@@ -1,8 +1,4 @@
 #!/bin/bash
-if [ ! -f /home/${USER}/tactical-deploy.tar.gz ]; then
-  echo "Missing required deployment file!"
-  exit 1
-fi
 
 if [ $EUID -eq 0 ]; then
   echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
@@ -262,7 +258,7 @@ sudo chown ${USER}:www-data /home/${USER}
 mkdir -p /home/${USER}/vue-rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
-tar -xvzf tactical-deploy.tar.gz -C /home/${USER}/vue-rmm/
+git clone https://github.com/wh1te909/tacticalrmm.git /home/steam/vue-rmm/
 sudo chown ${USER}:www-data -R /home/${USER}/vue-rmm/api/djangormm
 
 localvars="$(cat << EOF

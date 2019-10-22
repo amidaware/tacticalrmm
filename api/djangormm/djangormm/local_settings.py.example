@@ -1,0 +1,32 @@
+SECRET_KEY = 'changeme'
+
+ALLOWED_HOSTS = ['api.example.com']
+
+CORS_ORIGIN_WHITELIST = ["https://rmm.example.com",]
+
+DEBUG = False
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'djangormm',
+        'USER': 'djangormm',
+        'PASSWORD': 'changeme',
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
+    }
+}
+
+EMAIL_USE_TLS = True
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'example@gmail.com'
+EMAIL_HOST_PASSWORD = 'changeme'
+EMAIL_PORT = 587
+EMAIL_ALERT_RECIPIENTS = ["example@gmail.com",]
+
+SALT_USERNAME = "changeme"
+SALT_PASSWORD = "changeme"
+MESH_USERNAME = "changeme"
+MESH_PASSWORD = "changeme"
+MESH_SITE = "https://mesh.example.com"
+TWO_FACTOR_OTP = "changeme"

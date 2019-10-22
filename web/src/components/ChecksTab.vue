@@ -176,7 +176,6 @@
 import axios from "axios";
 import { mapState } from "vuex";
 import mixins from "@/mixins/mixins";
-import DiskCheckModal from "@/components/modals/checks/DiskCheckModal";
 import AddDiskSpaceCheck from "@/components/modals/checks/AddDiskSpaceCheck";
 import EditDiskSpaceCheck from "@/components/modals/checks/EditDiskSpaceCheck";
 import AddPingCheck from "@/components/modals/checks/AddPingCheck";
@@ -191,7 +190,6 @@ import EditWinSvcCheck from "@/components/modals/checks/EditWinSvcCheck";
 export default {
   name: "ChecksTab",
   components: {
-    DiskCheckModal,
     AddDiskSpaceCheck,
     EditDiskSpaceCheck,
     AddPingCheck,

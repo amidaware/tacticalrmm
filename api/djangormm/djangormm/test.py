@@ -5,7 +5,7 @@ from rest_framework.test import force_authenticate
 
 from accounts.models import User
 from agents.models import Agent
-
+from clients.models import Client, Site
 
 class BaseTestCase(TestCase):
     def setUp(self):
@@ -65,3 +65,27 @@ class BaseTestCase(TestCase):
             mesh_node_id="abcdefghijklmnopAABBCCDD77443355##!!AI%@#$%#*",
             status="online",
         )
+
+        Client.objects.create(client="Google")
+        Client.objects.create(client="Facebook")
+        google = Client.objects.get(client="Google")
+        facebook = Client.objects.get(client="Facebook")
+        Site.objects.create(client=google, site="Main Office")
+        Site.objects.create(client=google, site="LA Office")
+        Site.objects.create(client=google, site="MO Office")
+        Site.objects.create(client=facebook, site="Main Office")
+        Site.objects.create(client=facebook, site="NY Office")
+    
+
+
+    def check_not_authenticated(self, method, url):
+        self.client.logout()
+        switch = {
+            "get": self.client.get(url),
+            "post": self.client.post(url),
+            "put": self.client.put(url),
+            "patch": self.client.patch(url),
+            "delete": self.client.delete(url)
+        }
+        r = switch.get(method)
+        self.assertEqual(r.status_code, 401)

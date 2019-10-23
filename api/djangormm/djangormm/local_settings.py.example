@@ -17,6 +17,24 @@ DATABASES = {
     }
 }
 
+REST_FRAMEWORK = {
+    'DATETIME_FORMAT': "%b-%d-%Y - %H:%M",
+
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'knox.auth.TokenAuthentication',
+    ),
+}
+
+if not DEBUG:
+    REST_FRAMEWORK.update({
+        'DEFAULT_RENDERER_CLASSES': (
+            'rest_framework.renderers.JSONRenderer',
+        )
+    })
+
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = 'example@gmail.com'

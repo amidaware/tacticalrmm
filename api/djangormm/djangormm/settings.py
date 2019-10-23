@@ -35,16 +35,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-REST_FRAMEWORK = {
-    'DATETIME_FORMAT': "%b-%d-%Y - %H:%M",
-
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'knox.auth.TokenAuthentication',
-    )
-}
 
 REST_KNOX = {
   'TOKEN_TTL': timedelta(hours=5),

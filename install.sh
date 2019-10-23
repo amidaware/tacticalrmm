@@ -375,6 +375,7 @@ server {
 server {
     listen 443 ssl;
     server_name ${rmmdomain};
+    client_max_body_size 300M;
     access_log /home/${USER}/vue-rmm/api/djangormm/log/rmm-access.log;
     error_log /home/${USER}/vue-rmm/api/djangormm/log/rmm-error.log;
     ssl_certificate /etc/letsencrypt/live/${rmmdomain}/fullchain.pem;

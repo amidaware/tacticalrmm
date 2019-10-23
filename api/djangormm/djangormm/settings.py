@@ -127,6 +127,20 @@ if 'TRAVIS' in os.environ:
         }
     }
 
+    REST_FRAMEWORK = {
+        'DATETIME_FORMAT': "%b-%d-%Y - %H:%M",
+
+        'DEFAULT_PERMISSION_CLASSES': (
+            'rest_framework.permissions.IsAuthenticated',
+        ),
+        'DEFAULT_AUTHENTICATION_CLASSES': (
+            'knox.auth.TokenAuthentication',
+        ),
+        'DEFAULT_RENDERER_CLASSES': (
+            'rest_framework.renderers.JSONRenderer',
+        )
+    }
+
     DEBUG = True
     SECRET_KEY = 'abcdefghijklmnoptravis123456789'
 

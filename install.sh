@@ -232,7 +232,7 @@ echo "${meshcfg}" > /meshcentral/meshcentral-data/config.json
 print_green 'Installing python, redis and git'
 
 sudo apt install -y software-properties-common
-sudo apt install -y python3.7 python3.7-venv python3.7-dev python3-pip python3-dev python3-venv python3-setuptools curl ca-certificates redis git
+sudo apt install -y python3.7 python3.7-venv python3.7-dev python3-pip python3-dev python3-venv python3-setuptools curl ca-certificates redis git python3-cherrypy3
 
 print_green 'Installing postgresql'
 

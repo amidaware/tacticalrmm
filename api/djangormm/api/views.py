@@ -236,132 +236,145 @@ def delete_agent(request):
 @api_view(["POST"])
 @authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
-def hello(request):
+def add(request):
     data = request.data
     agent_id = data["agentid"]
-    os = data["operating_system"]
     hostname = data["hostname"]
-    local_ip = data["local_ip"]
-    services = data["services"]
-    public_ip = data["public_ip"]
-    cpu_load = data["cpu_load"]
-    total_ram = data["total_ram"]
-    used_ram = data["used_ram"]
-    disks = data["disks"]
-    boot_time = data["boot_time"]
-    logged_in_username = data["logged_in_username"]
-    cpu_info = data["cpu_info"]
     client = data["client"]
     site = data["site"]
     monitoring_type = data["monitoring_type"]
     description = data["description"]
     mesh_node_id = data["mesh_node_id"]
-    plat = data["platform"]
-    plat_release = data["platform_release"]
-    # if new agent, add to database
+
     if not Agent.objects.filter(agent_id=agent_id).exists():
         Agent(
             agent_id=agent_id,
-            operating_system=os,
-            plat=plat,
-            plat_release=plat_release,
             hostname=hostname,
-            local_ip=local_ip,
-            services=services,
-            public_ip=public_ip,
-            cpu_load=cpu_load,
-            total_ram=total_ram,
-            used_ram=used_ram,
-            disks=disks,
-            logged_in_username=logged_in_username,
             client=client,
             site=site,
             monitoring_type=monitoring_type,
-            cpu_info=cpu_info,
             description=description,
             mesh_node_id=mesh_node_id,
         ).save()
-        response = "added"
         agent = Agent.objects.get(agent_id=agent_id)
-        MemoryHistory(agent=agent, mem_history=[used_ram]).save()
-        CpuHistory(agent=agent, cpu_history=[cpu_load]).save()
+        MemoryHistory(agent=agent).save()
+        CpuHistory(agent=agent).save()
+    
+    return Response("ok")
 
-        # Wait for salt agent to start then run first check update and software checks
-        sync_salt_modules_task.delay(agent.pk)
 
+@api_view(["PATCH"])
+@authentication_classes((TokenAuthentication,))
+@permission_classes((IsAuthenticated,))
+def update(request):
+    data = request.data
+    agent_id = data["agentid"]
+    hostname = data["hostname"]
+    os = data["operating_system"]
+    total_ram = data["total_ram"]
+    cpu_info = data["cpu_info"]
+    plat = data["platform"]
+    plat_release = data["platform_release"]
+
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+
+    agent.hostname = hostname
+    agent.operating_system = os
+    agent.total_ram = total_ram
+    agent.cpu_info = cpu_info
+    agent.plat = plat
+    agent.plat_release = plat_release
+
+    agent.save(update_fields=[
+        "last_seen",
+        "hostname",
+        "operating_system",
+        "total_ram",
+        "cpu_info",
+        "plat",
+        "plat_release",
+    ])
+
+    sync_salt_modules_task.delay(agent.pk)
+
+    return Response("ok")
+
+
+@api_view(["PATCH"])
+@authentication_classes((TokenAuthentication,))
+@permission_classes((IsAuthenticated,))
+def hello(request):
+    data = request.data
+    agent_id = data["agentid"]
+    local_ip = data["local_ip"]
+    services = data["services"]
+    public_ip = data["public_ip"]
+    cpu_load = data["cpu_load"]
+    used_ram = data["used_ram"]
+    disks = data["disks"]
+    boot_time = data["boot_time"]
+    logged_in_username = data["logged_in_username"]
+    
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+
+    if agent.uninstall_pending:
+        if agent.uninstall_inprogress:
+            return Response("uninstallip")
+        else:
+            uninstall_agent_task.delay(agent.pk)
+            return Response("ok")
+
+    
+    agent.local_ip = local_ip
+    agent.public_ip = public_ip
+    agent.services = services
+    agent.cpu_load = cpu_load
+    
+    agent.used_ram = used_ram
+    agent.disks = disks
+    agent.boot_time = boot_time
+    agent.logged_in_username = logged_in_username
+    
+    agent.save(
+        update_fields=[
+            "last_seen",
+            "local_ip",
+            "public_ip",
+            "services",
+            "cpu_load",
+            "used_ram",
+            "disks",
+            "boot_time",
+            "logged_in_username", 
+        ]
+    )
+
+    # create a list of the last 35 mem averages
+    mem = MemoryHistory.objects.get(agent=agent)
+    mem_list = mem.mem_history
+
+    if len(mem_list) < 35:
+        mem_list.append(used_ram)
+        mem.mem_history = mem_list
+        mem.save(update_fields=["mem_history"])
     else:
-        agent = Agent.objects.get(agent_id=agent_id)
+        mem_list.append(used_ram)
+        new_mem_list = mem_list[-35:]
+        mem.mem_history = new_mem_list
+        mem.save(update_fields=["mem_history"])
 
-        if agent.uninstall_pending:
-            if agent.uninstall_inprogress:
-                return Response("uninstallip")
-            else:
-                uninstall_agent_task.delay(agent.pk)
-                return Response("ok")
+    # create list of the last 35 cpu load averages
+    cpu = CpuHistory.objects.get(agent=agent)
+    cpu_list = cpu.cpu_history
 
-        agent.hostname = hostname
-        agent.operating_system = os
-        agent.local_ip = local_ip
-        agent.public_ip = public_ip
-        agent.services = services
-        agent.cpu_load = cpu_load
-        agent.total_ram = total_ram
-        agent.used_ram = used_ram
-        agent.disks = disks
-        agent.boot_time = boot_time
-        agent.logged_in_username = logged_in_username
-        agent.cpu_info = cpu_info
-        agent.plat = plat
-        agent.plat_release = plat_release
-
-        agent.save(
-            update_fields=[
-                "last_seen",
-                "local_ip",
-                "public_ip",
-                "services",
-                "hostname",
-                "operating_system",
-                "cpu_load",
-                "total_ram",
-                "used_ram",
-                "disks",
-                "boot_time",
-                "logged_in_username",
-                "cpu_info",
-                "plat",
-                "plat_release",
-            ]
-        )
-
-        response = "ok"
-
-        # create a list of the last 35 mem averages
-        mem = MemoryHistory.objects.get(agent=agent)
-        mem_list = mem.mem_history
-
-        if len(mem_list) < 35:
-            mem_list.append(used_ram)
-            mem.mem_history = mem_list
-            mem.save(update_fields=["mem_history"])
-        else:
-            mem_list.append(used_ram)
-            new_mem_list = mem_list[-35:]
-            mem.mem_history = new_mem_list
-            mem.save(update_fields=["mem_history"])
-
-        # create list of the last 35 cpu load averages
-        cpu = CpuHistory.objects.get(agent=agent)
-        cpu_list = cpu.cpu_history
-
-        if len(cpu_list) < 35:
-            cpu_list.append(cpu_load)
-            cpu.cpu_history = cpu_list
-            cpu.save(update_fields=["cpu_history"])
-        else:
-            cpu_list.append(cpu_load)
-            new_cpu_list = cpu_list[-35:]
-            cpu.cpu_history = new_cpu_list
-            cpu.save(update_fields=["cpu_history"])
-        
-    return Response({"response": response})
+    if len(cpu_list) < 35:
+        cpu_list.append(cpu_load)
+        cpu.cpu_history = cpu_list
+        cpu.save(update_fields=["cpu_history"])
+    else:
+        cpu_list.append(cpu_load)
+        new_cpu_list = cpu_list[-35:]
+        cpu.cpu_history = new_cpu_list
+        cpu.save(update_fields=["cpu_history"])
+    
+    return Response("ok")

@@ -3,6 +3,8 @@ from . import views
 
 urlpatterns = [
     path("hello/", views.hello),
+    path("update/", views.update),
+    path("add/", views.add),
     path("agentauth/", views.agent_auth),
     path("getmeshnodes/", views.get_mesh_nodes),
     path("token/", views.create_auth_token),

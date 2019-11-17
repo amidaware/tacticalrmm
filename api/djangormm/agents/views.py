@@ -15,9 +15,19 @@ from rest_framework.authentication import BasicAuthentication, TokenAuthenticati
 
 from .models import Agent
 from .serializers import AgentSerializer
-from .tasks import uninstall_agent_task
+from .tasks import uninstall_agent_task, update_agent_task
 
 logger.configure(**settings.LOG_CONFIG)
+
+@api_view()
+@permission_classes([])
+@authentication_classes([])
+def update_agent(request, pk):
+    agent = get_object_or_404(Agent, pk=pk)
+    update_agent_task.delay(agent.pk)
+
+    return Response(f"updating {agent.hostname}")
+
 
 @api_view(["DELETE"])
 def uninstall_agent(request):

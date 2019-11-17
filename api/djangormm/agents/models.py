@@ -13,6 +13,7 @@ from django.conf import settings
 from django.contrib.postgres.fields import JSONField
 
 class Agent(models.Model):
+    version = models.CharField(default="0.1.0", max_length=255)
     operating_system = models.CharField(null=True, max_length=255)
     plat = models.CharField(max_length=255, null=True)
     plat_release = models.CharField(max_length=255, null=True)

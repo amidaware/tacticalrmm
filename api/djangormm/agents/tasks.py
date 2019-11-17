@@ -81,7 +81,7 @@ def uninstall_agent_task(pk, wait=True):
 
 
 @app.task
-def update_agent_task(pk, version="0.2.0"):
+def update_agent_task(pk, version="0.1.4"):
     app_dir = "C:\\Program Files\\TacticalAgent"
     temp_dir = "C:\\Windows\\Temp"
     agent = Agent.objects.get(pk=pk)
@@ -124,6 +124,19 @@ def update_agent_task(pk, version="0.2.0"):
         logger.error(f"{agent.hostname} unable to stop checkrunner service")
         return f"{agent.hostname} unable to stop checkrunner service"
     
+    update_version = agent.salt_api_cmd(
+        hostname=agent.hostname,
+        timeout=45,
+        func="sqlite3.modify",
+        arg=[
+            "C:\\Program Files\\TacticalAgent\\winagent\\agentdb.db",
+            f'UPDATE agentstorage SET version = "{version}"'
+        ]
+    )
+    versiondata = update_version.json()
+    if not versiondata["return"][0][agent.hostname]:
+        logger.error(f"{agent.hostname} unable to update sql version")
+        return f"{agent.hostname} unable to update sql version"
 
     resp3 = agent.salt_api_cmd(
         hostname=agent.hostname,

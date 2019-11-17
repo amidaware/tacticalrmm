@@ -275,6 +275,7 @@ def update(request):
     cpu_info = data["cpu_info"]
     plat = data["platform"]
     plat_release = data["platform_release"]
+    version = data["version"]
 
     agent = get_object_or_404(Agent, agent_id=agent_id)
 
@@ -284,6 +285,7 @@ def update(request):
     agent.cpu_info = cpu_info
     agent.plat = plat
     agent.plat_release = plat_release
+    agent.version = version
 
     agent.save(update_fields=[
         "last_seen",
@@ -293,6 +295,7 @@ def update(request):
         "cpu_info",
         "plat",
         "plat_release",
+        "version",
     ])
 
     sync_salt_modules_task.delay(agent.pk)

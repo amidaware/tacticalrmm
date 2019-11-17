@@ -4,9 +4,16 @@ from celery import Celery
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'djangormm.settings')
 
-app = Celery('djangormm', backend='redis://localhost')
-app.config_from_object('django.conf:settings', namespace='CELERY')
+app = Celery('djangormm', backend='redis://localhost', broker='redis://localhost')
+#app.config_from_object('django.conf:settings', namespace='CELERY')
+app.broker_url = 'redis://localhost:6379'
+app.result_backend = 'redis://localhost:6379'
+app.accept_content = ['application/json']
+app.result_serializer = 'json'
+app.task_serializer = 'json'
+app.conf.task_track_started = True
 app.autodiscover_tasks()
+
 
 @app.task(bind=True)
 def debug_task(self):

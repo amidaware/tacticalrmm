@@ -276,6 +276,7 @@ def update(request):
     plat = data["platform"]
     plat_release = data["platform_release"]
     version = data["version"]
+    av = data["av"]
 
     agent = get_object_or_404(Agent, agent_id=agent_id)
 
@@ -286,6 +287,7 @@ def update(request):
     agent.plat = plat
     agent.plat_release = plat_release
     agent.version = version
+    agent.antivirus = av
 
     agent.save(update_fields=[
         "last_seen",
@@ -296,6 +298,7 @@ def update(request):
         "plat",
         "plat_release",
         "version",
+        "antivirus",
     ])
 
     sync_salt_modules_task.delay(agent.pk)

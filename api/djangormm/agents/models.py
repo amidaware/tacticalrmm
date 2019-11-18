@@ -31,6 +31,7 @@ class Agent(models.Model):
     logged_in_username = models.CharField(null=True, max_length=200)
     cpu_info = JSONField(null=True)
     client = models.CharField(max_length=200)
+    antivirus = models.CharField(default="n/a", max_length=255)
     site = models.CharField(max_length=150)
     monitoring_type = models.CharField(max_length=30)
     description = models.CharField(null=True, max_length=255)

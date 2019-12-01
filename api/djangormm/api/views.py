@@ -38,7 +38,9 @@ from checks.models import (
     MemoryHistory,
     CpuHistory,
 )
+from winupdate.models import WinUpdate
 from agents.tasks import uninstall_agent_task, sync_salt_modules_task
+from winupdate.tasks import check_for_updates_task
 from agents.serializers import AgentHostnameSerializer
 
 logger.configure(**settings.LOG_CONFIG)
@@ -302,6 +304,11 @@ def update(request):
     ])
 
     sync_salt_modules_task.delay(agent.pk)
+
+    # check for updates if this is fresh agent install
+    if not WinUpdate.objects.filter(agent=agent).exists():
+        check_for_updates_task.delay(agent.pk)
+
 
     return Response("ok")
 

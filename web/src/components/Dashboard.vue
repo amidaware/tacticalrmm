@@ -110,17 +110,16 @@ export default {
       columns: [
         {
           name: "smsalert",
-          classes: "sms-alert",
-          style: "opacity: 1",
           align: "left"
         },
         {
           name: "emailalert",
-          classes: "email-alert",
-          style: "opacity: 1",
           align: "left"
         },
-        { name: "platform", align: "left" },
+        { 
+          name: "platform", 
+          align: "left" 
+        },
         {
           name: "client",
           label: "Client",
@@ -150,19 +149,15 @@ export default {
           align: "left"
         },
         {
-          name: "patches_pending",
-          classes: "patches-pending",
-          style: "opacity: 1",
+          name: "patchespending",
           align: "left"
         },
         {
-          name: "take_control",
-          classes: "take-control",
-          style: "opacity: 1",
+          name: "antivirus",
           align: "left"
         },
         {
-          name: "agent_status",
+          name: "agentstatus",
           field: "status",
           align: "left"
         },
@@ -272,22 +267,5 @@ export default {
 .my-menu-link {
   color: white;
   background: lightgray;
-}
-.email-alert {
-  background: url("../assets/email-alert.png") no-repeat center;
-  width: 16px;
-}
-.sms-alert {
-  background: url("../assets/sms-alert.png") no-repeat center;
-  width: 16px;
-}
-
-.patches-pending {
-  background: url("../assets/patches-pending.png") no-repeat center;
-  width: 16px;
-}
-.take-control {
-  background: url("../assets/take-control.png") no-repeat center;
-  width: 16px;
 }
 </style>

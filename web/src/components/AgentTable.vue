@@ -1,7 +1,42 @@
 <template>
   <div class="q-pa-sm">
-    <q-table dense class="agents-tbl-sticky" :data="filter" :columns="columns" 
-      row-key="id" binary-state-sort :pagination.sync="pagination" hide-bottom>
+    <q-table 
+      dense 
+      class="agents-tbl-sticky" 
+      :data="filter" 
+      :columns="columns" 
+      row-key="id" 
+      binary-state-sort 
+      :pagination.sync="pagination" 
+      hide-bottom
+    > 
+      <!-- header slots -->
+      <template v-slot:header-cell-smsalert="props">
+        <q-th auto-width :props="props">
+          <q-icon name="phone_android" size="1.5em"><q-tooltip>SMS Alert</q-tooltip></q-icon>
+        </q-th>
+      </template>
+      <template v-slot:header-cell-emailalert="props">
+        <q-th auto-width :props="props">
+          <q-icon name="email" size="1.5em"><q-tooltip>Email Alert</q-tooltip></q-icon>
+        </q-th>
+      </template>
+      <template v-slot:header-cell-patchespending="props">
+        <q-th auto-width :props="props">
+          <q-icon name="system_update_alt" size="1.5em" color="warning"><q-tooltip>Patches Pending</q-tooltip></q-icon>
+        </q-th>
+      </template>
+      <template v-slot:header-cell-antivirus="props">
+        <q-th auto-width :props="props">
+          <q-icon name="fas fa-shield-alt" size="1.2em" color="primary"><q-tooltip>Anti Virus</q-tooltip></q-icon>
+        </q-th>
+      </template>
+      <template v-slot:header-cell-agentstatus="props">
+        <q-th auto-width :props="props">
+          <q-icon name="fas fa-signal" size="1.2em" color="accent"><q-tooltip>Agent Status</q-tooltip></q-icon>
+        </q-th>
+      </template>
+      <!-- body slots -->
       <template slot="body" slot-scope="props" :props="props">
         <q-tr
           @contextmenu.native="agentRowSelected(props.row.id, props.row.agent_id)"
@@ -123,17 +158,19 @@
 
           <q-td key="hostname" :props="props">{{ props.row.hostname }}</q-td>
           <q-td key="description" :props="props">{{ props.row.description }}</q-td>
-          <q-td key="patches_pending">
-            <q-icon name="fas fa-power-off" color="blue">
-              <q-tooltip>Patches Pending</q-tooltip>
-            </q-icon>
+          <q-td key="patchespending">
+            <q-icon name="fas fa-power-off" color="primary" />
           </q-td>
-          <q-td key="take_control">
-            <q-icon name="fas fa-check" color="green">
-              <q-tooltip>Take Control</q-tooltip>
+          <q-td :props="props" key="antivirus">
+            <q-icon v-if="props.row.antivirus !== 'n/a' && props.row.antivirus === 'windowsdefender'" name="fas fa-exclamation" color="warning">
+              <q-tooltip>{{ props.row.antivirus }}</q-tooltip>
             </q-icon>
+            <q-icon v-else-if="props.row.antivirus !== 'n/a'" name="fas fa-check" color="positive">
+              <q-tooltip>{{ props.row.antivirus }}</q-tooltip>
+            </q-icon>
+            <q-icon v-else name="fas fa-times-circle" color="negative" />
           </q-td>
-          <q-td key="agent_status">
+          <q-td key="agentstatus">
             <q-icon v-if="props.row.status ==='overdue'" name="fas fa-exclamation-triangle" color="negative">
               <q-tooltip>Agent overdue</q-tooltip>
             </q-icon>

@@ -22,7 +22,7 @@ class Agent(models.Model):
     agent_id = models.CharField(max_length=200)
     last_seen = models.DateTimeField(auto_now=True)
     services = JSONField(null=True)
-    public_ip = models.CharField(null=True, max_length=100)
+    public_ip = models.CharField(null=True, max_length=255)
     cpu_load = models.FloatField(null=True)
     total_ram = models.IntegerField(null=True)
     used_ram = models.IntegerField(null=True)
@@ -73,6 +73,42 @@ class Agent(models.Model):
             timeout=kwargs["timeout"]
         )
         return resp
+    
+    @staticmethod
+    def salt_api_async(**kwargs):
+
+        json = {
+            "client": "local_async",
+            "tgt": kwargs["hostname"],
+            "fun": kwargs["func"],
+            "username": settings.SALT_USERNAME,
+            "password": settings.SALT_PASSWORD,
+            "eauth": "pam",
+        }
+
+        if "arg" in kwargs:
+            json.update({"arg": kwargs["arg"]})
+        if "kwargs" in kwargs:
+            json.update({"kwarg": kwargs["kwargs"]})
+        resp = requests.post(
+            "http://127.0.0.1:8123/run",
+            json=[json]
+        )
+        return resp
+    
+    @staticmethod
+    def salt_api_job(jid):
+
+        session = requests.Session()
+        session.post(
+            "http://127.0.0.1:8123/login",
+            json={
+                'username': settings.SALT_USERNAME, 
+                'password': settings.SALT_PASSWORD, 
+                'eauth': 'pam'
+            })
+        
+        return session.get(f"http://127.0.0.1:8123/jobs/{jid}")
 
     """ @staticmethod
     def salt_cmd(tgt, fun, arg=[], timeout=60, kwargs={}):

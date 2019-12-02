@@ -39,7 +39,7 @@ def check_for_updates_task(pk):
             ).save()
     else:
         for i in guids:
-            # check if existing update install status has changed
+            # check if existing update install / download status has changed
             if WinUpdate.objects.filter(agent=agent).filter(guid=i).exists():
 
                 update = WinUpdate.objects.filter(agent=agent).get(guid=i)
@@ -47,6 +47,10 @@ def check_for_updates_task(pk):
                 if ret[i]["Installed"] != update.installed:
                     update.installed = not update.installed
                     update.save(update_fields=["installed"])
+                
+                if ret[i]["Downloaded"] != update.downloaded:
+                    update.downloaded = not update.downloaded
+                    update.save(update_fields=["downloaded"])
 
             # otherwise it's a new update
             else:

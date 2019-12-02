@@ -40,9 +40,9 @@ def check_for_updates_task(pk):
     else:
         for i in guids:
             # check if existing update install status has changed
-            if WinUpdate.objects.filter(guid=i).exists():
+            if WinUpdate.objects.filter(agent=agent).filter(guid=i).exists():
 
-                update = WinUpdate.objects.get(guid=i)
+                update = WinUpdate.objects.filter(agent=agent).get(guid=i)
 
                 if ret[i]["Installed"] != update.installed:
                     update.installed = not update.installed

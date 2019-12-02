@@ -34,7 +34,8 @@ def check_for_updates_task(pk):
                 needs_reboot=ret[i]["NeedsReboot"],
                 installed=ret[i]["Installed"],
                 downloaded=ret[i]["Downloaded"],
-                description=ret[i]["Description"]
+                description=ret[i]["Description"],
+                severity=ret[i]["Severity"]
             ).save()
     else:
         for i in guids:
@@ -58,6 +59,7 @@ def check_for_updates_task(pk):
                     needs_reboot=ret[i]["NeedsReboot"],
                     installed=ret[i]["Installed"],
                     downloaded=ret[i]["Downloaded"],
-                    description=ret[i]["Description"]
+                    description=ret[i]["Description"],
+                    severity=ret[i]["Severity"]
                 ).save()
     return "ok"

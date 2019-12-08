@@ -27,13 +27,6 @@ def initial_setup(request):
         err = {"error": f"Client/site name cannot contain the | character"}
         return Response(err, status=status.HTTP_400_BAD_REQUEST)
     
-    if Client.objects.filter(client=client_name):
-        return Response("ok")
-    
-    if Site.objects.filter(site=site_name):
-        print("aksdjaksdjkasdjkasdjk")
-        return Response("ok")
-    
     Client(client=client_name).save()
     client = Client.objects.get(client=client_name)
     Site(client=client, site=site_name).save()

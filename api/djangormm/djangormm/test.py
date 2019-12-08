@@ -67,11 +67,11 @@ class BaseTestCase(TestCase):
         )
 
         Client.objects.create(client="Google")
-        Client.objects.create(client="Facebook")
+        Client.objects.create(client="Facebook", checks_failing=True)
         google = Client.objects.get(client="Google")
         facebook = Client.objects.get(client="Facebook")
         Site.objects.create(client=google, site="Main Office")
-        Site.objects.create(client=google, site="LA Office")
+        Site.objects.create(client=google, site="LA Office", checks_failing=True)
         Site.objects.create(client=google, site="MO Office")
         Site.objects.create(client=facebook, site="Main Office")
         Site.objects.create(client=facebook, site="NY Office")

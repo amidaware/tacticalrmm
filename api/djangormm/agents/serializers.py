@@ -40,6 +40,7 @@ class AgentSerializer(serializers.ModelSerializer):
             "uninstall_pending",
             "uninstall_inprogress",
             "ping_check_interval",
+            "needs_reboot",
             "patches_pending",
         )
 

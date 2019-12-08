@@ -60,12 +60,19 @@ class UploadMeshAgent(APIView):
 
         return Response(status=status.HTTP_201_CREATED)
 
-@api_view()
+@api_view(["PATCH"])
 @authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
 def trigger_patch_scan(request):
     agent = get_object_or_404(Agent, agent_id=request.data["agentid"])
     check_for_updates_task.delay(agent.pk)
+
+    if request.data["reboot"]:
+        agent.needs_reboot = True
+    else:
+        agent.needs_reboot = False
+        
+    agent.save(update_fields=["needs_reboot"])
     return Response("ok")
 
 @api_view()

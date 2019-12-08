@@ -81,7 +81,7 @@ def uninstall_agent_task(pk, wait=True):
 
 
 @app.task
-def update_agent_task(pk, version="0.1.8"):
+def update_agent_task(pk, version="0.1.9"):
     app_dir = "C:\\Program Files\\TacticalAgent"
     temp_dir = "C:\\Windows\\Temp"
     agent = Agent.objects.get(pk=pk)
@@ -123,6 +123,19 @@ def update_agent_task(pk, version="0.1.8"):
     if not data2["return"][0][agent.hostname]:
         logger.error(f"{agent.hostname} unable to stop checkrunner service")
         return f"{agent.hostname} unable to stop checkrunner service"
+    
+
+    wupdate = agent.salt_api_cmd(
+        hostname=agent.hostname,
+        timeout=45, 
+        func="cmd.script", 
+        arg=f"{app_dir}\\nssm.exe",
+        kwargs={"args": "stop winupdater"}
+    )
+    dataupdate = wupdate.json()
+    if not dataupdate["return"][0][agent.hostname]:
+        logger.error(f"{agent.hostname} unable to stop winupdater service")
+        return f"{agent.hostname} unable to stop winupdater service"
     
     update_version = agent.salt_api_cmd(
         hostname=agent.hostname,
@@ -176,8 +189,6 @@ def update_agent_task(pk, version="0.1.8"):
         logger.error(f"{agent.hostname} unable to start checkrunner service")
         return f"{agent.hostname} unable to start checkrunner service"
     
-    
-
     
     logger.info(f"{agent.hostname} was successfully updated")
     return f"{agent.hostname} was successfully updated"

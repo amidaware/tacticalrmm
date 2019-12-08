@@ -15,8 +15,6 @@ from .serializers import UpdateSerializer, WinUpdateSerializer, ApprovedUpdateSe
 from .tasks import check_for_updates_task
 
 @api_view()
-@authentication_classes([])
-@permission_classes([])
 def get_win_updates(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     return Response(UpdateSerializer(agent).data)

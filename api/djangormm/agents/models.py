@@ -8,9 +8,12 @@ opts = salt.config.master_config("/etc/salt/master")
 wheel = salt.wheel.WheelClient(opts)
 local = salt.client.LocalClient() """
 
+
+
 from django.db import models
 from django.conf import settings
 from django.contrib.postgres.fields import JSONField
+
 
 class Agent(models.Model):
     version = models.CharField(default="0.1.0", max_length=255)
@@ -47,6 +50,15 @@ class Agent(models.Model):
     def __str__(self):
         return self.hostname
     
+    @property
+    def has_patches_pending(self):
+        from winupdate.models import WinUpdate
+        if WinUpdate.objects.filter(agent=self).filter(action="approve").exists():
+            return True
+
+        return False
+
+
     @staticmethod
     def salt_api_cmd(**kwargs):
         try:

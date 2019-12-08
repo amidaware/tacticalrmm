@@ -19,3 +19,11 @@ class UpdateSerializer(serializers.ModelSerializer):
             "hostname",
             "winupdates",
         )
+
+class ApprovedUpdateSerializer(serializers.ModelSerializer):
+    winupdates = WinUpdateSerializer(read_only=True)
+    agentid = serializers.ReadOnlyField(source='agent.pk')
+
+    class Meta:
+        model = WinUpdate
+        fields = ("id", "kb", "guid", "agentid", "winupdates",)

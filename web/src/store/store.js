@@ -19,6 +19,7 @@ export const store = new Vuex.Store({
     treeReady: false,
     selectedRow: "",
     agentSummary: {},
+    winUpdates: {},
     agentChecks: {},
     agentTableLoading: false,
     treeLoading: false
@@ -29,6 +30,19 @@ export const store = new Vuex.Store({
     },
     selectedAgentPk(state) {
       return state.agentSummary.id;
+    },
+    sortedUpdates(state) {
+      // sort patches by latest then not installed
+      if (!state.winUpdates.winupdates) {
+        return [];
+      }
+      const sortedByID = state.winUpdates.winupdates.sort((a, b) =>
+        a.id > b.id ? 1 : -1
+      );
+      const sortedByInstall = sortedByID.sort(a =>
+        a.installed === false ? -1 : 1
+      );
+      return sortedByInstall;
     }
   },
   mutations: {
@@ -56,15 +70,25 @@ export const store = new Vuex.Store({
     setSummary(state, summary) {
       state.agentSummary = summary;
     },
+    SET_WIN_UPDATE(state, updates) {
+      state.winUpdates = updates;
+    },
     setChecks(state, checks) {
       state.agentChecks = checks;
     },
     destroySubTable(state) {
-      (state.agentSummary = {}), (state.agentChecks = {});
+      (state.agentSummary = {}),
+        (state.agentChecks = {}),
+        (state.winUpdates = {});
       state.selectedRow = "";
     }
   },
   actions: {
+    loadWinUpdates(context, pk) {
+      axios.get(`/winupdate/${pk}/getwinupdates/`).then(r => {
+        context.commit("SET_WIN_UPDATE", r.data);
+      });
+    },
     loadSummary(context, pk) {
       axios.get(`/agents/${pk}/agentdetail/`).then(r => {
         context.commit("setSummary", r.data);

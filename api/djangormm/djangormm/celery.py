@@ -21,6 +21,7 @@ def debug_task(self):
 
 @app.on_after_finalize.connect
 def setup_periodic_tasks(sender, **kwargs):
+    
     from checks.tasks import (
         disk_check_alert, 
         cpu_load_check_alert, 
@@ -28,6 +29,7 @@ def setup_periodic_tasks(sender, **kwargs):
         win_service_check_task,
         determine_agent_status
     )
+
     sender.add_periodic_task(30.0, disk_check_alert.s(), name='disk check alert every 30')
     sender.add_periodic_task(60.0, cpu_load_check_alert.s(), name='cpu load alert every 60')
     sender.add_periodic_task(60.0, mem_check_alert.s(), name='memory alert every 60')

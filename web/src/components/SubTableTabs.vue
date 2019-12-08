@@ -24,7 +24,7 @@
                 <ChecksTab />
             </q-tab-panel>
             <q-tab-panel name="patches">
-                patches
+                <WindowsUpdates />
             </q-tab-panel>
         </q-tab-panels>
     </div>
@@ -33,11 +33,13 @@
 <script>
 import SummaryTab from '@/components/SummaryTab';
 import ChecksTab from '@/components/ChecksTab';
+import WindowsUpdates from '@/components/WindowsUpdates';
 export default {
   name: "SubTableTabs",
   components: {
       SummaryTab,
-      ChecksTab
+      ChecksTab,
+      WindowsUpdates
   },
   data() {
       return {

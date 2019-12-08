@@ -88,6 +88,32 @@
                 <q-item-section class="remote-bg" side></q-item-section>
                 <q-item-section>Remote Background</q-item-section>
               </q-item>
+              
+              <!-- patch management -->
+              <q-separator />
+              <q-item clickable>
+                <q-item-section side>
+                  <q-icon name="power_settings_new" />
+                </q-item-section>
+                <q-item-section>Patch Management</q-item-section>
+                <q-item-section side>
+                  <q-icon name="keyboard_arrow_right" />
+                </q-item-section>
+
+                <q-menu anchor="top right" self="top left">
+                  <q-list dense style="min-width: 100px">
+                    <q-item
+                      clickable
+                      v-ripple
+                      v-close-popup
+                      @click.stop.prevent="runPatchStatusScan(props.row.id, props.row.hostname)"
+                    >
+                      <q-item-section>Run Patch Status Scan</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-menu>
+
+              </q-item>
 
               <q-separator />
               <q-item clickable>
@@ -158,8 +184,10 @@
 
           <q-td key="hostname" :props="props">{{ props.row.hostname }}</q-td>
           <q-td key="description" :props="props">{{ props.row.description }}</q-td>
-          <q-td key="patchespending">
-            <q-icon name="fas fa-power-off" color="primary" />
+          <q-td :props="props" key="patchespending">
+            <q-icon v-if="props.row.patches_pending" name="fas fa-power-off" color="primary">
+              <q-tooltip>Patches Pending</q-tooltip>
+            </q-icon>
           </q-td>
           <q-td :props="props" key="antivirus">
             <q-icon v-if="props.row.antivirus !== 'n/a' && props.row.antivirus === 'windowsdefender'" name="fas fa-exclamation" color="warning">
@@ -248,6 +276,11 @@ export default {
     };
   },
   methods: {
+    runPatchStatusScan(pk, hostname) {
+        axios.get(`/winupdate/${pk}/runupdatescan/`).then(r => {
+            this.notifySuccess(`Scan will be run shortly on ${hostname}`)
+        })
+    },
     agentEdited() {
       this.$emit("refreshEdit")
     },
@@ -367,6 +400,7 @@ export default {
       this.$store.commit("setActiveRow", agentid);
       this.$store.dispatch("loadSummary", pk);
       this.$store.dispatch("loadChecks", pk);
+      this.$store.dispatch("loadWinUpdates", pk);
     },
     overdueAlert(category, pk, alert_action) {
       const action = alert_action ? "enabled" : "disabled";

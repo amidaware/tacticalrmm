@@ -81,7 +81,7 @@ def uninstall_agent_task(pk, wait=True):
 
 
 @app.task
-def update_agent_task(pk, version="0.1.4"):
+def update_agent_task(pk, version="0.1.8"):
     app_dir = "C:\\Program Files\\TacticalAgent"
     temp_dir = "C:\\Windows\\Temp"
     agent = Agent.objects.get(pk=pk)

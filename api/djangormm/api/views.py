@@ -61,6 +61,14 @@ class UploadMeshAgent(APIView):
         return Response(status=status.HTTP_201_CREATED)
 
 @api_view()
+@authentication_classes((TokenAuthentication,))
+@permission_classes((IsAuthenticated,))
+def trigger_patch_scan(request):
+    agent = get_object_or_404(Agent, agent_id=request.data["agentid"])
+    check_for_updates_task.delay(agent.pk)
+    return Response("ok")
+
+@api_view()
 def download_log(request):
     log_file = os.path.join(settings.BASE_DIR, "log/debug.log")
     if settings.DEBUG:

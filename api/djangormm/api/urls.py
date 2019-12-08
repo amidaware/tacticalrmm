@@ -14,4 +14,5 @@ urlpatterns = [
     path("downloadrmmlog/", views.download_log),
     path("getmeshexe/", views.get_mesh_exe),
     path("uploadmeshagent/", views.UploadMeshAgent.as_view()),
+    path("triggerpatchscan/", views.trigger_patch_scan),
 ]

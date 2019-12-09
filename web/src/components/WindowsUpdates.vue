@@ -52,6 +52,7 @@
           </q-td>
           <q-td>
             <q-icon v-if="props.row.installed" name="fas fa-check" color="positive"><q-tooltip>Installed</q-tooltip></q-icon>
+            <q-icon v-else-if="props.row.action == 'approve'" name="fas fa-tasks" color="primary"><q-tooltip>Pending</q-tooltip></q-icon>
             <q-icon v-else name="fas fa-exclamation" color="warning"><q-tooltip>Missing</q-tooltip></q-icon>
           </q-td>
           <q-td>{{ props.row.severity }}</q-td>

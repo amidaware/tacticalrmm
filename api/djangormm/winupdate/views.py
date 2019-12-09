@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.utils import timezone as djangotime
 
 from rest_framework.decorators import (
     api_view,
@@ -57,12 +58,21 @@ def results(request):
         update.result = results
         update.save(update_fields=["result"])
 
-    elif results == "success" or results == "alreadyinstalled":
+    elif results == "success":
+        update.result = "success"
+        update.action = "nothing"
+        update.downloaded = True
+        update.installed = True
+        update.date_installed = djangotime.now()
+        update.save(update_fields=["result", "action", "downloaded", "installed", "date_installed"])
+
+    elif results == "alreadyinstalled":
         update.result = "success"
         update.action = "nothing"
         update.downloaded = True
         update.installed = True
         update.save(update_fields=["result", "action", "downloaded", "installed"])
-
+    else:
+        pass
 
     return Response("ok")

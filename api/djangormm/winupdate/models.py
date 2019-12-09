@@ -39,6 +39,7 @@ class WinUpdate(models.Model):
     severity = models.CharField(max_length=255, null=True, blank=True)
     action = models.CharField(max_length=100, choices=PATCH_ACTION_CHOICES, default="nothing")
     result = models.CharField(max_length=255, default="n/a")
+    date_installed = models.DateTimeField(null=True)
 
     def __str__(self):
         return f"{self.agent.hostname} {self.kb}"

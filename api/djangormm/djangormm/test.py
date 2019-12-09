@@ -5,6 +5,7 @@ from rest_framework.test import force_authenticate
 
 from accounts.models import User
 from agents.models import Agent
+from winupdate.models import WinUpdatePolicy
 from clients.models import Client, Site
 
 class BaseTestCase(TestCase):
@@ -65,6 +66,8 @@ class BaseTestCase(TestCase):
             mesh_node_id="abcdefghijklmnopAABBCCDD77443355##!!AI%@#$%#*",
             status="online",
         )
+
+        self.update_policy = WinUpdatePolicy.objects.create(agent=self.agent)
 
         Client.objects.create(client="Google")
         Client.objects.create(client="Facebook", checks_failing=True)

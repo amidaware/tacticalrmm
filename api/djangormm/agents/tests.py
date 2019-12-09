@@ -1,7 +1,9 @@
 from djangormm.test import BaseTestCase
 
 from .serializers import AgentSerializer
+from winupdate.serializers import WinUpdatePolicySerializer
 from .models import Agent
+from winupdate.models import WinUpdatePolicy
 
 
 class TestAgentViews(BaseTestCase):
@@ -34,6 +36,17 @@ class TestAgentViews(BaseTestCase):
             "pinginterval": 60,
             "emailalert": True,
             "textalert": False,
+            "critical": "approve",
+            "important": "approve",
+            "moderate": "manual",
+            "low": "ignore",
+            "other": "ignore",
+            "scheduledtime": 5,
+            "dayoptions": [2, 3, 6],
+            "rebootafterinstall": True,
+            "reprocessfailed": True,
+            "reprocessfailedtimes": 13,
+            "emailiffail": True,
         }
         r = self.client.patch(url, edit, format="json")
         self.assertEqual(r.status_code, 200)
@@ -41,6 +54,10 @@ class TestAgentViews(BaseTestCase):
         agent = Agent.objects.get(pk=self.agent.pk)
         data = AgentSerializer(agent).data
         self.assertEqual(data["site"], "NY Office")
+
+        policy = WinUpdatePolicy.objects.get(agent=self.agent)
+        data = WinUpdatePolicySerializer(policy).data
+        self.assertEqual(data["run_time_days"], [2, 3, 6])
 
         self.check_not_authenticated("patch", url)
 

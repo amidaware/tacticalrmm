@@ -43,16 +43,17 @@
             <q-icon v-else-if="props.row.action === 'approve'" name="fas fa-check" color="primary">
               <q-tooltip>Approve</q-tooltip>
             </q-icon>
-            <q-icon v-else-if="props.row.action === 'ignore'" name="fas fa-check" color="warning">
+            <q-icon v-else-if="props.row.action === 'ignore'" name="fas fa-check" color="negative">
               <q-tooltip>Ignore</q-tooltip>
             </q-icon>
-            <q-icon v-else-if="props.row.action === 'inherit'" name="fiber_manual_record" color="grey">
+            <q-icon v-else-if="props.row.action === 'inherit'" name="fiber_manual_record" color="accent">
               <q-tooltip>Inherit</q-tooltip>
             </q-icon>
           </q-td>
           <q-td>
             <q-icon v-if="props.row.installed" name="fas fa-check" color="positive"><q-tooltip>Installed</q-tooltip></q-icon>
             <q-icon v-else-if="props.row.action == 'approve'" name="fas fa-tasks" color="primary"><q-tooltip>Pending</q-tooltip></q-icon>
+            <q-icon v-else-if="props.row.action == 'ignore'" name="fas fa-ban" color="negative"><q-tooltip>Ignored</q-tooltip></q-icon>
             <q-icon v-else name="fas fa-exclamation" color="warning"><q-tooltip>Missing</q-tooltip></q-icon>
           </q-td>
           <q-td>{{ props.row.severity }}</q-td>

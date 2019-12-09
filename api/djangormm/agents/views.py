@@ -14,6 +14,8 @@ from rest_framework import status, generics
 from rest_framework.authentication import BasicAuthentication, TokenAuthentication
 
 from .models import Agent
+from winupdate.models import WinUpdatePolicy
+
 from .serializers import AgentSerializer
 from .tasks import uninstall_agent_task, update_agent_task
 
@@ -68,6 +70,7 @@ def uninstall_agent(request):
 @api_view(["PATCH"])
 def edit_agent(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
+    
     agent.client = request.data["client"]
     agent.site = request.data["site"]
     agent.monitoring_type = request.data["montype"]
@@ -76,9 +79,30 @@ def edit_agent(request):
     agent.ping_check_interval = request.data["pinginterval"]
     agent.overdue_email_alert = request.data["emailalert"]
     agent.overdue_text_alert = request.data["textalert"]
+
+    policy = WinUpdatePolicy.objects.get(agent=agent)
+
+    policy.critical = request.data["critical"]
+    policy.important = request.data["important"]
+    policy.moderate = request.data["moderate"]
+    policy.low = request.data["low"]
+    policy.other = request.data["other"]
+    policy.run_time_hour = request.data["scheduledtime"]
+    policy.run_time_days = request.data["dayoptions"]
+    policy.reboot_after_install = request.data["rebootafterinstall"]
+    policy.reprocess_failed = request.data["reprocessfailed"]
+    policy.reprocess_failed_times = request.data["reprocessfailedtimes"]
+    policy.email_if_fail = request.data["emailiffail"]
+
     agent.save(update_fields=[
         "client", "site", "monitoring_type", "description", "ping_check_interval",
         "overdue_time", "overdue_email_alert", "overdue_text_alert"
+    ])
+
+    policy.save(update_fields=[
+        "critical", "important", "moderate", "low", "other", "run_time_hour",
+        "run_time_days", "reboot_after_install", "reprocess_failed",
+        "reprocess_failed_times", "email_if_fail"
     ])
     return Response("ok")
 

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import WinUpdate
+from .models import WinUpdate, WinUpdatePolicy
 from agents.models import Agent
 
 class WinUpdateSerializer(serializers.ModelSerializer):
@@ -27,3 +27,9 @@ class ApprovedUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = WinUpdate
         fields = ("id", "kb", "guid", "agentid", "winupdates",)
+
+class WinUpdatePolicySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = WinUpdatePolicy
+        fields = "__all__"

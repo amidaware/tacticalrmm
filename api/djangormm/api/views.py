@@ -38,7 +38,7 @@ from checks.models import (
     MemoryHistory,
     CpuHistory,
 )
-from winupdate.models import WinUpdate
+from winupdate.models import WinUpdate, WinUpdatePolicy
 from agents.tasks import uninstall_agent_task, sync_salt_modules_task
 from winupdate.tasks import check_for_updates_task
 from agents.serializers import AgentHostnameSerializer
@@ -273,9 +273,16 @@ def add(request):
             description=description,
             mesh_node_id=mesh_node_id,
         ).save()
+
         agent = Agent.objects.get(agent_id=agent_id)
         MemoryHistory(agent=agent).save()
         CpuHistory(agent=agent).save()
+
+        if agent.monitoring_type == "workstation":
+            WinUpdatePolicy(agent=agent, run_time_days=[5, 6]).save()
+        else:
+            WinUpdatePolicy(agent=agent).save()
+
     
     return Response("ok")
 

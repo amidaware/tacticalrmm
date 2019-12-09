@@ -1,4 +1,8 @@
+import datetime as dt
+
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
+
 from agents.models import Agent
 
 PATCH_ACTION_CHOICES = [
@@ -6,6 +10,20 @@ PATCH_ACTION_CHOICES = [
     ('approve', 'Approve'),
     ('ignore', 'Ignore'),
     ('nothing', 'Do Nothing'),
+]
+
+AUTO_APPROVAL_CHOICES = [
+    ('manual', 'Manual'),
+    ('approve', 'Approve'),
+    ('ignore', 'Ignore'),
+]
+
+RUN_TIME_HOUR_CHOICES = [(i, dt.time(i).strftime('%l %p')) for i in range(24)]
+
+REBOOT_AFTER_INSTALL_CHOICES = [
+    ('never', 'Never'),
+    ('required', 'When Required'),
+    ('always', 'Always'),
 ]
 
 class WinUpdate(models.Model):
@@ -24,3 +42,33 @@ class WinUpdate(models.Model):
 
     def __str__(self):
         return f"{self.agent.hostname} {self.kb}"
+
+
+class WinUpdatePolicy(models.Model):
+    agent = models.ForeignKey(Agent, related_name="winupdatepolicy", on_delete=models.CASCADE)
+
+    critical = models.CharField(max_length=100, choices=AUTO_APPROVAL_CHOICES, default="manual")
+    important = models.CharField(max_length=100, choices=AUTO_APPROVAL_CHOICES, default="manual")
+    moderate = models.CharField(max_length=100, choices=AUTO_APPROVAL_CHOICES, default="manual")
+    low = models.CharField(max_length=100, choices=AUTO_APPROVAL_CHOICES, default="manual")
+    other = models.CharField(max_length=100, choices=AUTO_APPROVAL_CHOICES, default="manual")
+
+    run_time_hour = models.IntegerField(choices=RUN_TIME_HOUR_CHOICES, default=3)
+
+    # 0 to 6 = Monday to Sunday
+    run_time_days = ArrayField(models.IntegerField(blank=True), null=True, default=list)
+
+    reboot_after_install = models.CharField(max_length=50, choices=REBOOT_AFTER_INSTALL_CHOICES, default='required')
+
+    reprocess_failed = models.BooleanField(default=False)
+    reprocess_failed_times = models.PositiveIntegerField(default=5)
+    email_if_fail = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.agent.hostname
+
+
+
+
+
+

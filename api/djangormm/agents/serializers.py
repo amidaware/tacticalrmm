@@ -2,9 +2,12 @@ from rest_framework import serializers
 
 from .models import Agent
 
+from winupdate.serializers import WinUpdatePolicySerializer
+
 class AgentSerializer(serializers.ModelSerializer):
 
     patches_pending = serializers.ReadOnlyField(source="has_patches_pending")
+    winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
     
     class Meta:
         model = Agent
@@ -42,6 +45,7 @@ class AgentSerializer(serializers.ModelSerializer):
             "ping_check_interval",
             "needs_reboot",
             "patches_pending",
+            "winupdatepolicy",
         )
 
 class AgentHostnameSerializer(serializers.ModelSerializer):

@@ -149,6 +149,5 @@ if 'TRAVIS' in os.environ:
     SALT_USERNAME = "travis"
     SALT_PASSWORD = "travis"
     MESH_USERNAME = "travis"
-    MESH_PASSWORD = "travis"
     MESH_SITE = "https://example.com"
     TWO_FACTOR_OTP = "TRAVIS"

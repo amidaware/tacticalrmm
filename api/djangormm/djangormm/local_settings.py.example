@@ -45,6 +45,5 @@ EMAIL_ALERT_RECIPIENTS = ["example@gmail.com",]
 SALT_USERNAME = "changeme"
 SALT_PASSWORD = "changeme"
 MESH_USERNAME = "changeme"
-MESH_PASSWORD = "changeme"
 MESH_SITE = "https://mesh.example.com"
 TWO_FACTOR_OTP = "changeme"

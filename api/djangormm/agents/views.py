@@ -1,4 +1,5 @@
 from loguru import logger
+import subprocess
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -110,9 +111,16 @@ def edit_agent(request):
 @api_view()
 def meshcentral_tabs(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    node = agent.mesh_node_id
-    terminalurl = f"{settings.MESH_SITE}/?user={settings.MESH_USERNAME}&pass={settings.MESH_PASSWORD}&node={node}&viewmode=12&hide=31"
-    fileurl = f"{settings.MESH_SITE}/?user={settings.MESH_USERNAME}&pass={settings.MESH_PASSWORD}&node={node}&viewmode=13&hide=31"
+    r = subprocess.run([
+        "node", 
+        "/meshcentral/node_modules/meshcentral/meshcentral", 
+        "--logintoken", 
+        f"user//{settings.MESH_USERNAME}"], 
+        capture_output=True
+    )
+    token = r.stdout.decode().splitlines()[0]
+    terminalurl = f"{settings.MESH_SITE}/?viewmode=12&hide=31&login={token}&node={agent.mesh_node_id}"
+    fileurl = f"{settings.MESH_SITE}/?viewmode=13&hide=31&login={token}&node={agent.mesh_node_id}"
     return Response({
         "hostname": agent.hostname,
         "terminalurl": terminalurl,
@@ -123,8 +131,15 @@ def meshcentral_tabs(request, pk):
 @api_view()
 def take_control(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    node = agent.mesh_node_id
-    url = f"{settings.MESH_SITE}/?user={settings.MESH_USERNAME}&pass={settings.MESH_PASSWORD}&node={node}&viewmode=11&hide=31"
+    r = subprocess.run([
+        "node", 
+        "/meshcentral/node_modules/meshcentral/meshcentral", 
+        "--logintoken", 
+        f"user//{settings.MESH_USERNAME}"], 
+        capture_output=True
+    )
+    token = r.stdout.decode().splitlines()[0]
+    url = f"{settings.MESH_SITE}/?viewmode=11&hide=31&login={token}&node={agent.mesh_node_id}"
     return Response(url)
 
 

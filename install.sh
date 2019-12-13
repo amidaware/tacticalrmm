@@ -42,8 +42,6 @@ echo -ne "${YELLOW}Enter the domain for meshcentral${NC}: "
 read meshdomain
 echo -ne "${YELLOW}Enter your username for meshcentral${NC}: "
 read meshusername
-echo -ne "${YELLOW}Enter your password for meshcentral${NC}: "
-read meshpassword
 echo -ne "${YELLOW}Enter your email address for let's encrypt renewal notifications${NC}: "
 read letsemail
 echo -ne "${YELLOW}Please use google authenticator and enter TOTP code${NC}: "
@@ -311,7 +309,6 @@ EMAIL_ALERT_RECIPIENTS = ["jsmith@example.com",]
 SALT_USERNAME = "${USER}"
 SALT_PASSWORD = "${linuxpw}"
 MESH_USERNAME = "${meshusername}"
-MESH_PASSWORD = "${meshpassword}"
 MESH_SITE = "https://${meshdomain}"
 TWO_FACTOR_OTP = "${twofactor}"
 EOF

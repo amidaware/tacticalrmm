@@ -112,7 +112,7 @@ def edit_agent(request):
 def meshcentral_tabs(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     r = subprocess.run([
-        "node", 
+        "/usr/bin/node", 
         "/meshcentral/node_modules/meshcentral/meshcentral", 
         "--logintoken", 
         f"user//{settings.MESH_USERNAME}"], 
@@ -132,7 +132,7 @@ def meshcentral_tabs(request, pk):
 def take_control(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     r = subprocess.run([
-        "node", 
+        "/usr/bin/node", 
         "/meshcentral/node_modules/meshcentral/meshcentral", 
         "--logintoken", 
         f"user//{settings.MESH_USERNAME}"], 

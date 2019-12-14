@@ -15,7 +15,7 @@ before_script:
   - psql -c 'ALTER USER travisci CREATEDB;' -U postgres
 
 before_install:
-  - cd api/djangormm
+  - cd api/tacticalrmm
   
 
 install:

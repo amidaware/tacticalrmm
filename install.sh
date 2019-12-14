@@ -241,23 +241,23 @@ sudo apt install -y postgresql-11
 
 print_green 'Creating database for the rmm'
 
-sudo -u postgres psql -c "CREATE DATABASE djangormm"
+sudo -u postgres psql -c "CREATE DATABASE tacticalrmm"
 sudo -u postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
 sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'"
 sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
 sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE djangormm TO ${pgusername}"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
 
 
 sudo usermod -a -G www-data ${USER}
 sudo chmod 710 /home/${USER}
 sudo chown ${USER}:www-data /home/${USER}
 
-mkdir -p /home/${USER}/vue-rmm
+mkdir -p /home/${USER}/rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
-git clone https://github.com/wh1te909/tacticalrmm.git /home/steam/vue-rmm/
-sudo chown ${USER}:www-data -R /home/${USER}/vue-rmm/api/djangormm
+git clone https://github.com/wh1te909/tacticalrmm.git /home/steam/rmm/
+sudo chown ${USER}:www-data -R /home/${USER}/rmm/api/tacticalrmm
 
 localvars="$(cat << EOF
 SECRET_KEY = "${DJANGO_SEKRET}"
@@ -273,7 +273,7 @@ CORS_ORIGIN_WHITELIST = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'djangormm',
+        'NAME': 'tacticalrmm',
         'USER': '${pgusername}',
         'PASSWORD': '${pgpw}',
         'HOST': 'localhost',
@@ -313,16 +313,16 @@ MESH_SITE = "https://${meshdomain}"
 TWO_FACTOR_OTP = "${twofactor}"
 EOF
 )"
-echo "${localvars}" > /home/${USER}/vue-rmm/api/djangormm/djangormm/local_settings.py
+echo "${localvars}" > /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
 print_green 'Installing the backend'
 
-cd /home/${USER}/vue-rmm/api
+cd /home/${USER}/rmm/api
 python3.7 -m venv env
-source /home/${USER}/vue-rmm/api/env/bin/activate
-cd /home/${USER}/vue-rmm/api/djangormm
+source /home/${USER}/rmm/api/env/bin/activate
+cd /home/${USER}/rmm/api/tacticalrmm
 pip install --upgrade pip
-pip install -r /home/${USER}/vue-rmm/api/djangormm/requirements.txt
+pip install -r /home/${USER}/rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
@@ -336,15 +336,15 @@ deactivate
 uwsgini="$(cat << EOF
 [uwsgi]
 
-logto = /home/${USER}/vue-rmm/api/djangormm/log/uwsgi.log
-chdir = /home/${USER}/vue-rmm/api/djangormm
-module = djangormm.wsgi
-home = /home/${USER}/vue-rmm/api/env
+logto = /home/${USER}/rmm/api/tacticalrmm/log/uwsgi.log
+chdir = /home/${USER}/rmm/api/tacticalrmm
+module = tacticalrmm.wsgi
+home = /home/${USER}/rmm/api/env
 master = true
 processes = 2
 threads = 2
 enable-threads = True
-socket = /home/${USER}/vue-rmm/api/djangormm/djangormm.sock
+socket = /home/${USER}/rmm/api/tacticalrmm/tacticalrmm.sock
 harakiri = 300
 chmod-socket = 660
 # clear environment on exit
@@ -352,20 +352,20 @@ vacuum = true
 die-on-term = true
 EOF
 )"
-echo "${uwsgini}" > /home/${USER}/vue-rmm/api/djangormm/app.ini
+echo "${uwsgini}" > /home/${USER}/rmm/api/tacticalrmm/app.ini
 
 
 rmmservice="$(cat << EOF
 [Unit]
-Description=djangormm uwsgi daemon
+Description=tacticalrmm uwsgi daemon
 After=network.target
 
 [Service]
 User=${USER}
 Group=www-data
-WorkingDirectory=/home/${USER}/vue-rmm/api/djangormm
-Environment="PATH=/home/${USER}/vue-rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=/home/${USER}/vue-rmm/api/env/bin/uwsgi --ini app.ini
+WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
+Environment="PATH=/home/${USER}/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/home/${USER}/rmm/api/env/bin/uwsgi --ini app.ini
 
 [Install]
 WantedBy=multi-user.target
@@ -377,8 +377,8 @@ echo "${rmmservice}" | sudo tee /etc/systemd/system/rmm.service > /dev/null
 nginxrmm="$(cat << EOF
 server_tokens off;
 
-upstream djangormm {
-    server unix:////home/${USER}/vue-rmm/api/djangormm/djangormm.sock;
+upstream tacticalrmm {
+    server unix:////home/${USER}/rmm/api/tacticalrmm/tacticalrmm.sock;
 }
 
 server {
@@ -391,31 +391,31 @@ server {
     listen 443 ssl;
     server_name ${rmmdomain};
     client_max_body_size 300M;
-    access_log /home/${USER}/vue-rmm/api/djangormm/log/rmm-access.log;
-    error_log /home/${USER}/vue-rmm/api/djangormm/log/rmm-error.log;
+    access_log /home/${USER}/rmm/api/tacticalrmm/log/rmm-access.log;
+    error_log /home/${USER}/rmm/api/tacticalrmm/log/rmm-error.log;
     ssl_certificate /etc/letsencrypt/live/${rmmdomain}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${rmmdomain}/privkey.pem;
     ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
 
     location /static/ {
-        root /home/${USER}/vue-rmm/api/djangormm;
+        root /home/${USER}/rmm/api/tacticalrmm;
     }
 
     location /protected/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /home/${USER}/vue-rmm/api/djangormm/djangormm/downloads/;
+        alias /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/downloads/;
     }
 
     location /protectedlogs/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /home/steam/vue-rmm/api/djangormm/log/;
+        alias /home/steam/rmm/api/tacticalrmm/log/;
     }
 
 
     location / {
-        uwsgi_pass  djangormm;
+        uwsgi_pass  tacticalrmm;
         include     /etc/nginx/uwsgi_params;
         uwsgi_read_timeout 9999s;
         uwsgi_ignore_client_abort on;
@@ -516,7 +516,7 @@ Type=forking
 User=${USER}
 Group=${USER}
 EnvironmentFile=/etc/conf.d/celery.conf
-WorkingDirectory=/home/${USER}/vue-rmm/api/djangormm
+WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} multi start \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} \${CELERYD_OPTS}'
 ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \${CELERYD_NODES} --pidfile=\${CELERYD_PID_FILE}'
 ExecReload=/bin/sh -c '\${CELERY_BIN} multi restart \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} \${CELERYD_OPTS}'
@@ -530,19 +530,19 @@ echo "${celeryservice}" | sudo tee /etc/systemd/system/celery.service > /dev/nul
 celeryconf="$(cat << EOF
 CELERYD_NODES="w1"
 
-CELERY_BIN="/home/${USER}/vue-rmm/api/env/bin/celery"
+CELERY_BIN="/home/${USER}/rmm/api/env/bin/celery"
 
-CELERY_APP="djangormm"
+CELERY_APP="tacticalrmm"
 
 CELERYD_MULTI="multi"
 
 CELERYD_OPTS="--time-limit=2900 --autoscale=50,5"
 
-CELERYD_PID_FILE="/home/${USER}/vue-rmm/api/djangormm/%n.pid"
+CELERYD_PID_FILE="/home/${USER}/rmm/api/tacticalrmm/%n.pid"
 CELERYD_LOG_FILE="/var/log/celery/%n%I.log"
 CELERYD_LOG_LEVEL="INFO"
 
-CELERYBEAT_PID_FILE="/home/${USER}/vue-rmm/api/djangormm/beat.pid"
+CELERYBEAT_PID_FILE="/home/${USER}/rmm/api/tacticalrmm/beat.pid"
 CELERYBEAT_LOG_FILE="/var/log/celery/beat.log"
 EOF
 )"
@@ -559,7 +559,7 @@ Type=simple
 User=${USER}
 Group=${USER}
 EnvironmentFile=/etc/conf.d/celery.conf
-WorkingDirectory=/home/${USER}/vue-rmm/api/djangormm
+WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} beat -A \${CELERY_APP} --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
 
 [Install]
@@ -569,8 +569,8 @@ EOF
 echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service > /dev/null
 
 sudo mkdir -p /srv/salt
-sudo cp -r /home/${USER}/vue-rmm/_modules /srv/salt/
-sudo cp -r /home/${USER}/vue-rmm/scripts /srv/salt/
+sudo cp -r /home/${USER}/rmm/_modules /srv/salt/
+sudo cp -r /home/${USER}/rmm/scripts /srv/salt/
 sudo chown root:root -R /srv/salt/
 
 meshservice="$(cat << EOF
@@ -628,15 +628,15 @@ VUE_APP_PROD_URL = "https://${rmmdomain}"
 VUE_APP_DEV_URL = "http://localhost:8000"
 EOF
 )"
-echo "${vueconf}" | tee /home/${USER}/vue-rmm/web/.env.local > /dev/null
+echo "${vueconf}" | tee /home/${USER}/rmm/web/.env.local > /dev/null
 
 print_green 'Installing the frontend'
 
-cd /home/${USER}/vue-rmm/web
+cd /home/${USER}/rmm/web
 npm install
 npm run build
 sudo mkdir -p /var/www/rmm
-sudo cp -pvr /home/${USER}/vue-rmm/web/dist /var/www/rmm/
+sudo cp -pvr /home/${USER}/rmm/web/dist /var/www/rmm/
 sudo chown www-data:www-data -R /var/www/rmm/dist
 
 nginxfrontend="$(cat << EOF

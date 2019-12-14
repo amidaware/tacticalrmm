@@ -2,7 +2,7 @@ import datetime
 from datetime import timezone
 from statistics import mean
 
-from djangormm.celery import app
+from tacticalrmm.celery import app
 from django.core.exceptions import ObjectDoesNotExist
 
 from agents.models import Agent

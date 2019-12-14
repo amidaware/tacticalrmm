@@ -43,7 +43,7 @@ REST_KNOX = {
   'MIN_REFRESH_INTERVAL': 600
 }
 
-ROOT_URLCONF = 'djangormm.urls'
+ROOT_URLCONF = 'tacticalrmm.urls'
 
 
 TEMPLATES = [
@@ -62,7 +62,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'djangormm.wsgi.application'
+WSGI_APPLICATION = 'tacticalrmm.wsgi.application'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -95,7 +95,7 @@ STATIC_URL = '/static/'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'djangormm/static/')
+    os.path.join(BASE_DIR, 'tacticalrmm/static/')
 ]
 
 

@@ -1,4 +1,4 @@
-from djangormm.test import BaseTestCase
+from tacticalrmm.test import BaseTestCase
 
 from .models import Client, Site
 

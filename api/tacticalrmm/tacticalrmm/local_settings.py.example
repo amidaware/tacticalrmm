@@ -9,8 +9,8 @@ DEBUG = False
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'djangormm',
-        'USER': 'djangormm',
+        'NAME': 'tacticalrmm',
+        'USER': 'tacticalrmm',
         'PASSWORD': 'changeme',
         'HOST': '127.0.0.1',
         'PORT': '5432',

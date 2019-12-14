@@ -1,7 +1,7 @@
 from agents.models import Agent
 from .models import WinUpdate
 
-from djangormm.celery import app
+from tacticalrmm.celery import app
 
 @app.task
 def check_for_updates_task(pk):

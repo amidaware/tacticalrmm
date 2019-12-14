@@ -22,7 +22,7 @@ __pycache__/
 env/
 local_settings.py
 db.sqlite3
-api/djangormm/static
+api/tacticalrmm/static
 celerybeat-schedule
 meshagent.exe
 app.ini

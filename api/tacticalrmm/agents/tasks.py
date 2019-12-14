@@ -1,7 +1,7 @@
 from loguru import logger
 from time import sleep
 
-from djangormm.celery import app
+from tacticalrmm.celery import app
 from django.conf import settings
 
 from agents.models import Agent

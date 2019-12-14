@@ -53,7 +53,7 @@ class UploadMeshAgent(APIView):
             raise ParseError("Empty content")
 
         f = request.data['meshagent']
-        mesh_exe = os.path.join(settings.BASE_DIR, "djangormm/downloads/meshagent.exe")
+        mesh_exe = os.path.join(settings.BASE_DIR, "tacticalrmm/downloads/meshagent.exe")
         with open(mesh_exe, "wb+") as j:
             for chunk in f.chunks():
                 j.write(chunk)
@@ -137,7 +137,7 @@ def agent_auth(request):
 @permission_classes((IsAuthenticated,))
 def get_mesh_exe(request):
     if settings.DEBUG:
-        mesh_exe = os.path.join(settings.BASE_DIR, "djangormm/downloads/meshagent.exe")
+        mesh_exe = os.path.join(settings.BASE_DIR, "tacticalrmm/downloads/meshagent.exe")
         with open(mesh_exe, "rb") as f:
             response = HttpResponse(
                 f.read(), content_type="application/vnd.microsoft.portable-executable"

@@ -2,9 +2,9 @@ from __future__ import absolute_import, unicode_literals
 import os
 from celery import Celery
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'djangormm.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tacticalrmm.settings')
 
-app = Celery('djangormm', backend='redis://localhost', broker='redis://localhost')
+app = Celery('tacticalrmm', backend='redis://localhost', broker='redis://localhost')
 #app.config_from_object('django.conf:settings', namespace='CELERY')
 app.broker_url = 'redis://localhost:6379'
 app.result_backend = 'redis://localhost:6379'

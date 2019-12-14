@@ -63,6 +63,7 @@
               style="cursor:pointer;color:blue;text-decoration:underline"
             >{{ formatMessage(props.row.description) }}</span>
           </q-td>
+          <q-td>{{ props.row.date_installed }}</q-td>
         </q-tr>
       </template>
     </q-table>
@@ -118,6 +119,13 @@ export default {
           field: "description",
           align: "left",
           sortable: true
+        },
+        {
+          name: "date_installed",
+          label: "Installed On",
+          field: "date_installed",
+          align: "left",
+          sortable: true
         }
       ],
       visibleColumns: [
@@ -125,7 +133,8 @@ export default {
         "installed",
         "severity",
         "title",
-        "description"
+        "description",
+        "date_installed",
       ]
     };
   },

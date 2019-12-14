@@ -364,7 +364,7 @@ After=network.target
 User=${USER}
 Group=www-data
 WorkingDirectory=/home/${USER}/vue-rmm/api/djangormm
-Environment="PATH=/home/${USER}/vue-rmm/api/env/bin"
+Environment="PATH=/home/${USER}/vue-rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/home/${USER}/vue-rmm/api/env/bin/uwsgi --ini app.ini
 
 [Install]

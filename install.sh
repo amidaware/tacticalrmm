@@ -80,147 +80,37 @@ sudo chown ${USER}:${USER} -R /meshcentral
 
 meshcfg="$(cat << EOF
 {
-  "__comment__" : "This is a sample configuration file, edit a section and remove the _ in front of the name. Refer to the user's guide for details.",
   "settings": {
     "Cert": "${meshdomain}",
     "MongoDb": "mongodb://127.0.0.1:27017",
     "MongoDbName": "meshcentral",
-    "_MongoDbChangeStream": true,
     "WANonly": true,
-    "_LANonly": true,
     "Minify": 1,
-    "_SessionTime": 30,
-    "_SessionKey": "MyReallySecretPassword1",
-    "_SessionSameSite": "strict",
-    "_DbEncryptKey": "MyReallySecretPassword2",
-    "_DbExpire": {
-      "events": 1728000,
-      "powerevents": 864000
-    },
     "Port": 4430,
     "AliasPort": 443,
     "RedirPort": 800,
     "AllowLoginToken": true,
     "AllowFraming": true,
-    "_WebRTC": false,
-    "_Nice404": false,
-    "_ClickOnce": false,
-    "_SelfUpdate": true,
     "_AgentPing": 60,
     "AgentPong": 300,
-    "_AgentIdleTimeout": 150,
-    "_MeshErrorLogPath": "c:\\tmp",
-    "_NpmPath": "c:\\npm.exe",
-    "_NpmProxy": "http://1.2.3.4:80",
     "AllowHighQualityDesktop": true,
-    "_UserAllowedIP": "127.0.0.1,192.168.1.0/24",
-    "_UserBlockedIP": "127.0.0.1,::1,192.168.0.100",
-    "_AgentAllowedIP": "192.168.0.100/24",
-    "_AgentBlockedIP": "127.0.0.1,::1",
-    "_LocalDiscovery": {
-      "name": "Local server name",
-      "info": "Information about this server"
-    },
     "TlsOffload": "127.0.0.1",
-    "_MpsTlsOffload": true,
-    "_No2FactorAuth": true,
-    "_WebRtConfig": {
-      "iceServers": [
-        { "urls": "stun:stun.services.mozilla.com" },
-        { "urls": "stun:stun.l.google.com:19302" }
-      ]
-    },
-    "_AutoBackup": {
-      "backupIntervalHours": 24,
-      "keepLastDaysBackup": 10,
-      "zipPassword": "MyReallySecretPassword3",
-      "_backupPath": "C:\\backups"
-    },
-    "_Redirects": {
-      "meshcommander": "https://www.meshcommander.com/"
-    }
+    "MaxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 }
   },
   "domains": {
     "": {
       "Title": "Dev RMM",
       "Title2": "DevRMM",
-      "_TitlePicture": "title-sample.png",
-      "_UserQuota": 1048576,
-      "_MeshQuota": 248576,
       "NewAccounts": false,
-      "_UserNameIsEmail": true,
-      "_NewAccountEmailDomains": [ "sample.com" ],
-      "_NewAccountsRights": [ "nonewgroups", "notools" ],
       "Footer": "<a href='https://twitter.com/mytwitter'>Twitter</a>",
       "CertUrl": "https://${meshdomain}:443/",
-      "_PasswordRequirements": { "min": 8, "max": 128, "upper": 1, "lower": 1, "numeric": 1, "nonalpha": 1, "reset": 90, "force2factor": true },
-      "_AgentNoProxy": true,
       "GeoLocation": true,
-      "_UserAllowedIP": "127.0.0.1,192.168.1.0/24",
-      "_UserBlockedIP": "127.0.0.1,::1,192.168.0.100",
-      "_AgentAllowedIP": "192.168.0.100/24",
-      "_AgentBlockedIP": "127.0.0.1,::1",
-      "___UserSessionIdleTimeout__" : "Number of user idle minutes before auto-disconnect",
-      "_UserSessionIdleTimeout" : 120,
-      "__UserConsentFlags__" : "Set to: 1 for desktop, 2 for terminal, 3 for files, 7 for all",
-      "_UserConsentFlags" : 7,
-      "_Limits": {
-        "_MaxDevices": 100,
-        "_MaxUserAccounts": 100,
-        "_MaxUserSessions": 100,
-        "_MaxAgentSessions": 100,
-        "MaxSingleUserSessions": 10
-      },
-      "_AmtAcmActivation": {
-        "log": "amtactivation.log",
-        "certs": {
-          "mycertname": {
-            "certfiles": [ "amtacm-leafcert.crt", "amtacm-intermediate1.crt", "amtacm-intermediate2.crt", "amtacm-rootcert.crt" ],
-            "keyfile": "amtacm-leafcert.key"
-          }
-        }
-      },
-      "_Redirects": {
-        "meshcommander": "https://www.meshcommander.com/"
-      },
-      "_yubikey": { "id": "0000", "secret": "xxxxxxxxxxxxxxxxxxxxx", "_proxy": "http://myproxy.domain.com:80" },
       "httpheaders": {
         "Strict-Transport-Security": "max-age=360000",
-        "x-frame-options": "https://${frontenddomain}/",
+        "_x-frame-options": "sameorigin",
         "Content-Security-Policy": "default-src 'none'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-src 'self'; media-src 'self'"
-      },
-      "_agentConfig": [ "webSocketMaskOverride=1" ],
-      "_SessionRecording": {
-        "_filepath": "C:\\temp",
-        "__protocols__": "Is an array: 1 = Terminal, 2 = Desktop, 5 = Files, 100 = Intel AMT WSMAN, 101 = Intel AMT Redirection",
-        "protocols": [ 1, 2, 101 ]
       }
     }
-  },
-  "_letsencrypt": {
-    "__comment__": "Go to https://letsdebug.net/ first before trying Let's Encrypt.",
-    "email": "myemail@myserver.com ",
-    "names": "myserver.com,customer1.myserver.com",
-    "rsaKeySize": 3072,
-    "production": false
-  },
-  "_peers": {
-    "serverId": "server1",
-    "servers": {
-      "server1": { "url": "wss://192.168.2.133:443/" },
-      "server2": { "url": "wss://192.168.1.106:443/" }
-    }
-  },
-  "_smtp": {
-    "host": "smtp.myserver.com",
-    "port": 25,
-    "from": "myemail@myserver.com",
-    "__tls__": "When 'tls' is set to true, TLS is used immidiatly when connecting. For SMTP servers that use TLSSTART, set this to 'false' and TLS will still be used.",
-    "tls": false,
-    "___tlscertcheck__": "When set to false, the TLS certificate of the SMTP server is not checked.",
-    "_tlscertcheck": false,
-    "__tlsstrict__": "When set to true, TLS cypher setup is more limited, SSLv2 and SSLv3 are not allowed.",
-    "_tlsstrict": true
   }
 }
 EOF

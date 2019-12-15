@@ -1,13 +1,13 @@
 import Vue from "vue";
 import Router from "vue-router";
-import Dashboard from "@/components/Dashboard";
-import Login from "@/components/Login";
-import Logout from "@/components/Logout";
-import SessionExpired from "@/components/SessionExpired";
-import NotFound from "@/components/NotFound";
-import TakeControl from "@/components/TakeControl";
-import InitialSetup from "@/components/InitialSetup";
-import RemoteBackground from "@/components/RemoteBackground";
+import Dashboard from "@/views/Dashboard";
+import Login from "@/views/Login";
+import Logout from "@/views/Logout";
+import SessionExpired from "@/views/SessionExpired";
+import NotFound from "@/views/NotFound";
+import TakeControl from "@/views/TakeControl";
+import InitialSetup from "@/views/InitialSetup";
+import RemoteBackground from "@/views/RemoteBackground";
 
 Vue.use(Router);
 

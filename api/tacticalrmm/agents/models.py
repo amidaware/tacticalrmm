@@ -47,6 +47,7 @@ class Agent(models.Model):
     uninstall_inprogress = models.BooleanField(default=False)
     ping_check_interval = models.PositiveIntegerField(default=300)
     needs_reboot = models.BooleanField(default=False)
+    managed_by_wsus = models.BooleanField(default=False)
 
     def __str__(self):
         return self.hostname

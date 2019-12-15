@@ -31,6 +31,9 @@ export const store = new Vuex.Store({
     selectedAgentPk(state) {
       return state.agentSummary.id;
     },
+    managedByWsus(state) {
+      return state.agentSummary.managed_by_wsus;
+    },
     sortedUpdates(state) {
       // sort patches by latest then not installed
       if (!state.winUpdates.winupdates) {

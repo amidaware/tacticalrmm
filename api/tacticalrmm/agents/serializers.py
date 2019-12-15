@@ -44,6 +44,7 @@ class AgentSerializer(serializers.ModelSerializer):
             "uninstall_inprogress",
             "ping_check_interval",
             "needs_reboot",
+            "managed_by_wsus",
             "patches_pending",
             "winupdatepolicy",
         )

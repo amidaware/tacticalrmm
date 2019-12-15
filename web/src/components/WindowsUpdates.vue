@@ -22,16 +22,16 @@
         <q-tr :props="props">
           <q-menu context-menu>
             <q-list dense style="min-width: 100px">
-              <q-item clickable v-close-popup @click="editPolicy(props.row.id, 'inherit')">
+              <q-item v-if="!props.row.installed" clickable v-close-popup @click="editPolicy(props.row.id, 'inherit')">
                 <q-item-section>Inherit</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="editPolicy(props.row.id, 'approve')">
+              <q-item v-if="!props.row.installed" clickable v-close-popup @click="editPolicy(props.row.id, 'approve')">
                 <q-item-section>Approve</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="editPolicy(props.row.id, 'ignore')">
+              <q-item v-if="!props.row.installed" clickable v-close-popup @click="editPolicy(props.row.id, 'ignore')">
                 <q-item-section>Ignore</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="editPolicy(props.row.id, 'nothing')">
+              <q-item v-if="!props.row.installed" clickable v-close-popup @click="editPolicy(props.row.id, 'nothing')">
                 <q-item-section>Do Nothing</q-item-section>
               </q-item>
             </q-list>

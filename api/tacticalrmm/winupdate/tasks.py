@@ -19,14 +19,16 @@ def check_for_updates_task(pk):
     ret = data["return"][0][agent.hostname]
 
     # if managed by wsus, nothing we can do until salt supports it
-    if "unknown failure" or "2147352567" or "2145107934" in ret.lower():
-        agent.managed_by_wsus = True
-        agent.save(update_fields=["managed_by_wsus"])
-        return f"{agent.hostname} managed by wsus"
+    if type(ret) is str:
+        err = ["unknown failure", "2147352567", "2145107934"]
+        if any(x in ret.lower() for x in err):
+            agent.managed_by_wsus = True
+            agent.save(update_fields=["managed_by_wsus"])
+            return f"{agent.hostname} managed by wsus"
     else:
         # if previously managed by wsus but no longer (i.e moved into a different OU in AD) 
         # then we can use salt to manage updates
-        if agent.managed_by_wsus:
+        if agent.managed_by_wsus and type(ret) is dict:
             agent.managed_by_wsus = False
             agent.save(update_fields=["managed_by_wsus"])
 

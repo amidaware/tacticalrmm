@@ -1,9 +1,10 @@
 #!/bin/bash
 
-sudo systemctl stop celery
-sudo systemctl stop celerybeat
-sudo systemctl stop rmm
-sudo systemctl stop nginx
+for i in celery celery-winupdate celerybeat rmm nginx
+do
+sudo systemctl stop ${i}
+done
+
 cd /home/${USER}/rmm/
 git pull
 source /home/${USER}/rmm/api/env/bin/activate
@@ -23,7 +24,7 @@ sudo rm -rf /var/www/rmm/dist
 sudo cp -pvr /home/${USER}/rmm/web/dist /var/www/rmm/
 sudo chown www-data:www-data -R /var/www/rmm/dist
 
-sudo systemctl start celery
-sudo systemctl start celerybeat
-sudo systemctl start rmm
-sudo systemctl start nginx
+for i in celery celery-winupdate celerybeat rmm nginx
+do
+sudo systemctl start ${i}
+done

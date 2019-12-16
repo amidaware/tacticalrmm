@@ -45,7 +45,7 @@ def update_agents(request):
             agent.is_updating = True
             agent.save(update_fields=["is_updating"])
 
-            update_agent_task.delay(agent.pk, version)
+            update_agent_task.apply_async(queue='wupdate', kwargs={"pk": agent.pk, "version": version})
             
     return Response("ok")
 

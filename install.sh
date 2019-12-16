@@ -419,6 +419,27 @@ EOF
 )"
 echo "${celeryservice}" | sudo tee /etc/systemd/system/celery.service > /dev/null
 
+celerywinupdatesvc="$(cat << EOF
+[Unit]
+Description=Celery Win Update Service
+After=network.target
+
+[Service]
+Type=forking
+User=${USER}
+Group=${USER}
+EnvironmentFile=/etc/conf.d/celery-winupdate.conf
+WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
+ExecStart=/bin/sh -c '\${CELERY_BIN} multi start \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
+ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \${CELERYD_NODES} --pidfile=\${CELERYD_PID_FILE}'
+ExecReload=/bin/sh -c '\${CELERY_BIN} multi restart \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${celerywinupdatesvc}" | sudo tee /etc/systemd/system/celery-winupdate.service > /dev/null
+
 celeryconf="$(cat << EOF
 CELERYD_NODES="w1"
 
@@ -439,6 +460,24 @@ CELERYBEAT_LOG_FILE="/var/log/celery/beat.log"
 EOF
 )"
 echo "${celeryconf}" | sudo tee /etc/conf.d/celery.conf > /dev/null
+
+celerywinupdate="$(cat << EOF
+CELERYD_NODES="w2"
+
+CELERY_BIN="/home/${USER}/rmm/api/env/bin/celery"
+
+CELERY_APP="tacticalrmm"
+
+CELERYD_MULTI="multi"
+
+CELERYD_OPTS="--time-limit=4000 --autoscale=15,1"
+
+CELERYD_PID_FILE="/home/${USER}/rmm/api/tacticalrmm/%n.pid"
+CELERYD_LOG_FILE="/var/log/celery/%n%I.log"
+CELERYD_LOG_LEVEL="INFO"
+EOF
+)"
+echo "${celerywinupdate}" | sudo tee /etc/conf.d/celery-winupdate.conf > /dev/null
 
 
 celerybeatservice="$(cat << EOF
@@ -570,7 +609,7 @@ sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/fro
 
 print_green 'Restarting Services'
 
-for i in nginx celery.service celerybeat.service rmm.service
+for i in nginx celery.service celery-winupdate.service celerybeat.service rmm.service
 do
   sudo systemctl enable ${i}
   sudo systemctl restart ${i}

@@ -4,7 +4,7 @@ asgiref==3.2.3
 attrs==19.3.0
 billiard==3.6.1.0
 black==19.10b0
-celery==4.3.0
+celery==4.4.0
 certifi==2019.11.28
 cffi==1.13.2
 chardet==3.0.4

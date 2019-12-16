@@ -1,12 +1,4 @@
 dist: xenial
-language: python
-
-python:
-  - "3.7"
-  - "3.8"
-
-services:
-  - postgresql
 
 jobs:
   include:
@@ -19,19 +11,25 @@ jobs:
       script:
         - npm install meshcentral
 
-before_script:
-  - psql -c 'CREATE DATABASE travisci;' -U postgres
-  - psql -c "CREATE USER travisci WITH PASSWORD 'travisSuperSekret6645';" -U postgres
-  - psql -c 'GRANT ALL PRIVILEGES ON DATABASE travisci TO travisci;' -U postgres
-  - psql -c 'ALTER USER travisci CREATEDB;' -U postgres
+    - language: python
+      services:
+        - postgresql
+      python:
+        - "3.7"
+        - "3.8"
 
-before_install:
-  - cd api/tacticalrmm
+      before_script:
+        - psql -c 'CREATE DATABASE travisci;' -U postgres
+        - psql -c "CREATE USER travisci WITH PASSWORD 'travisSuperSekret6645';" -U postgres
+        - psql -c 'GRANT ALL PRIVILEGES ON DATABASE travisci TO travisci;' -U postgres
+        - psql -c 'ALTER USER travisci CREATEDB;' -U postgres
 
-install:
-  - pip install --upgrade pip
-  - pip install -r requirements-test.txt
+      before_install:
+        - cd api/tacticalrmm
 
-script:
-  - python manage.py migrate
-  - python manage.py test -v 2
+      install:
+        - pip install --upgrade pip
+        - pip install -r requirements-test.txt
+
+      script:
+        - python manage.py test -v 2

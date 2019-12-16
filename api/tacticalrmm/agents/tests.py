@@ -1,3 +1,5 @@
+import mock
+
 from tacticalrmm.test import BaseTestCase
 
 from .serializers import AgentSerializer
@@ -61,23 +63,42 @@ class TestAgentViews(BaseTestCase):
 
         self.check_not_authenticated("patch", url)
 
-    """ def test_meshcentral_tabs(self):
+    @mock.patch("subprocess.run")
+    def test_meshcentral_tabs(self, mock_run):
+        mock_run.return_value.stdout = b'h56Ju2aThD$!wy$AcDSAz@$NnvgGa0=\n'
         url = f"/agents/{self.agent.pk}/meshtabs/"
 
         r = self.client.get(url)
-        self.assertIn("viewmode", r.data["fileurl"])
+
+        self.assertIn("hide=31", r.data["fileurl"])
+        self.assertIn("@$NnvgGa0=", r.data["fileurl"])
+        self.assertIn("/?viewmode=13", r.data["fileurl"])
+        self.assertIs(type(r.data["fileurl"]), str)
+
+        self.assertIn("hide=31", r.data["terminalurl"])
+        self.assertIn("@$NnvgGa0=", r.data["terminalurl"])
+        self.assertIn("/?viewmode=12", r.data["terminalurl"])
+        self.assertIs(type(r.data["terminalurl"]), str)
+
+        self.assertEqual("DESKTOP-TEST123", r.data["hostname"])
+
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("get", url)
 
-    def test_takecontrols(self):
+    @mock.patch("subprocess.run")
+    def test_take_control(self, mock_run):
+        mock_run.return_value.stdout = b'h56Ju2aThD$!wy$AcDSAz@$NnvgGa0=\n'
         url = f"/agents/{self.agent.pk}/takecontrol/"
 
         r = self.client.get(url)
-        self.assertIn("hide", r.data)
+        self.assertIn("hide=31", r.data)
+        self.assertIn("@$NnvgGa0=", r.data)
+        self.assertIn("/?viewmode=11", r.data)
+        self.assertIs(type(r.data), str)
         self.assertEqual(r.status_code, 200)
 
-        self.check_not_authenticated("get", url) """
+        self.check_not_authenticated("get", url)
 
     def test_by_client(self):
         url = "/agents/byclient/Google/"

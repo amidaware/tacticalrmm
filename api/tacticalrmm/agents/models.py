@@ -48,6 +48,7 @@ class Agent(models.Model):
     ping_check_interval = models.PositiveIntegerField(default=300)
     needs_reboot = models.BooleanField(default=False)
     managed_by_wsus = models.BooleanField(default=False)
+    is_updating = models.BooleanField(default=False)
 
     def __str__(self):
         return self.hostname
@@ -123,6 +124,15 @@ class Agent(models.Model):
             })
         
         return session.get(f"http://127.0.0.1:8123/jobs/{jid}")
+    
+    @staticmethod
+    def get_github_versions():
+        r = requests.get("https://api.github.com/repos/wh1te909/winagent/releases")
+        versions = {}
+        for i, release in enumerate(r.json()):
+            versions[i] = release["name"]
+        
+        return {"versions": versions, "data": r.json()}
 
     """ @staticmethod
     def salt_cmd(tgt, fun, arg=[], timeout=60, kwargs={}):

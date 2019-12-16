@@ -14,6 +14,9 @@
             <q-item clickable v-close-popup @click="getLog">
               <q-item-section>Debug Log</q-item-section>
             </q-item>
+            <q-item clickable v-close-popup @click="showUpdateAgentsModal = true">
+              <q-item-section>Update Agents</q-item-section>
+            </q-item>
           </q-list>
         </q-menu>
       </div>
@@ -28,6 +31,18 @@
       </q-dialog>
       <!-- debug log modal -->
       <LogModal />
+      <!-- Update Agents Modal -->
+      <div class="q-pa-md q-gutter-sm">
+        <q-dialog 
+        v-model="showUpdateAgentsModal"
+        maximized
+        transition-show="slide-up"
+        transition-hide="slide-down" 
+      >
+        <UpdateAgents @close="showUpdateAgentsModal = false" />
+      </q-dialog>
+      </div>
+      
     </q-bar>
   </div>
 </template>
@@ -36,14 +51,16 @@
 import LogModal from "@/components/modals/logs/LogModal";
 import AddClient from "@/components/modals/clients/AddClient";
 import AddSite from "@/components/modals/clients/AddSite";
+import UpdateAgents from "@/components/modals/agents/UpdateAgents";
 export default {
   name: "FileBar",
-  components: { LogModal, AddClient, AddSite },
+  components: { LogModal, AddClient, AddSite, UpdateAgents },
   props: ["clients"],
   data() {
     return {
       showAddClientModal: false,
-      showAddSiteModal: false
+      showAddSiteModal: false,
+      showUpdateAgentsModal: false
     };
   },
   methods: {

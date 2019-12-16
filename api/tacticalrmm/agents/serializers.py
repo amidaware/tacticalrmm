@@ -45,6 +45,7 @@ class AgentSerializer(serializers.ModelSerializer):
             "ping_check_interval",
             "needs_reboot",
             "managed_by_wsus",
+            "is_updating",
             "patches_pending",
             "winupdatepolicy",
         )
@@ -52,4 +53,4 @@ class AgentSerializer(serializers.ModelSerializer):
 class AgentHostnameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent
-        fields = ("hostname",)
+        fields = ("hostname", "pk", "client", "site",)

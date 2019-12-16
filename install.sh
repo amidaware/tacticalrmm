@@ -462,6 +462,8 @@ sudo mkdir -p /srv/salt
 sudo cp -r /home/${USER}/rmm/_modules /srv/salt/
 sudo cp -r /home/${USER}/rmm/scripts /srv/salt/
 sudo chown root:root -R /srv/salt/
+sudo chown root:${USER} -R /srv/salt/scripts/
+sudo chmod 770 -R /srv/salt/scripts/
 
 meshservice="$(cat << EOF
 [Unit]

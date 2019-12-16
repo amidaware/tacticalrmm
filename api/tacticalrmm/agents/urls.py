@@ -14,5 +14,6 @@ urlpatterns = [
     path("uninstallagent/", views.uninstall_agent),
     path("editagent/", views.edit_agent),
     path("<pk>/geteventlog/<logtype>/<days>/", views.get_event_log),
-    path("<pk>/updateagent/", views.update_agent),
+    path("getagentversions/", views.get_agent_versions),
+    path("updateagents/", views.update_agents),
 ]

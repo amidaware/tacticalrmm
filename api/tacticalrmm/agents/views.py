@@ -1,5 +1,6 @@
 from loguru import logger
 import subprocess
+from packaging import version as pyver
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -17,19 +18,36 @@ from rest_framework.authentication import BasicAuthentication, TokenAuthenticati
 from .models import Agent
 from winupdate.models import WinUpdatePolicy
 
-from .serializers import AgentSerializer
+from .serializers import AgentSerializer, AgentHostnameSerializer
 from .tasks import uninstall_agent_task, update_agent_task
 
 logger.configure(**settings.LOG_CONFIG)
 
 @api_view()
-@permission_classes([])
-@authentication_classes([])
-def update_agent(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
-    update_agent_task.delay(agent.pk)
+def get_agent_versions(request):
+    agents = Agent.objects.only("pk")
+    return Response({
+        "versions": Agent.get_github_versions()["versions"], 
+        "agents": AgentHostnameSerializer(agents, many=True).data
+    })
 
-    return Response(f"updating {agent.hostname}")
+
+@api_view(["POST"])
+def update_agents(request):
+    pks = request.data["pks"]
+    version = request.data["version"]
+    ver = version.split("winagent-v")[1]
+    agents = Agent.objects.filter(pk__in=pks)
+
+    for agent in agents:
+        # don't update if agent's version same or higher
+        if (not pyver.parse(agent.version) >= pyver.parse(ver)) and not agent.is_updating:
+            agent.is_updating = True
+            agent.save(update_fields=["is_updating"])
+
+            update_agent_task.delay(agent.pk, version)
+            
+    return Response("ok")
 
 
 @api_view(["DELETE"])

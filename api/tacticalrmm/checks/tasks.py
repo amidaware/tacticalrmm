@@ -6,6 +6,7 @@ from tacticalrmm.celery import app
 from django.core.exceptions import ObjectDoesNotExist
 
 from agents.models import Agent
+from clients.models import Client, Site
 from .models import ( 
     DiskCheck, 
     DiskCheckEmail, 
@@ -59,6 +60,42 @@ def handle_check_email_alert_task(check_type, pk):
             eml(email=check).save()
             check.send_email()
     
+    return "ok"
+
+@app.task
+def checks_failing_task():
+    diskchecks = DiskCheck.objects.select_related('agent').only('agent__client', 'agent__site', 'status')
+    pingchecks = PingCheck.objects.select_related('agent').only('agent__client', 'agent__site', 'status')
+    cpuloadchecks = CpuLoadCheck.objects.select_related('agent').only('agent__client', 'agent__site', 'status')
+    memchecks = MemCheck.objects.select_related('agent').only('agent__client', 'agent__site', 'status')
+    winservicechecks = WinServiceCheck.objects.select_related('agent').only('agent__client', 'agent__site', 'status')
+
+    agents_failing = []
+
+    for check in (diskchecks, pingchecks, cpuloadchecks, memchecks, winservicechecks):
+        for i in check:
+            if i.status == "failing":
+                agents_failing.append(i.agent.pk)
+
+
+    agents_failing = list(set(agents_failing)) # remove duplicates
+
+    # first we reset all to passing
+    Client.objects.all().update(checks_failing=False)
+    Site.objects.all().update(checks_failing=False)
+
+    # then update only those that are failing
+    if agents_failing:
+        for pk in agents_failing:
+            agent = Agent.objects.get(pk=pk)
+            client = Client.objects.get(client=agent.client)
+            site = Site.objects.filter(client=client).get(site=agent.site)
+
+            client.checks_failing = True
+            site.checks_failing = True
+            client.save(update_fields=["checks_failing"])
+            site.save(update_fields=["checks_failing"])
+
     return "ok"
 
 @app.task

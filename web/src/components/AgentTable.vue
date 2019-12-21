@@ -39,10 +39,11 @@
       <!-- body slots -->
       <template slot="body" slot-scope="props" :props="props">
         <q-tr
-          @contextmenu.native="agentRowSelected(props.row.id, props.row.agent_id)"
+          @contextmenu="agentRowSelected(props.row.id, props.row.agent_id)"
           :props="props"
           :class="{highlight: selectedRow === props.row.agent_id}"
-          @click.native="agentRowSelected(props.row.id, props.row.agent_id)"
+          @click="agentRowSelected(props.row.id, props.row.agent_id)"
+          @dblclick="rowDoubleClicked(props.row.agent_id)"
         >
           <!-- context menu -->
           <q-menu context-menu>
@@ -276,6 +277,15 @@ export default {
     };
   },
   methods: {
+    rowDoubleClicked(agentid) {
+      this.$store.commit("setActiveRow", agentid);
+      this.$q.loading.show();
+      // give time for store to change active row
+      setTimeout(()=>{
+        this.$q.loading.hide();
+        this.showEditAgentModal = true;
+      }, 500);
+    },
     runPatchStatusScan(pk, hostname) {
         axios.get(`/winupdate/${pk}/runupdatescan/`).then(r => {
             this.notifySuccess(`Scan will be run shortly on ${hostname}`)

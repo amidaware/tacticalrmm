@@ -2,10 +2,9 @@
   <q-layout view="hHh lpR fFf">
     <q-header elevated class="bg-grey-9 text-white">
       <q-toolbar>
+        <q-btn dense flat push @click="refreshEntireSite" icon="refresh" />
         <q-toolbar-title>
-          <q-avatar>
-            <img src="https://cdn.quasar.dev/logo/svg/quasar-logo.svg" />
-          </q-avatar>Django RMM
+          Tactical RMM
         </q-toolbar-title>
         <q-btn-dropdown flat no-caps stretch :label="user">
           <q-list>
@@ -32,9 +31,6 @@
               <q-icon name="fas fa-home" />
             </q-item-section>
             <q-item-section>All Clients</q-item-section>
-            <q-item-section avatar>
-              <q-icon name="refresh" color="black" />
-            </q-item-section>
           </q-item>
           <q-tree
           ref="tree" 
@@ -88,7 +84,7 @@
 
 <script>
 import axios from "axios";
-import { mapState } from 'vuex';
+import { mapState, mapGetters } from 'vuex';
 import FileBar from "@/components/FileBar";
 import AgentTable from "@/components/AgentTable";
 import SubTableTabs from "@/components/SubTableTabs";
@@ -179,6 +175,16 @@ export default {
     };
   },
   methods: {
+    refreshEntireSite() {
+      this.$store.dispatch("loadTree");
+      this.loadAllClients();
+      if (this.selectedAgentPk) {
+        const pk = this.selectedAgentPk;
+        this.$store.dispatch("loadSummary", pk);
+        this.$store.dispatch("loadChecks", pk);
+        this.$store.dispatch("loadWinUpdates", pk);
+      }
+    },
     loadFrame(activenode) {
       this.$store.commit("destroySubTable");
       let client, site, url;
@@ -224,8 +230,8 @@ export default {
       this.$store.commit("AGENT_TABLE_LOADING", true);
       axios.get("/agents/listagents/").then(r => {
         this.frame = r.data;
-        this.siteActive = "";
-        this.$store.commit("destroySubTable");
+        //this.siteActive = "";
+        //this.$store.commit("destroySubTable");
         this.$store.commit("AGENT_TABLE_LOADING", false);
       });
     },
@@ -237,6 +243,7 @@ export default {
       treeReady: state => state.treeReady,
       clients: state => state.clients
     }),
+    ...mapGetters(["selectedAgentPk"]),
     allClientsActive() {
       return (this.selectedTree === '') ? true : false
     },

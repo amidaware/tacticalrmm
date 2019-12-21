@@ -147,7 +147,7 @@ export const store = new Vuex.Store({
           a.iconColor === "red" ? -1 : 1
         );
         commit("loadTree", sortedByFailing);
-        commit("destroySubTable");
+        //commit("destroySubTable");
       });
     },
     retrieveToken(context, credentials) {

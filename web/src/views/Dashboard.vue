@@ -265,6 +265,9 @@ export default {
     this.$store.dispatch("getUpdatedSites");
   },
   mounted() {
+    if (localStorage.getItem("reloaded")) {
+      localStorage.removeItem("reloaded");
+    };
     this.loadFrame(this.activeNode);
   }
 };

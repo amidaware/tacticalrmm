@@ -41,9 +41,9 @@
         <q-tr
           @contextmenu="agentRowSelected(props.row.id, props.row.agent_id)"
           :props="props"
-          :class="{highlight: selectedRow === props.row.agent_id}"
+          :class="{highlight: selectedRow === props.row.id}"
           @click="agentRowSelected(props.row.id, props.row.agent_id)"
-          @dblclick="rowDoubleClicked(props.row.agent_id)"
+          @dblclick="rowDoubleClicked(props.row.id)"
         >
           <!-- context menu -->
           <q-menu context-menu>
@@ -277,8 +277,8 @@ export default {
     };
   },
   methods: {
-    rowDoubleClicked(agentid) {
-      this.$store.commit("setActiveRow", agentid);
+    rowDoubleClicked(pk) {
+      this.$store.commit("setActiveRow", pk);
       this.$q.loading.show();
       // give time for store to change active row
       setTimeout(()=>{
@@ -406,8 +406,8 @@ export default {
           });
         });
     },
-    agentRowSelected(pk, agentid) {
-      this.$store.commit("setActiveRow", agentid);
+    agentRowSelected(pk) {
+      this.$store.commit("setActiveRow", pk);
       this.$store.dispatch("loadSummary", pk);
       this.$store.dispatch("loadChecks", pk);
       this.$store.dispatch("loadWinUpdates", pk);

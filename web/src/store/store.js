@@ -17,7 +17,7 @@ export const store = new Vuex.Store({
     clients: {},
     tree: [],
     treeReady: false,
-    selectedRow: "",
+    selectedRow: null,
     agentSummary: {},
     winUpdates: {},
     agentChecks: {},
@@ -52,8 +52,8 @@ export const store = new Vuex.Store({
     AGENT_TABLE_LOADING(state, visible) {
       state.agentTableLoading = visible;
     },
-    setActiveRow(state, agentid) {
-      state.selectedRow = agentid;
+    setActiveRow(state, pk) {
+      state.selectedRow = pk;
     },
     retrieveToken(state, { token, username }) {
       state.token = token;

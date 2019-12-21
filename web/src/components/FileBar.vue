@@ -14,7 +14,25 @@
             <q-item clickable v-close-popup @click="getLog">
               <q-item-section>Debug Log</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showUpdateAgentsModal = true">
+            <q-item
+              clickable
+              v-close-popup
+              @click="showUpdateAgentsModal = true"
+            >
+              <q-item-section>Update Agents</q-item-section>
+            </q-item>
+          </q-list>
+        </q-menu>
+      </div>
+      <div class="q-ml-md cursor-pointer non-selectable">
+        Agents
+        <q-menu auto-close>
+          <q-list dense style="min-width: 100px">
+            <q-item
+              clickable
+              v-close-popup
+              @click="showUpdateAgentsModal = true"
+            >
               <q-item-section>Update Agents</q-item-section>
             </q-item>
           </q-list>
@@ -27,22 +45,21 @@
       </q-dialog>
       <!-- add site modal -->
       <q-dialog v-model="showAddSiteModal">
-        <AddSite @close="showAddSiteModal = false" :clients=clients />
+        <AddSite @close="showAddSiteModal = false" :clients="clients" />
       </q-dialog>
       <!-- debug log modal -->
       <LogModal />
       <!-- Update Agents Modal -->
       <div class="q-pa-md q-gutter-sm">
-        <q-dialog 
-        v-model="showUpdateAgentsModal"
-        maximized
-        transition-show="slide-up"
-        transition-hide="slide-down" 
-      >
-        <UpdateAgents @close="showUpdateAgentsModal = false" />
-      </q-dialog>
+        <q-dialog
+          v-model="showUpdateAgentsModal"
+          maximized
+          transition-show="slide-up"
+          transition-hide="slide-down"
+        >
+          <UpdateAgents @close="showUpdateAgentsModal = false" />
+        </q-dialog>
       </div>
-      
     </q-bar>
   </div>
 </template>

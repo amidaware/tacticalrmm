@@ -10,6 +10,7 @@ from rest_framework.decorators import (
 )
 
 from django.conf import settings
+from django.shortcuts import get_object_or_404
 
 from agents.models import Agent
 from .serializers import ServicesSerializer
@@ -18,12 +19,12 @@ logger.configure(**settings.LOG_CONFIG)
 
 @api_view()
 def get_services(request, pk):
-    agent = Agent.objects.get(pk=pk)
+    agent = get_object_or_404(Agent, pk=pk)
     return Response(ServicesSerializer(agent).data)
 
 @api_view()
 def get_refreshed_services(request, pk):
-    agent = Agent.objects.get(pk=pk)
+    agent = get_object_or_404(Agent, pk=pk)
     try:
         resp = agent.salt_api_cmd(
             hostname=agent.hostname,
@@ -48,7 +49,7 @@ def service_action(request):
     pk = data["pk"]
     service_name = data["sv_name"]
     service_action = data["sv_action"]
-    agent = Agent.objects.get(pk=pk)
+    agent = get_object_or_404(Agent, pk=pk)
     resp = agent.salt_api_cmd(
         hostname = agent.hostname,
         timeout = 60,
@@ -65,7 +66,7 @@ def service_action(request):
 
 @api_view()
 def service_detail(request, pk, svcname):
-    agent = Agent.objects.get(pk=pk)
+    agent = get_object_or_404(Agent, pk=pk)
     resp = agent.salt_api_cmd(
         hostname = agent.hostname,
         timeout = 60,
@@ -86,7 +87,7 @@ def edit_service(request):
     service_name = data["sv_name"]
     edit_action = data["edit_action"]
 
-    agent = Agent.objects.get(pk=pk)
+    agent = get_object_or_404(Agent, pk=pk)
 
     if edit_action == "autodelay":
         kwargs = {"start_type": "auto", "start_delayed": True}

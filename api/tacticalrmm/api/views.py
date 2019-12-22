@@ -220,7 +220,7 @@ def accept_salt_key(request, hostname):
 def delete_agent(request):
     try:
         user = User.objects.get(username=request.data["agentid"])
-        agent = Agent.objects.get(agent_id=request.data["agentid"])
+        agent = get_object_or_404(Agent, agent_id=request.data["agentid"])
         user.delete()
         agent.delete()
     except Exception as e:
@@ -274,7 +274,7 @@ def add(request):
             mesh_node_id=mesh_node_id,
         ).save()
 
-        agent = Agent.objects.get(agent_id=agent_id)
+        agent = get_object_or_404(Agent, agent_id=agent_id)
         MemoryHistory(agent=agent).save()
         CpuHistory(agent=agent).save()
 

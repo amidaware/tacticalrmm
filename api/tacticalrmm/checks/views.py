@@ -75,13 +75,13 @@ def check_runner(request):
 
 @api_view()
 def load_checks(request, pk):
-    agent = Agent.objects.get(pk=pk)
+    agent = get_object_or_404(Agent, pk=pk)
     return Response(CheckSerializer(agent).data)
 
 
 @api_view()
 def get_disks(request, pk):
-    return Response(Agent.objects.get(pk=pk).disks)
+    return Response(get_object_or_404(Agent, pk=pk).disks)
 
 
 @api_view(["POST"])

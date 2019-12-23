@@ -1,6 +1,6 @@
 module.exports = {
   devServer: {
-    host: "10.0.45.214"
+    host: "192.168.99.150"
   },
   pluginOptions: {
     quasar: {}

@@ -58,7 +58,7 @@ print_green 'Installing NodeJS'
 
 sudo apt install -y curl wget
 
-curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs
@@ -148,7 +148,7 @@ sudo chown ${USER}:www-data /home/${USER}
 mkdir -p /home/${USER}/rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
-git clone https://github.com/wh1te909/tacticalrmm.git /home/steam/rmm/
+git clone https://github.com/wh1te909/tacticalrmm.git /home/${USER}/rmm/
 sudo chown ${USER}:www-data -R /home/${USER}/rmm/api/tacticalrmm
 
 localvars="$(cat << EOF

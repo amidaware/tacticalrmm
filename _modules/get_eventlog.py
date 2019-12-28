@@ -7,6 +7,7 @@ import datetime
 import random
 import string
 
+
 def get_eventlog(logtype, last_n_days):
 
     start_time = datetime.datetime.now() - datetime.timedelta(days=last_n_days)
@@ -52,7 +53,12 @@ def get_eventlog(logtype, last_n_days):
                     "message": msg,
                     "time": the_time,
                     "record": record,
-                    "uid": "".join([random.choice(string.ascii_letters + string.digits) for n in range(60)])
+                    "uid": "".join(
+                        [
+                            random.choice(string.ascii_letters + string.digits)
+                            for n in range(60)
+                        ]
+                    ),
                 }
 
                 log.append(event_dict)

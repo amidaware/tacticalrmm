@@ -19,17 +19,17 @@ from accounts.models import User
 
 
 class LoginView(KnoxLoginView):
-    
+
     permission_classes = (AllowAny,)
 
     def post(self, request, format=None):
         token = request.data["twofactor"]
-        #totp = pyotp.TOTP(settings.TWO_FACTOR_OTP)
-        #if totp.verify(token, valid_window=1):
-        if token == 'sekret':
+        # totp = pyotp.TOTP(settings.TWO_FACTOR_OTP)
+        # if totp.verify(token, valid_window=1):
+        if token == "sekret":
             serializer = AuthTokenSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            user = serializer.validated_data['user']
+            user = serializer.validated_data["user"]
             login(request, user)
             return super(LoginView, self).post(request, format=None)
         else:
@@ -41,11 +41,10 @@ class LoginView(KnoxLoginView):
 @permission_classes((IsAuthenticated,))
 def installer_twofactor(request):
     token = request.data["twofactorToken"]
-    #totp = pyotp.TOTP(settings.TWO_FACTOR_OTP)
-    #if totp.verify(token, valid_window=1):
+    # totp = pyotp.TOTP(settings.TWO_FACTOR_OTP)
+    # if totp.verify(token, valid_window=1):
     if token == "sekret":
         return Response("ok")
     else:
         return Response("bad 2 factor code", status=status.HTTP_400_BAD_REQUEST)
-
 

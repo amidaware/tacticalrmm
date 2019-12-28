@@ -23,13 +23,16 @@ from .tasks import uninstall_agent_task, update_agent_task
 
 logger.configure(**settings.LOG_CONFIG)
 
+
 @api_view()
 def get_agent_versions(request):
     agents = Agent.objects.only("pk")
-    return Response({
-        "versions": Agent.get_github_versions()["versions"], 
-        "agents": AgentHostnameSerializer(agents, many=True).data
-    })
+    return Response(
+        {
+            "versions": Agent.get_github_versions()["versions"],
+            "agents": AgentHostnameSerializer(agents, many=True).data,
+        }
+    )
 
 
 @api_view(["POST"])
@@ -41,12 +44,16 @@ def update_agents(request):
 
     for agent in agents:
         # don't update if agent's version same or higher
-        if (not pyver.parse(agent.version) >= pyver.parse(ver)) and not agent.is_updating:
+        if (
+            not pyver.parse(agent.version) >= pyver.parse(ver)
+        ) and not agent.is_updating:
             agent.is_updating = True
             agent.save(update_fields=["is_updating"])
 
-            update_agent_task.apply_async(queue='wupdate', kwargs={"pk": agent.pk, "version": version})
-            
+            update_agent_task.apply_async(
+                queue="wupdate", kwargs={"pk": agent.pk, "version": version}
+            )
+
     return Response("ok")
 
 
@@ -54,32 +61,32 @@ def update_agents(request):
 def uninstall_agent(request):
     pk = request.data["pk"]
     agent = get_object_or_404(Agent, pk=pk)
-    
+
     try:
-        resp = agent.salt_api_cmd(
-            hostname=agent.hostname, 
-            timeout=30, 
-            func="test.ping"
-        )
+        resp = agent.salt_api_cmd(hostname=agent.hostname, timeout=30, func="test.ping")
     except Exception:
         agent.uninstall_pending = True
         agent.save(update_fields=["uninstall_pending"])
-        logger.warning(f"{agent.hostname} is offline. It will be removed on next check-in")
-        return Response(
-            {"error": "Agent offline. It will be removed on next check-in"}, 
-            status=status.HTTP_400_BAD_REQUEST
+        logger.warning(
+            f"{agent.hostname} is offline. It will be removed on next check-in"
         )
-    
+        return Response(
+            {"error": "Agent offline. It will be removed on next check-in"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     data = resp.json()
     if not data["return"][0][agent.hostname]:
         agent.uninstall_pending = True
         agent.save(update_fields=["uninstall_pending"])
         return Response(
-            {"error": "Agent offline. It will be removed on next check-in"}, 
-            status=status.HTTP_400_BAD_REQUEST
+            {"error": "Agent offline. It will be removed on next check-in"},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
-    logger.info(f"{agent.hostname} has been marked for removal and will be uninstalled shortly")
+    logger.info(
+        f"{agent.hostname} has been marked for removal and will be uninstalled shortly"
+    )
     uninstall_agent_task.delay(pk, wait=False)
     agent.uninstall_pending = True
     agent.save(update_fields=["uninstall_pending"])
@@ -89,7 +96,7 @@ def uninstall_agent(request):
 @api_view(["PATCH"])
 def edit_agent(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
-    
+
     agent.client = request.data["client"]
     agent.site = request.data["site"]
     agent.monitoring_type = request.data["montype"]
@@ -113,48 +120,68 @@ def edit_agent(request):
     policy.reprocess_failed_times = request.data["reprocessfailedtimes"]
     policy.email_if_fail = request.data["emailiffail"]
 
-    agent.save(update_fields=[
-        "client", "site", "monitoring_type", "description", "ping_check_interval",
-        "overdue_time", "overdue_email_alert", "overdue_text_alert"
-    ])
+    agent.save(
+        update_fields=[
+            "client",
+            "site",
+            "monitoring_type",
+            "description",
+            "ping_check_interval",
+            "overdue_time",
+            "overdue_email_alert",
+            "overdue_text_alert",
+        ]
+    )
 
-    policy.save(update_fields=[
-        "critical", "important", "moderate", "low", "other", "run_time_hour",
-        "run_time_days", "reboot_after_install", "reprocess_failed",
-        "reprocess_failed_times", "email_if_fail"
-    ])
+    policy.save(
+        update_fields=[
+            "critical",
+            "important",
+            "moderate",
+            "low",
+            "other",
+            "run_time_hour",
+            "run_time_days",
+            "reboot_after_install",
+            "reprocess_failed",
+            "reprocess_failed_times",
+            "email_if_fail",
+        ]
+    )
     return Response("ok")
 
 
 @api_view()
 def meshcentral_tabs(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = subprocess.run([
-        "node", 
-        "/meshcentral/node_modules/meshcentral/meshcentral", 
-        "--logintoken", 
-        f"user//{settings.MESH_USERNAME}"], 
-        capture_output=True
+    r = subprocess.run(
+        [
+            "node",
+            "/meshcentral/node_modules/meshcentral/meshcentral",
+            "--logintoken",
+            f"user//{settings.MESH_USERNAME}",
+        ],
+        capture_output=True,
     )
     token = r.stdout.decode().splitlines()[0]
     terminalurl = f"{settings.MESH_SITE}/?viewmode=12&hide=31&login={token}&node={agent.mesh_node_id}"
     fileurl = f"{settings.MESH_SITE}/?viewmode=13&hide=31&login={token}&node={agent.mesh_node_id}"
-    return Response({
-        "hostname": agent.hostname,
-        "terminalurl": terminalurl,
-        "fileurl": fileurl
-    })
+    return Response(
+        {"hostname": agent.hostname, "terminalurl": terminalurl, "fileurl": fileurl}
+    )
 
 
 @api_view()
 def take_control(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = subprocess.run([
-        "node", 
-        "/meshcentral/node_modules/meshcentral/meshcentral", 
-        "--logintoken", 
-        f"user//{settings.MESH_USERNAME}"], 
-        capture_output=True
+    r = subprocess.run(
+        [
+            "node",
+            "/meshcentral/node_modules/meshcentral/meshcentral",
+            "--logintoken",
+            f"user//{settings.MESH_USERNAME}",
+        ],
+        capture_output=True,
     )
     token = r.stdout.decode().splitlines()[0]
     url = f"{settings.MESH_SITE}/?viewmode=11&hide=31&login={token}&node={agent.mesh_node_id}"
@@ -166,6 +193,7 @@ def agent_detail(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     return Response(AgentSerializer(agent).data)
 
+
 @api_view()
 def get_event_log(request, pk, logtype, days):
     agent = get_object_or_404(Agent, pk=pk)
@@ -174,12 +202,14 @@ def get_event_log(request, pk, logtype, days):
             hostname=agent.hostname,
             timeout=70,
             func="get_eventlog.get_eventlog",
-            arg=[logtype, int(days)]
+            arg=[logtype, int(days)],
         )
         data = resp.json()
     except Exception:
-        return Response({"error": "unable to contact the agent"}, status=status.HTTP_400_BAD_REQUEST)
-        
+        return Response(
+            {"error": "unable to contact the agent"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
     return Response(data["return"][0][agent.hostname])
 
 
@@ -191,7 +221,11 @@ def power_action(request):
     if action == "rebootnow":
         logger.info(f"{agent.hostname} was scheduled for immediate reboot")
         resp = agent.salt_api_cmd(
-            hostname=agent.hostname, timeout=30, func="system.reboot", arg=3, kwargs={"in_seconds": True}
+            hostname=agent.hostname,
+            timeout=30,
+            func="system.reboot",
+            arg=3,
+            kwargs={"in_seconds": True},
         )
 
     data = resp.json()
@@ -199,8 +233,9 @@ def power_action(request):
         return Response(
             "unable to contact the agent", status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     return Response("ok")
+
 
 @api_view(["POST"])
 def send_raw_cmd(request):

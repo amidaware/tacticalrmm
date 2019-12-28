@@ -12,7 +12,7 @@ from .models import (
     MemCheckEmail,
     MemoryHistory,
     WinServiceCheck,
-    WinServiceCheckEmail
+    WinServiceCheckEmail,
 )
 
 admin.site.register(DiskCheck)

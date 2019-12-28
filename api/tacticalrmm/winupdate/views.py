@@ -15,16 +15,19 @@ from .models import WinUpdate
 from .serializers import UpdateSerializer, WinUpdateSerializer, ApprovedUpdateSerializer
 from .tasks import check_for_updates_task
 
+
 @api_view()
 def get_win_updates(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     return Response(UpdateSerializer(agent).data)
+
 
 @api_view()
 def run_update_scan(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     check_for_updates_task.delay(agent.pk)
     return Response("ok")
+
 
 @api_view(["PATCH"])
 def edit_policy(request):
@@ -39,11 +42,16 @@ def edit_policy(request):
 @permission_classes((IsAuthenticated,))
 def win_updater(request):
     agent = get_object_or_404(Agent, agent_id=request.data["agentid"])
-    patches = WinUpdate.objects.filter(agent=agent).exclude(installed=True).filter(action="approve")
+    patches = (
+        WinUpdate.objects.filter(agent=agent)
+        .exclude(installed=True)
+        .filter(action="approve")
+    )
     if patches:
         return Response(ApprovedUpdateSerializer(patches, many=True).data)
-        
+
     return Response("nopatches")
+
 
 @api_view(["PATCH"])
 @authentication_classes((TokenAuthentication,))
@@ -64,7 +72,15 @@ def results(request):
         update.downloaded = True
         update.installed = True
         update.date_installed = djangotime.now()
-        update.save(update_fields=["result", "action", "downloaded", "installed", "date_installed"])
+        update.save(
+            update_fields=[
+                "result",
+                "action",
+                "downloaded",
+                "installed",
+                "date_installed",
+            ]
+        )
 
     elif results == "alreadyinstalled":
         update.result = "success"

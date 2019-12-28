@@ -2,6 +2,7 @@ from tacticalrmm.test import BaseTestCase
 
 from .models import Client, Site
 
+
 class TestClientViews(BaseTestCase):
     def test_initial_setup(self):
         url = "/clients/initialsetup/"
@@ -15,7 +16,7 @@ class TestClientViews(BaseTestCase):
         self.assertEqual(r.status_code, 400)
 
         self.check_not_authenticated("post", url)
-    
+
     def test_add_client(self):
         url = "/clients/addclient/"
 
@@ -32,7 +33,7 @@ class TestClientViews(BaseTestCase):
         self.assertEqual(r.status_code, 400)
 
         self.check_not_authenticated("post", url)
-    
+
     def test_add_site(self):
         url = "/clients/addsite/"
 
@@ -49,7 +50,7 @@ class TestClientViews(BaseTestCase):
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("post", url)
-    
+
     def test_installer_list_clients(self):
         url = "/clients/installer/listclients/"
 
@@ -65,7 +66,7 @@ class TestClientViews(BaseTestCase):
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("get", url)
-    
+
     def test_load_tree(self):
         url = "/clients/loadtree/"
 
@@ -80,7 +81,7 @@ class TestClientViews(BaseTestCase):
         self.assertTrue(f"LA Office|{site.pk}|red" in [i for i in r.data.values()][0])
 
         self.check_not_authenticated("get", url)
-    
+
     def test_load_clients(self):
         url = "/clients/loadclients/"
 
@@ -88,7 +89,7 @@ class TestClientViews(BaseTestCase):
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("get", url)
-    
+
     def test_installer_list_sites(self):
         url = "/clients/installer/Google/sites/"
 

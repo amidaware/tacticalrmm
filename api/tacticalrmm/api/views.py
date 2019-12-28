@@ -45,20 +45,24 @@ from agents.serializers import AgentHostnameSerializer
 
 logger.configure(**settings.LOG_CONFIG)
 
+
 class UploadMeshAgent(APIView):
     parser_class = (FileUploadParser,)
 
     def put(self, request, format=None):
-        if 'meshagent' not in request.data:
+        if "meshagent" not in request.data:
             raise ParseError("Empty content")
 
-        f = request.data['meshagent']
-        mesh_exe = os.path.join(settings.BASE_DIR, "tacticalrmm/downloads/meshagent.exe")
+        f = request.data["meshagent"]
+        mesh_exe = os.path.join(
+            settings.BASE_DIR, "tacticalrmm/downloads/meshagent.exe"
+        )
         with open(mesh_exe, "wb+") as j:
             for chunk in f.chunks():
                 j.write(chunk)
 
         return Response(status=status.HTTP_201_CREATED)
+
 
 @api_view(["PATCH"])
 @authentication_classes((TokenAuthentication,))
@@ -71,9 +75,10 @@ def trigger_patch_scan(request):
         agent.needs_reboot = True
     else:
         agent.needs_reboot = False
-        
+
     agent.save(update_fields=["needs_reboot"])
     return Response("ok")
+
 
 @api_view()
 def download_log(request):
@@ -86,8 +91,9 @@ def download_log(request):
     else:
         response = HttpResponse()
         response["Content-Disposition"] = "attachment; filename=debug.log"
-        response['X-Accel-Redirect'] = "/protectedlogs/debug.log"
+        response["X-Accel-Redirect"] = "/protectedlogs/debug.log"
         return response
+
 
 @api_view()
 def get_log(request, mode, hostname, order):
@@ -97,11 +103,20 @@ def get_log(request, mode, hostname, order):
     agent_hostnames = AgentHostnameSerializer(agents, many=True)
 
     dist = distro.linux_distribution(full_distribution_name=False)[0]
-    switch_grep = {"centos": "/usr/bin/grep", "ubuntu": "/bin/grep", "debian": "/usr/bin/grep"}
+    switch_grep = {
+        "centos": "/usr/bin/grep",
+        "ubuntu": "/bin/grep",
+        "debian": "/usr/bin/grep",
+    }
     grep = switch_grep.get(dist, "/bin/grep")
     tac = "/usr/bin/tac"
-    
-    switch_mode = {"info": "INFO", "critical": "CRITICAL", "error": "ERROR", "warning": "WARNING"}
+
+    switch_mode = {
+        "info": "INFO",
+        "critical": "CRITICAL",
+        "error": "ERROR",
+        "warning": "WARNING",
+    }
     level = switch_mode.get(mode, "INFO")
 
     if hostname == "all" and order == "latest":
@@ -114,7 +129,7 @@ def get_log(request, mode, hostname, order):
         cmd = f"{grep} {hostname} {log_file} | {grep} -h {level}"
     else:
         return Response("error", status=status.HTTP_400_BAD_REQUEST)
-        
+
     contents = run(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
 
     if not contents.stdout:
@@ -123,6 +138,7 @@ def get_log(request, mode, hostname, order):
         resp = contents.stdout
 
     return Response({"log": resp, "agents": agent_hostnames.data})
+
 
 @api_view(["POST"])
 @authentication_classes((BasicAuthentication,))
@@ -137,7 +153,9 @@ def agent_auth(request):
 @permission_classes((IsAuthenticated,))
 def get_mesh_exe(request):
     if settings.DEBUG:
-        mesh_exe = os.path.join(settings.BASE_DIR, "tacticalrmm/downloads/meshagent.exe")
+        mesh_exe = os.path.join(
+            settings.BASE_DIR, "tacticalrmm/downloads/meshagent.exe"
+        )
         with open(mesh_exe, "rb") as f:
             response = HttpResponse(
                 f.read(), content_type="application/vnd.microsoft.portable-executable"
@@ -147,7 +165,7 @@ def get_mesh_exe(request):
     else:
         response = HttpResponse()
         response["Content-Disposition"] = "attachment; filename=meshagent.exe"
-        response['X-Accel-Redirect'] = "/protected/meshagent.exe"
+        response["X-Accel-Redirect"] = "/protected/meshagent.exe"
         return response
 
 
@@ -156,13 +174,14 @@ def get_mesh_exe(request):
 @permission_classes((IsAuthenticated,))
 # installer get list of nodes from meshcentral database
 def get_mesh_nodes(request):
-    client = MongoClient('localhost', 27017)
+    client = MongoClient("localhost", 27017)
     db = client.meshcentral
     cursor = db.meshcentral.find({"type": "node"})
     nodes = {}
     for i in cursor:
-        nodes[i['rname']] = i['_id'].replace('node//', '')
+        nodes[i["rname"]] = i["_id"].replace("node//", "")
     return Response(nodes)
+
 
 @api_view(["POST"])
 @authentication_classes((BasicAuthentication,))
@@ -175,7 +194,9 @@ def create_auth_token(request):
         return Response({"error": "bad data"}, status=status.HTTP_400_BAD_REQUEST)
     else:
         try:
-            user = User.objects.create_user(username=agentid, password=User.objects.make_random_password(50))
+            user = User.objects.create_user(
+                username=agentid, password=User.objects.make_random_password(50)
+            )
         except IntegrityError:
             user = User.objects.get(username=agentid)
             token = Token.objects.get(user=user)
@@ -188,6 +209,7 @@ def create_auth_token(request):
     else:
         token = Token.objects.create(user=user)
         return Response({"token": token.key})
+
 
 @api_view(["POST"])
 @authentication_classes((BasicAuthentication,))
@@ -214,6 +236,7 @@ def accept_salt_key(request, hostname):
         return Response(status=status.HTTP_410_GONE)
     return Response("ok")
 
+
 @api_view(["POST"])
 @authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
@@ -225,7 +248,9 @@ def delete_agent(request):
         agent.delete()
     except Exception as e:
         logger.error(e)
-        return Response({"error": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"error": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST
+        )
     else:
         err = "Error removing agent from salt master. Please manually remove."
         try:
@@ -283,7 +308,6 @@ def add(request):
         else:
             WinUpdatePolicy(agent=agent).save()
 
-    
     return Response("ok")
 
 
@@ -313,24 +337,25 @@ def update(request):
     agent.version = version
     agent.antivirus = av
 
-    agent.save(update_fields=[
-        "last_seen",
-        "hostname",
-        "operating_system",
-        "total_ram",
-        "cpu_info",
-        "plat",
-        "plat_release",
-        "version",
-        "antivirus",
-    ])
+    agent.save(
+        update_fields=[
+            "last_seen",
+            "hostname",
+            "operating_system",
+            "total_ram",
+            "cpu_info",
+            "plat",
+            "plat_release",
+            "version",
+            "antivirus",
+        ]
+    )
 
     sync_salt_modules_task.delay(agent.pk)
 
     # check for updates if this is fresh agent install
     if not WinUpdate.objects.filter(agent=agent).exists():
         check_for_updates_task.delay(agent.pk)
-
 
     return Response("ok")
 
@@ -349,7 +374,7 @@ def hello(request):
     disks = data["disks"]
     boot_time = data["boot_time"]
     logged_in_username = data["logged_in_username"]
-    
+
     agent = get_object_or_404(Agent, agent_id=agent_id)
 
     if agent.uninstall_pending:
@@ -359,17 +384,16 @@ def hello(request):
             uninstall_agent_task.delay(agent.pk)
             return Response("ok")
 
-    
     agent.local_ip = local_ip
     agent.public_ip = public_ip
     agent.services = services
     agent.cpu_load = cpu_load
-    
+
     agent.used_ram = used_ram
     agent.disks = disks
     agent.boot_time = boot_time
     agent.logged_in_username = logged_in_username
-    
+
     agent.save(
         update_fields=[
             "last_seen",
@@ -380,7 +404,7 @@ def hello(request):
             "used_ram",
             "disks",
             "boot_time",
-            "logged_in_username", 
+            "logged_in_username",
         ]
     )
 
@@ -411,5 +435,6 @@ def hello(request):
         new_cpu_list = cpu_list[-35:]
         cpu.cpu_history = new_cpu_list
         cpu.save(update_fields=["cpu_history"])
-    
+
     return Response("ok")
+

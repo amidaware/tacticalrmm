@@ -18,6 +18,7 @@ from .models import Client, Site
 from collections import defaultdict
 from time import sleep
 
+
 @api_view(["POST"])
 def initial_setup(request):
     client_name = request.data["client"].strip()
@@ -26,7 +27,7 @@ def initial_setup(request):
     if "|" in client_name or "|" in site_name:
         err = {"error": f"Client/site name cannot contain the | character"}
         return Response(err, status=status.HTTP_400_BAD_REQUEST)
-    
+
     Client(client=client_name).save()
     client = Client.objects.get(client=client_name)
     Site(client=client, site=site_name).save()
@@ -57,6 +58,7 @@ def add_client(request):
         Site(client=client, site=default_site).save()
         return Response("ok")
 
+
 @api_view(["POST"])
 def add_site(request):
     client = Client.objects.get(client=request.data["client"].strip())
@@ -78,6 +80,7 @@ def add_site(request):
     else:
         return Response("ok")
 
+
 @api_view()
 @authentication_classes((BasicAuthentication,))
 @permission_classes((IsAuthenticated,))
@@ -85,6 +88,7 @@ def add_site(request):
 def installer_list_clients(request):
     clients = Client.objects.all()
     return Response(ClientSerializer(clients, many=True).data)
+
 
 @api_view()
 # for vue
@@ -97,10 +101,10 @@ def list_clients(request):
 def load_tree(request):
     clients = Client.objects.all()
     new = {}
-    
+
     for x in clients:
         b = []
-        
+
         sites = Site.objects.filter(client=x)
         for i in sites:
 
@@ -108,7 +112,7 @@ def load_tree(request):
                 b.append(f"{i.site}|{i.pk}|red")
             else:
                 b.append(f"{i.site}|{i.pk}|grey")
-            
+
             if x.checks_failing:
                 new[f"{x.client}|{x.pk}|red"] = b
             else:
@@ -116,20 +120,22 @@ def load_tree(request):
 
     return Response(new)
 
+
 @api_view()
 def load_clients(request):
     clients = Client.objects.all()
     new = {}
-    
+
     for x in clients:
         b = []
-        
+
         sites = Site.objects.filter(client=x)
         for i in sites:
             b.append(i.site)
             new[x.client] = b
 
     return Response(new)
+
 
 @api_view()
 @authentication_classes((BasicAuthentication,))

@@ -3,6 +3,7 @@ from .models import WinUpdate
 
 from tacticalrmm.celery import app
 
+
 @app.task
 def check_for_updates_task(pk):
 
@@ -13,7 +14,7 @@ def check_for_updates_task(pk):
         timeout=310,
         salt_timeout=300,
         func="win_wua.list",
-        arg="skip_installed=False"
+        arg="skip_installed=False",
     )
     data = resp.json()
     ret = data["return"][0][agent.hostname]
@@ -26,12 +27,11 @@ def check_for_updates_task(pk):
             agent.save(update_fields=["managed_by_wsus"])
             return f"{agent.hostname} managed by wsus"
     else:
-        # if previously managed by wsus but no longer (i.e moved into a different OU in AD) 
+        # if previously managed by wsus but no longer (i.e moved into a different OU in AD)
         # then we can use salt to manage updates
         if agent.managed_by_wsus and type(ret) is dict:
             agent.managed_by_wsus = False
             agent.save(update_fields=["managed_by_wsus"])
-
 
     guids = []
     for k in ret.keys():
@@ -50,7 +50,7 @@ def check_for_updates_task(pk):
                 installed=ret[i]["Installed"],
                 downloaded=ret[i]["Downloaded"],
                 description=ret[i]["Description"],
-                severity=ret[i]["Severity"]
+                severity=ret[i]["Severity"],
             ).save()
     else:
         for i in guids:
@@ -62,7 +62,7 @@ def check_for_updates_task(pk):
                 if ret[i]["Installed"] != update.installed:
                     update.installed = not update.installed
                     update.save(update_fields=["installed"])
-                
+
                 if ret[i]["Downloaded"] != update.downloaded:
                     update.downloaded = not update.downloaded
                     update.save(update_fields=["downloaded"])
@@ -79,6 +79,6 @@ def check_for_updates_task(pk):
                     installed=ret[i]["Installed"],
                     downloaded=ret[i]["Downloaded"],
                     description=ret[i]["Description"],
-                    severity=ret[i]["Severity"]
+                    severity=ret[i]["Severity"],
                 ).save()
     return "ok"

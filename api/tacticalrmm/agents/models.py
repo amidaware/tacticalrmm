@@ -9,7 +9,6 @@ wheel = salt.wheel.WheelClient(opts)
 local = salt.client.LocalClient() """
 
 
-
 from django.db import models
 from django.conf import settings
 from django.contrib.postgres.fields import JSONField
@@ -52,15 +51,15 @@ class Agent(models.Model):
 
     def __str__(self):
         return self.hostname
-    
+
     @property
     def has_patches_pending(self):
         from winupdate.models import WinUpdate
+
         if WinUpdate.objects.filter(agent=self).filter(action="approve").exists():
             return True
 
         return False
-
 
     @staticmethod
     def salt_api_cmd(**kwargs):
@@ -83,12 +82,10 @@ class Agent(models.Model):
         if "kwargs" in kwargs:
             json.update({"kwarg": kwargs["kwargs"]})
         resp = requests.post(
-            "http://127.0.0.1:8123/run",
-            json=[json], 
-            timeout=kwargs["timeout"]
+            "http://127.0.0.1:8123/run", json=[json], timeout=kwargs["timeout"]
         )
         return resp
-    
+
     @staticmethod
     def salt_api_async(**kwargs):
 
@@ -105,12 +102,9 @@ class Agent(models.Model):
             json.update({"arg": kwargs["arg"]})
         if "kwargs" in kwargs:
             json.update({"kwarg": kwargs["kwargs"]})
-        resp = requests.post(
-            "http://127.0.0.1:8123/run",
-            json=[json]
-        )
+        resp = requests.post("http://127.0.0.1:8123/run", json=[json])
         return resp
-    
+
     @staticmethod
     def salt_api_job(jid):
 
@@ -118,20 +112,21 @@ class Agent(models.Model):
         session.post(
             "http://127.0.0.1:8123/login",
             json={
-                'username': settings.SALT_USERNAME, 
-                'password': settings.SALT_PASSWORD, 
-                'eauth': 'pam'
-            })
-        
+                "username": settings.SALT_USERNAME,
+                "password": settings.SALT_PASSWORD,
+                "eauth": "pam",
+            },
+        )
+
         return session.get(f"http://127.0.0.1:8123/jobs/{jid}")
-    
+
     @staticmethod
     def get_github_versions():
         r = requests.get("https://api.github.com/repos/wh1te909/winagent/releases")
         versions = {}
         for i, release in enumerate(r.json()):
             versions[i] = release["name"]
-        
+
         return {"versions": versions, "data": r.json()}
 
     """ @staticmethod
@@ -163,4 +158,3 @@ class Agent(models.Model):
 
         return resp """
 
-    

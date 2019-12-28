@@ -1,12 +1,12 @@
 from rest_framework import serializers
 
 from .models import (
-    DiskCheck, 
-    CpuLoadCheck, 
-    MemCheck, 
-    PingCheck, 
-    CpuHistory, 
-    WinServiceCheck
+    DiskCheck,
+    CpuLoadCheck,
+    MemCheck,
+    PingCheck,
+    CpuHistory,
+    WinServiceCheck,
 )
 from agents.models import Agent
 from agents.serializers import AgentSerializer
@@ -41,11 +41,11 @@ class PingCheckSerializer(serializers.ModelSerializer):
         model = PingCheck
         fields = "__all__"
 
+
 class WinServiceCheckSerializer(serializers.ModelSerializer):
     class Meta:
         model = WinServiceCheck
         fields = "__all__"
-
 
 
 class CheckSerializer(serializers.ModelSerializer):

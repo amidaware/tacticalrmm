@@ -7,20 +7,21 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from agents.models import Agent
 from clients.models import Client, Site
-from .models import ( 
-    DiskCheck, 
-    DiskCheckEmail, 
-    PingCheck, 
-    PingCheckEmail, 
-    CpuLoadCheck, 
-    CpuLoadCheckEmail, 
-    CpuHistory, 
-    MemCheck, 
-    MemoryHistory, 
+from .models import (
+    DiskCheck,
+    DiskCheckEmail,
+    PingCheck,
+    PingCheckEmail,
+    CpuLoadCheck,
+    CpuLoadCheckEmail,
+    CpuHistory,
+    MemCheck,
+    MemoryHistory,
     MemCheckEmail,
     WinServiceCheck,
-    WinServiceCheckEmail
+    WinServiceCheckEmail,
 )
+
 
 @app.task
 def handle_check_email_alert_task(check_type, pk):
@@ -43,32 +44,39 @@ def handle_check_email_alert_task(check_type, pk):
         return {"error": "no check"}
 
     try:
-        latest_email = (
-            eml.objects.filter(email=check).order_by("-sent")[:1].get()
-        )
+        latest_email = eml.objects.filter(email=check).order_by("-sent")[:1].get()
     except Exception as e:
         # first time sending email
         eml(email=check).save()
         check.send_email()
     else:
         last_sent = latest_email.sent
-        delta = datetime.datetime.now(
-            timezone.utc
-        ) - datetime.timedelta(hours=24)
+        delta = datetime.datetime.now(timezone.utc) - datetime.timedelta(hours=24)
         # send an email only if the last email sent is older than 24 hours
         if last_sent < delta:
             eml(email=check).save()
             check.send_email()
-    
+
     return "ok"
+
 
 @app.task
 def checks_failing_task():
-    diskchecks = DiskCheck.objects.select_related('agent').only('agent__client', 'agent__site', 'status')
-    pingchecks = PingCheck.objects.select_related('agent').only('agent__client', 'agent__site', 'status')
-    cpuloadchecks = CpuLoadCheck.objects.select_related('agent').only('agent__client', 'agent__site', 'status')
-    memchecks = MemCheck.objects.select_related('agent').only('agent__client', 'agent__site', 'status')
-    winservicechecks = WinServiceCheck.objects.select_related('agent').only('agent__client', 'agent__site', 'status')
+    diskchecks = DiskCheck.objects.select_related("agent").only(
+        "agent__client", "agent__site", "status"
+    )
+    pingchecks = PingCheck.objects.select_related("agent").only(
+        "agent__client", "agent__site", "status"
+    )
+    cpuloadchecks = CpuLoadCheck.objects.select_related("agent").only(
+        "agent__client", "agent__site", "status"
+    )
+    memchecks = MemCheck.objects.select_related("agent").only(
+        "agent__client", "agent__site", "status"
+    )
+    winservicechecks = WinServiceCheck.objects.select_related("agent").only(
+        "agent__client", "agent__site", "status"
+    )
 
     agents_failing = []
 
@@ -77,8 +85,7 @@ def checks_failing_task():
             if i.status == "failing":
                 agents_failing.append(i.agent.pk)
 
-
-    agents_failing = list(set(agents_failing)) # remove duplicates
+    agents_failing = list(set(agents_failing))  # remove duplicates
 
     # first we reset all to passing
     Client.objects.all().update(checks_failing=False)
@@ -98,13 +105,16 @@ def checks_failing_task():
 
     return "ok"
 
+
 @app.task
 def determine_agent_status():
     agents = Agent.objects.all()
     offline = datetime.datetime.now(timezone.utc) - datetime.timedelta(minutes=4)
-    
+
     for agent in agents:
-        overdue = datetime.datetime.now(timezone.utc) - datetime.timedelta(minutes=agent.overdue_time)
+        overdue = datetime.datetime.now(timezone.utc) - datetime.timedelta(
+            minutes=agent.overdue_time
+        )
         if (agent.last_seen < offline) and (agent.last_seen > overdue):
             agent.status = "offline"
         elif (agent.last_seen < offline) and (agent.last_seen < overdue):
@@ -112,8 +122,9 @@ def determine_agent_status():
         else:
             agent.status = "online"
         agent.save(update_fields=["status"])
-    
+
     return "ok"
+
 
 @app.task
 def disk_check_alert():
@@ -168,22 +179,21 @@ def cpu_load_check_alert():
                         check.status = "passing"
                         check.save(update_fields=["status"])
                     check.save(update_fields=["last_run"])
-    
+
     return "ok"
+
 
 @app.task
 def restart_win_service_task(pk, svcname):
     agent = Agent.objects.get(pk=pk)
     resp = agent.salt_api_cmd(
-        hostname = agent.hostname,
-        timeout = 60,
-        func = f"service.restart",
-        arg = svcname,
+        hostname=agent.hostname, timeout=60, func=f"service.restart", arg=svcname,
     )
     data = resp.json()
     if not data["return"][0][agent.hostname]:
         return {"error": f"restart service {svcname} failed on {agent.hostname}"}
     return "ok"
+
 
 @app.task
 def win_service_check_task():
@@ -192,7 +202,9 @@ def win_service_check_task():
         for check in agents_with_checks:
             alert = False
             agent = Agent.objects.get(pk=check.agent.pk)
-            status = list(filter(lambda x: x["name"] == check.svc_name, agent.services))[0]["status"]
+            status = list(
+                filter(lambda x: x["name"] == check.svc_name, agent.services)
+            )[0]["status"]
             if status == "running":
                 check.status = "passing"
                 if check.failure_count != 0:
@@ -219,7 +231,7 @@ def win_service_check_task():
                 if new_count >= check.failures:
                     alert = True
                 check.save(update_fields=["failure_count"])
-            
+
             if check.restart_if_stopped:
                 if status == "stopped":
                     restart_win_service_task.delay(agent.pk, check.svc_name)
@@ -232,8 +244,6 @@ def win_service_check_task():
                     handle_check_email_alert_task.delay("winsvc", check.pk)
 
     return "ok"
-
-
 
 
 @app.task
@@ -263,5 +273,6 @@ def mem_check_alert():
                         check.status = "passing"
                         check.save(update_fields=["status"])
                     check.save(update_fields=["last_run"])
-    
+
     return "ok"
+

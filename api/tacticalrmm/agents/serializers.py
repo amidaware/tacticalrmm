@@ -4,11 +4,12 @@ from .models import Agent
 
 from winupdate.serializers import WinUpdatePolicySerializer
 
+
 class AgentSerializer(serializers.ModelSerializer):
 
     patches_pending = serializers.ReadOnlyField(source="has_patches_pending")
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
-    
+
     class Meta:
         model = Agent
         fields = (
@@ -50,7 +51,14 @@ class AgentSerializer(serializers.ModelSerializer):
             "winupdatepolicy",
         )
 
+
 class AgentHostnameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent
-        fields = ("hostname", "pk", "client", "site",)
+        fields = (
+            "hostname",
+            "pk",
+            "client",
+            "site",
+        )
+

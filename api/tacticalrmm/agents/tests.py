@@ -65,7 +65,7 @@ class TestAgentViews(BaseTestCase):
 
     @mock.patch("subprocess.run")
     def test_meshcentral_tabs(self, mock_run):
-        mock_run.return_value.stdout = b'h56Ju2aThD$!wy$AcDSAz@$NnvgGa0=\n'
+        mock_run.return_value.stdout = b"h56Ju2aThD$!wy$AcDSAz@$NnvgGa0=\n"
         url = f"/agents/{self.agent.pk}/meshtabs/"
 
         r = self.client.get(url)
@@ -88,7 +88,7 @@ class TestAgentViews(BaseTestCase):
 
     @mock.patch("subprocess.run")
     def test_take_control(self, mock_run):
-        mock_run.return_value.stdout = b'h56Ju2aThD$!wy$AcDSAz@$NnvgGa0=\n'
+        mock_run.return_value.stdout = b"h56Ju2aThD$!wy$AcDSAz@$NnvgGa0=\n"
         url = f"/agents/{self.agent.pk}/takecontrol/"
 
         r = self.client.get(url)

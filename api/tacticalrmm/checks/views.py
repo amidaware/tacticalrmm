@@ -32,10 +32,11 @@ from .serializers import (
     PingCheckSerializer,
     CpuLoadCheckSerializer,
     MemCheckSerializer,
-    WinServiceCheckSerializer
+    WinServiceCheckSerializer,
 )
 
 from .tasks import handle_check_email_alert_task
+
 
 @api_view(["PATCH"])
 @authentication_classes((TokenAuthentication,))
@@ -57,13 +58,13 @@ def update_ping_check(request):
         check.save(update_fields=["failure_count"])
         if new_count >= check.failures:
             alert = True
-    
+
     if alert:
         if check.email_alert:
             handle_check_email_alert_task.delay("ping", check.pk)
 
-
     return Response("ok")
+
 
 @api_view()
 @authentication_classes((TokenAuthentication,))
@@ -138,7 +139,7 @@ def add_standard_check(request):
 
         MemCheck(agent=agent, threshold=threshold).save()
         return Response("ok")
-    
+
     elif request.data["check_type"] == "winsvc":
         displayName = request.data["displayname"]
         rawName = request.data["rawname"]
@@ -150,18 +151,21 @@ def add_standard_check(request):
         if existing_checks:
             for check in existing_checks:
                 if rawName in check.svc_name:
-                    error = {"error": f"There is already a check for service {check.svc_display_name}"}
+                    error = {
+                        "error": f"There is already a check for service {check.svc_display_name}"
+                    }
                     return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
         WinServiceCheck(
             agent=agent,
-            svc_name=rawName, 
-            svc_display_name=displayName, 
+            svc_name=rawName,
+            svc_display_name=displayName,
             pass_if_start_pending=pass_start_pending,
             restart_if_stopped=restart_stopped,
-            failures=failures
+            failures=failures,
         ).save()
         return Response("ok")
+
 
 @api_view(["PATCH"])
 def edit_standard_check(request):
@@ -208,8 +212,11 @@ def edit_standard_check(request):
         check.pass_if_start_pending = request.data["passifstartpending"]
         check.restart_if_stopped = request.data["restartifstopped"]
         check.failures = request.data["failures"]
-        check.save(update_fields=["pass_if_start_pending", "restart_if_stopped", "failures"])
+        check.save(
+            update_fields=["pass_if_start_pending", "restart_if_stopped", "failures"]
+        )
         return Response("ok")
+
 
 @api_view()
 def get_standard_check(request, checktype, pk):

@@ -1,4 +1,5 @@
 trigger:
+- master
 - develop
 
 

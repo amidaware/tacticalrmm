@@ -18,5 +18,10 @@ jobs:
   steps:
     
   - script: |
-      echo test123
+      cd /home/steam/myagent/_work/1/s/api
+      python3.7 -m venv env
+      source env/bin/activate
+      python --version
+      deactivate
+      python --version
     displayName: 'Run Tests'

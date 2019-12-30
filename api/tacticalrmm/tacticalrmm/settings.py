@@ -151,3 +151,45 @@ if 'TRAVIS' in os.environ:
     MESH_USERNAME = "travis"
     MESH_SITE = "https://example.com"
     TWO_FACTOR_OTP = "TRAVIS"
+
+if 'AZPIPELINE' in os.environ:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'pipeline',
+            'USER': 'pipeline',
+            'PASSWORD': 'pipeline123456',
+            'HOST': '127.0.0.1',
+            'PORT': ''
+        }
+    }
+
+    REST_FRAMEWORK = {
+        'DATETIME_FORMAT': "%b-%d-%Y - %H:%M",
+
+        'DEFAULT_PERMISSION_CLASSES': (
+            'rest_framework.permissions.IsAuthenticated',
+        ),
+        'DEFAULT_AUTHENTICATION_CLASSES': (
+            'knox.auth.TokenAuthentication',
+        ),
+        'DEFAULT_RENDERER_CLASSES': (
+            'rest_framework.renderers.JSONRenderer',
+        )
+    }
+
+    DEBUG = True
+    SECRET_KEY = 'abcdefghijklmnoptravis123456789'
+
+    EMAIL_USE_TLS = True
+    EMAIL_HOST = 'smtp.gmail.com'
+    EMAIL_HOST_USER = 'pipeline@example.com'
+    EMAIL_HOST_PASSWORD = 'pipeline'
+    EMAIL_PORT = 587
+    EMAIL_ALERT_RECIPIENTS = ["pipeline@example.com",]
+
+    SALT_USERNAME = "pipeline"
+    SALT_PASSWORD = "pipeline"
+    MESH_USERNAME = "pipeline"
+    MESH_SITE = "https://example.com"
+    TWO_FACTOR_OTP = "ABC12345"

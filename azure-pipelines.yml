@@ -1,0 +1,22 @@
+trigger:
+- develop
+
+
+jobs:
+- job: setup_env
+  displayName: 'Setup Environment'
+  strategy:
+    matrix:
+      Ubuntu18:
+        AGENT_NAME: 'rmm-ubuntu18'
+  
+  pool:
+    name: linux-vms
+    demands:
+      - agent.name -equals $(AGENT_NAME)
+  
+  steps:
+    
+  - script: |
+      echo test123
+    displayName: 'Run Tests'

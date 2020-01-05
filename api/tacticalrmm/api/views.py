@@ -307,8 +307,10 @@ def add(request):
             WinUpdatePolicy(agent=agent, run_time_days=[5, 6]).save()
         else:
             WinUpdatePolicy(agent=agent).save()
-
-    return Response("ok")
+        
+        return Response({"pk": agent.pk})
+    else:
+        return Response("err", status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["PATCH"])

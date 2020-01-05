@@ -244,6 +244,7 @@ def delete_agent(request):
     try:
         user = User.objects.get(username=request.data["agentid"])
         agent = get_object_or_404(Agent, agent_id=request.data["agentid"])
+        saltid = agent.salt_id
         user.delete()
         agent.delete()
     except Exception as e:
@@ -260,7 +261,7 @@ def delete_agent(request):
                     {
                         "client": "wheel",
                         "fun": "key.delete",
-                        "match": agent.salt_id,
+                        "match": saltid,
                         "username": settings.SALT_USERNAME,
                         "password": settings.SALT_PASSWORD,
                         "eauth": "pam",

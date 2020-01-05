@@ -10,14 +10,14 @@ def check_for_updates_task(pk):
     agent = Agent.objects.get(pk=pk)
 
     resp = agent.salt_api_cmd(
-        hostname=agent.hostname,
+        hostname=agent.salt_id,
         timeout=310,
         salt_timeout=300,
         func="win_wua.list",
         arg="skip_installed=False",
     )
     data = resp.json()
-    ret = data["return"][0][agent.hostname]
+    ret = data["return"][0][agent.salt_id]
 
     # if managed by wsus, nothing we can do until salt supports it
     if type(ret) is str:

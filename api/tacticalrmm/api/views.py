@@ -260,7 +260,7 @@ def delete_agent(request):
                     {
                         "client": "wheel",
                         "fun": "key.delete",
-                        "match": agent.hostname,
+                        "match": agent.salt_id,
                         "username": settings.SALT_USERNAME,
                         "password": settings.SALT_PASSWORD,
                         "eauth": "pam",

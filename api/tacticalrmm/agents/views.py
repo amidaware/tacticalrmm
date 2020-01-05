@@ -63,7 +63,7 @@ def uninstall_agent(request):
     agent = get_object_or_404(Agent, pk=pk)
 
     try:
-        resp = agent.salt_api_cmd(hostname=agent.hostname, timeout=30, func="test.ping")
+        resp = agent.salt_api_cmd(hostname=agent.salt_id, timeout=30, func="test.ping")
     except Exception:
         agent.uninstall_pending = True
         agent.save(update_fields=["uninstall_pending"])
@@ -76,7 +76,7 @@ def uninstall_agent(request):
         )
 
     data = resp.json()
-    if not data["return"][0][agent.hostname]:
+    if not data["return"][0][agent.salt_id]:
         agent.uninstall_pending = True
         agent.save(update_fields=["uninstall_pending"])
         return Response(
@@ -199,7 +199,7 @@ def get_event_log(request, pk, logtype, days):
     agent = get_object_or_404(Agent, pk=pk)
     try:
         resp = agent.salt_api_cmd(
-            hostname=agent.hostname,
+            hostname=agent.salt_id,
             timeout=70,
             func="get_eventlog.get_eventlog",
             arg=[logtype, int(days)],
@@ -210,7 +210,7 @@ def get_event_log(request, pk, logtype, days):
             {"error": "unable to contact the agent"}, status=status.HTTP_400_BAD_REQUEST
         )
 
-    return Response(data["return"][0][agent.hostname])
+    return Response(data["return"][0][agent.salt_id])
 
 
 @api_view(["POST"])
@@ -221,7 +221,7 @@ def power_action(request):
     if action == "rebootnow":
         logger.info(f"{agent.hostname} was scheduled for immediate reboot")
         resp = agent.salt_api_cmd(
-            hostname=agent.hostname,
+            hostname=agent.salt_id,
             timeout=30,
             func="system.reboot",
             arg=3,
@@ -229,7 +229,7 @@ def power_action(request):
         )
 
     data = resp.json()
-    if not data["return"][0][agent.hostname]:
+    if not data["return"][0][agent.salt_id]:
         return Response(
             "unable to contact the agent", status=status.HTTP_400_BAD_REQUEST
         )
@@ -247,7 +247,7 @@ def send_raw_cmd(request):
     agent = get_object_or_404(Agent, pk=pk)
     try:
         resp = agent.salt_api_cmd(
-            hostname=agent.hostname, timeout=60, func="cmd.run", arg=cmd
+            hostname=agent.salt_id, timeout=60, func="cmd.run", arg=cmd
         )
         data = resp.json()
     except Exception:
@@ -255,12 +255,12 @@ def send_raw_cmd(request):
             "unable to contact the agent", status=status.HTTP_400_BAD_REQUEST
         )
 
-    if not data["return"][0][agent.hostname]:
+    if not data["return"][0][agent.salt_id]:
         return Response(
             "unable to contact the agent", status=status.HTTP_400_BAD_REQUEST
         )
     logger.info(f"The command {cmd} was sent on agent {agent.hostname}")
-    return Response(data["return"][0][agent.hostname])
+    return Response(data["return"][0][agent.salt_id])
 
 
 @api_view()

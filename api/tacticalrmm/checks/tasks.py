@@ -187,10 +187,10 @@ def cpu_load_check_alert():
 def restart_win_service_task(pk, svcname):
     agent = Agent.objects.get(pk=pk)
     resp = agent.salt_api_cmd(
-        hostname=agent.hostname, timeout=60, func=f"service.restart", arg=svcname,
+        hostname=agent.salt_id, timeout=60, func=f"service.restart", arg=svcname,
     )
     data = resp.json()
-    if not data["return"][0][agent.hostname]:
+    if not data["return"][0][agent.salt_id]:
         return {"error": f"restart service {svcname} failed on {agent.hostname}"}
     return "ok"
 

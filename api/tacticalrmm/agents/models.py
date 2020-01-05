@@ -61,6 +61,10 @@ class Agent(models.Model):
 
         return False
 
+    @property
+    def salt_id(self):
+        return f"{self.hostname}-{self.pk}"
+    
     @staticmethod
     def salt_api_cmd(**kwargs):
         try:

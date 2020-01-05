@@ -29,17 +29,17 @@ def get_refreshed_services(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     try:
         resp = agent.salt_api_cmd(
-            hostname=agent.hostname, timeout=30, func="get_services.get_services"
+            hostname=agent.salt_id, timeout=30, func="get_services.get_services"
         )
         data = resp.json()
     except Exception:
         error = {"error": "unable to contact the agent"}
         return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-    if not data["return"][0][agent.hostname]:
+    if not data["return"][0][agent.salt_id]:
         error = {"error": "unable to contact the agent"}
         return Response(error, status=status.HTTP_400_BAD_REQUEST)
-    agent.services = data["return"][0][agent.hostname]
+    agent.services = data["return"][0][agent.salt_id]
     agent.save(update_fields=["services"])
     return Response(ServicesSerializer(agent).data)
 
@@ -52,13 +52,13 @@ def service_action(request):
     service_action = data["sv_action"]
     agent = get_object_or_404(Agent, pk=pk)
     resp = agent.salt_api_cmd(
-        hostname=agent.hostname,
+        hostname=agent.salt_id,
         timeout=60,
         func=f"service.{service_action}",
         arg=service_name,
     )
     data = resp.json()
-    if not data["return"][0][agent.hostname]:
+    if not data["return"][0][agent.salt_id]:
         error = {"error": "unable to contact the agent"}
         return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
@@ -72,14 +72,14 @@ def service_action(request):
 def service_detail(request, pk, svcname):
     agent = get_object_or_404(Agent, pk=pk)
     resp = agent.salt_api_cmd(
-        hostname=agent.hostname, timeout=60, func="service.info", arg=svcname,
+        hostname=agent.salt_id, timeout=60, func="service.info", arg=svcname,
     )
     data = resp.json()
-    if not data["return"][0][agent.hostname]:
+    if not data["return"][0][agent.salt_id]:
         error = {"error": "unable to contact the agent"}
         return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response(data["return"][0][agent.hostname])
+    return Response(data["return"][0][agent.salt_id])
 
 
 @api_view(["POST"])
@@ -100,7 +100,7 @@ def edit_service(request):
 
     try:
         resp = agent.salt_api_cmd(
-            hostname=agent.hostname,
+            hostname=agent.salt_id,
             timeout=60,
             func="service.modify",
             arg=service_name,

@@ -16,7 +16,7 @@ def sync_salt_modules_task(pk):
     agent = Agent.objects.get(pk=pk)
     logger.info(f"Attempting to sync salt modules on {agent.hostname}")
     sleep(10)
-    resp = agent.salt_api_cmd(hostname=agent.hostname, timeout=30, func="test.ping")
+    resp = agent.salt_api_cmd(hostname=agent.salt_id, timeout=30, func="test.ping")
     try:
         data = resp.json()
     except Exception as e:
@@ -24,13 +24,13 @@ def sync_salt_modules_task(pk):
         return f"Unable to contact agent {agent.hostname}: {e}"
     else:
         try:
-            ping = data["return"][0][agent.hostname]
+            ping = data["return"][0][agent.salt_id]
         except KeyError as j:
             logger.error(f"{j}: Unable to contact agent (is salt installed properly?)")
             return f"{j}: Unable to contact agent (is salt installed properly?)"
         else:
             resp2 = agent.salt_api_cmd(
-                hostname=agent.hostname, timeout=60, func="saltutil.sync_modules"
+                hostname=agent.salt_id, timeout=60, func="saltutil.sync_modules"
             )
             try:
                 data2 = resp2.json()
@@ -55,18 +55,18 @@ def uninstall_agent_task(pk, wait=True):
         sleep(90)  # need to give salt time to startup on the minion
 
     resp2 = agent.salt_api_cmd(
-        hostname=agent.hostname,
+        hostname=agent.salt_id,
         timeout=60,
         func="cp.get_file",
         arg=["salt://scripts/removeagent.exe", "C:\\Windows\\Temp\\"],
     )
     data2 = resp2.json()
-    if not data2["return"][0][agent.hostname]:
+    if not data2["return"][0][agent.salt_id]:
         logger.error(f"{agent.hostname} unable to copy file")
         return f"{agent.hostname} unable to copy file"
 
     agent.salt_api_cmd(
-        hostname=agent.hostname,
+        hostname=agent.salt_id,
         timeout=500,
         func="cmd.script",
         arg="salt://scripts/uninstall.bat",
@@ -120,14 +120,14 @@ def update_agent_task(pk, version):
 
     # send the release to the agent
     r = agent.salt_api_cmd(
-        hostname=agent.hostname,
+        hostname=agent.salt_id,
         timeout=300,
         func="cp.get_file",
         arg=[f"salt://scripts/{version}.exe", temp_dir],
     )
     # success return example: {'return': [{'HOSTNAME': 'C:\\Windows\\Temp\\winagent-v0.1.12.exe'}]}
     # error return example: {'return': [{'HOSTNAME': ''}]}
-    if not r.json()["return"][0][agent.hostname]:
+    if not r.json()["return"][0][agent.salt_id]:
         agent.is_updating = False
         agent.save(update_fields=["is_updating"])
         logger.error(
@@ -142,9 +142,9 @@ def update_agent_task(pk, version):
     )
 
     for svc in services:
-        r = service_action(agent.hostname, "stop", svc)
+        r = service_action(agent.salt_id, "stop", svc)
         # returns non 0 if error
-        if r.json()["return"][0][agent.hostname]["retcode"]:
+        if r.json()["return"][0][agent.salt_id]["retcode"]:
             errors.append(f"failed to stop {svc}")
             logger.error(
                 f"{agent.hostname} was unable to stop service {svc}. Update cancelled"
@@ -155,7 +155,7 @@ def update_agent_task(pk, version):
         agent.is_updating = False
         agent.save(update_fields=["is_updating"])
         for svc in services:
-            service_action(agent.hostname, "start", svc)
+            service_action(agent.salt_id, "start", svc)
         return "stopping services failed. started again"
 
     # install the update
@@ -163,7 +163,7 @@ def update_agent_task(pk, version):
     # error response example: {'return': [{'HOSTNAME': 'The minion function caused an exception: Traceback...'}]}
     try:
         r = agent.salt_api_cmd(
-            hostname=agent.hostname,
+            hostname=agent.salt_id,
             timeout=120,
             func="cmd.script",
             arg=f"{temp_dir}\\{version}.exe",
@@ -176,14 +176,14 @@ def update_agent_task(pk, version):
             f"TIMEOUT: failed to run inno setup on {agent.hostname} for version {ver}"
         )
 
-    if "minion function caused an exception" in r.json()["return"][0][agent.hostname]:
+    if "minion function caused an exception" in r.json()["return"][0][agent.salt_id]:
         agent.is_updating = False
         agent.save(update_fields=["is_updating"])
         return (
             f"EXCEPTION: failed to run inno setup on {agent.hostname} for version {ver}"
         )
 
-    if r.json()["return"][0][agent.hostname]["retcode"]:
+    if r.json()["return"][0][agent.salt_id]["retcode"]:
         agent.is_updating = False
         agent.save(update_fields=["is_updating"])
         logger.error(f"failed to run inno setup on {agent.hostname} for version {ver}")
@@ -191,7 +191,7 @@ def update_agent_task(pk, version):
 
     # update the version in the agent's local database
     r = agent.salt_api_cmd(
-        hostname=agent.hostname,
+        hostname=agent.salt_id,
         timeout=45,
         func="sqlite3.modify",
         arg=[
@@ -201,22 +201,22 @@ def update_agent_task(pk, version):
     )
     # success return example: {'return': [{'FSV': True}]}
     # error return example: {'return': [{'HOSTNAME': 'The minion function caused an exception: Traceback...'}]}
-    sql_ret = type(r.json()["return"][0][agent.hostname])
+    sql_ret = type(r.json()["return"][0][agent.salt_id])
     if sql_ret is not bool and sql_ret is str:
         if (
             "minion function caused an exception"
-            in r.json()["return"][0][agent.hostname]
+            in r.json()["return"][0][agent.salt_id]
         ):
             logger.error(f"failed to update {agent.hostname} local database")
 
-    if not r.json()["return"][0][agent.hostname]:
+    if not r.json()["return"][0][agent.salt_id]:
         logger.error(
             f"failed to update {agent.hostname} local database to version {ver}"
         )
 
     # start the services
     for svc in services:
-        service_action(agent.hostname, "start", svc)
+        service_action(agent.salt_id, "start", svc)
 
     agent.is_updating = False
     agent.save(update_fields=["is_updating"])

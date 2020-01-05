@@ -8,6 +8,7 @@ from winupdate.serializers import WinUpdatePolicySerializer
 class AgentSerializer(serializers.ModelSerializer):
 
     patches_pending = serializers.ReadOnlyField(source="has_patches_pending")
+    salt_id = serializers.ReadOnlyField()
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
 
     class Meta:
@@ -49,6 +50,7 @@ class AgentSerializer(serializers.ModelSerializer):
             "is_updating",
             "patches_pending",
             "winupdatepolicy",
+            "salt_id",
         )
 
 

@@ -107,26 +107,6 @@ def checks_failing_task():
 
 
 @app.task
-def determine_agent_status():
-    agents = Agent.objects.all()
-    offline = datetime.datetime.now(timezone.utc) - datetime.timedelta(minutes=4)
-
-    for agent in agents:
-        overdue = datetime.datetime.now(timezone.utc) - datetime.timedelta(
-            minutes=agent.overdue_time
-        )
-        if (agent.last_seen < offline) and (agent.last_seen > overdue):
-            agent.status = "offline"
-        elif (agent.last_seen < offline) and (agent.last_seen < overdue):
-            agent.status = "overdue"
-        else:
-            agent.status = "online"
-        agent.save(update_fields=["status"])
-
-    return "ok"
-
-
-@app.task
 def disk_check_alert():
     agents_with_checks = DiskCheck.objects.all()
     if agents_with_checks:

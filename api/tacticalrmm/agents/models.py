@@ -1,4 +1,6 @@
 import requests
+import datetime
+from datetime import timezone
 
 """ import salt.client
 import salt.config
@@ -41,7 +43,6 @@ class Agent(models.Model):
     overdue_email_alert = models.BooleanField(default=False)
     overdue_text_alert = models.BooleanField(default=False)
     overdue_time = models.PositiveIntegerField(default=30)
-    status = models.CharField(default="n/a", max_length=30)
     uninstall_pending = models.BooleanField(default=False)
     uninstall_inprogress = models.BooleanField(default=False)
     ping_check_interval = models.PositiveIntegerField(default=300)
@@ -51,6 +52,20 @@ class Agent(models.Model):
 
     def __str__(self):
         return self.hostname
+
+    @property
+    def status(self):
+        offline = datetime.datetime.now(timezone.utc) - datetime.timedelta(minutes=4)
+        overdue = datetime.datetime.now(timezone.utc) - datetime.timedelta(
+            minutes=self.overdue_time
+        )
+        if (self.last_seen < offline) and (self.last_seen > overdue):
+            return "offline"
+        elif (self.last_seen < offline) and (self.last_seen < overdue):
+            return "overdue"
+        else:
+            return "online"
+
 
     @property
     def has_patches_pending(self):

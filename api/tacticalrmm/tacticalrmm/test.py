@@ -75,7 +75,6 @@ class BaseTestCase(TestCase):
             monitoring_type="server",
             description="Test PC",
             mesh_node_id="abcdefghijklmnopAABBCCDD77443355##!!AI%@#$%#*",
-            status="online",
         )
 
         self.update_policy = WinUpdatePolicy.objects.create(agent=self.agent)

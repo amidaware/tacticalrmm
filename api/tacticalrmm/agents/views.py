@@ -195,6 +195,42 @@ def agent_detail(request, pk):
 
 
 @api_view()
+def get_processes(request, pk):
+    agent = get_object_or_404(Agent, pk=pk)
+    try:
+        resp = agent.salt_api_cmd(
+            hostname=agent.salt_id,
+            timeout=70,
+            func="process_manager.get_procs"
+        )
+        data = resp.json()
+    except Exception:
+        return Response(
+            {"error": "unable to contact the agent"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    return Response(data["return"][0][agent.salt_id])
+
+@api_view()
+def kill_proc(request, pk, pid):
+    agent = get_object_or_404(Agent, pk=pk)
+    resp = agent.salt_api_cmd(
+        hostname=agent.salt_id,
+        timeout=60,
+        func="ps.kill_pid",
+        arg=int(pid)
+    )
+    data = resp.json()
+
+    if not data["return"][0][agent.salt_id]:
+        return Response(
+            {"error": "Unable to kill the process"}, status=status.HTTP_400_BAD_REQUEST
+        )
+    else:
+        return Response("ok")
+
+
+@api_view()
 def get_event_log(request, pk, logtype, days):
     agent = get_object_or_404(Agent, pk=pk)
     try:

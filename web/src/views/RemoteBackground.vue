@@ -13,7 +13,8 @@
       <q-tab name="terminal" icon="fas fa-terminal" label="Terminal" />
       <q-tab name="filebrowser" icon="far fa-folder-open" label="File Browser" />
       <q-tab name="services" icon="fas fa-cogs" label="Services" />
-      <q-tab name="eventlog" icon="fas fa-cogs" label="Event Log" />
+      <q-tab name="processes" icon="fas fa-chart-area" label="Processes" />
+      <q-tab name="eventlog" icon="fas fa-clipboard-list" label="Event Log" />
     </q-tabs>
     <q-separator />
     <q-tab-panels v-model="tab">
@@ -23,6 +24,9 @@
           :src="terminalurl" width="100%" height="100%" scrolling="no"
         >
         </iframe>
+      </q-tab-panel>
+      <q-tab-panel name="processes">
+        <ProcessManager :pk="pk" />
       </q-tab-panel>
       <q-tab-panel name="services">
         <Services :pk="pk" />
@@ -43,6 +47,7 @@
 
 <script>
 import axios from "axios";
+import ProcessManager from "@/components/ProcessManager";
 import Services from "@/components/Services";
 import EventLog from "@/components/EventLog";
 
@@ -50,7 +55,8 @@ export default {
   name: "RemoteBackground",
   components: {
     Services,
-    EventLog
+    EventLog,
+    ProcessManager
   },
   data() {
     return {

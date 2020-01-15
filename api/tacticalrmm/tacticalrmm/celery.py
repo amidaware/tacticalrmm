@@ -28,7 +28,6 @@ def setup_periodic_tasks(sender, **kwargs):
         cpu_load_check_alert,
         mem_check_alert,
         win_service_check_task,
-        determine_agent_status,
         checks_failing_task,
     )
 
@@ -36,5 +35,4 @@ def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(10.0, cpu_load_check_alert.s())
     sender.add_periodic_task(10.0, mem_check_alert.s())
     sender.add_periodic_task(10.0, win_service_check_task.s())
-    sender.add_periodic_task(60.0, determine_agent_status.s())
     sender.add_periodic_task(7.0, checks_failing_task.s())

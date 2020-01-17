@@ -26,3 +26,4 @@ api/tacticalrmm/static
 celerybeat-schedule
 meshagent.exe
 app.ini
+.env.dev

@@ -25,7 +25,6 @@ packaging==19.2
 pathspec==0.7.0
 psycopg2-binary==2.8.4
 pycparser==2.19
-pymongo==3.10.0
 pyotp==2.3.0
 pyparsing==2.4.6
 pytz==2019.3

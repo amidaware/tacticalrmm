@@ -8,6 +8,7 @@ fi
 
 DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 50 | head -n 1)
 SALTPW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
+ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 30 | head -n 1)
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -162,6 +163,8 @@ SECRET_KEY = "${DJANGO_SEKRET}"
 DEBUG = False
 
 ALLOWED_HOSTS = ['${rmmdomain}']
+
+ADMIN_URL = "${ADMINURL}/"
 
 CORS_ORIGIN_WHITELIST = [
     "https://${frontenddomain}"

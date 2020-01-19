@@ -23,6 +23,7 @@ pycparser==2.19
 pyotp==2.3.0
 pyparsing==2.4.6
 pytz==2019.3
+qrcode==6.1
 redis==3.3.11
 requests==2.22.0
 six==1.14.0

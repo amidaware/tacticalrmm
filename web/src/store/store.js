@@ -169,7 +169,7 @@ export const store = new Vuex.Store({
               timeout: 1000,
               textColor: "white",
               icon: "fas fa-times-circle",
-              message: "Invalid credentials"
+              message: "Bad token"
             });
             reject(error);
           });

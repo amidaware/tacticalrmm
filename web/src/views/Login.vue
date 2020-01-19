@@ -3,8 +3,8 @@
     <div class="row text-center">
       <div class="col"></div>
       <div class="col">
-        <h5>Tactical Techs RMM</h5>
-        <q-form @submit.prevent="prompt = true" class="q-gutter-md">
+        <h5>Tactical RMM</h5>
+        <q-form @submit.prevent="checkCreds" class="q-gutter-md">
           <q-input
             outlined
             v-model="credentials.username"
@@ -55,8 +55,12 @@
 </template>
 
 <script>
+import axios from "axios";
+import mixins from "@/mixins/mixins";
+
 export default {
   name: "Login",
+  mixins: [mixins],
   data() {
     return {
       credentials: {},
@@ -65,6 +69,15 @@ export default {
   },
 
   methods: {
+    checkCreds() {
+      axios.post("/checkcreds/", this.credentials)
+      .then(r => {
+        this.prompt = true;
+      })
+      .catch(() => {
+        this.notifyError('Bad credentials')
+      })
+    },
     onSubmit() {
       this.$store
         .dispatch("retrieveToken", this.credentials)

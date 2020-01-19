@@ -17,6 +17,15 @@ from rest_framework.decorators import (
 
 from accounts.models import User
 
+class CheckCreds(KnoxLoginView):
+
+    permission_classes = (AllowAny,)
+
+    def post(self, request, format=None):
+        serializer = AuthTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response("ok")
+
 
 class LoginView(KnoxLoginView):
 
@@ -24,9 +33,8 @@ class LoginView(KnoxLoginView):
 
     def post(self, request, format=None):
         token = request.data["twofactor"]
-        # totp = pyotp.TOTP(settings.TWO_FACTOR_OTP)
-        # if totp.verify(token, valid_window=1):
-        if token == "sekret":
+        totp = pyotp.TOTP(settings.TWO_FACTOR_OTP)
+        if totp.verify(token, valid_window=1):
             serializer = AuthTokenSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             user = serializer.validated_data["user"]
@@ -41,9 +49,8 @@ class LoginView(KnoxLoginView):
 @permission_classes((IsAuthenticated,))
 def installer_twofactor(request):
     token = request.data["twofactorToken"]
-    # totp = pyotp.TOTP(settings.TWO_FACTOR_OTP)
-    # if totp.verify(token, valid_window=1):
-    if token == "sekret":
+    totp = pyotp.TOTP(settings.TWO_FACTOR_OTP)
+    if totp.verify(token, valid_window=1):
         return Response("ok")
     else:
         return Response("bad 2 factor code", status=status.HTTP_400_BAD_REQUEST)

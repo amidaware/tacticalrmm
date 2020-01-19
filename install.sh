@@ -44,8 +44,6 @@ echo -ne "${YELLOW}Enter your username for meshcentral${NC}: "
 read meshusername
 echo -ne "${YELLOW}Enter your email address for let's encrypt renewal notifications${NC}: "
 read letsemail
-echo -ne "${YELLOW}Please use google authenticator and enter TOTP code${NC}: "
-read twofactor
 
 
 print_green 'Creating saltapi user'
@@ -157,6 +155,30 @@ sudo chown ${USER}:${USER} /var/log/celery
 git clone https://github.com/wh1te909/tacticalrmm.git /home/${USER}/rmm/
 sudo chown ${USER}:www-data -R /home/${USER}/rmm/api/tacticalrmm
 
+
+
+print_green 'Installing the backend'
+
+cd /home/${USER}/rmm/api
+python3.7 -m venv env
+source /home/${USER}/rmm/api/env/bin/activate
+cd /home/${USER}/rmm/api/tacticalrmm
+pip install --upgrade pip
+pip install -r /home/${USER}/rmm/api/tacticalrmm/requirements.txt
+python manage.py migrate
+python manage.py collectstatic
+printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
+printf >&2 "\n"
+printf >&2 "${YELLOW}Please create your login for the RMM website and django admin${NC}\n"
+printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
+printf >&2 "\n"
+echo -ne "Username: "
+read djangousername
+python manage.py createsuperuser --username ${djangousername} --email ${letsemail}
+RANDBASE=$(python manage.py generate_totp)
+python manage.py generate_barcode ${RANDBASE} ${djangousername}
+deactivate
+
 localvars="$(cat << EOF
 SECRET_KEY = "${DJANGO_SEKRET}"
 
@@ -210,28 +232,10 @@ SALT_USERNAME = "saltapi"
 SALT_PASSWORD = "${SALTPW}"
 MESH_USERNAME = "${meshusername}"
 MESH_SITE = "https://${meshdomain}"
-TWO_FACTOR_OTP = "${twofactor}"
+TWO_FACTOR_OTP = "${RANDBASE}"
 EOF
 )"
 echo "${localvars}" > /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/local_settings.py
-
-print_green 'Installing the backend'
-
-cd /home/${USER}/rmm/api
-python3.7 -m venv env
-source /home/${USER}/rmm/api/env/bin/activate
-cd /home/${USER}/rmm/api/tacticalrmm
-pip install --upgrade pip
-pip install -r /home/${USER}/rmm/api/tacticalrmm/requirements.txt
-python manage.py migrate
-python manage.py collectstatic
-printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
-printf >&2 "\n"
-printf >&2 "${YELLOW}Please create your login for the RMM website and django admin${NC}\n"
-printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
-printf >&2 "\n"
-python manage.py createsuperuser
-deactivate
 
 uwsgini="$(cat << EOF
 [uwsgi]

@@ -7,6 +7,8 @@ fi
 
 
 DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 50 | head -n 1)
+SALTPW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
+ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 30 | head -n 1)
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -32,8 +34,6 @@ echo -ne "${YELLOW}Create a username for the postgres database${NC}: "
 read pgusername
 echo -ne "${YELLOW}Create a password for the postgres database${NC}: "
 read pgpw
-echo -ne "${YELLOW}Enter your linux password for ${GREEN}${USER}${NC}: "
-read linuxpw
 echo -ne "${YELLOW}Enter the backend API domain for the rmm${NC}: "
 read rmmdomain
 echo -ne "${YELLOW}Enter the frontend  domain for the rmm${NC}: "
@@ -44,8 +44,12 @@ echo -ne "${YELLOW}Enter your username for meshcentral${NC}: "
 read meshusername
 echo -ne "${YELLOW}Enter your email address for let's encrypt renewal notifications${NC}: "
 read letsemail
-echo -ne "${YELLOW}Please use google authenticator and enter TOTP code${NC}: "
-read twofactor
+
+
+print_green 'Creating saltapi user'
+
+sudo adduser --no-create-home --disabled-password --gecos "" saltapi
+echo "saltapi:${SALTPW}" | sudo chpasswd
 
 
 print_green 'Installing Nginx'
@@ -158,6 +162,8 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['${rmmdomain}']
 
+ADMIN_URL = "${ADMINURL}/"
+
 CORS_ORIGIN_WHITELIST = [
     "https://${frontenddomain}"
 ]
@@ -198,11 +204,10 @@ EMAIL_HOST_PASSWORD = 'yourgmailpassword'
 EMAIL_PORT = 587
 EMAIL_ALERT_RECIPIENTS = ["jsmith@example.com",]
 
-SALT_USERNAME = "${USER}"
-SALT_PASSWORD = "${linuxpw}"
+SALT_USERNAME = "saltapi"
+SALT_PASSWORD = "${SALTPW}"
 MESH_USERNAME = "${meshusername}"
 MESH_SITE = "https://${meshdomain}"
-TWO_FACTOR_OTP = "${twofactor}"
 EOF
 )"
 echo "${localvars}" > /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/local_settings.py
@@ -222,8 +227,20 @@ printf >&2 "\n"
 printf >&2 "${YELLOW}Please create your login for the RMM website and django admin${NC}\n"
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
-python manage.py createsuperuser
+echo -ne "Username: "
+read djangousername
+python manage.py createsuperuser --username ${djangousername} --email ${letsemail}
+RANDBASE=$(python manage.py generate_totp)
+cls
+python manage.py generate_barcode ${RANDBASE} ${djangousername}
 deactivate
+read -n 1 -s -r -p "Press any key to continue..."
+
+totp="$(cat << EOF
+TWO_FACTOR_OTP = "${RANDBASE}"
+EOF
+)"
+echo "${totp}" | tee --append /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/local_settings.py > /dev/null
 
 uwsgini="$(cat << EOF
 [uwsgi]
@@ -375,7 +392,7 @@ gather_job_timeout: 30
 max_event_size: 30485760
 external_auth:
   pam:
-    ${USER}:
+    saltapi:
       - .*
       - '@runner'
       - '@wheel'

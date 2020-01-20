@@ -6,7 +6,6 @@ urlpatterns = [
     path("update/", views.update),
     path("add/", views.add),
     path("agentauth/", views.agent_auth),
-    path("getmeshnodes/", views.get_mesh_nodes),
     path("token/", views.create_auth_token),
     path("acceptsaltkey/<hostname>/", views.accept_salt_key),
     path("deleteagent/", views.delete_agent),

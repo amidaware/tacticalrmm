@@ -16,4 +16,6 @@ urlpatterns = [
     path("<pk>/geteventlog/<logtype>/<days>/", views.get_event_log),
     path("getagentversions/", views.get_agent_versions),
     path("updateagents/", views.update_agents),
+    path("<pk>/getprocs/", views.get_processes),
+    path("<pk>/<pid>/killproc/", views.kill_proc),
 ]

@@ -2,6 +2,8 @@ SECRET_KEY = 'changeme'
 
 ALLOWED_HOSTS = ['api.example.com']
 
+ADMIN_URL = "somerandomstring/"
+
 CORS_ORIGIN_WHITELIST = ["https://rmm.example.com",]
 
 DEBUG = False

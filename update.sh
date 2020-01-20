@@ -6,7 +6,9 @@ sudo systemctl stop ${i}
 done
 
 cd /home/${USER}/rmm/
-git pull
+git fetch origin develop
+git reset --hard FETCH_HEAD
+git clean -df
 source /home/${USER}/rmm/api/env/bin/activate
 cd /home/${USER}/rmm/api/tacticalrmm
 pip install -r /home/${USER}/rmm/api/tacticalrmm/requirements.txt

@@ -1,4 +1,3 @@
-from pymongo import MongoClient
 import requests
 from subprocess import run, PIPE
 import os
@@ -167,21 +166,6 @@ def get_mesh_exe(request):
         response["Content-Disposition"] = "attachment; filename=meshagent.exe"
         response["X-Accel-Redirect"] = "/protected/meshagent.exe"
         return response
-
-
-@api_view()
-@authentication_classes((BasicAuthentication,))
-@permission_classes((IsAuthenticated,))
-# installer get list of nodes from meshcentral database
-def get_mesh_nodes(request):
-    client = MongoClient("localhost", 27017)
-    db = client.meshcentral
-    cursor = db.meshcentral.find({"type": "node"})
-    nodes = {}
-    for i in cursor:
-        nodes[i["rname"]] = i["_id"].replace("node//", "")
-    return Response(nodes)
-
 
 @api_view(["POST"])
 @authentication_classes((BasicAuthentication,))

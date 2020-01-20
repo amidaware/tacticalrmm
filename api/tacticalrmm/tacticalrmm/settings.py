@@ -139,6 +139,8 @@ if 'TRAVIS' in os.environ:
     DEBUG = True
     SECRET_KEY = 'abcdefghijklmnoptravis123456789'
 
+    ADMIN_URL = "abc123456/"
+
     EMAIL_USE_TLS = True
     EMAIL_HOST = 'smtp.gmail.com'
     EMAIL_HOST_USER = 'travis@example.com'
@@ -180,6 +182,8 @@ if 'AZPIPELINE' in os.environ:
 
     DEBUG = True
     SECRET_KEY = 'abcdefghijklmnoptravis123456789'
+
+    ADMIN_URL = "abc123456/"
 
     EMAIL_USE_TLS = True
     EMAIL_HOST = 'smtp.gmail.com'

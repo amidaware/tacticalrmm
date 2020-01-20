@@ -29,7 +29,7 @@ jobs:
       python --version
       cd /home/steam/myagent/_work/1/s/api/tacticalrmm
       pip install --upgrade pip
-      pip install -r requirements-test.txt
+      pip install -r requirements.txt -r requirements-test.txt
       python manage.py test -v 2
       deactivate
     displayName: 'Install Dependencies and Run Tests'

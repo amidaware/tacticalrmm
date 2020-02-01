@@ -79,8 +79,9 @@ sudo systemctl restart mongod
 print_green 'Installing MeshCentral'
 
 sudo mkdir -p /meshcentral/meshcentral-data
+sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
-sudo npm install meshcentral
+npm install meshcentral
 cd /home/${USER}
 sudo chown ${USER}:${USER} -R /meshcentral
 
@@ -531,11 +532,11 @@ After=nginx.service
 [Service]
 Type=simple
 LimitNOFILE=1000000
-ExecStart=/usr/bin/node /meshcentral/node_modules/meshcentral
+ExecStart=/usr/bin/node node_modules/meshcentral
 Environment=NODE_ENV=production
 WorkingDirectory=/meshcentral
-User=root
-Group=root
+User=${USER}
+Group=${USER}
 Restart=always
 # Restart service after 10 seconds if node service crashes
 RestartSec=10

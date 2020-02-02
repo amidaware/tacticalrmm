@@ -49,6 +49,7 @@ class Agent(models.Model):
     needs_reboot = models.BooleanField(default=False)
     managed_by_wsus = models.BooleanField(default=False)
     is_updating = models.BooleanField(default=False)
+    choco_installed = models.BooleanField(default=False)
 
     def __str__(self):
         return self.hostname

@@ -22,7 +22,8 @@ export const store = new Vuex.Store({
     winUpdates: {},
     agentChecks: {},
     agentTableLoading: false,
-    treeLoading: false
+    treeLoading: false,
+    installedSoftware: []
   },
   getters: {
     loggedIn(state) {
@@ -76,6 +77,9 @@ export const store = new Vuex.Store({
     SET_WIN_UPDATE(state, updates) {
       state.winUpdates = updates;
     },
+    SET_INSTALLED_SOFTWARE(state, software) {
+      state.installedSoftware = software;
+    },
     setChecks(state, checks) {
       state.agentChecks = checks;
     },
@@ -87,6 +91,11 @@ export const store = new Vuex.Store({
     }
   },
   actions: {
+    loadInstalledSoftware(context, pk) {
+      axios.get(`/software/installed/${pk}`).then(r => {
+        context.commit("SET_INSTALLED_SOFTWARE", r.data.software);
+      });
+    },
     loadWinUpdates(context, pk) {
       axios.get(`/winupdate/${pk}/getwinupdates/`).then(r => {
         context.commit("SET_WIN_UPDATE", r.data);

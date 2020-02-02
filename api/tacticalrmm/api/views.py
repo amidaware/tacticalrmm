@@ -41,6 +41,7 @@ from winupdate.models import WinUpdate, WinUpdatePolicy
 from agents.tasks import uninstall_agent_task, sync_salt_modules_task
 from winupdate.tasks import check_for_updates_task
 from agents.serializers import AgentHostnameSerializer
+from software.tasks import install_chocolatey, get_installed_software
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -68,7 +69,7 @@ class UploadMeshAgent(APIView):
 @permission_classes((IsAuthenticated,))
 def trigger_patch_scan(request):
     agent = get_object_or_404(Agent, agent_id=request.data["agentid"])
-    check_for_updates_task.delay(agent.pk)
+    check_for_updates_task.delay(agent.pk, wait=False)
 
     if request.data["reboot"]:
         agent.needs_reboot = True
@@ -339,10 +340,14 @@ def update(request):
     )
 
     sync_salt_modules_task.delay(agent.pk)
+    get_installed_software.delay(agent.pk)
+
+    if not agent.choco_installed:
+        install_chocolatey.delay(agent.pk, wait=True)
 
     # check for updates if this is fresh agent install
     if not WinUpdate.objects.filter(agent=agent).exists():
-        check_for_updates_task.delay(agent.pk)
+        check_for_updates_task.delay(agent.pk, wait=True)
 
     return Response("ok")
 

@@ -87,6 +87,7 @@ export const store = new Vuex.Store({
       (state.agentSummary = {}),
         (state.agentChecks = {}),
         (state.winUpdates = {});
+        (state.installedSoftware = []);
       state.selectedRow = "";
     }
   },

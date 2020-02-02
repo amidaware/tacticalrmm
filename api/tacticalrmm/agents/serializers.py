@@ -51,6 +51,7 @@ class AgentSerializer(serializers.ModelSerializer):
             "patches_pending",
             "winupdatepolicy",
             "salt_id",
+            "choco_installed",
         )
 
 

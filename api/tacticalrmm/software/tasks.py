@@ -148,8 +148,6 @@ def install_program(pk, name, version):
         name.lower(),
         "was",
         "successful",
-        "has",
-        "been",
         "installed",
     ]
     duplicate = [name.lower(), "already", "installed", "--force", "reinstall"]

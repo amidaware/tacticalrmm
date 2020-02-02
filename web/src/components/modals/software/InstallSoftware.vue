@@ -49,6 +49,7 @@
 <script>
 import axios from "axios";
 import { mapState } from "vuex";
+import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 export default {
   name: "InstallSoftware",
@@ -93,16 +94,29 @@ export default {
     },
     install(name, version) {
       const data = { name: name, version: version, pk: this.agentpk };
-      axios
-        .post("/software/install/", data)
-        .then(r => {
-          this.$emit("close");
-          this.notifySuccess(r.data);
+      this.$q
+        .dialog({
+          title: "Install Software",
+          message: `Install ${name} on ${this.agentHostname}?`,
+          persistent: true,
+          ok: { label: "Install" },
+          cancel: { color: "negative" }
         })
-        .catch(e => {
-          this.notifyError("Something went wrong");
+        .onOk(() => {
+          axios
+            .post("/software/install/", data)
+            .then(r => {
+              this.$emit("close");
+              this.notifySuccess(r.data);
+            })
+            .catch(e => {
+              this.notifyError("Something went wrong");
+            });
         });
     }
+  },
+  computed: {
+    ...mapGetters(["agentHostname"])
   },
   created() {
     this.getChocos();

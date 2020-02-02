@@ -47,6 +47,9 @@ export const store = new Vuex.Store({
         a.installed === false ? -1 : 1
       );
       return sortedByInstall;
+    },
+    agentHostname(state) {
+      return state.agentSummary.hostname;
     }
   },
   mutations: {

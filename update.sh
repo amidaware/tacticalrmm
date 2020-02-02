@@ -14,6 +14,7 @@ cd /home/${USER}/rmm/api/tacticalrmm
 pip install -r /home/${USER}/rmm/api/tacticalrmm/requirements.txt
 python manage.py makemigrations
 python manage.py migrate
+python manage.py delete_tokens
 deactivate
 
 

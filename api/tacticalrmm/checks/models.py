@@ -19,7 +19,7 @@ STANDARD_CHECK_CHOICES = [
 
 SCRIPT_CHECK_SHELLS = [
     ("powershell", "Powershell"),
-    ("batch", "Batch"),
+    ("cmd", "Batch (CMD)"),
     ("python", "Python"),
 ]
 
@@ -89,6 +89,14 @@ class Script(models.Model):
         max_length=100, choices=SCRIPT_CHECK_SHELLS, default="powershell"
     )
 
+    @property
+    def filepath(self):
+        return f"salt://scripts//userdefined//{self.filename}"
+
+
+    def __str__(self):
+        return self.filename
+
 class ScriptCheck(models.Model):
     agent = models.ForeignKey(
         Agent, related_name="scriptchecks", on_delete=models.CASCADE
@@ -111,14 +119,14 @@ class ScriptCheck(models.Model):
     def send_email(self):
         send_mail(
             f"Script Check Fail on {self.agent.hostname}",
-            f"Script check {self.name} is failing on {self.agent.hostname}",
+            f"Script check {self.script.name} is failing on {self.agent.hostname}",
             settings.EMAIL_HOST_USER,
             settings.EMAIL_ALERT_RECIPIENTS,
             fail_silently=False,
         )
     
     def __str__(self):
-        return f"{self.agent.hostname} - {self.name}"
+        return f"{self.agent.hostname} - {self.script.filename}"
 
 class ScriptCheckEmail(models.Model):
     email = models.ForeignKey(ScriptCheck, on_delete=models.CASCADE)

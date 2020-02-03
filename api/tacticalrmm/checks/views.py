@@ -23,6 +23,8 @@ from .models import (
     CpuLoadCheck,
     MemCheck,
     WinServiceCheck,
+    ScriptCheck,
+    ScriptCheckEmail,
     validate_threshold,
 )
 
@@ -33,6 +35,7 @@ from .serializers import (
     CpuLoadCheckSerializer,
     MemCheckSerializer,
     WinServiceCheckSerializer,
+    ScriptCheckSerializer,
 )
 
 from .tasks import handle_check_email_alert_task
@@ -62,6 +65,55 @@ def update_ping_check(request):
     if alert:
         if check.email_alert:
             handle_check_email_alert_task.delay("ping", check.pk)
+
+    return Response("ok")
+
+@api_view(["PATCH"])
+@authentication_classes((TokenAuthentication,))
+@permission_classes((IsAuthenticated,))
+def update_script_check(request):
+    check = get_object_or_404(ScriptCheck, pk=request.data["id"])
+
+    try:
+        retcode = request.data["output"]["local"]["retcode"]
+    except Exception:
+        retcode = 1
+    
+    if retcode == 0:
+        status = "passing"
+    else:
+        status = "failing"
+    
+    try:
+        stdout = request.data["output"]["local"]["stdout"]
+        stderr = request.data["output"]["local"]["stderr"]
+    except Exception:
+        output = "error running script"
+    else:
+        if stdout:
+            output = stdout
+        else:
+            output = stderr
+    
+    check.status = status
+    check.more_info = output
+    check.save(update_fields=["status", "more_info", "last_run"])
+
+    alert = False
+    if check.status == "passing":
+        if check.failure_count != 0:
+            check.failure_count = 0
+            check.save(update_fields=["failure_count"])
+    else:
+        new_count = check.failure_count + 1
+        check.failure_count = new_count
+        check.save(update_fields=["failure_count"])
+        if new_count >= check.failures:
+            alert = True
+
+    if alert:
+        if check.email_alert:
+            handle_check_email_alert_task.delay("script", check.pk)
 
     return Response("ok")
 

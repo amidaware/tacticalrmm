@@ -7,6 +7,7 @@ from .models import (
     PingCheck,
     CpuHistory,
     WinServiceCheck,
+    ScriptCheck,
 )
 from agents.models import Agent
 from agents.serializers import AgentSerializer
@@ -41,6 +42,11 @@ class PingCheckSerializer(serializers.ModelSerializer):
         model = PingCheck
         fields = "__all__"
 
+class ScriptCheckSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ScriptCheck
+        fields = "__all__"
+
 
 class WinServiceCheckSerializer(serializers.ModelSerializer):
     class Meta:
@@ -55,6 +61,7 @@ class CheckSerializer(serializers.ModelSerializer):
     pingchecks = PingCheckSerializer(many=True, read_only=True)
     cpuhistory = CpuHistorySerializer(many=True, read_only=True)
     winservicechecks = WinServiceCheckSerializer(many=True, read_only=True)
+    scriptchecks = ScriptCheckSerializer(many=True, read_only=True)
 
     class Meta:
         model = Agent
@@ -69,4 +76,5 @@ class CheckSerializer(serializers.ModelSerializer):
             "pingchecks",
             "cpuhistory",
             "winservicechecks",
+            "scriptchecks",
         )

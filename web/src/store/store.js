@@ -23,7 +23,8 @@ export const store = new Vuex.Store({
     agentChecks: {},
     agentTableLoading: false,
     treeLoading: false,
-    installedSoftware: []
+    installedSoftware: [],
+    scripts: [],
   },
   getters: {
     loggedIn(state) {
@@ -50,6 +51,9 @@ export const store = new Vuex.Store({
     },
     agentHostname(state) {
       return state.agentSummary.hostname;
+    },
+    scripts(state) {
+      return state.scripts;
     }
   },
   mutations: {
@@ -92,9 +96,17 @@ export const store = new Vuex.Store({
         (state.winUpdates = {});
         (state.installedSoftware = []);
       state.selectedRow = "";
+    },
+    SET_SCRIPTS(state, scripts) {
+      state.scripts = scripts;
     }
   },
   actions: {
+    getScripts(context) {
+      axios.get("/checks/getscripts/").then(r => {
+        context.commit("SET_SCRIPTS", r.data);
+      })
+    },
     loadInstalledSoftware(context, pk) {
       axios.get(`/software/installed/${pk}`).then(r => {
         context.commit("SET_INSTALLED_SOFTWARE", r.data.software);

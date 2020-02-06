@@ -100,7 +100,7 @@ class CheckSerializer(serializers.ModelSerializer):
             "hostname",
             "pk",
             "disks",
-            "ping_check_interval",
+            "check_interval",
             "diskchecks",
             "cpuloadchecks",
             "memchecks",

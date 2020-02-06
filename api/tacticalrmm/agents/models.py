@@ -45,7 +45,7 @@ class Agent(models.Model):
     overdue_time = models.PositiveIntegerField(default=30)
     uninstall_pending = models.BooleanField(default=False)
     uninstall_inprogress = models.BooleanField(default=False)
-    ping_check_interval = models.PositiveIntegerField(default=300)
+    check_interval = models.PositiveIntegerField(default=120)
     needs_reboot = models.BooleanField(default=False)
     managed_by_wsus = models.BooleanField(default=False)
     is_updating = models.BooleanField(default=False)
@@ -67,7 +67,6 @@ class Agent(models.Model):
         else:
             return "online"
 
-
     @property
     def has_patches_pending(self):
         from winupdate.models import WinUpdate
@@ -80,7 +79,7 @@ class Agent(models.Model):
     @property
     def salt_id(self):
         return f"{self.hostname}-{self.pk}"
-    
+
     @staticmethod
     def salt_api_cmd(**kwargs):
         try:
@@ -177,4 +176,3 @@ class Agent(models.Model):
         }, timeout=100)
 
         return resp """
-

@@ -12,4 +12,5 @@ urlpatterns = [
     path("checkalert/", views.check_alert),
     path("updatepingcheck/", views.update_ping_check),
     path("updatescriptcheck/", views.update_script_check),
+    path("getscripts/", views.get_scripts),
 ]

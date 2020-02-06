@@ -102,7 +102,7 @@ def edit_agent(request):
     agent.monitoring_type = request.data["montype"]
     agent.description = request.data["desc"]
     agent.overdue_time = request.data["overduetime"]
-    agent.ping_check_interval = request.data["pinginterval"]
+    agent.check_interval = request.data["checkinterval"]
     agent.overdue_email_alert = request.data["emailalert"]
     agent.overdue_text_alert = request.data["textalert"]
 
@@ -126,7 +126,7 @@ def edit_agent(request):
             "site",
             "monitoring_type",
             "description",
-            "ping_check_interval",
+            "check_interval",
             "overdue_time",
             "overdue_email_alert",
             "overdue_text_alert",
@@ -199,9 +199,7 @@ def get_processes(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     try:
         resp = agent.salt_api_cmd(
-            hostname=agent.salt_id,
-            timeout=70,
-            func="process_manager.get_procs"
+            hostname=agent.salt_id, timeout=70, func="process_manager.get_procs"
         )
         data = resp.json()
     except Exception:
@@ -211,14 +209,12 @@ def get_processes(request, pk):
 
     return Response(data["return"][0][agent.salt_id])
 
+
 @api_view()
 def kill_proc(request, pk, pid):
     agent = get_object_or_404(Agent, pk=pk)
     resp = agent.salt_api_cmd(
-        hostname=agent.salt_id,
-        timeout=60,
-        func="ps.kill_pid",
-        arg=int(pid)
+        hostname=agent.salt_id, timeout=60, func="ps.kill_pid", arg=int(pid)
     )
     data = resp.json()
 

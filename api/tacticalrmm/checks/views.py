@@ -23,6 +23,7 @@ from .models import (
     CpuLoadCheck,
     MemCheck,
     WinServiceCheck,
+    Script,
     ScriptCheck,
     ScriptCheckEmail,
     validate_threshold,
@@ -36,9 +37,16 @@ from .serializers import (
     MemCheckSerializer,
     WinServiceCheckSerializer,
     ScriptCheckSerializer,
+    ScriptSerializer,
 )
 
 from .tasks import handle_check_email_alert_task
+
+
+@api_view()
+def get_scripts(request):
+    scripts = Script.objects.all()
+    return Response(ScriptSerializer(scripts, many=True, read_only=True).data)
 
 
 @api_view(["PATCH"])
@@ -62,11 +70,11 @@ def update_ping_check(request):
         if new_count >= check.failures:
             alert = True
 
-    if alert:
-        if check.email_alert:
-            handle_check_email_alert_task.delay("ping", check.pk)
+    if alert and check.email_alert:
+        handle_check_email_alert_task.delay("ping", check.pk)
 
     return Response("ok")
+
 
 @api_view(["PATCH"])
 @authentication_classes((TokenAuthentication,))
@@ -75,26 +83,12 @@ def update_script_check(request):
     check = get_object_or_404(ScriptCheck, pk=request.data["id"])
 
     try:
-        retcode = request.data["output"]["local"]["retcode"]
+        output = request.data["output"]
+        status = request.data["status"]
     except Exception:
-        retcode = 1
-    
-    if retcode == 0:
-        status = "passing"
-    else:
+        output = "something went wrong"
         status = "failing"
-    
-    try:
-        stdout = request.data["output"]["local"]["stdout"]
-        stderr = request.data["output"]["local"]["stderr"]
-    except Exception:
-        output = "error running script"
-    else:
-        if stdout:
-            output = stdout
-        else:
-            output = stderr
-    
+
     check.status = status
     check.more_info = output
     check.save(update_fields=["status", "more_info", "last_run"])
@@ -111,9 +105,8 @@ def update_script_check(request):
         if new_count >= check.failures:
             alert = True
 
-    if alert:
-        if check.email_alert:
-            handle_check_email_alert_task.delay("script", check.pk)
+    if alert and check.email_alert:
+        handle_check_email_alert_task.delay("script", check.pk)
 
     return Response("ok")
 
@@ -218,6 +211,28 @@ def add_standard_check(request):
         ).save()
         return Response("ok")
 
+    elif request.data["check_type"] == "script":
+        script_pk = request.data["scriptPk"]
+        timeout = request.data["timeout"]
+        failures = request.data["failures"]
+
+        script = Script.objects.get(pk=script_pk)
+
+        if ScriptCheck.objects.filter(agent=agent).filter(script=script).exists():
+            return Response(
+                f"{script.name} already exists on {agent.hostname}",
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ScriptCheck(
+            agent=agent, timeout=timeout, failures=failures, script=script
+        ).save()
+
+        return Response(f"{script.name} was added on {agent.hostname}!")
+
+    else:
+        return Response("something went wrong", status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(["PATCH"])
 def edit_standard_check(request):
@@ -269,6 +284,13 @@ def edit_standard_check(request):
         )
         return Response("ok")
 
+    elif request.data["check_type"] == "script":
+        check = get_object_or_404(ScriptCheck, pk=request.data["pk"])
+        check.failures = request.data["failures"]
+        check.timeout = request.data["timeout"]
+        check.save(update_fields=["failures", "timeout"])
+        return Response(f"{check.script.name} was edited on {check.agent.hostname}")
+
 
 @api_view()
 def get_standard_check(request, checktype, pk):
@@ -287,6 +309,9 @@ def get_standard_check(request, checktype, pk):
     elif checktype == "winsvc":
         check = WinServiceCheck.objects.get(pk=pk)
         return Response(WinServiceCheckSerializer(check).data)
+    elif checktype == "script":
+        check = ScriptCheck.objects.get(pk=pk)
+        return Response(ScriptCheckSerializer(check).data)
 
 
 @api_view(["DELETE"])
@@ -302,6 +327,8 @@ def delete_standard_check(request):
         check = MemCheck.objects.get(pk=pk)
     elif request.data["checktype"] == "winsvc":
         check = WinServiceCheck.objects.get(pk=pk)
+    elif request.data["checktype"] == "script":
+        check = ScriptCheck.objects.get(pk=pk)
 
     check.delete()
     return Response("ok")
@@ -323,6 +350,8 @@ def check_alert(request):
         check = PingCheck.objects.get(pk=checkid)
     elif category == "winsvc":
         check = WinServiceCheck.objects.get(pk=checkid)
+    elif category == "script":
+        check = ScriptCheck.objects.get(pk=checkid)
     else:
         return Response(
             {"error": "Something went wrong"}, status=status.HTTP_400_BAD_REQUEST

@@ -35,7 +35,7 @@ class TestAgentViews(BaseTestCase):
             "montype": "workstation",
             "desc": "asjdk234andasd",
             "overduetime": 300,
-            "pinginterval": 60,
+            "checkinterval": 60,
             "emailalert": True,
             "textalert": False,
             "critical": "approve",

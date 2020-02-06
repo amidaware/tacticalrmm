@@ -20,6 +20,9 @@
             <q-item clickable v-close-popup @click="showAddWinSvcCheck = true">
               <q-item-section>Windows Service Check</q-item-section>
             </q-item>
+            <q-item clickable v-close-popup @click="showAddScriptCheck = true">
+              <q-item-section>Script Check</q-item-section>
+            </q-item>
           </q-list>
         </q-menu>
       </q-btn>
@@ -38,9 +41,8 @@
             <th width="33%" class="text-left">More Info</th>
             <th width="34%" class="text-left">Date / Time</th>
           </thead>
-          
+
           <tbody>
-            
             <q-tr
               v-for="check in allChecks"
               :key="check.id + check.check_type"
@@ -49,11 +51,15 @@
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
                   <q-item clickable v-close-popup @click="editCheck(check.check_type)">
-                    <q-item-section side><q-icon name="edit" /></q-item-section>
+                    <q-item-section side>
+                      <q-icon name="edit" />
+                    </q-item-section>
                     <q-item-section>Edit</q-item-section>
                   </q-item>
                   <q-item clickable v-close-popup @click="deleteCheck(check.id, check.check_type)">
-                    <q-item-section side><q-icon name="delete" /></q-item-section>
+                    <q-item-section side>
+                      <q-icon name="delete" />
+                    </q-item-section>
                     <q-item-section>Delete</q-item-section>
                   </q-item>
                   <q-separator></q-separator>
@@ -87,11 +93,14 @@
                 v-if="check.check_type === 'diskspace'"
               >Disk Space Drive {{ check.disk }} > {{check.threshold }}%</td>
               <td v-else-if="check.check_type === 'cpuload'">Avg CPU Load > {{ check.cpuload }}%</td>
+              <td v-else-if="check.check_type === 'script'">Script check: {{ check.script.name }}</td>
               <td v-else-if="check.check_type === 'ping'">Ping {{ check.name }} ({{ check.ip }})</td>
               <td
                 v-else-if="check.check_type === 'memory'"
               >Avg memory usage > {{ check.threshold }}%</td>
-              <td v-else-if="check.check_type === 'winsvc'">Service Check - {{ check.svc_display_name }}</td>
+              <td
+                v-else-if="check.check_type === 'winsvc'"
+              >Service Check - {{ check.svc_display_name }}</td>
               <td v-if="check.status === 'pending'">Awaiting First Synchronization</td>
               <td v-else-if="check.status === 'passing'">
                 <q-badge color="positive">Passing</q-badge>
@@ -100,19 +109,21 @@
                 <q-badge color="negative">Failing</q-badge>
               </td>
               <td v-if="check.check_type === 'ping'">
-                <span 
+                <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
-                  @click="pingMoreInfo(check.more_info)"
-                  >
-                  output
-                </span>
+                  @click="moreInfo('Ping', check.more_info)"
+                >output</span>
+              </td>
+              <td v-else-if="check.check_type === 'script'">
+                <span
+                  style="cursor:pointer;color:blue;text-decoration:underline"
+                  @click="moreInfo('Script Check', check.more_info)"
+                >output</span>
               </td>
               <td v-else>{{ check.more_info }}</td>
               <td>{{ check.last_run }}</td>
             </q-tr>
-            
           </tbody>
-          
         </q-markup-table>
       </template>
     </div>
@@ -169,6 +180,17 @@
         :agentpk="checks.pk"
       />
     </q-dialog>
+    <!-- script check -->
+    <q-dialog v-model="showAddScriptCheck">
+      <AddScriptCheck @close="showAddScriptCheck = false" :agentpk="checks.pk" />
+    </q-dialog>
+    <q-dialog v-model="showEditScriptCheck">
+      <EditScriptCheck
+        @close="showEditScriptCheck = false"
+        :editCheckPK="editCheckPK"
+        :agentpk="checks.pk"
+      />
+    </q-dialog>
   </div>
 </template>
 
@@ -186,6 +208,8 @@ import AddMemCheck from "@/components/modals/checks/AddMemCheck";
 import EditMemCheck from "@/components/modals/checks/EditMemCheck";
 import AddWinSvcCheck from "@/components/modals/checks/AddWinSvcCheck";
 import EditWinSvcCheck from "@/components/modals/checks/EditWinSvcCheck";
+import AddScriptCheck from "@/components/modals/checks/AddScriptCheck";
+import EditScriptCheck from "@/components/modals/checks/EditScriptCheck";
 
 export default {
   name: "ChecksTab",
@@ -199,7 +223,9 @@ export default {
     AddMemCheck,
     EditMemCheck,
     AddWinSvcCheck,
-    EditWinSvcCheck
+    EditWinSvcCheck,
+    AddScriptCheck,
+    EditScriptCheck
   },
   mixins: [mixins],
   data() {
@@ -214,6 +240,8 @@ export default {
       showEditMemCheck: false,
       showAddWinSvcCheck: false,
       showEditWinSvcCheck: false,
+      showAddScriptCheck: false,
+      showEditScriptCheck: false,
       editCheckPK: null
     };
   },
@@ -238,10 +266,10 @@ export default {
     onRefresh(id) {
       this.$store.dispatch("loadChecks", id);
     },
-    pingMoreInfo(output) {
+    moreInfo(name, output) {
       this.$q.dialog({
-        title: "Ping output",
-        style: "width: 600px; max-width: 90vw",
+        title: `${name} output`,
+        style: "width: 80vw; max-width: 90vw",
         message: `<pre>${output}</pre>`,
         html: true,
         dark: true
@@ -263,6 +291,9 @@ export default {
           break;
         case "winsvc":
           this.showEditWinSvcCheck = true;
+          break;
+        case "script":
+          this.showEditScriptCheck = true;
           break;
         default:
           return false;
@@ -294,11 +325,12 @@ export default {
     }),
     allChecks() {
       return [
-        ...this.checks.pingchecks,
         ...this.checks.diskchecks,
         ...this.checks.cpuloadchecks,
         ...this.checks.memchecks,
-        ...this.checks.winservicechecks
+        ...this.checks.scriptchecks,
+        ...this.checks.winservicechecks,
+        ...this.checks.pingchecks
       ];
     }
   }

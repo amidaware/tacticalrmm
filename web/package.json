@@ -7,7 +7,7 @@
     "build": "vue-cli-service build"
   },
   "dependencies": {
-    "@quasar/extras": "^1.5.0",
+    "@quasar/extras": "^1.5.1",
     "axios": "^0.19.2",
     "core-js": "^3.6.4",
     "quasar": "^1.8.5",

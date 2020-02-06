@@ -8,7 +8,7 @@ chardet==3.0.4
 cryptography==2.8
 decorator==4.4.1
 distro==1.4.0
-Django==3.0.2
+Django==3.0.3
 django-cors-headers==3.2.1
 django-rest-knox==4.1.0
 djangorestframework==3.11.0

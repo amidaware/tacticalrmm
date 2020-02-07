@@ -320,7 +320,13 @@ server {
     location /protectedlogs/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /home/steam/rmm/api/tacticalrmm/log/;
+        alias /home/${USER}/rmm/api/tacticalrmm/log/;
+    }
+
+    location /protectedscripts/ {
+        internal;
+        add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
+        alias /srv/salt/scripts/userdefined/;
     }
 
 

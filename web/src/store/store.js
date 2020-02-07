@@ -25,6 +25,7 @@ export const store = new Vuex.Store({
     treeLoading: false,
     installedSoftware: [],
     scripts: [],
+    toggleScriptManager: false
   },
   getters: {
     loggedIn(state) {
@@ -57,6 +58,9 @@ export const store = new Vuex.Store({
     }
   },
   mutations: {
+    TOGGLE_SCRIPT_MANAGER(state, action) {
+      state.toggleScriptManager = action;
+    },
     AGENT_TABLE_LOADING(state, visible) {
       state.agentTableLoading = visible;
     },

@@ -81,6 +81,7 @@ class DiskCheckEmail(models.Model):
     def __str__(self):
         return self.email.agent.hostname
 
+
 class Script(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
@@ -93,9 +94,24 @@ class Script(models.Model):
     def filepath(self):
         return f"salt://scripts//userdefined//{self.filename}"
 
+    @property
+    def file(self):
+        return f"/srv/salt/scripts/userdefined/{self.filename}"
+
+    @staticmethod
+    def validate_filename(filename):
+        if (
+            not filename.endswith(".py")
+            and not filename.endswith(".ps1")
+            and not filename.endswith(".bat")
+        ):
+            return False
+
+        return True
 
     def __str__(self):
         return self.filename
+
 
 class ScriptCheck(models.Model):
     agent = models.ForeignKey(
@@ -124,9 +140,10 @@ class ScriptCheck(models.Model):
             settings.EMAIL_ALERT_RECIPIENTS,
             fail_silently=False,
         )
-    
+
     def __str__(self):
         return f"{self.agent.hostname} - {self.script.filename}"
+
 
 class ScriptCheckEmail(models.Model):
     email = models.ForeignKey(ScriptCheck, on_delete=models.CASCADE)

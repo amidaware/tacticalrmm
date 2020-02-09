@@ -527,9 +527,9 @@ sudo mkdir -p /srv/salt
 sudo cp -r /home/${USER}/rmm/_modules /srv/salt/
 sudo cp -r /home/${USER}/rmm/scripts /srv/salt/
 sudo mkdir /srv/salt/scripts/userdefined
-sudo chown root:root -R /srv/salt/
-sudo chown root:${USER} -R /srv/salt/scripts/
-sudo chmod 770 -R /srv/salt/scripts/
+sudo chown ${USER}:${USER} -R /srv/salt/
+sudo chown ${USER}:www-data /srv/salt/scripts/userdefined
+sudo chmod 750 /srv/salt/scripts/userdefined
 
 meshservice="$(cat << EOF
 [Unit]

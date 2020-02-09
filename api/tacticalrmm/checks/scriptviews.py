@@ -97,7 +97,7 @@ def download_script(request, pk):
             return response
     else:
         response = HttpResponse()
-        response["Content-Disposition"] = "attachment; filename=debug.log"
+        response["Content-Disposition"] = f"attachment; filename={script.filename}"
         response["X-Accel-Redirect"] = f"/protectedscripts/{script.filename}"
         return response
 

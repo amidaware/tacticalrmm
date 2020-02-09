@@ -7,7 +7,7 @@ urlpatterns = [
     path("add/", views.add),
     path("agentauth/", views.agent_auth),
     path("token/", views.create_auth_token),
-    path("acceptsaltkey/<hostname>/", views.accept_salt_key),
+    path("acceptsaltkey/", views.accept_salt_key),
     path("deleteagent/", views.delete_agent),
     path("getrmmlog/<mode>/<hostname>/<order>/", views.get_log),
     path("downloadrmmlog/", views.download_log),

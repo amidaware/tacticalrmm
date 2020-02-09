@@ -199,7 +199,8 @@ def create_auth_token(request):
 @api_view(["POST"])
 @authentication_classes((BasicAuthentication,))
 @permission_classes((IsAuthenticated,))
-def accept_salt_key(request, hostname):
+def accept_salt_key(request):
+    saltid = request.data["saltid"]
     try:
         resp = requests.post(
             "http://localhost:8123/run",
@@ -207,7 +208,7 @@ def accept_salt_key(request, hostname):
                 {
                     "client": "wheel",
                     "fun": "key.accept",
-                    "match": hostname,
+                    "match": saltid,
                     "username": settings.SALT_USERNAME,
                     "password": settings.SALT_PASSWORD,
                     "eauth": "pam",
@@ -215,11 +216,23 @@ def accept_salt_key(request, hostname):
             ],
             timeout=30,
         )
-    except requests.exceptions.Timeout:
+    except Exception:
         return Response(status=status.HTTP_400_BAD_REQUEST)
-    except requests.exceptions.ConnectionError:
-        return Response(status=status.HTTP_410_GONE)
-    return Response("ok")
+    else:
+        try:
+            data = resp.json()["return"][0]["data"]
+            minion = data["return"]["minions"][0]
+        except Exception:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        else:
+            if data["success"] and minion == saltid:
+                return Response("accepted")
+            else:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+    
+    Response(status=status.HTTP_400_BAD_REQUEST)
+        
+        
 
 
 @api_view(["POST"])

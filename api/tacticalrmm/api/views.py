@@ -230,7 +230,7 @@ def accept_salt_key(request):
             else:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
     
-    Response(status=status.HTTP_400_BAD_REQUEST)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
         
         
 

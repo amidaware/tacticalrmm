@@ -1,11 +1,15 @@
+from time import sleep
+
 from agents.models import Agent
 from .models import WinUpdate
-
 from tacticalrmm.celery import app
 
 
 @app.task
-def check_for_updates_task(pk):
+def check_for_updates_task(pk, wait=False):
+    
+    if wait:
+        sleep(60)
 
     agent = Agent.objects.get(pk=pk)
 

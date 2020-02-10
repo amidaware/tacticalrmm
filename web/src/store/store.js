@@ -22,7 +22,10 @@ export const store = new Vuex.Store({
     winUpdates: {},
     agentChecks: {},
     agentTableLoading: false,
-    treeLoading: false
+    treeLoading: false,
+    installedSoftware: [],
+    scripts: [],
+    toggleScriptManager: false
   },
   getters: {
     loggedIn(state) {
@@ -46,9 +49,18 @@ export const store = new Vuex.Store({
         a.installed === false ? -1 : 1
       );
       return sortedByInstall;
+    },
+    agentHostname(state) {
+      return state.agentSummary.hostname;
+    },
+    scripts(state) {
+      return state.scripts;
     }
   },
   mutations: {
+    TOGGLE_SCRIPT_MANAGER(state, action) {
+      state.toggleScriptManager = action;
+    },
     AGENT_TABLE_LOADING(state, visible) {
       state.agentTableLoading = visible;
     },
@@ -76,6 +88,9 @@ export const store = new Vuex.Store({
     SET_WIN_UPDATE(state, updates) {
       state.winUpdates = updates;
     },
+    SET_INSTALLED_SOFTWARE(state, software) {
+      state.installedSoftware = software;
+    },
     setChecks(state, checks) {
       state.agentChecks = checks;
     },
@@ -83,10 +98,24 @@ export const store = new Vuex.Store({
       (state.agentSummary = {}),
         (state.agentChecks = {}),
         (state.winUpdates = {});
+        (state.installedSoftware = []);
       state.selectedRow = "";
+    },
+    SET_SCRIPTS(state, scripts) {
+      state.scripts = scripts;
     }
   },
   actions: {
+    getScripts(context) {
+      axios.get("/checks/getscripts/").then(r => {
+        context.commit("SET_SCRIPTS", r.data);
+      })
+    },
+    loadInstalledSoftware(context, pk) {
+      axios.get(`/software/installed/${pk}`).then(r => {
+        context.commit("SET_INSTALLED_SOFTWARE", r.data.software);
+      });
+    },
     loadWinUpdates(context, pk) {
       axios.get(`/winupdate/${pk}/getwinupdates/`).then(r => {
         context.commit("SET_WIN_UPDATE", r.data);

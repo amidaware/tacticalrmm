@@ -44,13 +44,14 @@ class AgentSerializer(serializers.ModelSerializer):
             "status",
             "uninstall_pending",
             "uninstall_inprogress",
-            "ping_check_interval",
+            "check_interval",
             "needs_reboot",
             "managed_by_wsus",
             "is_updating",
             "patches_pending",
             "winupdatepolicy",
             "salt_id",
+            "choco_installed",
         )
 
 
@@ -63,4 +64,3 @@ class AgentHostnameSerializer(serializers.ModelSerializer):
             "client",
             "site",
         )
-

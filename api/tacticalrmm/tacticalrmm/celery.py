@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 import os
 from celery import Celery
+from celery.schedules import crontab
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tacticalrmm.settings")
 
@@ -13,6 +14,13 @@ app.result_serializer = "json"
 app.task_serializer = "json"
 app.conf.task_track_started = True
 app.autodiscover_tasks()
+
+app.conf.beat_schedule = {
+    'update-chocos': {
+        'task': 'software.tasks.update_chocos',
+        'schedule': crontab(minute=0, hour=4),
+    },
+}
 
 
 @app.task(bind=True)

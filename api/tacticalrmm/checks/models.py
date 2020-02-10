@@ -14,6 +14,13 @@ STANDARD_CHECK_CHOICES = [
     ("cpuload", "CPU Load Check"),
     ("memory", "Memory Check"),
     ("winsvc", "Win Service Check"),
+    ("script", "Script Check"),
+]
+
+SCRIPT_CHECK_SHELLS = [
+    ("powershell", "Powershell"),
+    ("cmd", "Batch (CMD)"),
+    ("python", "Python"),
 ]
 
 CHECK_STATUS_CHOICES = [
@@ -69,6 +76,77 @@ class DiskCheck(models.Model):
 
 class DiskCheckEmail(models.Model):
     email = models.ForeignKey(DiskCheck, on_delete=models.CASCADE)
+    sent = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.email.agent.hostname
+
+
+class Script(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField(null=True, blank=True)
+    filename = models.CharField(max_length=255)
+    shell = models.CharField(
+        max_length=100, choices=SCRIPT_CHECK_SHELLS, default="powershell"
+    )
+
+    @property
+    def filepath(self):
+        return f"salt://scripts//userdefined//{self.filename}"
+
+    @property
+    def file(self):
+        return f"/srv/salt/scripts/userdefined/{self.filename}"
+
+    @staticmethod
+    def validate_filename(filename):
+        if (
+            not filename.endswith(".py")
+            and not filename.endswith(".ps1")
+            and not filename.endswith(".bat")
+        ):
+            return False
+
+        return True
+
+    def __str__(self):
+        return self.filename
+
+
+class ScriptCheck(models.Model):
+    agent = models.ForeignKey(
+        Agent, related_name="scriptchecks", on_delete=models.CASCADE
+    )
+    check_type = models.CharField(
+        max_length=30, choices=STANDARD_CHECK_CHOICES, default="script"
+    )
+    timeout = models.PositiveIntegerField(default=120)
+    failures = models.PositiveIntegerField(default=5)
+    status = models.CharField(
+        max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
+    )
+    failure_count = models.IntegerField(default=0)
+    email_alert = models.BooleanField(default=False)
+    text_alert = models.BooleanField(default=False)
+    more_info = models.TextField(null=True, blank=True)
+    last_run = models.DateTimeField(auto_now=True)
+    script = models.ForeignKey(Script, related_name="script", on_delete=models.CASCADE)
+
+    def send_email(self):
+        send_mail(
+            f"Script Check Fail on {self.agent.hostname}",
+            f"Script check {self.script.name} is failing on {self.agent.hostname}",
+            settings.EMAIL_HOST_USER,
+            settings.EMAIL_ALERT_RECIPIENTS,
+            fail_silently=False,
+        )
+
+    def __str__(self):
+        return f"{self.agent.hostname} - {self.script.filename}"
+
+
+class ScriptCheckEmail(models.Model):
+    email = models.ForeignKey(ScriptCheck, on_delete=models.CASCADE)
     sent = models.DateTimeField(auto_now=True)
 
     def __str__(self):

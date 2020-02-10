@@ -17,4 +17,5 @@ urlpatterns = [
     path("checks/", include("checks.urls")),
     path("services/", include("services.urls")),
     path("winupdate/", include("winupdate.urls")),
+    path("software/", include("software.urls")),
 ]

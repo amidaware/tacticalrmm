@@ -183,6 +183,7 @@ export default {
         this.$store.dispatch("loadSummary", pk);
         this.$store.dispatch("loadChecks", pk);
         this.$store.dispatch("loadWinUpdates", pk);
+        this.$store.dispatch("loadInstalledSoftware", pk);
       }
     },
     loadFrame(activenode) {

@@ -24,6 +24,7 @@
           </q-list>
         </q-menu>
       </div>
+      <!-- agents -->
       <div class="q-ml-md cursor-pointer non-selectable">
         Agents
         <q-menu auto-close>
@@ -34,6 +35,21 @@
               @click="showUpdateAgentsModal = true"
             >
               <q-item-section>Update Agents</q-item-section>
+            </q-item>
+          </q-list>
+        </q-menu>
+      </div>
+      <!-- settings -->
+      <div class="q-ml-md cursor-pointer non-selectable">
+        Settings
+        <q-menu auto-close>
+          <q-list dense style="min-width: 100px">
+            <q-item
+              clickable
+              v-close-popup
+              @click="showScriptManager"
+            >
+              <q-item-section>Script Manager</q-item-section>
             </q-item>
           </q-list>
         </q-menu>
@@ -60,6 +76,8 @@
           <UpdateAgents @close="showUpdateAgentsModal = false" />
         </q-dialog>
       </div>
+      <!-- Script Manager -->
+      <ScriptManager />
     </q-bar>
   </div>
 </template>
@@ -69,9 +87,10 @@ import LogModal from "@/components/modals/logs/LogModal";
 import AddClient from "@/components/modals/clients/AddClient";
 import AddSite from "@/components/modals/clients/AddSite";
 import UpdateAgents from "@/components/modals/agents/UpdateAgents";
+import ScriptManager from "@/components/ScriptManager";
 export default {
   name: "FileBar",
-  components: { LogModal, AddClient, AddSite, UpdateAgents },
+  components: { LogModal, AddClient, AddSite, UpdateAgents, ScriptManager },
   props: ["clients"],
   data() {
     return {
@@ -83,6 +102,9 @@ export default {
   methods: {
     getLog() {
       this.$store.commit("logs/TOGGLE_LOG_MODAL", true);
+    },
+    showScriptManager() {
+      this.$store.commit("TOGGLE_SCRIPT_MANAGER", true);
     }
   }
 };

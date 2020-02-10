@@ -20,6 +20,8 @@ from .models import (
     MemCheckEmail,
     WinServiceCheck,
     WinServiceCheckEmail,
+    ScriptCheck,
+    ScriptCheckEmail,
 )
 
 
@@ -40,6 +42,9 @@ def handle_check_email_alert_task(check_type, pk):
     elif check_type == "winsvc":
         check = WinServiceCheck.objects.get(pk=pk)
         eml = WinServiceCheckEmail
+    elif check_type == "script":
+        check = ScriptCheck.objects.get(pk=pk)
+        eml = ScriptCheckEmail
     else:
         return {"error": "no check"}
 
@@ -77,10 +82,13 @@ def checks_failing_task():
     winservicechecks = WinServiceCheck.objects.select_related("agent").only(
         "agent__client", "agent__site", "status"
     )
+    scriptchecks = ScriptCheck.objects.select_related("agent").only(
+        "agent__client", "agent__site", "status"
+    )
 
     agents_failing = []
 
-    for check in (diskchecks, pingchecks, cpuloadchecks, memchecks, winservicechecks):
+    for check in (diskchecks, pingchecks, cpuloadchecks, memchecks, winservicechecks, scriptchecks,):
         for i in check:
             if i.status == "failing":
                 agents_failing.append(i.agent.pk)

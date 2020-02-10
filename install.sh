@@ -79,8 +79,9 @@ sudo systemctl restart mongod
 print_green 'Installing MeshCentral'
 
 sudo mkdir -p /meshcentral/meshcentral-data
+sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
-sudo npm install meshcentral
+npm install meshcentral
 cd /home/${USER}
 sudo chown ${USER}:${USER} -R /meshcentral
 
@@ -319,7 +320,13 @@ server {
     location /protectedlogs/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /home/steam/rmm/api/tacticalrmm/log/;
+        alias /home/${USER}/rmm/api/tacticalrmm/log/;
+    }
+
+    location /protectedscripts/ {
+        internal;
+        add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
+        alias /srv/salt/scripts/userdefined/;
     }
 
 
@@ -519,9 +526,10 @@ echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service > 
 sudo mkdir -p /srv/salt
 sudo cp -r /home/${USER}/rmm/_modules /srv/salt/
 sudo cp -r /home/${USER}/rmm/scripts /srv/salt/
-sudo chown root:root -R /srv/salt/
-sudo chown root:${USER} -R /srv/salt/scripts/
-sudo chmod 770 -R /srv/salt/scripts/
+sudo mkdir /srv/salt/scripts/userdefined
+sudo chown ${USER}:${USER} -R /srv/salt/
+sudo chown ${USER}:www-data /srv/salt/scripts/userdefined
+sudo chmod 750 /srv/salt/scripts/userdefined
 
 meshservice="$(cat << EOF
 [Unit]
@@ -531,11 +539,11 @@ After=nginx.service
 [Service]
 Type=simple
 LimitNOFILE=1000000
-ExecStart=/usr/bin/node /meshcentral/node_modules/meshcentral
+ExecStart=/usr/bin/node node_modules/meshcentral
 Environment=NODE_ENV=production
 WorkingDirectory=/meshcentral
-User=root
-Group=root
+User=${USER}
+Group=${USER}
 Restart=always
 # Restart service after 10 seconds if node service crashes
 RestartSec=10

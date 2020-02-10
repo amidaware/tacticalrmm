@@ -13,6 +13,9 @@ from .models import (
     MemoryHistory,
     WinServiceCheck,
     WinServiceCheckEmail,
+    ScriptCheck,
+    ScriptCheckEmail,
+    Script,
 )
 
 admin.site.register(DiskCheck)
@@ -27,3 +30,6 @@ admin.site.register(MemoryHistory)
 admin.site.register(MemCheckEmail)
 admin.site.register(WinServiceCheck)
 admin.site.register(WinServiceCheckEmail)
+admin.site.register(ScriptCheck)
+admin.site.register(ScriptCheckEmail)
+admin.site.register(Script)

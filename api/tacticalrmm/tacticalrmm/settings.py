@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'checks',
     'services',
     'winupdate',
+    'software',
 ]
 
 MIDDLEWARE = [

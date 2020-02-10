@@ -52,8 +52,8 @@
                 <q-input
                   dense
                   outlined
-                  v-model.number="pingInterval"
-                  label="Interval for ping checks (seconds)"
+                  v-model.number="checkInterval"
+                  label="Interval for checks (seconds)"
                   :rules="[ 
                       val => !!val || '*Required',
                       val => val >= 60 || 'Minimum is 60 seconds',
@@ -246,7 +246,7 @@ export default {
       monTypes: ["server", "workstation"],
       desc: "",
       overdueTime: null,
-      pingInterval: null,
+      checkInterval: null,
       emailAlert: null,
       textAlert: null,
       tree: {},
@@ -282,7 +282,7 @@ export default {
         this.monType = r.data.monitoring_type;
         this.desc = r.data.description;
         this.overdueTime = r.data.overdue_time;
-        this.pingInterval = r.data.ping_check_interval;
+        this.checkInterval = r.data.check_interval;
         this.emailAlert = r.data.overdue_email_alert;
         this.textAlert = r.data.overdue_text_alert;
         this.updatePolicy = r.data.winupdatepolicy;
@@ -312,7 +312,7 @@ export default {
         montype: this.monType,
         desc: this.desc,
         overduetime: this.overdueTime,
-        pinginterval: this.pingInterval,
+        checkinterval: this.checkInterval,
         emailalert: this.emailAlert,
         textalert: this.textAlert,
         critical: this.critical,

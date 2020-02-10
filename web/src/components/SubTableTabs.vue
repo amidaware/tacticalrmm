@@ -14,6 +14,7 @@
             <q-tab name="summary" icon="fas fa-server" size="xs" label="Summary" />
             <q-tab name="checks" icon="computer" label="Checks" />
             <q-tab name="patches" label="Patches" />
+            <q-tab name="software" label="Software" />
         </q-tabs>
         <q-separator />
         <q-tab-panels v-model="subtab" :animated="false">
@@ -26,6 +27,9 @@
             <q-tab-panel name="patches">
                 <WindowsUpdates />
             </q-tab-panel>
+            <q-tab-panel name="software">
+                <SoftwareTab />
+            </q-tab-panel>
         </q-tab-panels>
     </div>
 </template>
@@ -34,12 +38,14 @@
 import SummaryTab from '@/components/SummaryTab';
 import ChecksTab from '@/components/ChecksTab';
 import WindowsUpdates from '@/components/WindowsUpdates';
+import SoftwareTab from '@/components/SoftwareTab';
 export default {
   name: "SubTableTabs",
   components: {
       SummaryTab,
       ChecksTab,
-      WindowsUpdates
+      WindowsUpdates,
+      SoftwareTab,
   },
   data() {
       return {

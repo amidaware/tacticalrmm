@@ -1,0 +1,27 @@
+FROM nginx
+WORKDIR /etc/nginx/conf.d
+
+ARG APP_HOST
+ARG API_HOST
+ARG MESH_HOST
+
+EXPOSE 80
+EXPOSE 443
+
+#Remove default NGINX config
+RUN rm /etc/nginx/conf.d/default.conf
+
+#Copy APP config
+COPY app.conf ./app.conf.tmp
+RUN envsubst '\$APP_HOST' < /etc/nginx/conf.d/app.conf.tmp > /etc/nginx/conf.d/app.conf && rm /etc/nginx/conf.d/app.conf.tmp
+
+#Copy API config
+COPY api.conf ./api.conf.tmp
+RUN envsubst '\$API_HOST' < /etc/nginx/conf.d/api.conf.tmp > /etc/nginx/conf.d/api.conf && rm /etc/nginx/conf.d/api.conf.tmp
+
+#Copy Mesh config
+COPY mesh.conf ./mesh.conf.tmp
+RUN envsubst '\$MESH_HOST' < /etc/nginx/conf.d/mesh.conf.tmp > /etc/nginx/conf.d/mesh.conf && rm /etc/nginx/conf.d/mesh.conf.tmp
+
+#Copy Certs
+COPY ./cert/*.pem /cert/

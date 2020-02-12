@@ -209,6 +209,7 @@ SALT_USERNAME = "saltapi"
 SALT_PASSWORD = "${SALTPW}"
 MESH_USERNAME = "${meshusername}"
 MESH_SITE = "https://${meshdomain}"
+REDIS_HOST = "localhost"
 EOF
 )"
 echo "${localvars}" > /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/local_settings.py

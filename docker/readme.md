@@ -21,7 +21,8 @@ Copy the fullchain.pem and privkey.pem to the cert directory.
 
 Change values in .env to match your environment
 
-```cd docker
+```
+cd docker
 sudo docker-compose up -d
 ```
 
@@ -29,24 +30,28 @@ You may need to run this twice since some of the dependant containers won't be r
 
 ## Create a super user
 
-```sudo docker exec -it docker_api_1 python manage.py createsuperuser
+```
+sudo docker exec -it docker_api_1 python manage.py createsuperuser
 ```
 
 ## Setup 2FA authentication
 
 Get the 2FA code with 
 
-```sudo docker exec -it docker_api_1 python manage.py generate_totp
+```
+sudo docker exec -it docker_api_1 python manage.py generate_totp
 ```
 
 Add the generated code to the .env file TWO_FACTOR_OTP in the docker folder
 
 Rebuild the api container
 
-```sudo docker-compose up -d --build api
+```
+sudo docker-compose up -d --build api
 ```
 
 Use the generated code and the username to generate a bar code for your authenticator app
 
-```sudo docker exec -it docker_api_1 python manage.py generate_barcode [OTP_CODE] [username]
+```
+sudo docker exec -it docker_api_1 python manage.py generate_barcode [OTP_CODE] [username]
 ```

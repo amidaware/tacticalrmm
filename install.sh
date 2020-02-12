@@ -207,9 +207,10 @@ EMAIL_ALERT_RECIPIENTS = ["jsmith@example.com",]
 
 SALT_USERNAME = "saltapi"
 SALT_PASSWORD = "${SALTPW}"
+SALT_HOST     = "127.0.0.1"
 MESH_USERNAME = "${meshusername}"
 MESH_SITE = "https://${meshdomain}"
-REDIS_HOST = "localhost"
+REDIS_HOST    = "localhost"
 EOF
 )"
 echo "${localvars}" > /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/local_settings.py

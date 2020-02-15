@@ -1,0 +1,29 @@
+FROM tiangolo/uwsgi-nginx:python3.7
+WORKDIR /app
+ARG DJANGO_SEKRET
+ARG POSTGRES_USER
+ARG POSTGRES_PASS
+ARG POSTGRES_HOST
+ARG SALT_HOST
+ARG SALT_USER
+ARG SALT_PASS
+ARG REDIS_HOST
+ARG MESH_USER
+ARG MESH_HOST
+ARG APP_HOST
+ARG API_HOST
+ARG ADMIN_URL
+ARG TWO_FACTOR_OTP
+
+EXPOSE 80
+
+RUN apt-get update && apt-get install -y gettext-base
+COPY ./api/tacticalrmm .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY ./docker/api/prestart.sh .
+COPY ./docker/api/uwsgi.ini .
+COPY ./docker/api/api.conf /app/api.conf.tmp
+RUN envsubst '\$APP_HOST, \$API_HOST' < /app/api.conf.tmp > /app/nginx.conf && \
+    rm /app/api.conf.tmp
+COPY ./docker/api/local_settings.py ./tacticalrmm/local_settings.py.tmp
+RUN envsubst < /app/tacticalrmm/local_settings.py.tmp > /app/tacticalrmm/local_settings.py && rm /app/tacticalrmm/local_settings.py.tmp

@@ -1,6 +1,7 @@
 FROM tiangolo/uwsgi-nginx:python3.7
 WORKDIR /app
 ARG DJANGO_SEKRET
+ARG DJANGO_DEBUG
 ARG POSTGRES_USER
 ARG POSTGRES_PASS
 ARG POSTGRES_HOST
@@ -14,6 +15,12 @@ ARG APP_HOST
 ARG API_HOST
 ARG ADMIN_URL
 ARG TWO_FACTOR_OTP
+ARG EMAIL_TLS
+ARG EMAIL_HOST
+ARG EMAIL_USER
+ARG EMAIL_PASS
+ARG EMAIL_PORT
+ARG EMAIL_RECIPIENTS
 
 EXPOSE 80
 
@@ -25,5 +32,5 @@ COPY ./docker/api/uwsgi.ini .
 COPY ./docker/api/api.conf /app/api.conf.tmp
 RUN envsubst '\$APP_HOST, \$API_HOST' < /app/api.conf.tmp > /app/nginx.conf && \
     rm /app/api.conf.tmp
-COPY ./docker/api/local_settings.py ./tacticalrmm/local_settings.py.tmp
+COPY ./docker/api/local_settings.py.keep ./tacticalrmm/local_settings.py.tmp
 RUN envsubst < /app/tacticalrmm/local_settings.py.tmp > /app/tacticalrmm/local_settings.py && rm /app/tacticalrmm/local_settings.py.tmp

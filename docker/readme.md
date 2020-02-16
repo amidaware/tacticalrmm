@@ -13,12 +13,14 @@ sudo apt-get install certbot
 
 Generate the wildcard certificate. Add the DNS entry for domain validation.
 
-```sudo certbot certonly --manual -d *.example.com --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns
+```
+sudo certbot certonly --manual -d *.example.com --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns
 ```
 Copy the fullchain.pem and privkey.pem to the cert directory.
 
 ## Run the environment with Docker
 
+Copy the .env.example to .env
 Change values in .env to match your environment
 
 ```

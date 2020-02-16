@@ -567,8 +567,6 @@ print_green 'Installing certbot'
 
 sudo add-apt-repository -y ppa:certbot/certbot
 sudo apt install -y certbot
-sudo ufw allow http
-sudo ufw allow https
 sudo systemctl stop nginx
 
 print_green 'Getting https certs'
@@ -576,9 +574,6 @@ print_green 'Getting https certs'
 sudo certbot certonly --standalone --agree-tos -m ${letsemail} --no-eff-email -d ${meshdomain}
 sudo certbot certonly --standalone --agree-tos -m ${letsemail} --no-eff-email -d ${rmmdomain}
 sudo certbot certonly --standalone --agree-tos -m ${letsemail} --no-eff-email -d ${frontenddomain}
-
-sudo ufw delete allow http
-sudo ufw delete allow https
 
 sudo chown -R $USER:$GROUP /home/${USER}/.npm
 sudo chown -R $USER:$GROUP /home/${USER}/.config

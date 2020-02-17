@@ -4,9 +4,9 @@ ARG SALT_USER
 ARG SALT_PASS
 
 RUN adduser --no-create-home --disabled-password --gecos "" ${SALT_USER} && \
-echo "${SALT_USER}:${SALT_PASS}" | chpasswd
+    echo "${SALT_USER}:${SALT_PASS}" | chpasswd
 RUN apk add gettext
 
-COPY ./api.conf /etc/salt/master.d/api.conf.tmp
+COPY ./docker/salt/api.conf /etc/salt/master.d/api.conf.tmp
 RUN envsubst '\$SALT_USER' < /etc/salt/master.d/api.conf.tmp > /etc/salt/master.d/api.conf && \
- rm /etc/salt/master.d/api.conf.tmp
+    rm /etc/salt/master.d/api.conf.tmp

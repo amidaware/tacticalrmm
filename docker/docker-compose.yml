@@ -1,5 +1,6 @@
 version: '3.5'
 
+# Userdefined Networks
 networks: 
   database:
   redis:
@@ -10,7 +11,14 @@ networks:
       config:
         - subnet: 172.20.0.0/24
 
+# Docker managed persistent volumes
+volumes:
+  # Volume for userdefined scripts
+  scripts:
+
 services:
+
+  # Postgres Database for API service
   db:
     image: "postgres"
     restart: "always"
@@ -20,9 +28,12 @@ services:
       - POSTGRES_PASS=${POSTGRES_PASS}
     networks: 
       - database
+  
+  # Salt Master and API
   salt:
     build: 
-      context: ./salt
+      context: ..
+      dockerfile: ./docker/salt/dockerfile
       args:
         - SALT_USER=${SALT_USER}
         - SALT_PASS=${SALT_PASS}
@@ -30,6 +41,12 @@ services:
       - "8123:8123"
       - "4505:4505"
       - "4506:4506"
+    volumes:
+      - scripts:/srv:ro
+    networks:
+      - proxy
+  
+  # MeshCentral Container
   meshcentral:
     build:
       context: ./meshcentral
@@ -37,6 +54,10 @@ services:
         - MESH_HOST=${MESH_HOST}
     networks:
       - proxy
+    depends_on: 
+      - nginx-proxy
+
+  # Nginx Container Reverse Proxy that handles all http/https traffic
   nginx-proxy:
     build: 
       context: ./nginx-proxy
@@ -50,14 +71,14 @@ services:
     networks:
       proxy:
         ipv4_address: 172.20.0.20
-    depends_on: 
-      - app
-      - api
-      - meshcentral
+  
+  # Redis Container for Celery tasks
   redis:
     image: redis
     networks:
       - redis
+
+  # Container that hosts Vue frontend
   app:
     build:
       context: ..
@@ -67,6 +88,8 @@ services:
         - API_HOST=${API_HOST}
     networks: 
       - proxy
+  
+  # Container for Django backend
   api:
     build:
       context: ..
@@ -97,8 +120,12 @@ services:
       - proxy
       - database
       - redis
+    volumes:
+      - scripts:/srv
     depends_on: 
       - db
+
+  # Container for Celery worker service
   celery-service:
     build:
       context: ..
@@ -132,6 +159,8 @@ services:
     depends_on: 
       - db
       - redis
+
+  # Container for Celery beat service
   celery-beat:
     build:
       context: ..
@@ -165,6 +194,8 @@ services:
     depends_on: 
       - db
       - redis
+
+  # Container for Celery Winupdate tasks
   celery-winupdate:
     build:
       context: ..

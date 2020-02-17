@@ -1,5 +1,7 @@
 FROM tiangolo/uwsgi-nginx:python3.7
+
 WORKDIR /app
+
 ARG DJANGO_SEKRET
 ARG DJANGO_DEBUG
 ARG POSTGRES_USER

@@ -20,8 +20,8 @@ Copy the fullchain.pem and privkey.pem to the cert directory.
 
 ## Run the environment with Docker
 
-Copy the .env.example to .env
-Change values in .env to match your environment
+Copy the .env.example to .env then
+change values in .env to match your environment
 
 ```
 cd docker
@@ -57,3 +57,15 @@ Use the generated code and the username to generate a bar code for your authenti
 ```
 sudo docker exec -it docker_api_1 python manage.py generate_barcode [OTP_CODE] [username]
 ```
+
+## Connect to a container instance shell
+
+run `docker ps` to get the name of the running container instance
+
+Then use the name in the below command. It will use the api container instance as an example
+
+```
+sudo docker exec -it docker_api_1 /bin/bash
+```
+
+If /bin/bash doesn't work then /bin/sh might need to be used.

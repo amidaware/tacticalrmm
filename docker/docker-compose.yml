@@ -103,6 +103,7 @@ services:
       dockerfile: "./docker/api/dockerfile"
       args:
         - DJANGO_SEKRET=${DJANGO_SEKRET}
+        - DJANGO_DEBUG=${DJANGO_DEBUG}
         - POSTGRES_USER=${POSTGRES_USER}
         - POSTGRES_PASS=${POSTGRES_PASS}
         - POSTGRES_HOST=${POSTGRES_HOST}
@@ -116,6 +117,12 @@ services:
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
         - TWO_FACTOR_OTP=${TWO_FACTOR_OTP}
+        - EMAIL_TLS=${EMAIL_TLS}
+        - EMAIL_HOST=${EMAIL_HOST}
+        - EMAIL_USER=${EMAIL_USER}
+        - EMAIL_PASS=${EMAIL_PASS}
+        - EMAIL_PORT=${EMAIL_PORT}
+        - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
     command: celery -A tacticalrmm worker -l info
     networks:
       - redis
@@ -129,6 +136,7 @@ services:
       dockerfile: "./docker/api/dockerfile"
       args:
         - DJANGO_SEKRET=${DJANGO_SEKRET}
+        - DJANGO_DEBUG=${DJANGO_DEBUG}
         - POSTGRES_USER=${POSTGRES_USER}
         - POSTGRES_PASS=${POSTGRES_PASS}
         - POSTGRES_HOST=${POSTGRES_HOST}
@@ -142,6 +150,12 @@ services:
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
         - TWO_FACTOR_OTP=${TWO_FACTOR_OTP}
+        - EMAIL_TLS=${EMAIL_TLS}
+        - EMAIL_HOST=${EMAIL_HOST}
+        - EMAIL_USER=${EMAIL_USER}
+        - EMAIL_PASS=${EMAIL_PASS}
+        - EMAIL_PORT=${EMAIL_PORT}
+        - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
     command: celery -A tacticalrmm beat -l info
     networks:
       - redis
@@ -155,6 +169,7 @@ services:
       dockerfile: "./docker/api/dockerfile"
       args:
         - DJANGO_SEKRET=${DJANGO_SEKRET}
+        - DJANGO_DEBUG=${DJANGO_DEBUG}
         - POSTGRES_USER=${POSTGRES_USER}
         - POSTGRES_PASS=${POSTGRES_PASS}
         - POSTGRES_HOST=${POSTGRES_HOST}
@@ -168,6 +183,12 @@ services:
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
         - TWO_FACTOR_OTP=${TWO_FACTOR_OTP}
+        - EMAIL_TLS=${EMAIL_TLS}
+        - EMAIL_HOST=${EMAIL_HOST}
+        - EMAIL_USER=${EMAIL_USER}
+        - EMAIL_PASS=${EMAIL_PASS}
+        - EMAIL_PORT=${EMAIL_PORT}
+        - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
     command: celery -A tacticalrmm worker -Q wupdate
     networks:
       - redis

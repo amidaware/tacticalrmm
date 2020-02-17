@@ -41,5 +41,5 @@ RUN envsubst < /app/tacticalrmm/local_settings.py.tmp > /app/tacticalrmm/local_s
 COPY ./_modules /srv/salt/_modules
 COPY ./scripts /srv/salt/scripts
 RUN mkdir /srv/salt/scripts/userdefined && \
-    chown -R nginx /srv/salt/scripts/userdefined && \
+    chown -R 1000:nginx /srv/salt/scripts/userdefined && \
     chmod -R 771 /srv/salt/scripts/userdefined

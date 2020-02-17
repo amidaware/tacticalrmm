@@ -21,9 +21,11 @@ services:
     networks: 
       - database
   salt:
-    image: "saltstack/salt"
-    volumes:
-      - ./salt:/etc/salt/master.d
+    build: 
+      context: ./salt
+      args:
+        - SALT_USER=${SALT_USER}
+        - SALT_PASS=${SALT_PASS}
     ports:
       - "8123:8123"
       - "4505:4505"

@@ -49,9 +49,6 @@
           <!-- context menu -->
           <q-menu context-menu>
             <q-list dense style="min-width: 200px">
-              <q-item clickable v-close-popup>
-                <q-item-section>Open...</q-item-section>
-              </q-item>
               <q-item clickable v-close-popup @click="showEditAgentModal = true">
                 <q-item-section avatar>
                   <q-icon style="font-size: 0.9rem;" name="edit" />

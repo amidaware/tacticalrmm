@@ -62,12 +62,7 @@ def update_chocos():
                 continue
             else:
                 if data:
-                    install = agent.salt_api_cmd(
-                        hostname=agent.salt_id,
-                        timeout=180,
-                        func="chocolatey.bootstrap",
-                        arg="force=True",
-                    )
+                    
                     resp = agent.salt_api_cmd(
                         hostname=agent.salt_id, timeout=200, func="chocolatey.list"
                     )

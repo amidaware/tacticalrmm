@@ -86,7 +86,7 @@ export default {
   methods: {
     getChocos() {
       axios.get("/software/chocos/").then(r => {
-        this.chocos = r.data.chocos;
+        this.chocos = r.data;
       });
     },
     showDescription(name) {

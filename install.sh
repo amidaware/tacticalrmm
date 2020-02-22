@@ -225,6 +225,7 @@ pip install --upgrade pip
 pip install -r /home/${USER}/rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic
+python manage.py load_chocos
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
 printf >&2 "${YELLOW}Please create your login for the RMM website and django admin${NC}\n"

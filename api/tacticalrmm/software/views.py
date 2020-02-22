@@ -18,9 +18,7 @@ from .tasks import install_program
 
 @api_view()
 def chocos(request):
-    pk = ChocoSoftware.sort_by_highest()
-    choco = ChocoSoftware.objects.get(pk=pk)
-    return Response(ChocoSoftwareSerializer(choco).data)
+    return Response(ChocoSoftware.combine_all())
 
 
 @api_view(["POST"])

@@ -5,8 +5,8 @@ EXPOSE 80
 WORKDIR /home/node
 RUN apk add gettext
 COPY ./web .
-COPY ./docker/app/.env.local /home/.env.local.tmp
-RUN envsubst '\$APP_HOST, \$API_HOST' < /home/.env.local.tmp > /home/node/.env.local && rm /home/.env.local.tmp
+COPY ./docker/app/.env.local.keep /home/.env.local.tmp
+RUN envsubst '\$API_HOST' < /home/.env.local.tmp > /home/node/.env.local && rm /home/.env.local.tmp
 RUN npm install && npm run build
 COPY ./docker/app/app.conf /home/node/app.conf.tmp
 RUN envsubst '\$APP_HOST' < /home/node/app.conf.tmp > /home/node/app.conf

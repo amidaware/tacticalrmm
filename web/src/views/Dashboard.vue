@@ -148,10 +148,10 @@ export default {
           name: "patchespending",
           align: "left"
         },
-        {
+        /* {
           name: "antivirus",
           align: "left"
-        },
+        }, */
         {
           name: "agentstatus",
           field: "status",

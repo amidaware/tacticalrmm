@@ -38,7 +38,11 @@ from checks.models import (
     CpuHistory,
 )
 from winupdate.models import WinUpdate, WinUpdatePolicy
-from agents.tasks import uninstall_agent_task, sync_salt_modules_task
+from agents.tasks import (
+    uninstall_agent_task,
+    sync_salt_modules_task,
+    get_wmi_detail_task,
+)
 from winupdate.tasks import check_for_updates_task
 from agents.serializers import AgentHostnameSerializer
 from software.tasks import install_chocolatey, get_installed_software
@@ -168,6 +172,7 @@ def get_mesh_exe(request):
         response["X-Accel-Redirect"] = "/protected/meshagent.exe"
         return response
 
+
 @api_view(["POST"])
 @authentication_classes((BasicAuthentication,))
 @permission_classes((IsAuthenticated,))
@@ -229,10 +234,8 @@ def accept_salt_key(request):
                 return Response("accepted")
             else:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
-    
+
     return Response(status=status.HTTP_400_BAD_REQUEST)
-        
-        
 
 
 @api_view(["POST"])
@@ -306,7 +309,7 @@ def add(request):
             WinUpdatePolicy(agent=agent, run_time_days=[5, 6]).save()
         else:
             WinUpdatePolicy(agent=agent).save()
-        
+
         return Response({"pk": agent.pk})
     else:
         return Response("err", status=status.HTTP_400_BAD_REQUEST)
@@ -354,6 +357,7 @@ def update(request):
 
     sync_salt_modules_task.delay(agent.pk)
     get_installed_software.delay(agent.pk)
+    get_wmi_detail_task.delay(agent.pk)
 
     if not agent.choco_installed:
         install_chocolatey.delay(agent.pk, wait=True)
@@ -442,4 +446,3 @@ def hello(request):
         cpu.save(update_fields=["cpu_history"])
 
     return Response("ok")
-

@@ -50,6 +50,7 @@ class Agent(models.Model):
     managed_by_wsus = models.BooleanField(default=False)
     is_updating = models.BooleanField(default=False)
     choco_installed = models.BooleanField(default=False)
+    wmi_detail = JSONField(null=True)
 
     def __str__(self):
         return self.hostname

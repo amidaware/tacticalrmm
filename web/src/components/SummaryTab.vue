@@ -42,6 +42,12 @@
             </q-item-section>
             <q-item-section>Public IP: {{ summary.public_ip}}</q-item-section>
           </q-item>
+          <q-item>
+            <q-item-section avatar>
+              <q-icon name="fas fa-network-wired" />
+            </q-item-section>
+            <q-item-section>LAN IP: {{ localIPs }}</q-item-section>
+          </q-item>
         </q-list>
       </div>
       <div class="col-5"></div>
@@ -131,7 +137,7 @@ export default {
           });
         }
       });
-      return ips;
+      return (ips.length === 1 ? ips[0] : ips.join(", "))
     }
   }
 };

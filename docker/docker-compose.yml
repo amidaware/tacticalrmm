@@ -1,0 +1,231 @@
+version: '3.5'
+
+# Userdefined Networks
+networks: 
+  database:
+  redis:
+  proxy:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/24
+
+# Docker managed persistent volumes
+volumes:
+  # Volume for userdefined scripts
+  scripts:
+
+services:
+
+  # Postgres Database for API service
+  db:
+    image: "postgres"
+    restart: "always"
+    environment: 
+      - POSTGRES_DB=tacticalrmm
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASS=${POSTGRES_PASS}
+    networks: 
+      - database
+  
+  # Salt Master and API
+  salt:
+    build: 
+      context: ..
+      dockerfile: ./docker/salt/dockerfile
+      args:
+        - SALT_USER=${SALT_USER}
+        - SALT_PASS=${SALT_PASS}
+    ports:
+      - "8123:8123"
+      - "4505:4505"
+      - "4506:4506"
+    volumes:
+      - scripts:/srv:ro
+    networks:
+      - proxy
+  
+  # MeshCentral Container
+  meshcentral:
+    build:
+      context: ./meshcentral
+      args:
+        - MESH_HOST=${MESH_HOST}
+    networks:
+      - proxy
+    depends_on: 
+      - nginx-proxy
+
+  # Nginx Container Reverse Proxy that handles all http/https traffic
+  nginx-proxy:
+    build: 
+      context: ./nginx-proxy
+      args:
+        - APP_HOST=${APP_HOST}
+        - API_HOST=${API_HOST}
+        - MESH_HOST=${MESH_HOST}
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      proxy:
+        ipv4_address: 172.20.0.20
+  
+  # Redis Container for Celery tasks
+  redis:
+    image: redis
+    networks:
+      - redis
+
+  # Container that hosts Vue frontend
+  app:
+    build:
+      context: ..
+      dockerfile: "./docker/app/dockerfile"
+      args:
+        - APP_HOST=${APP_HOST}
+        - API_HOST=${API_HOST}
+    networks: 
+      - proxy
+  
+  # Container for Django backend
+  api:
+    build:
+      context: ..
+      dockerfile: "./docker/api/dockerfile"
+      args:
+        - DJANGO_SEKRET=${DJANGO_SEKRET}
+        - DJANGO_DEBUG=${DJANGO_DEBUG}
+        - POSTGRES_USER=${POSTGRES_USER}
+        - POSTGRES_PASS=${POSTGRES_PASS}
+        - POSTGRES_HOST=${POSTGRES_HOST}
+        - SALT_PASS=${SALT_PASS}
+        - SALT_USER=${SALT_USER}
+        - SALT_HOST=${SALT_HOST}
+        - REDIS_HOST=${REDIS_HOST}
+        - MESH_USER=${MESH_USER}
+        - MESH_HOST=${MESH_HOST}
+        - APP_HOST=${APP_HOST}
+        - API_HOST=${API_HOST}
+        - ADMIN_URL=${ADMIN_URL}
+        - TWO_FACTOR_OTP=${TWO_FACTOR_OTP}
+        - EMAIL_TLS=${EMAIL_TLS}
+        - EMAIL_HOST=${EMAIL_HOST}
+        - EMAIL_USER=${EMAIL_USER}
+        - EMAIL_PASS=${EMAIL_PASS}
+        - EMAIL_PORT=${EMAIL_PORT}
+        - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
+    networks:
+      - proxy
+      - database
+      - redis
+    volumes:
+      - scripts:/srv
+    depends_on: 
+      - db
+
+  # Container for Celery worker service
+  celery-service:
+    build:
+      context: ..
+      dockerfile: "./docker/api/dockerfile"
+      args:
+        - DJANGO_SEKRET=${DJANGO_SEKRET}
+        - DJANGO_DEBUG=${DJANGO_DEBUG}
+        - POSTGRES_USER=${POSTGRES_USER}
+        - POSTGRES_PASS=${POSTGRES_PASS}
+        - POSTGRES_HOST=${POSTGRES_HOST}
+        - SALT_PASS=${SALT_PASS}
+        - SALT_USER=${SALT_USER}
+        - SALT_HOST=${SALT_HOST}
+        - REDIS_HOST=${REDIS_HOST}
+        - MESH_USER=${MESH_USER}
+        - MESH_HOST=${MESH_HOST}
+        - APP_HOST=${APP_HOST}
+        - API_HOST=${API_HOST}
+        - ADMIN_URL=${ADMIN_URL}
+        - TWO_FACTOR_OTP=${TWO_FACTOR_OTP}
+        - EMAIL_TLS=${EMAIL_TLS}
+        - EMAIL_HOST=${EMAIL_HOST}
+        - EMAIL_USER=${EMAIL_USER}
+        - EMAIL_PASS=${EMAIL_PASS}
+        - EMAIL_PORT=${EMAIL_PORT}
+        - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
+    command: celery -A tacticalrmm worker -l info
+    networks:
+      - redis
+      - database
+    depends_on: 
+      - db
+      - redis
+
+  # Container for Celery beat service
+  celery-beat:
+    build:
+      context: ..
+      dockerfile: "./docker/api/dockerfile"
+      args:
+        - DJANGO_SEKRET=${DJANGO_SEKRET}
+        - DJANGO_DEBUG=${DJANGO_DEBUG}
+        - POSTGRES_USER=${POSTGRES_USER}
+        - POSTGRES_PASS=${POSTGRES_PASS}
+        - POSTGRES_HOST=${POSTGRES_HOST}
+        - SALT_PASS=${SALT_PASS}
+        - SALT_USER=${SALT_USER}
+        - SALT_HOST=${SALT_HOST}
+        - REDIS_HOST=${REDIS_HOST}
+        - MESH_USER=${MESH_USER}
+        - MESH_HOST=${MESH_HOST}
+        - APP_HOST=${APP_HOST}
+        - API_HOST=${API_HOST}
+        - ADMIN_URL=${ADMIN_URL}
+        - TWO_FACTOR_OTP=${TWO_FACTOR_OTP}
+        - EMAIL_TLS=${EMAIL_TLS}
+        - EMAIL_HOST=${EMAIL_HOST}
+        - EMAIL_USER=${EMAIL_USER}
+        - EMAIL_PASS=${EMAIL_PASS}
+        - EMAIL_PORT=${EMAIL_PORT}
+        - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
+    command: celery -A tacticalrmm beat -l info
+    networks:
+      - redis
+      - database
+    depends_on: 
+      - db
+      - redis
+
+  # Container for Celery Winupdate tasks
+  celery-winupdate:
+    build:
+      context: ..
+      dockerfile: "./docker/api/dockerfile"
+      args:
+        - DJANGO_SEKRET=${DJANGO_SEKRET}
+        - DJANGO_DEBUG=${DJANGO_DEBUG}
+        - POSTGRES_USER=${POSTGRES_USER}
+        - POSTGRES_PASS=${POSTGRES_PASS}
+        - POSTGRES_HOST=${POSTGRES_HOST}
+        - SALT_PASS=${SALT_PASS}
+        - SALT_USER=${SALT_USER}
+        - SALT_HOST=${SALT_HOST}
+        - REDIS_HOST=${REDIS_HOST}
+        - MESH_USER=${MESH_USER}
+        - MESH_HOST=${MESH_HOST}
+        - APP_HOST=${APP_HOST}
+        - API_HOST=${API_HOST}
+        - ADMIN_URL=${ADMIN_URL}
+        - TWO_FACTOR_OTP=${TWO_FACTOR_OTP}
+        - EMAIL_TLS=${EMAIL_TLS}
+        - EMAIL_HOST=${EMAIL_HOST}
+        - EMAIL_USER=${EMAIL_USER}
+        - EMAIL_PASS=${EMAIL_PASS}
+        - EMAIL_PORT=${EMAIL_PORT}
+        - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
+    command: celery -A tacticalrmm worker -Q wupdate
+    networks:
+      - redis
+      - database
+    depends_on: 
+      - db
+      - redis

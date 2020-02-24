@@ -52,6 +52,7 @@ class AgentSerializer(serializers.ModelSerializer):
             "winupdatepolicy",
             "salt_id",
             "choco_installed",
+            "wmi_detail",
         )
 
 

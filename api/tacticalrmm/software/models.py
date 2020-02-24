@@ -19,6 +19,26 @@ class ChocoSoftware(models.Model):
         ]
         biggest = max(range(len(sizes)), key=lambda index: sizes[index]["size"])
         return int(sizes[biggest]["pk"])
+    
+    @classmethod
+    def combine_all(cls):
+        from .serializers import ChocoSoftwareSerializer
+
+        chocos = cls.objects.all()
+        combined = []
+        for i in chocos:
+            combined.extend(ChocoSoftwareSerializer(i).data["chocos"])
+        
+        # remove duplicates
+        return [dict(t) for t in {tuple(d.items()) for d in combined}]
+    
+    def __str__(self):
+        from .serializers import ChocoSoftwareSerializer
+
+        return str(len(ChocoSoftwareSerializer(self).data["chocos"])) + f" - {self.added}"
+        
+
+
 
 
 class ChocoLog(models.Model):

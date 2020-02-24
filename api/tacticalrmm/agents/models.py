@@ -50,6 +50,7 @@ class Agent(models.Model):
     managed_by_wsus = models.BooleanField(default=False)
     is_updating = models.BooleanField(default=False)
     choco_installed = models.BooleanField(default=False)
+    wmi_detail = JSONField(null=True)
 
     def __str__(self):
         return self.hostname
@@ -101,7 +102,7 @@ class Agent(models.Model):
         if "kwargs" in kwargs:
             json.update({"kwarg": kwargs["kwargs"]})
         resp = requests.post(
-            "http://127.0.0.1:8123/run", json=[json], timeout=kwargs["timeout"]
+            "http://" + settings.SALT_HOST + ":8123/run", json=[json], timeout=kwargs["timeout"]
         )
         return resp
 
@@ -121,7 +122,7 @@ class Agent(models.Model):
             json.update({"arg": kwargs["arg"]})
         if "kwargs" in kwargs:
             json.update({"kwarg": kwargs["kwargs"]})
-        resp = requests.post("http://127.0.0.1:8123/run", json=[json])
+        resp = requests.post("http://" + settings.SALT_HOST + ":8123/run", json=[json])
         return resp
 
     @staticmethod
@@ -129,7 +130,7 @@ class Agent(models.Model):
 
         session = requests.Session()
         session.post(
-            "http://127.0.0.1:8123/login",
+            "http://" + settings.SALT_HOST + ":8123/login",
             json={
                 "username": settings.SALT_USERNAME,
                 "password": settings.SALT_PASSWORD,
@@ -137,7 +138,7 @@ class Agent(models.Model):
             },
         )
 
-        return session.get(f"http://127.0.0.1:8123/jobs/{jid}")
+        return session.get(f"http://" + settings.SALT_HOST + ":8123/jobs/{jid}")
 
     @staticmethod
     def get_github_versions():

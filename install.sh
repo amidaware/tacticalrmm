@@ -207,8 +207,10 @@ EMAIL_ALERT_RECIPIENTS = ["jsmith@example.com",]
 
 SALT_USERNAME = "saltapi"
 SALT_PASSWORD = "${SALTPW}"
+SALT_HOST     = "127.0.0.1"
 MESH_USERNAME = "${meshusername}"
 MESH_SITE = "https://${meshdomain}"
+REDIS_HOST    = "localhost"
 EOF
 )"
 echo "${localvars}" > /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/local_settings.py
@@ -223,6 +225,7 @@ pip install --upgrade pip
 pip install -r /home/${USER}/rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic
+python manage.py load_chocos
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
 printf >&2 "${YELLOW}Please create your login for the RMM website and django admin${NC}\n"
@@ -565,8 +568,6 @@ print_green 'Installing certbot'
 
 sudo add-apt-repository -y ppa:certbot/certbot
 sudo apt install -y certbot
-sudo ufw allow http
-sudo ufw allow https
 sudo systemctl stop nginx
 
 print_green 'Getting https certs'
@@ -574,9 +575,6 @@ print_green 'Getting https certs'
 sudo certbot certonly --standalone --agree-tos -m ${letsemail} --no-eff-email -d ${meshdomain}
 sudo certbot certonly --standalone --agree-tos -m ${letsemail} --no-eff-email -d ${rmmdomain}
 sudo certbot certonly --standalone --agree-tos -m ${letsemail} --no-eff-email -d ${frontenddomain}
-
-sudo ufw delete allow http
-sudo ufw delete allow https
 
 sudo chown -R $USER:$GROUP /home/${USER}/.npm
 sudo chown -R $USER:$GROUP /home/${USER}/.config

@@ -26,11 +26,12 @@
           <q-icon name="system_update_alt" size="1.5em" color="warning"><q-tooltip>Patches Pending</q-tooltip></q-icon>
         </q-th>
       </template>
+      <!--
       <template v-slot:header-cell-antivirus="props">
         <q-th auto-width :props="props">
           <q-icon name="fas fa-shield-alt" size="1.2em" color="primary"><q-tooltip>Anti Virus</q-tooltip></q-icon>
         </q-th>
-      </template>
+      </template> -->
       <template v-slot:header-cell-agentstatus="props">
         <q-th auto-width :props="props">
           <q-icon name="fas fa-signal" size="1.2em" color="accent"><q-tooltip>Agent Status</q-tooltip></q-icon>
@@ -48,9 +49,6 @@
           <!-- context menu -->
           <q-menu context-menu>
             <q-list dense style="min-width: 200px">
-              <q-item clickable v-close-popup>
-                <q-item-section>Open...</q-item-section>
-              </q-item>
               <q-item clickable v-close-popup @click="showEditAgentModal = true">
                 <q-item-section avatar>
                   <q-icon style="font-size: 0.9rem;" name="edit" />
@@ -190,6 +188,7 @@
               <q-tooltip>Patches Pending</q-tooltip>
             </q-icon>
           </q-td>
+          <!--
           <q-td :props="props" key="antivirus">
             <q-icon v-if="props.row.antivirus !== 'n/a' && props.row.antivirus === 'windowsdefender'" name="fas fa-exclamation" color="warning">
               <q-tooltip>{{ props.row.antivirus }}</q-tooltip>
@@ -198,7 +197,7 @@
               <q-tooltip>{{ props.row.antivirus }}</q-tooltip>
             </q-icon>
             <q-icon v-else name="fas fa-times-circle" color="negative" />
-          </q-td>
+          </q-td> -->
           <q-td key="agentstatus">
             <q-icon v-if="props.row.status ==='overdue'" name="fas fa-exclamation-triangle" color="negative">
               <q-tooltip>Agent overdue</q-tooltip>

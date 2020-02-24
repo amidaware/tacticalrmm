@@ -1,0 +1,53 @@
+SECRET_KEY = '${DJANGO_SEKRET}'
+
+ALLOWED_HOSTS = ['${API_HOST}']
+
+ADMIN_URL = "${ADMIN_URL}"
+
+CORS_ORIGIN_WHITELIST = ["https://${APP_HOST}",]
+
+DEBUG = ${DJANGO_DEBUG}
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'tacticalrmm',
+        'USER': '${POSTGRES_USER}',
+        'PASSWORD': '${POSTGRES_PASS}',
+        'HOST': '${POSTGRES_HOST}',
+        'PORT': '5432',
+    }
+}
+
+REST_FRAMEWORK = {
+    'DATETIME_FORMAT': "%b-%d-%Y - %H:%M",
+
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'knox.auth.TokenAuthentication',
+    ),
+}
+
+if not DEBUG:
+    REST_FRAMEWORK.update({
+        'DEFAULT_RENDERER_CLASSES': (
+            'rest_framework.renderers.JSONRenderer',
+        )
+    })
+
+EMAIL_USE_TLS = ${EMAIL_TLS}
+EMAIL_HOST = '${EMAIL_HOST}'
+EMAIL_HOST_USER = '${EMAIL_USER}'
+EMAIL_HOST_PASSWORD = '${EMAIL_PASS}'
+EMAIL_PORT = ${EMAIL_PORT}
+EMAIL_ALERT_RECIPIENTS = [${EMAIL_RECIPIENTS}]
+
+SALT_USERNAME = "${SALT_USER}"
+SALT_PASSWORD = "${SALT_PASS}"
+MESH_USERNAME = "${MESH_USER}"
+MESH_SITE = "https://${MESH_HOST}"
+REDIS_HOST = "${REDIS_HOST}"
+SALT_HOST = "${SALT_HOST}"
+TWO_FACTOR_OTP = "${TWO_FACTOR_OTP}"

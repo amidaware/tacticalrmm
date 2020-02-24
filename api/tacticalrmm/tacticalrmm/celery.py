@@ -2,13 +2,14 @@ from __future__ import absolute_import, unicode_literals
 import os
 from celery import Celery
 from celery.schedules import crontab
+from django.conf import settings
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tacticalrmm.settings")
 
-app = Celery("tacticalrmm", backend="redis://localhost", broker="redis://localhost")
+app = Celery("tacticalrmm", backend="redis://" + settings.REDIS_HOST, broker="redis://" + settings.REDIS_HOST)
 # app.config_from_object('django.conf:settings', namespace='CELERY')
-app.broker_url = "redis://localhost:6379"
-app.result_backend = "redis://localhost:6379"
+app.broker_url = "redis://" + settings.REDIS_HOST + ":6379"
+app.result_backend = "redis://" + settings.REDIS_HOST + ":6379"
 app.accept_content = ["application/json"]
 app.result_serializer = "json"
 app.task_serializer = "json"

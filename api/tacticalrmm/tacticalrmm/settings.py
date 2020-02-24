@@ -153,6 +153,8 @@ if 'TRAVIS' in os.environ:
     SALT_PASSWORD = "travis"
     MESH_USERNAME = "travis"
     MESH_SITE = "https://example.com"
+    REDIS_HOST = "localhost"
+    SALT_HOST = "127.0.0.1"
     TWO_FACTOR_OTP = "TRAVIS"
 
 if 'AZPIPELINE' in os.environ:
@@ -197,4 +199,6 @@ if 'AZPIPELINE' in os.environ:
     SALT_PASSWORD = "pipeline"
     MESH_USERNAME = "pipeline"
     MESH_SITE = "https://example.com"
+    REDIS_HOST = "localhost"
+    SALT_HOST = "127.0.0.1"
     TWO_FACTOR_OTP = "ABC12345"

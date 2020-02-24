@@ -11,10 +11,10 @@
             narrow-indicator
             no-caps
         >
-            <q-tab name="summary" icon="fas fa-server" size="xs" label="Summary" />
-            <q-tab name="checks" icon="computer" label="Checks" />
-            <q-tab name="patches" label="Patches" />
-            <q-tab name="software" label="Software" />
+            <q-tab name="summary" icon="fas fa-info-circle" size="xs" label="Summary" />
+            <q-tab name="checks" icon="fas fa-check-double" label="Checks" />
+            <q-tab name="patches" icon="system_update" label="Patches" />
+            <q-tab name="software" icon="fab fa-windows" label="Software" />
         </q-tabs>
         <q-separator />
         <q-tab-panels v-model="subtab" :animated="false">

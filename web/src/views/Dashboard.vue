@@ -148,10 +148,10 @@ export default {
           name: "patchespending",
           align: "left"
         },
-        {
+        /* {
           name: "antivirus",
           align: "left"
-        },
+        }, */
         {
           name: "agentstatus",
           field: "status",
@@ -177,7 +177,13 @@ export default {
   methods: {
     refreshEntireSite() {
       this.$store.dispatch("loadTree");
-      this.loadAllClients();
+      
+      if (this.allClientsActive) {
+        this.loadAllClients();
+      } else {
+        this.loadFrame(this.selectedTree, false);
+      }
+
       if (this.selectedAgentPk) {
         const pk = this.selectedAgentPk;
         this.$store.dispatch("loadSummary", pk);
@@ -186,8 +192,9 @@ export default {
         this.$store.dispatch("loadInstalledSoftware", pk);
       }
     },
-    loadFrame(activenode) {
-      this.$store.commit("destroySubTable");
+    loadFrame(activenode, destroySub=true) {
+      if (destroySub) this.$store.commit("destroySubTable");
+      
       let client, site, url;
       try {
         client = this.$refs.tree.meta[activenode].parent.key.split('|')[0];

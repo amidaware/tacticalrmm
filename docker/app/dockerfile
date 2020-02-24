@@ -1,0 +1,17 @@
+FROM node:12-alpine AS builder
+ARG APP_HOST
+ARG API_HOST
+EXPOSE 80
+WORKDIR /home/node
+RUN apk add gettext
+COPY ./web .
+COPY ./docker/app/.env.local.keep /home/.env.local.tmp
+RUN envsubst '\$API_HOST' < /home/.env.local.tmp > /home/node/.env.local && rm /home/.env.local.tmp
+RUN npm install && npm run build
+COPY ./docker/app/app.conf /home/node/app.conf.tmp
+RUN envsubst '\$APP_HOST' < /home/node/app.conf.tmp > /home/node/app.conf
+
+FROM nginx:alpine
+WORKDIR /usr/share/nginx/html
+COPY --from=builder /home/node/dist .
+COPY --from=builder /home/node/app.conf /etc/nginx/conf.d/default.conf

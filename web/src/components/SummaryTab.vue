@@ -1,26 +1,145 @@
 <template>
-    <div v-if="Object.keys(summary).length === 0">
-        No agent selected
+  <div v-if="Object.keys(summary).length === 0">No agent selected</div>
+  <div v-else>
+    <span>
+      <b>{{ summary.hostname }}</b>
+      &bull; {{ summary.operating_system }} &bull; Agent v{{ summary.version }}
+    </span>
+    <hr />
+    <div class="row">
+      <div class="col-4">
+        <!-- left -->
+        <q-list dense>
+          <q-item>
+            <q-item-section avatar>
+              <q-icon name="fas fa-desktop" />
+            </q-item-section>
+            <q-item-section>{{ makeModel }}</q-item-section>
+          </q-item>
+          <q-item>
+            <q-item-section avatar>
+              <q-icon name="fas fa-microchip" />
+            </q-item-section>
+            <q-item-section>{{ summary.cpu_info[0].name}}</q-item-section>
+          </q-item>
+          <q-item>
+            <q-item-section avatar>
+              <q-icon name="fas fa-memory" />
+            </q-item-section>
+            <q-item-section>{{ summary.total_ram}} GB RAM</q-item-section>
+          </q-item>
+
+          <!-- physical disks -->
+          <q-item v-for="disk in physicalDisks" :key="disk.model">
+            <q-item-section avatar>
+              <q-icon name="far fa-hdd" />
+            </q-item-section>
+            <q-item-section>{{ disk.model }} {{ disk.size }}GB {{ disk.interfaceType }}</q-item-section>
+          </q-item>
+          <q-item>
+            <q-item-section avatar>
+              <q-icon name="fas fa-globe-americas" />
+            </q-item-section>
+            <q-item-section>Public IP: {{ summary.public_ip}}</q-item-section>
+          </q-item>
+          <q-item>
+            <q-item-section avatar>
+              <q-icon name="fas fa-network-wired" />
+            </q-item-section>
+            <q-item-section>LAN IP: {{ localIPs }}</q-item-section>
+          </q-item>
+        </q-list>
+      </div>
+      <div class="col-5"></div>
+      <!-- right -->
+      <div class="col-3">
+        <span class="text-subtitle2 text-bold">Disks</span>
+        <div v-for="disk in disks" :key="disk.device">
+          <span>{{ disk.device }} ({{ disk.fstype }})</span>
+          <q-linear-progress
+            rounded
+            size="15px"
+            :value="disk.percent / 100"
+            color="green"
+            class="q-mt-sm"
+          />
+          <span>{{ disk.free }} free of {{ disk.total }}</span>
+          <hr />
+        </div>
+      </div>
     </div>
-    <div v-else>
-        {{ summary.operating_system }}
-    </div>
+  </div>
 </template>
 
 <script>
-import axios from 'axios';
 export default {
-    name: 'SummaryTab',
-    data() {
-        return {
-
-        }
+  name: "SummaryTab",
+  data() {
+    return {};
+  },
+  methods: {
+    bytesToGB(bytes) {
+      return Math.round(parseInt(bytes) / 1073741824);
     },
-    computed: {
-        summary() {
-            return this.$store.state.agentSummary;
-        }
+    validateIPv4(ip) {
+      const rx = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
+      if (rx.test(ip)) {
+        return true;
+      }
+      return false;
     }
-}
+  },
+  computed: {
+    summary() {
+      return this.$store.state.agentSummary;
+    },
+    disks() {
+      const entries = Object.entries(this.summary.disks);
+      const ret = [];
+      for (let [k, v] of entries) {
+        ret.push(v);
+      }
+      return ret;
+    },
+    makeModel() {
+      const ret = this.summary.wmi_detail.make_model[0];
+      return ret.filter(k => k.Version).map(k => k.Version)[0];
+    },
+    physicalDisks() {
+      const ret = this.summary.wmi_detail.disk;
+      const phys = [];
+      ret.forEach(disk => {
+        const model = disk.filter(k => k.Caption).map(k => k.Caption)[0];
+        const size = disk.filter(k => k.Size).map(k => k.Size)[0];
+        const interfaceType = disk
+          .filter(k => k.InterfaceType)
+          .map(k => k.InterfaceType)[0];
+
+        phys.push({
+          model: model,
+          size: this.bytesToGB(size),
+          interfaceType: interfaceType
+        });
+      });
+
+      return phys;
+    },
+    localIPs() {
+      const ret = this.summary.wmi_detail.network_config;
+      const ips = [];
+      ret.forEach(ip => {
+        const x = ip.filter(k => k.IPAddress).map(k => k.IPAddress)[0];
+        if (x !== undefined) {
+          x.forEach(i => {
+            if (this.validateIPv4(i)) {
+              ips.push(i);
+            }
+          });
+        }
+      });
+      return (ips.length === 1 ? ips[0] : ips.join(", "))
+    }
+  }
+};
 </script>
 

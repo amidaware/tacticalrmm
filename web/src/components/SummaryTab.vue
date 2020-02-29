@@ -102,8 +102,16 @@ export default {
       return ret;
     },
     makeModel() {
-      const ret = this.summary.wmi_detail.make_model[0];
-      return ret.filter(k => k.Version).map(k => k.Version)[0];
+      const comp_sys = this.summary.wmi_detail.comp_sys[0];
+      const comp_sys_prod = this.summary.wmi_detail.comp_sys_prod[0];
+      let make = comp_sys_prod.filter(k => k.Vendor).map(k => k.Vendor)[0];
+      let model = comp_sys.filter(k => k.SystemFamily).map(k => k.SystemFamily)[0];
+
+      if (!model || !make) {
+        return comp_sys_prod.filter(k => k.Version).map(k => k.Version)[0];
+      } else {
+        return `${make} ${model}`;
+      }
     },
     physicalDisks() {
       const ret = this.summary.wmi_detail.disk;

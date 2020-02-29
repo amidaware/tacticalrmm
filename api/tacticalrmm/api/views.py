@@ -324,7 +324,6 @@ def update(request):
     hostname = data["hostname"]
     os = data["operating_system"]
     total_ram = data["total_ram"]
-    cpu_info = data["cpu_info"]
     plat = data["platform"]
     plat_release = data["platform_release"]
     version = data["version"]
@@ -335,7 +334,6 @@ def update(request):
     agent.hostname = hostname
     agent.operating_system = os
     agent.total_ram = total_ram
-    agent.cpu_info = cpu_info
     agent.plat = plat
     agent.plat_release = plat_release
     agent.version = version
@@ -347,7 +345,6 @@ def update(request):
             "hostname",
             "operating_system",
             "total_ram",
-            "cpu_info",
             "plat",
             "plat_release",
             "version",

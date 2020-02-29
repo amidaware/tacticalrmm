@@ -20,7 +20,7 @@
             <q-item-section avatar>
               <q-icon name="fas fa-microchip" />
             </q-item-section>
-            <q-item-section>{{ summary.cpu_info[0].name}}</q-item-section>
+            <q-item-section>{{ cpuModel }}</q-item-section>
           </q-item>
           <q-item>
             <q-item-section avatar>
@@ -146,6 +146,10 @@ export default {
         }
       });
       return (ips.length === 1 ? ips[0] : ips.join(", "))
+    },
+    cpuModel() {
+      const cpu = this.summary.wmi_detail.cpu[0];
+      return cpu.filter(k => k.Name).map(k => k.Name)[0];
     }
   }
 };

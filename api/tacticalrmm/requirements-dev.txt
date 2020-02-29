@@ -3,6 +3,6 @@ attrs==19.3.0
 black==19.10b0
 Click==7.0
 pathspec==0.7.0
-regex==2020.1.8
+regex==2020.2.20
 toml==0.10.0
 typed-ast==1.4.1

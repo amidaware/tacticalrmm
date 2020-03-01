@@ -54,6 +54,7 @@ echo "saltapi:${SALTPW}" | sudo chpasswd
 
 print_green 'Installing Nginx'
 
+sudo apt install -y software-properties-common
 sudo add-apt-repository -y ppa:nginx/stable
 sudo apt update
 sudo apt install -y nginx
@@ -126,7 +127,8 @@ echo "${meshcfg}" > /meshcentral/meshcentral-data/config.json
 
 print_green 'Installing python, redis and git'
 
-sudo apt install -y software-properties-common
+sudo add-apt-repository -y ppa:deadsnakes/ppa
+sudo apt update
 sudo apt install -y python3.7 python3.7-venv python3.7-dev python3-pip python3-dev python3-venv python3-setuptools ca-certificates redis git python3-cherrypy3
 
 print_green 'Installing postgresql'
@@ -651,10 +653,11 @@ sudo systemctl restart salt-master
 sleep 30
 sudo systemctl restart salt-api
 
-printf >&2 "${BLUE}%0.s*${NC}" {1..80}
+printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"
-printf >&2 "${BLUE}Installation complete!${NC}\n\n"
-printf >&2 "${BLUE}Please refer to the github README for next steps${NC}\n"
-printf >&2 "\n\n"
-printf >&2 "${BLUE}%0.s*${NC}" {1..80}
+printf >&2 "${YELLOW}Installation complete!${NC}\n\n"
+printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${frontenddomain}${NC}\n"
+printf >&2 "${YELLOW}Django admin url: ${GREEN}https://${rmmdomain}/${ADMINURL}${NC}\n\n"
+printf >&2 "${YELLOW}Please refer to the github README for next steps${NC}\n\n"
+printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"

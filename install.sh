@@ -265,6 +265,8 @@ chmod-socket = 660
 # clear environment on exit
 vacuum = true
 die-on-term = true
+max-requests = 500
+max-requests-delta = 1000
 EOF
 )"
 echo "${uwsgini}" > /home/${USER}/rmm/api/tacticalrmm/app.ini

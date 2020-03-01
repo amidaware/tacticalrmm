@@ -29,7 +29,7 @@ def get_refreshed_services(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     try:
         resp = agent.salt_api_cmd(
-            hostname=agent.salt_id, timeout=30, func="get_services.get_services"
+            hostname=agent.salt_id, timeout=30, func="win_agent.get_services"
         )
         data = resp.json()
     except Exception:

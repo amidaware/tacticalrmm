@@ -1,4 +1,10 @@
+from __future__ import absolute_import
+import psutil
 import os
+
+
+def get_services():
+    return [svc.as_dict() for svc in psutil.win_service_iter()]
 
 
 def run_python_script(filename, timeout):

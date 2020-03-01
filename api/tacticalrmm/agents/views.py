@@ -1,6 +1,9 @@
 from loguru import logger
 import subprocess
 from packaging import version as pyver
+import zlib
+import json
+import base64
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -236,13 +239,18 @@ def get_event_log(request, pk, logtype, days):
             func="get_eventlog.get_eventlog",
             arg=[logtype, int(days)],
         )
-        data = resp.json()
     except Exception:
         return Response(
             {"error": "unable to contact the agent"}, status=status.HTTP_400_BAD_REQUEST
         )
 
-    return Response(data["return"][0][agent.salt_id])
+    return Response(
+        json.loads(
+            zlib.decompress(
+                base64.b64decode(resp.json()["return"][0][agent.salt_id]["wineventlog"])
+            )
+        )
+    )
 
 
 @api_view(["POST"])

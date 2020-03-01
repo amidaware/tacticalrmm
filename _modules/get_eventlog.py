@@ -4,8 +4,17 @@ import win32con
 import win32evtlogutil
 import winerror
 import datetime
-import random
-import string
+import zlib
+import json
+import base64
+
+
+def _compress_json(j):
+    return {
+        "wineventlog": base64.b64encode(
+            zlib.compress(json.dumps(j).encode("utf-8", errors="ignore"))
+        ).decode("ascii", errors="ignore")
+    }
 
 
 def get_eventlog(logtype, last_n_days):
@@ -28,6 +37,7 @@ def get_eventlog(logtype, last_n_days):
 
     try:
         events = 1
+        uid = 0
         while events:
             events = win32evtlog.ReadEventLog(hand, flags, 0)
             for ev_obj in events:
@@ -43,6 +53,7 @@ def get_eventlog(logtype, last_n_days):
                 evt_category = str(ev_obj.EventCategory)
                 record = str(ev_obj.RecordNumber)
                 msg = str(win32evtlogutil.SafeFormatMessage(ev_obj, logtype))
+                uid += 1
 
                 event_dict = {
                     "computer": computer,
@@ -53,12 +64,7 @@ def get_eventlog(logtype, last_n_days):
                     "message": msg,
                     "time": the_time,
                     "record": record,
-                    "uid": "".join(
-                        [
-                            random.choice(string.ascii_letters + string.digits)
-                            for n in range(60)
-                        ]
-                    ),
+                    "uid": uid,
                 }
 
                 log.append(event_dict)
@@ -66,8 +72,8 @@ def get_eventlog(logtype, last_n_days):
             if time_obj < start_time:
                 break
 
-    except Exception as e:
+    except Exception:
         pass
 
     win32evtlog.CloseEventLog(hand)
-    return log
+    return _compress_json(log)

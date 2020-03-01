@@ -19,6 +19,7 @@
       row-key="uid"
       binary-state-sort
       hide-bottom
+      virtual-scroll
     >
       <template v-slot:top>
         <q-btn dense flat push @click="getEventLog" icon="refresh" />
@@ -123,7 +124,7 @@ export default {
       this.events = [];
       this.$q.loading.show({ message: `Loading ${this.logType} event log...please wait` });
       axios.get(`/agents/${this.pk}/geteventlog/${this.logType}/${this.days}/`).then(r => {
-        this.events = r.data;
+        this.events = Object.freeze(r.data);
         this.$q.loading.hide();
       })
       .catch(e => {

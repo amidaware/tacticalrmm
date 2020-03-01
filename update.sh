@@ -9,6 +9,7 @@ cd /home/${USER}/rmm/
 git fetch origin develop
 git reset --hard FETCH_HEAD
 git clean -df
+cp /home/${USER}/rmm/_modules/* /srv/salt/_modules/
 source /home/${USER}/rmm/api/env/bin/activate
 cd /home/${USER}/rmm/api/tacticalrmm
 pip install -r /home/${USER}/rmm/api/tacticalrmm/requirements.txt

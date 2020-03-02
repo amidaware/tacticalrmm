@@ -12,7 +12,7 @@ logger.configure(**settings.LOG_CONFIG)
 @app.task()
 def install_chocolatey(pk, wait=False):
     if wait:
-        sleep(10)
+        sleep(15)
     agent = Agent.objects.get(pk=pk)
     r = agent.salt_api_cmd(
         hostname=agent.salt_id,

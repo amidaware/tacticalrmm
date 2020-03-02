@@ -9,7 +9,7 @@ from tacticalrmm.celery import app
 def check_for_updates_task(pk, wait=False):
     
     if wait:
-        sleep(60)
+        sleep(70)
 
     agent = Agent.objects.get(pk=pk)
 

@@ -202,7 +202,7 @@ def create_auth_token(request):
 
 
 @api_view(["POST"])
-@authentication_classes((BasicAuthentication,))
+@authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
 def accept_salt_key(request):
     saltid = request.data["saltid"]
@@ -359,12 +359,32 @@ def update(request):
     if not agent.choco_installed:
         install_chocolatey.delay(agent.pk, wait=True)
 
-    # check for updates if this is fresh agent install
-    if not WinUpdate.objects.filter(agent=agent).exists():
-        check_for_updates_task.delay(agent.pk, wait=True)
-
     return Response("ok")
 
+@api_view(["POST"])
+@authentication_classes((TokenAuthentication,))
+@permission_classes((IsAuthenticated,))
+def on_agent_first_install(request):
+    pk = request.data["pk"]
+    agent = get_object_or_404(Agent, pk=pk)
+
+    resp = agent.salt_api_cmd(
+        hostname=agent.salt_id, timeout=60, func="saltutil.sync_modules"
+    )
+    try:
+        data = resp.json()
+    except Exception:
+        return Response("err", status=status.HTTP_400_BAD_REQUEST)
+    else:
+        if not data["return"][0][agent.salt_id]:
+            return Response("err", status=status.HTTP_400_BAD_REQUEST)
+        else:
+            get_wmi_detail_task.delay(agent.pk)
+            get_installed_software.delay(agent.pk)
+            install_chocolatey.delay(agent.pk, wait=True)
+            check_for_updates_task.delay(agent.pk, wait=True)
+            return Response("ok")
+    
 
 @api_view(["PATCH"])
 @authentication_classes((TokenAuthentication,))

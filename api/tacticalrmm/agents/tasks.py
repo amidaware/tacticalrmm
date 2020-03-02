@@ -13,7 +13,6 @@ logger.configure(**settings.LOG_CONFIG)
 
 @app.task
 def get_wmi_detail_task(pk):
-    sleep(30)
     agent = Agent.objects.get(pk=pk)
     resp = agent.salt_api_cmd(
         hostname=agent.salt_id, timeout=30, func="system_info.system_info"
@@ -26,33 +25,20 @@ def get_wmi_detail_task(pk):
 @app.task
 def sync_salt_modules_task(pk):
     agent = Agent.objects.get(pk=pk)
-    logger.info(f"Attempting to sync salt modules on {agent.hostname}")
-    sleep(10)
-    resp = agent.salt_api_cmd(hostname=agent.salt_id, timeout=30, func="test.ping")
+
+    resp = agent.salt_api_cmd(
+        hostname=agent.salt_id, timeout=60, func="saltutil.sync_modules"
+    )
+    # successful sync if new/charnged files: {'return': [{'MINION-15': ['modules.get_eventlog', 'modules.win_agent', 'etc...']}]}
+    # successful sync with no new/changed files: {'return': [{'MINION-15': []}]}
     try:
-        data = resp.json()
-    except Exception as e:
-        logger.error(f"Unable to contact agent {agent.hostname}: {e}")
-        return f"Unable to contact agent {agent.hostname}: {e}"
+        data = resp.json()["return"][0][agent.salt_id]
+    except Exception as f:
+        logger.error(f"Unable to sync modules {agent.salt_id}: {f}")
+        return f"Unable to sync modules {agent.salt_id}: {f}"
     else:
-        try:
-            ping = data["return"][0][agent.salt_id]
-        except KeyError as j:
-            logger.error(f"{j}: Unable to contact agent (is salt installed properly?)")
-            return f"{j}: Unable to contact agent (is salt installed properly?)"
-        else:
-            resp2 = agent.salt_api_cmd(
-                hostname=agent.salt_id, timeout=60, func="saltutil.sync_modules"
-            )
-            try:
-                data2 = resp2.json()
-            except Exception as f:
-                logger.error(f"Unable to contact agent {agent.hostname}: {f}")
-                return f"Unable to contact agent {agent.hostname}: {f}"
-            else:
-                # TODO fix return type
-                logger.info(f"Successfully synced salt modules on {agent.hostname}")
-                return f"Successfully synced salt modules on {agent.hostname}"
+        logger.info(f"Successfully synced salt modules on {agent.hostname}")
+        return f"Successfully synced salt modules on {agent.hostname}"
 
 
 @app.task

@@ -381,7 +381,6 @@ def on_agent_first_install(request):
         else:
             get_wmi_detail_task.delay(agent.pk)
             get_installed_software.delay(agent.pk)
-            install_chocolatey.delay(agent.pk, wait=True)
             check_for_updates_task.delay(agent.pk, wait=True)
             return Response("ok")
     

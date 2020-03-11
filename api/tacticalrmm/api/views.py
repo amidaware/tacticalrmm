@@ -156,10 +156,10 @@ def agent_auth(request):
 @authentication_classes((BasicAuthentication,))
 @permission_classes((IsAuthenticated,))
 def get_mesh_exe(request):
+    mesh_exe = os.path.join(settings.BASE_DIR, "tacticalrmm/downloads/meshagent.exe")
+    if not os.path.exists(mesh_exe):
+        return Response("error", status=status.HTTP_400_BAD_REQUEST)
     if settings.DEBUG:
-        mesh_exe = os.path.join(
-            settings.BASE_DIR, "tacticalrmm/downloads/meshagent.exe"
-        )
         with open(mesh_exe, "rb") as f:
             response = HttpResponse(
                 f.read(), content_type="application/vnd.microsoft.portable-executable"
@@ -328,6 +328,7 @@ def update(request):
     plat_release = data["platform_release"]
     version = data["version"]
     av = data["av"]
+    boot_time = data["boot_time"]
 
     agent = get_object_or_404(Agent, agent_id=agent_id)
 
@@ -338,6 +339,7 @@ def update(request):
     agent.plat_release = plat_release
     agent.version = version
     agent.antivirus = av
+    agent.boot_time = boot_time
 
     agent.save(
         update_fields=[
@@ -349,6 +351,7 @@ def update(request):
             "plat_release",
             "version",
             "antivirus",
+            "boot_time",
         ]
     )
 
@@ -360,6 +363,7 @@ def update(request):
         install_chocolatey.delay(agent.pk, wait=True)
 
     return Response("ok")
+
 
 @api_view(["POST"])
 @authentication_classes((TokenAuthentication,))
@@ -376,6 +380,11 @@ def on_agent_first_install(request):
     except Exception:
         return Response("err", status=status.HTTP_400_BAD_REQUEST)
     else:
+        try:
+            ret = data["return"][0][agent.salt_id]
+        except KeyError:
+            return Response("err", status=status.HTTP_400_BAD_REQUEST)
+
         if not data["return"][0][agent.salt_id]:
             return Response("err", status=status.HTTP_400_BAD_REQUEST)
         else:
@@ -383,7 +392,7 @@ def on_agent_first_install(request):
             get_installed_software.delay(agent.pk)
             check_for_updates_task.delay(agent.pk, wait=True)
             return Response("ok")
-    
+
 
 @api_view(["PATCH"])
 @authentication_classes((TokenAuthentication,))
@@ -397,7 +406,6 @@ def hello(request):
     cpu_load = data["cpu_load"]
     used_ram = data["used_ram"]
     disks = data["disks"]
-    boot_time = data["boot_time"]
     logged_in_username = data["logged_in_username"]
 
     agent = get_object_or_404(Agent, agent_id=agent_id)
@@ -413,10 +421,9 @@ def hello(request):
     agent.public_ip = public_ip
     agent.services = services
     agent.cpu_load = cpu_load
-
     agent.used_ram = used_ram
     agent.disks = disks
-    agent.boot_time = boot_time
+
     agent.logged_in_username = logged_in_username
 
     agent.save(
@@ -428,7 +435,6 @@ def hello(request):
             "cpu_load",
             "used_ram",
             "disks",
-            "boot_time",
             "logged_in_username",
         ]
     )

@@ -162,7 +162,7 @@ def update_agent_task(pk, version):
     try:
         r = agent.salt_api_cmd(
             hostname=agent.salt_id,
-            timeout=120,
+            timeout=200,
             func="cmd.script",
             arg=f"{temp_dir}\\{version}.exe",
             kwargs={"args": "/VERYSILENT /SUPPRESSMSGBOXES"},
@@ -193,7 +193,7 @@ def update_agent_task(pk, version):
         timeout=45,
         func="sqlite3.modify",
         arg=[
-            "C:\\Program Files\\TacticalAgent\\winagent\\agentdb.db",
+            "C:\\Program Files\\TacticalAgent\\agentdb.db",
             f'UPDATE agentstorage SET version = "{ver}"',
         ],
     )

@@ -44,6 +44,7 @@ def sync_salt_modules_task(pk):
 @app.task
 def uninstall_agent_task(pk, wait=True):
     agent = Agent.objects.get(pk=pk)
+    salt_id = agent.salt_id
     agent.uninstall_inprogress = True
     agent.save(update_fields=["uninstall_inprogress"])
     logger.info(f"{agent.hostname} uninstall task is running")
@@ -52,26 +53,29 @@ def uninstall_agent_task(pk, wait=True):
         logger.info(f"{agent.hostname} waiting 90 seconds before uninstalling")
         sleep(90)  # need to give salt time to startup on the minion
 
-    resp2 = agent.salt_api_cmd(
-        hostname=agent.salt_id,
-        timeout=60,
-        func="cp.get_file",
-        arg=["salt://scripts/removeagent.exe", "C:\\Windows\\Temp\\"],
-    )
-    data2 = resp2.json()
-    if not data2["return"][0][agent.salt_id]:
-        logger.error(f"{agent.hostname} unable to copy file")
-        return f"{agent.hostname} unable to copy file"
+    attempts = 0
+    error = False
 
-    agent.salt_api_cmd(
-        hostname=agent.salt_id,
-        timeout=500,
-        func="cmd.script",
-        arg="salt://scripts/uninstall.bat",
-    )
+    while 1:
+        attempts += 1
+        r = agent.salt_api_cmd(
+            hostname=salt_id, timeout=60, func="win_agent.uninstall_agent"
+        )
+        if r.json()["return"][0][salt_id] != "ok":
+            if attempts >= 10:
+                error = True
+                break
+            else:
+                continue
+        else:
+            break
 
-    logger.info(f"{agent.hostname} was successfully uninstalled")
-    return f"{agent.hostname} was successfully uninstalled"
+    if error:
+        logger.error(f"{salt_id} uninstall failed")
+    else:
+        logger.info(f"{salt_id} was successfully uninstalled")
+
+    return "agent uninstall"
 
 
 def service_action(hostname, action, service):

@@ -22,3 +22,9 @@ def uninstall_agent():
     remove_exe = os.path.join("C:\\Program Files\\TacticalAgent", "unins000.exe")
     __salt__["cmd.run_bg"]([remove_exe, "/VERYSILENT", "/SUPPRESSMSGBOXES"])
     return "ok"
+
+
+def update_salt():
+    tacrmm = os.path.join("C:\\Program Files\\TacticalAgent", "tacticalrmm.exe")
+    __salt__["cmd.run_bg"]([tacrmm, "-m", "updatesalt"])
+    return "ok"

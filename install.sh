@@ -283,6 +283,8 @@ Group=www-data
 WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
 Environment="PATH=/home/${USER}/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/home/${USER}/rmm/api/env/bin/uwsgi --ini app.ini
+Restart=always
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target
@@ -433,6 +435,7 @@ celeryservice="$(cat << EOF
 [Unit]
 Description=Celery Service
 After=network.target
+After=redis.service
 
 [Service]
 Type=forking
@@ -443,6 +446,8 @@ WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} multi start \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} \${CELERYD_OPTS}'
 ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \${CELERYD_NODES} --pidfile=\${CELERYD_PID_FILE}'
 ExecReload=/bin/sh -c '\${CELERY_BIN} multi restart \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} \${CELERYD_OPTS}'
+Restart=always
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target
@@ -454,6 +459,7 @@ celerywinupdatesvc="$(cat << EOF
 [Unit]
 Description=Celery Win Update Service
 After=network.target
+After=redis.service
 
 [Service]
 Type=forking
@@ -464,6 +470,8 @@ WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} multi start \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
 ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \${CELERYD_NODES} --pidfile=\${CELERYD_PID_FILE}'
 ExecReload=/bin/sh -c '\${CELERY_BIN} multi restart \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
+Restart=always
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target
@@ -515,6 +523,7 @@ celerybeatservice="$(cat << EOF
 [Unit]
 Description=Celery Beat Service
 After=network.target
+After=redis.service
 
 [Service]
 Type=simple
@@ -523,6 +532,8 @@ Group=${USER}
 EnvironmentFile=/etc/conf.d/celery.conf
 WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} beat -A \${CELERY_APP} --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
+Restart=always
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target
@@ -552,8 +563,8 @@ WorkingDirectory=/meshcentral
 User=${USER}
 Group=${USER}
 Restart=always
-# Restart service after 10 seconds if node service crashes
-RestartSec=10
+RestartSec=10s
+
 [Install]
 WantedBy=multi-user.target
 EOF

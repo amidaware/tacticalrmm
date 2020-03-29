@@ -31,32 +31,51 @@
         <p>No Checks</p>
       </template>
       <template v-else>
-        <q-markup-table dense>
-          <thead>
-            <th width="1%" class="text-left">Email</th>
-            <th width="1%" class="text-left">SMS</th>
-            <th width="1%" class="text-left"></th>
-            <th width="20%" class="text-left">Description</th>
-            <th width="10%" class="text-left">Status</th>
-            <th width="33%" class="text-left">More Info</th>
-            <th width="34%" class="text-left">Date / Time</th>
-          </thead>
-
-          <tbody>
-            <q-tr
-              v-for="check in allChecks"
-              :key="check.id + check.check_type"
-              @contextmenu.native="editCheckPK = check.id"
-            >
+        <q-table
+          dense
+          class="checks-tbl-sticky"
+          :data="allChecks"
+          :columns="columns"
+          :row-key="row => row.id + row.check_type"
+          binary-state-sort
+          :pagination.sync="pagination"
+          hide-bottom
+        >
+          <!-- header slots -->
+          <template v-slot:header-cell-smsalert="props">
+            <q-th auto-width :props="props">
+              <q-icon name="phone_android" size="1.5em">
+                <q-tooltip>SMS Alert</q-tooltip>
+              </q-icon>
+            </q-th>
+          </template>
+          <template v-slot:header-cell-emailalert="props">
+            <q-th auto-width :props="props">
+              <q-icon name="email" size="1.5em">
+                <q-tooltip>Email Alert</q-tooltip>
+              </q-icon>
+            </q-th>
+          </template>
+          <template v-slot:header-cell-statusicon="props">
+            <q-th auto-width :props="props"></q-th>
+          </template>
+          <!-- body slots -->
+          <template slot="body" slot-scope="props" :props="props">
+            <q-tr @contextmenu="editCheckPK = props.row.id">
+              <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item clickable v-close-popup @click="editCheck(check.check_type)">
+                  <q-item clickable v-close-popup @click="editCheck(props.row.check_type)">
                     <q-item-section side>
                       <q-icon name="edit" />
                     </q-item-section>
                     <q-item-section>Edit</q-item-section>
                   </q-item>
-                  <q-item clickable v-close-popup @click="deleteCheck(check.id, check.check_type)">
+                  <q-item
+                    clickable
+                    v-close-popup
+                    @click="deleteCheck(props.row.id, props.row.check_type)"
+                  >
                     <q-item-section side>
                       <q-icon name="delete" />
                     </q-item-section>
@@ -68,63 +87,70 @@
                   </q-item>
                 </q-list>
               </q-menu>
-              <td>
+              <!-- tds -->
+              <q-td>
                 <q-checkbox
                   dense
-                  @input="checkAlertAction(check.id, check.check_type, 'email', check.email_alert)"
-                  v-model="check.email_alert"
+                  @input="checkAlertAction(props.row.id, props.row.check_type, 'email', props.row.email_alert)"
+                  v-model="props.row.email_alert"
                 />
-              </td>
-              <td>
+              </q-td>
+              <q-td>
                 <q-checkbox
                   dense
-                  @input="checkAlertAction(check.id, check.check_type, 'text', check.text_alert)"
-                  v-model="check.text_alert"
+                  @input="checkAlertAction(props.row.id, props.row.check_type, 'text', props.row.text_alert)"
+                  v-model="props.row.text_alert"
                 />
-              </td>
-              <td v-if="check.status === 'pending'"></td>
-              <td v-else-if="check.status === 'passing'">
+              </q-td>
+              <q-td v-if="props.row.status === 'pending'"></q-td>
+              <q-td v-else-if="props.row.status === 'passing'">
                 <q-icon style="font-size: 1.3rem;" color="positive" name="check_circle" />
-              </td>
-              <td v-else-if="check.status === 'failing'">
+              </q-td>
+              <q-td v-else-if="props.row.status === 'failing'">
                 <q-icon style="font-size: 1.3rem;" color="negative" name="error" />
-              </td>
-              <td
-                v-if="check.check_type === 'diskspace'"
-              >Disk Space Drive {{ check.disk }} > {{check.threshold }}%</td>
-              <td v-else-if="check.check_type === 'cpuload'">Avg CPU Load > {{ check.cpuload }}%</td>
-              <td v-else-if="check.check_type === 'script'">Script check: {{ check.script.name }}</td>
-              <td v-else-if="check.check_type === 'ping'">Ping {{ check.name }} ({{ check.ip }})</td>
-              <td
-                v-else-if="check.check_type === 'memory'"
-              >Avg memory usage > {{ check.threshold }}%</td>
-              <td
-                v-else-if="check.check_type === 'winsvc'"
-              >Service Check - {{ check.svc_display_name }}</td>
-              <td v-if="check.status === 'pending'">Awaiting First Synchronization</td>
-              <td v-else-if="check.status === 'passing'">
+              </q-td>
+              <q-td
+                v-if="props.row.check_type === 'diskspace'"
+              >Disk Space Drive {{ props.row.disk }} > {{props.row.threshold }}%</q-td>
+              <q-td
+                v-else-if="props.row.check_type === 'cpuload'"
+              >Avg CPU Load > {{ props.row.cpuload }}%</q-td>
+              <q-td
+                v-else-if="props.row.check_type === 'script'"
+              >Script check: {{ props.row.script.name }}</q-td>
+              <q-td
+                v-else-if="props.row.check_type === 'ping'"
+              >Ping {{ props.row.name }} ({{ props.row.ip }})</q-td>
+              <q-td
+                v-else-if="props.row.check_type === 'memory'"
+              >Avg memory usage > {{ props.row.threshold }}%</q-td>
+              <q-td
+                v-else-if="props.row.check_type === 'winsvc'"
+              >Service Check - {{ props.row.svc_display_name }}</q-td>
+              <q-td v-if="props.row.status === 'pending'">Awaiting First Synchronization</q-td>
+              <q-td v-else-if="props.row.status === 'passing'">
                 <q-badge color="positive">Passing</q-badge>
-              </td>
-              <td v-else-if="check.status === 'failing'">
+              </q-td>
+              <q-td v-else-if="props.row.status === 'failing'">
                 <q-badge color="negative">Failing</q-badge>
-              </td>
-              <td v-if="check.check_type === 'ping'">
+              </q-td>
+              <q-td v-if="props.row.check_type === 'ping'">
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
-                  @click="moreInfo('Ping', check.more_info)"
+                  @click="moreInfo('Ping', props.row.more_info)"
                 >output</span>
-              </td>
-              <td v-else-if="check.check_type === 'script'">
+              </q-td>
+              <q-td v-else-if="props.row.check_type === 'script'">
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
-                  @click="moreInfo('Script Check', check.more_info)"
+                  @click="moreInfo('Script Check', props.row.more_info)"
                 >output</span>
-              </td>
-              <td v-else>{{ check.more_info }}</td>
-              <td>{{ check.last_run }}</td>
+              </q-td>
+              <q-td v-else>{{ props.row.more_info }}</q-td>
+              <q-td>{{ props.row.last_run }}</q-td>
             </q-tr>
-          </tbody>
-        </q-markup-table>
+          </template>
+        </q-table>
       </template>
     </div>
     <!-- modals -->
@@ -242,7 +268,29 @@ export default {
       showEditWinSvcCheck: false,
       showAddScriptCheck: false,
       showEditScriptCheck: false,
-      editCheckPK: null
+      editCheckPK: null,
+      columns: [
+        { name: "smsalert", field: "text_alert", align: "left" },
+        { name: "emailalert", field: "email_alert", align: "left" },
+        { name: "statusicon", align: "left" },
+        { name: "desc", label: "Description", align: "left" },
+        { name: "status", label: "Status", field: "status", align: "left" },
+        {
+          name: "moreinfo",
+          label: "More Info",
+          field: "more_info",
+          align: "left"
+        },
+        {
+          name: "datetime",
+          label: "Date / Time",
+          field: "last_run",
+          align: "left"
+        }
+      ],
+      pagination: {
+        rowsPerPage: 9999
+      }
     };
   },
   methods: {
@@ -336,4 +384,23 @@ export default {
   }
 };
 </script>
+
+<style lang="stylus">
+.checks-tbl-sticky {
+  .q-table__middle {
+    max-height: 25vh;
+  }
+
+  .q-table__top, .q-table__bottom, thead tr:first-child th {
+    background-color: #f5f4f2;
+  }
+
+  thead tr:first-child th {
+    position: sticky;
+    top: 0;
+    opacity: 1;
+    z-index: 1;
+  }
+}
+</style>
 

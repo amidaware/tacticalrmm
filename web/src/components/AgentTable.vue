@@ -463,7 +463,7 @@ export default {
   }
 
   .q-table__top, .q-table__bottom, thead tr:first-child th {
-    background-color: white;
+    background-color: #f5f4f2;
   }
 
   thead tr:first-child th {

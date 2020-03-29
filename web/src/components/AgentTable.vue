@@ -51,7 +51,7 @@
             <q-list dense style="min-width: 200px">
               <q-item clickable v-close-popup @click="showEditAgentModal = true">
                 <q-item-section avatar>
-                  <q-icon style="font-size: 0.9rem;" name="edit" />
+                  <q-icon name="fas fa-edit" />
                 </q-item-section>
                 <q-item-section>Edit {{ props.row.hostname }}</q-item-section>
               </q-item>
@@ -64,7 +64,7 @@
                 @click.stop.prevent="takeControl(props.row.id)"
               >
                 <q-item-section avatar>
-                  <q-icon style="font-size: 0.8rem;" name="fas fa-desktop" />
+                  <q-icon name="fas fa-desktop" />
                 </q-item-section>
 
                 <q-item-section>Take Control</q-item-section>
@@ -77,22 +77,24 @@
                 @click="toggleSendCommand(props.row.id, props.row.hostname)"
               >
                 <q-item-section avatar>
-                  <q-icon style="font-size: 0.8rem;" name="fas fa-terminal" />
+                  <q-icon name="fas fa-terminal" />
                 </q-item-section>
                 <q-item-section>Send Command</q-item-section>
               </q-item>
 
               <q-separator />
               <q-item clickable v-close-popup @click.stop.prevent="remoteBG(props.row.id)">
-                <q-item-section class="remote-bg" side></q-item-section>
+                <q-item-section avatar>
+                  <q-icon name="fas fa-cogs" />
+                </q-item-section>
                 <q-item-section>Remote Background</q-item-section>
               </q-item>
               
               <!-- patch management -->
               <q-separator />
               <q-item clickable>
-                <q-item-section side>
-                  <q-icon name="power_settings_new" />
+                <q-item-section avatar>
+                  <q-icon name="system_update" />
                 </q-item-section>
                 <q-item-section>Patch Management</q-item-section>
                 <q-item-section side>
@@ -116,7 +118,7 @@
 
               <q-separator />
               <q-item clickable>
-                <q-item-section side>
+                <q-item-section avatar>
                   <q-icon name="power_settings_new" />
                 </q-item-section>
                 <q-item-section>Reboot</q-item-section>
@@ -150,7 +152,7 @@
 
               <q-separator />
               <q-item clickable v-close-popup @click.stop.prevent="removeAgent(props.row.id, props.row.hostname)">
-                <q-item-section side><q-icon name="delete" /></q-item-section>
+                <q-item-section avatar><q-icon name="delete" /></q-item-section>
                 <q-item-section>Remove Agent</q-item-section>
               </q-item>
 
@@ -474,11 +476,6 @@ export default {
 
 .highlight {
   background-color: #c9e6ff;
-}
-.remote-bg {
-  background: url("../assets/remote-bg.png") no-repeat center;
-  width: 16px;
-  margin-right: 10px;
 }
 .agent-offline {
   background: gray !important

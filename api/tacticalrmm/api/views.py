@@ -156,10 +156,10 @@ def agent_auth(request):
 @authentication_classes((BasicAuthentication,))
 @permission_classes((IsAuthenticated,))
 def get_mesh_exe(request):
+    mesh_exe = os.path.join(settings.BASE_DIR, "tacticalrmm/downloads/meshagent.exe")
+    if not os.path.exists(mesh_exe):
+        return Response("error", status=status.HTTP_400_BAD_REQUEST)
     if settings.DEBUG:
-        mesh_exe = os.path.join(
-            settings.BASE_DIR, "tacticalrmm/downloads/meshagent.exe"
-        )
         with open(mesh_exe, "rb") as f:
             response = HttpResponse(
                 f.read(), content_type="application/vnd.microsoft.portable-executable"
@@ -202,7 +202,7 @@ def create_auth_token(request):
 
 
 @api_view(["POST"])
-@authentication_classes((BasicAuthentication,))
+@authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
 def accept_salt_key(request):
     saltid = request.data["saltid"]
@@ -324,22 +324,22 @@ def update(request):
     hostname = data["hostname"]
     os = data["operating_system"]
     total_ram = data["total_ram"]
-    cpu_info = data["cpu_info"]
     plat = data["platform"]
     plat_release = data["platform_release"]
     version = data["version"]
     av = data["av"]
+    boot_time = data["boot_time"]
 
     agent = get_object_or_404(Agent, agent_id=agent_id)
 
     agent.hostname = hostname
     agent.operating_system = os
     agent.total_ram = total_ram
-    agent.cpu_info = cpu_info
     agent.plat = plat
     agent.plat_release = plat_release
     agent.version = version
     agent.antivirus = av
+    agent.boot_time = boot_time
 
     agent.save(
         update_fields=[
@@ -347,11 +347,11 @@ def update(request):
             "hostname",
             "operating_system",
             "total_ram",
-            "cpu_info",
             "plat",
             "plat_release",
             "version",
             "antivirus",
+            "boot_time",
         ]
     )
 
@@ -362,11 +362,36 @@ def update(request):
     if not agent.choco_installed:
         install_chocolatey.delay(agent.pk, wait=True)
 
-    # check for updates if this is fresh agent install
-    if not WinUpdate.objects.filter(agent=agent).exists():
-        check_for_updates_task.delay(agent.pk, wait=True)
-
     return Response("ok")
+
+
+@api_view(["POST"])
+@authentication_classes((TokenAuthentication,))
+@permission_classes((IsAuthenticated,))
+def on_agent_first_install(request):
+    pk = request.data["pk"]
+    agent = get_object_or_404(Agent, pk=pk)
+
+    resp = agent.salt_api_cmd(
+        hostname=agent.salt_id, timeout=60, func="saltutil.sync_modules"
+    )
+    try:
+        data = resp.json()
+    except Exception:
+        return Response("err", status=status.HTTP_400_BAD_REQUEST)
+    else:
+        try:
+            ret = data["return"][0][agent.salt_id]
+        except KeyError:
+            return Response("err", status=status.HTTP_400_BAD_REQUEST)
+
+        if not data["return"][0][agent.salt_id]:
+            return Response("err", status=status.HTTP_400_BAD_REQUEST)
+        else:
+            get_wmi_detail_task.delay(agent.pk)
+            get_installed_software.delay(agent.pk)
+            check_for_updates_task.delay(agent.pk, wait=True)
+            return Response("ok")
 
 
 @api_view(["PATCH"])
@@ -381,7 +406,6 @@ def hello(request):
     cpu_load = data["cpu_load"]
     used_ram = data["used_ram"]
     disks = data["disks"]
-    boot_time = data["boot_time"]
     logged_in_username = data["logged_in_username"]
 
     agent = get_object_or_404(Agent, agent_id=agent_id)
@@ -397,10 +421,9 @@ def hello(request):
     agent.public_ip = public_ip
     agent.services = services
     agent.cpu_load = cpu_load
-
     agent.used_ram = used_ram
     agent.disks = disks
-    agent.boot_time = boot_time
+
     agent.logged_in_username = logged_in_username
 
     agent.save(
@@ -412,7 +435,6 @@ def hello(request):
             "cpu_load",
             "used_ram",
             "disks",
-            "boot_time",
             "logged_in_username",
         ]
     )

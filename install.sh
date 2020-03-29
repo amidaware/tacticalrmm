@@ -54,6 +54,7 @@ echo "saltapi:${SALTPW}" | sudo chpasswd
 
 print_green 'Installing Nginx'
 
+sudo apt install -y software-properties-common
 sudo add-apt-repository -y ppa:nginx/stable
 sudo apt update
 sudo apt install -y nginx
@@ -126,7 +127,8 @@ echo "${meshcfg}" > /meshcentral/meshcentral-data/config.json
 
 print_green 'Installing python, redis and git'
 
-sudo apt install -y software-properties-common
+sudo add-apt-repository -y ppa:deadsnakes/ppa
+sudo apt update
 sudo apt install -y python3.7 python3.7-venv python3.7-dev python3-pip python3-dev python3-venv python3-setuptools ca-certificates redis git python3-cherrypy3
 
 print_green 'Installing postgresql'
@@ -263,6 +265,8 @@ chmod-socket = 660
 # clear environment on exit
 vacuum = true
 die-on-term = true
+max-requests = 500
+max-requests-delta = 1000
 EOF
 )"
 echo "${uwsgini}" > /home/${USER}/rmm/api/tacticalrmm/app.ini
@@ -279,6 +283,8 @@ Group=www-data
 WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
 Environment="PATH=/home/${USER}/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/home/${USER}/rmm/api/env/bin/uwsgi --ini app.ini
+Restart=always
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target
@@ -429,6 +435,7 @@ celeryservice="$(cat << EOF
 [Unit]
 Description=Celery Service
 After=network.target
+After=redis.service
 
 [Service]
 Type=forking
@@ -439,6 +446,8 @@ WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} multi start \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} \${CELERYD_OPTS}'
 ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \${CELERYD_NODES} --pidfile=\${CELERYD_PID_FILE}'
 ExecReload=/bin/sh -c '\${CELERY_BIN} multi restart \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} \${CELERYD_OPTS}'
+Restart=always
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target
@@ -450,6 +459,7 @@ celerywinupdatesvc="$(cat << EOF
 [Unit]
 Description=Celery Win Update Service
 After=network.target
+After=redis.service
 
 [Service]
 Type=forking
@@ -460,6 +470,8 @@ WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} multi start \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
 ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \${CELERYD_NODES} --pidfile=\${CELERYD_PID_FILE}'
 ExecReload=/bin/sh -c '\${CELERY_BIN} multi restart \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
+Restart=always
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target
@@ -511,6 +523,7 @@ celerybeatservice="$(cat << EOF
 [Unit]
 Description=Celery Beat Service
 After=network.target
+After=redis.service
 
 [Service]
 Type=simple
@@ -519,6 +532,8 @@ Group=${USER}
 EnvironmentFile=/etc/conf.d/celery.conf
 WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} beat -A \${CELERY_APP} --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
+Restart=always
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target
@@ -548,8 +563,8 @@ WorkingDirectory=/meshcentral
 User=${USER}
 Group=${USER}
 Restart=always
-# Restart service after 10 seconds if node service crashes
-RestartSec=10
+RestartSec=10s
+
 [Install]
 WantedBy=multi-user.target
 EOF
@@ -651,10 +666,11 @@ sudo systemctl restart salt-master
 sleep 30
 sudo systemctl restart salt-api
 
-printf >&2 "${BLUE}%0.s*${NC}" {1..80}
+printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"
-printf >&2 "${BLUE}Installation complete!${NC}\n\n"
-printf >&2 "${BLUE}Please refer to the github README for next steps${NC}\n"
-printf >&2 "\n\n"
-printf >&2 "${BLUE}%0.s*${NC}" {1..80}
+printf >&2 "${YELLOW}Installation complete!${NC}\n\n"
+printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${frontenddomain}${NC}\n"
+printf >&2 "${YELLOW}Django admin url: ${GREEN}https://${rmmdomain}/${ADMINURL}${NC}\n\n"
+printf >&2 "${YELLOW}Please refer to the github README for next steps${NC}\n\n"
+printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"

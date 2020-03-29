@@ -33,7 +33,6 @@ class Agent(models.Model):
     disks = JSONField(null=True)
     boot_time = models.FloatField(null=True)
     logged_in_username = models.CharField(null=True, max_length=200)
-    cpu_info = JSONField(null=True)
     client = models.CharField(max_length=200)
     antivirus = models.CharField(default="n/a", max_length=255)
     site = models.CharField(max_length=150)

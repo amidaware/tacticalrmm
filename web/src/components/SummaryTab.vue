@@ -20,7 +20,7 @@
             <q-item-section avatar>
               <q-icon name="fas fa-microchip" />
             </q-item-section>
-            <q-item-section>{{ summary.cpu_info[0].name}}</q-item-section>
+            <q-item-section>{{ cpuModel }}</q-item-section>
           </q-item>
           <q-item>
             <q-item-section avatar>
@@ -102,8 +102,16 @@ export default {
       return ret;
     },
     makeModel() {
-      const ret = this.summary.wmi_detail.make_model[0];
-      return ret.filter(k => k.Version).map(k => k.Version)[0];
+      const comp_sys = this.summary.wmi_detail.comp_sys[0];
+      const comp_sys_prod = this.summary.wmi_detail.comp_sys_prod[0];
+      let make = comp_sys_prod.filter(k => k.Vendor).map(k => k.Vendor)[0];
+      let model = comp_sys.filter(k => k.SystemFamily).map(k => k.SystemFamily)[0];
+
+      if (!model || !make) {
+        return comp_sys_prod.filter(k => k.Version).map(k => k.Version)[0];
+      } else {
+        return `${make} ${model}`;
+      }
     },
     physicalDisks() {
       const ret = this.summary.wmi_detail.disk;
@@ -138,6 +146,10 @@ export default {
         }
       });
       return (ips.length === 1 ? ips[0] : ips.join(", "))
+    },
+    cpuModel() {
+      const cpu = this.summary.wmi_detail.cpu[0];
+      return cpu.filter(k => k.Name).map(k => k.Name)[0];
     }
   }
 };

@@ -31,7 +31,6 @@ class AgentSerializer(serializers.ModelSerializer):
             "disks",
             "boot_time",
             "logged_in_username",
-            "cpu_info",
             "client",
             "antivirus",
             "site",

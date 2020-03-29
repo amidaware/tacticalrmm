@@ -5,7 +5,8 @@ import wmi
 class SystemDetail:
     def __init__(self):
         self.c = wmi.WMI()
-        self.make_model = self.c.Win32_ComputerSystemProduct()
+        self.comp_sys_prod = self.c.Win32_ComputerSystemProduct()
+        self.comp_sys = self.c.Win32_ComputerSystem()
         self.memory = self.c.Win32_PhysicalMemory()
         self.os = self.c.Win32_OperatingSystem()
         self.base_board = self.c.Win32_BaseBoard()
@@ -33,7 +34,8 @@ class SystemDetail:
 def system_info():
     info = SystemDetail()
     return {
-        "make_model": info.get_all(info.make_model),
+        "comp_sys_prod": info.get_all(info.comp_sys_prod),
+        "comp_sys": info.get_all(info.comp_sys),
         "mem": info.get_all(info.memory),
         "os": info.get_all(info.os),
         "base_board": info.get_all(info.base_board),

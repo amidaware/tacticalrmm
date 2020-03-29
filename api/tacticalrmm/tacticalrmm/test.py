@@ -63,13 +63,6 @@ class BaseTestCase(TestCase):
             },
             boot_time=8173231.4,
             logged_in_username="John",
-            cpu_info=[
-                {
-                    "name": "Common KVM processor",
-                    "logical_cores": 4,
-                    "physical_cores": 4,
-                }
-            ],
             client="Google",
             site="Main Office",
             monitoring_type="server",

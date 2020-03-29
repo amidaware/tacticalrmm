@@ -1,6 +1,9 @@
 from loguru import logger
 import subprocess
 from packaging import version as pyver
+import zlib
+import json
+import base64
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -95,30 +98,32 @@ def uninstall_agent(request):
 
 @api_view(["PATCH"])
 def edit_agent(request):
-    agent = get_object_or_404(Agent, pk=request.data["pk"])
+    agent = get_object_or_404(Agent, pk=request.data["id"])
 
     agent.client = request.data["client"]
     agent.site = request.data["site"]
-    agent.monitoring_type = request.data["montype"]
-    agent.description = request.data["desc"]
-    agent.overdue_time = request.data["overduetime"]
-    agent.check_interval = request.data["checkinterval"]
-    agent.overdue_email_alert = request.data["emailalert"]
-    agent.overdue_text_alert = request.data["textalert"]
+    agent.monitoring_type = request.data["monitoring_type"]
+    agent.description = request.data["description"]
+    agent.overdue_time = request.data["overdue_time"]
+    agent.check_interval = request.data["check_interval"]
+    agent.overdue_email_alert = request.data["overdue_email_alert"]
+    agent.overdue_text_alert = request.data["overdue_text_alert"]
 
     policy = WinUpdatePolicy.objects.get(agent=agent)
 
-    policy.critical = request.data["critical"]
-    policy.important = request.data["important"]
-    policy.moderate = request.data["moderate"]
-    policy.low = request.data["low"]
-    policy.other = request.data["other"]
-    policy.run_time_hour = request.data["scheduledtime"]
-    policy.run_time_days = request.data["dayoptions"]
-    policy.reboot_after_install = request.data["rebootafterinstall"]
-    policy.reprocess_failed = request.data["reprocessfailed"]
-    policy.reprocess_failed_times = request.data["reprocessfailedtimes"]
-    policy.email_if_fail = request.data["emailiffail"]
+    policy_data = request.data["winupdatepolicy"][0]
+
+    policy.critical = policy_data["critical"]
+    policy.important = policy_data["important"]
+    policy.moderate = policy_data["moderate"]
+    policy.low = policy_data["low"]
+    policy.other = policy_data["other"]
+    policy.run_time_hour = policy_data["run_time_hour"]
+    policy.run_time_days = policy_data["run_time_days"]
+    policy.reboot_after_install = policy_data["reboot_after_install"]
+    policy.reprocess_failed = policy_data["reprocess_failed"]
+    policy.reprocess_failed_times = policy_data["reprocess_failed_times"]
+    policy.email_if_fail = policy_data["email_if_fail"]
 
     agent.save(
         update_fields=[
@@ -236,13 +241,18 @@ def get_event_log(request, pk, logtype, days):
             func="get_eventlog.get_eventlog",
             arg=[logtype, int(days)],
         )
-        data = resp.json()
     except Exception:
         return Response(
             {"error": "unable to contact the agent"}, status=status.HTTP_400_BAD_REQUEST
         )
 
-    return Response(data["return"][0][agent.salt_id])
+    return Response(
+        json.loads(
+            zlib.decompress(
+                base64.b64decode(resp.json()["return"][0][agent.salt_id]["wineventlog"])
+            )
+        )
+    )
 
 
 @api_view(["POST"])

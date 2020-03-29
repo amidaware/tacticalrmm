@@ -29,27 +29,32 @@ class TestAgentViews(BaseTestCase):
         url = "/agents/editagent/"
 
         edit = {
-            "pk": self.agent.pk,
+            "id": self.agent.pk,
             "client": "Facebook",
             "site": "NY Office",
-            "montype": "workstation",
-            "desc": "asjdk234andasd",
-            "overduetime": 300,
-            "checkinterval": 60,
-            "emailalert": True,
-            "textalert": False,
-            "critical": "approve",
-            "important": "approve",
-            "moderate": "manual",
-            "low": "ignore",
-            "other": "ignore",
-            "scheduledtime": 5,
-            "dayoptions": [2, 3, 6],
-            "rebootafterinstall": True,
-            "reprocessfailed": True,
-            "reprocessfailedtimes": 13,
-            "emailiffail": True,
+            "monitoring_type": "workstation",
+            "description": "asjdk234andasd",
+            "overdue_time": 300,
+            "check_interval": 60,
+            "overdue_email_alert": True,
+            "overdue_text_alert": False,
+            "winupdatepolicy": [
+                {
+                    "critical": "approve",
+                    "important": "approve",
+                    "moderate": "manual",
+                    "low": "ignore",
+                    "other": "ignore",
+                    "run_time_hour": 5,
+                    "run_time_days": [2, 3, 6],
+                    "reboot_after_install": True,
+                    "reprocess_failed": True,
+                    "reprocess_failed_times": 13,
+                    "email_if_fail": True,
+                }
+            ],
         }
+
         r = self.client.patch(url, edit, format="json")
         self.assertEqual(r.status_code, 200)
 

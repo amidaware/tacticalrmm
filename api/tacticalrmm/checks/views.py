@@ -115,7 +115,7 @@ def update_script_check(request):
 @authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
 def check_runner(request):
-    agent = get_object_or_404(Agent, agent_id=request.data["agentid"])
+    agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
     return Response(CheckSerializer(agent).data)
 
 

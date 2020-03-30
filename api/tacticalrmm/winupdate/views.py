@@ -41,7 +41,7 @@ def edit_policy(request):
 @authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
 def win_updater(request):
-    agent = get_object_or_404(Agent, agent_id=request.data["agentid"])
+    agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
     patches = (
         WinUpdate.objects.filter(agent=agent)
         .exclude(installed=True)
@@ -57,7 +57,7 @@ def win_updater(request):
 @authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
 def results(request):
-    agent = get_object_or_404(Agent, agent_id=request.data["agentid"])
+    agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
     kb = request.data["kb"]
     results = request.data["results"]
     update = WinUpdate.objects.filter(agent=agent).get(kb=kb)

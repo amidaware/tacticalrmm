@@ -14,11 +14,7 @@
             <q-item clickable v-close-popup @click="getLog">
               <q-item-section>Debug Log</q-item-section>
             </q-item>
-            <q-item
-              clickable
-              v-close-popup
-              @click="showUpdateAgentsModal = true"
-            >
+            <q-item clickable v-close-popup @click="showUpdateAgentsModal = true">
               <q-item-section>Update Agents</q-item-section>
             </q-item>
           </q-list>
@@ -29,11 +25,7 @@
         Agents
         <q-menu auto-close>
           <q-list dense style="min-width: 100px">
-            <q-item
-              clickable
-              v-close-popup
-              @click="showUpdateAgentsModal = true"
-            >
+            <q-item clickable v-close-popup @click="showUpdateAgentsModal = true">
               <q-item-section>Update Agents</q-item-section>
             </q-item>
           </q-list>
@@ -44,12 +36,13 @@
         Settings
         <q-menu auto-close>
           <q-list dense style="min-width: 100px">
-            <q-item
-              clickable
-              v-close-popup
-              @click="showScriptManager"
-            >
+            <!-- script manager -->
+            <q-item clickable v-close-popup @click="showScriptManager">
               <q-item-section>Script Manager</q-item-section>
+            </q-item>
+            <!-- core settings -->
+            <q-item clickable v-close-popup @click="showEditCoreSettingsModal = true">
+              <q-item-section>Global Settings</q-item-section>
             </q-item>
           </q-list>
         </q-menu>
@@ -62,6 +55,10 @@
       <!-- add site modal -->
       <q-dialog v-model="showAddSiteModal">
         <AddSite @close="showAddSiteModal = false" :clients="clients" />
+      </q-dialog>
+      <!-- edit core settings modal -->
+      <q-dialog v-model="showEditCoreSettingsModal">
+        <EditCoreSettings @close="showEditCoreSettingsModal = false" />
       </q-dialog>
       <!-- debug log modal -->
       <LogModal />
@@ -88,15 +85,24 @@ import AddClient from "@/components/modals/clients/AddClient";
 import AddSite from "@/components/modals/clients/AddSite";
 import UpdateAgents from "@/components/modals/agents/UpdateAgents";
 import ScriptManager from "@/components/ScriptManager";
+import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
 export default {
   name: "FileBar",
-  components: { LogModal, AddClient, AddSite, UpdateAgents, ScriptManager },
+  components: {
+    LogModal,
+    AddClient,
+    AddSite,
+    UpdateAgents,
+    ScriptManager,
+    EditCoreSettings
+  },
   props: ["clients"],
   data() {
     return {
       showAddClientModal: false,
       showAddSiteModal: false,
-      showUpdateAgentsModal: false
+      showUpdateAgentsModal: false,
+      showEditCoreSettingsModal: false
     };
   },
   methods: {

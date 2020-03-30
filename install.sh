@@ -51,6 +51,11 @@ print_green 'Creating saltapi user'
 sudo adduser --no-create-home --disabled-password --gecos "" saltapi
 echo "saltapi:${SALTPW}" | sudo chpasswd
 
+print_green 'Creating sudoers conf to restart celery'
+
+echo "${USER} ALL=(ALL) NOPASSWD: /bin/systemctl restart celerybeat.service" | sudo tee /etc/sudoers.d/${USER}
+sudo chmod 0440 /etc/sudoers.d/${USER}
+
 
 print_green 'Installing Nginx'
 
@@ -227,6 +232,7 @@ pip install --upgrade pip
 pip install -r /home/${USER}/rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic
+python manage.py initial_db_setup
 python manage.py load_chocos
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"

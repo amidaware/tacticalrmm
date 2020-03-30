@@ -20,6 +20,7 @@ from rest_framework.authentication import BasicAuthentication, TokenAuthenticati
 
 from .models import Agent
 from winupdate.models import WinUpdatePolicy
+from winupdate.serializers import WinUpdatePolicySerializer
 
 from .serializers import AgentSerializer, AgentHostnameSerializer
 from .tasks import uninstall_agent_task, update_agent_task
@@ -99,60 +100,17 @@ def uninstall_agent(request):
 @api_view(["PATCH"])
 def edit_agent(request):
     agent = get_object_or_404(Agent, pk=request.data["id"])
-
-    agent.client = request.data["client"]
-    agent.site = request.data["site"]
-    agent.monitoring_type = request.data["monitoring_type"]
-    agent.description = request.data["description"]
-    agent.overdue_time = request.data["overdue_time"]
-    agent.check_interval = request.data["check_interval"]
-    agent.overdue_email_alert = request.data["overdue_email_alert"]
-    agent.overdue_text_alert = request.data["overdue_text_alert"]
-
+    a_serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
+    a_serializer.is_valid(raise_exception=True)
+    a_serializer.save()
+    
     policy = WinUpdatePolicy.objects.get(agent=agent)
-
-    policy_data = request.data["winupdatepolicy"][0]
-
-    policy.critical = policy_data["critical"]
-    policy.important = policy_data["important"]
-    policy.moderate = policy_data["moderate"]
-    policy.low = policy_data["low"]
-    policy.other = policy_data["other"]
-    policy.run_time_hour = policy_data["run_time_hour"]
-    policy.run_time_days = policy_data["run_time_days"]
-    policy.reboot_after_install = policy_data["reboot_after_install"]
-    policy.reprocess_failed = policy_data["reprocess_failed"]
-    policy.reprocess_failed_times = policy_data["reprocess_failed_times"]
-    policy.email_if_fail = policy_data["email_if_fail"]
-
-    agent.save(
-        update_fields=[
-            "client",
-            "site",
-            "monitoring_type",
-            "description",
-            "check_interval",
-            "overdue_time",
-            "overdue_email_alert",
-            "overdue_text_alert",
-        ]
+    p_serializer = WinUpdatePolicySerializer(
+        instance=policy, data=request.data["winupdatepolicy"][0]
     )
+    p_serializer.is_valid(raise_exception=True)
+    p_serializer.save()
 
-    policy.save(
-        update_fields=[
-            "critical",
-            "important",
-            "moderate",
-            "low",
-            "other",
-            "run_time_hour",
-            "run_time_days",
-            "reboot_after_install",
-            "reprocess_failed",
-            "reprocess_failed_times",
-            "email_if_fail",
-        ]
-    )
     return Response("ok")
 
 

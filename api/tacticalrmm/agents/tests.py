@@ -47,10 +47,11 @@ class TestAgentViews(BaseTestCase):
                     "other": "ignore",
                     "run_time_hour": 5,
                     "run_time_days": [2, 3, 6],
-                    "reboot_after_install": True,
+                    "reboot_after_install": "required",
                     "reprocess_failed": True,
                     "reprocess_failed_times": 13,
                     "email_if_fail": True,
+                    "agent": self.agent.pk,
                 }
             ],
         }

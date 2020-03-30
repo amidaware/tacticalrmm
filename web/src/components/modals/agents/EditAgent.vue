@@ -79,9 +79,7 @@
                   />
                 </q-card-section>
                 <q-card-section class="row">
-                  <div
-                    class="col-10"
-                  >Send an overdue alert if the server has not reported in after:</div>
+                  <div class="col-10">Send an overdue alert if the server has not reported in after:</div>
                   <q-input
                     dense
                     type="number"
@@ -352,7 +350,7 @@ export default {
           this.$emit("edited");
           this.notifySuccess("Agent was edited!");
         })
-        .catch(e => this.notifyError(e.response.data.error));
+        .catch(() => this.notifyError("Something went wrong"));
     }
   },
   computed: {

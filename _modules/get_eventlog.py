@@ -34,11 +34,11 @@ def get_eventlog(logtype, last_n_days):
     computer = "localhost"
     hand = win32evtlog.OpenEventLog(computer, logtype)
     log = []
+    uid = 0
 
     try:
-        events = 1
         uid = 0
-        while events:
+        while 1:
             events = win32evtlog.ReadEventLog(hand, flags, 0)
             for ev_obj in events:
 
@@ -52,7 +52,11 @@ def get_eventlog(logtype, last_n_days):
                 evt_id = str(winerror.HRESULT_CODE(ev_obj.EventID))
                 evt_category = str(ev_obj.EventCategory)
                 record = str(ev_obj.RecordNumber)
-                msg = str(win32evtlogutil.SafeFormatMessage(ev_obj, logtype))
+                msg = (
+                    str(win32evtlogutil.SafeFormatMessage(ev_obj, logtype))
+                    .replace("<", "")
+                    .replace(">", "")
+                )
                 uid += 1
 
                 event_dict = {

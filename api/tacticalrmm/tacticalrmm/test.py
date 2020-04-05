@@ -48,7 +48,6 @@ class BaseTestCase(TestCase):
                 },
             ],
             public_ip="74.13.24.14",
-            cpu_load=23.5,
             total_ram=16,
             used_ram=33,
             disks={

@@ -33,10 +33,8 @@ def debug_task(self):
 def setup_periodic_tasks(sender, **kwargs):
 
     from checks.tasks import (
-        disk_check_alert,
         cpu_load_check_alert,
         mem_check_alert,
-        win_service_check_task,
         checks_failing_task,
     )
 
@@ -44,8 +42,6 @@ def setup_periodic_tasks(sender, **kwargs):
 
     interval = CoreSettings.objects.get(pk=1)
 
-    sender.add_periodic_task(interval.disk_check_interval, disk_check_alert.s())
-    sender.add_periodic_task(interval.cpuload_check_interval, cpu_load_check_alert.s())
-    sender.add_periodic_task(interval.mem_check_interval, mem_check_alert.s())
-    sender.add_periodic_task(interval.win_svc_check_interval, win_service_check_task.s())
+    sender.add_periodic_task(30.0, cpu_load_check_alert.s())
+    sender.add_periodic_task(30.0, mem_check_alert.s())
     sender.add_periodic_task(30.0, checks_failing_task.s())

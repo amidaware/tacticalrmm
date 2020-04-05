@@ -27,7 +27,6 @@ class Agent(models.Model):
     last_seen = models.DateTimeField(auto_now=True)
     services = JSONField(null=True)
     public_ip = models.CharField(null=True, max_length=255)
-    cpu_load = models.FloatField(null=True)
     total_ram = models.IntegerField(null=True)
     used_ram = models.IntegerField(null=True)
     disks = JSONField(null=True)

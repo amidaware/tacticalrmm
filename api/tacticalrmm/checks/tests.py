@@ -9,8 +9,10 @@ class TestCheckViews(BaseTestCase):
             "check_type": "diskspace",
             "disk": "C:",
             "threshold": 41,
+            "failure": 4,
         }
         resp = self.client.post("/checks/addstandardcheck/", disk_data, format="json")
         self.assertEqual(resp.status_code, 200)
         data = CheckSerializer(self.agent).data
         self.assertEqual(data["diskchecks"][0]["threshold"], 41)
+        self.assertEqual(data["diskchecks"][0]["failures"], 4)

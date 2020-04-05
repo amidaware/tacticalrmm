@@ -50,7 +50,7 @@ def handle_check_email_alert_task(check_type, pk):
 
     try:
         latest_email = eml.objects.filter(email=check).order_by("-sent")[:1].get()
-    except Exception as e:
+    except:
         # first time sending email
         eml(email=check).save()
         check.send_email()
@@ -88,7 +88,14 @@ def checks_failing_task():
 
     agents_failing = []
 
-    for check in (diskchecks, pingchecks, cpuloadchecks, memchecks, winservicechecks, scriptchecks,):
+    for check in (
+        diskchecks,
+        pingchecks,
+        cpuloadchecks,
+        memchecks,
+        winservicechecks,
+        scriptchecks,
+    ):
         for i in check:
             if i.status == "failing":
                 agents_failing.append(i.agent.pk)
@@ -114,31 +121,6 @@ def checks_failing_task():
     return "ok"
 
 
-@app.task
-def disk_check_alert():
-    agents_with_checks = DiskCheck.objects.all()
-    if agents_with_checks:
-        for diskcheck in agents_with_checks:
-            agent = Agent.objects.get(pk=diskcheck.agent.pk)
-            total = agent.disks[diskcheck.disk]["total"]
-            free = agent.disks[diskcheck.disk]["free"]
-            diskcheck.more_info = f"Total: {total}B, Free: {free}B"
-            diskcheck.save(update_fields=["more_info"])
-            percent_used = agent.disks[diskcheck.disk]["percent"]
-            percent_free = 100 - percent_used
-            if percent_free < diskcheck.threshold:
-                diskcheck.status = "failing"
-                diskcheck.save(update_fields=["status", "last_run"])
-                if diskcheck.email_alert:
-                    handle_check_email_alert_task.delay("diskspace", diskcheck.pk)
-            else:
-                if diskcheck.status != "passing":
-                    diskcheck.status = "passing"
-                    diskcheck.save(update_fields=["status"])
-
-                diskcheck.save(update_fields=["last_run"])
-    return "ok"
-
 
 @app.task
 def cpu_load_check_alert():
@@ -152,21 +134,22 @@ def cpu_load_check_alert():
             except ObjectDoesNotExist:
                 pass
             else:
-                check.more_info = cpuhistory.format_nice()
-                check.save(update_fields=["more_info", "last_run"])
-                avg = int(mean(cpuhistory.cpu_history))
-                if avg > threshold:
-                    check.status = "failing"
-                    check.save(update_fields=["status"])
+                if len(cpuhistory.cpu_history) >= 2:
+                    check.more_info = cpuhistory.format_nice()
+                    check.save(update_fields=["more_info"])
 
-                    if check.email_alert:
-                        handle_check_email_alert_task.delay("cpuload", check.pk)
-
-                else:
-                    if check.status != "passing":
-                        check.status = "passing"
+                    avg = int(mean(cpuhistory.cpu_history))
+                    if avg > threshold:
+                        check.status = "failing"
                         check.save(update_fields=["status"])
-                    check.save(update_fields=["last_run"])
+
+                        if check.email_alert:
+                            handle_check_email_alert_task.delay("cpuload", check.pk)
+
+                    else:
+                        if check.status != "passing":
+                            check.status = "passing"
+                            check.save(update_fields=["status"])
 
     return "ok"
 
@@ -184,52 +167,14 @@ def restart_win_service_task(pk, svcname):
 
 
 @app.task
-def win_service_check_task():
-    agents_with_checks = WinServiceCheck.objects.all()
-    if agents_with_checks:
-        for check in agents_with_checks:
-            alert = False
-            agent = Agent.objects.get(pk=check.agent.pk)
-            status = list(
-                filter(lambda x: x["name"] == check.svc_name, agent.services)
-            )[0]["status"]
-            if status == "running":
-                check.status = "passing"
-                if check.failure_count != 0:
-                    check.failure_count = 0
-                    check.save(update_fields=["failure_count"])
-            elif status == "start_pending":
-                if check.pass_if_start_pending:
-                    check.status = "passing"
-                    if check.failure_count != 0:
-                        check.failure_count = 0
-                        check.save(update_fields=["failure_count"])
-                else:
-                    check.status = "failing"
-                    new_count = check.failure_count + 1
-                    check.failure_count = new_count
-                    if new_count >= check.failures:
-                        alert = True
-                    check.save(update_fields=["failure_count"])
-
-            else:
-                check.status = "failing"
-                new_count = check.failure_count + 1
-                check.failure_count = new_count
-                if new_count >= check.failures:
-                    alert = True
-                check.save(update_fields=["failure_count"])
-
-            if check.restart_if_stopped:
-                if status == "stopped":
-                    restart_win_service_task.delay(agent.pk, check.svc_name)
-
-            check.more_info = f"Status {status.upper()}"
-            check.save(update_fields=["status", "more_info", "last_run"])
-
-            if alert:
-                if check.email_alert:
-                    handle_check_email_alert_task.delay("winsvc", check.pk)
+def run_checks_task(pk):
+    agent = Agent.objects.get(pk=pk)
+    try:
+        agent.salt_api_cmd(
+            hostname=agent.salt_id, timeout=30, func=f"win_agent.run_manual_checks",
+        )
+    except:
+        pass
 
     return "ok"
 
@@ -246,21 +191,21 @@ def mem_check_alert():
             except ObjectDoesNotExist:
                 pass
             else:
-                check.more_info = memhistory.format_nice()
-                check.save(update_fields=["more_info", "last_run"])
-                avg = int(mean(memhistory.mem_history))
-                if avg > threshold:
-                    check.status = "failing"
-                    check.save(update_fields=["status"])
+                if len(memhistory.mem_history) >= 2:
+                    check.more_info = memhistory.format_nice()
+                    check.save(update_fields=["more_info"])
 
-                    if check.email_alert:
-                        handle_check_email_alert_task.delay("memory", check.pk)
-
-                else:
-                    if check.status != "passing":
-                        check.status = "passing"
+                    avg = int(mean(memhistory.mem_history))
+                    if avg > threshold:
+                        check.status = "failing"
                         check.save(update_fields=["status"])
-                    check.save(update_fields=["last_run"])
+
+                        if check.email_alert:
+                            handle_check_email_alert_task.delay("memory", check.pk)
+
+                    else:
+                        if check.status != "passing":
+                            check.status = "passing"
+                            check.save(update_fields=["status"])
 
     return "ok"
-

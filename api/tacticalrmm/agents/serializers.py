@@ -25,7 +25,6 @@ class AgentSerializer(serializers.ModelSerializer):
             "last_seen",
             "services",
             "public_ip",
-            "cpu_load",
             "total_ram",
             "used_ram",
             "disks",

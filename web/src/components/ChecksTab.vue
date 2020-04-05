@@ -6,21 +6,39 @@
         <q-menu>
           <q-list dense style="min-width: 200px">
             <q-item clickable v-close-popup @click="showAddDiskSpaceCheck = true">
+              <q-item-section side>
+                <q-icon size="xs" name="far fa-hdd" />
+              </q-item-section>
               <q-item-section>Disk Space Check</q-item-section>
             </q-item>
             <q-item clickable v-close-popup @click="showAddPingCheck = true">
+              <q-item-section side>
+                <q-icon size="xs" name="fas fa-network-wired" />
+              </q-item-section>
               <q-item-section>Ping Check</q-item-section>
             </q-item>
             <q-item clickable v-close-popup @click="showAddCpuLoadCheck = true">
+              <q-item-section side>
+                <q-icon size="xs" name="fas fa-microchip" />
+              </q-item-section>
               <q-item-section>CPU Load Check</q-item-section>
             </q-item>
             <q-item clickable v-close-popup @click="showAddMemCheck = true">
+              <q-item-section side>
+                <q-icon size="xs" name="fas fa-memory" />
+              </q-item-section>
               <q-item-section>Memory Check</q-item-section>
             </q-item>
             <q-item clickable v-close-popup @click="showAddWinSvcCheck = true">
+              <q-item-section side>
+                <q-icon size="xs" name="fas fa-cogs" />
+              </q-item-section>
               <q-item-section>Windows Service Check</q-item-section>
             </q-item>
             <q-item clickable v-close-popup @click="showAddScriptCheck = true">
+              <q-item-section side>
+                <q-icon size="xs" name="fas fa-terminal" />
+              </q-item-section>
               <q-item-section>Script Check</q-item-section>
             </q-item>
           </q-list>
@@ -91,15 +109,15 @@
               <q-td>
                 <q-checkbox
                   dense
-                  @input="checkAlertAction(props.row.id, props.row.check_type, 'email', props.row.email_alert)"
-                  v-model="props.row.email_alert"
+                  @input="checkAlertAction(props.row.id, props.row.check_type, 'text', props.row.text_alert)"
+                  v-model="props.row.text_alert"
                 />
               </q-td>
               <q-td>
                 <q-checkbox
                   dense
-                  @input="checkAlertAction(props.row.id, props.row.check_type, 'text', props.row.text_alert)"
-                  v-model="props.row.text_alert"
+                  @input="checkAlertAction(props.row.id, props.row.check_type, 'email', props.row.email_alert)"
+                  v-model="props.row.email_alert"
                 />
               </q-td>
               <q-td v-if="props.row.status === 'pending'"></q-td>
@@ -143,7 +161,7 @@
               <q-td v-else-if="props.row.check_type === 'script'">
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
-                  @click="moreInfo('Script Check', props.row.more_info)"
+                  @click="scriptMoreInfo(props.row)"
                 >output</span>
               </q-td>
               <q-td v-else>{{ props.row.more_info }}</q-td>
@@ -217,6 +235,9 @@
         :agentpk="checks.pk"
       />
     </q-dialog>
+    <q-dialog v-model="showScriptOutput">
+      <ScriptOutput @close="showScriptOutput = false; scriptInfo = {}" :scriptInfo="scriptInfo" />
+    </q-dialog>
   </div>
 </template>
 
@@ -236,6 +257,7 @@ import AddWinSvcCheck from "@/components/modals/checks/AddWinSvcCheck";
 import EditWinSvcCheck from "@/components/modals/checks/EditWinSvcCheck";
 import AddScriptCheck from "@/components/modals/checks/AddScriptCheck";
 import EditScriptCheck from "@/components/modals/checks/EditScriptCheck";
+import ScriptOutput from "@/components/modals/checks/ScriptOutput";
 
 export default {
   name: "ChecksTab",
@@ -251,7 +273,8 @@ export default {
     AddWinSvcCheck,
     EditWinSvcCheck,
     AddScriptCheck,
-    EditScriptCheck
+    EditScriptCheck,
+    ScriptOutput
   },
   mixins: [mixins],
   data() {
@@ -268,7 +291,9 @@ export default {
       showEditWinSvcCheck: false,
       showAddScriptCheck: false,
       showEditScriptCheck: false,
+      showScriptOutput: false,
       editCheckPK: null,
+      scriptInfo: {},
       columns: [
         { name: "smsalert", field: "text_alert", align: "left" },
         { name: "emailalert", field: "email_alert", align: "left" },
@@ -317,11 +342,15 @@ export default {
     moreInfo(name, output) {
       this.$q.dialog({
         title: `${name} output`,
-        style: "width: 80vw; max-width: 90vw",
+        style: "width: 35vw; max-width: 50vw",
         message: `<pre>${output}</pre>`,
         html: true,
         dark: true
       });
+    },
+    scriptMoreInfo(props) {
+      this.scriptInfo = props;
+      this.showScriptOutput = true;
     },
     editCheck(category) {
       switch (category) {

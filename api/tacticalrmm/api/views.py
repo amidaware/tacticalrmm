@@ -379,33 +379,4 @@ def hello(request):
     serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
     serializer.save()
-
-    # create a list of the last 35 mem averages
-    mem = MemoryHistory.objects.get(agent=agent)
-    mem_list = mem.mem_history
-
-    if len(mem_list) < 35:
-        mem_list.append(request.data["used_ram"])
-        mem.mem_history = mem_list
-        mem.save(update_fields=["mem_history"])
-    else:
-        mem_list.append(request.data["used_ram"])
-        new_mem_list = mem_list[-35:]
-        mem.mem_history = new_mem_list
-        mem.save(update_fields=["mem_history"])
-
-    # create list of the last 35 cpu load averages
-    cpu = CpuHistory.objects.get(agent=agent)
-    cpu_list = cpu.cpu_history
-
-    if len(cpu_list) < 35:
-        cpu_list.append(request.data["cpu_load"])
-        cpu.cpu_history = cpu_list
-        cpu.save(update_fields=["cpu_history"])
-    else:
-        cpu_list.append(request.data["cpu_load"])
-        new_cpu_list = cpu_list[-35:]
-        cpu.cpu_history = new_cpu_list
-        cpu.save(update_fields=["cpu_history"])
-
     return Response("ok")

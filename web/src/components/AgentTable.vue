@@ -1,29 +1,35 @@
 <template>
   <div class="q-pa-sm">
-    <q-table 
-      dense 
-      class="agents-tbl-sticky" 
-      :data="filter" 
-      :columns="columns" 
-      row-key="id" 
-      binary-state-sort 
-      :pagination.sync="pagination" 
+    <q-table
+      dense
+      class="agents-tbl-sticky"
+      :data="filter"
+      :columns="columns"
+      row-key="id"
+      binary-state-sort
+      :pagination.sync="pagination"
       hide-bottom
-    > 
+    >
       <!-- header slots -->
       <template v-slot:header-cell-smsalert="props">
         <q-th auto-width :props="props">
-          <q-icon name="phone_android" size="1.5em"><q-tooltip>SMS Alert</q-tooltip></q-icon>
+          <q-icon name="phone_android" size="1.5em">
+            <q-tooltip>SMS Alert</q-tooltip>
+          </q-icon>
         </q-th>
       </template>
       <template v-slot:header-cell-emailalert="props">
         <q-th auto-width :props="props">
-          <q-icon name="email" size="1.5em"><q-tooltip>Email Alert</q-tooltip></q-icon>
+          <q-icon name="email" size="1.5em">
+            <q-tooltip>Email Alert</q-tooltip>
+          </q-icon>
         </q-th>
       </template>
       <template v-slot:header-cell-patchespending="props">
         <q-th auto-width :props="props">
-          <q-icon name="system_update_alt" size="1.5em" color="warning"><q-tooltip>Patches Pending</q-tooltip></q-icon>
+          <q-icon name="system_update_alt" size="1.5em" color="warning">
+            <q-tooltip>Patches Pending</q-tooltip>
+          </q-icon>
         </q-th>
       </template>
       <!--
@@ -31,10 +37,12 @@
         <q-th auto-width :props="props">
           <q-icon name="fas fa-shield-alt" size="1.2em" color="primary"><q-tooltip>Anti Virus</q-tooltip></q-icon>
         </q-th>
-      </template> -->
+      </template>-->
       <template v-slot:header-cell-agentstatus="props">
         <q-th auto-width :props="props">
-          <q-icon name="fas fa-signal" size="1.2em" color="accent"><q-tooltip>Agent Status</q-tooltip></q-icon>
+          <q-icon name="fas fa-signal" size="1.2em" color="accent">
+            <q-tooltip>Agent Status</q-tooltip>
+          </q-icon>
         </q-th>
       </template>
       <!-- body slots -->
@@ -50,8 +58,8 @@
           <q-menu context-menu>
             <q-list dense style="min-width: 200px">
               <q-item clickable v-close-popup @click="showEditAgentModal = true">
-                <q-item-section avatar>
-                  <q-icon name="fas fa-edit" />
+                <q-item-section side>
+                  <q-icon size="xs" name="fas fa-edit" />
                 </q-item-section>
                 <q-item-section>Edit {{ props.row.hostname }}</q-item-section>
               </q-item>
@@ -63,8 +71,8 @@
                 v-close-popup
                 @click.stop.prevent="takeControl(props.row.id)"
               >
-                <q-item-section avatar>
-                  <q-icon name="fas fa-desktop" />
+                <q-item-section side>
+                  <q-icon size="xs" name="fas fa-desktop" />
                 </q-item-section>
 
                 <q-item-section>Take Control</q-item-section>
@@ -76,25 +84,25 @@
                 v-close-popup
                 @click="toggleSendCommand(props.row.id, props.row.hostname)"
               >
-                <q-item-section avatar>
-                  <q-icon name="fas fa-terminal" />
+                <q-item-section side>
+                  <q-icon size="xs" name="fas fa-terminal" />
                 </q-item-section>
                 <q-item-section>Send Command</q-item-section>
               </q-item>
 
               <q-separator />
               <q-item clickable v-close-popup @click.stop.prevent="remoteBG(props.row.id)">
-                <q-item-section avatar>
-                  <q-icon name="fas fa-cogs" />
+                <q-item-section side>
+                  <q-icon size="xs" name="fas fa-cogs" />
                 </q-item-section>
                 <q-item-section>Remote Background</q-item-section>
               </q-item>
-              
+
               <!-- patch management -->
               <q-separator />
               <q-item clickable>
-                <q-item-section avatar>
-                  <q-icon name="system_update" />
+                <q-item-section side>
+                  <q-icon size="xs" name="system_update" />
                 </q-item-section>
                 <q-item-section>Patch Management</q-item-section>
                 <q-item-section side>
@@ -113,13 +121,19 @@
                     </q-item>
                   </q-list>
                 </q-menu>
-
+              </q-item>
+              <q-separator />
+              <q-item clickable v-close-popup @click.stop.prevent="runChecks(props.row.id)">
+                <q-item-section side>
+                  <q-icon size="xs" name="fas fa-check-double" />
+                </q-item-section>
+                <q-item-section>Run Checks</q-item-section>
               </q-item>
 
               <q-separator />
               <q-item clickable>
-                <q-item-section avatar>
-                  <q-icon name="power_settings_new" />
+                <q-item-section side>
+                  <q-icon size="xs" name="power_settings_new" />
                 </q-item-section>
                 <q-item-section>Reboot</q-item-section>
                 <q-item-section side>
@@ -151,14 +165,20 @@
               </q-item>
 
               <q-separator />
-              <q-item clickable v-close-popup @click.stop.prevent="removeAgent(props.row.id, props.row.hostname)">
-                <q-item-section avatar><q-icon name="delete" /></q-item-section>
+              <q-item
+                clickable
+                v-close-popup
+                @click.stop.prevent="removeAgent(props.row.id, props.row.hostname)"
+              >
+                <q-item-section side>
+                  <q-icon size="xs" name="delete" />
+                </q-item-section>
                 <q-item-section>Remove Agent</q-item-section>
               </q-item>
 
               <q-separator />
               <q-item clickable v-close-popup>
-                <q-item-section>Quit</q-item-section>
+                <q-item-section>Close</q-item-section>
               </q-item>
             </q-list>
           </q-menu>
@@ -199,12 +219,20 @@
               <q-tooltip>{{ props.row.antivirus }}</q-tooltip>
             </q-icon>
             <q-icon v-else name="fas fa-times-circle" color="negative" />
-          </q-td> -->
+          </q-td>-->
           <q-td key="agentstatus">
-            <q-icon v-if="props.row.status ==='overdue'" name="fas fa-exclamation-triangle" color="negative">
+            <q-icon
+              v-if="props.row.status ==='overdue'"
+              name="fas fa-exclamation-triangle"
+              color="negative"
+            >
               <q-tooltip>Agent overdue</q-tooltip>
             </q-icon>
-            <q-icon v-else-if="props.row.status ==='offline'" name="fas fa-exclamation-triangle" color="grey-8">
+            <q-icon
+              v-else-if="props.row.status ==='offline'"
+              name="fas fa-exclamation-triangle"
+              color="grey-8"
+            >
               <q-tooltip>Agent offline</q-tooltip>
             </q-icon>
             <q-icon v-else name="fas fa-check" color="positive">
@@ -215,7 +243,6 @@
           <q-td key="boottime" :props="props">{{ bootTime(props.row.boot_time) }}</q-td>
         </q-tr>
       </template>
-      
     </q-table>
     <q-inner-loading :showing="agentTableLoading">
       <q-spinner size="40px" color="primary" />
@@ -260,7 +287,7 @@ import EditAgent from "@/components/modals/agents/EditAgent";
 export default {
   name: "AgentTable",
   props: ["frame", "columns", "tab", "filter", "userName"],
-  components: {EditAgent},
+  components: { EditAgent },
   mixins: [mixins],
   data() {
     return {
@@ -282,18 +309,18 @@ export default {
       this.$store.commit("setActiveRow", pk);
       this.$q.loading.show();
       // give time for store to change active row
-      setTimeout(()=>{
+      setTimeout(() => {
         this.$q.loading.hide();
         this.showEditAgentModal = true;
       }, 500);
     },
     runPatchStatusScan(pk, hostname) {
-        axios.get(`/winupdate/${pk}/runupdatescan/`).then(r => {
-            this.notifySuccess(`Scan will be run shortly on ${hostname}`)
-        })
+      axios.get(`/winupdate/${pk}/runupdatescan/`).then(r => {
+        this.notifySuccess(`Scan will be run shortly on ${hostname}`);
+      });
     },
     agentEdited() {
-      this.$emit("refreshEdit")
+      this.$emit("refreshEdit");
     },
     takeControl(pk) {
       const url = this.$router.resolve(`/takecontrol/${pk}`).href;
@@ -311,44 +338,55 @@ export default {
         "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1280,height=826"
       );
     },
+    runChecks(pk) {
+      axios
+        .get(`/checks/runchecks/${pk}/`)
+        .then(r => this.notifySuccess(`Checks will now be re-run on ${r.data}`))
+        .catch(e => this.notifyError("Something went wrong"));
+    },
     removeAgent(pk, hostname) {
-      this.$q.dialog({
-        title: "Are you sure?",
-        message: `Delete agent ${hostname}`,
-        cancel: true,
-        persistent: true
-      })
-      .onOk(() => {
-        this.$q.dialog({
-          title: `Please type <code style="color:red">${hostname}</code> to confirm`,
-          prompt: {model: '', type: 'text'},
+      this.$q
+        .dialog({
+          title: "Are you sure?",
+          message: `Delete agent ${hostname}`,
           cancel: true,
-          persistent: true,
-          html: true
-        }).onOk((hostnameConfirm) => {
-          if (hostnameConfirm !== hostname) {
-            this.$q.notify({
-              message: "ERROR: Please type the correct hostname",
-              color: "red"
-            })
-          } else {
-            const data = {pk: pk};
-            axios.delete("/agents/uninstallagent/", {data: data}).then(r => {
-              this.$q.notify({
-                message: `${hostname} will now be uninstalled!`,
-                color: "green"
-              })
-            })
-            .catch(e => {
-              this.$q.notify({
-                message: e.response.data.error,
-                color: "info",
-                timeout: 4000
-              })
-            })
-          }
+          persistent: true
         })
-      })
+        .onOk(() => {
+          this.$q
+            .dialog({
+              title: `Please type <code style="color:red">${hostname}</code> to confirm`,
+              prompt: { model: "", type: "text" },
+              cancel: true,
+              persistent: true,
+              html: true
+            })
+            .onOk(hostnameConfirm => {
+              if (hostnameConfirm !== hostname) {
+                this.$q.notify({
+                  message: "ERROR: Please type the correct hostname",
+                  color: "red"
+                });
+              } else {
+                const data = { pk: pk };
+                axios
+                  .delete("/agents/uninstallagent/", { data: data })
+                  .then(r => {
+                    this.$q.notify({
+                      message: `${hostname} will now be uninstalled!`,
+                      color: "green"
+                    });
+                  })
+                  .catch(e => {
+                    this.$q.notify({
+                      message: e.response.data.error,
+                      color: "info",
+                      timeout: 4000
+                    });
+                  });
+              }
+            });
+        });
     },
     rebootNow(pk, hostname) {
       this.$q
@@ -370,7 +408,7 @@ export default {
     },
     rebootLater() {
       // TODO implement this
-      console.log('reboot later')
+      console.log("reboot later");
     },
     toggleSendCommand(pk, hostname) {
       this.sendCommandToggle = true;
@@ -436,12 +474,12 @@ export default {
         });
     },
     agentClass(status) {
-      if (status === 'offline') {
-        return 'agent-offline'
-      } else if (status === 'overdue') {
-        return 'agent-overdue'
+      if (status === "offline") {
+        return "agent-offline";
+      } else if (status === "overdue") {
+        return "agent-overdue";
       } else {
-        return 'agent-normal'
+        return "agent-normal";
       }
     }
   },
@@ -477,11 +515,13 @@ export default {
 .highlight {
   background-color: #c9e6ff;
 }
+
 .agent-offline {
-  background: gray !important
+  background: gray !important;
 }
+
 .agent-overdue {
-  background: red !important
+  background: red !important;
 }
 </style>
 

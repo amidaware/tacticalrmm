@@ -4,12 +4,14 @@ import axios from "axios";
 import { Notify } from "quasar";
 import router from "../router";
 import logModule from "./logs";
+import alertsModule from "./alerts";
 
 Vue.use(Vuex);
 
 export const store = new Vuex.Store({
   modules: {
-    logs: logModule
+    logs: logModule,
+    alerts: alertsModule
   },
   state: {
     username: localStorage.getItem("user_name") || null,
@@ -25,7 +27,9 @@ export const store = new Vuex.Store({
     treeLoading: false,
     installedSoftware: [],
     scripts: [],
-    toggleScriptManager: false
+    toggleScriptManager: false,
+    policies: [],
+    toggleAutomationManager: false
   },
   getters: {
     loggedIn(state) {
@@ -55,9 +59,15 @@ export const store = new Vuex.Store({
     },
     scripts(state) {
       return state.scripts;
+    },
+    policies(state) {
+      return state.policies;
     }
   },
   mutations: {
+    TOGGLE_AUTOMATION_MANAGER(state, action) {
+      state.toggleAutomationManager = action;
+    },
     TOGGLE_SCRIPT_MANAGER(state, action) {
       state.toggleScriptManager = action;
     },
@@ -103,9 +113,17 @@ export const store = new Vuex.Store({
     },
     SET_SCRIPTS(state, scripts) {
       state.scripts = scripts;
+    },
+    SET_POLICIES(state, policies) {
+      state.policies = policies;
     }
   },
   actions: {
+    getPolicies(context) {
+      axios.get("/automation/policies/").then(r => {
+        context.commit("SET_POLICIES", r.data);
+      })
+    },
     getScripts(context) {
       axios.get("/checks/getscripts/").then(r => {
         context.commit("SET_SCRIPTS", r.data);

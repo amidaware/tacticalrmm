@@ -7,7 +7,8 @@
 
 Install Certbot
 
-```sudo add-apt-repository ppa:certbot/certbot
+```
+sudo add-apt-repository ppa:certbot/certbot
 sudo apt-get install certbot
 ```
 
@@ -16,7 +17,7 @@ Generate the wildcard certificate. Add the DNS entry for domain validation.
 ```
 sudo certbot certonly --manual -d *.example.com --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns
 ```
-Copy the fullchain.pem and privkey.pem to the cert directory.
+Copy the fullchain.pem and privkey.pem to the nginx-proxy/cert directory.
 
 ## Configure DNS and Firewall
 
@@ -37,7 +38,7 @@ You may need to run this twice since some of the dependant containers won't be r
 ## Create a super user
 
 ```
-sudo docker exec -it docker_api_1 python manage.py createsuperuser
+sudo docker-compose exec api python manage.py createsuperuser
 ```
 
 ## Setup 2FA authentication
@@ -45,7 +46,7 @@ sudo docker exec -it docker_api_1 python manage.py createsuperuser
 Get the 2FA code with 
 
 ```
-sudo docker exec -it docker_api_1 python manage.py generate_totp
+sudo docker-compose exec api python manage.py generate_totp
 ```
 
 Add the generated code to the .env file TWO_FACTOR_OTP in the docker folder
@@ -59,17 +60,21 @@ sudo docker-compose up -d --build api
 Use the generated code and the username to generate a bar code for your authenticator app
 
 ```
-sudo docker exec -it docker_api_1 python manage.py generate_barcode [OTP_CODE] [username]
+sudo docker-compose exec api python manage.py generate_barcode [OTP_CODE] [username]
 ```
 
 ## Connect to a container instance shell
 
-run `docker ps` to get the name of the running container instance.
-
-Then use the name in the below command. It will use the api container instance as an example
+The below command opens up a shell to the api service.
 
 ```
-sudo docker exec -it docker_api_1 /bin/bash
+sudo docker-compose exec api /bin/bash
 ```
 
 If /bin/bash doesn't work then /bin/sh might need to be used.
+
+## Using Docker for Dev
+
+run `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up`
+
+This will mount the local vue files in the app container with hot reload.

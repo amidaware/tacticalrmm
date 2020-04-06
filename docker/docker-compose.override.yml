@@ -1,0 +1,159 @@
+# FOR PROD 
+version: '3.7'
+
+services:
+  
+  # Container that hosts Vue frontend
+  app:
+    build:
+      context: ..
+      args:
+        - APP_HOST=${APP_HOST}
+        - API_HOST=${API_HOST}
+      dockerfile: "./docker/app/dockerfile"
+    networks: 
+      - proxy
+
+  # Container for Django backend
+  api:
+    build:
+      context: ..
+      dockerfile: "./docker/api/dockerfile"
+      args:
+        - DJANGO_SEKRET=${DJANGO_SEKRET}
+        - DJANGO_DEBUG=${DJANGO_DEBUG}
+        - POSTGRES_USER=${POSTGRES_USER}
+        - POSTGRES_PASS=${POSTGRES_PASS}
+        - POSTGRES_HOST=${POSTGRES_HOST}
+        - SALT_PASS=${SALT_PASS}
+        - SALT_USER=${SALT_USER}
+        - SALT_HOST=${SALT_HOST}
+        - REDIS_HOST=${REDIS_HOST}
+        - MESH_USER=${MESH_USER}
+        - MESH_HOST=${MESH_HOST}
+        - APP_HOST=${APP_HOST}
+        - API_HOST=${API_HOST}
+        - ADMIN_URL=${ADMIN_URL}
+        - TWO_FACTOR_OTP=${TWO_FACTOR_OTP}
+        - EMAIL_TLS=${EMAIL_TLS}
+        - EMAIL_HOST=${EMAIL_HOST}
+        - EMAIL_USER=${EMAIL_USER}
+        - EMAIL_PASS=${EMAIL_PASS}
+        - EMAIL_PORT=${EMAIL_PORT}
+        - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
+    networks:
+      - proxy
+      - database
+      - redis
+    volumes:
+      - scripts:/srv
+    depends_on: 
+      - db
+  
+  # Container for Celery worker service
+  celery-service:
+    build:
+      context: ..
+      dockerfile: "./docker/api/dockerfile"
+      args:
+        - DJANGO_SEKRET=${DJANGO_SEKRET}
+        - DJANGO_DEBUG=${DJANGO_DEBUG}
+        - POSTGRES_USER=${POSTGRES_USER}
+        - POSTGRES_PASS=${POSTGRES_PASS}
+        - POSTGRES_HOST=${POSTGRES_HOST}
+        - SALT_PASS=${SALT_PASS}
+        - SALT_USER=${SALT_USER}
+        - SALT_HOST=${SALT_HOST}
+        - REDIS_HOST=${REDIS_HOST}
+        - MESH_USER=${MESH_USER}
+        - MESH_HOST=${MESH_HOST}
+        - APP_HOST=${APP_HOST}
+        - API_HOST=${API_HOST}
+        - ADMIN_URL=${ADMIN_URL}
+        - TWO_FACTOR_OTP=${TWO_FACTOR_OTP}
+        - EMAIL_TLS=${EMAIL_TLS}
+        - EMAIL_HOST=${EMAIL_HOST}
+        - EMAIL_USER=${EMAIL_USER}
+        - EMAIL_PASS=${EMAIL_PASS}
+        - EMAIL_PORT=${EMAIL_PORT}
+        - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
+    command: celery -A tacticalrmm worker -l debug
+    networks:
+      - redis
+      - proxy
+      - database
+    depends_on: 
+      - db
+      - redis
+
+  # Container for Celery beat service
+  celery-beat:
+    build:
+      context: ..
+      dockerfile: "./docker/api/dockerfile"
+      args:
+        - DJANGO_SEKRET=${DJANGO_SEKRET}
+        - DJANGO_DEBUG=${DJANGO_DEBUG}
+        - POSTGRES_USER=${POSTGRES_USER}
+        - POSTGRES_PASS=${POSTGRES_PASS}
+        - POSTGRES_HOST=${POSTGRES_HOST}
+        - SALT_PASS=${SALT_PASS}
+        - SALT_USER=${SALT_USER}
+        - SALT_HOST=${SALT_HOST}
+        - REDIS_HOST=${REDIS_HOST}
+        - MESH_USER=${MESH_USER}
+        - MESH_HOST=${MESH_HOST}
+        - APP_HOST=${APP_HOST}
+        - API_HOST=${API_HOST}
+        - ADMIN_URL=${ADMIN_URL}
+        - TWO_FACTOR_OTP=${TWO_FACTOR_OTP}
+        - EMAIL_TLS=${EMAIL_TLS}
+        - EMAIL_HOST=${EMAIL_HOST}
+        - EMAIL_USER=${EMAIL_USER}
+        - EMAIL_PASS=${EMAIL_PASS}
+        - EMAIL_PORT=${EMAIL_PORT}
+        - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
+    command: celery -A tacticalrmm beat -l debug
+    networks:
+      - redis
+      - proxy
+      - database
+    depends_on: 
+      - db
+      - redis
+
+  # Container for Celery Winupdate tasks
+  celery-winupdate:
+    build:
+      context: ..
+      dockerfile: "./docker/api/dockerfile"
+      args:
+        - DJANGO_SEKRET=${DJANGO_SEKRET}
+        - DJANGO_DEBUG=${DJANGO_DEBUG}
+        - POSTGRES_USER=${POSTGRES_USER}
+        - POSTGRES_PASS=${POSTGRES_PASS}
+        - POSTGRES_HOST=${POSTGRES_HOST}
+        - SALT_PASS=${SALT_PASS}
+        - SALT_USER=${SALT_USER}
+        - SALT_HOST=${SALT_HOST}
+        - REDIS_HOST=${REDIS_HOST}
+        - MESH_USER=${MESH_USER}
+        - MESH_HOST=${MESH_HOST}
+        - APP_HOST=${APP_HOST}
+        - API_HOST=${API_HOST}
+        - ADMIN_URL=${ADMIN_URL}
+        - TWO_FACTOR_OTP=${TWO_FACTOR_OTP}
+        - EMAIL_TLS=${EMAIL_TLS}
+        - EMAIL_HOST=${EMAIL_HOST}
+        - EMAIL_USER=${EMAIL_USER}
+        - EMAIL_PASS=${EMAIL_PASS}
+        - EMAIL_PORT=${EMAIL_PORT}
+        - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
+    command: celery -A tacticalrmm worker -Q wupdate -l debug
+    networks:
+      - redis
+      - proxy
+      - database
+    depends_on: 
+      - db
+      - redis

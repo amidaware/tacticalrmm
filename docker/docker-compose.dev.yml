@@ -1,0 +1,98 @@
+# FOR DEV 
+version: '3.7'
+
+services:
+  
+  # Container that hosts Vue frontend
+  app:
+    image: node:12
+    command: /bin/bash -c "npm install --force && npm run serve -- --host 0.0.0.0 --port 80 --public ${APP_HOST}"
+    working_dir: /home/node
+    volumes:
+      - ../web:/home/node
+    networks: 
+      - proxy
+
+  # Builds Python Virtual Env to share between containers
+  venv:
+    image: python:3.7
+    command: /bin/bash -c "pip install virtualenv && python -m virtualenv env && ./env/bin/pip install -r requirements.txt"
+    working_dir: /app
+    volumes: 
+      - ../api/tacticalrmm:/app
+
+  # Container for Django backend
+  api:
+    image: python:3.7
+    command: /bin/bash -c "python manage.py collectstatic --clear --no-input && python manage.py migrate && python manage.py runserver 0.0.0.0:80"
+    working_dir: /app
+    environment: 
+      VIRTUAL_ENV: /env
+      PATH: /app/env/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    networks:
+      - proxy
+      - database
+      - redis
+    volumes:
+      - scripts:/srv
+      - ../api/tacticalrmm:/app
+    depends_on: 
+      - db
+      - venv
+  
+  # Container for Celery worker service
+  celery-service:
+    image: python:3.7
+    command: /bin/bash -c "celery -A tacticalrmm worker -l debug"
+    working_dir: /app
+    environment: 
+      VIRTUAL_ENV: /env
+      PATH: /app/env/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    volumes: 
+      - ../api/tacticalrmm:/app
+    networks:
+      - redis
+      - proxy
+      - database
+    depends_on: 
+      - db
+      - redis
+      - venv
+
+  # Container for Celery beat service
+  celery-beat:
+    image: python:3.7
+    command: /bin/bash -c "celery -A tacticalrmm beat -l debug"
+    working_dir: /app
+    environment: 
+      VIRTUAL_ENV: /env
+      PATH: /app/env/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    volumes: 
+      - ../api/tacticalrmm:/app
+    networks:
+      - redis
+      - proxy
+      - database
+    depends_on: 
+      - db
+      - redis
+      - venv
+
+  # Container for Celery Winupdate tasks
+  celery-winupdate:
+    image: python:3.7
+    command: /bin/bash -c "celery -A tacticalrmm worker -Q wupdate -l debug"
+    working_dir: /app
+    environment: 
+      VIRTUAL_ENV: /env
+      PATH: /app/env/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    volumes: 
+      - ../api/tacticalrmm:/app
+    networks:
+      - redis
+      - proxy
+      - database
+    depends_on: 
+      - db
+      - redis
+      - venv

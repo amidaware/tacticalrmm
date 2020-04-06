@@ -41,13 +41,6 @@
         <q-radio
           v-model="logType"
           color="cyan"
-          val="Setup"
-          label="Setup"
-          @input="getEventLog"
-        />
-        <q-radio
-          v-model="logType"
-          color="cyan"
           val="Security"
           label="Security"
           @input="getEventLog"

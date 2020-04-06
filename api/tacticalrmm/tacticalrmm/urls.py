@@ -18,4 +18,5 @@ urlpatterns = [
     path("services/", include("services.urls")),
     path("winupdate/", include("winupdate.urls")),
     path("software/", include("software.urls")),
+    path("core/", include("core.urls")),
 ]

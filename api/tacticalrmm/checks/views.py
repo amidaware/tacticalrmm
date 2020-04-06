@@ -1,8 +1,8 @@
 import validators
-import datetime
-from datetime import timezone
+import datetime as dt
 
 from django.shortcuts import get_object_or_404
+from django.utils import timezone as djangotime
 
 from rest_framework.response import Response
 from rest_framework import status
@@ -40,7 +40,7 @@ from .serializers import (
     ScriptSerializer,
 )
 
-from .tasks import handle_check_email_alert_task
+from .tasks import handle_check_email_alert_task, run_checks_task
 
 
 @api_view()
@@ -49,74 +49,81 @@ def get_scripts(request):
     return Response(ScriptSerializer(scripts, many=True, read_only=True).data)
 
 
-@api_view(["PATCH"])
+@api_view()
 @authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
-def update_ping_check(request):
-    check = get_object_or_404(PingCheck, pk=request.data["id"])
-    check.status = request.data["status"]
-    check.more_info = request.data["output"]
-    check.save(update_fields=["status", "more_info", "last_run"])
-
-    alert = False
-    if check.status == "passing":
-        if check.failure_count != 0:
-            check.failure_count = 0
-            check.save(update_fields=["failure_count"])
-    else:
-        new_count = check.failure_count + 1
-        check.failure_count = new_count
-        check.save(update_fields=["failure_count"])
-        if new_count >= check.failures:
-            alert = True
-
-    if alert and check.email_alert:
-        handle_check_email_alert_task.delay("ping", check.pk)
-
-    return Response("ok")
+def check_runner(request):
+    agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+    return Response(CheckSerializer(agent).data)
 
 
 @api_view(["PATCH"])
 @authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
-def update_script_check(request):
-    check = get_object_or_404(ScriptCheck, pk=request.data["id"])
+def update_check(request):
+    if request.data["check_type"] == "diskspace":
+        check = get_object_or_404(DiskCheck, pk=request.data["id"])
+        check.last_run = dt.datetime.now(tz=djangotime.utc)
+        check.save(update_fields=["last_run"])
+        serializer = DiskCheckSerializer(
+            instance=check, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        check.handle_check(request.data)
 
-    try:
-        output = request.data["output"]
-        status = request.data["status"]
-    except Exception:
-        output = "something went wrong"
-        status = "failing"
+    elif request.data["check_type"] == "cpuload":
+        check = get_object_or_404(CpuLoadCheck, pk=request.data["id"])
+        check.handle_check(request.data)
 
-    check.status = status
-    check.more_info = output
-    check.save(update_fields=["status", "more_info", "last_run"])
+    elif request.data["check_type"] == "memory":
+        check = get_object_or_404(MemCheck, pk=request.data["id"])
+        check.handle_check(request.data)
 
-    alert = False
-    if check.status == "passing":
-        if check.failure_count != 0:
-            check.failure_count = 0
-            check.save(update_fields=["failure_count"])
+    elif request.data["check_type"] == "winsvc":
+        check = get_object_or_404(WinServiceCheck, pk=request.data["id"])
+        check.last_run = dt.datetime.now(tz=djangotime.utc)
+        check.save(update_fields=["last_run"])
+        serializer = WinServiceCheckSerializer(
+            instance=check, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        check.handle_check(request.data)
+
+    elif request.data["check_type"] == "script":
+        check = get_object_or_404(ScriptCheck, pk=request.data["id"])
+        check.last_run = dt.datetime.now(tz=djangotime.utc)
+        check.save(update_fields=["last_run"])
+        serializer = ScriptCheckSerializer(
+            instance=check, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        check.handle_check(request.data)
+
+    elif request.data["check_type"] == "ping":
+        check = get_object_or_404(PingCheck, pk=request.data["id"])
+        check.last_run = dt.datetime.now(tz=djangotime.utc)
+        check.save(update_fields=["last_run"])
+        serializer = PingCheckSerializer(
+            instance=check, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        check.handle_check(request.data)
+
     else:
-        new_count = check.failure_count + 1
-        check.failure_count = new_count
-        check.save(update_fields=["failure_count"])
-        if new_count >= check.failures:
-            alert = True
-
-    if alert and check.email_alert:
-        handle_check_email_alert_task.delay("script", check.pk)
+        return Response("error", status=status.HTTP_400_BAD_REQUEST)
 
     return Response("ok")
 
 
 @api_view()
-@authentication_classes((TokenAuthentication,))
-@permission_classes((IsAuthenticated,))
-def check_runner(request):
-    agent = get_object_or_404(Agent, agent_id=request.data["agentid"])
-    return Response(CheckSerializer(agent).data)
+def run_checks(request, pk):
+    agent = get_object_or_404(Agent, pk=pk)
+    run_checks_task.delay(agent.pk)
+    return Response(agent.hostname)
 
 
 @api_view()
@@ -136,6 +143,7 @@ def add_standard_check(request):
     if request.data["check_type"] == "diskspace":
         disk = request.data["disk"]
         threshold = request.data["threshold"]
+        failures = request.data["failure"]
         existing_checks = DiskCheck.objects.filter(agent=agent)
         if existing_checks:
             for check in existing_checks:
@@ -147,7 +155,7 @@ def add_standard_check(request):
             error = {"error": "Please enter a valid threshold between 1 and 99"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-        DiskCheck(agent=agent, disk=disk, threshold=threshold).save()
+        DiskCheck(agent=agent, disk=disk, threshold=threshold, failures=failures).save()
         return Response("ok")
 
     elif request.data["check_type"] == "ping":
@@ -166,11 +174,12 @@ def add_standard_check(request):
             error = {"error": f"A cpu load check for {agent.hostname} already exists!"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
         threshold = request.data["threshold"]
+        failures = request.data["failure"]
         if not validate_threshold(threshold):
             error = {"error": "Please enter a valid threshold between 1 and 99"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-        CpuLoadCheck(agent=agent, cpuload=threshold).save()
+        CpuLoadCheck(agent=agent, cpuload=threshold, failures=failures).save()
         return Response("ok")
 
     elif request.data["check_type"] == "mem":
@@ -178,11 +187,12 @@ def add_standard_check(request):
             error = {"error": f"A memory check for {agent.hostname} already exists!"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
         threshold = request.data["threshold"]
+        failures = request.data["failure"]
         if not validate_threshold(threshold):
             error = {"error": "Please enter a valid threshold between 1 and 99"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-        MemCheck(agent=agent, threshold=threshold).save()
+        MemCheck(agent=agent, threshold=threshold, failures=failures).save()
         return Response("ok")
 
     elif request.data["check_type"] == "winsvc":
@@ -242,7 +252,8 @@ def edit_standard_check(request):
             error = {"error": "Please enter a valid threshold between 1 and 99"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
         check.threshold = request.data["threshold"]
-        check.save(update_fields=["threshold"])
+        check.failures = request.data["failures"]
+        check.save(update_fields=["threshold", "failures"])
         return Response("ok")
 
     elif request.data["check_type"] == "ping":
@@ -262,7 +273,8 @@ def edit_standard_check(request):
             error = {"error": "Please enter a valid threshold between 1 and 99"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
         check.cpuload = request.data["threshold"]
-        check.save(update_fields=["cpuload"])
+        check.failures = request.data["failure"]
+        check.save(update_fields=["cpuload", "failures"])
         return Response("ok")
 
     elif request.data["check_type"] == "mem":
@@ -271,7 +283,8 @@ def edit_standard_check(request):
             error = {"error": "Please enter a valid threshold between 1 and 99"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
         check.threshold = request.data["threshold"]
-        check.save(update_fields=["threshold"])
+        check.failures = request.data["failure"]
+        check.save(update_fields=["threshold", "failures"])
         return Response("ok")
 
     elif request.data["check_type"] == "winsvc":

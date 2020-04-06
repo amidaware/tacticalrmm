@@ -1,35 +1,44 @@
 <template>
-    <q-card style="min-width: 400px">
-        <q-card-section class="row items-center">
-        <div class="text-h6">Add Memory Check</div>
-        <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
-        </q-card-section>
+  <q-card style="min-width: 400px">
+    <q-card-section class="row items-center">
+      <div class="text-h6">Add Memory Check</div>
+      <q-space />
+      <q-btn icon="close" flat round dense v-close-popup />
+    </q-card-section>
 
-        <q-form @submit.prevent="addCheck">
-            <q-card-section>
-                <q-input
-                outlined
-                v-model.number="threshold"
-                label="Alert if average memory usage > (%)"
-                :rules="[ 
+    <q-form @submit.prevent="addCheck">
+      <q-card-section>
+        <q-input
+          outlined
+          v-model.number="threshold"
+          label="Alert if average memory usage > (%)"
+          :rules="[ 
                     val => !!val || '*Required',
                     val => val >= 1 || 'Minimum threshold is 1',
                     val => val < 100 || 'Maximum threshold is 99'
                 ]"
-                />
-            </q-card-section>
-            <q-card-actions align="right">
-                <q-btn label="Add" color="primary" type="submit" />
-                <q-btn label="Cancel" v-close-popup />
-            </q-card-actions>
-        </q-form>
-    </q-card>
+        />
+      </q-card-section>
+      <q-card-section>
+        <q-select
+          outlined
+          dense
+          v-model="failure"
+          :options="failures"
+          label="Number of consecutive failures before alert"
+        />
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn label="Add" color="primary" type="submit" />
+        <q-btn label="Cancel" v-close-popup />
+      </q-card-actions>
+    </q-form>
+  </q-card>
 </template>
 
 <script>
 import axios from "axios";
-import { mapState } from 'vuex';
+import { mapState } from "vuex";
 import mixins from "@/mixins/mixins";
 export default {
   name: "AddMemCheck",
@@ -37,7 +46,9 @@ export default {
   mixins: [mixins],
   data() {
     return {
-      threshold: 85
+      threshold: 85,
+      failure: 5,
+      failures: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     };
   },
   methods: {
@@ -45,7 +56,8 @@ export default {
       const data = {
         pk: this.agentpk,
         check_type: "mem",
-        threshold: this.threshold
+        threshold: this.threshold,
+        failure: this.failure
       };
       axios
         .post("/checks/addstandardcheck/", data)

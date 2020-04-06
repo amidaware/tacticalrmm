@@ -6,7 +6,11 @@ from django.conf import settings
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tacticalrmm.settings")
 
-app = Celery("tacticalrmm", backend="redis://" + settings.REDIS_HOST, broker="redis://" + settings.REDIS_HOST)
+app = Celery(
+    "tacticalrmm",
+    backend="redis://" + settings.REDIS_HOST,
+    broker="redis://" + settings.REDIS_HOST,
+)
 # app.config_from_object('django.conf:settings', namespace='CELERY')
 app.broker_url = "redis://" + settings.REDIS_HOST + ":6379"
 app.result_backend = "redis://" + settings.REDIS_HOST + ":6379"
@@ -17,9 +21,9 @@ app.conf.task_track_started = True
 app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
-    'update-chocos': {
-        'task': 'software.tasks.update_chocos',
-        'schedule': crontab(minute=0, hour=4),
+    "update-chocos": {
+        "task": "software.tasks.update_chocos",
+        "schedule": crontab(minute=0, hour=4),
     },
 }
 
@@ -32,16 +36,10 @@ def debug_task(self):
 @app.on_after_finalize.connect
 def setup_periodic_tasks(sender, **kwargs):
 
-    from checks.tasks import (
-        disk_check_alert,
-        cpu_load_check_alert,
-        mem_check_alert,
-        win_service_check_task,
-        checks_failing_task,
-    )
+    from checks.tasks import checks_failing_task
 
-    sender.add_periodic_task(10.0, disk_check_alert.s())
-    sender.add_periodic_task(10.0, cpu_load_check_alert.s())
-    sender.add_periodic_task(10.0, mem_check_alert.s())
-    sender.add_periodic_task(10.0, win_service_check_task.s())
-    sender.add_periodic_task(7.0, checks_failing_task.s())
+    from core.models import CoreSettings
+
+    interval = CoreSettings.objects.get(pk=1)
+
+    sender.add_periodic_task(30.0, checks_failing_task.s())

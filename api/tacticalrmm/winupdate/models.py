@@ -74,7 +74,7 @@ class WinUpdatePolicy(models.Model):
     run_time_hour = models.IntegerField(choices=RUN_TIME_HOUR_CHOICES, default=3)
 
     # 0 to 6 = Monday to Sunday
-    run_time_days = ArrayField(models.IntegerField(blank=True), null=True, default=list)
+    run_time_days = ArrayField(models.IntegerField(blank=True), null=True, blank=True, default=list)
 
     reboot_after_install = models.CharField(
         max_length=50, choices=REBOOT_AFTER_INSTALL_CHOICES, default="required"

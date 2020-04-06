@@ -34,8 +34,6 @@ from checks.models import (
     CpuLoadCheck,
     MemCheck,
     PingCheck,
-    MemoryHistory,
-    CpuHistory,
 )
 from winupdate.models import WinUpdate, WinUpdatePolicy
 from agents.tasks import (
@@ -44,7 +42,7 @@ from agents.tasks import (
     get_wmi_detail_task,
 )
 from winupdate.tasks import check_for_updates_task
-from agents.serializers import AgentHostnameSerializer
+from agents.serializers import AgentHostnameSerializer, AgentSerializer
 from software.tasks import install_chocolatey, get_installed_software
 
 logger.configure(**settings.LOG_CONFIG)
@@ -72,7 +70,7 @@ class UploadMeshAgent(APIView):
 @authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
 def trigger_patch_scan(request):
-    agent = get_object_or_404(Agent, agent_id=request.data["agentid"])
+    agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
     check_for_updates_task.delay(agent.pk, wait=False)
 
     if request.data["reboot"]:
@@ -178,7 +176,7 @@ def get_mesh_exe(request):
 @permission_classes((IsAuthenticated,))
 def create_auth_token(request):
     try:
-        agentid = request.data["agentid"]
+        agentid = request.data["agent_id"]
     except Exception:
         logger.error("agentid was not provided with request")
         return Response({"error": "bad data"}, status=status.HTTP_400_BAD_REQUEST)
@@ -243,8 +241,8 @@ def accept_salt_key(request):
 @permission_classes((IsAuthenticated,))
 def delete_agent(request):
     try:
-        user = User.objects.get(username=request.data["agentid"])
-        agent = get_object_or_404(Agent, agent_id=request.data["agentid"])
+        user = User.objects.get(username=request.data["agent_id"])
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
         saltid = agent.salt_id
         user.delete()
         agent.delete()
@@ -282,7 +280,7 @@ def delete_agent(request):
 @permission_classes((IsAuthenticated,))
 def add(request):
     data = request.data
-    agent_id = data["agentid"]
+    agent_id = data["agent_id"]
     hostname = data["hostname"]
     client = data["client"]
     site = data["site"]
@@ -302,8 +300,6 @@ def add(request):
         ).save()
 
         agent = get_object_or_404(Agent, agent_id=agent_id)
-        MemoryHistory(agent=agent).save()
-        CpuHistory(agent=agent).save()
 
         if agent.monitoring_type == "workstation":
             WinUpdatePolicy(agent=agent, run_time_days=[5, 6]).save()
@@ -319,41 +315,10 @@ def add(request):
 @authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
 def update(request):
-    data = request.data
-    agent_id = data["agentid"]
-    hostname = data["hostname"]
-    os = data["operating_system"]
-    total_ram = data["total_ram"]
-    plat = data["platform"]
-    plat_release = data["platform_release"]
-    version = data["version"]
-    av = data["av"]
-    boot_time = data["boot_time"]
-
-    agent = get_object_or_404(Agent, agent_id=agent_id)
-
-    agent.hostname = hostname
-    agent.operating_system = os
-    agent.total_ram = total_ram
-    agent.plat = plat
-    agent.plat_release = plat_release
-    agent.version = version
-    agent.antivirus = av
-    agent.boot_time = boot_time
-
-    agent.save(
-        update_fields=[
-            "last_seen",
-            "hostname",
-            "operating_system",
-            "total_ram",
-            "plat",
-            "plat_release",
-            "version",
-            "antivirus",
-            "boot_time",
-        ]
-    )
+    agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+    serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
 
     sync_salt_modules_task.delay(agent.pk)
     get_installed_software.delay(agent.pk)
@@ -398,17 +363,7 @@ def on_agent_first_install(request):
 @authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
 def hello(request):
-    data = request.data
-    agent_id = data["agentid"]
-    local_ip = data["local_ip"]
-    services = data["services"]
-    public_ip = data["public_ip"]
-    cpu_load = data["cpu_load"]
-    used_ram = data["used_ram"]
-    disks = data["disks"]
-    logged_in_username = data["logged_in_username"]
-
-    agent = get_object_or_404(Agent, agent_id=agent_id)
+    agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
 
     if agent.uninstall_pending:
         if agent.uninstall_inprogress:
@@ -417,54 +372,7 @@ def hello(request):
             uninstall_agent_task.delay(agent.pk)
             return Response("ok")
 
-    agent.local_ip = local_ip
-    agent.public_ip = public_ip
-    agent.services = services
-    agent.cpu_load = cpu_load
-    agent.used_ram = used_ram
-    agent.disks = disks
-
-    agent.logged_in_username = logged_in_username
-
-    agent.save(
-        update_fields=[
-            "last_seen",
-            "local_ip",
-            "public_ip",
-            "services",
-            "cpu_load",
-            "used_ram",
-            "disks",
-            "logged_in_username",
-        ]
-    )
-
-    # create a list of the last 35 mem averages
-    mem = MemoryHistory.objects.get(agent=agent)
-    mem_list = mem.mem_history
-
-    if len(mem_list) < 35:
-        mem_list.append(used_ram)
-        mem.mem_history = mem_list
-        mem.save(update_fields=["mem_history"])
-    else:
-        mem_list.append(used_ram)
-        new_mem_list = mem_list[-35:]
-        mem.mem_history = new_mem_list
-        mem.save(update_fields=["mem_history"])
-
-    # create list of the last 35 cpu load averages
-    cpu = CpuHistory.objects.get(agent=agent)
-    cpu_list = cpu.cpu_history
-
-    if len(cpu_list) < 35:
-        cpu_list.append(cpu_load)
-        cpu.cpu_history = cpu_list
-        cpu.save(update_fields=["cpu_history"])
-    else:
-        cpu_list.append(cpu_load)
-        new_cpu_list = cpu_list[-35:]
-        cpu.cpu_history = new_cpu_list
-        cpu.save(update_fields=["cpu_history"])
-
+    serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
     return Response("ok")

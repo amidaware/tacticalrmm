@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import psutil
 import os
 
+PROGRAM_DIR = "C:\\Program Files\\TacticalAgent"
 
 def get_services():
     return [svc.as_dict() for svc in psutil.win_service_iter()]
@@ -19,12 +20,17 @@ def run_python_script(filename, timeout):
 
 
 def uninstall_agent():
-    remove_exe = os.path.join("C:\\Program Files\\TacticalAgent", "unins000.exe")
+    remove_exe = os.path.join(PROGRAM_DIR, "unins000.exe")
     __salt__["cmd.run_bg"]([remove_exe, "/VERYSILENT", "/SUPPRESSMSGBOXES"])
     return "ok"
 
 
 def update_salt():
-    tacrmm = os.path.join("C:\\Program Files\\TacticalAgent", "tacticalrmm.exe")
+    tacrmm = os.path.join(PROGRAM_DIR, "tacticalrmm.exe")
     __salt__["cmd.run_bg"]([tacrmm, "-m", "updatesalt"])
+    return "ok"
+
+def run_manual_checks():
+    tacrmm = os.path.join(PROGRAM_DIR, "tacticalrmm.exe")
+    __salt__["cmd.run_bg"]([tacrmm, "-m", "runchecks"])
     return "ok"

@@ -1,6 +1,9 @@
 import validators
 from statistics import mean
+import datetime as dt
 
+
+from django.utils import timezone as djangotime
 from django.db import models
 from django.core.mail import send_mail
 from django.conf import settings
@@ -57,10 +60,24 @@ class DiskCheck(models.Model):
     email_alert = models.BooleanField(default=False)
     text_alert = models.BooleanField(default=False)
     more_info = models.TextField(null=True, blank=True)
-    last_run = models.DateTimeField(auto_now=True)
+    last_run = models.DateTimeField(null=True, blank=True)
+    failures = models.PositiveIntegerField(default=5)
+    failure_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"{self.agent.hostname} - {self.disk}"
+
+    def handle_check(self, data):
+        if data["status"] == "passing" and self.failure_count != 0:
+            self.failure_count = 0
+            self.save(update_fields=["failure_count"])
+        elif data["status"] == "failing":
+            self.failure_count += 1
+            self.save(update_fields=["failure_count"])
+            if self.email_alert and self.failure_count >= self.failures:
+                from .tasks import handle_check_email_alert_task
+
+                handle_check_email_alert_task.delay("diskspace", self.pk)
 
     def send_email(self):
         percent_used = self.agent.disks[self.disk]["percent"]
@@ -125,12 +142,27 @@ class ScriptCheck(models.Model):
     status = models.CharField(
         max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
     )
-    failure_count = models.IntegerField(default=0)
+    failure_count = models.PositiveIntegerField(default=0)
     email_alert = models.BooleanField(default=False)
     text_alert = models.BooleanField(default=False)
-    more_info = models.TextField(null=True, blank=True)
-    last_run = models.DateTimeField(auto_now=True)
+    stdout = models.TextField(null=True, blank=True)
+    stderr = models.TextField(null=True, blank=True)
+    retcode = models.IntegerField(default=0)
+    execution_time = models.CharField(max_length=100, default="0.0000")
+    last_run = models.DateTimeField(null=True, blank=True)
     script = models.ForeignKey(Script, related_name="script", on_delete=models.CASCADE)
+
+    def handle_check(self, data):
+        if data["status"] == "passing" and self.failure_count != 0:
+            self.failure_count = 0
+            self.save(update_fields=["failure_count"])
+        elif data["status"] == "failing":
+            self.failure_count += 1
+            self.save(update_fields=["failure_count"])
+            if self.email_alert and self.failure_count >= self.failures:
+                from .tasks import handle_check_email_alert_task
+
+                handle_check_email_alert_task.delay("script", self.pk)
 
     def send_email(self):
         send_mail(
@@ -166,11 +198,23 @@ class PingCheck(models.Model):
     status = models.CharField(
         max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
     )
-    failure_count = models.IntegerField(default=0)
+    failure_count = models.PositiveIntegerField(default=0)
     email_alert = models.BooleanField(default=False)
     text_alert = models.BooleanField(default=False)
     more_info = models.TextField(null=True, blank=True)
-    last_run = models.DateTimeField(auto_now=True)
+    last_run = models.DateTimeField(null=True, blank=True)
+
+    def handle_check(self, data):
+        if data["status"] == "passing" and self.failure_count != 0:
+            self.failure_count = 0
+            self.save(update_fields=["failure_count"])
+        elif data["status"] == "failing":
+            self.failure_count += 1
+            self.save(update_fields=["failure_count"])
+            if self.email_alert and self.failure_count >= self.failures:
+                from .tasks import handle_check_email_alert_task
+
+                handle_check_email_alert_task.delay("ping", self.pk)
 
     def send_email(self):
         send_mail(
@@ -210,39 +254,57 @@ class CpuLoadCheck(models.Model):
     status = models.CharField(
         max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
     )
-    more_info = models.TextField(null=True, blank=True)
     email_alert = models.BooleanField(default=False)
     text_alert = models.BooleanField(default=False)
-    last_run = models.DateTimeField(auto_now=True)
+    last_run = models.DateTimeField(null=True, blank=True)
+    failures = models.PositiveIntegerField(default=5)
+    failure_count = models.PositiveIntegerField(default=0)
+    history = ArrayField(models.IntegerField(blank=True), null=True, default=list)
 
     def __str__(self):
         return self.agent.hostname
 
-    def send_email(self):
+    @property
+    def more_info(self):
+        return ", ".join(str(f"{x}%") for x in self.history[-6:])
 
-        cpuhistory = CpuHistory.objects.get(agent=self.agent).cpu_history
-        avg = int(mean(cpuhistory))
+    def handle_check(self, data):
+        if len(self.history) < 15:
+            self.history.append(data["cpu_load"])
+        else:
+            self.history.append(data["cpu_load"])
+            self.history = self.history[-15:]
+
+        self.last_run = dt.datetime.now(tz=djangotime.utc)
+        self.save(update_fields=["history", "last_run"])
+
+        avg = int(mean(self.history))
+        if avg > self.cpuload:
+            self.status = "failing"
+            self.failure_count += 1
+            self.save(update_fields=["status", "failure_count"])
+        else:
+            self.status = "passing"
+            if self.failure_count != 0:
+                self.failure_count = 0
+                self.save(update_fields=["status", "failure_count"])
+            else:
+                self.save(update_fields=["status"])
+
+        if self.email_alert and self.failure_count >= self.failures:
+            from .tasks import handle_check_email_alert_task
+
+            handle_check_email_alert_task.delay("cpuload", self.pk)
+
+    def send_email(self):
 
         send_mail(
             f"CPU Load Check fail on {self.agent.hostname}",
-            f"Average cpu utilization is {avg}% which is greater than the threshold {self.cpuload}%",
+            f"Average cpu utilization is {int(mean(self.history))}% which is greater than the threshold {self.cpuload}%",
             settings.EMAIL_HOST_USER,
             settings.EMAIL_ALERT_RECIPIENTS,
             fail_silently=False,
         )
-
-
-class CpuHistory(models.Model):
-    agent = models.ForeignKey(
-        Agent, related_name="cpuhistory", on_delete=models.CASCADE
-    )
-    cpu_history = ArrayField(models.IntegerField(blank=True), null=True, default=list)
-
-    def __str__(self):
-        return self.agent.hostname
-
-    def format_nice(self):
-        return ", ".join(str(f"{x}%") for x in self.cpu_history[-6:])
 
 
 class CpuLoadCheckEmail(models.Model):
@@ -262,37 +324,57 @@ class MemCheck(models.Model):
     status = models.CharField(
         max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
     )
-    more_info = models.TextField(null=True, blank=True)
     email_alert = models.BooleanField(default=False)
     text_alert = models.BooleanField(default=False)
-    last_run = models.DateTimeField(auto_now=True)
+    last_run = models.DateTimeField(null=True, blank=True)
+    failures = models.PositiveIntegerField(default=5)
+    failure_count = models.PositiveIntegerField(default=0)
+    history = ArrayField(models.IntegerField(blank=True), null=True, default=list)
 
     def __str__(self):
         return self.agent.hostname
 
-    def send_email(self):
+    @property
+    def more_info(self):
+        return ", ".join(str(f"{x}%") for x in self.history[-6:])
 
-        memhistory = MemoryHistory.objects.get(agent=self.agent).mem_history
-        avg = int(mean(memhistory))
+    def handle_check(self, data):
+        if len(self.history) < 15:
+            self.history.append(data["used_ram"])
+        else:
+            self.history.append(data["used_ram"])
+            self.history = self.history[-15:]
+
+        self.last_run = dt.datetime.now(tz=djangotime.utc)
+        self.save(update_fields=["history", "last_run"])
+
+        avg = int(mean(self.history))
+        if avg > self.threshold:
+            self.status = "failing"
+            self.failure_count += 1
+            self.save(update_fields=["status", "failure_count"])
+        else:
+            self.status = "passing"
+            if self.failure_count != 0:
+                self.failure_count = 0
+                self.save(update_fields=["status", "failure_count"])
+            else:
+                self.save(update_fields=["status"])
+
+        if self.email_alert and self.failure_count >= self.failures:
+            from .tasks import handle_check_email_alert_task
+
+            handle_check_email_alert_task.delay("memory", self.pk)
+
+    def send_email(self):
 
         send_mail(
             f"Memory Check fail on {self.agent.hostname}",
-            f"Average memory usage is {avg}% which is greater than the threshold {self.threshold}%",
+            f"Average memory usage is {int(mean(self.history))}% which is greater than the threshold {self.threshold}%",
             settings.EMAIL_HOST_USER,
             settings.EMAIL_ALERT_RECIPIENTS,
             fail_silently=False,
         )
-
-
-class MemoryHistory(models.Model):
-    agent = models.ForeignKey(Agent, on_delete=models.CASCADE)
-    mem_history = ArrayField(models.IntegerField(blank=True), null=True, default=list)
-
-    def __str__(self):
-        return self.agent.hostname
-
-    def format_nice(self):
-        return ", ".join(str(f"{x}%") for x in self.mem_history[-6:])
 
 
 class MemCheckEmail(models.Model):
@@ -315,17 +397,29 @@ class WinServiceCheck(models.Model):
     pass_if_start_pending = models.BooleanField(default=False)
     restart_if_stopped = models.BooleanField(default=False)
     failures = models.PositiveIntegerField(default=1)
-    failure_count = models.IntegerField(default=0)
+    failure_count = models.PositiveIntegerField(default=0)
     status = models.CharField(
         max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
     )
     more_info = models.TextField(null=True, blank=True)
     email_alert = models.BooleanField(default=False)
     text_alert = models.BooleanField(default=False)
-    last_run = models.DateTimeField(auto_now=True)
+    last_run = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.agent.hostname} - {self.svc_display_name}"
+
+    def handle_check(self, data):
+        if data["status"] == "passing" and self.failure_count != 0:
+            self.failure_count = 0
+            self.save(update_fields=["failure_count"])
+        elif data["status"] == "failing":
+            self.failure_count += 1
+            self.save(update_fields=["failure_count"])
+            if self.email_alert and self.failure_count >= self.failures:
+                from .tasks import handle_check_email_alert_task
+
+                handle_check_email_alert_task.delay("winsvc", self.pk)
 
     def send_email(self):
 

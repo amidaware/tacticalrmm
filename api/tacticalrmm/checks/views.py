@@ -21,9 +21,7 @@ from .models import (
     PingCheck,
     PingCheckEmail,
     CpuLoadCheck,
-    CpuHistory,
     MemCheck,
-    MemoryHistory,
     WinServiceCheck,
     Script,
     ScriptCheck,
@@ -76,19 +74,11 @@ def update_check(request):
 
     elif request.data["check_type"] == "cpuload":
         check = get_object_or_404(CpuLoadCheck, pk=request.data["id"])
-        check.last_run = dt.datetime.now(tz=djangotime.utc)
-        check.save(update_fields=["last_run"])
-
-        cpu = CpuHistory.objects.get(agent=check.agent)
-        cpu.update_history(request.data["cpu_load"])
+        check.handle_check(request.data)
 
     elif request.data["check_type"] == "memory":
         check = get_object_or_404(MemCheck, pk=request.data["id"])
-        check.last_run = dt.datetime.now(tz=djangotime.utc)
-        check.save(update_fields=["last_run"])
-
-        mem = MemoryHistory.objects.get(agent=check.agent)
-        mem.update_history(request.data["used_ram"])
+        check.handle_check(request.data)
 
     elif request.data["check_type"] == "winsvc":
         check = get_object_or_404(WinServiceCheck, pk=request.data["id"])
@@ -184,11 +174,12 @@ def add_standard_check(request):
             error = {"error": f"A cpu load check for {agent.hostname} already exists!"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
         threshold = request.data["threshold"]
+        failures = request.data["failure"]
         if not validate_threshold(threshold):
             error = {"error": "Please enter a valid threshold between 1 and 99"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-        CpuLoadCheck(agent=agent, cpuload=threshold).save()
+        CpuLoadCheck(agent=agent, cpuload=threshold, failures=failures).save()
         return Response("ok")
 
     elif request.data["check_type"] == "mem":
@@ -196,11 +187,12 @@ def add_standard_check(request):
             error = {"error": f"A memory check for {agent.hostname} already exists!"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
         threshold = request.data["threshold"]
+        failures = request.data["failure"]
         if not validate_threshold(threshold):
             error = {"error": "Please enter a valid threshold between 1 and 99"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-        MemCheck(agent=agent, threshold=threshold).save()
+        MemCheck(agent=agent, threshold=threshold, failures=failures).save()
         return Response("ok")
 
     elif request.data["check_type"] == "winsvc":
@@ -281,7 +273,8 @@ def edit_standard_check(request):
             error = {"error": "Please enter a valid threshold between 1 and 99"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
         check.cpuload = request.data["threshold"]
-        check.save(update_fields=["cpuload"])
+        check.failures = request.data["failure"]
+        check.save(update_fields=["cpuload", "failures"])
         return Response("ok")
 
     elif request.data["check_type"] == "mem":
@@ -290,7 +283,8 @@ def edit_standard_check(request):
             error = {"error": "Please enter a valid threshold between 1 and 99"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
         check.threshold = request.data["threshold"]
-        check.save(update_fields=["threshold"])
+        check.failures = request.data["failure"]
+        check.save(update_fields=["threshold", "failures"])
         return Response("ok")
 
     elif request.data["check_type"] == "winsvc":

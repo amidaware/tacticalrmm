@@ -14,9 +14,7 @@ from .models import (
     PingCheckEmail,
     CpuLoadCheck,
     CpuLoadCheckEmail,
-    CpuHistory,
     MemCheck,
-    MemoryHistory,
     MemCheckEmail,
     WinServiceCheck,
     WinServiceCheckEmail,
@@ -121,39 +119,6 @@ def checks_failing_task():
     return "ok"
 
 
-
-@app.task
-def cpu_load_check_alert():
-    agents_with_checks = CpuLoadCheck.objects.all()
-    if agents_with_checks:
-        for check in agents_with_checks:
-            threshold = check.cpuload
-            agent = Agent.objects.get(pk=check.agent.pk)
-            try:
-                cpuhistory = CpuHistory.objects.get(agent=agent)
-            except ObjectDoesNotExist:
-                pass
-            else:
-                if len(cpuhistory.cpu_history) >= 2:
-                    check.more_info = cpuhistory.format_nice()
-                    check.save(update_fields=["more_info"])
-
-                    avg = int(mean(cpuhistory.cpu_history))
-                    if avg > threshold:
-                        check.status = "failing"
-                        check.save(update_fields=["status"])
-
-                        if check.email_alert:
-                            handle_check_email_alert_task.delay("cpuload", check.pk)
-
-                    else:
-                        if check.status != "passing":
-                            check.status = "passing"
-                            check.save(update_fields=["status"])
-
-    return "ok"
-
-
 @app.task
 def restart_win_service_task(pk, svcname):
     agent = Agent.objects.get(pk=pk)
@@ -175,37 +140,5 @@ def run_checks_task(pk):
         )
     except:
         pass
-
-    return "ok"
-
-
-@app.task
-def mem_check_alert():
-    agents_with_checks = MemCheck.objects.all()
-    if agents_with_checks:
-        for check in agents_with_checks:
-            threshold = check.threshold
-            agent = Agent.objects.get(pk=check.agent.pk)
-            try:
-                memhistory = MemoryHistory.objects.get(agent=agent)
-            except ObjectDoesNotExist:
-                pass
-            else:
-                if len(memhistory.mem_history) >= 2:
-                    check.more_info = memhistory.format_nice()
-                    check.save(update_fields=["more_info"])
-
-                    avg = int(mean(memhistory.mem_history))
-                    if avg > threshold:
-                        check.status = "failing"
-                        check.save(update_fields=["status"])
-
-                        if check.email_alert:
-                            handle_check_email_alert_task.delay("memory", check.pk)
-
-                    else:
-                        if check.status != "passing":
-                            check.status = "passing"
-                            check.save(update_fields=["status"])
 
     return "ok"

@@ -7,13 +7,22 @@
     </q-card-section>
 
     <q-form @submit.prevent="addCheck">
-      
       <q-card-section>
-        <q-select :rules="[val => !!val || '*Required']" dense outlined v-model="displayName" :options="svcDisplayNames" label="Service" @input="getRawName" />
-        
+        <q-select
+          :rules="[val => !!val || '*Required']"
+          dense
+          outlined
+          v-model="displayName"
+          :options="svcDisplayNames"
+          label="Service"
+          @input="getRawName"
+        />
       </q-card-section>
       <q-card-section>
-        <q-checkbox v-model="passIfStartPending" label="PASS if service is in 'Start Pending' mode" />
+        <q-checkbox
+          v-model="passIfStartPending"
+          label="PASS if service is in 'Start Pending' mode"
+        />
         <q-checkbox v-model="restartIfStopped" label="RESTART service if it's stopped" />
       </q-card-section>
       <q-card-section>
@@ -48,13 +57,13 @@ export default {
       rawName: [],
       passIfStartPending: false,
       restartIfStopped: false,
-      failure: 1,
+      failure: 2,
       failures: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     };
   },
   computed: {
     svcDisplayNames() {
-      return this.servicesData.map(k => k.display_name).sort()
+      return this.servicesData.map(k => k.display_name).sort();
     }
   },
   methods: {
@@ -67,7 +76,9 @@ export default {
       }
     },
     getRawName() {
-      let svc = this.servicesData.find(k => k.display_name === this.displayName);
+      let svc = this.servicesData.find(
+        k => k.display_name === this.displayName
+      );
       this.rawName = [svc].map(j => j.name);
     },
     addCheck() {
@@ -92,6 +103,6 @@ export default {
   },
   mounted() {
     this.getServices();
-  },
+  }
 };
 </script>

@@ -52,7 +52,7 @@ export default {
       threshold: 25,
       disks: [],
       firstdisk: "",
-      failure: 1,
+      failure: 2,
       failures: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     };
   },

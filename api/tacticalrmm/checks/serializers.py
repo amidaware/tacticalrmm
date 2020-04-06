@@ -5,7 +5,6 @@ from .models import (
     CpuLoadCheck,
     MemCheck,
     PingCheck,
-    CpuHistory,
     WinServiceCheck,
     Script,
     ScriptCheck,
@@ -21,18 +20,16 @@ class DiskCheckSerializer(serializers.ModelSerializer):
 
 
 class CpuLoadCheckSerializer(serializers.ModelSerializer):
+    more_info = serializers.ReadOnlyField()
+
     class Meta:
         model = CpuLoadCheck
         fields = "__all__"
 
 
-class CpuHistorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CpuHistory
-        fields = ("cpu_history",)
-
-
 class MemCheckSerializer(serializers.ModelSerializer):
+    more_info = serializers.ReadOnlyField()
+
     class Meta:
         model = MemCheck
         fields = "__all__"
@@ -93,7 +90,6 @@ class CheckSerializer(serializers.ModelSerializer):
     cpuloadchecks = CpuLoadCheckSerializer(many=True, read_only=True)
     memchecks = MemCheckSerializer(many=True, read_only=True)
     pingchecks = PingCheckSerializer(many=True, read_only=True)
-    cpuhistory = CpuHistorySerializer(many=True, read_only=True)
     winservicechecks = WinServiceCheckSerializer(many=True, read_only=True)
     scriptchecks = ScriptCheckSerializer(many=True, read_only=True)
 
@@ -108,7 +104,6 @@ class CheckSerializer(serializers.ModelSerializer):
             "cpuloadchecks",
             "memchecks",
             "pingchecks",
-            "cpuhistory",
             "winservicechecks",
             "scriptchecks",
         )

@@ -10,48 +10,11 @@ class AgentSerializer(serializers.ModelSerializer):
     patches_pending = serializers.ReadOnlyField(source="has_patches_pending")
     salt_id = serializers.ReadOnlyField()
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
+    status = serializers.ReadOnlyField()
 
     class Meta:
         model = Agent
-        fields = (
-            "id",
-            "version",
-            "operating_system",
-            "plat",
-            "plat_release",
-            "hostname",
-            "local_ip",
-            "agent_id",
-            "last_seen",
-            "services",
-            "public_ip",
-            "total_ram",
-            "used_ram",
-            "disks",
-            "boot_time",
-            "logged_in_username",
-            "client",
-            "antivirus",
-            "site",
-            "monitoring_type",
-            "description",
-            "mesh_node_id",
-            "overdue_email_alert",
-            "overdue_text_alert",
-            "overdue_time",
-            "status",
-            "uninstall_pending",
-            "uninstall_inprogress",
-            "check_interval",
-            "needs_reboot",
-            "managed_by_wsus",
-            "is_updating",
-            "patches_pending",
-            "winupdatepolicy",
-            "salt_id",
-            "choco_installed",
-            "wmi_detail",
-        )
+        fields = "__all__"
 
 
 class AgentHostnameSerializer(serializers.ModelSerializer):

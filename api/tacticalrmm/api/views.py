@@ -34,8 +34,6 @@ from checks.models import (
     CpuLoadCheck,
     MemCheck,
     PingCheck,
-    MemoryHistory,
-    CpuHistory,
 )
 from winupdate.models import WinUpdate, WinUpdatePolicy
 from agents.tasks import (
@@ -302,8 +300,6 @@ def add(request):
         ).save()
 
         agent = get_object_or_404(Agent, agent_id=agent_id)
-        MemoryHistory(agent=agent).save()
-        CpuHistory(agent=agent).save()
 
         if agent.monitoring_type == "workstation":
             WinUpdatePolicy(agent=agent, run_time_days=[5, 6]).save()

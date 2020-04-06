@@ -6,6 +6,9 @@
         <q-toolbar-title>
           Tactical RMM
         </q-toolbar-title>
+
+        <AlertsIcon />
+
         <q-btn-dropdown flat no-caps stretch :label="user">
           <q-list>
             <q-item to="/logout" exact>
@@ -88,11 +91,13 @@ import { mapState, mapGetters } from 'vuex';
 import FileBar from "@/components/FileBar";
 import AgentTable from "@/components/AgentTable";
 import SubTableTabs from "@/components/SubTableTabs";
+import AlertsIcon from "@/components/AlertsIcon";
 export default {
   components: {
     FileBar,
     AgentTable,
-    SubTableTabs
+    SubTableTabs,
+    AlertsIcon
   },
   data() {
     return {
@@ -171,7 +176,7 @@ export default {
           sortable: true,
           align: "left"
         }
-      ]
+      ],
     };
   },
   methods: {
@@ -242,7 +247,7 @@ export default {
         //this.$store.commit("destroySubTable");
         this.$store.commit("AGENT_TABLE_LOADING", false);
       });
-    },
+    }
   },
   computed: {
     ...mapState({

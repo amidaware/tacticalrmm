@@ -43,3 +43,4 @@ COPY ./scripts /srv/salt/scripts
 RUN mkdir /srv/salt/scripts/userdefined && \
     chown -R 1000:nginx /srv/salt/scripts/userdefined && \
     chmod -R 771 /srv/salt/scripts/userdefined
+    

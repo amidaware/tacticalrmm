@@ -18,7 +18,7 @@ AUTO_APPROVAL_CHOICES = [
     ("ignore", "Ignore"),
 ]
 
-RUN_TIME_HOUR_CHOICES = [(i, dt.time(i).strftime("%l %p")) for i in range(24)]
+RUN_TIME_HOUR_CHOICES = [(i, dt.time(i).strftime("%I %p")) for i in range(24)]
 
 REBOOT_AFTER_INSTALL_CHOICES = [
     ("never", "Never"),

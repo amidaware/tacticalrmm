@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'winupdate',
     'software',
     'core',
+    'automation'
 ]
 
 MIDDLEWARE = [

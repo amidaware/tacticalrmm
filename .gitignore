@@ -27,3 +27,5 @@ celerybeat-schedule
 meshagent.exe
 app.ini
 .env.dev
+.env
+*.pem

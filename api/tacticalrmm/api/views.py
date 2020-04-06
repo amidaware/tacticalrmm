@@ -206,7 +206,7 @@ def accept_salt_key(request):
     saltid = request.data["saltid"]
     try:
         resp = requests.post(
-            "http://localhost:8123/run",
+            "http://" + settings.SALT_HOST + ":8123/run",
             json=[
                 {
                     "client": "wheel",
@@ -255,7 +255,7 @@ def delete_agent(request):
         err = "Error removing agent from salt master. Please manually remove."
         try:
             resp = requests.post(
-                "http://localhost:8123/run",
+                "http://" + settings.SALT_HOST + ":8123/run",
                 json=[
                     {
                         "client": "wheel",

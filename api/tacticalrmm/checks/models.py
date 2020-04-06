@@ -10,6 +10,7 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 
 from agents.models import Agent
+from automation.models import Policy
 
 STANDARD_CHECK_CHOICES = [
     ("diskspace", "Disk Space Check"),
@@ -52,6 +53,7 @@ class DiskCheck(models.Model):
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="diskspace"
     )
+    policy = models.ForeignKey(Policy, null=True, on_delete=models.CASCADE)
     disk = models.CharField(max_length=2, null=True, blank=True)
     threshold = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(
@@ -137,6 +139,7 @@ class ScriptCheck(models.Model):
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="script"
     )
+    policy = models.ForeignKey(Policy, null=True, on_delete=models.CASCADE)
     timeout = models.PositiveIntegerField(default=120)
     failures = models.PositiveIntegerField(default=5)
     status = models.CharField(
@@ -192,6 +195,7 @@ class PingCheck(models.Model):
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="ping"
     )
+    policy = models.ForeignKey(Policy, null=True, on_delete=models.CASCADE)
     ip = models.CharField(max_length=255)
     name = models.CharField(max_length=255, null=True, blank=True)
     failures = models.PositiveIntegerField(default=5)
@@ -250,6 +254,7 @@ class CpuLoadCheck(models.Model):
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="cpuload"
     )
+    policy = models.ForeignKey(Policy, null=True, on_delete=models.CASCADE)
     cpuload = models.PositiveIntegerField(default=85)
     status = models.CharField(
         max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
@@ -320,6 +325,7 @@ class MemCheck(models.Model):
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="memory"
     )
+    policy = models.ForeignKey(Policy, null=True, on_delete=models.CASCADE)
     threshold = models.PositiveIntegerField(default=75)
     status = models.CharField(
         max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
@@ -391,6 +397,9 @@ class WinServiceCheck(models.Model):
     )
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="winsvc"
+    )
+    policy = models.ForeignKey(
+        Policy, null=True, on_delete=models.CASCADE
     )
     svc_name = models.CharField(max_length=255)
     svc_display_name = models.CharField(max_length=255)

@@ -40,6 +40,10 @@
             <q-item clickable v-close-popup @click="showScriptManager">
               <q-item-section>Script Manager</q-item-section>
             </q-item>
+            <!-- automation manager -->
+            <q-item clickable v-close-popup @click="showAutomationManager">
+              <q-item-section>Automation Manager</q-item-section>
+            </q-item>
             <!-- core settings -->
             <q-item clickable v-close-popup @click="showEditCoreSettingsModal = true">
               <q-item-section>Global Settings</q-item-section>
@@ -75,6 +79,9 @@
       </div>
       <!-- Script Manager -->
       <ScriptManager />
+
+      <!-- Automation Manager -->
+      <AutomationManager />
     </q-bar>
   </div>
 </template>
@@ -86,6 +93,8 @@ import AddSite from "@/components/modals/clients/AddSite";
 import UpdateAgents from "@/components/modals/agents/UpdateAgents";
 import ScriptManager from "@/components/ScriptManager";
 import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
+import AutomationManager from "@/components/AutomationManager";
+
 export default {
   name: "FileBar",
   components: {
@@ -94,7 +103,8 @@ export default {
     AddSite,
     UpdateAgents,
     ScriptManager,
-    EditCoreSettings
+    EditCoreSettings,
+    AutomationManager
   },
   props: ["clients"],
   data() {
@@ -111,6 +121,9 @@ export default {
     },
     showScriptManager() {
       this.$store.commit("TOGGLE_SCRIPT_MANAGER", true);
+    },
+    showAutomationManager() {
+      this.$store.commit("TOGGLE_AUTOMATION_MANAGER", true);
     }
   }
 };

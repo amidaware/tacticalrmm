@@ -19,4 +19,5 @@ urlpatterns = [
     path("winupdate/", include("winupdate.urls")),
     path("software/", include("software.urls")),
     path("core/", include("core.urls")),
+    path("automation/", include("automation.urls")),
 ]

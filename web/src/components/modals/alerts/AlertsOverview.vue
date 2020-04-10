@@ -22,8 +22,11 @@
 
 <script>
 import axios from "axios";
+import mixins from "@/mixins/mixins";
+
 export default {
   name: "AlertsOverview",
+  mixins: [mixins],
   data() {
     return {
       alerts: [],

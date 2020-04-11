@@ -27,15 +27,25 @@ export default {
     },
     notifySuccess(msg) {
       Notify.create({
-        color: "green",
-        icon: "fas fa-check-circle",
+        type: "positive",
         message: msg
       });
     },
     notifyError(msg) {
       Notify.create({
-        color: "red",
-        icon: "fas fa-times-circle",
+        type: "negative",
+        message: msg
+      });
+    },
+    notifyWarning(msg) {
+      Notify.create({
+        type: "warning",
+        message: msg
+      });
+    },
+    notifyInfo(msg) {
+      Notify.create({
+        type: "info",
         message: msg
       });
     }

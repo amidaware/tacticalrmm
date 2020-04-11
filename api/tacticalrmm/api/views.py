@@ -1,7 +1,6 @@
 import requests
 from subprocess import run, PIPE
 import os
-import distro
 from time import sleep
 from loguru import logger
 
@@ -104,15 +103,6 @@ def get_log(request, mode, hostname, order):
     agents = Agent.objects.all()
     agent_hostnames = AgentHostnameSerializer(agents, many=True)
 
-    dist = distro.linux_distribution(full_distribution_name=False)[0]
-    switch_grep = {
-        "centos": "/usr/bin/grep",
-        "ubuntu": "/bin/grep",
-        "debian": "/usr/bin/grep",
-    }
-    grep = switch_grep.get(dist, "/bin/grep")
-    tac = "/usr/bin/tac"
-
     switch_mode = {
         "info": "INFO",
         "critical": "CRITICAL",
@@ -122,13 +112,13 @@ def get_log(request, mode, hostname, order):
     level = switch_mode.get(mode, "INFO")
 
     if hostname == "all" and order == "latest":
-        cmd = f"{grep} -h {level} {log_file} | {tac}"
+        cmd = f"grep -h {level} {log_file} | tac"
     elif hostname == "all" and order == "oldest":
-        cmd = f"{grep} -h {level} {log_file}"
+        cmd = f"grep -h {level} {log_file}"
     elif hostname != "all" and order == "latest":
-        cmd = f"{grep} {hostname} {log_file} | {grep} -h {level} | {tac}"
+        cmd = f"grep {hostname} {log_file} | grep -h {level} | tac"
     elif hostname != "all" and order == "oldest":
-        cmd = f"{grep} {hostname} {log_file} | {grep} -h {level}"
+        cmd = f"grep {hostname} {log_file} | grep -h {level}"
     else:
         return Response("error", status=status.HTTP_400_BAD_REQUEST)
 

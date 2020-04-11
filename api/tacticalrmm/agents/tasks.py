@@ -203,15 +203,12 @@ def update_agent_task(pk, version):
     )
     # success return example: {'return': [{'FSV': True}]}
     # error return example: {'return': [{'HOSTNAME': 'The minion function caused an exception: Traceback...'}]}
-    sql_ret = type(r.json()["return"][0][agent.salt_id])
-    if sql_ret is not bool and sql_ret is str:
-        if (
-            "minion function caused an exception"
-            in r.json()["return"][0][agent.salt_id]
-        ):
+    sql_ret = r.json()["return"][0][agent.salt_id]
+    if not isinstance(sql_ret, bool) and isinstance(sql_ret, str):
+        if "minion function caused an exception" in sql_ret:
             logger.error(f"failed to update {agent.hostname} local database")
 
-    if not r.json()["return"][0][agent.salt_id]:
+    if not sql_ret:
         logger.error(
             f"failed to update {agent.hostname} local database to version {ver}"
         )

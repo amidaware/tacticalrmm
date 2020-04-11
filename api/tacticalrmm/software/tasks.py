@@ -25,7 +25,7 @@ def install_chocolatey(pk, wait=False):
     except Exception as e:
         return f"error installing choco on {agent.salt_id}"
 
-    if type(r.json()) is dict:
+    if isinstance(r.json(), dict):
         try:
             output = r.json()["return"][0][agent.salt_id].lower()
         except Exception:
@@ -130,7 +130,7 @@ def install_program(pk, name, version):
         logger.error(f"Error installing {name} {version} on {agent.salt_id}: {e}")
         return "error"
 
-    if type(r.json()) is dict:
+    if isinstance(r.json(), dict):
         try:
             output = r.json()["return"][0][agent.salt_id].lower()
         except Exception as e:

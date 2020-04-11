@@ -79,12 +79,12 @@ class TestAgentViews(BaseTestCase):
         self.assertIn("hide=31", r.data["fileurl"])
         self.assertIn("@$NnvgGa0=", r.data["fileurl"])
         self.assertIn("/?viewmode=13", r.data["fileurl"])
-        self.assertIs(type(r.data["fileurl"]), str)
+        self.assertIsInstance(r.data["fileurl"], str)
 
         self.assertIn("hide=31", r.data["terminalurl"])
         self.assertIn("@$NnvgGa0=", r.data["terminalurl"])
         self.assertIn("/?viewmode=12", r.data["terminalurl"])
-        self.assertIs(type(r.data["terminalurl"]), str)
+        self.assertIsInstance(r.data["terminalurl"], str)
 
         self.assertEqual("DESKTOP-TEST123", r.data["hostname"])
 
@@ -101,7 +101,7 @@ class TestAgentViews(BaseTestCase):
         self.assertIn("hide=31", r.data)
         self.assertIn("@$NnvgGa0=", r.data)
         self.assertIn("/?viewmode=11", r.data)
-        self.assertIs(type(r.data), str)
+        self.assertIsInstance(r.data, str)
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("get", url)

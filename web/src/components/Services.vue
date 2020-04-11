@@ -163,6 +163,7 @@
 
 <script>
 import axios from "axios";
+import mixins from "@/mixins/mixins";
 
 export default {
   name: "Services",
@@ -255,18 +256,10 @@ export default {
         .then(r => {
           this.serviceDetailsModal = false;
           this.refreshServices();
-          this.$q.notify({
-            color: "green",
-            icon: "fas fa-check-circle",
-            message: `Service ${name} was edited!`
-          });
+          this.notifySuccess(`Service ${name} was edited!`);
         })
         .catch(err => {
-          this.$q.notify({
-            color: "red",
-            icon: "fas fa-times-circle",
-            message: err.response.data.error
-          });
+          this.notifyError(err.response.data.error);
         });
     },
     startupTypeChanged() {
@@ -298,11 +291,7 @@ export default {
         .catch(err => {
           this.serviceDetailVisible = false;
           this.serviceDetailsModal = false;
-          this.$q.notify({
-            color: "red",
-            icon: "fas fa-times-circle",
-            message: err.response.data.error
-          });
+          this.notifyError(err.response.data.error);
         });
     },
     serviceAction(name, action, fullname) {
@@ -334,19 +323,11 @@ export default {
         .then(r => {
           this.refreshServices();
           this.serviceDetailsModal = false;
-          this.$q.notify({
-            color: "green",
-            icon: "fas fa-check-circle",
-            message: `Service ${fullname} was ${status}!`
-          });
+          this.notifySuccess(`Service ${fullname} was ${status}!`);
         })
         .catch(err => {
           this.$q.loading.hide();
-          this.$q.notify({
-            color: "red",
-            icon: "fas fa-times-circle",
-            message: err.response.data.error
-          });
+          this.notifyError(err.response.data.error);
         });
     },
     async getServices() {
@@ -367,11 +348,7 @@ export default {
         })
         .catch(err => {
           this.$q.loading.hide();
-          this.$q.notify({
-            color: "red",
-            icon: "fas fa-times-circle",
-            message: err.response.data.error
-          });
+          this.notifyError(err.response.data.error);
         });
     }
   },

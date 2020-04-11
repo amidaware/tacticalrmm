@@ -363,27 +363,13 @@ export default {
             })
             .onOk(hostnameConfirm => {
               if (hostnameConfirm !== hostname) {
-                this.$q.notify({
-                  message: "ERROR: Please type the correct hostname",
-                  color: "red"
-                });
+                this.notifyError("ERROR: Please type the correct hostname");
               } else {
                 const data = { pk: pk };
                 axios
                   .delete("/agents/uninstallagent/", { data: data })
-                  .then(r => {
-                    this.$q.notify({
-                      message: `${hostname} will now be uninstalled!`,
-                      color: "green"
-                    });
-                  })
-                  .catch(e => {
-                    this.$q.notify({
-                      message: e.response.data.error,
-                      color: "info",
-                      timeout: 4000
-                    });
-                  });
+                  .then(r => this.notifySuccess(`${hostname} will now be uninstalled!`))
+                  .catch(e => this.notifyInfo(e.response.data.error));
               }
             });
         });
@@ -438,11 +424,7 @@ export default {
         })
         .catch(err => {
           this.loadingSendCMD = false;
-          this.$q.notify({
-            color: "red",
-            icon: "fas fa-times-circle",
-            message: err.response.data
-          });
+          this.notifyError(err.response.data);
         });
     },
     agentRowSelected(pk) {
@@ -469,9 +451,7 @@ export default {
             message: `Overdue ${category} alerts ${action} on ${r.data}`
           });
         })
-        .catch(e => {
-          console.log(e.response.data.error);
-        });
+        .catch(e => this.notifyError(e.response.data.error));
     },
     agentClass(status) {
       if (status === "offline") {

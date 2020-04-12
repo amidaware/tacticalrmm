@@ -10,10 +10,12 @@ from .models import (
     ScriptCheck,
 )
 from agents.models import Agent
-from agents.serializers import AgentSerializer
 
 
 class DiskCheckSerializer(serializers.ModelSerializer):
+    readable_desc = serializers.ReadOnlyField()
+    assigned_task = serializers.ReadOnlyField()
+
     class Meta:
         model = DiskCheck
         fields = "__all__"
@@ -21,6 +23,8 @@ class DiskCheckSerializer(serializers.ModelSerializer):
 
 class CpuLoadCheckSerializer(serializers.ModelSerializer):
     more_info = serializers.ReadOnlyField()
+    readable_desc = serializers.ReadOnlyField()
+    assigned_task = serializers.ReadOnlyField()
 
     class Meta:
         model = CpuLoadCheck
@@ -29,6 +33,8 @@ class CpuLoadCheckSerializer(serializers.ModelSerializer):
 
 class MemCheckSerializer(serializers.ModelSerializer):
     more_info = serializers.ReadOnlyField()
+    readable_desc = serializers.ReadOnlyField()
+    assigned_task = serializers.ReadOnlyField()
 
     class Meta:
         model = MemCheck
@@ -36,6 +42,9 @@ class MemCheckSerializer(serializers.ModelSerializer):
 
 
 class PingCheckSerializer(serializers.ModelSerializer):
+    readable_desc = serializers.ReadOnlyField()
+    assigned_task = serializers.ReadOnlyField()
+
     class Meta:
         model = PingCheck
         fields = "__all__"
@@ -57,29 +66,18 @@ class ScriptSerializer(serializers.ModelSerializer):
 class ScriptCheckSerializer(serializers.ModelSerializer):
 
     script = ScriptSerializer(read_only=True)
+    readable_desc = serializers.ReadOnlyField()
+    assigned_task = serializers.ReadOnlyField()
 
     class Meta:
         model = ScriptCheck
-        fields = (
-            "id",
-            "check_type",
-            "timeout",
-            "failures",
-            "status",
-            "failure_count",
-            "email_alert",
-            "text_alert",
-            "stdout",
-            "stderr",
-            "retcode",
-            "execution_time",
-            "last_run",
-            "agent",
-            "script",
-        )
+        fields = "__all__"
 
 
 class WinServiceCheckSerializer(serializers.ModelSerializer):
+    readable_desc = serializers.ReadOnlyField()
+    assigned_task = serializers.ReadOnlyField()
+
     class Meta:
         model = WinServiceCheck
         fields = "__all__"

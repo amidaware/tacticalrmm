@@ -40,6 +40,6 @@ def setup_periodic_tasks(sender, **kwargs):
 
     from core.models import CoreSettings
 
-    interval = CoreSettings.objects.get(pk=1)
+    interval = CoreSettings.objects.all().get()
 
     sender.add_periodic_task(30.0, checks_failing_task.s())

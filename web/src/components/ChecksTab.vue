@@ -166,6 +166,7 @@
               </q-td>
               <q-td v-else>{{ props.row.more_info }}</q-td>
               <q-td>{{ props.row.last_run }}</q-td>
+              <q-td>{{ props.row.assigned_task }}</q-td>
             </q-tr>
           </template>
         </q-table>
@@ -311,7 +312,8 @@ export default {
           label: "Date / Time",
           field: "last_run",
           align: "left"
-        }
+        },
+        { name: "assignedtasks", label: "Assigned Tasks", field: "assigned_task", align: "left" },
       ],
       pagination: {
         rowsPerPage: 9999
@@ -338,6 +340,7 @@ export default {
     },
     onRefresh(id) {
       this.$store.dispatch("loadChecks", id);
+      this.$store.dispatch("loadAutomatedTasks", id);
     },
     moreInfo(name, output) {
       this.$q.dialog({
@@ -390,6 +393,7 @@ export default {
             .delete("checks/deletestandardcheck/", { data: data })
             .then(r => {
               this.$store.dispatch("loadChecks", this.checks.pk);
+              this.$store.dispatch("loadAutomatedTasks", this.checks.pk);
               this.notifySuccess("Check was deleted!");
             })
             .catch(e => this.notifyError(e.response.data.error));

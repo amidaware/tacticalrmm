@@ -1,5 +1,6 @@
 <template>
-  <div v-if="!Array.isArray(software) || !software.length">No software</div>
+  <div v-if="!this.selectedAgentPk">No agent selected</div>
+  <div v-else-if="!Array.isArray(software) || !software.length">No software</div>
   <div v-else>
     <q-btn
       size="sm"

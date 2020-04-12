@@ -13,6 +13,7 @@
         >
             <q-tab name="summary" icon="fas fa-info-circle" size="xs" label="Summary" />
             <q-tab name="checks" icon="fas fa-check-double" label="Checks" />
+            <q-tab name="tasks" icon="fas fa-tasks" label="Tasks" />
             <q-tab name="patches" icon="system_update" label="Patches" />
             <q-tab name="software" icon="fab fa-windows" label="Software" />
         </q-tabs>
@@ -23,6 +24,9 @@
             </q-tab-panel>
             <q-tab-panel name="checks">
                 <ChecksTab />
+            </q-tab-panel>
+            <q-tab-panel name="tasks">
+                <AutomatedTasksTab />
             </q-tab-panel>
             <q-tab-panel name="patches">
                 <WindowsUpdates />
@@ -37,6 +41,7 @@
 <script>
 import SummaryTab from '@/components/SummaryTab';
 import ChecksTab from '@/components/ChecksTab';
+import AutomatedTasksTab from '@/components/AutomatedTasksTab';
 import WindowsUpdates from '@/components/WindowsUpdates';
 import SoftwareTab from '@/components/SoftwareTab';
 export default {
@@ -44,6 +49,7 @@ export default {
   components: {
       SummaryTab,
       ChecksTab,
+      AutomatedTasksTab,
       WindowsUpdates,
       SoftwareTab,
   },

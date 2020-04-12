@@ -1,8 +1,11 @@
 from rest_framework import serializers
 
 from .models import Agent
+from automation.models import AutomatedTask
 
 from winupdate.serializers import WinUpdatePolicySerializer
+from automation.serializers import TaskSerializer, PolicySerializer
+
 
 
 class AgentSerializer(serializers.ModelSerializer):

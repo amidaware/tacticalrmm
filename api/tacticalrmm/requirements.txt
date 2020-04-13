@@ -19,7 +19,7 @@ more-itertools==8.2.0
 packaging==20.3
 psycopg2-binary==2.8.4
 pycparser==2.20
-pycrypto==2.6.1
+pycryptodome==3.9.7
 pyotp==2.3.0
 pyparsing==2.4.6
 pytz==2019.3

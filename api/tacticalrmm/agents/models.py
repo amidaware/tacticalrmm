@@ -1,15 +1,12 @@
 import requests
 import datetime
 from datetime import timezone
-
-""" import salt.client
-import salt.config
-import salt.wheel
-
-opts = salt.config.master_config("/etc/salt/master")
-wheel = salt.wheel.WheelClient(opts)
-local = salt.client.LocalClient() """
-
+import time
+import hashlib
+import secrets
+import base64
+from Crypto.Cipher import AES
+from binascii import unhexlify
 
 from django.db import models
 from django.conf import settings
@@ -79,6 +76,27 @@ class Agent(models.Model):
     def salt_id(self):
         return f"{self.hostname}-{self.pk}"
 
+    def get_login_token(self, key, user, action=3):
+        key = bytes.fromhex(key)
+        key1 = key[0:48]
+        key2 = key[48:]
+        msg = '{{"a":{}, "u":"{}","time":{}}}'.format(action, user, int(time.time()))
+        iv = secrets.token_bytes(16)
+
+        #sha
+        h= hashlib.sha3_384()
+        h.update(key1)
+        msg= h.digest() + msg.encode()
+
+        #aes
+        a = AES.new(key2, AES.MODE_CBC, iv)
+        n = 16-(len(msg)%16)
+        n = 16 if n==0 else n
+        pad = unhexlify('%02x' % n)
+        msg = a.encrypt(msg + pad*n)
+
+        return base64.b64encode(iv+msg, altchars=b"@$").decode("utf-8")
+    
     @staticmethod
     def salt_api_cmd(**kwargs):
         try:

@@ -31,6 +31,7 @@ services:
         - REDIS_HOST=${REDIS_HOST}
         - MESH_USER=${MESH_USER}
         - MESH_HOST=${MESH_HOST}
+        - MESH_TOKEN_KEY=${MESH_TOKEN_KEY}
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
@@ -67,6 +68,7 @@ services:
         - REDIS_HOST=${REDIS_HOST}
         - MESH_USER=${MESH_USER}
         - MESH_HOST=${MESH_HOST}
+        - MESH_TOKEN_KEY=${MESH_TOKEN_KEY}
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
@@ -103,6 +105,7 @@ services:
         - REDIS_HOST=${REDIS_HOST}
         - MESH_USER=${MESH_USER}
         - MESH_HOST=${MESH_HOST}
+        - MESH_TOKEN_KEY=${MESH_TOKEN_KEY}
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
@@ -139,6 +142,7 @@ services:
         - REDIS_HOST=${REDIS_HOST}
         - MESH_USER=${MESH_USER}
         - MESH_HOST=${MESH_HOST}
+        - MESH_TOKEN_KEY=${MESH_TOKEN_KEY}
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}

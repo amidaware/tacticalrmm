@@ -113,6 +113,9 @@ class TestAgentViews(BaseTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.data)
 
+        # testing to see if azure pipelines will not report this as passing
+        self.assertTrue(False)
+
         url = f"/agents/byclient/Majh3 Akj34 ad/"
         r = self.client.get(url)
         self.assertFalse(r.data)  # returns empty list

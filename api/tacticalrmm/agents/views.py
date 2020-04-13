@@ -117,18 +117,9 @@ def edit_agent(request):
 @api_view()
 def meshcentral_tabs(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = subprocess.run(
-        [
-            "node",
-            "/meshcentral/node_modules/meshcentral/meshcentral",
-            "--logintoken",
-            f"user//{settings.MESH_USERNAME}",
-        ],
-        capture_output=True,
-    )
-    token = r.stdout.decode().splitlines()[0]
-    terminalurl = f"{settings.MESH_SITE}/?viewmode=12&hide=31&login={token}&node={agent.mesh_node_id}"
-    fileurl = f"{settings.MESH_SITE}/?viewmode=13&hide=31&login={token}&node={agent.mesh_node_id}"
+    token = agent.get_login_token(key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}")
+    terminalurl = f"{settings.MESH_SITE}/?login={token}&node={agent.mesh_node_id}&viewmode=12&hide=31"
+    fileurl = f"{settings.MESH_SITE}/?login={token}&node={agent.mesh_node_id}&viewmode=13&hide=31"
     return Response(
         {"hostname": agent.hostname, "terminalurl": terminalurl, "fileurl": fileurl}
     )
@@ -137,17 +128,8 @@ def meshcentral_tabs(request, pk):
 @api_view()
 def take_control(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = subprocess.run(
-        [
-            "node",
-            "/meshcentral/node_modules/meshcentral/meshcentral",
-            "--logintoken",
-            f"user//{settings.MESH_USERNAME}",
-        ],
-        capture_output=True,
-    )
-    token = r.stdout.decode().splitlines()[0]
-    url = f"{settings.MESH_SITE}/?viewmode=11&hide=31&login={token}&node={agent.mesh_node_id}"
+    token = agent.get_login_token(key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}")
+    url = f"{settings.MESH_SITE}/?login={token}&node={agent.mesh_node_id}&viewmode=11&hide=31"
     return Response(url)
 
 

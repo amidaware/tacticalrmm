@@ -667,6 +667,22 @@ sudo systemctl restart meshcentral
 
 sleep 30
 
+print_green 'Generating meshcentral login token key'
+
+MESHTOKENKEY=$(node /meshcentral/node_modules/meshcentral --logintokenkey)
+
+meshtoken="$(cat << EOF
+MESH_TOKEN_KEY = "${MESHTOKENKEY}"
+EOF
+)"
+echo "${meshtoken}" | tee --append /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/local_settings.py > /dev/null
+
+print_green 'Restarting all services'
+for i in nginx celery.service celery-winupdate.service celerybeat.service rmm.service meshcentral.service
+do
+  sudo systemctl restart ${i}
+done
+
 print_green 'Restarting salt-master and waiting 30 seconds'
 sudo systemctl restart salt-master
 sleep 30

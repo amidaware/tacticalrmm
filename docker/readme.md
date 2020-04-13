@@ -51,6 +51,16 @@ sudo docker-compose exec api python manage.py generate_totp
 
 Add the generated code to the .env file TWO_FACTOR_OTP in the docker folder
 
+## Generate the meshcentral login token key
+
+Get the login token key with
+
+```
+sudo docker-compose exec meshcentral node node_modules/meshcentral/meshcentral --logintokenkey
+```
+
+Add the generated key to the .env file MESH_TOKEN_KEY in the docker folder
+
 Rebuild the api container
 
 ```

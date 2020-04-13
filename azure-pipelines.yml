@@ -26,10 +26,14 @@ jobs:
       cd /home/steam/myagent/_work/1/s/api
       python3.7 -m venv env
       source env/bin/activate
-      python --version
       cd /home/steam/myagent/_work/1/s/api/tacticalrmm
       pip install --upgrade pip
       pip install -r requirements.txt -r requirements-test.txt
+    displayName: 'Install Dependencies'
+  
+  - script: |
+      cd /home/steam/myagent/_work/1/s/api
+      source env/bin/activate
+      cd /home/steam/myagent/_work/1/s/api/tacticalrmm
       python manage.py test -v 2
-      deactivate
-    displayName: 'Install Dependencies and Run Tests'
+    displayName: 'Run tests'

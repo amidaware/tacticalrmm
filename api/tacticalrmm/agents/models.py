@@ -76,6 +76,7 @@ class Agent(models.Model):
     def salt_id(self):
         return f"{self.hostname}-{self.pk}"
 
+    # https://github.com/Ylianst/MeshCentral/issues/59#issuecomment-521965347
     def get_login_token(self, key, user, action=3):
         key = bytes.fromhex(key)
         key1 = key[0:48]

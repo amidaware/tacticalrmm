@@ -3,18 +3,7 @@
   <div v-else-if="Object.keys(automatedTasks).length === 0">No Tasks</div>
   <div class="row" v-else>
     <div class="col-12">
-      <q-btn size="sm" color="grey-5" icon="fas fa-plus" label="Add Task" text-color="black">
-        <q-menu>
-          <q-list dense style="min-width: 200px">
-            <q-item clickable v-close-popup @click="showAddAutomatedTask = true">
-              <q-item-section side>
-                <q-icon size="xs" name="fas fa-tasks" />
-              </q-item-section>
-              <q-item-section>Automated Task</q-item-section>
-            </q-item>
-          </q-list>
-        </q-menu>
-      </q-btn>
+      <q-btn size="sm" color="grey-5" icon="fas fa-plus" label="Add Task" text-color="black" @click="showAddAutomatedTask = true" />
       <q-btn dense flat push @click="refreshTasks(automatedTasks.pk)" icon="refresh" />
       <template v-if="tasks === undefined || tasks.length === 0">
         <p>No Tasks</p>
@@ -42,7 +31,7 @@
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item clickable v-close-popup @click="runTask(props.row.id)">
+                  <q-item clickable v-close-popup @click="runTask(props.row.id, props.row.enabled)">
                     <q-item-section side>
                       <q-icon name="play_arrow" />
                     </q-item-section>
@@ -173,7 +162,11 @@ export default {
       this.scriptInfo = props;
       this.showScriptOutput = true;
     },
-    runTask(pk) {
+    runTask(pk, enabled) {
+      if (!enabled) {
+        this.notifyError("Task cannot be run when it's disabled. Enable it first.");
+        return;
+      }
       axios
         .get(`/automation/runwintask/${pk}/`)
         .then(r => this.notifySuccess(r.data))

@@ -16,7 +16,12 @@ from checks.models import Script
 
 from .serializers import PolicySerializer, AutoTaskSerializer, AgentTaskSerializer
 from checks.serializers import ScriptSerializer
-from .tasks import create_win_task_schedule, delete_win_task_schedule, run_win_task
+from .tasks import (
+    create_win_task_schedule,
+    delete_win_task_schedule,
+    run_win_task,
+    enable_or_disable_win_task,
+)
 
 
 class GetAddPolicies(APIView):
@@ -142,10 +147,11 @@ class AutoTask(APIView):
 
         if "enableordisable" in request.data:
             action = request.data["enableordisable"]
+            enable_or_disable_win_task.delay(pk=task.pk, action=action)
             task.enabled = action
             task.save(update_fields=["enabled"])
             action = "enabled" if action else "disabled"
-            return Response(f"Task {action}")
+            return Response(f"Task will be {action} shortly")
 
     def delete(self, request, pk):
         task = get_object_or_404(AutomatedTask, pk=pk)

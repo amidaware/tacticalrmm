@@ -24,6 +24,8 @@ export const store = new Vuex.Store({
     winUpdates: {},
     agentChecks: {},
     automatedTasks: {},
+    selectedPolicy: null,
+    policyChecks: {},
     agentTableLoading: false,
     treeLoading: false,
     installedSoftware: [],
@@ -108,6 +110,9 @@ export const store = new Vuex.Store({
     SET_AUTOMATED_TASKS(state, tasks) {
       state.automatedTasks = tasks;
     },
+    setPolicyChecks(state, checks) {
+      state.policyChecks = checks;
+    },
     destroySubTable(state) {
       (state.agentSummary = {}),
         (state.agentChecks = {}),
@@ -120,7 +125,10 @@ export const store = new Vuex.Store({
     },
     SET_POLICIES(state, policies) {
       state.policies = policies;
-    }
+    },
+    setSelectedPolicy(state, pk) {
+      state.selectedPolicy = pk;
+    },
   },
   actions: {
     getPolicies(context) {
@@ -156,6 +164,11 @@ export const store = new Vuex.Store({
     loadChecks(context, pk) {
       axios.get(`/checks/${pk}/loadchecks/`).then(r => {
         context.commit("setChecks", r.data);
+      });
+    },
+    loadPolicyChecks(context, pk) {
+      axios.get(`/checks/${pk}/loadpolicychecks/`).then(r => {
+        context.commit("setPolicyChecks", r.data);
       });
     },
     getUpdatedSites(context) {

@@ -24,7 +24,7 @@ services:
   # Container for Django backend
   api:
     image: python:3.7
-    command: /bin/bash -c "python manage.py collectstatic --clear --no-input && python manage.py migrate && python manage.py runserver 0.0.0.0:80"
+    command: /bin/bash -c "python manage.py collectstatic --clear --no-input && python manage.py migrate && python manage.py initial_db_setup && python manage.py load_chocos && python manage.py runserver 0.0.0.0:80"
     working_dir: /app
     environment: 
       VIRTUAL_ENV: /env
@@ -43,7 +43,7 @@ services:
   # Container for Celery worker service
   celery-service:
     image: python:3.7
-    command: /bin/bash -c "celery -A tacticalrmm worker -l debug"
+    command: celery -A tacticalrmm worker -l debug
     working_dir: /app
     environment: 
       VIRTUAL_ENV: /env
@@ -62,7 +62,7 @@ services:
   # Container for Celery beat service
   celery-beat:
     image: python:3.7
-    command: /bin/bash -c "celery -A tacticalrmm beat -l debug"
+    command: celery -A tacticalrmm beat -l debug
     working_dir: /app
     environment: 
       VIRTUAL_ENV: /env
@@ -81,7 +81,7 @@ services:
   # Container for Celery Winupdate tasks
   celery-winupdate:
     image: python:3.7
-    command: /bin/bash -c "celery -A tacticalrmm worker -Q wupdate -l debug"
+    command: celery -A tacticalrmm worker -Q wupdate -l debug
     working_dir: /app
     environment: 
       VIRTUAL_ENV: /env

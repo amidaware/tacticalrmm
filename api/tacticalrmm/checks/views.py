@@ -15,6 +15,7 @@ from rest_framework.decorators import (
 )
 
 from agents.models import Agent
+from automation.models import Policy
 
 from .models import (
     DiskCheck,
@@ -33,6 +34,7 @@ from automation.models import AutomatedTask
 
 from .serializers import (
     CheckSerializer,
+    PolicyChecksSerializer,
     DiskCheckSerializer,
     PingCheckSerializer,
     CpuLoadCheckSerializer,
@@ -134,6 +136,11 @@ def load_checks(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     return Response(CheckSerializer(agent).data)
 
+@api_view()
+def load_policy_checks(request, pk):
+    policy = get_object_or_404(Policy, pk=pk)
+    return Response(PolicyChecksSerializer(policy).data)
+
 
 @api_view()
 def get_disks(request, pk):
@@ -142,7 +149,11 @@ def get_disks(request, pk):
 
 @api_view(["POST"])
 def add_standard_check(request):
-    agent = get_object_or_404(Agent, pk=request.data["pk"])
+    if 'policy' in request.data:
+        policy = get_object_or_404(Policy, id=request.data["policy"])
+    else:
+        agent = get_object_or_404(Agent, pk=request.data["pk"])
+
     if request.data["check_type"] == "diskspace":
         disk = request.data["disk"]
         threshold = request.data["threshold"]
@@ -168,8 +179,12 @@ def add_standard_check(request):
         if not PingCheck.validate_hostname_or_ip(ip):
             error = {"error": "Please enter a valid hostname or IP"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
+        
+        if policy:
+            PingCheck(policy=policy, ip=ip, name=name, failures=failures).save()
+        else:
+            PingCheck(agent=agent, ip=ip, name=name, failures=failures).save()
 
-        PingCheck(agent=agent, ip=ip, name=name, failures=failures).save()
         return Response("ok")
 
     elif request.data["check_type"] == "cpuload":

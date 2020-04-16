@@ -96,6 +96,11 @@ def list_clients(request):
     clients = Client.objects.all()
     return Response(ClientSerializer(clients, many=True).data)
 
+@api_view()
+# for vue
+def list_sites(request):
+    sites = Site.objects.all()
+    return Response(TreeSerializer(sites, many=True).data)
 
 @api_view()
 def load_tree(request):

@@ -45,7 +45,7 @@ import { mapState } from "vuex";
 import mixins from "@/mixins/mixins";
 export default {
   name: "AddPingCheck",
-  props: ["agentpk"],
+  props: ["agentpk", "policypk"],
   mixins: [mixins],
   data() {
     return {
@@ -57,21 +57,32 @@ export default {
   },
   methods: {
     addCheck() {
+      let pk = (this.policypk) ? {policy: this.policypk} : {pk: this.agentpk}
+
       const data = {
-        pk: this.agentpk,
+        ...pk,
         check_type: "ping",
         failures: this.failure,
         name: this.pingname,
         ip: this.pingip,
       };
-      axios
-        .post("/checks/addstandardcheck/", data)
+
+      axios.post("/checks/addstandardcheck/", data)
         .then(r => {
           this.$emit("close");
-          this.$store.dispatch("loadChecks", this.agentpk);
+
+          if (this.policypk) {
+            this.$store.dispatch("loadPolicyChecks", this.policypk);
+          } else {
+            this.$store.dispatch("loadChecks", this.agentpk);
+          }
+
           this.notifySuccess("Ping check was added!");
         })
-        .catch(e => this.notifyError(e.response.data.error));
+        .catch(e => {
+          this.notifyError(e.response.data);
+          console.log(e.response.data)
+        });
     }
   }
 };

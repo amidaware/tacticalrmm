@@ -85,6 +85,50 @@ If /bin/bash doesn't work then /bin/sh might need to be used.
 
 ## Using Docker for Dev
 
-run `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up`
+This allows you to edit the files locally and those changes will be presented to the conatiners. Hot Module Reload (Vue/webpack) and the Python equivalent will also work!
 
-This will mount the local vue files in the app container with hot reload.
+### Setup
+
+Files that need to be manually created are:
+- api/tacticalrmm/tacticalrmm/local_settings.py
+- web/.env.local
+
+For HMR to work with vue you may need to alter the web/vue.config.js file to with these changes
+
+```
+  devServer: {
+    //host: "192.168.99.150",
+    disableHostCheck: true,
+    public: "YOUR_APP_URL"
+  },
+```
+
+Since this file is checked into git you can configure git to ignore it and the changes will stay intact
+
+```
+git update-index --assume-unchanged ./web/vue.config.js
+```
+
+### Create Python Virtual Env
+
+Each python container shares the same virtual env to make spinning up faster. It is located in api/tacticalrmm/env.
+
+There is a container dedicated to creating and keeping this up to date. Prior to spinning up the environment you can run `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up venv` to make sure the virtual env is ready. Otherwise the api and celery containers will fail to start.
+
+### Spinup the environment
+
+Now run `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d` to spin everything else up
+
+This will mount the local vue and python files in the app container with hot reload. Does not require rebuilding when changes to code are made and the changes will take effect immediately!
+
+### Other Considerations
+
+- Using Docker Desktop on Windows will provide more visibility into which containers are running. You also can easily view the logs for each container in real-time, and view container environment variables.
+
+- If you are on a *nix system, you can get equivalent logging by using `docker-compose logs [service_name]`.
+
+- `docker ps` will show running containers.
+
+- `docker system prune` will remove items that are not in use by running containers. There are also `--all and --volumes` options to remove everything if you want to start over. Stop running containers first. `docker-compose -f docker-compose.yml -f docker-compose.dev.yml down`
+
+- If the docker container isn't getting file changes you can restart the host or do a `docker system prune --volumes`. This will remove the docker volumes and will create a new one once the containers are started.

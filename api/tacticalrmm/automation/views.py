@@ -1,5 +1,6 @@
 import datetime as dt
 
+from django.db import DataError
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 
@@ -13,8 +14,15 @@ from rest_framework.decorators import api_view
 from .models import Policy, AutomatedTask
 from agents.models import Agent
 from checks.models import Script
+from clients.models import Client, Site
 
-from .serializers import PolicySerializer, AutoTaskSerializer, AgentTaskSerializer
+from .serializers import (
+    PolicySerializer, 
+    PolicyRelationSerializer,
+    AutoTaskSerializer, 
+    AgentTaskSerializer
+)
+
 from checks.serializers import ScriptSerializer
 from .tasks import (
     create_win_task_schedule,
@@ -23,37 +31,46 @@ from .tasks import (
     enable_or_disable_win_task,
 )
 
-
 class GetAddPolicies(APIView):
     def get(self, request):
 
         policies = Policy.objects.all()
 
-        return Response(PolicySerializer(policies, many=True).data)
+        return Response(PolicyRelationSerializer(policies, many=True).data)
 
     def post(self, request):
         name = request.data["name"].strip()
         desc = request.data["desc"].strip()
+        active = request.data["active"]
 
         if Policy.objects.filter(name=name):
             content = {"error": f"Policy {name} already exists"}
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            Policy(name=name, desc=desc).save()
+            policy = Policy.objects.create(name=name, desc=desc, active=active)
         except DataError:
             content = {"error": "Policy name too long (max 255 chars)"}
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response("ok")
+        
+        # Add Clients, Sites, and Agents to Policy
+        if (len(request.data["clients"]) > 0):
+            policy.clients.set(request.data["clients"])
 
+        if (len(request.data["sites"]) > 0):
+            policy.sites.set(request.data["sites"])
 
-class GetAddDeletePolicy(APIView):
+        if (len(request.data["agents"]) > 0):
+            policy.agents.set(request.data["agents"])
+
+        return Response("ok")
+
+class GetUpdateDeletePolicy(APIView):     
     def get(self, request, pk):
 
         policy = get_object_or_404(Policy, pk=pk)
 
-        return Response(PolicySerializer(policy).data)
+        return Response(PolicyRelationSerializer(policy).data)
 
     def put(self, request, pk):
 
@@ -69,8 +86,22 @@ class GetAddDeletePolicy(APIView):
             content = {"error": "Policy name too long (max 255 chars)"}
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
-        # Client, Site, Agent Many to Many Logic Here
+        # Update Clients, Sites, and Agents to Policy
+        if (len(request.data["clients"]) > 0):
+            policy.clients.set(request.data["clients"])
+        else:
+            policy.clients.clear()
+        
+        if (len(request.data["sites"]) > 0):
+            policy.sites.set(request.data["sites"])
+        else:
+            policy.sites.clear()
 
+        if (len(request.data["agents"]) > 0):
+            policy.agents.set(request.data["agents"])
+        else:
+            policy.agents.clear()
+        
         return Response("ok")
 
     def delete(self, request, pk):
@@ -187,3 +218,31 @@ class TaskRunner(APIView):
             update_fields=["stdout", "stderr", "retcode", "last_run", "execution_time"]
         )
         return Response("ok")
+class OverviewPolicy(APIView): 
+
+    def get(self, request):
+
+        clients = Client.objects.all()
+        response = {}
+
+        for client in clients:
+
+            client_sites = {}
+            client_sites["sites"] = {}
+
+            policies = Policy.objects.filter(clients__id=client.id)
+            client_sites["policies"] = list(PolicySerializer(policies, many=True).data)
+
+            sites = Site.objects.filter(client=client)
+
+            for site in sites:
+                
+                client_sites["sites"][site.site] = {}
+
+                policies = Policy.objects.filter(sites__id=site.id)
+
+                client_sites["sites"][site.site]["policies"] = list(PolicySerializer(policies, many=True).data)
+                            
+            response[client.client] = client_sites
+
+        return Response(response)

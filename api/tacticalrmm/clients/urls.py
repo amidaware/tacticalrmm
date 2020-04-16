@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     path("installer/<client>/sites/", views.installer_list_sites),
     path("listclients/", views.list_clients),
+    path("listsites/", views.list_sites),
     path("installer/listclients/", views.installer_list_clients),
     path("addclient/", views.add_client),
     path("addsite/", views.add_site),

@@ -140,7 +140,6 @@ def update_agent_task(pk, version):
     services = (
         "tacticalagent",
         "checkrunner",
-        "winupdater",
     )
 
     for svc in services:

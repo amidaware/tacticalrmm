@@ -63,7 +63,7 @@ def check_runner(request):
 @api_view(["PATCH"])
 @authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
-def update_check(request):
+def check_results(request):
     if request.data["check_type"] == "diskspace":
         check = get_object_or_404(DiskCheck, pk=request.data["id"])
         check.last_run = dt.datetime.now(tz=djangotime.utc)

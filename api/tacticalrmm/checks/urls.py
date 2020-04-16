@@ -18,5 +18,5 @@ urlpatterns = [
     path("getscript/<pk>/", scriptviews.get_script),
     path("downloadscript/<pk>/", scriptviews.download_script),
     path("runchecks/<pk>/", views.run_checks),
-    path("updatecheck/", views.update_check),
+    path("checkresults/", views.check_results),
 ]

@@ -193,6 +193,7 @@ export default {
         const pk = this.selectedAgentPk;
         this.$store.dispatch("loadSummary", pk);
         this.$store.dispatch("loadChecks", pk);
+        this.$store.dispatch("loadAutomatedTasks", pk);
         this.$store.dispatch("loadWinUpdates", pk);
         this.$store.dispatch("loadInstalledSoftware", pk);
       }

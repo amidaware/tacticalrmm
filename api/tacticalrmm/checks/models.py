@@ -53,7 +53,7 @@ class DiskCheck(models.Model):
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="diskspace"
     )
-    policy = models.ForeignKey(Policy, null=True, on_delete=models.CASCADE)
+    policy = models.ForeignKey(Policy, null=True, blank=True, on_delete=models.CASCADE)
     disk = models.CharField(max_length=2, null=True, blank=True)
     threshold = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(
@@ -65,9 +65,24 @@ class DiskCheck(models.Model):
     last_run = models.DateTimeField(null=True, blank=True)
     failures = models.PositiveIntegerField(default=5)
     failure_count = models.PositiveIntegerField(default=0)
+    task_on_failure = models.ForeignKey(
+        "automation.AutomatedTask",
+        null=True,
+        blank=True,
+        related_name="disktaskfailure",
+        on_delete=models.SET_NULL,
+    )
 
     def __str__(self):
         return f"{self.agent.hostname} - {self.disk}"
+
+    @property
+    def readable_desc(self):
+        return f"Disk space check: Drive {self.disk}"
+
+    @property
+    def assigned_task(self):
+        return self.task_on_failure.name
 
     def handle_check(self, data):
         if data["status"] == "passing" and self.failure_count != 0:
@@ -139,7 +154,7 @@ class ScriptCheck(models.Model):
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="script"
     )
-    policy = models.ForeignKey(Policy, null=True, on_delete=models.CASCADE)
+    policy = models.ForeignKey(Policy, null=True, blank=True, on_delete=models.CASCADE)
     timeout = models.PositiveIntegerField(default=120)
     failures = models.PositiveIntegerField(default=5)
     status = models.CharField(
@@ -154,6 +169,21 @@ class ScriptCheck(models.Model):
     execution_time = models.CharField(max_length=100, default="0.0000")
     last_run = models.DateTimeField(null=True, blank=True)
     script = models.ForeignKey(Script, related_name="script", on_delete=models.CASCADE)
+    task_on_failure = models.ForeignKey(
+        "automation.AutomatedTask",
+        null=True,
+        blank=True,
+        related_name="scripttaskfailure",
+        on_delete=models.SET_NULL,
+    )
+
+    @property
+    def readable_desc(self):
+        return f"Script check: {self.script.name}"
+
+    @property
+    def assigned_task(self):
+        return self.task_on_failure.name
 
     def handle_check(self, data):
         if data["status"] == "passing" and self.failure_count != 0:
@@ -195,7 +225,7 @@ class PingCheck(models.Model):
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="ping"
     )
-    policy = models.ForeignKey(Policy, null=True, on_delete=models.CASCADE)
+    policy = models.ForeignKey(Policy, null=True, blank=True, on_delete=models.CASCADE)
     ip = models.CharField(max_length=255)
     name = models.CharField(max_length=255, null=True, blank=True)
     failures = models.PositiveIntegerField(default=5)
@@ -207,6 +237,21 @@ class PingCheck(models.Model):
     text_alert = models.BooleanField(default=False)
     more_info = models.TextField(null=True, blank=True)
     last_run = models.DateTimeField(null=True, blank=True)
+    task_on_failure = models.ForeignKey(
+        "automation.AutomatedTask",
+        null=True,
+        blank=True,
+        related_name="pingtaskfailure",
+        on_delete=models.SET_NULL,
+    )
+
+    @property
+    def readable_desc(self):
+        return f"Ping check: {self.name}"
+
+    @property
+    def assigned_task(self):
+        return self.task_on_failure.name
 
     def handle_check(self, data):
         if data["status"] == "passing" and self.failure_count != 0:
@@ -254,7 +299,7 @@ class CpuLoadCheck(models.Model):
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="cpuload"
     )
-    policy = models.ForeignKey(Policy, null=True, on_delete=models.CASCADE)
+    policy = models.ForeignKey(Policy, null=True, blank=True, on_delete=models.CASCADE)
     cpuload = models.PositiveIntegerField(default=85)
     status = models.CharField(
         max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
@@ -265,6 +310,13 @@ class CpuLoadCheck(models.Model):
     failures = models.PositiveIntegerField(default=5)
     failure_count = models.PositiveIntegerField(default=0)
     history = ArrayField(models.IntegerField(blank=True), null=True, default=list)
+    task_on_failure = models.ForeignKey(
+        "automation.AutomatedTask",
+        null=True,
+        blank=True,
+        related_name="cpuloadtaskfailure",
+        on_delete=models.SET_NULL,
+    )
 
     def __str__(self):
         return self.agent.hostname
@@ -272,6 +324,14 @@ class CpuLoadCheck(models.Model):
     @property
     def more_info(self):
         return ", ".join(str(f"{x}%") for x in self.history[-6:])
+
+    @property
+    def readable_desc(self):
+        return f"CPU Load check: > {self.cpuload}%"
+
+    @property
+    def assigned_task(self):
+        return self.task_on_failure.name
 
     def handle_check(self, data):
         if len(self.history) < 15:
@@ -325,7 +385,7 @@ class MemCheck(models.Model):
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="memory"
     )
-    policy = models.ForeignKey(Policy, null=True, on_delete=models.CASCADE)
+    policy = models.ForeignKey(Policy, null=True, blank=True, on_delete=models.CASCADE)
     threshold = models.PositiveIntegerField(default=75)
     status = models.CharField(
         max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
@@ -336,6 +396,13 @@ class MemCheck(models.Model):
     failures = models.PositiveIntegerField(default=5)
     failure_count = models.PositiveIntegerField(default=0)
     history = ArrayField(models.IntegerField(blank=True), null=True, default=list)
+    task_on_failure = models.ForeignKey(
+        "automation.AutomatedTask",
+        null=True,
+        blank=True,
+        related_name="memtaskfailure",
+        on_delete=models.SET_NULL,
+    )
 
     def __str__(self):
         return self.agent.hostname
@@ -343,6 +410,14 @@ class MemCheck(models.Model):
     @property
     def more_info(self):
         return ", ".join(str(f"{x}%") for x in self.history[-6:])
+
+    @property
+    def readable_desc(self):
+        return f"Memory check: > {self.threshold}%"
+
+    @property
+    def assigned_task(self):
+        return self.task_on_failure.name
 
     def handle_check(self, data):
         if len(self.history) < 15:
@@ -398,9 +473,7 @@ class WinServiceCheck(models.Model):
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="winsvc"
     )
-    policy = models.ForeignKey(
-        Policy, null=True, on_delete=models.CASCADE
-    )
+    policy = models.ForeignKey(Policy, null=True, blank=True, on_delete=models.CASCADE)
     svc_name = models.CharField(max_length=255)
     svc_display_name = models.CharField(max_length=255)
     pass_if_start_pending = models.BooleanField(default=False)
@@ -414,9 +487,24 @@ class WinServiceCheck(models.Model):
     email_alert = models.BooleanField(default=False)
     text_alert = models.BooleanField(default=False)
     last_run = models.DateTimeField(null=True, blank=True)
+    task_on_failure = models.ForeignKey(
+        "automation.AutomatedTask",
+        null=True,
+        blank=True,
+        related_name="winsvctaskfailure",
+        on_delete=models.SET_NULL,
+    )
 
     def __str__(self):
         return f"{self.agent.hostname} - {self.svc_display_name}"
+
+    @property
+    def readable_desc(self):
+        return f"Service check: {self.svc_display_name}"
+
+    @property
+    def assigned_task(self):
+        return self.task_on_failure.name
 
     def handle_check(self, data):
         if data["status"] == "passing" and self.failure_count != 0:

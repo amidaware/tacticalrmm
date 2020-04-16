@@ -1,13 +1,5 @@
 import Vue from "vue";
 import Router from "vue-router";
-import Dashboard from "@/views/Dashboard";
-import Login from "@/views/Login";
-import Logout from "@/views/Logout";
-import SessionExpired from "@/views/SessionExpired";
-import NotFound from "@/views/NotFound";
-import TakeControl from "@/views/TakeControl";
-import InitialSetup from "@/views/InitialSetup";
-import RemoteBackground from "@/views/RemoteBackground";
 
 Vue.use(Router);
 
@@ -18,7 +10,7 @@ export default new Router({
     {
       path: "/",
       name: "Dashboard",
-      component: Dashboard,
+      component: () => import ("@/views/Dashboard"),
       meta: {
         requireAuth: true
       }
@@ -26,7 +18,7 @@ export default new Router({
     {
       path: "/setup",
       name: "InitialSetup",
-      component: InitialSetup,
+      component: () => import ("@/views/InitialSetup"),
       meta: {
         requireAuth: true
       }
@@ -34,7 +26,7 @@ export default new Router({
     {
       path: "/takecontrol/:pk",
       name: "TakeControl",
-      component: TakeControl,
+      component: () => import ("@/views/TakeControl"),
       meta: {
         requireAuth: true
       }
@@ -42,7 +34,7 @@ export default new Router({
     {
       path: "/remotebackground/:pk",
       name: "RemoteBackground",
-      component: RemoteBackground,
+      component: () => import ("@/views/RemoteBackground"),
       meta: {
         requireAuth: true
       }
@@ -50,7 +42,7 @@ export default new Router({
     {
       path: "/login",
       name: "Login",
-      component: Login,
+      component: () => import ("@/views/Login"),
       meta: {
         requiresVisitor: true
       }
@@ -58,16 +50,16 @@ export default new Router({
     {
       path: "/logout",
       name: "Logout",
-      component: Logout
+      component: () => import ("@/views/Logout")
     },
     {
       path: "/expired",
       name: "SessionExpired",
-      component: SessionExpired,
+      component: () => import ("@/views/SessionExpired"),
       meta: {
         requireAuth: true
       }
     },
-    { path: "*", component: NotFound }
+    { path: "*", component: () => import ("@/views/NotFound") }
   ]
 });

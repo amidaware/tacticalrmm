@@ -23,6 +23,7 @@ export const store = new Vuex.Store({
     agentSummary: {},
     winUpdates: {},
     agentChecks: {},
+    automatedTasks: {},
     agentTableLoading: false,
     treeLoading: false,
     installedSoftware: [],
@@ -104,6 +105,9 @@ export const store = new Vuex.Store({
     setChecks(state, checks) {
       state.agentChecks = checks;
     },
+    SET_AUTOMATED_TASKS(state, tasks) {
+      state.automatedTasks = tasks;
+    },
     destroySubTable(state) {
       (state.agentSummary = {}),
         (state.agentChecks = {}),
@@ -122,6 +126,11 @@ export const store = new Vuex.Store({
     getPolicies(context) {
       axios.get("/automation/policies/").then(r => {
         context.commit("SET_POLICIES", r.data);
+      })
+    },
+    loadAutomatedTasks(context, pk) {
+      axios.get(`/automation/${pk}/automatedtasks/`).then(r => {
+        context.commit("SET_AUTOMATED_TASKS", r.data);
       })
     },
     getScripts(context) {
@@ -211,11 +220,8 @@ export const store = new Vuex.Store({
           })
           .catch(error => {
             Notify.create({
-              color: "red",
-              position: "top",
+              type: "negative",
               timeout: 1000,
-              textColor: "white",
-              icon: "fas fa-times-circle",
               message: "Bad token"
             });
             reject(error);

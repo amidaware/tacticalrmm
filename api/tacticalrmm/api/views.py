@@ -42,6 +42,7 @@ from agents.tasks import (
 )
 from winupdate.tasks import check_for_updates_task
 from agents.serializers import AgentHostnameSerializer, AgentSerializer
+from automation.serializers import TaskSerializer
 from software.tasks import install_chocolatey, get_installed_software
 
 logger.configure(**settings.LOG_CONFIG)

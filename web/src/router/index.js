@@ -1,16 +1,16 @@
 import Vue from "vue";
-import Router from "vue-router";
+import VueRouter from "vue-router";
 
-Vue.use(Router);
+Vue.use(VueRouter);
 
-export default new Router({
+const router = new VueRouter({
   mode: "history",
   base: process.env.BASE_URL,
   routes: [
     {
       path: "/",
       name: "Dashboard",
-      component: () => import ("@/views/Dashboard"),
+      component: () => import("@/views/Dashboard"),
       meta: {
         requireAuth: true
       }
@@ -18,7 +18,7 @@ export default new Router({
     {
       path: "/setup",
       name: "InitialSetup",
-      component: () => import ("@/views/InitialSetup"),
+      component: () => import("@/views/InitialSetup"),
       meta: {
         requireAuth: true
       }
@@ -26,7 +26,7 @@ export default new Router({
     {
       path: "/takecontrol/:pk",
       name: "TakeControl",
-      component: () => import ("@/views/TakeControl"),
+      component: () => import("@/views/TakeControl"),
       meta: {
         requireAuth: true
       }
@@ -34,7 +34,7 @@ export default new Router({
     {
       path: "/remotebackground/:pk",
       name: "RemoteBackground",
-      component: () => import ("@/views/RemoteBackground"),
+      component: () => import("@/views/RemoteBackground"),
       meta: {
         requireAuth: true
       }
@@ -42,7 +42,7 @@ export default new Router({
     {
       path: "/login",
       name: "Login",
-      component: () => import ("@/views/Login"),
+      component: () => import("@/views/Login"),
       meta: {
         requiresVisitor: true
       }
@@ -50,16 +50,18 @@ export default new Router({
     {
       path: "/logout",
       name: "Logout",
-      component: () => import ("@/views/Logout")
+      component: () => import("@/views/Logout")
     },
     {
       path: "/expired",
       name: "SessionExpired",
-      component: () => import ("@/views/SessionExpired"),
+      component: () => import("@/views/SessionExpired"),
       meta: {
         requireAuth: true
       }
     },
-    { path: "*", component: () => import ("@/views/NotFound") }
+    { path: "*", component: () => import("@/views/NotFound") }
   ]
 });
+
+export default router;

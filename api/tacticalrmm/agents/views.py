@@ -103,7 +103,7 @@ def edit_agent(request):
     a_serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
     a_serializer.is_valid(raise_exception=True)
     a_serializer.save()
-    
+
     policy = WinUpdatePolicy.objects.get(agent=agent)
     p_serializer = WinUpdatePolicySerializer(
         instance=policy, data=request.data["winupdatepolicy"][0]
@@ -117,7 +117,9 @@ def edit_agent(request):
 @api_view()
 def meshcentral_tabs(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    token = agent.get_login_token(key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}")
+    token = agent.get_login_token(
+        key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}"
+    )
     terminalurl = f"{settings.MESH_SITE}/?login={token}&node={agent.mesh_node_id}&viewmode=12&hide=31"
     fileurl = f"{settings.MESH_SITE}/?login={token}&node={agent.mesh_node_id}&viewmode=13&hide=31"
     return Response(
@@ -128,7 +130,9 @@ def meshcentral_tabs(request, pk):
 @api_view()
 def take_control(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    token = agent.get_login_token(key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}")
+    token = agent.get_login_token(
+        key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}"
+    )
     url = f"{settings.MESH_SITE}/?login={token}&node={agent.mesh_node_id}&viewmode=11&hide=31"
     return Response(url)
 

@@ -1,10 +1,24 @@
 <template>
-  <q-card style="min-width: 800px" v-if="agentLoaded && clientsLoaded">
+  <q-card
+    style="min-width: 800px"
+    v-if="agentLoaded && clientsLoaded"
+  >
     <q-splitter v-model="splitterModel">
       <template v-slot:before>
-        <q-tabs dense v-model="tab" vertical class="text-primary">
-          <q-tab name="general" label="General" />
-          <q-tab name="patch" label="Patches" />
+        <q-tabs
+          dense
+          v-model="tab"
+          vertical
+          class="text-primary"
+        >
+          <q-tab
+            name="general"
+            label="General"
+          />
+          <q-tab
+            name="patch"
+            label="Patches"
+          />
         </q-tabs>
       </template>
       <template v-slot:after>
@@ -12,9 +26,18 @@
           <q-card-section class="row items-center">
             <div class="text-h6">Edit {{ agent.hostname }}</div>
             <q-space />
-            <q-btn icon="close" flat round dense v-close-popup />
+            <q-btn
+              icon="close"
+              flat
+              round
+              dense
+              v-close-popup
+            />
           </q-card-section>
-          <q-scroll-area :thumb-style="thumbStyle" style="height: 500px;">
+          <q-scroll-area
+            :thumb-style="thumbStyle"
+            style="height: 500px;"
+          >
             <q-tab-panels
               v-model="tab"
               animated
@@ -38,7 +61,13 @@
                 <q-card-section class="row">
                   <div class="col-2">Site:</div>
                   <div class="col-2"></div>
-                  <q-select class="col-8" dense outlined v-model="agent.site" :options="sites" />
+                  <q-select
+                    class="col-8"
+                    dense
+                    outlined
+                    v-model="agent.site"
+                    :options="sites"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Type:</div>
@@ -95,8 +124,14 @@
                   />
                 </q-card-section>
                 <q-card-section class="row">
-                  <q-checkbox v-model="agent.overdue_email_alert" label="Get overdue email alerts" />
-                  <q-checkbox v-model="agent.overdue_text_alert" label="Get overdue sms alerts" />
+                  <q-checkbox
+                    v-model="agent.overdue_email_alert"
+                    label="Get overdue email alerts"
+                  />
+                  <q-checkbox
+                    v-model="agent.overdue_text_alert"
+                    label="Get overdue sms alerts"
+                  />
                 </q-card-section>
               </q-tab-panel>
               <!-- patch -->
@@ -282,8 +317,15 @@
             </q-tab-panels>
           </q-scroll-area>
           <q-card-section class="row items-center">
-            <q-btn label="Save" color="primary" type="submit" />
-            <q-btn label="Cancel" v-close-popup />
+            <q-btn
+              label="Save"
+              color="primary"
+              type="submit"
+            />
+            <q-btn
+              label="Cancel"
+              v-close-popup
+            />
           </q-card-section>
         </q-form>
       </template>
@@ -299,7 +341,7 @@ import { scheduledTimes } from "@/mixins/data";
 export default {
   name: "EditAgent",
   mixins: [mixins],
-  data() {
+  data () {
     return {
       agentLoaded: false,
       clientsLoaded: false,
@@ -324,22 +366,21 @@ export default {
     };
   },
   methods: {
-    getAgentInfo() {
+    getAgentInfo () {
       axios.get(`/agents/${this.selectedAgentPk}/agentdetail/`).then(r => {
         this.agent = r.data;
         this.agentLoaded = true;
       });
     },
-    getClientsSites() {
+    getClientsSites () {
       axios.get("/clients/loadclients/").then(r => {
         this.tree = r.data;
         this.clientsLoaded = true;
       });
     },
-    editAgent() {
+    editAgent () {
       let data = this.agent;
       delete data.services;
-      delete data.wmi_detail;
       delete data.disks;
       delete data.local_ip;
 
@@ -355,13 +396,13 @@ export default {
   },
   computed: {
     ...mapGetters(["selectedAgentPk"]),
-    sites() {
+    sites () {
       if (this.agentLoaded && this.clientsLoaded) {
         return this.tree[this.agent.client];
       }
     }
   },
-  created() {
+  created () {
     this.getAgentInfo();
     this.getClientsSites();
   }

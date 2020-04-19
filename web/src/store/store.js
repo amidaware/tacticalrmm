@@ -36,19 +36,19 @@ export const store = new Vuex.Store({
     toggleAutomationManager: false
   },
   getters: {
-    loggedIn(state) {
+    loggedIn (state) {
       return state.token !== null;
     },
-    selectedAgentPk(state) {
+    selectedAgentPk (state) {
       return state.agentSummary.id;
     },
     selectedPolicyPk(state) {
       return state.selectedPolicy;
     },
-    managedByWsus(state) {
+    managedByWsus (state) {
       return state.agentSummary.managed_by_wsus;
     },
-    sortedUpdates(state) {
+    sortedUpdates (state) {
       // sort patches by latest then not installed
       if (!state.winUpdates.winupdates) {
         return [];
@@ -61,57 +61,57 @@ export const store = new Vuex.Store({
       );
       return sortedByInstall;
     },
-    agentHostname(state) {
+    agentHostname (state) {
       return state.agentSummary.hostname;
     },
-    scripts(state) {
+    scripts (state) {
       return state.scripts;
     },
-    policies(state) {
+    policies (state) {
       return state.policies;
     }
   },
   mutations: {
-    TOGGLE_AUTOMATION_MANAGER(state, action) {
+    TOGGLE_AUTOMATION_MANAGER (state, action) {
       state.toggleAutomationManager = action;
     },
-    TOGGLE_SCRIPT_MANAGER(state, action) {
+    TOGGLE_SCRIPT_MANAGER (state, action) {
       state.toggleScriptManager = action;
     },
-    AGENT_TABLE_LOADING(state, visible) {
+    AGENT_TABLE_LOADING (state, visible) {
       state.agentTableLoading = visible;
     },
-    setActiveRow(state, pk) {
+    setActiveRow (state, pk) {
       state.selectedRow = pk;
     },
-    retrieveToken(state, { token, username }) {
+    retrieveToken (state, { token, username }) {
       state.token = token;
       state.username = username;
     },
-    destroyCommit(state) {
+    destroyCommit (state) {
       state.token = null;
       state.username = null;
     },
-    getUpdatedSites(state, clients) {
+    getUpdatedSites (state, clients) {
       state.clients = clients;
     },
-    loadTree(state, treebar) {
+    loadTree (state, treebar) {
       state.tree = treebar;
       state.treeReady = true;
     },
-    setSummary(state, summary) {
+    setSummary (state, summary) {
       state.agentSummary = summary;
     },
-    SET_WIN_UPDATE(state, updates) {
+    SET_WIN_UPDATE (state, updates) {
       state.winUpdates = updates;
     },
-    SET_INSTALLED_SOFTWARE(state, software) {
+    SET_INSTALLED_SOFTWARE (state, software) {
       state.installedSoftware = software;
     },
-    setChecks(state, checks) {
+    setChecks (state, checks) {
       state.agentChecks = checks;
     },
-    SET_AUTOMATED_TASKS(state, tasks) {
+    SET_AUTOMATED_TASKS (state, tasks) {
       state.automatedTasks = tasks;
     },
     setPolicyChecks(state, checks) {
@@ -120,17 +120,17 @@ export const store = new Vuex.Store({
     setPolicyAutomatedTasks(state, tasks) {
       state.policyAutomatedTasks = tasks;
     },
-    destroySubTable(state) {
+    destroySubTable (state) {
       (state.agentSummary = {}),
         (state.agentChecks = {}),
         (state.winUpdates = {});
-        (state.installedSoftware = []);
+      (state.installedSoftware = []);
       state.selectedRow = "";
     },
-    SET_SCRIPTS(state, scripts) {
+    SET_SCRIPTS (state, scripts) {
       state.scripts = scripts;
     },
-    SET_POLICIES(state, policies) {
+    SET_POLICIES (state, policies) {
       state.policies = policies;
     },
     setSelectedPolicy(state, pk) {
@@ -138,12 +138,12 @@ export const store = new Vuex.Store({
     },
   },
   actions: {
-    getPolicies(context) {
+    getPolicies (context) {
       axios.get("/automation/policies/").then(r => {
         context.commit("SET_POLICIES", r.data);
       })
     },
-    loadAutomatedTasks(context, pk) {
+    loadAutomatedTasks (context, pk) {
       axios.get(`/automation/${pk}/automatedtasks/`).then(r => {
         context.commit("SET_AUTOMATED_TASKS", r.data);
       })
@@ -153,27 +153,27 @@ export const store = new Vuex.Store({
         context.commit("setPolicyAutomatedTasks", r.data);
       })
     },
-    getScripts(context) {
+    getScripts (context) {
       axios.get("/checks/getscripts/").then(r => {
         context.commit("SET_SCRIPTS", r.data);
       })
     },
-    loadInstalledSoftware(context, pk) {
+    loadInstalledSoftware (context, pk) {
       axios.get(`/software/installed/${pk}`).then(r => {
         context.commit("SET_INSTALLED_SOFTWARE", r.data.software);
       });
     },
-    loadWinUpdates(context, pk) {
+    loadWinUpdates (context, pk) {
       axios.get(`/winupdate/${pk}/getwinupdates/`).then(r => {
         context.commit("SET_WIN_UPDATE", r.data);
       });
     },
-    loadSummary(context, pk) {
+    loadSummary (context, pk) {
       axios.get(`/agents/${pk}/agentdetail/`).then(r => {
         context.commit("setSummary", r.data);
       });
     },
-    loadChecks(context, pk) {
+    loadChecks (context, pk) {
       axios.get(`/checks/${pk}/loadchecks/`).then(r => {
         context.commit("setChecks", r.data);
       });
@@ -183,12 +183,12 @@ export const store = new Vuex.Store({
         context.commit("setPolicyChecks", r.data);
       });
     },
-    getUpdatedSites(context) {
+    getUpdatedSites (context) {
       axios.get("/clients/loadclients/").then(r => {
         context.commit("getUpdatedSites", r.data);
       });
     },
-    loadTree({ commit }) {
+    loadTree ({ commit }) {
       axios.get("/clients/loadtree/").then(r => {
         const input = r.data;
         if (
@@ -231,7 +231,7 @@ export const store = new Vuex.Store({
         //commit("destroySubTable");
       });
     },
-    retrieveToken(context, credentials) {
+    retrieveToken (context, credentials) {
       return new Promise((resolve, reject) => {
         axios
           .post("/login/", credentials)
@@ -253,7 +253,7 @@ export const store = new Vuex.Store({
           });
       });
     },
-    destroyToken(context) {
+    destroyToken (context) {
       if (context.getters.loggedIn) {
         return new Promise((resolve, reject) => {
           axios

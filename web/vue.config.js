@@ -3,7 +3,12 @@ module.exports = {
     host: "192.168.99.150"
   },
   pluginOptions: {
-    quasar: {}
+    quasar: {
+      importStrategy: 'kebab',
+      rtlSupport: false
+    }
   },
-  transpileDependencies: [/[\\\/]node_modules[\\\/]quasar[\\\/]/]
-};
+  transpileDependencies: [
+    'quasar'
+  ]
+}

@@ -1,5 +1,5 @@
 <template>
-  <q-card style="width: 40vw">
+  <q-card style="width: 60vw">
     <q-form @submit.prevent="addPolicy">
       <q-card-section class="row items-center">
         <div class="text-h6">Add Policy</div>
@@ -15,7 +15,73 @@
       <q-card-section class="row">
         <div class="col-2">Description:</div>
         <div class="col-10">
-          <q-input outlined dense v-model="desc" type="textarea" />
+          <q-input outlined dense v-model="desc" />
+        </div>
+      </q-card-section>
+      <q-card-section class="row">
+        <div class="col-2">Active:</div>
+        <div class="col-10">
+          <q-toggle v-model="active" color="green" />
+        </div>
+      </q-card-section>
+      <q-card-section class="row">
+        <div class="col-2">Clients:</div>
+        <div class="col-10">
+          <q-select
+            v-model="selectedClients"
+            :options="clientOptions"
+            filled
+            multiple
+            use-chips
+          >
+            <template v-slot:no-option>
+              <q-item>
+                <q-item-section class="text-grey">
+                  No Results
+                </q-item-section>
+              </q-item>
+            </template>
+          </q-select>
+        </div>
+      </q-card-section>
+      <q-card-section class="row">
+        <div class="col-2">Sites:</div>
+        <div class="col-10">
+          <q-select
+            v-model="selectedSites"
+            :options="siteOptions"
+            filled
+            multiple
+            use-chips
+          >
+            <template v-slot:no-option>
+              <q-item>
+                <q-item-section class="text-grey">
+                  No Results
+                </q-item-section>
+              </q-item>
+            </template>
+          </q-select>
+        </div>
+      </q-card-section>
+      <q-card-section class="row">
+        <div class="col-2">Agents:</div>
+        <div class="col-10">
+          <q-select
+            v-model="selectedAgents"
+            :options="agentOptions"
+            filled
+            multiple
+            use-chips
+          >
+            <template v-slot:no-option>
+              <q-item>
+                <q-item-section class="text-grey">
+                  No Results
+                </q-item-section>
+              </q-item>
+            </template>
+          </q-select>
         </div>
       </q-card-section>
       <q-card-section class="row items-center">
@@ -34,7 +100,14 @@ export default {
   data() {
     return {
       name: "",
-      desc: ""
+      desc: "",
+      active: false,
+      selectedAgents: [],
+      selectedSites: [],
+      selectedClients: [],
+      clientOptions: [],
+      siteOptions: [],
+      agentOptions: [],
     };
   },
   methods: {
@@ -45,22 +118,78 @@ export default {
       }
 
       this.$q.loading.show();
-      let formData = new FormData();
-      formData.append("name", this.name);
-      formData.append("desc", this.desc);
-      axios
-        .post("/automation/policies/", formData)
+
+      let formData = {
+        name: this.name,
+        desc: this.desc,
+        active: this.active,
+        agents: this.selectedAgents.map(agent => agent.value),
+        sites: this.selectedSites.map(site => site.value),
+        clients: this.selectedClients.map(client => client.value)
+      };
+
+      axios.post("/automation/policies/", formData)
         .then(r => {
           this.$q.loading.hide();
           this.$emit("close");
           this.$emit("added");
-          this.notifySuccess("Policy added! Edit the policy to add Checks!");
+          this.notifySuccess("Policy added! Now you can add Tasks and Checks!");
         })
         .catch(e => {
           this.$q.loading.hide();
           this.notifyError(e.response.data);
         });
-    }
+    },
+    getClients() {
+
+      axios.get(`/clients/listclients/`).then(r => {
+        this.clientOptions = r.data.map(client => {
+          return {
+            label: client.client,
+            value: client.id
+          }
+        });
+      })
+      .catch(e => {
+        this.$q.loading.hide();
+        this.notifyError(e.response.data);
+      });
+    },
+    getSites() {
+
+      axios.get(`/clients/listsites/`).then(r => {
+        this.siteOptions = r.data.map(site => {
+          return {
+            label: `${site.client_name}\\${site.site}`,
+            value: site.id
+          }
+        });
+      })
+      .catch(e => {
+        this.$q.loading.hide();
+        this.notifyError(e.response.data);
+      });
+    },
+    getAgents() {
+
+      axios.get(`/agents/listagents/`).then(r => {
+        this.agentOptions = r.data.map(agent => {
+          return {
+            label: `${agent.client}\\${agent.site}\\${agent.hostname}`,
+            value: agent.pk
+          }
+        });
+      })
+      .catch(e => {
+        this.$q.loading.hide();
+        this.notifyError(e.response.data);
+      });
+    },
+  },
+  created() {
+    this.getClients();
+    this.getSites();
+    this.getAgents();
   }
 };
 </script>

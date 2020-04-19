@@ -45,7 +45,7 @@ import axios from "axios";
 import mixins from "@/mixins/mixins";
 export default {
   name: "EditScriptCheck",
-  props: ["agentpk", "editCheckPK"],
+  props: ["agentpk", "policypk", "editCheckPK"],
   mixins: [mixins],
   data() {
     return {
@@ -76,7 +76,13 @@ export default {
         .patch("/checks/editstandardcheck/", data)
         .then(r => {
           this.$emit("close");
-          this.$store.dispatch("loadChecks", this.agentpk);
+
+          if (this.policypk) {
+            this.$store.dispatch("loadPolicyChecks", this.policypk);
+          } else {
+            this.$store.dispatch("loadChecks", this.agentpk);
+          }
+          
           this.notifySuccess(r.data);
         })
         .catch(e => this.notifyError(e.response.data.error));

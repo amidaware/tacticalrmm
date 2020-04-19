@@ -45,7 +45,7 @@ import { mapState } from "vuex";
 import mixins from "@/mixins/mixins";
 export default {
   name: "AddDiskSpaceCheck",
-  props: ["agentpk"],
+  props: ["agentpk", "policypk"],
   mixins: [mixins],
   data() {
     return {
@@ -58,14 +58,16 @@ export default {
   },
   methods: {
     getDisks() {
-      axios.get(`/checks/getdisks/${this.agentpk}/`).then(r => {
+      axios.get(`/checks/getdisks/policies/`).then(r => {
         this.disks = Object.keys(r.data);
         this.firstdisk = Object.keys(r.data)[0];
       });
     },
     addCheck() {
+      pk = (this.policypk) ? {policy: policypk} : {pk: agentpk}
+
       const data = {
-        pk: this.agentpk,
+        ...pk,
         check_type: "diskspace",
         disk: this.firstdisk,
         threshold: this.threshold,
@@ -75,7 +77,13 @@ export default {
         .post("/checks/addstandardcheck/", data)
         .then(r => {
           this.$emit("close");
-          this.$store.dispatch("loadChecks", this.agentpk);
+          
+          if (this.policypk) {
+            this.$store.dispatch("loadPolicyChecks", this.policypk);
+          } else {
+            this.$store.dispatch("loadChecks", this.agentpk);
+          }
+
           this.notifySuccess(`Disk check for drive ${data.disk} was added!`);
         })
         .catch(e => this.notifyError(e.response.data.error));

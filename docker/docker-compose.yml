@@ -4,6 +4,7 @@ version: '3.7'
 networks: 
   database:
   redis:
+  mesh-mongodb:
   proxy:
     driver: bridge
     ipam:
@@ -57,10 +58,25 @@ services:
       context: ./meshcentral
       args:
         - MESH_HOST=${MESH_HOST}
+        - MONGODB_USER=${MONGODB_USER}
+        - MONGODB_PASSWORD=${MONGODB_PASSWORD}
     networks:
       - proxy
+      - mesh-mongodb
     depends_on: 
+      - mesh-mongodb
       - nginx-proxy
+
+  # MongoDB Container for MeshCentral
+  mesh-mongodb:
+    image: mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+      MONGO_INITDB_DATABASE: meshcentral
+    networks:
+      - mesh-mongodb
+
 
   # Nginx Container Reverse Proxy that handles all http/https traffic
   nginx-proxy:

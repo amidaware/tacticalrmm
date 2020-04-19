@@ -58,7 +58,7 @@ export default {
   methods: {
     getCheck() {
       axios
-        .get(`/checks/getstandardcheck/diskspace/${this.editCheckPK}/`)
+        .get(`/checks/getstandardcheck/polcies/`)
         .then(r => {
           this.disks = [r.data.disk];
           this.diskToEdit = r.data.disk;
@@ -77,7 +77,13 @@ export default {
         .patch("/checks/editstandardcheck/", data)
         .then(r => {
           this.$emit("close");
-          this.$store.dispatch("loadChecks", this.agentpk);
+
+          if (this.policypk) {
+            this.$store.dispatch("loadPolicyChecks", this.policypk);
+          } else {
+            this.$store.dispatch("loadChecks", this.agentpk);
+          }
+
           this.notifySuccess("Disk space check was edited!");
         })
         .catch(e => this.notifyError(e.response.data.error));

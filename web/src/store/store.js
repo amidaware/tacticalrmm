@@ -24,6 +24,9 @@ export const store = new Vuex.Store({
     winUpdates: {},
     agentChecks: {},
     automatedTasks: {},
+    selectedPolicy: null,
+    policyChecks: {},
+    PolicyAutomatedTasks: {},
     agentTableLoading: false,
     treeLoading: false,
     installedSoftware: [],
@@ -38,6 +41,9 @@ export const store = new Vuex.Store({
     },
     selectedAgentPk (state) {
       return state.agentSummary.id;
+    },
+    selectedPolicyPk(state) {
+      return state.selectedPolicy;
     },
     managedByWsus (state) {
       return state.agentSummary.managed_by_wsus;
@@ -108,6 +114,12 @@ export const store = new Vuex.Store({
     SET_AUTOMATED_TASKS (state, tasks) {
       state.automatedTasks = tasks;
     },
+    setPolicyChecks(state, checks) {
+      state.policyChecks = checks;
+    },
+    setPolicyAutomatedTasks(state, tasks) {
+      state.policyAutomatedTasks = tasks;
+    },
     destroySubTable (state) {
       (state.agentSummary = {}),
         (state.agentChecks = {}),
@@ -120,7 +132,10 @@ export const store = new Vuex.Store({
     },
     SET_POLICIES (state, policies) {
       state.policies = policies;
-    }
+    },
+    setSelectedPolicy(state, pk) {
+      state.selectedPolicy = pk;
+    },
   },
   actions: {
     getPolicies (context) {
@@ -131,6 +146,11 @@ export const store = new Vuex.Store({
     loadAutomatedTasks (context, pk) {
       axios.get(`/automation/${pk}/automatedtasks/`).then(r => {
         context.commit("SET_AUTOMATED_TASKS", r.data);
+      })
+    },
+    loadPolicyAutomatedTasks(context, pk) {
+      axios.get(`/automation/${pk}/policyautomatedtasks/`).then(r => {
+        context.commit("setPolicyAutomatedTasks", r.data);
       })
     },
     getScripts (context) {
@@ -156,6 +176,11 @@ export const store = new Vuex.Store({
     loadChecks (context, pk) {
       axios.get(`/checks/${pk}/loadchecks/`).then(r => {
         context.commit("setChecks", r.data);
+      });
+    },
+    loadPolicyChecks(context, pk) {
+      axios.get(`/checks/${pk}/loadpolicychecks/`).then(r => {
+        context.commit("setPolicyChecks", r.data);
       });
     },
     getUpdatedSites (context) {

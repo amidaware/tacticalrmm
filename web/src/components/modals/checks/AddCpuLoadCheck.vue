@@ -42,7 +42,7 @@ import { mapState } from "vuex";
 import mixins from "@/mixins/mixins";
 export default {
   name: "AddCpuLoadCheck",
-  props: ["agentpk"],
+  props: ["agentpk", "policypk"],
   mixins: [mixins],
   data() {
     return {
@@ -53,8 +53,10 @@ export default {
   },
   methods: {
     addCheck() {
+      pk = (this.policypk) ? {policy: policypk} : {pk: agentpk}
+
       const data = {
-        pk: this.agentpk,
+        ...pk,
         check_type: "cpuload",
         threshold: this.threshold,
         failure: this.failure
@@ -63,7 +65,13 @@ export default {
         .post("/checks/addstandardcheck/", data)
         .then(r => {
           this.$emit("close");
-          this.$store.dispatch("loadChecks", this.agentpk);
+
+          if (this.policypk) {
+            this.$store.dispatch("loadPolicyChecks", this.policypk);
+          } else {
+            this.$store.dispatch("loadChecks", this.agentpk);
+          }
+
           this.notifySuccess("CPU load check was added!");
         })
         .catch(e => this.notifyError(e.response.data.error));

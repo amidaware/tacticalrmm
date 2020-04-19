@@ -254,6 +254,11 @@ def list_agents(request):
     agents = Agent.objects.all()
     return Response(AgentSerializer(agents, many=True).data)
 
+@api_view()
+def list_agents_no_detail(request):
+    agents = Agent.objects.all()
+    return Response(AgentHostnameSerializer(agents, many=True).data)
+
 
 @api_view()
 def by_client(request, client):

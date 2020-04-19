@@ -75,15 +75,18 @@
               >
                 <q-td>{{ props.row.name }}</q-td>
                 <q-td>{{ props.row.desc }}</q-td>
-                <q-td>{{ props.row.applied_to }}</q-td>
-                <q-td>{{ props.row.actions }}</q-td>
+                <q-td>{{ props.row.active }}</q-td>
+                <q-td>{{ props.row.clients.length }}</q-td>
+                <q-td>{{ props.row.sites.length }}</q-td>
+                <q-td>{{ props.row.agents.length }}</q-td>
               </q-tr>
             </template>
           </q-table>
         </div>
-        <q-card-section></q-card-section>
         <q-separator />
-        <q-card-section></q-card-section>
+        <q-card-section>
+          <PolicySubTableTabs />
+        </q-card-section>
       </q-card>
     </q-dialog>
     <q-dialog v-model="showAddPolicyModal">
@@ -105,14 +108,14 @@ import { mapState } from "vuex";
 import AddPolicy from "@/components/modals/automation/AddPolicy";
 import EditPolicy from "@/components/modals/automation/EditPolicy";
 import PolicyOverview from "@/components/modals/automation/PolicyOverview";
+import PolicySubTableTabs from "@/components/PolicySubTableTabs"
 
 export default {
   name: "AutomationManager",
-  components: { AddPolicy, EditPolicy, PolicyOverview },
+  components: { AddPolicy, EditPolicy, PolicyOverview, PolicySubTableTabs },
   mixins: [mixins],
   data() {
     return {
-      selectedRow: null,
       showAddPolicyModal: false,
       showEditPolicyModal: false,
       showPolicyOverviewModal: false,
@@ -145,14 +148,28 @@ export default {
           sortable: true
         },
         {
-          name: "applied_to",
-          label: "Applied To",
-          field: "applied_to",
+          name: "clients",
+          label: "Clients",
+          field: "clients",
+          align: "left",
+          sortable: false
+        },
+        {
+          name: "sites",
+          label: "Sites",
+          field: "sites",
+          align: "left",
+          sortable: false
+        },
+        {
+          name: "agents",
+          label: "Agents",
+          field: "agents",
           align: "left",
           sortable: false
         }
       ],
-      visibleColumns: ["name", "desc", "active", "applied_to"]
+      visibleColumns: ["name", "desc", "active", "clients", "sites", "agents"]
     };
   },
   methods: {
@@ -164,10 +181,13 @@ export default {
       this.$store.commit("TOGGLE_AUTOMATION_MANAGER", false);
     },
     policyRowSelected(pk) {
-      this.selectedRow = pk;
+      this.$store.commit("setSelectedPolicy", pk);
+      this.$store.dispatch("loadPolicyChecks", pk);
+      this.$store.dispatch("loadPolicyAutomatedTasks", pk);
     },
     clearRow() {
-      this.selectedRow = null;
+      this.$store.commit("setSelectedPolicy", null);
+      this.$store.commit("setPolicyChecks", {});
     },
     deletePolicy() {
       this.$q
@@ -179,16 +199,17 @@ export default {
         .onOk(() => {
           axios.delete(`/automation/policies/${this.selectedRow}`).then(r => {
             this.getPolicies();
-            this.notifySuccess(`Policy ${r.data} was deleted!`);
+            this.notifySuccess(`Policy was deleted!`);
           });
         });
-    }
+    },
   },
   computed: {
     ...mapState({
       toggleAutomationManager: state => state.toggleAutomationManager,
-      policies: state => state.policies
-    })
+      policies: state => state.policies,
+      selectedRow: state => state.selectedPolicy
+    }),
   },
   mounted() {
     this.getPolicies();

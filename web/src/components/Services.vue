@@ -12,18 +12,37 @@
       hide-bottom
     >
       <template v-slot:top>
-        <q-btn dense flat push @click="refreshServices" icon="refresh" />
+        <q-btn
+          dense
+          flat
+          push
+          @click="refreshServices"
+          icon="refresh"
+        />
         <q-space />
-        <q-input v-model="filter" outlined label="Search" dense clearable >
+        <q-input
+          v-model="filter"
+          outlined
+          label="Search"
+          dense
+          clearable
+        >
           <template v-slot:prepend>
             <q-icon name="search" />
           </template>
         </q-input>
       </template>
-      <template slot="body" slot-scope="props" :props="props">
+      <template
+        slot="body"
+        slot-scope="props"
+        :props="props"
+      >
         <q-tr :props="props">
           <q-menu context-menu>
-            <q-list dense style="min-width: 200px">
+            <q-list
+              dense
+              style="min-width: 200px"
+            >
               <q-item
                 clickable
                 v-close-popup
@@ -46,19 +65,38 @@
                 <q-item-section>Restart</q-item-section>
               </q-item>
               <q-separator />
-              <q-item clickable v-close-popup @click="editService(props.row.name)">
+              <q-item
+                clickable
+                v-close-popup
+                @click="editService(props.row.name)"
+              >
                 <q-item-section>Service Details</q-item-section>
               </q-item>
             </q-list>
           </q-menu>
-          <q-td key="display_name" :props="props">
+          <q-td
+            key="display_name"
+            :props="props"
+          >
             <q-icon name="fas fa-cogs" />
             &nbsp;&nbsp;&nbsp;{{ props.row.display_name }}
           </q-td>
-          <q-td key="start_type" :props="props">{{ props.row.start_type }}</q-td>
-          <q-td key="pid" :props="props">{{ props.row.pid }}</q-td>
-          <q-td key="status" :props="props">{{ props.row.status }}</q-td>
-          <q-td key="username" :props="props">{{ props.row.username }}</q-td>
+          <q-td
+            key="start_type"
+            :props="props"
+          >{{ props.row.start_type }}</q-td>
+          <q-td
+            key="pid"
+            :props="props"
+          >{{ props.row.pid }}</q-td>
+          <q-td
+            key="status"
+            :props="props"
+          >{{ props.row.status }}</q-td>
+          <q-td
+            key="username"
+            :props="props"
+          >{{ props.row.username }}</q-td>
         </q-tr>
       </template>
     </q-table>
@@ -83,7 +121,10 @@
           <div class="row">
             <div class="col-3">Description:</div>
             <div class="col-9">
-              <q-field outlined color="black">{{ serviceData.Description }}</q-field>
+              <q-field
+                outlined
+                color="black"
+              >{{ serviceData.Description }}</q-field>
             </div>
           </div>
           <br />
@@ -145,7 +186,10 @@
           </div>
         </q-card-section>
         <hr />
-        <q-card-actions align="left" class="bg-white text-teal">
+        <q-card-actions
+          align="left"
+          class="bg-white text-teal"
+        >
           <q-btn
             :disable="saveServiceDetailButton"
             dense
@@ -153,7 +197,12 @@
             color="positive"
             @click="changeStartupType(startupType, serviceData.svc_name)"
           />
-          <q-btn dense label="Cancel" color="grey" v-close-popup />
+          <q-btn
+            dense
+            label="Cancel"
+            color="grey"
+            v-close-popup
+          />
         </q-card-actions>
         <q-inner-loading :showing="serviceDetailVisible" />
       </q-card>
@@ -168,7 +217,8 @@ import mixins from "@/mixins/mixins";
 export default {
   name: "Services",
   props: ["pk"],
-  data() {
+  mixins: [mixins],
+  data () {
     return {
       servicesData: [],
       serviceDetailsModal: false,
@@ -228,7 +278,7 @@ export default {
     };
   },
   methods: {
-    changeStartupType(startuptype, name) {
+    changeStartupType (startuptype, name) {
       let changed;
       switch (startuptype) {
         case "Automatic (Delayed Start)":
@@ -251,21 +301,24 @@ export default {
         sv_name: name,
         edit_action: changed
       };
+      this.serviceDetailVisible = true;
       axios
         .post("/services/editservice/", data)
         .then(r => {
+          this.serviceDetailVisible = false;
           this.serviceDetailsModal = false;
           this.refreshServices();
           this.notifySuccess(`Service ${name} was edited!`);
         })
         .catch(err => {
+          this.serviceDetailVisible = false;
           this.notifyError(err.response.data.error);
         });
     },
-    startupTypeChanged() {
+    startupTypeChanged () {
       this.saveServiceDetailButton = false;
     },
-    editService(name) {
+    editService (name) {
       this.saveServiceDetailButton = true;
       this.serviceDetailsModal = true;
       this.serviceDetailVisible = true;
@@ -294,7 +347,7 @@ export default {
           this.notifyError(err.response.data.error);
         });
     },
-    serviceAction(name, action, fullname) {
+    serviceAction (name, action, fullname) {
       let msg, status;
       switch (action) {
         case "start":
@@ -330,15 +383,15 @@ export default {
           this.notifyError(err.response.data.error);
         });
     },
-    async getServices() {
+    async getServices () {
       try {
         let r = await axios.get(`/services/${this.pk}/services/`);
         this.servicesData = [r.data][0].services;
-      } catch(e) {
+      } catch (e) {
         console.log(`ERROR!: ${e}`)
       }
     },
-    refreshServices() {
+    refreshServices () {
       this.$q.loading.show({ message: "Reloading services..." });
       axios
         .get(`/services/${this.pk}/refreshedservices/`)
@@ -352,7 +405,7 @@ export default {
         });
     }
   },
-  created() {
+  created () {
     this.getServices();
   }
 };

@@ -41,7 +41,11 @@ from agents.tasks import (
     get_wmi_detail_task,
 )
 from winupdate.tasks import check_for_updates_task
-from agents.serializers import AgentHostnameSerializer, AgentSerializer
+from agents.serializers import (
+    AgentHostnameSerializer,
+    AgentSerializer,
+    WinAgentSerializer,
+)
 from automation.serializers import TaskSerializer
 from software.tasks import install_chocolatey, get_installed_software
 
@@ -307,7 +311,7 @@ def add(request):
 @permission_classes((IsAuthenticated,))
 def update(request):
     agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-    serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
+    serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
     serializer.save()
 
@@ -363,7 +367,7 @@ def hello(request):
             uninstall_agent_task.delay(agent.pk)
             return Response("ok")
 
-    serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
+    serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
     serializer.save()
     return Response("ok")

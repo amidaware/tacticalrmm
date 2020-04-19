@@ -7,6 +7,7 @@ import secrets
 import base64
 from Crypto.Cipher import AES
 from binascii import unhexlify
+import validators
 
 from django.db import models
 from django.conf import settings
@@ -76,6 +77,73 @@ class Agent(models.Model):
     def salt_id(self):
         return f"{self.hostname}-{self.pk}"
 
+    @property
+    def cpu_model(self):
+        try:
+            cpu = self.wmi_detail["cpu"][0]
+            return [x["Name"] for x in cpu if "Name" in x][0]
+        except:
+            return "unknown cpu model"
+
+    @property
+    def local_ips(self):
+        try:
+            ips = self.wmi_detail["network_config"]
+            ret = []
+            for _ in ips:
+                try:
+                    addr = [x["IPAddress"] for x in _ if "IPAddress" in x][0]
+                except:
+                    continue
+                else:
+                    for ip in addr:
+                        if validators.ipv4(ip):
+                            ret.append(ip)
+
+                if len(ret) == 1:
+                    return ret[0]
+                else:
+                    return ", ".join(ret)
+        except:
+            return "error getting local ips"
+
+    @property
+    def make_model(self):
+        try:
+            comp_sys = self.wmi_detail["comp_sys"][0]
+            comp_sys_prod = self.wmi_detail["comp_sys_prod"][0]
+            make = [x["Vendor"] for x in comp_sys_prod if "Vendor" in x][0]
+            model = [x["SystemFamily"] for x in comp_sys if "SystemFamily" in x][0]
+            if not make or not model:
+                return [x["Version"] for x in comp_sys_prod if "Version" in x][0]
+            else:
+                return f"{make} {model}"
+        except:
+            return "unknown make/model"
+
+    @property
+    def physical_disks(self):
+        try:
+            disks = self.wmi_detail["disk"]
+            phys = []
+            for disk in disks:
+                model = [x["Caption"] for x in disk if "Caption" in x][0]
+                size = [x["Size"] for x in disk if "Size" in x][0]
+                interface_type = [
+                    x["InterfaceType"] for x in disk if "InterfaceType" in x
+                ][0]
+                phys.append(
+                    {
+                        "model": model,
+                        "size": round(int(size) / 1_073_741_824),  # bytes to GB
+                        "interfaceType": interface_type,
+                    }
+                )
+
+            return phys
+        except:
+            return [{"model": "unknown", "size": "unknown", "interfaceType": "unknown"}]
+
     # https://github.com/Ylianst/MeshCentral/issues/59#issuecomment-521965347
     def get_login_token(self, key, user, action=3):
         key = bytes.fromhex(key)
@@ -84,20 +152,20 @@ class Agent(models.Model):
         msg = '{{"a":{}, "u":"{}","time":{}}}'.format(action, user, int(time.time()))
         iv = secrets.token_bytes(16)
 
-        #sha
-        h= hashlib.sha3_384()
+        # sha
+        h = hashlib.sha3_384()
         h.update(key1)
-        msg= h.digest() + msg.encode()
+        msg = h.digest() + msg.encode()
 
-        #aes
+        # aes
         a = AES.new(key2, AES.MODE_CBC, iv)
-        n = 16-(len(msg)%16)
-        n = 16 if n==0 else n
-        pad = unhexlify('%02x' % n)
-        msg = a.encrypt(msg + pad*n)
+        n = 16 - (len(msg) % 16)
+        n = 16 if n == 0 else n
+        pad = unhexlify("%02x" % n)
+        msg = a.encrypt(msg + pad * n)
 
-        return base64.b64encode(iv+msg, altchars=b"@$").decode("utf-8")
-    
+        return base64.b64encode(iv + msg, altchars=b"@$").decode("utf-8")
+
     @staticmethod
     def salt_api_cmd(**kwargs):
         try:
@@ -119,7 +187,9 @@ class Agent(models.Model):
         if "kwargs" in kwargs:
             json.update({"kwarg": kwargs["kwargs"]})
         resp = requests.post(
-            "http://" + settings.SALT_HOST + ":8123/run", json=[json], timeout=kwargs["timeout"]
+            "http://" + settings.SALT_HOST + ":8123/run",
+            json=[json],
+            timeout=kwargs["timeout"],
         )
         return resp
 
@@ -155,7 +225,7 @@ class Agent(models.Model):
             },
         )
 
-        return session.get(f"http://" + settings.SALT_HOST + ":8123/jobs/{jid}")
+        return session.get(f"http://{settings.SALT_HOST}:8123/jobs/{jid}")
 
     @staticmethod
     def get_github_versions():

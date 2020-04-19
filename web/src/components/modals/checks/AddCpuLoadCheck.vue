@@ -56,7 +56,7 @@ export default {
       pk = (this.policypk) ? {policy: policypk} : {pk: agentpk}
 
       const data = {
-        pk,
+        ...pk,
         check_type: "cpuload",
         threshold: this.threshold,
         failure: this.failure

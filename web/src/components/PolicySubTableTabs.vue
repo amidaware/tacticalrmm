@@ -12,11 +12,15 @@
       no-caps
     >
       <q-tab name="checks" icon="fas fa-check-double" label="Checks" />
+      <q-tab name="tasks" icon="fas fa-check-double" label="Tasks" />
     </q-tabs>
     <q-separator />
     <q-tab-panels v-model="subtab" :animated="false">
       <q-tab-panel name="checks">
         <PolicyChecksTab />
+      </q-tab-panel>
+      <q-tab-panel name="tasks">
+        <PolicyAutomatedTasksTab />
       </q-tab-panel>
     </q-tab-panels>
   </div>
@@ -24,11 +28,13 @@
 
 <script>
 import PolicyChecksTab from '@/components/PolicyChecksTab';
+import PolicyAutomatedTasksTab from '@/components/PolicyAutomatedTasksTab';
 
 export default {
   name: "PolicySubTableTabs",
   components: {
     PolicyChecksTab,
+    PolicyAutomatedTasksTab,
   },
   data() {
     return {

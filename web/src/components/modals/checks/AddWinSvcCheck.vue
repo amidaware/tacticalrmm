@@ -48,7 +48,7 @@ import { mapState } from "vuex";
 import mixins from "@/mixins/mixins";
 export default {
   name: "AddWinSvcCheck",
-  props: ["agentpk"],
+  props: ["agentpk", "policypk"],
   mixins: [mixins],
   data() {
     return {
@@ -69,7 +69,7 @@ export default {
   methods: {
     async getServices() {
       try {
-        let r = await axios.get(`/services/${this.agentpk}/services/`);
+        let r = await axios.get(`/services/policies/`);
         this.servicesData = Object.freeze([r.data][0].services);
       } catch (e) {
         console.log(`ERROR!: ${e}`);
@@ -82,8 +82,11 @@ export default {
       this.rawName = [svc].map(j => j.name);
     },
     addCheck() {
+
+      pk = (this.policypk) ? {policy: policypk} : {pk: agentpk}
+
       const data = {
-        pk: this.agentpk,
+        ...pk,
         check_type: "winsvc",
         displayname: this.displayName,
         rawname: this.rawName[0],
@@ -95,7 +98,13 @@ export default {
         .post("/checks/addstandardcheck/", data)
         .then(r => {
           this.$emit("close");
-          this.$store.dispatch("loadChecks", this.agentpk);
+
+          if (this.policypk) {
+            this.$store.dispatch("loadPolicyChecks", this.policypk);
+          } else {
+            this.$store.dispatch("loadChecks", this.agentpk);
+          }
+
           this.notifySuccess(`${data.displayname} service check added!`);
         })
         .catch(e => this.notifyError(e.response.data.error));

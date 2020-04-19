@@ -76,7 +76,11 @@ class DiskCheck(models.Model):
     )
 
     def __str__(self):
-        return f"{self.agent.hostname} - {self.disk}"
+        if self.agent:
+            return f"{self.agent.hostname} - {self.disk}"
+        else:
+            return self.policy.name
+
 
     @property
     def readable_desc(self):
@@ -102,8 +106,8 @@ class DiskCheck(models.Model):
         percent_used = self.agent.disks[self.disk]["percent"]
         percent_free = 100 - percent_used
         send_mail(
-            f"Disk Space Check Failing on {self.agent.hostname}",
-            f"{self.agent.hostname} is failing disk space check {self.disk} - Free: {percent_free}%, Threshold: {self.threshold}%",
+            f"Disk Space Check Failing on {self}",
+            f"{self} is failing disk space check {self.disk} - Free: {percent_free}%, Threshold: {self.threshold}%",
             settings.EMAIL_HOST_USER,
             settings.EMAIL_ALERT_RECIPIENTS,
             fail_silently=False,
@@ -115,7 +119,10 @@ class DiskCheckEmail(models.Model):
     sent = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.email.agent.hostname
+        if self.email.agent:
+            return self.email.agent.hostname
+        else:
+            return self.email.policy.name
 
 
 class Script(models.Model):
@@ -203,15 +210,18 @@ class ScriptCheck(models.Model):
 
     def send_email(self):
         send_mail(
-            f"Script Check Fail on {self.agent.hostname}",
-            f"Script check {self.script.name} is failing on {self.agent.hostname}",
+            f"Script Check Fail on {self}",
+            f"Script check {self.script.name} is failing on {self}",
             settings.EMAIL_HOST_USER,
             settings.EMAIL_ALERT_RECIPIENTS,
             fail_silently=False,
         )
 
     def __str__(self):
-        return f"{self.agent.hostname} - {self.script.filename}"
+        if self.agent:
+            return f"{self.agent.hostname} - {self.script.filename}"
+        else:
+            return self.policy.name
 
 
 class ScriptCheckEmail(models.Model):
@@ -219,7 +229,10 @@ class ScriptCheckEmail(models.Model):
     sent = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.email.agent.hostname
+        if self.email.agent:
+            return self.email.agent.hostname
+        else:
+            return self.email.policy.name
 
 
 class PingCheck(models.Model):
@@ -273,7 +286,7 @@ class PingCheck(models.Model):
 
     def send_email(self):
         send_mail(
-            f"Ping Check Fail on {self.agent.hostname}",
+            f"Ping Check Fail on {self}",
             f"Ping check {self.name} ({self.ip}) is failing",
             settings.EMAIL_HOST_USER,
             settings.EMAIL_ALERT_RECIPIENTS,
@@ -287,7 +300,11 @@ class PingCheck(models.Model):
         return False
 
     def __str__(self):
-        return self.agent.hostname
+        if self.agent:
+            return self.agent.hostname
+        else:
+            return self.policy.name
+             
 
 
 class PingCheckEmail(models.Model):
@@ -295,7 +312,10 @@ class PingCheckEmail(models.Model):
     sent = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.email.agent.hostname
+        if self.email.agent:
+            return self.email.agent.hostname
+        else:
+            return self.email.policy.name
 
 
 class CpuLoadCheck(models.Model):
@@ -327,7 +347,10 @@ class CpuLoadCheck(models.Model):
     )
 
     def __str__(self):
-        return self.agent.hostname
+        if self.agent:
+            return self.agent.hostname
+        else:
+            return self.policy.name
 
     @property
     def more_info(self):
@@ -372,7 +395,7 @@ class CpuLoadCheck(models.Model):
     def send_email(self):
 
         send_mail(
-            f"CPU Load Check fail on {self.agent.hostname}",
+            f"CPU Load Check fail on {self}",
             f"Average cpu utilization is {int(mean(self.history))}% which is greater than the threshold {self.cpuload}%",
             settings.EMAIL_HOST_USER,
             settings.EMAIL_ALERT_RECIPIENTS,
@@ -385,7 +408,10 @@ class CpuLoadCheckEmail(models.Model):
     sent = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.email.agent.hostname
+        if self.email.agent:
+            return self.email.agent.hostname
+        else:
+            return self.email.policy.name
 
 
 class MemCheck(models.Model):
@@ -417,7 +443,10 @@ class MemCheck(models.Model):
     )
 
     def __str__(self):
-        return self.agent.hostname
+        if self.agent:
+            return self.agent.hostname
+        else:
+            return self.policy.name
 
     @property
     def more_info(self):
@@ -462,7 +491,7 @@ class MemCheck(models.Model):
     def send_email(self):
 
         send_mail(
-            f"Memory Check fail on {self.agent.hostname}",
+            f"Memory Check fail on {self}",
             f"Average memory usage is {int(mean(self.history))}% which is greater than the threshold {self.threshold}%",
             settings.EMAIL_HOST_USER,
             settings.EMAIL_ALERT_RECIPIENTS,
@@ -475,7 +504,10 @@ class MemCheckEmail(models.Model):
     sent = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.email.agent.hostname
+        if self.email.agent:
+            return self.email.agent.hostname
+        else:
+            return self.email.policy.name
 
 
 class WinServiceCheck(models.Model):
@@ -510,7 +542,10 @@ class WinServiceCheck(models.Model):
     )
 
     def __str__(self):
-        return f"{self.agent.hostname} - {self.svc_display_name}"
+        if self.agent:
+            return f"{self.agent.hostname} - {self.svc_display_name}"
+        else:
+            return self.policy.name
 
     @property
     def readable_desc(self):
@@ -539,7 +574,7 @@ class WinServiceCheck(models.Model):
         )[0]["status"]
 
         send_mail(
-            f"Windows Service Check fail on {self.agent.hostname}",
+            f"Windows Service Check fail on {self}",
             f"Service: {self.svc_display_name} - Status: {status.upper()}",
             settings.EMAIL_HOST_USER,
             settings.EMAIL_ALERT_RECIPIENTS,
@@ -552,4 +587,7 @@ class WinServiceCheckEmail(models.Model):
     sent = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.email.agent.hostname} - {self.email.svc_display_name}"
+        if self.email.agent:
+            return f"{self.email.agent.hostname} - {self.email.svc_display_name}"
+        else:
+            return self.email.policy.name

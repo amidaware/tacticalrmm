@@ -47,3 +47,15 @@ class AutoTaskSerializer(serializers.ModelSerializer):
             "hostname",
             "autotasks",
         )
+
+class AutoTaskPolicySerializer(serializers.ModelSerializer):
+
+    autotasks = TaskSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Policy
+        fields = (
+            "id",
+            "name",
+            "autotasks",
+        )

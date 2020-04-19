@@ -183,6 +183,7 @@ export default {
     policyRowSelected(pk) {
       this.$store.commit("setSelectedPolicy", pk);
       this.$store.dispatch("loadPolicyChecks", pk);
+      this.$store.dispatch("loadPolicyAutomatedTasks", pk);
     },
     clearRow() {
       this.$store.commit("setSelectedPolicy", null);

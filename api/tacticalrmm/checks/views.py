@@ -136,6 +136,7 @@ def load_checks(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     return Response(CheckSerializer(agent).data)
 
+
 @api_view()
 def load_policy_checks(request, pk):
     policy = get_object_or_404(Policy, pk=pk)
@@ -149,16 +150,22 @@ def get_disks(request, pk):
 
 @api_view(["POST"])
 def add_standard_check(request):
+    # Determine if adding check to Policy or Agent
     if 'policy' in request.data:
         policy = get_object_or_404(Policy, id=request.data["policy"])
+
+        # Object used for filter and save
+        parent = {"policy": policy}
     else:
         agent = get_object_or_404(Agent, pk=request.data["pk"])
+        # Object used for filter and save
+        parent = {"agent": agent}
 
     if request.data["check_type"] == "diskspace":
         disk = request.data["disk"]
         threshold = request.data["threshold"]
         failures = request.data["failure"]
-        existing_checks = DiskCheck.objects.filter(agent=agent)
+        existing_checks = DiskCheck.objects.filter(**parent)
         if existing_checks:
             for check in existing_checks:
                 if disk in check.disk:
@@ -169,7 +176,7 @@ def add_standard_check(request):
             error = {"error": "Please enter a valid threshold between 1 and 99"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-        DiskCheck(agent=agent, disk=disk, threshold=threshold, failures=failures).save()
+        DiskCheck(**parent, disk=disk, threshold=threshold, failures=failures).save()
         return Response("ok")
 
     elif request.data["check_type"] == "ping":
@@ -180,16 +187,13 @@ def add_standard_check(request):
             error = {"error": "Please enter a valid hostname or IP"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
         
-        if policy:
-            PingCheck(policy=policy, ip=ip, name=name, failures=failures).save()
-        else:
-            PingCheck(agent=agent, ip=ip, name=name, failures=failures).save()
+        PingCheck(**parent, ip=ip, name=name, failures=failures).save()
 
         return Response("ok")
 
     elif request.data["check_type"] == "cpuload":
-        if CpuLoadCheck.objects.filter(agent=agent):
-            error = {"error": f"A cpu load check for {agent.hostname} already exists!"}
+        if CpuLoadCheck.objects.filter(**parent):
+            error = {"error": f"A cpu load check already exists!"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
         threshold = request.data["threshold"]
         failures = request.data["failure"]
@@ -197,12 +201,13 @@ def add_standard_check(request):
             error = {"error": "Please enter a valid threshold between 1 and 99"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-        CpuLoadCheck(agent=agent, cpuload=threshold, failures=failures).save()
+        CpuLoadCheck(**parent, cpuload=threshold, failures=failures).save()
+
         return Response("ok")
 
     elif request.data["check_type"] == "mem":
-        if MemCheck.objects.filter(agent=agent):
-            error = {"error": f"A memory check for {agent.hostname} already exists!"}
+        if MemCheck.objects.filter(**parent):
+            error = {"error": f"A memory check already exists!"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
         threshold = request.data["threshold"]
         failures = request.data["failure"]
@@ -210,7 +215,7 @@ def add_standard_check(request):
             error = {"error": "Please enter a valid threshold between 1 and 99"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-        MemCheck(agent=agent, threshold=threshold, failures=failures).save()
+        MemCheck(**parent, threshold=threshold, failures=failures).save()
         return Response("ok")
 
     elif request.data["check_type"] == "winsvc":
@@ -220,7 +225,7 @@ def add_standard_check(request):
         restart_stopped = request.data["restartifstopped"]
         failures = request.data["failures"]
 
-        existing_checks = WinServiceCheck.objects.filter(agent=agent)
+        existing_checks = WinServiceCheck.objects.filter(**parent)
         if existing_checks:
             for check in existing_checks:
                 if rawName in check.svc_name:
@@ -230,7 +235,7 @@ def add_standard_check(request):
                     return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
         WinServiceCheck(
-            agent=agent,
+            **parent,
             svc_name=rawName,
             svc_display_name=displayName,
             pass_if_start_pending=pass_start_pending,
@@ -246,17 +251,17 @@ def add_standard_check(request):
 
         script = Script.objects.get(pk=script_pk)
 
-        if ScriptCheck.objects.filter(agent=agent).filter(script=script).exists():
+        if ScriptCheck.objects.filter(**parent).filter(script=script).exists():
             return Response(
-                f"{script.name} already exists on {agent.hostname}",
+                f"{script.name} already exists",
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         ScriptCheck(
-            agent=agent, timeout=timeout, failures=failures, script=script
+            **parent, timeout=timeout, failures=failures, script=script
         ).save()
 
-        return Response(f"{script.name} was added on {agent.hostname}!")
+        return Response(f"{script.name} was added!")
 
     else:
         return Response("something went wrong", status=status.HTTP_400_BAD_REQUEST)
@@ -320,7 +325,7 @@ def edit_standard_check(request):
         check.failures = request.data["failures"]
         check.timeout = request.data["timeout"]
         check.save(update_fields=["failures", "timeout"])
-        return Response(f"{check.script.name} was edited on {check.agent.hostname}")
+        return Response(f"{check.script.name} was edited!")
 
 
 @api_view()

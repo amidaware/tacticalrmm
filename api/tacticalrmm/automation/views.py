@@ -19,6 +19,7 @@ from clients.models import Client, Site
 from .serializers import (
     PolicySerializer, 
     PolicyRelationSerializer,
+    AutoTaskPolicySerializer,
     AutoTaskSerializer, 
     AgentTaskSerializer
 )
@@ -190,6 +191,11 @@ class AutoTask(APIView):
         return Response(f"{task.name} will be deleted shortly")
 
 
+class PolicyAutoTask(APIView):
+    def get(self, request, pk):
+        policy = Policy.objects.only("pk").get(pk=pk)
+        return Response(AutoTaskPolicySerializer(policy).data)
+
 @api_view()
 def run_task(request, pk):
     task = get_object_or_404(AutomatedTask, pk=pk)
@@ -218,6 +224,8 @@ class TaskRunner(APIView):
             update_fields=["stdout", "stderr", "retcode", "last_run", "execution_time"]
         )
         return Response("ok")
+
+
 class OverviewPolicy(APIView): 
 
     def get(self, request):
@@ -246,3 +254,4 @@ class OverviewPolicy(APIView):
             response[client.client] = client_sites
 
         return Response(response)
+

@@ -104,17 +104,17 @@
 <script>
 import axios from "axios";
 import mixins from "@/mixins/mixins";
-import { mapState } from "vuex";
-import AddPolicy from "@/components/modals/automation/AddPolicy";
-import EditPolicy from "@/components/modals/automation/EditPolicy";
-import PolicyOverview from "@/components/modals/automation/PolicyOverview";
-import PolicySubTableTabs from "@/components/PolicySubTableTabs"
+import { mapState } from 'vuex';
+import AddPolicy from "@/components/automation/modals/AddPolicy";
+import EditPolicy from "@/components/automation/modals/EditPolicy";
+import PolicyOverview from "@/components/automation/PolicyOverview";
+import PolicySubTableTabs from "@/components/automation/PolicySubTableTabs"
 
 export default {
   name: "AutomationManager",
   components: { AddPolicy, EditPolicy, PolicyOverview, PolicySubTableTabs },
   mixins: [mixins],
-  data() {
+  data () {
     return {
       showAddPolicyModal: false,
       showEditPolicyModal: false,
@@ -173,23 +173,23 @@ export default {
     };
   },
   methods: {
-    getPolicies() {
+    getPolicies () {
       this.clearRow();
-      this.$store.dispatch("getPolicies");
+      this.$store.dispatch('automation/getPolicies');
     },
-    hideAutomationManager() {
+    hideAutomationManager () {
       this.$store.commit("TOGGLE_AUTOMATION_MANAGER", false);
     },
-    policyRowSelected(pk) {
-      this.$store.commit("setSelectedPolicy", pk);
-      this.$store.dispatch("loadPolicyChecks", pk);
-      this.$store.dispatch("loadPolicyAutomatedTasks", pk);
+    policyRowSelected (pk) {
+      this.$store.commit('automation/setSelectedPolicy', pk);
+      this.$store.dispatch('automation/loadPolicyChecks', pk);
+      this.$store.dispatch('automation/loadPolicyAutomatedTasks', pk);
     },
-    clearRow() {
-      this.$store.commit("setSelectedPolicy", null);
-      this.$store.commit("setPolicyChecks", {});
+    clearRow () {
+      this.$store.commit('automation/setSelectedPolicy', null);
+      this.$store.commit('automation/setPolicyChecks', {});
     },
-    deletePolicy() {
+    deletePolicy () {
       this.$q
         .dialog({
           title: "Delete policy?",
@@ -207,11 +207,11 @@ export default {
   computed: {
     ...mapState({
       toggleAutomationManager: state => state.toggleAutomationManager,
-      policies: state => state.policies,
-      selectedRow: state => state.selectedPolicy
+      policies: state => state.automation.policies,
+      selectedRow: state => state.automation.selectedPolicy
     }),
   },
-  mounted() {
+  mounted () {
     this.getPolicies();
   }
 };

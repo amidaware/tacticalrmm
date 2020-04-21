@@ -93,7 +93,7 @@ import AddSite from "@/components/modals/clients/AddSite";
 import UpdateAgents from "@/components/modals/agents/UpdateAgents";
 import ScriptManager from "@/components/ScriptManager";
 import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
-import AutomationManager from "@/components/AutomationManager";
+import AutomationManager from "@/components/automation/AutomationManager";
 
 export default {
   name: "FileBar",

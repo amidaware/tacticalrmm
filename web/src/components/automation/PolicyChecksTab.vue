@@ -331,7 +331,7 @@ export default {
       });
     },
     onRefresh(id) {
-      this.$store.dispatch("loadPolicyChecks", id);
+      this.$store.dispatch("automation/loadPolicyChecks", id);
     },
     moreInfo(name, output) {
       this.$q.dialog({
@@ -383,7 +383,7 @@ export default {
           axios
             .delete("checks/deletestandardcheck/", { data: data })
             .then(r => {
-              this.$store.dispatch("loadPolicyChecks", this.checks.pk);
+              this.$store.dispatch("automation/loadPolicyChecks", this.checks.pk);
               this.notifySuccess("Check was deleted!");
             })
             .catch(e => this.notifyError(e.response.data.error));
@@ -392,7 +392,7 @@ export default {
   },
   computed: {
     ...mapState({
-      checks: state => state.policyChecks
+      checks: state => state.automation.checks
     }),
     allChecks() {
       return [

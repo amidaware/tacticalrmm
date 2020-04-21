@@ -12,7 +12,7 @@
       no-caps
     >
       <q-tab name="checks" icon="fas fa-check-double" label="Checks" />
-      <q-tab name="tasks" icon="fas fa-check-double" label="Tasks" />
+      <q-tab name="tasks" icon="fas fa-tasks" label="Tasks" />
     </q-tabs>
     <q-separator />
     <q-tab-panels v-model="subtab" :animated="false">
@@ -27,8 +27,8 @@
 </template>
 
 <script>
-import PolicyChecksTab from '@/components/PolicyChecksTab';
-import PolicyAutomatedTasksTab from '@/components/PolicyAutomatedTasksTab';
+import PolicyChecksTab from '@/components/automation/PolicyChecksTab';
+import PolicyAutomatedTasksTab from '@/components/automation/PolicyAutomatedTasksTab';
 
 export default {
   name: "PolicySubTableTabs",
@@ -36,7 +36,7 @@ export default {
     PolicyChecksTab,
     PolicyAutomatedTasksTab,
   },
-  data() {
+  data () {
     return {
       subtab: 'checks'
     }

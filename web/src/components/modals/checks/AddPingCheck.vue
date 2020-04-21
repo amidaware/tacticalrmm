@@ -66,7 +66,7 @@ export default {
         name: this.pingname,
         ip: this.pingip,
       };
-      console.log(data)
+
       axios.post("/checks/addstandardcheck/", data)
         .then(r => {
           this.$emit("close");
@@ -81,7 +81,6 @@ export default {
         })
         .catch(e => {
           this.notifyError(e.response.data);
-          console.log(e.response.data)
         });
     }
   }

@@ -1,8 +1,8 @@
 <template>
   <q-card style="width: 60vw">
-    <q-form @submit.prevent="editPolicy">
+    <q-form @submit.prevent="addPolicy">
       <q-card-section class="row items-center">
-        <div class="text-h6">Edit Policy</div>
+        <div class="text-h6">Add Policy</div>
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </q-card-section>
@@ -85,7 +85,7 @@
         </div>
       </q-card-section>
       <q-card-section class="row items-center">
-        <q-btn label="Edit" color="primary" type="submit" />
+        <q-btn label="Add" color="primary" type="submit" />
       </q-card-section>
     </q-form>
   </q-card>
@@ -94,12 +94,10 @@
 <script>
 import axios from "axios";
 import mixins from "@/mixins/mixins";
-
 export default {
-  name: "EditPolicy",
+  name: "AddPolicy",
   mixins: [mixins],
-  props: ["pk"],
-  data() {
+  data () {
     return {
       name: "",
       desc: "",
@@ -113,40 +111,14 @@ export default {
     };
   },
   methods: {
-    getPolicy() {
-      axios.get(`/automation/policies/${this.pk}/`).then(r => {
-
-        this.name = r.data.name;
-        this.desc = r.data.desc;
-        this.active = r.data.active;
-        this.selectedAgents = r.data.agents.map(agent => {
-          return {
-            label: agent.hostname,
-            value: agent.pk
-          }
-        });
-        this.selectedSites = r.data.sites.map(site => {
-          return {
-            label: site.site,
-            value: site.id
-          }
-        });
-        this.selectedClients = r.data.clients.map(client => {
-          return {
-            label: client.client,
-            value: client.id
-          }
-        });
-      });
-    },
-    editPolicy() {
+    addPolicy () {
       if (!this.name) {
         this.notifyError("Name is required!");
         return false;
       }
 
       this.$q.loading.show();
-      
+
       let formData = {
         name: this.name,
         desc: this.desc,
@@ -154,28 +126,27 @@ export default {
         agents: this.selectedAgents.map(agent => agent.value),
         sites: this.selectedSites.map(site => site.value),
         clients: this.selectedClients.map(client => client.value)
-      }
+      };
 
-      axios.put(`/automation/policies/${this.pk}/`, formData)
+      axios.post("/automation/policies/", formData)
         .then(r => {
           this.$q.loading.hide();
           this.$emit("close");
-          this.$emit("edited");
-          this.notifySuccess("Policy edited!");
+          this.$emit("added");
+          this.notifySuccess("Policy added! Now you can add Tasks and Checks!");
         })
         .catch(e => {
           this.$q.loading.hide();
           this.notifyError(e.response.data);
         });
     },
-    getClients() {
-
+    getClients () {
       axios.get(`/clients/listclients/`).then(r => {
         this.clientOptions = r.data.map(client => {
           return {
             label: client.client,
             value: client.id
-          }
+          };
         });
       })
       .catch(e => {
@@ -183,14 +154,13 @@ export default {
         this.notifyError(e.response.data);
       });
     },
-    getSites() {
-
+    getSites () {
       axios.get(`/clients/listsites/`).then(r => {
         this.siteOptions = r.data.map(site => {
           return {
             label: `${site.client_name}\\${site.site}`,
             value: site.id
-          }
+          };
         });
       })
       .catch(e => {
@@ -198,14 +168,13 @@ export default {
         this.notifyError(e.response.data);
       });
     },
-    getAgents() {
-
+    getAgents () {
       axios.get(`/agents/listagents/`).then(r => {
         this.agentOptions = r.data.map(agent => {
           return {
             label: `${agent.client}\\${agent.site}\\${agent.hostname}`,
             value: agent.pk
-          }
+          };
         });
       })
       .catch(e => {
@@ -214,8 +183,7 @@ export default {
       });
     },
   },
-  created() {
-    this.getPolicy();
+  mounted () {
     this.getClients();
     this.getSites();
     this.getAgents();

@@ -1,5 +1,5 @@
 <template>
-  <q-card style="width: 600px; max-width: 60vw">
+  <q-card style="width: 900px; max-width: 90vw">
     <q-bar>
       <q-btn @click="getPolicyTree" class="q-mr-sm" dense flat push icon="refresh" />Policy Overview
       <q-space />
@@ -9,7 +9,7 @@
     </q-bar>
     <q-splitter
       v-model="splitterModel"
-      style="height: 400px"
+      style="height: 600px"
     >
       <template v-slot:before>
         <div class="q-pa-md">
@@ -28,17 +28,37 @@
       </template>
 
       <template v-slot:after>
+        <q-tabs
+          v-model="selectedTab"
+          dense
+          inline-label
+          class="text-grey"
+          active-color="primary"
+          indicator-color="primary"
+          align="left"
+          narrow-indicator
+          no-caps
+        >
+          <q-tab name="checks" icon="fas fa-check-double" label="Checks" />
+          <q-tab name="tasks" icon="fas fa-tasks" label="Tasks" />
+        </q-tabs>
         <q-tab-panels
           v-model="selectedTab"
           animated
           transition-prev="jump-up"
           transition-next="jump-up"
         >
-          <q-tab-panel name="Checks">
-            <p>List Checks</p>
+          <q-tab-panel name="checks">
+            <template v-if="Object.keys(selectedPolicy).length === 0">
+              <p>Select a Policy</p>
+            </template>
+            <OverviewChecksTab v-else :policypk="policypk" />
           </q-tab-panel>
-          <q-tab-panel name="Tasks">
-            <p>List Tasks</p>
+          <q-tab-panel name="tasks">
+            <template v-if="Object.keys(selectedPolicy).length === 0">
+              <p>Select a Policy</p>
+            </template>
+            <OverviewAutomatedTasksTab v-else :policypk="policypk" />
           </q-tab-panel>
         </q-tab-panels>
       </template>
@@ -49,24 +69,30 @@
 <script>
 import axios from "axios";
 import mixins from "@/mixins/mixins";
+import OverviewChecksTab from "@/components/automation/OverviewChecksTab"
+import OverviewAutomatedTasksTab from "@/components/automation/OverviewAutomatedTasksTab"
 
 export default {
   name: "PolicyOverview",
+  components: {
+    OverviewChecksTab,
+    OverviewAutomatedTasksTab,
+  },
   mixins: [mixins],
   data () {
     return {
-      splitterModel: 50,
+      splitterModel: 25,
       selected: "",
       selectedPolicy: {},
-      selectedTab: "Checks",
+      selectedTab: "checks",
       clientSiteTree: [],
     }
   },
-  created() {
+  mounted () {
     this.getPolicyTree();
   },
   methods: {
-    getPolicyTree() {
+    getPolicyTree () {
       axios.get(`/automation/policies/overview/`).then(r => {
         this.processTreeDataFromApi(r.data);
       })
@@ -76,19 +102,9 @@ export default {
       });
 
     },
-    loadPolicyDetails(key) {
-
-      if (key === undefined) {return}
-
-      let node = this.$refs.Tree.getNodeByKey(key);
-
-      axios.get(`/automation/policies/${node.id}/`).then(r => {
-        this.selectedPolicy = r.data
-      })
-      .catch(e => {
-        this.$q.loading.hide();
-        this.notifyError(e.response.data);
-      });
+    loadPolicyDetails (key) {
+      if (key === undefined) {return;}
+      this.selectedPolicy = this.$refs.Tree.getNodeByKey(key);
     },
     processTreeDataFromApi(data) {
       /* Structure
@@ -160,6 +176,11 @@ export default {
       }
 
       this.clientSiteTree = result;
+    }
+  },
+  computed: {
+    policypk () {
+      return this.selectedPolicy.id;
     }
   }
 };

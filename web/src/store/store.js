@@ -5,13 +5,15 @@ import { Notify } from "quasar";
 import router from "../router";
 import logModule from "./logs";
 import alertsModule from "./alerts";
+import automationModule from "./automation";
 
 Vue.use(Vuex);
 
 export const store = new Vuex.Store({
   modules: {
     logs: logModule,
-    alerts: alertsModule
+    automation: automationModule,
+    alerts: alertsModule,
   },
   state: {
     username: localStorage.getItem("user_name") || null,
@@ -24,15 +26,11 @@ export const store = new Vuex.Store({
     winUpdates: {},
     agentChecks: {},
     automatedTasks: {},
-    selectedPolicy: null,
-    policyChecks: {},
-    PolicyAutomatedTasks: {},
     agentTableLoading: false,
     treeLoading: false,
     installedSoftware: [],
     scripts: [],
     toggleScriptManager: false,
-    policies: [],
     toggleAutomationManager: false
   },
   getters: {
@@ -41,9 +39,6 @@ export const store = new Vuex.Store({
     },
     selectedAgentPk (state) {
       return state.agentSummary.id;
-    },
-    selectedPolicyPk(state) {
-      return state.selectedPolicy;
     },
     managedByWsus (state) {
       return state.agentSummary.managed_by_wsus;
@@ -67,9 +62,6 @@ export const store = new Vuex.Store({
     scripts (state) {
       return state.scripts;
     },
-    policies (state) {
-      return state.policies;
-    }
   },
   mutations: {
     TOGGLE_AUTOMATION_MANAGER (state, action) {
@@ -114,12 +106,6 @@ export const store = new Vuex.Store({
     SET_AUTOMATED_TASKS (state, tasks) {
       state.automatedTasks = tasks;
     },
-    setPolicyChecks(state, checks) {
-      state.policyChecks = checks;
-    },
-    setPolicyAutomatedTasks(state, tasks) {
-      state.policyAutomatedTasks = tasks;
-    },
     destroySubTable (state) {
       (state.agentSummary = {}),
         (state.agentChecks = {}),
@@ -130,33 +116,17 @@ export const store = new Vuex.Store({
     SET_SCRIPTS (state, scripts) {
       state.scripts = scripts;
     },
-    SET_POLICIES (state, policies) {
-      state.policies = policies;
-    },
-    setSelectedPolicy(state, pk) {
-      state.selectedPolicy = pk;
-    },
   },
   actions: {
-    getPolicies (context) {
-      axios.get("/automation/policies/").then(r => {
-        context.commit("SET_POLICIES", r.data);
-      })
-    },
     loadAutomatedTasks (context, pk) {
       axios.get(`/automation/${pk}/automatedtasks/`).then(r => {
         context.commit("SET_AUTOMATED_TASKS", r.data);
       })
     },
-    loadPolicyAutomatedTasks(context, pk) {
-      axios.get(`/automation/${pk}/policyautomatedtasks/`).then(r => {
-        context.commit("setPolicyAutomatedTasks", r.data);
-      })
-    },
     getScripts (context) {
       axios.get("/checks/getscripts/").then(r => {
         context.commit("SET_SCRIPTS", r.data);
-      })
+      });
     },
     loadInstalledSoftware (context, pk) {
       axios.get(`/software/installed/${pk}`).then(r => {
@@ -176,11 +146,6 @@ export const store = new Vuex.Store({
     loadChecks (context, pk) {
       axios.get(`/checks/${pk}/loadchecks/`).then(r => {
         context.commit("setChecks", r.data);
-      });
-    },
-    loadPolicyChecks(context, pk) {
-      axios.get(`/checks/${pk}/loadpolicychecks/`).then(r => {
-        context.commit("setPolicyChecks", r.data);
       });
     },
     getUpdatedSites (context) {

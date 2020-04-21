@@ -1,3 +1,5 @@
+import axios from 'axios'
+
 export default {
   namespaced: true,
   state: {
@@ -13,7 +15,7 @@ export default {
     }
   },
 
-  mutation: {
+  mutations: {
     SET_ALERTS(state, alerts) {
       state.alerts = alerts;
     },

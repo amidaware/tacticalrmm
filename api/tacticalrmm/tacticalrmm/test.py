@@ -7,6 +7,7 @@ from accounts.models import User
 from agents.models import Agent
 from winupdate.models import WinUpdatePolicy
 from clients.models import Client, Site
+from automation.models import Policy
 
 
 class BaseTestCase(TestCase):
@@ -80,6 +81,12 @@ class BaseTestCase(TestCase):
         Site.objects.create(client=google, site="MO Office")
         Site.objects.create(client=facebook, site="Main Office")
         Site.objects.create(client=facebook, site="NY Office")
+
+        self.policy = Policy.objects.create(
+            name="testpolicy", desc="my awesome policy", active=True,
+        )
+        self.policy.clients.add(google)
+        self.policy.clients.add(facebook)
 
     def check_not_authenticated(self, method, url):
         self.client.logout()

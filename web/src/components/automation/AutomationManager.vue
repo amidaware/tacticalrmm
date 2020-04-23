@@ -85,7 +85,7 @@
         </div>
         <q-separator />
         <q-card-section>
-          <PolicySubTableTabs />
+          <PolicySubTableTabs :policypk="policyPkSelected" />
         </q-card-section>
       </q-card>
     </q-dialog>
@@ -119,6 +119,7 @@ export default {
       showAddPolicyModal: false,
       showEditPolicyModal: false,
       showPolicyOverviewModal: false,
+      policyPkSelected: null,
       pagination: {
         rowsPerPage: 0,
         sortBy: "id",
@@ -184,6 +185,7 @@ export default {
       this.$store.commit('automation/setSelectedPolicy', pk);
       this.$store.dispatch('automation/loadPolicyChecks', pk);
       this.$store.dispatch('automation/loadPolicyAutomatedTasks', pk);
+      this.policyPkSelected = pk;
     },
     clearRow () {
       this.$store.commit('automation/setSelectedPolicy', null);

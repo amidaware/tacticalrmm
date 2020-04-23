@@ -172,7 +172,7 @@ export const store = new Vuex.Store({
               id: sites_arr[i].split("|")[1],
               raw: sites_arr[i],
               header: "generic",
-              icon: "fas fa-map-marker-alt",
+              icon: "business",
               iconColor: sites_arr[i].split("|")[2]
             });
           }
@@ -181,7 +181,7 @@ export const store = new Vuex.Store({
             id: prop.split("|")[1],
             raw: prop,
             header: "root",
-            icon: "fas fa-user",
+            icon: "apartment",
             iconColor: prop.split("|")[2],
             children: child_single
           });

@@ -17,7 +17,7 @@
     <q-separator />
     <q-tab-panels v-model="subtab" :animated="false">
       <q-tab-panel name="checks">
-        <PolicyChecksTab />
+        <PolicyChecksTab :policypk="policypk" />
       </q-tab-panel>
       <q-tab-panel name="tasks">
         <PolicyAutomatedTasksTab />
@@ -32,6 +32,7 @@ import PolicyAutomatedTasksTab from '@/components/automation/PolicyAutomatedTask
 
 export default {
   name: "PolicySubTableTabs",
+  props: ["policypk"],
   components: {
     PolicyChecksTab,
     PolicyAutomatedTasksTab,

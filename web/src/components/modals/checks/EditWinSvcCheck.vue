@@ -39,7 +39,7 @@ import { mapState } from "vuex";
 import mixins from "@/mixins/mixins";
 export default {
   name: "EditWinSvcCheck",
-  props: ["agentpk", "editCheckPK"],
+  props: ["agentpk", "editCheckPK", "policypk"],
   mixins: [mixins],
   data() {
     return {
@@ -78,7 +78,7 @@ export default {
           this.$emit("close");
 
           if (this.policypk) {
-            this.$store.dispatch("loadPolicyChecks", this.policypk);
+            this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
           } else {
             this.$store.dispatch("loadChecks", this.agentpk);
           }

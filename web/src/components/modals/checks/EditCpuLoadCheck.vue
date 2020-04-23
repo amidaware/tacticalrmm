@@ -73,7 +73,7 @@ export default {
           this.$emit("close");
 
           if (this.policypk) {
-            this.$store.dispatch("loadPolicyChecks", this.policypk);
+            this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
           } else {
             this.$store.dispatch("loadChecks", this.agentpk);
           }

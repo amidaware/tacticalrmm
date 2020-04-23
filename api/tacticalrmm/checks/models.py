@@ -2,6 +2,8 @@ import validators
 from statistics import mean
 import datetime as dt
 import string
+import os
+import json
 
 
 from django.utils import timezone as djangotime
@@ -627,6 +629,15 @@ class WinServiceCheck(models.Model):
             settings.EMAIL_ALERT_RECIPIENTS,
             fail_silently=False,
         )
+
+    @staticmethod
+    def load_default_services():
+        with open(
+            os.path.join(settings.BASE_DIR, "services/default_services.json")
+        ) as f:
+            default_services = json.load(f)
+
+        return default_services
 
 
 class WinServiceCheckEmail(models.Model):

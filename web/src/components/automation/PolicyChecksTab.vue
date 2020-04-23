@@ -257,6 +257,7 @@ import EditScriptCheck from "@/components/modals/checks/EditScriptCheck";
 
 export default {
   name: "PolicyChecksTab",
+  props: ["policypk"],
   components: {
     AddDiskSpaceCheck,
     EditDiskSpaceCheck,
@@ -383,7 +384,7 @@ export default {
           axios
             .delete("checks/deletestandardcheck/", { data: data })
             .then(r => {
-              this.$store.dispatch("automation/loadPolicyChecks", this.checks.pk);
+              this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
               this.notifySuccess("Check was deleted!");
             })
             .catch(e => this.notifyError(e.response.data.error));

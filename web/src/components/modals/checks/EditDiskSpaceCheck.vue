@@ -44,7 +44,7 @@ import axios from "axios";
 import mixins from "@/mixins/mixins";
 export default {
   name: "EditDiskSpaceCheck",
-  props: ["editCheckPK", "agentpk"],
+  props: ["editCheckPK", "agentpk", "policypk"],
   mixins: [mixins],
   data() {
     return {
@@ -58,7 +58,7 @@ export default {
   methods: {
     getCheck() {
       axios
-        .get(`/checks/getstandardcheck/polcies/`)
+        .get(`/checks/getstandardcheck/diskspace/${this.editCheckPK}/`)
         .then(r => {
           this.disks = [r.data.disk];
           this.diskToEdit = r.data.disk;
@@ -79,7 +79,7 @@ export default {
           this.$emit("close");
 
           if (this.policypk) {
-            this.$store.dispatch("loadPolicyChecks", this.policypk);
+            this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
           } else {
             this.$store.dispatch("loadChecks", this.agentpk);
           }

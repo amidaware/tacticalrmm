@@ -148,10 +148,15 @@ def get_disks(request, pk):
     return Response(get_object_or_404(Agent, pk=pk).disks)
 
 
+@api_view()
+def get_disks_for_policies(request):
+    return Response(DiskCheck.all_disks())
+
+
 @api_view(["POST"])
 def add_standard_check(request):
     # Determine if adding check to Policy or Agent
-    if 'policy' in request.data:
+    if "policy" in request.data:
         policy = get_object_or_404(Policy, id=request.data["policy"])
 
         # Object used for filter and save
@@ -186,7 +191,7 @@ def add_standard_check(request):
         if not PingCheck.validate_hostname_or_ip(ip):
             error = {"error": "Please enter a valid hostname or IP"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
-        
+
         PingCheck(**parent, ip=ip, name=name, failures=failures).save()
 
         return Response("ok")
@@ -253,13 +258,10 @@ def add_standard_check(request):
 
         if ScriptCheck.objects.filter(**parent).filter(script=script).exists():
             return Response(
-                f"{script.name} already exists",
-                status=status.HTTP_400_BAD_REQUEST,
+                f"{script.name} already exists", status=status.HTTP_400_BAD_REQUEST,
             )
 
-        ScriptCheck(
-            **parent, timeout=timeout, failures=failures, script=script
-        ).save()
+        ScriptCheck(**parent, timeout=timeout, failures=failures, script=script).save()
 
         return Response(f"{script.name} was added!")
 

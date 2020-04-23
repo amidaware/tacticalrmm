@@ -3,12 +3,23 @@
     <q-card-section class="row items-center">
       <div class="text-h6">Add Disk Space Check</div>
       <q-space />
-      <q-btn icon="close" flat round dense v-close-popup />
+      <q-btn
+        icon="close"
+        flat
+        round
+        dense
+        v-close-popup
+      />
     </q-card-section>
 
     <q-form @submit.prevent="addCheck">
       <q-card-section>
-        <q-select outlined v-model="firstdisk" :options="disks" label="Disk" />
+        <q-select
+          outlined
+          v-model="firstdisk"
+          :options="disks"
+          label="Disk"
+        />
       </q-card-section>
       <q-card-section>
         <q-input
@@ -32,8 +43,15 @@
         />
       </q-card-section>
       <q-card-actions align="right">
-        <q-btn label="Add" color="primary" type="submit" />
-        <q-btn label="Cancel" v-close-popup />
+        <q-btn
+          label="Add"
+          color="primary"
+          type="submit"
+        />
+        <q-btn
+          label="Cancel"
+          v-close-popup
+        />
       </q-card-actions>
     </q-form>
   </q-card>
@@ -58,14 +76,21 @@ export default {
   },
   methods: {
     getDisks() {
-      axios.get(`/checks/getdisks/policies/`).then(r => {
-        this.disks = Object.keys(r.data);
-        this.firstdisk = Object.keys(r.data)[0];
-      });
+      if (this.policypk) {
+        axios.get("/checks/getalldisks/").then(r => {
+          this.disks = r.data;
+          this.firstdisk = "C:";
+        });
+      } else {
+        axios.get(`/checks/getdisks/${this.agentpk}/`).then(r => {
+          this.disks = Object.keys(r.data);
+          this.firstdisk = Object.keys(r.data)[0];
+        });
+      }
+
     },
     addCheck() {
-      pk = (this.policypk) ? {policy: policypk} : {pk: agentpk}
-
+      const pk = (this.policypk) ? { policy: this.policypk } : { pk: this.agentpk }
       const data = {
         ...pk,
         check_type: "diskspace",
@@ -77,9 +102,9 @@ export default {
         .post("/checks/addstandardcheck/", data)
         .then(r => {
           this.$emit("close");
-          
+
           if (this.policypk) {
-            this.$store.dispatch("loadPolicyChecks", this.policypk);
+            this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
           } else {
             this.$store.dispatch("loadChecks", this.agentpk);
           }

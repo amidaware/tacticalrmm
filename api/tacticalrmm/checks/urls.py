@@ -10,6 +10,7 @@ urlpatterns = [
     path("editstandardcheck/", views.edit_standard_check),
     path("deletestandardcheck/", views.delete_standard_check),
     path("getdisks/<pk>/", views.get_disks),
+    path("getalldisks/", views.get_disks_for_policies),
     path("checkalert/", views.check_alert),
     path("getscripts/", views.get_scripts),
     path("uploadscript/", scriptviews.UploadScript.as_view()),

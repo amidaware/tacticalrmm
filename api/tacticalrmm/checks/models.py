@@ -1,6 +1,7 @@
 import validators
 from statistics import mean
 import datetime as dt
+import string
 
 
 from django.utils import timezone as djangotime
@@ -48,13 +49,21 @@ def validate_threshold(threshold):
 
 class DiskCheck(models.Model):
     agent = models.ForeignKey(
-        Agent, related_name="diskchecks", null=True, blank=True, on_delete=models.CASCADE
+        Agent,
+        related_name="diskchecks",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="diskspace"
     )
     policy = models.ForeignKey(
-        Policy, related_name="diskchecks", null=True, blank=True, on_delete=models.CASCADE
+        Policy,
+        related_name="diskchecks",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
     disk = models.CharField(max_length=2, null=True, blank=True)
     threshold = models.PositiveIntegerField(null=True, blank=True)
@@ -80,7 +89,6 @@ class DiskCheck(models.Model):
             return f"{self.agent.hostname} - {self.disk}"
         else:
             return self.policy.name
-
 
     @property
     def readable_desc(self):
@@ -112,6 +120,10 @@ class DiskCheck(models.Model):
             settings.EMAIL_ALERT_RECIPIENTS,
             fail_silently=False,
         )
+
+    @staticmethod
+    def all_disks():
+        return [f"{disk}:" for disk in string.ascii_uppercase]
 
 
 class DiskCheckEmail(models.Model):
@@ -158,13 +170,21 @@ class Script(models.Model):
 
 class ScriptCheck(models.Model):
     agent = models.ForeignKey(
-        Agent, related_name="scriptchecks", null=True, blank=True, on_delete=models.CASCADE
+        Agent,
+        related_name="scriptchecks",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="script"
     )
     policy = models.ForeignKey(
-        Policy, related_name="scriptchecks", null=True, blank=True, on_delete=models.CASCADE
+        Policy,
+        related_name="scriptchecks",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
     timeout = models.PositiveIntegerField(default=120)
     failures = models.PositiveIntegerField(default=5)
@@ -237,13 +257,21 @@ class ScriptCheckEmail(models.Model):
 
 class PingCheck(models.Model):
     agent = models.ForeignKey(
-        Agent, related_name="pingchecks", null=True, blank=True, on_delete=models.CASCADE
+        Agent,
+        related_name="pingchecks",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="ping"
     )
     policy = models.ForeignKey(
-        Policy, related_name="pingchecks", null=True, blank=True, on_delete=models.CASCADE
+        Policy,
+        related_name="pingchecks",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
     ip = models.CharField(max_length=255)
     name = models.CharField(max_length=255, null=True, blank=True)
@@ -304,7 +332,6 @@ class PingCheck(models.Model):
             return self.agent.hostname
         else:
             return self.policy.name
-             
 
 
 class PingCheckEmail(models.Model):
@@ -320,13 +347,21 @@ class PingCheckEmail(models.Model):
 
 class CpuLoadCheck(models.Model):
     agent = models.ForeignKey(
-        Agent, related_name="cpuloadchecks", null=True, blank=True, on_delete=models.CASCADE
+        Agent,
+        related_name="cpuloadchecks",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="cpuload"
     )
     policy = models.ForeignKey(
-        Policy, related_name="cpuloadchecks", null=True, blank=True, on_delete=models.CASCADE
+        Policy,
+        related_name="cpuloadchecks",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
     cpuload = models.PositiveIntegerField(default=85)
     status = models.CharField(
@@ -422,7 +457,11 @@ class MemCheck(models.Model):
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="memory"
     )
     policy = models.ForeignKey(
-        Policy, related_name="memchecks", null=True, blank=True, on_delete=models.CASCADE
+        Policy,
+        related_name="memchecks",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
     threshold = models.PositiveIntegerField(default=75)
     status = models.CharField(
@@ -512,13 +551,21 @@ class MemCheckEmail(models.Model):
 
 class WinServiceCheck(models.Model):
     agent = models.ForeignKey(
-        Agent, related_name="winservicechecks", null=True, blank=True, on_delete=models.CASCADE
+        Agent,
+        related_name="winservicechecks",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
     check_type = models.CharField(
         max_length=30, choices=STANDARD_CHECK_CHOICES, default="winsvc"
     )
     policy = models.ForeignKey(
-        Policy, related_name="winservicechecks", null=True, blank=True, on_delete=models.CASCADE
+        Policy,
+        related_name="winservicechecks",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
     svc_name = models.CharField(max_length=255)
     svc_display_name = models.CharField(max_length=255)

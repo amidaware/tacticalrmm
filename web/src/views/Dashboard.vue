@@ -1,17 +1,34 @@
 <template>
   <q-layout view="hHh lpR fFf">
-    <q-header elevated class="bg-grey-9 text-white">
+    <q-header
+      elevated
+      class="bg-grey-9 text-white"
+    >
       <q-toolbar>
-        <q-btn dense flat push @click="refreshEntireSite" icon="refresh" />
+        <q-btn
+          dense
+          flat
+          push
+          @click="refreshEntireSite"
+          icon="refresh"
+        />
         <q-toolbar-title>
           Tactical RMM
         </q-toolbar-title>
 
         <AlertsIcon />
 
-        <q-btn-dropdown flat no-caps stretch :label="user">
+        <q-btn-dropdown
+          flat
+          no-caps
+          stretch
+          :label="user"
+        >
           <q-list>
-            <q-item to="/logout" exact>
+            <q-item
+              to="/logout"
+              exact
+            >
               <q-item-section>
                 <q-item-label>Logout</q-item-label>
               </q-item-section>
@@ -21,66 +38,94 @@
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="left" side="left" :width="250" elevated>
-      <div class="q-pa-sm q-gutter-sm" v-if="treeReady">
-        <q-list dense class="rounded-borders">
-          <q-item
-            clickable
-            v-ripple
-            :active="allClientsActive"
-            @click="clearTreeSelected"
-          >
-            <q-item-section avatar>
-              <q-icon name="fas fa-home" />
-            </q-item-section>
-            <q-item-section>All Clients</q-item-section>
-          </q-item>
-          <q-tree
-          ref="tree" 
-          :nodes="clientsTree"
-          node-key="raw"
-          no-nodes-label="No Clients"
-          selected-color="primary"
-          :selected.sync="selectedTree"
-          @update:selected="loadFrame(selectedTree)"
-        >
-        </q-tree>
-        </q-list>   
-      </div>
-      <div v-else>
-        <p>Loading</p>
-      </div>
-      
-    </q-drawer>
-
     <q-page-container>
       <FileBar :clients="clients"></FileBar>
-      <q-tabs
-        v-model="tab"
-        dense
-        no-caps
-        inline-label
-        class="text-grey"
-        active-color="primary"
-        indicator-color="primary"
-        align="left"
-        narrow-indicator
-      >
-        <q-tab name="server" icon="fas fa-server" label="Servers" />
-        <q-tab name="workstation" icon="computer" label="Workstations" />
-        <q-tab name="mixed" label="Mixed" />
-      </q-tabs>
-      <q-splitter v-model="splitterModel" horizontal style="height: 80vh">
+      <q-splitter v-model="outsideModel">
         <template v-slot:before>
-          <AgentTable :frame="frame" :columns="columns" :tab="tab" :filter="filteredAgents" :userName="user" @refreshEdit="getTree" />
-        </template>
-        <template v-slot:separator>
-          <q-avatar color="primary" text-color="white" size="20px" icon="drag_indicator" />
+          <div
+            class="q-pa-sm q-gutter-sm"
+            v-if="treeReady"
+          >
+            <q-list
+              dense
+              class="rounded-borders"
+            >
+              <q-item
+                clickable
+                v-ripple
+                :active="allClientsActive"
+                @click="clearTreeSelected"
+              >
+                <q-item-section avatar>
+                  <q-icon name="fas fa-home" />
+                </q-item-section>
+                <q-item-section>All Clients</q-item-section>
+              </q-item>
+              <q-tree
+                ref="tree"
+                :nodes="clientsTree"
+                node-key="raw"
+                no-nodes-label="No Clients"
+                selected-color="primary"
+                :selected.sync="selectedTree"
+                @update:selected="loadFrame(selectedTree)"
+              >
+              </q-tree>
+            </q-list>
+          </div>
+          <div v-else>
+            <p>Loading</p>
+          </div>
         </template>
         <template v-slot:after>
-          <SubTableTabs />
+          <q-splitter
+            v-model="innerModel"
+            horizontal
+            style="height: 80vh"
+          >
+            <template v-slot:before>
+              <q-tabs
+                v-model="tab"
+                dense
+                no-caps
+                inline-label
+                class="text-grey"
+                active-color="primary"
+                indicator-color="primary"
+                align="left"
+                narrow-indicator
+              >
+                <q-tab
+                  name="server"
+                  icon="fas fa-server"
+                  label="Servers"
+                />
+                <q-tab
+                  name="workstation"
+                  icon="computer"
+                  label="Workstations"
+                />
+                <q-tab
+                  name="mixed"
+                  label="Mixed"
+                />
+              </q-tabs>
+              <AgentTable
+                :frame="frame"
+                :columns="columns"
+                :tab="tab"
+                :filter="filteredAgents"
+                :userName="user"
+                @refreshEdit="getTree"
+              />
+            </template>
+            <template v-slot:after>
+              <SubTableTabs />
+            </template>
+          </q-splitter>
         </template>
       </q-splitter>
+
     </q-page-container>
   </q-layout>
 </template>
@@ -101,8 +146,9 @@ export default {
   },
   data() {
     return {
+      outsideModel: 11,
       selectedTree: '',
-      splitterModel: 50,
+      innerModel: 40,
       tab: "server",
       left: true,
       clientActive: "",
@@ -117,9 +163,9 @@ export default {
           name: "emailalert",
           align: "left"
         },
-        { 
-          name: "platform", 
-          align: "left" 
+        {
+          name: "platform",
+          align: "left"
         },
         {
           name: "client",
@@ -182,7 +228,7 @@ export default {
   methods: {
     refreshEntireSite() {
       this.$store.dispatch("loadTree");
-      
+
       if (this.allClientsActive) {
         this.loadAllClients();
       } else {
@@ -198,20 +244,20 @@ export default {
         this.$store.dispatch("loadInstalledSoftware", pk);
       }
     },
-    loadFrame(activenode, destroySub=true) {
+    loadFrame(activenode, destroySub = true) {
       if (destroySub) this.$store.commit("destroySubTable");
-      
+
       let client, site, url;
       try {
         client = this.$refs.tree.meta[activenode].parent.key.split('|')[0];
         site = activenode.split('|')[0];
         url = `/agents/bysite/${client}/${site}/`;
       }
-      catch(e) {
+      catch (e) {
         try {
           client = activenode.split('|')[0];
         }
-        catch(e) {
+        catch (e) {
           return false;
         }
         if (client === null || client === undefined) {

@@ -189,7 +189,7 @@ def add_standard_check(request):
         name = request.data["name"]
         ip = request.data["ip"]
         if not PingCheck.validate_hostname_or_ip(ip):
-            error = {"error": "Please enter a valid hostname or IP"}
+            error = "Please enter a valid hostname or IP"
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
         PingCheck(**parent, ip=ip, name=name, failures=failures).save()

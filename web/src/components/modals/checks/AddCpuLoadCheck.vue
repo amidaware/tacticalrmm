@@ -53,7 +53,7 @@ export default {
   },
   methods: {
     addCheck() {
-      pk = (this.policypk) ? {policy: policypk} : {pk: agentpk}
+      const pk = (this.policypk) ? {policy: this.policypk} : {pk: this.agentpk}
 
       const data = {
         ...pk,

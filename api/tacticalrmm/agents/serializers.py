@@ -23,6 +23,31 @@ class AgentSerializer(serializers.ModelSerializer):
         exclude = ["wmi_detail", "services"]
 
 
+class AgentTableSerializer(serializers.ModelSerializer):
+    patches_pending = serializers.ReadOnlyField(source="has_patches_pending")
+    status = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Agent
+        fields = [
+            "id",
+            "hostname",
+            "plat",
+            "agent_id",
+            "client",
+            "site",
+            "monitoring_type",
+            "description",
+            "needs_reboot",
+            "patches_pending",
+            "status",
+            "overdue_text_alert",
+            "overdue_email_alert",
+            "last_seen",
+            "boot_time",
+        ]
+
+
 class WinAgentSerializer(serializers.ModelSerializer):
     # for the windows agent
     patches_pending = serializers.ReadOnlyField(source="has_patches_pending")

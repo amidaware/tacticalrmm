@@ -22,7 +22,7 @@ from .models import Agent
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .serializers import AgentSerializer, AgentHostnameSerializer
+from .serializers import AgentSerializer, AgentHostnameSerializer, AgentTableSerializer
 from .tasks import uninstall_agent_task, update_agent_task
 
 logger.configure(**settings.LOG_CONFIG)
@@ -252,7 +252,8 @@ def send_raw_cmd(request):
 @api_view()
 def list_agents(request):
     agents = Agent.objects.all()
-    return Response(AgentSerializer(agents, many=True).data)
+    return Response(AgentTableSerializer(agents, many=True).data)
+
 
 @api_view()
 def list_agents_no_detail(request):

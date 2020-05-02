@@ -16,3 +16,10 @@ class Site(models.Model):
 
     def __str__(self):
         return self.site
+
+
+def validate_name(name):
+    if "|" in name:
+        return False
+    else:
+        return True

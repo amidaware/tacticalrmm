@@ -1,34 +1,15 @@
 <template>
   <q-layout view="hHh lpR fFf">
-    <q-header
-      elevated
-      class="bg-grey-9 text-white"
-    >
+    <q-header elevated class="bg-grey-9 text-white">
       <q-toolbar>
-        <q-btn
-          dense
-          flat
-          push
-          @click="refreshEntireSite"
-          icon="refresh"
-        />
-        <q-toolbar-title>
-          Tactical RMM
-        </q-toolbar-title>
+        <q-btn dense flat push @click="refreshEntireSite" icon="refresh" />
+        <q-toolbar-title>Tactical RMM</q-toolbar-title>
 
         <AlertsIcon />
 
-        <q-btn-dropdown
-          flat
-          no-caps
-          stretch
-          :label="user"
-        >
+        <q-btn-dropdown flat no-caps stretch :label="user">
           <q-list>
-            <q-item
-              to="/logout"
-              exact
-            >
+            <q-item to="/logout" exact>
               <q-item-section>
                 <q-item-label>Logout</q-item-label>
               </q-item-section>
@@ -39,23 +20,12 @@
     </q-header>
 
     <q-page-container>
-      <FileBar :clients="clients"></FileBar>
+      <FileBar :clients="clients" @edited="refreshEntireSite" />
       <q-splitter v-model="outsideModel">
         <template v-slot:before>
-          <div
-            class="q-pa-sm q-gutter-sm"
-            v-if="treeReady"
-          >
-            <q-list
-              dense
-              class="rounded-borders"
-            >
-              <q-item
-                clickable
-                v-ripple
-                :active="allClientsActive"
-                @click="clearTreeSelected"
-              >
+          <div class="q-pa-sm q-gutter-sm" v-if="treeReady">
+            <q-list dense class="rounded-borders">
+              <q-item clickable v-ripple :active="allClientsActive" @click="clearTreeSelected">
                 <q-item-section avatar>
                   <q-icon name="fas fa-home" />
                 </q-item-section>
@@ -69,8 +39,7 @@
                 selected-color="primary"
                 :selected.sync="selectedTree"
                 @update:selected="loadFrame(selectedTree)"
-              >
-              </q-tree>
+              />
             </q-list>
           </div>
           <div v-else>
@@ -78,11 +47,7 @@
           </div>
         </template>
         <template v-slot:after>
-          <q-splitter
-            v-model="innerModel"
-            horizontal
-            style="height: 88vh"
-          >
+          <q-splitter v-model="innerModel" horizontal style="height: 88vh">
             <template v-slot:before>
               <q-tabs
                 v-model="tab"
@@ -95,20 +60,9 @@
                 align="left"
                 narrow-indicator
               >
-                <q-tab
-                  name="server"
-                  icon="fas fa-server"
-                  label="Servers"
-                />
-                <q-tab
-                  name="workstation"
-                  icon="computer"
-                  label="Workstations"
-                />
-                <q-tab
-                  name="mixed"
-                  label="Mixed"
-                />
+                <q-tab name="server" icon="fas fa-server" label="Servers" />
+                <q-tab name="workstation" icon="computer" label="Workstations" />
+                <q-tab name="mixed" label="Mixed" />
               </q-tabs>
               <AgentTable
                 :frame="frame"
@@ -125,14 +79,13 @@
           </q-splitter>
         </template>
       </q-splitter>
-
     </q-page-container>
   </q-layout>
 </template>
 
 <script>
 import axios from "axios";
-import { mapState, mapGetters } from 'vuex';
+import { mapState, mapGetters } from "vuex";
 import FileBar from "@/components/FileBar";
 import AgentTable from "@/components/AgentTable";
 import SubTableTabs from "@/components/SubTableTabs";
@@ -147,7 +100,7 @@ export default {
   data() {
     return {
       outsideModel: 11,
-      selectedTree: '',
+      selectedTree: "",
       innerModel: 55,
       tab: "server",
       left: true,
@@ -222,7 +175,7 @@ export default {
           sortable: true,
           align: "left"
         }
-      ],
+      ]
     };
   },
   methods: {
@@ -249,15 +202,13 @@ export default {
 
       let client, site, url;
       try {
-        client = this.$refs.tree.meta[activenode].parent.key.split('|')[0];
-        site = activenode.split('|')[0];
+        client = this.$refs.tree.meta[activenode].parent.key.split("|")[0];
+        site = activenode.split("|")[0];
         url = `/agents/bysite/${client}/${site}/`;
-      }
-      catch (e) {
+      } catch (e) {
         try {
-          client = activenode.split('|')[0];
-        }
-        catch (e) {
+          client = activenode.split("|")[0];
+        } catch (e) {
           return false;
         }
         if (client === null || client === undefined) {
@@ -271,7 +222,7 @@ export default {
         axios.get(url).then(r => {
           this.frame = r.data;
           this.$store.commit("AGENT_TABLE_LOADING", false);
-        })
+        });
       }
     },
     getTree() {
@@ -279,7 +230,7 @@ export default {
       this.$store.dispatch("loadTree");
     },
     clearTreeSelected() {
-      this.selectedTree = '';
+      this.selectedTree = "";
       this.getTree();
     },
     clearSite() {
@@ -305,7 +256,7 @@ export default {
     }),
     ...mapGetters(["selectedAgentPk"]),
     allClientsActive() {
-      return (this.selectedTree === '') ? true : false
+      return this.selectedTree === "" ? true : false;
     },
     filteredAgents() {
       if (this.tab === "mixed") {
@@ -327,7 +278,7 @@ export default {
   mounted() {
     if (localStorage.getItem("reloaded")) {
       localStorage.removeItem("reloaded");
-    };
+    }
     this.loadFrame(this.activeNode);
   }
 };

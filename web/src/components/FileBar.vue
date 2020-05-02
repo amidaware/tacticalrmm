@@ -11,11 +11,14 @@
             <q-item clickable v-close-popup @click="showAddSiteModal = true">
               <q-item-section>Add Site</q-item-section>
             </q-item>
+            <q-item clickable v-close-popup @click="showEditClientsModal = true">
+              <q-item-section>Edit Clients</q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="showEditSitesModal = true">
+              <q-item-section>Edit Sites</q-item-section>
+            </q-item>
             <q-item clickable v-close-popup @click="getLog">
               <q-item-section>Debug Log</q-item-section>
-            </q-item>
-            <q-item clickable v-close-popup @click="showUpdateAgentsModal = true">
-              <q-item-section>Update Agents</q-item-section>
             </q-item>
           </q-list>
         </q-menu>
@@ -56,9 +59,15 @@
       <q-dialog v-model="showAddClientModal">
         <AddClient @close="showAddClientModal = false" />
       </q-dialog>
+      <q-dialog v-model="showEditClientsModal">
+        <EditClients @close="showEditClientsModal = false" @edited="edited" />
+      </q-dialog>
       <!-- add site modal -->
       <q-dialog v-model="showAddSiteModal">
         <AddSite @close="showAddSiteModal = false" :clients="clients" />
+      </q-dialog>
+      <q-dialog v-model="showEditSitesModal">
+        <EditSites @close="showEditSitesModal = false" @edited="edited" />
       </q-dialog>
       <!-- edit core settings modal -->
       <q-dialog v-model="showEditCoreSettingsModal">
@@ -89,7 +98,9 @@
 <script>
 import LogModal from "@/components/modals/logs/LogModal";
 import AddClient from "@/components/modals/clients/AddClient";
+import EditClients from "@/components/modals/clients/EditClients";
 import AddSite from "@/components/modals/clients/AddSite";
+import EditSites from "@/components/modals/clients/EditSites";
 import UpdateAgents from "@/components/modals/agents/UpdateAgents";
 import ScriptManager from "@/components/ScriptManager";
 import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
@@ -100,7 +111,9 @@ export default {
   components: {
     LogModal,
     AddClient,
+    EditClients,
     AddSite,
+    EditSites,
     UpdateAgents,
     ScriptManager,
     EditCoreSettings,
@@ -110,7 +123,9 @@ export default {
   data() {
     return {
       showAddClientModal: false,
+      showEditClientsModal: false,
       showAddSiteModal: false,
+      showEditSitesModal: false,
       showUpdateAgentsModal: false,
       showEditCoreSettingsModal: false
     };
@@ -124,6 +139,9 @@ export default {
     },
     showAutomationManager() {
       this.$store.commit("TOGGLE_AUTOMATION_MANAGER", true);
+    },
+    edited() {
+      this.$emit("edited");
     }
   }
 };

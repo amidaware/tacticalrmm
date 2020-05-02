@@ -1,4 +1,5 @@
 from django.db import DataError
+from django.shortcuts import get_object_or_404
 
 from rest_framework.response import Response
 from rest_framework import status
@@ -14,9 +15,8 @@ from rest_framework.decorators import (
 )
 
 from .serializers import ClientSerializer, SiteSerializer, TreeSerializer
-from .models import Client, Site
-from collections import defaultdict
-from time import sleep
+from .models import Client, Site, validate_name
+from agents.models import Agent
 
 
 @api_view(["POST"])
@@ -24,8 +24,8 @@ def initial_setup(request):
     client_name = request.data["client"].strip()
     site_name = request.data["site"].strip()
 
-    if "|" in client_name or "|" in site_name:
-        err = {"error": f"Client/site name cannot contain the | character"}
+    if not validate_name(client_name) or not validate_name(site_name):
+        err = {"error": "Client/site name cannot contain the | character"}
         return Response(err, status=status.HTTP_400_BAD_REQUEST)
 
     Client(client=client_name).save()
@@ -40,8 +40,8 @@ def add_client(request):
     client_name = request.data["client"].strip()
     default_site = request.data["site"].strip()
 
-    if "|" in client_name:
-        content = {"error": f"Client name cannot contain the | character"}
+    if not validate_name(client_name) or not validate_name(default_site):
+        content = {"error": "Client name cannot contain the | character"}
         return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
     if Client.objects.filter(client=client_name):
@@ -64,8 +64,8 @@ def add_site(request):
     client = Client.objects.get(client=request.data["client"].strip())
     site = request.data["site"].strip()
 
-    if "|" in site:
-        content = {"error": f"Site name cannot contain the | character"}
+    if not validate_name(site):
+        content = {"error": "Site name cannot contain the | character"}
         return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
     if Site.objects.filter(client=client).filter(site=site):
@@ -79,6 +79,51 @@ def add_site(request):
         return Response(content, status=status.HTTP_400_BAD_REQUEST)
     else:
         return Response("ok")
+
+
+@api_view(["PATCH"])
+def edit_client(request):
+
+    new_name = request.data["name"].strip()
+
+    if not validate_name(new_name):
+        err = "Client name cannot contain the | character"
+        return Response(err, status=status.HTTP_400_BAD_REQUEST)
+
+    client = get_object_or_404(Client, pk=request.data["pk"])
+    agents = Agent.objects.filter(client=client.client)
+
+    client.client = new_name
+    client.save(update_fields=["client"])
+
+    for agent in agents:
+        agent.client = new_name
+        agent.save(update_fields=["client"])
+
+    return Response("ok")
+
+
+@api_view(["PATCH"])
+def edit_site(request):
+    new_name = request.data["name"].strip()
+
+    if not validate_name(new_name):
+        err = "Site name cannot contain the | character"
+        return Response(err, status=status.HTTP_400_BAD_REQUEST)
+
+    client = get_object_or_404(Client, client=request.data["client"])
+    site = Site.objects.filter(client=client).filter(site=request.data["site"]).get()
+
+    agents = Agent.objects.filter(client=client.client).filter(site=site.site)
+
+    site.site = new_name
+    site.save(update_fields=["site"])
+
+    for agent in agents:
+        agent.site = new_name
+        agent.save(update_fields=["site"])
+
+    return Response("ok")
 
 
 @api_view()
@@ -96,11 +141,13 @@ def list_clients(request):
     clients = Client.objects.all()
     return Response(ClientSerializer(clients, many=True).data)
 
+
 @api_view()
 # for vue
 def list_sites(request):
     sites = Site.objects.all()
     return Response(TreeSerializer(sites, many=True).data)
+
 
 @api_view()
 def load_tree(request):

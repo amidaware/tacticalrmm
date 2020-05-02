@@ -244,15 +244,10 @@ read djangousername
 python manage.py createsuperuser --username ${djangousername} --email ${letsemail}
 RANDBASE=$(python manage.py generate_totp)
 cls
-python manage.py generate_barcode ${RANDBASE} ${djangousername}
+python manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain}
 deactivate
 read -n 1 -s -r -p "Press any key to continue..."
 
-totp="$(cat << EOF
-TWO_FACTOR_OTP = "${RANDBASE}"
-EOF
-)"
-echo "${totp}" | tee --append /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/local_settings.py > /dev/null
 
 uwsgini="$(cat << EOF
 [uwsgi]

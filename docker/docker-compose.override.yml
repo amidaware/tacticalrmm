@@ -1,8 +1,7 @@
-# FOR PROD 
-version: '3.7'
+# FOR PROD
+version: "3.7"
 
 services:
-  
   # Container that hosts Vue frontend
   app:
     build:
@@ -11,7 +10,7 @@ services:
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
       dockerfile: "./docker/app/dockerfile"
-    networks: 
+    networks:
       - proxy
 
   # Container for Django backend
@@ -35,7 +34,6 @@ services:
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
-        - TWO_FACTOR_OTP=${TWO_FACTOR_OTP}
         - EMAIL_TLS=${EMAIL_TLS}
         - EMAIL_HOST=${EMAIL_HOST}
         - EMAIL_USER=${EMAIL_USER}
@@ -48,9 +46,9 @@ services:
       - redis
     volumes:
       - scripts:/srv
-    depends_on: 
+    depends_on:
       - db
-  
+
   # Container for Celery worker service
   celery-service:
     build:
@@ -72,7 +70,6 @@ services:
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
-        - TWO_FACTOR_OTP=${TWO_FACTOR_OTP}
         - EMAIL_TLS=${EMAIL_TLS}
         - EMAIL_HOST=${EMAIL_HOST}
         - EMAIL_USER=${EMAIL_USER}
@@ -84,7 +81,7 @@ services:
       - redis
       - proxy
       - database
-    depends_on: 
+    depends_on:
       - db
       - redis
 
@@ -109,7 +106,6 @@ services:
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
-        - TWO_FACTOR_OTP=${TWO_FACTOR_OTP}
         - EMAIL_TLS=${EMAIL_TLS}
         - EMAIL_HOST=${EMAIL_HOST}
         - EMAIL_USER=${EMAIL_USER}
@@ -121,7 +117,7 @@ services:
       - redis
       - proxy
       - database
-    depends_on: 
+    depends_on:
       - db
       - redis
 
@@ -146,7 +142,6 @@ services:
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
-        - TWO_FACTOR_OTP=${TWO_FACTOR_OTP}
         - EMAIL_TLS=${EMAIL_TLS}
         - EMAIL_HOST=${EMAIL_HOST}
         - EMAIL_USER=${EMAIL_USER}
@@ -158,6 +153,6 @@ services:
       - redis
       - proxy
       - database
-    depends_on: 
+    depends_on:
       - db
       - redis

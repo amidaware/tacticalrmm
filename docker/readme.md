@@ -49,7 +49,15 @@ Get the 2FA code with
 sudo docker-compose exec api python manage.py generate_totp
 ```
 
-Add the generated code to the .env file TWO_FACTOR_OTP in the docker folder
+
+Use the generated code and the username to generate a bar code for your authenticator app
+(domain is the domain name of your site, for example: rmm.example.com)
+
+```
+sudo docker-compose exec api python manage.py generate_barcode [2FAcode] [username] [domain]
+```
+
+
 
 ## Generate the meshcentral login token key
 
@@ -61,16 +69,10 @@ sudo docker-compose exec meshcentral node node_modules/meshcentral/meshcentral -
 
 Add the generated key to the .env file MESH_TOKEN_KEY in the docker folder
 
-Rebuild the api container
+## Rebuild the api container
 
 ```
 sudo docker-compose up -d --build api
-```
-
-Use the generated code and the username to generate a bar code for your authenticator app
-
-```
-sudo docker-compose exec api python manage.py generate_barcode [OTP_CODE] [username]
 ```
 
 ## Connect to a container instance shell

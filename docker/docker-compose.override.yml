@@ -34,12 +34,6 @@ services:
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
-        - EMAIL_TLS=${EMAIL_TLS}
-        - EMAIL_HOST=${EMAIL_HOST}
-        - EMAIL_USER=${EMAIL_USER}
-        - EMAIL_PASS=${EMAIL_PASS}
-        - EMAIL_PORT=${EMAIL_PORT}
-        - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
     networks:
       - proxy
       - database
@@ -70,12 +64,6 @@ services:
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
-        - EMAIL_TLS=${EMAIL_TLS}
-        - EMAIL_HOST=${EMAIL_HOST}
-        - EMAIL_USER=${EMAIL_USER}
-        - EMAIL_PASS=${EMAIL_PASS}
-        - EMAIL_PORT=${EMAIL_PORT}
-        - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
     command: celery -A tacticalrmm worker -l debug
     networks:
       - redis
@@ -106,12 +94,6 @@ services:
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
-        - EMAIL_TLS=${EMAIL_TLS}
-        - EMAIL_HOST=${EMAIL_HOST}
-        - EMAIL_USER=${EMAIL_USER}
-        - EMAIL_PASS=${EMAIL_PASS}
-        - EMAIL_PORT=${EMAIL_PORT}
-        - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
     command: celery -A tacticalrmm beat -l debug
     networks:
       - redis
@@ -142,12 +124,6 @@ services:
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
-        - EMAIL_TLS=${EMAIL_TLS}
-        - EMAIL_HOST=${EMAIL_HOST}
-        - EMAIL_USER=${EMAIL_USER}
-        - EMAIL_PASS=${EMAIL_PASS}
-        - EMAIL_PORT=${EMAIL_PORT}
-        - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS}
     command: celery -A tacticalrmm worker -Q wupdate -l debug
     networks:
       - redis

@@ -127,15 +127,6 @@ if "TRAVIS" in os.environ:
 
     ADMIN_URL = "abc123456/"
 
-    EMAIL_USE_TLS = True
-    EMAIL_HOST = "smtp.gmail.com"
-    EMAIL_HOST_USER = "travis@example.com"
-    EMAIL_HOST_PASSWORD = "travis"
-    EMAIL_PORT = 587
-    EMAIL_ALERT_RECIPIENTS = [
-        "travis@example.com",
-    ]
-
     SALT_USERNAME = "travis"
     SALT_PASSWORD = "travis"
     MESH_USERNAME = "travis"
@@ -167,15 +158,6 @@ if "AZPIPELINE" in os.environ:
     SECRET_KEY = "abcdefghijklmnoptravis123456789"
 
     ADMIN_URL = "abc123456/"
-
-    EMAIL_USE_TLS = True
-    EMAIL_HOST = "smtp.gmail.com"
-    EMAIL_HOST_USER = "pipeline@example.com"
-    EMAIL_HOST_PASSWORD = "pipeline"
-    EMAIL_PORT = 587
-    EMAIL_ALERT_RECIPIENTS = [
-        "pipeline@example.com",
-    ]
 
     SALT_USERNAME = "pipeline"
     SALT_PASSWORD = "pipeline"

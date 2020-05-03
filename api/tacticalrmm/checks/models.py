@@ -8,12 +8,14 @@ import json
 
 from django.utils import timezone as djangotime
 from django.db import models
-from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 
 from agents.models import Agent
 from automation.models import Policy
+
+from core.models import CoreSettings
+
 
 STANDARD_CHECK_CHOICES = [
     ("diskspace", "Disk Space Check"),
@@ -113,14 +115,14 @@ class DiskCheck(models.Model):
                 handle_check_email_alert_task.delay("diskspace", self.pk)
 
     def send_email(self):
+
         percent_used = self.agent.disks[self.disk]["percent"]
         percent_free = 100 - percent_used
-        send_mail(
+
+        CORE = CoreSettings.objects.first()
+        CORE.send_mail(
             f"Disk Space Check Failing on {self}",
             f"{self} is failing disk space check {self.disk} - Free: {percent_free}%, Threshold: {self.threshold}%",
-            settings.EMAIL_HOST_USER,
-            settings.EMAIL_ALERT_RECIPIENTS,
-            fail_silently=False,
         )
 
     @staticmethod
@@ -231,12 +233,11 @@ class ScriptCheck(models.Model):
                 handle_check_email_alert_task.delay("script", self.pk)
 
     def send_email(self):
-        send_mail(
+
+        CORE = CoreSettings.objects.first()
+        CORE.send_mail(
             f"Script Check Fail on {self}",
             f"Script check {self.script.name} is failing on {self}",
-            settings.EMAIL_HOST_USER,
-            settings.EMAIL_ALERT_RECIPIENTS,
-            fail_silently=False,
         )
 
     def __str__(self):
@@ -315,12 +316,11 @@ class PingCheck(models.Model):
                 handle_check_email_alert_task.delay("ping", self.pk)
 
     def send_email(self):
-        send_mail(
+
+        CORE = CoreSettings.objects.first()
+        CORE.send_mail(
             f"Ping Check Fail on {self}",
             f"Ping check {self.name} ({self.ip}) is failing",
-            settings.EMAIL_HOST_USER,
-            settings.EMAIL_ALERT_RECIPIENTS,
-            fail_silently=False,
         )
 
     @staticmethod
@@ -431,12 +431,10 @@ class CpuLoadCheck(models.Model):
 
     def send_email(self):
 
-        send_mail(
+        CORE = CoreSettings.objects.first()
+        CORE.send_mail(
             f"CPU Load Check fail on {self}",
             f"Average cpu utilization is {int(mean(self.history))}% which is greater than the threshold {self.cpuload}%",
-            settings.EMAIL_HOST_USER,
-            settings.EMAIL_ALERT_RECIPIENTS,
-            fail_silently=False,
         )
 
 
@@ -531,12 +529,10 @@ class MemCheck(models.Model):
 
     def send_email(self):
 
-        send_mail(
+        CORE = CoreSettings.objects.first()
+        CORE.send_mail(
             f"Memory Check fail on {self}",
             f"Average memory usage is {int(mean(self.history))}% which is greater than the threshold {self.threshold}%",
-            settings.EMAIL_HOST_USER,
-            settings.EMAIL_ALERT_RECIPIENTS,
-            fail_silently=False,
         )
 
 
@@ -622,12 +618,10 @@ class WinServiceCheck(models.Model):
             filter(lambda x: x["name"] == self.svc_name, self.agent.services)
         )[0]["status"]
 
-        send_mail(
+        CORE = CoreSettings.objects.first()
+        CORE.send_mail(
             f"Windows Service Check fail on {self}",
             f"Service: {self.svc_display_name} - Status: {status.upper()}",
-            settings.EMAIL_HOST_USER,
-            settings.EMAIL_ALERT_RECIPIENTS,
-            fail_silently=False,
         )
 
     @staticmethod

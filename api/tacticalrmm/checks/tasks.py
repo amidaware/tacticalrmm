@@ -135,9 +135,7 @@ def restart_win_service_task(pk, svcname):
 def run_checks_task(pk):
     agent = Agent.objects.get(pk=pk)
     try:
-        agent.salt_api_cmd(
-            hostname=agent.salt_id, timeout=30, func=f"win_agent.run_manual_checks",
-        )
+        agent.salt_api_async(hostname=agent.salt_id, func="win_agent.run_manual_checks")
     except:
         pass
 

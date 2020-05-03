@@ -72,9 +72,8 @@ def create_win_task_schedule(pk):
 @app.task
 def enable_or_disable_win_task(pk, action):
     task = AutomatedTask.objects.get(pk=pk)
-    resp = task.agent.salt_api_cmd(
+    task.agent.salt_api_async(
         hostname=task.agent.salt_id,
-        timeout=120,
         func="task.edit_task",
         arg=[f"name={task.win_task_name}", f"enabled={action}",],
     )
@@ -103,9 +102,8 @@ def delete_win_task_schedule(pk):
 @app.task
 def run_win_task(pk):
     task = AutomatedTask.objects.get(pk=pk)
-    resp = task.agent.salt_api_cmd(
+    task.agent.salt_api_async(
         hostname=task.agent.salt_id,
-        timeout=120,
         func="task.run",
         arg=[f"name={task.win_task_name}"],
     )

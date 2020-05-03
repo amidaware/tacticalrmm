@@ -160,15 +160,15 @@ def load_tree(request):
         sites = Site.objects.filter(client=x)
         for i in sites:
 
-            if i.checks_failing:
-                b.append(f"{i.site}|{i.pk}|red")
+            if i.has_failing_checks:
+                b.append(f"{i.site}|{i.pk}|negative")
             else:
-                b.append(f"{i.site}|{i.pk}|grey")
+                b.append(f"{i.site}|{i.pk}|black")
 
-            if x.checks_failing:
-                new[f"{x.client}|{x.pk}|red"] = b
+            if x.has_failing_checks:
+                new[f"{x.client}|{x.pk}|negative"] = b
             else:
-                new[f"{x.client}|{x.pk}|grey"] = b
+                new[f"{x.client}|{x.pk}|black"] = b
 
     return Response(new)
 

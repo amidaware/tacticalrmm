@@ -73,11 +73,11 @@ class BaseTestCase(TestCase):
         self.update_policy = WinUpdatePolicy.objects.create(agent=self.agent)
 
         Client.objects.create(client="Google")
-        Client.objects.create(client="Facebook", checks_failing=True)
+        Client.objects.create(client="Facebook")
         google = Client.objects.get(client="Google")
         facebook = Client.objects.get(client="Facebook")
         Site.objects.create(client=google, site="Main Office")
-        Site.objects.create(client=google, site="LA Office", checks_failing=True)
+        Site.objects.create(client=google, site="LA Office")
         Site.objects.create(client=google, site="MO Office")
         Site.objects.create(client=facebook, site="Main Office")
         Site.objects.create(client=facebook, site="NY Office")

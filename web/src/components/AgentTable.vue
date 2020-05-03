@@ -25,9 +25,16 @@
           </q-icon>
         </q-th>
       </template>
+      <template v-slot:header-cell-checks-status="props">
+        <q-th :props="props">
+          <q-icon name="fas fa-check-double" size="1.2em">
+            <q-tooltip>Checks Status</q-tooltip>
+          </q-icon>
+        </q-th>
+      </template>
       <template v-slot:header-cell-patchespending="props">
         <q-th auto-width :props="props">
-          <q-icon name="system_update_alt" size="1.5em" color="warning">
+          <q-icon name="system_update_alt" size="1.5em">
             <q-tooltip>Patches Pending</q-tooltip>
           </q-icon>
         </q-th>
@@ -40,7 +47,7 @@
       </template>-->
       <template v-slot:header-cell-agentstatus="props">
         <q-th auto-width :props="props">
-          <q-icon name="fas fa-signal" size="1.2em" color="accent">
+          <q-icon name="fas fa-signal" size="1.2em">
             <q-tooltip>Agent Status</q-tooltip>
           </q-icon>
         </q-th>
@@ -196,9 +203,18 @@
               v-model="props.row.overdue_email_alert"
             />
           </q-td>
-          <q-td key="platform" :props="props">
-            <q-icon v-if="props.row.plat === 'windows'" name="fab fa-windows" color="blue" />
-            <q-icon v-else-if="props.row.plat === 'linux'" name="fab fa-linux" color="blue" />
+          <q-td key="checks-status" :props="props">
+            <q-icon
+              v-if="props.row.has_failing_checks"
+              name="fas fa-check-double"
+              size="1.2em"
+              color="negative"
+            >
+              <q-tooltip>Checks failing</q-tooltip>
+            </q-icon>
+            <q-icon v-else name="fas fa-check-double" size="1.2em" color="positive">
+              <q-tooltip>Checks passing</q-tooltip>
+            </q-icon>
           </q-td>
           <q-td key="client" :props="props">{{ props.row.client }}</q-td>
           <q-td key="site" :props="props">{{ props.row.site }}</q-td>
@@ -223,19 +239,21 @@
           <q-td key="agentstatus">
             <q-icon
               v-if="props.row.status ==='overdue'"
-              name="fas fa-exclamation-triangle"
+              name="fas fa-signal"
+              size="1.2em"
               color="negative"
             >
               <q-tooltip>Agent overdue</q-tooltip>
             </q-icon>
             <q-icon
               v-else-if="props.row.status ==='offline'"
-              name="fas fa-exclamation-triangle"
-              color="grey-8"
+              name="fas fa-signal"
+              size="1.2em"
+              color="warning"
             >
               <q-tooltip>Agent offline</q-tooltip>
             </q-icon>
-            <q-icon v-else name="fas fa-check" color="positive">
+            <q-icon v-else name="fas fa-signal" size="1.2em" color="positive">
               <q-tooltip>Agent online</q-tooltip>
             </q-icon>
           </q-td>
@@ -324,19 +342,11 @@ export default {
     },
     takeControl(pk) {
       const url = this.$router.resolve(`/takecontrol/${pk}`).href;
-      window.open(
-        url,
-        "",
-        "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1600,height=900"
-      );
+      window.open(url, "", "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1600,height=900");
     },
     remoteBG(pk) {
       const url = this.$router.resolve(`/remotebackground/${pk}`).href;
-      window.open(
-        url,
-        "",
-        "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1280,height=826"
-      );
+      window.open(url, "", "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1280,height=826");
     },
     runChecks(pk) {
       axios

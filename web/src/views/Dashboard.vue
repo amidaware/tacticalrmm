@@ -117,7 +117,7 @@ export default {
           align: "left"
         },
         {
-          name: "platform",
+          name: "checks-status",
           align: "left"
         },
         {

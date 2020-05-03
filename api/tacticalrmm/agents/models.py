@@ -78,6 +78,27 @@ class Agent(models.Model):
         return f"{self.hostname}-{self.pk}"
 
     @property
+    def has_failing_checks(self):
+
+        checks = (
+            "diskchecks",
+            "scriptchecks",
+            "pingchecks",
+            "cpuloadchecks",
+            "memchecks",
+            "winservicechecks",
+        )
+
+        for check in checks:
+            obj = getattr(self, check)
+            if obj.exists():
+                for i in obj.all():
+                    if i.status == "failing":
+                        return True
+
+        return False
+
+    @property
     def cpu_model(self):
         try:
             cpu = self.wmi_detail["cpu"][0]

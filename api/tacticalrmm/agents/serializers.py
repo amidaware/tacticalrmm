@@ -27,7 +27,7 @@ class AgentSerializer(serializers.ModelSerializer):
 class AgentTableSerializer(serializers.ModelSerializer):
     patches_pending = serializers.ReadOnlyField(source="has_patches_pending")
     status = serializers.ReadOnlyField()
-    has_failing_checks = serializers.ReadOnlyField()
+    checks = serializers.ReadOnlyField()
 
     class Meta:
         model = Agent
@@ -47,7 +47,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "overdue_email_alert",
             "last_seen",
             "boot_time",
-            "has_failing_checks",
+            "checks",
         ]
 
 

@@ -15,23 +15,28 @@ It uses an [agent](https://github.com/wh1te909/winagent) written in python, as w
 - Teamviewer-like remote desktop control
 - Real-time remote shell
 - Remote file browser (download and upload files)
-- Remote command and script execution
+- Remote command and script execution (batch, powershell and python scripts)
 - Event log viewer
 - Services management
 - Windows patch management
-- Automated checks with email/SMS alerting (cpu, disk, memory, services, event logs)
+- Automated checks with email/SMS alerting (cpu, disk, memory, services, scripts, event logs)
+- Automated task runner (run scripts on a schedule)
 - Remote software installation via chocolatey
 - Software and hardware inventory
 
 ## Server Requirements
 
-- Any modern linux distro (an install script is provided for Ubuntu Server 18.04)
+- Any modern linux distro with min 2GB ram (an install script is provided for Ubuntu Server 18.04)
 - A domain you own with at least 3 subdomains
 - Google Authenticator app (2 factor is NOT optional)
 
 ## Windows versions supported
 
 - Windows 7, 8.1, 10, Server 2008R2, 2012R2, 2016, 2019
+
+## Updating
+
+Download and run ```update.sh```
 
 ## Installation example (Ubuntu server 18.04 LTS)
 

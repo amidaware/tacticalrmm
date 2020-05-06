@@ -13,7 +13,7 @@ class Client(models.Model):
 
         agents = Agent.objects.filter(client=self.client)
         for agent in agents:
-            if agent.has_failing_checks:
+            if agent.checks["has_failing_checks"]:
                 return True
 
         return False
@@ -31,7 +31,7 @@ class Site(models.Model):
 
         agents = Agent.objects.filter(client=self.client.client).filter(site=self.site)
         for agent in agents:
-            if agent.has_failing_checks:
+            if agent.checks["has_failing_checks"]:
                 return True
 
         return False

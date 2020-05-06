@@ -66,20 +66,18 @@ class Agent(models.Model):
 
     @property
     def has_patches_pending(self):
-        from winupdate.models import WinUpdate
 
-        if WinUpdate.objects.filter(agent=self).filter(action="approve").exists():
+        if self.winupdates.filter(action="approve").exists():
             return True
-
-        return False
+        else:
+            return False
 
     @property
     def salt_id(self):
         return f"{self.hostname}-{self.pk}"
 
     @property
-    def has_failing_checks(self):
-
+    def checks(self):
         checks = (
             "diskchecks",
             "scriptchecks",
@@ -88,15 +86,27 @@ class Agent(models.Model):
             "memchecks",
             "winservicechecks",
         )
+        total, passing, failing = 0, 0, 0
 
         for check in checks:
             obj = getattr(self, check)
             if obj.exists():
                 for i in obj.all():
-                    if i.status == "failing":
-                        return True
+                    total += 1
+                    if i.status == "passing":
+                        passing += 1
+                    elif i.status == "failing":
+                        failing += 1
 
-        return False
+        has_failing_checks = True if failing > 0 else False
+
+        ret = {
+            "total": total,
+            "passing": passing,
+            "failing": failing,
+            "has_failing_checks": has_failing_checks,
+        }
+        return ret
 
     @property
     def cpu_model(self):

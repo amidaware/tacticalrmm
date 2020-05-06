@@ -205,7 +205,7 @@
           </q-td>
           <q-td key="checks-status" :props="props">
             <q-icon
-              v-if="props.row.has_failing_checks"
+              v-if="props.row.checks.has_failing_checks"
               name="fas fa-check-double"
               size="1.2em"
               color="negative"

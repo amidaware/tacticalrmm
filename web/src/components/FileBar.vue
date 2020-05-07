@@ -44,7 +44,7 @@
               <q-item-section>Script Manager</q-item-section>
             </q-item>
             <!-- automation manager -->
-            <q-item clickable v-close-popup @click="showAutomationManager">
+            <q-item clickable v-close-popup @click="showAutomationManager = true">
               <q-item-section>Automation Manager</q-item-section>
             </q-item>
             <!-- core settings -->
@@ -90,7 +90,11 @@
       <ScriptManager />
 
       <!-- Automation Manager -->
-      <AutomationManager />
+      <div class="q-pa-md q-gutter-sm">
+        <q-dialog v-model="showAutomationManager">
+          <AutomationManager @close="showAutomationManager = false"/>
+        </q-dialog>
+      </div>
     </q-bar>
   </div>
 </template>
@@ -127,7 +131,8 @@ export default {
       showAddSiteModal: false,
       showEditSitesModal: false,
       showUpdateAgentsModal: false,
-      showEditCoreSettingsModal: false
+      showEditCoreSettingsModal: false,
+      showAutomationManager: false,
     };
   },
   methods: {
@@ -136,9 +141,6 @@ export default {
     },
     showScriptManager() {
       this.$store.commit("TOGGLE_SCRIPT_MANAGER", true);
-    },
-    showAutomationManager() {
-      this.$store.commit("TOGGLE_AUTOMATION_MANAGER", true);
     },
     edited() {
       this.$emit("edited");

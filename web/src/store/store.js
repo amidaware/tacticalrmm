@@ -31,7 +31,6 @@ export const store = new Vuex.Store({
     installedSoftware: [],
     scripts: [],
     toggleScriptManager: false,
-    toggleAutomationManager: false
   },
   getters: {
     loggedIn(state) {
@@ -64,10 +63,7 @@ export const store = new Vuex.Store({
     },
   },
   mutations: {
-    TOGGLE_AUTOMATION_MANAGER(state, action) {
-      state.toggleAutomationManager = action;
-    },
-    TOGGLE_SCRIPT_MANAGER(state, action) {
+    TOGGLE_SCRIPT_MANAGER (state, action) {
       state.toggleScriptManager = action;
     },
     AGENT_TABLE_LOADING(state, visible) {
@@ -152,6 +148,15 @@ export const store = new Vuex.Store({
       axios.get("/clients/loadclients/").then(r => {
         context.commit("getUpdatedSites", r.data);
       });
+    },
+    loadClients (context) {
+      return axios.get("/clients/listclients/");
+    },
+    loadSites (context) {
+      return axios.get("/clients/listsites/");
+    },
+    loadAgents (context) {
+      return axios.get("/agents/listagents/");
     },
     loadTree({ commit }) {
       axios.get("/clients/loadtree/").then(r => {

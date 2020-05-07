@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from "axios";
 
 export default {
   namespaced: true,
@@ -34,7 +34,7 @@ export default {
   },
 
   actions: {
-    getPolicies (context) {
+    loadPolicies (context) {
       axios.get("/automation/policies/").then(r => {
         context.commit("SET_POLICIES", r.data);
       })
@@ -49,5 +49,19 @@ export default {
         context.commit("setPolicyChecks", r.data);
       });
     },
+    loadPolicy (context, pk) {
+      return axios.get(`/automation/policies/${pk}/`);
+    },
+    addPolicy (context, data) {
+      return axios.post("/automation/policies/", data);
+    },
+    editpolicy (context, data) {
+      return axios.put(`/automation/policies/${this.pk}/`, formData)
+    },
+    deletePolicy (context, pk) {
+      return axios.delete(`/automation/policies/${pk}`).then(r => {
+        context.dispatch("getPolicies");
+      });
+    }
   }
 }

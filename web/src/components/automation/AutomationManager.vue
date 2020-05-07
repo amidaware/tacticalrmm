@@ -1,99 +1,107 @@
 <template>
-  <div class="q-pa-md q-gutter-sm">
-    <q-dialog :value="toggleAutomationManager" @hide="hideAutomationManager" @show="getPolicies">
-      <q-card style="width: 900px; max-width: 90vw;">
-        <q-bar>
-          <q-btn @click="getPolicies" class="q-mr-sm" dense flat push icon="refresh" />Automation Manager
-          <q-space />
-          <q-btn dense flat icon="close" v-close-popup>
-            <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
-          </q-btn>
-        </q-bar>
-        <div class="q-pa-md">
-          <div class="q-gutter-sm">
-            <q-btn
-              label="New"
-              dense
-              flat
-              push
-              unelevated
-              no-caps
-              icon="add"
-              @click="showAddPolicyModal = true; clearRow"
-            />
-            <q-btn
-              label="Edit"
-              :disable="selectedRow === null"
-              dense
-              flat
-              push
-              unelevated
-              no-caps
-              icon="edit"
-              @click="showEditPolicyModal = true"
-            />
-            <q-btn
-              label="Delete"
-              :disable="selectedRow === null"
-              dense
-              flat
-              push
-              unelevated
-              no-caps
-              icon="delete"
-              @click="deletePolicy"
-            />
-            <q-btn
-              label="Policy Overview"
-              dense
-              flat
-              push
-              unelevated
-              no-caps
-              icon="remove_red_eye"
-              @click="showPolicyOverviewModal = true"
-            />
-          </div>
-          <q-table
+  <div style="width: 900px; max-width: 90vw;">
+    <q-card>
+      <q-bar>
+        <q-btn ref="refresh" @click="getPolicies; clearRow()" class="q-mr-sm" dense flat push icon="refresh" />Automation Manager
+        <q-space />
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+      <div class="q-pa-md">
+        <div class="q-gutter-sm">
+          <q-btn
+            ref="new"
+            label="New"
             dense
-            class="automation-sticky-header-table"
-            :data="policies"
-            :columns="columns"
-            :visible-columns="visibleColumns"
-            :pagination.sync="pagination"
-            row-key="id"
-            binary-state-sort
-            hide-bottom
-            virtual-scroll
             flat
-            :rows-per-page-options="[0]"
-          >
-            <template slot="body" slot-scope="props" :props="props">
-              <q-tr
-                :class="{highlight: selectedRow === props.row.id}"
-                @click="policyRowSelected(props.row.id)"
-              >
-                <q-td>{{ props.row.name }}</q-td>
-                <q-td>{{ props.row.desc }}</q-td>
-                <q-td>{{ props.row.active }}</q-td>
-                <q-td>{{ props.row.clients.length }}</q-td>
-                <q-td>{{ props.row.sites.length }}</q-td>
-                <q-td>{{ props.row.agents.length }}</q-td>
-              </q-tr>
-            </template>
-          </q-table>
+            push
+            unelevated
+            no-caps
+            icon="add"
+            @click="showPolicyFormModal = true; clearRow()"
+          />
+          <q-btn
+            ref="edit"
+            label="Edit"
+            :disable="selectedRow === null"
+            dense
+            flat
+            push
+            unelevated
+            no-caps
+            icon="edit"
+            @click="showPolicyFormModal = true"
+          />
+          <q-btn
+            ref="delete"
+            label="Delete"
+            :disable="selectedRow === null"
+            dense
+            flat
+            push
+            unelevated
+            no-caps
+            icon="delete"
+            @click="deletePolicy"
+          />
+          <q-btn
+            ref="overview"
+            label="Policy Overview"
+            dense
+            flat
+            push
+            unelevated
+            no-caps
+            icon="remove_red_eye"
+            @click="showPolicyOverviewModal = true"
+          />
         </div>
-        <q-separator />
-        <q-card-section>
-          <PolicySubTableTabs :policypk="policyPkSelected" />
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-    <q-dialog v-model="showAddPolicyModal">
-      <AddPolicy @close="showAddPolicyModal = false" @added="getPolicies" />
-    </q-dialog>
-    <q-dialog v-model="showEditPolicyModal">
-      <EditPolicy :pk="selectedRow" @close="showEditPolicyModal = false" @edited="getPolicies" />
+        <q-table
+          dense
+          class="automation-sticky-header-table"
+          :data="policies"
+          :columns="columns"
+          :visible-columns="visibleColumns"
+          :pagination.sync="pagination"
+          :selected.sync="selected"
+          @selection="policyRowSelected"
+          selection="single"
+          row-key="id"
+          binary-state-sort
+          hide-bottom
+          flat
+        >
+          <template v-slot:header="props">
+            <q-tr :props="props">
+              <q-th v-for="col in props.cols" :key="col.name" :props="props">
+                {{ col.label }}
+              </q-th>
+            </q-tr>
+          </template>
+          <template v-slot:body="props">
+            <q-tr
+              :props="props"
+              class="cursor-pointer"
+              @click="props.selected = true"  
+            >
+              <q-td>{{ props.row.name }}</q-td>
+              <q-td>{{ props.row.desc }}</q-td>
+              <q-td>{{ props.row.active }}</q-td>
+              <q-td>{{ props.row.clients.length }}</q-td>
+              <q-td>{{ props.row.sites.length }}</q-td>
+              <q-td>{{ props.row.agents.length }}</q-td>
+            </q-tr>
+          </template>
+        </q-table>
+      </div>
+
+      <q-card-section>
+        <PolicySubTableTabs :policypk="selected.id" />
+      </q-card-section>
+    </q-card>
+    <q-dialog v-model="showPolicyFormModal">
+      <PolicyForm @close="showPolicyFormModal = false" @refresh="getPolicies; clearRow()" />
     </q-dialog>
     <q-dialog v-model="showPolicyOverviewModal">
       <PolicyOverview @close="showPolicyOverviewModal = false" />
@@ -102,24 +110,21 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 import { mapState } from 'vuex';
-import AddPolicy from "@/components/automation/modals/AddPolicy";
-import EditPolicy from "@/components/automation/modals/EditPolicy";
+import PolicyForm from "@/components/automation/modals/PolicyForm";
 import PolicyOverview from "@/components/automation/PolicyOverview";
 import PolicySubTableTabs from "@/components/automation/PolicySubTableTabs"
 
 export default {
   name: "AutomationManager",
-  components: { AddPolicy, EditPolicy, PolicyOverview, PolicySubTableTabs },
+  components: { PolicyForm, PolicyOverview, PolicySubTableTabs },
   mixins: [mixins],
   data () {
     return {
-      showAddPolicyModal: false,
-      showEditPolicyModal: false,
+      showPolicyFormModal: false,
       showPolicyOverviewModal: false,
-      policyPkSelected: null,
+      selected: [],
       pagination: {
         rowsPerPage: 0,
         sortBy: "id",
@@ -175,17 +180,14 @@ export default {
   },
   methods: {
     getPolicies () {
-      this.clearRow();
-      this.$store.dispatch('automation/getPolicies');
+      this.$store.dispatch('automation/loadPolicies');
     },
-    hideAutomationManager () {
-      this.$store.commit("TOGGLE_AUTOMATION_MANAGER", false);
-    },
-    policyRowSelected (pk) {
-      this.$store.commit('automation/setSelectedPolicy', pk);
-      this.$store.dispatch('automation/loadPolicyChecks', pk);
-      this.$store.dispatch('automation/loadPolicyAutomatedTasks', pk);
-      this.policyPkSelected = pk;
+    policyRowSelected ({added, keys, rows}) {
+
+      // First key of the array is the selected row pk
+      this.$store.commit('automation/setSelectedPolicy', keys[0]);
+      this.$store.dispatch('automation/loadPolicyChecks', keys[0]);
+      this.$store.dispatch('automation/loadPolicyAutomatedTasks', keys[0]);
     },
     clearRow () {
       this.$store.commit('automation/setSelectedPolicy', null);
@@ -193,23 +195,25 @@ export default {
       this.$store.commit('automation/setPolicyAutomatedTasks', {});
     },
     deletePolicy () {
-      this.$q
-        .dialog({
+      this.$q.dialog({
           title: "Delete policy?",
           cancel: true,
           ok: { label: "Delete", color: "negative" }
         })
         .onOk(() => {
-          axios.delete(`/automation/policies/${this.selectedRow}`).then(r => {
-            this.getPolicies();
-            this.notifySuccess(`Policy was deleted!`);
-          });
+
+          this.$store.dispatch('automation/deletePolicy', this.selectedRow)
+            .then(response => {
+              this.notifySuccess(`Policy was deleted!`);
+            })
+            .catch(error => {
+              this.notifyError(`An Error occured while deleting policy`);
+            });
         });
     },
   },
   computed: {
     ...mapState({
-      toggleAutomationManager: state => state.toggleAutomationManager,
       policies: state => state.automation.policies,
       selectedRow: state => state.automation.selectedPolicy
     }),

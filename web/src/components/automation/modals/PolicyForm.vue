@@ -1,8 +1,8 @@
 <template>
   <q-card style="width: 60vw">
-    <q-form @submit.prevent="editPolicy">
+    <q-form @submit.prevent="submit">
       <q-card-section class="row items-center">
-        <div class="text-h6">Edit Policy</div>
+        <div class="text-h6">{{ title }}</div>
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </q-card-section>
@@ -85,20 +85,20 @@
         </div>
       </q-card-section>
       <q-card-section class="row items-center">
-        <q-btn label="Edit" color="primary" type="submit" />
+        <q-btn :label="title" color="primary" type="submit" />
       </q-card-section>
     </q-form>
   </q-card>
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
+import dropdown_formatter from "@/mixins/dropdown_formatter";
 
 export default {
-  name: "EditPolicy",
-  mixins: [mixins],
-  props: ["pk"],
+  name: "PolicyForm",
+  mixins: [mixins, dropdown_formatter],
+  props: {"pk": Number},
   data () {
     return {
       name: "",
@@ -112,9 +112,14 @@ export default {
       agentOptions: [],
     };
   },
+  computed: {
+    title () {
+      return (this.pk) ? "Edit Policy" : "Add Policy";
+    }
+  },
   methods: {
     getPolicy () {
-      axios.get(`/automation/policies/${this.pk}/`).then(r => {
+      this.$store.dispatch("automation/loadPolicy", this.pk).then(r => {
 
         this.name = r.data.name;
         this.desc = r.data.desc;
@@ -139,14 +144,14 @@ export default {
         });
       });
     },
-    editPolicy () {
+    submit () {
       if (!this.name) {
         this.notifyError("Name is required!");
         return false;
       }
 
       this.$q.loading.show();
-      
+
       let formData = {
         name: this.name,
         desc: this.desc,
@@ -155,67 +160,73 @@ export default {
         sites: this.selectedSites.map(site => site.value),
         clients: this.selectedClients.map(client => client.value)
       };
+      
+      if (this.pk) {
+        this.$store.dispatch("automation/editPolicy", this.pk, formData)
+          .then(r => {
+            this.$q.loading.hide();
+            this.$emit("close");
+            this.$emit("edited");
+            this.notifySuccess("Policy edited!");
+          })
+          .catch(e => {
+            this.$q.loading.hide();
+            this.notifyError(e.response.data);
+          });
 
-      axios.put(`/automation/policies/${this.pk}/`, formData)
+      } else {
+
+        this.$store.dispatch("automation/addPolicy", formData)
+          .then(r => {
+            this.$q.loading.hide();
+            this.$emit("close");
+            this.$emit("refresh");
+            this.notifySuccess("Policy added! Now you can add Tasks and Checks!");
+          })
+          .catch(e => {
+            this.$q.loading.hide();
+            this.notifyError(e.response.data);
+          });
+
+      }
+    },
+    getClients () {
+      this.$store.dispatch("loadClients")
         .then(r => {
-          this.$q.loading.hide();
-          this.$emit("close");
-          this.$emit("edited");
-          this.notifySuccess("Policy edited!");
+          this.clientOptions = this.formatClient(r.data);
         })
         .catch(e => {
           this.$q.loading.hide();
           this.notifyError(e.response.data);
         });
     },
-    getClients () {
-
-      axios.get(`/clients/listclients/`).then(r => {
-        this.clientOptions = r.data.map(client => {
-          return {
-            label: client.client,
-            value: client.id
-          };
-        });
-      })
-      .catch(e => {
-        this.$q.loading.hide();
-        this.notifyError(e.response.data);
-      });
-    },
     getSites () {
-
-      axios.get(`/clients/listsites/`).then(r => {
-        this.siteOptions = r.data.map(site => {
-          return {
-            label: `${site.client_name}\\${site.site}`,
-            value: site.id
-          };
+      this.$store.dispatch("loadSites")
+        .then(r => {
+          this.siteOptions = this.formatSites(r.data);
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError(e.response.data);
         });
-      })
-      .catch(e => {
-        this.$q.loading.hide();
-        this.notifyError(e.response.data);
-      });
     },
     getAgents () {
-
-      axios.get(`/agents/listagents/`).then(r => {
-        this.agentOptions = r.data.map(agent => {
-          return {
-            label: `${agent.client}\\${agent.site}\\${agent.hostname}`,
-            value: agent.pk
-          };
+      this.$store.dispatch("loadAgents")
+        .then(r => {
+          this.agentOptions = this.formatAgents(r.data)
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError(e.response.data);
         });
-      })
-      .catch(e => {
-        this.$q.loading.hide();
-        this.notifyError(e.response.data);
-      });
     },
   },
   mounted () {
-    this.getPolicy();
+    //If pk prop is set that means we are editting
+    if (this.pk) {
+      this.getPolicy();
+    }
+
     this.getClients();
     this.getSites();
     this.getAgents();

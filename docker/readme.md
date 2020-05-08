@@ -111,17 +111,31 @@ Since this file is checked into git you can configure git to ignore it and the c
 git update-index --assume-unchanged ./web/vue.config.js
 ```
 
+To revert this run
+
+```
+git update-index --no-assume-unchanged ./web/vue.config.js
+```
+
 ### Create Python Virtual Env
 
 Each python container shares the same virtual env to make spinning up faster. It is located in api/tacticalrmm/env.
 
-There is a container dedicated to creating and keeping this up to date. Prior to spinning up the environment you can run `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up venv` to make sure the virtual env is ready. Otherwise the api and celery containers will fail to start.
+There is a container dedicated to creating and keeping this up to date. Prior to spinning up the environment you can run `docker-compose -f docker-compose.dev.yml up venv` to make sure the virtual env is ready. Otherwise the api and celery containers will fail to start.
 
 ### Spinup the environment
 
 Now run `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d` to spin everything else up
 
 This will mount the local vue and python files in the app container with hot reload. Does not require rebuilding when changes to code are made and the changes will take effect immediately!
+
+### Running the Tests
+
+There is a container that is dedicated to run the vue unit tests. The below command will run them and display the output. You can ignore the orphaned containers message.
+
+```
+docker-compose -f docker-compose.test.yml up app-unit-test
+```
 
 ### Other Considerations
 

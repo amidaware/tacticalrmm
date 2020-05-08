@@ -1,0 +1,11 @@
+# FOR TESTS 
+version: '3.7'
+
+services:
+  # Container that hosts Vue frontend
+  app-unit-test:
+    image: node:12
+    command: npm run test:unit
+    working_dir: /home/node
+    volumes:
+      - ../web:/home/node

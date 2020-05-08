@@ -17,7 +17,7 @@ class AgentSerializer(serializers.ModelSerializer):
     local_ips = serializers.ReadOnlyField()
     make_model = serializers.ReadOnlyField()
     physical_disks = serializers.ReadOnlyField()
-    has_failing_checks = serializers.ReadOnlyField()
+    checks = serializers.ReadOnlyField()
 
     class Meta:
         model = Agent

@@ -3,52 +3,13 @@ dist: xenial
 matrix:
   include:
     - language: node_js
-      node_js: "10"
-      before_install:
-        - cd web
-      install:
-        - npm install
-      script:
-        - npm run build
-
-    - language: node_js
-      node_js: "11"
-      before_install:
-        - cd web
-      install:
-        - npm install
-      script:
-        - npm run build
-
-    - language: node_js
       node_js: "12"
       before_install:
         - cd web
       install:
         - npm install
       script:
-        - npm run build
-
-    - language: node_js
-      node_js: "10"
-      before_script:
-        - mkdir meshcentral && cd meshcentral
-      script:
-        - npm install meshcentral
-
-    - language: node_js
-      node_js: "11"
-      before_script:
-        - mkdir meshcentral && cd meshcentral
-      script:
-        - npm install meshcentral
-
-    - language: node_js
-      node_js: "12"
-      before_script:
-        - mkdir meshcentral && cd meshcentral
-      script:
-        - npm install meshcentral
+        - npm run test:unit
 
     - language: python
       python: "3.7"

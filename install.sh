@@ -228,7 +228,8 @@ cd /home/${USER}/rmm/api
 python3.7 -m venv env
 source /home/${USER}/rmm/api/env/bin/activate
 cd /home/${USER}/rmm/api/tacticalrmm
-pip install --upgrade pip
+pip install --no-cache-dir --upgrade pip
+pip install --no-cache-dir --upgrade setuptools wheel
 pip install -r /home/${USER}/rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic

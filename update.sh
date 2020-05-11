@@ -12,6 +12,7 @@ git clean -df
 cp /home/${USER}/rmm/_modules/* /srv/salt/_modules/
 cp /home/${USER}/rmm/scripts/* /srv/salt/scripts/
 rm -rf /home/${USER}/rmm/api/env
+cd /home/${USER}/rmm/api
 python3.7 -m venv env
 source /home/${USER}/rmm/api/env/bin/activate
 cd /home/${USER}/rmm/api/tacticalrmm

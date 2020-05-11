@@ -26,7 +26,7 @@ jobs:
           source env/bin/activate
           cd /home/steam/myagent/_work/1/s/api/tacticalrmm
           pip install --upgrade pip
-          pip install -r requirements.txt -r requirements-test.txt
+          pip install -r requirements.txt
         displayName: "Install Python Dependencies"
 
       - script: |

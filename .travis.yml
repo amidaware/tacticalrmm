@@ -27,7 +27,7 @@ matrix:
 
       install:
         - pip install --upgrade pip
-        - pip install -r requirements.txt -r requirements-test.txt
+        - pip install -r requirements.txt
 
       script:
         - python manage.py test -v 2
@@ -48,7 +48,7 @@ matrix:
 
       install:
         - pip install --upgrade pip
-        - pip install -r requirements.txt -r requirements-test.txt
+        - pip install -r requirements.txt
 
       script:
         - python manage.py test -v 2

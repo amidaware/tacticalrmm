@@ -92,6 +92,7 @@ class CheckSerializer(serializers.ModelSerializer):
     pingchecks = PingCheckSerializer(many=True, read_only=True)
     winservicechecks = WinServiceCheckSerializer(many=True, read_only=True)
     scriptchecks = ScriptCheckSerializer(many=True, read_only=True)
+    checks = serializers.ReadOnlyField()
 
     class Meta:
         model = Agent
@@ -106,7 +107,9 @@ class CheckSerializer(serializers.ModelSerializer):
             "pingchecks",
             "winservicechecks",
             "scriptchecks",
+            "checks",
         )
+
 
 class PolicyChecksSerializer(serializers.ModelSerializer):
     diskchecks = DiskCheckSerializer(many=True, read_only=True)
@@ -120,12 +123,12 @@ class PolicyChecksSerializer(serializers.ModelSerializer):
         model = Policy
         fields = (
             "id",
-            "name", 
+            "name",
             "active",
             "diskchecks",
             "cpuloadchecks",
             "memchecks",
             "pingchecks",
             "winservicechecks",
-            "scriptchecks"
+            "scriptchecks",
         )

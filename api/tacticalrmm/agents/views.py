@@ -181,14 +181,13 @@ def get_event_log(request, pk, logtype, days):
     try:
         resp = agent.salt_api_cmd(
             hostname=agent.salt_id,
-            timeout=70,
+            timeout=90,
+            salt_timeout=85,
             func="get_eventlog.get_eventlog",
             arg=[logtype, int(days)],
         )
     except Exception:
-        return Response(
-            {"error": "unable to contact the agent"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response("Agent timed out", status=status.HTTP_400_BAD_REQUEST)
 
     return Response(
         json.loads(

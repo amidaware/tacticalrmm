@@ -1,59 +1,65 @@
 <template>
   <div class="q-pa-xs q-ma-xs">
     <q-bar>
-      <div class="cursor-pointer non-selectable">
-        File
-        <q-menu>
-          <q-list dense style="min-width: 100px">
-            <q-item clickable v-close-popup @click="showAddClientModal = true">
-              <q-item-section>Add Client</q-item-section>
-            </q-item>
-            <q-item clickable v-close-popup @click="showAddSiteModal = true">
-              <q-item-section>Add Site</q-item-section>
-            </q-item>
-            <q-item clickable v-close-popup @click="showEditClientsModal = true">
-              <q-item-section>Edit Clients</q-item-section>
-            </q-item>
-            <q-item clickable v-close-popup @click="showEditSitesModal = true">
-              <q-item-section>Edit Sites</q-item-section>
-            </q-item>
-            <q-item clickable v-close-popup @click="getLog">
-              <q-item-section>Debug Log</q-item-section>
-            </q-item>
-          </q-list>
-        </q-menu>
-      </div>
-      <!-- agents -->
-      <div class="q-ml-md cursor-pointer non-selectable">
-        Agents
-        <q-menu auto-close>
-          <q-list dense style="min-width: 100px">
-            <q-item clickable v-close-popup @click="showUpdateAgentsModal = true">
-              <q-item-section>Update Agents</q-item-section>
-            </q-item>
-          </q-list>
-        </q-menu>
-      </div>
-      <!-- settings -->
-      <div class="q-ml-md cursor-pointer non-selectable">
-        Settings
-        <q-menu auto-close>
-          <q-list dense style="min-width: 100px">
-            <!-- script manager -->
-            <q-item clickable v-close-popup @click="showScriptManager">
-              <q-item-section>Script Manager</q-item-section>
-            </q-item>
-            <!-- automation manager -->
-            <q-item clickable v-close-popup @click="showAutomationManager = true">
-              <q-item-section>Automation Manager</q-item-section>
-            </q-item>
-            <!-- core settings -->
-            <q-item clickable v-close-popup @click="showEditCoreSettingsModal = true">
-              <q-item-section>Global Settings</q-item-section>
-            </q-item>
-          </q-list>
-        </q-menu>
-      </div>
+      <q-btn-group flat>
+        <q-btn size="md" dense no-caps flat label="File">
+          <q-menu>
+            <q-list dense style="min-width: 100px">
+              <q-item clickable v-close-popup @click="showAddClientModal = true">
+                <q-item-section>Add Client</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="showAddSiteModal = true">
+                <q-item-section>Add Site</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="getLog">
+                <q-item-section>Debug Log</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
+        <!-- edit -->
+        <q-btn size="md" dense no-caps flat label="Edit">
+          <q-menu>
+            <q-list dense style="min-width: 100px">
+              <q-item clickable v-close-popup @click="showEditClientsModal = true">
+                <q-item-section>Edit Clients</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="showEditSitesModal = true">
+                <q-item-section>Edit Sites</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
+        <!-- agents -->
+        <q-btn size="md" dense no-caps flat label="Agents">
+          <q-menu auto-close>
+            <q-list dense style="min-width: 100px">
+              <q-item clickable v-close-popup @click="showUpdateAgentsModal = true">
+                <q-item-section>Update Agents</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
+        <!-- settings -->
+        <q-btn size="md" dense no-caps flat label="Settings">
+          <q-menu auto-close>
+            <q-list dense style="min-width: 100px">
+              <!-- script manager -->
+              <q-item clickable v-close-popup @click="showScriptManager">
+                <q-item-section>Script Manager</q-item-section>
+              </q-item>
+              <!-- automation manager -->
+              <q-item clickable v-close-popup @click="showAutomationManager = true">
+                <q-item-section>Automation Manager</q-item-section>
+              </q-item>
+              <!-- core settings -->
+              <q-item clickable v-close-popup @click="showEditCoreSettingsModal = true">
+                <q-item-section>Global Settings</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
+      </q-btn-group>
       <q-space />
       <!-- add client modal -->
       <q-dialog v-model="showAddClientModal">
@@ -92,7 +98,7 @@
       <!-- Automation Manager -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showAutomationManager">
-          <AutomationManager @close="showAutomationManager = false"/>
+          <AutomationManager @close="showAutomationManager = false" />
         </q-dialog>
       </div>
     </q-bar>
@@ -132,7 +138,7 @@ export default {
       showEditSitesModal: false,
       showUpdateAgentsModal: false,
       showEditCoreSettingsModal: false,
-      showAutomationManager: false,
+      showAutomationManager: false
     };
   },
   methods: {

@@ -6,7 +6,7 @@ export default {
     alerts: [],
   },
 
-  getters:{
+  getters: {
     getAlerts(state) {
       return state.alerts;
     },

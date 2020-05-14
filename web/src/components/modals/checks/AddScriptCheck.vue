@@ -80,7 +80,7 @@ export default {
       this.$store.dispatch("getScripts");
     },
     addScriptCheck() {
-      const pk = (this.policypk) ? {policy: this.policypk} : {pk: this.agentpk}
+      const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
 
       const data = {
         ...pk,
@@ -99,7 +99,7 @@ export default {
           } else {
             this.$store.dispatch("loadChecks", this.agentpk);
           }
-          
+
           this.notifySuccess(r.data);
         })
         .catch(e => this.notifyError(e.response.data));

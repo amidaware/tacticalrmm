@@ -9,56 +9,56 @@ export default {
     policies: [],
   },
 
-  getters:{
-    selectedPolicyPk (state) {
+  getters: {
+    selectedPolicyPk(state) {
       return state.selectedPolicy;
     },
-    policies (state) {
+    policies(state) {
       return state.policies;
     }
   },
 
   mutations: {
-    SET_POLICIES (state, policies) {
+    SET_POLICIES(state, policies) {
       state.policies = policies;
     },
-    setSelectedPolicy (state, pk) {
+    setSelectedPolicy(state, pk) {
       state.selectedPolicy = pk;
     },
-    setPolicyChecks (state, checks) {
+    setPolicyChecks(state, checks) {
       state.checks = checks;
     },
-    setPolicyAutomatedTasks (state, tasks) {
+    setPolicyAutomatedTasks(state, tasks) {
       state.automatedTasks = tasks;
     },
   },
 
   actions: {
-    loadPolicies (context) {
+    loadPolicies(context) {
       axios.get("/automation/policies/").then(r => {
         context.commit("SET_POLICIES", r.data);
       })
     },
-    loadPolicyAutomatedTasks (context, pk) {
+    loadPolicyAutomatedTasks(context, pk) {
       axios.get(`/automation/${pk}/policyautomatedtasks/`).then(r => {
         context.commit("setPolicyAutomatedTasks", r.data);
       });
     },
-    loadPolicyChecks (context, pk) {
+    loadPolicyChecks(context, pk) {
       axios.get(`/checks/${pk}/loadpolicychecks/`).then(r => {
         context.commit("setPolicyChecks", r.data);
       });
     },
-    loadPolicy (context, pk) {
+    loadPolicy(context, pk) {
       return axios.get(`/automation/policies/${pk}/`);
     },
-    addPolicy (context, data) {
+    addPolicy(context, data) {
       return axios.post("/automation/policies/", data);
     },
-    editpolicy (context, data) {
+    editpolicy(context, data) {
       return axios.put(`/automation/policies/${this.pk}/`, formData)
     },
-    deletePolicy (context, pk) {
+    deletePolicy(context, pk) {
       return axios.delete(`/automation/policies/${pk}`).then(r => {
         context.dispatch("getPolicies");
       });

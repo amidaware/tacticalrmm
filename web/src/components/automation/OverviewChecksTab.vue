@@ -38,18 +38,10 @@
             <q-tr>
               <!-- tds -->
               <q-td>
-                <q-checkbox
-                  disabled
-                  dense
-                  v-model="props.row.text_alert"
-                />
+                <q-checkbox disabled dense v-model="props.row.text_alert" />
               </q-td>
               <q-td>
-                <q-checkbox
-                  disabled
-                  dense
-                  v-model="props.row.email_alert"
-                />
+                <q-checkbox disabled dense v-model="props.row.email_alert" />
               </q-td>
               <q-td v-if="props.row.status === 'pending'"></q-td>
               <q-td v-else-if="props.row.status === 'passing'">
@@ -84,14 +76,10 @@
                 <q-badge color="negative">Failing</q-badge>
               </q-td>
               <q-td v-if="props.row.check_type === 'ping'">
-                <span
-                  style="cursor:pointer;color:blue;text-decoration:underline"
-                >output</span>
+                <span style="cursor:pointer;color:blue;text-decoration:underline">output</span>
               </q-td>
               <q-td v-else-if="props.row.check_type === 'script'">
-                <span
-                  style="cursor:pointer;color:blue;text-decoration:underline"
-                >output</span>
+                <span style="cursor:pointer;color:blue;text-decoration:underline">output</span>
               </q-td>
               <q-td v-else>{{ props.row.more_info }}</q-td>
               <q-td>{{ props.row.last_run }}</q-td>
@@ -104,8 +92,8 @@
 </template>
 
 <script>
-import axios from 'axios'
-import mixins from '@/mixins/mixins'
+import axios from "axios";
+import mixins from "@/mixins/mixins";
 
 export default {
   name: "OverviewChecksTab",
@@ -138,23 +126,25 @@ export default {
       }
     };
   },
-  mounted () {
+  mounted() {
     this.getPolicyChecks();
   },
   watch: {
-    'policypk': function () {
+    policypk: function() {
       this.getPolicyChecks();
     }
   },
   methods: {
-    getPolicyChecks () {
-      axios.get(`/checks/${this.policypk}/loadpolicychecks/`).then(r => {
-        this.checks = r.data;
-      })
-      .catch(e => {
-        this.$q.loading.hide();
-        this.notifyError(e.response.data);
-      });
+    getPolicyChecks() {
+      axios
+        .get(`/checks/${this.policypk}/loadpolicychecks/`)
+        .then(r => {
+          this.checks = r.data;
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError(e.response.data);
+        });
     }
   },
   computed: {

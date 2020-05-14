@@ -5,10 +5,7 @@ from .models import Client, Site
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Client
-        fields = (
-            "id",
-            "client"
-        )
+        fields = ("id", "client")
 
 
 class SiteSerializer(serializers.ModelSerializer):
@@ -27,4 +24,3 @@ class TreeSerializer(serializers.ModelSerializer):
             "site",
             "client_name",
         )
-

@@ -3,13 +3,7 @@
     <q-card-section class="row items-center">
       <div class="text-h6">Add Windows Service Check</div>
       <q-space />
-      <q-btn
-        icon="close"
-        flat
-        round
-        dense
-        v-close-popup
-      />
+      <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
 
     <q-form @submit.prevent="addCheck">
@@ -67,10 +61,7 @@
           v-model="passIfStartPending"
           label="PASS if service is in 'Start Pending' mode"
         />
-        <q-checkbox
-          v-model="restartIfStopped"
-          label="RESTART service if it's stopped"
-        />
+        <q-checkbox v-model="restartIfStopped" label="RESTART service if it's stopped" />
       </q-card-section>
       <q-card-section>
         <q-select
@@ -82,15 +73,8 @@
         />
       </q-card-section>
       <q-card-actions align="right">
-        <q-btn
-          label="Add"
-          color="primary"
-          type="submit"
-        />
-        <q-btn
-          label="Cancel"
-          v-close-popup
-        />
+        <q-btn label="Add" color="primary" type="submit" />
+        <q-btn label="Cancel" v-close-popup />
       </q-card-actions>
     </q-form>
   </q-card>
@@ -136,31 +120,35 @@ export default {
       }
     },
     getRawName() {
-      let svc = this.servicesData.find(
-        k => k.display_name === this.displayName
-      );
+      let svc = this.servicesData.find(k => k.display_name === this.displayName);
       this.rawName = [svc].map(j => j.name);
     },
     addCheck() {
-      const pk = (this.policypk) ? { policy: this.policypk } : { pk: this.agentpk }
+      const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
 
       let rawname, displayname;
 
       if (this.policypk) {
         // policy
-        if (this.serviceType === 'svcdefault') {
-          rawname = { rawname: this.rawName[0] }
-          displayname = { displayname: this.displayName }
-          if (this.rawName.length === 0) { this.notifyError("Please select a service"); return; }
-        } else if (this.serviceType === 'svcmanual') {
-          rawname = { rawname: this.manualServiceName }
-          displayname = { displayname: this.manualSvcDisplayName }
-          if (!this.manualServiceName || !this.manualSvcDisplayName) { this.notifyError("All fields required"); return; }
+        if (this.serviceType === "svcdefault") {
+          rawname = { rawname: this.rawName[0] };
+          displayname = { displayname: this.displayName };
+          if (this.rawName.length === 0) {
+            this.notifyError("Please select a service");
+            return;
+          }
+        } else if (this.serviceType === "svcmanual") {
+          rawname = { rawname: this.manualServiceName };
+          displayname = { displayname: this.manualSvcDisplayName };
+          if (!this.manualServiceName || !this.manualSvcDisplayName) {
+            this.notifyError("All fields required");
+            return;
+          }
         }
       } else {
         // agent
-        rawname = { rawname: this.rawName[0] }
-        displayname = { displayname: this.displayName }
+        rawname = { rawname: this.rawName[0] };
+        displayname = { displayname: this.displayName };
       }
 
       const data = {

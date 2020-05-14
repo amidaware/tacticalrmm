@@ -266,32 +266,3 @@ class Agent(models.Model):
             versions[i] = release["name"]
 
         return {"versions": versions, "data": r.json()}
-
-    """ @staticmethod
-    def salt_cmd(tgt, fun, arg=[], timeout=60, kwargs={}):
-        return local.cmd(
-            tgt, 
-            fun, 
-            arg, 
-            timeout=timeout, 
-            tgt_type="glob", 
-            ret="", 
-            jid="", 
-            full_return=False, 
-            kwarg=kwargs, 
-            username=settings.SALT_USERNAME, 
-            password=settings.SALT_PASSWORD, 
-            eauth="pam"
-        )
-    
-    @staticmethod
-    def salt_wheel_cmd(hostname, func):
-        resp = wheel.cmd_sync({
-            "fun": func,
-            "match": hostname,
-            "username": settings.SALT_USERNAME,
-            "password": settings.SALT_PASSWORD,
-            "eauth": "pam"
-        }, timeout=100)
-
-        return resp """

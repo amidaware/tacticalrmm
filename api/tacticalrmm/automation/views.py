@@ -17,11 +17,11 @@ from checks.models import Script
 from clients.models import Client, Site
 
 from .serializers import (
-    PolicySerializer, 
+    PolicySerializer,
     PolicyRelationSerializer,
     AutoTaskPolicySerializer,
-    AutoTaskSerializer, 
-    AgentTaskSerializer
+    AutoTaskSerializer,
+    AgentTaskSerializer,
 )
 
 from checks.serializers import ScriptSerializer
@@ -31,6 +31,7 @@ from .tasks import (
     run_win_task,
     enable_or_disable_win_task,
 )
+
 
 class GetAddPolicies(APIView):
     def get(self, request):
@@ -53,20 +54,21 @@ class GetAddPolicies(APIView):
         except DataError:
             content = {"error": "Policy name too long (max 255 chars)"}
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # Add Clients, Sites, and Agents to Policy
-        if (len(request.data["clients"]) > 0):
+        if len(request.data["clients"]) > 0:
             policy.clients.set(request.data["clients"])
 
-        if (len(request.data["sites"]) > 0):
+        if len(request.data["sites"]) > 0:
             policy.sites.set(request.data["sites"])
 
-        if (len(request.data["agents"]) > 0):
+        if len(request.data["agents"]) > 0:
             policy.agents.set(request.data["agents"])
 
         return Response("ok")
 
-class GetUpdateDeletePolicy(APIView):     
+
+class GetUpdateDeletePolicy(APIView):
     def get(self, request, pk):
 
         policy = get_object_or_404(Policy, pk=pk)
@@ -88,21 +90,21 @@ class GetUpdateDeletePolicy(APIView):
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
         # Update Clients, Sites, and Agents to Policy
-        if (len(request.data["clients"]) > 0):
+        if len(request.data["clients"]) > 0:
             policy.clients.set(request.data["clients"])
         else:
             policy.clients.clear()
-        
-        if (len(request.data["sites"]) > 0):
+
+        if len(request.data["sites"]) > 0:
             policy.sites.set(request.data["sites"])
         else:
             policy.sites.clear()
 
-        if (len(request.data["agents"]) > 0):
+        if len(request.data["agents"]) > 0:
             policy.agents.set(request.data["agents"])
         else:
             policy.agents.clear()
-        
+
         return Response("ok")
 
     def delete(self, request, pk):
@@ -196,6 +198,7 @@ class PolicyAutoTask(APIView):
         policy = Policy.objects.only("pk").get(pk=pk)
         return Response(AutoTaskPolicySerializer(policy).data)
 
+
 @api_view()
 def run_task(request, pk):
     task = get_object_or_404(AutomatedTask, pk=pk)
@@ -226,8 +229,7 @@ class TaskRunner(APIView):
         return Response("ok")
 
 
-class OverviewPolicy(APIView): 
-
+class OverviewPolicy(APIView):
     def get(self, request):
 
         clients = Client.objects.all()
@@ -244,14 +246,15 @@ class OverviewPolicy(APIView):
             sites = Site.objects.filter(client=client)
 
             for site in sites:
-                
+
                 client_sites["sites"][site.site] = {}
 
                 policies = Policy.objects.filter(sites__id=site.id)
 
-                client_sites["sites"][site.site]["policies"] = list(PolicySerializer(policies, many=True).data)
-                            
+                client_sites["sites"][site.site]["policies"] = list(
+                    PolicySerializer(policies, many=True).data
+                )
+
             response[client.client] = client_sites
 
         return Response(response)
-

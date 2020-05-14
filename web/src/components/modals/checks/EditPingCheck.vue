@@ -57,13 +57,11 @@ export default {
   },
   methods: {
     getCheck() {
-      axios
-        .get(`/checks/getstandardcheck/ping/${this.editCheckPK}/`)
-        .then(r => {
-          this.failure = r.data.failures;
-          this.pingname = r.data.name;
-          this.pingip = r.data.ip;
-        });
+      axios.get(`/checks/getstandardcheck/ping/${this.editCheckPK}/`).then(r => {
+        this.failure = r.data.failures;
+        this.pingname = r.data.name;
+        this.pingip = r.data.ip;
+      });
     },
     editCheck() {
       const data = {
@@ -83,7 +81,7 @@ export default {
           } else {
             this.$store.dispatch("loadChecks", this.agentpk);
           }
-          
+
           this.notifySuccess("Ping check was edited!");
         })
         .catch(e => this.notifyError(e.response.data.error));

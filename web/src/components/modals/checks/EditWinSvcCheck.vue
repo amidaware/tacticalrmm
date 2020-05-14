@@ -7,13 +7,21 @@
     </q-card-section>
 
     <q-form @submit.prevent="editCheck">
-      
       <q-card-section>
-        <q-select disable dense outlined v-model="displayName" :options="svcDisplayNames" label="Service" />
-        
+        <q-select
+          disable
+          dense
+          outlined
+          v-model="displayName"
+          :options="svcDisplayNames"
+          label="Service"
+        />
       </q-card-section>
       <q-card-section>
-        <q-checkbox v-model="passIfStartPending" label="PASS if service is in 'Start Pending' mode" />
+        <q-checkbox
+          v-model="passIfStartPending"
+          label="PASS if service is in 'Start Pending' mode"
+        />
         <q-checkbox v-model="restartIfStopped" label="RESTART service if it's stopped" />
       </q-card-section>
       <q-card-section>
@@ -82,7 +90,7 @@ export default {
           } else {
             this.$store.dispatch("loadChecks", this.agentpk);
           }
-          
+
           this.notifySuccess("Windows service check was edited!");
         })
         .catch(e => this.notifyError(e.response.data.error));
@@ -90,6 +98,6 @@ export default {
   },
   mounted() {
     this.getService();
-  },
+  }
 };
 </script>

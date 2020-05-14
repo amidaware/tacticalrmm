@@ -207,15 +207,16 @@ export default {
         });
     },
     downloadScript() {
-      axios.get(`/checks/downloadscript/${this.selectedRow}/`, { responseType: 'blob' })
+      axios
+        .get(`/checks/downloadscript/${this.selectedRow}/`, { responseType: "blob" })
         .then(({ data }) => {
-            const blob = new Blob([data], { type: 'text/plain' })
-            let link = document.createElement('a')
-            link.href = window.URL.createObjectURL(blob)
-            link.download = this.filename
-            link.click()
+          const blob = new Blob([data], { type: "text/plain" });
+          let link = document.createElement("a");
+          link.href = window.URL.createObjectURL(blob);
+          link.download = this.filename;
+          link.click();
         })
-        .catch(error => console.error(error))
+        .catch(error => console.error(error));
     }
   },
   computed: {

@@ -62,7 +62,7 @@ def update_chocos():
                 continue
             else:
                 if data:
-                    
+
                     resp = agent.salt_api_cmd(
                         hostname=agent.salt_id, timeout=200, func="chocolatey.list"
                     )

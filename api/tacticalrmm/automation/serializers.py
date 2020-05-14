@@ -4,14 +4,14 @@ from .models import Policy, AutomatedTask
 from agents.models import Agent
 from checks.serializers import ScriptSerializer
 
-class PolicySerializer(serializers.ModelSerializer):
 
+class PolicySerializer(serializers.ModelSerializer):
     class Meta:
         model = Policy
         fields = "__all__"
 
+
 class PolicyRelationSerializer(serializers.ModelSerializer):
-    
     class Meta:
         model = Policy
         fields = "__all__"
@@ -28,13 +28,18 @@ class TaskSerializer(serializers.ModelSerializer):
         fields = "__all__"
         depth = 1
 
+
 class AgentTaskSerializer(serializers.ModelSerializer):
 
     script = ScriptSerializer(read_only=True)
 
     class Meta:
         model = AutomatedTask
-        fields = ("timeout", "script",)
+        fields = (
+            "timeout",
+            "script",
+        )
+
 
 class AutoTaskSerializer(serializers.ModelSerializer):
 
@@ -47,6 +52,7 @@ class AutoTaskSerializer(serializers.ModelSerializer):
             "hostname",
             "autotasks",
         )
+
 
 class AutoTaskPolicySerializer(serializers.ModelSerializer):
 

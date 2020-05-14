@@ -6,6 +6,6 @@ export default {
     mutations: {
         TOGGLE_LOG_MODAL(state, action) {
             state.toggleLogModal = action;
-          }
+        }
     }
 }

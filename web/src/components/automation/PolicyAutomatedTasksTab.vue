@@ -2,7 +2,14 @@
   <div v-if="Object.keys(automatedTasks).length === 0">No Policy Selected</div>
   <div class="row" v-else>
     <div class="col-12">
-      <q-btn size="sm" color="grey-5" icon="fas fa-plus" label="Add Task" text-color="black" @click="showAddAutomatedTask = true" />
+      <q-btn
+        size="sm"
+        color="grey-5"
+        icon="fas fa-plus"
+        label="Add Task"
+        text-color="black"
+        @click="showAddAutomatedTask = true"
+      />
       <q-btn dense flat push @click="refreshTasks(automatedTasks.pk)" icon="refresh" />
       <template v-if="tasks === undefined || tasks.length === 0">
         <p>No Tasks</p>
@@ -143,7 +150,7 @@ export default {
     };
   },
   methods: {
-    taskEnableorDisable (pk, action) {
+    taskEnableorDisable(pk, action) {
       const data = { enableordisable: action };
       axios
         .patch(`/automation/${pk}/automatedtasks/`, data)
@@ -153,14 +160,14 @@ export default {
         })
         .catch(e => this.notifyError("Something went wrong"));
     },
-    refreshTasks (id) {
+    refreshTasks(id) {
       this.$store.dispatch("automation/loadPolicyAutomatedTasks", id);
     },
-    scriptMoreInfo (props) {
+    scriptMoreInfo(props) {
       this.scriptInfo = props;
       this.showScriptOutput = true;
     },
-    runTask (pk, enabled) {
+    runTask(pk, enabled) {
       if (!enabled) {
         this.notifyError("Task cannot be run when it's disabled. Enable it first.");
         return;
@@ -170,7 +177,7 @@ export default {
         .then(r => this.notifySuccess(r.data))
         .catch(() => this.notifyError("Something went wrong"));
     },
-    deleteTask (name, pk) {
+    deleteTask(name, pk) {
       this.$q
         .dialog({
           title: "Are you sure?",

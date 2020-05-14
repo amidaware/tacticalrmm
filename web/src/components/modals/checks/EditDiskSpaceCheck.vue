@@ -57,14 +57,12 @@ export default {
   },
   methods: {
     getCheck() {
-      axios
-        .get(`/checks/getstandardcheck/diskspace/${this.editCheckPK}/`)
-        .then(r => {
-          this.disks = [r.data.disk];
-          this.diskToEdit = r.data.disk;
-          this.threshold = r.data.threshold;
-          this.failure = r.data.failures;
-        });
+      axios.get(`/checks/getstandardcheck/diskspace/${this.editCheckPK}/`).then(r => {
+        this.disks = [r.data.disk];
+        this.diskToEdit = r.data.disk;
+        this.threshold = r.data.threshold;
+        this.failure = r.data.failures;
+      });
     },
     editCheck() {
       const data = {

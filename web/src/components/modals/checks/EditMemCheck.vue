@@ -75,7 +75,7 @@ export default {
           } else {
             this.$store.dispatch("loadChecks", this.agentpk);
           }
-          
+
           this.notifySuccess("Memory check was edited!");
         })
         .catch(e => this.notifyError(e.response.data.error));

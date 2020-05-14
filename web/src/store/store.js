@@ -63,7 +63,7 @@ export const store = new Vuex.Store({
     },
   },
   mutations: {
-    TOGGLE_SCRIPT_MANAGER (state, action) {
+    TOGGLE_SCRIPT_MANAGER(state, action) {
       state.toggleScriptManager = action;
     },
     AGENT_TABLE_LOADING(state, visible) {
@@ -149,13 +149,13 @@ export const store = new Vuex.Store({
         context.commit("getUpdatedSites", r.data);
       });
     },
-    loadClients (context) {
+    loadClients(context) {
       return axios.get("/clients/listclients/");
     },
-    loadSites (context) {
+    loadSites(context) {
       return axios.get("/clients/listsites/");
     },
-    loadAgents (context) {
+    loadAgents(context) {
       return axios.get("/agents/listagents/");
     },
     loadTree({ commit }) {

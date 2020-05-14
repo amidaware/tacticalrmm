@@ -53,12 +53,10 @@ export default {
   },
   methods: {
     getCheck() {
-      axios
-        .get(`/checks/getstandardcheck/cpuload/${this.editCheckPK}/`)
-        .then(r => {
-          this.threshold = r.data.cpuload;
-          this.failure = r.data.failures;
-        });
+      axios.get(`/checks/getstandardcheck/cpuload/${this.editCheckPK}/`).then(r => {
+        this.threshold = r.data.cpuload;
+        this.failure = r.data.failures;
+      });
     },
     editCheck() {
       const data = {
@@ -77,7 +75,7 @@ export default {
           } else {
             this.$store.dispatch("loadChecks", this.agentpk);
           }
-          
+
           this.notifySuccess("CPU load check was edited!");
         })
         .catch(e => this.notifyError(e.response.data.error));

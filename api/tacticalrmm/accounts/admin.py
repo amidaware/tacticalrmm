@@ -6,4 +6,3 @@ from .models import User
 
 admin.site.register(User)
 TokenAdmin.raw_id_fields = ("user",)
-

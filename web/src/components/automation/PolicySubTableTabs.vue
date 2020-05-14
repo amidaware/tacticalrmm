@@ -27,20 +27,20 @@
 </template>
 
 <script>
-import PolicyChecksTab from '@/components/automation/PolicyChecksTab';
-import PolicyAutomatedTasksTab from '@/components/automation/PolicyAutomatedTasksTab';
+import PolicyChecksTab from "@/components/automation/PolicyChecksTab";
+import PolicyAutomatedTasksTab from "@/components/automation/PolicyAutomatedTasksTab";
 
 export default {
   name: "PolicySubTableTabs",
   props: ["policypk"],
   components: {
     PolicyChecksTab,
-    PolicyAutomatedTasksTab,
+    PolicyAutomatedTasksTab
   },
-  data () {
+  data() {
     return {
-      subtab: 'checks'
-    }
+      subtab: "checks"
+    };
   }
 };
 </script>

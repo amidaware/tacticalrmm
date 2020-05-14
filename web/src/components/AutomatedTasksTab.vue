@@ -3,7 +3,14 @@
   <div v-else-if="Object.keys(automatedTasks).length === 0">No Tasks</div>
   <div class="row" v-else>
     <div class="col-12">
-      <q-btn size="sm" color="grey-5" icon="fas fa-plus" label="Add Task" text-color="black" @click="showAddAutomatedTask = true" />
+      <q-btn
+        size="sm"
+        color="grey-5"
+        icon="fas fa-plus"
+        label="Add Task"
+        text-color="black"
+        @click="showAddAutomatedTask = true"
+      />
       <q-btn dense flat push @click="refreshTasks(automatedTasks.pk)" icon="refresh" />
       <template v-if="tasks === undefined || tasks.length === 0">
         <p>No Tasks</p>
@@ -184,10 +191,7 @@ export default {
           axios
             .delete(`/automation/${pk}/automatedtasks/`)
             .then(r => {
-              this.$store.dispatch(
-                "loadAutomatedTasks",
-                this.automatedTasks.pk
-              );
+              this.$store.dispatch("loadAutomatedTasks", this.automatedTasks.pk);
               this.$store.dispatch("loadChecks", this.automatedTasks.pk);
               this.notifySuccess(r.data);
             })

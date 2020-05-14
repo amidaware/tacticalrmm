@@ -57,17 +57,18 @@ export default {
   },
   methods: {
     addCheck() {
-      let pk = (this.policypk) ? {policy: this.policypk} : {pk: this.agentpk}
+      let pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
 
       const data = {
         ...pk,
         check_type: "ping",
         failures: this.failure,
         name: this.pingname,
-        ip: this.pingip,
+        ip: this.pingip
       };
 
-      axios.post("/checks/addstandardcheck/", data)
+      axios
+        .post("/checks/addstandardcheck/", data)
         .then(r => {
           this.$emit("close");
 

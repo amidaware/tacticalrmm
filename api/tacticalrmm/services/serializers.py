@@ -11,4 +11,3 @@ class ServicesSerializer(serializers.ModelSerializer):
             "pk",
             "services",
         )
-

@@ -29,3 +29,5 @@ app.ini
 .env.dev
 .env
 *.pem
+create_services.py
+gen_random.py

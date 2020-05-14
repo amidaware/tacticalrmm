@@ -1,6 +1,6 @@
 export default {
   methods: {
-    formatClients (clients) {
+    formatClients(clients) {
       return clients.map(client => {
         return {
           label: client.client,
@@ -8,7 +8,7 @@ export default {
         };
       });
     },
-    formatSites (sites) {
+    formatSites(sites) {
       return sites.map(site => {
         return {
           label: `${site.client_name}\\${site.site}`,
@@ -16,7 +16,7 @@ export default {
         };
       });
     },
-    formatAgents (agents) {
+    formatAgents(agents) {
       return agents.map(agent => {
         return {
           label: `${agent.client}\\${agent.site}\\${agent.hostname}`,

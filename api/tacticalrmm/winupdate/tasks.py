@@ -7,7 +7,7 @@ from tacticalrmm.celery import app
 
 @app.task
 def check_for_updates_task(pk, wait=False):
-    
+
     if wait:
         sleep(70)
 

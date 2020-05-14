@@ -313,7 +313,7 @@ export default {
           field: "last_run",
           align: "left"
         },
-        { name: "assignedtasks", label: "Assigned Tasks", field: "assigned_task", align: "left" },
+        { name: "assignedtasks", label: "Assigned Tasks", field: "assigned_task", align: "left" }
       ],
       pagination: {
         rowsPerPage: 9999

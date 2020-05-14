@@ -8,14 +8,9 @@
       </q-btn>
     </q-bar>
     <q-separator />
+    <q-card-section>All Alerts</q-card-section>
     <q-card-section>
-      All Alerts
-    </q-card-section>
-    <q-card-section>
-      <q-btn
-        label="Update"
-        color="primary"
-      />
+      <q-btn label="Update" color="primary" />
     </q-card-section>
   </q-card>
 </template>
@@ -29,7 +24,7 @@ export default {
   mixins: [mixins],
   data() {
     return {
-      alerts: [],
+      alerts: []
     };
   },
   methods: {
@@ -38,17 +33,15 @@ export default {
       axios
         .get("/alerts/")
         .then(r => {
-          this.alerts = r.data.alerts
+          this.alerts = r.data.alerts;
         })
         .catch(() => {
           this.$q.loading.hide();
           this.notifyError("Something went wrong");
         });
-    },
+    }
   },
-  computed: {
-
-  },
+  computed: {},
   created() {
     this.getAlerts();
   }

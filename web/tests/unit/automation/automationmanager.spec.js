@@ -15,7 +15,7 @@ describe('AutomationManager.vue', () => {
       desc: "Description",
       active: true,
       clients: [],
-      sites: [{},{}],
+      sites: [{}, {}],
       agents: [{}]
     },
     {
@@ -24,7 +24,7 @@ describe('AutomationManager.vue', () => {
       desc: "Description 2",
       active: false,
       clients: [],
-      sites: [{},{}],
+      sites: [{}, {}],
       agents: [{}]
     }
   ];
@@ -45,7 +45,7 @@ describe('AutomationManager.vue', () => {
     };
 
     mutations = {
-      setSelectedPolicy: jest.fn((state, key) => {state.selectedPolicy = key}),
+      setSelectedPolicy: jest.fn((state, key) => { state.selectedPolicy = key }),
       setPolicyChecks: jest.fn(),
       setPolicyAutomatedTasks: jest.fn(),
 
@@ -74,14 +74,14 @@ describe('AutomationManager.vue', () => {
       store,
       localVue,
       stubs: [
-        "PolicySubTableTabs", 
+        "PolicySubTableTabs",
         "PolicyForm"
       ],
     });
 
   });
 
-  
+
   // Runs after every test
   // This is needed to remove q-dialogs since body doesn't rerender
   afterEach(() => {
@@ -107,7 +107,7 @@ describe('AutomationManager.vue', () => {
   it("sends vuex mutations and actions when policy is selected", () => {
 
     const row = wrapper.findAll("tbody > tr.q-tr").wrappers[1];
-    
+
     row.trigger('click');
 
     expect(mutations.setSelectedPolicy).toHaveBeenCalledWith(expect.anything(), 2);
@@ -118,7 +118,7 @@ describe('AutomationManager.vue', () => {
 
   it("shows edit policy modal on edit button press", async () => {
 
-    const button = wrapper.find({ref: "edit"});
+    const button = wrapper.find({ ref: "edit" });
 
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(false);
     await button.trigger("click")
@@ -133,7 +133,7 @@ describe('AutomationManager.vue', () => {
 
   it('shows add policy modal on button press', async () => {
 
-    const button = wrapper.find({ref: "new"});
+    const button = wrapper.find({ ref: "new" });
 
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(false);
     await button.trigger("click");
@@ -143,7 +143,7 @@ describe('AutomationManager.vue', () => {
 
   it('deletes selected policy', async () => {
 
-    const button = wrapper.find({ref: "delete"});
+    const button = wrapper.find({ ref: "delete" });
 
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(false);
     // Select Row
@@ -160,7 +160,7 @@ describe('AutomationManager.vue', () => {
 
   it('shows overview modal when button clicked', async () => {
 
-    const button = wrapper.find({ref: "overview"});
+    const button = wrapper.find({ ref: "overview" });
 
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(false);
     await button.trigger("click");
@@ -169,7 +169,7 @@ describe('AutomationManager.vue', () => {
 
   it('calls vuex loadPolicies action when refresh button clicked and clears selected', () => {
 
-    const button = wrapper.find({ref: "refresh"});
+    const button = wrapper.find({ ref: "refresh" });
 
     button.trigger("click");
     expect(actions.loadPolicies).toHaveBeenCalled();
@@ -180,4 +180,3 @@ describe('AutomationManager.vue', () => {
   });
 
 });
-  

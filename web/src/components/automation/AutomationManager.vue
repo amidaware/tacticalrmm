@@ -2,7 +2,15 @@
   <div style="width: 900px; max-width: 90vw;">
     <q-card>
       <q-bar>
-        <q-btn ref="refresh" @click="getPolicies; clearRow()" class="q-mr-sm" dense flat push icon="refresh" />Automation Manager
+        <q-btn
+          ref="refresh"
+          @click="getPolicies; clearRow()"
+          class="q-mr-sm"
+          dense
+          flat
+          push
+          icon="refresh"
+        />Automation Manager
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
@@ -74,17 +82,11 @@
         >
           <template v-slot:header="props">
             <q-tr :props="props">
-              <q-th v-for="col in props.cols" :key="col.name" :props="props">
-                {{ col.label }}
-              </q-th>
+              <q-th v-for="col in props.cols" :key="col.name" :props="props">{{ col.label }}</q-th>
             </q-tr>
           </template>
           <template v-slot:body="props">
-            <q-tr
-              :props="props"
-              class="cursor-pointer"
-              @click="props.selected = true"  
-            >
+            <q-tr :props="props" class="cursor-pointer" @click="props.selected = true">
               <q-td>{{ props.row.name }}</q-td>
               <q-td>{{ props.row.desc }}</q-td>
               <q-td>{{ props.row.active }}</q-td>
@@ -111,16 +113,16 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import { mapState } from 'vuex';
+import { mapState } from "vuex";
 import PolicyForm from "@/components/automation/modals/PolicyForm";
 import PolicyOverview from "@/components/automation/PolicyOverview";
-import PolicySubTableTabs from "@/components/automation/PolicySubTableTabs"
+import PolicySubTableTabs from "@/components/automation/PolicySubTableTabs";
 
 export default {
   name: "AutomationManager",
   components: { PolicyForm, PolicyOverview, PolicySubTableTabs },
   mixins: [mixins],
-  data () {
+  data() {
     return {
       showPolicyFormModal: false,
       showPolicyOverviewModal: false,
@@ -179,30 +181,30 @@ export default {
     };
   },
   methods: {
-    getPolicies () {
-      this.$store.dispatch('automation/loadPolicies');
+    getPolicies() {
+      this.$store.dispatch("automation/loadPolicies");
     },
-    policyRowSelected ({added, keys, rows}) {
-
+    policyRowSelected({ added, keys, rows }) {
       // First key of the array is the selected row pk
-      this.$store.commit('automation/setSelectedPolicy', keys[0]);
-      this.$store.dispatch('automation/loadPolicyChecks', keys[0]);
-      this.$store.dispatch('automation/loadPolicyAutomatedTasks', keys[0]);
+      this.$store.commit("automation/setSelectedPolicy", keys[0]);
+      this.$store.dispatch("automation/loadPolicyChecks", keys[0]);
+      this.$store.dispatch("automation/loadPolicyAutomatedTasks", keys[0]);
     },
-    clearRow () {
-      this.$store.commit('automation/setSelectedPolicy', null);
-      this.$store.commit('automation/setPolicyChecks', {});
-      this.$store.commit('automation/setPolicyAutomatedTasks', {});
+    clearRow() {
+      this.$store.commit("automation/setSelectedPolicy", null);
+      this.$store.commit("automation/setPolicyChecks", {});
+      this.$store.commit("automation/setPolicyAutomatedTasks", {});
     },
-    deletePolicy () {
-      this.$q.dialog({
+    deletePolicy() {
+      this.$q
+        .dialog({
           title: "Delete policy?",
           cancel: true,
           ok: { label: "Delete", color: "negative" }
         })
         .onOk(() => {
-
-          this.$store.dispatch('automation/deletePolicy', this.selectedRow)
+          this.$store
+            .dispatch("automation/deletePolicy", this.selectedRow)
             .then(response => {
               this.notifySuccess(`Policy was deleted!`);
             })
@@ -210,15 +212,15 @@ export default {
               this.notifyError(`An Error occured while deleting policy`);
             });
         });
-    },
+    }
   },
   computed: {
     ...mapState({
       policies: state => state.automation.policies,
       selectedRow: state => state.automation.selectedPolicy
-    }),
+    })
   },
-  mounted () {
+  mounted() {
     this.getPolicies();
   }
 };

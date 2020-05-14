@@ -67,24 +67,27 @@ export default {
         this.notifyError("Please upload your meshagent.exe");
       } else {
         this.$q.loading.show();
-        const data = {client: this.firstclient, site: this.firstsite};
-        axios.post("/clients/initialsetup/", data).then(r => {
-          let formData = new FormData();
-          formData.append("meshagent", this.meshagent);
-          axios.put("/api/v1/uploadmeshagent/", formData).then(r => {
-            this.$q.loading.hide();
-            this.$router.push({ name: "Dashboard" });
+        const data = { client: this.firstclient, site: this.firstsite };
+        axios
+          .post("/clients/initialsetup/", data)
+          .then(r => {
+            let formData = new FormData();
+            formData.append("meshagent", this.meshagent);
+            axios
+              .put("/api/v1/uploadmeshagent/", formData)
+              .then(r => {
+                this.$q.loading.hide();
+                this.$router.push({ name: "Dashboard" });
+              })
+              .catch(e => {
+                this.notifyError("error uploading");
+                this.$q.loading.hide();
+              });
           })
-          .catch(e => {
-            this.notifyError('error uploading');
+          .catch(err => {
+            this.notifyError(err.response.data.error);
             this.$q.loading.hide();
-          })
-        })
-        .catch(err => {
-          this.notifyError(err.response.data.error);
-          this.$q.loading.hide();
-        })
-        
+          });
       }
     }
   }

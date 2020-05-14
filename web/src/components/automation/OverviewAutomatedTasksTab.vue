@@ -26,17 +26,11 @@
             <q-tr>
               <!-- tds -->
               <q-td>
-                <q-checkbox
-                  disabled
-                  dense
-                  v-model="props.row.enabled"
-                />
+                <q-checkbox disabled dense v-model="props.row.enabled" />
               </q-td>
               <q-td>{{ props.row.name }}</q-td>
               <q-td v-if="props.row.retcode || props.row.stdout || props.row.stderr">
-                <span
-                  style="cursor:pointer;color:blue;text-decoration:underline"
-                >output</span>
+                <span style="cursor:pointer;color:blue;text-decoration:underline">output</span>
               </q-td>
               <q-td v-else>Awaiting output</q-td>
               <q-td v-if="props.row.last_run">{{ props.row.last_run }}</q-td>
@@ -59,7 +53,7 @@ export default {
   name: "OverviewAutomatedTasksTab",
   props: ["policypk"],
   mixins: [mixins],
-  data () {
+  data() {
     return {
       automatedTasks: {},
       columns: [
@@ -95,27 +89,29 @@ export default {
       }
     };
   },
- mounted () {
+  mounted() {
     this.getPolicyTasks();
   },
   watch: {
-    'policypk': function () {
+    policypk: function() {
       this.getPolicyTasks();
     }
   },
   methods: {
-    getPolicyTasks () {
-      axios.get(`/automation/${this.policypk}/policyautomatedtasks/`).then(r => {
-        this.automatedTasks = r.data;
-      })
-      .catch(e => {
-        this.$q.loading.hide();
-        this.notifyError(e.response.data);
-      });
+    getPolicyTasks() {
+      axios
+        .get(`/automation/${this.policypk}/policyautomatedtasks/`)
+        .then(r => {
+          this.automatedTasks = r.data;
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError(e.response.data);
+        });
     }
   },
   computed: {
-    tasks () {
+    tasks() {
       return this.automatedTasks.autotasks;
     }
   }

@@ -4,6 +4,7 @@ import os
 
 PROGRAM_DIR = "C:\\Program Files\\TacticalAgent"
 
+
 def get_services():
     return [svc.as_dict() for svc in psutil.win_service_iter()]
 
@@ -29,6 +30,7 @@ def update_salt():
     tacrmm = os.path.join(PROGRAM_DIR, "tacticalrmm.exe")
     __salt__["cmd.run_bg"]([tacrmm, "-m", "updatesalt"])
     return "ok"
+
 
 def run_manual_checks():
     tacrmm = os.path.join(PROGRAM_DIR, "tacticalrmm.exe")

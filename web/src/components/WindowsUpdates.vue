@@ -1,6 +1,8 @@
 <template>
   <div v-if="!selectedAgentPk">No agent selected</div>
-  <div v-else-if="managedByWsus">Patch management is not available for this agent because it is managed by WSUS</div>
+  <div
+    v-else-if="managedByWsus"
+  >Patch management is not available for this agent because it is managed by WSUS</div>
   <div v-else-if="Object.keys(sortedUpdates).length === 0">No Patches</div>
   <div v-else class="q-pa-xs">
     <q-btn label="Refresh" dense flat push @click="refreshUpdates(updates.pk)" icon="refresh" />
@@ -22,16 +24,36 @@
         <q-tr :props="props">
           <q-menu context-menu>
             <q-list dense style="min-width: 100px">
-              <q-item v-if="!props.row.installed" clickable v-close-popup @click="editPolicy(props.row.id, 'inherit')">
+              <q-item
+                v-if="!props.row.installed"
+                clickable
+                v-close-popup
+                @click="editPolicy(props.row.id, 'inherit')"
+              >
                 <q-item-section>Inherit</q-item-section>
               </q-item>
-              <q-item v-if="!props.row.installed" clickable v-close-popup @click="editPolicy(props.row.id, 'approve')">
+              <q-item
+                v-if="!props.row.installed"
+                clickable
+                v-close-popup
+                @click="editPolicy(props.row.id, 'approve')"
+              >
                 <q-item-section>Approve</q-item-section>
               </q-item>
-              <q-item v-if="!props.row.installed" clickable v-close-popup @click="editPolicy(props.row.id, 'ignore')">
+              <q-item
+                v-if="!props.row.installed"
+                clickable
+                v-close-popup
+                @click="editPolicy(props.row.id, 'ignore')"
+              >
                 <q-item-section>Ignore</q-item-section>
               </q-item>
-              <q-item v-if="!props.row.installed" clickable v-close-popup @click="editPolicy(props.row.id, 'nothing')">
+              <q-item
+                v-if="!props.row.installed"
+                clickable
+                v-close-popup
+                @click="editPolicy(props.row.id, 'nothing')"
+              >
                 <q-item-section>Do Nothing</q-item-section>
               </q-item>
             </q-list>
@@ -47,15 +69,27 @@
             <q-icon v-else-if="props.row.action === 'ignore'" name="fas fa-check" color="negative">
               <q-tooltip>Ignore</q-tooltip>
             </q-icon>
-            <q-icon v-else-if="props.row.action === 'inherit'" name="fiber_manual_record" color="accent">
+            <q-icon
+              v-else-if="props.row.action === 'inherit'"
+              name="fiber_manual_record"
+              color="accent"
+            >
               <q-tooltip>Inherit</q-tooltip>
             </q-icon>
           </q-td>
           <q-td>
-            <q-icon v-if="props.row.installed" name="fas fa-check" color="positive"><q-tooltip>Installed</q-tooltip></q-icon>
-            <q-icon v-else-if="props.row.action == 'approve'" name="fas fa-tasks" color="primary"><q-tooltip>Pending</q-tooltip></q-icon>
-            <q-icon v-else-if="props.row.action == 'ignore'" name="fas fa-ban" color="negative"><q-tooltip>Ignored</q-tooltip></q-icon>
-            <q-icon v-else name="fas fa-exclamation" color="warning"><q-tooltip>Missing</q-tooltip></q-icon>
+            <q-icon v-if="props.row.installed" name="fas fa-check" color="positive">
+              <q-tooltip>Installed</q-tooltip>
+            </q-icon>
+            <q-icon v-else-if="props.row.action == 'approve'" name="fas fa-tasks" color="primary">
+              <q-tooltip>Pending</q-tooltip>
+            </q-icon>
+            <q-icon v-else-if="props.row.action == 'ignore'" name="fas fa-ban" color="negative">
+              <q-tooltip>Ignored</q-tooltip>
+            </q-icon>
+            <q-icon v-else name="fas fa-exclamation" color="warning">
+              <q-tooltip>Missing</q-tooltip>
+            </q-icon>
           </q-td>
           <q-td>{{ props.row.severity }}</q-td>
           <q-td>{{ formatMessage(props.row.title) }}</q-td>
@@ -129,14 +163,7 @@ export default {
           sortable: true
         }
       ],
-      visibleColumns: [
-        "action",
-        "installed",
-        "severity",
-        "title",
-        "description",
-        "date_installed",
-      ]
+      visibleColumns: ["action", "installed", "severity", "title", "description", "date_installed"]
     };
   },
   methods: {

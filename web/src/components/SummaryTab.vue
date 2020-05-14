@@ -30,10 +30,7 @@
           </q-item>
 
           <!-- physical disks -->
-          <q-item
-            v-for="disk in summary.physical_disks"
-            :key="disk.model"
-          >
+          <q-item v-for="disk in summary.physical_disks" :key="disk.model">
             <q-item-section avatar>
               <q-icon name="far fa-hdd" />
             </q-item-section>
@@ -57,10 +54,7 @@
       <!-- right -->
       <div class="col-3">
         <span class="text-subtitle2 text-bold">Disks</span>
-        <div
-          v-for="disk in disks"
-          :key="disk.device"
-        >
+        <div v-for="disk in disks" :key="disk.device">
           <span>{{ disk.device }} ({{ disk.fstype }})</span>
           <q-linear-progress
             rounded
@@ -80,16 +74,15 @@
 <script>
 export default {
   name: "SummaryTab",
-  data () {
+  data() {
     return {};
   },
-  methods: {
-  },
+  methods: {},
   computed: {
-    summary () {
+    summary() {
       return this.$store.state.agentSummary;
     },
-    disks () {
+    disks() {
       const entries = Object.entries(this.summary.disks);
       const ret = [];
       for (let [k, v] of entries) {

@@ -35,7 +35,7 @@ router.beforeEach((to, from, next) => {
 });
 
 axios.interceptors.request.use(
-  function(config) {
+  function (config) {
     const token = store.state.token;
 
     if (token != null) {
@@ -44,19 +44,19 @@ axios.interceptors.request.use(
 
     return config;
   },
-  function(err) {
+  function (err) {
     return Promise.reject(err);
   }
 );
 
 axios.interceptors.response.use(
-  function(response) {
+  function (response) {
     if (response.status === 400) {
       return Promise.reject(response);
     }
     return response;
   },
-  function(error) {
+  function (error) {
     if (error.response.status === 401) {
       router.push({ path: "/expired" });
     }

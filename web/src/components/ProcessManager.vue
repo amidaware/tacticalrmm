@@ -161,15 +161,11 @@ export default {
     },
     startPoll() {
       this.poll = true;
-      axios
-        .get(`/agents/${this.pk}/getprocs/`)
-        .then(r => (this.procs = r.data));
+      axios.get(`/agents/${this.pk}/getprocs/`).then(r => (this.procs = r.data));
       this.refreshProcs();
     },
     getAgent() {
-      axios
-        .get(`/agents/${this.pk}/agentdetail/`)
-        .then(r => (this.mem = r.data.total_ram));
+      axios.get(`/agents/${this.pk}/agentdetail/`).then(r => (this.mem = r.data.total_ram));
     },
     convert(percent) {
       const mb = this.mem * 1024;

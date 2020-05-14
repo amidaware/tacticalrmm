@@ -185,21 +185,13 @@ export default {
       return r;
     },
     step1Done() {
-      return this.step > 1 && this.scriptPk !== null && this.taskName !== null
-        ? true
-        : false;
+      return this.step > 1 && this.scriptPk !== null && this.taskName !== null ? true : false;
     },
     step2Done() {
       if (this.trigger === "daily") {
-        return this.days !== null &&
-          this.days.length !== 0 &&
-          this.time !== null
-          ? true
-          : false;
+        return this.days !== null && this.days.length !== 0 && this.time !== null ? true : false;
       } else if (this.trigger === "checkfailure") {
-        return this.assignedCheck !== null && this.assignedCheck.length !== 0
-          ? true
-          : false;
+        return this.assignedCheck !== null && this.assignedCheck.length !== 0 ? true : false;
       } else if (this.trigger === "manual") {
         return true;
       } else {

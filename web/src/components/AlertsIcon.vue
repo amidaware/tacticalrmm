@@ -1,48 +1,44 @@
 <template>
   <q-btn dense flat icon="notifications">
-    <q-badge color="red" floating transparent>
-        {{ test_alerts.length }}
-    </q-badge>
+    <q-badge color="red" floating transparent>{{ test_alerts.length }}</q-badge>
     <q-menu>
       <q-list separator>
         <q-item v-for="alert in test_alerts" :key="alert.id">
           <q-item-section>
             <q-item-label>{{ alert.client }} - {{ alert.hostname }}</q-item-label>
             <q-item-label caption>
-              <q-icon :class="`text-${alertColor(alert.type)}`" :name="alert.type"></q-icon> 
-              {{ alert.message }}</q-item-label>
+              <q-icon :class="`text-${alertColor(alert.type)}`" :name="alert.type"></q-icon>
+              {{ alert.message }}
+            </q-item-label>
           </q-item-section>
 
           <q-item-section side top>
             <q-item-label caption>{{ alert.timestamp }}</q-item-label>
           </q-item-section>
         </q-item>
-        <q-item clickable @click="showAlertsModal = true">
-          View All Alerts ({{test_alerts.length}})
-        </q-item>
+        <q-item clickable @click="showAlertsModal = true">View All Alerts ({{test_alerts.length}})</q-item>
       </q-list>
     </q-menu>
-  
-      <q-dialog
-        v-model="showAlertsModal"
-        maximized
-        transition-show="slide-up"
-        transition-hide="slide-down"
-      >
-        <AlertsOverview @close="showAlertsModal = false" />
-      </q-dialog>
 
+    <q-dialog
+      v-model="showAlertsModal"
+      maximized
+      transition-show="slide-up"
+      transition-hide="slide-down"
+    >
+      <AlertsOverview @close="showAlertsModal = false" />
+    </q-dialog>
   </q-btn>
 </template>
 
 <script>
-import { mapState } from 'vuex';
-import AlertsOverview from '@/components/modals/alerts/AlertsOverview'
+import { mapState } from "vuex";
+import AlertsOverview from "@/components/modals/alerts/AlertsOverview";
 
 export default {
   name: "AlertsIcon",
-  components: {AlertsOverview},
-  data () {
+  components: { AlertsOverview },
+  data() {
     return {
       showAlertsModal: false,
       test_alerts: [
@@ -65,22 +61,22 @@ export default {
           timestamp: "5 hours ago"
         }
       ]
-    }
+    };
   },
   methods: {
-    alertColor (type) {
-      if (type === "error"){
+    alertColor(type) {
+      if (type === "error") {
         return "red";
-      } 
-      if (type === "warning"){
-        return "orange"
+      }
+      if (type === "warning") {
+        return "orange";
       }
     }
   },
   computed: {
-    ...mapState('alerts/', {
+    ...mapState("alerts/", {
       alerts: state => state.alerts
     })
   }
-}
+};
 </script>

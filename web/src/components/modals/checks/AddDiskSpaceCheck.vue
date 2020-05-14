@@ -3,23 +3,12 @@
     <q-card-section class="row items-center">
       <div class="text-h6">Add Disk Space Check</div>
       <q-space />
-      <q-btn
-        icon="close"
-        flat
-        round
-        dense
-        v-close-popup
-      />
+      <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
 
     <q-form @submit.prevent="addCheck">
       <q-card-section>
-        <q-select
-          outlined
-          v-model="firstdisk"
-          :options="disks"
-          label="Disk"
-        />
+        <q-select outlined v-model="firstdisk" :options="disks" label="Disk" />
       </q-card-section>
       <q-card-section>
         <q-input
@@ -43,15 +32,8 @@
         />
       </q-card-section>
       <q-card-actions align="right">
-        <q-btn
-          label="Add"
-          color="primary"
-          type="submit"
-        />
-        <q-btn
-          label="Cancel"
-          v-close-popup
-        />
+        <q-btn label="Add" color="primary" type="submit" />
+        <q-btn label="Cancel" v-close-popup />
       </q-card-actions>
     </q-form>
   </q-card>
@@ -87,10 +69,9 @@ export default {
           this.firstdisk = Object.keys(r.data)[0];
         });
       }
-
     },
     addCheck() {
-      const pk = (this.policypk) ? { policy: this.policypk } : { pk: this.agentpk }
+      const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
       const data = {
         ...pk,
         check_type: "diskspace",

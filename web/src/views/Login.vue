@@ -9,10 +9,7 @@
             </div>
           </q-card-section>
           <q-card-section>
-            <q-form
-              @submit.prevent="checkCreds"
-              class="q-gutter-md"
-            >
+            <q-form @submit.prevent="checkCreds" class="q-gutter-md">
               <q-input
                 filled
                 v-model="credentials.username"
@@ -31,11 +28,7 @@
               />
 
               <div>
-                <q-btn
-                  label="Login"
-                  type="submit"
-                  color="primary"
-                />
+                <q-btn label="Login" type="submit" color="primary" />
               </div>
             </q-form>
           </q-card-section>
@@ -55,20 +48,9 @@
                 />
               </q-card-section>
 
-              <q-card-actions
-                align="right"
-                class="text-primary"
-              >
-                <q-btn
-                  flat
-                  label="Cancel"
-                  v-close-popup
-                />
-                <q-btn
-                  flat
-                  label="Submit"
-                  type="submit"
-                />
+              <q-card-actions align="right" class="text-primary">
+                <q-btn flat label="Cancel" v-close-popup />
+                <q-btn flat label="Submit" type="submit" />
               </q-card-actions>
             </q-form>
           </q-card>
@@ -94,13 +76,14 @@ export default {
 
   methods: {
     checkCreds() {
-      axios.post("/checkcreds/", this.credentials)
+      axios
+        .post("/checkcreds/", this.credentials)
         .then(r => {
           this.prompt = true;
         })
         .catch(() => {
-          this.notifyError('Bad credentials')
-        })
+          this.notifyError("Bad credentials");
+        });
     },
     onSubmit() {
       this.$store
@@ -124,11 +107,6 @@ export default {
 
 <style>
 .bg-image {
-  background-image: linear-gradient(
-    90deg,
-    rgba(20, 20, 29, 1) 0%,
-    rgba(38, 42, 56, 1) 49%,
-    rgba(15, 18, 20, 1) 100%
-  );
+  background-image: linear-gradient(90deg, rgba(20, 20, 29, 1) 0%, rgba(38, 42, 56, 1) 49%, rgba(15, 18, 20, 1) 100%);
 }
 </style>

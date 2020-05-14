@@ -80,7 +80,7 @@ export default {
         this.name = r.data.name;
         this.desc = r.data.description;
         this.shell = r.data.shell;
-      })
+      });
     },
     editScript() {
       if (!this.name || !this.shell) {

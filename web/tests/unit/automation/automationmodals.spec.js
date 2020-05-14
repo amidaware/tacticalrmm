@@ -20,13 +20,13 @@ describe('PolicyForm.vue', () => {
   beforeEach(() => {
 
     rootActions = {
-      loadClients: jest.fn( () => clients ),
-      loadSites: jest.fn( () => sites ),
-      loadAgents: jest.fn( () => agents ),
+      loadClients: jest.fn(() => clients),
+      loadSites: jest.fn(() => sites),
+      loadAgents: jest.fn(() => agents),
     };
 
     actions = {
-      loadPolicy: jest.fn( () => policy ),
+      loadPolicy: jest.fn(() => policy),
       addPolicy: jest.fn(),
       editPolicy: jest.fn(),
     };
@@ -82,4 +82,3 @@ describe('PolicyForm.vue', () => {
   })*/
 
 })
-  

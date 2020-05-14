@@ -37,6 +37,7 @@ TASK_TYPE_CHOICES = [
     ("manual", "Manual"),
 ]
 
+
 class AutomatedTask(models.Model):
     agent = models.ForeignKey(Agent, related_name="autotasks", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
@@ -89,7 +90,9 @@ class AutomatedTask(models.Model):
                     if i in j:
                         ret.append(j[1][0:3])
 
-            run_time_nice = dt.datetime.strptime(self.run_time_minute, "%H:%M").strftime("%I:%M %p")
+            run_time_nice = dt.datetime.strptime(
+                self.run_time_minute, "%H:%M"
+            ).strftime("%I:%M %p")
 
             if len(ret) == 7:
                 return f"Every day at {run_time_nice}"
@@ -133,7 +136,7 @@ class AutomatedTask(models.Model):
     def generate_task_name():
         chars = string.ascii_letters
         return "TacticalRMM_" + "".join(random.choice(chars) for i in range(35))
-    
+
     @staticmethod
     def get_related_check(data):
         from checks.models import (

@@ -98,7 +98,7 @@ class TestAgentViews(BaseTestCase):
 
         # TODO
         # decode the cookie
-        
+
         self.assertIn("&hide=31", r.data)
         self.assertIn("&viewmode=11", r.data)
         self.assertIsInstance(r.data, str)

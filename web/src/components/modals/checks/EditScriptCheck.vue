@@ -57,13 +57,11 @@ export default {
   },
   methods: {
     getScriptCheck() {
-      axios
-        .get(`/checks/getstandardcheck/script/${this.editCheckPK}/`)
-        .then(r => {
-          this.failure = r.data.failures;
-          this.timeout = r.data.timeout;
-          this.scriptName = r.data.script.name;
-        });
+      axios.get(`/checks/getstandardcheck/script/${this.editCheckPK}/`).then(r => {
+        this.failure = r.data.failures;
+        this.timeout = r.data.timeout;
+        this.scriptName = r.data.script.name;
+      });
     },
     editScriptCheck() {
       const data = {
@@ -82,7 +80,7 @@ export default {
           } else {
             this.$store.dispatch("loadChecks", this.agentpk);
           }
-          
+
           this.notifySuccess(r.data);
         })
         .catch(e => this.notifyError(e.response.data.error));

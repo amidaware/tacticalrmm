@@ -4,7 +4,7 @@
       <q-bar>
         <q-btn
           ref="refresh"
-          @click="getPolicies; clearRow()"
+          @click="clearRow"
           class="q-mr-sm"
           dense
           flat
@@ -27,7 +27,7 @@
             unelevated
             no-caps
             icon="add"
-            @click="showPolicyFormModal = true; clearRow()"
+            @click="showPolicyFormModal = true;"
           />
           <q-btn
             ref="edit"
@@ -99,11 +99,11 @@
       </div>
 
       <q-card-section>
-        <PolicySubTableTabs :policypk="selected.id" />
+        <PolicySubTableTabs :policypk="selectedRow" />
       </q-card-section>
     </q-card>
     <q-dialog v-model="showPolicyFormModal">
-      <PolicyForm @close="showPolicyFormModal = false" @refresh="getPolicies; clearRow()" />
+      <PolicyForm :pk="selectedRow" @close="showPolicyFormModal = false" @refresh="clearRow" />
     </q-dialog>
     <q-dialog v-model="showPolicyOverviewModal">
       <PolicyOverview @close="showPolicyOverviewModal = false" />
@@ -190,7 +190,8 @@ export default {
       this.$store.dispatch("automation/loadPolicyChecks", keys[0]);
       this.$store.dispatch("automation/loadPolicyAutomatedTasks", keys[0]);
     },
-    clearRow() {
+    clearRow () {
+      this.getPolicies();
       this.$store.commit("automation/setSelectedPolicy", null);
       this.$store.commit("automation/setPolicyChecks", {});
       this.$store.commit("automation/setPolicyAutomatedTasks", {});

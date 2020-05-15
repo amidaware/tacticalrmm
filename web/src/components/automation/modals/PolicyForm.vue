@@ -1,6 +1,6 @@
 <template>
   <q-card style="width: 60vw">
-    <q-form @submit.prevent="submit">
+    <q-form ref="form" @submit="submit">
       <q-card-section class="row items-center">
         <div class="text-h6">{{ title }}</div>
         <q-space />
@@ -99,24 +99,18 @@ export default {
         this.name = r.data.name;
         this.desc = r.data.desc;
         this.active = r.data.active;
-        this.selectedAgents = r.data.agents.map(agent => {
-          return {
-            label: agent.hostname,
-            value: agent.pk
-          };
-        });
-        this.selectedSites = r.data.sites.map(site => {
-          return {
-            label: site.site,
-            value: site.id
-          };
-        });
-        this.selectedClients = r.data.clients.map(client => {
-          return {
-            label: client.client,
-            value: client.id
-          };
-        });
+        this.selectedAgents = r.data.agents.map(agent => ({
+          label: agent.hostname,
+          value: agent.pk
+        }) );
+        this.selectedSites = r.data.sites.map(site => ({
+          label: site.site,
+          value: site.id
+        }) );
+        this.selectedClients = r.data.clients.map(client => ({
+          label: client.client,
+          value: client.id
+        }) );
       });
     },
     submit() {
@@ -128,6 +122,7 @@ export default {
       this.$q.loading.show();
 
       let formData = {
+        id: this.pk,
         name: this.name,
         desc: this.desc,
         active: this.active,
@@ -138,11 +133,11 @@ export default {
 
       if (this.pk) {
         this.$store
-          .dispatch("automation/editPolicy", this.pk, formData)
+          .dispatch("automation/editPolicy", formData)
           .then(r => {
             this.$q.loading.hide();
             this.$emit("close");
-            this.$emit("edited");
+            this.$emit("refresh");
             this.notifySuccess("Policy edited!");
           })
           .catch(e => {
@@ -168,7 +163,7 @@ export default {
       this.$store
         .dispatch("loadClients")
         .then(r => {
-          this.clientOptions = this.formatClient(r.data);
+          this.clientOptions = this.formatClients(r.data);
         })
         .catch(e => {
           this.$q.loading.hide();

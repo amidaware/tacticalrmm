@@ -57,8 +57,6 @@ Use the generated code and the username to generate a bar code for your authenti
 sudo docker-compose exec api python manage.py generate_barcode [2FAcode] [username] [domain]
 ```
 
-
-
 ## Generate the meshcentral login token key
 
 Get the login token key with
@@ -87,7 +85,7 @@ If /bin/bash doesn't work then /bin/sh might need to be used.
 
 ## Using Docker for Dev
 
-This allows you to edit the files locally and those changes will be presented to the conatiners. Hot Module Reload (Vue/webpack) and the Python equivalent will also work!
+This allows you to edit the files locally and those changes will be presented to the containers. Hot Module Reload (Vue/webpack) and the Python equivalent will also work!
 
 ### Setup
 

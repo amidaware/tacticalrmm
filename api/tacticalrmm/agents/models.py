@@ -22,7 +22,7 @@ class Agent(models.Model):
     hostname = models.CharField(max_length=255)
     local_ip = models.TextField(null=True)
     agent_id = models.CharField(max_length=200)
-    last_seen = models.DateTimeField(auto_now=True)
+    last_seen = models.DateTimeField(null=True, blank=True)
     services = JSONField(null=True)
     public_ip = models.CharField(null=True, max_length=255)
     total_ram = models.IntegerField(null=True)
@@ -266,3 +266,54 @@ class Agent(models.Model):
             versions[i] = release["name"]
 
         return {"versions": versions, "data": r.json()}
+
+
+class AgentOutage(models.Model):
+    agent = models.ForeignKey(
+        Agent,
+        related_name="agentoutages",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+    )
+    outage_time = models.DateTimeField(auto_now_add=True)
+    recovery_time = models.DateTimeField(null=True, blank=True)
+    outage_email_sent = models.BooleanField(default=False)
+    outage_sms_sent = models.BooleanField(default=False)
+    recovery_email_sent = models.BooleanField(default=False)
+    recovery_sms_sent = models.BooleanField(default=False)
+
+    @property
+    def is_active(self):
+        return False if self.recovery_time else True
+
+    def send_outage_email(self):
+        from core.models import CoreSettings
+
+        CORE = CoreSettings.objects.first()
+        CORE.send_mail(
+            f"{self.agent.client}, {self.agent.site}, {self.agent.hostname} - data overdue",
+            (
+                f"Data has not been received from client {self.agent.client}, "
+                f"site {self.agent.site}, "
+                f"agent {self.agent.hostname} "
+                "within the expected time."
+            ),
+        )
+
+    def send_recovery_email(self):
+        from core.models import CoreSettings
+
+        CORE = CoreSettings.objects.first()
+        CORE.send_mail(
+            f"{self.agent.client}, {self.agent.site}, {self.agent.hostname} - data received",
+            (
+                f"Data has been received from client {self.agent.client}, "
+                f"site {self.agent.site}, "
+                f"agent {self.agent.hostname} "
+                "after an interruption in data transmission."
+            ),
+        )
+
+    def __str__(self):
+        return self.agent.hostname

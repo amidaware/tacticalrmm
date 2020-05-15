@@ -68,13 +68,11 @@ def check_runner(request):
 def check_results(request):
     if request.data["check_type"] == "diskspace":
         check = get_object_or_404(DiskCheck, pk=request.data["id"])
-        check.last_run = dt.datetime.now(tz=djangotime.utc)
-        check.save(update_fields=["last_run"])
         serializer = DiskCheckSerializer(
             instance=check, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        serializer.save(last_run=djangotime.now())
         check.handle_check(request.data)
 
     elif request.data["check_type"] == "cpuload":
@@ -87,35 +85,29 @@ def check_results(request):
 
     elif request.data["check_type"] == "winsvc":
         check = get_object_or_404(WinServiceCheck, pk=request.data["id"])
-        check.last_run = dt.datetime.now(tz=djangotime.utc)
-        check.save(update_fields=["last_run"])
         serializer = WinServiceCheckSerializer(
             instance=check, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        serializer.save(last_run=djangotime.now())
         check.handle_check(request.data)
 
     elif request.data["check_type"] == "script":
         check = get_object_or_404(ScriptCheck, pk=request.data["id"])
-        check.last_run = dt.datetime.now(tz=djangotime.utc)
-        check.save(update_fields=["last_run"])
         serializer = ScriptCheckSerializer(
             instance=check, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        serializer.save(last_run=djangotime.now())
         check.handle_check(request.data)
 
     elif request.data["check_type"] == "ping":
         check = get_object_or_404(PingCheck, pk=request.data["id"])
-        check.last_run = dt.datetime.now(tz=djangotime.utc)
-        check.save(update_fields=["last_run"])
         serializer = PingCheckSerializer(
             instance=check, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        serializer.save(last_run=djangotime.now())
         check.handle_check(request.data)
 
     else:

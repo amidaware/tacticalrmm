@@ -3,10 +3,12 @@ import subprocess
 from loguru import logger
 from time import sleep
 
-from tacticalrmm.celery import app
+
 from django.conf import settings
 
-from agents.models import Agent
+
+from tacticalrmm.celery import app
+from agents.models import Agent, AgentOutage
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -220,3 +222,40 @@ def update_agent_task(pk, version):
     agent.save(update_fields=["is_updating"])
     logger.info(f"{agent.hostname} was successfully updated to version {ver}")
     return f"{agent.hostname} was successfully updated to version {ver}"
+
+
+@app.task
+def agent_outage_email_task(pk):
+    outage = AgentOutage.objects.get(pk=pk)
+    outage.send_outage_email()
+    outage.outage_email_sent = True
+    outage.save(update_fields=["outage_email_sent"])
+
+
+@app.task
+def agent_recovery_email_task(pk):
+    outage = AgentOutage.objects.get(pk=pk)
+    outage.send_recovery_email()
+    outage.recovery_email_sent = True
+    outage.save(update_fields=["recovery_email_sent"])
+
+
+@app.task
+def agent_outages_task():
+    agents = Agent.objects.only("pk")
+
+    for agent in agents:
+        if agent.status == "overdue":
+            outages = AgentOutage.objects.filter(agent=agent)
+            if outages and outages.last().is_active:
+                continue
+
+            outage = AgentOutage(agent=agent)
+            outage.save()
+
+            if agent.overdue_email_alert:
+                agent_outage_email_task.delay(pk=outage.pk)
+
+            if agent.overdue_text_alert:
+                # TODO
+                pass

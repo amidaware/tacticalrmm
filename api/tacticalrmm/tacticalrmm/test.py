@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.utils import timezone as djangotime
 
 from rest_framework.test import APIClient
 from rest_framework.test import force_authenticate
@@ -68,6 +69,7 @@ class BaseTestCase(TestCase):
             monitoring_type="server",
             description="Test PC",
             mesh_node_id="abcdefghijklmnopAABBCCDD77443355##!!AI%@#$%#*",
+            last_seen=djangotime.now(),
         )
 
         self.update_policy = WinUpdatePolicy.objects.create(agent=self.agent)

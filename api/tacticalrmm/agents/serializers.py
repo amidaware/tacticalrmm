@@ -21,7 +21,11 @@ class AgentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Agent
-        exclude = ["wmi_detail", "services"]
+        exclude = [
+            "wmi_detail",
+            "services",
+            "last_seen",
+        ]
 
 
 class AgentTableSerializer(serializers.ModelSerializer):

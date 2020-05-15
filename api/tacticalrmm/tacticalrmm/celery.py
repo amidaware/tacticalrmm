@@ -36,4 +36,6 @@ def debug_task(self):
 @app.on_after_finalize.connect
 def setup_periodic_tasks(sender, **kwargs):
 
-    pass
+    from agents.tasks import agent_outages_task
+
+    sender.add_periodic_task(60.0, agent_outages_task.s())

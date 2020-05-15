@@ -8,6 +8,7 @@ from django.conf import settings
 from django.db import IntegrityError
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone as djangotime
 
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
@@ -26,7 +27,7 @@ from rest_framework.decorators import (
     permission_classes,
 )
 
-from agents.models import Agent
+from agents.models import Agent, AgentOutage
 from accounts.models import User
 from checks.models import (
     DiskCheck,
@@ -39,6 +40,7 @@ from agents.tasks import (
     uninstall_agent_task,
     sync_salt_modules_task,
     get_wmi_detail_task,
+    agent_recovery_email_task,
 )
 from winupdate.tasks import check_for_updates_task
 from agents.serializers import (
@@ -313,7 +315,7 @@ def update(request):
     agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
     serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
-    serializer.save()
+    serializer.save(last_seen=djangotime.now())
 
     sync_salt_modules_task.delay(agent.pk)
     get_installed_software.delay(agent.pk)
@@ -369,5 +371,19 @@ def hello(request):
 
     serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
-    serializer.save()
+    serializer.save(last_seen=djangotime.now())
+
+    outages = AgentOutage.objects.filter(agent=agent)
+
+    if outages.exists() and outages.last().is_active:
+        last_outage = outages.last()
+        last_outage.recovery_time = djangotime.now()
+        last_outage.save(update_fields=["recovery_time"])
+
+        if agent.overdue_email_alert:
+            agent_recovery_email_task.delay(pk=last_outage.pk)
+        if agent.overdue_text_alert:
+            # TODO
+            pass
+
     return Response("ok")

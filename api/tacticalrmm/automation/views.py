@@ -138,11 +138,17 @@ class AutoTask(APIView):
 
         rand_name = AutomatedTask.generate_task_name()
 
+        try:
+            timeout = data["timeout"]
+        except KeyError:
+            timeout = 130
+
         if daily:
             task = AutomatedTask(
                 agent=agent,
                 name=data["name"],
                 script=script,
+                timeout=timeout,
                 task_type="scheduled",
                 win_task_name=rand_name,
                 run_time_days=data["days"],
@@ -155,6 +161,7 @@ class AutoTask(APIView):
                 agent=agent,
                 name=data["name"],
                 script=script,
+                timeout=timeout,
                 win_task_name=rand_name,
                 task_type="checkfailure",
             )
@@ -167,6 +174,7 @@ class AutoTask(APIView):
             task = AutomatedTask(
                 agent=agent,
                 name=data["name"],
+                timeout=timeout,
                 win_task_name=rand_name,
                 script=script,
                 task_type="manual",

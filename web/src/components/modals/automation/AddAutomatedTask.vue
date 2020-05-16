@@ -39,6 +39,16 @@
             label="Descriptive name of task"
           />
         </q-card-section>
+        <q-card-section>
+          <q-input
+            :rules="[val => !!val || '*Required']"
+            outlined
+            dense
+            v-model.number="timeout"
+            type="number"
+            label="Maximum permitted execution time (seconds)"
+          />
+        </q-card-section>
       </q-step>
 
       <q-step :name="2" title="Choose Schedule" :done="step2Done" :error="!step2Done">
@@ -113,6 +123,7 @@ export default {
       taskName: null,
       scriptPk: null,
       assignedCheck: null,
+      timeout: 120,
       days: [],
       dayOptions: [
         { label: "Monday", value: 0 },

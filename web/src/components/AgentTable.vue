@@ -163,7 +163,7 @@
                       clickable
                       v-ripple
                       v-close-popup
-                      @click.stop.prevent="rebootLater(props.row.id, props.row.hostname)"
+                      @click.stop.prevent="showRebootLaterModal = true"
                     >
                       <q-item-section>Later</q-item-section>
                     </q-item>
@@ -295,6 +295,10 @@
     <q-dialog v-model="showEditAgentModal">
       <EditAgent @close="showEditAgentModal = false" @edited="agentEdited" />
     </q-dialog>
+    <!-- reboot later modal -->
+    <q-dialog v-model="showRebootLaterModal">
+      <RebootLater @close="showRebootLaterModal = false" />
+    </q-dialog>
   </div>
 </template>
 
@@ -302,10 +306,11 @@
 import axios from "axios";
 import mixins from "@/mixins/mixins";
 import EditAgent from "@/components/modals/agents/EditAgent";
+import RebootLater from "@/components/modals/agents/RebootLater";
 export default {
   name: "AgentTable",
   props: ["frame", "columns", "tab", "filter", "userName"],
-  components: { EditAgent },
+  components: { EditAgent, RebootLater },
   mixins: [mixins],
   data() {
     return {
@@ -319,7 +324,8 @@ export default {
       sendCommandHostname: "",
       rawCMD: "",
       loadingSendCMD: false,
-      showEditAgentModal: false
+      showEditAgentModal: false,
+      showRebootLaterModal: false
     };
   },
   methods: {
@@ -401,10 +407,6 @@ export default {
             });
           });
         });
-    },
-    rebootLater() {
-      // TODO implement this
-      console.log("reboot later");
     },
     toggleSendCommand(pk, hostname) {
       this.sendCommandToggle = true;

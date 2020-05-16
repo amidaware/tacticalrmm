@@ -25,28 +25,32 @@ export default {
         return Math.round(elapsed / msPerYear) + " years ago";
       }
     },
-    notifySuccess(msg) {
+    notifySuccess(msg, timeout = 2000) {
       Notify.create({
         type: "positive",
-        message: msg
+        message: msg,
+        timeout: timeout
       });
     },
-    notifyError(msg) {
+    notifyError(msg, timeout = 2000) {
       Notify.create({
         type: "negative",
-        message: msg
+        message: msg,
+        timeout: timeout
       });
     },
-    notifyWarning(msg) {
+    notifyWarning(msg, timeout = 2000) {
       Notify.create({
         type: "warning",
-        message: msg
+        message: msg,
+        timeout: timeout
       });
     },
-    notifyInfo(msg) {
+    notifyInfo(msg, timeout = 2000) {
       Notify.create({
         type: "info",
-        message: msg
+        message: msg,
+        timeout: timeout
       });
     }
   }

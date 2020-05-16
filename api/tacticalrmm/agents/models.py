@@ -1,6 +1,5 @@
 import requests
-import datetime
-from datetime import timezone
+import datetime as dt
 import time
 import hashlib
 import secrets
@@ -8,6 +7,8 @@ import base64
 from Crypto.Cipher import AES
 from binascii import unhexlify
 import validators
+import random
+import string
 
 from django.db import models
 from django.conf import settings
@@ -53,8 +54,8 @@ class Agent(models.Model):
 
     @property
     def status(self):
-        offline = datetime.datetime.now(timezone.utc) - datetime.timedelta(minutes=4)
-        overdue = datetime.datetime.now(timezone.utc) - datetime.timedelta(
+        offline = dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=4)
+        overdue = dt.datetime.now(dt.timezone.utc) - dt.timedelta(
             minutes=self.overdue_time
         )
         if (self.last_seen < offline) and (self.last_seen > overdue):
@@ -266,6 +267,43 @@ class Agent(models.Model):
             versions[i] = release["name"]
 
         return {"versions": versions, "data": r.json()}
+
+    def schedule_reboot(self, obj):
+
+        start_date = dt.datetime.strftime(obj, "%Y-%m-%d")
+        start_time = dt.datetime.strftime(obj, "%H:%M")
+
+        # let windows task scheduler automatically delete the task after it runs
+        end_obj = obj + dt.timedelta(minutes=15)
+        end_date = dt.datetime.strftime(end_obj, "%Y-%m-%d")
+        end_time = dt.datetime.strftime(end_obj, "%H:%M")
+
+        task_name = "TacticalRMM_SchedReboot_" + "".join(
+            random.choice(string.ascii_letters) for _ in range(10)
+        )
+
+        r = self.salt_api_cmd(
+            hostname=self.salt_id,
+            timeout=20,
+            func="task.create_task",
+            arg=[
+                f"name={task_name}",
+                "force=True",
+                "action_type=Execute",
+                'cmd="C:\\Windows\\System32\\shutdown.exe"',
+                'arguments="/r /t 5 /f"',
+                "trigger_type=Once",
+                f'start_date="{start_date}"',
+                f'start_time="{start_time}"',
+                f'end_date="{end_date}"',
+                f'end_time="{end_time}"',
+                "ac_only=False",
+                "stop_if_on_batteries=False",
+                "delete_after=Immediately",
+            ],
+        )
+
+        return r.json()
 
 
 class AgentOutage(models.Model):

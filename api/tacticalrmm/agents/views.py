@@ -4,6 +4,8 @@ from packaging import version as pyver
 import zlib
 import json
 import base64
+import datetime as dt
+
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -295,3 +297,24 @@ def overdue_action(request):
             {"error": "Something went wrong"}, status=status.HTTP_400_BAD_REQUEST
         )
     return Response(agent.hostname)
+
+
+@api_view(["POST"])
+def reboot_later(request):
+    agent = get_object_or_404(Agent, pk=request.data["pk"])
+    date_time = request.data["datetime"]
+
+    try:
+        obj = dt.datetime.strptime(date_time, "%Y-%m-%d %H:%M")
+    except Exception:
+        return Response("invalid date", status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        resp = agent.schedule_reboot(obj)
+    except Exception:
+        return Response("Unable to contact agent", status=status.HTTP_400_BAD_REQUEST)
+
+    if resp["return"][0][agent.salt_id]:
+        return Response(f"{agent.hostname}: reboot scheduled for {obj}")
+    else:
+        return Response("Something went wrong", status=status.HTTP_400_BAD_REQUEST)

@@ -148,7 +148,8 @@ export default {
           trigger: this.trigger,
           check: this.assignedCheck,
           time: this.time,
-          days: this.days
+          days: this.days,
+          timeout: this.timeout
         };
         axios
           .post(`/tasks/${this.selectedAgentPk}/automatedtasks/`, data)

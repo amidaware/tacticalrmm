@@ -115,7 +115,7 @@ export const store = new Vuex.Store({
   },
   actions: {
     loadAutomatedTasks(context, pk) {
-      axios.get(`/automation/${pk}/automatedtasks/`).then(r => {
+      axios.get(`/tasks/${pk}/automatedtasks/`).then(r => {
         context.commit("SET_AUTOMATED_TASKS", r.data);
       })
     },

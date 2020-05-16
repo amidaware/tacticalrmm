@@ -101,7 +101,7 @@
 import axios from "axios";
 import { mapState } from "vuex";
 import mixins from "@/mixins/mixins";
-import AddAutomatedTask from "@/components/modals/automation/AddAutomatedTask";
+import AddAutomatedTask from "@/components/modals/tasks/AddAutomatedTask";
 import ScriptOutput from "@/components/modals/checks/ScriptOutput";
 
 export default {
@@ -153,7 +153,7 @@ export default {
     taskEnableorDisable(pk, action) {
       const data = { enableordisable: action };
       axios
-        .patch(`/automation/${pk}/automatedtasks/`, data)
+        .patch(`/tasks/${pk}/automatedtasks/`, data)
         .then(r => {
           this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.automatedTasks.pk);
           this.notifySuccess(r.data);

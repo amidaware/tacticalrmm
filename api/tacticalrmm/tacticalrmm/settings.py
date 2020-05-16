@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "software",
     "core",
     "automation",
+    "autotasks",
 ]
 
 MIDDLEWARE = [

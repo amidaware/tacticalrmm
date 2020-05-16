@@ -81,7 +81,7 @@ class DiskCheck(models.Model):
     failures = models.PositiveIntegerField(default=5)
     failure_count = models.PositiveIntegerField(default=0)
     task_on_failure = models.ForeignKey(
-        "automation.AutomatedTask",
+        "autotasks.AutomatedTask",
         null=True,
         blank=True,
         related_name="disktaskfailure",
@@ -205,7 +205,7 @@ class ScriptCheck(models.Model):
     last_run = models.DateTimeField(null=True, blank=True)
     script = models.ForeignKey(Script, related_name="script", on_delete=models.CASCADE)
     task_on_failure = models.ForeignKey(
-        "automation.AutomatedTask",
+        "autotasks.AutomatedTask",
         null=True,
         blank=True,
         related_name="scripttaskfailure",
@@ -288,7 +288,7 @@ class PingCheck(models.Model):
     more_info = models.TextField(null=True, blank=True)
     last_run = models.DateTimeField(null=True, blank=True)
     task_on_failure = models.ForeignKey(
-        "automation.AutomatedTask",
+        "autotasks.AutomatedTask",
         null=True,
         blank=True,
         related_name="pingtaskfailure",
@@ -376,7 +376,7 @@ class CpuLoadCheck(models.Model):
     failure_count = models.PositiveIntegerField(default=0)
     history = ArrayField(models.IntegerField(blank=True), null=True, default=list)
     task_on_failure = models.ForeignKey(
-        "automation.AutomatedTask",
+        "autotasks.AutomatedTask",
         null=True,
         blank=True,
         related_name="cpuloadtaskfailure",
@@ -474,7 +474,7 @@ class MemCheck(models.Model):
     failure_count = models.PositiveIntegerField(default=0)
     history = ArrayField(models.IntegerField(blank=True), null=True, default=list)
     task_on_failure = models.ForeignKey(
-        "automation.AutomatedTask",
+        "autotasks.AutomatedTask",
         null=True,
         blank=True,
         related_name="memtaskfailure",
@@ -579,7 +579,7 @@ class WinServiceCheck(models.Model):
     text_alert = models.BooleanField(default=False)
     last_run = models.DateTimeField(null=True, blank=True)
     task_on_failure = models.ForeignKey(
-        "automation.AutomatedTask",
+        "autotasks.AutomatedTask",
         null=True,
         blank=True,
         related_name="winsvctaskfailure",

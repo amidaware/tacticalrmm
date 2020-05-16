@@ -103,7 +103,7 @@ import axios from "axios";
 import { mapState } from "vuex";
 import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
-import AddAutomatedTask from "@/components/modals/automation/AddAutomatedTask";
+import AddAutomatedTask from "@/components/modals/tasks/AddAutomatedTask";
 import ScriptOutput from "@/components/modals/checks/ScriptOutput";
 
 export default {
@@ -155,7 +155,7 @@ export default {
     taskEnableorDisable(pk, action) {
       const data = { enableordisable: action };
       axios
-        .patch(`/automation/${pk}/automatedtasks/`, data)
+        .patch(`/tasks/${pk}/automatedtasks/`, data)
         .then(r => {
           this.$store.dispatch("loadAutomatedTasks", this.automatedTasks.pk);
           this.notifySuccess(r.data);
@@ -175,7 +175,7 @@ export default {
         return;
       }
       axios
-        .get(`/automation/runwintask/${pk}/`)
+        .get(`/tasks/runwintask/${pk}/`)
         .then(r => this.notifySuccess(r.data))
         .catch(() => this.notifyError("Something went wrong"));
     },
@@ -189,7 +189,7 @@ export default {
         })
         .onOk(() => {
           axios
-            .delete(`/automation/${pk}/automatedtasks/`)
+            .delete(`/tasks/${pk}/automatedtasks/`)
             .then(r => {
               this.$store.dispatch("loadAutomatedTasks", this.automatedTasks.pk);
               this.$store.dispatch("loadChecks", this.automatedTasks.pk);

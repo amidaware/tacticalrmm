@@ -151,7 +151,7 @@ export default {
           days: this.days
         };
         axios
-          .post(`/automation/${this.selectedAgentPk}/automatedtasks/`, data)
+          .post(`/tasks/${this.selectedAgentPk}/automatedtasks/`, data)
           .then(r => {
             this.$emit("close");
             this.$store.dispatch("loadAutomatedTasks", this.selectedAgentPk);

@@ -48,7 +48,7 @@ from agents.serializers import (
     AgentSerializer,
     WinAgentSerializer,
 )
-from automation.serializers import TaskSerializer
+from autotasks.serializers import TaskSerializer
 from software.tasks import install_chocolatey, get_installed_software
 
 logger.configure(**settings.LOG_CONFIG)

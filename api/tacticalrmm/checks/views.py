@@ -30,7 +30,7 @@ from .models import (
     validate_threshold,
 )
 
-from automation.models import AutomatedTask
+from autotasks.models import AutomatedTask
 
 from .serializers import (
     CheckSerializer,
@@ -45,7 +45,7 @@ from .serializers import (
 )
 
 from .tasks import handle_check_email_alert_task, run_checks_task
-from automation.tasks import delete_win_task_schedule
+from autotasks.tasks import delete_win_task_schedule
 
 
 @api_view()

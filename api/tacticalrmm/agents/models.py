@@ -58,12 +58,16 @@ class Agent(models.Model):
         overdue = dt.datetime.now(dt.timezone.utc) - dt.timedelta(
             minutes=self.overdue_time
         )
-        if (self.last_seen < offline) and (self.last_seen > overdue):
-            return "offline"
-        elif (self.last_seen < offline) and (self.last_seen < overdue):
-            return "overdue"
+
+        if self.last_seen is not None:
+            if (self.last_seen < offline) and (self.last_seen > overdue):
+                return "offline"
+            elif (self.last_seen < offline) and (self.last_seen < overdue):
+                return "overdue"
+            else:
+                return "online"
         else:
-            return "online"
+            return "offline"
 
     @property
     def has_patches_pending(self):

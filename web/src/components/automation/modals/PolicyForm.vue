@@ -27,10 +27,30 @@
       <q-card-section class="row">
         <div class="col-2">Clients:</div>
         <div class="col-10">
-          <q-select v-model="selectedClients" :options="clientOptions" filled multiple use-chips>
+          <q-select 
+            v-model="selectedClients" 
+            :options="clientOptions" 
+            filled 
+            multiple 
+            use-chips
+            options-selected-class="text-green"
+          >
             <template v-slot:no-option>
               <q-item>
                 <q-item-section class="text-grey">No Results</q-item-section>
+              </q-item>
+            </template>
+            <template v-slot:option="props">
+              <q-item
+                v-bind="props.itemProps"
+                v-on="props.itemEvents"
+              >
+                <q-item-section avatar>
+                  <q-icon v-if="props.selected" name="check" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label v-html="props.opt.label" />
+                </q-item-section>
               </q-item>
             </template>
           </q-select>
@@ -39,22 +59,32 @@
       <q-card-section class="row">
         <div class="col-2">Sites:</div>
         <div class="col-10">
-          <q-select v-model="selectedSites" :options="siteOptions" filled multiple use-chips>
+          <q-select 
+            v-model="selectedSites" 
+            :options="siteOptions" 
+            filled 
+            multiple 
+            use-chips
+            options-selected-class="text-green"
+          >
             <template v-slot:no-option>
               <q-item>
                 <q-item-section class="text-grey">No Results</q-item-section>
               </q-item>
             </template>
-          </q-select>
-        </div>
-      </q-card-section>
-      <q-card-section class="row">
-        <div class="col-2">Agents:</div>
-        <div class="col-10">
-          <q-select v-model="selectedAgents" :options="agentOptions" filled multiple use-chips>
-            <template v-slot:no-option>
-              <q-item>
-                <q-item-section class="text-grey">No Results</q-item-section>
+            <template v-slot:option="props">
+              <q-item
+                v-bind="props.itemProps"
+                v-on="props.itemEvents"
+              >
+                <q-item-section avatar>
+                  <q-icon v-if="props.selected" name="check" />
+                </q-item-section>
+                <q-item-section>
+                  <!-- <q-item-label overline>{{ props.opt.client }}</q-item-label> -->
+                  <q-item-label v-html="props.opt.label" />
+                  <q-item-label caption>{{ props.opt.client }}</q-item-label>
+                </q-item-section>
               </q-item>
             </template>
           </q-select>
@@ -80,12 +110,10 @@ export default {
       name: "",
       desc: "",
       active: false,
-      selectedAgents: [],
       selectedSites: [],
       selectedClients: [],
       clientOptions: [],
-      siteOptions: [],
-      agentOptions: []
+      siteOptions: []
     };
   },
   computed: {
@@ -95,23 +123,26 @@ export default {
   },
   methods: {
     getPolicy() {
-      this.$store.dispatch("automation/loadPolicy", this.pk).then(r => {
-        this.name = r.data.name;
-        this.desc = r.data.desc;
-        this.active = r.data.active;
-        this.selectedAgents = r.data.agents.map(agent => ({
-          label: agent.hostname,
-          value: agent.pk
-        }) );
-        this.selectedSites = r.data.sites.map(site => ({
-          label: site.site,
-          value: site.id
-        }) );
-        this.selectedClients = r.data.clients.map(client => ({
-          label: client.client,
-          value: client.id
-        }) );
-      });
+      this.$q.loading.show();
+
+      this.$store
+        .dispatch("automation/loadPolicy", this.pk)
+        .then(r => {
+
+          this.$q.loading.hide();
+          
+          this.name = r.data.name;
+          this.desc = r.data.desc;
+          this.active = r.data.active;
+          this.selectedSites = r.data.sites.map(site => ({
+            label: site.site,
+            value: site.id
+          }) );
+          this.selectedClients = r.data.clients.map(client => ({
+            label: client.client,
+            value: client.id
+          }) );
+        });
     },
     submit() {
       if (!this.name) {
@@ -126,7 +157,6 @@ export default {
         name: this.name,
         desc: this.desc,
         active: this.active,
-        agents: this.selectedAgents.map(agent => agent.value),
         sites: this.selectedSites.map(site => site.value),
         clients: this.selectedClients.map(client => client.value)
       };
@@ -164,10 +194,6 @@ export default {
         .dispatch("loadClients")
         .then(r => {
           this.clientOptions = this.formatClients(r.data);
-        })
-        .catch(e => {
-          this.$q.loading.hide();
-          this.notifyError(e.response.data);
         });
     },
     getSites() {
@@ -175,21 +201,6 @@ export default {
         .dispatch("loadSites")
         .then(r => {
           this.siteOptions = this.formatSites(r.data);
-        })
-        .catch(e => {
-          this.$q.loading.hide();
-          this.notifyError(e.response.data);
-        });
-    },
-    getAgents() {
-      this.$store
-        .dispatch("loadAgents")
-        .then(r => {
-          this.agentOptions = this.formatAgents(r.data);
-        })
-        .catch(e => {
-          this.$q.loading.hide();
-          this.notifyError(e.response.data);
         });
     }
   },
@@ -201,7 +212,6 @@ export default {
 
     this.getClients();
     this.getSites();
-    this.getAgents();
   }
 };
 </script>

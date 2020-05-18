@@ -19,7 +19,7 @@
             unelevated
             no-caps
             icon="add"
-            @click="showPolicyFormModal = true;"
+            @click="showAddPolicyModal"
           />
           <q-btn
             ref="edit"
@@ -82,9 +82,18 @@
               <q-td>{{ props.row.name }}</q-td>
               <q-td>{{ props.row.desc }}</q-td>
               <q-td>{{ props.row.active }}</q-td>
-              <q-td>{{ props.row.clients.length }}</q-td>
-              <q-td>{{ props.row.sites.length }}</q-td>
-              <q-td>{{ props.row.agents.length }}</q-td>
+              <q-td>
+                <q-btn
+                  :label="`See Related (${props.row.clients.length + props.row.sites.length + props.row.agents.length}+)`"
+                  color="primary"
+                  dense
+                  flat
+                  unelevated
+                  no-caps
+                  @click="showRelationsModal(props.row)"
+                  size="sm"
+                />
+              </q-td>
             </q-tr>
           </template>
         </q-table>
@@ -100,6 +109,9 @@
     <q-dialog v-model="showPolicyOverviewModal">
       <PolicyOverview @close="showPolicyOverviewModal = false" />
     </q-dialog>
+    <q-dialog v-model="showRelationsViewModal">
+      <RelationsView :policy="policy" @close="closeRelationsModal" />
+    </q-dialog>
   </div>
 </template>
 
@@ -109,15 +121,18 @@ import { mapState } from "vuex";
 import PolicyForm from "@/components/automation/modals/PolicyForm";
 import PolicyOverview from "@/components/automation/PolicyOverview";
 import PolicySubTableTabs from "@/components/automation/PolicySubTableTabs";
+import RelationsView from "@/components/automation/modals/RelationsView";
 
 export default {
   name: "AutomationManager",
-  components: { PolicyForm, PolicyOverview, PolicySubTableTabs },
+  components: { PolicyForm, PolicyOverview, PolicySubTableTabs, RelationsView },
   mixins: [mixins],
   data() {
     return {
       showPolicyFormModal: false,
       showPolicyOverviewModal: false,
+      showRelationsViewModal: false,
+      policy: null,
       selected: [],
       pagination: {
         rowsPerPage: 0,
@@ -148,28 +163,14 @@ export default {
           sortable: true
         },
         {
-          name: "clients",
-          label: "Clients",
-          field: "clients",
-          align: "left",
-          sortable: false
-        },
-        {
-          name: "sites",
-          label: "Sites",
-          field: "sites",
-          align: "left",
-          sortable: false
-        },
-        {
-          name: "agents",
-          label: "Agents",
-          field: "agents",
+          name: "actions",
+          label: "Actions",
+          field: "actions",
           align: "left",
           sortable: false
         }
       ],
-      visibleColumns: ["name", "desc", "active", "clients", "sites", "agents"]
+      visibleColumns: ["name", "desc", "active", "actions"]
     };
   },
   methods: {
@@ -205,6 +206,18 @@ export default {
               this.notifyError(`An Error occured while deleting policy`);
             });
         });
+    },
+    showRelationsModal(policy) {
+      this.policy = policy;
+      this.showRelationsViewModal = true;
+    },
+    closeRelationsModal() {
+      this.policy = null;
+      this.showRelationsViewModal = false;
+    },
+    showAddPolicyModal() {
+      this.clearRow();
+      this.showPolicyFormModal = true;
     }
   },
   computed: {

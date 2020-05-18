@@ -56,12 +56,15 @@ export default {
       return axios.post("/automation/policies/", data);
     },
     editPolicy(context, data) {
-      return axios.put(`/automation/policies/${data.id}/`, data)
+      return axios.put(`/automation/policies/${data.id}/`, data);
     },
     deletePolicy(context, pk) {
-      return axios.delete(`/automation/policies/${pk}`).then(r => {
+      return axios.delete(`/automation/policies/${pk}/`).then(r => {
         context.dispatch("loadPolicies");
       });
+    },
+    getRelated(context, pk) {
+      return axios.get(`/automation/policies/${pk}/related/`);
     }
   }
 }

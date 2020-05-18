@@ -14,6 +14,13 @@ from agents.models import Agent
 from checks.models import Script
 from clients.models import Client, Site
 
+from clients.serializers import (
+    ClientSerializer,
+    TreeSerializer
+)
+
+from agents.serializers import AgentHostnameSerializer
+
 from .serializers import (
     PolicySerializer,
     PolicyRelationSerializer,
@@ -42,15 +49,12 @@ class GetAddPolicies(APIView):
             content = {"error": "Policy name too long (max 255 chars)"}
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
-        # Add Clients, Sites, and Agents to Policy
+        # Add Clients, Sites to Policy
         if len(request.data["clients"]) > 0:
             policy.clients.set(request.data["clients"])
 
         if len(request.data["sites"]) > 0:
             policy.sites.set(request.data["sites"])
-
-        if len(request.data["agents"]) > 0:
-            policy.agents.set(request.data["agents"])
 
         return Response("ok")
 
@@ -76,7 +80,7 @@ class GetUpdateDeletePolicy(APIView):
             content = {"error": "Policy name too long (max 255 chars)"}
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
-        # Update Clients, Sites, and Agents to Policy
+        # Update Clients, Sites to Policy
         if len(request.data["clients"]) > 0:
             policy.clients.set(request.data["clients"])
         else:
@@ -86,11 +90,6 @@ class GetUpdateDeletePolicy(APIView):
             policy.sites.set(request.data["sites"])
         else:
             policy.sites.clear()
-
-        if len(request.data["agents"]) > 0:
-            policy.agents.set(request.data["agents"])
-        else:
-            policy.agents.clear()
 
         return Response("ok")
 
@@ -135,5 +134,28 @@ class OverviewPolicy(APIView):
                 )
 
             response[client.client] = client_sites
+
+
+        return Response(response)
+
+class GetRelated(APIView):
+    def get(self, request, pk):
+
+        response = {}
+
+        policy = Policy.objects.filter(pk=pk).prefetch_related("clients", "sites").first()
+
+        response["clients"] = ClientSerializer(policy.clients.all(), many=True).data
+       
+        filtered_sites = list()
+
+        for client in policy.clients.all():
+            for site in client.sites.all():
+                if site not in policy.sites.all():
+                    filtered_sites.append(site)
+
+        response["sites"] = TreeSerializer(filtered_sites + list(policy.sites.all()), many=True).data
+
+        response["agents"] = AgentHostnameSerializer(policy.related_agents(), many=True).data
 
         return Response(response)

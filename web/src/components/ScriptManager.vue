@@ -68,7 +68,7 @@
           </div>
           <q-table
             dense
-            class="scriptmanager-sticky-header-table"
+            class="settings-tbl-sticky"
             :data="scripts"
             :columns="columns"
             :visible-columns="visibleColumns"
@@ -230,23 +230,3 @@ export default {
   }
 };
 </script>
-
-<style lang="stylus">
-.scriptmanager-sticky-header-table {
-  /* max height is important */
-  .q-table__middle {
-    max-height: 500px;
-  }
-
-  .q-table__top, .q-table__bottom, thead tr:first-child th {
-    background-color: #CBCBCB;
-  }
-
-  thead tr:first-child th {
-    position: sticky;
-    top: 0;
-    opacity: 1;
-    z-index: 1;
-  }
-}
-</style>

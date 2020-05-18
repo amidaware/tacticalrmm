@@ -12,7 +12,7 @@
     />
     <q-btn dense flat push @click="refreshSoftware" icon="refresh" />
     <q-table
-      class="software-sticky-header-table"
+      class="tabs-tbl-sticky"
       dense
       :data="software"
       :columns="columns"
@@ -94,24 +94,4 @@ export default {
   }
 };
 </script>
-
-<style lang="stylus">
-.software-sticky-header-table {
-  /* max height is important */
-  .q-table__middle {
-    max-height: 400px;
-  }
-
-  .q-table__top, .q-table__bottom, thead tr:first-child th {
-    background-color: #f5f4f2;
-  }
-
-  thead tr:first-child th {
-    position: sticky;
-    top: 0;
-    opacity: 1;
-    z-index: 1;
-  }
-}
-</style>
 

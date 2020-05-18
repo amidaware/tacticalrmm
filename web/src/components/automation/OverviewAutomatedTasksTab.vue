@@ -7,7 +7,7 @@
       <template v-else>
         <q-table
           dense
-          class="autotasks-tbl-sticky"
+          class="tabs-tbl-sticky"
           :data="tasks"
           :columns="columns"
           :row-key="row => row.id"
@@ -117,23 +117,4 @@ export default {
   }
 };
 </script>
-
-<style lang="stylus">
-.autotasks-tbl-sticky {
-  .q-table__middle {
-    max-height: 25vh;
-  }
-
-  .q-table__top, .q-table__bottom, thead tr:first-child th {
-    background-color: #f5f4f2;
-  }
-
-  thead tr:first-child th {
-    position: sticky;
-    top: 0;
-    opacity: 1;
-    z-index: 1;
-  }
-}
-</style>
 

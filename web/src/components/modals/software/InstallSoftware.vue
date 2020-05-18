@@ -2,7 +2,7 @@
   <q-card style="width: 50vw; max-width: 80vw;">
     <q-card-section>
       <q-table
-        class="choco-sticky-header-table"
+        class="remote-bg-tbl-sticky"
         title="Software"
         dense
         :data="chocos"
@@ -123,23 +123,3 @@ export default {
   }
 };
 </script>
-
-<style lang="stylus">
-.choco-sticky-header-table {
-  /* max height is important */
-  .q-table__middle {
-    max-height: 30vw;
-  }
-
-  .q-table__top, .q-table__bottom, thead tr:first-child th {
-    background-color: #f5f4f2;
-  }
-
-  thead tr:first-child th {
-    position: sticky;
-    top: 0;
-    opacity: 1;
-    z-index: 1;
-  }
-}
-</style>

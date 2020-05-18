@@ -2,15 +2,7 @@
   <div style="width: 900px; max-width: 90vw;">
     <q-card>
       <q-bar>
-        <q-btn
-          ref="refresh"
-          @click="clearRow"
-          class="q-mr-sm"
-          dense
-          flat
-          push
-          icon="refresh"
-        />Automation Manager
+        <q-btn ref="refresh" @click="clearRow" class="q-mr-sm" dense flat push icon="refresh" />Automation Manager
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
@@ -67,7 +59,7 @@
         </div>
         <q-table
           dense
-          class="automation-sticky-header-table"
+          class="settings-tbl-sticky"
           :data="policies"
           :columns="columns"
           :visible-columns="visibleColumns"
@@ -190,7 +182,7 @@ export default {
       this.$store.dispatch("automation/loadPolicyChecks", keys[0]);
       this.$store.dispatch("automation/loadPolicyAutomatedTasks", keys[0]);
     },
-    clearRow () {
+    clearRow() {
       this.getPolicies();
       this.$store.commit("automation/setSelectedPolicy", null);
       this.$store.commit("automation/setPolicyChecks", {});
@@ -226,23 +218,3 @@ export default {
   }
 };
 </script>
-
-<style lang="stylus">
-.automation-sticky-header-table {
-  /* max height is important */
-  .q-table__middle {
-    max-height: 500px;
-  }
-
-  .q-table__top, .q-table__bottom, thead tr:first-child th {
-    background-color: #CBCBCB;
-  }
-
-  thead tr:first-child th {
-    position: sticky;
-    top: 0;
-    opacity: 1;
-    z-index: 1;
-  }
-}
-</style>

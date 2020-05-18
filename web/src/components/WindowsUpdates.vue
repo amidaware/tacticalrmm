@@ -8,7 +8,7 @@
     <q-btn label="Refresh" dense flat push @click="refreshUpdates(updates.pk)" icon="refresh" />
     <q-table
       dense
-      class="winupdate-sticky-header-table"
+      class="tabs-tbl-sticky"
       :data="sortedUpdates"
       :columns="columns"
       :visible-columns="visibleColumns"
@@ -197,23 +197,3 @@ export default {
   }
 };
 </script>
-
-<style lang="stylus">
-.winupdate-sticky-header-table {
-  /* max height is important */
-  .q-table__middle {
-    max-height: 250px;
-  }
-
-  .q-table__top, .q-table__bottom, thead tr:first-child th {
-    background-color: #f5f4f2;
-  }
-
-  thead tr:first-child th {
-    position: sticky;
-    top: 0;
-    opacity: 1;
-    z-index: 1;
-  }
-}
-</style>

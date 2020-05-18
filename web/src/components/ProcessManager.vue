@@ -2,7 +2,7 @@
   <div class="q-pa-md">
     <q-table
       dense
-      class="procs-sticky-header-table"
+      class="remote-bg-tbl-sticky"
       :data="procs"
       :columns="columns"
       :pagination.sync="pagination"
@@ -187,23 +187,3 @@ export default {
   }
 };
 </script>
-
-<style lang="stylus">
-.procs-sticky-header-table {
-  /* max height is important */
-  .q-table__middle {
-    max-height: 650px;
-  }
-
-  .q-table__top, .q-table__bottom, thead tr:first-child th {
-    background-color: #f5f4f2;
-  }
-
-  thead tr:first-child th {
-    position: sticky;
-    top: 0;
-    opacity: 1;
-    z-index: 1;
-  }
-}
-</style>

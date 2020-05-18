@@ -30,6 +30,16 @@
             </q-list>
           </q-menu>
         </q-btn>
+        <!-- view -->
+        <q-btn size="md" dense no-caps flat label="View">
+          <q-menu auto-close>
+            <q-list dense style="min-width: 100px">
+              <q-item clickable v-close-popup @click="showPendingActions">
+                <q-item-section>Pending Actions</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
         <!-- agents -->
         <q-btn size="md" dense no-caps flat label="Agents">
           <q-menu auto-close>
@@ -40,6 +50,7 @@
             </q-list>
           </q-menu>
         </q-btn>
+
         <!-- settings -->
         <q-btn size="md" dense no-caps flat label="Settings">
           <q-menu auto-close>
@@ -144,6 +155,10 @@ export default {
   methods: {
     getLog() {
       this.$store.commit("logs/TOGGLE_LOG_MODAL", true);
+    },
+    showPendingActions() {
+      const data = { action: true, agentpk: null, hostname: null };
+      this.$store.commit("logs/TOGGLE_PENDING_ACTIONS", data);
     },
     showScriptManager() {
       this.$store.commit("TOGGLE_SCRIPT_MANAGER", true);

@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "core",
     "automation",
     "autotasks",
+    "logs",
 ]
 
 MIDDLEWARE = [
@@ -96,7 +97,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "tacticalrmm/static/")]
 
 
 LOG_CONFIG = {
-    "handlers": [{"sink": os.path.join(BASE_DIR, "log/debug.log"), "serialize": False}]
+    "handlers": [{"sink": os.path.join(BASE_DIR, "logs/debug.log"), "serialize": False}]
 }
 
 try:

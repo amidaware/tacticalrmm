@@ -90,7 +90,7 @@ def trigger_patch_scan(request):
 
 @api_view()
 def download_log(request):
-    log_file = os.path.join(settings.BASE_DIR, "log/debug.log")
+    log_file = settings.LOG_CONFIG["handlers"][0]["sink"]
     if settings.DEBUG:
         with open(log_file, "rb") as f:
             response = HttpResponse(f.read(), content_type="text/plain")
@@ -105,7 +105,7 @@ def download_log(request):
 
 @api_view()
 def get_log(request, mode, hostname, order):
-    log_file = os.path.join(settings.BASE_DIR, "log/debug.log")
+    log_file = settings.LOG_CONFIG["handlers"][0]["sink"]
 
     agents = Agent.objects.all()
     agent_hostnames = AgentHostnameSerializer(agents, many=True)

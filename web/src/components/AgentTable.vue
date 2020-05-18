@@ -64,13 +64,24 @@
           <!-- context menu -->
           <q-menu context-menu>
             <q-list dense style="min-width: 200px">
+              <!-- edit agent -->
               <q-item clickable v-close-popup @click="showEditAgentModal = true">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-edit" />
                 </q-item-section>
                 <q-item-section>Edit {{ props.row.hostname }}</q-item-section>
               </q-item>
-
+              <!-- agent pending actions -->
+              <q-item
+                clickable
+                v-close-popup
+                @click="showPendingActions(props.row.id, props.row.hostname)"
+              >
+                <q-item-section side>
+                  <q-icon size="xs" name="far fa-clock" />
+                </q-item-section>
+                <q-item-section>Pending Agent Actions</q-item-section>
+              </q-item>
               <!-- take control -->
               <q-item
                 clickable
@@ -299,6 +310,8 @@
     <q-dialog v-model="showRebootLaterModal">
       <RebootLater @close="showRebootLaterModal = false" />
     </q-dialog>
+    <!-- pending actions modal -->
+    <PendingActions />
   </div>
 </template>
 
@@ -307,10 +320,12 @@ import axios from "axios";
 import mixins from "@/mixins/mixins";
 import EditAgent from "@/components/modals/agents/EditAgent";
 import RebootLater from "@/components/modals/agents/RebootLater";
+import PendingActions from "@/components/modals/logs/PendingActions";
+
 export default {
   name: "AgentTable",
   props: ["frame", "columns", "tab", "filter", "userName"],
-  components: { EditAgent, RebootLater },
+  components: { EditAgent, RebootLater, PendingActions },
   mixins: [mixins],
   data() {
     return {
@@ -345,6 +360,10 @@ export default {
     },
     agentEdited() {
       this.$emit("refreshEdit");
+    },
+    showPendingActions(pk, hostname) {
+      const data = { action: true, agentpk: pk, hostname: hostname };
+      this.$store.commit("logs/TOGGLE_PENDING_ACTIONS", data);
     },
     takeControl(pk) {
       const url = this.$router.resolve(`/takecontrol/${pk}`).href;
@@ -486,35 +505,4 @@ export default {
   }
 };
 </script>
-
-<style lang="stylus">
-.agents-tbl-sticky {
-  .q-table__middle {
-    max-height: 35vh;
-  }
-
-  .q-table__top, .q-table__bottom, thead tr:first-child th {
-    background-color: #f5f4f2;
-  }
-
-  thead tr:first-child th {
-    position: sticky;
-    top: 0;
-    opacity: 1;
-    z-index: 1;
-  }
-}
-
-.highlight {
-  background-color: #c9e6ff;
-}
-
-.agent-offline {
-  background: gray !important;
-}
-
-.agent-overdue {
-  background: red !important;
-}
-</style>
 

@@ -21,4 +21,5 @@ urlpatterns = [
     path("core/", include("core.urls")),
     path("automation/", include("automation.urls")),
     path("tasks/", include("autotasks.urls")),
+    path("logs/", include("logs.urls")),
 ]

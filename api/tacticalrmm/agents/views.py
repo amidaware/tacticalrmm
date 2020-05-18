@@ -6,10 +6,8 @@ import json
 import base64
 import datetime as dt
 
-
 from django.conf import settings
 from django.shortcuts import get_object_or_404
-
 
 from rest_framework.decorators import (
     api_view,
@@ -22,9 +20,10 @@ from rest_framework.authentication import BasicAuthentication, TokenAuthenticati
 
 from .models import Agent
 from winupdate.models import WinUpdatePolicy
-from winupdate.serializers import WinUpdatePolicySerializer
 
 from .serializers import AgentSerializer, AgentHostnameSerializer, AgentTableSerializer
+from winupdate.serializers import WinUpdatePolicySerializer
+
 from .tasks import uninstall_agent_task, update_agent_task
 
 logger.configure(**settings.LOG_CONFIG)
@@ -309,12 +308,11 @@ def reboot_later(request):
     except Exception:
         return Response("invalid date", status=status.HTTP_400_BAD_REQUEST)
 
-    try:
-        resp = agent.schedule_reboot(obj)
-    except Exception:
-        return Response("Unable to contact agent", status=status.HTTP_400_BAD_REQUEST)
+    resp = agent.schedule_reboot(obj)
 
-    if resp["return"][0][agent.salt_id]:
-        return Response(f"{agent.hostname}: reboot scheduled for {obj}")
+    if resp["ret"] and resp["success"]:
+        return Response(resp["msg"])
+    elif resp["ret"] and not resp["success"]:
+        return Response(resp["msg"], status=status.HTTP_400_BAD_REQUEST)
     else:
-        return Response("Something went wrong", status=status.HTTP_400_BAD_REQUEST)
+        return Response(resp["msg"], status=status.HTTP_400_BAD_REQUEST)

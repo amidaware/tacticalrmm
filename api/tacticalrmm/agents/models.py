@@ -282,28 +282,57 @@ class Agent(models.Model):
             random.choice(string.ascii_letters) for _ in range(10)
         )
 
-        r = self.salt_api_cmd(
-            hostname=self.salt_id,
-            timeout=20,
-            func="task.create_task",
-            arg=[
-                f"name={task_name}",
-                "force=True",
-                "action_type=Execute",
-                'cmd="C:\\Windows\\System32\\shutdown.exe"',
-                'arguments="/r /t 5 /f"',
-                "trigger_type=Once",
-                f'start_date="{start_date}"',
-                f'start_time="{start_time}"',
-                f'end_date="{end_date}"',
-                f'end_time="{end_time}"',
-                "ac_only=False",
-                "stop_if_on_batteries=False",
-                "delete_after=Immediately",
-            ],
-        )
+        try:
+            r = self.salt_api_cmd(
+                hostname=self.salt_id,
+                timeout=20,
+                func="task.create_task",
+                arg=[
+                    f"name={task_name}",
+                    "force=True",
+                    "action_type=Execute",
+                    'cmd="C:\\Windows\\System32\\shutdown.exe"',
+                    'arguments="/r /t 5 /f"',
+                    "trigger_type=Once",
+                    f'start_date="{start_date}"',
+                    f'start_time="{start_time}"',
+                    f'end_date="{end_date}"',
+                    f'end_time="{end_time}"',
+                    "ac_only=False",
+                    "stop_if_on_batteries=False",
+                    "delete_after=Immediately",
+                ],
+            )
+        except Exception:
+            return {"ret": False, "msg": "Unable to contact the agent"}
 
-        return r.json()
+        salt_resp = r.json()["return"][0][self.salt_id]
+
+        if isinstance(salt_resp, bool) and salt_resp == True:
+            from logs.models import PendingAction
+
+            details = {
+                "taskname": task_name,
+                "time": str(obj),
+            }
+            PendingAction(agent=self, action_type="schedreboot", details=details).save()
+
+            nice_time = dt.datetime.strftime(obj, "%B %d, %Y at %I:%M %p")
+            return {
+                "ret": True,
+                "msg": {"time": nice_time, "agent": self.hostname},
+                "success": True,
+            }
+
+        elif isinstance(salt_resp, bool) and salt_resp == False:
+            return {
+                "ret": True,
+                "msg": "Unable to create task (possibly because date/time cannot be in the past)",
+                "success": False,
+            }
+
+        else:
+            return {"ret": True, "msg": salt_resp, "success": False}
 
 
 class AgentOutage(models.Model):

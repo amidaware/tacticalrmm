@@ -48,23 +48,32 @@ export default {
   },
   methods: {
     scheduleReboot() {
-      this.$q.loading.show();
+      this.$q.loading.show({ message: "Contacting agent..." });
       const data = { pk: this.selectedAgentPk, datetime: this.datetime };
       axios
         .post("/agents/rebootlater/", data)
         .then(r => {
           this.$q.loading.hide();
           this.$emit("close");
-          this.notifySuccess(r.data, 5000);
+          this.confirmReboot(r.data);
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data);
+          this.notifyError(e.response.data, 5000);
         });
     },
     getCurrentDate() {
       let timeStamp = Date.now();
       this.datetime = date.formatDate(timeStamp, "YYYY-MM-DD HH:mm");
+    },
+    confirmReboot(data) {
+      this.$q.dialog({
+        title: "Reboot pending",
+        style: "width: 40vw",
+        message: `A reboot has been scheduled for <strong>${data.time}</strong> on ${data.agent}.
+          <br />It can be cancelled from the Pending Actions menu until the scheduled time.`,
+        html: true
+      });
     }
   },
   computed: {

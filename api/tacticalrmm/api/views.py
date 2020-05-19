@@ -286,7 +286,7 @@ def add(request):
     mesh_node_id = data["mesh_node_id"]
 
     if not Agent.objects.filter(agent_id=agent_id).exists():
-        Agent(
+        agent = Agent(
             agent_id=agent_id,
             hostname=hostname,
             client=client,
@@ -294,9 +294,10 @@ def add(request):
             monitoring_type=monitoring_type,
             description=description,
             mesh_node_id=mesh_node_id,
-        ).save()
+            last_seen=djangotime.now(),
+        )
 
-        agent = get_object_or_404(Agent, agent_id=agent_id)
+        agent.save()
 
         if agent.monitoring_type == "workstation":
             WinUpdatePolicy(agent=agent, run_time_days=[5, 6]).save()

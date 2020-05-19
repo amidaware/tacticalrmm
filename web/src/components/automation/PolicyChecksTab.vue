@@ -1,5 +1,5 @@
 <template>
-  <div v-if="Object.keys(checks).length === 0">No policy selected</div>
+  <div v-if="Object.keys(checks).length === 0">No Policy Selected</div>
   <div class="row" v-else>
     <div class="col-12">
       <q-btn size="sm" color="grey-5" icon="fas fa-plus" label="Add Check" text-color="black">

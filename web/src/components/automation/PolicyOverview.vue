@@ -13,7 +13,7 @@
           <q-tree
             ref="Tree"
             :nodes="clientSiteTree"
-            node-key="label"
+            node-key="id"
             :selected.sync="selected"
             selected-color="primary"
             @update:selected="loadPolicyDetails"
@@ -123,13 +123,19 @@ export default {
 
       var result = [];
 
+      // Used by tree for unique identification
+      let unique_id = 0;
+
       for (let client in data) {
         var client_temp = {};
 
         client_temp["label"] = client;
+        client_temp["id"] = unique_id;
         client_temp["icon"] = "business";
         client_temp["selectable"] = false;
         client_temp["children"] = [];
+
+        unique_id--;
 
         // Add any policies assigned to client
         if (data[client].policies.length > 0) {
@@ -145,8 +151,11 @@ export default {
         for (let site in data[client].sites) {
           var site_temp = {};
           site_temp["label"] = site;
+          site_temp["id"] = unique_id;
           site_temp["icon"] = "apartment";
           site_temp["selectable"] = false;
+
+          unique_id--;
 
           // Add any policies assigned to site
           if (data[client].sites[site].policies.length > 0) {

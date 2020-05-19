@@ -9,6 +9,7 @@ from agents.models import Agent
 from winupdate.models import WinUpdatePolicy
 from clients.models import Client, Site
 from automation.models import Policy
+from core.models import CoreSettings
 
 
 class BaseTestCase(TestCase):
@@ -19,6 +20,8 @@ class BaseTestCase(TestCase):
         self.john.save()
         self.client = APIClient()
         self.client.force_authenticate(user=self.john)
+
+        self.coresettings = CoreSettings.objects.create()
 
         self.agent = Agent.objects.create(
             operating_system="Windows 10",

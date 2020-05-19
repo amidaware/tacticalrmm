@@ -8,11 +8,19 @@ class TestClientViews(BaseTestCase):
     def test_initial_setup(self):
         url = "/clients/initialsetup/"
 
-        payload = {"client": "Amazon", "site": "NY Office", "timezone": "America/Los_Angeles"}
+        payload = {
+            "client": "Amazon",
+            "site": "NY Office",
+            "timezone": "America/Los_Angeles",
+        }
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
 
-        payload = {"client": "Amaz|on", "site": "NY Off|ice  |*&@#$"}
+        payload = {
+            "client": "Amaz|on",
+            "site": "NY Off|ice  |*&@#$",
+            "timezone": "ASDjnb23k4@!#!@#(*!^@Y$",
+        }
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 400)
 

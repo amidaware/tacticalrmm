@@ -1,3 +1,5 @@
+import pytz
+
 from rest_framework import serializers
 
 from .models import Agent
@@ -19,6 +21,11 @@ class AgentSerializer(serializers.ModelSerializer):
     make_model = serializers.ReadOnlyField()
     physical_disks = serializers.ReadOnlyField()
     checks = serializers.ReadOnlyField()
+    timezone = serializers.ReadOnlyField()
+    all_timezones = serializers.SerializerMethodField("all_time_zones")
+
+    def all_time_zones(self, obj):
+        return pytz.all_timezones
 
     class Meta:
         model = Agent
@@ -33,6 +40,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
     patches_pending = serializers.ReadOnlyField(source="has_patches_pending")
     status = serializers.ReadOnlyField()
     checks = serializers.ReadOnlyField()
+    timezone = serializers.ReadOnlyField()
 
     class Meta:
         model = Agent
@@ -53,6 +61,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "last_seen",
             "boot_time",
             "checks",
+            "timezone",
         ]
 
 

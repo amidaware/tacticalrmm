@@ -17,20 +17,28 @@ from rest_framework.decorators import (
 from .serializers import ClientSerializer, SiteSerializer, TreeSerializer
 from .models import Client, Site, validate_name
 from agents.models import Agent
+from core.models import CoreSettings
 
 
 @api_view(["POST"])
 def initial_setup(request):
     client_name = request.data["client"].strip()
     site_name = request.data["site"].strip()
+    tz = request.data["timezone"]
 
     if not validate_name(client_name) or not validate_name(site_name):
         err = {"error": "Client/site name cannot contain the | character"}
         return Response(err, status=status.HTTP_400_BAD_REQUEST)
 
     Client(client=client_name).save()
+
     client = Client.objects.get(client=client_name)
     Site(client=client, site=site_name).save()
+
+    core = CoreSettings.objects.first()
+    core.default_time_zone = tz
+    core.save(update_fields=["default_time_zone"])
+
     return Response("ok")
 
 

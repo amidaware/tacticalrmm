@@ -3,6 +3,7 @@
     <q-splitter v-model="splitterModel">
       <template v-slot:before>
         <q-tabs dense v-model="tab" vertical class="text-primary">
+          <q-tab name="general" label="General" />
           <q-tab name="alerts" label="Alerts" />
         </q-tabs>
       </template>
@@ -20,6 +21,22 @@
               transition-prev="jump-up"
               transition-next="jump-up"
             >
+              <!-- general -->
+              <q-tab-panel name="general">
+                <div class="text-subtitle2">General</div>
+                <hr />
+                <q-card-section class="row">
+                  <div class="col-4">Default agent timezone:</div>
+                  <div class="col-2"></div>
+                  <q-select
+                    outlined
+                    dense
+                    v-model="settings.default_time_zone"
+                    :options="allTimezones"
+                    class="col-6"
+                  />
+                </q-card-section>
+              </q-tab-panel>
               <!-- alerts -->
               <q-tab-panel name="alerts">
                 <div class="text-subtitle2 row">
@@ -147,9 +164,10 @@ export default {
       settings: {},
       email: null,
       AddEmailModal: false,
-      tab: "alerts",
+      tab: "general",
       splitterModel: 15,
       isPwd: true,
+      allTimezones: [],
       thumbStyle: {
         right: "2px",
         borderRadius: "5px",
@@ -163,6 +181,7 @@ export default {
     getCoreSettings() {
       axios.get("/core/getcoresettings/").then(r => {
         this.settings = r.data;
+        this.allTimezones = Object.freeze(r.data.all_timezones);
         this.ready = true;
       });
     },

@@ -14,6 +14,8 @@ from django.db import models
 from django.conf import settings
 from django.contrib.postgres.fields import JSONField
 
+from core.models import TZ_CHOICES
+
 
 class Agent(models.Model):
     version = models.CharField(default="0.1.0", max_length=255)
@@ -48,9 +50,22 @@ class Agent(models.Model):
     is_updating = models.BooleanField(default=False)
     choco_installed = models.BooleanField(default=False)
     wmi_detail = JSONField(null=True)
+    time_zone = models.CharField(
+        max_length=255, choices=TZ_CHOICES, null=True, blank=True
+    )
 
     def __str__(self):
         return self.hostname
+
+    @property
+    def timezone(self):
+        # return the default timezone unless the timezone is explicity set per agent
+        if self.time_zone is not None:
+            return self.time_zone
+        else:
+            from core.models import CoreSettings
+
+            return CoreSettings.objects.first().default_time_zone
 
     @property
     def status(self):

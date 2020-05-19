@@ -63,6 +63,17 @@
                   />
                 </q-card-section>
                 <q-card-section class="row">
+                  <div class="col-2">Timezone:</div>
+                  <div class="col-2"></div>
+                  <q-select
+                    outlined
+                    dense
+                    v-model="timezone"
+                    :options="allTimezones"
+                    class="col-8"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
                   <div class="col-10">Check interval:</div>
                   <q-input
                     dense
@@ -308,6 +319,10 @@ export default {
       tree: {},
       splitterModel: 15,
       tab: "general",
+      timezone: null,
+      tz_inherited: true,
+      original_tz: null,
+      allTimezones: [],
       severityOptions: [
         { label: "Manual", value: "manual" },
         { label: "Approve", value: "approve" },
@@ -327,6 +342,21 @@ export default {
     getAgentInfo() {
       axios.get(`/agents/${this.selectedAgentPk}/agentdetail/`).then(r => {
         this.agent = r.data;
+        this.allTimezones = Object.freeze(r.data.all_timezones);
+
+        // r.data.time_zone is the actual db column from the agent
+        // r.data.timezone is a computed property based on the db time_zone field
+        // which whill return null if the time_zone field is not set
+        // and is therefore inheriting from the default global setting
+        if (r.data.time_zone === null) {
+          this.timezone = r.data.timezone;
+          this.original_tz = r.data.timezone;
+        } else {
+          this.tz_inherited = false;
+          this.timezone = r.data.time_zone;
+          this.original_tz = r.data.time_zone;
+        }
+
         this.agentLoaded = true;
       });
     },
@@ -338,6 +368,14 @@ export default {
     },
     editAgent() {
       let data = this.agent;
+
+      // only send the timezone data if it has changed
+      // this way django will keep the db column as null and inherit from the global setting
+      // until we explicity change the agent's timezone
+      if (this.timezone !== this.original_tz) {
+        data.time_zone = this.timezone;
+      }
+
       delete data.services;
       delete data.disks;
       delete data.local_ip;

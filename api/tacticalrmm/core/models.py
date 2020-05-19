@@ -1,4 +1,5 @@
 from loguru import logger
+import pytz
 
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -8,6 +9,8 @@ from django.core.mail.backends.smtp import EmailBackend
 from django.conf import settings
 
 logger.configure(**settings.LOG_CONFIG)
+
+TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
 
 
 class CoreSettings(models.Model):
@@ -25,6 +28,9 @@ class CoreSettings(models.Model):
         max_length=255, null=True, blank=True, default="changeme"
     )
     smtp_port = models.PositiveIntegerField(default=587, null=True, blank=True)
+    default_time_zone = models.CharField(
+        max_length=255, choices=TZ_CHOICES, default="America/Los_Angeles"
+    )
 
     def save(self, *args, **kwargs):
         if not self.pk and CoreSettings.objects.exists():

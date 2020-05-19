@@ -30,6 +30,10 @@
               </q-input>
             </q-card-section>
             <q-card-section>
+              <div>Default timezone for agents:</div>
+              <q-select dense outlined v-model="timezone" :options="allTimezones" />
+            </q-card-section>
+            <q-card-section>
               <div>Upload MeshAgent:</div>
               <div class="row">
                 <q-input dense @input="val => { meshagent = val[0] }" filled type="file" />
@@ -58,7 +62,9 @@ export default {
       step: 1,
       firstclient: null,
       firstsite: null,
-      meshagent: null
+      meshagent: null,
+      allTimezones: [],
+      timezone: null
     };
   },
   methods: {
@@ -67,7 +73,7 @@ export default {
         this.notifyError("Please upload your meshagent.exe");
       } else {
         this.$q.loading.show();
-        const data = { client: this.firstclient, site: this.firstsite };
+        const data = { client: this.firstclient, site: this.firstsite, timezone: this.timezone };
         axios
           .post("/clients/initialsetup/", data)
           .then(r => {
@@ -89,7 +95,16 @@ export default {
             this.$q.loading.hide();
           });
       }
+    },
+    getSettings() {
+      axios.get("/core/getcoresettings/").then(r => {
+        this.allTimezones = Object.freeze(r.data.all_timezones);
+        this.timezone = r.data.default_time_zone;
+      });
     }
+  },
+  created() {
+    this.getSettings();
   }
 };
 </script>

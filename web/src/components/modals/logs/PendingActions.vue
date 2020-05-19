@@ -13,7 +13,7 @@
         </q-bar>
         <div v-if="actions.length !== 0" class="q-pa-md">
           <div class="row">
-            <div class="col-2">
+            <div class="col">
               <q-btn
                 label="Cancel Action"
                 :disable="selectedRow === null || selectedStatus === 'completed'"
@@ -26,10 +26,10 @@
                 @click="cancelPendingAction"
               />
             </div>
-            <div class="col"></div>
-            <div class="col-2">
+            <div class="col-7"></div>
+            <div class="col">
               <q-btn
-                :label="showCompleted ? 'Hide Completed' : 'Show Completed'"
+                :label="showCompleted ? `Hide ${completedCount} Completed` : `Show ${completedCount} Completed`"
                 :icon="showCompleted ? 'visibility_off' : 'visibility'"
                 @click="showCompleted = !showCompleted"
                 dense
@@ -185,6 +185,9 @@ export default {
     },
     title() {
       return this.agentpk === null ? "All Pending Actions" : `Pending Actions for ${this.hostname}`;
+    },
+    completedCount() {
+      return this.actions.filter(k => k.status === "completed").length;
     }
   }
 };

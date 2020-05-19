@@ -9,6 +9,7 @@
     <div class="row">
       <div class="col-4">
         <!-- left -->
+        <span class="text-subtitle2 text-bold">Hardware Details</span>
         <q-list dense>
           <q-item>
             <q-item-section avatar>
@@ -50,7 +51,25 @@
           </q-item>
         </q-list>
       </div>
-      <div class="col-5"></div>
+      <div class="col-2">
+        <span class="text-subtitle2 text-bold">Checks Status</span>
+        <br />
+        <template v-if="summary.checks.total !== 0">
+          <q-chip v-if="summary.checks.passing" square size="lg">
+            <q-avatar size="lg" square icon="done" color="green" text-color="white" />
+            <small>{{ summary.checks.passing }} checks passing</small>
+          </q-chip>
+          <q-chip v-if="summary.checks.failing" square size="lg">
+            <q-avatar size="lg" square icon="cancel" color="red" text-color="white" />
+            <small>{{ summary.checks.failing }} checks failing</small>
+          </q-chip>
+          <span
+            v-if="awaitingSync(summary.checks.total, summary.checks.passing, summary.checks.failing)"
+          >{{ summary.checks.total }} checks awaiting first synchronization</span>
+        </template>
+        <template v-else>No checks</template>
+      </div>
+      <div class="col-1"></div>
       <!-- right -->
       <div class="col-3">
         <span class="text-subtitle2 text-bold">Disks</span>
@@ -67,6 +86,7 @@
           <hr />
         </div>
       </div>
+      <div class="col-2"></div>
     </div>
   </div>
 </template>
@@ -77,7 +97,11 @@ export default {
   data() {
     return {};
   },
-  methods: {},
+  methods: {
+    awaitingSync(total, passing, failing) {
+      return total !== 0 && passing === 0 && failing === 0 ? true : false;
+    }
+  },
   computed: {
     summary() {
       return this.$store.state.agentSummary;

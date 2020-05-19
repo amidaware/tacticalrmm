@@ -8,7 +8,7 @@ class TestClientViews(BaseTestCase):
     def test_initial_setup(self):
         url = "/clients/initialsetup/"
 
-        payload = {"client": "Amazon", "site": "NY Office"}
+        payload = {"client": "Amazon", "site": "NY Office", "timezone": "America/Los_Angeles"}
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
 

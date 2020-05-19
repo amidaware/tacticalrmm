@@ -75,7 +75,8 @@ describe("AutomationManager.vue", () => {
       localVue,
       stubs: [
         "PolicySubTableTabs",
-        "PolicyForm"
+        "PolicyForm",
+        "RelationsView"
       ],
     });
 
@@ -86,7 +87,9 @@ describe("AutomationManager.vue", () => {
   // This is needed to remove q-dialogs since body doesn't rerender
   afterEach(() => {
     const dialogs = document.querySelectorAll(".q-dialog");
+    const menus = document.querySelectorAll(".q-menu");
     dialogs.forEach(x => x.remove());
+    menus.forEach(x => x.remove());
   });
 
 
@@ -116,17 +119,17 @@ describe("AutomationManager.vue", () => {
 
   });
 
-  it("shows edit policy modal on edit button press", async () => {
-
-    const button = wrapper.findComponent({ ref: "edit" });
+  it("shows edit policy modal on edit context menu button press", async () => {
 
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(false);
-    await button.trigger("click")
-    expect(bodyWrapper.find(".q-dialog").exists()).toBe(false);
+    expect(bodyWrapper.find(".q-menu").exists()).toBe(false);
 
-    //Select Row
-    await wrapper.find("tbody > tr.q-tr").trigger("click");
-    await button.trigger("click");
+    // Right Click on Row
+    await wrapper.find("tbody > tr.q-tr").trigger("contextmenu");
+    expect(bodyWrapper.find(".q-menu").exists()).toBe(true);
+    await bodyWrapper.find("#context-edit").trigger("click");
+
+    expect(wrapper.vm.editPolicyId).toBe(1);
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(true);
 
   });
@@ -137,19 +140,21 @@ describe("AutomationManager.vue", () => {
 
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(false);
     await button.trigger("click");
+
+    expect(wrapper.vm.editPolicyId).toBe(null);
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(true);
 
   });
 
   it("deletes selected policy", async () => {
 
-    const button = wrapper.findComponent({ ref: "delete" });
-
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(false);
-    // Select Row
-    await wrapper.find("tbody > tr.q-tr").trigger("click");
-    await button.trigger("click");
-    expect(bodyWrapper.find(".q-dialog").exists()).toBe(true);
+    expect(bodyWrapper.find(".q-menu").exists()).toBe(false);
+
+    // Right Click on Row
+    await wrapper.find("tbody > tr.q-tr").trigger("contextmenu");
+    expect(bodyWrapper.find(".q-menu").exists()).toBe(true);
+    await bodyWrapper.find("#context-delete").trigger("click");
 
     //Get OK button and click it
     bodyWrapper.findAll(".q-btn").wrappers[1].trigger("click");
@@ -176,6 +181,21 @@ describe("AutomationManager.vue", () => {
     expect(mutations.setSelectedPolicy).toHaveBeenCalledWith(expect.anything(), null);
     expect(mutations.setPolicyChecks).toHaveBeenCalledWith(expect.anything(), {});
     expect(mutations.setPolicyAutomatedTasks).toHaveBeenCalledWith(expect.anything(), {});
+
+  });
+
+  it("shows relation modal on context menu button press", async () => {
+
+    expect(bodyWrapper.find(".q-dialog").exists()).toBe(false);
+    expect(bodyWrapper.find(".q-menu").exists()).toBe(false);
+
+    // Right Click on Row
+    await wrapper.find("tbody > tr.q-tr").trigger("contextmenu");
+    expect(bodyWrapper.find(".q-menu").exists()).toBe(true);
+    await bodyWrapper.find("#context-relation").trigger("click");
+
+    expect(wrapper.vm.policy).toBe(policiesData[0]);
+    expect(bodyWrapper.find(".q-dialog").exists()).toBe(true);
 
   });
 

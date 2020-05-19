@@ -3,4 +3,6 @@ module.exports = {
   moduleNameMapper: {
     quasar: "quasar/dist/quasar.umd.min.js"
   },
+  //"collectCoverage": true,
+  //"collectCoverageFrom": ["**/*.{js,vue}", "!**/node_modules/**"]
 }

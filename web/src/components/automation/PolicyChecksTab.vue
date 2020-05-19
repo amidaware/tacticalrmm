@@ -99,7 +99,22 @@
                     </q-item-section>
                     <q-item-section>Delete</q-item-section>
                   </q-item>
+
                   <q-separator></q-separator>
+
+                  <q-item
+                    clickable
+                    v-close-popup
+                    @click="showPolicyCheckStatusModal(props.row)"
+                  >
+                    <q-item-section side>
+                      <q-icon name="remove_red_eye" />
+                    </q-item-section>
+                    <q-item-section>Status</q-item-section>
+                  </q-item>
+
+                  <q-separator></q-separator>
+
                   <q-item clickable v-close-popup>
                     <q-item-section>Close</q-item-section>
                   </q-item>
@@ -120,13 +135,6 @@
                   v-model="props.row.email_alert"
                 />
               </q-td>
-              <q-td v-if="props.row.status === 'pending'"></q-td>
-              <q-td v-else-if="props.row.status === 'passing'">
-                <q-icon style="font-size: 1.3rem;" color="positive" name="check_circle" />
-              </q-td>
-              <q-td v-else-if="props.row.status === 'failing'">
-                <q-icon style="font-size: 1.3rem;" color="negative" name="error" />
-              </q-td>
               <q-td
                 v-if="props.row.check_type === 'diskspace'"
               >Disk Space Drive {{ props.row.disk }} > {{props.row.threshold }}%</q-td>
@@ -145,27 +153,18 @@
               <q-td
                 v-else-if="props.row.check_type === 'winsvc'"
               >Service Check - {{ props.row.svc_display_name }}</q-td>
-              <q-td v-if="props.row.status === 'pending'">Awaiting First Synchronization</q-td>
-              <q-td v-else-if="props.row.status === 'passing'">
-                <q-badge color="positive">Passing</q-badge>
+              <q-td>
+                <q-btn
+                  label="See Status"
+                  color="primary"
+                  dense
+                  flat
+                  unelevated
+                  no-caps
+                  @click="showPolicyCheckStatusModal(props.row)"
+                  size="sm"
+                />
               </q-td>
-              <q-td v-else-if="props.row.status === 'failing'">
-                <q-badge color="negative">Failing</q-badge>
-              </q-td>
-              <q-td v-if="props.row.check_type === 'ping'">
-                <span
-                  style="cursor:pointer;color:blue;text-decoration:underline"
-                  @click="moreInfo('Ping', props.row.more_info)"
-                >output</span>
-              </q-td>
-              <q-td v-else-if="props.row.check_type === 'script'">
-                <span
-                  style="cursor:pointer;color:blue;text-decoration:underline"
-                  @click="scriptMoreInfo(props.row)"
-                >output</span>
-              </q-td>
-              <q-td v-else>{{ props.row.more_info }}</q-td>
-              <q-td>{{ props.row.last_run }}</q-td>
             </q-tr>
           </template>
         </q-table>
@@ -202,7 +201,6 @@
         :policypk="checks.id"
       />
     </q-dialog>
-
     <q-dialog v-model="showAddMemCheck">
       <AddMemCheck @close="showAddMemCheck = false" :policypk="checks.id" />
     </q-dialog>
@@ -213,7 +211,6 @@
         :policypk="checks.id"
       />
     </q-dialog>
-
     <q-dialog v-model="showAddWinSvcCheck">
       <AddWinSvcCheck @close="showAddWinSvcCheck = false" :policypk="checks.id" />
     </q-dialog>
@@ -235,6 +232,12 @@
         :policypk="checks.id"
       />
     </q-dialog>
+    <q-dialog v-model="showPolicyCheckStatus">
+      <PolicyCheckStatus 
+        :check="statusCheck" 
+        @close="closePolicyCheckStatusModal" 
+      />
+    </q-dialog>
   </div>
 </template>
 
@@ -254,6 +257,7 @@ import AddWinSvcCheck from "@/components/modals/checks/AddWinSvcCheck";
 import EditWinSvcCheck from "@/components/modals/checks/EditWinSvcCheck";
 import AddScriptCheck from "@/components/modals/checks/AddScriptCheck";
 import EditScriptCheck from "@/components/modals/checks/EditScriptCheck";
+import PolicyCheckStatus from "@/components/automation/modals/PolicyCheckStatus";
 
 export default {
   name: "PolicyChecksTab",
@@ -270,7 +274,8 @@ export default {
     AddWinSvcCheck,
     EditWinSvcCheck,
     AddScriptCheck,
-    EditScriptCheck
+    EditScriptCheck,
+    PolicyCheckStatus
   },
   mixins: [mixins],
   data() {
@@ -287,26 +292,14 @@ export default {
       showEditWinSvcCheck: false,
       showAddScriptCheck: false,
       showEditScriptCheck: false,
+      showPolicyCheckStatus: false,
       editCheckPK: null,
-      scriptInfo: {},
+      statusCheck: {},
       columns: [
         { name: "smsalert", field: "text_alert", align: "left" },
         { name: "emailalert", field: "email_alert", align: "left" },
-        { name: "statusicon", align: "left" },
         { name: "desc", label: "Description", align: "left" },
-        { name: "status", label: "Status", field: "status", align: "left" },
-        {
-          name: "moreinfo",
-          label: "More Info",
-          field: "more_info",
-          align: "left"
-        },
-        {
-          name: "datetime",
-          label: "Date / Time",
-          field: "last_run",
-          align: "left"
-        }
+        { name: "status", label: "Status", field: "status", align: "left" }
       ],
       pagination: {
         rowsPerPage: 9999
@@ -333,19 +326,6 @@ export default {
     },
     onRefresh(id) {
       this.$store.dispatch("automation/loadPolicyChecks", id);
-    },
-    moreInfo(name, output) {
-      this.$q.dialog({
-        title: `${name} output`,
-        style: "width: 35vw; max-width: 50vw",
-        message: `<pre>${output}</pre>`,
-        html: true,
-        dark: true
-      });
-    },
-    scriptMoreInfo(props) {
-      this.scriptInfo = props;
-      this.showScriptOutput = true;
     },
     editCheck(category) {
       switch (category) {
@@ -389,6 +369,14 @@ export default {
             })
             .catch(e => this.notifyError(e.response.data.error));
         });
+    },
+    showPolicyCheckStatusModal(check) {
+      this.statusCheck = check;
+      this.showPolicyCheckStatus = true;
+    },
+    closePolicyCheckStatusModal() {
+      this.showPolicyCheckStatus = false;
+      this.statusCheck = {};
     }
   },
   computed: {

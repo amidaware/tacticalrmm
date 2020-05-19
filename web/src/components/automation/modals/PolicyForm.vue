@@ -205,7 +205,7 @@ export default {
     }
   },
   mounted() {
-    //If pk prop is set that means we are editting
+    // If pk prop is set that means we are editting
     if (this.pk) {
       this.getPolicy();
     }

@@ -22,30 +22,6 @@
             @click="showAddPolicyModal"
           />
           <q-btn
-            ref="edit"
-            label="Edit"
-            :disable="selectedRow === null"
-            dense
-            flat
-            push
-            unelevated
-            no-caps
-            icon="edit"
-            @click="showPolicyFormModal = true"
-          />
-          <q-btn
-            ref="delete"
-            label="Delete"
-            :disable="selectedRow === null"
-            dense
-            flat
-            push
-            unelevated
-            no-caps
-            icon="delete"
-            @click="deletePolicy"
-          />
-          <q-btn
             ref="overview"
             label="Policy Overview"
             dense
@@ -79,6 +55,53 @@
           </template>
           <template v-slot:body="props">
             <q-tr :props="props" class="cursor-pointer" @click="props.selected = true">
+              <!-- context menu -->
+              <q-menu context-menu>
+                <q-list dense style="min-width: 200px">
+                  <q-item 
+                    clickable 
+                    v-close-popup 
+                    @click="showEditPolicyModal(props.row.id)"
+                    id="context-edit"
+                  >
+                    <q-item-section side>
+                      <q-icon name="edit" />
+                    </q-item-section>
+                    <q-item-section>Edit</q-item-section>
+                  </q-item>
+                  <q-item
+                    clickable
+                    v-close-popup
+                    @click="deletePolicy(props.row.id)"
+                    id="context-delete"
+                  >
+                    <q-item-section side>
+                      <q-icon name="delete" />
+                    </q-item-section>
+                    <q-item-section>Delete</q-item-section>
+                  </q-item>
+
+                  <q-separator></q-separator>
+
+                  <q-item
+                    clickable
+                    v-close-popup
+                    @click="showRelationsModal(props.row)"
+                    id="context-relation"
+                  >
+                    <q-item-section side>
+                      <q-icon name="account_tree" />
+                    </q-item-section>
+                    <q-item-section>Show Relations</q-item-section>
+                  </q-item>
+
+                  <q-separator></q-separator>
+
+                  <q-item clickable v-close-popup>
+                    <q-item-section>Close</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-menu>
               <q-td>{{ props.row.name }}</q-td>
               <q-td>{{ props.row.desc }}</q-td>
               <q-td>{{ props.row.active }}</q-td>
@@ -104,13 +127,19 @@
       </q-card-section>
     </q-card>
     <q-dialog v-model="showPolicyFormModal">
-      <PolicyForm :pk="selectedRow" @close="showPolicyFormModal = false" @refresh="clearRow" />
+      <PolicyForm 
+        :pk="editPolicyId" 
+        @close="closeEditPolicyModal" 
+        @refresh="clearRow" />
     </q-dialog>
     <q-dialog v-model="showPolicyOverviewModal">
-      <PolicyOverview @close="showPolicyOverviewModal = false" />
+      <PolicyOverview 
+        @close="showPolicyOverviewModal = false" />
     </q-dialog>
     <q-dialog v-model="showRelationsViewModal">
-      <RelationsView :policy="policy" @close="closeRelationsModal" />
+      <RelationsView 
+        :policy="policy"
+        @close="closeRelationsModal" />
     </q-dialog>
   </div>
 </template>
@@ -133,6 +162,7 @@ export default {
       showPolicyOverviewModal: false,
       showRelationsViewModal: false,
       policy: null,
+      editPolicyId: null,
       selected: [],
       pagination: {
         rowsPerPage: 0,
@@ -189,7 +219,7 @@ export default {
       this.$store.commit("automation/setPolicyChecks", {});
       this.$store.commit("automation/setPolicyAutomatedTasks", {});
     },
-    deletePolicy() {
+    deletePolicy(id) {
       this.$q
         .dialog({
           title: "Delete policy?",
@@ -198,7 +228,7 @@ export default {
         })
         .onOk(() => {
           this.$store
-            .dispatch("automation/deletePolicy", this.selectedRow)
+            .dispatch("automation/deletePolicy", id)
             .then(response => {
               this.notifySuccess(`Policy was deleted!`);
             })
@@ -215,8 +245,15 @@ export default {
       this.policy = null;
       this.showRelationsViewModal = false;
     },
+    showEditPolicyModal(id) {
+      this.editPolicyId = id;
+      this.showPolicyFormModal = true;
+    },
+    closeEditPolicyModal() {
+      this.showPolicyFormModal = false;
+      this.editPolicyId = null;
+    },
     showAddPolicyModal() {
-      this.clearRow();
       this.showPolicyFormModal = true;
     }
   },
@@ -227,7 +264,7 @@ export default {
     })
   },
   mounted() {
-    this.getPolicies();
+    this.clearRow();
   }
 };
 </script>

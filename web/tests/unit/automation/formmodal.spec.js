@@ -1,4 +1,5 @@
-import { mount, createLocalVue } from "@vue/test-utils";
+import { mount, createLocalVue, createWrapper } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import Vuex from "vuex";
 import PolicyForm from "@/components/automation/modals/PolicyForm";
 import "@/quasar.js"
@@ -8,17 +9,40 @@ localVue.use(Vuex);
 
 describe("PolicyForm.vue", () => {
 
-  const clients = [];
-  const sites = [];
-  const agents = [];
+  const clients = [ 
+    {
+      id: 1, 
+      client: "Test Client"
+    }, 
+    {
+      id: 2, 
+      client: "Test Client2"
+    },
+    {
+      id: 3, 
+      client: "Test Client3"
+    } 
+  ];
+  const sites = [ 
+    {
+      id: 1, 
+      site: "Site Name", 
+      client_name: "Test Client"
+    }, 
+    {
+      id: 2, 
+      site: "Site Name2", 
+      client_name: "Test Client2"
+    } 
+  ];
 
   const policy = {
     id: 1,
     name: "Test Policy",
     active: true,
-    clients: [{id: 1, client: "Test Name"}],
-    sites: [{id: 1, site: "Test Name"}],
-    agents: [{pk: 1, hostname: "Test Name"}]
+    clients: [],
+    sites: [],
+    agents: []
   };
 
   let methods;
@@ -34,7 +58,6 @@ describe("PolicyForm.vue", () => {
     rootActions = {
       loadClients: jest.fn(() => new Promise(res => res({ data: clients }))),
       loadSites: jest.fn(() => new Promise(res => res({ data: sites }))),
-      loadAgents: jest.fn(() => new Promise(res => res({ data: agents }))),
     };
 
     actions = {
@@ -65,7 +88,6 @@ describe("PolicyForm.vue", () => {
 
     expect(rootActions.loadClients).toHaveBeenCalled();
     expect(rootActions.loadSites).toHaveBeenCalled();
-    expect(rootActions.loadAgents).toHaveBeenCalled();
 
     // Not called unless pk prop is set
     expect(actions.loadPolicy).not.toHaveBeenCalled();
@@ -74,7 +96,7 @@ describe("PolicyForm.vue", () => {
 
   it("calls vuex actions on mount with pk prop set", () => {
 
-    const wrapper = mount(PolicyForm, {
+    mount(PolicyForm, {
       localVue,
       store,
       propsData: {
@@ -84,14 +106,24 @@ describe("PolicyForm.vue", () => {
 
     expect(rootActions.loadClients).toHaveBeenCalled();
     expect(rootActions.loadSites).toHaveBeenCalled();
-    expect(rootActions.loadAgents).toHaveBeenCalled();
     expect(actions.loadPolicy).toHaveBeenCalled();
 
   });
 
-  /*it("renders the client, site, and agent dropdowns correctly", async () => {
+  it("Sets client and site options correctly", async () => {
 
-  })*/
+    const wrapper = mount(PolicyForm, {
+      localVue,
+      store
+    });
+
+    // Make sure the promises are resolved
+    await flushPromises();
+
+    expect(wrapper.vm.clientOptions).toHaveLength(3);
+    expect(wrapper.vm.siteOptions).toHaveLength(2);
+
+  });
   
   it("sends the correct add action on submit", async () => {
 

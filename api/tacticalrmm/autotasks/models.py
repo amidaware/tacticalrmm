@@ -95,6 +95,7 @@ class AutomatedTask(models.Model):
             "cpuloadtaskfailure",
             "memtaskfailure",
             "winsvctaskfailure",
+            "eventlogtaskfailure",
         )
 
         for i in related_checks:
@@ -113,6 +114,8 @@ class AutomatedTask(models.Model):
                     ret = "Memory Check"
                 elif check.check_type == "winsvc":
                     ret = f"Service Check: {check.svc_display_name}"
+                elif check.check_type == "eventlog":
+                    ret = f"Event Log Check: {check.desc}"
                 else:
                     ret = "error"
 
@@ -132,6 +135,7 @@ class AutomatedTask(models.Model):
             CpuLoadCheck,
             MemCheck,
             WinServiceCheck,
+            EventLogCheck,
         )
 
         pk = int(data.split("|")[0])
@@ -148,3 +152,5 @@ class AutomatedTask(models.Model):
             return MemCheck.objects.get(pk=pk)
         elif check_type == "winsvc":
             return WinServiceCheck.objects.get(pk=pk)
+        elif check_type == "eventlog":
+            return EventLogCheck.objects.get(pk=pk)

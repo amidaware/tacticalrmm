@@ -41,6 +41,12 @@
               </q-item-section>
               <q-item-section>Script Check</q-item-section>
             </q-item>
+            <q-item clickable v-close-popup @click="showAddEventLogCheck = true">
+              <q-item-section side>
+                <q-icon size="xs" name="fas fa-clipboard-list" />
+              </q-item-section>
+              <q-item-section>Event Log Check</q-item-section>
+            </q-item>
           </q-list>
         </q-menu>
       </q-btn>
@@ -145,6 +151,9 @@
               <q-td
                 v-else-if="props.row.check_type === 'winsvc'"
               >Service Check - {{ props.row.svc_display_name }}</q-td>
+              <q-td
+                v-else-if="props.row.check_type === 'eventlog'"
+              >Event Log Check - {{ props.row.desc }}</q-td>
               <q-td v-if="props.row.status === 'pending'">Awaiting First Synchronization</q-td>
               <q-td v-else-if="props.row.status === 'passing'">
                 <q-badge color="positive">Passing</q-badge>
@@ -162,6 +171,12 @@
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
                   @click="scriptMoreInfo(props.row)"
+                >output</span>
+              </q-td>
+              <q-td v-else-if="props.row.check_type === 'eventlog'">
+                <span
+                  style="cursor:pointer;color:blue;text-decoration:underline"
+                  @click="eventLogMoreInfo(props.row)"
                 >output</span>
               </q-td>
               <q-td v-else>{{ props.row.more_info }}</q-td>
@@ -239,6 +254,23 @@
     <q-dialog v-model="showScriptOutput">
       <ScriptOutput @close="showScriptOutput = false; scriptInfo = {}" :scriptInfo="scriptInfo" />
     </q-dialog>
+    <!-- event log check -->
+    <q-dialog v-model="showAddEventLogCheck">
+      <AddEventLogCheck @close="showAddEventLogCheck = false" :agentpk="checks.pk" />
+    </q-dialog>
+    <q-dialog v-model="showEditEventLogCheck">
+      <EditEventLogCheck
+        @close="showEditEventLogCheck = false"
+        :editCheckPK="editCheckPK"
+        :agentpk="checks.pk"
+      />
+    </q-dialog>
+    <q-dialog v-model="showEventLogOutput">
+      <EventLogCheckOutput
+        @close="showEventLogOutput = false; evtlogdata = {}"
+        :evtlogdata="evtlogdata"
+      />
+    </q-dialog>
   </div>
 </template>
 
@@ -259,6 +291,9 @@ import EditWinSvcCheck from "@/components/modals/checks/EditWinSvcCheck";
 import AddScriptCheck from "@/components/modals/checks/AddScriptCheck";
 import EditScriptCheck from "@/components/modals/checks/EditScriptCheck";
 import ScriptOutput from "@/components/modals/checks/ScriptOutput";
+import AddEventLogCheck from "@/components/modals/checks/AddEventLogCheck";
+import EditEventLogCheck from "@/components/modals/checks/EditEventLogCheck";
+import EventLogCheckOutput from "@/components/modals/checks/EventLogCheckOutput";
 
 export default {
   name: "ChecksTab",
@@ -275,7 +310,10 @@ export default {
     EditWinSvcCheck,
     AddScriptCheck,
     EditScriptCheck,
-    ScriptOutput
+    ScriptOutput,
+    AddEventLogCheck,
+    EditEventLogCheck,
+    EventLogCheckOutput
   },
   mixins: [mixins],
   data() {
@@ -293,8 +331,12 @@ export default {
       showAddScriptCheck: false,
       showEditScriptCheck: false,
       showScriptOutput: false,
+      showAddEventLogCheck: false,
+      showEditEventLogCheck: false,
+      showEventLogOutput: false,
       editCheckPK: null,
       scriptInfo: {},
+      evtlogdata: {},
       columns: [
         { name: "smsalert", field: "text_alert", align: "left" },
         { name: "emailalert", field: "email_alert", align: "left" },
@@ -355,6 +397,10 @@ export default {
       this.scriptInfo = props;
       this.showScriptOutput = true;
     },
+    eventLogMoreInfo(props) {
+      this.evtlogdata = props;
+      this.showEventLogOutput = true;
+    },
     editCheck(category) {
       switch (category) {
         case "diskspace":
@@ -374,6 +420,9 @@ export default {
           break;
         case "script":
           this.showEditScriptCheck = true;
+          break;
+        case "eventlog":
+          this.showEditEventLogCheck = true;
           break;
         default:
           return false;
@@ -411,7 +460,8 @@ export default {
         ...this.checks.memchecks,
         ...this.checks.scriptchecks,
         ...this.checks.winservicechecks,
-        ...this.checks.pingchecks
+        ...this.checks.pingchecks,
+        ...this.checks.eventlogchecks
       ];
     }
   }

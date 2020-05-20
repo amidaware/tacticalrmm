@@ -178,7 +178,8 @@ export default {
         ...this.checks.memchecks,
         ...this.checks.scriptchecks,
         ...this.checks.winservicechecks,
-        ...this.checks.pingchecks
+        ...this.checks.pingchecks,
+        ...this.checks.eventlogchecks
       ];
     },
     checksOptions() {

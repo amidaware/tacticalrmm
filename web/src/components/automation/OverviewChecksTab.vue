@@ -68,6 +68,9 @@
               <q-td
                 v-else-if="props.row.check_type === 'winsvc'"
               >Service Check - {{ props.row.svc_display_name }}</q-td>
+              <q-td
+                v-else-if="props.row.check_type === 'eventlog'"
+              >Event Log Check - {{ props.row.desc }}</q-td>
               <q-td v-if="props.row.status === 'pending'">Awaiting First Synchronization</q-td>
               <q-td v-else-if="props.row.status === 'passing'">
                 <q-badge color="positive">Passing</q-badge>
@@ -155,7 +158,8 @@ export default {
         ...this.checks.memchecks,
         ...this.checks.scriptchecks,
         ...this.checks.winservicechecks,
-        ...this.checks.pingchecks
+        ...this.checks.pingchecks,
+        ...this.checks.eventlogchecks
       ];
     }
   }

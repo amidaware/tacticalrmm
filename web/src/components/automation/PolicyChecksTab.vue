@@ -41,6 +41,12 @@
               </q-item-section>
               <q-item-section>Script Check</q-item-section>
             </q-item>
+            <q-item clickable v-close-popup @click="showAddEventLogCheck = true">
+              <q-item-section side>
+                <q-icon size="xs" name="fas fa-clipboard-list" />
+              </q-item-section>
+              <q-item-section>Event Log Check</q-item-section>
+            </q-item>
           </q-list>
         </q-menu>
       </q-btn>
@@ -102,11 +108,7 @@
 
                   <q-separator></q-separator>
 
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="showPolicyCheckStatusModal(props.row)"
-                  >
+                  <q-item clickable v-close-popup @click="showPolicyCheckStatusModal(props.row)">
                     <q-item-section side>
                       <q-icon name="remove_red_eye" />
                     </q-item-section>
@@ -153,6 +155,9 @@
               <q-td
                 v-else-if="props.row.check_type === 'winsvc'"
               >Service Check - {{ props.row.svc_display_name }}</q-td>
+              <q-td
+                v-else-if="props.row.check_type === 'eventlog'"
+              >Event Log Check - {{ props.row.desc }}</q-td>
               <q-td>
                 <q-btn
                   label="See Status"
@@ -232,11 +237,20 @@
         :policypk="checks.id"
       />
     </q-dialog>
-    <q-dialog v-model="showPolicyCheckStatus">
-      <PolicyCheckStatus 
-        :check="statusCheck" 
-        @close="closePolicyCheckStatusModal" 
+    <!-- event log check -->
+    <q-dialog v-model="showAddEventLogCheck">
+      <AddEventLogCheck @close="showAddEventLogCheck = false" :policypk="checks.id" />
+    </q-dialog>
+    <q-dialog v-model="showEditEventLogCheck">
+      <EditEventLogCheck
+        @close="showEditEventLogCheck = false"
+        :editCheckPK="editCheckPK"
+        :policypk="checks.id"
       />
+    </q-dialog>
+
+    <q-dialog v-model="showPolicyCheckStatus">
+      <PolicyCheckStatus :check="statusCheck" @close="closePolicyCheckStatusModal" />
     </q-dialog>
   </div>
 </template>
@@ -258,6 +272,8 @@ import EditWinSvcCheck from "@/components/modals/checks/EditWinSvcCheck";
 import AddScriptCheck from "@/components/modals/checks/AddScriptCheck";
 import EditScriptCheck from "@/components/modals/checks/EditScriptCheck";
 import PolicyCheckStatus from "@/components/automation/modals/PolicyCheckStatus";
+import AddEventLogCheck from "@/components/modals/checks/AddEventLogCheck";
+import EditEventLogCheck from "@/components/modals/checks/EditEventLogCheck";
 
 export default {
   name: "PolicyChecksTab",
@@ -275,7 +291,9 @@ export default {
     EditWinSvcCheck,
     AddScriptCheck,
     EditScriptCheck,
-    PolicyCheckStatus
+    PolicyCheckStatus,
+    AddEventLogCheck,
+    EditEventLogCheck
   },
   mixins: [mixins],
   data() {
@@ -293,6 +311,8 @@ export default {
       showAddScriptCheck: false,
       showEditScriptCheck: false,
       showPolicyCheckStatus: false,
+      showAddEventLogCheck: false,
+      showEditEventLogCheck: false,
       editCheckPK: null,
       statusCheck: {},
       columns: [
@@ -347,6 +367,9 @@ export default {
         case "script":
           this.showEditScriptCheck = true;
           break;
+        case "eventlog":
+          this.showEditEventLogCheck = true;
+          break;
         default:
           return false;
       }
@@ -390,7 +413,8 @@ export default {
         ...this.checks.memchecks,
         ...this.checks.scriptchecks,
         ...this.checks.winservicechecks,
-        ...this.checks.pingchecks
+        ...this.checks.pingchecks,
+        ...this.checks.eventlogchecks
       ];
     }
   }

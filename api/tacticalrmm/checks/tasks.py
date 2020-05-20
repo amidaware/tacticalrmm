@@ -20,6 +20,8 @@ from .models import (
     WinServiceCheckEmail,
     ScriptCheck,
     ScriptCheckEmail,
+    EventLogCheck,
+    EventLogCheckEmail,
 )
 
 
@@ -43,6 +45,9 @@ def handle_check_email_alert_task(check_type, pk):
     elif check_type == "script":
         check = ScriptCheck.objects.get(pk=pk)
         eml = ScriptCheckEmail
+    elif check_type == "eventlog":
+        check = EventLogCheck.objects.get(pk=pk)
+        eml = EventLogCheckEmail
     else:
         return {"error": "no check"}
 

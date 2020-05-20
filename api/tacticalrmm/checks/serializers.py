@@ -8,6 +8,7 @@ from .models import (
     WinServiceCheck,
     Script,
     ScriptCheck,
+    EventLogCheck,
 )
 from agents.models import Agent
 
@@ -85,6 +86,15 @@ class WinServiceCheckSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class EventLogCheckSerializer(serializers.ModelSerializer):
+    readable_desc = serializers.ReadOnlyField()
+    assigned_task = serializers.ReadOnlyField()
+
+    class Meta:
+        model = EventLogCheck
+        fields = "__all__"
+
+
 class CheckSerializer(serializers.ModelSerializer):
     diskchecks = DiskCheckSerializer(many=True, read_only=True)
     cpuloadchecks = CpuLoadCheckSerializer(many=True, read_only=True)
@@ -92,6 +102,7 @@ class CheckSerializer(serializers.ModelSerializer):
     pingchecks = PingCheckSerializer(many=True, read_only=True)
     winservicechecks = WinServiceCheckSerializer(many=True, read_only=True)
     scriptchecks = ScriptCheckSerializer(many=True, read_only=True)
+    eventlogchecks = EventLogCheckSerializer(many=True, read_only=True)
     checks = serializers.ReadOnlyField()
 
     class Meta:
@@ -107,6 +118,7 @@ class CheckSerializer(serializers.ModelSerializer):
             "pingchecks",
             "winservicechecks",
             "scriptchecks",
+            "eventlogchecks",
             "checks",
         )
 
@@ -118,6 +130,7 @@ class PolicyChecksSerializer(serializers.ModelSerializer):
     pingchecks = PingCheckSerializer(many=True, read_only=True)
     winservicechecks = WinServiceCheckSerializer(many=True, read_only=True)
     scriptchecks = ScriptCheckSerializer(many=True, read_only=True)
+    eventlogchecks = EventLogCheckSerializer(many=True, read_only=True)
 
     class Meta:
         model = Policy
@@ -131,4 +144,5 @@ class PolicyChecksSerializer(serializers.ModelSerializer):
             "pingchecks",
             "winservicechecks",
             "scriptchecks",
+            "eventlogchecks",
         )

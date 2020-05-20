@@ -14,6 +14,8 @@ from .models import (
     ScriptCheck,
     ScriptCheckEmail,
     Script,
+    EventLogCheck,
+    EventLogCheckEmail,
 )
 
 admin.site.register(DiskCheck)
@@ -29,3 +31,5 @@ admin.site.register(WinServiceCheckEmail)
 admin.site.register(ScriptCheck)
 admin.site.register(ScriptCheckEmail)
 admin.site.register(Script)
+admin.site.register(EventLogCheck)
+admin.site.register(EventLogCheckEmail)

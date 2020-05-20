@@ -9,7 +9,7 @@ import json
 from django.utils import timezone as djangotime
 from django.db import models
 from django.conf import settings
-from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.fields import ArrayField, JSONField
 
 from agents.models import Agent
 from automation.models import Policy
@@ -24,6 +24,7 @@ STANDARD_CHECK_CHOICES = [
     ("memory", "Memory Check"),
     ("winsvc", "Win Service Check"),
     ("script", "Script Check"),
+    ("eventlog", "Event Log Check"),
 ]
 
 SCRIPT_CHECK_SHELLS = [
@@ -641,5 +642,118 @@ class WinServiceCheckEmail(models.Model):
     def __str__(self):
         if self.email.agent:
             return f"{self.email.agent.hostname} - {self.email.svc_display_name}"
+        else:
+            return self.email.policy.name
+
+
+EVT_LOG_NAME_CHOICES = [
+    ("Application", "Application"),
+    ("System", "System"),
+    ("Security", "Security"),
+]
+
+EVT_LOG_TYPE_CHOICES = [
+    ("INFO", "Information"),
+    ("WARNING", "Warning"),
+    ("ERROR", "Error"),
+    ("AUDIT_SUCCESS", "Success Audit"),
+    ("AUDIT_FAILURE", "Failure Audit"),
+]
+
+EVT_LOG_FAIL_WHEN_CHOICES = [
+    ("contains", "Log contains"),
+    ("not_contains", "Log does not contain"),
+]
+
+
+class EventLogCheck(models.Model):
+    agent = models.ForeignKey(
+        Agent,
+        related_name="eventlogchecks",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+    )
+    check_type = models.CharField(
+        max_length=30, choices=STANDARD_CHECK_CHOICES, default="eventlog"
+    )
+    policy = models.ForeignKey(
+        Policy,
+        related_name="eventlogchecks",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+    )
+    desc = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    log_name = models.CharField(
+        max_length=255, choices=EVT_LOG_NAME_CHOICES, default="Application"
+    )
+    event_id = models.IntegerField(default=0)
+    event_type = models.CharField(
+        max_length=255, choices=EVT_LOG_TYPE_CHOICES, default="ERROR"
+    )
+    fail_when = models.CharField(
+        max_length=255, choices=EVT_LOG_FAIL_WHEN_CHOICES, default="contains"
+    )
+    search_last_days = models.IntegerField(default=1)
+    status = models.CharField(
+        max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
+    )
+    failures = models.PositiveIntegerField(default=1)
+    failure_count = models.PositiveIntegerField(default=0)
+    more_info = JSONField(null=True, blank=True)
+    email_alert = models.BooleanField(default=False)
+    text_alert = models.BooleanField(default=False)
+    last_run = models.DateTimeField(null=True, blank=True)
+    task_on_failure = models.ForeignKey(
+        "autotasks.AutomatedTask",
+        null=True,
+        blank=True,
+        related_name="eventlogtaskfailure",
+        on_delete=models.SET_NULL,
+    )
+
+    def __str__(self):
+        if self.agent:
+            return f"{self.agent.hostname} - {self.desc}"
+        else:
+            return f"{self.policy.name} - {self.desc}"
+
+    @property
+    def readable_desc(self):
+        return f"Event log check: {self.desc}"
+
+    @property
+    def assigned_task(self):
+        return self.task_on_failure.name
+
+    def handle_check(self, data):
+        if data["status"] == "passing" and self.failure_count != 0:
+            self.failure_count = 0
+            self.save(update_fields=["failure_count"])
+        elif data["status"] == "failing":
+            self.failure_count += 1
+            self.save(update_fields=["failure_count"])
+            if self.email_alert and self.failure_count >= self.failures:
+                from .tasks import handle_check_email_alert_task
+
+                handle_check_email_alert_task.delay("eventlog", self.pk)
+
+    def send_email(self):
+
+        CORE = CoreSettings.objects.first()
+        CORE.send_mail(
+            f"Event Log Check failure on {self.agent.hostname}: {self.desc}",
+            f"Event ID {self.event_id} was found in the {self.log_name} log.",
+        )
+
+
+class EventLogCheckEmail(models.Model):
+    email = models.ForeignKey(EventLogCheck, on_delete=models.CASCADE)
+    sent = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        if self.email.agent:
+            return f"{self.email.agent.hostname} - {self.email.desc}"
         else:
             return self.email.policy.name

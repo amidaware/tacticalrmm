@@ -105,6 +105,7 @@ class Agent(models.Model):
             "cpuloadchecks",
             "memchecks",
             "winservicechecks",
+            "eventlogchecks",
         )
         total, passing, failing = 0, 0, 0
 

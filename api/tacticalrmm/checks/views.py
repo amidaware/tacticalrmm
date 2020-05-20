@@ -20,13 +20,12 @@ from automation.models import Policy
 from .models import (
     DiskCheck,
     PingCheck,
-    PingCheckEmail,
     CpuLoadCheck,
     MemCheck,
     WinServiceCheck,
     Script,
     ScriptCheck,
-    ScriptCheckEmail,
+    EventLogCheck,
     validate_threshold,
 )
 
@@ -42,6 +41,7 @@ from .serializers import (
     WinServiceCheckSerializer,
     ScriptCheckSerializer,
     ScriptSerializer,
+    EventLogCheckSerializer,
 )
 
 from .tasks import handle_check_email_alert_task, run_checks_task
@@ -104,6 +104,15 @@ def check_results(request):
     elif request.data["check_type"] == "ping":
         check = get_object_or_404(PingCheck, pk=request.data["id"])
         serializer = PingCheckSerializer(
+            instance=check, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(last_run=djangotime.now())
+        check.handle_check(request.data)
+
+    elif request.data["check_type"] == "eventlog":
+        check = get_object_or_404(EventLogCheck, pk=request.data["id"])
+        serializer = EventLogCheckSerializer(
             instance=check, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
@@ -257,6 +266,13 @@ def add_standard_check(request):
 
         return Response(f"{script.name} was added!")
 
+    elif request.data["check_type"] == "eventlog":
+        serializer = EventLogCheckSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(**parent)
+
+        return Response("Event log check was added!")
+
     else:
         return Response("something went wrong", status=status.HTTP_400_BAD_REQUEST)
 
@@ -321,6 +337,16 @@ def edit_standard_check(request):
         check.save(update_fields=["failures", "timeout"])
         return Response(f"{check.script.name} was edited!")
 
+    elif request.data["check_type"] == "eventlog":
+        check = get_object_or_404(EventLogCheck, pk=request.data["pk"])
+        serializer = EventLogCheckSerializer(
+            instance=check, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response("Event log check was edited")
+
 
 @api_view()
 def get_standard_check(request, checktype, pk):
@@ -342,6 +368,9 @@ def get_standard_check(request, checktype, pk):
     elif checktype == "script":
         check = ScriptCheck.objects.get(pk=pk)
         return Response(ScriptCheckSerializer(check).data)
+    elif checktype == "eventlog":
+        check = EventLogCheck.objects.get(pk=pk)
+        return Response(EventLogCheckSerializer(check).data)
 
 
 @api_view(["DELETE"])
@@ -359,6 +388,8 @@ def delete_standard_check(request):
         check = WinServiceCheck.objects.get(pk=pk)
     elif request.data["checktype"] == "script":
         check = ScriptCheck.objects.get(pk=pk)
+    elif request.data["checktype"] == "eventlog":
+        check = EventLogCheck.objects.get(pk=pk)
 
     if check.task_on_failure:
         delete_win_task_schedule.delay(check.task_on_failure.pk)
@@ -385,6 +416,8 @@ def check_alert(request):
         check = WinServiceCheck.objects.get(pk=checkid)
     elif category == "script":
         check = ScriptCheck.objects.get(pk=checkid)
+    elif category == "eventlog":
+        check = EventLogCheck.objects.get(pk=checkid)
     else:
         return Response(
             {"error": "Something went wrong"}, status=status.HTTP_400_BAD_REQUEST

@@ -6,7 +6,7 @@
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </div>
-      <div>
+      <div v-if="evtlogdata.more_info !== null">
         <q-table
           dense
           class="remote-bg-tbl-sticky"
@@ -19,6 +19,7 @@
           no-data-label="No event logs"
         />
       </div>
+      <div v-else>Check has not run yet</div>
     </q-card-section>
   </q-card>
 </template>

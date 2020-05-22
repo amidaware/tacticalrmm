@@ -264,13 +264,13 @@ def list_agents_no_detail(request):
 @api_view()
 def by_client(request, client):
     agents = Agent.objects.filter(client=client)
-    return Response(AgentSerializer(agents, many=True).data)
+    return Response(AgentTableSerializer(agents, many=True).data)
 
 
 @api_view()
 def by_site(request, client, site):
     agents = Agent.objects.filter(client=client).filter(site=site)
-    return Response(AgentSerializer(agents, many=True).data)
+    return Response(AgentTableSerializer(agents, many=True).data)
 
 
 @api_view(["POST"])

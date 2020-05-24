@@ -1,6 +1,6 @@
 <template>
   <div>
-    <q-card style="min-width: 30vw" v-if="loaded">
+    <q-card style="min-width: 25vw" v-if="loaded">
       <q-card-section class="row">
         <q-card-actions align="left">
           <div class="text-h6">Add an agent</div>
@@ -48,7 +48,7 @@
         </q-form>
       </q-card-section>
     </q-card>
-    <div class="q-pa-md q-gutter-sm">
+    <div>
       <q-dialog v-model="showAgentDownload" @hide="quit">
         <AgentDownload :info="info" @close="showAgentDownload = false" />
       </q-dialog>

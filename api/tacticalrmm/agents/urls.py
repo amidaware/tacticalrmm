@@ -20,4 +20,5 @@ urlpatterns = [
     path("<pk>/getprocs/", views.get_processes),
     path("<pk>/<pid>/killproc/", views.kill_proc),
     path("rebootlater/", views.reboot_later),
+    path("installagent/", views.install_agent),
 ]

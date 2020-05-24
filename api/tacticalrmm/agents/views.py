@@ -20,6 +20,7 @@ from rest_framework.authentication import BasicAuthentication, TokenAuthenticati
 
 from .models import Agent
 from winupdate.models import WinUpdatePolicy
+from clients.models import Client, Site
 
 from .serializers import AgentSerializer, AgentHostnameSerializer, AgentTableSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
@@ -32,9 +33,11 @@ logger.configure(**settings.LOG_CONFIG)
 @api_view()
 def get_agent_versions(request):
     agents = Agent.objects.only("pk")
+    ret = Agent.get_github_versions()
     return Response(
         {
-            "versions": Agent.get_github_versions()["versions"],
+            "versions": ret["versions"],
+            "github": ret["data"],
             "agents": AgentHostnameSerializer(agents, many=True).data,
         }
     )
@@ -316,3 +319,16 @@ def reboot_later(request):
         return Response(resp["msg"], status=status.HTTP_400_BAD_REQUEST)
     else:
         return Response(resp["msg"], status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+def install_agent(request):
+    from knox.models import AuthToken
+
+    client = get_object_or_404(Client, client=request.data["client"])
+    site = get_object_or_404(Site, client=client, site=request.data["site"])
+
+    _, token = AuthToken.objects.create(user=request.user, expiry=dt.timedelta(hours=1))
+
+    resp = {"token": token, "client": client.pk, "site": site.pk}
+    return Response(resp)

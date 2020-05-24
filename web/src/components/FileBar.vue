@@ -44,6 +44,9 @@
         <q-btn size="md" dense no-caps flat label="Agents">
           <q-menu auto-close>
             <q-list dense style="min-width: 100px">
+              <q-item clickable v-close-popup @click="showInstallAgent = true">
+                <q-item-section>Install Agent</q-item-section>
+              </q-item>
               <q-item clickable v-close-popup @click="showUpdateAgentsModal = true">
                 <q-item-section>Update Agents</q-item-section>
               </q-item>
@@ -92,6 +95,12 @@
       </q-dialog>
       <!-- debug log modal -->
       <LogModal />
+      <!-- Install Agents -->
+      <div class="q-pa-md q-gutter-sm">
+        <q-dialog v-model="showInstallAgent">
+          <InstallAgent @close="showInstallAgent = false" />
+        </q-dialog>
+      </div>
       <!-- Update Agents Modal -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog
@@ -126,6 +135,7 @@ import UpdateAgents from "@/components/modals/agents/UpdateAgents";
 import ScriptManager from "@/components/ScriptManager";
 import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
 import AutomationManager from "@/components/automation/AutomationManager";
+import InstallAgent from "@/components/modals/agents/InstallAgent";
 
 export default {
   name: "FileBar",
@@ -138,7 +148,8 @@ export default {
     UpdateAgents,
     ScriptManager,
     EditCoreSettings,
-    AutomationManager
+    AutomationManager,
+    InstallAgent
   },
   props: ["clients"],
   data() {
@@ -149,7 +160,8 @@ export default {
       showEditSitesModal: false,
       showUpdateAgentsModal: false,
       showEditCoreSettingsModal: false,
-      showAutomationManager: false
+      showAutomationManager: false,
+      showInstallAgent: false
     };
   },
   methods: {

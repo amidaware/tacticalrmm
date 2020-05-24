@@ -42,6 +42,8 @@ from agents.tasks import (
     get_wmi_detail_task,
     agent_recovery_email_task,
 )
+from clients.models import Client, Site
+
 from winupdate.tasks import check_for_updates_task
 from agents.serializers import (
     AgentHostnameSerializer,
@@ -148,8 +150,6 @@ def agent_auth(request):
 
 
 @api_view(["POST"])
-@authentication_classes((BasicAuthentication,))
-@permission_classes((IsAuthenticated,))
 def get_mesh_exe(request):
     mesh_exe = os.path.join(settings.BASE_DIR, "tacticalrmm/downloads/meshagent.exe")
     if not os.path.exists(mesh_exe):
@@ -169,8 +169,6 @@ def get_mesh_exe(request):
 
 
 @api_view(["POST"])
-@authentication_classes((BasicAuthentication,))
-@permission_classes((IsAuthenticated,))
 def create_auth_token(request):
     try:
         agentid = request.data["agent_id"]
@@ -197,8 +195,6 @@ def create_auth_token(request):
 
 
 @api_view(["POST"])
-@authentication_classes((TokenAuthentication,))
-@permission_classes((IsAuthenticated,))
 def accept_salt_key(request):
     saltid = request.data["saltid"]
     try:
@@ -273,27 +269,21 @@ def delete_agent(request):
 
 
 @api_view(["POST"])
-@authentication_classes((TokenAuthentication,))
-@permission_classes((IsAuthenticated,))
 def add(request):
     data = request.data
-    agent_id = data["agent_id"]
-    hostname = data["hostname"]
-    client = data["client"]
-    site = data["site"]
-    monitoring_type = data["monitoring_type"]
-    description = data["description"]
-    mesh_node_id = data["mesh_node_id"]
 
-    if not Agent.objects.filter(agent_id=agent_id).exists():
+    client = get_object_or_404(Client, pk=int(data["client"]))
+    site = get_object_or_404(Site, pk=int(data["site"]))
+
+    if not Agent.objects.filter(agent_id=data["agent_id"]).exists():
         agent = Agent(
-            agent_id=agent_id,
-            hostname=hostname,
-            client=client,
-            site=site,
-            monitoring_type=monitoring_type,
-            description=description,
-            mesh_node_id=mesh_node_id,
+            agent_id=data["agent_id"],
+            hostname=data["hostname"],
+            client=client.client,
+            site=site.site,
+            monitoring_type=data["monitoring_type"],
+            description=data["description"],
+            mesh_node_id=data["mesh_node_id"],
             last_seen=djangotime.now(),
         )
 
@@ -329,8 +319,6 @@ def update(request):
 
 
 @api_view(["POST"])
-@authentication_classes((TokenAuthentication,))
-@permission_classes((IsAuthenticated,))
 def on_agent_first_install(request):
     pk = request.data["pk"]
     agent = get_object_or_404(Agent, pk=pk)

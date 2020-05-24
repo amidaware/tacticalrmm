@@ -122,20 +122,5 @@ Create your first client and site, then upload the ```meshagent64-tacticalrmm.ex
 
 You will be taken to the homepage of the app
 
-
-Now install the agent on a windows computer:
-
-Download the latest release exe from https://github.com/wh1te909/winagent/releases
-
-Run the installer as administrator
-
-Make sure to use the backend api url when installing, not the frontend url\
-Username and password is the same one you created for django superuser:
-
-![Screenshot](docs/screenshots/install9.PNG)
-
-Choose the client and site, enter a description of the computer and then install:
-
-![Screenshot](docs/screenshots/install10.PNG)
-
-Once installation finished, check the website and you will see your computer appear in the dashboard.
+### Install an agent
+From the app's dashboard, choose Agents > Install Agent to generate an installer.

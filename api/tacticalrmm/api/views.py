@@ -330,19 +330,27 @@ def on_agent_first_install(request):
         data = resp.json()
     except Exception:
         return Response("err", status=status.HTTP_400_BAD_REQUEST)
-    else:
-        try:
-            ret = data["return"][0][agent.salt_id]
-        except KeyError:
-            return Response("err", status=status.HTTP_400_BAD_REQUEST)
 
-        if not data["return"][0][agent.salt_id]:
-            return Response("err", status=status.HTTP_400_BAD_REQUEST)
-        else:
-            get_wmi_detail_task.delay(agent.pk)
-            get_installed_software.delay(agent.pk)
-            check_for_updates_task.delay(agent.pk, wait=True)
-            return Response("ok")
+    try:
+        ret = data["return"][0][agent.salt_id]
+    except KeyError:
+        return Response("err", status=status.HTTP_400_BAD_REQUEST)
+
+    if not data["return"][0][agent.salt_id]:
+        return Response("err", status=status.HTTP_400_BAD_REQUEST)
+
+    create_salt_fix = agent.create_fix_salt_task()
+    if not create_salt_fix:
+        return Response("err", status=status.HTTP_400_BAD_REQUEST)
+
+    sleep(1)
+    agent.salt_api_async(
+        hostname=agent.salt_id, func="task.run", arg=["name='TacticalRMM_fixsalt'"],
+    )
+    get_wmi_detail_task.delay(agent.pk)
+    get_installed_software.delay(agent.pk)
+    check_for_updates_task.delay(agent.pk, wait=True)
+    return Response("ok")
 
 
 @api_view(["PATCH"])

@@ -354,6 +354,37 @@ class Agent(models.Model):
         else:
             return {"ret": True, "msg": salt_resp, "success": False}
 
+    def create_fix_salt_task(self):
+        # https://github.com/wh1te909/winagent/commit/64bc96c131dbdb568e8552c85ed970d06af055df
+        r = self.salt_api_cmd(
+            hostname=self.salt_id,
+            timeout=30,
+            func="task.create_task",
+            arg=[
+                f"name=TacticalRMM_fixsalt",
+                "force=True",
+                "action_type=Execute",
+                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
+                'arguments="-m fixsalt"',
+                "trigger_type=Daily",
+                "start_time='10:30'",
+                "repeat_interval='1 hour'",
+                "ac_only=False",
+                "stop_if_on_batteries=False",
+            ],
+        )
+
+        try:
+            data = r.json()
+        except:
+            return False
+        else:
+            ret = data["return"][0][self.salt_id]
+            if isinstance(ret, bool) and ret:
+                return True
+            else:
+                return False
+
 
 class AgentOutage(models.Model):
     agent = models.ForeignKey(

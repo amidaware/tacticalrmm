@@ -74,10 +74,11 @@ describe("AutomationManager.vue", () => {
       store,
       localVue,
       stubs: [
-        "PolicySubTableTabs",
+        "PolicySubTableTabs",,
+        "PolicyOverview",
         "PolicyForm",
         "RelationsView"
-      ],
+      ]
     });
 
   });
@@ -97,6 +98,9 @@ describe("AutomationManager.vue", () => {
   it("calls vuex loadPolicies action on mount", () => {
 
     expect(actions.loadPolicies).toHaveBeenCalled();
+    expect(mutations.setSelectedPolicy).toHaveBeenCalledWith(expect.anything(), null);
+    expect(mutations.setPolicyChecks).toHaveBeenCalledWith(expect.anything(), {});
+    expect(mutations.setPolicyAutomatedTasks).toHaveBeenCalledWith(expect.anything(), {});
 
   });
 
@@ -146,6 +150,38 @@ describe("AutomationManager.vue", () => {
 
   });
 
+  it("shows edit policy modal on edit button press", async () => {
+
+    const button = wrapper.findComponent({ ref: "edit" });
+
+    expect(bodyWrapper.find(".q-dialog").exists()).toBe(false);
+    await button.trigger("click")
+    expect(bodyWrapper.find(".q-dialog").exists()).toBe(false);
+
+    //Select Row
+    await wrapper.find("tbody > tr.q-tr").trigger("click");
+    await button.trigger("click");
+    expect(bodyWrapper.find(".q-dialog").exists()).toBe(true);
+
+  });
+
+  it("deletes selected policy on delete button press", async () => {
+
+    const button = wrapper.findComponent({ ref: "delete" });
+
+    expect(bodyWrapper.find(".q-dialog").exists()).toBe(false);
+    // Select Row
+    await wrapper.find("tbody > tr.q-tr").trigger("click");
+    await button.trigger("click");
+    expect(bodyWrapper.find(".q-dialog").exists()).toBe(true);
+
+    //Get OK button and click it
+    await bodyWrapper.findAll(".q-btn").wrappers[1].trigger("click");
+
+    expect(actions.deletePolicy).toHaveBeenCalledWith(expect.anything(), 1);
+
+  });
+
   it("deletes selected policy", async () => {
 
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(false);
@@ -170,6 +206,11 @@ describe("AutomationManager.vue", () => {
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(false);
     await button.trigger("click");
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(true);
+
+    expect(mutations.setSelectedPolicy).toHaveBeenCalledWith(expect.anything(), null);
+    expect(mutations.setPolicyChecks).toHaveBeenCalledWith(expect.anything(), {});
+    expect(mutations.setPolicyAutomatedTasks).toHaveBeenCalledWith(expect.anything(), {});
+
   });
 
   it("calls vuex loadPolicies action when refresh button clicked and clears selected", () => {
@@ -198,5 +239,7 @@ describe("AutomationManager.vue", () => {
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(true);
 
   });
+
+  // TODO: Test @close and @hide events
 
 });

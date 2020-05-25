@@ -2,7 +2,7 @@
   <div style="width: 900px; max-width: 90vw;">
     <q-card>
       <q-bar>
-        <q-btn ref="refresh" @click="clearRow" class="q-mr-sm" dense flat push icon="refresh" />Automation Manager
+        <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />Automation Manager
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
@@ -22,6 +22,30 @@
             @click="showAddPolicyModal"
           />
           <q-btn
+            ref="edit"
+            label="Edit"
+            :disable="selectedRow === null"
+            dense
+            flat
+            push
+            unelevated
+            no-caps
+            icon="edit"
+            @click="showEditPolicyModal(selectedRow)"
+          />
+          <q-btn
+            ref="delete"
+            label="Delete"
+            :disable="selectedRow === null"
+            dense
+            flat
+            push
+            unelevated
+            no-caps
+            icon="delete"
+            @click="deletePolicy(selectedRow)"
+          />
+          <q-btn
             ref="overview"
             label="Policy Overview"
             dense
@@ -30,7 +54,7 @@
             unelevated
             no-caps
             icon="remove_red_eye"
-            @click="showPolicyOverviewModal = true"
+            @click="showPolicyOverview"
           />
         </div>
         <q-table
@@ -106,16 +130,12 @@
               <q-td>{{ props.row.desc }}</q-td>
               <q-td>{{ props.row.active }}</q-td>
               <q-td>
-                <q-btn
-                  :label="`See Related (${props.row.clients.length + props.row.sites.length + props.row.agents.length}+)`"
-                  color="primary"
-                  dense
-                  flat
-                  unelevated
-                  no-caps
+                <span
+                  style="cursor:pointer;color:blue;text-decoration:underline"
                   @click="showRelationsModal(props.row)"
-                  size="sm"
-                />
+                >
+                  {{ `See Related (${props.row.clients.length + props.row.sites.length + props.row.agents.length}+)` }}
+                </span>
               </q-td>
             </q-tr>
           </template>
@@ -123,29 +143,41 @@
       </div>
 
       <q-card-section>
-        <PolicySubTableTabs :policypk="selectedRow" />
+        <PolicySubTableTabs />
       </q-card-section>
     </q-card>
-    <q-dialog v-model="showPolicyFormModal">
+
+    <!-- policy form modal -->
+    <q-dialog 
+      v-model="showPolicyFormModal"
+      @hide="closePolicyFormModal" 
+    >
       <PolicyForm 
         :pk="editPolicyId" 
-        @close="closeEditPolicyModal" 
-        @refresh="clearRow" />
+        @close="closePolicyFormModal" 
+      />
     </q-dialog>
-    <q-dialog v-model="showPolicyOverviewModal">
-      <PolicyOverview 
-        @close="showPolicyOverviewModal = false" />
+
+    <!-- policy overview modal -->
+    <q-dialog 
+      v-model="showPolicyOverviewModal"
+      @hide="clearRow"
+    >
+      <PolicyOverview />
     </q-dialog>
-    <q-dialog v-model="showRelationsViewModal">
-      <RelationsView 
-        :policy="policy"
-        @close="closeRelationsModal" />
+
+    <!-- policy relations modal -->
+    <q-dialog 
+      v-model="showRelationsViewModal"
+      @hide="closeRelationsModal"
+    >
+      <RelationsView :policy="policy" />
     </q-dialog>
   </div>
 </template>
 
 <script>
-import mixins from "@/mixins/mixins";
+import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import { mapState } from "vuex";
 import PolicyForm from "@/components/automation/modals/PolicyForm";
 import PolicyOverview from "@/components/automation/PolicyOverview";
@@ -208,16 +240,19 @@ export default {
       this.$store.dispatch("automation/loadPolicies");
     },
     policyRowSelected({ added, keys, rows }) {
-      // First key of the array is the selected row pk
+      // First item of the keys array is the selected policy pk
       this.$store.commit("automation/setSelectedPolicy", keys[0]);
       this.$store.dispatch("automation/loadPolicyChecks", keys[0]);
       this.$store.dispatch("automation/loadPolicyAutomatedTasks", keys[0]);
     },
     clearRow() {
-      this.getPolicies();
       this.$store.commit("automation/setSelectedPolicy", null);
       this.$store.commit("automation/setPolicyChecks", {});
       this.$store.commit("automation/setPolicyAutomatedTasks", {});
+    },
+    refresh() {
+      this.getPolicies();
+      this.clearRow();
     },
     deletePolicy(id) {
       this.$q
@@ -230,10 +265,10 @@ export default {
           this.$store
             .dispatch("automation/deletePolicy", id)
             .then(response => {
-              this.notifySuccess(`Policy was deleted!`);
+              this.$q.notify(notifySuccessConfig("Policy was deleted!"));
             })
             .catch(error => {
-              this.notifyError(`An Error occured while deleting policy`);
+              this.$q.notify(notifyErrorConfig("An Error occured while deleting policy"));
             });
         });
     },
@@ -249,12 +284,17 @@ export default {
       this.editPolicyId = id;
       this.showPolicyFormModal = true;
     },
-    closeEditPolicyModal() {
+    closePolicyFormModal() {
       this.showPolicyFormModal = false;
       this.editPolicyId = null;
+      this.refresh();
     },
     showAddPolicyModal() {
       this.showPolicyFormModal = true;
+    },
+    showPolicyOverview() {
+      this.showPolicyOverviewModal = true
+      this.clearRow();
     }
   },
   computed: {
@@ -264,7 +304,7 @@ export default {
     })
   },
   mounted() {
-    this.clearRow();
+    this.refresh();
   }
 };
 </script>

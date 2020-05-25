@@ -13,6 +13,7 @@ from rest_framework.decorators import api_view
 from .models import AutomatedTask
 from agents.models import Agent
 from checks.models import Script
+from automation.models import Policy
 
 from .serializers import AutoTaskSerializer, AgentTaskSerializer
 from checks.serializers import ScriptSerializer
@@ -24,17 +25,22 @@ from .tasks import (
     enable_or_disable_win_task,
 )
 
-
-class AutoTask(APIView):
-    def get(self, request, pk):
-
-        agent = Agent.objects.only("pk").get(pk=pk)
-        return Response(AutoTaskSerializer(agent).data)
-
-    def post(self, request, pk):
+class AddAutoTask(APIView):
+    def post(self, request):
         daily, checkfailure, manual = False, False, False
         data = request.data
-        agent = Agent.objects.only("pk").get(pk=pk)
+
+        # Determine if adding check to Policy or Agent
+        if "policy" in data:
+            policy = get_object_or_404(Policy, id=data["policy"])
+
+            # Object used for filter and save
+            parent = {"policy": policy}
+        else:
+            agent = get_object_or_404(Agent, pk=data["agent"])
+            # Object used for filter and save
+            parent = {"agent": agent}
+
         script = Script.objects.only("pk").get(pk=data["script"])
         if data["trigger"] == "daily":
             daily = True
@@ -55,7 +61,7 @@ class AutoTask(APIView):
 
         if daily:
             task = AutomatedTask(
-                agent=agent,
+                **parent,
                 name=data["name"],
                 script=script,
                 timeout=timeout,
@@ -68,7 +74,7 @@ class AutoTask(APIView):
 
         elif checkfailure:
             task = AutomatedTask(
-                agent=agent,
+                **parent,
                 name=data["name"],
                 script=script,
                 timeout=timeout,
@@ -82,7 +88,7 @@ class AutoTask(APIView):
 
         elif manual:
             task = AutomatedTask(
-                agent=agent,
+                **parent,
                 name=data["name"],
                 timeout=timeout,
                 win_task_name=rand_name,
@@ -93,6 +99,12 @@ class AutoTask(APIView):
 
         create_win_task_schedule.delay(pk=task.pk)
         return Response("ok")
+
+class AutoTask(APIView):
+    def get(self, request, pk):
+
+        agent = Agent.objects.only("pk").get(pk=pk)
+        return Response(AutoTaskSerializer(agent).data)
 
     def patch(self, request, pk):
         task = get_object_or_404(AutomatedTask, pk=pk)

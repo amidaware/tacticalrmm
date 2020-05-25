@@ -25,11 +25,17 @@ TASK_TYPE_CHOICES = [
 
 
 class AutomatedTask(models.Model):
-    agent = models.ForeignKey(Agent, related_name="autotasks", on_delete=models.CASCADE)
+    agent = models.ForeignKey(
+        Agent, 
+        related_name="autotasks", 
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
     name = models.CharField(max_length=255)
     policy = models.ForeignKey(
         Policy,
-        related_name="autotaskpolicy",
+        related_name="autotasks",
         null=True,
         blank=True,
         on_delete=models.CASCADE,
@@ -61,7 +67,7 @@ class AutomatedTask(models.Model):
     enabled = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.agent} - {self.name}"
+        return self.name
 
     @property
     def schedule(self):

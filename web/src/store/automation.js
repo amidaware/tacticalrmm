@@ -10,6 +10,17 @@ export default {
   },
 
   getters: {
+    allChecks(state) {
+      return [
+        ...state.checks.diskchecks,
+        ...state.checks.cpuloadchecks,
+        ...state.checks.memchecks,
+        ...state.checks.scriptchecks,
+        ...state.checks.winservicechecks,
+        ...state.checks.pingchecks,
+        ...state.checks.eventlogchecks
+      ];
+    },
     selectedPolicyPk(state) {
       return state.selectedPolicy;
     },
@@ -63,8 +74,14 @@ export default {
         context.dispatch("loadPolicies");
       });
     },
+    runPolicyTask(context, pk) {
+      return axios.get(`/automation/runwintask/${pk}/`);
+    },
     getRelated(context, pk) {
       return axios.get(`/automation/policies/${pk}/related/`);
+    },
+    loadPolicyTreeData(context) {
+      return axios.get("/automation/policies/overview/");
     }
   }
 }

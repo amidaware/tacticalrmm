@@ -156,7 +156,7 @@ export default {
           timeout: this.timeout
         };
 
-        console.log(data)
+        console.log(data);
         axios
           .post("tasks/automatedtasks/", data)
           .then(r => {
@@ -180,9 +180,13 @@ export default {
   },
   computed: {
     ...mapGetters(["selectedAgentPk", "scripts"]),
-    ...mapState({
-      checks: state => this.policypk ? state.automation.checks : state.agentChecks
-    }),
+    /* ...mapState({
+      checks: state => (this.policypk ? state.automation.checks : state.agentChecks)
+    }), */
+    // I have no idea why this works and the above doesn't
+    checks() {
+      return this.policypk ? this.$store.state.automation.checks : this.$store.state.agentChecks;
+    },
     allChecks() {
       return [
         ...this.checks.diskchecks,

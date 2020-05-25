@@ -1,8 +1,8 @@
-import { mount, createLocalVue, createWrapper } from "@vue/test-utils";
+import { mount, createLocalVue } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import Vuex from "vuex";
 import PolicyForm from "@/components/automation/modals/PolicyForm";
-import "@/quasar.js"
+import "@/quasar.js";
 
 const localVue = createLocalVue();
 localVue.use(Vuex);
@@ -39,21 +39,16 @@ describe("PolicyForm.vue", () => {
   const policy = {
     id: 1,
     name: "Test Policy",
+    desc: "Test Desc",
     active: true,
     clients: [],
-    sites: [],
-    agents: []
+    sites: []
   };
 
-  let methods;
   let actions, rootActions, store;
 
   // Runs before every test
   beforeEach(() => {
-
-    methods = {
-      notifyError: () => jest.fn()
-    };
 
     rootActions = {
       loadClients: jest.fn(() => new Promise(res => res({ data: clients }))),
@@ -83,7 +78,7 @@ describe("PolicyForm.vue", () => {
 
     const wrapper = mount(PolicyForm, {
       localVue,
-      store,
+      store
     });
 
     expect(rootActions.loadClients).toHaveBeenCalled();
@@ -106,7 +101,7 @@ describe("PolicyForm.vue", () => {
 
     expect(rootActions.loadClients).toHaveBeenCalled();
     expect(rootActions.loadSites).toHaveBeenCalled();
-    expect(actions.loadPolicy).toHaveBeenCalled();
+    expect(actions.loadPolicy).toHaveBeenCalledWith(expect.anything(), 1);
 
   });
 
@@ -129,11 +124,10 @@ describe("PolicyForm.vue", () => {
 
     const wrapper = mount(PolicyForm, {
       localVue,
-      store,
-      methods: methods
+      store
     });
 
-    wrapper.setData({name: "Test Name"});
+    wrapper.setData({name: "Test Policy"});
     const form = wrapper.findComponent({ ref: "form" });
     form.vm.$emit("submit");
     await wrapper.vm.$nextTick();
@@ -150,17 +144,16 @@ describe("PolicyForm.vue", () => {
       store,
       propsData: {
         pk: 1
-      },
-      methods: methods
+      }
     });
 
-    wrapper.setData({name: "TestName"})
+    await flushPromises();
     const form = wrapper.findComponent({ ref: "form" });
     form.vm.$emit("submit");
     await wrapper.vm.$nextTick();
 
     expect(actions.addPolicy).not.toHaveBeenCalled();
-    expect(actions.editPolicy).toHaveBeenCalled();
+    expect(actions.editPolicy).toHaveBeenCalledWith(expect.anything(), policy);
     
   });
   
@@ -168,8 +161,7 @@ describe("PolicyForm.vue", () => {
 
     const wrapper = mount(PolicyForm, {
       localVue,
-      store,
-      methods: methods
+      store
     });
 
     const form = wrapper.findComponent({ ref: "form" });

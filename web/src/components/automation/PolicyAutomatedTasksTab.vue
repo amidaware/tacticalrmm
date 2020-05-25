@@ -10,7 +10,7 @@
         text-color="black"
         @click="showAddAutomatedTask = true"
       />
-      <q-btn dense flat push @click="refreshTasks(automatedTasks.pk)" icon="refresh" />
+      <q-btn dense flat push @click="refreshTasks(automatedTasks.id)" icon="refresh" />
       <template v-if="tasks === undefined || tasks.length === 0">
         <p>No Tasks</p>
       </template>
@@ -70,13 +70,12 @@
                 />
               </q-td>
               <q-td>{{ props.row.name }}</q-td>
-              <q-td v-if="props.row.retcode || props.row.stdout || props.row.stderr">
+              <q-td>
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
-                  @click="scriptMoreInfo(props.row)"
-                >output</span>
+                  @click="showStatus(props.row)"
+                >See Status</span>
               </q-td>
-              <q-td v-else>Awaiting output</q-td>
               <q-td v-if="props.row.last_run">{{ props.row.last_run }}</q-td>
               <q-td v-else>Has not run yet</q-td>
               <q-td>{{ props.row.schedule }}</q-td>
@@ -88,39 +87,48 @@
     </div>
     <!-- modals -->
     <q-dialog v-model="showAddAutomatedTask" position="top">
-      <AddAutomatedTask @close="showAddAutomatedTask = false" />
+      <AddAutomatedTask 
+        :policypk="automatedTasks.id"
+        @close="showAddAutomatedTask = false" 
+      />
     </q-dialog>
 
-    <q-dialog v-model="showScriptOutput">
-      <ScriptOutput @close="showScriptOutput = false; scriptInfo = {}" :scriptInfo="scriptInfo" />
+    <!-- policy task status -->
+    <q-dialog v-model="showPolicyTaskStatus">
+      <PolicyStatus 
+        type="task" 
+        :item="statusTask"
+        :description="`${statusTask.name} Agent Status`"
+      />
     </q-dialog>
   </div>
 </template>
 
 <script>
-import axios from "axios";
 import { mapState } from "vuex";
-import mixins from "@/mixins/mixins";
+import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import AddAutomatedTask from "@/components/modals/tasks/AddAutomatedTask";
-import ScriptOutput from "@/components/modals/checks/ScriptOutput";
+import PolicyStatus from "@/components/automation/modals/PolicyStatus";
 
 export default {
   name: "PolicyAutomatedTasksTab",
-  components: { AddAutomatedTask, ScriptOutput },
+  components: { 
+    AddAutomatedTask,
+    PolicyStatus
+  },
   mixins: [mixins],
   data() {
     return {
       showAddAutomatedTask: false,
       showEditAutomatedTask: false,
-      showScriptOutput: false,
+      showPolicyTaskStatus: false,
+      statusTask: {},
       editTaskPk: null,
-      showScriptOutput: false,
-      scriptInfo: {},
       columns: [
         { name: "enabled", align: "left", field: "enabled" },
         { name: "name", label: "Name", field: "name", align: "left" },
         {
-          name: "moreinfo",
+          name: "status",
           label: "More Info",
           field: "more_info",
           align: "left"
@@ -151,31 +159,32 @@ export default {
   },
   methods: {
     taskEnableorDisable(pk, action) {
-      const data = { enableordisable: action };
-      axios
-        .patch(`/tasks/${pk}/automatedtasks/`, data)
+      const data = { id: pk, enableordisable: action };
+      this.$store
+        .dispatch("editAutoTask", data)
         .then(r => {
-          this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.automatedTasks.pk);
-          this.notifySuccess(r.data);
+          this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.automatedTasks.id
+          );
+          this.$q.notify(notifySuccessConfig(r.data));
         })
-        .catch(e => this.notifyError("Something went wrong"));
+        .catch(e => this.$q.notify(notifySuccessConfig("Something went wrong")));
+    },
+    showStatus(task) {
+      this.statusTask = task;
+      this.showPolicyTaskStatus = true
     },
     refreshTasks(id) {
       this.$store.dispatch("automation/loadPolicyAutomatedTasks", id);
     },
-    scriptMoreInfo(props) {
-      this.scriptInfo = props;
-      this.showScriptOutput = true;
-    },
     runTask(pk, enabled) {
       if (!enabled) {
-        this.notifyError("Task cannot be run when it's disabled. Enable it first.");
+        this.$q.notify(notifyErrorConfig("Task cannot be run when it's disabled. Enable it first."));
         return;
       }
-      axios
-        .get(`/automation/runwintask/${pk}/`)
-        .then(r => this.notifySuccess(r.data))
-        .catch(() => this.notifyError("Something went wrong"));
+      this.$store
+        .dispatch("automation/runPolicyTask", pk)
+        .then(r => this.$q.notify(notifySuccessConfig(r.data)))
+        .catch(() => this.$q.notify(notifyErrorConfig("Something went wrong")));
     },
     deleteTask(name, pk) {
       this.$q
@@ -186,13 +195,13 @@ export default {
           persistent: true
         })
         .onOk(() => {
-          axios
-            .delete(`/automation/${pk}/automatedtasks/`)
+          this.$store 
+            .dispatch("deleteAutoTask", pk)
             .then(r => {
-              this.$store.dispatch("automation/loadPolicyChecks", this.automatedTasks.pk);
-              this.notifySuccess(r.data);
+              this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.automatedTasks.id);
+              this.$q.notify(notifySuccessConfig(r.data));
             })
-            .catch(e => this.notifyError("Something went wrong"));
+            .catch(e => this.$q.notify(notifyErrorConfig("Something went wrong")));
         });
     }
   },

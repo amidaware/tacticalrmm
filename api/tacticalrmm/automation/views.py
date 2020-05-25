@@ -103,8 +103,14 @@ class GetUpdateDeletePolicy(APIView):
 
 class PolicyAutoTask(APIView):
     def get(self, request, pk):
-        policy = Policy.objects.only("pk").get(pk=pk)
+        policy = get_object_or_404(Policy, pk=pk)
         return Response(AutoTaskPolicySerializer(policy).data)
+
+class RunPolicyTask(APIView):
+    def get(self, request, pk):
+
+        # TODO: Run tasks for all Agents under policy
+        return Response("ok")
 
 
 class OverviewPolicy(APIView):

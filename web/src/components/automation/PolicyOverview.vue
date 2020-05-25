@@ -11,7 +11,7 @@
       <template v-slot:before>
         <div class="q-pa-md">
           <q-tree
-            ref="Tree"
+            ref="tree"
             :nodes="clientSiteTree"
             node-key="id"
             :selected.sync="selected"
@@ -44,16 +44,10 @@
           transition-next="jump-up"
         >
           <q-tab-panel name="checks">
-            <template v-if="Object.keys(selectedPolicy).length === 0">
-              <p>Select a Policy</p>
-            </template>
-            <OverviewChecksTab v-else :policypk="policypk" />
+            <PolicyChecksTab :readonly="true" />
           </q-tab-panel>
           <q-tab-panel name="tasks">
-            <template v-if="Object.keys(selectedPolicy).length === 0">
-              <p>Select a Policy</p>
-            </template>
-            <OverviewAutomatedTasksTab v-else :policypk="policypk" />
+            <PolicyAutomatedTasksTab/>
           </q-tab-panel>
         </q-tab-panels>
       </template>
@@ -62,16 +56,15 @@
 </template>
 
 <script>
-import axios from "axios";
-import mixins from "@/mixins/mixins";
-import OverviewChecksTab from "@/components/automation/OverviewChecksTab";
-import OverviewAutomatedTasksTab from "@/components/automation/OverviewAutomatedTasksTab";
+import mixins, { notifyErrorConfig } from "@/mixins/mixins";
+import PolicyChecksTab from "@/components/automation/PolicyChecksTab";
+import PolicyAutomatedTasksTab from "@/components/automation/PolicyAutomatedTasksTab";
 
 export default {
   name: "PolicyOverview",
   components: {
-    OverviewChecksTab,
-    OverviewAutomatedTasksTab
+    PolicyAutomatedTasksTab,
+    PolicyChecksTab
   },
   mixins: [mixins],
   data() {
@@ -83,26 +76,28 @@ export default {
       clientSiteTree: []
     };
   },
-  mounted() {
-    this.getPolicyTree();
-  },
   methods: {
     getPolicyTree() {
-      axios
-        .get(`/automation/policies/overview/`)
+      this.$store
+        .dispatch("automation/loadPolicyTreeData")
         .then(r => {
           this.processTreeDataFromApi(r.data);
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data);
+          this.$q.notify(notifyErrorConfig(e.response.data));
         });
     },
     loadPolicyDetails(key) {
-      if (key === undefined) {
+      if (key === undefined || key === null) {
         return;
       }
-      this.selectedPolicy = this.$refs.Tree.getNodeByKey(key);
+
+      this.selectedPolicy = this.$refs.tree.getNodeByKey(key);
+
+      this.$store.dispatch("automation/loadPolicyChecks", this.selectedPolicy.id);
+      this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.selectedPolicy.id);
+      
     },
     processTreeDataFromApi(data) {
       /* Structure
@@ -110,12 +105,14 @@ export default {
        *   "client_name_1": {
        *     "policies": [
        *       {
-       *         id: 1
+       *         id: 1,
        *         name: "Policy Name 1"
        *       }
-       *     ]
-       *     "site_name_1": {
-       *       "policies": []
+       *     ],
+       *     sites: {
+       *       "site_name_1": {
+       *         "policies": []
+       *       }
        *     }
        *   }
        * }]
@@ -138,13 +135,22 @@ export default {
         unique_id--;
 
         // Add any policies assigned to client
+
         if (data[client].policies.length > 0) {
-          for (let policy in data[client].policies)
+          for (let policy in data[client].policies) {
+            let disabled = "";
+
+            // Indicate if the policy is active or not
+            if (!data[client].policies[policy].active) {
+             disabled = " (disabled)";
+            }
+
             client_temp["children"].push({
-              label: data[client].policies[policy].name,
+              label: data[client].policies[policy].name + disabled,
               icon: "policy",
               id: data[client].policies[policy].id
             });
+          }
         }
 
         // Iterate through Sites
@@ -162,8 +168,15 @@ export default {
             site_temp["children"] = [];
 
             for (let policy in data[client].sites[site].policies) {
+              
+              // Indicate if the policy is active or not
+              let disabled = "";
+              if (!data[client].sites[site].policies[policy].active) {
+                disabled = " (disabled)";
+              }
+
               site_temp["children"].push({
-                label: data[client].sites[site].policies[policy].name,
+                label: data[client].sites[site].policies[policy].name + disabled,
                 icon: "policy",
                 id: data[client].sites[site].policies[policy].id
               });
@@ -181,10 +194,8 @@ export default {
       this.clientSiteTree = result;
     }
   },
-  computed: {
-    policypk() {
-      return this.selectedPolicy.id;
-    }
-  }
+  mounted() {
+    this.getPolicyTree();
+  },
 };
 </script>

@@ -108,12 +108,14 @@
 
 <script>
 import axios from "axios";
-import { mapState } from "vuex";
-import { mapGetters } from "vuex";
+import { mapState, mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 
 export default {
   name: "AddAutomatedTask",
+  props: {
+    policypk: Number
+  },
   mixins: [mixins],
   data() {
     return {
@@ -141,8 +143,10 @@ export default {
       if (!this.step1Done || !this.step2Done) {
         this.notifyError("Some steps incomplete");
       } else {
+        const pk = this.policypk ? { policy: this.policypk } : { agent: this.selectedAgentPk };
+
         const data = {
-          agent: this.selectedAgentPk,
+          ...pk,
           name: this.taskName,
           script: this.scriptPk,
           trigger: this.trigger,
@@ -151,12 +155,20 @@ export default {
           days: this.days,
           timeout: this.timeout
         };
+
+        console.log(data)
         axios
-          .post(`/tasks/${this.selectedAgentPk}/automatedtasks/`, data)
+          .post("tasks/automatedtasks/", data)
           .then(r => {
             this.$emit("close");
-            this.$store.dispatch("loadAutomatedTasks", this.selectedAgentPk);
-            this.$store.dispatch("loadChecks", this.selectedAgentPk);
+
+            if (!this.policypk) {
+              this.$store.dispatch("loadAutomatedTasks", this.selectedAgentPk);
+              this.$store.dispatch("loadChecks", this.selectedAgentPk);
+            } else {
+              this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.policypk);
+              this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
+            }
             this.notifySuccess(r.data);
           })
           .catch(e => this.notifyError(e.response.data));
@@ -169,7 +181,7 @@ export default {
   computed: {
     ...mapGetters(["selectedAgentPk", "scripts"]),
     ...mapState({
-      checks: state => state.agentChecks
+      checks: state => this.policypk ? state.automation.checks : state.agentChecks
     }),
     allChecks() {
       return [

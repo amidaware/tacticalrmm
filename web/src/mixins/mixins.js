@@ -1,5 +1,37 @@
 import { Notify } from "quasar";
 
+export function notifySuccessConfig(msg, timeout = 2000) {
+  return {
+    type: "positive",
+    message: msg,
+    timeout: timeout
+  }
+};
+
+export function notifyErrorConfig(msg, timeout = 2000) {
+  return {
+    type: "negative",
+    message: msg,
+    timeout: timeout
+  }
+};
+
+export function notifyWarningConfig(msg, timeout = 2000) {
+  return {
+    type: "warning",
+    message: msg,
+    timeout: timeout
+  }
+};
+
+export function notifyInfoConfig(msg, timeout = 2000) {
+  return {
+    type: "info",
+    message: msg,
+    timeout: timeout
+  }
+};
+
 export default {
   methods: {
     bootTime(unixtime) {
@@ -26,32 +58,16 @@ export default {
       }
     },
     notifySuccess(msg, timeout = 2000) {
-      Notify.create({
-        type: "positive",
-        message: msg,
-        timeout: timeout
-      });
+      Notify.create(notifySuccessConfig(msg, timeout));
     },
     notifyError(msg, timeout = 2000) {
-      Notify.create({
-        type: "negative",
-        message: msg,
-        timeout: timeout
-      });
+      Notify.create(notifyErrorConfig(msg, timeout));
     },
     notifyWarning(msg, timeout = 2000) {
-      Notify.create({
-        type: "warning",
-        message: msg,
-        timeout: timeout
-      });
+      Notify.create(notifyWarningConfig(msg, timeout));
     },
     notifyInfo(msg, timeout = 2000) {
-      Notify.create({
-        type: "info",
-        message: msg,
-        timeout: timeout
-      });
+      Notify.create(notifyInfoConfig(msg, timeout));
     }
   }
 };

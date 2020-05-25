@@ -98,7 +98,7 @@
 </template>
 
 <script>
-import mixins from "@/mixins/mixins";
+import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import dropdown_formatter from "@/mixins/dropdown_formatter";
 
 export default {
@@ -146,7 +146,7 @@ export default {
     },
     submit() {
       if (!this.name) {
-        this.notifyError("Name is required!");
+        this.$q.notify(notifySuccessConfig("Name is required!"));
         return false;
       }
 
@@ -167,12 +167,11 @@ export default {
           .then(r => {
             this.$q.loading.hide();
             this.$emit("close");
-            this.$emit("refresh");
-            this.notifySuccess("Policy edited!");
+            this.$q.notify(notifySuccessConfig("Policy edited!"));
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.notifyError(e.response.data);
+            this.$q.notify(notifyErrorConfig(e.response.data));
           });
       } else {
         this.$store
@@ -180,12 +179,11 @@ export default {
           .then(r => {
             this.$q.loading.hide();
             this.$emit("close");
-            this.$emit("refresh");
-            this.notifySuccess("Policy added! Now you can add Tasks and Checks!");
+            this.$q.notify(notifySuccessConfig("Policy added! Now you can add Tasks and Checks!"));
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.notifyError(e.response.data);
+            this.$q.notify(notifyErrorConfig(e.response.data));
           });
       }
     },

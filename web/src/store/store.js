@@ -144,6 +144,18 @@ export const store = new Vuex.Store({
         context.commit("setChecks", r.data);
       });
     },
+    editCheckAlertAction(context, data) {
+      return axios.patch("/checks/checkalert/", data);
+    },
+    deleteCheck(context, data) {
+      return axios.delete("checks/deletestandardcheck/", { data: data });
+    },
+    editAutoTask(context, data) {
+      return axios.patch(`/tasks/${data.id}/automatedtasks/`, data);
+    },
+    deleteAutoTask(context, pk) {
+      return axios.delete(`/tasks/${pk}/automatedtasks/`);
+    },
     getUpdatedSites(context) {
       axios.get("/clients/loadclients/").then(r => {
         context.commit("getUpdatedSites", r.data);

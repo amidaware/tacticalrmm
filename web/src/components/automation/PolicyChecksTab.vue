@@ -8,6 +8,7 @@
         icon="fas fa-plus" 
         label="Add Check" 
         text-color="black"
+        ref="add"
       >
         <q-menu>
           <q-list dense style="min-width: 200px">
@@ -62,6 +63,7 @@
         push 
         @click="onRefresh(checks.id)" 
         icon="refresh"
+        ref="refresh"
       />
       <template v-if="allChecks === undefined || allChecks.length === 0">
         <p>No Checks</p>
@@ -105,6 +107,7 @@
                     clickable 
                     v-close-popup 
                     @click="showEditDialog(props.row.check_type)"
+                    id="context-edit"
                   >
                     <q-item-section side>
                       <q-icon name="edit" />
@@ -115,6 +118,7 @@
                     clickable
                     v-close-popup
                     @click="deleteCheck(props.row.id, props.row.check_type)"
+                    id="context-delete"
                   >
                     <q-item-section side>
                       <q-icon name="delete" />
@@ -124,7 +128,12 @@
 
                   <q-separator></q-separator>
 
-                  <q-item clickable v-close-popup @click="showPolicyCheckStatusModal(props.row)">
+                  <q-item 
+                    clickable 
+                    v-close-popup 
+                    @click="showPolicyCheckStatusModal(props.row)"
+                    id="context-status"
+                  >
                     <q-item-section side>
                       <q-icon name="sync" />
                     </q-item-section>
@@ -158,6 +167,7 @@
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
                   @click="showPolicyCheckStatusModal(props.row)"
+                  class="status-cell"
                 >
                   See Status
                 </span>
@@ -178,8 +188,11 @@
     </q-dialog>
     
     <!-- add/edit modals -->
-    <q-dialog v-model="showDialog">
+    <q-dialog 
+      v-model="showDialog"
+      @hide="hideDialog">
       <component 
+        v-if="dialogComponent !== null"
         :is="dialogComponent" 
         @close="hideDialog" 
         :policypk="checks.id" 
@@ -193,11 +206,39 @@
 import { mapState, mapGetters } from "vuex";
 import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import PolicyStatus from "@/components/automation/modals/PolicyStatus";
+import AddDiskSpaceCheck from "@/components/modals/checks/AddDiskSpaceCheck";
+import EditDiskSpaceCheck from "@/components/modals/checks/EditDiskSpaceCheck";
+import AddPingCheck from "@/components/modals/checks/AddPingCheck";
+import EditPingCheck from "@/components/modals/checks/EditPingCheck";
+import AddCpuLoadCheck from "@/components/modals/checks/AddCpuLoadCheck";
+import EditCpuLoadCheck from "@/components/modals/checks/EditCpuLoadCheck";
+import AddMemCheck from "@/components/modals/checks/AddMemCheck";
+import EditMemCheck from "@/components/modals/checks/EditMemCheck";
+import AddWinSvcCheck from "@/components/modals/checks/AddWinSvcCheck";
+import EditWinSvcCheck from "@/components/modals/checks/EditWinSvcCheck";
+import AddScriptCheck from "@/components/modals/checks/AddScriptCheck";
+import EditScriptCheck from "@/components/modals/checks/EditScriptCheck";
+import AddEventLogCheck from "@/components/modals/checks/AddEventLogCheck";
+import EditEventLogCheck from "@/components/modals/checks/EditEventLogCheck";
 
 export default {
   name: "PolicyChecksTab",
   components: {
-    PolicyStatus
+    PolicyStatus,
+    AddDiskSpaceCheck,
+    EditDiskSpaceCheck,
+    AddPingCheck,
+    EditPingCheck,
+    AddCpuLoadCheck,
+    EditCpuLoadCheck,
+    AddMemCheck,
+    EditMemCheck,
+    AddWinSvcCheck,
+    EditWinSvcCheck,
+    AddScriptCheck,
+    EditScriptCheck,
+    AddEventLogCheck,
+    EditEventLogCheck
   },
   mixins: [mixins],
   data() {
@@ -242,40 +283,38 @@ export default {
       this.$store.dispatch("automation/loadPolicyChecks", id);
     },
     showAddDialog(component) {
-      this.dialogComponent = () => import(`@/components/modals/checks/${component}`);
+      this.dialogComponent = component;
       this.showDialog = true;
     },
     showEditDialog(category) {
-      let component = null;
-
       switch (category) {
         case "diskspace":
-          component = "EditDiskSpaceCheck";
+          this.dialogComponent = "EditDiskSpaceCheck";
           break;
         case "ping":
-          component = "EditPingCheck";
+          this.dialogComponent = "EditPingCheck";
           break;
         case "cpuload":
-          tcomponent = "EditCpuLoadCheck";
+          this.dialogComponent = "EditCpuLoadCheck";
           break;
         case "memory":
-          component = "EditMemCheck";
+          this.dialogComponent = "EditMemCheck";
           break;
         case "winsvc":
-          component = "EditWinSvcCheck";
+          this.dialogComponent = "EditWinSvcCheck";
           break;
         case "script":
-          component = "EditScriptCheck";
+          this.dialogComponent = "EditScriptCheck";
           break;
         case "eventlog":
-          component = "EditEventLogCheck";
+          this.dialogComponent = "EditEventLogCheck";
           break;
         default:
           return null;
       }
 
-      this.dialogComponent = () => import(`@/components/modals/checks/${component}`);
       this.showDialog = true;
+
     },
     hideDialog(component) {
       this.showDialog = false;
@@ -284,10 +323,9 @@ export default {
     deleteCheck(pk, check_type) {
       this.$q
         .dialog({
-          title: "Are you sure?",
-          message: `Delete ${check_type} check`,
+          title: `Delete ${check_type} check`,
+          ok: { label: "Delete", color: "negative" },
           cancel: true,
-          persistent: true
         })
         .onOk(() => {
           const data = { pk: pk, checktype: check_type };

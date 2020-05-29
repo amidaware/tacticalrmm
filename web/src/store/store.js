@@ -153,6 +153,12 @@ export const store = new Vuex.Store({
         context.commit("setChecks", r.data);
       });
     },
+    loadDefaultServices(context) {
+      return axios.get("/services/getdefaultservices/");
+    },
+    loadAgentServices(context, agentpk) {
+      return axios.get(`/services/${agentpk}/services/`);
+    },
     editCheckAlertAction(context, data) {
       return axios.patch("/checks/checkalert/", data);
     },

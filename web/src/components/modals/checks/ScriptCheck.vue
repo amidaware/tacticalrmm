@@ -65,6 +65,10 @@
 
 <script>
 import axios from "axios";
+<<<<<<< HEAD:web/src/components/modals/checks/ScriptCheck.vue
+=======
+import { mapState, mapGetters } from "vuex";
+>>>>>>> More Vue Tests:web/src/components/modals/checks/AddScriptCheck.vue
 import mixins from "@/mixins/mixins";
 import { mapGetters, mapState } from "vuex";
 export default {

@@ -23,16 +23,5 @@ class Script(models.Model):
     def file(self):
         return f"/srv/salt/scripts/userdefined/{self.filename}"
 
-    @staticmethod
-    def validate_filename(filename):
-        if (
-            not filename.endswith(".py")
-            and not filename.endswith(".ps1")
-            and not filename.endswith(".bat")
-        ):
-            return False
-
-        return True
-
     def __str__(self):
         return self.filename

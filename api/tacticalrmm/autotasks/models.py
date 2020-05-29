@@ -26,13 +26,12 @@ TASK_TYPE_CHOICES = [
 
 class AutomatedTask(models.Model):
     agent = models.ForeignKey(
-        Agent, 
-        related_name="autotasks", 
+        "agents.Agent",
+        related_name="autotasks",
         on_delete=models.CASCADE,
         null=True,
-        blank=True
+        blank=True,
     )
-    name = models.CharField(max_length=255)
     policy = models.ForeignKey(
         Policy,
         related_name="autotasks",
@@ -41,12 +40,20 @@ class AutomatedTask(models.Model):
         on_delete=models.CASCADE,
     )
     script = models.ForeignKey(
-        "checks.Script",
+        "scripts.Script",
         null=True,
         blank=True,
         related_name="autoscript",
         on_delete=models.CASCADE,
     )
+    assigned_check = models.ForeignKey(
+        "checks.Check",
+        null=True,
+        blank=True,
+        related_name="assignedcheck",
+        on_delete=models.SET_NULL,
+    )
+    name = models.CharField(max_length=255)
     run_time_days = ArrayField(
         models.IntegerField(choices=RUN_TIME_DAY_CHOICES, null=True, blank=True),
         null=True,
@@ -92,71 +99,7 @@ class AutomatedTask(models.Model):
                 days = ",".join(ret)
                 return f"{days} at {run_time_nice}"
 
-    @property
-    def assigned_check(self):
-        related_checks = (
-            "scripttaskfailure",
-            "disktaskfailure",
-            "pingtaskfailure",
-            "cpuloadtaskfailure",
-            "memtaskfailure",
-            "winsvctaskfailure",
-            "eventlogtaskfailure",
-        )
-
-        for i in related_checks:
-            obj = getattr(self, i)
-            if obj.exists():
-                check = obj.get()
-                if check.check_type == "script":
-                    ret = f"Script Check: {check.script.name}"
-                elif check.check_type == "diskspace":
-                    ret = f"Disk Space Check: Drive {check.disk}"
-                elif check.check_type == "ping":
-                    ret = f"Ping Check: {check.name}"
-                elif check.check_type == "cpuload":
-                    ret = "CPU Load Check"
-                elif check.check_type == "memory":
-                    ret = "Memory Check"
-                elif check.check_type == "winsvc":
-                    ret = f"Service Check: {check.svc_display_name}"
-                elif check.check_type == "eventlog":
-                    ret = f"Event Log Check: {check.desc}"
-                else:
-                    ret = "error"
-
-                return ret
-
     @staticmethod
     def generate_task_name():
         chars = string.ascii_letters
         return "TacticalRMM_" + "".join(random.choice(chars) for i in range(35))
-
-    @staticmethod
-    def get_related_check(data):
-        from checks.models import (
-            DiskCheck,
-            ScriptCheck,
-            PingCheck,
-            CpuLoadCheck,
-            MemCheck,
-            WinServiceCheck,
-            EventLogCheck,
-        )
-
-        pk = int(data.split("|")[0])
-        check_type = data.split("|")[1]
-        if check_type == "diskspace":
-            return DiskCheck.objects.get(pk=pk)
-        elif check_type == "script":
-            return ScriptCheck.objects.get(pk=pk)
-        elif check_type == "ping":
-            return PingCheck.objects.get(pk=pk)
-        elif check_type == "cpuload":
-            return CpuLoadCheck.objects.get(pk=pk)
-        elif check_type == "memory":
-            return MemCheck.objects.get(pk=pk)
-        elif check_type == "winsvc":
-            return WinServiceCheck.objects.get(pk=pk)
-        elif check_type == "eventlog":
-            return EventLogCheck.objects.get(pk=pk)

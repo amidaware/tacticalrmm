@@ -13,9 +13,9 @@ from rest_framework.decorators import api_view
 
 from agents.models import Agent
 
-from .models import Script
+# from .models import Script
 
-from .serializers import ScriptSerializer
+# from .serializers import ScriptSerializer
 
 
 class UploadScript(APIView):

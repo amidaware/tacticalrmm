@@ -11,7 +11,7 @@ from rest_framework import status
 
 from .models import Policy
 from agents.models import Agent
-from checks.models import Script
+from scripts.models import Script
 from clients.models import Client, Site
 
 from clients.serializers import (

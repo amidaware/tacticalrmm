@@ -12,11 +12,12 @@ from rest_framework.decorators import api_view
 
 from .models import AutomatedTask
 from agents.models import Agent
-from checks.models import Script
+
+from scripts.models import Script
 from automation.models import Policy
 
 from .serializers import AutoTaskSerializer, AgentTaskSerializer
-from checks.serializers import ScriptSerializer
+from scripts.serializers import ScriptSerializer
 
 from .tasks import (
     create_win_task_schedule,
@@ -24,6 +25,7 @@ from .tasks import (
     run_win_task,
     enable_or_disable_win_task,
 )
+
 
 class AddAutoTask(APIView):
     def post(self, request):
@@ -99,6 +101,7 @@ class AddAutoTask(APIView):
 
         create_win_task_schedule.delay(pk=task.pk)
         return Response("ok")
+
 
 class AutoTask(APIView):
     def get(self, request, pk):

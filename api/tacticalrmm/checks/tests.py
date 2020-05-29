@@ -1,5 +1,5 @@
 from tacticalrmm.test import BaseTestCase
-from .serializers import CheckSerializer, PolicyChecksSerializer
+from .serializers import CheckSerializer  # , PolicyChecksSerializer
 
 
 class TestCheckViews(BaseTestCase):

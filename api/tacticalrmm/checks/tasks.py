@@ -7,22 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from agents.models import Agent
 from clients.models import Client, Site
-from .models import (
-    DiskCheck,
-    DiskCheckEmail,
-    PingCheck,
-    PingCheckEmail,
-    CpuLoadCheck,
-    CpuLoadCheckEmail,
-    MemCheck,
-    MemCheckEmail,
-    WinServiceCheck,
-    WinServiceCheckEmail,
-    ScriptCheck,
-    ScriptCheckEmail,
-    EventLogCheck,
-    EventLogCheckEmail,
-)
+from .models import Check
 
 
 @app.task

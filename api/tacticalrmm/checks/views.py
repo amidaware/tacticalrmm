@@ -17,32 +17,11 @@ from rest_framework.decorators import (
 from agents.models import Agent
 from automation.models import Policy
 
-from .models import (
-    DiskCheck,
-    PingCheck,
-    CpuLoadCheck,
-    MemCheck,
-    WinServiceCheck,
-    Script,
-    ScriptCheck,
-    EventLogCheck,
-    validate_threshold,
-)
+from .models import Check
 
 from autotasks.models import AutomatedTask
 
-from .serializers import (
-    CheckSerializer,
-    PolicyChecksSerializer,
-    DiskCheckSerializer,
-    PingCheckSerializer,
-    CpuLoadCheckSerializer,
-    MemCheckSerializer,
-    WinServiceCheckSerializer,
-    ScriptCheckSerializer,
-    ScriptSerializer,
-    EventLogCheckSerializer,
-)
+from .serializers import CheckSerializer
 
 from .tasks import handle_check_email_alert_task, run_checks_task
 from autotasks.tasks import delete_win_task_schedule

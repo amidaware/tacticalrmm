@@ -13,7 +13,8 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 
 from agents.models import Agent
-from checks.models import WinServiceCheck
+
+# from checks.models import WinServiceCheck
 from .serializers import ServicesSerializer
 
 logger.configure(**settings.LOG_CONFIG)

@@ -29,12 +29,13 @@ from rest_framework.decorators import (
 
 from agents.models import Agent, AgentOutage
 from accounts.models import User
-from checks.models import (
+
+""" from checks.models import (
     DiskCheck,
     CpuLoadCheck,
     MemCheck,
     PingCheck,
-)
+) """
 from winupdate.models import WinUpdate, WinUpdatePolicy
 from agents.tasks import (
     uninstall_agent_task,

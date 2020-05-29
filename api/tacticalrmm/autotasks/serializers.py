@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import AutomatedTask
 from agents.models import Agent
 
-from checks.serializers import ScriptSerializer
+from scripts.serializers import ScriptSerializer
 
 
 class TaskSerializer(serializers.ModelSerializer):

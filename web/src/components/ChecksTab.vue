@@ -85,11 +85,11 @@
           </template>
           <!-- body slots -->
           <template slot="body" slot-scope="props" :props="props">
-            <q-tr @contextmenu="editCheckPK = props.row.id">
+            <q-tr @contextmenu="checkpk = props.row.id">
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item clickable v-close-popup @click="editCheck(props.row.check_type)">
+                  <q-item clickable v-close-popup @click="showCheck('edit', props.row.check_type)">
                     <q-item-section side>
                       <q-icon name="edit" />
                     </q-item-section>
@@ -187,8 +187,14 @@
     </div>
     <!-- modals -->
     <q-dialog v-model="showDiskSpaceCheck">
-      <DiskSpaceCheck @close="showDiskSpaceCheck = false" :agentpk="selectedAgentPk" :mode="mode" />
+      <DiskSpaceCheck
+        @close="showDiskSpaceCheck = false"
+        :agentpk="selectedAgentPk"
+        :mode="mode"
+        :checkpk="checkpk"
+      />
     </q-dialog>
+    <!-- refactor below -->
     <q-dialog v-model="showAddPingCheck">
       <AddPingCheck @close="showAddPingCheck = false" :agentpk="selectedAgentPk" />
     </q-dialog>
@@ -309,6 +315,7 @@ export default {
   data() {
     return {
       mode: "add",
+      checkpk: null,
       showDiskSpaceCheck: false,
       // refactor below
       showAddPingCheck: false,

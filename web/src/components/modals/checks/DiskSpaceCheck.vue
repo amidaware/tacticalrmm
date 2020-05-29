@@ -7,9 +7,15 @@
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
 
-    <q-form @submit.prevent="addCheck">
+    <q-form @submit.prevent="mode === 'add' ? addCheck() : editCheck()">
       <q-card-section>
-        <q-select outlined v-model="diskcheck.disk" :options="diskOptions" label="Disk" />
+        <q-select
+          :disable="this.mode === 'edit'"
+          outlined
+          v-model="diskcheck.disk"
+          :options="diskOptions"
+          label="Disk"
+        />
       </q-card-section>
       <q-card-section>
         <q-input
@@ -50,7 +56,8 @@ export default {
   props: {
     agentpk: Number,
     policypk: Number,
-    mode: String
+    mode: String,
+    checkpk: Number
   },
   mixins: [mixins],
   data() {
@@ -72,6 +79,9 @@ export default {
         this.diskcheck.disk = this.diskOptions[0];
       }
     },
+    getCheck() {
+      axios.get(`/checks/${this.checkpk}/check/`).then(r => (this.diskcheck = r.data));
+    },
     addCheck() {
       const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
       const data = {
@@ -82,16 +92,27 @@ export default {
         .post("/checks/checks/", data)
         .then(r => {
           this.$emit("close");
-
-          if (this.policypk) {
-            this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
-          } else {
-            this.$store.dispatch("loadChecks", this.agentpk);
-          }
-
+          this.reloadChecks();
           this.notifySuccess(r.data);
         })
         .catch(e => this.notifyError(e.response.data));
+    },
+    editCheck() {
+      axios
+        .patch(`/checks/${this.checkpk}/check/`, this.diskcheck)
+        .then(r => {
+          this.$emit("close");
+          this.reloadChecks();
+          this.notifySuccess(r.data);
+        })
+        .catch(e => this.notifyError(e.response.data));
+    },
+    reloadChecks() {
+      if (this.policypk) {
+        this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
+      } else {
+        this.$store.dispatch("loadChecks", this.agentpk);
+      }
     }
   },
   computed: {
@@ -103,6 +124,8 @@ export default {
       this.diskcheck.threshold = 25;
       this.diskcheck.fails_b4_alert = 1;
       this.setDiskOptions();
+    } else if (this.mode === "edit") {
+      this.getCheck();
     }
   }
 };

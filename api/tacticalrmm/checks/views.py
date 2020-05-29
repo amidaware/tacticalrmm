@@ -52,6 +52,20 @@ class GetAddCheck(APIView):
         return Response(f"{obj.readable_desc} was added!")
 
 
+class GetUpdateDeleteCheck(APIView):
+    def get(self, request, pk):
+        check = get_object_or_404(Check, pk=pk)
+        return Response(CheckSerializer(check).data)
+
+    def patch(self, request, pk):
+        check = get_object_or_404(Check, pk=pk)
+        serializer = CheckSerializer(instance=check, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        obj = serializer.save()
+
+        return Response(f"{obj.readable_desc} was edited!")
+
+
 @api_view()
 def get_scripts(request):
     scripts = Script.objects.all()

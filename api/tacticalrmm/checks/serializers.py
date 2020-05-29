@@ -16,10 +16,11 @@ class CheckSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def validate_ip(self, val):
-        if not _v.ipv4(val) and not _v.ipv6(val) and not _v.domain(val):
-            raise serializers.ValidationError(
-                "Please enter a valid IP address or domain name"
-            )
+        if val:
+            if not _v.ipv4(val) and not _v.ipv6(val) and not _v.domain(val):
+                raise serializers.ValidationError(
+                    "Please enter a valid IP address or domain name"
+                )
         return val
 
 

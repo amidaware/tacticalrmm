@@ -1,11 +1,11 @@
 <template>
-  <div v-if="Object.keys(checks).length === 0">No agent selected</div>
+  <div v-if="checks.length === 0">No agent selected</div>
   <div class="row" v-else>
     <div class="col-12">
       <q-btn size="sm" color="grey-5" icon="fas fa-plus" label="Add Check" text-color="black">
         <q-menu>
           <q-list dense style="min-width: 200px">
-            <q-item clickable v-close-popup @click="showAddDiskSpaceCheck = true">
+            <q-item clickable v-close-popup @click="showDiskSpaceCheck = true">
               <q-item-section side>
                 <q-icon size="xs" name="far fa-hdd" />
               </q-item-section>
@@ -50,15 +50,15 @@
           </q-list>
         </q-menu>
       </q-btn>
-      <q-btn dense flat push @click="onRefresh(checks.pk)" icon="refresh" />
-      <template v-if="allChecks === undefined || allChecks.length === 0">
+      <q-btn dense flat push @click="onRefresh(selectedAgentPk)" icon="refresh" />
+      <template v-if="checks === undefined || checks.length === 0">
         <p>No Checks</p>
       </template>
       <template v-else>
         <q-table
           dense
           class="tabs-tbl-sticky"
-          :data="allChecks"
+          :data="checks"
           :columns="columns"
           :row-key="row => row.id + row.check_type"
           binary-state-sort
@@ -133,9 +133,7 @@
               <q-td v-else-if="props.row.status === 'failing'">
                 <q-icon style="font-size: 1.3rem;" color="negative" name="error" />
               </q-td>
-              <q-td
-                v-if="props.row.check_type === 'diskspace'"
-              >Disk Space Drive {{ props.row.disk }} > {{props.row.threshold }}%</q-td>
+              <q-td v-if="props.row.check_type === 'diskspace'">{{ props.row.readable_desc }}</q-td>
               <q-td
                 v-else-if="props.row.check_type === 'cpuload'"
               >Avg CPU Load > {{ props.row.cpuload }}%</q-td>
@@ -188,67 +186,60 @@
       </template>
     </div>
     <!-- modals -->
-    <q-dialog v-model="showAddDiskSpaceCheck">
-      <AddDiskSpaceCheck @close="showAddDiskSpaceCheck = false" :agentpk="checks.pk" />
-    </q-dialog>
-    <q-dialog v-model="showEditDiskSpaceCheck">
-      <EditDiskSpaceCheck
-        @close="showEditDiskSpaceCheck = false"
-        :editCheckPK="editCheckPK"
-        :agentpk="checks.pk"
-      />
+    <q-dialog v-model="showDiskSpaceCheck">
+      <DiskSpaceCheck @close="showDiskSpaceCheck = false" :agentpk="selectedAgentPk" :mode="mode" />
     </q-dialog>
     <q-dialog v-model="showAddPingCheck">
-      <AddPingCheck @close="showAddPingCheck = false" :agentpk="checks.pk" />
+      <AddPingCheck @close="showAddPingCheck = false" :agentpk="selectedAgentPk" />
     </q-dialog>
     <q-dialog v-model="showEditPingCheck">
       <EditPingCheck
         @close="showEditPingCheck = false"
         :editCheckPK="editCheckPK"
-        :agentpk="checks.pk"
+        :agentpk="selectedAgentPk"
       />
     </q-dialog>
     <q-dialog v-model="showAddCpuLoadCheck">
-      <AddCpuLoadCheck @close="showAddCpuLoadCheck = false" :agentpk="checks.pk" />
+      <AddCpuLoadCheck @close="showAddCpuLoadCheck = false" :agentpk="selectedAgentPk" />
     </q-dialog>
     <q-dialog v-model="showEditCpuLoadCheck">
       <EditCpuLoadCheck
         @close="showEditCpuLoadCheck = false"
         :editCheckPK="editCheckPK"
-        :agentpk="checks.pk"
+        :agentpk="selectedAgentPk"
       />
     </q-dialog>
 
     <q-dialog v-model="showAddMemCheck">
-      <AddMemCheck @close="showAddMemCheck = false" :agentpk="checks.pk" />
+      <AddMemCheck @close="showAddMemCheck = false" :agentpk="selectedAgentPk" />
     </q-dialog>
     <q-dialog v-model="showEditMemCheck">
       <EditMemCheck
         @close="showEditMemCheck = false"
         :editCheckPK="editCheckPK"
-        :agentpk="checks.pk"
+        :agentpk="selectedAgentPk"
       />
     </q-dialog>
 
     <q-dialog v-model="showAddWinSvcCheck">
-      <AddWinSvcCheck @close="showAddWinSvcCheck = false" :agentpk="checks.pk" />
+      <AddWinSvcCheck @close="showAddWinSvcCheck = false" :agentpk="selectedAgentPk" />
     </q-dialog>
     <q-dialog v-model="showEditWinSvcCheck">
       <EditWinSvcCheck
         @close="showEditWinSvcCheck = false"
         :editCheckPK="editCheckPK"
-        :agentpk="checks.pk"
+        :agentpk="selectedAgentPk"
       />
     </q-dialog>
     <!-- script check -->
     <q-dialog v-model="showAddScriptCheck">
-      <AddScriptCheck @close="showAddScriptCheck = false" :agentpk="checks.pk" />
+      <AddScriptCheck @close="showAddScriptCheck = false" :agentpk="selectedAgentPk" />
     </q-dialog>
     <q-dialog v-model="showEditScriptCheck">
       <EditScriptCheck
         @close="showEditScriptCheck = false"
         :editCheckPK="editCheckPK"
-        :agentpk="checks.pk"
+        :agentpk="selectedAgentPk"
       />
     </q-dialog>
     <q-dialog v-model="showScriptOutput">
@@ -256,13 +247,13 @@
     </q-dialog>
     <!-- event log check -->
     <q-dialog v-model="showAddEventLogCheck">
-      <AddEventLogCheck @close="showAddEventLogCheck = false" :agentpk="checks.pk" />
+      <AddEventLogCheck @close="showAddEventLogCheck = false" :agentpk="selectedAgentPk" />
     </q-dialog>
     <q-dialog v-model="showEditEventLogCheck">
       <EditEventLogCheck
         @close="showEditEventLogCheck = false"
         :editCheckPK="editCheckPK"
-        :agentpk="checks.pk"
+        :agentpk="selectedAgentPk"
       />
     </q-dialog>
     <q-dialog v-model="showEventLogOutput">
@@ -276,10 +267,10 @@
 
 <script>
 import axios from "axios";
-import { mapState } from "vuex";
+import { mapState, mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
-import AddDiskSpaceCheck from "@/components/modals/checks/AddDiskSpaceCheck";
-import EditDiskSpaceCheck from "@/components/modals/checks/EditDiskSpaceCheck";
+import DiskSpaceCheck from "@/components/modals/checks/DiskSpaceCheck";
+// refactor below
 import AddPingCheck from "@/components/modals/checks/AddPingCheck";
 import EditPingCheck from "@/components/modals/checks/EditPingCheck";
 import AddCpuLoadCheck from "@/components/modals/checks/AddCpuLoadCheck";
@@ -298,8 +289,7 @@ import EventLogCheckOutput from "@/components/modals/checks/EventLogCheckOutput"
 export default {
   name: "ChecksTab",
   components: {
-    AddDiskSpaceCheck,
-    EditDiskSpaceCheck,
+    DiskSpaceCheck,
     AddPingCheck,
     EditPingCheck,
     AddCpuLoadCheck,
@@ -318,6 +308,9 @@ export default {
   mixins: [mixins],
   data() {
     return {
+      mode: "add",
+      showDiskSpaceCheck: false,
+      //
       showAddDiskSpaceCheck: false,
       showEditDiskSpaceCheck: false,
       showAddPingCheck: false,
@@ -363,6 +356,16 @@ export default {
     };
   },
   methods: {
+    showCheck(mode, type) {
+      if (mode === "add") {
+        switch (type) {
+          case "diskspace":
+            this.mode = "add";
+            this.showDiskSpaceCheck = true;
+            break;
+        }
+      }
+    },
     checkAlertAction(pk, category, alert_type, alert_action) {
       const action = alert_action ? "enabled" : "disabled";
       const data = {
@@ -403,9 +406,6 @@ export default {
     },
     editCheck(category) {
       switch (category) {
-        case "diskspace":
-          this.showEditDiskSpaceCheck = true;
-          break;
         case "ping":
           this.showEditPingCheck = true;
           break;
@@ -441,8 +441,8 @@ export default {
           axios
             .delete("checks/deletestandardcheck/", { data: data })
             .then(r => {
-              this.$store.dispatch("loadChecks", this.checks.pk);
-              this.$store.dispatch("loadAutomatedTasks", this.checks.pk);
+              this.$store.dispatch("loadChecks", this.selectedAgentPk);
+              this.$store.dispatch("loadAutomatedTasks", this.selectedAgentPk);
               this.notifySuccess("Check was deleted!");
             })
             .catch(e => this.notifyError(e.response.data.error));
@@ -450,20 +450,7 @@ export default {
     }
   },
   computed: {
-    ...mapState({
-      checks: state => state.agentChecks
-    }),
-    allChecks() {
-      return [
-        ...this.checks.diskchecks,
-        ...this.checks.cpuloadchecks,
-        ...this.checks.memchecks,
-        ...this.checks.scriptchecks,
-        ...this.checks.winservicechecks,
-        ...this.checks.pingchecks,
-        ...this.checks.eventlogchecks
-      ];
-    }
+    ...mapGetters(["selectedAgentPk", "checks"])
   }
 };
 </script>

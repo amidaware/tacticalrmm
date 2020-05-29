@@ -4,6 +4,7 @@ import datetime as dt
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
@@ -18,13 +19,37 @@ from agents.models import Agent
 from automation.models import Policy
 
 from .models import Check
+from scripts.models import Script
 
 from autotasks.models import AutomatedTask
 
 from .serializers import CheckSerializer
+from scripts.serializers import ScriptSerializer
 
 from .tasks import handle_check_email_alert_task, run_checks_task
 from autotasks.tasks import delete_win_task_schedule
+
+
+class GetAddCheck(APIView):
+    def get(self, request):
+        checks = Check.objects.all()
+        return Response(CheckSerializer(checks, many=True).data)
+
+    def post(self, request):
+        # Determine if adding check to Policy or Agent
+        if "policy" in request.data:
+            policy = get_object_or_404(Policy, id=request.data["policy"])
+            # Object used for filter and save
+            parent = {"policy": policy}
+        else:
+            agent = get_object_or_404(Agent, pk=request.data["pk"])
+            parent = {"agent": agent}
+
+        serializer = CheckSerializer(data=request.data["check"], partial=True)
+        serializer.is_valid(raise_exception=True)
+        obj = serializer.save(**parent)
+
+        return Response(f"{obj.readable_desc} was added!")
 
 
 @api_view()
@@ -113,8 +138,8 @@ def run_checks(request, pk):
 
 @api_view()
 def load_checks(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
-    return Response(CheckSerializer(agent).data)
+    checks = Check.objects.filter(agent__pk=pk)
+    return Response(CheckSerializer(checks, many=True).data)
 
 
 @api_view()
@@ -131,129 +156,6 @@ def get_disks(request, pk):
 @api_view()
 def get_disks_for_policies(request):
     return Response(DiskCheck.all_disks())
-
-
-@api_view(["POST"])
-def add_standard_check(request):
-    # Determine if adding check to Policy or Agent
-    if "policy" in request.data:
-        policy = get_object_or_404(Policy, id=request.data["policy"])
-
-        # Object used for filter and save
-        parent = {"policy": policy}
-    else:
-        agent = get_object_or_404(Agent, pk=request.data["pk"])
-        # Object used for filter and save
-        parent = {"agent": agent}
-
-    if request.data["check_type"] == "diskspace":
-        disk = request.data["disk"]
-        threshold = request.data["threshold"]
-        failures = request.data["failure"]
-        existing_checks = DiskCheck.objects.filter(**parent)
-        if existing_checks:
-            for check in existing_checks:
-                if disk in check.disk:
-                    error = {"error": f"A disk check for drive {disk} already exists!"}
-                    return Response(error, status=status.HTTP_400_BAD_REQUEST)
-
-        if not validate_threshold(threshold):
-            error = {"error": "Please enter a valid threshold between 1 and 99"}
-            return Response(error, status=status.HTTP_400_BAD_REQUEST)
-
-        DiskCheck(**parent, disk=disk, threshold=threshold, failures=failures).save()
-        return Response("ok")
-
-    elif request.data["check_type"] == "ping":
-        failures = request.data["failures"]
-        name = request.data["name"]
-        ip = request.data["ip"]
-        if not PingCheck.validate_hostname_or_ip(ip):
-            error = "Please enter a valid hostname or IP"
-            return Response(error, status=status.HTTP_400_BAD_REQUEST)
-
-        PingCheck(**parent, ip=ip, name=name, failures=failures).save()
-
-        return Response("ok")
-
-    elif request.data["check_type"] == "cpuload":
-        if CpuLoadCheck.objects.filter(**parent):
-            error = {"error": f"A cpu load check already exists!"}
-            return Response(error, status=status.HTTP_400_BAD_REQUEST)
-        threshold = request.data["threshold"]
-        failures = request.data["failure"]
-        if not validate_threshold(threshold):
-            error = {"error": "Please enter a valid threshold between 1 and 99"}
-            return Response(error, status=status.HTTP_400_BAD_REQUEST)
-
-        CpuLoadCheck(**parent, cpuload=threshold, failures=failures).save()
-
-        return Response("ok")
-
-    elif request.data["check_type"] == "mem":
-        if MemCheck.objects.filter(**parent):
-            error = {"error": f"A memory check already exists!"}
-            return Response(error, status=status.HTTP_400_BAD_REQUEST)
-        threshold = request.data["threshold"]
-        failures = request.data["failure"]
-        if not validate_threshold(threshold):
-            error = {"error": "Please enter a valid threshold between 1 and 99"}
-            return Response(error, status=status.HTTP_400_BAD_REQUEST)
-
-        MemCheck(**parent, threshold=threshold, failures=failures).save()
-        return Response("ok")
-
-    elif request.data["check_type"] == "winsvc":
-        displayName = request.data["displayname"]
-        rawName = request.data["rawname"]
-        pass_start_pending = request.data["passifstartpending"]
-        restart_stopped = request.data["restartifstopped"]
-        failures = request.data["failures"]
-
-        existing_checks = WinServiceCheck.objects.filter(**parent)
-        if existing_checks:
-            for check in existing_checks:
-                if rawName in check.svc_name:
-                    error = {
-                        "error": f"There is already a check for service {check.svc_display_name}"
-                    }
-                    return Response(error, status=status.HTTP_400_BAD_REQUEST)
-
-        WinServiceCheck(
-            **parent,
-            svc_name=rawName,
-            svc_display_name=displayName,
-            pass_if_start_pending=pass_start_pending,
-            restart_if_stopped=restart_stopped,
-            failures=failures,
-        ).save()
-        return Response("ok")
-
-    elif request.data["check_type"] == "script":
-        script_pk = request.data["scriptPk"]
-        timeout = request.data["timeout"]
-        failures = request.data["failures"]
-
-        script = Script.objects.get(pk=script_pk)
-
-        if ScriptCheck.objects.filter(**parent).filter(script=script).exists():
-            return Response(
-                f"{script.name} already exists", status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        ScriptCheck(**parent, timeout=timeout, failures=failures, script=script).save()
-
-        return Response(f"{script.name} was added!")
-
-    elif request.data["check_type"] == "eventlog":
-        serializer = EventLogCheckSerializer(data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(**parent)
-
-        return Response("Event log check was added!")
-
-    else:
-        return Response("something went wrong", status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["PATCH"])

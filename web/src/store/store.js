@@ -24,7 +24,7 @@ export const store = new Vuex.Store({
     selectedRow: null,
     agentSummary: {},
     winUpdates: {},
-    agentChecks: {},
+    agentChecks: [],
     automatedTasks: {},
     agentTableLoading: false,
     treeLoading: false,
@@ -38,6 +38,12 @@ export const store = new Vuex.Store({
     },
     selectedAgentPk(state) {
       return state.agentSummary.id;
+    },
+    agentDisks(state) {
+      return state.agentSummary.disks;
+    },
+    checks(state) {
+      return state.agentChecks;
     },
     managedByWsus(state) {
       return state.agentSummary.managed_by_wsus;
@@ -104,7 +110,7 @@ export const store = new Vuex.Store({
     },
     destroySubTable(state) {
       (state.agentSummary = {}),
-        (state.agentChecks = {}),
+        (state.agentChecks = []),
         (state.winUpdates = {});
       (state.installedSoftware = []);
       state.selectedRow = "";

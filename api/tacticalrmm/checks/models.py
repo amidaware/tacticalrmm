@@ -62,7 +62,9 @@ class Check(models.Model):
         on_delete=models.CASCADE,
     )
     name = models.CharField(max_length=255, null=True, blank=True)
-    check_type = models.CharField(max_length=50, choices=CHECK_TYPE_CHOICES)
+    check_type = models.CharField(
+        max_length=50, choices=CHECK_TYPE_CHOICES, default="diskspace"
+    )
     status = models.CharField(
         max_length=100, choices=CHECK_STATUS_CHOICES, default="pending"
     )

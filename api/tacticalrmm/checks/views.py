@@ -67,6 +67,11 @@ class GetUpdateDeleteCheck(APIView):
 
         return Response(f"{obj.readable_desc} was edited!")
 
+    def delete(self, request, pk):
+        check = get_object_or_404(Check, pk=pk)
+        check.delete()
+        return Response(f"{check.readable_desc} was deleted!")
+
 
 @api_view()
 def get_scripts(request):

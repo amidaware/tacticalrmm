@@ -98,7 +98,7 @@
                   <q-item
                     clickable
                     v-close-popup
-                    @click="deleteCheck(props.row.id, props.row.check_type)"
+                    @click="deleteCheck(props.row.id, props.row.readable_desc)"
                   >
                     <q-item-section side>
                       <q-icon name="delete" />
@@ -439,24 +439,23 @@ export default {
           return false;
       }
     },
-    deleteCheck(pk, check_type) {
+    deleteCheck(pk, desc) {
       this.$q
         .dialog({
           title: "Are you sure?",
-          message: `Delete ${check_type} check`,
+          message: `Delete ${desc}`,
           cancel: true,
           persistent: true
         })
         .onOk(() => {
-          const data = { pk: pk, checktype: check_type };
           axios
-            .delete("checks/deletestandardcheck/", { data: data })
+            .delete(`/checks/${pk}/check/`)
             .then(r => {
               this.$store.dispatch("loadChecks", this.selectedAgentPk);
               this.$store.dispatch("loadAutomatedTasks", this.selectedAgentPk);
-              this.notifySuccess("Check was deleted!");
+              this.notifySuccess(r.data);
             })
-            .catch(e => this.notifyError(e.response.data.error));
+            .catch(e => this.notifyError(e.response.data));
         });
     }
   },

@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
 from .models import Policy
-from autotasks.models import AutomatedTask
 from autotasks.serializers import TaskSerializer
+from checks.serializers import CheckSerializer
 
 
 class PolicySerializer(serializers.ModelSerializer):
@@ -16,6 +16,19 @@ class PolicyRelationSerializer(serializers.ModelSerializer):
         model = Policy
         fields = "__all__"
         depth = 2
+
+
+class CheckPolicySerializer(serializers.ModelSerializer):
+
+    checks = CheckSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Policy
+        fields = (
+            "id",
+            "name",
+            "checks",
+        )
 
 
 class AutoTaskPolicySerializer(serializers.ModelSerializer):

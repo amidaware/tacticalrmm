@@ -15,12 +15,30 @@ class CheckSerializer(serializers.ModelSerializer):
         model = Check
         fields = "__all__"
 
-    def validate_ip(self, val):
-        if val:
-            if not _v.ipv4(val) and not _v.ipv6(val) and not _v.domain(val):
+    # https://www.django-rest-framework.org/api-guide/serializers/#object-level-validation
+    def validate(self, val):
+        # disk checks
+        # make sure no duplicate diskchecks exist for an agent/policy
+        if val["disk"] and not self.instance:  # only on create
+            checks = Check.objects.filter(**self.context)
+            if checks:
+                for check in checks:
+                    if val["disk"] in check.disk:
+                        raise serializers.ValidationError(
+                            f"A disk check for Drive {val['disk']} already exists!"
+                        )
+
+        # ping checks
+        if val["ip"]:
+            if (
+                not _v.ipv4(val["ip"])
+                and not _v.ipv6(val["ip"])
+                and not _v.domain(val["ip"])
+            ):
                 raise serializers.ValidationError(
                     "Please enter a valid IP address or domain name"
                 )
+
         return val
 
 

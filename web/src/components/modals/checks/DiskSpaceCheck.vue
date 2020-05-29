@@ -95,7 +95,7 @@ export default {
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data));
+        .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     editCheck() {
       axios
@@ -105,7 +105,7 @@ export default {
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data));
+        .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     reloadChecks() {
       if (this.policypk) {

@@ -45,7 +45,9 @@ class GetAddCheck(APIView):
             agent = get_object_or_404(Agent, pk=request.data["pk"])
             parent = {"agent": agent}
 
-        serializer = CheckSerializer(data=request.data["check"], partial=True)
+        serializer = CheckSerializer(
+            data=request.data["check"], partial=True, context=parent
+        )
         serializer.is_valid(raise_exception=True)
         obj = serializer.save(**parent)
 

@@ -362,20 +362,19 @@ export default {
   },
   methods: {
     showCheck(mode, type) {
-      if (mode === "add") {
-        this.mode = "add";
-        switch (type) {
-          case "diskspace":
-            this.showDiskSpaceCheck = true;
-            break;
-        }
-      } else if (mode === "edit") {
-        this.mode = "edit";
-        switch (type) {
-          case "diskspace":
-            this.showDiskSpaceCheck = true;
-            break;
-        }
+      switch (mode) {
+        case "add":
+          this.mode = "add";
+          break;
+        case "edit":
+          this.mode = "edit";
+          break;
+      }
+
+      switch (type) {
+        case "diskspace":
+          this.showDiskSpaceCheck = true;
+          break;
       }
     },
     checkAlertAction(pk, category, alert_type, alert_action) {

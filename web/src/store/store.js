@@ -24,7 +24,7 @@ export const store = new Vuex.Store({
     selectedRow: null,
     agentSummary: {},
     winUpdates: {},
-    agentChecks: [],
+    agentChecks: null,
     automatedTasks: {},
     agentTableLoading: false,
     treeLoading: false,
@@ -110,7 +110,7 @@ export const store = new Vuex.Store({
     },
     destroySubTable(state) {
       (state.agentSummary = {}),
-        (state.agentChecks = []),
+        (state.agentChecks = null),
         (state.winUpdates = {});
       (state.installedSoftware = []);
       state.selectedRow = "";

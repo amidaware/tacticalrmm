@@ -1,11 +1,11 @@
 <template>
-  <div v-if="checks.length === 0">No agent selected</div>
+  <div v-if="checks === null">No agent selected</div>
   <div class="row" v-else>
     <div class="col-12">
       <q-btn size="sm" color="grey-5" icon="fas fa-plus" label="Add Check" text-color="black">
         <q-menu>
           <q-list dense style="min-width: 200px">
-            <q-item clickable v-close-popup @click="showDiskSpaceCheck = true">
+            <q-item clickable v-close-popup @click="showCheck('add', 'diskspace')">
               <q-item-section side>
                 <q-icon size="xs" name="far fa-hdd" />
               </q-item-section>
@@ -310,9 +310,7 @@ export default {
     return {
       mode: "add",
       showDiskSpaceCheck: false,
-      //
-      showAddDiskSpaceCheck: false,
-      showEditDiskSpaceCheck: false,
+      // refactor below
       showAddPingCheck: false,
       showEditPingCheck: false,
       showAddCpuLoadCheck: false,
@@ -358,9 +356,16 @@ export default {
   methods: {
     showCheck(mode, type) {
       if (mode === "add") {
+        this.mode = "add";
         switch (type) {
           case "diskspace":
-            this.mode = "add";
+            this.showDiskSpaceCheck = true;
+            break;
+        }
+      } else if (mode === "edit") {
+        this.mode = "edit";
+        switch (type) {
+          case "diskspace":
             this.showDiskSpaceCheck = true;
             break;
         }

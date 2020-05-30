@@ -17,7 +17,7 @@
               </q-item-section>
               <q-item-section>Ping Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddCpuLoadCheck = true">
+            <q-item clickable v-close-popup @click="showCheck('add', 'cpuload')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-microchip" />
               </q-item-section>
@@ -133,25 +133,7 @@
               <q-td v-else-if="props.row.status === 'failing'">
                 <q-icon style="font-size: 1.3rem;" color="negative" name="error" />
               </q-td>
-              <q-td v-if="props.row.check_type === 'diskspace'">{{ props.row.readable_desc }}</q-td>
-              <q-td
-                v-else-if="props.row.check_type === 'cpuload'"
-              >Avg CPU Load > {{ props.row.cpuload }}%</q-td>
-              <q-td
-                v-else-if="props.row.check_type === 'script'"
-              >Script check: {{ props.row.script.name }}</q-td>
-              <q-td
-                v-else-if="props.row.check_type === 'ping'"
-              >Ping {{ props.row.name }} ({{ props.row.ip }})</q-td>
-              <q-td
-                v-else-if="props.row.check_type === 'memory'"
-              >Avg memory usage > {{ props.row.threshold }}%</q-td>
-              <q-td
-                v-else-if="props.row.check_type === 'winsvc'"
-              >Service Check - {{ props.row.svc_display_name }}</q-td>
-              <q-td
-                v-else-if="props.row.check_type === 'eventlog'"
-              >Event Log Check - {{ props.row.desc }}</q-td>
+              <q-td>{{ props.row.readable_desc }}</q-td>
               <q-td v-if="props.row.status === 'pending'">Awaiting First Synchronization</q-td>
               <q-td v-else-if="props.row.status === 'passing'">
                 <q-badge color="positive">Passing</q-badge>
@@ -202,6 +184,14 @@
         :checkpk="checkpk"
       />
     </q-dialog>
+    <q-dialog v-model="showCpuLoadCheck">
+      <CpuLoadCheck
+        @close="showCpuLoadCheck = false"
+        :agentpk="selectedAgentPk"
+        :mode="mode"
+        :checkpk="checkpk"
+      />
+    </q-dialog>
     <!-- refactor below -->
     <q-dialog v-model="showAddPingCheck">
       <AddPingCheck @close="showAddPingCheck = false" :agentpk="selectedAgentPk" />
@@ -213,17 +203,6 @@
         :agentpk="selectedAgentPk"
       />
     </q-dialog>
-    <q-dialog v-model="showAddCpuLoadCheck">
-      <AddCpuLoadCheck @close="showAddCpuLoadCheck = false" :agentpk="selectedAgentPk" />
-    </q-dialog>
-    <q-dialog v-model="showEditCpuLoadCheck">
-      <EditCpuLoadCheck
-        @close="showEditCpuLoadCheck = false"
-        :editCheckPK="editCheckPK"
-        :agentpk="selectedAgentPk"
-      />
-    </q-dialog>
-
     <q-dialog v-model="showAddWinSvcCheck">
       <AddWinSvcCheck @close="showAddWinSvcCheck = false" :agentpk="selectedAgentPk" />
     </q-dialog>
@@ -274,11 +253,10 @@ import { mapState, mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import DiskSpaceCheck from "@/components/modals/checks/DiskSpaceCheck";
 import MemCheck from "@/components/modals/checks/MemCheck";
+import CpuLoadCheck from "@/components/modals/checks/CpuLoadCheck";
 // refactor below
 import AddPingCheck from "@/components/modals/checks/AddPingCheck";
 import EditPingCheck from "@/components/modals/checks/EditPingCheck";
-import AddCpuLoadCheck from "@/components/modals/checks/AddCpuLoadCheck";
-import EditCpuLoadCheck from "@/components/modals/checks/EditCpuLoadCheck";
 import AddWinSvcCheck from "@/components/modals/checks/AddWinSvcCheck";
 import EditWinSvcCheck from "@/components/modals/checks/EditWinSvcCheck";
 import AddScriptCheck from "@/components/modals/checks/AddScriptCheck";
@@ -293,10 +271,9 @@ export default {
   components: {
     DiskSpaceCheck,
     MemCheck,
+    CpuLoadCheck,
     AddPingCheck,
     EditPingCheck,
-    AddCpuLoadCheck,
-    EditCpuLoadCheck,
     AddWinSvcCheck,
     EditWinSvcCheck,
     AddScriptCheck,
@@ -313,11 +290,10 @@ export default {
       checkpk: null,
       showDiskSpaceCheck: false,
       showMemCheck: false,
+      showCpuLoadCheck: false,
       // refactor below
       showAddPingCheck: false,
       showEditPingCheck: false,
-      showAddCpuLoadCheck: false,
-      showEditCpuLoadCheck: false,
       showAddWinSvcCheck: false,
       showEditWinSvcCheck: false,
       showAddScriptCheck: false,
@@ -371,6 +347,9 @@ export default {
           break;
         case "memory":
           this.showMemCheck = true;
+          break;
+        case "cpuload":
+          this.showCpuLoadCheck = true;
           break;
       }
     },

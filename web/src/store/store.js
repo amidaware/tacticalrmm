@@ -126,7 +126,7 @@ export const store = new Vuex.Store({
       })
     },
     getScripts(context) {
-      axios.get("/checks/getscripts/").then(r => {
+      axios.get("/scripts/scripts/").then(r => {
         context.commit("SET_SCRIPTS", r.data);
       });
     },

@@ -19,22 +19,22 @@
               unelevated
               no-caps
               icon="add"
-              @click="showUploadScriptModal = true; clearRow"
+              @click="showScript('add'); clearRow()"
             />
             <q-btn
               label="Edit"
-              :disable="selectedRow === null"
+              :disable="scriptpk === null"
               dense
               flat
               push
               unelevated
               no-caps
               icon="edit"
-              @click="showEditScriptModal = true"
+              @click="showScript('edit')"
             />
             <q-btn
               label="Delete"
-              :disable="selectedRow === null"
+              :disable="scriptpk === null"
               dense
               flat
               push
@@ -45,7 +45,7 @@
             />
             <q-btn
               label="View Code"
-              :disable="selectedRow === null"
+              :disable="scriptpk === null"
               dense
               flat
               push
@@ -56,7 +56,7 @@
             />
             <q-btn
               label="Download Script"
-              :disable="selectedRow === null"
+              :disable="scriptpk === null"
               dense
               flat
               push
@@ -82,8 +82,8 @@
           >
             <template slot="body" slot-scope="props" :props="props">
               <q-tr
-                :class="{highlight: selectedRow === props.row.id}"
-                @click="scriptRowSelected(props.row.id, props.row.filename)"
+                :class="{highlight: scriptpk === props.row.id}"
+                @click="scriptpk = props.row.id; filename = props.row.filename; code = props.row.code;"
               >
                 <q-td>{{ props.row.name }}</q-td>
                 <q-td>{{ props.row.description }}</q-td>
@@ -98,11 +98,13 @@
         <q-card-section></q-card-section>
       </q-card>
     </q-dialog>
-    <q-dialog v-model="showUploadScriptModal">
-      <UploadScript @close="showUploadScriptModal = false" @uploaded="getScripts" />
-    </q-dialog>
-    <q-dialog v-model="showEditScriptModal">
-      <EditScript :pk="selectedRow" @close="showEditScriptModal = false" @edited="getScripts" />
+    <q-dialog v-model="showScriptModal">
+      <ScriptModal
+        :mode="mode"
+        :scriptpk="scriptpk"
+        @close="showScriptModal = false"
+        @uploaded="getScripts"
+      />
     </q-dialog>
   </div>
 </template>
@@ -111,18 +113,18 @@
 import axios from "axios";
 import mixins from "@/mixins/mixins";
 import { mapState } from "vuex";
-import UploadScript from "@/components/modals/scripts/UploadScript";
-import EditScript from "@/components/modals/scripts/EditScript";
+import ScriptModal from "@/components/modals/scripts/ScriptModal";
 export default {
   name: "ScriptManager",
-  components: { UploadScript, EditScript },
+  components: { ScriptModal },
   mixins: [mixins],
   data() {
     return {
-      selectedRow: null,
-      showUploadScriptModal: false,
-      showEditScriptModal: false,
+      mode: "add",
+      scriptpk: null,
+      showScriptModal: false,
       filename: null,
+      code: null,
       pagination: {
         rowsPerPage: 0,
         sortBy: "id",
@@ -170,26 +172,17 @@ export default {
     hideScriptManager() {
       this.$store.commit("TOGGLE_SCRIPT_MANAGER", false);
     },
-    scriptRowSelected(pk, filename) {
-      this.selectedRow = pk;
-      this.filename = filename;
-    },
     clearRow() {
-      this.selectedRow = null;
+      this.scriptpk = null;
       this.filename = null;
     },
     viewCode() {
-      axios
-        .get(`/checks/viewscriptcode/${this.selectedRow}/`)
-        .then(r => {
-          this.$q.dialog({
-            title: r.data.name,
-            message: `<pre>${r.data.text}</pre>`,
-            html: true,
-            fullWidth: true
-          });
-        })
-        .catch(() => this.notifyError("Something went wrong"));
+      this.$q.dialog({
+        title: this.filename,
+        message: `<pre>${this.code}</pre>`,
+        html: true,
+        style: "width: 70vw; max-width: 80vw;"
+      });
     },
     deleteScript() {
       this.$q
@@ -199,16 +192,18 @@ export default {
           ok: { label: "Delete", color: "negative" }
         })
         .onOk(() => {
-          const data = { pk: this.selectedRow };
-          axios.delete("/checks/deletescript/", { data: data }).then(r => {
-            this.getScripts();
-            this.notifySuccess(`Script ${r.data} was deleted!`);
-          });
+          axios
+            .delete(`/scripts/${this.scriptpk}/script/`)
+            .then(r => {
+              this.getScripts();
+              this.notifySuccess(r.data);
+            })
+            .catch(() => this.notifySuccess("Something went wrong"));
         });
     },
     downloadScript() {
       axios
-        .get(`/checks/downloadscript/${this.selectedRow}/`, { responseType: "blob" })
+        .get(`/scripts/${this.scriptpk}/download/`, { responseType: "blob" })
         .then(({ data }) => {
           const blob = new Blob([data], { type: "text/plain" });
           let link = document.createElement("a");
@@ -216,7 +211,18 @@ export default {
           link.download = this.filename;
           link.click();
         })
-        .catch(error => console.error(error));
+        .catch(() => this.notifyError("Something went wrong"));
+    },
+    showScript(mode) {
+      switch (mode) {
+        case "add":
+          this.mode = "add";
+          break;
+        case "edit":
+          this.mode = "edit";
+          break;
+      }
+      this.showScriptModal = true;
     }
   },
   computed: {

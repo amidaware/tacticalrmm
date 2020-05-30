@@ -1,6 +1,3 @@
-import validators
-import datetime as dt
-
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 
@@ -21,10 +18,7 @@ from automation.models import Policy
 from .models import Check
 from scripts.models import Script
 
-from autotasks.models import AutomatedTask
-
 from .serializers import CheckSerializer
-from scripts.serializers import ScriptSerializer
 
 from .tasks import handle_check_email_alert_task, run_checks_task
 from autotasks.tasks import delete_win_task_schedule
@@ -77,12 +71,7 @@ class GetUpdateDeleteCheck(APIView):
         return Response(f"{check.readable_desc} was deleted!")
 
 
-@api_view()
-def get_scripts(request):
-    scripts = Script.objects.all()
-    return Response(ScriptSerializer(scripts, many=True, read_only=True).data)
-
-
+# TODO move to api
 @api_view()
 @authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
@@ -91,6 +80,7 @@ def check_runner(request):
     return Response(CheckSerializer(agent).data)
 
 
+# TODO move to api and cleanup
 @api_view(["PATCH"])
 @authentication_classes((TokenAuthentication,))
 @permission_classes((IsAuthenticated,))
@@ -174,131 +164,5 @@ def load_policy_checks(request, pk):
 
 
 @api_view()
-def get_disks(request, pk):
-    return Response(get_object_or_404(Agent, pk=pk).disks)
-
-
-@api_view()
 def get_disks_for_policies(request):
     return Response(DiskCheck.all_disks())
-
-
-@api_view(["PATCH"])
-def edit_standard_check(request):
-    if request.data["check_type"] == "diskspace":
-        check = get_object_or_404(DiskCheck, pk=request.data["pk"])
-        if not validate_threshold(request.data["threshold"]):
-            error = {"error": "Please enter a valid threshold between 1 and 99"}
-            return Response(error, status=status.HTTP_400_BAD_REQUEST)
-        check.threshold = request.data["threshold"]
-        check.failures = request.data["failures"]
-        check.save(update_fields=["threshold", "failures"])
-        return Response("ok")
-
-    elif request.data["check_type"] == "ping":
-        check = get_object_or_404(PingCheck, pk=request.data["pk"])
-        if not PingCheck.validate_hostname_or_ip(request.data["ip"]):
-            error = {"error": "Please enter a valid hostname or IP"}
-            return Response(error, status=status.HTTP_400_BAD_REQUEST)
-        check.name = request.data["name"]
-        check.ip = request.data["ip"]
-        check.failures = request.data["failures"]
-        check.save(update_fields=["name", "ip", "failures"])
-        return Response("ok")
-
-    elif request.data["check_type"] == "cpuload":
-        check = get_object_or_404(CpuLoadCheck, pk=request.data["pk"])
-        if not validate_threshold(request.data["threshold"]):
-            error = {"error": "Please enter a valid threshold between 1 and 99"}
-            return Response(error, status=status.HTTP_400_BAD_REQUEST)
-        check.cpuload = request.data["threshold"]
-        check.failures = request.data["failure"]
-        check.save(update_fields=["cpuload", "failures"])
-        return Response("ok")
-
-    elif request.data["check_type"] == "mem":
-        check = get_object_or_404(MemCheck, pk=request.data["pk"])
-        if not validate_threshold(request.data["threshold"]):
-            error = {"error": "Please enter a valid threshold between 1 and 99"}
-            return Response(error, status=status.HTTP_400_BAD_REQUEST)
-        check.threshold = request.data["threshold"]
-        check.failures = request.data["failure"]
-        check.save(update_fields=["threshold", "failures"])
-        return Response("ok")
-
-    elif request.data["check_type"] == "winsvc":
-        check = get_object_or_404(WinServiceCheck, pk=request.data["pk"])
-        check.pass_if_start_pending = request.data["passifstartpending"]
-        check.restart_if_stopped = request.data["restartifstopped"]
-        check.failures = request.data["failures"]
-        check.save(
-            update_fields=["pass_if_start_pending", "restart_if_stopped", "failures"]
-        )
-        return Response("ok")
-
-    elif request.data["check_type"] == "script":
-        check = get_object_or_404(ScriptCheck, pk=request.data["pk"])
-        check.failures = request.data["failures"]
-        check.timeout = request.data["timeout"]
-        check.save(update_fields=["failures", "timeout"])
-        return Response(f"{check.script.name} was edited!")
-
-    elif request.data["check_type"] == "eventlog":
-        check = get_object_or_404(EventLogCheck, pk=request.data["pk"])
-        serializer = EventLogCheckSerializer(
-            instance=check, data=request.data, partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response("Event log check was edited")
-
-
-@api_view()
-def get_standard_check(request, checktype, pk):
-    if checktype == "diskspace":
-        check = DiskCheck.objects.get(pk=pk)
-        return Response(DiskCheckSerializer(check).data)
-    elif checktype == "ping":
-        check = PingCheck.objects.get(pk=pk)
-        return Response(PingCheckSerializer(check).data)
-    elif checktype == "cpuload":
-        check = CpuLoadCheck.objects.get(pk=pk)
-        return Response(CpuLoadCheckSerializer(check).data)
-    elif checktype == "mem":
-        check = MemCheck.objects.get(pk=pk)
-        return Response(MemCheckSerializer(check).data)
-    elif checktype == "winsvc":
-        check = WinServiceCheck.objects.get(pk=pk)
-        return Response(WinServiceCheckSerializer(check).data)
-    elif checktype == "script":
-        check = ScriptCheck.objects.get(pk=pk)
-        return Response(ScriptCheckSerializer(check).data)
-    elif checktype == "eventlog":
-        check = EventLogCheck.objects.get(pk=pk)
-        return Response(EventLogCheckSerializer(check).data)
-
-
-@api_view(["DELETE"])
-def delete_standard_check(request):
-    pk = request.data["pk"]
-    if request.data["checktype"] == "diskspace":
-        check = DiskCheck.objects.get(pk=pk)
-    elif request.data["checktype"] == "ping":
-        check = PingCheck.objects.get(pk=pk)
-    elif request.data["checktype"] == "cpuload":
-        check = CpuLoadCheck.objects.get(pk=pk)
-    elif request.data["checktype"] == "memory":
-        check = MemCheck.objects.get(pk=pk)
-    elif request.data["checktype"] == "winsvc":
-        check = WinServiceCheck.objects.get(pk=pk)
-    elif request.data["checktype"] == "script":
-        check = ScriptCheck.objects.get(pk=pk)
-    elif request.data["checktype"] == "eventlog":
-        check = EventLogCheck.objects.get(pk=pk)
-
-    if check.task_on_failure:
-        delete_win_task_schedule.delay(check.task_on_failure.pk)
-
-    check.delete()
-    return Response("ok")

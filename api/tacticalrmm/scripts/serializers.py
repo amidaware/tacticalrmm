@@ -7,6 +7,7 @@ from .models import Script
 class ScriptSerializer(ModelSerializer):
 
     code = ReadOnlyField()
+    filepath = ReadOnlyField()
 
     class Meta:
         model = Script

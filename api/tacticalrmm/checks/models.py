@@ -144,8 +144,10 @@ class Check(models.Model):
             return f"{self.get_check_type_display()} > {self.threshold}%"
         elif self.check_type == "winsvc":
             return f"{self.get_check_type_display()}: {self.svc_display_name}"
-        elif self.check_type == "script" or self.check_type == "eventlog":
+        elif self.check_type == "eventlog":
             return f"{self.get_check_type_display()}: {self.name}"
+        elif self.check_type == "script":
+            return f"{self.get_check_type_display()}: {self.script.name}"
         else:
             return "n/a"
 

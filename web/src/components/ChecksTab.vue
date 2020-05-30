@@ -35,7 +35,7 @@
               </q-item-section>
               <q-item-section>Windows Service Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddScriptCheck = true">
+            <q-item clickable v-close-popup @click="showCheck('add', 'script')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-terminal" />
               </q-item-section>
@@ -216,18 +216,15 @@
         :checkpk="checkpk"
       />
     </q-dialog>
-    <!-- refactor below -->
-    <!-- script check -->
-    <q-dialog v-model="showAddScriptCheck">
-      <AddScriptCheck @close="showAddScriptCheck = false" :agentpk="selectedAgentPk" />
-    </q-dialog>
-    <q-dialog v-model="showEditScriptCheck">
-      <EditScriptCheck
-        @close="showEditScriptCheck = false"
-        :editCheckPK="editCheckPK"
+    <q-dialog v-model="showScriptCheck">
+      <ScriptCheck
+        @close="showScriptCheck = false"
         :agentpk="selectedAgentPk"
+        :mode="mode"
+        :checkpk="checkpk"
       />
     </q-dialog>
+    <!-- refactor below -->
     <q-dialog v-model="showScriptOutput">
       <ScriptOutput @close="showScriptOutput = false; scriptInfo = {}" :scriptInfo="scriptInfo" />
     </q-dialog>
@@ -250,9 +247,8 @@ import CpuLoadCheck from "@/components/modals/checks/CpuLoadCheck";
 import PingCheck from "@/components/modals/checks/PingCheck";
 import WinSvcCheck from "@/components/modals/checks/WinSvcCheck";
 import EventLogCheck from "@/components/modals/checks/EventLogCheck";
+import ScriptCheck from "@/components/modals/checks/ScriptCheck";
 // refactor below
-import AddScriptCheck from "@/components/modals/checks/AddScriptCheck";
-import EditScriptCheck from "@/components/modals/checks/EditScriptCheck";
 import ScriptOutput from "@/components/modals/checks/ScriptOutput";
 import EventLogCheckOutput from "@/components/modals/checks/EventLogCheckOutput";
 
@@ -265,8 +261,7 @@ export default {
     PingCheck,
     WinSvcCheck,
     EventLogCheck,
-    AddScriptCheck,
-    EditScriptCheck,
+    ScriptCheck,
     ScriptOutput,
     EventLogCheckOutput
   },
@@ -281,9 +276,8 @@ export default {
       showPingCheck: false,
       showWinSvcCheck: false,
       showEventLogCheck: false,
+      showScriptCheck: false,
       // refactor below
-      showAddScriptCheck: false,
-      showEditScriptCheck: false,
       showScriptOutput: false,
       showEventLogOutput: false,
       editCheckPK: null,
@@ -343,6 +337,9 @@ export default {
           break;
         case "eventlog":
           this.showEventLogCheck = true;
+          break;
+        case "script":
+          this.showScriptCheck = true;
           break;
       }
     },

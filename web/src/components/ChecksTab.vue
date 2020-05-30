@@ -115,14 +115,14 @@
               <q-td>
                 <q-checkbox
                   dense
-                  @input="checkAlertAction(props.row.id, props.row.check_type, 'text', props.row.text_alert)"
+                  @input="checkAlert(props.row.id, 'Text', props.row.text_alert)"
                   v-model="props.row.text_alert"
                 />
               </q-td>
               <q-td>
                 <q-checkbox
                   dense
-                  @input="checkAlertAction(props.row.id, props.row.check_type, 'email', props.row.email_alert)"
+                  @input="checkAlert(props.row.id, 'Email', props.row.email_alert)"
                   v-model="props.row.email_alert"
                 />
               </q-td>
@@ -280,7 +280,6 @@ export default {
       // refactor below
       showScriptOutput: false,
       showEventLogOutput: false,
-      editCheckPK: null,
       scriptInfo: {},
       evtlogdata: {},
       columns: [
@@ -343,20 +342,21 @@ export default {
           break;
       }
     },
-    checkAlertAction(pk, category, alert_type, alert_action) {
-      const action = alert_action ? "enabled" : "disabled";
-      const data = {
-        alertType: alert_type,
-        checkid: pk,
-        category: category,
-        action: action
-      };
-      const alertColor = alert_action ? "positive" : "warning";
-      axios.patch("/checks/checkalert/", data).then(r => {
+    checkAlert(id, alert_type, action) {
+      const data = {};
+      if (alert_type === "Email") {
+        data.email_alert = action;
+      } else {
+        data.text_alert = action;
+      }
+
+      const act = action ? "enabled" : "disabled";
+      const color = action ? "positive" : "warning";
+      axios.patch(`/checks/${id}/check/`, data).then(r => {
         this.$q.notify({
-          color: alertColor,
+          color: color,
           icon: "fas fa-check-circle",
-          message: `${alert_type} alerts ${action}`
+          message: `${alert_type} alerts ${act}`
         });
       });
     },

@@ -17,7 +17,10 @@ class CheckSerializer(serializers.ModelSerializer):
 
     # https://www.django-rest-framework.org/api-guide/serializers/#object-level-validation
     def validate(self, val):
-        check_type = val["check_type"]
+        try:
+            check_type = val["check_type"]
+        except KeyError:
+            return val
         # disk checks
         # make sure no duplicate diskchecks exist for an agent/policy
         if check_type == "diskspace" and not self.instance:  # only on create

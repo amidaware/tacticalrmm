@@ -4,7 +4,7 @@ from .serializers import CheckSerializer  # , PolicyChecksSerializer
 
 class TestCheckViews(BaseTestCase):
     def test_add_disk_check(self):
-        url = "/checks/addstandardcheck/"
+        url = "/checks/"
         disk_data = {
             "pk": self.agent.pk,
             "check_type": "diskspace",
@@ -22,7 +22,7 @@ class TestCheckViews(BaseTestCase):
         self.check_not_authenticated("post", url)
 
     def test_add_policy_disk_check(self):
-        url = "/checks/addstandardcheck/"
+        url = "/checks/"
         policy_disk_data = {
             "policy": self.policy.pk,
             "check_type": "diskspace",
@@ -32,7 +32,7 @@ class TestCheckViews(BaseTestCase):
         }
         resp = self.client.post(url, policy_disk_data, format="json")
         self.assertEqual(resp.status_code, 200)
-        data = PolicyChecksSerializer(self.policy).data
+        data = CheckSerializer(self.policy).data
         self.assertEqual(data["diskchecks"][0]["threshold"], 87)
         self.assertEqual(data["diskchecks"][0]["failures"], 1)
         self.assertEqual(data["diskchecks"][0]["disk"], "M:")

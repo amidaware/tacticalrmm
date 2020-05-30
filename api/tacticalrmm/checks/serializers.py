@@ -19,7 +19,7 @@ class CheckSerializer(serializers.ModelSerializer):
     def validate(self, val):
         # disk checks
         # make sure no duplicate diskchecks exist for an agent/policy
-        if val["disk"] and not self.instance:  # only on create
+        if "disk" in val and not self.instance:  # only on create
             checks = Check.objects.filter(**self.context)
             if checks:
                 for check in checks:
@@ -29,7 +29,7 @@ class CheckSerializer(serializers.ModelSerializer):
                         )
 
         # ping checks
-        if val["ip"]:
+        if "ip" in val:
             if (
                 not _v.ipv4(val["ip"])
                 and not _v.ipv6(val["ip"])

@@ -4,22 +4,14 @@ export default {
   namespaced: true,
   state: {
     selectedPolicy: null,
-    checks: {},
+    checks: [],
     automatedTasks: {},
     policies: [],
   },
 
   getters: {
-    allChecks(state) {
-      return [
-        ...state.checks.diskchecks,
-        ...state.checks.cpuloadchecks,
-        ...state.checks.memchecks,
-        ...state.checks.scriptchecks,
-        ...state.checks.winservicechecks,
-        ...state.checks.pingchecks,
-        ...state.checks.eventlogchecks
-      ];
+    checks(state) {
+      return state.checks;
     },
     selectedPolicyPk(state) {
       return state.selectedPolicy;
@@ -56,7 +48,7 @@ export default {
       });
     },
     loadPolicyChecks(context, pk) {
-      axios.get(`/checks/${pk}/loadpolicychecks/`).then(r => {
+      axios.get(`/automation/${pk}/policychecks/`).then(r => {
         context.commit("setPolicyChecks", r.data);
       });
     },

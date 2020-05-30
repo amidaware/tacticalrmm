@@ -247,7 +247,7 @@ export default {
     },
     clearRow() {
       this.$store.commit("automation/setSelectedPolicy", null);
-      this.$store.commit("automation/setPolicyChecks", {});
+      this.$store.commit("automation/setPolicyChecks", []);
       this.$store.commit("automation/setPolicyAutomatedTasks", {});
     },
     refresh() {

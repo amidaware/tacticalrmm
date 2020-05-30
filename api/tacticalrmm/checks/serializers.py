@@ -57,29 +57,3 @@ class CheckSerializer(serializers.ModelSerializer):
                 )
 
         return val
-
-
-""" class PolicyChecksSerializer(serializers.ModelSerializer):
-    diskchecks = DiskCheckSerializer(many=True, read_only=True)
-    cpuloadchecks = CpuLoadCheckSerializer(many=True, read_only=True)
-    memchecks = MemCheckSerializer(many=True, read_only=True)
-    pingchecks = PingCheckSerializer(many=True, read_only=True)
-    winservicechecks = WinServiceCheckSerializer(many=True, read_only=True)
-    scriptchecks = ScriptCheckSerializer(many=True, read_only=True)
-    eventlogchecks = EventLogCheckSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Policy
-        fields = (
-            "id",
-            "name",
-            "active",
-            "diskchecks",
-            "cpuloadchecks",
-            "memchecks",
-            "pingchecks",
-            "winservicechecks",
-            "scriptchecks",
-            "eventlogchecks",
-        )
- """

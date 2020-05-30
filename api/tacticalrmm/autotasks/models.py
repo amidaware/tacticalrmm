@@ -50,7 +50,7 @@ class AutomatedTask(models.Model):
         "checks.Check",
         null=True,
         blank=True,
-        related_name="assignedcheck",
+        related_name="assignedtask",
         on_delete=models.SET_NULL,
     )
     name = models.CharField(max_length=255)

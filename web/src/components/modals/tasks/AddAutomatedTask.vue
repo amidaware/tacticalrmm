@@ -6,7 +6,7 @@
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
     <q-card-section>
-      <p>You need to upload a script/task first</p>
+      <p>You need to upload a script first</p>
       <p>Settings -> Script Manager</p>
     </q-card-section>
   </q-card>
@@ -23,7 +23,7 @@
             :rules="[val => !!val || '*Required']"
             dense
             outlined
-            v-model="scriptPk"
+            v-model="autotask.script"
             :options="scriptOptions"
             label="Select task"
             map-options
@@ -35,7 +35,7 @@
             :rules="[val => !!val || '*Required']"
             outlined
             dense
-            v-model="taskName"
+            v-model="autotask.name"
             label="Descriptive name of task"
           />
         </q-card-section>
@@ -44,7 +44,7 @@
             :rules="[val => !!val || '*Required']"
             outlined
             dense
-            v-model.number="timeout"
+            v-model.number="autotask.timeout"
             type="number"
             label="Maximum permitted execution time (seconds)"
           />
@@ -52,28 +52,38 @@
       </q-step>
 
       <q-step :name="2" title="Choose Schedule" :done="step2Done" :error="!step2Done">
-        <q-radio v-model="trigger" val="daily" label="Scheduled" />
-        <q-radio v-model="trigger" val="checkfailure" label="On check failure" />
-        <q-radio v-model="trigger" val="manual" label="Manual" />
-        <div v-if="trigger === 'daily'" class="row q-pa-lg">
+        <q-radio v-model="autotask.task_type" val="scheduled" label="Scheduled" @input="clear" />
+        <q-radio
+          v-model="autotask.task_type"
+          val="checkfailure"
+          label="On check failure"
+          @input="clear"
+        />
+        <q-radio v-model="autotask.task_type" val="manual" label="Manual" @input="clear" />
+        <div v-if="autotask.task_type === 'scheduled'" class="row q-pa-lg">
           <div class="col-3">
             Run on Days:
-            <q-option-group :options="dayOptions" label="Days" type="checkbox" v-model="days" />
+            <q-option-group
+              :options="dayOptions"
+              label="Days"
+              type="checkbox"
+              v-model="autotask.run_time_days"
+            />
           </div>
           <div class="col-2"></div>
           <div class="col-6">
             At time:
-            <q-time v-model="time" />
+            <q-time v-model="autotask.run_time_minute" />
           </div>
           <div class="col-1"></div>
         </div>
-        <div v-else-if="trigger === 'checkfailure'" class="q-pa-lg">
+        <div v-else-if="autotask.task_type === 'checkfailure'" class="q-pa-lg">
           When Check Fails:
           <q-select
             :rules="[val => !!val || '*Required']"
             dense
             outlined
-            v-model="assignedCheck"
+            v-model="autotask.assigned_check"
             :options="checksOptions"
             label="Select Check"
             map-options
@@ -120,13 +130,15 @@ export default {
   data() {
     return {
       step: 1,
-      trigger: "daily",
-      time: null,
-      taskName: null,
-      scriptPk: null,
-      assignedCheck: null,
-      timeout: 120,
-      days: [],
+      autotask: {
+        script: null,
+        assigned_check: null,
+        name: null,
+        run_time_days: [],
+        run_time_minute: null,
+        task_type: "scheduled",
+        timeout: 120
+      },
       dayOptions: [
         { label: "Monday", value: 0 },
         { label: "Tuesday", value: 1 },
@@ -139,6 +151,11 @@ export default {
     };
   },
   methods: {
+    clear() {
+      this.autotask.assigned_check = null;
+      this.autotask.run_time_days = [];
+      this.autotask.run_time_minute = null;
+    },
     addTask() {
       if (!this.step1Done || !this.step2Done) {
         this.notifyError("Some steps incomplete");
@@ -147,16 +164,9 @@ export default {
 
         const data = {
           ...pk,
-          name: this.taskName,
-          script: this.scriptPk,
-          trigger: this.trigger,
-          check: this.assignedCheck,
-          time: this.time,
-          days: this.days,
-          timeout: this.timeout
+          autotask: this.autotask
         };
 
-        console.log(data);
         axios
           .post("tasks/automatedtasks/", data)
           .then(r => {
@@ -180,48 +190,34 @@ export default {
   },
   computed: {
     ...mapGetters(["selectedAgentPk", "scripts"]),
-    /* ...mapState({
-      checks: state => (this.policypk ? state.automation.checks : state.agentChecks)
-    }), */
-    // I have no idea why this works and the above doesn't
     checks() {
       return this.policypk ? this.$store.state.automation.checks : this.$store.state.agentChecks;
     },
-    allChecks() {
-      return [
-        ...this.checks.diskchecks,
-        ...this.checks.cpuloadchecks,
-        ...this.checks.memchecks,
-        ...this.checks.scriptchecks,
-        ...this.checks.winservicechecks,
-        ...this.checks.pingchecks,
-        ...this.checks.eventlogchecks
-      ];
-    },
     checksOptions() {
       const r = [];
-      this.allChecks.forEach(k => {
-        // some checks may have the same primary key so add the check type to make them unique
-        r.push({ label: k.readable_desc, value: `${k.id}|${k.check_type}` });
+      this.checks.forEach(i => {
+        r.push({ label: i.readable_desc, value: i.id });
       });
       return r;
     },
     scriptOptions() {
       const r = [];
-      this.scripts.forEach(k => {
-        r.push({ label: k.name, value: k.id });
+      this.scripts.forEach(i => {
+        r.push({ label: i.name, value: i.id });
       });
       return r;
     },
     step1Done() {
-      return this.step > 1 && this.scriptPk !== null && this.taskName !== null ? true : false;
+      return this.step > 1 && this.autotask.script !== null && this.autotask.name && this.autotask.timeout
+        ? true
+        : false;
     },
     step2Done() {
-      if (this.trigger === "daily") {
-        return this.days !== null && this.days.length !== 0 && this.time !== null ? true : false;
-      } else if (this.trigger === "checkfailure") {
-        return this.assignedCheck !== null && this.assignedCheck.length !== 0 ? true : false;
-      } else if (this.trigger === "manual") {
+      if (this.autotask.task_type === "scheduled") {
+        return this.autotask.run_time_days.length !== 0 && this.autotask.run_time_minute !== null ? true : false;
+      } else if (this.autotask.task_type === "checkfailure") {
+        return this.autotask.assigned_check !== null ? true : false;
+      } else if (this.autotask.task_type === "manual") {
         return true;
       } else {
         return false;

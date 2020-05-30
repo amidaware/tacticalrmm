@@ -130,9 +130,9 @@ class Check(models.Model):
 
     def __str__(self):
         if self.agent:
-            return f"{self.agent.hostname} - {self.check_type}"
+            return f"{self.agent.hostname} - {self.readable_desc}"
         else:
-            return f"{self.policy.name} - {self.check_type}"
+            return f"{self.policy.name} - {self.readable_desc}"
 
     @property
     def readable_desc(self):

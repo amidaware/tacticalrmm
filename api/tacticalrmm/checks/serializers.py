@@ -3,13 +3,26 @@ import validators as _v
 from rest_framework import serializers
 
 from .models import Check
+from autotasks.models import AutomatedTask
 from scripts.serializers import ScriptSerializer
+
+
+class AssignedTaskField(serializers.ModelSerializer):
+    class Meta:
+        model = AutomatedTask
+        fields = "__all__"
 
 
 class CheckSerializer(serializers.ModelSerializer):
 
     readable_desc = serializers.ReadOnlyField()
     script = ScriptSerializer(read_only=True)
+    assigned_task = serializers.SerializerMethodField()
+
+    def get_assigned_task(self, obj):
+        if obj.assignedtask.exists():
+            task = obj.assignedtask.get()
+            return AssignedTaskField(task).data
 
     class Meta:
         model = Check

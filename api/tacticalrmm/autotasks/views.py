@@ -12,11 +12,12 @@ from rest_framework.decorators import api_view
 
 from .models import AutomatedTask
 from agents.models import Agent
+from checks.models import Check
 
 from scripts.models import Script
 from automation.models import Policy
 
-from .serializers import AutoTaskSerializer, AgentTaskSerializer
+from .serializers import TaskSerializer, AutoTaskSerializer, AgentTaskSerializer
 from scripts.serializers import ScriptSerializer
 
 from .tasks import (
@@ -29,78 +30,35 @@ from .tasks import (
 
 class AddAutoTask(APIView):
     def post(self, request):
-        daily, checkfailure, manual = False, False, False
+
         data = request.data
+        script = get_object_or_404(Script, pk=data["autotask"]["script"])
 
         # Determine if adding check to Policy or Agent
         if "policy" in data:
             policy = get_object_or_404(Policy, id=data["policy"])
-
             # Object used for filter and save
             parent = {"policy": policy}
         else:
             agent = get_object_or_404(Agent, pk=data["agent"])
-            # Object used for filter and save
             parent = {"agent": agent}
 
-        script = Script.objects.only("pk").get(pk=data["script"])
-        if data["trigger"] == "daily":
-            daily = True
-            days = data["days"]
-            time = data["time"]
-        elif data["trigger"] == "checkfailure":
-            checkfailure = True
-            check = data["check"]
-        elif data["trigger"] == "manual":
-            manual = True
+        check = None
+        if data["autotask"]["assigned_check"]:
+            check = get_object_or_404(Check, pk=data["autotask"]["assigned_check"])
 
-        rand_name = AutomatedTask.generate_task_name()
+        serializer = TaskSerializer(data=data["autotask"], partial=True, context=parent)
+        serializer.is_valid(raise_exception=True)
+        obj = serializer.save(
+            **parent,
+            script=script,
+            win_task_name=AutomatedTask.generate_task_name(),
+            assigned_check=check,
+        )
 
-        try:
-            timeout = data["timeout"]
-        except KeyError:
-            timeout = 130
+        create_win_task_schedule.delay(pk=obj.pk)
 
-        if daily:
-            task = AutomatedTask(
-                **parent,
-                name=data["name"],
-                script=script,
-                timeout=timeout,
-                task_type="scheduled",
-                win_task_name=rand_name,
-                run_time_days=data["days"],
-                run_time_minute=data["time"],
-            )
-            task.save()
-
-        elif checkfailure:
-            task = AutomatedTask(
-                **parent,
-                name=data["name"],
-                script=script,
-                timeout=timeout,
-                win_task_name=rand_name,
-                task_type="checkfailure",
-            )
-            task.save()
-            related_check = AutomatedTask.get_related_check(check)
-            related_check.task_on_failure = task
-            related_check.save(update_fields=["task_on_failure"])
-
-        elif manual:
-            task = AutomatedTask(
-                **parent,
-                name=data["name"],
-                timeout=timeout,
-                win_task_name=rand_name,
-                script=script,
-                task_type="manual",
-            )
-            task.save()
-
-        create_win_task_schedule.delay(pk=task.pk)
-        return Response("ok")
+        return Response("Task will be created shortly!")
 
 
 class AutoTask(APIView):

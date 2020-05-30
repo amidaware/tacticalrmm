@@ -4,17 +4,17 @@ from .models import AutomatedTask
 from agents.models import Agent
 
 from scripts.serializers import ScriptSerializer
+from checks.serializers import CheckSerializer
 
 
 class TaskSerializer(serializers.ModelSerializer):
 
-    assigned_check = serializers.ReadOnlyField()
+    assigned_check = CheckSerializer(read_only=True)
     schedule = serializers.ReadOnlyField()
 
     class Meta:
         model = AutomatedTask
         fields = "__all__"
-        depth = 1
 
 
 class AgentTaskSerializer(serializers.ModelSerializer):

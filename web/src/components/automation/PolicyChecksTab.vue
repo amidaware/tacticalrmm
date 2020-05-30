@@ -151,14 +151,14 @@
               <q-td>
                 <q-checkbox
                   dense
-                  @input="checkAlertAction(props.row.id, props.row.check_type, 'text', props.row.text_alert)"
+                  @input="checkAlert(props.row.id, 'Text', props.row.text_alert)"
                   v-model="props.row.text_alert"
                 />
               </q-td>
               <q-td>
                 <q-checkbox
                   dense
-                  @input="checkAlertAction(props.row.id, props.row.check_type, 'email', props.row.email_alert)"
+                  @input="checkAlert(props.row.id, 'Email', props.row.email_alert)"
                   v-model="props.row.email_alert"
                 />
               </q-td>
@@ -247,22 +247,23 @@ export default {
     };
   },
   methods: {
-    checkAlertAction(pk, category, alert_type, alert_action) {
-      const action = alert_action ? "enabled" : "disabled";
-      const data = {
-        alertType: alert_type,
-        checkid: pk,
-        category: category,
-        action: action
-      };
-      const alertColor = alert_action ? "positive" : "warning";
+    checkAlert(id, alert_type, action) {
+      const data = {};
+      if (alert_type === "Email") {
+        data.email_alert = action;
+      } else {
+        data.text_alert = action;
+      }
+
+      const act = action ? "enabled" : "disabled";
+      const color = action ? "positive" : "warning";
       this.$store
-        .dispatch("editCheckAlertAction", data)
+        .dispatch("editCheckAlert", id, data)
         .then(r => {
           this.$q.notify({
-            color: alertColor,
+            color: color,
             icon: "fas fa-check-circle",
-            message: `${alert_type} alerts ${action}`
+            message: `${alert_type} alerts ${act}`
           });
         });
     },
@@ -310,14 +311,13 @@ export default {
     deleteCheck(check) {
       this.$q
         .dialog({
-          title: `Delete ${check.check_type} check`,
+          title: `Delete ${check.check_type} check?`,
           ok: { label: "Delete", color: "negative" },
           cancel: true,
         })
         .onOk(() => {
-          const data = { pk: check.id, checktype: check.check_type };
           this.$store
-            .dispatch("deleteCheck", data)
+            .dispatch("deleteCheck", check.id)
             .then(r => {
               this.$store.dispatch("automation/loadPolicyChecks", check.id);
               this.$q.notify(notifySuccessConfig("Check Deleted!"));

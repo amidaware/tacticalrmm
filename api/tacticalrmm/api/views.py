@@ -30,6 +30,7 @@ from rest_framework.decorators import (
 from agents.models import Agent, AgentOutage
 from accounts.models import User
 from checks.models import Check
+from autotasks.models import AutomatedTask
 from winupdate.models import WinUpdate, WinUpdatePolicy
 
 from agents.tasks import (
@@ -46,7 +47,7 @@ from agents.serializers import (
     AgentSerializer,
     WinAgentSerializer,
 )
-from autotasks.serializers import TaskSerializer
+from autotasks.serializers import TaskRunnerGetSerializer, TaskRunnerPatchSerializer
 from checks.serializers import CheckRunnerGetSerializer, CheckResultsSerializer
 from software.tasks import install_chocolatey, get_installed_software
 
@@ -411,4 +412,28 @@ class CheckRunner(APIView):
 
         check.handle_check(request.data)
 
+        return Response("ok")
+
+
+class TaskRunner(APIView):
+    """
+    For windows agent
+    """
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+
+        task = get_object_or_404(AutomatedTask, pk=pk)
+        return Response(TaskRunnerGetSerializer(task).data)
+
+    def patch(self, request, pk):
+        task = get_object_or_404(AutomatedTask, pk=pk)
+
+        serializer = TaskRunnerPatchSerializer(
+            instance=task, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(last_run=djangotime.now())
         return Response("ok")

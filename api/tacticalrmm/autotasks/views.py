@@ -1,13 +1,8 @@
-import datetime as dt
-
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view
 
 from .models import AutomatedTask
@@ -17,7 +12,7 @@ from checks.models import Check
 from scripts.models import Script
 from automation.models import Policy
 
-from .serializers import TaskSerializer, AutoTaskSerializer, AgentTaskSerializer
+from .serializers import TaskSerializer, AutoTaskSerializer
 from scripts.serializers import ScriptSerializer
 
 from .tasks import (
@@ -89,26 +84,3 @@ def run_task(request, pk):
     task = get_object_or_404(AutomatedTask, pk=pk)
     run_win_task.delay(task.pk)
     return Response(f"{task.name} will now be run on {task.agent.hostname}")
-
-
-class TaskRunner(APIView):
-
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, pk):
-
-        task = get_object_or_404(AutomatedTask, pk=pk)
-        return Response(AgentTaskSerializer(task).data)
-
-    def patch(self, request, pk):
-        task = get_object_or_404(AutomatedTask, pk=pk)
-        task.stdout = request.data["stdout"]
-        task.stderr = request.data["stderr"]
-        task.retcode = request.data["retcode"]
-        task.execution_time = request.data["execution_time"]
-        task.last_run = dt.datetime.now(tz=djangotime.utc)
-        task.save(
-            update_fields=["stdout", "stderr", "retcode", "last_run", "execution_time"]
-        )
-        return Response("ok")

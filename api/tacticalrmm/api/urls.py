@@ -16,4 +16,5 @@ urlpatterns = [
     path("triggerpatchscan/", views.trigger_patch_scan),
     path("firstinstall/", views.on_agent_first_install),
     path("<int:pk>/checkrunner/", views.CheckRunner.as_view()),
+    path("<int:pk>/taskrunner/", views.TaskRunner.as_view()),
 ]

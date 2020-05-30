@@ -29,14 +29,9 @@ from rest_framework.decorators import (
 
 from agents.models import Agent, AgentOutage
 from accounts.models import User
-
-""" from checks.models import (
-    DiskCheck,
-    CpuLoadCheck,
-    MemCheck,
-    PingCheck,
-) """
+from checks.models import Check
 from winupdate.models import WinUpdate, WinUpdatePolicy
+
 from agents.tasks import (
     uninstall_agent_task,
     sync_salt_modules_task,
@@ -52,6 +47,7 @@ from agents.serializers import (
     WinAgentSerializer,
 )
 from autotasks.serializers import TaskSerializer
+from checks.serializers import CheckRunnerGetSerializer, CheckResultsSerializer
 from software.tasks import install_chocolatey, get_installed_software
 
 logger.configure(**settings.LOG_CONFIG)
@@ -385,3 +381,34 @@ def hello(request):
             pass
 
     return Response("ok")
+
+
+class CheckRunner(APIView):
+    """
+    For windows agent
+    """
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        checks = Check.objects.filter(agent__pk=pk)
+        return Response(CheckRunnerGetSerializer(checks, many=True).data)
+
+    def patch(self, request, pk):
+        check = get_object_or_404(Check, pk=pk)
+
+        if check.check_type != "cpuload" and check.check_type != "memory":
+            serializer = CheckResultsSerializer(
+                instance=check, data=request.data, partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save(last_run=djangotime.now())
+
+        else:
+            check.last_run = djangotime.now()
+            check.save(update_fields=["last_run"])
+
+        check.handle_check(request.data)
+
+        return Response("ok")

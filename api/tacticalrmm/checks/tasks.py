@@ -1,54 +1,31 @@
-import datetime
-from datetime import timezone
-from statistics import mean
+import datetime as dt
 
 from tacticalrmm.celery import app
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone as djangotime
 
 from agents.models import Agent
 from clients.models import Client, Site
-from .models import Check
 
 
 @app.task
-def handle_check_email_alert_task(check_type, pk):
-    if check_type == "ping":
-        check = PingCheck.objects.get(pk=pk)
-        eml = PingCheckEmail
-    elif check_type == "diskspace":
-        check = DiskCheck.objects.get(pk=pk)
-        eml = DiskCheckEmail
-    elif check_type == "cpuload":
-        check = CpuLoadCheck.objects.get(pk=pk)
-        eml = CpuLoadCheckEmail
-    elif check_type == "memory":
-        check = MemCheck.objects.get(pk=pk)
-        eml = MemCheckEmail
-    elif check_type == "winsvc":
-        check = WinServiceCheck.objects.get(pk=pk)
-        eml = WinServiceCheckEmail
-    elif check_type == "script":
-        check = ScriptCheck.objects.get(pk=pk)
-        eml = ScriptCheckEmail
-    elif check_type == "eventlog":
-        check = EventLogCheck.objects.get(pk=pk)
-        eml = EventLogCheckEmail
-    else:
-        return {"error": "no check"}
+def handle_check_email_alert_task(pk):
+    from .models import Check
 
-    try:
-        latest_email = eml.objects.filter(email=check).order_by("-sent")[:1].get()
-    except:
-        # first time sending email
-        eml(email=check).save()
+    check = Check.objects.get(pk=pk)
+
+    # first time sending email
+    if not check.email_sent:
         check.send_email()
+        check.email_sent = djangotime.now()
+        check.save(update_fields=["email_sent"])
     else:
-        last_sent = latest_email.sent
-        delta = datetime.datetime.now(timezone.utc) - datetime.timedelta(hours=24)
         # send an email only if the last email sent is older than 24 hours
-        if last_sent < delta:
-            eml(email=check).save()
+        delta = djangotime.now() - dt.timedelta(hours=24)
+        if check.email_sent < delta:
             check.send_email()
+            check.email_sent = djangotime.now()
+            check.save(update_fields=["email_sent"])
 
     return "ok"
 

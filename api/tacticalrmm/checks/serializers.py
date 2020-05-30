@@ -57,3 +57,55 @@ class CheckSerializer(serializers.ModelSerializer):
                 )
 
         return val
+
+
+class AssignedTaskCheckRunnerField(serializers.ModelSerializer):
+    class Meta:
+        model = AutomatedTask
+        fields = ["id", "win_task_name", "enabled"]
+
+
+class CheckRunnerGetSerializer(serializers.ModelSerializer):
+    # for the windows agent
+    # only send data needed for agent to run a check
+
+    assigned_task = serializers.SerializerMethodField()
+    script = ScriptSerializer(read_only=True)
+
+    def get_assigned_task(self, obj):
+        if obj.assignedtask.exists():
+            task = obj.assignedtask.get()
+            return AssignedTaskCheckRunnerField(task).data
+
+    class Meta:
+        model = Check
+        exclude = [
+            "agent",
+            "policy",
+            "name",
+            "more_info",
+            "last_run",
+            "email_alert",
+            "text_alert",
+            "fails_b4_alert",
+            "fail_count",
+            "email_sent",
+            "text_sent",
+            "outage_history",
+            "extra_details",
+            "stdout",
+            "stderr",
+            "retcode",
+            "execution_time",
+            "svc_display_name",
+            "svc_policy_mode",
+        ]
+
+
+class CheckResultsSerializer(serializers.ModelSerializer):
+    # used when patching results from the windows agent
+    # no validation needed
+
+    class Meta:
+        model = Check
+        fields = "__all__"

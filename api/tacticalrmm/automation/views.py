@@ -13,6 +13,7 @@ from .models import Policy
 from agents.models import Agent
 from scripts.models import Script
 from clients.models import Client, Site
+from checks.models import Check
 
 from clients.serializers import (
     ClientSerializer,
@@ -26,6 +27,8 @@ from .serializers import (
     PolicyRelationSerializer,
     AutoTaskPolicySerializer,
 )
+
+from checks.serializers import CheckSerializer
 
 class GetAddPolicies(APIView):
     def get(self, request):
@@ -111,6 +114,11 @@ class RunPolicyTask(APIView):
 
         # TODO: Run tasks for all Agents under policy
         return Response("ok")
+
+class PolicyCheck(APIView):
+    def get(self, request, pk):
+        checks = Check.objects.filter(policy__pk=pk)
+        return Response(CheckSerializer(checks, many=True).data)
 
 
 class OverviewPolicy(APIView):

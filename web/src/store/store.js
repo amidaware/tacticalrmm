@@ -202,7 +202,7 @@ export const store = new Vuex.Store({
             child_single.push({
               label: sites_arr[i].split("|")[0],
               id: sites_arr[i].split("|")[1],
-              raw: sites_arr[i],
+              raw: `Site|${sites_arr[i]}`,
               header: "generic",
               icon: "apartment",
               iconColor: sites_arr[i].split("|")[2]
@@ -211,7 +211,7 @@ export const store = new Vuex.Store({
           output.push({
             label: prop.split("|")[0],
             id: prop.split("|")[1],
-            raw: prop,
+            raw: `Client|${prop}`,
             header: "root",
             icon: "business",
             iconColor: prop.split("|")[2],

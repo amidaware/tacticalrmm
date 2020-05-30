@@ -1,5 +1,5 @@
 <template>
-  <div v-if="Object.keys(checks).length === 0">No Policy Selected</div>
+  <div v-if="selectedPolicy === null">No Policy Selected</div>
   <div class="row" v-else>
     <div class="col-12">
       <q-btn 
@@ -12,43 +12,43 @@
       >
         <q-menu>
           <q-list dense style="min-width: 200px">
-            <q-item clickable v-close-popup @click="showAddDialog('AddDiskSpaceCheck')">
+            <q-item clickable v-close-popup @click="showAddDialog('DiskSpaceCheck')">
               <q-item-section side>
                 <q-icon size="xs" name="far fa-hdd" />
               </q-item-section>
               <q-item-section>Disk Space Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddDialog('AddPingCheck')">
+            <q-item clickable v-close-popup @click="showAddDialog('PingCheck')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-network-wired" />
               </q-item-section>
               <q-item-section>Ping Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddDialog('AddCpuLoadCheck')">
+            <q-item clickable v-close-popup @click="showAddDialog('CpuLoadCheck')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-microchip" />
               </q-item-section>
               <q-item-section>CPU Load Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddDialog('AddMemCheck')">
+            <q-item clickable v-close-popup @click="showAddDialog('MemCheck')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-memory" />
               </q-item-section>
               <q-item-section>Memory Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddDialog('AddWinSvcCheck')">
+            <q-item clickable v-close-popup @click="showAddDialog('WinSvcCheck')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-cogs" />
               </q-item-section>
               <q-item-section>Windows Service Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddDialog('AddScriptCheck')">
+            <q-item clickable v-close-popup @click="showAddDialog('ScriptCheck')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-terminal" />
               </q-item-section>
               <q-item-section>Script Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddDialog('AddEventLogCheck')">
+            <q-item clickable v-close-popup @click="showAddDialog('EventLogCheck')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-clipboard-list" />
               </q-item-section>
@@ -61,18 +61,18 @@
         dense 
         flat 
         push 
-        @click="onRefresh(checks.id)" 
+        @click="onRefresh(selectedPolicy)" 
         icon="refresh"
         ref="refresh"
       />
-      <template v-if="allChecks === undefined || allChecks.length === 0">
+      <template v-if="checks.length === 0">
         <p>No Checks</p>
       </template>
       <template v-else>
         <q-table
           dense
           class="tabs-tbl-sticky"
-          :data="allChecks"
+          :data="checks"
           :columns="columns"
           :row-key="row => row.id + row.check_type"
           binary-state-sort
@@ -99,14 +99,14 @@
           </template>
           <!-- body slots -->
           <template v-slot:body="props">
-            <q-tr @contextmenu="editCheckPK = props.row.id" :props="props">
+            <q-tr :props="props">
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
                   <q-item 
                     clickable 
                     v-close-popup 
-                    @click="showEditDialog(props.row.check_type)"
+                    @click="showEditDialog(props.row)"
                     id="context-edit"
                   >
                     <q-item-section side>
@@ -117,7 +117,7 @@
                   <q-item
                     clickable
                     v-close-popup
-                    @click="deleteCheck(props.row.id, props.row.check_type)"
+                    @click="deleteCheck(props.row)"
                     id="context-delete"
                   >
                     <q-item-section side>
@@ -195,8 +195,9 @@
         v-if="dialogComponent !== null"
         :is="dialogComponent" 
         @close="hideDialog" 
-        :policypk="checks.id" 
-        :editCheckPK="editCheckPK"
+        :policypk="selectedPolicy" 
+        :checkpk="editCheckPK"
+        :mode="!!editCheckPK ? 'edit' : 'add'"
       />
     </q-dialog>
   </div>
@@ -206,39 +207,25 @@
 import { mapState, mapGetters } from "vuex";
 import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import PolicyStatus from "@/components/automation/modals/PolicyStatus";
-import AddDiskSpaceCheck from "@/components/modals/checks/AddDiskSpaceCheck";
-import EditDiskSpaceCheck from "@/components/modals/checks/EditDiskSpaceCheck";
-import AddPingCheck from "@/components/modals/checks/AddPingCheck";
-import EditPingCheck from "@/components/modals/checks/EditPingCheck";
-import AddCpuLoadCheck from "@/components/modals/checks/AddCpuLoadCheck";
-import EditCpuLoadCheck from "@/components/modals/checks/EditCpuLoadCheck";
-import AddMemCheck from "@/components/modals/checks/AddMemCheck";
-import EditMemCheck from "@/components/modals/checks/EditMemCheck";
-import AddWinSvcCheck from "@/components/modals/checks/AddWinSvcCheck";
-import EditWinSvcCheck from "@/components/modals/checks/EditWinSvcCheck";
-import AddScriptCheck from "@/components/modals/checks/AddScriptCheck";
-import EditScriptCheck from "@/components/modals/checks/EditScriptCheck";
-import AddEventLogCheck from "@/components/modals/checks/AddEventLogCheck";
-import EditEventLogCheck from "@/components/modals/checks/EditEventLogCheck";
+import DiskSpaceCheck from "@/components/modals/checks/DiskSpaceCheck";
+import PingCheck from "@/components/modals/checks/PingCheck";
+import CpuLoadCheck from "@/components/modals/checks/CpuLoadCheck";
+import MemCheck from "@/components/modals/checks/MemCheck";
+import WinSvcCheck from "@/components/modals/checks/WinSvcCheck";
+import ScriptCheck from "@/components/modals/checks/ScriptCheck";
+import EventLogCheck from "@/components/modals/checks/EventLogCheck";
 
 export default {
   name: "PolicyChecksTab",
   components: {
     PolicyStatus,
-    AddDiskSpaceCheck,
-    EditDiskSpaceCheck,
-    AddPingCheck,
-    EditPingCheck,
-    AddCpuLoadCheck,
-    EditCpuLoadCheck,
-    AddMemCheck,
-    EditMemCheck,
-    AddWinSvcCheck,
-    EditWinSvcCheck,
-    AddScriptCheck,
-    EditScriptCheck,
-    AddEventLogCheck,
-    EditEventLogCheck
+    DiskSpaceCheck,
+    PingCheck,
+    CpuLoadCheck,
+    MemCheck,
+    WinSvcCheck,
+    ScriptCheck,
+    EventLogCheck,
   },
   mixins: [mixins],
   data() {
@@ -286,33 +273,33 @@ export default {
       this.dialogComponent = component;
       this.showDialog = true;
     },
-    showEditDialog(category) {
-      switch (category) {
+    showEditDialog(check) {
+      switch (check.check_type) {
         case "diskspace":
-          this.dialogComponent = "EditDiskSpaceCheck";
+          this.dialogComponent = "DiskSpaceCheck";
           break;
         case "ping":
-          this.dialogComponent = "EditPingCheck";
+          this.dialogComponent = "PingCheck";
           break;
         case "cpuload":
-          this.dialogComponent = "EditCpuLoadCheck";
+          this.dialogComponent = "CpuLoadCheck";
           break;
         case "memory":
-          this.dialogComponent = "EditMemCheck";
+          this.dialogComponent = "MemCheck";
           break;
         case "winsvc":
-          this.dialogComponent = "EditWinSvcCheck";
+          this.dialogComponent = "WinSvcCheck";
           break;
         case "script":
-          this.dialogComponent = "EditScriptCheck";
+          this.dialogComponent = "ScriptCheck";
           break;
         case "eventlog":
-          this.dialogComponent = "EditEventLogCheck";
+          this.dialogComponent = "EventLogCheck";
           break;
         default:
           return null;
       }
-
+      this.editCheckPK = check.id
       this.showDialog = true;
 
     },
@@ -320,22 +307,22 @@ export default {
       this.showDialog = false;
       this.dialogComponent = null;
     },
-    deleteCheck(pk, check_type) {
+    deleteCheck(check) {
       this.$q
         .dialog({
-          title: `Delete ${check_type} check`,
+          title: `Delete ${check.check_type} check`,
           ok: { label: "Delete", color: "negative" },
           cancel: true,
         })
         .onOk(() => {
-          const data = { pk: pk, checktype: check_type };
+          const data = { pk: check.id, checktype: check.check_type };
           this.$store
             .dispatch("deleteCheck", data)
             .then(r => {
-              this.$store.dispatch("automation/loadPolicyChecks", this.checks.id);
-              this.$q.notify(notifySuccessConfig);
+              this.$store.dispatch("automation/loadPolicyChecks", check.id);
+              this.$q.notify(notifySuccessConfig("Check Deleted!"));
             })
-            .catch(e => this.$q.notify(notifyErrorConfig));
+            .catch(e => this.$q.notify(notifyErrorConfig("An Error Occurred while deleting")));
         });
     },
     showPolicyCheckStatusModal(check) {
@@ -364,12 +351,10 @@ export default {
     }
   },
   computed: {
-    ...mapState({
-      checks: state => state.automation.checks
-    }),
     ...mapGetters({
-      allChecks: "automation/allChecks"
-    })
+      checks: "automation/checks",
+      selectedPolicy: "automation/selectedPolicyPk"
+      })
   }
 };
 </script>

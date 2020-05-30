@@ -97,7 +97,7 @@ describe("AutomationManager.vue", () => {
 
     expect(actions.loadPolicies).toHaveBeenCalled();
     expect(mutations.setSelectedPolicy).toHaveBeenCalledWith(expect.anything(), null);
-    expect(mutations.setPolicyChecks).toHaveBeenCalledWith(expect.anything(), {});
+    expect(mutations.setPolicyChecks).toHaveBeenCalledWith(expect.anything(), []);
     expect(mutations.setPolicyAutomatedTasks).toHaveBeenCalledWith(expect.anything(), {});
 
   });
@@ -206,7 +206,7 @@ describe("AutomationManager.vue", () => {
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(true);
 
     expect(mutations.setSelectedPolicy).toHaveBeenCalledWith(expect.anything(), null);
-    expect(mutations.setPolicyChecks).toHaveBeenCalledWith(expect.anything(), {});
+    expect(mutations.setPolicyChecks).toHaveBeenCalledWith(expect.anything(), []);
     expect(mutations.setPolicyAutomatedTasks).toHaveBeenCalledWith(expect.anything(), {});
 
   });
@@ -218,7 +218,7 @@ describe("AutomationManager.vue", () => {
     button.trigger("click");
     expect(actions.loadPolicies).toHaveBeenCalled();
     expect(mutations.setSelectedPolicy).toHaveBeenCalledWith(expect.anything(), null);
-    expect(mutations.setPolicyChecks).toHaveBeenCalledWith(expect.anything(), {});
+    expect(mutations.setPolicyChecks).toHaveBeenCalledWith(expect.anything(), []);
     expect(mutations.setPolicyAutomatedTasks).toHaveBeenCalledWith(expect.anything(), {});
 
   });

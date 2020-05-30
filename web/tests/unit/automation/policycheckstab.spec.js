@@ -30,13 +30,24 @@ afterEach(() => {
 /***   TEST SUITES   ***/
 describe("PolicyChecksTab.vue with no policy selected", () => {
 
-  let wrapper, state, store;
+  let wrapper, state, getters, store;
   // Runs before every test
   beforeEach(() => {
 
     // Create the Test store
+    // Create the Test store
     state = {
-      checks: {},
+      checks: [],
+      selectedPolicy: null
+    };
+
+    getters = {
+      checks(state) {
+        return state.checks
+      },
+      selectedPolicyPk(state) {
+        return state.selectedPolicy
+      }
     };
 
     store = new Vuex.Store({
@@ -44,6 +55,7 @@ describe("PolicyChecksTab.vue with no policy selected", () => {
         automation: {
           namespaced: true,
           state,
+          getters
         }
       }
     });
@@ -67,13 +79,13 @@ describe("PolicyChecksTab.vue with policy selected and no checks", () => {
 
   // Used for the add check test loop
   const addChecksMenu = [
-    { name: "AddDiskSpaceCheck", index: 0 },
-    { name: "AddPingCheck", index: 1},
-    { name: "AddCpuLoadCheck", index: 2},
-    { name: "AddMemCheck", index: 3},
-    { name: "AddWinSvcCheck", index: 4},
-    { name: "AddScriptCheck", index: 5},
-    { name: "AddEventLogCheck", index: 6}
+    { name: "DiskSpaceCheck", index: 0 },
+    { name: "PingCheck", index: 1},
+    { name: "CpuLoadCheck", index: 2},
+    { name: "MemCheck", index: 3},
+    { name: "WinSvcCheck", index: 4},
+    { name: "ScriptCheck", index: 5},
+    { name: "EventLogCheck", index: 6}
   ];
 
   let wrapper, store, state, actions, getters;
@@ -82,30 +94,16 @@ describe("PolicyChecksTab.vue with policy selected and no checks", () => {
 
     // Create the Test store
     state = {
-      checks: {
-        id: 1,
-        name: "Test Policy",
-        diskchecks: [],
-        cpuloadchecks: [],
-        memchecks: [],
-        scriptchecks: [],
-        winservicechecks: [],
-        pingchecks: [],
-        eventlogchecks: []
-      }
+      checks: [],
+      selectedPolicy: 1
     };
 
     getters = {
-      allChecks(state) {
-        return [
-        ...state.checks.diskchecks,
-        ...state.checks.cpuloadchecks,
-        ...state.checks.memchecks,
-        ...state.checks.scriptchecks,
-        ...state.checks.winservicechecks,
-        ...state.checks.pingchecks,
-        ...state.checks.eventlogchecks
-        ];
+      checks(state) {
+        return state.checks
+      },
+      selectedPolicyPk(state) {
+        return state.selectedPolicy
       }
     };
 
@@ -129,13 +127,13 @@ describe("PolicyChecksTab.vue with policy selected and no checks", () => {
       store,
       localVue,
       stubs: [
-        "AddDiskSpaceCheck",
-        "AddPingCheck",
-        "AddCpuLoadCheck",
-        "AddMemCheck",
-        "AddWinSvcCheck",
-        "AddScriptCheck",
-        "AddEventLogCheck"
+        "DiskSpaceCheck",
+        "PingCheck",
+        "CpuLoadCheck",
+        "MemCheck",
+        "WinSvcCheck",
+        "ScriptCheck",
+        "EventLogCheck"
       ]
     });
   
@@ -179,13 +177,13 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
 
   // Used for the edit check test loop
   const editChecksModals = [
-    {name: "EditDiskSpaceCheck", index: 0, id: 1},
-    {name: "EditCpuLoadCheck", index: 1, id: 2},
-    {name: "EditMemCheck", index: 2, id: 3},
-    {name: "EditScriptCheck", index: 3, id: 4},
-    {name: "EditWinSvcCheck", index: 4, id: 5},
-    {name: "EditPingCheck", index: 5, id: 6},
-    {name: "EditEventLogCheck", index: 6, id: 7}
+    {name: "DiskSpaceCheck", index: 0, id: 1},
+    {name: "CpuLoadCheck", index: 1, id: 2},
+    {name: "MemCheck", index: 2, id: 3},
+    {name: "ScriptCheck", index: 3, id: 4},
+    {name: "WinSvcCheck", index: 4, id: 5},
+    {name: "PingCheck", index: 5, id: 6},
+    {name: "EventLogCheck", index: 6, id: 7}
   ];
 
   let state, rootActions, actions, getters, store, wrapper;
@@ -193,31 +191,26 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
   beforeEach(() => {
 
     // Create the Test store
+    // Create the Test store
     state = {
-      checks: {
-        id: 1,
-        name: "Test Policy",
-        diskchecks: [diskcheck],
-        cpuloadchecks: [cpuloadcheck],
-        memchecks: [memcheck],
-        scriptchecks: [scriptcheck],
-        winservicechecks: [winservicecheck],
-        pingchecks: [pingcheck],
-        eventlogchecks: [eventlogcheck]
-      },
+      checks: [
+        diskcheck,
+        cpuloadcheck,
+        memcheck,
+        scriptcheck,
+        winservicecheck,
+        pingcheck,
+        eventlogcheck
+      ],
+      selectedPolicy: 1
     };
 
     getters = {
-      allChecks(state) {
-        return [
-          ...state.checks.diskchecks,
-          ...state.checks.cpuloadchecks,
-          ...state.checks.memchecks,
-          ...state.checks.scriptchecks,
-          ...state.checks.winservicechecks,
-          ...state.checks.pingchecks,
-          ...state.checks.eventlogchecks
-        ];
+      checks(state) {
+        return state.checks
+      },
+      selectedPolicyPk(state) {
+        return state.selectedPolicy
       }
     };
 
@@ -247,13 +240,13 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
       store,
       localVue,
       stubs: [
-        "EditDiskSpaceCheck",
-        "EditPingCheck",
-        "EditCpuLoadCheck",
-        "EditMemCheck",
-        "EditWinSvcCheck",
-        "EditScriptCheck",
-        "EditEventLogCheck",
+        "DiskSpaceCheck",
+        "PingCheck",
+        "CpuLoadCheck",
+        "MemCheck",
+        "WinSvcCheck",
+        "ScriptCheck",
+        "EventLogCheck",
         "PolicyStatus"
       ]
     });

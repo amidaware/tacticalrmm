@@ -3,6 +3,7 @@ from rest_framework import serializers
 from .models import Policy
 from autotasks.models import AutomatedTask
 from autotasks.serializers import TaskSerializer
+from checks.serializers import CheckSerializer
 
 
 class PolicySerializer(serializers.ModelSerializer):
@@ -29,3 +30,4 @@ class AutoTaskPolicySerializer(serializers.ModelSerializer):
             "name",
             "autotasks",
         )
+        

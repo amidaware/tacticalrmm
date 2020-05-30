@@ -420,8 +420,8 @@ class TaskRunner(APIView):
     For windows agent
     """
 
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
 

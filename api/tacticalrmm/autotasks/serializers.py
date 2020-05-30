@@ -35,7 +35,7 @@ class AutoTaskSerializer(serializers.ModelSerializer):
 class TaskRunnerScriptField(serializers.ModelSerializer):
     class Meta:
         model = Script
-        fields = ["id", "filepath", "shell"]
+        fields = ["id", "filepath", "filename", "shell"]
 
 
 class TaskRunnerGetSerializer(serializers.ModelSerializer):

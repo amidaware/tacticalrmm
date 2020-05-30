@@ -11,7 +11,7 @@
               </q-item-section>
               <q-item-section>Disk Space Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddPingCheck = true">
+            <q-item clickable v-close-popup @click="showCheck('add', 'ping')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-network-wired" />
               </q-item-section>
@@ -192,17 +192,15 @@
         :checkpk="checkpk"
       />
     </q-dialog>
-    <!-- refactor below -->
-    <q-dialog v-model="showAddPingCheck">
-      <AddPingCheck @close="showAddPingCheck = false" :agentpk="selectedAgentPk" />
-    </q-dialog>
-    <q-dialog v-model="showEditPingCheck">
-      <EditPingCheck
-        @close="showEditPingCheck = false"
-        :editCheckPK="editCheckPK"
+    <q-dialog v-model="showPingCheck">
+      <PingCheck
+        @close="showPingCheck = false"
         :agentpk="selectedAgentPk"
+        :mode="mode"
+        :checkpk="checkpk"
       />
     </q-dialog>
+    <!-- refactor below -->
     <q-dialog v-model="showAddWinSvcCheck">
       <AddWinSvcCheck @close="showAddWinSvcCheck = false" :agentpk="selectedAgentPk" />
     </q-dialog>
@@ -254,9 +252,8 @@ import mixins from "@/mixins/mixins";
 import DiskSpaceCheck from "@/components/modals/checks/DiskSpaceCheck";
 import MemCheck from "@/components/modals/checks/MemCheck";
 import CpuLoadCheck from "@/components/modals/checks/CpuLoadCheck";
+import PingCheck from "@/components/modals/checks/PingCheck";
 // refactor below
-import AddPingCheck from "@/components/modals/checks/AddPingCheck";
-import EditPingCheck from "@/components/modals/checks/EditPingCheck";
 import AddWinSvcCheck from "@/components/modals/checks/AddWinSvcCheck";
 import EditWinSvcCheck from "@/components/modals/checks/EditWinSvcCheck";
 import AddScriptCheck from "@/components/modals/checks/AddScriptCheck";
@@ -272,8 +269,7 @@ export default {
     DiskSpaceCheck,
     MemCheck,
     CpuLoadCheck,
-    AddPingCheck,
-    EditPingCheck,
+    PingCheck,
     AddWinSvcCheck,
     EditWinSvcCheck,
     AddScriptCheck,
@@ -291,9 +287,8 @@ export default {
       showDiskSpaceCheck: false,
       showMemCheck: false,
       showCpuLoadCheck: false,
+      showPingCheck: false,
       // refactor below
-      showAddPingCheck: false,
-      showEditPingCheck: false,
       showAddWinSvcCheck: false,
       showEditWinSvcCheck: false,
       showAddScriptCheck: false,
@@ -350,6 +345,9 @@ export default {
           break;
         case "cpuload":
           this.showCpuLoadCheck = true;
+          break;
+        case "ping":
+          this.showPingCheck = true;
           break;
       }
     },

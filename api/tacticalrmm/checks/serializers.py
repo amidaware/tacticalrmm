@@ -17,9 +17,10 @@ class CheckSerializer(serializers.ModelSerializer):
 
     # https://www.django-rest-framework.org/api-guide/serializers/#object-level-validation
     def validate(self, val):
+        check_type = val["check_type"]
         # disk checks
         # make sure no duplicate diskchecks exist for an agent/policy
-        if "disk" in val and not self.instance:  # only on create
+        if check_type == "diskspace" and not self.instance:  # only on create
             checks = Check.objects.filter(**self.context)
             if checks:
                 for check in checks:
@@ -29,7 +30,7 @@ class CheckSerializer(serializers.ModelSerializer):
                         )
 
         # ping checks
-        if "ip" in val:
+        if check_type == "ping":
             if (
                 not _v.ipv4(val["ip"])
                 and not _v.ipv6(val["ip"])

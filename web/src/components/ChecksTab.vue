@@ -23,7 +23,7 @@
               </q-item-section>
               <q-item-section>CPU Load Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddMemCheck = true">
+            <q-item clickable v-close-popup @click="showCheck('add', 'memory')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-memory" />
               </q-item-section>
@@ -194,6 +194,14 @@
         :checkpk="checkpk"
       />
     </q-dialog>
+    <q-dialog v-model="showMemCheck">
+      <MemCheck
+        @close="showMemCheck = false"
+        :agentpk="selectedAgentPk"
+        :mode="mode"
+        :checkpk="checkpk"
+      />
+    </q-dialog>
     <!-- refactor below -->
     <q-dialog v-model="showAddPingCheck">
       <AddPingCheck @close="showAddPingCheck = false" :agentpk="selectedAgentPk" />
@@ -211,17 +219,6 @@
     <q-dialog v-model="showEditCpuLoadCheck">
       <EditCpuLoadCheck
         @close="showEditCpuLoadCheck = false"
-        :editCheckPK="editCheckPK"
-        :agentpk="selectedAgentPk"
-      />
-    </q-dialog>
-
-    <q-dialog v-model="showAddMemCheck">
-      <AddMemCheck @close="showAddMemCheck = false" :agentpk="selectedAgentPk" />
-    </q-dialog>
-    <q-dialog v-model="showEditMemCheck">
-      <EditMemCheck
-        @close="showEditMemCheck = false"
         :editCheckPK="editCheckPK"
         :agentpk="selectedAgentPk"
       />
@@ -276,13 +273,12 @@ import axios from "axios";
 import { mapState, mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import DiskSpaceCheck from "@/components/modals/checks/DiskSpaceCheck";
+import MemCheck from "@/components/modals/checks/MemCheck";
 // refactor below
 import AddPingCheck from "@/components/modals/checks/AddPingCheck";
 import EditPingCheck from "@/components/modals/checks/EditPingCheck";
 import AddCpuLoadCheck from "@/components/modals/checks/AddCpuLoadCheck";
 import EditCpuLoadCheck from "@/components/modals/checks/EditCpuLoadCheck";
-import AddMemCheck from "@/components/modals/checks/AddMemCheck";
-import EditMemCheck from "@/components/modals/checks/EditMemCheck";
 import AddWinSvcCheck from "@/components/modals/checks/AddWinSvcCheck";
 import EditWinSvcCheck from "@/components/modals/checks/EditWinSvcCheck";
 import AddScriptCheck from "@/components/modals/checks/AddScriptCheck";
@@ -296,12 +292,11 @@ export default {
   name: "ChecksTab",
   components: {
     DiskSpaceCheck,
+    MemCheck,
     AddPingCheck,
     EditPingCheck,
     AddCpuLoadCheck,
     EditCpuLoadCheck,
-    AddMemCheck,
-    EditMemCheck,
     AddWinSvcCheck,
     EditWinSvcCheck,
     AddScriptCheck,
@@ -317,13 +312,12 @@ export default {
       mode: "add",
       checkpk: null,
       showDiskSpaceCheck: false,
+      showMemCheck: false,
       // refactor below
       showAddPingCheck: false,
       showEditPingCheck: false,
       showAddCpuLoadCheck: false,
       showEditCpuLoadCheck: false,
-      showAddMemCheck: false,
-      showEditMemCheck: false,
       showAddWinSvcCheck: false,
       showEditWinSvcCheck: false,
       showAddScriptCheck: false,
@@ -375,6 +369,9 @@ export default {
         case "diskspace":
           this.showDiskSpaceCheck = true;
           break;
+        case "memory":
+          this.showMemCheck = true;
+          break;
       }
     },
     checkAlertAction(pk, category, alert_type, alert_action) {
@@ -414,30 +411,6 @@ export default {
     eventLogMoreInfo(props) {
       this.evtlogdata = props;
       this.showEventLogOutput = true;
-    },
-    editCheck(category) {
-      switch (category) {
-        case "ping":
-          this.showEditPingCheck = true;
-          break;
-        case "cpuload":
-          this.showEditCpuLoadCheck = true;
-          break;
-        case "memory":
-          this.showEditMemCheck = true;
-          break;
-        case "winsvc":
-          this.showEditWinSvcCheck = true;
-          break;
-        case "script":
-          this.showEditScriptCheck = true;
-          break;
-        case "eventlog":
-          this.showEditEventLogCheck = true;
-          break;
-        default:
-          return false;
-      }
     },
     deleteCheck(pk, desc) {
       this.$q

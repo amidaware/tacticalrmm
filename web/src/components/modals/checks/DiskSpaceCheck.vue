@@ -62,7 +62,12 @@ export default {
   mixins: [mixins],
   data() {
     return {
-      diskcheck: {},
+      diskcheck: {
+        disk: null,
+        check_type: "diskspace",
+        threshold: 25,
+        fails_b4_alert: 1
+      },
       diskOptions: [],
       failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     };
@@ -120,9 +125,6 @@ export default {
   },
   created() {
     if (this.mode === "add") {
-      this.diskcheck.check_type = "diskspace";
-      this.diskcheck.threshold = 25;
-      this.diskcheck.fails_b4_alert = 1;
       this.setDiskOptions();
     } else if (this.mode === "edit") {
       this.getCheck();

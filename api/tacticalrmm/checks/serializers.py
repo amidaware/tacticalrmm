@@ -18,6 +18,7 @@ class CheckSerializer(serializers.ModelSerializer):
     readable_desc = serializers.ReadOnlyField()
     script = ScriptSerializer(read_only=True)
     assigned_task = serializers.SerializerMethodField()
+    history_info = serializers.ReadOnlyField()
 
     def get_assigned_task(self, obj):
         if obj.assignedtask.exists():

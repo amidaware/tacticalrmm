@@ -154,6 +154,11 @@ class Check(models.Model):
         else:
             return "n/a"
 
+    @property
+    def history_info(self):
+        if self.check_type == "cpuload" or self.check_type == "memory":
+            return ", ".join(str(f"{x}%") for x in self.history[-6:])
+
     def handle_check(self, data):
         if self.check_type != "cpuload" and self.check_type != "memory":
 

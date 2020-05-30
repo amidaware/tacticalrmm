@@ -112,6 +112,7 @@
                 </q-list>
               </q-menu>
               <!-- tds -->
+              <!-- text alert -->
               <q-td>
                 <q-checkbox
                   dense
@@ -119,6 +120,7 @@
                   v-model="props.row.text_alert"
                 />
               </q-td>
+              <!-- email alert -->
               <q-td>
                 <q-checkbox
                   dense
@@ -126,6 +128,7 @@
                   v-model="props.row.email_alert"
                 />
               </q-td>
+              <!-- status icon -->
               <q-td v-if="props.row.status === 'pending'"></q-td>
               <q-td v-else-if="props.row.status === 'passing'">
                 <q-icon style="font-size: 1.3rem;" color="positive" name="check_circle" />
@@ -133,7 +136,9 @@
               <q-td v-else-if="props.row.status === 'failing'">
                 <q-icon style="font-size: 1.3rem;" color="negative" name="error" />
               </q-td>
+              <!-- check description -->
               <q-td>{{ props.row.readable_desc }}</q-td>
+              <!-- status text -->
               <q-td v-if="props.row.status === 'pending'">Awaiting First Synchronization</q-td>
               <q-td v-else-if="props.row.status === 'passing'">
                 <q-badge color="positive">Passing</q-badge>
@@ -141,6 +146,7 @@
               <q-td v-else-if="props.row.status === 'failing'">
                 <q-badge color="negative">Failing</q-badge>
               </q-td>
+              <!-- more info -->
               <q-td v-if="props.row.check_type === 'ping'">
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
@@ -159,6 +165,9 @@
                   @click="eventLogMoreInfo(props.row)"
                 >output</span>
               </q-td>
+              <q-td
+                v-else-if="props.row.check_type === 'cpuload' || props.row.check_type === 'memory'"
+              >{{ props.row.history_info }}</q-td>
               <q-td v-else>{{ props.row.more_info }}</q-td>
               <q-td>{{ props.row.last_run }}</q-td>
               <q-td v-if="props.row.assigned_task">{{ props.row.assigned_task.name }}</q-td>

@@ -31,7 +31,6 @@ class AgentSerializer(serializers.ModelSerializer):
         model = Agent
         exclude = [
             "wmi_detail",
-            "services",
             "last_seen",
         ]
 

@@ -13,8 +13,8 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 
 from agents.models import Agent
+from checks.models import Check
 
-# from checks.models import WinServiceCheck
 from .serializers import ServicesSerializer
 
 logger.configure(**settings.LOG_CONFIG)
@@ -27,8 +27,8 @@ def get_services(request, pk):
 
 
 @api_view()
-def get_default_services(request):
-    return Response(WinServiceCheck.load_default_services())
+def default_services(request):
+    return Response(Check.load_default_services())
 
 
 @api_view()

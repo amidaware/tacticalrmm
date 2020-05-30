@@ -12,7 +12,7 @@ CHECK_TYPE_CHOICES = [
     ("ping", "Ping Check"),
     ("cpuload", "CPU Load Check"),
     ("memory", "Memory Check"),
-    ("winsvc", "Win Service Check"),
+    ("winsvc", "Service Check"),
     ("script", "Script Check"),
     ("eventlog", "Event Log Check"),
 ]
@@ -111,6 +111,10 @@ class Check(models.Model):
     svc_display_name = models.CharField(max_length=255, null=True, blank=True)
     pass_if_start_pending = models.BooleanField(null=True, blank=True)
     restart_if_stopped = models.BooleanField(null=True, blank=True)
+    svc_policy_mode = models.CharField(
+        max_length=20, null=True, blank=True
+    )  # 'default' or 'manual', for editing policy check
+
     # event log checks
     log_name = models.CharField(
         max_length=255, choices=EVT_LOG_NAME_CHOICES, null=True, blank=True

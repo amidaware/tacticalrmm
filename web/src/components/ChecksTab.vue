@@ -29,7 +29,7 @@
               </q-item-section>
               <q-item-section>Memory Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddWinSvcCheck = true">
+            <q-item clickable v-close-popup @click="showCheck('add', 'winsvc')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-cogs" />
               </q-item-section>
@@ -200,17 +200,15 @@
         :checkpk="checkpk"
       />
     </q-dialog>
-    <!-- refactor below -->
-    <q-dialog v-model="showAddWinSvcCheck">
-      <AddWinSvcCheck @close="showAddWinSvcCheck = false" :agentpk="selectedAgentPk" />
-    </q-dialog>
-    <q-dialog v-model="showEditWinSvcCheck">
-      <EditWinSvcCheck
-        @close="showEditWinSvcCheck = false"
-        :editCheckPK="editCheckPK"
+    <q-dialog v-model="showWinSvcCheck">
+      <WinSvcCheck
+        @close="showWinSvcCheck = false"
         :agentpk="selectedAgentPk"
+        :mode="mode"
+        :checkpk="checkpk"
       />
     </q-dialog>
+    <!-- refactor below -->
     <!-- script check -->
     <q-dialog v-model="showAddScriptCheck">
       <AddScriptCheck @close="showAddScriptCheck = false" :agentpk="selectedAgentPk" />
@@ -253,9 +251,8 @@ import DiskSpaceCheck from "@/components/modals/checks/DiskSpaceCheck";
 import MemCheck from "@/components/modals/checks/MemCheck";
 import CpuLoadCheck from "@/components/modals/checks/CpuLoadCheck";
 import PingCheck from "@/components/modals/checks/PingCheck";
+import WinSvcCheck from "@/components/modals/checks/WinSvcCheck";
 // refactor below
-import AddWinSvcCheck from "@/components/modals/checks/AddWinSvcCheck";
-import EditWinSvcCheck from "@/components/modals/checks/EditWinSvcCheck";
 import AddScriptCheck from "@/components/modals/checks/AddScriptCheck";
 import EditScriptCheck from "@/components/modals/checks/EditScriptCheck";
 import ScriptOutput from "@/components/modals/checks/ScriptOutput";
@@ -270,8 +267,7 @@ export default {
     MemCheck,
     CpuLoadCheck,
     PingCheck,
-    AddWinSvcCheck,
-    EditWinSvcCheck,
+    WinSvcCheck,
     AddScriptCheck,
     EditScriptCheck,
     ScriptOutput,
@@ -288,9 +284,8 @@ export default {
       showMemCheck: false,
       showCpuLoadCheck: false,
       showPingCheck: false,
+      showWinSvcCheck: false,
       // refactor below
-      showAddWinSvcCheck: false,
-      showEditWinSvcCheck: false,
       showAddScriptCheck: false,
       showEditScriptCheck: false,
       showScriptOutput: false,
@@ -348,6 +343,9 @@ export default {
           break;
         case "ping":
           this.showPingCheck = true;
+          break;
+        case "winsvc":
+          this.showWinSvcCheck = true;
           break;
       }
     },

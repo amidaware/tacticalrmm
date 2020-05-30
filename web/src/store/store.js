@@ -42,6 +42,9 @@ export const store = new Vuex.Store({
     agentDisks(state) {
       return state.agentSummary.disks;
     },
+    agentServices(state) {
+      return state.agentSummary.services;
+    },
     checks(state) {
       return state.agentChecks;
     },

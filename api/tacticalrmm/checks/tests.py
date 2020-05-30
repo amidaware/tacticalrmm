@@ -4,13 +4,15 @@ from .serializers import CheckSerializer  # , PolicyChecksSerializer
 
 class TestCheckViews(BaseTestCase):
     def test_add_disk_check(self):
-        url = "/checks/"
+        url = "/checks/checks/"
         disk_data = {
             "pk": self.agent.pk,
-            "check_type": "diskspace",
-            "disk": "C:",
-            "threshold": 41,
-            "failure": 4,
+            "check": {
+                "check_type": "diskspace",
+                "disk": "C:",
+                "threshold": 41,
+                "failure": 4
+            }
         }
         resp = self.client.post(url, disk_data, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -22,13 +24,15 @@ class TestCheckViews(BaseTestCase):
         self.check_not_authenticated("post", url)
 
     def test_add_policy_disk_check(self):
-        url = "/checks/"
+        url = "/checks/checks/"
         policy_disk_data = {
             "policy": self.policy.pk,
-            "check_type": "diskspace",
-            "disk": "M:",
-            "threshold": 87,
-            "failure": 1,
+            "check": {
+                "check_type": "diskspace",
+                "disk": "M:",
+                "threshold": 87,
+                "failure": 1,
+            }
         }
         resp = self.client.post(url, policy_disk_data, format="json")
         self.assertEqual(resp.status_code, 200)

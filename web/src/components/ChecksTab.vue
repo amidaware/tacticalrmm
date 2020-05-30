@@ -41,7 +41,7 @@
               </q-item-section>
               <q-item-section>Script Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddEventLogCheck = true">
+            <q-item clickable v-close-popup @click="showCheck('add', 'eventlog')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-clipboard-list" />
               </q-item-section>
@@ -208,6 +208,14 @@
         :checkpk="checkpk"
       />
     </q-dialog>
+    <q-dialog v-model="showEventLogCheck">
+      <EventLogCheck
+        @close="showEventLogCheck = false"
+        :agentpk="selectedAgentPk"
+        :mode="mode"
+        :checkpk="checkpk"
+      />
+    </q-dialog>
     <!-- refactor below -->
     <!-- script check -->
     <q-dialog v-model="showAddScriptCheck">
@@ -222,17 +230,6 @@
     </q-dialog>
     <q-dialog v-model="showScriptOutput">
       <ScriptOutput @close="showScriptOutput = false; scriptInfo = {}" :scriptInfo="scriptInfo" />
-    </q-dialog>
-    <!-- event log check -->
-    <q-dialog v-model="showAddEventLogCheck">
-      <AddEventLogCheck @close="showAddEventLogCheck = false" :agentpk="selectedAgentPk" />
-    </q-dialog>
-    <q-dialog v-model="showEditEventLogCheck">
-      <EditEventLogCheck
-        @close="showEditEventLogCheck = false"
-        :editCheckPK="editCheckPK"
-        :agentpk="selectedAgentPk"
-      />
     </q-dialog>
     <q-dialog v-model="showEventLogOutput">
       <EventLogCheckOutput
@@ -252,12 +249,11 @@ import MemCheck from "@/components/modals/checks/MemCheck";
 import CpuLoadCheck from "@/components/modals/checks/CpuLoadCheck";
 import PingCheck from "@/components/modals/checks/PingCheck";
 import WinSvcCheck from "@/components/modals/checks/WinSvcCheck";
+import EventLogCheck from "@/components/modals/checks/EventLogCheck";
 // refactor below
 import AddScriptCheck from "@/components/modals/checks/AddScriptCheck";
 import EditScriptCheck from "@/components/modals/checks/EditScriptCheck";
 import ScriptOutput from "@/components/modals/checks/ScriptOutput";
-import AddEventLogCheck from "@/components/modals/checks/AddEventLogCheck";
-import EditEventLogCheck from "@/components/modals/checks/EditEventLogCheck";
 import EventLogCheckOutput from "@/components/modals/checks/EventLogCheckOutput";
 
 export default {
@@ -268,11 +264,10 @@ export default {
     CpuLoadCheck,
     PingCheck,
     WinSvcCheck,
+    EventLogCheck,
     AddScriptCheck,
     EditScriptCheck,
     ScriptOutput,
-    AddEventLogCheck,
-    EditEventLogCheck,
     EventLogCheckOutput
   },
   mixins: [mixins],
@@ -285,12 +280,11 @@ export default {
       showCpuLoadCheck: false,
       showPingCheck: false,
       showWinSvcCheck: false,
+      showEventLogCheck: false,
       // refactor below
       showAddScriptCheck: false,
       showEditScriptCheck: false,
       showScriptOutput: false,
-      showAddEventLogCheck: false,
-      showEditEventLogCheck: false,
       showEventLogOutput: false,
       editCheckPK: null,
       scriptInfo: {},
@@ -346,6 +340,9 @@ export default {
           break;
         case "winsvc":
           this.showWinSvcCheck = true;
+          break;
+        case "eventlog":
+          this.showEventLogCheck = true;
           break;
       }
     },

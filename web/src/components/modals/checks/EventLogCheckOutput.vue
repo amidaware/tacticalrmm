@@ -6,11 +6,11 @@
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </div>
-      <div v-if="evtlogdata.more_info !== null">
+      <div v-if="evtlogdata.extra_details !== null">
         <q-table
           dense
           class="remote-bg-tbl-sticky"
-          :data="evtlogdata.more_info.log"
+          :data="evtlogdata.extra_details.log"
           :columns="columns"
           :pagination.sync="pagination"
           row-key="uid"

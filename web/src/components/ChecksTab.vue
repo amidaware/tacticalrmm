@@ -144,7 +144,7 @@
               <q-td v-if="props.row.check_type === 'ping'">
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
-                  @click="moreInfo('Ping', props.row.more_info)"
+                  @click="pingInfo(props.row.readable_desc, props.row.more_info)"
                 >output</span>
               </q-td>
               <q-td v-else-if="props.row.check_type === 'script'">
@@ -224,7 +224,6 @@
         :checkpk="checkpk"
       />
     </q-dialog>
-    <!-- refactor below -->
     <q-dialog v-model="showScriptOutput">
       <ScriptOutput @close="showScriptOutput = false; scriptInfo = {}" :scriptInfo="scriptInfo" />
     </q-dialog>
@@ -248,7 +247,6 @@ import PingCheck from "@/components/modals/checks/PingCheck";
 import WinSvcCheck from "@/components/modals/checks/WinSvcCheck";
 import EventLogCheck from "@/components/modals/checks/EventLogCheck";
 import ScriptCheck from "@/components/modals/checks/ScriptCheck";
-// refactor below
 import ScriptOutput from "@/components/modals/checks/ScriptOutput";
 import EventLogCheckOutput from "@/components/modals/checks/EventLogCheckOutput";
 
@@ -277,7 +275,6 @@ export default {
       showWinSvcCheck: false,
       showEventLogCheck: false,
       showScriptCheck: false,
-      // refactor below
       showScriptOutput: false,
       showEventLogOutput: false,
       scriptInfo: {},
@@ -364,13 +361,12 @@ export default {
       this.$store.dispatch("loadChecks", id);
       this.$store.dispatch("loadAutomatedTasks", id);
     },
-    moreInfo(name, output) {
+    pingInfo(desc, output) {
       this.$q.dialog({
-        title: `${name} output`,
-        style: "width: 35vw; max-width: 50vw",
+        title: desc,
+        style: "width: 50vw; max-width: 60vw",
         message: `<pre>${output}</pre>`,
-        html: true,
-        dark: true
+        html: true
       });
     },
     scriptMoreInfo(props) {
@@ -387,6 +383,7 @@ export default {
           title: "Are you sure?",
           message: `Delete ${desc}`,
           cancel: true,
+          ok: { label: "Delete", color: "negative" },
           persistent: true
         })
         .onOk(() => {

@@ -7,7 +7,7 @@ from django.http import HttpResponse
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.parsers import FileUploadParser, MultiPartParser, JSONParser
+from rest_framework.parsers import FileUploadParser
 
 from .models import Script
 from .serializers import ScriptSerializer

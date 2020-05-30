@@ -393,8 +393,15 @@ class CheckRunner(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
+        agent = get_object_or_404(Agent, pk=pk)
         checks = Check.objects.filter(agent__pk=pk)
-        return Response(CheckRunnerGetSerializer(checks, many=True).data)
+
+        ret = {
+            "agent": agent.pk,
+            "check_interval": agent.check_interval,
+            "checks": CheckRunnerGetSerializer(checks, many=True).data,
+        }
+        return Response(ret)
 
     def patch(self, request, pk):
         check = get_object_or_404(Check, pk=pk)
@@ -420,8 +427,8 @@ class TaskRunner(APIView):
     For windows agent
     """
 
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
 

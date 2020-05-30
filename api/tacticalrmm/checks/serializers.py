@@ -63,7 +63,7 @@ class CheckSerializer(serializers.ModelSerializer):
 class AssignedTaskCheckRunnerField(serializers.ModelSerializer):
     class Meta:
         model = AutomatedTask
-        fields = ["id", "win_task_name", "enabled"]
+        fields = ["id", "enabled"]
 
 
 class CheckRunnerGetSerializer(serializers.ModelSerializer):
@@ -81,7 +81,6 @@ class CheckRunnerGetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Check
         exclude = [
-            "agent",
             "policy",
             "name",
             "more_info",

@@ -8,6 +8,8 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField, JSONField
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+from core.models import CoreSettings
+
 from .tasks import handle_check_email_alert_task
 
 CHECK_TYPE_CHOICES = [
@@ -209,3 +211,53 @@ class Check(models.Model):
             default_services = json.load(f)
 
         return default_services
+
+    def send_email(self):
+
+        CORE = CoreSettings.objects.first()
+
+        subject = f"{self} Failed"
+
+        if self.check_type == "diskspace":
+            percent_used = self.agent.disks[self.disk]["percent"]
+            percent_free = 100 - percent_free
+
+            body = subject + f" - Free: {percent_free}%, Threshold: {self.threshold}%"
+
+        elif self.check_type == "script":
+
+            body = subject + f" - Return code: {self.retcode}, Error: {self.stderr}"
+
+        elif self.check_type == "ping":
+
+            body = self.more_info
+
+        elif self.check_type == "cpuload" or self.check_type == "memory":
+
+            avg = int(mean(self.history))
+
+            if self.check_type == "cpuload":
+                body = (
+                    subject
+                    + f" - Average CPU utilization: {avg}%, Threshold: {self.threshold}%"
+                )
+
+            elif self.check_type == "memory":
+                body = (
+                    subject
+                    + f" - Average memory usage: {avg}%, Threshold: {self.threshold}%"
+                )
+
+        elif self.check_type == "winsvc":
+
+            status = list(
+                filter(lambda x: x["name"] == self.svc_name, self.agent.services)
+            )[0]["status"]
+
+            body = subject + f" - Status: {status.upper()}"
+
+        elif self.check_type == "eventlog":
+
+            body = f"Event ID {self.event_id} was found in the {self.log_name} log"
+
+        CORE.send_mail(subject, body)

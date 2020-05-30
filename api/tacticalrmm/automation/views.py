@@ -1,9 +1,13 @@
+
+
 from django.db import DataError
 from django.shortcuts import get_object_or_404
+
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+
 
 from .models import Policy
 from agents.models import Agent
@@ -21,7 +25,6 @@ from .serializers import (
     PolicySerializer,
     PolicyRelationSerializer,
     AutoTaskPolicySerializer,
-    CheckPolicySerializer
 )
 
 class GetAddPolicies(APIView):
@@ -103,18 +106,11 @@ class PolicyAutoTask(APIView):
         policy = get_object_or_404(Policy, pk=pk)
         return Response(AutoTaskPolicySerializer(policy).data)
 
-
 class RunPolicyTask(APIView):
     def get(self, request, pk):
 
         # TODO: Run tasks for all Agents under policy
         return Response("ok")
-
-
-class PolicyCheck(APIView):
-    def get(self, request, pk):
-        policy = get_object_or_404(Policy, pk=pk)
-        return Response(CheckPolicySerializer(policy).data)
 
 
 class OverviewPolicy(APIView):

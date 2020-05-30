@@ -156,6 +156,13 @@ def load_checks(request, pk):
     checks = Check.objects.filter(agent__pk=pk)
     return Response(CheckSerializer(checks, many=True).data)
 
+
+@api_view()
+def load_policy_checks(request, pk):
+    policy = get_object_or_404(Policy, pk=pk)
+    return Response(PolicyChecksSerializer(policy).data)
+
+
 @api_view()
 def get_disks_for_policies(request):
     return Response(DiskCheck.all_disks())

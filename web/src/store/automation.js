@@ -11,7 +11,15 @@ export default {
 
   getters: {
     allChecks(state) {
-      return state.checks.checks
+      return [
+        ...state.checks.diskchecks,
+        ...state.checks.cpuloadchecks,
+        ...state.checks.memchecks,
+        ...state.checks.scriptchecks,
+        ...state.checks.winservicechecks,
+        ...state.checks.pingchecks,
+        ...state.checks.eventlogchecks
+      ];
     },
     selectedPolicyPk(state) {
       return state.selectedPolicy;
@@ -48,7 +56,7 @@ export default {
       });
     },
     loadPolicyChecks(context, pk) {
-      axios.get(`/automation/${pk}/policychecks/`).then(r => {
+      axios.get(`/checks/${pk}/loadpolicychecks/`).then(r => {
         context.commit("setPolicyChecks", r.data);
       });
     },

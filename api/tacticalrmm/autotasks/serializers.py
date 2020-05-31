@@ -2,31 +2,20 @@ from rest_framework import serializers
 
 from .models import AutomatedTask
 from agents.models import Agent
+from scripts.models import Script
 
-from checks.serializers import ScriptSerializer
+from scripts.serializers import ScriptSerializer
+from checks.serializers import CheckSerializer
 
 
 class TaskSerializer(serializers.ModelSerializer):
 
-    assigned_check = serializers.ReadOnlyField()
+    assigned_check = CheckSerializer(read_only=True)
     schedule = serializers.ReadOnlyField()
 
     class Meta:
         model = AutomatedTask
         fields = "__all__"
-        depth = 1
-
-
-class AgentTaskSerializer(serializers.ModelSerializer):
-
-    script = ScriptSerializer(read_only=True)
-
-    class Meta:
-        model = AutomatedTask
-        fields = (
-            "timeout",
-            "script",
-        )
 
 
 class AutoTaskSerializer(serializers.ModelSerializer):
@@ -40,3 +29,25 @@ class AutoTaskSerializer(serializers.ModelSerializer):
             "hostname",
             "autotasks",
         )
+
+
+# below is for the windows agent
+class TaskRunnerScriptField(serializers.ModelSerializer):
+    class Meta:
+        model = Script
+        fields = ["id", "filepath", "filename", "shell"]
+
+
+class TaskRunnerGetSerializer(serializers.ModelSerializer):
+
+    script = TaskRunnerScriptField(read_only=True)
+
+    class Meta:
+        model = AutomatedTask
+        fields = ["id", "script", "timeout", "enabled"]
+
+
+class TaskRunnerPatchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AutomatedTask
+        fields = ["id", "stdout", "stderr", "retcode", "last_run"]

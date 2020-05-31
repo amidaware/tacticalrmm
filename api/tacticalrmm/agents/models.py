@@ -98,26 +98,15 @@ class Agent(models.Model):
 
     @property
     def checks(self):
-        checks = (
-            "diskchecks",
-            "scriptchecks",
-            "pingchecks",
-            "cpuloadchecks",
-            "memchecks",
-            "winservicechecks",
-            "eventlogchecks",
-        )
         total, passing, failing = 0, 0, 0
 
-        for check in checks:
-            obj = getattr(self, check)
-            if obj.exists():
-                for i in obj.all():
-                    total += 1
-                    if i.status == "passing":
-                        passing += 1
-                    elif i.status == "failing":
-                        failing += 1
+        if self.agentchecks.exists():
+            for i in self.agentchecks.all():
+                total += 1
+                if i.status == "passing":
+                    passing += 1
+                elif i.status == "failing":
+                    failing += 1
 
         has_failing_checks = True if failing > 0 else False
 

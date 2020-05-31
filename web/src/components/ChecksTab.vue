@@ -1,47 +1,47 @@
 <template>
-  <div v-if="Object.keys(checks).length === 0">No agent selected</div>
+  <div v-if="checks === null">No agent selected</div>
   <div class="row" v-else>
     <div class="col-12">
       <q-btn size="sm" color="grey-5" icon="fas fa-plus" label="Add Check" text-color="black">
         <q-menu>
           <q-list dense style="min-width: 200px">
-            <q-item clickable v-close-popup @click="showAddDiskSpaceCheck = true">
+            <q-item clickable v-close-popup @click="showCheck('add', 'diskspace')">
               <q-item-section side>
                 <q-icon size="xs" name="far fa-hdd" />
               </q-item-section>
               <q-item-section>Disk Space Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddPingCheck = true">
+            <q-item clickable v-close-popup @click="showCheck('add', 'ping')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-network-wired" />
               </q-item-section>
               <q-item-section>Ping Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddCpuLoadCheck = true">
+            <q-item clickable v-close-popup @click="showCheck('add', 'cpuload')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-microchip" />
               </q-item-section>
               <q-item-section>CPU Load Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddMemCheck = true">
+            <q-item clickable v-close-popup @click="showCheck('add', 'memory')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-memory" />
               </q-item-section>
               <q-item-section>Memory Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddWinSvcCheck = true">
+            <q-item clickable v-close-popup @click="showCheck('add', 'winsvc')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-cogs" />
               </q-item-section>
               <q-item-section>Windows Service Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddScriptCheck = true">
+            <q-item clickable v-close-popup @click="showCheck('add', 'script')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-terminal" />
               </q-item-section>
               <q-item-section>Script Check</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="showAddEventLogCheck = true">
+            <q-item clickable v-close-popup @click="showCheck('add', 'eventlog')">
               <q-item-section side>
                 <q-icon size="xs" name="fas fa-clipboard-list" />
               </q-item-section>
@@ -50,15 +50,15 @@
           </q-list>
         </q-menu>
       </q-btn>
-      <q-btn dense flat push @click="onRefresh(checks.pk)" icon="refresh" />
-      <template v-if="allChecks === undefined || allChecks.length === 0">
+      <q-btn dense flat push @click="onRefresh(selectedAgentPk)" icon="refresh" />
+      <template v-if="checks === undefined || checks.length === 0">
         <p>No Checks</p>
       </template>
       <template v-else>
         <q-table
           dense
           class="tabs-tbl-sticky"
-          :data="allChecks"
+          :data="checks"
           :columns="columns"
           :row-key="row => row.id + row.check_type"
           binary-state-sort
@@ -85,11 +85,11 @@
           </template>
           <!-- body slots -->
           <template slot="body" slot-scope="props" :props="props">
-            <q-tr @contextmenu="editCheckPK = props.row.id">
+            <q-tr @contextmenu="checkpk = props.row.id">
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item clickable v-close-popup @click="editCheck(props.row.check_type)">
+                  <q-item clickable v-close-popup @click="showCheck('edit', props.row.check_type)">
                     <q-item-section side>
                       <q-icon name="edit" />
                     </q-item-section>
@@ -98,7 +98,7 @@
                   <q-item
                     clickable
                     v-close-popup
-                    @click="deleteCheck(props.row.id, props.row.check_type)"
+                    @click="deleteCheck(props.row.id, props.row.readable_desc)"
                   >
                     <q-item-section side>
                       <q-icon name="delete" />
@@ -112,20 +112,23 @@
                 </q-list>
               </q-menu>
               <!-- tds -->
+              <!-- text alert -->
               <q-td>
                 <q-checkbox
                   dense
-                  @input="checkAlertAction(props.row.id, props.row.check_type, 'text', props.row.text_alert)"
+                  @input="checkAlert(props.row.id, 'Text', props.row.text_alert)"
                   v-model="props.row.text_alert"
                 />
               </q-td>
+              <!-- email alert -->
               <q-td>
                 <q-checkbox
                   dense
-                  @input="checkAlertAction(props.row.id, props.row.check_type, 'email', props.row.email_alert)"
+                  @input="checkAlert(props.row.id, 'Email', props.row.email_alert)"
                   v-model="props.row.email_alert"
                 />
               </q-td>
+              <!-- status icon -->
               <q-td v-if="props.row.status === 'pending'"></q-td>
               <q-td v-else-if="props.row.status === 'passing'">
                 <q-icon style="font-size: 1.3rem;" color="positive" name="check_circle" />
@@ -133,27 +136,9 @@
               <q-td v-else-if="props.row.status === 'failing'">
                 <q-icon style="font-size: 1.3rem;" color="negative" name="error" />
               </q-td>
-              <q-td
-                v-if="props.row.check_type === 'diskspace'"
-              >Disk Space Drive {{ props.row.disk }} > {{props.row.threshold }}%</q-td>
-              <q-td
-                v-else-if="props.row.check_type === 'cpuload'"
-              >Avg CPU Load > {{ props.row.cpuload }}%</q-td>
-              <q-td
-                v-else-if="props.row.check_type === 'script'"
-              >Script check: {{ props.row.script.name }}</q-td>
-              <q-td
-                v-else-if="props.row.check_type === 'ping'"
-              >Ping {{ props.row.name }} ({{ props.row.ip }})</q-td>
-              <q-td
-                v-else-if="props.row.check_type === 'memory'"
-              >Avg memory usage > {{ props.row.threshold }}%</q-td>
-              <q-td
-                v-else-if="props.row.check_type === 'winsvc'"
-              >Service Check - {{ props.row.svc_display_name }}</q-td>
-              <q-td
-                v-else-if="props.row.check_type === 'eventlog'"
-              >Event Log Check - {{ props.row.desc }}</q-td>
+              <!-- check description -->
+              <q-td>{{ props.row.readable_desc }}</q-td>
+              <!-- status text -->
               <q-td v-if="props.row.status === 'pending'">Awaiting First Synchronization</q-td>
               <q-td v-else-if="props.row.status === 'passing'">
                 <q-badge color="positive">Passing</q-badge>
@@ -161,10 +146,11 @@
               <q-td v-else-if="props.row.status === 'failing'">
                 <q-badge color="negative">Failing</q-badge>
               </q-td>
+              <!-- more info -->
               <q-td v-if="props.row.check_type === 'ping'">
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
-                  @click="moreInfo('Ping', props.row.more_info)"
+                  @click="pingInfo(props.row.readable_desc, props.row.more_info)"
                 >output</span>
               </q-td>
               <q-td v-else-if="props.row.check_type === 'script'">
@@ -179,91 +165,77 @@
                   @click="eventLogMoreInfo(props.row)"
                 >output</span>
               </q-td>
+              <q-td
+                v-else-if="props.row.check_type === 'cpuload' || props.row.check_type === 'memory'"
+              >{{ props.row.history_info }}</q-td>
               <q-td v-else>{{ props.row.more_info }}</q-td>
               <q-td>{{ props.row.last_run }}</q-td>
-              <q-td>{{ props.row.assigned_task }}</q-td>
+              <q-td v-if="props.row.assigned_task">{{ props.row.assigned_task.name }}</q-td>
+              <q-td v-else></q-td>
             </q-tr>
           </template>
         </q-table>
       </template>
     </div>
     <!-- modals -->
-    <q-dialog v-model="showAddDiskSpaceCheck">
-      <AddDiskSpaceCheck @close="showAddDiskSpaceCheck = false" :agentpk="checks.pk" />
-    </q-dialog>
-    <q-dialog v-model="showEditDiskSpaceCheck">
-      <EditDiskSpaceCheck
-        @close="showEditDiskSpaceCheck = false"
-        :editCheckPK="editCheckPK"
-        :agentpk="checks.pk"
+    <q-dialog v-model="showDiskSpaceCheck">
+      <DiskSpaceCheck
+        @close="showDiskSpaceCheck = false"
+        :agentpk="selectedAgentPk"
+        :mode="mode"
+        :checkpk="checkpk"
       />
     </q-dialog>
-    <q-dialog v-model="showAddPingCheck">
-      <AddPingCheck @close="showAddPingCheck = false" :agentpk="checks.pk" />
-    </q-dialog>
-    <q-dialog v-model="showEditPingCheck">
-      <EditPingCheck
-        @close="showEditPingCheck = false"
-        :editCheckPK="editCheckPK"
-        :agentpk="checks.pk"
+    <q-dialog v-model="showMemCheck">
+      <MemCheck
+        @close="showMemCheck = false"
+        :agentpk="selectedAgentPk"
+        :mode="mode"
+        :checkpk="checkpk"
       />
     </q-dialog>
-    <q-dialog v-model="showAddCpuLoadCheck">
-      <AddCpuLoadCheck @close="showAddCpuLoadCheck = false" :agentpk="checks.pk" />
-    </q-dialog>
-    <q-dialog v-model="showEditCpuLoadCheck">
-      <EditCpuLoadCheck
-        @close="showEditCpuLoadCheck = false"
-        :editCheckPK="editCheckPK"
-        :agentpk="checks.pk"
+    <q-dialog v-model="showCpuLoadCheck">
+      <CpuLoadCheck
+        @close="showCpuLoadCheck = false"
+        :agentpk="selectedAgentPk"
+        :mode="mode"
+        :checkpk="checkpk"
       />
     </q-dialog>
-
-    <q-dialog v-model="showAddMemCheck">
-      <AddMemCheck @close="showAddMemCheck = false" :agentpk="checks.pk" />
-    </q-dialog>
-    <q-dialog v-model="showEditMemCheck">
-      <EditMemCheck
-        @close="showEditMemCheck = false"
-        :editCheckPK="editCheckPK"
-        :agentpk="checks.pk"
+    <q-dialog v-model="showPingCheck">
+      <PingCheck
+        @close="showPingCheck = false"
+        :agentpk="selectedAgentPk"
+        :mode="mode"
+        :checkpk="checkpk"
       />
     </q-dialog>
-
-    <q-dialog v-model="showAddWinSvcCheck">
-      <AddWinSvcCheck @close="showAddWinSvcCheck = false" :agentpk="checks.pk" />
-    </q-dialog>
-    <q-dialog v-model="showEditWinSvcCheck">
-      <EditWinSvcCheck
-        @close="showEditWinSvcCheck = false"
-        :editCheckPK="editCheckPK"
-        :agentpk="checks.pk"
+    <q-dialog v-model="showWinSvcCheck">
+      <WinSvcCheck
+        @close="showWinSvcCheck = false"
+        :agentpk="selectedAgentPk"
+        :mode="mode"
+        :checkpk="checkpk"
       />
     </q-dialog>
-    <!-- script check -->
-    <q-dialog v-model="showAddScriptCheck">
-      <AddScriptCheck @close="showAddScriptCheck = false" :agentpk="checks.pk" />
+    <q-dialog v-model="showEventLogCheck">
+      <EventLogCheck
+        @close="showEventLogCheck = false"
+        :agentpk="selectedAgentPk"
+        :mode="mode"
+        :checkpk="checkpk"
+      />
     </q-dialog>
-    <q-dialog v-model="showEditScriptCheck">
-      <EditScriptCheck
-        @close="showEditScriptCheck = false"
-        :editCheckPK="editCheckPK"
-        :agentpk="checks.pk"
+    <q-dialog v-model="showScriptCheck">
+      <ScriptCheck
+        @close="showScriptCheck = false"
+        :agentpk="selectedAgentPk"
+        :mode="mode"
+        :checkpk="checkpk"
       />
     </q-dialog>
     <q-dialog v-model="showScriptOutput">
       <ScriptOutput @close="showScriptOutput = false; scriptInfo = {}" :scriptInfo="scriptInfo" />
-    </q-dialog>
-    <!-- event log check -->
-    <q-dialog v-model="showAddEventLogCheck">
-      <AddEventLogCheck @close="showAddEventLogCheck = false" :agentpk="checks.pk" />
-    </q-dialog>
-    <q-dialog v-model="showEditEventLogCheck">
-      <EditEventLogCheck
-        @close="showEditEventLogCheck = false"
-        :editCheckPK="editCheckPK"
-        :agentpk="checks.pk"
-      />
     </q-dialog>
     <q-dialog v-model="showEventLogOutput">
       <EventLogCheckOutput
@@ -276,65 +248,45 @@
 
 <script>
 import axios from "axios";
-import { mapState } from "vuex";
+import { mapState, mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
-import AddDiskSpaceCheck from "@/components/modals/checks/AddDiskSpaceCheck";
-import EditDiskSpaceCheck from "@/components/modals/checks/EditDiskSpaceCheck";
-import AddPingCheck from "@/components/modals/checks/AddPingCheck";
-import EditPingCheck from "@/components/modals/checks/EditPingCheck";
-import AddCpuLoadCheck from "@/components/modals/checks/AddCpuLoadCheck";
-import EditCpuLoadCheck from "@/components/modals/checks/EditCpuLoadCheck";
-import AddMemCheck from "@/components/modals/checks/AddMemCheck";
-import EditMemCheck from "@/components/modals/checks/EditMemCheck";
-import AddWinSvcCheck from "@/components/modals/checks/AddWinSvcCheck";
-import EditWinSvcCheck from "@/components/modals/checks/EditWinSvcCheck";
-import AddScriptCheck from "@/components/modals/checks/AddScriptCheck";
-import EditScriptCheck from "@/components/modals/checks/EditScriptCheck";
+import DiskSpaceCheck from "@/components/modals/checks/DiskSpaceCheck";
+import MemCheck from "@/components/modals/checks/MemCheck";
+import CpuLoadCheck from "@/components/modals/checks/CpuLoadCheck";
+import PingCheck from "@/components/modals/checks/PingCheck";
+import WinSvcCheck from "@/components/modals/checks/WinSvcCheck";
+import EventLogCheck from "@/components/modals/checks/EventLogCheck";
+import ScriptCheck from "@/components/modals/checks/ScriptCheck";
 import ScriptOutput from "@/components/modals/checks/ScriptOutput";
-import AddEventLogCheck from "@/components/modals/checks/AddEventLogCheck";
-import EditEventLogCheck from "@/components/modals/checks/EditEventLogCheck";
 import EventLogCheckOutput from "@/components/modals/checks/EventLogCheckOutput";
 
 export default {
   name: "ChecksTab",
   components: {
-    AddDiskSpaceCheck,
-    EditDiskSpaceCheck,
-    AddPingCheck,
-    EditPingCheck,
-    AddCpuLoadCheck,
-    EditCpuLoadCheck,
-    AddMemCheck,
-    EditMemCheck,
-    AddWinSvcCheck,
-    EditWinSvcCheck,
-    AddScriptCheck,
-    EditScriptCheck,
+    DiskSpaceCheck,
+    MemCheck,
+    CpuLoadCheck,
+    PingCheck,
+    WinSvcCheck,
+    EventLogCheck,
+    ScriptCheck,
     ScriptOutput,
-    AddEventLogCheck,
-    EditEventLogCheck,
     EventLogCheckOutput
   },
   mixins: [mixins],
   data() {
     return {
-      showAddDiskSpaceCheck: false,
-      showEditDiskSpaceCheck: false,
-      showAddPingCheck: false,
-      showEditPingCheck: false,
-      showAddCpuLoadCheck: false,
-      showEditCpuLoadCheck: false,
-      showAddMemCheck: false,
-      showEditMemCheck: false,
-      showAddWinSvcCheck: false,
-      showEditWinSvcCheck: false,
-      showAddScriptCheck: false,
-      showEditScriptCheck: false,
+      mode: "add",
+      checkpk: null,
+      showDiskSpaceCheck: false,
+      showMemCheck: false,
+      showCpuLoadCheck: false,
+      showPingCheck: false,
+      showWinSvcCheck: false,
+      showEventLogCheck: false,
+      showScriptCheck: false,
       showScriptOutput: false,
-      showAddEventLogCheck: false,
-      showEditEventLogCheck: false,
       showEventLogOutput: false,
-      editCheckPK: null,
       scriptInfo: {},
       evtlogdata: {},
       columns: [
@@ -363,20 +315,55 @@ export default {
     };
   },
   methods: {
-    checkAlertAction(pk, category, alert_type, alert_action) {
-      const action = alert_action ? "enabled" : "disabled";
-      const data = {
-        alertType: alert_type,
-        checkid: pk,
-        category: category,
-        action: action
-      };
-      const alertColor = alert_action ? "positive" : "warning";
-      axios.patch("/checks/checkalert/", data).then(r => {
+    showCheck(mode, type) {
+      switch (mode) {
+        case "add":
+          this.mode = "add";
+          break;
+        case "edit":
+          this.mode = "edit";
+          break;
+      }
+
+      switch (type) {
+        case "diskspace":
+          this.showDiskSpaceCheck = true;
+          break;
+        case "memory":
+          this.showMemCheck = true;
+          break;
+        case "cpuload":
+          this.showCpuLoadCheck = true;
+          break;
+        case "ping":
+          this.showPingCheck = true;
+          break;
+        case "winsvc":
+          this.showWinSvcCheck = true;
+          break;
+        case "eventlog":
+          this.showEventLogCheck = true;
+          break;
+        case "script":
+          this.showScriptCheck = true;
+          break;
+      }
+    },
+    checkAlert(id, alert_type, action) {
+      const data = {};
+      if (alert_type === "Email") {
+        data.email_alert = action;
+      } else {
+        data.text_alert = action;
+      }
+
+      const act = action ? "enabled" : "disabled";
+      const color = action ? "positive" : "warning";
+      axios.patch(`/checks/${id}/check/`, data).then(r => {
         this.$q.notify({
-          color: alertColor,
+          color: color,
           icon: "fas fa-check-circle",
-          message: `${alert_type} alerts ${action}`
+          message: `${alert_type} alerts ${act}`
         });
       });
     },
@@ -384,13 +371,12 @@ export default {
       this.$store.dispatch("loadChecks", id);
       this.$store.dispatch("loadAutomatedTasks", id);
     },
-    moreInfo(name, output) {
+    pingInfo(desc, output) {
       this.$q.dialog({
-        title: `${name} output`,
-        style: "width: 35vw; max-width: 50vw",
+        title: desc,
+        style: "width: 50vw; max-width: 60vw",
         message: `<pre>${output}</pre>`,
-        html: true,
-        dark: true
+        html: true
       });
     },
     scriptMoreInfo(props) {
@@ -401,69 +387,29 @@ export default {
       this.evtlogdata = props;
       this.showEventLogOutput = true;
     },
-    editCheck(category) {
-      switch (category) {
-        case "diskspace":
-          this.showEditDiskSpaceCheck = true;
-          break;
-        case "ping":
-          this.showEditPingCheck = true;
-          break;
-        case "cpuload":
-          this.showEditCpuLoadCheck = true;
-          break;
-        case "memory":
-          this.showEditMemCheck = true;
-          break;
-        case "winsvc":
-          this.showEditWinSvcCheck = true;
-          break;
-        case "script":
-          this.showEditScriptCheck = true;
-          break;
-        case "eventlog":
-          this.showEditEventLogCheck = true;
-          break;
-        default:
-          return false;
-      }
-    },
-    deleteCheck(pk, check_type) {
+    deleteCheck(pk, desc) {
       this.$q
         .dialog({
           title: "Are you sure?",
-          message: `Delete ${check_type} check`,
+          message: `Delete ${desc}`,
           cancel: true,
+          ok: { label: "Delete", color: "negative" },
           persistent: true
         })
         .onOk(() => {
-          const data = { pk: pk, checktype: check_type };
           axios
-            .delete("checks/deletestandardcheck/", { data: data })
+            .delete(`/checks/${pk}/check/`)
             .then(r => {
-              this.$store.dispatch("loadChecks", this.checks.pk);
-              this.$store.dispatch("loadAutomatedTasks", this.checks.pk);
-              this.notifySuccess("Check was deleted!");
+              this.$store.dispatch("loadChecks", this.selectedAgentPk);
+              this.$store.dispatch("loadAutomatedTasks", this.selectedAgentPk);
+              this.notifySuccess(r.data);
             })
-            .catch(e => this.notifyError(e.response.data.error));
+            .catch(e => this.notifyError(e.response.data));
         });
     }
   },
   computed: {
-    ...mapState({
-      checks: state => state.agentChecks
-    }),
-    allChecks() {
-      return [
-        ...this.checks.diskchecks,
-        ...this.checks.cpuloadchecks,
-        ...this.checks.memchecks,
-        ...this.checks.scriptchecks,
-        ...this.checks.winservicechecks,
-        ...this.checks.pingchecks,
-        ...this.checks.eventlogchecks
-      ];
-    }
+    ...mapGetters(["selectedAgentPk", "checks"])
   }
 };
 </script>

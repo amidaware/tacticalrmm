@@ -6,8 +6,18 @@ import "@/quasar.js"
 const localVue = createLocalVue();
 localVue.use(Vuex);
 
-describe("AutomationManager.vue", () => {
+const bodyWrapper = createWrapper(document.body);
 
+// This is needed to remove q-dialogs since body doesn't rerender
+afterEach(() => {
+  const dialogs = document.querySelectorAll(".q-dialog");
+  const menus = document.querySelectorAll(".q-menu");
+  dialogs.forEach(x => x.remove());
+  menus.forEach(x => x.remove());
+});
+
+describe("AutomationManager.vue", () => {
+  
   const policiesData = [
     {
       id: 1,
@@ -29,7 +39,6 @@ describe("AutomationManager.vue", () => {
     }
   ];
 
-  const bodyWrapper = createWrapper(document.body);
   let wrapper;
   let state, mutations, actions, store;
 
@@ -83,23 +92,12 @@ describe("AutomationManager.vue", () => {
 
   });
 
-
-  // Runs after every test
-  // This is needed to remove q-dialogs since body doesn't rerender
-  afterEach(() => {
-    const dialogs = document.querySelectorAll(".q-dialog");
-    const menus = document.querySelectorAll(".q-menu");
-    dialogs.forEach(x => x.remove());
-    menus.forEach(x => x.remove());
-  });
-
-
   // The Tests
   it("calls vuex loadPolicies action on mount", () => {
 
     expect(actions.loadPolicies).toHaveBeenCalled();
     expect(mutations.setSelectedPolicy).toHaveBeenCalledWith(expect.anything(), null);
-    expect(mutations.setPolicyChecks).toHaveBeenCalledWith(expect.anything(), {});
+    expect(mutations.setPolicyChecks).toHaveBeenCalledWith(expect.anything(), []);
     expect(mutations.setPolicyAutomatedTasks).toHaveBeenCalledWith(expect.anything(), {});
 
   });
@@ -208,7 +206,7 @@ describe("AutomationManager.vue", () => {
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(true);
 
     expect(mutations.setSelectedPolicy).toHaveBeenCalledWith(expect.anything(), null);
-    expect(mutations.setPolicyChecks).toHaveBeenCalledWith(expect.anything(), {});
+    expect(mutations.setPolicyChecks).toHaveBeenCalledWith(expect.anything(), []);
     expect(mutations.setPolicyAutomatedTasks).toHaveBeenCalledWith(expect.anything(), {});
 
   });
@@ -220,7 +218,7 @@ describe("AutomationManager.vue", () => {
     button.trigger("click");
     expect(actions.loadPolicies).toHaveBeenCalled();
     expect(mutations.setSelectedPolicy).toHaveBeenCalledWith(expect.anything(), null);
-    expect(mutations.setPolicyChecks).toHaveBeenCalledWith(expect.anything(), {});
+    expect(mutations.setPolicyChecks).toHaveBeenCalledWith(expect.anything(), []);
     expect(mutations.setPolicyAutomatedTasks).toHaveBeenCalledWith(expect.anything(), {});
 
   });

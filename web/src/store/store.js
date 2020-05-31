@@ -24,7 +24,7 @@ export const store = new Vuex.Store({
     selectedRow: null,
     agentSummary: {},
     winUpdates: {},
-    agentChecks: {},
+    agentChecks: null,
     automatedTasks: {},
     agentTableLoading: false,
     treeLoading: false,
@@ -38,6 +38,15 @@ export const store = new Vuex.Store({
     },
     selectedAgentPk(state) {
       return state.agentSummary.id;
+    },
+    agentDisks(state) {
+      return state.agentSummary.disks;
+    },
+    agentServices(state) {
+      return state.agentSummary.services;
+    },
+    checks(state) {
+      return state.agentChecks;
     },
     managedByWsus(state) {
       return state.agentSummary.managed_by_wsus;
@@ -104,7 +113,7 @@ export const store = new Vuex.Store({
     },
     destroySubTable(state) {
       (state.agentSummary = {}),
-        (state.agentChecks = {}),
+        (state.agentChecks = null),
         (state.winUpdates = {});
       (state.installedSoftware = []);
       state.selectedRow = "";
@@ -120,7 +129,7 @@ export const store = new Vuex.Store({
       })
     },
     getScripts(context) {
-      axios.get("/checks/getscripts/").then(r => {
+      axios.get("/scripts/scripts/").then(r => {
         context.commit("SET_SCRIPTS", r.data);
       });
     },
@@ -144,11 +153,17 @@ export const store = new Vuex.Store({
         context.commit("setChecks", r.data);
       });
     },
-    editCheckAlertAction(context, data) {
-      return axios.patch("/checks/checkalert/", data);
+    loadDefaultServices(context) {
+      return axios.get("/services/getdefaultservices/");
     },
-    deleteCheck(context, data) {
-      return axios.delete("checks/deletestandardcheck/", { data: data });
+    loadAgentServices(context, agentpk) {
+      return axios.get(`/services/${agentpk}/services/`);
+    },
+    editCheckAlert(context, pk, data) {
+      return axios.patch(`/checks/${pk}/check/`, data);
+    },
+    deleteCheck(context, pk) {
+      return axios.delete(`/checks/${pk}/check/`);
     },
     editAutoTask(context, data) {
       return axios.patch(`/tasks/${data.id}/automatedtasks/`, data);
@@ -187,7 +202,7 @@ export const store = new Vuex.Store({
             child_single.push({
               label: sites_arr[i].split("|")[0],
               id: sites_arr[i].split("|")[1],
-              raw: sites_arr[i],
+              raw: `Site|${sites_arr[i]}`,
               header: "generic",
               icon: "apartment",
               iconColor: sites_arr[i].split("|")[2]
@@ -196,7 +211,7 @@ export const store = new Vuex.Store({
           output.push({
             label: prop.split("|")[0],
             id: prop.split("|")[1],
-            raw: prop,
+            raw: `Client|${prop}`,
             header: "root",
             icon: "business",
             iconColor: prop.split("|")[2],

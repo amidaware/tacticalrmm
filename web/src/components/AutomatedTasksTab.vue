@@ -81,7 +81,8 @@
               <q-td v-if="props.row.last_run">{{ props.row.last_run }}</q-td>
               <q-td v-else>Has not run yet</q-td>
               <q-td>{{ props.row.schedule }}</q-td>
-              <q-td>{{ props.row.assigned_check }}</q-td>
+              <q-td v-if="props.row.assigned_check">{{ props.row.assigned_check.readable_desc }}</q-td>
+              <q-td v-else></q-td>
             </q-tr>
           </template>
         </q-table>

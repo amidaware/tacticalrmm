@@ -222,7 +222,7 @@ export const store = new Vuex.Store({
         // first sort alphabetically, then move failing clients to the top
         const sortedAlpha = output.sort((a, b) => (a.label > b.label ? 1 : -1));
         const sortedByFailing = sortedAlpha.sort(a =>
-          a.iconColor === "red" ? -1 : 1
+          a.iconColor === "negative" ? -1 : 1
         );
         commit("loadTree", sortedByFailing);
         //commit("destroySubTable");

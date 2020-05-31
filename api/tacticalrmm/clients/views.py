@@ -134,14 +134,6 @@ def edit_site(request):
     return Response("ok")
 
 
-@api_view()
-@authentication_classes((BasicAuthentication,))
-@permission_classes((IsAuthenticated,))
-# for installer
-def installer_list_clients(request):
-    clients = Client.objects.all()
-    return Response(ClientSerializer(clients, many=True).data)
-
 
 @api_view()
 # for vue
@@ -196,11 +188,3 @@ def load_clients(request):
 
     return Response(new)
 
-
-@api_view()
-@authentication_classes((BasicAuthentication,))
-@permission_classes((IsAuthenticated,))
-# get list of clients and sites for the installer
-def installer_list_sites(request, client):
-    sites = Site.objects.filter(client__client=client)
-    return Response(SiteSerializer(sites, many=True).data)

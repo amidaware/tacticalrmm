@@ -16,7 +16,7 @@ class TestCheckViews(BaseTestCase):
         self.assertEqual(resp.data, serializer.data)
         self.check_not_authenticated("post", url)
 
-    def test_add_diskcheck(self):
+    def test_add_disk_check(self):
         url = "/checks/checks/"
 
         self.valid_payload = {
@@ -43,7 +43,7 @@ class TestCheckViews(BaseTestCase):
             },
         }
 
-        resp = self.client.post(url, self.valid_payload, format="json")
+        resp = self.client.post(url, self.invalid_payload, format="json")
         self.assertEqual(resp.status_code, 400)
 
     def test_get_policy_disk_check(self):
@@ -56,11 +56,11 @@ class TestCheckViews(BaseTestCase):
         self.assertEqual(resp.data, serializer.data)
         self.check_not_authenticated("post", url)
 
-    def test_add_policy_diskcheck(self):
+    def test_add_policy_disk_check(self):
         url = "/checks/checks/"
 
         self.valid_payload = {
-            "pk": self.policy.pk,
+            "policy": self.policy.pk,
             "check": {
                 "check_type": "diskspace",
                 "disk": "D:",
@@ -74,7 +74,7 @@ class TestCheckViews(BaseTestCase):
 
         # this should fail because we already have a check for drive M: in setup
         self.invalid_payload = {
-            "pk": self.policy.pk,
+            "policy": self.policy.pk,
             "check": {
                 "check_type": "diskspace",
                 "disk": "M:",
@@ -83,7 +83,7 @@ class TestCheckViews(BaseTestCase):
             },
         }
 
-        resp = self.client.post(url, self.valid_payload, format="json")
+        resp = self.client.post(url, self.invalid_payload, format="json")
         self.assertEqual(resp.status_code, 400)
 
     def test_get_disks_for_policies(self):

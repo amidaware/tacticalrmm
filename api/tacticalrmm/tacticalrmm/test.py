@@ -10,6 +10,7 @@ from winupdate.models import WinUpdatePolicy
 from clients.models import Client, Site
 from automation.models import Policy
 from core.models import CoreSettings
+from checks.models import Check
 
 
 class BaseTestCase(TestCase):
@@ -92,6 +93,21 @@ class BaseTestCase(TestCase):
         )
         self.policy.clients.add(google)
         self.policy.clients.add(facebook)
+
+        self.agentDiskCheck = Check.objects.create(
+            agent=self.agent,
+            check_type="diskspace",
+            disk="C:",
+            threshold=41,
+            fails_b4_alert=4,
+        )
+        self.policyDiskCheck = Check.objects.create(
+            policy=self.policy,
+            check_type="diskspace",
+            disk="M:",
+            threshold=87,
+            fails_b4_alert=1,
+        )
 
     def check_not_authenticated(self, method, url):
         self.client.logout()

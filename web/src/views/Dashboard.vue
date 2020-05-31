@@ -202,12 +202,12 @@ export default {
 
       let client, site, url;
       try {
-        client = this.$refs.tree.meta[activenode].parent.key.split("|")[0];
-        site = activenode.split("|")[0];
+        client = this.$refs.tree.meta[activenode].parent.key.split("|")[1];
+        site = activenode.split("|")[1];
         url = `/agents/bysite/${client}/${site}/`;
       } catch (e) {
         try {
-          client = activenode.split("|")[0];
+          client = activenode.split("|")[1];
         } catch (e) {
           return false;
         }

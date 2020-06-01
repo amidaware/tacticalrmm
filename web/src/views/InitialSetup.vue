@@ -13,19 +13,24 @@
               <q-input
                 dense
                 outlined
-                v-model="firstclient"
+                v-model="client.client"
                 :rules="[ val => !!val || '*Required' ]"
               >
                 <template v-slot:prepend>
-                  <q-icon name="fas fa-user" />
+                  <q-icon name="business" />
                 </template>
               </q-input>
             </q-card-section>
             <q-card-section>
               <div>Add Site:</div>
-              <q-input dense outlined v-model="firstsite" :rules="[ val => !!val || '*Required' ]">
+              <q-input
+                dense
+                outlined
+                v-model="client.site"
+                :rules="[ val => !!val || '*Required' ]"
+              >
                 <template v-slot:prepend>
-                  <q-icon name="fas fa-map-marker-alt" />
+                  <q-icon name="apartment" />
                 </template>
               </q-input>
             </q-card-section>
@@ -34,13 +39,24 @@
               <q-select dense outlined v-model="timezone" :options="allTimezones" />
             </q-card-section>
             <q-card-section>
-              <div>Upload MeshAgent:</div>
               <div class="row">
-                <q-input dense @input="val => { meshagent = val[0] }" filled type="file" />
+                <q-file
+                  v-model="meshagent"
+                  :rules="[ val => !!val || '*Required' ]"
+                  label="Upload MeshAgent"
+                  stack-label
+                  filled
+                  counter
+                  accept=".exe"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="attach_file" />
+                  </template>
+                </q-file>
               </div>
             </q-card-section>
             <q-card-actions align="center">
-              <q-btn label="Finish" color="primary" type="submit" />
+              <q-btn label="Finish" color="primary" class="full-width" type="submit" />
             </q-card-actions>
           </q-form>
         </q-card>
@@ -59,9 +75,10 @@ export default {
   mixins: [mixins],
   data() {
     return {
-      step: 1,
-      firstclient: null,
-      firstsite: null,
+      client: {
+        client: null,
+        site: null
+      },
       meshagent: null,
       allTimezones: [],
       timezone: null
@@ -69,32 +86,36 @@ export default {
   },
   methods: {
     finish() {
-      if (!this.firstclient || !this.firstsite || !this.meshagent) {
-        this.notifyError("Please upload your meshagent.exe");
-      } else {
-        this.$q.loading.show();
-        const data = { client: this.firstclient, site: this.firstsite, timezone: this.timezone };
-        axios
-          .post("/clients/initialsetup/", data)
-          .then(r => {
-            let formData = new FormData();
-            formData.append("meshagent", this.meshagent);
-            axios
-              .put("/api/v1/uploadmeshagent/", formData)
-              .then(r => {
-                this.$q.loading.hide();
-                this.$router.push({ name: "Dashboard" });
-              })
-              .catch(e => {
-                this.notifyError("error uploading");
-                this.$q.loading.hide();
-              });
-          })
-          .catch(err => {
-            this.notifyError(err.response.data.error);
-            this.$q.loading.hide();
-          });
-      }
+      this.$q.loading.show();
+      const data = {
+        client: this.client,
+        timezone: this.timezone,
+        initialsetup: true
+      };
+      axios
+        .post("/clients/clients/", data)
+        .then(r => {
+          let formData = new FormData();
+          formData.append("meshagent", this.meshagent);
+          axios
+            .put("/core/uploadmesh/", formData)
+            .then(() => {
+              this.$q.loading.hide();
+              this.$router.push({ name: "Dashboard" });
+            })
+            .catch(e => {
+              this.$q.loading.hide();
+              this.notifyError("error uploading");
+            });
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          if (e.response.data.client) {
+            this.notifyError(e.response.data.client);
+          } else {
+            this.notifyError(e.response.data.non_field_errors);
+          }
+        });
     },
     getSettings() {
       axios.get("/core/getcoresettings/").then(r => {

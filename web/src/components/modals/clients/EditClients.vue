@@ -16,9 +16,9 @@
             :rules="[val => !!val || '*Required']"
             outlined
             label="Select client"
-            v-model="clientPK"
+            v-model="client.id"
             :options="clients"
-            @input="clientChanged"
+            @input="onChange"
             emit-value
             map-options
           />
@@ -27,7 +27,7 @@
           <q-input
             :rules="[val => !!val || '*Required']"
             outlined
-            v-model="newName"
+            v-model="client.client"
             label="Rename client"
           />
         </q-card-section>
@@ -48,44 +48,46 @@ export default {
   data() {
     return {
       clients: [],
-      clientPK: null,
-      newName: null
+      client: {
+        client: null,
+        id: null
+      }
     };
   },
   computed: {
     nameChanged() {
-      if (this.clients.length !== 0) {
-        const origName = this.clients.find(k => k.value === this.clientPK).label;
-        return this.newName === origName ? false : true;
+      if (this.clients.length !== 0 && this.client.client !== null) {
+        const origName = this.clients.find(i => i.value === this.client.id).label;
+        return this.client.client === origName ? false : true;
       }
     }
   },
   methods: {
     getClients() {
-      axios.get("/clients/listclients/").then(r => {
+      axios.get("/clients/clients/").then(r => {
         r.data.forEach(client => {
           this.clients.push({ label: client.client, value: client.id });
         });
-        this.clientPK = this.clients.map(k => k.value)[0];
-        this.newName = this.clients.map(k => k.label)[0];
       });
     },
-    clientChanged() {
-      this.newName = this.clients.find(k => k.value === this.clientPK).label;
+    onChange() {
+      this.client.client = this.clients.find(i => i.value === this.client.id).label;
     },
     editClient() {
-      const data = {
-        pk: this.clientPK,
-        name: this.newName
-      };
       axios
-        .patch("/clients/editclient/", data)
-        .then(() => {
+        .patch(`/clients/${this.client.id}/client/`, this.client)
+        .then(r => {
           this.$emit("edited");
           this.$emit("close");
-          this.notifySuccess("Client was edited");
+          this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data));
+        .catch(e => {
+          if (e.response.data.client) {
+            this.notifyError(e.response.data.client);
+          } else {
+            this.notifyError(e.response.data.non_field_errors);
+          }
+        });
     }
   },
   created() {

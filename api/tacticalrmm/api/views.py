@@ -12,8 +12,6 @@ from django.utils import timezone as djangotime
 
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
-from rest_framework.exceptions import ParseError
-from rest_framework.parsers import FileUploadParser
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.authentication import (
@@ -53,23 +51,6 @@ from software.tasks import install_chocolatey, get_installed_software
 
 logger.configure(**settings.LOG_CONFIG)
 
-
-class UploadMeshAgent(APIView):
-    parser_class = (FileUploadParser,)
-
-    def put(self, request, format=None):
-        if "meshagent" not in request.data:
-            raise ParseError("Empty content")
-
-        f = request.data["meshagent"]
-        mesh_exe = os.path.join(
-            settings.BASE_DIR, "tacticalrmm/downloads/meshagent.exe"
-        )
-        with open(mesh_exe, "wb+") as j:
-            for chunk in f.chunks():
-                j.write(chunk)
-
-        return Response(status=status.HTTP_201_CREATED)
 
 
 @api_view(["PATCH"])
@@ -137,14 +118,6 @@ def get_log(request, mode, hostname, order):
         resp = contents.stdout
 
     return Response({"log": resp, "agents": agent_hostnames.data})
-
-
-@api_view(["POST"])
-@authentication_classes((BasicAuthentication,))
-@permission_classes((IsAuthenticated,))
-# installer auth
-def agent_auth(request):
-    return Response("ok")
 
 
 @api_view(["POST"])

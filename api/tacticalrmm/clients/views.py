@@ -3,16 +3,10 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.authentication import (
-    BasicAuthentication,
-    TokenAuthentication,
-)
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import (
-    api_view,
-    authentication_classes,
-    permission_classes,
-)
+from rest_framework.views import APIView
+
+
+from rest_framework.decorators import api_view
 
 from .serializers import ClientSerializer, SiteSerializer, TreeSerializer
 from .models import Client, Site, validate_name
@@ -20,11 +14,55 @@ from agents.models import Agent
 from core.models import CoreSettings
 
 
+class GetAddClients(APIView):
+    def get(self, request):
+        clients = Client.objects.all()
+        return Response(ClientSerializer(clients, many=True).data)
+
+    def post(self, request):
+
+        if "initialsetup" in request.data:
+            client = {"client": request.data["client"]["client"].strip()}
+            site = {"site": request.data["client"]["site"].strip()}
+            serializer = ClientSerializer(data=client, context=request.data["client"])
+            serializer.is_valid(raise_exception=True)
+            core = CoreSettings.objects.first()
+            core.default_time_zone = request.data["timezone"]
+            core.save(update_fields=["default_time_zone"])
+        else:
+            client = {"client": request.data["client"].strip()}
+            site = {"site": request.data["site"].strip()}
+            serializer = ClientSerializer(data=client, context=request.data)
+            serializer.is_valid(raise_exception=True)
+
+        obj = serializer.save()
+        Site(client=obj, site=site["site"]).save()
+
+        return Response(f"{obj} was added!")
+
+
+class GetUpdateDeleteClient(APIView):
+    def patch(self, request, pk):
+        client = get_object_or_404(Client, pk=pk)
+        orig = client.client
+
+        serializer = ClientSerializer(data=request.data, instance=client)
+        serializer.is_valid(raise_exception=True)
+        obj = serializer.save()
+
+        return Response(f"{orig} renamed to {obj}")
+
+
+class GetAddSites(APIView):
+    def get(self, request):
+        sites = Site.objects.all()
+        return Response(SiteSerializer(sites, many=True).data)
+
+
 @api_view(["POST"])
 def initial_setup(request):
     client_name = request.data["client"].strip()
     site_name = request.data["site"].strip()
-    tz = request.data["timezone"]
 
     if not validate_name(client_name) or not validate_name(site_name):
         err = {"error": "Client/site name cannot contain the | character"}
@@ -35,36 +73,7 @@ def initial_setup(request):
     client = Client.objects.get(client=client_name)
     Site(client=client, site=site_name).save()
 
-    core = CoreSettings.objects.first()
-    core.default_time_zone = tz
-    core.save(update_fields=["default_time_zone"])
-
     return Response("ok")
-
-
-@api_view(["POST"])
-def add_client(request):
-    # remove leading and trailing whitespaces
-    client_name = request.data["client"].strip()
-    default_site = request.data["site"].strip()
-
-    if not validate_name(client_name) or not validate_name(default_site):
-        content = {"error": "Client name cannot contain the | character"}
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
-
-    if Client.objects.filter(client=client_name):
-        content = {"error": f"Client {client_name} already exists"}
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        Client(client=client_name).save()
-    except DataError:
-        content = {"error": "Client name too long (max 255 chars)"}
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
-    else:
-        client = Client.objects.get(client=client_name)
-        Site(client=client, site=default_site).save()
-        return Response("ok")
 
 
 @api_view(["POST"])
@@ -134,7 +143,6 @@ def edit_site(request):
     return Response("ok")
 
 
-
 @api_view()
 # for vue
 def list_clients(request):
@@ -187,4 +195,3 @@ def load_clients(request):
             new[x.client] = b
 
     return Response(new)
-

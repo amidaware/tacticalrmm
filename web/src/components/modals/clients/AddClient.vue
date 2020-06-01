@@ -14,17 +14,17 @@
         <q-card-section>
           <q-input
             outlined
-            v-model="clientName"
+            v-model="client.client"
             label="Client:"
-            :rules="[ val => val && val.length > 0 || 'This field is required']"
+            :rules="[ val => val && val.length > 0 || '*Required']"
           />
         </q-card-section>
         <q-card-section>
           <q-input
             outlined
-            v-model="defaultSite"
+            v-model="client.site"
             label="Default first site:"
-            :rules="[ val => val && val.length > 0 || 'This field is required']"
+            :rules="[ val => val && val.length > 0 || '*Required']"
           />
         </q-card-section>
         <q-card-actions align="right">
@@ -44,24 +44,29 @@ export default {
   mixins: [mixins],
   data() {
     return {
-      clientName: "",
-      defaultSite: ""
+      client: {
+        client: null,
+        site: null
+      }
     };
   },
   methods: {
     addClient() {
       axios
-        .post("/clients/addclient/", {
-          client: this.clientName,
-          site: this.defaultSite
-        })
-        .then(() => {
-          this.$emit("close");
+        .post("/clients/clients/", this.client)
+        .then(r => {
+          //this.$emit("close");
           this.$store.dispatch("loadTree");
           this.$store.dispatch("getUpdatedSites");
-          this.notifySuccess(`Client ${this.clientName} was added!`);
+          this.notifySuccess(r.data);
         })
-        .catch(err => this.notifyError(err.response.data.error));
+        .catch(e => {
+          if (e.response.data.client) {
+            this.notifyError(e.response.data.client);
+          } else {
+            this.notifyError(e.response.data.non_field_errors);
+          }
+        });
     }
   }
 };

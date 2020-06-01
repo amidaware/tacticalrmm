@@ -3,7 +3,7 @@ from agents.models import Agent
 
 
 class Client(models.Model):
-    client = models.CharField(max_length=255)
+    client = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
         return self.client

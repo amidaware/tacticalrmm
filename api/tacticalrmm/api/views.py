@@ -1,5 +1,5 @@
 import requests
-from subprocess import run, PIPE
+
 import os
 from time import sleep
 from loguru import logger
@@ -14,10 +14,7 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
 from rest_framework import status
-from rest_framework.authentication import (
-    BasicAuthentication,
-    TokenAuthentication,
-)
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import (
     api_view,
@@ -41,7 +38,6 @@ from clients.models import Client, Site
 
 from winupdate.tasks import check_for_updates_task
 from agents.serializers import (
-    AgentHostnameSerializer,
     AgentSerializer,
     WinAgentSerializer,
 )
@@ -50,7 +46,6 @@ from checks.serializers import CheckRunnerGetSerializer, CheckResultsSerializer
 from software.tasks import install_chocolatey, get_installed_software
 
 logger.configure(**settings.LOG_CONFIG)
-
 
 
 @api_view(["PATCH"])
@@ -69,60 +64,9 @@ def trigger_patch_scan(request):
     return Response("ok")
 
 
-@api_view()
-def download_log(request):
-    log_file = settings.LOG_CONFIG["handlers"][0]["sink"]
-    if settings.DEBUG:
-        with open(log_file, "rb") as f:
-            response = HttpResponse(f.read(), content_type="text/plain")
-            response["Content-Disposition"] = "attachment; filename=debug.log"
-            return response
-    else:
-        response = HttpResponse()
-        response["Content-Disposition"] = "attachment; filename=debug.log"
-        response["X-Accel-Redirect"] = "/protectedlogs/debug.log"
-        return response
-
-
-@api_view()
-def get_log(request, mode, hostname, order):
-    log_file = settings.LOG_CONFIG["handlers"][0]["sink"]
-
-    agents = Agent.objects.all()
-    agent_hostnames = AgentHostnameSerializer(agents, many=True)
-
-    switch_mode = {
-        "info": "INFO",
-        "critical": "CRITICAL",
-        "error": "ERROR",
-        "warning": "WARNING",
-    }
-    level = switch_mode.get(mode, "INFO")
-
-    if hostname == "all" and order == "latest":
-        cmd = f"grep -h {level} {log_file} | tac"
-    elif hostname == "all" and order == "oldest":
-        cmd = f"grep -h {level} {log_file}"
-    elif hostname != "all" and order == "latest":
-        cmd = f"grep {hostname} {log_file} | grep -h {level} | tac"
-    elif hostname != "all" and order == "oldest":
-        cmd = f"grep {hostname} {log_file} | grep -h {level}"
-    else:
-        return Response("error", status=status.HTTP_400_BAD_REQUEST)
-
-    contents = run(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
-
-    if not contents.stdout:
-        resp = f"Hooray! No {mode} logs!"
-    else:
-        resp = contents.stdout
-
-    return Response({"log": resp, "agents": agent_hostnames.data})
-
-
 @api_view(["POST"])
 def get_mesh_exe(request):
-    mesh_exe = os.path.join(settings.BASE_DIR, "tacticalrmm/downloads/meshagent.exe")
+    mesh_exe = os.path.join(settings.EXE_DIR, "meshagent.exe")
     if not os.path.exists(mesh_exe):
         return Response("error", status=status.HTTP_400_BAD_REQUEST)
     if settings.DEBUG:
@@ -135,7 +79,7 @@ def get_mesh_exe(request):
     else:
         response = HttpResponse()
         response["Content-Disposition"] = "attachment; filename=meshagent.exe"
-        response["X-Accel-Redirect"] = "/protected/meshagent.exe"
+        response["X-Accel-Redirect"] = "/private/exe/meshagent.exe"
         return response
 
 

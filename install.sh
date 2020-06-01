@@ -253,7 +253,7 @@ read -n 1 -s -r -p "Press any key to continue..."
 uwsgini="$(cat << EOF
 [uwsgi]
 
-logto = /home/${USER}/rmm/api/tacticalrmm/log/uwsgi.log
+logto = /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/private/log/uwsgi.log
 chdir = /home/${USER}/rmm/api/tacticalrmm
 module = tacticalrmm.wsgi
 home = /home/${USER}/rmm/api/env
@@ -312,8 +312,8 @@ server {
     listen 443 ssl;
     server_name ${rmmdomain};
     client_max_body_size 300M;
-    access_log /home/${USER}/rmm/api/tacticalrmm/log/rmm-access.log;
-    error_log /home/${USER}/rmm/api/tacticalrmm/log/rmm-error.log;
+    access_log /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/private/log/access.log;
+    error_log /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
     ssl_certificate /etc/letsencrypt/live/${rmmdomain}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${rmmdomain}/privkey.pem;
     ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
@@ -322,19 +322,13 @@ server {
         root /home/${USER}/rmm/api/tacticalrmm;
     }
 
-    location /protected/ {
+    location /private/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/downloads/;
+        alias /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/private/;
     }
 
-    location /protectedlogs/ {
-        internal;
-        add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /home/${USER}/rmm/api/tacticalrmm/log/;
-    }
-
-    location /protectedscripts/ {
+    location /saltscripts/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
         alias /srv/salt/scripts/userdefined/;

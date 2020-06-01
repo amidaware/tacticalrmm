@@ -11,6 +11,9 @@
               <q-item clickable v-close-popup @click="showAddSiteModal = true">
                 <q-item-section>Add Site</q-item-section>
               </q-item>
+              <q-item clickable v-close-popup @click="showUploadMesh = true">
+                <q-item-section>Upload MeshAgent</q-item-section>
+              </q-item>
               <q-item clickable v-close-popup @click="getLog">
                 <q-item-section>Debug Log</q-item-section>
               </q-item>
@@ -121,6 +124,10 @@
           <AutomationManager @close="showAutomationManager = false" />
         </q-dialog>
       </div>
+      <!-- Upload new mesh agent -->
+      <q-dialog v-model="showUploadMesh">
+        <UploadMesh @close="showUploadMesh = false" />
+      </q-dialog>
     </q-bar>
   </div>
 </template>
@@ -136,6 +143,7 @@ import ScriptManager from "@/components/ScriptManager";
 import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
 import AutomationManager from "@/components/automation/AutomationManager";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
+import UploadMesh from "@/components/modals/core/UploadMesh";
 
 export default {
   name: "FileBar",
@@ -149,7 +157,8 @@ export default {
     ScriptManager,
     EditCoreSettings,
     AutomationManager,
-    InstallAgent
+    InstallAgent,
+    UploadMesh
   },
   props: ["clients"],
   data() {
@@ -161,7 +170,8 @@ export default {
       showUpdateAgentsModal: false,
       showEditCoreSettingsModal: false,
       showAutomationManager: false,
-      showInstallAgent: false
+      showInstallAgent: false,
+      showUploadMesh: false
     };
   },
   methods: {

@@ -21,9 +21,7 @@ class UploadMeshAgent(APIView):
             raise ParseError("Empty content")
 
         f = request.data["meshagent"]
-        mesh_exe = os.path.join(
-            settings.BASE_DIR, "tacticalrmm/downloads/meshagent.exe"
-        )
+        mesh_exe = os.path.join(settings.EXE_DIR, "meshagent.exe")
         with open(mesh_exe, "wb+") as j:
             for chunk in f.chunks():
                 j.write(chunk)

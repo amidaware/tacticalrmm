@@ -107,5 +107,5 @@ def download(request, pk):
     else:
         response = HttpResponse()
         response["Content-Disposition"] = f"attachment; filename={script.filename}"
-        response["X-Accel-Redirect"] = f"/protectedscripts/{script.filename}"
+        response["X-Accel-Redirect"] = f"/saltscripts/{script.filename}"
         return response

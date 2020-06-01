@@ -3,6 +3,10 @@ from datetime import timedelta
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+LOG_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/log")
+
+EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
+
 AUTH_USER_MODEL = "accounts.User"
 
 INSTALLED_APPS = [
@@ -98,7 +102,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "tacticalrmm/static/")]
 
 
 LOG_CONFIG = {
-    "handlers": [{"sink": os.path.join(BASE_DIR, "logs/debug.log"), "serialize": False}]
+    "handlers": [{"sink": os.path.join(LOG_DIR, "debug.log"), "serialize": False}]
 }
 
 try:

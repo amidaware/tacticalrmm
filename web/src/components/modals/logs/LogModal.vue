@@ -94,7 +94,7 @@ export default {
   methods: {
     downloadLog() {
       axios
-        .get("/api/v1/downloadrmmlog/", { responseType: "blob" })
+        .get("/logs/downloadlog/", { responseType: "blob" })
         .then(({ data }) => {
           const blob = new Blob([data], { type: "text/plain" });
           let link = document.createElement("a");
@@ -105,7 +105,7 @@ export default {
         .catch(error => console.error(error));
     },
     getLog() {
-      axios.get(`/api/v1/getrmmlog/${this.loglevel}/${this.agent}/${this.order}/`).then(r => {
+      axios.get(`/logs/debuglog/${this.loglevel}/${this.agent}/${this.order}/`).then(r => {
         this.logContent = r.data.log;
         this.agents = r.data.agents.map(k => k.hostname);
         this.agents.unshift("all");

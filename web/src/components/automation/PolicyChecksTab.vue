@@ -249,6 +249,7 @@ export default {
   methods: {
     checkAlert(id, alert_type, action) {
       const data = {};
+
       if (alert_type === "Email") {
         data.email_alert = action;
       } else {
@@ -258,7 +259,7 @@ export default {
       const act = action ? "enabled" : "disabled";
       const color = action ? "positive" : "warning";
       this.$store
-        .dispatch("editCheckAlert", id, data)
+        .dispatch("editCheckAlert", { pk: id, data })
         .then(r => {
           this.$q.notify({
             color: color,

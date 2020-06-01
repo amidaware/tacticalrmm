@@ -55,7 +55,7 @@ export default {
       axios
         .post("/clients/clients/", this.client)
         .then(r => {
-          //this.$emit("close");
+          this.$emit("close");
           this.$store.dispatch("loadTree");
           this.$store.dispatch("getUpdatedSites");
           this.notifySuccess(r.data);

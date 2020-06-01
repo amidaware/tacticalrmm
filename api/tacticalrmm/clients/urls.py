@@ -12,5 +12,4 @@ urlpatterns = [
     path("editsite/", views.edit_site),
     path("loadtree/", views.load_tree),
     path("loadclients/", views.load_clients),
-    path("initialsetup/", views.initial_setup),
 ]

@@ -60,23 +60,6 @@ class GetAddSites(APIView):
 
 
 @api_view(["POST"])
-def initial_setup(request):
-    client_name = request.data["client"].strip()
-    site_name = request.data["site"].strip()
-
-    if not validate_name(client_name) or not validate_name(site_name):
-        err = {"error": "Client/site name cannot contain the | character"}
-        return Response(err, status=status.HTTP_400_BAD_REQUEST)
-
-    Client(client=client_name).save()
-
-    client = Client.objects.get(client=client_name)
-    Site(client=client, site=site_name).save()
-
-    return Response("ok")
-
-
-@api_view(["POST"])
 def add_site(request):
     client = Client.objects.get(client=request.data["client"].strip())
     site = request.data["site"].strip()

@@ -191,7 +191,6 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
   beforeEach(() => {
 
     // Create the Test store
-    // Create the Test store
     state = {
       checks: [
         diskcheck,
@@ -219,7 +218,7 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
     };
 
     rootActions = {
-      editCheckAlertAction: jest.fn(),
+      editCheckAlert: jest.fn(),
       deleteCheck: jest.fn()
     };
 
@@ -330,7 +329,7 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
     //Get OK button on confirmation dialog and click it
     await bodyWrapper.findAll(".q-btn").wrappers[1].trigger("click");
 
-    expect(rootActions.deleteCheck).toHaveBeenCalledWith(expect.anything(), {pk: 1, checktype:"diskspace"});
+    expect(rootActions.deleteCheck).toHaveBeenCalledWith(expect.anything(), 1);
     expect(actions.loadPolicyChecks).toHaveBeenCalled();
 
   });
@@ -343,22 +342,29 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
     //Enable Text Alert
     await row.trigger("click");
 
-    expect(rootActions.editCheckAlertAction).toHaveBeenCalledWith(expect.anything(), {
-      alertType: "text",
-      checkid: 1,
-      category: "diskspace",
-      action: "enabled"
-    });
+    expect(rootActions.editCheckAlert).toHaveBeenCalledWith(
+      expect.anything(), 
+      { 
+        pk: 1,
+          data: {
+            text_alert: true
+          }
+      }
+      );
 
     //Disable Text Alert
     await row.trigger("click");
 
-    expect(rootActions.editCheckAlertAction).toHaveBeenCalledWith(expect.anything(), {
-      alertType: "text",
-      checkid: 1,
-      category: "diskspace",
-      action: "disabled"
-    });
+    expect(rootActions.editCheckAlert).toHaveBeenCalledWith(     
+      expect.anything(), 
+      { 
+        pk: 1,
+          data: {
+            text_alert: false
+          }
+      }
+    );
+
   });
 
   it("enables and disables email alerts for check", async () => {
@@ -369,22 +375,28 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
     //Enable Text Alert
     await row.trigger("click");
 
-    expect(rootActions.editCheckAlertAction).toHaveBeenCalledWith(expect.anything(), {
-      alertType: "email",
-      checkid: 1,
-      category: "diskspace",
-      action: "enabled"
-    });
+    expect(rootActions.editCheckAlert).toHaveBeenCalledWith(
+      expect.anything(), 
+      { 
+        pk: 1,
+          data: {
+            email_alert: true
+          }
+      }
+    );
 
     //Disable Text Alert
     await row.trigger("click");
 
-    expect(rootActions.editCheckAlertAction).toHaveBeenCalledWith(expect.anything(), {
-      alertType: "email",
-      checkid: 1,
-      category: "diskspace",
-      action: "disabled"
-    });
+    expect(rootActions.editCheckAlert).toHaveBeenCalledWith(
+      expect.anything(), 
+      { 
+        pk: 1,
+          data: {
+            email_alert: false
+          }
+      }
+    );
   });
 
   /* TODO: test @close and @hide events */

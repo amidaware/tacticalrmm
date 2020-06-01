@@ -159,7 +159,7 @@ export const store = new Vuex.Store({
     loadAgentServices(context, agentpk) {
       return axios.get(`/services/${agentpk}/services/`);
     },
-    editCheckAlert(context, pk, data) {
+    editCheckAlert(context, {pk, data}) {
       return axios.patch(`/checks/${pk}/check/`, data);
     },
     deleteCheck(context, pk) {

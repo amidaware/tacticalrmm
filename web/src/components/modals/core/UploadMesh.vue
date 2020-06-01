@@ -42,6 +42,7 @@ export default {
   },
   methods: {
     upload() {
+      this.$q.loading.show({ message: "Uploading..." });
       let formData = new FormData();
       formData.append("meshagent", this.meshagent);
       axios

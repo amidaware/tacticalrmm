@@ -13,6 +13,9 @@ export default {
     checks(state) {
       return state.checks;
     },
+    tasks(state) {
+      return state.automatedTasks.autotasks;
+    },
     selectedPolicyPk(state) {
       return state.selectedPolicy;
     },
@@ -38,7 +41,7 @@ export default {
 
   actions: {
     loadPolicies(context) {
-      axios.get("/automation/policies/").then(r => {
+      return axios.get("/automation/policies/").then(r => {
         context.commit("SET_POLICIES", r.data);
       })
     },
@@ -51,6 +54,12 @@ export default {
       axios.get(`/automation/${pk}/policychecks/`).then(r => {
         context.commit("setPolicyChecks", r.data);
       });
+    },
+    loadCheckStatus(context, { policypk, checkpk }) {
+      return axios.patch(`/automation/${policypk}/policycheckstatus/${checkpk}/check/`);
+    },
+    loadAutomatedTaskStatus(context, { policypk, taskpk }) {
+      return axios.patch(`/automation/${policypk}/policyautomatedtaskstatus/${taskpk}/task/`);
     },
     loadPolicy(context, pk) {
       return axios.get(`/automation/policies/${pk}/`);
@@ -71,6 +80,12 @@ export default {
     },
     getRelated(context, pk) {
       return axios.get(`/automation/policies/${pk}/related/`);
+    },
+    getRelatedPolicies(context, data) {
+      return axios.patch(`/automation/related/`, data);
+    },
+    updateRelatedPolicies(context, data) {
+      return axios.post(`/automation/related/`, data);
     },
     loadPolicyTreeData(context) {
       return axios.get("/automation/policies/overview/");

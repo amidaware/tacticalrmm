@@ -12,7 +12,7 @@ import {
   winservicecheck,
   pingcheck,
   eventlogcheck
-} from "./checksData.js";
+} from "./data.js";
 
 const localVue = createLocalVue();
 localVue.use(Vuex);

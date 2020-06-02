@@ -1,5 +1,5 @@
 <template>
-  <div v-if="Object.keys(automatedTasks).length === 0">No Policy Selected</div>
+  <div v-if="selectedPolicy === null">No Policy Selected</div>
   <div class="row" v-else>
     <div class="col-12">
       <q-btn
@@ -8,9 +8,16 @@
         icon="fas fa-plus"
         label="Add Task"
         text-color="black"
+        ref="add"
         @click="showAddAutomatedTask = true"
       />
-      <q-btn dense flat push @click="refreshTasks(automatedTasks.id)" icon="refresh" />
+      <q-btn 
+        dense 
+        flat push 
+        @click="refreshTasks(selectedPolicy)" 
+        icon="refresh"
+        ref="refresh" 
+      />
       <template v-if="tasks === undefined || tasks.length === 0">
         <p>No Tasks</p>
       </template>
@@ -32,30 +39,57 @@
             </q-th>
           </template>
           <!-- body slots -->
-          <template slot="body" slot-scope="props" :props="props">
+          <template v-slot:body="props" :props="props">
             <q-tr @contextmenu="editTaskPk = props.row.id">
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item clickable v-close-popup @click="runTask(props.row.id, props.row.enabled)">
+                  <q-item 
+                    clickable 
+                    v-close-popup 
+                    @click="runTask(props.row.id, props.row.enabled)"
+                    id="context-runtask"
+                  >
                     <q-item-section side>
                       <q-icon name="play_arrow" />
                     </q-item-section>
                     <q-item-section>Run task now</q-item-section>
                   </q-item>
-                  <q-item clickable v-close-popup @click="showEditAutomatedTask = true">
+                  <q-item 
+                    clickable 
+                    v-close-popup 
+                    @click="showEditAutomatedTask = true"
+                    id="context-edit"
+                  >
                     <q-item-section side>
                       <q-icon name="edit" />
                     </q-item-section>
                     <q-item-section>Edit</q-item-section>
                   </q-item>
-                  <q-item clickable v-close-popup @click="deleteTask(props.row.name, props.row.id)">
+                  <q-item 
+                    clickable 
+                    v-close-popup
+                    @click="deleteTask(props.row.name, props.row.id)"
+                    id="context-delete"
+                  >
                     <q-item-section side>
                       <q-icon name="delete" />
                     </q-item-section>
                     <q-item-section>Delete</q-item-section>
                   </q-item>
-                  <q-separator></q-separator>
+                  <q-separator />
+                  <q-item 
+                    clickable 
+                    v-close-popup
+                    @click="showStatus(props.row)"
+                    id="context-status"
+                  >
+                    <q-item-section side>
+                      <q-icon name="sync" />
+                    </q-item-section>
+                    <q-item-section>Policy Status</q-item-section>
+                  </q-item>
+                  <q-separator />
                   <q-item clickable v-close-popup>
                     <q-item-section>Close</q-item-section>
                   </q-item>
@@ -70,16 +104,20 @@
                 />
               </q-td>
               <q-td>{{ props.row.name }}</q-td>
+              <q-td v-if="props.row.last_run">{{ props.row.last_run }}</q-td>
+              <q-td v-else>Has not run yet</q-td>
+              <q-td>{{ props.row.schedule }}</q-td>
               <q-td>
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
                   @click="showStatus(props.row)"
-                >See Status</span>
+                  class="status-cell"
+                >
+                See Status
+                </span>
               </q-td>
-              <q-td v-if="props.row.last_run">{{ props.row.last_run }}</q-td>
-              <q-td v-else>Has not run yet</q-td>
-              <q-td>{{ props.row.schedule }}</q-td>
-              <q-td>{{ props.row.assigned_check }}</q-td>
+              <q-td v-if="props.row.assigned_check">{{ props.row.assigned_check.name }}</q-td>
+              <q-td v-else></q-td>
             </q-tr>
           </template>
         </q-table>
@@ -88,7 +126,7 @@
     <!-- modals -->
     <q-dialog v-model="showAddAutomatedTask" position="top">
       <AddAutomatedTask 
-        :policypk="automatedTasks.id"
+        :policypk="selectedPolicy"
         @close="showAddAutomatedTask = false" 
       />
     </q-dialog>
@@ -105,7 +143,7 @@
 </template>
 
 <script>
-import { mapState } from "vuex";
+import { mapGetters } from "vuex";
 import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import AddAutomatedTask from "@/components/modals/tasks/AddAutomatedTask";
 import PolicyStatus from "@/components/automation/modals/PolicyStatus";
@@ -128,12 +166,6 @@ export default {
         { name: "enabled", align: "left", field: "enabled" },
         { name: "name", label: "Name", field: "name", align: "left" },
         {
-          name: "status",
-          label: "More Info",
-          field: "more_info",
-          align: "left"
-        },
-        {
           name: "datetime",
           label: "Last Run Time",
           field: "last_run",
@@ -143,6 +175,12 @@ export default {
           name: "schedule",
           label: "Schedule",
           field: "schedule",
+          align: "left"
+        },
+        {
+          name: "status",
+          label: "More Info",
+          field: "more_info",
           align: "left"
         },
         {
@@ -163,15 +201,14 @@ export default {
       this.$store
         .dispatch("editAutoTask", data)
         .then(r => {
-          this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.automatedTasks.id
-          );
+          this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.selectedPolicy);
           this.$q.notify(notifySuccessConfig(r.data));
         })
         .catch(e => this.$q.notify(notifySuccessConfig("Something went wrong")));
     },
     showStatus(task) {
       this.statusTask = task;
-      this.showPolicyTaskStatus = true
+      this.showPolicyTaskStatus = true;
     },
     refreshTasks(id) {
       this.$store.dispatch("automation/loadPolicyAutomatedTasks", id);
@@ -198,7 +235,7 @@ export default {
           this.$store 
             .dispatch("deleteAutoTask", pk)
             .then(r => {
-              this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.automatedTasks.id);
+              this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.selectedPolicy);
               this.$q.notify(notifySuccessConfig(r.data));
             })
             .catch(e => this.$q.notify(notifyErrorConfig("Something went wrong")));
@@ -206,12 +243,10 @@ export default {
     }
   },
   computed: {
-    ...mapState({
-      automatedTasks: state => state.automation.automatedTasks
+    ...mapGetters({
+      tasks: "automation/tasks",
+      selectedPolicy: "automation/selectedPolicyPk"
     }),
-    tasks() {
-      return this.automatedTasks.autotasks;
-    }
   }
 };
 </script>

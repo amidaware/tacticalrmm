@@ -107,6 +107,10 @@ export default {
       return this.$store.state.agentSummary;
     },
     disks() {
+      if (this.summary.disks === undefined) {
+        return [];
+      }
+
       const entries = Object.entries(this.summary.disks);
       const ret = [];
       for (let [k, v] of entries) {

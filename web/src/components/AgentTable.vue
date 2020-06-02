@@ -186,6 +186,18 @@
               <q-item
                 clickable
                 v-close-popup
+                @click.stop.prevent="showPolicyAdd(props.row.id)"
+              >
+                <q-item-section side>
+                  <q-icon size="xs" name="policy" />
+                </q-item-section>
+                <q-item-section>Edit Policies</q-item-section>
+              </q-item>
+
+              <q-separator />
+              <q-item
+                clickable
+                v-close-popup
                 @click.stop.prevent="removeAgent(props.row.id, props.row.hostname)"
               >
                 <q-item-section side>
@@ -312,6 +324,14 @@
     </q-dialog>
     <!-- pending actions modal -->
     <PendingActions />
+    <!-- add policy modal -->
+    <q-dialog v-model="showPolicyAddModal">
+      <PolicyAdd 
+        @close="showPolicyAddModal = false"
+        type="agent"
+        :pk="policyAddPk"
+         />
+    </q-dialog>
   </div>
 </template>
 
@@ -321,11 +341,17 @@ import mixins from "@/mixins/mixins";
 import EditAgent from "@/components/modals/agents/EditAgent";
 import RebootLater from "@/components/modals/agents/RebootLater";
 import PendingActions from "@/components/modals/logs/PendingActions";
+import PolicyAdd from "@/components/automation/modals/PolicyAdd"
 
 export default {
   name: "AgentTable",
   props: ["frame", "columns", "tab", "filter", "userName"],
-  components: { EditAgent, RebootLater, PendingActions },
+  components: { 
+    EditAgent, 
+    RebootLater, 
+    PendingActions,
+    PolicyAdd
+  },
   mixins: [mixins],
   data() {
     return {
@@ -340,7 +366,9 @@ export default {
       rawCMD: "",
       loadingSendCMD: false,
       showEditAgentModal: false,
-      showRebootLaterModal: false
+      showRebootLaterModal: false,
+      showPolicyAddModal: false,
+      policyAddPk: null
     };
   },
   methods: {
@@ -493,6 +521,10 @@ export default {
       } else {
         return "agent-normal";
       }
+    },
+    showPolicyAdd(pk) {
+      this.policyAddPk = pk;
+      this.showPolicyAddModal = true;
     }
   },
   computed: {

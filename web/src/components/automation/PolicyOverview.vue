@@ -44,10 +44,10 @@
           transition-next="jump-up"
         >
           <q-tab-panel name="checks">
-            <PolicyChecksTab :readonly="true" />
+            <PolicyChecksTab />
           </q-tab-panel>
           <q-tab-panel name="tasks">
-            <PolicyAutomatedTasksTab/>
+            <PolicyAutomatedTasksTab />
           </q-tab-panel>
         </q-tab-panels>
       </template>
@@ -78,10 +78,12 @@ export default {
   },
   methods: {
     getPolicyTree() {
+      this.$q.loading.show();
       this.$store
         .dispatch("automation/loadPolicyTreeData")
         .then(r => {
           this.processTreeDataFromApi(r.data);
+          this.$q.loading.hide();
         })
         .catch(e => {
           this.$q.loading.hide();
@@ -96,6 +98,7 @@ export default {
       this.selectedPolicy = this.$refs.tree.getNodeByKey(key);
 
       this.$store.dispatch("automation/loadPolicyChecks", this.selectedPolicy.id);
+      this.$store.commit("automation/setSelectedPolicy", this.selectedPolicy.id);
       this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.selectedPolicy.id);
       
     },

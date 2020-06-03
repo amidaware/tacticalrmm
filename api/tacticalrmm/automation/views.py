@@ -1,13 +1,9 @@
-
-
 from django.db import DataError
 from django.shortcuts import get_object_or_404
-
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-
 
 from .models import Policy
 from agents.models import Agent
@@ -109,10 +105,15 @@ class PolicyAutoTask(APIView):
         policy = get_object_or_404(Policy, pk=pk)
         return Response(AutoTaskPolicySerializer(policy).data)
 
+    def patch(self, request, policy, task):
+
+        # TODO pull agents and status for policy task
+        return Response(list())
+
 class RunPolicyTask(APIView):
     def get(self, request, pk):
 
-        # TODO: Run tasks for all Agents under policy
+        # TODO: Run task for all Agents under policy
         return Response("ok")
 
 class PolicyCheck(APIView):
@@ -120,6 +121,10 @@ class PolicyCheck(APIView):
         checks = Check.objects.filter(policy__pk=pk)
         return Response(CheckSerializer(checks, many=True).data)
 
+    def patch(self, request, policy, check):
+
+        # TODO pull agents and status for policy check
+        return Response(list())
 
 class OverviewPolicy(APIView):
     def get(self, request):
@@ -173,3 +178,58 @@ class GetRelated(APIView):
         response["agents"] = AgentHostnameSerializer(policy.related_agents(), many=True).data
 
         return Response(response)
+    
+    def post(self, request):
+        # Update Agents, Clients, Sites to Policy
+        
+        policies = request.data["policies"]
+        related_type = request.data["type"]
+        pk = request.data["pk"]
+
+        if len(policies) > 0:
+            if related_type == "client":
+                client = get_object_or_404(Client, pk=pk)
+                client.policies.set(policies)
+
+            if related_type == "site":
+                site = get_object_or_404(Site, pk=pk)
+                site.policies.set(policies)
+            
+            if related_type == "agent":
+                agent = get_object_or_404(Agent, pk=pk)
+                agent.policies.set(policies)
+
+        else:
+            if related_type == "client":
+                client = get_object_or_404(Client, pk=pk)
+                client.policies.clear()
+
+            if related_type == "site":
+                site = get_object_or_404(Site, pk=pk)
+                site.policies.clear()
+            
+            if related_type == "agent":
+                agent = get_object_or_404(Agent, pk=pk)
+                agent.policies.clear()
+
+        return Response("ok")
+
+    def patch(self, request):
+        related_type = request.data["type"]
+        pk = request.data["pk"]
+
+        if related_type == "agent":
+            agent = get_object_or_404(Agent, pk=pk)
+            return Response(PolicySerializer(agent.policies.all(), many=True).data)
+
+        if related_type == "site":
+            site = get_object_or_404(Site, pk=pk)
+            return Response(PolicySerializer(site.policies.all(), many=True).data)
+
+        if related_type == "client":
+            client = get_object_or_404(Client, pk=pk)
+            return Response(PolicySerializer(client.policies.all(), many=True).data)
+        
+        content = {"error": "Data was submitted incorrectly"}
+        return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        

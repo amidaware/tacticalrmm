@@ -26,7 +26,6 @@
 
       <q-tab-panels v-model="tab" :animated="false">
         <q-tab-panel name="clients">
-          <div class="text-h6">Clients</div>
           <q-list separator padding>
             <q-item :key="item.id" v-for="item in related.clients">
               <q-item-section>
@@ -37,7 +36,6 @@
         </q-tab-panel>
 
         <q-tab-panel name="sites">
-          <div class="text-h6">Sites</div>
           <q-list separator padding>
             <q-item :key="item.id" v-for="item in related.sites">
               <q-item-section>
@@ -49,7 +47,6 @@
         </q-tab-panel>
 
         <q-tab-panel name="agents">
-          <div class="text-h6">Agents</div>
           <q-list separator padding>
             <q-item :key="item.pk" v-for="item in related.agents">
               <q-item-section>

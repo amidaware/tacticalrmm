@@ -48,7 +48,7 @@ describe("PolicyOverview.vue", () => {
     }
   };
    
-  let wrapper, actions, store;
+  let wrapper, actions, mutations, store;
 
   // Runs before every test
   beforeEach(() => {
@@ -59,10 +59,15 @@ describe("PolicyOverview.vue", () => {
       loadPolicyAutomatedTasks: jest.fn()
     };
 
+    mutations = {
+      setSelectedPolicy: jest.fn()
+    };
+
     store = new Vuex.Store({
       modules: {
         automation: {
           namespaced: true,
+          mutations,
           actions
         }
       }
@@ -114,11 +119,12 @@ describe("PolicyOverview.vue", () => {
       label: "Policy Name 1"
     };
 
-    // Get second rree node which should be the first policy
+    // Get second tree node which should be the first policy
     wrapper.findAll(".q-tree__node-header").wrappers[1].trigger("click");
 
     expect(wrapper.vm.selectedPolicy).toStrictEqual(returnData);
     expect(actions.loadPolicyChecks).toHaveBeenCalledWith(expect.anything(), 1);
+    expect(mutations.setSelectedPolicy).toHaveBeenCalledWith(expect.anything(), 1);
     expect(actions.loadPolicyAutomatedTasks).toHaveBeenCalledWith(expect.anything(), 1);
 
   });

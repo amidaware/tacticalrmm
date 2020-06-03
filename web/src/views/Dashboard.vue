@@ -39,7 +39,58 @@
                 selected-color="primary"
                 :selected.sync="selectedTree"
                 @update:selected="loadFrame(selectedTree)"
-              />
+              >
+                <template v-slot:default-header="props">
+                  <div class="row">
+                    <q-icon :name="props.node.icon" :color="props.node.color" class="q-mr-sm" />
+                    <span>{{ props.node.label }}</span>
+                    
+                    <q-menu context-menu>
+                      <q-list dense style="min-width: 200px">
+                        <q-item 
+                          clickable 
+                          v-close-popup 
+                          @click="showEditModal(props.node)"
+                        >
+                          <q-item-section side>
+                            <q-icon name="edit" />
+                          </q-item-section>
+                          <q-item-section>Edit</q-item-section>
+                        </q-item>
+                        <!--<q-item
+                          clickable
+                          v-close-popup
+                          @click="showDelete(props.node)"
+                        >
+                          <q-item-section side>
+                            <q-icon name="delete" />
+                          </q-item-section>
+                          <q-item-section>Delete</q-item-section>
+                        </q-item>-->
+
+                        <q-separator></q-separator>
+
+                        <q-item 
+                          clickable 
+                          v-close-popup 
+                          @click="showPolicyAdd(props.node)"
+                        >
+                          <q-item-section side>
+                            <q-icon name="policy" />
+                          </q-item-section>
+                          <q-item-section>Edit Policies</q-item-section>
+                        </q-item>
+
+                        <q-separator></q-separator>
+
+                        <q-item clickable v-close-popup>
+                          <q-item-section>Close</q-item-section>
+                        </q-item>
+                      </q-list>
+                    </q-menu>
+                  </div>
+                </template>
+              </q-tree>
             </q-list>
           </div>
           <div v-else>
@@ -80,6 +131,23 @@
         </template>
       </q-splitter>
     </q-page-container>
+
+    <!-- edit client modal -->
+    <q-dialog v-model="showEditClientModal">
+      <EditClients @close="showEditClientModal = false" />
+    </q-dialog>
+    <!-- edit site modal -->
+    <q-dialog v-model="showEditSiteModal">
+      <EditSites @close="showEditSiteModal = false" />
+    </q-dialog>
+    <!-- add policy modal -->
+    <q-dialog v-model="showPolicyAddModal">
+      <PolicyAdd 
+        @close="showPolicyAddModal = false"
+        :type="policyAddType"
+        :pk="parseInt(policyAddPk)"
+      />
+    </q-dialog>
   </q-layout>
 </template>
 
@@ -90,15 +158,27 @@ import FileBar from "@/components/FileBar";
 import AgentTable from "@/components/AgentTable";
 import SubTableTabs from "@/components/SubTableTabs";
 import AlertsIcon from "@/components/AlertsIcon";
+import PolicyAdd from "@/components/automation/modals/PolicyAdd"
+import EditSites from "@/components/modals/clients/EditSites"
+import EditClients from "@/components/modals/clients/EditClients"
+
 export default {
   components: {
     FileBar,
     AgentTable,
     SubTableTabs,
-    AlertsIcon
+    AlertsIcon,
+    PolicyAdd,
+    EditSites,
+    EditClients
   },
   data() {
     return {
+      showEditClientModal: false,
+      showEditSiteModal: false,
+      showPolicyAddModal: false,
+      policyAddType: null,
+      policyAddPk: null,
       outsideModel: 11,
       selectedTree: "",
       innerModel: 55,
@@ -245,6 +325,24 @@ export default {
         //this.$store.commit("destroySubTable");
         this.$store.commit("AGENT_TABLE_LOADING", false);
       });
+    },
+    showPolicyAdd(node) {
+      if (node.children) {
+        this.policyAddType = "client";
+        this.policyAddPk = node.id;
+        this.showPolicyAddModal = true;
+      } else {
+        this.policyAddType = "site";
+        this.policyAddPk = node.id;
+        this.showPolicyAddModal = true;
+      }
+    },
+    showEditModal(node) {
+      if (node.children) {
+        this.showEditClientModal = true;
+      } else {
+        this.showEditSiteModal = true;
+      }
     }
   },
   computed: {

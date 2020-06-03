@@ -134,7 +134,7 @@
                   style="cursor:pointer;color:blue;text-decoration:underline"
                   @click="showRelationsModal(props.row)"
                 >
-                  {{ `See Related (${props.row.clients.length + props.row.sites.length + props.row.agents.length}+)` }}
+                  {{ `Show Relations (${props.row.clients.length + props.row.sites.length + props.row.agents.length}+)` }}
                 </span>
               </q-td>
             </q-tr>

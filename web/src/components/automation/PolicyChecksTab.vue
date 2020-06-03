@@ -172,6 +172,8 @@
                   See Status
                 </span>
               </q-td>
+              <q-td v-if="props.row.assigned_task">{{ props.row.assigned_task.name }}</q-td>
+              <q-td v-else></q-td>
             </q-tr>
           </template>
         </q-table>
@@ -239,7 +241,8 @@ export default {
         { name: "smsalert", field: "text_alert", align: "left" },
         { name: "emailalert", field: "email_alert", align: "left" },
         { name: "desc", label: "Description", align: "left" },
-        { name: "status", label: "Status", field: "status", align: "left" }
+        { name: "status", label: "Status", field: "status", align: "left" },
+        { name: "assigned_task", label: "Assigned Task", field: "assigned_task", align: "left" },
       ],
       pagination: {
         rowsPerPage: 9999

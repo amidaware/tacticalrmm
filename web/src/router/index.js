@@ -1,67 +1,39 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
 
+import routes from './routes';
+
 Vue.use(VueRouter);
 
-const router = new VueRouter({
-  mode: "history",
-  base: process.env.BASE_URL,
-  routes: [
-    {
-      path: "/",
-      name: "Dashboard",
-      component: () => import("@/views/Dashboard"),
-      meta: {
-        requireAuth: true
-      }
-    },
-    {
-      path: "/setup",
-      name: "InitialSetup",
-      component: () => import("@/views/InitialSetup"),
-      meta: {
-        requireAuth: true
-      }
-    },
-    {
-      path: "/takecontrol/:pk",
-      name: "TakeControl",
-      component: () => import("@/views/TakeControl"),
-      meta: {
-        requireAuth: true
-      }
-    },
-    {
-      path: "/remotebackground/:pk",
-      name: "RemoteBackground",
-      component: () => import("@/views/RemoteBackground"),
-      meta: {
-        requireAuth: true
-      }
-    },
-    {
-      path: "/login",
-      name: "Login",
-      component: () => import("@/views/Login"),
-      meta: {
-        requiresVisitor: true
-      }
-    },
-    {
-      path: "/logout",
-      name: "Logout",
-      component: () => import("@/views/Logout")
-    },
-    {
-      path: "/expired",
-      name: "SessionExpired",
-      component: () => import("@/views/SessionExpired"),
-      meta: {
-        requireAuth: true
-      }
-    },
-    { path: "*", component: () => import("@/views/NotFound") }
-  ]
-});
+export default function ({ store }) {
+  const Router = new VueRouter({
+    scrollBehavior: () => ({ x: 0, y: 0 }),
+    routes,
+    mode: process.env.VUE_ROUTER_MODE,
+    base: process.env.VUE_ROUTER_BASE
+  })
 
-export default router;
+  Router.beforeEach((to, from, next) => {
+    if (to.meta.requireAuth) {
+      if (!store.getters.loggedIn) {
+        next({
+          name: "Login"
+        });
+      } else {
+        next();
+      }
+    } else if (to.meta.requiresVisitor) {
+      if (store.getters.loggedIn) {
+        next({
+          name: "Dashboard"
+        });
+      } else {
+        next();
+      }
+    } else {
+      next();
+    }
+  });
+
+  return Router
+}

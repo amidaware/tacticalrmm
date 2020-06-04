@@ -2,37 +2,25 @@
   "name": "web",
   "version": "0.1.8",
   "private": true,
+  "productName": "Tactical RMM",
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "test:unit": "vue-cli-service test:unit"
+    "serve": "quasar dev",
+    "build": "quasar build",
+    "__test:unit": "vue-cli-service test:unit"
   },
   "dependencies": {
     "@quasar/extras": "^1.8.1",
     "axios": "^0.19.2",
-    "core-js": "^3.6.5",
-    "quasar": "^1.12.2",
-    "vue": "^2.6.11",
-    "vue-router": "^3.3.2",
-    "vuex": "^3.4.0"
+    "dotenv": "^8.2.0",
+    "quasar": "^1.12.2"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "~4.4.1",
-    "@vue/cli-plugin-router": "~4.4.1",
-    "@vue/cli-plugin-unit-jest": "^4.4.1",
-    "@vue/cli-plugin-vuex": "~4.4.1",
-    "@vue/cli-service": "~4.4.1",
-    "@vue/test-utils": "^1.0.3",
-    "babel-plugin-transform-imports": "1.5.0",
-    "flush-promises": "^1.0.2",
-    "stylus": "^0.54.7",
-    "stylus-loader": "^3.0.2",
-    "vue-cli-plugin-quasar": "^2.0.2",
-    "vue-template-compiler": "^2.6.11"
+    "@quasar/app": "^1.9.5",
+    "@quasar/quasar-app-extension-testing": "^1.0.0",
+    "@quasar/quasar-app-extension-testing-unit-jest": "^1.0.1",
+    "flush-promises": "^1.0.2"
   },
   "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead"
+    "last 1 version, not dead, ie >= 11"
   ]
 }

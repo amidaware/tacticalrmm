@@ -1,7 +1,8 @@
-import { mount, createLocalVue, createWrapper } from "@vue/test-utils";
+import { mount, createLocalVue } from "test-utils";
+import flushpromises from "flush-promises";
 import Vuex from "vuex";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
-import "@/quasar.js";
+import "../../utils/quasar.js";
 
 const localVue = createLocalVue();
 localVue.use(Vuex);
@@ -73,8 +74,9 @@ describe.each([
     });
   });
 
-  it("calls vuex actions on mount", () => {
+  it("calls vuex actions on mount", async () => {
 
+    await flushpromises();
     expect(actions.loadPolicies).toHaveBeenCalled();
     expect(actions.getRelatedPolicies).toHaveBeenCalledWith(expect.anything(),
       {pk: pk, type: type}
@@ -87,18 +89,21 @@ describe.each([
     expect(wrapper.find(".text-h6").text()).toBe(`Edit policies assigned to ${type}`);
   });
 
-  it("renders correct amount of policies in dropdown", () => {
+  it("renders correct amount of policies in dropdown", async () => {
     
+    await flushpromises();
     expect(wrapper.vm.options).toHaveLength(3);
   });
 
-  it("renders correct amount of related policies in selected", () => {
+  it("renders correct amount of related policies in selected", async () => {
     
+    await flushpromises();
     expect(wrapper.vm.selected).toHaveLength(2);
   });
 
   it("sends correct data on form submit", async () => {
     
+    await flushpromises();
     const form = wrapper.findComponent({ ref: "form" });
 
     await form.vm.$emit("submit");

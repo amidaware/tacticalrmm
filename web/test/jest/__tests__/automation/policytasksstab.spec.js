@@ -1,7 +1,7 @@
-import { mount, shallowMount, createLocalVue, createWrapper } from "@vue/test-utils";
+import { mount, shallowMount, createWrapper, createLocalVue } from "@vue/test-utils";
 import PolicyAutomatedTasksTab from "@/components/automation/PolicyAutomatedTasksTab";
 import Vuex from "vuex";
-import "@/quasar.js";
+import "../../utils/quasar.js";
 
 // Import Test Data
 import {
@@ -238,6 +238,7 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
 
     const row = wrapper.findAll(".q-table > tbody > .q-tr").wrappers[0];
     await row.trigger("contextmenu");
+    await localVue.nextTick();
     expect(bodyWrapper.find(".q-menu").exists()).toBe(true);
 
     await bodyWrapper.find("#context-status").trigger("click");
@@ -252,6 +253,7 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
 
     const row = wrapper.findAll(".q-table > tbody > .q-tr").wrappers[0];
     await row.trigger("contextmenu");
+    await localVue.nextTick();
     expect(bodyWrapper.find(".q-menu").exists()).toBe(true);
 
     await bodyWrapper.find("#context-delete").trigger("click");

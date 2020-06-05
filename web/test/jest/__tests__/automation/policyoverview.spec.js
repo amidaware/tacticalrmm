@@ -1,8 +1,7 @@
 import { mount, createLocalVue } from "@vue/test-utils";
-import flushPromises from "flush-promises";
 import Vuex from "vuex";
 import PolicyOverview from "@/components/automation/PolicyOverview";
-import "@/quasar.js";
+import "../../utils/quasar.js";
 
 const localVue = createLocalVue();
 localVue.use(Vuex);
@@ -91,7 +90,9 @@ describe("PolicyOverview.vue", () => {
 
   });
 
-  it("renders tree data", () => {
+  it("renders tree data", async () => {
+
+    await localVue.nextTick();
 
     const tree = wrapper.findComponent({ ref: "tree" });
 
@@ -110,7 +111,7 @@ describe("PolicyOverview.vue", () => {
     expect(site2.label).toBe("Site Name 2");
   });
 
-  it("selects tree node and updates data property with policy",() => {
+  it("selects tree node and updates data property with policy", async () => {
 
     // Expected rendered policy node data
     const returnData = {
@@ -119,6 +120,8 @@ describe("PolicyOverview.vue", () => {
       label: "Policy Name 1"
     };
 
+    await localVue.nextTick();
+    
     // Get second tree node which should be the first policy
     wrapper.findAll(".q-tree__node-header").wrappers[1].trigger("click");
 

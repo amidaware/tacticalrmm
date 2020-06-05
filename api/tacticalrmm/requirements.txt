@@ -7,7 +7,7 @@ cffi==1.14.0
 chardet==3.0.4
 cryptography==2.9.2
 decorator==4.4.2
-Django==3.0.6
+Django==3.0.7
 django-cors-headers==3.3.0
 django-rest-knox==4.1.0
 djangorestframework==3.11.0

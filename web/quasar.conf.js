@@ -60,8 +60,9 @@ module.exports = function () {
     // Full list of options: https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-devServer
     devServer: {
       https: false,
-      host: "192.168.99.150",
-      port: 8080,
+      host: process.env.DEV_HOST,
+      port: process.env.DEV_PORT,
+      public: process.env.APP_URL,
       open: false
     },
 

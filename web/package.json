@@ -6,19 +6,22 @@
   "scripts": {
     "serve": "quasar dev",
     "build": "quasar build",
-    "__test:unit": "vue-cli-service test:unit"
+    "test:unit": "quasar test --unit jest"
   },
   "dependencies": {
-    "@quasar/extras": "^1.8.1",
+    "@quasar/extras": "^1.8.2",
     "axios": "^0.19.2",
     "dotenv": "^8.2.0",
-    "quasar": "^1.12.2"
+    "quasar": "^1.12.3"
   },
   "devDependencies": {
-    "@quasar/app": "^1.9.5",
+    "@quasar/app": "^1.9.6",
+    "@quasar/cli": "^1.0.7",
     "@quasar/quasar-app-extension-testing": "^1.0.0",
     "@quasar/quasar-app-extension-testing-unit-jest": "^1.0.1",
-    "flush-promises": "^1.0.2"
+    "core-js": "^2.6.11",
+    "flush-promises": "^1.0.2",
+    "fs-extra": "^9.0.1"
   },
   "browserslist": [
     "last 1 version, not dead, ie >= 11"

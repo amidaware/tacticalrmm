@@ -1,7 +1,7 @@
-import { mount, shallowMount, createLocalVue, createWrapper } from "@vue/test-utils";
+import { mount, shallowMount, createWrapper, createLocalVue } from "@vue/test-utils";
 import PolicyChecksTab from "@/components/automation/PolicyChecksTab";
 import Vuex from "vuex";
-import "@/quasar.js";
+import "../../utils/quasar.js"
 
 // Import Test Data
 import {
@@ -14,7 +14,7 @@ import {
   eventlogcheck
 } from "./data.js";
 
-const localVue = createLocalVue();
+const localVue = createLocalVue()
 localVue.use(Vuex);
 
 const bodyWrapper = createWrapper(document.body);
@@ -34,7 +34,6 @@ describe("PolicyChecksTab.vue with no policy selected", () => {
   // Runs before every test
   beforeEach(() => {
 
-    // Create the Test store
     // Create the Test store
     state = {
       checks: [],
@@ -160,6 +159,7 @@ describe("PolicyChecksTab.vue with policy selected and no checks", () => {
       expect(bodyWrapper.find(".q-menu").exists()).toBe(false);
 
       await addButton.trigger("click");
+      await localVue.nextTick();
       expect(bodyWrapper.find(".q-menu").exists()).toBe(true);
 
       // Selects correct menu item
@@ -268,6 +268,7 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
 
       const row = wrapper.findAll(".q-table > tbody > .q-tr").wrappers[item.index];
       await row.trigger("contextmenu");
+      await localVue.nextTick();
       expect(bodyWrapper.find(".q-menu").exists()).toBe(true);
       
       await bodyWrapper.find("#context-edit").trigger("click");
@@ -296,6 +297,7 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
 
     const row = wrapper.findAll(".q-table > tbody > .q-tr").wrappers[0];
     await row.trigger("contextmenu");
+    await localVue.nextTick();
     expect(bodyWrapper.find(".q-menu").exists()).toBe(true);
 
     await bodyWrapper.find("#context-status").trigger("click");
@@ -321,6 +323,7 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
 
     const row = wrapper.findAll(".q-table > tbody > .q-tr").wrappers[0];
     await row.trigger("contextmenu");
+    await localVue.nextTick();
     expect(bodyWrapper.find(".q-menu").exists()).toBe(true);
 
     await bodyWrapper.find("#context-delete").trigger("click");

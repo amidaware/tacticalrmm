@@ -1,7 +1,7 @@
 import { mount, createLocalVue } from "@vue/test-utils";
 import Vuex from "vuex";
 import RelationsView from "@/components/automation/modals/RelationsView";
-import "@/quasar.js"
+import "../../utils/quasar.js";
 
 const localVue = createLocalVue();
 localVue.use(Vuex);

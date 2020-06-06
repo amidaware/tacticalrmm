@@ -6,6 +6,8 @@
   },
   "@quasar/testing-unit-jest": {
     "babel": "babelrc",
-    "options": []
+    "options": [
+      "scripts"
+    ]
   }
 }

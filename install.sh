@@ -590,12 +590,15 @@ sudo certbot certonly --standalone --agree-tos -m ${letsemail} --no-eff-email -d
 sudo chown -R $USER:$GROUP /home/${USER}/.npm
 sudo chown -R $USER:$GROUP /home/${USER}/.config
 
-vueconf="$(cat << EOF
-VUE_APP_PROD_URL = "https://${rmmdomain}"
-VUE_APP_DEV_URL = "http://localhost:8000"
+quasarenv="$(cat << EOF
+PROD_URL = "https://${rmmdomain}"
+DEV_URL = "https://api.example.com"
+APP_URL = "https://app.example.com"
+DEV_HOST = 0.0.0.0
+DEV_PORT = 80
 EOF
 )"
-echo "${vueconf}" | tee /home/${USER}/rmm/web/.env.local > /dev/null
+echo "${quasarenv}" | tee /home/${USER}/rmm/web/.env > /dev/null
 
 print_green 'Installing the frontend'
 

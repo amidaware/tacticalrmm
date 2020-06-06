@@ -6,8 +6,8 @@ WORKDIR /home/node
 RUN apk add gettext
 COPY ./web/package.json .
 RUN npm install
-COPY ./docker/app/.env.local.keep /home/.env.local.tmp
-RUN envsubst '\$API_HOST' < /home/.env.local.tmp > /home/node/.env.local && rm /home/.env.local.tmp
+COPY ./docker/app/.env.keep /home/.env.tmp
+RUN envsubst '\$API_HOST' < /home/.env.tmp > /home/node/.env && rm /home/.env.tmp
 COPY ./docker/app/app.conf /home/node/app.conf.tmp
 RUN envsubst '\$APP_HOST' < /home/node/app.conf.tmp > /home/node/app.conf
 COPY ./web .

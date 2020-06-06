@@ -2,7 +2,7 @@ import { mount, createLocalVue } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import Vuex from "vuex";
 import PolicyForm from "@/components/automation/modals/PolicyForm";
-import "@/quasar.js";
+import "../../utils/quasar.js";
 
 const localVue = createLocalVue();
 localVue.use(Vuex);

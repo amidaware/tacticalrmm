@@ -1,7 +1,7 @@
-import { mount, createLocalVue, createWrapper } from "@vue/test-utils";
+import { mount, createWrapper, createLocalVue } from "@vue/test-utils";
 import Vuex from "vuex";
 import AutomationManager from "@/components/automation/AutomationManager";
-import "@/quasar.js"
+import "../../utils/quasar.js";
 
 const localVue = createLocalVue();
 localVue.use(Vuex);
@@ -127,7 +127,8 @@ describe("AutomationManager.vue", () => {
     expect(bodyWrapper.find(".q-menu").exists()).toBe(false);
 
     // Right Click on Row
-    await wrapper.find("tbody > tr.q-tr").trigger("contextmenu");
+    await wrapper.find("tbody > .q-tr").trigger("contextmenu");
+    await localVue.nextTick();
     expect(bodyWrapper.find(".q-menu").exists()).toBe(true);
     await bodyWrapper.find("#context-edit").trigger("click");
 
@@ -187,6 +188,7 @@ describe("AutomationManager.vue", () => {
 
     // Right Click on Row
     await wrapper.find("tbody > tr.q-tr").trigger("contextmenu");
+    await localVue.nextTick();
     expect(bodyWrapper.find(".q-menu").exists()).toBe(true);
     await bodyWrapper.find("#context-delete").trigger("click");
 
@@ -230,6 +232,7 @@ describe("AutomationManager.vue", () => {
 
     // Right Click on Row
     await wrapper.find("tbody > tr.q-tr").trigger("contextmenu");
+    await localVue.nextTick();
     expect(bodyWrapper.find(".q-menu").exists()).toBe(true);
     await bodyWrapper.find("#context-relation").trigger("click");
 

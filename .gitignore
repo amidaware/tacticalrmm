@@ -1,4 +1,5 @@
 .DS_Store
+.quasar
 node_modules
 /dist
 .env.local

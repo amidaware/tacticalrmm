@@ -32,6 +32,7 @@ module.exports = function () {
     build: {
       env: { DEV_API: JSON.stringify(process.env.DEV_URL), PROD_API: JSON.stringify(process.env.PROD_URL) },
       vueRouterMode: 'history', // available values: 'hash', 'history'
+      distDir: "dist/",
 
       // Add dependencies for transpiling with Babel (Array of regexes)
       // (from node_modules, which are by default not transpiled).

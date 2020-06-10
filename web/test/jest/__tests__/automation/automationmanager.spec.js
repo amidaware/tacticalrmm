@@ -241,6 +241,8 @@ describe("AutomationManager.vue", () => {
 
   });
 
+  // TODO Test Checkboxes on table
+
   // TODO: Test @close and @hide events
 
 });

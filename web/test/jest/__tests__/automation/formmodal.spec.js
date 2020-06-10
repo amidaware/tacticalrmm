@@ -8,48 +8,16 @@ const localVue = createLocalVue();
 localVue.use(Vuex);
 
 /***   TEST DATA   ***/
-const clients = [ 
-  {
-    id: 1, 
-    client: "Test Client"
-  }, 
-  {
-    id: 2, 
-    client: "Test Client2"
-  },
-  {
-    id: 3, 
-    client: "Test Client3"
-  } 
-];
-const sites = [ 
-  {
-    id: 1, 
-    site: "Site Name", 
-    client_name: "Test Client"
-  }, 
-  {
-    id: 2, 
-    site: "Site Name2", 
-    client_name: "Test Client2"
-  } 
-];
-
 const policy = {
   id: 1,
   name: "Test Policy",
   desc: "Test Desc",
-  active: true,
-  clients: [],
-  sites: []
+  enforced: false,
+  active: true
 };
 
 let actions, rootActions, store;
 beforeEach(() => {
-  rootActions = {
-    loadClients: jest.fn(() => new Promise(res => res({ data: clients }))),
-    loadSites: jest.fn(() => new Promise(res => res({ data: sites }))),
-  };
 
   actions = {
     loadPolicy: jest.fn(() => new Promise(res => res({ data: policy }))),
@@ -87,8 +55,6 @@ describe("PolicyForm.vue when editting", () => {
   /***   TESTS   ***/
   it("calls vuex actions on mount with pk prop set", () => {
 
-    expect(rootActions.loadClients).toHaveBeenCalled();
-    expect(rootActions.loadSites).toHaveBeenCalled();
     expect(actions.loadPolicy).toHaveBeenCalledWith(expect.anything(), 1);
 
   });
@@ -127,21 +93,8 @@ describe("PolicyForm.vue when adding", () => {
   /***   TESTS   ***/
   it("calls vuex actions on mount", () => {
 
-    expect(rootActions.loadClients).toHaveBeenCalled();
-    expect(rootActions.loadSites).toHaveBeenCalled();
-
     // Not called unless pk prop is set
     expect(actions.loadPolicy).not.toHaveBeenCalled();
-
-  });
-
-  it("Sets client and site options correctly", async () => {
-
-    // Make sure the promises are resolved
-    await flushPromises();
-
-    expect(wrapper.vm.clientOptions).toHaveLength(3);
-    expect(wrapper.vm.siteOptions).toHaveLength(2);
 
   });
 

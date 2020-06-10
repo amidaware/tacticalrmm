@@ -83,6 +83,9 @@
           <template v-slot:header-cell-statusicon="props">
             <q-th auto-width :props="props"></q-th>
           </template>
+          <template v-slot:header-cell-policystatus="props">
+            <q-th auto-width :props="props"></q-th>
+          </template>
           <!-- body slots -->
           <template slot="body" slot-scope="props" :props="props">
             <q-tr @contextmenu="checkpk = props.row.id">
@@ -128,6 +131,18 @@
                   v-model="props.row.email_alert"
                 />
               </q-td>
+              <!-- policy check icon -->
+              <q-td v-if="props.row.managed_by_policy">
+                <q-icon style="font-size: 1.3rem;" name="policy">
+                  <q-tooltip>This check is managed by a policy</q-tooltip>
+                </q-icon>
+              </q-td>
+              <q-td v-else-if="props.row.overriden_by_policy">
+                <q-icon style="font-size: 1.3rem;" name="remove_circle_outline">
+                  <q-tooltip>This check is overriden by a policy</q-tooltip>
+                </q-icon>
+              </q-td>
+              <q-td v-else></q-td>
               <!-- status icon -->
               <q-td v-if="props.row.status === 'pending'"></q-td>
               <q-td v-else-if="props.row.status === 'passing'">
@@ -292,6 +307,7 @@ export default {
       columns: [
         { name: "smsalert", field: "text_alert", align: "left" },
         { name: "emailalert", field: "email_alert", align: "left" },
+        { name: "policystatus", align: "left" },
         { name: "statusicon", align: "left" },
         { name: "desc", label: "Description", align: "left" },
         { name: "status", label: "Status", field: "status", align: "left" },

@@ -7,23 +7,21 @@ import "../../utils/quasar.js";
 const localVue = createLocalVue();
 localVue.use(Vuex);
 
-const related = [
-  {
+const related = {
     id: 1,
     name: "Test Policy"
-  },
-  {
-    id: 2,
-    name: "Test Policy 2"
-  }
-];
+  };
 
 let state, actions, getters, store;
 beforeEach(() => {
 
   state = {
     policies: [
-      ...related,
+      related,
+      {
+        id: 2,
+        name: "Test Policy 2"
+      },
       {
         id: 3,
         name: "TestPolicy 3"
@@ -34,7 +32,7 @@ beforeEach(() => {
   actions = {
     updateRelatedPolicies: jest.fn(),
     loadPolicies: jest.fn(),
-    getRelatedPolicies: jest.fn(() => new Promise(res => res({ data: related }))),
+    getRelatedPolicies: jest.fn(() => Promise.resolve({ data: related })),
   };
 
   getters = {
@@ -86,7 +84,7 @@ describe.each([
 
   it("renders title correctly", () => {
     
-    expect(wrapper.find(".text-h6").text()).toBe(`Edit policies assigned to ${type}`);
+    expect(wrapper.find(".text-h6").text()).toBe(`Edit policy assigned to ${type}`);
   });
 
   it("renders correct amount of policies in dropdown", async () => {
@@ -95,10 +93,10 @@ describe.each([
     expect(wrapper.vm.options).toHaveLength(3);
   });
 
-  it("renders correct amount of related policies in selected", async () => {
+  it("renders correct policy in selected", async () => {
     
     await flushpromises();
-    expect(wrapper.vm.selected).toHaveLength(2);
+    expect(wrapper.vm.selected).toStrictEqual({label: related.name, value: related.id});
   });
 
   it("sends correct data on form submit", async () => {
@@ -109,7 +107,7 @@ describe.each([
     await form.vm.$emit("submit");
 
     expect(actions.updateRelatedPolicies).toHaveBeenCalledWith(expect.anything(),
-      { pk: pk, type: type, policies: [1,2] }
+      { pk: pk, type: type, policy: related.id }
     );
 
   });

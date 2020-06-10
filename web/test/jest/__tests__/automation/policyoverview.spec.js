@@ -8,44 +8,44 @@ localVue.use(Vuex);
 
 describe("PolicyOverview.vue", () => {
 
-  const policyTreeData = { 
-    // node 0
-    "Client Name 1": {
-      policies: [
+  const policyTreeData = [ 
+    {
+      // node 0
+      client: "Client Name 1",
+      policy: {
+        id: 1,
+        name: "Policy Name 1",
+        active: true
+      },
+      // node -1
+      sites: [
         {
-          id: 1,
-          name: "Policy Name 1",
-          active: true
+          site: "Site Name 1",
+          policy: null
         }
-      ],
-      sites: {
-        // node -1
-        "Site Name 1": { policies: []}
-      }
+      ]
     },
-    // node -2
-    "Client Name 2": {
-      policies: [
+    {
+      // node -2
+      client: "Client Name 2",
+      policy: {
+        id: 2,
+        name: "Policy Name 2",
+        active: true
+      },
+      sites: [
         {
-          id: 2,
-          name: "Policy Name 2",
-          active: true
+          // node -3
+          site: "Site Name 2",
+          policy: {
+            id: 3,
+            name: "Policy Name 3",
+            active: false
+          }
         }
-      ],
-      sites: {
-      // node -3
-        "Site Name 2": { 
-          policies: [
-            {
-              id: 3,
-              name: "Policy Name 3",
-              active: false
-            }
-          ]
-        }
-      }
+      ]
     }
-  };
+  ];
    
   let wrapper, actions, mutations, store;
 

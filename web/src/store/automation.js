@@ -55,11 +55,11 @@ export default {
         context.commit("setPolicyChecks", r.data);
       });
     },
-    loadCheckStatus(context, { policypk, checkpk }) {
-      return axios.patch(`/automation/${policypk}/policycheckstatus/${checkpk}/check/`);
+    loadCheckStatus(context, { checkpk }) {
+      return axios.patch(`/automation/policycheckstatus/${checkpk}/check/`);
     },
-    loadAutomatedTaskStatus(context, { policypk, taskpk }) {
-      return axios.patch(`/automation/${policypk}/policyautomatedtaskstatus/${taskpk}/task/`);
+    loadAutomatedTaskStatus(context, { taskpk }) {
+      return axios.patch(`/automation/policyautomatedtaskstatus/${taskpk}/task/`);
     },
     loadPolicy(context, pk) {
       return axios.get(`/automation/policies/${pk}/`);
@@ -76,7 +76,10 @@ export default {
       });
     },
     runPolicyTask(context, pk) {
-      return axios.get(`/automation/runwintask/${pk}/`);
+      return axios.put(`/automation/runwintask/${pk}/`);
+    },
+    runPolicyCheck(context, pk) {
+      return axios.put(`/automation/runpolicycheck/${pk}/`);
     },
     getRelated(context, pk) {
       return axios.get(`/automation/policies/${pk}/related/`);

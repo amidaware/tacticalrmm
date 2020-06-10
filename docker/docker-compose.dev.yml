@@ -6,7 +6,7 @@ services:
   # Container that hosts Vue frontend
   app:
     image: node:12
-    command: /bin/bash -c "npm install --force && npm run serve -- --host 0.0.0.0 --port 80 --public ${APP_HOST}"
+    command: /bin/bash -c "npm install && npm run serve -- --host 0.0.0.0 --port 80 --public ${APP_HOST}"
     working_dir: /home/node
     volumes:
       - ../web:/home/node

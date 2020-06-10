@@ -105,19 +105,18 @@ export default {
     processTreeDataFromApi(data) {
       /* Structure
        * [{
-       *   "client_name_1": {
-       *     "policies": [
-       *       {
-       *         id: 1,
-       *         name: "Policy Name 1"
-       *       }
-       *     ],
-       *     sites: {
-       *       "site_name_1": {
-       *         "policies": []
-       *       }
+       *   client: Client Name 1,
+       *   policy: {
+       *     id: 1,
+       *     name: "Policy Name 1"
+       *   },
+       *   sites: [{
+       *     name: "Site Name 1",
+       *     policy: {
+       *       id: 2,
+       *       name: "Policy Name 2"
        *     }
-       *   }
+       *   }]
        * }]
        */
 
@@ -129,7 +128,7 @@ export default {
       for (let client in data) {
         var client_temp = {};
 
-        client_temp["label"] = client;
+        client_temp["label"] = data[client].client;
         client_temp["id"] = unique_id;
         client_temp["icon"] = "business";
         client_temp["selectable"] = false;
@@ -139,27 +138,25 @@ export default {
 
         // Add any policies assigned to client
 
-        if (data[client].policies.length > 0) {
-          for (let policy in data[client].policies) {
-            let disabled = "";
+        if (data[client].policy !== null) {
+          let disabled = "";
 
-            // Indicate if the policy is active or not
-            if (!data[client].policies[policy].active) {
-             disabled = " (disabled)";
-            }
-
-            client_temp["children"].push({
-              label: data[client].policies[policy].name + disabled,
-              icon: "policy",
-              id: data[client].policies[policy].id
-            });
+          // Indicate if the policy is active or not
+          if (!data[client].policy.active) {
+            disabled = " (disabled)";
           }
+
+          client_temp["children"].push({
+            label: data[client].policy.name + disabled,
+            icon: "policy",
+            id: data[client].policy.id
+          });
         }
 
         // Iterate through Sites
         for (let site in data[client].sites) {
           var site_temp = {};
-          site_temp["label"] = site;
+          site_temp["label"] = data[client].sites[site].site;
           site_temp["id"] = unique_id;
           site_temp["icon"] = "apartment";
           site_temp["selectable"] = false;
@@ -167,23 +164,21 @@ export default {
           unique_id--;
 
           // Add any policies assigned to site
-          if (data[client].sites[site].policies.length > 0) {
+          if (data[client].sites[site].policy !== null) {
             site_temp["children"] = [];
-
-            for (let policy in data[client].sites[site].policies) {
-              
-              // Indicate if the policy is active or not
-              let disabled = "";
-              if (!data[client].sites[site].policies[policy].active) {
-                disabled = " (disabled)";
-              }
-
-              site_temp["children"].push({
-                label: data[client].sites[site].policies[policy].name + disabled,
-                icon: "policy",
-                id: data[client].sites[site].policies[policy].id
-              });
+         
+            // Indicate if the policy is active or not
+            let disabled = "";
+            if (!data[client].sites[site].policy.active) {
+              disabled = " (disabled)";
             }
+
+            site_temp["children"].push({
+              label: data[client].sites[site].policy.name + disabled,
+              icon: "policy",
+              id: data[client].sites[site].policy.id
+            });
+            
           }
 
           // Add Site to Client children array

@@ -311,7 +311,11 @@ class CheckRunner(APIView):
 
     def get(self, request, pk):
         agent = get_object_or_404(Agent, pk=pk)
-        checks = Check.objects.filter(agent__pk=pk)
+        
+        if agent.policies_pending:
+            agent.generate_checks_from_policies()
+ 
+        checks = Check.objects.filter(agent__pk=pk, overriden_by_policy=False)
 
         ret = {
             "agent": agent.pk,

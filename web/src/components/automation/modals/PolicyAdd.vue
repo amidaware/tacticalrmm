@@ -1,7 +1,7 @@
 <template>
   <q-card style="width: 60vw" >
     <q-card-section class="row items-center">
-      <div class="text-h6">Edit policies assigned to {{ type }}</div>
+      <div class="text-h6">Edit policy assigned to {{ type }}</div>
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
@@ -11,10 +11,9 @@
             v-model="selected" 
             :options="options" 
             filled 
-            multiple 
-            use-chips
             options-selected-class="text-green"
             dense
+            clearable
           >
             <template v-slot:option="props">
               <q-item
@@ -32,7 +31,7 @@
           </q-select>
         </q-card-section>
         <q-card-section class="row items-center">
-          <q-btn label="Add Polices" color="primary" type="submit" />
+          <q-btn label="Add Policy" color="primary" type="submit" />
         </q-card-section>
       </q-form>
   </q-card>
@@ -57,7 +56,7 @@ export default {
   },
   data() {
     return {
-      selected: [],
+      selected: null,
       options: []
     }
   },
@@ -73,7 +72,7 @@ export default {
       let data = {};
       data.pk = this.pk,
       data.type = this.type;
-      data.policies = this.selected.map(policy => policy.value);
+      data.policy = this.selected === null ? 0 : this.selected.value;
 
       this.$store
         .dispatch("automation/updateRelatedPolicies", data)
@@ -102,14 +101,16 @@ export default {
         });;
 
     },
-    getRelations(pk, type) {
+    getRelation(pk, type) {
       this.$store
         .dispatch("automation/getRelatedPolicies", {pk, type})
         .then(r => {
-          this.selected = r.data.map(item => ({
-            label: item.name,
-            value: item.id
-          }))
+          if (r.data.id !== undefined) {
+            this.selected = {
+              label: r.data.name,
+              value: r.data.id
+            }
+          }
         })
         .catch(e => {
           this.$q.notify(notifyErrorConfig("Add error occured while loading"));
@@ -118,7 +119,7 @@ export default {
   },
   mounted() {
     this.getPolicies();
-    this.getRelations(this.pk, this.type);
+    this.getRelation(this.pk, this.type);
   }
 }
 </script>

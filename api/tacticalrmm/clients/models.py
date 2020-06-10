@@ -4,6 +4,13 @@ from agents.models import Agent
 
 class Client(models.Model):
     client = models.CharField(max_length=255, unique=True)
+    policy = models.ForeignKey(
+        "automation.Policy",
+        related_name="clients",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
 
     def __str__(self):
         return self.client
@@ -22,6 +29,13 @@ class Client(models.Model):
 class Site(models.Model):
     client = models.ForeignKey(Client, related_name="sites", on_delete=models.CASCADE)
     site = models.CharField(max_length=255)
+    policy = models.ForeignKey(
+        "automation.Policy",
+        related_name="sites",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
 
     def __str__(self):
         return self.site

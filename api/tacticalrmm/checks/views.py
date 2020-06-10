@@ -68,6 +68,7 @@ class GetUpdateDeleteCheck(APIView):
     def delete(self, request, pk):
         check = get_object_or_404(Check, pk=pk)
         check.delete()
+
         return Response(f"{check.readable_desc} was deleted!")
 
 

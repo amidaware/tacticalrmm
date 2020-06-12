@@ -9,7 +9,7 @@ urlpatterns = [
     path("policies/<int:pk>/", views.GetUpdateDeletePolicy.as_view()),
     path("<int:pk>/policychecks/", views.PolicyCheck.as_view()),
     path("<int:pk>/policyautomatedtasks/", views.PolicyAutoTask.as_view()),
-    path("<int:policy>/policycheckstatus/<int:check>/check/", views.PolicyCheck.as_view()),
-    path("<int:policy>/policyautomatedtaskstatus/<int:task>/task/", views.PolicyAutoTask.as_view()),
-    path("runwintask/<int:pk>/", views.RunPolicyTask.as_view()),
+    path("policycheckstatus/<int:check>/check/", views.PolicyCheck.as_view()),
+    path("policyautomatedtaskstatus/<int:task>/task/", views.PolicyAutoTask.as_view()),
+    path("runwintask/<int:pk>/", views.PolicyAutoTask.as_view()),
 ]

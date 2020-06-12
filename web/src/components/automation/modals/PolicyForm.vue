@@ -25,69 +25,9 @@
         </div>
       </q-card-section>
       <q-card-section class="row">
-        <div class="col-2">Clients:</div>
+        <div class="col-2">Enforced:</div>
         <div class="col-10">
-          <q-select 
-            v-model="selectedClients" 
-            :options="clientOptions" 
-            filled 
-            multiple 
-            use-chips
-            options-selected-class="text-green"
-          >
-            <template v-slot:no-option>
-              <q-item>
-                <q-item-section class="text-grey">No Results</q-item-section>
-              </q-item>
-            </template>
-            <template v-slot:option="props">
-              <q-item
-                v-bind="props.itemProps"
-                v-on="props.itemEvents"
-              >
-                <q-item-section avatar>
-                  <q-icon v-if="props.selected" name="check" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label v-html="props.opt.label" />
-                </q-item-section>
-              </q-item>
-            </template>
-          </q-select>
-        </div>
-      </q-card-section>
-      <q-card-section class="row">
-        <div class="col-2">Sites:</div>
-        <div class="col-10">
-          <q-select 
-            v-model="selectedSites" 
-            :options="siteOptions" 
-            filled 
-            multiple 
-            use-chips
-            options-selected-class="text-green"
-          >
-            <template v-slot:no-option>
-              <q-item>
-                <q-item-section class="text-grey">No Results</q-item-section>
-              </q-item>
-            </template>
-            <template v-slot:option="props">
-              <q-item
-                v-bind="props.itemProps"
-                v-on="props.itemEvents"
-              >
-                <q-item-section avatar>
-                  <q-icon v-if="props.selected" name="check" />
-                </q-item-section>
-                <q-item-section>
-                  <!-- <q-item-label overline>{{ props.opt.client }}</q-item-label> -->
-                  <q-item-label v-html="props.opt.label" />
-                  <q-item-label caption>{{ props.opt.client }}</q-item-label>
-                </q-item-section>
-              </q-item>
-            </template>
-          </q-select>
+          <q-toggle v-model="enforced" color="green" />
         </div>
       </q-card-section>
       <q-card-section class="row items-center">
@@ -99,21 +39,17 @@
 
 <script>
 import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
-import dropdown_formatter from "@/mixins/dropdown_formatter";
 
 export default {
   name: "PolicyForm",
-  mixins: [mixins, dropdown_formatter],
+  mixins: [mixins],
   props: { pk: Number },
   data() {
     return {
       name: "",
       desc: "",
-      active: false,
-      selectedSites: [],
-      selectedClients: [],
-      clientOptions: [],
-      siteOptions: []
+      enforced: false,
+      active: false
     };
   },
   computed: {
@@ -134,14 +70,7 @@ export default {
           this.name = r.data.name;
           this.desc = r.data.desc;
           this.active = r.data.active;
-          this.selectedSites = r.data.sites.map(site => ({
-            label: site.site,
-            value: site.id
-          }) );
-          this.selectedClients = r.data.clients.map(client => ({
-            label: client.client,
-            value: client.id
-          }) );
+          this.enforced = r.data.enforced;
         });
     },
     submit() {
@@ -157,8 +86,7 @@ export default {
         name: this.name,
         desc: this.desc,
         active: this.active,
-        sites: this.selectedSites.map(site => site.value),
-        clients: this.selectedClients.map(client => client.value)
+        enforced: this.enforced
       };
 
       if (this.pk) {
@@ -186,20 +114,6 @@ export default {
             this.$q.notify(notifyErrorConfig(e.response.data));
           });
       }
-    },
-    getClients() {
-      this.$store
-        .dispatch("loadClients")
-        .then(r => {
-          this.clientOptions = this.formatClients(r.data);
-        });
-    },
-    getSites() {
-      this.$store
-        .dispatch("loadSites")
-        .then(r => {
-          this.siteOptions = this.formatSites(r.data);
-        });
     }
   },
   mounted() {
@@ -207,9 +121,6 @@ export default {
     if (this.pk) {
       this.getPolicy();
     }
-
-    this.getClients();
-    this.getSites();
   }
 };
 </script>

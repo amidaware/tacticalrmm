@@ -62,21 +62,38 @@
           class="settings-tbl-sticky"
           :data="policies"
           :columns="columns"
-          :visible-columns="visibleColumns"
           :pagination.sync="pagination"
           :selected.sync="selected"
-          @selection="policyRowSelected"
           selection="single"
+          @selection="policyRowSelected"
           row-key="id"
           binary-state-sort
           hide-bottom
-          flat
         >
+          <!-- header slots -->
           <template v-slot:header="props">
             <q-tr :props="props">
-              <q-th v-for="col in props.cols" :key="col.name" :props="props">{{ col.label }}</q-th>
+              <template v-for="col in props.cols">
+
+                <q-th v-if="col.name === 'active'" auto-width :key="col.name">
+                  <q-icon name="power_settings_new" size="1.5em">
+                    <q-tooltip>Enable Policy</q-tooltip>
+                  </q-icon>
+                </q-th>
+
+                <q-th v-else-if="col.name === 'enforced'" auto-width :key="col.name">
+                  <q-icon name="security" size="1.5em">
+                    <q-tooltip>Enforce Policy (Will override Agent checks)</q-tooltip>
+                  </q-icon>
+                </q-th>
+
+                <q-th v-else :key="col.name" :props="props">
+                  {{ col.label }}
+                </q-th>
+
+              </template>
             </q-tr>
-          </template>
+          </template> 
           <template v-slot:body="props">
             <q-tr :props="props" class="cursor-pointer" @click="props.selected = true">
               <!-- context menu -->
@@ -126,15 +143,30 @@
                   </q-item>
                 </q-list>
               </q-menu>
+              <!-- enabled checkbox -->
+              <q-td>
+                <q-checkbox
+                  dense
+                  @input="toggleCheckbox(props.row, 'Active')"
+                  v-model="props.row.active"
+                />
+              </q-td>
+              <!-- enforced checkbox -->
+              <q-td>
+                <q-checkbox
+                  dense
+                  @input="toggleCheckbox(props.row, 'Enforced')"
+                  v-model="props.row.enforced"
+                />
+              </q-td>
               <q-td>{{ props.row.name }}</q-td>
               <q-td>{{ props.row.desc }}</q-td>
-              <q-td>{{ props.row.active }}</q-td>
               <q-td>
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
                   @click="showRelationsModal(props.row)"
                 >
-                  {{ `Show Relations (${props.row.clients.length + props.row.sites.length + props.row.agents.length}+)` }}
+                  {{ `Show Relations (${props.row.clients_count + props.row.sites_count + props.row.agents_count}+)` }}
                 </span>
               </q-td>
             </q-tr>
@@ -196,13 +228,9 @@ export default {
       policy: null,
       editPolicyId: null,
       selected: [],
-      pagination: {
-        rowsPerPage: 0,
-        sortBy: "id",
-        descending: false
-      },
       columns: [
-        { name: "id", label: "ID", field: "id" },
+        { name: "active", label: "Active", field: "active", align: "left" },
+        { name: "enforced", label: "Enforced", field: "enforced", align: "left" },
         {
           name: "name",
           label: "Name",
@@ -215,24 +243,17 @@ export default {
           label: "Description",
           field: "desc",
           align: "left",
-          sortable: false
-        },
-        {
-          name: "active",
-          label: "Active",
-          field: "active",
-          align: "left",
-          sortable: true
         },
         {
           name: "actions",
           label: "Actions",
           field: "actions",
           align: "left",
-          sortable: false
         }
       ],
-      visibleColumns: ["name", "desc", "active", "actions"]
+      pagination: {
+        rowsPerPage: 9999
+      },
     };
   },
   methods: {
@@ -295,6 +316,32 @@ export default {
     showPolicyOverview() {
       this.showPolicyOverviewModal = true
       this.clearRow();
+    },
+    toggleCheckbox(policy, type) {
+      let text = "";
+
+      if (type === "Active") {
+        text =  policy.active ? "Policy enabled successfully" : "Policy disabled successfully";
+      } else if (type === "Enforced") {
+        text =  policy.enforced ? "Policy enforced successfully" : "Policy enforcement disabled";
+      }
+
+      const data ={
+        id: policy.id,
+        name: policy.name,
+        desc: policy.desc,
+        active: policy.active,
+        enforced: policy.enforced
+      }
+ 
+      this.$store
+        .dispatch("automation/editPolicy", data)
+        .then(response => {
+          this.$q.notify(notifySuccessConfig(text));
+        })
+        .catch(error => {
+          this.$q.notify(notifyErrorConfig("An Error occured while editing policy"));
+        });
     }
   },
   computed: {

@@ -16,6 +16,8 @@ from django.contrib.postgres.fields import JSONField
 
 from core.models import TZ_CHOICES
 
+import automation
+
 
 class Agent(models.Model):
     version = models.CharField(default="0.1.0", max_length=255)
@@ -50,8 +52,16 @@ class Agent(models.Model):
     is_updating = models.BooleanField(default=False)
     choco_installed = models.BooleanField(default=False)
     wmi_detail = JSONField(null=True)
+    policies_pending = models.BooleanField(default=False)
     time_zone = models.CharField(
         max_length=255, choices=TZ_CHOICES, null=True, blank=True
+    )
+    policy = models.ForeignKey(
+        "automation.Policy",
+        related_name="agents",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
     )
 
     def __str__(self):
@@ -184,6 +194,21 @@ class Agent(models.Model):
             return phys
         except:
             return [{"model": "unknown", "size": "unknown", "interfaceType": "unknown"}]
+
+
+    def generate_checks_from_policies(self):
+        # Clear agent checks managed by policy
+        self.agentchecks.filter(managed_by_policy=True).delete()
+
+        # Clear agent checks that have overriden_by_policy set
+        self.agentchecks.update(overriden_by_policy=False)
+
+        # Generate checks based on policies
+        automation.models.Policy.generate_policy_checks(self)
+
+        # Set policies_pending to false to disable policy generation on next checkin
+        self.policies_pending = False
+        self.save()
 
     # https://github.com/Ylianst/MeshCentral/issues/59#issuecomment-521965347
     def get_login_token(self, key, user, action=3):

@@ -91,29 +91,9 @@ This allows you to edit the files locally and those changes will be presented to
 
 Files that need to be manually created are:
 - api/tacticalrmm/tacticalrmm/local_settings.py
-- web/.env.local
+- web/.env
 
-For HMR to work with vue you may need to alter the web/vue.config.js file to with these changes
-
-```
-  devServer: {
-    //host: "192.168.99.150",
-    disableHostCheck: true,
-    public: "YOUR_APP_URL"
-  },
-```
-
-Since this file is checked into git you can configure git to ignore it and the changes will stay intact
-
-```
-git update-index --assume-unchanged ./web/vue.config.js
-```
-
-To revert this run
-
-```
-git update-index --no-assume-unchanged ./web/vue.config.js
-```
+For HMR to work with vue you can copy .env.example and modify the setting to fit your dev environment.
 
 ### Create Python Virtual Env
 

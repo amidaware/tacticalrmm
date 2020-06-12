@@ -10,6 +10,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 from core.models import CoreSettings
 
+import agents
+
 from .tasks import handle_check_email_alert_task
 
 CHECK_TYPE_CHOICES = [
@@ -66,6 +68,9 @@ class Check(models.Model):
         blank=True,
         on_delete=models.CASCADE,
     )
+    managed_by_policy = models.BooleanField(default=False)
+    overriden_by_policy = models.BooleanField(default=False)
+    parent_check = models.PositiveIntegerField(null=True, blank=True)
     name = models.CharField(max_length=255, null=True, blank=True)
     check_type = models.CharField(
         max_length=50, choices=CHECK_TYPE_CHOICES, default="diskspace"
@@ -211,6 +216,35 @@ class Check(models.Model):
             default_services = json.load(f)
 
         return default_services
+
+    def create_policy_check(self, agent):
+        Check.objects.create(
+            agent=agent,
+            policy=self.policy,
+            managed_by_policy=True,
+            parent_check=self.pk,
+            name=self.name,
+            check_type=self.check_type,
+            email_alert=self.email_alert,
+            text_alert=self.text_alert,
+            fails_b4_alert=self.fails_b4_alert,
+            extra_details=self.extra_details,
+            threshold=self.threshold,
+            disk=self.disk,
+            ip=self.ip,
+            script=self.script,
+            timeout=self.timeout,
+            svc_name=self.svc_name,
+            svc_display_name=self.svc_display_name,
+            pass_if_start_pending=self.pass_if_start_pending,
+            restart_if_stopped=self.restart_if_stopped,
+            svc_policy_mode=self.svc_policy_mode,
+            log_name=self.log_name,
+            event_id=self.event_id,
+            event_type=self.event_type,
+            fail_when=self.fail_when,
+            search_last_days=self.search_last_days,
+        )
 
     def send_email(self):
 

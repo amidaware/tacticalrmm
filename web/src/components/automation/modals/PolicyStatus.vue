@@ -144,7 +144,7 @@ export default {
     getCheckData() {
       this.$q.loading.show();
       this.$store
-        .dispatch("automation/loadCheckStatus", { policypk: this.item.policy, checkpk: this.item.id })
+        .dispatch("automation/loadCheckStatus", { checkpk: this.item.id })
         .then(r => {
           this.$q.loading.hide();
           this.tableData = r.data
@@ -157,7 +157,7 @@ export default {
     getTaskData() {
       this.$q.loading.show();
       this.$store
-        .dispatch("automation/loadAutomatedTaskStatus", { policypk: this.item.policy, taskpk: this.item.id })
+        .dispatch("automation/loadAutomatedTaskStatus", { taskpk: this.item.id })
         .then(r => {
           this.$q.loading.hide();
           this.tableData = r.data
@@ -174,7 +174,23 @@ export default {
     closeScriptOutput() {
       this.showScriptOutput = false; 
       this.scriptInfo = {}
-    }
+    },
+    pingInfo(desc, output) {
+      this.$q.dialog({
+        title: desc,
+        style: "width: 50vw; max-width: 60vw",
+        message: `<pre>${output}</pre>`,
+        html: true
+      });
+    },
+    scriptMoreInfo(props) {
+      this.scriptInfo = props;
+      this.showScriptOutput = true;
+    },
+    eventLogMoreInfo(props) {
+      this.evtLogData = props;
+      this.showEventLogOutput = true;
+    },
   },
   mounted() {
     if (this.type === "task") {

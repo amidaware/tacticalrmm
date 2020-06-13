@@ -8,7 +8,7 @@ import automationModule from "./automation";
 
 Vue.use(Vuex);
 
-export default function ({ router }) {
+export default function () {
   const Store = new Vuex.Store({
     modules: {
       logs: logModule,
@@ -192,7 +192,7 @@ export default function ({ router }) {
             Object.entries(input).length === 0 &&
             input.constructor === Object
           ) {
-            router.push({ name: "InitialSetup" });
+            this.$router.push({ name: "InitialSetup" });
           }
           const output = [];
           for (let prop in input) {

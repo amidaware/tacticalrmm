@@ -1,6 +1,10 @@
 <template>
   <q-layout view="hHh lpR fFf">
     <q-header elevated class="bg-grey-9 text-white">
+      <q-banner v-if="needRefresh" inline-actions class="bg-red text-white text-center">
+        You are viewing an outdated version of this page.
+        <q-btn color="dark" icon="refresh" label="Refresh" @click="reload" />
+      </q-banner>
       <q-toolbar>
         <q-btn dense flat push @click="refreshEntireSite" icon="refresh" />
         <q-toolbar-title>Tactical RMM</q-toolbar-title>
@@ -9,7 +13,7 @@
 
         <q-btn-dropdown flat no-caps stretch :label="user">
           <q-list>
-            <q-item to="/logout" exact>
+            <q-item to="/expired" exact>
               <q-item-section>
                 <q-item-label>Logout</q-item-label>
               </q-item-section>
@@ -44,14 +48,10 @@
                   <div class="row">
                     <q-icon :name="props.node.icon" :color="props.node.color" class="q-mr-sm" />
                     <span>{{ props.node.label }}</span>
-                    
+
                     <q-menu context-menu>
                       <q-list dense style="min-width: 200px">
-                        <q-item 
-                          clickable 
-                          v-close-popup 
-                          @click="showEditModal(props.node)"
-                        >
+                        <q-item clickable v-close-popup @click="showEditModal(props.node)">
                           <q-item-section side>
                             <q-icon name="edit" />
                           </q-item-section>
@@ -70,11 +70,7 @@
 
                         <q-separator></q-separator>
 
-                        <q-item 
-                          clickable 
-                          v-close-popup 
-                          @click="showPolicyAdd(props.node)"
-                        >
+                        <q-item clickable v-close-popup @click="showPolicyAdd(props.node)">
                           <q-item-section side>
                             <q-icon name="policy" />
                           </q-item-section>
@@ -142,7 +138,7 @@
     </q-dialog>
     <!-- add policy modal -->
     <q-dialog v-model="showPolicyAddModal">
-      <PolicyAdd 
+      <PolicyAdd
         @close="showPolicyAddModal = false"
         :type="policyAddType"
         :pk="parseInt(policyAddPk)"
@@ -158,9 +154,9 @@ import FileBar from "@/components/FileBar";
 import AgentTable from "@/components/AgentTable";
 import SubTableTabs from "@/components/SubTableTabs";
 import AlertsIcon from "@/components/AlertsIcon";
-import PolicyAdd from "@/components/automation/modals/PolicyAdd"
-import EditSites from "@/components/modals/clients/EditSites"
-import EditClients from "@/components/modals/clients/EditClients"
+import PolicyAdd from "@/components/automation/modals/PolicyAdd";
+import EditSites from "@/components/modals/clients/EditSites";
+import EditClients from "@/components/modals/clients/EditClients";
 
 export default {
   components: {
@@ -187,6 +183,7 @@ export default {
       clientActive: "",
       siteActive: "",
       frame: [],
+      poll: null,
       columns: [
         {
           name: "smsalert",
@@ -343,6 +340,14 @@ export default {
       } else {
         this.showEditSiteModal = true;
       }
+    },
+    reload() {
+      this.$store.dispatch("reload");
+    },
+    livePoll() {
+      this.poll = setInterval(() => {
+        this.$store.dispatch("checkVer");
+      }, 60 * 5 * 1000);
     }
   },
   computed: {
@@ -352,7 +357,7 @@ export default {
       treeReady: state => state.treeReady,
       clients: state => state.clients
     }),
-    ...mapGetters(["selectedAgentPk"]),
+    ...mapGetters(["selectedAgentPk", "needRefresh"]),
     allClientsActive() {
       return this.selectedTree === "" ? true : false;
     },
@@ -372,12 +377,14 @@ export default {
   created() {
     this.getTree();
     this.$store.dispatch("getUpdatedSites");
+    this.$store.dispatch("checkVer");
   },
   mounted() {
-    if (localStorage.getItem("reloaded")) {
-      localStorage.removeItem("reloaded");
-    }
     this.loadFrame(this.activeNode);
+    this.livePoll();
+  },
+  beforeDestroy() {
+    clearInterval(this.poll);
   }
 };
 </script>

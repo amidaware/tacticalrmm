@@ -31,6 +31,7 @@ export default function () {
       installedSoftware: [],
       scripts: [],
       toggleScriptManager: false,
+      needrefresh: false,
     },
     getters: {
       loggedIn(state) {
@@ -70,6 +71,9 @@ export default function () {
       scripts(state) {
         return state.scripts;
       },
+      needRefresh(state) {
+        return state.needrefresh;
+      }
     },
     mutations: {
       TOGGLE_SCRIPT_MANAGER(state, action) {
@@ -121,6 +125,9 @@ export default function () {
       SET_SCRIPTS(state, scripts) {
         state.scripts = scripts;
       },
+      SET_REFRESH_NEEDED(state, action) {
+        state.needrefresh = action;
+      }
     },
     actions: {
       loadAutomatedTasks(context, pk) {
@@ -227,6 +234,27 @@ export default function () {
           commit("loadTree", sortedByFailing);
           //commit("destroySubTable");
         });
+      },
+      checkVer(context) {
+        axios.get("/core/version/").then(r => {
+          const version = r.data;
+
+          if (localStorage.getItem("rmmver")) {
+            if (localStorage.getItem("rmmver") === version) {
+              return;
+            } else {
+              localStorage.setItem("rmmver", "0.0.1");
+              context.commit("SET_REFRESH_NEEDED", true);
+            }
+          } else {
+            localStorage.setItem("rmmver", version);
+            return;
+          }
+        })
+      },
+      reload() {
+        localStorage.removeItem("rmmver");
+        location.reload();
       },
       retrieveToken(context, credentials) {
         return new Promise((resolve, reject) => {

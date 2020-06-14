@@ -40,17 +40,9 @@ const routes = [
     }
   },
   {
-    path: "/logout",
-    name: "Logout",
-    component: () => import("@/views/Logout")
-  },
-  {
     path: "/expired",
     name: "SessionExpired",
-    component: () => import("@/views/SessionExpired"),
-    meta: {
-      requireAuth: true
-    }
+    component: () => import("@/views/SessionExpired")
   },
   { path: "*", component: () => import("@/views/NotFound") }
 ]

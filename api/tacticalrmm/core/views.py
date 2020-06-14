@@ -42,3 +42,8 @@ def edit_settings(request):
     serializer.is_valid(raise_exception=True)
     serializer.save()
     return Response("ok")
+
+
+@api_view()
+def version(request):
+    return Response(settings.APP_VER)

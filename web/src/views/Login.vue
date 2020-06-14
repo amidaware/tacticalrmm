@@ -28,7 +28,7 @@
               />
 
               <div>
-                <q-btn label="Login" type="submit" color="primary" />
+                <q-btn label="Login" type="submit" color="primary" class="full-width" />
               </div>
             </q-form>
           </q-card-section>

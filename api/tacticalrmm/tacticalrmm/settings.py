@@ -9,6 +9,8 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 
 AUTH_USER_MODEL = "accounts.User"
 
+APP_VER = "0.0.1"
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",

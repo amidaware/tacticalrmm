@@ -29,7 +29,6 @@ from autotasks.models import AutomatedTask
 from winupdate.models import WinUpdate, WinUpdatePolicy
 
 from agents.tasks import (
-    uninstall_agent_task,
     sync_salt_modules_task,
     get_wmi_detail_task,
     agent_recovery_email_task,
@@ -145,45 +144,6 @@ def accept_salt_key(request):
 
 
 @api_view(["POST"])
-@authentication_classes((TokenAuthentication,))
-@permission_classes((IsAuthenticated,))
-def delete_agent(request):
-    try:
-        user = User.objects.get(username=request.data["agent_id"])
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-        saltid = agent.salt_id
-        user.delete()
-        agent.delete()
-    except Exception as e:
-        logger.error(e)
-        return Response(
-            {"error": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST
-        )
-    else:
-        err = "Error removing agent from salt master. Please manually remove."
-        try:
-            resp = requests.post(
-                "http://" + settings.SALT_HOST + ":8123/run",
-                json=[
-                    {
-                        "client": "wheel",
-                        "fun": "key.delete",
-                        "match": saltid,
-                        "username": settings.SALT_USERNAME,
-                        "password": settings.SALT_PASSWORD,
-                        "eauth": "pam",
-                    }
-                ],
-                timeout=30,
-            )
-        except requests.exceptions.Timeout:
-            return Response(err, status=status.HTTP_400_BAD_REQUEST)
-        except requests.exceptions.ConnectionError:
-            return Response(err, status=status.HTTP_410_GONE)
-        return Response("ok")
-
-
-@api_view(["POST"])
 def add(request):
     data = request.data
 
@@ -254,14 +214,6 @@ def on_agent_first_install(request):
     if not data["return"][0][agent.salt_id]:
         return Response("err", status=status.HTTP_400_BAD_REQUEST)
 
-    create_salt_fix = agent.create_fix_salt_task()
-    if not create_salt_fix:
-        return Response("err", status=status.HTTP_400_BAD_REQUEST)
-
-    sleep(1)
-    agent.salt_api_async(
-        hostname=agent.salt_id, func="task.run", arg=["name='TacticalRMM_fixsalt'"],
-    )
     get_wmi_detail_task.delay(agent.pk)
     get_installed_software.delay(agent.pk)
     check_for_updates_task.delay(agent.pk, wait=True)
@@ -273,13 +225,6 @@ def on_agent_first_install(request):
 @permission_classes((IsAuthenticated,))
 def hello(request):
     agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-
-    if agent.uninstall_pending:
-        if agent.uninstall_inprogress:
-            return Response("uninstallip")
-        else:
-            uninstall_agent_task.delay(agent.pk)
-            return Response("ok")
 
     serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
@@ -311,10 +256,10 @@ class CheckRunner(APIView):
 
     def get(self, request, pk):
         agent = get_object_or_404(Agent, pk=pk)
-        
+
         if agent.policies_pending:
             agent.generate_checks_from_policies()
- 
+
         checks = Check.objects.filter(agent__pk=pk, overriden_by_policy=False)
 
         ret = {

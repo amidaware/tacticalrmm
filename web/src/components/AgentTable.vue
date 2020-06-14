@@ -183,11 +183,7 @@
               </q-item>
 
               <q-separator />
-              <q-item
-                clickable
-                v-close-popup
-                @click.stop.prevent="showPolicyAdd(props.row.id)"
-              >
+              <q-item clickable v-close-popup @click.stop.prevent="showPolicyAdd(props.row.id)">
                 <q-item-section side>
                   <q-icon size="xs" name="policy" />
                 </q-item-section>
@@ -195,11 +191,7 @@
               </q-item>
 
               <q-separator />
-              <q-item
-                clickable
-                v-close-popup
-                @click.stop.prevent="removeAgent(props.row.id, props.row.hostname)"
-              >
+              <q-item clickable v-close-popup @click.stop.prevent="pingAgent(props.row.id)">
                 <q-item-section side>
                   <q-icon size="xs" name="delete" />
                 </q-item-section>
@@ -326,11 +318,7 @@
     <PendingActions />
     <!-- add policy modal -->
     <q-dialog v-model="showPolicyAddModal">
-      <PolicyAdd 
-        @close="showPolicyAddModal = false"
-        type="agent"
-        :pk="policyAddPk"
-         />
+      <PolicyAdd @close="showPolicyAddModal = false" type="agent" :pk="policyAddPk" />
     </q-dialog>
   </div>
 </template>
@@ -341,14 +329,14 @@ import mixins from "@/mixins/mixins";
 import EditAgent from "@/components/modals/agents/EditAgent";
 import RebootLater from "@/components/modals/agents/RebootLater";
 import PendingActions from "@/components/modals/logs/PendingActions";
-import PolicyAdd from "@/components/automation/modals/PolicyAdd"
+import PolicyAdd from "@/components/automation/modals/PolicyAdd";
 
 export default {
   name: "AgentTable",
   props: ["frame", "columns", "tab", "filter", "userName"],
-  components: { 
-    EditAgent, 
-    RebootLater, 
+  components: {
+    EditAgent,
+    RebootLater,
     PendingActions,
     PolicyAdd
   },
@@ -407,34 +395,63 @@ export default {
         .then(r => this.notifySuccess(`Checks will now be re-run on ${r.data}`))
         .catch(e => this.notifyError("Something went wrong"));
     },
-    removeAgent(pk, hostname) {
+    removeAgent(pk, name) {
       this.$q
         .dialog({
-          title: "Are you sure?",
-          message: `Delete agent ${hostname}`,
+          title: `Please type <code style="color:red">${name}</code> to confirm deletion.`,
+          prompt: {
+            model: "",
+            type: "text",
+            isValid: val => val === name
+          },
           cancel: true,
-          persistent: true
+          ok: { label: "Uninstall", color: "negative" },
+          persistent: true,
+          html: true
         })
-        .onOk(() => {
-          this.$q
-            .dialog({
-              title: `Please type <code style="color:red">${hostname}</code> to confirm`,
-              prompt: { model: "", type: "text" },
-              cancel: true,
-              persistent: true,
-              html: true
+        .onOk(val => {
+          const data = { pk: pk };
+          this.$axios
+            .delete("/agents/uninstall/", { data: data })
+            .then(r => {
+              this.notifySuccess(r.data);
+              setTimeout(() => {
+                location.reload();
+              }, 2000);
             })
-            .onOk(hostnameConfirm => {
-              if (hostnameConfirm !== hostname) {
-                this.notifyError("ERROR: Please type the correct hostname");
-              } else {
-                const data = { pk: pk };
-                axios
-                  .delete("/agents/uninstallagent/", { data: data })
-                  .then(r => this.notifySuccess(`${hostname} will now be uninstalled!`))
-                  .catch(e => this.notifyInfo(e.response.data.error));
-              }
-            });
+            .catch(() => this.notifyError("Something went wrong"));
+        });
+    },
+    pingAgent(pk) {
+      this.$q.loading.show();
+      this.$axios
+        .get(`/agents/${pk}/ping/`)
+        .then(r => {
+          this.$q.loading.hide();
+          if (r.data.status === "offline") {
+            this.$q
+              .dialog({
+                title: "Agent offline",
+                message: `${r.data.name} cannot be contacted. 
+                  Would you like to continue with the uninstall? 
+                  If so, the agent will need to be manually uninstalled from the computer.`,
+                cancel: { label: "No", color: "negative" },
+                ok: { label: "Yes", color: "positive" },
+                persistent: true
+              })
+              .onOk(() => this.removeAgent(pk, r.data.name))
+              .onCancel(() => {
+                return;
+              });
+          } else if (r.data.status === "online") {
+            this.removeAgent(pk, r.data.name);
+          } else {
+            this.notifyError("Something went wrong");
+          }
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError("Something went wrong");
         });
     },
     rebootNow(pk, hostname) {

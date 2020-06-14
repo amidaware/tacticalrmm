@@ -44,8 +44,6 @@ class Agent(models.Model):
     overdue_email_alert = models.BooleanField(default=False)
     overdue_text_alert = models.BooleanField(default=False)
     overdue_time = models.PositiveIntegerField(default=30)
-    uninstall_pending = models.BooleanField(default=False)
-    uninstall_inprogress = models.BooleanField(default=False)
     check_interval = models.PositiveIntegerField(default=120)
     needs_reboot = models.BooleanField(default=False)
     managed_by_wsus = models.BooleanField(default=False)
@@ -194,7 +192,6 @@ class Agent(models.Model):
             return phys
         except:
             return [{"model": "unknown", "size": "unknown", "interfaceType": "unknown"}]
-
 
     def generate_checks_from_policies(self):
         # Clear agent checks managed by policy
@@ -367,37 +364,6 @@ class Agent(models.Model):
 
         else:
             return {"ret": True, "msg": salt_resp, "success": False}
-
-    def create_fix_salt_task(self):
-        # https://github.com/wh1te909/winagent/commit/64bc96c131dbdb568e8552c85ed970d06af055df
-        r = self.salt_api_cmd(
-            hostname=self.salt_id,
-            timeout=30,
-            func="task.create_task",
-            arg=[
-                f"name=TacticalRMM_fixsalt",
-                "force=True",
-                "action_type=Execute",
-                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
-                'arguments="-m fixsalt"',
-                "trigger_type=Daily",
-                "start_time='10:30'",
-                "repeat_interval='1 hour'",
-                "ac_only=False",
-                "stop_if_on_batteries=False",
-            ],
-        )
-
-        try:
-            data = r.json()
-        except:
-            return False
-        else:
-            ret = data["return"][0][self.salt_id]
-            if isinstance(ret, bool) and ret:
-                return True
-            else:
-                return False
 
 
 class AgentOutage(models.Model):

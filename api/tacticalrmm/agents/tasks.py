@@ -2,6 +2,7 @@ import os
 import subprocess
 from loguru import logger
 from time import sleep
+import requests
 
 
 from django.conf import settings
@@ -44,32 +45,28 @@ def sync_salt_modules_task(pk):
 
 
 @app.task
-def uninstall_agent_task(pk, wait=True):
-    agent = Agent.objects.get(pk=pk)
-    salt_id = agent.salt_id
-    agent.uninstall_inprogress = True
-    agent.save(update_fields=["uninstall_inprogress"])
-    logger.info(f"{agent.hostname} uninstall task is running")
-
-    if wait:
-        logger.info(f"{agent.hostname} waiting 90 seconds before uninstalling")
-        sleep(90)  # need to give salt time to startup on the minion
-
+def uninstall_agent_task(salt_id):
     attempts = 0
     error = False
 
     while 1:
-        attempts += 1
-        r = agent.salt_api_cmd(
-            hostname=salt_id, timeout=60, func="win_agent.uninstall_agent"
-        )
-        if r.json()["return"][0][salt_id] != "ok":
-            if attempts >= 10:
-                error = True
-                break
-            else:
-                continue
+        try:
+            r = Agent.salt_api_cmd(
+                hostname=salt_id, timeout=10, func="win_agent.uninstall_agent"
+            )
+            ret = r.json()["return"][0][salt_id]
+        except Exception:
+            attempts += 1
         else:
+            if ret != "ok":
+                attempts += 1
+            else:
+                attempts = 0
+
+        if attempts >= 10:
+            error = True
+            break
+        elif attempts == 0:
             break
 
     if error:
@@ -77,7 +74,25 @@ def uninstall_agent_task(pk, wait=True):
     else:
         logger.info(f"{salt_id} was successfully uninstalled")
 
-    return "agent uninstall"
+    try:
+        r = requests.post(
+            f"http://{settings.SALT_HOST}:8123/run",
+            json=[
+                {
+                    "client": "wheel",
+                    "fun": "key.delete",
+                    "match": salt_id,
+                    "username": settings.SALT_USERNAME,
+                    "password": settings.SALT_PASSWORD,
+                    "eauth": "pam",
+                }
+            ],
+            timeout=30,
+        )
+    except Exception:
+        logger.error(f"{salt_id} unable to remove salt-key")
+
+    return "ok"
 
 
 def service_action(hostname, action, service):

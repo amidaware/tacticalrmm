@@ -12,7 +12,7 @@ urlpatterns = [
     path("<pk>/meshtabs/", views.meshcentral_tabs),
     path("<pk>/takecontrol/", views.take_control),
     path("poweraction/", views.power_action),
-    path("uninstallagent/", views.uninstall_agent),
+    path("uninstall/", views.uninstall),
     path("editagent/", views.edit_agent),
     path("<pk>/geteventlog/<logtype>/<days>/", views.get_event_log),
     path("getagentversions/", views.get_agent_versions),
@@ -21,4 +21,5 @@ urlpatterns = [
     path("<pk>/<pid>/killproc/", views.kill_proc),
     path("rebootlater/", views.reboot_later),
     path("installagent/", views.install_agent),
+    path("<int:pk>/ping/", views.ping),
 ]

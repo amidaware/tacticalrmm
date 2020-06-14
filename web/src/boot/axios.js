@@ -1,6 +1,10 @@
+import Vue from 'vue';
 import axios from 'axios';
 
 export default function ({ router, store }) {
+
+  Vue.prototype.$axios = axios;
+
   axios.defaults.baseURL =
     process.env.NODE_ENV === "production"
       ? process.env.PROD_API
@@ -33,7 +37,5 @@ export default function ({ router, store }) {
       return Promise.reject(error);
     }
   );
-
-  //Vue.prototype.$axios = axios;
 }
 

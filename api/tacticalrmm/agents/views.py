@@ -21,6 +21,7 @@ from rest_framework.authentication import BasicAuthentication, TokenAuthenticati
 from .models import Agent
 from winupdate.models import WinUpdatePolicy
 from clients.models import Client, Site
+from accounts.models import User
 
 from .serializers import AgentSerializer, AgentHostnameSerializer, AgentTableSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
@@ -65,40 +66,32 @@ def update_agents(request):
     return Response("ok")
 
 
-@api_view(["DELETE"])
-def uninstall_agent(request):
-    pk = request.data["pk"]
+@api_view()
+def ping(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-
     try:
-        resp = agent.salt_api_cmd(hostname=agent.salt_id, timeout=30, func="test.ping")
+        r = agent.salt_api_cmd(hostname=agent.salt_id, timeout=5, func="test.ping")
     except Exception:
-        agent.uninstall_pending = True
-        agent.save(update_fields=["uninstall_pending"])
-        logger.warning(
-            f"{agent.hostname} is offline. It will be removed on next check-in"
-        )
-        return Response(
-            {"error": "Agent offline. It will be removed on next check-in"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return Response({"name": agent.hostname, "status": "offline"})
 
-    data = resp.json()
-    if not data["return"][0][agent.salt_id]:
-        agent.uninstall_pending = True
-        agent.save(update_fields=["uninstall_pending"])
-        return Response(
-            {"error": "Agent offline. It will be removed on next check-in"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+    data = r.json()["return"][0][agent.salt_id]
+    if isinstance(data, bool) and data:
+        return Response({"name": agent.hostname, "status": "online"})
+    else:
+        return Response({"name": agent.hostname, "status": "offline"})
 
-    logger.info(
-        f"{agent.hostname} has been marked for removal and will be uninstalled shortly"
-    )
-    uninstall_agent_task.delay(pk, wait=False)
-    agent.uninstall_pending = True
-    agent.save(update_fields=["uninstall_pending"])
-    return Response("ok")
+
+@api_view(["DELETE"])
+def uninstall(request):
+    agent = get_object_or_404(Agent, pk=request.data["pk"])
+    user = get_object_or_404(User, username=agent.agent_id)
+    salt_id = agent.salt_id
+    name = agent.hostname
+    user.delete()
+    agent.delete()
+
+    uninstall_agent_task.delay(salt_id)
+    return Response(f"{name} will now be uninstalled.")
 
 
 @api_view(["PATCH"])

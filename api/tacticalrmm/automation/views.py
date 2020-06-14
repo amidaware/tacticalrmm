@@ -117,34 +117,7 @@ class PolicyCheck(APIView):
 
 class OverviewPolicy(APIView):
     def get(self, request):
-        """
-        clients = Client.objects.all()
-        response = {}
 
-        for client in clients:
-
-            client_sites = {}
-            client_sites["sites"] = {}
-
-            policies = Policy.objects.filter(clients__id=client.id)
-            client_sites["policies"] = list(PolicySerializer(policies, many=True).data)
-
-            sites = Site.objects.filter(client=client)
-
-            for site in sites:
-
-                client_sites["sites"][site.site] = {}
-
-                policies = Policy.objects.filter(sites__id=site.id)
-
-                client_sites["sites"][site.site]["policies"] = list(
-                    PolicySerializer(policies, many=True).data
-                )
-
-            response[client.client] = client_sites
-
-        return Response(response)
-        """
         clients = Client.objects.all()
         return Response(PolicyOverviewSerializer(clients, many=True).data)
 
@@ -192,7 +165,10 @@ class GetRelated(APIView):
                 Site.objects.filter(pk=pk).update(policy=policy)
 
             if related_type == "agent":
-                Agent.objects.filter(pk=pk).update(policy=policy, policies_pending=True)
+                agent = Agent.objects.get(pk=pk)
+                agent.policy=policy
+                agent.save()
+                agent.generate_checks_from_policies()
 
         else:
             if related_type == "client":
@@ -202,7 +178,10 @@ class GetRelated(APIView):
                 Site.objects.filter(pk=pk).update(policy=None)
 
             if related_type == "agent":
-                Agent.objects.filter(pk=pk).update(policy=None, policies_pending=True)
+                agent = Agent.objects.get(pk=pk)
+                agent.policy=None
+                agent.save()
+                agent.generate_checks_from_policies()
 
         return Response("ok")
 

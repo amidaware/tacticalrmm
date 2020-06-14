@@ -2,6 +2,7 @@ from django.db import models
 from agents.models import Agent
 from clients.models import Site, Client
 
+
 class Policy(models.Model):
     name = models.CharField(max_length=255, unique=True)
     desc = models.CharField(max_length=255)
@@ -22,13 +23,17 @@ class Policy(models.Model):
         for site in explicit_sites:
             if site.client not in explicit_clients:
                 filtered_sites_ids.append(site.site)
-        
+
         for client in explicit_clients:
             client_ids.append(client.client)
             for site in client.sites.all():
                 filtered_sites_ids.append(site.site)
 
-        return Agent.objects.filter(models.Q(pk__in=explicit_agents.only("pk")) | models.Q(site__in=filtered_sites_ids) | models.Q(client__in=client_ids)).distinct()
+        return Agent.objects.filter(
+            models.Q(pk__in=explicit_agents.only("pk"))
+            | models.Q(site__in=filtered_sites_ids)
+            | models.Q(client__in=client_ids)
+        ).distinct()
 
     @staticmethod
     def cascade_policy_checks(agent):
@@ -169,7 +174,15 @@ class Policy(models.Model):
                     check.overriden_by_policy = True
                     check.save()
 
-        return diskspace_checks + ping_checks + cpuload_checks + memory_checks + winsvc_checks + script_checks + eventlog_checks
+        return (
+            diskspace_checks
+            + ping_checks
+            + cpuload_checks
+            + memory_checks
+            + winsvc_checks
+            + script_checks
+            + eventlog_checks
+        )
 
     @staticmethod
     def generate_policy_checks(agent):
@@ -182,6 +195,8 @@ class Policy(models.Model):
 
 
 class PolicyExclusions(models.Model):
-    policy = models.ForeignKey(Policy, related_name="exclusions", on_delete=models.CASCADE)
+    policy = models.ForeignKey(
+        Policy, related_name="exclusions", on_delete=models.CASCADE
+    )
     agents = models.ManyToManyField(Agent, related_name="policy_exclusions")
     sites = models.ManyToManyField(Site, related_name="policy_exclusions")

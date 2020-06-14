@@ -11,10 +11,7 @@ from scripts.models import Script
 from clients.models import Client, Site
 from checks.models import Check
 
-from clients.serializers import (
-    ClientSerializer,
-    TreeSerializer
-)
+from clients.serializers import ClientSerializer, TreeSerializer
 
 from agents.serializers import AgentHostnameSerializer
 
@@ -23,10 +20,11 @@ from .serializers import (
     PolicyTableSerializer,
     PolicyOverviewSerializer,
     PolicyCheckStatusSerializer,
-    AutoTaskPolicySerializer
+    AutoTaskPolicySerializer,
 )
 
 from checks.serializers import CheckSerializer
+
 
 class GetAddPolicies(APIView):
     def get(self, request):
@@ -46,7 +44,9 @@ class GetAddPolicies(APIView):
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            policy = Policy.objects.create(name=name, desc=desc, active=active, enforced=enforced)
+            policy = Policy.objects.create(
+                name=name, desc=desc, active=active, enforced=enforced
+            )
         except DataError:
             content = {"error": "Policy name too long (max 255 chars)"}
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
@@ -79,7 +79,6 @@ class GetUpdateDeletePolicy(APIView):
         return Response("ok")
 
     def delete(self, request, pk):
-
         policy = Policy.objects.get(pk=pk)
         policy.delete()
 
@@ -95,7 +94,7 @@ class PolicyAutoTask(APIView):
 
         # TODO pull agents and status for policy task
         return Response(list())
-    
+
     def put(self, request, pk):
         return Response("ok")
 
@@ -155,10 +154,12 @@ class GetRelated(APIView):
 
         response = {}
 
-        policy = Policy.objects.filter(pk=pk).prefetch_related("clients", "sites").first()
+        policy = (
+            Policy.objects.filter(pk=pk).prefetch_related("clients", "sites").first()
+        )
 
         response["clients"] = ClientSerializer(policy.clients.all(), many=True).data
-       
+
         filtered_sites = list()
 
         for client in policy.clients.all():
@@ -166,15 +167,19 @@ class GetRelated(APIView):
                 if site not in policy.sites.all():
                     filtered_sites.append(site)
 
-        response["sites"] = TreeSerializer(filtered_sites + list(policy.sites.all()), many=True).data
+        response["sites"] = TreeSerializer(
+            filtered_sites + list(policy.sites.all()), many=True
+        ).data
 
-        response["agents"] = AgentHostnameSerializer(policy.related_agents(), many=True).data
+        response["agents"] = AgentHostnameSerializer(
+            policy.related_agents(), many=True
+        ).data
 
         return Response(response)
-    
+
     def post(self, request):
         # Update Agents, Clients, Sites to Policy
-        
+
         related_type = request.data["type"]
         pk = request.data["pk"]
 
@@ -185,7 +190,7 @@ class GetRelated(APIView):
 
             if related_type == "site":
                 Site.objects.filter(pk=pk).update(policy=policy)
-            
+
             if related_type == "agent":
                 Agent.objects.filter(pk=pk).update(policy=policy, policies_pending=True)
 
@@ -195,7 +200,7 @@ class GetRelated(APIView):
 
             if related_type == "site":
                 Site.objects.filter(pk=pk).update(policy=None)
-            
+
             if related_type == "agent":
                 Agent.objects.filter(pk=pk).update(policy=None, policies_pending=True)
 
@@ -216,7 +221,6 @@ class GetRelated(APIView):
         if related_type == "client":
             policy = Policy.objects.filter(clients__pk=pk).first()
             return Response(PolicySerializer(policy).data)
-        
+
         content = {"error": "Data was submitted incorrectly"}
         return Response(content, status=status.HTTP_400_BAD_REQUEST)
-        

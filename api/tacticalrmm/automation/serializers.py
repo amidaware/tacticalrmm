@@ -1,9 +1,9 @@
 from rest_framework.serializers import (
-    ModelSerializer, 
-    SerializerMethodField, 
-    StringRelatedField, 
-    ReadOnlyField, 
-    ValidationError
+    ModelSerializer,
+    SerializerMethodField,
+    StringRelatedField,
+    ReadOnlyField,
+    ValidationError,
 )
 
 from .models import Policy
@@ -46,15 +46,9 @@ class PolicyTableSerializer(ModelSerializer):
 
 
 class PolicyOverviewSerializer(ModelSerializer):
-
     class Meta:
         model = Client
-        fields = (
-            "pk",
-            "client",
-            "sites",
-            "policy"
-        )
+        fields = ("pk", "client", "sites", "policy")
         depth = 2
 
 
@@ -78,4 +72,3 @@ class AutoTaskPolicySerializer(ModelSerializer):
             "name",
             "autotasks",
         )
-        

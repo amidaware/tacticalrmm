@@ -135,6 +135,16 @@ def take_control(request, pk):
 
 
 @api_view()
+def web_rdp(request, pk):
+    agent = get_object_or_404(Agent, pk=pk)
+    token = agent.get_login_token(
+        key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}"
+    )
+    url = f"{settings.MESH_SITE}/mstsc.html?login={token}&node={agent.mesh_node_id}"
+    return Response(url)
+
+
+@api_view()
 def agent_detail(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     return Response(AgentSerializer(agent).data)

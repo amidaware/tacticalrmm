@@ -38,3 +38,10 @@ for i in celery celery-winupdate celerybeat rmm nginx
 do
 sudo systemctl start ${i}
 done
+
+sudo systemctl stop meshcentral
+cd /meshcentral
+rm -rf node_modules/
+npm install meshcentral@latest
+sudo systemctl start meshcentral
+sleep 10

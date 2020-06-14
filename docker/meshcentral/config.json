@@ -12,14 +12,18 @@
     "_AgentPing": 60,
     "AgentPong": 300,
     "AllowHighQualityDesktop": true,
-    "MaxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 }
+    "MaxInvalidLogin": {
+      "time": 5,
+      "count": 5,
+      "coolofftime": 30
+    }
   },
   "domains": {
     "": {
       "Title": "Dev RMM",
       "Title2": "DevRMM",
       "NewAccounts": false,
-      "Footer": "<a href='https://twitter.com/mytwitter'>Twitter</a>",
+      "mstsc": true,
       "GeoLocation": true,
       "CertUrl": "https://172.20.0.20:443",
       "httpheaders": {

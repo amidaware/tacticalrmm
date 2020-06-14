@@ -96,6 +96,14 @@
                 <q-item-section>Take Control</q-item-section>
               </q-item>
 
+              <!-- web rdp -->
+              <q-item clickable v-ripple v-close-popup @click.stop.prevent="webRDP(props.row.id)">
+                <q-item-section side>
+                  <q-icon size="xs" name="screen_share" />
+                </q-item-section>
+                <q-item-section>Remote Desktop</q-item-section>
+              </q-item>
+
               <q-item
                 clickable
                 v-ripple
@@ -326,6 +334,7 @@
 <script>
 import axios from "axios";
 import mixins from "@/mixins/mixins";
+import { openURL } from "quasar";
 import EditAgent from "@/components/modals/agents/EditAgent";
 import RebootLater from "@/components/modals/agents/RebootLater";
 import PendingActions from "@/components/modals/logs/PendingActions";
@@ -542,6 +551,19 @@ export default {
     showPolicyAdd(pk) {
       this.policyAddPk = pk;
       this.showPolicyAddModal = true;
+    },
+    webRDP(pk) {
+      this.$q.loading.show();
+      this.$axios
+        .get(`/agents/${pk}/webrdp/`)
+        .then(r => {
+          this.$q.loading.hide();
+          openURL(r.data);
+        })
+        .catch(() => {
+          this.$q.loading.hide();
+          this.notifyError("Something went wrong");
+        });
     }
   },
   computed: {

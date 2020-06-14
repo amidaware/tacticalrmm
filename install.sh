@@ -115,7 +115,7 @@ meshcfg="$(cat << EOF
       "Title": "Dev RMM",
       "Title2": "DevRMM",
       "NewAccounts": false,
-      "Footer": "<a href='https://twitter.com/mytwitter'>Twitter</a>",
+      "mstsc": true,
       "CertUrl": "https://${meshdomain}:443/",
       "GeoLocation": true,
       "httpheaders": {

@@ -23,33 +23,28 @@ from .serializers import (
     AutoTaskPolicySerializer,
 )
 
-from .tasks import generate_agent_checks_from_policies_task, generate_policy_checks_from_agents_task
+from .tasks import generate_agent_checks_from_policies_task, generate_agent_checks_task
 
 
 class GetAddPolicies(APIView):
     def get(self, request):
-
         policies = Policy.objects.all()
 
         return Response(PolicyTableSerializer(policies, many=True).data)
 
     def post(self, request):
-        name = request.data["name"].strip()
-        desc = request.data["desc"].strip()
+        name = request.data["name"]
+        desc = request.data["desc"]
         active = request.data["active"]
-        enforced = active = request.data["enforced"]
+        enforced = request.data["enforced"]
 
         if Policy.objects.filter(name=name):
             content = {"error": f"Policy {name} already exists"}
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            policy = Policy.objects.create(
-                name=name, desc=desc, active=active, enforced=enforced
-            )
-        except DataError:
-            content = {"error": "Policy name too long (max 255 chars)"}
-            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        Policy.objects.create(
+            name=name, desc=desc, active=active, enforced=enforced
+        )
 
         return Response("ok")
 
@@ -67,19 +62,14 @@ class GetUpdateDeletePolicy(APIView):
 
         # Used to determine if policy checks should be regenerated
         old_active = policy.active
-        old_enforce = policy.enforced
+        old_enforced = policy.enforced
 
         policy.name = request.data["name"]
         policy.desc = request.data["desc"]
         policy.active = request.data["active"]
         policy.enforced = request.data["enforced"]
+        policy.save()
 
-        try:
-            policy.save(update_fields=["name", "desc", "active", "enforced"])
-        except DataError:
-            content = {"error": "Policy name too long (max 255 chars)"}
-            return Response(content, status=status.HTTP_400_BAD_REQUEST)
-        
         # Generate agent checks only if active and enforced were changed
         if policy.active != old_active or policy.enforced != old_enforced:
             generate_agent_checks_from_policies_task.delay(policypk=policy.pk)
@@ -89,12 +79,14 @@ class GetUpdateDeletePolicy(APIView):
     def delete(self, request, pk):
         policy = Policy.objects.get(pk=pk)
 
-        # Used to regenerate policy checks on affected agents after deletion
-        affected_agents = policy.related_agents()
+        # delete all managed policy checks off of agents
+        parent_check_pks = policy.policychecks.only("pk")
+
+        if parent_check_pks:
+            Check.objects.filter(parent_check__in=parent_check_pks).delete()
+
         policy.delete()
         
-        generate_policy_checks_from_agents_task.delay(agents=list(affected_agents))
-
         return Response("ok")
 
 
@@ -118,14 +110,8 @@ class PolicyCheck(APIView):
         return Response(CheckSerializer(checks, many=True).data)
 
     def patch(self, request, check):
-
         checks = Check.objects.filter(parent_check=check)
         return Response(PolicyCheckStatusSerializer(checks, many=True).data)
-
-    def put(self, request):
-
-        # TODO run policy check manually for all agents
-        return Response(list())
 
 
 class OverviewPolicy(APIView):
@@ -175,7 +161,7 @@ class GetRelated(APIView):
                 client = get_object_or_404(Client, pk=pk)
                 
                 # Check and see if policy changed and regenerate policies
-                if client.policy.pk != policy.pk:
+                if not client.policy or client.policy and client.policy.pk != policy.pk:
                     client.policy = policy
                     client.save()
                     generate_agent_checks_from_policies_task.delay(policypk=policy.pk)
@@ -184,7 +170,7 @@ class GetRelated(APIView):
                 site = get_object_or_404(Site, pk=pk)
 
                 # Check and see if policy changed and regenerate policies
-                if site.policy.pk != policy.pk:
+                if not site.policy or site.policy and site.policy.pk != policy.pk:
                     site.policy = policy
                     site.save()
                     generate_agent_checks_from_policies_task.delay(policypk=policy.pk)
@@ -193,7 +179,7 @@ class GetRelated(APIView):
                 agent = get_object_or_404(Agent, pk=pk)
 
                 # Check and see if policy changed and regenerate policies
-                if agent.policy.pk != policy.pk:
+                if not agent.policy or agent.policy and agent.policy.pk != policy.pk:
                     agent.policy=policy
                     agent.save()
                     agent.generate_checks_from_policies()

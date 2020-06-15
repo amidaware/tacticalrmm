@@ -341,7 +341,7 @@ export default {
       if (check.check_type === "diskspace")
         return `Disk Space Drive ${check.disk} > ${check.threshold}%`;
       else if (check.check_type === "cpuload")
-        return `Avg CPU Load > ${check.cpuload}%`;
+        return `Avg CPU Load > ${check.threshold}%`;
       else if (check.check_type === "script")
         return `Script check: ${check.script.name}`;
       else if (check.check_type === "ping")
@@ -351,7 +351,7 @@ export default {
       else if (check.check_type === "winsvc")
         return `Service Check - ${check.svc_display_name}`;
       else if (check.check_type === "eventlog")
-        return `Event Log Check - ${check.desc}`
+        return `Event Log Check - ${check.name}`
     }
   },
   computed: {

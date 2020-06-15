@@ -59,6 +59,9 @@ class GetUpdateDeleteCheck(APIView):
 
     def patch(self, request, pk):
         check = get_object_or_404(Check, pk=pk)
+        # removed fields that should not be changed when editing a check from the frontend
+        [request.data.pop(i) for i in check.non_editable_fields]
+
         serializer = CheckSerializer(instance=check, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()

@@ -166,6 +166,27 @@ class Check(models.Model):
         if self.check_type == "cpuload" or self.check_type == "memory":
             return ", ".join(str(f"{x}%") for x in self.history[-6:])
 
+    @property
+    def non_editable_fields(self):
+        return [
+            "check_type",
+            "status",
+            "more_info",
+            "last_run",
+            "fail_count",
+            "email_sent",
+            "text_sent",
+            "outage_history",
+            "extra_details",
+            "stdout",
+            "stderr",
+            "retcode",
+            "execution_time",
+            "history",
+            "readable_desc",
+            "history_info",
+        ]
+
     def handle_check(self, data):
         if self.check_type != "cpuload" and self.check_type != "memory":
 

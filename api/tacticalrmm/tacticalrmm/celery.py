@@ -17,10 +17,6 @@ app.result_backend = "redis://" + settings.REDIS_HOST + ":6379"
 app.accept_content = ["application/json"]
 app.result_serializer = "json"
 app.task_serializer = "json"
-
-if "TRAVIS" in os.environ:
-    app.task_always_eager = True
-
 app.conf.task_track_started = True
 app.autodiscover_tasks()
 

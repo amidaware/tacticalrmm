@@ -12,7 +12,7 @@
     "@quasar/extras": "^1.8.2",
     "axios": "^0.19.2",
     "dotenv": "^8.2.0",
-    "quasar": "^1.12.3"
+    "quasar": "^1.12.5"
   },
   "devDependencies": {
     "@quasar/app": "^1.9.6",

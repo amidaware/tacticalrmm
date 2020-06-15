@@ -14,7 +14,8 @@ from automation.models import Policy
 from core.models import CoreSettings
 from checks.models import Check
 
-@patch('automation.tasks.generate_agent_checks_from_policies_task.delay')
+
+# @patch("automation.tasks.generate_agent_checks_from_policies_task.delay")
 class BaseTestCase(TestCase):
     def setUp(self):
 

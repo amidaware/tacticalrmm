@@ -53,32 +53,29 @@ class Policy(models.Model):
         enforced_checks = list()
         policy_checks = list()
 
-        if agent_policy != None:
-            if agent_policy.active:
-                if agent_policy.enforced:
-                    for check in agent_policy.policychecks.all():
-                        enforced_checks.append(check)
-                else:
-                    for check in agent_policy.policychecks.all():
-                        policy_checks.append(check)
+        if agent_policy and agent_policy.active:
+            if agent_policy.enforced:
+                for check in agent_policy.policychecks.all():
+                    enforced_checks.append(check)
+            else:
+                for check in agent_policy.policychecks.all():
+                    policy_checks.append(check)
 
-        if site_policy != None:
-            if site_policy.active:
-                if site_policy.enforced:
-                    for check in site_policy.policychecks.all():
-                        enforced_checks.append(check)
-                else:
-                    for check in site_policy.policychecks.all():
-                        policy_checks.append(check)
+        if site_policy and site_policy.active:
+            if site_policy.enforced:
+                for check in site_policy.policychecks.all():
+                    enforced_checks.append(check)
+            else:
+                for check in site_policy.policychecks.all():
+                    policy_checks.append(check)
 
-        if client_policy != None:
-            if client_policy.active:
-                if client_policy.enforced:
-                    for check in client_policy.policychecks.all():
-                        enforced_checks.append(check)
-                else:
-                    for check in client_policy.policychecks.all():
-                        policy_checks.append(check)
+        if client_policy and client_policy.active:
+            if client_policy.enforced:
+                for check in client_policy.policychecks.all():
+                    enforced_checks.append(check)
+            else:
+                for check in client_policy.policychecks.all():
+                    policy_checks.append(check)
 
         # Sorted Checks already added
         added_diskspace_checks = list()
@@ -105,9 +102,9 @@ class Policy(models.Model):
                 if check.disk not in added_diskspace_checks:
                     added_diskspace_checks.append(check.disk)
                     # Dont create the check if it is an agent check
-                    if check.agent == None:
+                    if not check.agent:
                         diskspace_checks.append(check)
-                elif check.agent != None:
+                elif check.agent:
                     check.overriden_by_policy = True
                     check.save()
 
@@ -116,32 +113,32 @@ class Policy(models.Model):
                 if check.ip not in added_ping_checks:
                     added_ping_checks.append(check.ip)
                     # Dont create the check if it is an agent check
-                    if check.agent == None:
+                    if not check.agent:
                         ping_checks.append(check)
                     added_ping_checks.append(check.ip)
-                elif check.agent != None:
+                elif check.agent:
                     check.overriden_by_policy = True
                     check.save()
 
             if check.check_type == "cpuload":
                 # Check if cpuload check exists
-                if len(added_cpuload_checks) == 0:
+                if added_cpuload_checks:
                     added_cpuload_checks.append(check)
                     # Dont create the check if it is an agent check
-                    if check.agent == None:
+                    if not check.agent:
                         cpuload_checks.append(check)
-                elif check.agent != None:
+                elif check.agent:
                     check.overriden_by_policy = True
                     check.save()
 
             if check.check_type == "memory":
                 # Check if memory check exists
-                if len(added_memory_checks) == 0:
+                if added_memory_checks:
                     added_memory_checks.append(check)
                     # Dont create the check if it is an agent check
-                    if check.agent == None:
+                    if not check.agent:
                         memory_checks.append(check)
-                elif check.agent != None:
+                elif check.agent:
                     check.overriden_by_policy = True
                     check.save()
 
@@ -150,9 +147,9 @@ class Policy(models.Model):
                 if check.svc_name not in added_winsvc_checks:
                     added_winsvc_checks.append(check.svc_name)
                     # Dont create the check if it is an agent check
-                    if check.agent == None:
+                    if not check.agent:
                         winsvc_checks.append(check)
-                elif check.agent != None:
+                elif check.agent:
                     check.overriden_by_policy = True
                     check.save()
 
@@ -161,9 +158,9 @@ class Policy(models.Model):
                 if check.script not in added_script_checks:
                     added_script_checks.append(check.script)
                     # Dont create the check if it is an agent check
-                    if check.agent == None:
+                    if not check.agent:
                         script_checks.append(check)
-                elif check.agent != None:
+                elif check.agent:
                     check.overriden_by_policy = True
                     check.save()
 
@@ -171,9 +168,9 @@ class Policy(models.Model):
                 # Check if events were already added
                 if [check.log_name, check.event_id] not in added_eventlog_checks:
                     added_eventlog_checks.append([check.log_name, check.event_id])
-                    if check.agent == None:
+                    if not check.agent:
                         eventlog_checks.append(check)
-                elif check.agent != None:
+                elif check.agent:
                     check.overriden_by_policy = True
                     check.save()
 
@@ -191,10 +188,9 @@ class Policy(models.Model):
     def generate_policy_checks(agent):
         checks = Policy.cascade_policy_checks(agent)
 
-        if checks != None:
-            if len(checks) > 0:
-                for check in checks:
-                    check.create_policy_check(agent)
+        if checks:
+            for check in checks:
+                check.create_policy_check(agent)
 
 
 class PolicyExclusions(models.Model):

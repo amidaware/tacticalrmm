@@ -50,7 +50,6 @@ class Agent(models.Model):
     is_updating = models.BooleanField(default=False)
     choco_installed = models.BooleanField(default=False)
     wmi_detail = JSONField(null=True)
-    policies_pending = models.BooleanField(default=False)
     time_zone = models.CharField(
         max_length=255, choices=TZ_CHOICES, null=True, blank=True
     )
@@ -202,10 +201,6 @@ class Agent(models.Model):
 
         # Generate checks based on policies
         automation.models.Policy.generate_policy_checks(self)
-
-        # Set policies_pending to false to disable policy generation on next checkin
-        self.policies_pending = False
-        self.save()
 
     # https://github.com/Ylianst/MeshCentral/issues/59#issuecomment-521965347
     def get_login_token(self, key, user, action=3):

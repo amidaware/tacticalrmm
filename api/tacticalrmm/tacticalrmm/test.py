@@ -1,6 +1,8 @@
 from django.test import TestCase
 from django.utils import timezone as djangotime
 
+from unittest.mock import patch
+
 from rest_framework.test import APIClient
 from rest_framework.test import force_authenticate
 
@@ -12,7 +14,7 @@ from automation.models import Policy
 from core.models import CoreSettings
 from checks.models import Check
 
-
+@patch('automation.tasks.generate_agent_checks_from_policies_task.delay')
 class BaseTestCase(TestCase):
     def setUp(self):
 

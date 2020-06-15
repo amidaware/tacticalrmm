@@ -220,7 +220,7 @@ class Check(models.Model):
     def create_policy_check(self, agent):
         Check.objects.create(
             agent=agent,
-            policy=self.policy,
+            policy=None,
             managed_by_policy=True,
             parent_check=self.pk,
             name=self.name,

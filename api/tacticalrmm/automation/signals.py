@@ -40,10 +40,3 @@ def pre_delete_check_handler(sender, instance, **kwargs):
     # Agent check deleted
     elif instance.agent:
         instance.agent.generate_checks_from_policies()
-
-
-@receiver([post_save, pre_delete], sender="automation.Policy")
-def save_delete_policy_handler(sender, instance, **kwargs):
-
-    # Generate agent checks on save and delete
-    generate_agent_checks_from_policies_task.delay(policypk=instance.pk)

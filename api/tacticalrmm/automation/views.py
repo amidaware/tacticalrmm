@@ -12,7 +12,7 @@ from clients.models import Client, Site
 from checks.models import Check
 
 from clients.serializers import ClientSerializer, TreeSerializer
-
+from checks.serializers import CheckSerializer
 from agents.serializers import AgentHostnameSerializer
 
 from .serializers import (
@@ -23,7 +23,7 @@ from .serializers import (
     AutoTaskPolicySerializer,
 )
 
-from checks.serializers import CheckSerializer
+from .tasks import generate_agent_checks_from_policies_task, generate_policy_checks_from_agents_task
 
 
 class GetAddPolicies(APIView):
@@ -65,6 +65,10 @@ class GetUpdateDeletePolicy(APIView):
 
         policy = get_object_or_404(Policy, pk=pk)
 
+        # Used to determine if policy checks should be regenerated
+        old_active = policy.active
+        old_enforce = policy.enforced
+
         policy.name = request.data["name"]
         policy.desc = request.data["desc"]
         policy.active = request.data["active"]
@@ -75,12 +79,21 @@ class GetUpdateDeletePolicy(APIView):
         except DataError:
             content = {"error": "Policy name too long (max 255 chars)"}
             return Response(content, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Generate agent checks only if active and enforced were changed
+        if policy.active != old_active or policy.enforced != old_enforced:
+            generate_agent_checks_from_policies_task.delay(policypk=policy.pk)
 
         return Response("ok")
 
     def delete(self, request, pk):
         policy = Policy.objects.get(pk=pk)
+
+        # Used to regenerate policy checks on affected agents after deletion
+        affected_agents = policy.related_agents()
         policy.delete()
+        
+        generate_policy_checks_from_agents_task.delay(agents=list(affected_agents))
 
         return Response("ok")
 
@@ -157,31 +170,67 @@ class GetRelated(APIView):
         pk = request.data["pk"]
 
         if request.data["policy"] != 0:
-            policy = Policy.objects.get(pk=request.data["policy"])
+            policy = get_object_or_404(Policy, pk=request.data["policy"])
             if related_type == "client":
-                Client.objects.filter(pk=pk).update(policy=policy)
+                client = get_object_or_404(Client, pk=pk)
+                
+                # Check and see if policy changed and regenerate policies
+                if client.policy.pk != policy.pk:
+                    client.policy = policy
+                    client.save()
+                    generate_agent_checks_from_policies_task.delay(policypk=policy.pk)
 
             if related_type == "site":
-                Site.objects.filter(pk=pk).update(policy=policy)
+                site = get_object_or_404(Site, pk=pk)
+
+                # Check and see if policy changed and regenerate policies
+                if site.policy.pk != policy.pk:
+                    site.policy = policy
+                    site.save()
+                    generate_agent_checks_from_policies_task.delay(policypk=policy.pk)
 
             if related_type == "agent":
-                agent = Agent.objects.get(pk=pk)
-                agent.policy=policy
-                agent.save()
-                agent.generate_checks_from_policies()
+                agent = get_object_or_404(Agent, pk=pk)
 
+                # Check and see if policy changed and regenerate policies
+                if agent.policy.pk != policy.pk:
+                    agent.policy=policy
+                    agent.save()
+                    agent.generate_checks_from_policies()
+
+        # If policy was cleared
         else:
             if related_type == "client":
-                Client.objects.filter(pk=pk).update(policy=None)
+                client = get_object_or_404(Client, pk=pk)
+
+                # Check if policy is not none and update it to None
+                if client.policy:
+
+                    # Get old policy pk to regenerate the checks
+                    old_pk = client.pk
+                    client.policy=None
+                    client.save()
+                    generate_agent_checks_from_policies_task.delay(policypk=old_pk)
 
             if related_type == "site":
-                Site.objects.filter(pk=pk).update(policy=None)
+                site = get_object_or_404(Site, pk=pk)
+
+                # Check if policy is not none and update it to None
+                if site.policy:
+
+                    # Get old policy pk to regenerate the checks
+                    old_pk = site.pk
+                    site.policy=None
+                    site.save()
+                    generate_agent_checks_from_policies_task.delay(policypk=old_pk)
 
             if related_type == "agent":
-                agent = Agent.objects.get(pk=pk)
-                agent.policy=None
-                agent.save()
-                agent.generate_checks_from_policies()
+                agent = get_object_or_404(Agent, pk=pk)
+
+                if agent.policy:
+                    agent.policy=None
+                    agent.save()
+                    agent.generate_checks_from_policies()
 
         return Response("ok")
 

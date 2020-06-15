@@ -16,14 +16,14 @@ def post_save_check_handler(sender, instance, created, **kwargs):
     # For created checks
     if created:
         if instance.policy:
-            generate_agent_checks_from_policies_task.delay(policypk=instance.pk)
+            generate_agent_checks_from_policies_task.delay(policypk=instance.policy.pk)
         elif instance.agent:
             instance.agent.generate_checks_from_policies()
 
     # Checks that are updated except for agent
     else:
         if instance.policy:
-            generate_agent_checks_from_policies_task.delay(policypk=instance.pk)
+            generate_agent_checks_from_policies_task.delay(policypk=instance.policy.pk)
 
 
 @receiver(pre_delete, sender="checks.Check")
@@ -35,7 +35,7 @@ def pre_delete_check_handler(sender, instance, **kwargs):
 
     # Policy check deleted
     if instance.policy:
-        generate_agent_checks_from_policies_task.delay(policypk=instance.pk)
+        generate_agent_checks_from_policies_task.delay(policypk=instance.policy.pk)
 
     # Agent check deleted
     elif instance.agent:

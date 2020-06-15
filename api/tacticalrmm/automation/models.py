@@ -41,8 +41,11 @@ class Policy(models.Model):
         agent_checks = list(agent.agentchecks.filter(managed_by_policy=False))
 
         # Get policies applied to agent and agent site and client
-        client_policy = Client.objects.get(client=agent.client).policy
-        site_policy = Site.objects.get(site=agent.site).policy
+        client = Client.objects.get(client=agent.client)
+        site = Site.objects.filter(client=client).get(site=agent.site)
+
+        client_policy = client.policy
+        site_policy = site.policy
         agent_policy = agent.policy
 
         # Used to hold the policies that will be applied and the order in which they are applied

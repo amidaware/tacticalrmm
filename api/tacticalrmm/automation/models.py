@@ -121,8 +121,8 @@ class Policy(models.Model):
                     check.save()
 
             if check.check_type == "cpuload":
-                # Check if cpuload check exists
-                if added_cpuload_checks:
+                # Check if cpuload list is empty
+                if not added_cpuload_checks:
                     added_cpuload_checks.append(check)
                     # Dont create the check if it is an agent check
                     if not check.agent:
@@ -132,8 +132,8 @@ class Policy(models.Model):
                     check.save()
 
             if check.check_type == "memory":
-                # Check if memory check exists
-                if added_memory_checks:
+                # Check if memory check list is empty
+                if not added_memory_checks:
                     added_memory_checks.append(check)
                     # Dont create the check if it is an agent check
                     if not check.agent:

@@ -372,7 +372,7 @@ export default {
       } else {
         data.text_alert = action;
       }
-
+      data.check_alert = true;
       const act = action ? "enabled" : "disabled";
       const color = action ? "positive" : "warning";
       axios.patch(`/checks/${id}/check/`, data).then(r => {

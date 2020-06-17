@@ -1,11 +1,11 @@
 <template>
   <div class="row">
     <div class="col-12">
-      <q-btn 
-        size="sm" 
-        color="grey-5" 
-        icon="fas fa-plus" 
-        label="Add Check" 
+      <q-btn
+        size="sm"
+        color="grey-5"
+        icon="fas fa-plus"
+        label="Add Check"
         text-color="black"
         ref="add"
       >
@@ -56,14 +56,7 @@
           </q-list>
         </q-menu>
       </q-btn>
-      <q-btn 
-        dense 
-        flat 
-        push 
-        @click="onRefresh(selectedPolicy)" 
-        icon="refresh"
-        ref="refresh"
-      />
+      <q-btn dense flat push @click="onRefresh(selectedPolicy)" icon="refresh" ref="refresh" />
       <template>
         <q-table
           dense
@@ -94,14 +87,10 @@
             <q-th auto-width :props="props"></q-th>
           </template>
           <!-- No data Slot -->
-          <template v-slot:no-data >
+          <template v-slot:no-data>
             <div class="full-width row flex-center q-gutter-sm">
-              <span v-if="selectedPolicy === null">
-                Click on a policy to see the checks
-              </span>
-              <span v-else>
-                There are no checks added to this policy
-              </span>
+              <span v-if="selectedPolicy === null">Click on a policy to see the checks</span>
+              <span v-else>There are no checks added to this policy</span>
             </div>
           </template>
           <!-- body slots -->
@@ -110,9 +99,9 @@
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item 
-                    clickable 
-                    v-close-popup 
+                  <q-item
+                    clickable
+                    v-close-popup
                     @click="showEditDialog(props.row)"
                     id="context-edit"
                   >
@@ -135,9 +124,9 @@
 
                   <q-separator></q-separator>
 
-                  <q-item 
-                    clickable 
-                    v-close-popup 
+                  <q-item
+                    clickable
+                    v-close-popup
                     @click="showPolicyCheckStatusModal(props.row)"
                     id="context-status"
                   >
@@ -175,9 +164,7 @@
                   style="cursor:pointer;color:blue;text-decoration:underline"
                   @click="showPolicyCheckStatusModal(props.row)"
                   class="status-cell"
-                >
-                  See Status
-                </span>
+                >See Status</span>
               </q-td>
               <q-td v-if="props.row.assigned_task">{{ props.row.assigned_task.name }}</q-td>
               <q-td v-else></q-td>
@@ -189,21 +176,16 @@
 
     <!-- policy status -->
     <q-dialog v-model="showPolicyCheckStatus">
-      <PolicyStatus 
-        type="check" 
-        :item="statusCheck"
-      />
+      <PolicyStatus type="check" :item="statusCheck" />
     </q-dialog>
-    
+
     <!-- add/edit modals -->
-    <q-dialog 
-      v-model="showDialog"
-      @hide="hideDialog">
-      <component 
+    <q-dialog v-model="showDialog" @hide="hideDialog">
+      <component
         v-if="dialogComponent !== null"
-        :is="dialogComponent" 
-        @close="hideDialog" 
-        :policypk="selectedPolicy" 
+        :is="dialogComponent"
+        @close="hideDialog"
+        :policypk="selectedPolicy"
         :checkpk="editCheckPK"
         :mode="!!editCheckPK ? 'edit' : 'add'"
       />
@@ -233,7 +215,7 @@ export default {
     MemCheck,
     WinSvcCheck,
     ScriptCheck,
-    EventLogCheck,
+    EventLogCheck
   },
   mixins: [mixins],
   data() {
@@ -248,7 +230,7 @@ export default {
         { name: "emailalert", field: "email_alert", align: "left" },
         { name: "desc", label: "Description", align: "left" },
         { name: "status", label: "Status", field: "status", align: "left" },
-        { name: "assigned_task", label: "Assigned Task", field: "assigned_task", align: "left" },
+        { name: "assigned_task", label: "Assigned Task", field: "assigned_task", align: "left" }
       ],
       pagination: {
         rowsPerPage: 9999
@@ -264,18 +246,16 @@ export default {
       } else {
         data.text_alert = action;
       }
-
+      data.check_alert = true;
       const act = action ? "enabled" : "disabled";
       const color = action ? "positive" : "warning";
-      this.$store
-        .dispatch("editCheckAlert", { pk: id, data })
-        .then(r => {
-          this.$q.notify({
-            color: color,
-            icon: "fas fa-check-circle",
-            message: `${alert_type} alerts ${act}`
-          });
+      this.$store.dispatch("editCheckAlert", { pk: id, data }).then(r => {
+        this.$q.notify({
+          color: color,
+          icon: "fas fa-check-circle",
+          message: `${alert_type} alerts ${act}`
         });
+      });
     },
     onRefresh(id) {
       this.$store.dispatch("automation/loadPolicyChecks", id);
@@ -310,9 +290,8 @@ export default {
         default:
           return null;
       }
-      this.editCheckPK = check.id
+      this.editCheckPK = check.id;
       this.showDialog = true;
-
     },
     hideDialog(component) {
       this.showDialog = false;
@@ -324,7 +303,7 @@ export default {
         .dialog({
           title: `Delete ${check.check_type} check?`,
           ok: { label: "Delete", color: "negative" },
-          cancel: true,
+          cancel: true
         })
         .onOk(() => {
           this.$store
@@ -349,7 +328,7 @@ export default {
     ...mapGetters({
       checks: "automation/checks",
       selectedPolicy: "automation/selectedPolicyPk"
-      })
+    })
   }
 };
 </script>

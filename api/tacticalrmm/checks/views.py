@@ -83,7 +83,7 @@ class GetUpdateDeleteCheck(APIView):
 
         # Update policy check fields
         if check.policy:
-            update_policy_check_fields_task(checkpk=check.pk, fields=CheckSerializer(check).data)
+            update_policy_check_fields_task(checkpk=pk)
 
         return Response(f"{obj.readable_desc} was edited!")
 
@@ -103,6 +103,7 @@ class GetUpdateDeleteCheck(APIView):
             check.agent.generate_checks_from_policies()
 
         check.delete()
+        
         return Response(f"{check.readable_desc} was deleted!")
 
 

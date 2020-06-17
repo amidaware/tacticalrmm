@@ -17,18 +17,27 @@ def generate_agent_checks_from_policies_task(policypk, many=False):
             agent.generate_checks_from_policies()
 
 @app.task
-def generate_agent_checks_task(agents):
-
-    if agents:
-        for agent in agents:
-            agent.generate_checks_from_policies()
-
-@app.task
 def delete_policy_check_task(checkpk):
 
     Check.objects.filter(parent_check=checkpk).delete()
 
 @app.task
-def update_policy_check_fields_task(checkpk, fields, many=False):
+def update_policy_check_fields_task(checkpk):
 
-    Check.objects.filter(parent_check=checkpk).update(**fields)
+    check = Check.objects.get(pk=checkpk)
+
+    Check.objects.filter(parent_check=checkpk).update(
+        threshold=check.threshold,
+        name=check.name,
+        fails_b4_alert=check.fails_b4_alert,
+        disk=check.disk,
+        ip=check.ip,
+        script=check.script,
+        pass_if_start_pending=check.pass_if_start_pending,
+        restart_if_stopped=check.restart_if_stopped,
+        log_name=check.log_name,
+        event_id=check.event_id,
+        event_type=check.event_type,
+        fail_when=check.fail_when,
+        search_last_days=check.search_last_days
+    )

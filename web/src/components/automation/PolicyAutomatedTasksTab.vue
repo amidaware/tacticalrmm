@@ -1,6 +1,5 @@
 <template>
-  <div v-if="selectedPolicy === null">No Policy Selected</div>
-  <div class="row" v-else>
+  <div class="row">
     <div class="col-12">
       <q-btn
         size="sm"
@@ -18,25 +17,33 @@
         icon="refresh"
         ref="refresh" 
       />
-      <template v-if="tasks === undefined || tasks.length === 0">
-        <p>No Tasks</p>
-      </template>
-      <template v-else>
+      <template>
         <q-table
           dense
           class="tabs-tbl-sticky"
           :data="tasks"
           :columns="columns"
-          :row-key="row => row.id"
+          row-key="id"
           binary-state-sort
           :pagination.sync="pagination"
-          hide-bottom
+          hide-pagination
         >
           <!-- header slots -->
           <template v-slot:header-cell-enabled="props">
             <q-th auto-width :props="props">
               <small>Enabled</small>
             </q-th>
+          </template>
+          <!-- No data Slot -->
+          <template v-slot:no-data >
+            <div class="full-width row flex-center q-gutter-sm">
+              <span v-if="selectedPolicy === null">
+                Click on a policy to see the tasks
+              </span>
+              <span v-else>
+                There are no tasks added to this policy
+              </span>
+            </div>
           </template>
           <!-- body slots -->
           <template v-slot:body="props" :props="props">

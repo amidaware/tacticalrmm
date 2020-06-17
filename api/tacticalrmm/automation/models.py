@@ -5,7 +5,7 @@ from clients.models import Site, Client
 
 class Policy(models.Model):
     name = models.CharField(max_length=255, unique=True)
-    desc = models.CharField(max_length=255)
+    desc = models.CharField(max_length=255, null=True, blank=True)
     active = models.BooleanField(default=False)
     enforced = models.BooleanField(default=False)
 
@@ -115,7 +115,6 @@ class Policy(models.Model):
                     # Dont create the check if it is an agent check
                     if not check.agent:
                         ping_checks.append(check)
-                    added_ping_checks.append(check.ip)
                 elif check.agent:
                     check.overriden_by_policy = True
                     check.save()

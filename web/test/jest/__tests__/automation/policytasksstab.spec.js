@@ -1,4 +1,4 @@
-import { mount, shallowMount, createWrapper, createLocalVue } from "@vue/test-utils";
+import { mount, createWrapper, createLocalVue } from "@vue/test-utils";
 import PolicyAutomatedTasksTab from "@/components/automation/PolicyAutomatedTasksTab";
 import Vuex from "vuex";
 import "../../utils/quasar.js";
@@ -53,7 +53,7 @@ describe("PolicyAutomatedTasksTab.vue with no policy selected", () => {
       }
     });
 
-    wrapper = shallowMount(PolicyAutomatedTasksTab, {
+    wrapper = mount(PolicyAutomatedTasksTab, {
       store,
       localVue
     });
@@ -63,7 +63,7 @@ describe("PolicyAutomatedTasksTab.vue with no policy selected", () => {
   /***   TESTS   ***/
   it("renders text when policy is selected with no tasks", () => {
 
-    expect(wrapper.html()).toContain("No Policy Selected");
+    expect(wrapper.html()).toContain("Click on a policy to see the tasks");
   });
 
 });
@@ -120,7 +120,7 @@ describe("PolicyAutomatedTasksTab.vue with policy selected and no tasks", () => 
 
   it("renders text when policy is selected with no tasks", () => {
 
-    expect(wrapper.html()).toContain("No Tasks");
+    expect(wrapper.html()).toContain("There are no tasks added to this policy");
   });
 
   it("sends vuex actions on refresh button click", () => {

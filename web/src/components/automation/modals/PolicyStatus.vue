@@ -1,7 +1,7 @@
 <template>
   <q-card style="width: 90vw" >
     <q-card-section class="row items-center">
-      <div class="text-h6">{{ this.description }}</div>
+      <div class="text-h6">{{ this.item.readable_desc }}</div>
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
@@ -14,11 +14,19 @@
         row-key="id"
         binary-state-sort
         :pagination.sync="pagination"
-        hide-bottom
+        hide-pagination
       >
         <!-- header slots -->
         <template v-slot:header-cell-statusicon="props">
           <q-th auto-width :props="props"></q-th>
+        </template>
+        <!-- No data Slot -->
+        <template v-slot:no-data >
+          <div class="full-width row flex-center q-gutter-sm">
+            <span>
+              There are no agents applied to this policy
+            </span>
+          </div>
         </template>
         <!-- body slots -->
         <template v-slot:body="props" :props="props">
@@ -45,19 +53,22 @@
             <q-td v-if="props.row.check_type === 'ping'">
               <span
                 style="cursor:pointer;color:blue;text-decoration:underline"
-                @click="pingInfo(props.row.readable_desc, props.row.more_info)"
+                @click="pingInfo(props.row)"
+                class="ping-cell"
               >output</span>
             </q-td>
             <q-td v-else-if="props.row.check_type === 'script'">
               <span
                 style="cursor:pointer;color:blue;text-decoration:underline"
                 @click="scriptMoreInfo(props.row)"
+                class="script-cell"
               >output</span>
             </q-td>
             <q-td v-else-if="props.row.check_type === 'eventlog'">
               <span
                 style="cursor:pointer;color:blue;text-decoration:underline"
                 @click="eventLogMoreInfo(props.row)"
+                class="eventlog-cell"
               >output</span>
             </q-td>
             <q-td
@@ -84,7 +95,6 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
 import ScriptOutput from "@/components/modals/checks/ScriptOutput";
 import EventLogCheckOutput from "@/components/modals/checks/EventLogCheckOutput";
 
@@ -106,9 +116,6 @@ export default {
         // The value must match one of these strings
         return ["task", "check"].includes(value);
       }
-    },
-    description: {
-      type: String
     }
   },
   data() {
@@ -175,20 +182,20 @@ export default {
       this.showScriptOutput = false; 
       this.scriptInfo = {}
     },
-    pingInfo(desc, output) {
+    pingInfo(check) {
       this.$q.dialog({
-        title: desc,
+        title: check.readable_desc,
         style: "width: 50vw; max-width: 60vw",
-        message: `<pre>${output}</pre>`,
+        message: `<pre>${check.more_info}</pre>`,
         html: true
       });
     },
-    scriptMoreInfo(props) {
-      this.scriptInfo = props;
+    scriptMoreInfo(check) {
+      this.scriptInfo = check;
       this.showScriptOutput = true;
     },
-    eventLogMoreInfo(props) {
-      this.evtLogData = props;
+    eventLogMoreInfo(check) {
+      this.evtLogData = check;
       this.showEventLogOutput = true;
     },
   },

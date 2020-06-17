@@ -185,6 +185,9 @@ class Check(models.Model):
             "history",
             "readable_desc",
             "history_info",
+            "parent_check",
+            "managed_by_policy",
+            "overriden_by_policy"
         ]
 
     def handle_check(self, data):

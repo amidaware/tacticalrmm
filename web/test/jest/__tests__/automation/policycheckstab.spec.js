@@ -1,4 +1,4 @@
-import { mount, shallowMount, createWrapper, createLocalVue } from "@vue/test-utils";
+import { mount, createWrapper, createLocalVue } from "@vue/test-utils";
 import PolicyChecksTab from "@/components/automation/PolicyChecksTab";
 import Vuex from "vuex";
 import "../../utils/quasar.js"
@@ -59,7 +59,7 @@ describe("PolicyChecksTab.vue with no policy selected", () => {
       }
     });
 
-    wrapper = shallowMount(PolicyChecksTab, {
+    wrapper = mount(PolicyChecksTab, {
       store,
       localVue
     });
@@ -69,7 +69,7 @@ describe("PolicyChecksTab.vue with no policy selected", () => {
   /***   TESTS   ***/
   it("renders text when policy is selected with no checks", () => {
 
-    expect(wrapper.html()).toContain("No Policy Selected");
+    expect(wrapper.html()).toContain("Click on a policy to see the checks");
   });
 
 });
@@ -140,7 +140,7 @@ describe("PolicyChecksTab.vue with policy selected and no checks", () => {
 
   it("renders text when policy is selected with no checks", () => {
 
-    expect(wrapper.html()).toContain("No Checks");
+    expect(wrapper.html()).toContain("There are no checks added to this policy");
   });
 
   it("sends vuex actions on refresh button click", () => {
@@ -303,17 +303,6 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
     await bodyWrapper.find("#context-status").trigger("click");
     expect(bodyWrapper.find(".q-dialog").exists()).toBe(true);
     expect(wrapper.vm.statusCheck).toEqual(diskcheck);
-  });
-
-  it("renders correct description for checks", () => {
-
-    expect(wrapper.find(".q-table").html()).toContain("Disk Space Drive C: &gt; 25%");
-    expect(wrapper.find(".q-table").html()).toContain("Avg CPU Load &gt; 85%");
-    expect(wrapper.find(".q-table").html()).toContain("Avg memory usage &gt; 75%");
-    expect(wrapper.find(".q-table").html()).toContain("Script check: Test Script");
-    expect(wrapper.find(".q-table").html()).toContain("Service Check - Agent Activation Runtime_1232as");
-    expect(wrapper.find(".q-table").html()).toContain("Ping fghfgh (10.10.10.10)");
-    expect(wrapper.find(".q-table").html()).toContain("Event Log Check - asasasa");
   });
 
   it("deletes check", async () => {

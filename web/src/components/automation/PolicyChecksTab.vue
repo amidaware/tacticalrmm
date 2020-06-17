@@ -1,6 +1,5 @@
 <template>
-  <div v-if="selectedPolicy === null">No Policy Selected</div>
-  <div class="row" v-else>
+  <div class="row">
     <div class="col-12">
       <q-btn 
         size="sm" 
@@ -65,19 +64,16 @@
         icon="refresh"
         ref="refresh"
       />
-      <template v-if="checks.length === 0">
-        <p>No Checks</p>
-      </template>
-      <template v-else>
+      <template>
         <q-table
           dense
           class="tabs-tbl-sticky"
           :data="checks"
           :columns="columns"
-          :row-key="row => row.id + row.check_type"
+          row-key="id"
           binary-state-sort
           :pagination.sync="pagination"
-          hide-bottom
+          hide-pagination
         >
           <!-- header slots -->
           <template v-slot:header-cell-smsalert="props">
@@ -96,6 +92,17 @@
           </template>
           <template v-slot:header-cell-statusicon="props">
             <q-th auto-width :props="props"></q-th>
+          </template>
+          <!-- No data Slot -->
+          <template v-slot:no-data >
+            <div class="full-width row flex-center q-gutter-sm">
+              <span v-if="selectedPolicy === null">
+                Click on a policy to see the checks
+              </span>
+              <span v-else>
+                There are no checks added to this policy
+              </span>
+            </div>
           </template>
           <!-- body slots -->
           <template v-slot:body="props">
@@ -162,7 +169,7 @@
                   v-model="props.row.email_alert"
                 />
               </q-td>
-              <q-td>{{ getDescription(props.row) }}</q-td>
+              <q-td>{{ props.row.readable_desc }}</q-td>
               <q-td>
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
@@ -185,7 +192,6 @@
       <PolicyStatus 
         type="check" 
         :item="statusCheck"
-        :description="getDescription(statusCheck)"
       />
     </q-dialog>
     
@@ -311,6 +317,7 @@ export default {
     hideDialog(component) {
       this.showDialog = false;
       this.dialogComponent = null;
+      this.editCheckPK = null;
     },
     deleteCheck(check) {
       this.$q
@@ -336,22 +343,6 @@ export default {
     closePolicyCheckStatusModal() {
       this.showPolicyCheckStatus = false;
       this.statusCheck = {};
-    },
-    getDescription(check) {
-      if (check.check_type === "diskspace")
-        return `Disk Space Drive ${check.disk} > ${check.threshold}%`;
-      else if (check.check_type === "cpuload")
-        return `Avg CPU Load > ${check.threshold}%`;
-      else if (check.check_type === "script")
-        return `Script check: ${check.script.name}`;
-      else if (check.check_type === "ping")
-        return `Ping ${check.name} (${check.ip})`;
-      else if (check.check_type === "memory")
-        return `Avg memory usage > ${check.threshold}%`;
-      else if (check.check_type === "winsvc")
-        return `Service Check - ${check.svc_display_name}`;
-      else if (check.check_type === "eventlog")
-        return `Event Log Check - ${check.name}`
     }
   },
   computed: {

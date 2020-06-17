@@ -23,7 +23,7 @@ from .serializers import (
     AutoTaskPolicySerializer,
 )
 
-from .tasks import generate_agent_checks_from_policies_task, generate_agent_checks_task
+from .tasks import generate_agent_checks_from_policies_task
 
 
 class GetAddPolicies(APIView):
@@ -33,45 +33,31 @@ class GetAddPolicies(APIView):
         return Response(PolicyTableSerializer(policies, many=True).data)
 
     def post(self, request):
-        name = request.data["name"]
-        desc = request.data["desc"]
-        active = request.data["active"]
-        enforced = request.data["enforced"]
-
-        if Policy.objects.filter(name=name):
-            content = {"error": f"Policy {name} already exists"}
-            return Response(content, status=status.HTTP_400_BAD_REQUEST)
-
-        Policy.objects.create(
-            name=name, desc=desc, active=active, enforced=enforced
-        )
+        serializer = PolicySerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
         return Response("ok")
 
 
 class GetUpdateDeletePolicy(APIView):
     def get(self, request, pk):
-
         policy = get_object_or_404(Policy, pk=pk)
 
         return Response(PolicySerializer(policy).data)
 
     def put(self, request, pk):
-
         policy = get_object_or_404(Policy, pk=pk)
 
-        # Used to determine if policy checks should be regenerated
         old_active = policy.active
         old_enforced = policy.enforced
 
-        policy.name = request.data["name"]
-        policy.desc = request.data["desc"]
-        policy.active = request.data["active"]
-        policy.enforced = request.data["enforced"]
-        policy.save()
+        serializer = PolicySerializer(instance=policy, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        saved_policy = serializer.save()
 
         # Generate agent checks only if active and enforced were changed
-        if policy.active != old_active or policy.enforced != old_enforced:
+        if saved_policy.active != old_active or saved_policy.enforced != old_enforced:
             generate_agent_checks_from_policies_task.delay(policypk=policy.pk)
 
         return Response("ok")
@@ -81,7 +67,6 @@ class GetUpdateDeletePolicy(APIView):
 
         # delete all managed policy checks off of agents
         parent_check_pks = policy.policychecks.only("pk")
-
         if parent_check_pks:
             Check.objects.filter(parent_check__in=parent_check_pks).delete()
 

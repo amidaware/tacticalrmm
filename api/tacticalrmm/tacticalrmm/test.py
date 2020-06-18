@@ -1,8 +1,6 @@
 from django.test import TestCase
 from django.utils import timezone as djangotime
 
-from unittest.mock import patch
-
 from rest_framework.test import APIClient
 from rest_framework.test import force_authenticate
 

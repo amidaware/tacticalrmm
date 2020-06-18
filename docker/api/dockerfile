@@ -13,21 +13,17 @@ ARG SALT_PASS
 ARG REDIS_HOST
 ARG MESH_USER
 ARG MESH_HOST
+ARG MESH_TOKEN_KEY
 ARG APP_HOST
 ARG API_HOST
 ARG ADMIN_URL
-ARG TWO_FACTOR_OTP
-ARG EMAIL_TLS
-ARG EMAIL_HOST
-ARG EMAIL_USER
-ARG EMAIL_PASS
-ARG EMAIL_PORT
-ARG EMAIL_RECIPIENTS
 
 EXPOSE 80
 
 RUN apt-get update && apt-get install -y gettext-base
 COPY ./api/tacticalrmm/requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir --upgrade setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 COPY ./api/tacticalrmm/ .
 COPY ./docker/api/prestart.sh .
@@ -43,3 +39,4 @@ COPY ./scripts /srv/salt/scripts
 RUN mkdir /srv/salt/scripts/userdefined && \
     chown -R 1000:nginx /srv/salt/scripts/userdefined && \
     chmod -R 771 /srv/salt/scripts/userdefined
+    

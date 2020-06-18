@@ -11,9 +11,14 @@ git reset --hard FETCH_HEAD
 git clean -df
 cp /home/${USER}/rmm/_modules/* /srv/salt/_modules/
 cp /home/${USER}/rmm/scripts/* /srv/salt/scripts/
+rm -rf /home/${USER}/rmm/api/env
+cd /home/${USER}/rmm/api
+python3.7 -m venv env
 source /home/${USER}/rmm/api/env/bin/activate
 cd /home/${USER}/rmm/api/tacticalrmm
-pip install -r /home/${USER}/rmm/api/tacticalrmm/requirements.txt
+pip install --no-cache-dir --upgrade pip
+pip install --no-cache-dir --upgrade setuptools wheel
+pip install --no-cache-dir -r requirements.txt
 python manage.py makemigrations
 python manage.py migrate
 python manage.py delete_tokens
@@ -33,3 +38,10 @@ for i in celery celery-winupdate celerybeat rmm nginx
 do
 sudo systemctl start ${i}
 done
+
+sudo systemctl stop meshcentral
+cd /meshcentral
+rm -rf node_modules/
+npm install meshcentral@latest
+sudo systemctl start meshcentral
+sleep 10

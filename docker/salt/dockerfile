@@ -1,12 +1,23 @@
-FROM saltstack/salt
+FROM ubuntu:18.04
 
 ARG SALT_USER
 ARG SALT_PASS
 
 RUN adduser --no-create-home --disabled-password --gecos "" ${SALT_USER} && \
-    echo "${SALT_USER}:${SALT_PASS}" | chpasswd
-RUN apk add gettext
+    echo "${SALT_USER}:${SALT_PASS}" | chpasswd && \
+    apt-get update && \
+    apt-get install -y ca-certificates wget gnupg2 gettext-base tzdata supervisor && \
+    wget -O - https://repo.saltstack.com/py3/ubuntu/18.04/amd64/latest/SALTSTACK-GPG-KEY.pub | apt-key add - && \
+    echo 'deb http://repo.saltstack.com/py3/ubuntu/18.04/amd64/latest bionic main' | tee /etc/apt/sources.list.d/saltstack.list && \
+    apt-get update && \
+    apt-get install -y salt-master salt-api && \
+    mkdir -p /var/log/supervisor
 
-COPY ./docker/salt/api.conf /etc/salt/master.d/api.conf.tmp
-RUN envsubst '\$SALT_USER' < /etc/salt/master.d/api.conf.tmp > /etc/salt/master.d/api.conf && \
-    rm /etc/salt/master.d/api.conf.tmp
+COPY ./docker/salt/api.conf /etc/salt/master.tmp
+RUN envsubst '\$SALT_USER' < /etc/salt/master.tmp | tee --append /etc/salt/master && \
+    rm /etc/salt/master.tmp
+
+COPY ./docker/salt/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
+
+EXPOSE 8123 4505 4506
+CMD ["/usr/bin/supervisord"]

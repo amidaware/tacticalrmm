@@ -36,10 +36,6 @@ def debug_task(self):
 @app.on_after_finalize.connect
 def setup_periodic_tasks(sender, **kwargs):
 
-    from checks.tasks import checks_failing_task
+    from agents.tasks import agent_outages_task
 
-    from core.models import CoreSettings
-
-    interval = CoreSettings.objects.get(pk=1)
-
-    sender.add_periodic_task(30.0, checks_failing_task.s())
+    sender.add_periodic_task(60.0, agent_outages_task.s())

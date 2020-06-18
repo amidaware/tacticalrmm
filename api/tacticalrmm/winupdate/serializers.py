@@ -47,4 +47,3 @@ class ApprovedUpdateSerializer(serializers.ModelSerializer):
             "winupdates",
             "patch_policy",
         )
-

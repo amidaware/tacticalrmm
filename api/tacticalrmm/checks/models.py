@@ -1,29 +1,27 @@
-import validators
+import string
+import os
+import json
 from statistics import mean
-import datetime as dt
 
-
-from django.utils import timezone as djangotime
 from django.db import models
-from django.core.mail import send_mail
 from django.conf import settings
-from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.fields import ArrayField, JSONField
+from django.core.validators import MinValueValidator, MaxValueValidator
 
-from agents.models import Agent
+from core.models import CoreSettings
 
-STANDARD_CHECK_CHOICES = [
+import agents
+
+from .tasks import handle_check_email_alert_task
+
+CHECK_TYPE_CHOICES = [
     ("diskspace", "Disk Space Check"),
     ("ping", "Ping Check"),
     ("cpuload", "CPU Load Check"),
     ("memory", "Memory Check"),
-    ("winsvc", "Win Service Check"),
+    ("winsvc", "Service Check"),
     ("script", "Script Check"),
-]
-
-SCRIPT_CHECK_SHELLS = [
-    ("powershell", "Powershell"),
-    ("cmd", "Batch (CMD)"),
-    ("python", "Python"),
+    ("eventlog", "Event Log Check"),
 ]
 
 CHECK_STATUS_CHOICES = [
@@ -32,413 +30,291 @@ CHECK_STATUS_CHOICES = [
     ("pending", "Pending"),
 ]
 
+EVT_LOG_NAME_CHOICES = [
+    ("Application", "Application"),
+    ("System", "System"),
+    ("Security", "Security"),
+]
 
-def validate_threshold(threshold):
-    try:
-        int(threshold)
-    except ValueError:
-        return False
+EVT_LOG_TYPE_CHOICES = [
+    ("INFO", "Information"),
+    ("WARNING", "Warning"),
+    ("ERROR", "Error"),
+    ("AUDIT_SUCCESS", "Success Audit"),
+    ("AUDIT_FAILURE", "Failure Audit"),
+]
 
-    if int(threshold) <= 0 or int(threshold) >= 100:
-        return False
+EVT_LOG_FAIL_WHEN_CHOICES = [
+    ("contains", "Log contains"),
+    ("not_contains", "Log does not contain"),
+]
 
-    return True
 
+class Check(models.Model):
 
-class DiskCheck(models.Model):
+    # common fields
+
     agent = models.ForeignKey(
-        Agent, related_name="diskchecks", on_delete=models.CASCADE
+        "agents.Agent",
+        related_name="agentchecks",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
+    policy = models.ForeignKey(
+        "automation.Policy",
+        related_name="policychecks",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+    )
+    managed_by_policy = models.BooleanField(default=False)
+    overriden_by_policy = models.BooleanField(default=False)
+    parent_check = models.PositiveIntegerField(null=True, blank=True)
+    name = models.CharField(max_length=255, null=True, blank=True)
     check_type = models.CharField(
-        max_length=30, choices=STANDARD_CHECK_CHOICES, default="diskspace"
+        max_length=50, choices=CHECK_TYPE_CHOICES, default="diskspace"
     )
-    disk = models.CharField(max_length=2, null=True, blank=True)
-    threshold = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(
-        max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
+        max_length=100, choices=CHECK_STATUS_CHOICES, default="pending"
     )
-    email_alert = models.BooleanField(default=False)
-    text_alert = models.BooleanField(default=False)
     more_info = models.TextField(null=True, blank=True)
     last_run = models.DateTimeField(null=True, blank=True)
-    failures = models.PositiveIntegerField(default=5)
-    failure_count = models.PositiveIntegerField(default=0)
-
-    def __str__(self):
-        return f"{self.agent.hostname} - {self.disk}"
-
-    def handle_check(self, data):
-        if data["status"] == "passing" and self.failure_count != 0:
-            self.failure_count = 0
-            self.save(update_fields=["failure_count"])
-        elif data["status"] == "failing":
-            self.failure_count += 1
-            self.save(update_fields=["failure_count"])
-            if self.email_alert and self.failure_count >= self.failures:
-                from .tasks import handle_check_email_alert_task
-
-                handle_check_email_alert_task.delay("diskspace", self.pk)
-
-    def send_email(self):
-        percent_used = self.agent.disks[self.disk]["percent"]
-        percent_free = 100 - percent_used
-        send_mail(
-            f"Disk Space Check Failing on {self.agent.hostname}",
-            f"{self.agent.hostname} is failing disk space check {self.disk} - Free: {percent_free}%, Threshold: {self.threshold}%",
-            settings.EMAIL_HOST_USER,
-            settings.EMAIL_ALERT_RECIPIENTS,
-            fail_silently=False,
-        )
-
-
-class DiskCheckEmail(models.Model):
-    email = models.ForeignKey(DiskCheck, on_delete=models.CASCADE)
-    sent = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return self.email.agent.hostname
-
-
-class Script(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField(null=True, blank=True)
-    filename = models.CharField(max_length=255)
-    shell = models.CharField(
-        max_length=100, choices=SCRIPT_CHECK_SHELLS, default="powershell"
-    )
-
-    @property
-    def filepath(self):
-        return f"salt://scripts//userdefined//{self.filename}"
-
-    @property
-    def file(self):
-        return f"/srv/salt/scripts/userdefined/{self.filename}"
-
-    @staticmethod
-    def validate_filename(filename):
-        if (
-            not filename.endswith(".py")
-            and not filename.endswith(".ps1")
-            and not filename.endswith(".bat")
-        ):
-            return False
-
-        return True
-
-    def __str__(self):
-        return self.filename
-
-
-class ScriptCheck(models.Model):
-    agent = models.ForeignKey(
-        Agent, related_name="scriptchecks", on_delete=models.CASCADE
-    )
-    check_type = models.CharField(
-        max_length=30, choices=STANDARD_CHECK_CHOICES, default="script"
-    )
-    timeout = models.PositiveIntegerField(default=120)
-    failures = models.PositiveIntegerField(default=5)
-    status = models.CharField(
-        max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
-    )
-    failure_count = models.PositiveIntegerField(default=0)
     email_alert = models.BooleanField(default=False)
     text_alert = models.BooleanField(default=False)
+    fails_b4_alert = models.PositiveIntegerField(default=1)
+    fail_count = models.PositiveIntegerField(default=0)
+    email_sent = models.DateTimeField(null=True, blank=True)
+    text_sent = models.DateTimeField(null=True, blank=True)
+    outage_history = JSONField(null=True, blank=True)  # store
+    extra_details = JSONField(null=True, blank=True)
+
+    # check specific fields
+
+    # threshold percent for diskspace, cpuload or memory check
+    threshold = models.PositiveIntegerField(
+        null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(99)]
+    )
+    # diskcheck i.e C:, D: etc
+    disk = models.CharField(max_length=2, null=True, blank=True)
+    # ping checks
+    ip = models.CharField(max_length=255, null=True, blank=True)
+    # script checks
+    script = models.ForeignKey(
+        "scripts.Script",
+        related_name="script",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    timeout = models.PositiveIntegerField(null=True, blank=True)
     stdout = models.TextField(null=True, blank=True)
     stderr = models.TextField(null=True, blank=True)
-    retcode = models.IntegerField(default=0)
-    execution_time = models.CharField(max_length=100, default="0.0000")
-    last_run = models.DateTimeField(null=True, blank=True)
-    script = models.ForeignKey(Script, related_name="script", on_delete=models.CASCADE)
+    retcode = models.IntegerField(null=True, blank=True)
+    execution_time = models.CharField(max_length=100, null=True, blank=True)
+    # cpu and mem check history
+    history = ArrayField(
+        models.IntegerField(blank=True), null=True, blank=True, default=list
+    )
+    # win service checks
+    svc_name = models.CharField(max_length=255, null=True, blank=True)
+    svc_display_name = models.CharField(max_length=255, null=True, blank=True)
+    pass_if_start_pending = models.BooleanField(null=True, blank=True)
+    restart_if_stopped = models.BooleanField(null=True, blank=True)
+    svc_policy_mode = models.CharField(
+        max_length=20, null=True, blank=True
+    )  # 'default' or 'manual', for editing policy check
 
-    def handle_check(self, data):
-        if data["status"] == "passing" and self.failure_count != 0:
-            self.failure_count = 0
-            self.save(update_fields=["failure_count"])
-        elif data["status"] == "failing":
-            self.failure_count += 1
-            self.save(update_fields=["failure_count"])
-            if self.email_alert and self.failure_count >= self.failures:
-                from .tasks import handle_check_email_alert_task
-
-                handle_check_email_alert_task.delay("script", self.pk)
-
-    def send_email(self):
-        send_mail(
-            f"Script Check Fail on {self.agent.hostname}",
-            f"Script check {self.script.name} is failing on {self.agent.hostname}",
-            settings.EMAIL_HOST_USER,
-            settings.EMAIL_ALERT_RECIPIENTS,
-            fail_silently=False,
-        )
+    # event log checks
+    log_name = models.CharField(
+        max_length=255, choices=EVT_LOG_NAME_CHOICES, null=True, blank=True
+    )
+    event_id = models.IntegerField(null=True, blank=True)
+    event_type = models.CharField(
+        max_length=255, choices=EVT_LOG_TYPE_CHOICES, null=True, blank=True
+    )
+    fail_when = models.CharField(
+        max_length=255, choices=EVT_LOG_FAIL_WHEN_CHOICES, null=True, blank=True
+    )
+    search_last_days = models.PositiveIntegerField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.agent.hostname} - {self.script.filename}"
+        if self.agent:
+            return f"{self.agent.hostname} - {self.readable_desc}"
+        else:
+            return f"{self.policy.name} - {self.readable_desc}"
 
+    @property
+    def readable_desc(self):
+        if self.check_type == "diskspace":
+            return f"{self.get_check_type_display()}: Drive {self.disk} < {self.threshold}%"
+        elif self.check_type == "ping":
+            return f"{self.get_check_type_display()}: {self.ip}"
+        elif self.check_type == "cpuload" or self.check_type == "memory":
+            return f"{self.get_check_type_display()} > {self.threshold}%"
+        elif self.check_type == "winsvc":
+            return f"{self.get_check_type_display()}: {self.svc_display_name}"
+        elif self.check_type == "eventlog":
+            return f"{self.get_check_type_display()}: {self.name}"
+        elif self.check_type == "script":
+            return f"{self.get_check_type_display()}: {self.script.name}"
+        else:
+            return "n/a"
 
-class ScriptCheckEmail(models.Model):
-    email = models.ForeignKey(ScriptCheck, on_delete=models.CASCADE)
-    sent = models.DateTimeField(auto_now=True)
+    @property
+    def history_info(self):
+        if self.check_type == "cpuload" or self.check_type == "memory":
+            return ", ".join(str(f"{x}%") for x in self.history[-6:])
 
-    def __str__(self):
-        return self.email.agent.hostname
-
-
-class PingCheck(models.Model):
-    agent = models.ForeignKey(
-        Agent, related_name="pingchecks", on_delete=models.CASCADE
-    )
-    check_type = models.CharField(
-        max_length=30, choices=STANDARD_CHECK_CHOICES, default="ping"
-    )
-    ip = models.CharField(max_length=255)
-    name = models.CharField(max_length=255, null=True, blank=True)
-    failures = models.PositiveIntegerField(default=5)
-    status = models.CharField(
-        max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
-    )
-    failure_count = models.PositiveIntegerField(default=0)
-    email_alert = models.BooleanField(default=False)
-    text_alert = models.BooleanField(default=False)
-    more_info = models.TextField(null=True, blank=True)
-    last_run = models.DateTimeField(null=True, blank=True)
+    @property
+    def non_editable_fields(self):
+        return [
+            "check_type",
+            "status",
+            "more_info",
+            "last_run",
+            "fail_count",
+            "email_sent",
+            "text_sent",
+            "outage_history",
+            "extra_details",
+            "stdout",
+            "stderr",
+            "retcode",
+            "execution_time",
+            "history",
+            "readable_desc",
+            "history_info",
+            "parent_check",
+            "managed_by_policy",
+            "overriden_by_policy"
+        ]
 
     def handle_check(self, data):
-        if data["status"] == "passing" and self.failure_count != 0:
-            self.failure_count = 0
-            self.save(update_fields=["failure_count"])
-        elif data["status"] == "failing":
-            self.failure_count += 1
-            self.save(update_fields=["failure_count"])
-            if self.email_alert and self.failure_count >= self.failures:
-                from .tasks import handle_check_email_alert_task
+        if self.check_type != "cpuload" and self.check_type != "memory":
 
-                handle_check_email_alert_task.delay("ping", self.pk)
+            if data["status"] == "passing" and self.fail_count != 0:
+                self.fail_count = 0
+                self.save(update_fields=["fail_count"])
 
-    def send_email(self):
-        send_mail(
-            f"Ping Check Fail on {self.agent.hostname}",
-            f"Ping check {self.name} ({self.ip}) is failing",
-            settings.EMAIL_HOST_USER,
-            settings.EMAIL_ALERT_RECIPIENTS,
-            fail_silently=False,
-        )
+            elif data["status"] == "failing":
+                self.fail_count += 1
+                self.save(update_fields=["fail_count"])
 
+        else:
+            self.history.append(data["percent"])
+
+            if len(self.history) > 15:
+                self.history = self.history[-15:]
+
+            self.save(update_fields=["history"])
+
+            avg = int(mean(self.history))
+
+            if avg > self.threshold:
+                self.status = "failing"
+                self.fail_count += 1
+                self.save(update_fields=["status", "fail_count"])
+            else:
+                self.status = "passing"
+                if self.fail_count != 0:
+                    self.fail_count = 0
+                    self.save(update_fields=["status", "fail_count"])
+                else:
+                    self.save(update_fields=["status"])
+
+        if self.email_alert and self.fail_count >= self.fails_b4_alert:
+            handle_check_email_alert_task.delay(self.pk)
+
+    # for policy diskchecks
     @staticmethod
-    def validate_hostname_or_ip(i):
-        if validators.ipv4(i) or validators.ipv6(i) or validators.domain(i):
-            return True
-        return False
+    def all_disks():
+        return [f"{i}:" for i in string.ascii_uppercase]
 
-    def __str__(self):
-        return self.agent.hostname
+    # for policy service checks
+    @staticmethod
+    def load_default_services():
+        with open(
+            os.path.join(settings.BASE_DIR, "services/default_services.json")
+        ) as f:
+            default_services = json.load(f)
 
+        return default_services
 
-class PingCheckEmail(models.Model):
-    email = models.ForeignKey(PingCheck, on_delete=models.CASCADE)
-    sent = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return self.email.agent.hostname
-
-
-class CpuLoadCheck(models.Model):
-    agent = models.ForeignKey(
-        Agent, related_name="cpuloadchecks", on_delete=models.CASCADE
-    )
-    check_type = models.CharField(
-        max_length=30, choices=STANDARD_CHECK_CHOICES, default="cpuload"
-    )
-    cpuload = models.PositiveIntegerField(default=85)
-    status = models.CharField(
-        max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
-    )
-    email_alert = models.BooleanField(default=False)
-    text_alert = models.BooleanField(default=False)
-    last_run = models.DateTimeField(null=True, blank=True)
-    failures = models.PositiveIntegerField(default=5)
-    failure_count = models.PositiveIntegerField(default=0)
-    history = ArrayField(models.IntegerField(blank=True), null=True, default=list)
-
-    def __str__(self):
-        return self.agent.hostname
-
-    @property
-    def more_info(self):
-        return ", ".join(str(f"{x}%") for x in self.history[-6:])
-
-    def handle_check(self, data):
-        if len(self.history) < 15:
-            self.history.append(data["cpu_load"])
-        else:
-            self.history.append(data["cpu_load"])
-            self.history = self.history[-15:]
-
-        self.last_run = dt.datetime.now(tz=djangotime.utc)
-        self.save(update_fields=["history", "last_run"])
-
-        avg = int(mean(self.history))
-        if avg > self.cpuload:
-            self.status = "failing"
-            self.failure_count += 1
-            self.save(update_fields=["status", "failure_count"])
-        else:
-            self.status = "passing"
-            if self.failure_count != 0:
-                self.failure_count = 0
-                self.save(update_fields=["status", "failure_count"])
-            else:
-                self.save(update_fields=["status"])
-
-        if self.email_alert and self.failure_count >= self.failures:
-            from .tasks import handle_check_email_alert_task
-
-            handle_check_email_alert_task.delay("cpuload", self.pk)
+    def create_policy_check(self, agent):
+        Check.objects.create(
+            agent=agent,
+            managed_by_policy=True,
+            parent_check=self.pk,
+            name=self.name,
+            check_type=self.check_type,
+            email_alert=self.email_alert,
+            text_alert=self.text_alert,
+            fails_b4_alert=self.fails_b4_alert,
+            extra_details=self.extra_details,
+            threshold=self.threshold,
+            disk=self.disk,
+            ip=self.ip,
+            script=self.script,
+            timeout=self.timeout,
+            svc_name=self.svc_name,
+            svc_display_name=self.svc_display_name,
+            pass_if_start_pending=self.pass_if_start_pending,
+            restart_if_stopped=self.restart_if_stopped,
+            svc_policy_mode=self.svc_policy_mode,
+            log_name=self.log_name,
+            event_id=self.event_id,
+            event_type=self.event_type,
+            fail_when=self.fail_when,
+            search_last_days=self.search_last_days,
+        )
 
     def send_email(self):
 
-        send_mail(
-            f"CPU Load Check fail on {self.agent.hostname}",
-            f"Average cpu utilization is {int(mean(self.history))}% which is greater than the threshold {self.cpuload}%",
-            settings.EMAIL_HOST_USER,
-            settings.EMAIL_ALERT_RECIPIENTS,
-            fail_silently=False,
-        )
+        CORE = CoreSettings.objects.first()
 
+        subject = f"{self} Failed"
 
-class CpuLoadCheckEmail(models.Model):
-    email = models.ForeignKey(CpuLoadCheck, on_delete=models.CASCADE)
-    sent = models.DateTimeField(auto_now=True)
+        if self.check_type == "diskspace":
+            percent_used = self.agent.disks[self.disk]["percent"]
+            percent_free = 100 - percent_free
 
-    def __str__(self):
-        return self.email.agent.hostname
+            body = subject + f" - Free: {percent_free}%, Threshold: {self.threshold}%"
 
+        elif self.check_type == "script":
 
-class MemCheck(models.Model):
-    agent = models.ForeignKey(Agent, related_name="memchecks", on_delete=models.CASCADE)
-    check_type = models.CharField(
-        max_length=30, choices=STANDARD_CHECK_CHOICES, default="memory"
-    )
-    threshold = models.PositiveIntegerField(default=75)
-    status = models.CharField(
-        max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
-    )
-    email_alert = models.BooleanField(default=False)
-    text_alert = models.BooleanField(default=False)
-    last_run = models.DateTimeField(null=True, blank=True)
-    failures = models.PositiveIntegerField(default=5)
-    failure_count = models.PositiveIntegerField(default=0)
-    history = ArrayField(models.IntegerField(blank=True), null=True, default=list)
+            body = subject + f" - Return code: {self.retcode}, Error: {self.stderr}"
 
-    def __str__(self):
-        return self.agent.hostname
+        elif self.check_type == "ping":
 
-    @property
-    def more_info(self):
-        return ", ".join(str(f"{x}%") for x in self.history[-6:])
+            body = self.more_info
 
-    def handle_check(self, data):
-        if len(self.history) < 15:
-            self.history.append(data["used_ram"])
-        else:
-            self.history.append(data["used_ram"])
-            self.history = self.history[-15:]
+        elif self.check_type == "cpuload" or self.check_type == "memory":
 
-        self.last_run = dt.datetime.now(tz=djangotime.utc)
-        self.save(update_fields=["history", "last_run"])
+            avg = int(mean(self.history))
 
-        avg = int(mean(self.history))
-        if avg > self.threshold:
-            self.status = "failing"
-            self.failure_count += 1
-            self.save(update_fields=["status", "failure_count"])
-        else:
-            self.status = "passing"
-            if self.failure_count != 0:
-                self.failure_count = 0
-                self.save(update_fields=["status", "failure_count"])
-            else:
-                self.save(update_fields=["status"])
+            if self.check_type == "cpuload":
+                body = (
+                    subject
+                    + f" - Average CPU utilization: {avg}%, Threshold: {self.threshold}%"
+                )
 
-        if self.email_alert and self.failure_count >= self.failures:
-            from .tasks import handle_check_email_alert_task
+            elif self.check_type == "memory":
+                body = (
+                    subject
+                    + f" - Average memory usage: {avg}%, Threshold: {self.threshold}%"
+                )
 
-            handle_check_email_alert_task.delay("memory", self.pk)
+        elif self.check_type == "winsvc":
 
-    def send_email(self):
+            status = list(
+                filter(lambda x: x["name"] == self.svc_name, self.agent.services)
+            )[0]["status"]
 
-        send_mail(
-            f"Memory Check fail on {self.agent.hostname}",
-            f"Average memory usage is {int(mean(self.history))}% which is greater than the threshold {self.threshold}%",
-            settings.EMAIL_HOST_USER,
-            settings.EMAIL_ALERT_RECIPIENTS,
-            fail_silently=False,
-        )
+            body = subject + f" - Status: {status.upper()}"
 
+        elif self.check_type == "eventlog":
 
-class MemCheckEmail(models.Model):
-    email = models.ForeignKey(MemCheck, on_delete=models.CASCADE)
-    sent = models.DateTimeField(auto_now=True)
+            body = f"Event ID {self.event_id} was found in the {self.log_name} log"
 
-    def __str__(self):
-        return self.email.agent.hostname
-
-
-class WinServiceCheck(models.Model):
-    agent = models.ForeignKey(
-        Agent, related_name="winservicechecks", on_delete=models.CASCADE
-    )
-    check_type = models.CharField(
-        max_length=30, choices=STANDARD_CHECK_CHOICES, default="winsvc"
-    )
-    svc_name = models.CharField(max_length=255)
-    svc_display_name = models.CharField(max_length=255)
-    pass_if_start_pending = models.BooleanField(default=False)
-    restart_if_stopped = models.BooleanField(default=False)
-    failures = models.PositiveIntegerField(default=1)
-    failure_count = models.PositiveIntegerField(default=0)
-    status = models.CharField(
-        max_length=30, choices=CHECK_STATUS_CHOICES, default="pending"
-    )
-    more_info = models.TextField(null=True, blank=True)
-    email_alert = models.BooleanField(default=False)
-    text_alert = models.BooleanField(default=False)
-    last_run = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self):
-        return f"{self.agent.hostname} - {self.svc_display_name}"
-
-    def handle_check(self, data):
-        if data["status"] == "passing" and self.failure_count != 0:
-            self.failure_count = 0
-            self.save(update_fields=["failure_count"])
-        elif data["status"] == "failing":
-            self.failure_count += 1
-            self.save(update_fields=["failure_count"])
-            if self.email_alert and self.failure_count >= self.failures:
-                from .tasks import handle_check_email_alert_task
-
-                handle_check_email_alert_task.delay("winsvc", self.pk)
-
-    def send_email(self):
-
-        status = list(
-            filter(lambda x: x["name"] == self.svc_name, self.agent.services)
-        )[0]["status"]
-
-        send_mail(
-            f"Windows Service Check fail on {self.agent.hostname}",
-            f"Service: {self.svc_display_name} - Status: {status.upper()}",
-            settings.EMAIL_HOST_USER,
-            settings.EMAIL_ALERT_RECIPIENTS,
-            fail_silently=False,
-        )
-
-
-class WinServiceCheckEmail(models.Model):
-    email = models.ForeignKey(WinServiceCheck, on_delete=models.CASCADE)
-    sent = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.email.agent.hostname} - {self.email.svc_display_name}"
+        CORE.send_mail(subject, body)

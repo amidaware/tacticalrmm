@@ -25,9 +25,16 @@
           </q-icon>
         </q-th>
       </template>
+      <template v-slot:header-cell-checks-status="props">
+        <q-th :props="props">
+          <q-icon name="fas fa-check-double" size="1.2em">
+            <q-tooltip>Checks Status</q-tooltip>
+          </q-icon>
+        </q-th>
+      </template>
       <template v-slot:header-cell-patchespending="props">
         <q-th auto-width :props="props">
-          <q-icon name="system_update_alt" size="1.5em" color="warning">
+          <q-icon name="system_update_alt" size="1.5em">
             <q-tooltip>Patches Pending</q-tooltip>
           </q-icon>
         </q-th>
@@ -40,7 +47,7 @@
       </template>-->
       <template v-slot:header-cell-agentstatus="props">
         <q-th auto-width :props="props">
-          <q-icon name="fas fa-signal" size="1.2em" color="accent">
+          <q-icon name="fas fa-signal" size="1.2em">
             <q-tooltip>Agent Status</q-tooltip>
           </q-icon>
         </q-th>
@@ -57,13 +64,24 @@
           <!-- context menu -->
           <q-menu context-menu>
             <q-list dense style="min-width: 200px">
+              <!-- edit agent -->
               <q-item clickable v-close-popup @click="showEditAgentModal = true">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-edit" />
                 </q-item-section>
                 <q-item-section>Edit {{ props.row.hostname }}</q-item-section>
               </q-item>
-
+              <!-- agent pending actions -->
+              <q-item
+                clickable
+                v-close-popup
+                @click="showPendingActions(props.row.id, props.row.hostname)"
+              >
+                <q-item-section side>
+                  <q-icon size="xs" name="far fa-clock" />
+                </q-item-section>
+                <q-item-section>Pending Agent Actions</q-item-section>
+              </q-item>
               <!-- take control -->
               <q-item
                 clickable
@@ -76,6 +94,14 @@
                 </q-item-section>
 
                 <q-item-section>Take Control</q-item-section>
+              </q-item>
+
+              <!-- web rdp -->
+              <q-item clickable v-ripple v-close-popup @click.stop.prevent="webRDP(props.row.id)">
+                <q-item-section side>
+                  <q-icon size="xs" name="screen_share" />
+                </q-item-section>
+                <q-item-section>Remote Desktop</q-item-section>
               </q-item>
 
               <q-item
@@ -156,7 +182,7 @@
                       clickable
                       v-ripple
                       v-close-popup
-                      @click.stop.prevent="rebootLater(props.row.id, props.row.hostname)"
+                      @click.stop.prevent="showRebootLaterModal = true"
                     >
                       <q-item-section>Later</q-item-section>
                     </q-item>
@@ -165,11 +191,15 @@
               </q-item>
 
               <q-separator />
-              <q-item
-                clickable
-                v-close-popup
-                @click.stop.prevent="removeAgent(props.row.id, props.row.hostname)"
-              >
+              <q-item clickable v-close-popup @click.stop.prevent="showPolicyAdd(props.row.id)">
+                <q-item-section side>
+                  <q-icon size="xs" name="policy" />
+                </q-item-section>
+                <q-item-section>Edit Policies</q-item-section>
+              </q-item>
+
+              <q-separator />
+              <q-item clickable v-close-popup @click.stop.prevent="pingAgent(props.row.id)">
                 <q-item-section side>
                   <q-icon size="xs" name="delete" />
                 </q-item-section>
@@ -196,9 +226,18 @@
               v-model="props.row.overdue_email_alert"
             />
           </q-td>
-          <q-td key="platform" :props="props">
-            <q-icon v-if="props.row.plat === 'windows'" name="fab fa-windows" color="blue" />
-            <q-icon v-else-if="props.row.plat === 'linux'" name="fab fa-linux" color="blue" />
+          <q-td key="checks-status" :props="props">
+            <q-icon
+              v-if="props.row.checks.has_failing_checks"
+              name="fas fa-check-double"
+              size="1.2em"
+              color="negative"
+            >
+              <q-tooltip>Checks failing</q-tooltip>
+            </q-icon>
+            <q-icon v-else name="fas fa-check-double" size="1.2em" color="positive">
+              <q-tooltip>Checks passing</q-tooltip>
+            </q-icon>
           </q-td>
           <q-td key="client" :props="props">{{ props.row.client }}</q-td>
           <q-td key="site" :props="props">{{ props.row.site }}</q-td>
@@ -223,19 +262,21 @@
           <q-td key="agentstatus">
             <q-icon
               v-if="props.row.status ==='overdue'"
-              name="fas fa-exclamation-triangle"
+              name="fas fa-signal"
+              size="1.2em"
               color="negative"
             >
               <q-tooltip>Agent overdue</q-tooltip>
             </q-icon>
             <q-icon
               v-else-if="props.row.status ==='offline'"
-              name="fas fa-exclamation-triangle"
-              color="grey-8"
+              name="fas fa-signal"
+              size="1.2em"
+              color="warning"
             >
               <q-tooltip>Agent offline</q-tooltip>
             </q-icon>
-            <q-icon v-else name="fas fa-check" color="positive">
+            <q-icon v-else name="fas fa-signal" size="1.2em" color="positive">
               <q-tooltip>Agent online</q-tooltip>
             </q-icon>
           </q-td>
@@ -277,17 +318,37 @@
     <q-dialog v-model="showEditAgentModal">
       <EditAgent @close="showEditAgentModal = false" @edited="agentEdited" />
     </q-dialog>
+    <!-- reboot later modal -->
+    <q-dialog v-model="showRebootLaterModal">
+      <RebootLater @close="showRebootLaterModal = false" />
+    </q-dialog>
+    <!-- pending actions modal -->
+    <PendingActions />
+    <!-- add policy modal -->
+    <q-dialog v-model="showPolicyAddModal">
+      <PolicyAdd @close="showPolicyAddModal = false" type="agent" :pk="policyAddPk" />
+    </q-dialog>
   </div>
 </template>
 
 <script>
 import axios from "axios";
 import mixins from "@/mixins/mixins";
+import { openURL } from "quasar";
 import EditAgent from "@/components/modals/agents/EditAgent";
+import RebootLater from "@/components/modals/agents/RebootLater";
+import PendingActions from "@/components/modals/logs/PendingActions";
+import PolicyAdd from "@/components/automation/modals/PolicyAdd";
+
 export default {
   name: "AgentTable",
   props: ["frame", "columns", "tab", "filter", "userName"],
-  components: { EditAgent },
+  components: {
+    EditAgent,
+    RebootLater,
+    PendingActions,
+    PolicyAdd
+  },
   mixins: [mixins],
   data() {
     return {
@@ -301,7 +362,10 @@ export default {
       sendCommandHostname: "",
       rawCMD: "",
       loadingSendCMD: false,
-      showEditAgentModal: false
+      showEditAgentModal: false,
+      showRebootLaterModal: false,
+      showPolicyAddModal: false,
+      policyAddPk: null
     };
   },
   methods: {
@@ -322,21 +386,17 @@ export default {
     agentEdited() {
       this.$emit("refreshEdit");
     },
+    showPendingActions(pk, hostname) {
+      const data = { action: true, agentpk: pk, hostname: hostname };
+      this.$store.commit("logs/TOGGLE_PENDING_ACTIONS", data);
+    },
     takeControl(pk) {
       const url = this.$router.resolve(`/takecontrol/${pk}`).href;
-      window.open(
-        url,
-        "",
-        "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1600,height=900"
-      );
+      window.open(url, "", "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1600,height=900");
     },
     remoteBG(pk) {
       const url = this.$router.resolve(`/remotebackground/${pk}`).href;
-      window.open(
-        url,
-        "",
-        "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1280,height=826"
-      );
+      window.open(url, "", "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1280,height=826");
     },
     runChecks(pk) {
       axios
@@ -344,48 +404,63 @@ export default {
         .then(r => this.notifySuccess(`Checks will now be re-run on ${r.data}`))
         .catch(e => this.notifyError("Something went wrong"));
     },
-    removeAgent(pk, hostname) {
+    removeAgent(pk, name) {
       this.$q
         .dialog({
-          title: "Are you sure?",
-          message: `Delete agent ${hostname}`,
+          title: `Please type <code style="color:red">${name}</code> to confirm deletion.`,
+          prompt: {
+            model: "",
+            type: "text",
+            isValid: val => val === name
+          },
           cancel: true,
-          persistent: true
+          ok: { label: "Uninstall", color: "negative" },
+          persistent: true,
+          html: true
         })
-        .onOk(() => {
-          this.$q
-            .dialog({
-              title: `Please type <code style="color:red">${hostname}</code> to confirm`,
-              prompt: { model: "", type: "text" },
-              cancel: true,
-              persistent: true,
-              html: true
+        .onOk(val => {
+          const data = { pk: pk };
+          this.$axios
+            .delete("/agents/uninstall/", { data: data })
+            .then(r => {
+              this.notifySuccess(r.data);
+              setTimeout(() => {
+                location.reload();
+              }, 2000);
             })
-            .onOk(hostnameConfirm => {
-              if (hostnameConfirm !== hostname) {
-                this.$q.notify({
-                  message: "ERROR: Please type the correct hostname",
-                  color: "red"
-                });
-              } else {
-                const data = { pk: pk };
-                axios
-                  .delete("/agents/uninstallagent/", { data: data })
-                  .then(r => {
-                    this.$q.notify({
-                      message: `${hostname} will now be uninstalled!`,
-                      color: "green"
-                    });
-                  })
-                  .catch(e => {
-                    this.$q.notify({
-                      message: e.response.data.error,
-                      color: "info",
-                      timeout: 4000
-                    });
-                  });
-              }
-            });
+            .catch(() => this.notifyError("Something went wrong"));
+        });
+    },
+    pingAgent(pk) {
+      this.$q.loading.show();
+      this.$axios
+        .get(`/agents/${pk}/ping/`)
+        .then(r => {
+          this.$q.loading.hide();
+          if (r.data.status === "offline") {
+            this.$q
+              .dialog({
+                title: "Agent offline",
+                message: `${r.data.name} cannot be contacted. 
+                  Would you like to continue with the uninstall? 
+                  If so, the agent will need to be manually uninstalled from the computer.`,
+                cancel: { label: "No", color: "negative" },
+                ok: { label: "Yes", color: "positive" },
+                persistent: true
+              })
+              .onOk(() => this.removeAgent(pk, r.data.name))
+              .onCancel(() => {
+                return;
+              });
+          } else if (r.data.status === "online") {
+            this.removeAgent(pk, r.data.name);
+          } else {
+            this.notifyError("Something went wrong");
+          }
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError("Something went wrong");
         });
     },
     rebootNow(pk, hostname) {
@@ -405,10 +480,6 @@ export default {
             });
           });
         });
-    },
-    rebootLater() {
-      // TODO implement this
-      console.log("reboot later");
     },
     toggleSendCommand(pk, hostname) {
       this.sendCommandToggle = true;
@@ -438,17 +509,14 @@ export default {
         })
         .catch(err => {
           this.loadingSendCMD = false;
-          this.$q.notify({
-            color: "red",
-            icon: "fas fa-times-circle",
-            message: err.response.data
-          });
+          this.notifyError(err.response.data);
         });
     },
     agentRowSelected(pk) {
       this.$store.commit("setActiveRow", pk);
       this.$store.dispatch("loadSummary", pk);
       this.$store.dispatch("loadChecks", pk);
+      this.$store.dispatch("loadAutomatedTasks", pk);
       this.$store.dispatch("loadWinUpdates", pk);
       this.$store.dispatch("loadInstalledSoftware", pk);
     },
@@ -469,9 +537,7 @@ export default {
             message: `Overdue ${category} alerts ${action} on ${r.data}`
           });
         })
-        .catch(e => {
-          console.log(e.response.data.error);
-        });
+        .catch(e => this.notifyError(e.response.data.error));
     },
     agentClass(status) {
       if (status === "offline") {
@@ -481,6 +547,23 @@ export default {
       } else {
         return "agent-normal";
       }
+    },
+    showPolicyAdd(pk) {
+      this.policyAddPk = pk;
+      this.showPolicyAddModal = true;
+    },
+    webRDP(pk) {
+      this.$q.loading.show();
+      this.$axios
+        .get(`/agents/${pk}/webrdp/`)
+        .then(r => {
+          this.$q.loading.hide();
+          openURL(r.data);
+        })
+        .catch(() => {
+          this.$q.loading.hide();
+          this.notifyError("Something went wrong");
+        });
     }
   },
   computed: {
@@ -493,35 +576,4 @@ export default {
   }
 };
 </script>
-
-<style lang="stylus">
-.agents-tbl-sticky {
-  .q-table__middle {
-    max-height: 35vh;
-  }
-
-  .q-table__top, .q-table__bottom, thead tr:first-child th {
-    background-color: #f5f4f2;
-  }
-
-  thead tr:first-child th {
-    position: sticky;
-    top: 0;
-    opacity: 1;
-    z-index: 1;
-  }
-}
-
-.highlight {
-  background-color: #c9e6ff;
-}
-
-.agent-offline {
-  background: gray !important;
-}
-
-.agent-overdue {
-  background: red !important;
-}
-</style>
 

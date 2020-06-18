@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from tacticalrmm.test import BaseTestCase
 
@@ -69,22 +69,21 @@ class TestAgentViews(BaseTestCase):
 
         self.check_not_authenticated("patch", url)
 
-    @mock.patch("subprocess.run")
-    def test_meshcentral_tabs(self, mock_run):
-        mock_run.return_value.stdout = b"h56Ju2aThD$!wy$AcDSAz@$NnvgGa0=\n"
+    def test_meshcentral_tabs(self):
         url = f"/agents/{self.agent.pk}/meshtabs/"
 
         r = self.client.get(url)
 
-        self.assertIn("hide=31", r.data["fileurl"])
-        self.assertIn("@$NnvgGa0=", r.data["fileurl"])
-        self.assertIn("/?viewmode=13", r.data["fileurl"])
-        self.assertIs(type(r.data["fileurl"]), str)
+        # TODO
+        # decode the cookie
 
-        self.assertIn("hide=31", r.data["terminalurl"])
-        self.assertIn("@$NnvgGa0=", r.data["terminalurl"])
-        self.assertIn("/?viewmode=12", r.data["terminalurl"])
-        self.assertIs(type(r.data["terminalurl"]), str)
+        self.assertIn("&hide=31", r.data["fileurl"])
+        self.assertIn("&viewmode=13", r.data["fileurl"])
+        self.assertIsInstance(r.data["fileurl"], str)
+
+        self.assertIn("&hide=31", r.data["terminalurl"])
+        self.assertIn("&viewmode=12", r.data["terminalurl"])
+        self.assertIsInstance(r.data["terminalurl"], str)
 
         self.assertEqual("DESKTOP-TEST123", r.data["hostname"])
 
@@ -92,16 +91,17 @@ class TestAgentViews(BaseTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @mock.patch("subprocess.run")
-    def test_take_control(self, mock_run):
-        mock_run.return_value.stdout = b"h56Ju2aThD$!wy$AcDSAz@$NnvgGa0=\n"
+    def test_take_control(self):
         url = f"/agents/{self.agent.pk}/takecontrol/"
 
         r = self.client.get(url)
-        self.assertIn("hide=31", r.data)
-        self.assertIn("@$NnvgGa0=", r.data)
-        self.assertIn("/?viewmode=11", r.data)
-        self.assertIs(type(r.data), str)
+
+        # TODO
+        # decode the cookie
+
+        self.assertIn("&hide=31", r.data)
+        self.assertIn("&viewmode=11", r.data)
+        self.assertIsInstance(r.data, str)
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("get", url)

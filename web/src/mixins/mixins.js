@@ -1,5 +1,37 @@
 import { Notify } from "quasar";
 
+export function notifySuccessConfig(msg, timeout = 2000) {
+  return {
+    type: "positive",
+    message: msg,
+    timeout: timeout
+  }
+};
+
+export function notifyErrorConfig(msg, timeout = 2000) {
+  return {
+    type: "negative",
+    message: msg,
+    timeout: timeout
+  }
+};
+
+export function notifyWarningConfig(msg, timeout = 2000) {
+  return {
+    type: "warning",
+    message: msg,
+    timeout: timeout
+  }
+};
+
+export function notifyInfoConfig(msg, timeout = 2000) {
+  return {
+    type: "info",
+    message: msg,
+    timeout: timeout
+  }
+};
+
 export default {
   methods: {
     bootTime(unixtime) {
@@ -25,19 +57,17 @@ export default {
         return Math.round(elapsed / msPerYear) + " years ago";
       }
     },
-    notifySuccess(msg) {
-      Notify.create({
-        color: "green",
-        icon: "fas fa-check-circle",
-        message: msg
-      });
+    notifySuccess(msg, timeout = 2000) {
+      Notify.create(notifySuccessConfig(msg, timeout));
     },
-    notifyError(msg) {
-      Notify.create({
-        color: "red",
-        icon: "fas fa-times-circle",
-        message: msg
-      });
+    notifyError(msg, timeout = 2000) {
+      Notify.create(notifyErrorConfig(msg, timeout));
+    },
+    notifyWarning(msg, timeout = 2000) {
+      Notify.create(notifyWarningConfig(msg, timeout));
+    },
+    notifyInfo(msg, timeout = 2000) {
+      Notify.create(notifyInfoConfig(msg, timeout));
     }
   }
 };

@@ -18,7 +18,7 @@ AUTO_APPROVAL_CHOICES = [
     ("ignore", "Ignore"),
 ]
 
-RUN_TIME_HOUR_CHOICES = [(i, dt.time(i).strftime("%l %p")) for i in range(24)]
+RUN_TIME_HOUR_CHOICES = [(i, dt.time(i).strftime("%I %p")) for i in range(24)]
 
 REBOOT_AFTER_INSTALL_CHOICES = [
     ("never", "Never"),
@@ -74,7 +74,9 @@ class WinUpdatePolicy(models.Model):
     run_time_hour = models.IntegerField(choices=RUN_TIME_HOUR_CHOICES, default=3)
 
     # 0 to 6 = Monday to Sunday
-    run_time_days = ArrayField(models.IntegerField(blank=True), null=True, blank=True, default=list)
+    run_time_days = ArrayField(
+        models.IntegerField(blank=True), null=True, blank=True, default=list
+    )
 
     reboot_after_install = models.CharField(
         max_length=50, choices=REBOOT_AFTER_INSTALL_CHOICES, default="required"
@@ -86,4 +88,3 @@ class WinUpdatePolicy(models.Model):
 
     def __str__(self):
         return self.agent.hostname
-

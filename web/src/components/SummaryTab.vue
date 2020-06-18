@@ -9,18 +9,19 @@
     <div class="row">
       <div class="col-4">
         <!-- left -->
+        <span class="text-subtitle2 text-bold">Hardware Details</span>
         <q-list dense>
           <q-item>
             <q-item-section avatar>
               <q-icon name="fas fa-desktop" />
             </q-item-section>
-            <q-item-section>{{ makeModel }}</q-item-section>
+            <q-item-section>{{ summary.make_model }}</q-item-section>
           </q-item>
           <q-item>
             <q-item-section avatar>
               <q-icon name="fas fa-microchip" />
             </q-item-section>
-            <q-item-section>{{ cpuModel }}</q-item-section>
+            <q-item-section>{{ summary.cpu_model }}</q-item-section>
           </q-item>
           <q-item>
             <q-item-section avatar>
@@ -30,7 +31,7 @@
           </q-item>
 
           <!-- physical disks -->
-          <q-item v-for="disk in physicalDisks" :key="disk.model">
+          <q-item v-for="disk in summary.physical_disks" :key="disk.model">
             <q-item-section avatar>
               <q-icon name="far fa-hdd" />
             </q-item-section>
@@ -46,11 +47,29 @@
             <q-item-section avatar>
               <q-icon name="fas fa-network-wired" />
             </q-item-section>
-            <q-item-section>LAN IP: {{ localIPs }}</q-item-section>
+            <q-item-section>LAN IP: {{ summary.local_ips }}</q-item-section>
           </q-item>
         </q-list>
       </div>
-      <div class="col-5"></div>
+      <div class="col-2">
+        <span class="text-subtitle2 text-bold">Checks Status</span>
+        <br />
+        <template v-if="summary.checks.total !== 0">
+          <q-chip v-if="summary.checks.passing" square size="lg">
+            <q-avatar size="lg" square icon="done" color="green" text-color="white" />
+            <small>{{ summary.checks.passing }} checks passing</small>
+          </q-chip>
+          <q-chip v-if="summary.checks.failing" square size="lg">
+            <q-avatar size="lg" square icon="cancel" color="red" text-color="white" />
+            <small>{{ summary.checks.failing }} checks failing</small>
+          </q-chip>
+          <span
+            v-if="awaitingSync(summary.checks.total, summary.checks.passing, summary.checks.failing)"
+          >{{ summary.checks.total }} checks awaiting first synchronization</span>
+        </template>
+        <template v-else>No checks</template>
+      </div>
+      <div class="col-1"></div>
       <!-- right -->
       <div class="col-3">
         <span class="text-subtitle2 text-bold">Disks</span>
@@ -67,6 +86,7 @@
           <hr />
         </div>
       </div>
+      <div class="col-2"></div>
     </div>
   </div>
 </template>
@@ -78,15 +98,8 @@ export default {
     return {};
   },
   methods: {
-    bytesToGB(bytes) {
-      return Math.round(parseInt(bytes) / 1073741824);
-    },
-    validateIPv4(ip) {
-      const rx = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
-      if (rx.test(ip)) {
-        return true;
-      }
-      return false;
+    awaitingSync(total, passing, failing) {
+      return total !== 0 && passing === 0 && failing === 0 ? true : false;
     }
   },
   computed: {
@@ -94,62 +107,16 @@ export default {
       return this.$store.state.agentSummary;
     },
     disks() {
+      if (this.summary.disks === undefined) {
+        return [];
+      }
+
       const entries = Object.entries(this.summary.disks);
       const ret = [];
       for (let [k, v] of entries) {
         ret.push(v);
       }
       return ret;
-    },
-    makeModel() {
-      const comp_sys = this.summary.wmi_detail.comp_sys[0];
-      const comp_sys_prod = this.summary.wmi_detail.comp_sys_prod[0];
-      let make = comp_sys_prod.filter(k => k.Vendor).map(k => k.Vendor)[0];
-      let model = comp_sys.filter(k => k.SystemFamily).map(k => k.SystemFamily)[0];
-
-      if (!model || !make) {
-        return comp_sys_prod.filter(k => k.Version).map(k => k.Version)[0];
-      } else {
-        return `${make} ${model}`;
-      }
-    },
-    physicalDisks() {
-      const ret = this.summary.wmi_detail.disk;
-      const phys = [];
-      ret.forEach(disk => {
-        const model = disk.filter(k => k.Caption).map(k => k.Caption)[0];
-        const size = disk.filter(k => k.Size).map(k => k.Size)[0];
-        const interfaceType = disk
-          .filter(k => k.InterfaceType)
-          .map(k => k.InterfaceType)[0];
-
-        phys.push({
-          model: model,
-          size: this.bytesToGB(size),
-          interfaceType: interfaceType
-        });
-      });
-
-      return phys;
-    },
-    localIPs() {
-      const ret = this.summary.wmi_detail.network_config;
-      const ips = [];
-      ret.forEach(ip => {
-        const x = ip.filter(k => k.IPAddress).map(k => k.IPAddress)[0];
-        if (x !== undefined) {
-          x.forEach(i => {
-            if (this.validateIPv4(i)) {
-              ips.push(i);
-            }
-          });
-        }
-      });
-      return (ips.length === 1 ? ips[0] : ips.join(", "))
-    },
-    cpuModel() {
-      const cpu = this.summary.wmi_detail.cpu[0];
-      return cpu.filter(k => k.Name).map(k => k.Name)[0];
     }
   }
 };

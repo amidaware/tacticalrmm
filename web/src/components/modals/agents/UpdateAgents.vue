@@ -10,37 +10,18 @@
     <q-separator />
     <q-card-section>
       Select Version
-      <q-select
-        square
-        outlined
-        v-model="version"
-        :options="Object.values(versions)"
-      />
+      <q-select square outlined v-model="version" :options="Object.values(versions)" />
     </q-card-section>
     <q-card-section v-show="version !== null">
       Select Agent
       <br />
       <hr />
-      <q-checkbox
-        v-model="selectAll"
-        label="Select All"
-        @input="selectAllAction"
-      />
+      <q-checkbox v-model="selectAll" label="Select All" @input="selectAllAction" />
       <hr />
-      <q-option-group
-        v-model="group"
-        :options="agentOptions"
-        color="green"
-        type="checkbox"
-      />
+      <q-option-group v-model="group" :options="agentOptions" color="green" type="checkbox" />
     </q-card-section>
     <q-card-section>
-      <q-btn
-        v-show="group.length !== 0"
-        label="Update"
-        color="primary"
-        @click="update"
-      />
+      <q-btn v-show="group.length !== 0" label="Update" color="primary" @click="update" />
     </q-card-section>
   </q-card>
 </template>

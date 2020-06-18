@@ -1,8 +1,8 @@
 <template>
-  <q-card style="min-width: 700px" class="q-pa-xs">
+  <q-card style="min-width: 70vw" class="q-pa-xs">
     <q-card-section>
       <div class="row items-center">
-        <div class="text-h6">{{ scriptInfo.script.name }}</div>
+        <div class="text-h6">{{ scriptInfo.readable_desc }}</div>
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </div>
@@ -15,15 +15,17 @@
         <code>{{ scriptInfo.retcode }}</code>
         <br />
       </div>
+      <br />
       <div v-if="scriptInfo.stdout">
-        Standard Output:
-        <q-scroll-area style="height: 200px; max-height: 500px;">
+        Standard Output
+        <q-separator />
+        <q-scroll-area style="height: 50vh; max-height: 70vh;">
           <pre>{{ scriptInfo.stdout }}</pre>
         </q-scroll-area>
       </div>
       <div v-if="scriptInfo.stderr">
         Standard Error:
-        <q-scroll-area style="height: 200px; max-height: 500px;">
+        <q-scroll-area style="height: 50vh; max-height: 70vh;">
           <pre>{{ scriptInfo.stderr }}</pre>
         </q-scroll-area>
       </div>

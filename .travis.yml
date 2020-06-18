@@ -3,57 +3,19 @@ dist: xenial
 matrix:
   include:
     - language: node_js
-      node_js: "10"
-      before_install:
-        - cd web
-      install:
-        - npm install
-      script:
-        - npm run build
-
-    - language: node_js
-      node_js: "11"
-      before_install:
-        - cd web
-      install:
-        - npm install
-      script:
-        - npm run build
-
-    - language: node_js
       node_js: "12"
       before_install:
         - cd web
       install:
         - npm install
       script:
-        - npm run build
-
-    - language: node_js
-      node_js: "10"
-      before_script:
-        - mkdir meshcentral && cd meshcentral
-      script:
-        - npm install meshcentral
-
-    - language: node_js
-      node_js: "11"
-      before_script:
-        - mkdir meshcentral && cd meshcentral
-      script:
-        - npm install meshcentral
-
-    - language: node_js
-      node_js: "12"
-      before_script:
-        - mkdir meshcentral && cd meshcentral
-      script:
-        - npm install meshcentral
+        - npm run test:unit
 
     - language: python
       python: "3.7"
       services:
         - postgresql
+        - redis
 
       before_script:
         - psql -c 'CREATE DATABASE travisci;' -U postgres
@@ -66,7 +28,7 @@ matrix:
 
       install:
         - pip install --upgrade pip
-        - pip install -r requirements.txt -r requirements-test.txt
+        - pip install -r requirements.txt
 
       script:
         - python manage.py test -v 2
@@ -75,6 +37,7 @@ matrix:
       python: "3.8"
       services:
         - postgresql
+        - redis
 
       before_script:
         - psql -c 'CREATE DATABASE travisci;' -U postgres
@@ -87,7 +50,7 @@ matrix:
 
       install:
         - pip install --upgrade pip
-        - pip install -r requirements.txt -r requirements-test.txt
+        - pip install -r requirements.txt
 
       script:
         - python manage.py test -v 2

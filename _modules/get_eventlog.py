@@ -33,19 +33,28 @@ def get_eventlog(logtype, last_n_days):
 
     computer = "localhost"
     hand = win32evtlog.OpenEventLog(computer, logtype)
+    total = win32evtlog.GetNumberOfEventLogRecords(hand)
     log = []
     uid = 0
+    done = False
 
     try:
-        uid = 0
         while 1:
             events = win32evtlog.ReadEventLog(hand, flags, 0)
             for ev_obj in events:
 
+                uid += 1
+                # return once total number of events reach or we'll be stuck in an infinite loop
+                if uid >= total:
+                    done = True
+                    break
+
                 the_time = ev_obj.TimeGenerated.Format()
                 time_obj = datetime.datetime.strptime(the_time, "%c")
                 if time_obj < start_time:
+                    done = True
                     break
+
                 computer = str(ev_obj.ComputerName)
                 src = str(ev_obj.SourceName)
                 evt_type = str(status_dict[ev_obj.EventType])
@@ -57,7 +66,6 @@ def get_eventlog(logtype, last_n_days):
                     .replace("<", "")
                     .replace(">", "")
                 )
-                uid += 1
 
                 event_dict = {
                     "computer": computer,
@@ -73,7 +81,7 @@ def get_eventlog(logtype, last_n_days):
 
                 log.append(event_dict)
 
-            if time_obj < start_time:
+            if done:
                 break
 
     except Exception:

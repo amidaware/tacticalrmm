@@ -4,10 +4,10 @@ from packaging import version as pyver
 import zlib
 import json
 import base64
+import datetime as dt
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
-
 
 from rest_framework.decorators import (
     api_view,
@@ -20,9 +20,12 @@ from rest_framework.authentication import BasicAuthentication, TokenAuthenticati
 
 from .models import Agent
 from winupdate.models import WinUpdatePolicy
+from clients.models import Client, Site
+from accounts.models import User
+
+from .serializers import AgentSerializer, AgentHostnameSerializer, AgentTableSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .serializers import AgentSerializer, AgentHostnameSerializer
 from .tasks import uninstall_agent_task, update_agent_task
 
 logger.configure(**settings.LOG_CONFIG)
@@ -31,9 +34,11 @@ logger.configure(**settings.LOG_CONFIG)
 @api_view()
 def get_agent_versions(request):
     agents = Agent.objects.only("pk")
+    ret = Agent.get_github_versions()
     return Response(
         {
-            "versions": Agent.get_github_versions()["versions"],
+            "versions": ret["versions"],
+            "github": ret["data"],
             "agents": AgentHostnameSerializer(agents, many=True).data,
         }
     )
@@ -61,40 +66,32 @@ def update_agents(request):
     return Response("ok")
 
 
-@api_view(["DELETE"])
-def uninstall_agent(request):
-    pk = request.data["pk"]
+@api_view()
+def ping(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-
     try:
-        resp = agent.salt_api_cmd(hostname=agent.salt_id, timeout=30, func="test.ping")
+        r = agent.salt_api_cmd(hostname=agent.salt_id, timeout=5, func="test.ping")
     except Exception:
-        agent.uninstall_pending = True
-        agent.save(update_fields=["uninstall_pending"])
-        logger.warning(
-            f"{agent.hostname} is offline. It will be removed on next check-in"
-        )
-        return Response(
-            {"error": "Agent offline. It will be removed on next check-in"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return Response({"name": agent.hostname, "status": "offline"})
 
-    data = resp.json()
-    if not data["return"][0][agent.salt_id]:
-        agent.uninstall_pending = True
-        agent.save(update_fields=["uninstall_pending"])
-        return Response(
-            {"error": "Agent offline. It will be removed on next check-in"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+    data = r.json()["return"][0][agent.salt_id]
+    if isinstance(data, bool) and data:
+        return Response({"name": agent.hostname, "status": "online"})
+    else:
+        return Response({"name": agent.hostname, "status": "offline"})
 
-    logger.info(
-        f"{agent.hostname} has been marked for removal and will be uninstalled shortly"
-    )
-    uninstall_agent_task.delay(pk, wait=False)
-    agent.uninstall_pending = True
-    agent.save(update_fields=["uninstall_pending"])
-    return Response("ok")
+
+@api_view(["DELETE"])
+def uninstall(request):
+    agent = get_object_or_404(Agent, pk=request.data["pk"])
+    user = get_object_or_404(User, username=agent.agent_id)
+    salt_id = agent.salt_id
+    name = agent.hostname
+    user.delete()
+    agent.delete()
+
+    uninstall_agent_task.delay(salt_id)
+    return Response(f"{name} will now be uninstalled.")
 
 
 @api_view(["PATCH"])
@@ -103,7 +100,7 @@ def edit_agent(request):
     a_serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
     a_serializer.is_valid(raise_exception=True)
     a_serializer.save()
-    
+
     policy = WinUpdatePolicy.objects.get(agent=agent)
     p_serializer = WinUpdatePolicySerializer(
         instance=policy, data=request.data["winupdatepolicy"][0]
@@ -117,18 +114,11 @@ def edit_agent(request):
 @api_view()
 def meshcentral_tabs(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = subprocess.run(
-        [
-            "node",
-            "/meshcentral/node_modules/meshcentral/meshcentral",
-            "--logintoken",
-            f"user//{settings.MESH_USERNAME}",
-        ],
-        capture_output=True,
+    token = agent.get_login_token(
+        key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}"
     )
-    token = r.stdout.decode().splitlines()[0]
-    terminalurl = f"{settings.MESH_SITE}/?viewmode=12&hide=31&login={token}&node={agent.mesh_node_id}"
-    fileurl = f"{settings.MESH_SITE}/?viewmode=13&hide=31&login={token}&node={agent.mesh_node_id}"
+    terminalurl = f"{settings.MESH_SITE}/?login={token}&node={agent.mesh_node_id}&viewmode=12&hide=31"
+    fileurl = f"{settings.MESH_SITE}/?login={token}&node={agent.mesh_node_id}&viewmode=13&hide=31"
     return Response(
         {"hostname": agent.hostname, "terminalurl": terminalurl, "fileurl": fileurl}
     )
@@ -137,17 +127,20 @@ def meshcentral_tabs(request, pk):
 @api_view()
 def take_control(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = subprocess.run(
-        [
-            "node",
-            "/meshcentral/node_modules/meshcentral/meshcentral",
-            "--logintoken",
-            f"user//{settings.MESH_USERNAME}",
-        ],
-        capture_output=True,
+    token = agent.get_login_token(
+        key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}"
     )
-    token = r.stdout.decode().splitlines()[0]
-    url = f"{settings.MESH_SITE}/?viewmode=11&hide=31&login={token}&node={agent.mesh_node_id}"
+    url = f"{settings.MESH_SITE}/?login={token}&node={agent.mesh_node_id}&viewmode=11&hide=31"
+    return Response(url)
+
+
+@api_view()
+def web_rdp(request, pk):
+    agent = get_object_or_404(Agent, pk=pk)
+    token = agent.get_login_token(
+        key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}"
+    )
+    url = f"{settings.MESH_SITE}/mstsc.html?login={token}&node={agent.mesh_node_id}"
     return Response(url)
 
 
@@ -195,14 +188,13 @@ def get_event_log(request, pk, logtype, days):
     try:
         resp = agent.salt_api_cmd(
             hostname=agent.salt_id,
-            timeout=70,
+            timeout=90,
+            salt_timeout=85,
             func="get_eventlog.get_eventlog",
             arg=[logtype, int(days)],
         )
     except Exception:
-        return Response(
-            {"error": "unable to contact the agent"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response("Agent timed out", status=status.HTTP_400_BAD_REQUEST)
 
     return Response(
         json.loads(
@@ -266,19 +258,25 @@ def send_raw_cmd(request):
 @api_view()
 def list_agents(request):
     agents = Agent.objects.all()
-    return Response(AgentSerializer(agents, many=True).data)
+    return Response(AgentTableSerializer(agents, many=True).data)
+
+
+@api_view()
+def list_agents_no_detail(request):
+    agents = Agent.objects.all()
+    return Response(AgentHostnameSerializer(agents, many=True).data)
 
 
 @api_view()
 def by_client(request, client):
     agents = Agent.objects.filter(client=client)
-    return Response(AgentSerializer(agents, many=True).data)
+    return Response(AgentTableSerializer(agents, many=True).data)
 
 
 @api_view()
 def by_site(request, client, site):
     agents = Agent.objects.filter(client=client).filter(site=site)
-    return Response(AgentSerializer(agents, many=True).data)
+    return Response(AgentTableSerializer(agents, many=True).data)
 
 
 @api_view(["POST"])
@@ -304,3 +302,36 @@ def overdue_action(request):
             {"error": "Something went wrong"}, status=status.HTTP_400_BAD_REQUEST
         )
     return Response(agent.hostname)
+
+
+@api_view(["POST"])
+def reboot_later(request):
+    agent = get_object_or_404(Agent, pk=request.data["pk"])
+    date_time = request.data["datetime"]
+
+    try:
+        obj = dt.datetime.strptime(date_time, "%Y-%m-%d %H:%M")
+    except Exception:
+        return Response("invalid date", status=status.HTTP_400_BAD_REQUEST)
+
+    resp = agent.schedule_reboot(obj)
+
+    if resp["ret"] and resp["success"]:
+        return Response(resp["msg"])
+    elif resp["ret"] and not resp["success"]:
+        return Response(resp["msg"], status=status.HTTP_400_BAD_REQUEST)
+    else:
+        return Response(resp["msg"], status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+def install_agent(request):
+    from knox.models import AuthToken
+
+    client = get_object_or_404(Client, client=request.data["client"])
+    site = get_object_or_404(Site, client=client, site=request.data["site"])
+
+    _, token = AuthToken.objects.create(user=request.user, expiry=dt.timedelta(hours=1))
+
+    resp = {"token": token, "client": client.pk, "site": site.pk}
+    return Response(resp)

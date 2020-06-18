@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.utils import timezone as djangotime
 
 from rest_framework.test import APIClient
 from rest_framework.test import force_authenticate
@@ -7,6 +8,9 @@ from accounts.models import User
 from agents.models import Agent
 from winupdate.models import WinUpdatePolicy
 from clients.models import Client, Site
+from automation.models import Policy
+from core.models import CoreSettings
+from checks.models import Check
 
 
 class BaseTestCase(TestCase):
@@ -17,6 +21,8 @@ class BaseTestCase(TestCase):
         self.john.save()
         self.client = APIClient()
         self.client.force_authenticate(user=self.john)
+
+        self.coresettings = CoreSettings.objects.create()
 
         self.agent = Agent.objects.create(
             operating_system="Windows 10",
@@ -67,19 +73,41 @@ class BaseTestCase(TestCase):
             monitoring_type="server",
             description="Test PC",
             mesh_node_id="abcdefghijklmnopAABBCCDD77443355##!!AI%@#$%#*",
+            last_seen=djangotime.now(),
         )
 
         self.update_policy = WinUpdatePolicy.objects.create(agent=self.agent)
 
         Client.objects.create(client="Google")
-        Client.objects.create(client="Facebook", checks_failing=True)
+        Client.objects.create(client="Facebook")
         google = Client.objects.get(client="Google")
         facebook = Client.objects.get(client="Facebook")
         Site.objects.create(client=google, site="Main Office")
-        Site.objects.create(client=google, site="LA Office", checks_failing=True)
+        Site.objects.create(client=google, site="LA Office")
         Site.objects.create(client=google, site="MO Office")
         Site.objects.create(client=facebook, site="Main Office")
         Site.objects.create(client=facebook, site="NY Office")
+
+        self.policy = Policy.objects.create(
+            name="testpolicy", desc="my awesome policy", active=True,
+        )
+        self.policy.clients.add(google)
+        self.policy.clients.add(facebook)
+
+        self.agentDiskCheck = Check.objects.create(
+            agent=self.agent,
+            check_type="diskspace",
+            disk="C:",
+            threshold=41,
+            fails_b4_alert=4,
+        )
+        self.policyDiskCheck = Check.objects.create(
+            policy=self.policy,
+            check_type="diskspace",
+            disk="M:",
+            threshold=87,
+            fails_b4_alert=1,
+        )
 
     def check_not_authenticated(self, method, url):
         self.client.logout()

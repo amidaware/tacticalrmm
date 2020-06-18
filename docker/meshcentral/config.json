@@ -1,31 +1,36 @@
 {
-    "settings": {
-      "Cert": "${MESH_HOST}",
-      "TLSOffload": "172.20.0.20",
-      "RedirPort": 80,
-      "WANonly": true,
-      "Minify": 1,
-      "Port": 443,
-      "AllowLoginToken": true,
-      "AllowFraming": true,
-      "_AgentPing": 60,
-      "AgentPong": 300,
-      "AllowHighQualityDesktop": true,
-      "MaxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 }
-    },
-    "domains": {
-      "": {
-        "Title": "Dev RMM",
-        "Title2": "DevRMM",
-        "NewAccounts": false,
-        "Footer": "<a href='https://twitter.com/mytwitter'>Twitter</a>",
-        "GeoLocation": true,
-        "CertUrl": "https://172.20.0.20:443",
-        "httpheaders": {
-          "Strict-Transport-Security": "max-age=360000",
-          "_x-frame-options": "sameorigin",
-          "Content-Security-Policy": "default-src 'none'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-src 'self'; media-src 'self'"
-        }
+  "settings": {
+    "mongodb": "mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@mesh-mongodb:27017",
+    "Cert": "${MESH_HOST}",
+    "TLSOffload": "172.20.0.20",
+    "RedirPort": 80,
+    "WANonly": true,
+    "Minify": 1,
+    "Port": 443,
+    "AllowLoginToken": true,
+    "AllowFraming": true,
+    "_AgentPing": 60,
+    "AgentPong": 300,
+    "AllowHighQualityDesktop": true,
+    "MaxInvalidLogin": {
+      "time": 5,
+      "count": 5,
+      "coolofftime": 30
+    }
+  },
+  "domains": {
+    "": {
+      "Title": "Dev RMM",
+      "Title2": "DevRMM",
+      "NewAccounts": false,
+      "mstsc": true,
+      "GeoLocation": true,
+      "CertUrl": "https://172.20.0.20:443",
+      "httpheaders": {
+        "Strict-Transport-Security": "max-age=360000",
+        "_x-frame-options": "sameorigin",
+        "Content-Security-Policy": "default-src 'none'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-src 'self'; media-src 'self'"
       }
     }
   }
+}

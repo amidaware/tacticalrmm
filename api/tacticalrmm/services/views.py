@@ -13,6 +13,8 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 
 from agents.models import Agent
+from checks.models import Check
+
 from .serializers import ServicesSerializer
 
 logger.configure(**settings.LOG_CONFIG)
@@ -22,6 +24,11 @@ logger.configure(**settings.LOG_CONFIG)
 def get_services(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     return Response(ServicesSerializer(agent).data)
+
+
+@api_view()
+def default_services(request):
+    return Response(Check.load_default_services())
 
 
 @api_view()

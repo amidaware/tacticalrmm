@@ -2,7 +2,7 @@
   <div class="q-pa-md">
     <q-table
       dense
-      class="services-sticky-header-table"
+      class="remote-bg-tbl-sticky"
       :data="servicesData"
       :columns="columns"
       :pagination.sync="pagination"
@@ -14,7 +14,7 @@
       <template v-slot:top>
         <q-btn dense flat push @click="refreshServices" icon="refresh" />
         <q-space />
-        <q-input v-model="filter" outlined label="Search" dense clearable >
+        <q-input v-model="filter" outlined label="Search" dense clearable>
           <template v-slot:prepend>
             <q-icon name="search" />
           </template>
@@ -163,10 +163,12 @@
 
 <script>
 import axios from "axios";
+import mixins from "@/mixins/mixins";
 
 export default {
   name: "Services",
   props: ["pk"],
+  mixins: [mixins],
   data() {
     return {
       servicesData: [],
@@ -175,12 +177,7 @@ export default {
       saveServiceDetailButton: true,
       serviceData: {},
       startupType: "",
-      startupOptions: [
-        "Automatic (Delayed Start)",
-        "Automatic",
-        "Manual",
-        "Disabled"
-      ],
+      startupOptions: ["Automatic (Delayed Start)", "Automatic", "Manual", "Disabled"],
       filter: "",
       pagination: {
         rowsPerPage: 9999,
@@ -250,23 +247,18 @@ export default {
         sv_name: name,
         edit_action: changed
       };
+      this.serviceDetailVisible = true;
       axios
         .post("/services/editservice/", data)
         .then(r => {
+          this.serviceDetailVisible = false;
           this.serviceDetailsModal = false;
           this.refreshServices();
-          this.$q.notify({
-            color: "green",
-            icon: "fas fa-check-circle",
-            message: `Service ${name} was edited!`
-          });
+          this.notifySuccess(`Service ${name} was edited!`);
         })
         .catch(err => {
-          this.$q.notify({
-            color: "red",
-            icon: "fas fa-times-circle",
-            message: err.response.data.error
-          });
+          this.serviceDetailVisible = false;
+          this.notifyError(err.response.data.error);
         });
     },
     startupTypeChanged() {
@@ -282,15 +274,9 @@ export default {
           this.serviceData = r.data;
           this.serviceData.svc_name = name;
           this.startupType = this.serviceData.StartType;
-          if (
-            this.serviceData.StartType === "Auto" &&
-            this.serviceData.StartTypeDelayed === true
-          ) {
+          if (this.serviceData.StartType === "Auto" && this.serviceData.StartTypeDelayed === true) {
             this.startupType = "Automatic (Delayed Start)";
-          } else if (
-            this.serviceData.StartType === "Auto" &&
-            this.serviceData.StartTypeDelayed === false
-          ) {
+          } else if (this.serviceData.StartType === "Auto" && this.serviceData.StartTypeDelayed === false) {
             this.startupType = "Automatic";
           }
           this.serviceDetailVisible = false;
@@ -298,11 +284,7 @@ export default {
         .catch(err => {
           this.serviceDetailVisible = false;
           this.serviceDetailsModal = false;
-          this.$q.notify({
-            color: "red",
-            icon: "fas fa-times-circle",
-            message: err.response.data.error
-          });
+          this.notifyError(err.response.data.error);
         });
     },
     serviceAction(name, action, fullname) {
@@ -334,27 +316,19 @@ export default {
         .then(r => {
           this.refreshServices();
           this.serviceDetailsModal = false;
-          this.$q.notify({
-            color: "green",
-            icon: "fas fa-check-circle",
-            message: `Service ${fullname} was ${status}!`
-          });
+          this.notifySuccess(`Service ${fullname} was ${status}!`);
         })
         .catch(err => {
           this.$q.loading.hide();
-          this.$q.notify({
-            color: "red",
-            icon: "fas fa-times-circle",
-            message: err.response.data.error
-          });
+          this.notifyError(err.response.data.error);
         });
     },
     async getServices() {
       try {
         let r = await axios.get(`/services/${this.pk}/services/`);
         this.servicesData = [r.data][0].services;
-      } catch(e) {
-        console.log(`ERROR!: ${e}`)
+      } catch (e) {
+        console.log(`ERROR!: ${e}`);
       }
     },
     refreshServices() {
@@ -367,11 +341,7 @@ export default {
         })
         .catch(err => {
           this.$q.loading.hide();
-          this.$q.notify({
-            color: "red",
-            icon: "fas fa-times-circle",
-            message: err.response.data.error
-          });
+          this.notifyError(err.response.data.error);
         });
     }
   },
@@ -380,23 +350,3 @@ export default {
   }
 };
 </script>
-
-<style lang="stylus">
-.services-sticky-header-table {
-  /* max height is important */
-  .q-table__middle {
-    max-height: 650px;
-  }
-
-  .q-table__top, .q-table__bottom, thead tr:first-child th {
-    background-color: #f5f4f2;
-  }
-
-  thead tr:first-child th {
-    position: sticky;
-    top: 0;
-    opacity: 1;
-    z-index: 1;
-  }
-}
-</style>

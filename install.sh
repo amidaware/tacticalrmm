@@ -115,7 +115,7 @@ meshcfg="$(cat << EOF
       "Title": "Dev RMM",
       "Title2": "DevRMM",
       "NewAccounts": false,
-      "Footer": "<a href='https://twitter.com/mytwitter'>Twitter</a>",
+      "mstsc": true,
       "CertUrl": "https://${meshdomain}:443/",
       "GeoLocation": true,
       "httpheaders": {
@@ -228,7 +228,8 @@ cd /home/${USER}/rmm/api
 python3.7 -m venv env
 source /home/${USER}/rmm/api/env/bin/activate
 cd /home/${USER}/rmm/api/tacticalrmm
-pip install --upgrade pip
+pip install --no-cache-dir --upgrade pip
+pip install --no-cache-dir --upgrade setuptools wheel
 pip install -r /home/${USER}/rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic
@@ -244,20 +245,15 @@ read djangousername
 python manage.py createsuperuser --username ${djangousername} --email ${letsemail}
 RANDBASE=$(python manage.py generate_totp)
 cls
-python manage.py generate_barcode ${RANDBASE} ${djangousername}
+python manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain}
 deactivate
 read -n 1 -s -r -p "Press any key to continue..."
 
-totp="$(cat << EOF
-TWO_FACTOR_OTP = "${RANDBASE}"
-EOF
-)"
-echo "${totp}" | tee --append /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/local_settings.py > /dev/null
 
 uwsgini="$(cat << EOF
 [uwsgi]
 
-logto = /home/${USER}/rmm/api/tacticalrmm/log/uwsgi.log
+logto = /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/private/log/uwsgi.log
 chdir = /home/${USER}/rmm/api/tacticalrmm
 module = tacticalrmm.wsgi
 home = /home/${USER}/rmm/api/env
@@ -316,8 +312,8 @@ server {
     listen 443 ssl;
     server_name ${rmmdomain};
     client_max_body_size 300M;
-    access_log /home/${USER}/rmm/api/tacticalrmm/log/rmm-access.log;
-    error_log /home/${USER}/rmm/api/tacticalrmm/log/rmm-error.log;
+    access_log /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/private/log/access.log;
+    error_log /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
     ssl_certificate /etc/letsencrypt/live/${rmmdomain}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${rmmdomain}/privkey.pem;
     ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
@@ -326,19 +322,13 @@ server {
         root /home/${USER}/rmm/api/tacticalrmm;
     }
 
-    location /protected/ {
+    location /private/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/downloads/;
+        alias /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/private/;
     }
 
-    location /protectedlogs/ {
-        internal;
-        add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /home/${USER}/rmm/api/tacticalrmm/log/;
-    }
-
-    location /protectedscripts/ {
+    location /saltscripts/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
         alias /srv/salt/scripts/userdefined/;
@@ -600,12 +590,15 @@ sudo certbot certonly --standalone --agree-tos -m ${letsemail} --no-eff-email -d
 sudo chown -R $USER:$GROUP /home/${USER}/.npm
 sudo chown -R $USER:$GROUP /home/${USER}/.config
 
-vueconf="$(cat << EOF
-VUE_APP_PROD_URL = "https://${rmmdomain}"
-VUE_APP_DEV_URL = "http://localhost:8000"
+quasarenv="$(cat << EOF
+PROD_URL = "https://${rmmdomain}"
+DEV_URL = "https://api.example.com"
+APP_URL = "https://app.example.com"
+DEV_HOST = 0.0.0.0
+DEV_PORT = 80
 EOF
 )"
-echo "${vueconf}" | tee /home/${USER}/rmm/web/.env.local > /dev/null
+echo "${quasarenv}" | tee /home/${USER}/rmm/web/.env > /dev/null
 
 print_green 'Installing the frontend'
 
@@ -666,6 +659,22 @@ print_green 'Restarting meshcentral and waiting for it to install plugins'
 sudo systemctl restart meshcentral
 
 sleep 30
+
+print_green 'Generating meshcentral login token key'
+
+MESHTOKENKEY=$(node /meshcentral/node_modules/meshcentral --logintokenkey)
+
+meshtoken="$(cat << EOF
+MESH_TOKEN_KEY = "${MESHTOKENKEY}"
+EOF
+)"
+echo "${meshtoken}" | tee --append /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/local_settings.py > /dev/null
+
+print_green 'Restarting all services'
+for i in nginx celery.service celery-winupdate.service celerybeat.service rmm.service meshcentral.service
+do
+  sudo systemctl restart ${i}
+done
 
 print_green 'Restarting salt-master and waiting 30 seconds'
 sudo systemctl restart salt-master

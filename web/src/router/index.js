@@ -1,73 +1,39 @@
 import Vue from "vue";
-import Router from "vue-router";
-import Dashboard from "@/views/Dashboard";
-import Login from "@/views/Login";
-import Logout from "@/views/Logout";
-import SessionExpired from "@/views/SessionExpired";
-import NotFound from "@/views/NotFound";
-import TakeControl from "@/views/TakeControl";
-import InitialSetup from "@/views/InitialSetup";
-import RemoteBackground from "@/views/RemoteBackground";
+import VueRouter from "vue-router";
 
-Vue.use(Router);
+import routes from './routes';
 
-export default new Router({
-  mode: "history",
-  base: process.env.BASE_URL,
-  routes: [
-    {
-      path: "/",
-      name: "Dashboard",
-      component: Dashboard,
-      meta: {
-        requireAuth: true
+Vue.use(VueRouter);
+
+export default function ({ store }) {
+  const Router = new VueRouter({
+    scrollBehavior: () => ({ x: 0, y: 0 }),
+    routes,
+    mode: process.env.VUE_ROUTER_MODE,
+    base: process.env.VUE_ROUTER_BASE
+  })
+
+  Router.beforeEach((to, from, next) => {
+    if (to.meta.requireAuth) {
+      if (!store.getters.loggedIn) {
+        next({
+          name: "Login"
+        });
+      } else {
+        next();
       }
-    },
-    {
-      path: "/setup",
-      name: "InitialSetup",
-      component: InitialSetup,
-      meta: {
-        requireAuth: true
+    } else if (to.meta.requiresVisitor) {
+      if (store.getters.loggedIn) {
+        next({
+          name: "Dashboard"
+        });
+      } else {
+        next();
       }
-    },
-    {
-      path: "/takecontrol/:pk",
-      name: "TakeControl",
-      component: TakeControl,
-      meta: {
-        requireAuth: true
-      }
-    },
-    {
-      path: "/remotebackground/:pk",
-      name: "RemoteBackground",
-      component: RemoteBackground,
-      meta: {
-        requireAuth: true
-      }
-    },
-    {
-      path: "/login",
-      name: "Login",
-      component: Login,
-      meta: {
-        requiresVisitor: true
-      }
-    },
-    {
-      path: "/logout",
-      name: "Logout",
-      component: Logout
-    },
-    {
-      path: "/expired",
-      name: "SessionExpired",
-      component: SessionExpired,
-      meta: {
-        requireAuth: true
-      }
-    },
-    { path: "*", component: NotFound }
-  ]
-});
+    } else {
+      next();
+    }
+  });
+
+  return Router
+}

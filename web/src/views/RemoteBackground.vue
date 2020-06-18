@@ -21,9 +21,11 @@
       <q-tab-panel name="terminal">
         <iframe
           style="overflow:hidden;height:715px;"
-          :src="terminalurl" width="100%" height="100%" scrolling="no"
-        >
-        </iframe>
+          :src="terminalurl"
+          width="100%"
+          height="100%"
+          scrolling="no"
+        ></iframe>
       </q-tab-panel>
       <q-tab-panel name="processes">
         <ProcessManager :pk="pk" />
@@ -37,9 +39,11 @@
       <q-tab-panel name="filebrowser">
         <iframe
           style="overflow:hidden;height:715px;"
-          :src="fileurl" width="100%" height="100%" scrolling="no"
-        >
-        </iframe>
+          :src="fileurl"
+          width="100%"
+          height="100%"
+          scrolling="no"
+        ></iframe>
       </q-tab-panel>
     </q-tab-panels>
   </div>
@@ -63,7 +67,7 @@ export default {
       terminalurl: "",
       fileurl: "",
       tab: "terminal",
-      title: ''
+      title: ""
     };
   },
   methods: {
@@ -78,7 +82,7 @@ export default {
   meta() {
     return {
       title: this.title
-    }
+    };
   },
   computed: {
     pk() {

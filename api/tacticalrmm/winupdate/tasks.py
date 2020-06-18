@@ -7,7 +7,7 @@ from tacticalrmm.celery import app
 
 @app.task
 def check_for_updates_task(pk, wait=False):
-    
+
     if wait:
         sleep(70)
 
@@ -24,7 +24,7 @@ def check_for_updates_task(pk, wait=False):
     ret = data["return"][0][agent.salt_id]
 
     # if managed by wsus, nothing we can do until salt supports it
-    if type(ret) is str:
+    if isinstance(ret, str):
         err = ["unknown failure", "2147352567", "2145107934"]
         if any(x in ret.lower() for x in err):
             agent.managed_by_wsus = True
@@ -33,7 +33,7 @@ def check_for_updates_task(pk, wait=False):
     else:
         # if previously managed by wsus but no longer (i.e moved into a different OU in AD)
         # then we can use salt to manage updates
-        if agent.managed_by_wsus and type(ret) is dict:
+        if agent.managed_by_wsus and isinstance(ret, dict):
             agent.managed_by_wsus = False
             agent.save(update_fields=["managed_by_wsus"])
 

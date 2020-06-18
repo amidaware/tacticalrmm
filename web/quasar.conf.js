@@ -88,10 +88,15 @@ module.exports = function () {
       plugins: [
         'Dialog',
         'Loading',
+        'LoadingBar',
         'Meta',
         'Notify'
       ],
       config: {
+        loadingBar: {
+          color: "red",
+          size: "4px"
+        },
         notify: {
           position: "top",
           timeout: 2000,

@@ -1,6 +1,9 @@
 # FOR TESTS 
 version: '3.7'
 
+networks: 
+  test:
+
 services:
   # Container that hosts Vue frontend
   app-unit-test:
@@ -9,3 +12,31 @@ services:
     working_dir: /home/node
     volumes:
       - ../web:/home/node
+    networks: 
+      - test
+  
+  api-test:
+    build:
+      context: ..
+      dockerfile: ./docker/api-test/dockerfile
+    depends_on: 
+      - db-test
+      - redis-test
+    networks: 
+      - test
+
+  # Postgres Database for API service
+  db-test:
+    image: postgres:11.7
+    environment: 
+      POSTGRES_DB: tacticalrmm-test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: testpass
+    networks: 
+      - test
+
+  # Redis Container for Celery tasks
+  redis-test:
+    image: redis
+    networks: 
+      - test

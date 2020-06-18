@@ -1,0 +1,16 @@
+FROM python:3.7
+
+WORKDIR /app
+
+COPY ./api/tacticalrmm/requirements.txt .
+
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
+
+COPY ./api/tacticalrmm/ .
+
+RUN rm ./tacticalrmm/local_settings.py && \
+    rm ./tacticalrmm/settings.py
+
+COPY ./docker/api-test/settings.py ./tacticalrmm/
+CMD python manage.py test -v 2

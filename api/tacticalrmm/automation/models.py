@@ -40,6 +40,8 @@ class Policy(models.Model):
         # Get checks added to agent directly
         agent_checks = list(agent.agentchecks.filter(managed_by_policy=False))
 
+        agent_checks_parent_pks = [check.parent_check for check in agent.agentchecks.filter(managed_by_policy=True)]
+
         # Get policies applied to agent and agent site and client
         client = Client.objects.get(client=agent.client)
         site = Site.objects.filter(client=client).get(site=agent.site)
@@ -173,7 +175,7 @@ class Policy(models.Model):
                     check.overriden_by_policy = True
                     check.save()
 
-        return (
+        final_list = (
             diskspace_checks
             + ping_checks
             + cpuload_checks
@@ -182,6 +184,8 @@ class Policy(models.Model):
             + script_checks
             + eventlog_checks
         )
+
+        return [check for check in final_list if check.pk not in agent_checks_parent_pks]
 
     @staticmethod
     def generate_policy_checks(agent):

@@ -1,20 +1,28 @@
 from automation.models import Policy
 from checks.models import Check
+from agents.models import Agent
 from tacticalrmm.celery import app
 
 
 @app.task
-def generate_agent_checks_from_policies_task(policypk, many=False):
+def generate_agent_checks_from_policies_task(policypk, many=False, clear=False, parent_checks=[]):
 
     if many:
         policy_list = Policy.objects.filter(pk__in=policypk)
         for policy in policy_list:
             for agent in policy.related_agents():
-                agent.generate_checks_from_policies()
+                agent.generate_checks_from_policies(clear=clear, parent_checks=parent_checks)
     else:
         policy = Policy.objects.get(pk=policypk)
         for agent in policy.related_agents():
-            agent.generate_checks_from_policies()
+            agent.generate_checks_from_policies(clear=clear, parent_checks=parent_checks)
+
+@app.task
+def generate_agent_checks_by_location_task(location, clear=False, parent_checks=[]):
+
+    policy = Policy.objects.get(pk=policypk)
+    for agent in Agent.objects.filter(**location):
+        agent.generate_checks_from_policies(clear=clear, parent_checks=parent_checks)
 
 @app.task
 def delete_policy_check_task(checkpk):

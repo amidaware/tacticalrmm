@@ -23,7 +23,10 @@ from .serializers import (
     AutoTaskPolicySerializer,
 )
 
-from .tasks import generate_agent_checks_from_policies_task
+from .tasks import (
+    generate_agent_checks_from_policies_task,
+    generate_agent_checks_by_location_task
+)
 
 
 class GetAddPolicies(APIView):
@@ -58,7 +61,7 @@ class GetUpdateDeletePolicy(APIView):
 
         # Generate agent checks only if active and enforced were changed
         if saved_policy.active != old_active or saved_policy.enforced != old_enforced:
-            generate_agent_checks_from_policies_task.delay(policypk=policy.pk)
+            generate_agent_checks_from_policies_task.delay(policypk=policy.pk, clear=(not saved_policy.active or not saved_policy.enforced))
 
         return Response("ok")
 
@@ -66,10 +69,7 @@ class GetUpdateDeletePolicy(APIView):
         policy = Policy.objects.get(pk=pk)
 
         # delete all managed policy checks off of agents
-        parent_check_pks = policy.policychecks.only("pk")
-        if parent_check_pks:
-            Check.objects.filter(parent_check__in=parent_check_pks).delete()
-
+        generate_agent_checks_from_policies_task.delay(policypk=policy.pk, clear=True)
         policy.delete()
         
         return Response("ok")
@@ -149,7 +149,7 @@ class GetRelated(APIView):
                 if not client.policy or client.policy and client.policy.pk != policy.pk:
                     client.policy = policy
                     client.save()
-                    generate_agent_checks_from_policies_task.delay(policypk=policy.pk)
+                    generate_agent_checks_by_location_task.delay(location={"client": client.pk}, clear=True)
 
             if related_type == "site":
                 site = get_object_or_404(Site, pk=pk)
@@ -158,7 +158,7 @@ class GetRelated(APIView):
                 if not site.policy or site.policy and site.policy.pk != policy.pk:
                     site.policy = policy
                     site.save()
-                    generate_agent_checks_from_policies_task.delay(policypk=policy.pk)
+                    generate_agent_checks_by_location_task.delay(location={"client": site.client.client, "site": site.pk}, clear=True)
 
             if related_type == "agent":
                 agent = get_object_or_404(Agent, pk=pk)
@@ -167,9 +167,9 @@ class GetRelated(APIView):
                 if not agent.policy or agent.policy and agent.policy.pk != policy.pk:
                     agent.policy=policy
                     agent.save()
-                    agent.generate_checks_from_policies()
+                    agent.generate_checks_from_policies(clear=True)
 
-        # If policy was cleared
+        # If policy was cleared or blank
         else:
             if related_type == "client":
                 client = get_object_or_404(Client, pk=pk)
@@ -178,10 +178,10 @@ class GetRelated(APIView):
                 if client.policy:
 
                     # Get old policy pk to regenerate the checks
-                    old_pk = client.pk
+                    old_pk = client.policy.pk
                     client.policy=None
                     client.save()
-                    generate_agent_checks_from_policies_task.delay(policypk=old_pk)
+                    generate_agent_checks_by_location_task.delay(location={"client": client.pk}, clear=True)
 
             if related_type == "site":
                 site = get_object_or_404(Site, pk=pk)
@@ -190,10 +190,10 @@ class GetRelated(APIView):
                 if site.policy:
 
                     # Get old policy pk to regenerate the checks
-                    old_pk = site.pk
+                    old_pk = site.policy.pk
                     site.policy=None
                     site.save()
-                    generate_agent_checks_from_policies_task.delay(policypk=old_pk)
+                    generate_agent_checks_by_location_task.delay(location={"client": site.client.client, "site": site.pk}, clear=True)
 
             if related_type == "agent":
                 agent = get_object_or_404(Agent, pk=pk)
@@ -201,7 +201,7 @@ class GetRelated(APIView):
                 if agent.policy:
                     agent.policy=None
                     agent.save()
-                    agent.generate_checks_from_policies()
+                    agent.generate_checks_from_policies(clear=True)
 
         return Response("ok")
 

@@ -192,9 +192,15 @@ class Agent(models.Model):
         except:
             return [{"model": "unknown", "size": "unknown", "interfaceType": "unknown"}]
 
-    def generate_checks_from_policies(self):
+    # clear is used to delete managed policy checks from agent
+    # parent_checks specifies a list of checks to delete from agent with matching parent_check field
+    def generate_checks_from_policies(self, clear=False, parent_checks=[]):
         # Clear agent checks managed by policy
-        self.agentchecks.filter(managed_by_policy=True).delete()
+        if clear:
+            if parent_checks:
+                self.agentchecks.filter(managed_by_policy=True).filter(parent_checks__in=parent_checks).delete()
+            else:
+                self.agentchecks.filter(managed_by_policy=True).delete()
 
         # Clear agent checks that have overriden_by_policy set
         self.agentchecks.update(overriden_by_policy=False)

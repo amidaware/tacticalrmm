@@ -72,6 +72,12 @@ describe("PolicyChecksTab.vue with no policy selected", () => {
     expect(wrapper.html()).toContain("Click on a policy to see the checks");
   });
 
+  it("doesn't show refresh or add button when no policy selected", () => {
+
+    expect(wrapper.findComponent({ ref: "refresh" }).exists()).toBe(false)
+    expect(wrapper.findComponent({ ref: "add" }).exists()).toBe(false)
+  });
+
 });
 
 describe("PolicyChecksTab.vue with policy selected and no checks", () => {
@@ -339,7 +345,8 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
       { 
         pk: 1,
           data: {
-            text_alert: true
+            text_alert: true,
+            check_alert: true
           }
       }
       );
@@ -352,7 +359,8 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
       { 
         pk: 1,
           data: {
-            text_alert: false
+            text_alert: false,
+            check_alert: true
           }
       }
     );
@@ -372,7 +380,8 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
       { 
         pk: 1,
           data: {
-            email_alert: true
+            email_alert: true,
+            check_alert: true
           }
       }
     );
@@ -385,7 +394,8 @@ describe("PolicyChecksTab.vue with policy selected and checks", () => {
       { 
         pk: 1,
           data: {
-            email_alert: false
+            email_alert: false,
+            check_alert: true
           }
       }
     );

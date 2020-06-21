@@ -2,6 +2,7 @@
   <div class="row">
     <div class="col-12">
       <q-btn
+        v-if="selectedPolicy !== null"
         size="sm"
         color="grey-5"
         icon="fas fa-plus"
@@ -11,11 +12,13 @@
         @click="showAddAutomatedTask = true"
       />
       <q-btn 
-        dense 
-        flat push 
-        @click="refreshTasks(selectedPolicy)" 
+        v-if="selectedPolicy !== null"
+        dense
+        flat
+        push
+        @click="refreshTasks(selectedPolicy)"
         icon="refresh"
-        ref="refresh" 
+        ref="refresh"
       />
       <template>
         <q-table

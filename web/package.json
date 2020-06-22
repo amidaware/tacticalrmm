@@ -12,18 +12,26 @@
     "@quasar/extras": "^1.8.2",
     "axios": "^0.19.2",
     "dotenv": "^8.2.0",
-    "quasar": "^1.12.5"
+    "quasar": "^1.12.7"
   },
   "devDependencies": {
-    "@quasar/app": "^1.9.6",
+    "@quasar/app": "^2.0.0",
     "@quasar/cli": "^1.0.7",
     "@quasar/quasar-app-extension-testing": "^1.0.0",
     "@quasar/quasar-app-extension-testing-unit-jest": "^1.0.1",
-    "core-js": "^2.6.11",
+    "core-js": "^3.6.5",
     "flush-promises": "^1.0.2",
     "fs-extra": "^9.0.1"
   },
   "browserslist": [
-    "last 1 version, not dead, ie >= 11"
+    "last 4 Chrome versions",
+    "last 4 Firefox versions",
+    "last 2 Edge versions",
+    "last 3 Safari versions",
+    "last 3 Android versions",
+    "last 3 ChromeAndroid versions",
+    "last 3 FirefoxAndroid versions",
+    "last 3 iOS versions",
+    "last 2 Opera versions"
   ]
 }

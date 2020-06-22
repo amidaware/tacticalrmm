@@ -3,7 +3,6 @@ const path = require('path');
 
 module.exports = function () {
   return {
-    supportIE: false,
     supportTS: false,
     // https://quasar.dev/quasar-cli/cli-documentation/prefetch-feature
     // preFetch: true,
@@ -30,7 +29,7 @@ module.exports = function () {
 
     // Full list of options: https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-build
     build: {
-      env: { DEV_API: JSON.stringify(process.env.DEV_URL), PROD_API: JSON.stringify(process.env.PROD_URL) },
+      env: { DEV_API: process.env.DEV_URL, PROD_API: process.env.PROD_URL },
       vueRouterMode: 'history', // available values: 'hash', 'history'
       distDir: "dist/",
 
@@ -39,9 +38,8 @@ module.exports = function () {
       // Does not applies to modern builds.
       // transpileDependencies: [],
 
-      modern: true, // https://quasar.dev/quasar-cli/modern-build
       // rtl: false, // https://quasar.dev/options/rtl-support
-      // preloadChunks: true,
+      // preloadChunks: false,
       // showProgress: false,
       // gzip: true,
       // analyze: true,
@@ -72,17 +70,13 @@ module.exports = function () {
       iconSet: 'material-icons', // Quasar icon set
       lang: 'en-us', // Quasar language pack
 
-      // Possible values for "all":
       // * 'auto' - Auto-import needed Quasar components & directives
       //            (slightly higher compile time; next to minimum bundle size; most convenient)
       // * false  - Manually specify what to import
       //            (fastest compile time; minimum bundle size; most tedious)
       // * true   - Import everything from Quasar
       //            (not treeshaking Quasar; biggest bundle size; convenient)
-      all: 'auto',
-
-      components: [],
-      directives: [],
+      importStrategy: 'auto',
 
       // Quasar plugins
       plugins: [

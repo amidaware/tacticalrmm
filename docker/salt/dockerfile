@@ -17,6 +17,7 @@ COPY ./docker/salt/api.conf /etc/salt/master.d/rmm-salt.tmp
 RUN envsubst '\$SALT_USER' < /etc/salt/master.d/rmm-salt.tmp | tee /etc/salt/master.d/rmm-salt.conf && \
     rm /etc/salt/master.d/rmm-salt.tmp
 
+RUN sed -i 's/msgpack_kwargs = {"raw": six.PY2}/msgpack_kwargs = {"raw": six.PY2, "max_buffer_size": 2147483647}/g' /usr/lib/python3/dist-packages/salt/transport/ipc.py
 COPY ./docker/salt/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
 
 EXPOSE 8123 4505 4506

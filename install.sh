@@ -51,18 +51,12 @@ print_green 'Creating saltapi user'
 sudo adduser --no-create-home --disabled-password --gecos "" saltapi
 echo "saltapi:${SALTPW}" | sudo chpasswd
 
-print_green 'Creating sudoers conf to restart celery'
-
-echo "${USER} ALL=(ALL) NOPASSWD: /bin/systemctl restart celerybeat.service" | sudo tee /etc/sudoers.d/${USER}
-sudo chmod 0440 /etc/sudoers.d/${USER}
-
-
 print_green 'Installing Nginx'
 
 sudo apt install -y software-properties-common
-sudo add-apt-repository -y ppa:nginx/stable
 sudo apt update
 sudo apt install -y nginx
+sudo systemctl stop nginx
 
 print_green 'Installing NodeJS'
 
@@ -115,9 +109,10 @@ meshcfg="$(cat << EOF
       "Title": "Dev RMM",
       "Title2": "DevRMM",
       "NewAccounts": false,
-      "mstsc": true,
       "CertUrl": "https://${meshdomain}:443/",
       "GeoLocation": true,
+      "CookieIpCheck": false,
+      "mstsc": true,
       "httpheaders": {
         "Strict-Transport-Security": "max-age=360000",
         "_x-frame-options": "sameorigin",
@@ -132,16 +127,15 @@ echo "${meshcfg}" > /meshcentral/meshcentral-data/config.json
 
 print_green 'Installing python, redis and git'
 
-sudo add-apt-repository -y ppa:deadsnakes/ppa
 sudo apt update
-sudo apt install -y python3.7 python3.7-venv python3.7-dev python3-pip python3-dev python3-venv python3-setuptools ca-certificates redis git python3-cherrypy3
+sudo apt install -y python3.8-venv python3.8-dev python3-pip python3-setuptools python3-wheel ca-certificates redis git
 
 print_green 'Installing postgresql'
 
-sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
-sudo apt install -y postgresql-11
+sudo apt install -y postgresql-12
 
 print_green 'Creating database for the rmm'
 
@@ -225,12 +219,12 @@ echo "${localvars}" > /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/local_settin
 print_green 'Installing the backend'
 
 cd /home/${USER}/rmm/api
-python3.7 -m venv env
+python3 -m venv env
 source /home/${USER}/rmm/api/env/bin/activate
 cd /home/${USER}/rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
 pip install --no-cache-dir --upgrade setuptools wheel
-pip install -r /home/${USER}/rmm/api/tacticalrmm/requirements.txt
+pip install --no-cache-dir -r /home/${USER}/rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic
 python manage.py initial_db_setup
@@ -393,14 +387,18 @@ sudo ln -s /etc/nginx/sites-available/meshcentral.conf /etc/nginx/sites-enabled/
 
 print_green 'Installing Salt Master'
 
-wget -O - https://repo.saltstack.com/py3/ubuntu/18.04/amd64/latest/SALTSTACK-GPG-KEY.pub | sudo apt-key add -
-echo 'deb http://repo.saltstack.com/py3/ubuntu/18.04/amd64/latest bionic main' | sudo tee /etc/apt/sources.list.d/saltstack.list
+wget -O - https://repo.saltstack.com/py3/ubuntu/20.04/amd64/latest/SALTSTACK-GPG-KEY.pub | sudo apt-key add -
+echo 'deb http://repo.saltstack.com/py3/ubuntu/20.04/amd64/latest focal main' | sudo tee /etc/apt/sources.list.d/saltstack.list
+
 sudo apt update
 sudo apt install -y salt-master
 
+print_green 'Waiting 30 seconds for salt to start'
+sleep 30
+
 saltvars="$(cat << EOF
-timeout: 60
-gather_job_timeout: 30
+timeout: 20
+gather_job_timeout: 25
 max_event_size: 30485760
 external_auth:
   pam:
@@ -417,10 +415,13 @@ rest_cherrypy:
 
 EOF
 )"
-echo "${saltvars}" | sudo tee --append /etc/salt/master > /dev/null
+echo "${saltvars}" | sudo tee /etc/salt/master.d/rmm-salt.conf > /dev/null
 
-print_green 'Waiting 30 seconds for salt to start'
-sleep 30 # wait for salt to start
+# fix the stupid 1 MB limit present in msgpack 0.6.2, which btw was later changed to 100 MB in msgpack 1.0.0
+# but 0.6.2 is the default on ubuntu 20
+sudo sed -i 's/msgpack_kwargs = {"raw": six.PY2}/msgpack_kwargs = {"raw": six.PY2, "max_buffer_size": 2147483647}/g' /usr/lib/python3/dist-packages/salt/transport/ipc.py
+
+
 
 print_green 'Installing Salt API'
 sudo apt install -y salt-api
@@ -431,7 +432,7 @@ celeryservice="$(cat << EOF
 [Unit]
 Description=Celery Service
 After=network.target
-After=redis.service
+After=redis-server.service
 
 [Service]
 Type=forking
@@ -455,7 +456,7 @@ celerywinupdatesvc="$(cat << EOF
 [Unit]
 Description=Celery Win Update Service
 After=network.target
-After=redis.service
+After=redis-server.service
 
 [Service]
 Type=forking
@@ -519,7 +520,7 @@ celerybeatservice="$(cat << EOF
 [Unit]
 Description=Celery Beat Service
 After=network.target
-After=redis.service
+After=redis-server.service
 
 [Service]
 Type=simple
@@ -549,6 +550,7 @@ meshservice="$(cat << EOF
 [Unit]
 Description=MeshCentral Server
 After=network.target
+After=mongod.service
 After=nginx.service
 [Service]
 Type=simple
@@ -577,9 +579,7 @@ sudo systemctl restart salt-api
 
 print_green 'Installing certbot'
 
-sudo add-apt-repository -y ppa:certbot/certbot
 sudo apt install -y certbot
-sudo systemctl stop nginx
 
 print_green 'Getting https certs'
 

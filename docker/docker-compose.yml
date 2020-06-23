@@ -1,7 +1,7 @@
-version: '3.7'
+version: "3.7"
 
 # Userdefined Networks
-networks: 
+networks:
   database:
   redis:
   mesh-mongodb:
@@ -18,17 +18,16 @@ volumes:
   scripts:
 
 services:
-
   # Postgres Database for API service
   db:
-    image: postgres:11.7
-    environment: 
+    image: postgres:12
+    environment:
       POSTGRES_DB: tacticalrmm
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASS}
-    networks: 
+    networks:
       - database
-  
+
   # Redis Container for Celery tasks
   redis:
     image: redis
@@ -37,7 +36,7 @@ services:
 
   # Salt Master and API
   salt:
-    build: 
+    build:
       context: ..
       dockerfile: ./docker/salt/dockerfile
       args:
@@ -51,7 +50,7 @@ services:
       - scripts:/srv
     networks:
       - proxy
-  
+
   # MeshCentral Container
   meshcentral:
     build:
@@ -63,7 +62,7 @@ services:
     networks:
       - proxy
       - mesh-mongodb
-    depends_on: 
+    depends_on:
       - mesh-mongodb
       - nginx-proxy
 
@@ -77,10 +76,9 @@ services:
     networks:
       - mesh-mongodb
 
-
   # Nginx Container Reverse Proxy that handles all http/https traffic
   nginx-proxy:
-    build: 
+    build:
       context: ./nginx-proxy
       args:
         - APP_HOST=${APP_HOST}

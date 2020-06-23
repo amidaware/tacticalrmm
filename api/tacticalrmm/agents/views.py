@@ -155,7 +155,7 @@ def get_processes(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     try:
         resp = agent.salt_api_cmd(
-            hostname=agent.salt_id, timeout=70, func="process_manager.get_procs"
+            hostname=agent.salt_id, timeout=70, func="win_agent.get_procs"
         )
         data = resp.json()
     except Exception:
@@ -190,7 +190,7 @@ def get_event_log(request, pk, logtype, days):
             hostname=agent.salt_id,
             timeout=90,
             salt_timeout=85,
-            func="get_eventlog.get_eventlog",
+            func="win_agent.get_eventlog",
             arg=[logtype, int(days)],
         )
     except Exception:

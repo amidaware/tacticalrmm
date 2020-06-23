@@ -18,7 +18,7 @@ logger.configure(**settings.LOG_CONFIG)
 def get_wmi_detail_task(pk):
     agent = Agent.objects.get(pk=pk)
     resp = agent.salt_api_cmd(
-        hostname=agent.salt_id, timeout=30, func="system_info.system_info"
+        hostname=agent.salt_id, timeout=30, func="win_agent.system_info"
     )
     agent.wmi_detail = resp.json()["return"][0][agent.salt_id]
     agent.save(update_fields=["wmi_detail"])

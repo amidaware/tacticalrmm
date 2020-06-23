@@ -21,7 +21,7 @@ Copy the fullchain.pem and privkey.pem to the nginx-proxy/cert directory.
 
 ## Configure DNS and Firewall
 
-You will need to add DNS entries so that the three subdomains resolve to the IP of the docker host. There is a reverse proxy running that will route the hostnames to the correct container. On the host, you will need to ensure the firewall is open on tcp ports 80, 443, 8123, 4505, 4506.
+You will need to add DNS entries so that the three subdomains resolve to the IP of the docker host. There is a reverse proxy running that will route the hostnames to the correct container. On the host, you will need to ensure the firewall is open on tcp ports 80, 443, 4505, 4506.
 
 ## Run the environment with Docker
 

@@ -24,21 +24,22 @@ It uses an [agent](https://github.com/wh1te909/winagent) written in python, as w
 - Remote software installation via chocolatey
 - Software and hardware inventory
 
-## Server Requirements
-
-- Any modern linux distro with min 2GB ram (an install script is provided for Ubuntu Server 18.04)
-- A domain you own with at least 3 subdomains
-- Google Authenticator app (2 factor is NOT optional)
-
 ## Windows versions supported
 
 - Windows 7, 8.1, 10, Server 2008R2, 2012R2, 2016, 2019
 
-## Updating
+## Installation
 
-Download and run ```update.sh```
+### Requirements
+- VPS with 2GB ram (an install script is provided for Ubuntu Server 20.04)
+- A domain you own with at least 3 subdomains
+- Google Authenticator app (2 factor is NOT optional)
 
-## Installation example (Ubuntu server 18.04 LTS)
+### Docker
+Refer to the [docker setup](docker/readme.md)
+
+
+### Installation example (Ubuntu server 20.04 LTS)
 
 Fresh VPS with latest updates\
 login as root and create a user and add to sudoers group (we will be creating a user called tactical)
@@ -76,51 +77,14 @@ chmod +x install.sh
 ./install.sh
 ```
 
-Enter the following values when prompted:
+ Links will be provided at the end of the install script.\
+ Download the executable from the first link, then open ```rmm.tacticalrmm.com``` and login.\
+ Upload the executable when prompted during the initial setup page.
 
-![Screenshot](docs/screenshots/install1.PNG)
-
-The install script will begin installing stuff. When it gets to this step, create the django superuser account:
-
-![Screenshot](docs/screenshots/install2.PNG)
-
-Download the Google Authenticator app on your smartphone and scan the barcode that is generated:
-
-![Screenshot](docs/screenshots/install3.PNG)
-
-Once the install has finished, navigate to your meshcentral site\
-https://mesh.tacticalrmm.com
-
-![Screenshot](docs/screenshots/install4.PNG)
-
-Create an account. Make sure to use the same username that you entered at the beginning of the install script when prompted for "meshcentral username"\
-Create a strong password (does __not__ have to be the same as the django superuser account, recommend using a different password)
-
-![Screenshot](docs/screenshots/install5.PNG)
-
-Now create a device group. Name it whatever you want:
-
-![Screenshot](docs/screenshots/install6.PNG)
-
-Click on "add one" and download the 64bit Mesh Agent:
-
-![Screenshot](docs/screenshots/install7.PNG)
-
-You will now have a file named "meshagent64-tacticalrmm.exe" in your Downloads folder
-
-Navigate to the rmm frontend in a new tab\
-https://rmm.tacticalrmm.com
-
-Login using the username and password you created during the install script for the django superuser\
-Then enter the 6 digit code from your google authenticator app when prompted
-
-You will be redirected to the initial setup page
-
-Create your first client and site, then upload the ```meshagent64-tacticalrmm.exe``` from your downloads folder and click Finish:
-
-![Screenshot](docs/screenshots/install8.PNG)
-
-You will be taken to the homepage of the app
 
 ### Install an agent
 From the app's dashboard, choose Agents > Install Agent to generate an installer.
+
+## Updating
+
+Download and run [update.sh](./update.sh)

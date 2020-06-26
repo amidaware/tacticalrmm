@@ -47,6 +47,10 @@ def run_manual_checks():
     return "ok"
 
 
+def install_updatesa():
+    return __salt__["cmd.run_bg"]([TAC_RMM, "-m", "winupdater"])
+
+
 class SystemDetail:
     def __init__(self):
         self.c = wmi.WMI()

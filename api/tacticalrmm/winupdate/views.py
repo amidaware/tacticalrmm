@@ -14,6 +14,7 @@ from agents.models import Agent
 from .models import WinUpdate
 from .serializers import UpdateSerializer, WinUpdateSerializer, ApprovedUpdateSerializer
 from .tasks import check_for_updates_task
+from tacticalrmm.utils import notify_error
 
 
 @api_view()
@@ -27,6 +28,26 @@ def run_update_scan(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     check_for_updates_task.delay(agent.pk, wait=False)
     return Response("ok")
+
+
+@api_view()
+def install_updates(request, pk):
+    agent = get_object_or_404(Agent, pk=pk)
+    try:
+        r = agent.salt_api_cmd(
+            hostname=agent.salt_id, timeout=10, func="win_agent.install_updates"
+        )
+    except:
+        return notify_error("Unable to contact the agent")
+
+    # successful response: {'return': [{'SALT-ID': {'pid': 3316}}]}
+    ret = r.json()["return"][0][agent.salt_id]
+    try:
+        ret["pid"]
+    except KeyError:
+        return notify_error(str(ret))
+
+    return Response(f"Patches will now be installed on {agent.hostname}")
 
 
 @api_view(["PATCH"])

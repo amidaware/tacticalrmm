@@ -145,6 +145,14 @@
                     >
                       <q-item-section>Run Patch Status Scan</q-item-section>
                     </q-item>
+                    <q-item
+                      clickable
+                      v-ripple
+                      v-close-popup
+                      @click.stop.prevent="installPatches(props.row.id)"
+                    >
+                      <q-item-section>Install Patches Now</q-item-section>
+                    </q-item>
                   </q-list>
                 </q-menu>
               </q-item>
@@ -382,6 +390,19 @@ export default {
       axios.get(`/winupdate/${pk}/runupdatescan/`).then(r => {
         this.notifySuccess(`Scan will be run shortly on ${hostname}`);
       });
+    },
+    installPatches(pk) {
+      this.$q.loading.show();
+      this.$axios
+        .get(`/winupdate/${pk}/installnow/`)
+        .then(r => {
+          this.$q.loading.hide();
+          this.notifySuccess(r.data);
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError(e.response.data, 5000);
+        });
     },
     agentEdited() {
       this.$emit("refreshEdit");

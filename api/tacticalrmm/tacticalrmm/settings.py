@@ -9,7 +9,9 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 
 AUTH_USER_MODEL = "accounts.User"
 
-APP_VER = "0.0.2"
+# bump this version everytime vue code is changed
+# to alert user they need to manually refresh their browser
+APP_VER = "0.0.3"
 
 INSTALLED_APPS = [
     "django.contrib.admin",

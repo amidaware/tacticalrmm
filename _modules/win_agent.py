@@ -47,7 +47,7 @@ def run_manual_checks():
     return "ok"
 
 
-def install_updatesa():
+def install_updates():
     return __salt__["cmd.run_bg"]([TAC_RMM, "-m", "winupdater"])
 
 

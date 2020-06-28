@@ -212,7 +212,7 @@ export default function () {
                 raw: `Site|${sites_arr[i]}`,
                 header: "generic",
                 icon: "apartment",
-                iconColor: sites_arr[i].split("|")[2]
+                color: sites_arr[i].split("|")[2]
               });
             }
             output.push({
@@ -221,7 +221,7 @@ export default function () {
               raw: `Client|${prop}`,
               header: "root",
               icon: "business",
-              iconColor: prop.split("|")[2],
+              color: prop.split("|")[2],
               children: child_single
             });
           }

@@ -131,7 +131,7 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data.error);
+          this.notifyError(e.response.data);
         });
     },
     refreshProcs() {
@@ -152,7 +152,7 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data.error);
+          this.notifyError(e.response.data);
         });
     },
     stopPoll() {

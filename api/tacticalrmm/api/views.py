@@ -44,6 +44,8 @@ from autotasks.serializers import TaskRunnerGetSerializer, TaskRunnerPatchSerial
 from checks.serializers import CheckRunnerGetSerializer, CheckResultsSerializer
 from software.tasks import install_chocolatey, get_installed_software
 
+from tacticalrmm.utils import notify_error
+
 logger.configure(**settings.LOG_CONFIG)
 
 
@@ -197,22 +199,10 @@ def update(request):
 def on_agent_first_install(request):
     pk = request.data["pk"]
     agent = get_object_or_404(Agent, pk=pk)
+    r = agent.salt_api_cmd(timeout=20, func="saltutil.sync_modules")
 
-    resp = agent.salt_api_cmd(
-        hostname=agent.salt_id, timeout=60, func="saltutil.sync_modules"
-    )
-    try:
-        data = resp.json()
-    except Exception:
-        return Response("err", status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        ret = data["return"][0][agent.salt_id]
-    except KeyError:
-        return Response("err", status=status.HTTP_400_BAD_REQUEST)
-
-    if not data["return"][0][agent.salt_id]:
-        return Response("err", status=status.HTTP_400_BAD_REQUEST)
+    if r == "timeout" or r == "error" or not r:
+        return notify_error("err")
 
     get_wmi_detail_task.delay(agent.pk)
     get_installed_software.delay(agent.pk)

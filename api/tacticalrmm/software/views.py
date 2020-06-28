@@ -14,6 +14,7 @@ from agents.models import Agent
 from .models import ChocoSoftware, InstalledSoftware
 from .serializers import ChocoSoftwareSerializer, InstalledSoftwareSerializer
 from .tasks import install_program
+from tacticalrmm.utils import notify_error
 
 
 @api_view()
@@ -45,16 +46,17 @@ def get_installed(request, pk):
 @api_view()
 def refresh_installed(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(hostname=agent.salt_id, timeout=30, func="pkg.list_pkgs")
-    try:
-        output = r.json()["return"][0][agent.salt_id]
-    except Exception:
-        return Response("error", status=status.HTTP_400_BAD_REQUEST)
+    r = agent.salt_api_cmd(timeout=20, func="pkg.list_pkgs")
+
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+    elif r == "error":
+        return notify_error("Something went wrong")
 
     try:
-        software = [{"name": k, "version": v} for k, v in output.items()]
+        software = [{"name": k, "version": v} for k, v in r.items()]
     except Exception:
-        return Response("error", status=status.HTTP_400_BAD_REQUEST)
+        return notify_error("Something went wrong")
 
     if not InstalledSoftware.objects.filter(agent=agent).exists():
         InstalledSoftware(agent=agent, software=software).save()

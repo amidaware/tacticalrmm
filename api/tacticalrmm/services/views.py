@@ -17,6 +17,8 @@ from checks.models import Check
 
 from .serializers import ServicesSerializer
 
+from tacticalrmm.utils import notify_error
+
 logger.configure(**settings.LOG_CONFIG)
 
 
@@ -34,19 +36,14 @@ def default_services(request):
 @api_view()
 def get_refreshed_services(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    try:
-        resp = agent.salt_api_cmd(
-            hostname=agent.salt_id, timeout=30, func="win_agent.get_services"
-        )
-        data = resp.json()
-    except Exception:
-        error = {"error": "unable to contact the agent"}
-        return Response(error, status=status.HTTP_400_BAD_REQUEST)
+    r = agent.salt_api_cmd(timeout=15, func="win_agent.get_services")
 
-    if not data["return"][0][agent.salt_id]:
-        error = {"error": "unable to contact the agent"}
-        return Response(error, status=status.HTTP_400_BAD_REQUEST)
-    agent.services = data["return"][0][agent.salt_id]
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+    elif r == "error" or not r:
+        return notify_error("Something went wrong")
+
+    agent.services = r
     agent.save(update_fields=["services"])
     return Response(ServicesSerializer(agent).data)
 
@@ -58,35 +55,29 @@ def service_action(request):
     service_name = data["sv_name"]
     service_action = data["sv_action"]
     agent = get_object_or_404(Agent, pk=pk)
-    resp = agent.salt_api_cmd(
-        hostname=agent.salt_id,
-        timeout=60,
-        func=f"service.{service_action}",
-        arg=service_name,
+    r = agent.salt_api_cmd(
+        timeout=45, func=f"service.{service_action}", arg=service_name,
     )
-    data = resp.json()
-    if not data["return"][0][agent.salt_id]:
-        error = {"error": "unable to contact the agent"}
-        return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-    logger.info(
-        f"The {service_name} service on {agent.hostname} was sent the {service_action} command"
-    )
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+    elif r == "error" or not r:
+        return notify_error("Something went wrong")
+
     return Response("ok")
 
 
 @api_view()
 def service_detail(request, pk, svcname):
     agent = get_object_or_404(Agent, pk=pk)
-    resp = agent.salt_api_cmd(
-        hostname=agent.salt_id, timeout=60, func="service.info", arg=svcname,
-    )
-    data = resp.json()
-    if not data["return"][0][agent.salt_id]:
-        error = {"error": "unable to contact the agent"}
-        return Response(error, status=status.HTTP_400_BAD_REQUEST)
+    r = agent.salt_api_cmd(timeout=20, func="service.info", arg=svcname)
 
-    return Response(data["return"][0][agent.salt_id])
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+    elif r == "error" or not r:
+        return notify_error("Something went wrong")
+
+    return Response(r)
 
 
 @api_view(["POST"])
@@ -105,18 +96,13 @@ def edit_service(request):
     else:
         kwargs = {"start_type": edit_action}
 
-    try:
-        resp = agent.salt_api_cmd(
-            hostname=agent.salt_id,
-            timeout=60,
-            func="service.modify",
-            arg=service_name,
-            kwargs=kwargs,
-        )
-    except Exception as e:
-        return Response(
-            {"error": "Unable to contact the agent"}, status=status.HTTP_400_BAD_REQUEST
-        )
-    else:
-        logger.info(f"The {service_name} on {agent.hostname} was modified: {kwargs}")
-        return Response("ok")
+    r = agent.salt_api_cmd(
+        timeout=20, func="service.modify", arg=service_name, kwargs=kwargs,
+    )
+
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+    elif r == "error" or not r:
+        return notify_error("Something went wrong")
+
+    return Response("ok")

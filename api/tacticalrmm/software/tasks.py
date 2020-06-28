@@ -13,23 +13,19 @@ logger.configure(**settings.LOG_CONFIG)
 def install_chocolatey(pk, wait=False):
     if wait:
         sleep(15)
-    agent = Agent.objects.get(pk=pk)
-    r = agent.salt_api_cmd(
-        hostname=agent.salt_id,
-        timeout=300,
-        func="chocolatey.bootstrap",
-        arg="force=True",
-    )
-    try:
-        r.json()
-    except Exception as e:
-        return f"error installing choco on {agent.salt_id}"
 
-    if isinstance(r.json(), dict):
-        try:
-            output = r.json()["return"][0][agent.salt_id].lower()
-        except Exception:
-            return f"error installing choco on {agent.salt_id}"
+    agent = Agent.objects.get(pk=pk)
+    r = agent.salt_api_cmd(timeout=120, func="chocolatey.bootstrap", arg="force=True")
+
+    if r == "timeout" or r == "error":
+        logger.error(f"failed to install choco on {agent.salt_id}")
+        return
+
+    try:
+        output = r.lower()
+    except Exception as e:
+        logger.error(f"failed to install choco on {agent.salt_id}: {e}")
+        return
 
     success = ["chocolatey", "is", "now", "ready"]
 
@@ -37,9 +33,10 @@ def install_chocolatey(pk, wait=False):
         agent.choco_installed = True
         agent.save(update_fields=["choco_installed"])
         logger.info(f"Installed chocolatey on {agent.salt_id}")
-        return f"Installed choco on {agent.salt_id}"
+        return "ok"
     else:
-        return f"error installing choco on {agent.salt_id}"
+        logger.error(f"failed to install choco on {agent.salt_id}")
+        return
 
 
 @app.task
@@ -49,39 +46,28 @@ def update_chocos():
 
     while 1:
         for agent in online:
-            try:
-                ret = agent.salt_api_cmd(
-                    hostname=agent.salt_id, timeout=15, func="test.ping"
-                )
-            except Exception:
+
+            r = agent.salt_api_cmd(timeout=10, func="test.ping")
+            if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
                 continue
 
-            try:
-                data = ret.json()["return"][0][agent.salt_id]
-            except Exception:
-                continue
-            else:
-                if data:
+            if isinstance(r, bool) and r:
+                ret = agent.salt_api_cmd(timeout=200, func="chocolatey.list")
+                if ret == "timeout" or ret == "error":
+                    continue
 
-                    resp = agent.salt_api_cmd(
-                        hostname=agent.salt_id, timeout=200, func="chocolatey.list"
-                    )
-                    ret = resp.json()["return"][0][agent.salt_id]
-
-                    try:
-                        chocos = [{"name": k, "version": v[0]} for k, v in ret.items()]
-                    except AttributeError:
+                try:
+                    chocos = [{"name": k, "version": v[0]} for k, v in ret.items()]
+                except AttributeError:
+                    continue
+                else:
+                    # somtimes chocolatey api is down or buggy and doesn't return the full list of software
+                    if len(chocos) < 4000:
                         continue
                     else:
-                        # somtimes chocolatey api is down or buggy and doesn't return the full list of software
-                        if len(chocos) < 4000:
-                            continue
-                        else:
-                            logger.info(
-                                f"Chocos were updated using agent {agent.salt_id}"
-                            )
-                            ChocoSoftware(chocos=chocos).save()
-                            break
+                        logger.info(f"Chocos were updated using {agent.salt_id}")
+                        ChocoSoftware(chocos=chocos).save()
+                        break
 
         break
 
@@ -91,18 +77,17 @@ def update_chocos():
 @app.task
 def get_installed_software(pk):
     agent = Agent.objects.get(pk=pk)
-    r = agent.salt_api_cmd(hostname=agent.salt_id, timeout=30, func="pkg.list_pkgs")
-    try:
-        output = r.json()["return"][0][agent.salt_id]
-    except Exception:
+    r = agent.salt_api_cmd(timeout=30, func="pkg.list_pkgs")
+
+    if r == "timeout" or r == "error":
         logger.error(f"Unable to get installed software on {agent.salt_id}")
-        return "error"
+        return
 
     try:
-        software = [{"name": k, "version": v} for k, v in output.items()]
+        software = [{"name": k, "version": v} for k, v in r.items()]
     except Exception:
         logger.error(f"Unable to get installed software on {agent.salt_id}")
-        return "error"
+        return
 
     if not InstalledSoftware.objects.filter(agent=agent).exists():
         InstalledSoftware(agent=agent, software=software).save()
@@ -119,23 +104,18 @@ def install_program(pk, name, version):
     agent = Agent.objects.get(pk=pk)
 
     r = agent.salt_api_cmd(
-        hostname=agent.salt_id,
-        timeout=1000,
-        func="chocolatey.install",
-        arg=[name, f"version={version}"],
+        timeout=900, func="chocolatey.install", arg=[name, f"version={version}"],
     )
-    try:
-        r.json()
-    except Exception as e:
-        logger.error(f"Error installing {name} {version} on {agent.salt_id}: {e}")
-        return "error"
 
-    if isinstance(r.json(), dict):
-        try:
-            output = r.json()["return"][0][agent.salt_id].lower()
-        except Exception as e:
-            logger.error(f"Error installing {name} {version} on {agent.salt_id}: {e}")
-            return "error"
+    if r == "timeout" or r == "error":
+        logger.error(f"Failed to install {name} {version} on {agent.salt_id}: timeout")
+        return
+
+    try:
+        output = r.lower()
+    except Exception as e:
+        logger.error(f"Failed to install {name} {version} on {agent.salt_id}: {e}")
+        return
 
     success = [
         "install",

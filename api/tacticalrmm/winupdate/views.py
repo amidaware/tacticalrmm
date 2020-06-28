@@ -33,19 +33,18 @@ def run_update_scan(request, pk):
 @api_view()
 def install_updates(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    try:
-        r = agent.salt_api_cmd(
-            hostname=agent.salt_id, timeout=10, func="win_agent.install_updates"
-        )
-    except:
+    r = agent.salt_api_cmd(timeout=15, func="win_agent.install_updates")
+
+    if r == "timeout":
         return notify_error("Unable to contact the agent")
+    elif r == "error":
+        return notify_error("Something went wrong")
 
     # successful response: {'return': [{'SALT-ID': {'pid': 3316}}]}
-    ret = r.json()["return"][0][agent.salt_id]
     try:
-        ret["pid"]
+        r["pid"]
     except KeyError:
-        return notify_error(str(ret))
+        return notify_error(str(r))
 
     return Response(f"Patches will now be installed on {agent.hostname}")
 

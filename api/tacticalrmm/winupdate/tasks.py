@@ -12,16 +12,12 @@ def check_for_updates_task(pk, wait=False):
         sleep(70)
 
     agent = Agent.objects.get(pk=pk)
-
-    resp = agent.salt_api_cmd(
-        hostname=agent.salt_id,
-        timeout=310,
-        salt_timeout=300,
-        func="win_wua.list",
-        arg="skip_installed=False",
+    ret = agent.salt_api_cmd(
+        timeout=310, func="win_wua.list", arg="skip_installed=False",
     )
-    data = resp.json()
-    ret = data["return"][0][agent.salt_id]
+
+    if ret == "timeout" or ret == "error":
+        return
 
     # if managed by wsus, nothing we can do until salt supports it
     if isinstance(ret, str):

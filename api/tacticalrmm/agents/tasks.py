@@ -17,10 +17,11 @@ logger.configure(**settings.LOG_CONFIG)
 @app.task
 def get_wmi_detail_task(pk):
     agent = Agent.objects.get(pk=pk)
-    resp = agent.salt_api_cmd(
-        hostname=agent.salt_id, timeout=30, func="win_agent.system_info"
-    )
-    agent.wmi_detail = resp.json()["return"][0][agent.salt_id]
+    r = agent.salt_api_cmd(timeout=30, func="win_agent.system_info")
+    if r == "timeout" or r == "error":
+        return "failed"
+
+    agent.wmi_detail = r
     agent.save(update_fields=["wmi_detail"])
     return "ok"
 
@@ -28,20 +29,15 @@ def get_wmi_detail_task(pk):
 @app.task
 def sync_salt_modules_task(pk):
     agent = Agent.objects.get(pk=pk)
-
-    resp = agent.salt_api_cmd(
-        hostname=agent.salt_id, timeout=60, func="saltutil.sync_modules"
-    )
+    r = agent.salt_api_cmd(timeout=35, func="saltutil.sync_modules")
     # successful sync if new/charnged files: {'return': [{'MINION-15': ['modules.get_eventlog', 'modules.win_agent', 'etc...']}]}
     # successful sync with no new/changed files: {'return': [{'MINION-15': []}]}
-    try:
-        data = resp.json()["return"][0][agent.salt_id]
-    except Exception as f:
-        logger.error(f"Unable to sync modules {agent.salt_id}: {f}")
-        return f"Unable to sync modules {agent.salt_id}: {f}"
-    else:
-        logger.info(f"Successfully synced salt modules on {agent.hostname}")
-        return f"Successfully synced salt modules on {agent.hostname}"
+    if r == "timeout" or r == "error":
+        logger.error(f"Unable to sync modules {agent.salt_id}")
+        return
+
+    logger.info(f"Successfully synced salt modules on {agent.hostname}")
+    return "ok"
 
 
 @app.task
@@ -51,8 +47,21 @@ def uninstall_agent_task(salt_id):
 
     while 1:
         try:
-            r = Agent.salt_api_cmd(
-                hostname=salt_id, timeout=10, func="win_agent.uninstall_agent"
+
+            r = requests.post(
+                f"http://{settings.SALT_HOST}:8123/run",
+                json=[
+                    {
+                        "client": "local",
+                        "tgt": salt_id,
+                        "fun": "win_agent.uninstall_agent",
+                        "timeout": 8,
+                        "username": settings.SALT_USERNAME,
+                        "password": settings.SALT_PASSWORD,
+                        "eauth": "pam",
+                    }
+                ],
+                timeout=10,
             )
             ret = r.json()["return"][0][salt_id]
         except Exception:
@@ -95,20 +104,18 @@ def uninstall_agent_task(salt_id):
     return "ok"
 
 
-def service_action(hostname, action, service):
-    return Agent.salt_api_cmd(
-        hostname=hostname,
-        timeout=30,
-        func="cmd.script",
-        arg="C:\\Program Files\\TacticalAgent\\nssm.exe",
-        kwargs={"args": f"{action} {service}"},
-    )
-
-
 @app.task
 def update_agent_task(pk, version):
 
     agent = Agent.objects.get(pk=pk)
+
+    def _service_action(action, service):
+        return agent.salt_api_cmd(
+            timeout=30,
+            func="cmd.script",
+            arg="C:\\Program Files\\TacticalAgent\\nssm.exe",
+            kwargs={"args": f"{action} {service}"},
+        )
 
     errors = []
     file = f"/srv/salt/scripts/{version}.exe"
@@ -139,20 +146,25 @@ def update_agent_task(pk, version):
 
     # send the release to the agent
     r = agent.salt_api_cmd(
-        hostname=agent.salt_id,
         timeout=300,
         func="cp.get_file",
         arg=[f"salt://scripts/{version}.exe", temp_dir],
     )
     # success return example: {'return': [{'HOSTNAME': 'C:\\Windows\\Temp\\winagent-v0.1.12.exe'}]}
     # error return example: {'return': [{'HOSTNAME': ''}]}
-    if not r.json()["return"][0][agent.salt_id]:
+    if r == "timeout" or r == "error":
+        logger.error(
+            f"{agent.hostname} update failed to version {ver} (unable to copy installer)"
+        )
+        return
+
+    if not r:
         agent.is_updating = False
         agent.save(update_fields=["is_updating"])
         logger.error(
             f"{agent.hostname} update failed to version {ver} (unable to copy installer)"
         )
-        return f"{agent.hostname} update failed to version {ver} (unable to copy installer)"
+        return
 
     services = (
         "tacticalagent",
@@ -160,9 +172,9 @@ def update_agent_task(pk, version):
     )
 
     for svc in services:
-        r = service_action(agent.salt_id, "stop", svc)
+        r = _service_action("stop", svc)
         # returns non 0 if error
-        if r.json()["return"][0][agent.salt_id]["retcode"]:
+        if r["retcode"] != 0:
             errors.append(f"failed to stop {svc}")
             logger.error(
                 f"{agent.hostname} was unable to stop service {svc}. Update cancelled"
@@ -173,35 +185,35 @@ def update_agent_task(pk, version):
         agent.is_updating = False
         agent.save(update_fields=["is_updating"])
         for svc in services:
-            service_action(agent.salt_id, "start", svc)
-        return "stopping services failed. started again"
+            _service_action("start", svc)
+        return
 
     # install the update
     # success respose example: {'return': [{'HOSTNAME': {'retcode': 0, 'stderr': '', 'stdout': '', 'pid': 3452}}]}
     # error response example: {'return': [{'HOSTNAME': 'The minion function caused an exception: Traceback...'}]}
-    try:
-        r = agent.salt_api_cmd(
-            hostname=agent.salt_id,
-            timeout=200,
-            func="cmd.script",
-            arg=f"{temp_dir}\\{version}.exe",
-            kwargs={"args": "/VERYSILENT /SUPPRESSMSGBOXES"},
-        )
-    except Exception:
+    r = agent.salt_api_cmd(
+        timeout=200,
+        func="cmd.script",
+        arg=f"{temp_dir}\\{version}.exe",
+        kwargs={"args": "/VERYSILENT /SUPPRESSMSGBOXES"},
+    )
+    if r == "timeout" or r == "error":
         agent.is_updating = False
         agent.save(update_fields=["is_updating"])
-        return (
+        logger.error(
             f"TIMEOUT: failed to run inno setup on {agent.hostname} for version {ver}"
         )
+        return
 
-    if "minion function caused an exception" in r.json()["return"][0][agent.salt_id]:
+    if "minion function caused an exception" in r:
         agent.is_updating = False
         agent.save(update_fields=["is_updating"])
-        return (
+        logger.error(
             f"EXCEPTION: failed to run inno setup on {agent.hostname} for version {ver}"
         )
+        return
 
-    if r.json()["return"][0][agent.salt_id]["retcode"]:
+    if r["retcode"] != 0:
         agent.is_updating = False
         agent.save(update_fields=["is_updating"])
         logger.error(f"failed to run inno setup on {agent.hostname} for version {ver}")
@@ -209,8 +221,7 @@ def update_agent_task(pk, version):
 
     # update the version in the agent's local database
     r = agent.salt_api_cmd(
-        hostname=agent.salt_id,
-        timeout=45,
+        timeout=30,
         func="sqlite3.modify",
         arg=[
             "C:\\Program Files\\TacticalAgent\\agentdb.db",
@@ -219,24 +230,26 @@ def update_agent_task(pk, version):
     )
     # success return example: {'return': [{'FSV': True}]}
     # error return example: {'return': [{'HOSTNAME': 'The minion function caused an exception: Traceback...'}]}
-    sql_ret = r.json()["return"][0][agent.salt_id]
-    if not isinstance(sql_ret, bool) and isinstance(sql_ret, str):
-        if "minion function caused an exception" in sql_ret:
+    if r == "timeout" or r == "error":
+        logger.error(f"failed to update {agent.hostname} local database")
+
+    elif not isinstance(r, bool) and isinstance(r, str):
+        if "minion function caused an exception" in r:
             logger.error(f"failed to update {agent.hostname} local database")
 
-    if not sql_ret:
+    elif isinstance(r, bool) and not r:
         logger.error(
             f"failed to update {agent.hostname} local database to version {ver}"
         )
 
     # start the services
     for svc in services:
-        service_action(agent.salt_id, "start", svc)
+        _service_action("start", svc)
 
     agent.is_updating = False
     agent.save(update_fields=["is_updating"])
     logger.info(f"{agent.hostname} was successfully updated to version {ver}")
-    return f"{agent.hostname} was successfully updated to version {ver}"
+    return "ok"
 
 
 @app.task

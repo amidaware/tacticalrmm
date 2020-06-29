@@ -7,8 +7,10 @@
       :columns="columns"
       row-key="id"
       binary-state-sort
+      virtual-scroll
       :pagination.sync="pagination"
-      hide-bottom
+      :rows-per-page-options="[0]"
+      no-data-label="No Agents"
     >
       <!-- header slots -->
       <template v-slot:header-cell-smsalert="props">
@@ -361,7 +363,7 @@ export default {
   data() {
     return {
       pagination: {
-        rowsPerPage: 9999,
+        rowsPerPage: 0,
         sortBy: "hostname",
         descending: false
       },

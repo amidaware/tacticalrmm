@@ -11,7 +11,7 @@ AUTH_USER_MODEL = "accounts.User"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.5"
+APP_VER = "0.0.6"
 
 INSTALLED_APPS = [
     "django.contrib.admin",

@@ -18,7 +18,11 @@ class Client(models.Model):
     @property
     def has_failing_checks(self):
 
-        agents = Agent.objects.filter(client=self.client)
+        agents = (
+            Agent.objects.only("pk")
+            .filter(client=self.client)
+            .prefetch_related("agentchecks")
+        )
         for agent in agents:
             if agent.checks["has_failing_checks"]:
                 return True
@@ -43,7 +47,12 @@ class Site(models.Model):
     @property
     def has_failing_checks(self):
 
-        agents = Agent.objects.filter(client=self.client.client).filter(site=self.site)
+        agents = (
+            Agent.objects.only("pk")
+            .filter(client=self.client.client)
+            .filter(site=self.site)
+            .prefetch_related("agentchecks")
+        )
         for agent in agents:
             if agent.checks["has_failing_checks"]:
                 return True

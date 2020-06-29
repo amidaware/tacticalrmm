@@ -2,6 +2,9 @@ FROM node:stretch
 
 WORKDIR /home/node/app
 ARG MESH_HOST
+ARG MESH_USER
+ARG MESH_PASS
+ARG EMAIL_USER
 ARG MONGODB_USER
 ARG MONGODB_PASSWORD
 RUN apt-get update && apt-get install -y gettext-base
@@ -10,4 +13,9 @@ COPY config.json ./meshcentral-data/config.json.tmp
 RUN envsubst '\$MESH_HOST, \$MONGODB_USER, \$MONGODB_PASSWORD' < /home/node/app/meshcentral-data/config.json.tmp > /home/node/app/meshcentral-data/config.json && \
     rm /home/node/app/meshcentral-data/config.json.tmp
 
-CMD ["node", "./node_modules/meshcentral/meshcentral"]
+COPY entry.sh ./entry.sh.tmp
+RUN envsubst < /home/node/app/entry.sh.tmp > /home/node/app/entry.sh && \
+    rm /home/node/app/entry.sh.tmp && \
+    chmod +x entry.sh
+
+CMD ./entry.sh

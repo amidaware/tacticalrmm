@@ -15,7 +15,7 @@ services:
 
   # Builds Python Virtual Env to share between containers
   venv:
-    image: python:3.7
+    image: python:3.8
     command: /bin/bash -c "pip install virtualenv && python -m virtualenv env && ./env/bin/pip install -r requirements.txt"
     working_dir: /app
     volumes: 
@@ -23,8 +23,8 @@ services:
 
   # Container for Django backend
   api:
-    image: python:3.7
-    command: /bin/bash -c "python manage.py collectstatic --clear --no-input && python manage.py migrate && python manage.py initial_db_setup && python manage.py load_chocos && python manage.py runserver 0.0.0.0:80"
+    image: python:3.8
+    command: /bin/bash -c "python manage.py collectstatic --clear --no-input && python manage.py migrate && python manage.py initial_db_setup && python manage.py initial_mesh_setup && python manage.py load_chocos && python manage.py runserver 0.0.0.0:80"
     working_dir: /app
     environment: 
       VIRTUAL_ENV: /env
@@ -35,6 +35,7 @@ services:
       - redis
     volumes:
       - scripts:/srv
+      - mesh_token:/token
       - ../api/tacticalrmm:/app
     depends_on: 
       - db
@@ -42,7 +43,7 @@ services:
   
   # Container for Celery worker service
   celery-service:
-    image: python:3.7
+    image: python:3.8
     command: celery -A tacticalrmm worker -l debug
     working_dir: /app
     environment: 
@@ -61,7 +62,7 @@ services:
 
   # Container for Celery beat service
   celery-beat:
-    image: python:3.7
+    image: python:3.8
     command: celery -A tacticalrmm beat -l debug
     working_dir: /app
     environment: 
@@ -80,7 +81,7 @@ services:
 
   # Container for Celery Winupdate tasks
   celery-winupdate:
-    image: python:3.7
+    image: python:3.8
     command: celery -A tacticalrmm worker -Q wupdate -l debug
     working_dir: /app
     environment: 

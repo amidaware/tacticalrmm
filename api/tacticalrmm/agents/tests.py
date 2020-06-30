@@ -70,38 +70,20 @@ class TestAgentViews(BaseTestCase):
         self.check_not_authenticated("patch", url)
 
     def test_meshcentral_tabs(self):
-        url = f"/agents/{self.agent.pk}/meshtabs/"
+        url = f"/agents/{self.agent.pk}/meshcentral/"
 
         r = self.client.get(url)
 
         # TODO
         # decode the cookie
 
-        self.assertIn("&hide=31", r.data["fileurl"])
-        self.assertIn("&viewmode=13", r.data["fileurl"])
-        self.assertIsInstance(r.data["fileurl"], str)
-
-        self.assertIn("&hide=31", r.data["terminalurl"])
-        self.assertIn("&viewmode=12", r.data["terminalurl"])
-        self.assertIsInstance(r.data["terminalurl"], str)
+        self.assertIn("&viewmode=13", r.data["file"])
+        self.assertIn("&viewmode=12", r.data["terminal"])
+        self.assertIn("&viewmode=11", r.data["control"])
+        self.assertIn("mstsc.html?login=", r.data["webrdp"])
 
         self.assertEqual("DESKTOP-TEST123", r.data["hostname"])
 
-        self.assertEqual(r.status_code, 200)
-
-        self.check_not_authenticated("get", url)
-
-    def test_take_control(self):
-        url = f"/agents/{self.agent.pk}/takecontrol/"
-
-        r = self.client.get(url)
-
-        # TODO
-        # decode the cookie
-
-        self.assertIn("&hide=31", r.data)
-        self.assertIn("&viewmode=11", r.data)
-        self.assertIsInstance(r.data, str)
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("get", url)

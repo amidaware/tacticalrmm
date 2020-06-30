@@ -9,8 +9,7 @@ urlpatterns = [
     path("overdueaction/", views.overdue_action),
     path("sendrawcmd/", views.send_raw_cmd),
     path("<pk>/agentdetail/", views.agent_detail),
-    path("<pk>/meshtabs/", views.meshcentral_tabs),
-    path("<pk>/takecontrol/", views.take_control),
+    path("<int:pk>/meshcentral/", views.meshcentral),
     path("poweraction/", views.power_action),
     path("uninstall/", views.uninstall),
     path("editagent/", views.edit_agent),
@@ -22,5 +21,4 @@ urlpatterns = [
     path("rebootlater/", views.reboot_later),
     path("installagent/", views.install_agent),
     path("<int:pk>/ping/", views.ping),
-    path("<int:pk>/webrdp/", views.web_rdp),
 ]

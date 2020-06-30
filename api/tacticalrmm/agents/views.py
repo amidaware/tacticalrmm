@@ -22,6 +22,7 @@ from .models import Agent
 from winupdate.models import WinUpdatePolicy
 from clients.models import Client, Site
 from accounts.models import User
+from core.models import CoreSettings
 
 from .serializers import AgentSerializer, AgentHostnameSerializer, AgentTableSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
@@ -113,36 +114,36 @@ def edit_agent(request):
 
 
 @api_view()
-def meshcentral_tabs(request, pk):
+def meshcentral(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
+    core = CoreSettings.objects.first()
+
     token = agent.get_login_token(
-        key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}"
-    )
-    terminalurl = f"{settings.MESH_SITE}/?login={token}&node={agent.mesh_node_id}&viewmode=12&hide=31"
-    fileurl = f"{settings.MESH_SITE}/?login={token}&node={agent.mesh_node_id}&viewmode=13&hide=31"
-    return Response(
-        {"hostname": agent.hostname, "terminalurl": terminalurl, "fileurl": fileurl}
+        key=core.mesh_token, user=f"user//{core.mesh_username}"
     )
 
+    if token == "err":
+        return notify_error("Invalid mesh token")
 
-@api_view()
-def take_control(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
-    token = agent.get_login_token(
-        key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}"
+    control = (
+        f"{core.mesh_site}/?login={token}&node={agent.mesh_node_id}&viewmode=11&hide=31"
     )
-    url = f"{settings.MESH_SITE}/?login={token}&node={agent.mesh_node_id}&viewmode=11&hide=31"
-    return Response(url)
-
-
-@api_view()
-def web_rdp(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
-    token = agent.get_login_token(
-        key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}"
+    terminal = (
+        f"{core.mesh_site}/?login={token}&node={agent.mesh_node_id}&viewmode=12&hide=31"
     )
-    url = f"{settings.MESH_SITE}/mstsc.html?login={token}&node={agent.mesh_node_id}"
-    return Response(url)
+    file = (
+        f"{core.mesh_site}/?login={token}&node={agent.mesh_node_id}&viewmode=13&hide=31"
+    )
+    webrdp = f"{core.mesh_site}/mstsc.html?login={token}&node={agent.mesh_node_id}"
+
+    ret = {
+        "hostname": agent.hostname,
+        "control": control,
+        "terminal": terminal,
+        "file": file,
+        "webrdp": webrdp,
+    }
+    return Response(ret)
 
 
 @api_view()

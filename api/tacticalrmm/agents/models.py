@@ -215,25 +215,30 @@ class Agent(models.Model):
 
     # https://github.com/Ylianst/MeshCentral/issues/59#issuecomment-521965347
     def get_login_token(self, key, user, action=3):
-        key = bytes.fromhex(key)
-        key1 = key[0:48]
-        key2 = key[48:]
-        msg = '{{"a":{}, "u":"{}","time":{}}}'.format(action, user, int(time.time()))
-        iv = secrets.token_bytes(16)
+        try:
+            key = bytes.fromhex(key)
+            key1 = key[0:48]
+            key2 = key[48:]
+            msg = '{{"a":{}, "u":"{}","time":{}}}'.format(
+                action, user, int(time.time())
+            )
+            iv = secrets.token_bytes(16)
 
-        # sha
-        h = hashlib.sha3_384()
-        h.update(key1)
-        msg = h.digest() + msg.encode()
+            # sha
+            h = hashlib.sha3_384()
+            h.update(key1)
+            msg = h.digest() + msg.encode()
 
-        # aes
-        a = AES.new(key2, AES.MODE_CBC, iv)
-        n = 16 - (len(msg) % 16)
-        n = 16 if n == 0 else n
-        pad = unhexlify("%02x" % n)
-        msg = a.encrypt(msg + pad * n)
+            # aes
+            a = AES.new(key2, AES.MODE_CBC, iv)
+            n = 16 - (len(msg) % 16)
+            n = 16 if n == 0 else n
+            pad = unhexlify("%02x" % n)
+            msg = a.encrypt(msg + pad * n)
 
-        return base64.b64encode(iv + msg, altchars=b"@$").decode("utf-8")
+            return base64.b64encode(iv + msg, altchars=b"@$").decode("utf-8")
+        except Exception:
+            return "err"
 
     def salt_api_cmd(self, **kwargs):
 

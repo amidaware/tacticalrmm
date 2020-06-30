@@ -21,7 +21,7 @@
       <q-tab-panel name="terminal">
         <iframe
           style="overflow:hidden;height:715px;"
-          :src="terminalurl"
+          :src="terminal"
           width="100%"
           height="100%"
           scrolling="no"
@@ -39,7 +39,7 @@
       <q-tab-panel name="filebrowser">
         <iframe
           style="overflow:hidden;height:715px;"
-          :src="fileurl"
+          :src="file"
           width="100%"
           height="100%"
           scrolling="no"
@@ -64,17 +64,17 @@ export default {
   },
   data() {
     return {
-      terminalurl: "",
-      fileurl: "",
+      terminal: "",
+      file: "",
       tab: "terminal",
       title: ""
     };
   },
   methods: {
     genURLS() {
-      axios.get(`/agents/${this.pk}/meshtabs/`).then(r => {
-        this.terminalurl = r.data.terminalurl;
-        this.fileurl = r.data.fileurl;
+      axios.get(`/agents/${this.pk}/meshcentral/`).then(r => {
+        this.terminal = r.data.terminal;
+        this.file = r.data.file;
         this.title = `${r.data.hostname} | Remote Background`;
       });
     }

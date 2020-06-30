@@ -578,14 +578,14 @@ export default {
     webRDP(pk) {
       this.$q.loading.show();
       this.$axios
-        .get(`/agents/${pk}/webrdp/`)
+        .get(`/agents/${pk}/meshcentral/`)
         .then(r => {
           this.$q.loading.hide();
-          openURL(r.data);
+          openURL(r.data.webrdp);
         })
-        .catch(() => {
+        .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Something went wrong");
+          this.notifyError(e.response.data);
         });
     }
   },

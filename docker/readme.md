@@ -49,7 +49,6 @@ Get the 2FA code with
 sudo docker-compose exec api python manage.py generate_totp
 ```
 
-
 Use the generated code and the username to generate a bar code for your authenticator app
 (domain is the domain name of your site, for example: rmm.example.com)
 
@@ -57,20 +56,18 @@ Use the generated code and the username to generate a bar code for your authenti
 sudo docker-compose exec api python manage.py generate_barcode [2FAcode] [username] [domain]
 ```
 
-## Generate the meshcentral login token key
-
-Get the login token key with
-
-```
-sudo docker-compose exec meshcentral node node_modules/meshcentral/meshcentral --logintokenkey
-```
-
-Add the generated key to the .env file MESH_TOKEN_KEY in the docker folder
-
 ## Rebuild the api container
 
 ```
 sudo docker-compose up -d --build api
+```
+
+## Get MeshCentral EXE download link
+
+Run the below command to get the download link for the mesh central exe. The dashboard will ask for this when you first sign in
+
+```
+sudo docker-compose exec api python manage.py get_mesh_exe_url
 ```
 
 ## Connect to a container instance shell
@@ -92,6 +89,8 @@ This allows you to edit the files locally and those changes will be presented to
 Files that need to be manually created are:
 - api/tacticalrmm/tacticalrmm/local_settings.py
 - web/.env
+
+Make sure to add `MESH_WS_URL="ws://meshcentral:443"` in the local_settings.py file. This is needed for the mesh central setup
 
 For HMR to work with vue you can copy .env.example and modify the setting to fit your dev environment.
 

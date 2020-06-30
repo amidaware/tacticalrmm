@@ -59,7 +59,6 @@
         </div>
         <q-table
           dense
-          class="settings-tbl-sticky"
           :data="policies"
           :columns="columns"
           :pagination.sync="pagination"
@@ -68,7 +67,7 @@
           @selection="policyRowSelected"
           row-key="id"
           binary-state-sort
-          hide-bottom
+          hide-pagination
         >
           <!-- header slots -->
           <template v-slot:header="props">
@@ -94,6 +93,15 @@
               </template>
             </q-tr>
           </template> 
+          <!-- No data Slot -->
+          <template v-slot:no-data >
+            <div class="full-width row flex-center q-gutter-sm">
+              <span v-if="policies.length === 0">
+                No Policies. Click Add to create one
+              </span>
+            </div>
+          </template>
+          <!-- body slots -->
           <template v-slot:body="props">
             <q-tr :props="props" class="cursor-pointer" @click="props.selected = true">
               <!-- context menu -->

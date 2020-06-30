@@ -5,6 +5,7 @@
         <q-tabs dense v-model="tab" vertical class="text-primary">
           <q-tab name="general" label="General" />
           <q-tab name="alerts" label="Alerts" />
+          <q-tab name="meshcentral" label="MeshCentral" />
         </q-tabs>
       </template>
       <template v-slot:after>
@@ -138,6 +139,41 @@
                   <div class="col-2">Use TLS:</div>
                   <div class="col-4"></div>
                   <q-checkbox v-model="settings.smtp_use_tls" />
+                </q-card-section>
+              </q-tab-panel>
+              <!-- meshcentral -->
+              <q-tab-panel name="meshcentral">
+                <div class="text-subtitle2">MeshCentral Settings</div>
+                <hr />
+                <q-card-section class="row">
+                  <div class="col-4">Username:</div>
+                  <div class="col-2"></div>
+                  <q-input
+                    dense
+                    filled
+                    v-model="settings.mesh_username"
+                    class="col-6"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4">Mesh Site:</div>
+                  <div class="col-2"></div>
+                  <q-input
+                    dense
+                    filled
+                    v-model="settings.mesh_site"
+                    class="col-6"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4">Mesh Token:</div>
+                  <div class="col-2"></div>
+                  <q-input
+                    dense
+                    filled
+                    v-model="settings.mesh_token"
+                    class="col-6"
+                  />
                 </q-card-section>
               </q-tab-panel>
             </q-tab-panels>

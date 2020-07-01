@@ -42,6 +42,7 @@ services:
       - mesh_token:/token
     depends_on:
       - db
+      - meshcentral
 
   # Container for Celery worker service
   celery-service:

@@ -1,11 +1,11 @@
 import requests
 import datetime as dt
 import time
-import hashlib
-import secrets
 import base64
 from Crypto.Cipher import AES
-from binascii import unhexlify
+from Crypto.Random import get_random_bytes
+from Crypto.Hash import SHA3_384
+from Crypto.Util.Padding import pad
 import validators
 import random
 import string
@@ -222,19 +222,16 @@ class Agent(models.Model):
             msg = '{{"a":{}, "u":"{}","time":{}}}'.format(
                 action, user, int(time.time())
             )
-            iv = secrets.token_bytes(16)
+            iv = get_random_bytes(16)
 
             # sha
-            h = hashlib.sha3_384()
+            h = SHA3_384.new()
             h.update(key1)
-            msg = h.digest() + msg.encode()
+            hashed_msg = h.digest() + msg.encode()
 
             # aes
-            a = AES.new(key2, AES.MODE_CBC, iv)
-            n = 16 - (len(msg) % 16)
-            n = 16 if n == 0 else n
-            pad = unhexlify("%02x" % n)
-            msg = a.encrypt(msg + pad * n)
+            cipher = AES.new(key2, AES.MODE_CBC, iv)
+            msg = cipher.encrypt(pad(hashed_msg, 16))
 
             return base64.b64encode(iv + msg, altchars=b"@$").decode("utf-8")
         except Exception:

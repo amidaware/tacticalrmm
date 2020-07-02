@@ -244,7 +244,6 @@ pip install --no-cache-dir --upgrade setuptools wheel
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic
-python manage.py initial_db_setup
 python manage.py load_chocos
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
@@ -688,6 +687,12 @@ sleep 5
 
 node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name TacticalRMM
 MESHEXE=$(node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} GenerateInviteLink --group TacticalRMM --hours 8)
+
+cd /rmm/api/tacticalrmm
+source /rmm/api/env/bin/activate
+python manage.py initial_db_setup
+deactivate
+
 
 print_green 'Restarting services'
 for i in celery.service celery-winupdate.service celerybeat.service rmm.service

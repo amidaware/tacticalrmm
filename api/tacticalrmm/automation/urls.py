@@ -11,5 +11,5 @@ urlpatterns = [
     path("<int:pk>/policyautomatedtasks/", views.PolicyAutoTask.as_view()),
     path("policycheckstatus/<int:check>/check/", views.PolicyCheck.as_view()),
     path("policyautomatedtaskstatus/<int:task>/task/", views.PolicyAutoTask.as_view()),
-    path("runwintask/<int:pk>/", views.PolicyAutoTask.as_view()),
+    path("runwintask/<int:task>/", views.PolicyAutoTask.as_view()),
 ]

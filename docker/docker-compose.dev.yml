@@ -24,10 +24,10 @@ services:
   # Container for Django backend
   api:
     image: python:3.8
-    command: /bin/bash -c "python manage.py collectstatic --clear --no-input && python manage.py migrate && python manage.py initial_db_setup && python manage.py initial_mesh_setup && python manage.py load_chocos && python manage.py runserver 0.0.0.0:80"
+    command: /bin/bash -c "python manage.py collectstatic --clear --no-input && python manage.py migrate && sleep 10s && python manage.py initial_db_setup && python manage.py initial_mesh_setup && python manage.py load_chocos && python manage.py runserver 0.0.0.0:80"
     working_dir: /app
     environment: 
-      VIRTUAL_ENV: /env
+      VIRTUAL_ENV: /app/env
       PATH: /app/env/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     networks:
       - proxy
@@ -48,7 +48,7 @@ services:
     command: celery -A tacticalrmm worker -l debug
     working_dir: /app
     environment: 
-      VIRTUAL_ENV: /env
+      VIRTUAL_ENV: /app/env
       PATH: /app/env/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     volumes: 
       - ../api/tacticalrmm:/app
@@ -67,7 +67,7 @@ services:
     command: celery -A tacticalrmm beat -l debug
     working_dir: /app
     environment: 
-      VIRTUAL_ENV: /env
+      VIRTUAL_ENV: /app/env
       PATH: /app/env/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     volumes: 
       - ../api/tacticalrmm:/app
@@ -86,7 +86,7 @@ services:
     command: celery -A tacticalrmm worker -Q wupdate -l debug
     working_dir: /app
     environment: 
-      VIRTUAL_ENV: /env
+      VIRTUAL_ENV: /app/env
       PATH: /app/env/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     volumes: 
       - ../api/tacticalrmm:/app

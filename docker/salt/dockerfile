@@ -20,5 +20,11 @@ RUN envsubst '\$SALT_USER' < /etc/salt/master.d/rmm-salt.tmp | tee /etc/salt/mas
 RUN sed -i 's/msgpack_kwargs = {"raw": six.PY2}/msgpack_kwargs = {"raw": six.PY2, "max_buffer_size": 2147483647}/g' /usr/lib/python3/dist-packages/salt/transport/ipc.py
 COPY ./docker/salt/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
 
+COPY ./_modules /srv/salt/_modules
+COPY ./scripts /srv/salt/scripts
+RUN mkdir -p /srv/salt/scripts/userdefined && \
+    chown -R 1000:102 /srv/salt/scripts/userdefined && \
+    chmod -R 771 /srv/salt/scripts/userdefined
+
 EXPOSE 8123 4505 4506
 CMD ["/usr/bin/supervisord"]

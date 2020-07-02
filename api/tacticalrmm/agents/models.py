@@ -18,6 +18,7 @@ from django.contrib.postgres.fields import JSONField
 from core.models import TZ_CHOICES
 
 import automation
+import autotasks
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -212,6 +213,24 @@ class Agent(models.Model):
 
         # Generate checks based on policies
         automation.models.Policy.generate_policy_checks(self)
+
+    # clear is used to delete managed policy tasks from agent
+    # parent_tasks specifies a list of tasks to delete from agent with matching parent_task field
+    def generate_tasks_from_policies(self, clear=False, parent_tasks=[]):
+        # Clear agent tasks managed by policy
+        if clear:
+            if parent_tasks:
+                tasks = self.autotasks.filter(managed_by_policy=True).filter(
+                    parent_tasks__in=parent_tasks
+                )
+                for task in tasks:
+                    autotasks.tasks.delete_win_task_schedule.delay(task.pk)
+            else:
+                for task in self.autotasks.filter(managed_by_policy=True):
+                    autotasks.tasks.delete_win_task_schedule.delay(task.pk)
+
+        # Generate tasks based on policies
+        automation.models.Policy.generate_policy_tasks(self)
 
     # https://github.com/Ylianst/MeshCentral/issues/59#issuecomment-521965347
     def get_login_token(self, key, user, action=3):

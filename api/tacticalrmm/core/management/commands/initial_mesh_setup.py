@@ -6,15 +6,16 @@ import asyncio
 import ssl
 import websockets
 import json
+import time
 
 
 class Command(BaseCommand):
     help = "Sets up initial mesh central configuration"
 
     async def websocket_call(self):
-        print(self.mesh_settings.mesh_token)
+
         token = get_auth_token(
-            self.mesh_settings.mesh_username, self.mesh_settings.mesh_token.rstrip()
+            self.mesh_settings.mesh_username, self.mesh_settings.mesh_token
         )
 
         if settings.MESH_WS_URL:

@@ -32,6 +32,9 @@
               <small>Enabled</small>
             </q-th>
           </template>
+          <template v-slot:header-cell-policystatus="props">
+            <q-th auto-width :props="props"></q-th>
+          </template>
           <!-- body slots -->
           <template slot="body" slot-scope="props" :props="props">
             <q-tr @contextmenu="editTaskPk = props.row.id">
@@ -44,13 +47,23 @@
                     </q-item-section>
                     <q-item-section>Run task now</q-item-section>
                   </q-item>
-                  <q-item clickable v-close-popup @click="showEditAutomatedTask = true">
+                  <q-item
+                    clickable
+                    v-close-popup
+                    @click="showEditAutomatedTask = true"
+                    v-if="!props.row.managed_by_policy"
+                  >
                     <q-item-section side>
                       <q-icon name="edit" />
                     </q-item-section>
                     <q-item-section>Edit</q-item-section>
                   </q-item>
-                  <q-item clickable v-close-popup @click="deleteTask(props.row.name, props.row.id)">
+                  <q-item
+                  clickable
+                  v-close-popup
+                  @click="deleteTask(props.row.name, props.row.id)"
+                  v-if="!props.row.managed_by_policy"
+                >
                     <q-item-section side>
                       <q-icon name="delete" />
                     </q-item-section>
@@ -70,6 +83,13 @@
                   v-model="props.row.enabled"
                 />
               </q-td>
+              <!-- policy check icon -->
+              <q-td v-if="props.row.managed_by_policy">
+                <q-icon style="font-size: 1.3rem;" name="policy">
+                  <q-tooltip>This task is managed by a policy</q-tooltip>
+                </q-icon>
+              </q-td>
+              <q-td v-else></q-td>
               <q-td>{{ props.row.name }}</q-td>
               <q-td v-if="props.row.retcode || props.row.stdout || props.row.stderr">
                 <span
@@ -121,6 +141,7 @@ export default {
       scriptInfo: {},
       columns: [
         { name: "enabled", align: "left", field: "enabled" },
+        { name: "policystatus", align: "left" },
         { name: "name", label: "Name", field: "name", align: "left" },
         {
           name: "moreinfo",

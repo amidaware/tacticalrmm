@@ -36,12 +36,39 @@ class Policy(models.Model):
         ).distinct()
 
     @staticmethod
+    def cascade_policy_tasks(agent):
+
+        # List of all tasks to be applied
+        tasks = list()
+
+        # Get policies applied to agent and agent site and client
+        client = Client.objects.get(client=agent.client)
+        site = Site.objects.filter(client=client).get(site=agent.site)
+
+        client_policy = client.policy
+        site_policy = site.policy
+        agent_policy = agent.policy
+
+        if agent_policy and agent_policy.active:
+            for task in agent_policy.autotasks.all():
+                tasks.append(task)
+        if site_policy and site_policy.active:
+            for task in site_policy.autotasks.all():
+                tasks.append(task)
+        if client_policy and client_policy.active:
+            for task in client_policy.autotasks.all():
+                tasks.append(task)
+
+        return tasks
+
+    @staticmethod
     def cascade_policy_checks(agent):
         # Get checks added to agent directly
         agent_checks = list(agent.agentchecks.filter(managed_by_policy=False))
 
         agent_checks_parent_pks = [check.parent_check for check in agent.agentchecks.filter(managed_by_policy=True)]
 
+        # Get policies applied to agent and agent site and client
         # Get policies applied to agent and agent site and client
         client = Client.objects.get(client=agent.client)
         site = Site.objects.filter(client=client).get(site=agent.site)
@@ -194,6 +221,14 @@ class Policy(models.Model):
         if checks:
             for check in checks:
                 check.create_policy_check(agent)
+
+    @staticmethod
+    def generate_policy_tasks(agent):
+        tasks = Policy.cascade_policy_tasks(agent)
+
+        if tasks:
+            for task in tasks:
+                task.create_policy_task(agent)
 
 
 class PolicyExclusions(models.Model):

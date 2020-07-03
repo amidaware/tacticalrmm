@@ -92,7 +92,12 @@
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item clickable v-close-popup @click="showCheck('edit', props.row.check_type)">
+                  <q-item 
+                    clickable 
+                    v-close-popup 
+                    @click="showCheck('edit', props.row.check_type)" 
+                    v-if="!props.row.managed_by_policy"
+                  >
                     <q-item-section side>
                       <q-icon name="edit" />
                     </q-item-section>
@@ -102,6 +107,7 @@
                     clickable
                     v-close-popup
                     @click="deleteCheck(props.row.id, props.row.readable_desc)"
+                    v-if="!props.row.managed_by_policy"
                   >
                     <q-item-section side>
                       <q-icon name="delete" />

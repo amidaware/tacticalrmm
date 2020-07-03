@@ -16,6 +16,7 @@ networks:
 volumes:
   # Volume for userdefined scripts
   scripts:
+  # Volume for mesh token initial setup
   mesh_token:
 
 services:

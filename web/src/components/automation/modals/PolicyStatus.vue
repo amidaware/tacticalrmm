@@ -1,7 +1,7 @@
 <template>
   <q-card style="width: 90vw" >
     <q-card-section class="row items-center">
-      <div class="text-h6">{{ this.item.readable_desc }}</div>
+      <div class="text-h6">{{ this.title }}</div>
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
@@ -41,13 +41,17 @@
             <q-td v-else-if="props.row.status === 'failing'">
               <q-icon style="font-size: 1.3rem;" color="negative" name="error" />
             </q-td>
+            <q-td v-else></q-td>
             <!-- status text -->
             <q-td v-if="props.row.status === 'pending'">Awaiting First Synchronization</q-td>
             <q-td v-else-if="props.row.status === 'passing'">
-              <q-badge color="positive">Passing</q-badge>
+              
             </q-td>
             <q-td v-else-if="props.row.status === 'failing'">
               <q-badge color="negative">Failing</q-badge>
+            </q-td>
+            <q-td v-else>
+              <q-badge color="positive">No Issues</q-badge>
             </q-td>
             <!-- more info -->
             <q-td v-if="props.row.check_type === 'ping'">
@@ -57,7 +61,7 @@
                 class="ping-cell"
               >output</span>
             </q-td>
-            <q-td v-else-if="props.row.check_type === 'script'">
+            <q-td v-else-if="props.row.check_type === 'script' || props.row.retcode || props.row.stdout || props.row.stderr">
               <span
                 style="cursor:pointer;color:blue;text-decoration:underline"
                 @click="scriptMoreInfo(props.row)"
@@ -74,7 +78,8 @@
             <q-td
               v-else-if="props.row.check_type === 'cpuload' || props.row.check_type === 'memory'"
             >{{ props.row.history_info }}</q-td>
-            <q-td v-else>{{ props.row.more_info }}</q-td>
+            <q-td v-else-if="props.row.more_info">{{ props.row.more_info }}</q-td>
+            <q-td v-else>Awaiting Output</q-td>
             <!-- last run -->
             <q-td>{{ props.row.last_run }}</q-td>
           </q-tr>
@@ -145,6 +150,11 @@ export default {
       pagination: {
         rowsPerPage: 9999
       }
+    }
+  },
+  computed: {
+    title () {
+      return this.item.readable_desc ? this.item.readable_desc + " Status" : this.item.name + " Status"
     }
   },
   methods: {

@@ -10,22 +10,28 @@ from agents.models import Agent
 from scripts.models import Script
 from clients.models import Client, Site
 from checks.models import Check
+from autotasks.models import AutomatedTask
 
 from clients.serializers import ClientSerializer, TreeSerializer
 from checks.serializers import CheckSerializer
 from agents.serializers import AgentHostnameSerializer
+from autotasks.serializers import TaskSerializer
 
 from .serializers import (
     PolicySerializer,
     PolicyTableSerializer,
     PolicyOverviewSerializer,
     PolicyCheckStatusSerializer,
-    AutoTaskPolicySerializer,
+    PolicyTaskStatusSerializer,
+    AutoTaskPolicySerializer
 )
 
 from .tasks import (
     generate_agent_checks_from_policies_task,
-    generate_agent_checks_by_location_task
+    generate_agent_checks_by_location_task,
+    generate_agent_tasks_from_policies_task,
+    generate_agent_tasks_by_location_task,
+    run_win_policy_autotask_task
 )
 
 
@@ -63,6 +69,10 @@ class GetUpdateDeletePolicy(APIView):
         if saved_policy.active != old_active or saved_policy.enforced != old_enforced:
             generate_agent_checks_from_policies_task.delay(policypk=policy.pk, clear=(not saved_policy.active or not saved_policy.enforced))
 
+        # Genereate agent tasks if active was changed
+        if saved_policy.active != old_active:
+            generate_agent_tasks_from_policies_task.delay(policypk=policy.pk, clear=(not saved_policy.active))
+
         return Response("ok")
 
     def delete(self, request, pk):
@@ -70,6 +80,7 @@ class GetUpdateDeletePolicy(APIView):
 
         # delete all managed policy checks off of agents
         generate_agent_checks_from_policies_task.delay(policypk=policy.pk, clear=True)
+        generate_agent_tasks_from_policies_task.delay(policypk=policy.pk, clear=True)
         policy.delete()
         
         return Response("ok")
@@ -80,13 +91,14 @@ class PolicyAutoTask(APIView):
         policy = get_object_or_404(Policy, pk=pk)
         return Response(AutoTaskPolicySerializer(policy).data)
 
-    def patch(self, request, policy, task):
+    def patch(self, request, task):
+        tasks = AutomatedTask.objects.filter(parent_task=task)
+        return Response(PolicyTaskStatusSerializer(tasks, many=True).data)
 
-        # TODO pull agents and status for policy task
-        return Response(list())
-
-    def put(self, request, pk):
-        return Response("ok")
+    def put(self, request, task):
+        tasks = AutomatedTask.objects.filter(parent_task=task)
+        run_win_policy_autotask_task.delay([task.id for task in tasks])
+        return Response("Affected agent tasks will run shortly")
 
 
 class PolicyCheck(APIView):
@@ -150,6 +162,7 @@ class GetRelated(APIView):
                     client.policy = policy
                     client.save()
                     generate_agent_checks_by_location_task.delay(location={"client": client.pk}, clear=True)
+                    generate_agent_tasks_by_location_task.delay(location={"client": client.pk}, clear=True)
 
             if related_type == "site":
                 site = get_object_or_404(Site, pk=pk)
@@ -159,6 +172,7 @@ class GetRelated(APIView):
                     site.policy = policy
                     site.save()
                     generate_agent_checks_by_location_task.delay(location={"client": site.client.client, "site": site.pk}, clear=True)
+                    generate_agent_tasks_by_location_task.delay(location={"client": site.client.client, "site": site.pk}, clear=True)
 
             if related_type == "agent":
                 agent = get_object_or_404(Agent, pk=pk)
@@ -168,6 +182,7 @@ class GetRelated(APIView):
                     agent.policy=policy
                     agent.save()
                     agent.generate_checks_from_policies(clear=True)
+                    agent.generate_tasks_from_policies(clear=True)
 
         # If policy was cleared or blank
         else:
@@ -182,6 +197,7 @@ class GetRelated(APIView):
                     client.policy=None
                     client.save()
                     generate_agent_checks_by_location_task.delay(location={"client": client.pk}, clear=True)
+                    generate_agent_tasks_by_location_task.delay(location={"client": client.pk}, clear=True)
 
             if related_type == "site":
                 site = get_object_or_404(Site, pk=pk)
@@ -194,6 +210,7 @@ class GetRelated(APIView):
                     site.policy=None
                     site.save()
                     generate_agent_checks_by_location_task.delay(location={"client": site.client.client, "site": site.pk}, clear=True)
+                    generate_agent_tasks_by_location_task.delay(location={"client": site.client.client, "site": site.pk}, clear=True)
 
             if related_type == "agent":
                 agent = get_object_or_404(Agent, pk=pk)
@@ -202,6 +219,7 @@ class GetRelated(APIView):
                     agent.policy=None
                     agent.save()
                     agent.generate_checks_from_policies(clear=True)
+                    agent.generate_tasks_from_policies(clear=True)
 
         return Response("ok")
 

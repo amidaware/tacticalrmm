@@ -68,6 +68,7 @@
           row-key="id"
           binary-state-sort
           hide-pagination
+          :hide-bottom="!!selected"
         >
           <!-- header slots -->
           <template v-slot:header="props">
@@ -97,7 +98,7 @@
           <template v-slot:no-data >
             <div class="full-width row flex-center q-gutter-sm">
               <span v-if="policies.length === 0">
-                No Policies. Click Add to create one
+                No Policies
               </span>
             </div>
           </template>

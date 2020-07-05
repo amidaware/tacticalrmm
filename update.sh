@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for i in celery celery-winupdate celerybeat rmm nginx
+for i in celery celerybeat rmm nginx
 do
 sudo systemctl stop ${i}
 done
@@ -19,7 +19,6 @@ cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
 pip install --no-cache-dir --upgrade setuptools wheel
 pip install --no-cache-dir -r requirements.txt
-python manage.py makemigrations
 python manage.py migrate
 python manage.py delete_tokens
 deactivate
@@ -34,7 +33,7 @@ sudo rm -rf /var/www/rmm/dist
 sudo cp -pvr /rmm/web/dist /var/www/rmm/
 sudo chown www-data:www-data -R /var/www/rmm/dist
 
-for i in celery celery-winupdate celerybeat rmm nginx
+for i in celery celerybeat rmm nginx
 do
 sudo systemctl start ${i}
 done

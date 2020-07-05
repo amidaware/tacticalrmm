@@ -11,9 +11,14 @@ import win32con
 import win32evtlogutil
 import winerror
 from time import sleep
+import requests
+import subprocess
 
 PROGRAM_DIR = "C:\\Program Files\\TacticalAgent"
 TAC_RMM = os.path.join(PROGRAM_DIR, "tacticalrmm.exe")
+NSSM = os.path.join(PROGRAM_DIR, "nssm.exe")
+SALT_CALL = os.path.join("C:\\salt", "salt-call.bat")
+TEMP_DIR = os.path.join("C:\\Windows", "Temp")
 
 
 def get_services():
@@ -49,6 +54,53 @@ def run_manual_checks():
 
 def install_updates():
     return __salt__["cmd.run_bg"]([TAC_RMM, "-m", "winupdater"])
+
+
+def agent_update(version, url):
+    try:
+        r = requests.get(url, stream=True, timeout=300)
+    except Exception:
+        return "failed"
+
+    if r.status_code != 200:
+        return "failed"
+
+    exe = os.path.join(TEMP_DIR, f"winagent-v{version}.exe")
+
+    with open(exe, "wb") as f:
+        for chunk in r.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+    del r
+
+    services = ("tacticalagent", "checkrunner")
+
+    for svc in services:
+        subprocess.run([NSSM, "stop", svc], timeout=120)
+
+    sleep(5)
+    r = subprocess.run([exe, "/VERYSILENT", "/SUPPRESSMSGBOXES"], timeout=300)
+    sleep(15)
+
+    db = os.path.join(PROGRAM_DIR, "agentdb.db")
+    __salt__["sqlite3.modify"](db, f'UPDATE agentstorage SET version = "{version}"')
+
+    for svc in services:
+        subprocess.run([NSSM, "start", svc], timeout=120)
+
+    return "ok"
+
+
+def do_agent_update(version, url):
+    return __salt__["cmd.run_bg"](
+        [
+            "C:\\salt\\salt-call.bat",
+            "win_agent.agent_update",
+            f"version={version}",
+            f"url={url}",
+            "--local",
+        ]
+    )
 
 
 class SystemDetail:

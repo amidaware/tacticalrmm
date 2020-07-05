@@ -181,6 +181,11 @@ def add(request):
 @permission_classes((IsAuthenticated,))
 def update(request):
     agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+
+    if agent.update_pending and request.data["version"] != agent.version:
+        agent.update_pending = False
+        agent.save(update_fields=["update_pending"])
+
     serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
     serializer.save(last_seen=djangotime.now())

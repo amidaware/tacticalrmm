@@ -51,7 +51,7 @@ class Agent(models.Model):
     check_interval = models.PositiveIntegerField(default=120)
     needs_reboot = models.BooleanField(default=False)
     managed_by_wsus = models.BooleanField(default=False)
-    is_updating = models.BooleanField(default=False)
+    update_pending = models.BooleanField(default=False)
     choco_installed = models.BooleanField(default=False)
     wmi_detail = JSONField(null=True)
     time_zone = models.CharField(
@@ -307,6 +307,32 @@ class Agent(models.Model):
         json = {
             "client": "local_async",
             "tgt": self.salt_id,
+            "fun": kwargs["func"],
+            "username": settings.SALT_USERNAME,
+            "password": settings.SALT_PASSWORD,
+            "eauth": "pam",
+        }
+
+        if "arg" in kwargs:
+            json.update({"arg": kwargs["arg"]})
+        if "kwargs" in kwargs:
+            json.update({"kwarg": kwargs["kwargs"]})
+
+        try:
+            resp = requests.post(f"http://{settings.SALT_HOST}:8123/run", json=[json])
+        except Exception:
+            return "timeout"
+
+        return resp
+
+    @staticmethod
+    def salt_batch_async(**kwargs):
+        assert isinstance(kwargs["minions"], list)
+
+        targets = ",".join(kwargs["minions"])
+        json = {
+            "client": "local_async",
+            "tgt": targets,
             "fun": kwargs["func"],
             "username": settings.SALT_USERNAME,
             "password": settings.SALT_PASSWORD,

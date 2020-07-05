@@ -27,7 +27,7 @@ from core.models import CoreSettings
 from .serializers import AgentSerializer, AgentHostnameSerializer, AgentTableSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .tasks import uninstall_agent_task, update_agent_task
+from .tasks import uninstall_agent_task
 
 from tacticalrmm.utils import notify_error
 
@@ -52,19 +52,34 @@ def update_agents(request):
     pks = request.data["pks"]
     version = request.data["version"]
     ver = version.split("winagent-v")[1]
-    agents = Agent.objects.filter(pk__in=pks)
+    q = Agent.objects.only("pk").filter(pk__in=pks)
 
-    for agent in agents:
-        # don't update if agent's version same or higher
-        if (
-            not pyver.parse(agent.version) >= pyver.parse(ver)
-        ) and not agent.is_updating:
-            agent.is_updating = True
-            agent.save(update_fields=["is_updating"])
+    agents = [i for i in q if pyver.parse(i.version) < pyver.parse(ver)]
 
-            update_agent_task.apply_async(
-                queue="wupdate", kwargs={"pk": agent.pk, "version": version}
-            )
+    if agents:
+        for agent in agents:
+            agent.update_pending = True
+            agent.save(update_fields=["update_pending"])
+
+        minions = [i.salt_id for i in agents]
+
+        r = Agent.get_github_versions()
+        git_versions = r["versions"]
+        data = r["data"]  # full response from github
+        versions = {}
+
+        for i, release in enumerate(data):
+            versions[i] = release["name"]
+
+        key = [k for k, v in versions.items() if v == version][0]
+
+        download_url = data[key]["assets"][0]["browser_download_url"]
+
+        r = Agent.salt_batch_async(
+            minions=minions,
+            func="win_agent.do_agent_update",
+            kwargs={"version": ver, "url": download_url},
+        )
 
     return Response("ok")
 

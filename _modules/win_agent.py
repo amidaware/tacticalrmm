@@ -80,10 +80,7 @@ def agent_update(version, url):
 
     sleep(5)
     r = subprocess.run([exe, "/VERYSILENT", "/SUPPRESSMSGBOXES"], timeout=300)
-    sleep(15)
-
-    db = os.path.join(PROGRAM_DIR, "agentdb.db")
-    __salt__["sqlite3.modify"](db, f'UPDATE agentstorage SET version = "{version}"')
+    sleep(10)
 
     for svc in services:
         subprocess.run([NSSM, "start", svc], timeout=120)

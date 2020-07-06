@@ -23,7 +23,7 @@ EXPOSE 80
 RUN apt-get update && apt-get install -y gettext-base
 COPY ./api/tacticalrmm/requirements.txt .
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir --upgrade setuptools wheel
+RUN pip install --no-cache-dir setuptools==47.3.2 wheel==0.34.2
 RUN pip install --no-cache-dir -r requirements.txt
 COPY ./api/tacticalrmm/ .
 COPY ./docker/api/prestart.sh .

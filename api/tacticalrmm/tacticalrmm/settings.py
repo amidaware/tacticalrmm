@@ -13,6 +13,11 @@ AUTH_USER_MODEL = "accounts.User"
 # to alert user they need to manually refresh their browser
 APP_VER = "0.0.7"
 
+try:
+    from .local_settings import *
+except ImportError:
+    pass
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -38,6 +43,9 @@ INSTALLED_APPS = [
     "logs",
     "scripts",
 ]
+
+if DEBUG and not "TRAVIS" in os.environ and not "AZPIPELINE" in os.environ:
+    INSTALLED_APPS += ("django_extensions",)
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -108,11 +116,6 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "tacticalrmm/static/")]
 LOG_CONFIG = {
     "handlers": [{"sink": os.path.join(LOG_DIR, "debug.log"), "serialize": False}]
 }
-
-try:
-    from .local_settings import *
-except ImportError:
-    pass
 
 if "TRAVIS" in os.environ:
     DATABASES = {

@@ -17,7 +17,7 @@ python3 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir --upgrade setuptools wheel
+pip install --no-cache-dir setuptools==47.3.2 wheel==0.34.2
 pip install --no-cache-dir -r requirements.txt
 python manage.py migrate
 python manage.py delete_tokens

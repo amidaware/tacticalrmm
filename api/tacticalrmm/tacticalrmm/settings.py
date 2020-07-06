@@ -44,8 +44,9 @@ INSTALLED_APPS = [
     "scripts",
 ]
 
-if DEBUG and not "TRAVIS" in os.environ and not "AZPIPELINE" in os.environ:
-    INSTALLED_APPS += ("django_extensions",)
+if not "TRAVIS" in os.environ and not "AZPIPELINE" in os.environ:
+    if DEBUG:
+        INSTALLED_APPS += ("django_extensions",)
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

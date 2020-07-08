@@ -1,6 +1,7 @@
 from loguru import logger
 import pytz
 import os
+import time
 
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -132,17 +133,23 @@ class CoreSettings(models.Model):
                 raise AttributeError("MESH_TOKEN_KEY doesn't exist")
         except AttributeError:
             filepath = "/token/token.key"
-            if os.path.exists(filepath):
-                with open(filepath, "r") as read_file:
-                    key = read_file.readlines()
+            counter = 0
+            while counter < 12:
+                try:
+                    with open(filepath, "r") as read_file:
+                        key = read_file.readlines()
 
-                    # Remove key file contents for security reasons
-                    with open(filepath, "w") as write_file:
-                        write_file.write("")
+                        # Remove key file contents for security reasons
+                        with open(filepath, "w") as write_file:
+                            write_file.write("")
 
-                    # readlines() returns an array. Get first item
-                    mesh_settings["mesh_token"] = key[0].rstrip()
-            else:
-                pass
+                        # readlines() returns an array. Get first item
+                        mesh_settings["mesh_token"] = key[0].rstrip()
+                        break
+                except IOError:
+                    pass
+
+                counter = counter + 1
+                time.sleep(10)
 
         return mesh_settings

@@ -90,12 +90,23 @@
                 <div class="text-subtitle2">SMTP Settings</div>
                 <hr />
                 <q-card-section class="row">
+                  <div class="col-2">From Email:</div>
+                  <div class="col-4"></div>
+                  <q-input
+                    outlined
+                    dense
+                    v-model="settings.smtp_from_email"
+                    class="col-6"
+                    :rules="[val => isValidEmail(val) || 'Invalid email']"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
                   <div class="col-2">Host:</div>
                   <div class="col-4"></div>
                   <q-input outlined dense v-model="settings.smtp_host" class="col-6" />
                 </q-card-section>
                 <q-card-section class="row">
-                  <div class="col-2">Email:</div>
+                  <div class="col-2">Username:</div>
                   <div class="col-4"></div>
                   <q-input
                     outlined
@@ -134,11 +145,6 @@
                     filled
                     :rules="[ val => val > 0 && val <= 65535 || 'Invalid Port']"
                   />
-                </q-card-section>
-                <q-card-section class="row">
-                  <div class="col-2">Use TLS:</div>
-                  <div class="col-4"></div>
-                  <q-checkbox v-model="settings.smtp_use_tls" />
                 </q-card-section>
               </q-tab-panel>
               <!-- meshcentral -->

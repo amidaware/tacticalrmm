@@ -11,7 +11,7 @@ AUTH_USER_MODEL = "accounts.User"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.7"
+APP_VER = "0.0.8"
 
 try:
     from .local_settings import *

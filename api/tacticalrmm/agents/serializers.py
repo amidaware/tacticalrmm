@@ -22,15 +22,14 @@ class AgentSerializer(serializers.ModelSerializer):
     physical_disks = serializers.ReadOnlyField()
     checks = serializers.ReadOnlyField()
     timezone = serializers.ReadOnlyField()
-    all_timezones = serializers.SerializerMethodField("all_time_zones")
+    all_timezones = serializers.SerializerMethodField()
 
-    def all_time_zones(self, obj):
+    def get_all_timezones(self, obj):
         return pytz.all_timezones
 
     class Meta:
         model = Agent
         exclude = [
-            "wmi_detail",
             "last_seen",
         ]
 

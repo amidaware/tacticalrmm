@@ -178,7 +178,7 @@ export default {
       policyAddPk: null,
       outsideModel: 11,
       selectedTree: "",
-      innerModel: 55,
+      innerModel: 50,
       tab: "server",
       left: true,
       clientActive: "",

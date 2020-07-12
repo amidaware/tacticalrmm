@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-md">
+  <div class="q-pa-none">
     <q-tabs
       v-model="subtab"
       dense
@@ -16,6 +16,7 @@
       <q-tab name="tasks" icon="fas fa-tasks" label="Tasks" />
       <q-tab name="patches" icon="system_update" label="Patches" />
       <q-tab name="software" icon="fab fa-windows" label="Software" />
+      <q-tab name="assets" icon="fas fa-barcode" label="Assets" />
     </q-tabs>
     <q-separator />
     <q-tab-panels v-model="subtab" :animated="false">
@@ -34,6 +35,9 @@
       <q-tab-panel name="software">
         <SoftwareTab />
       </q-tab-panel>
+      <q-tab-panel name="assets">
+        <AssetsTab />
+      </q-tab-panel>
     </q-tab-panels>
   </div>
 </template>
@@ -44,6 +48,7 @@ import ChecksTab from "@/components/ChecksTab";
 import AutomatedTasksTab from "@/components/AutomatedTasksTab";
 import WindowsUpdates from "@/components/WindowsUpdates";
 import SoftwareTab from "@/components/SoftwareTab";
+import AssetsTab from "@/components/AssetsTab";
 export default {
   name: "SubTableTabs",
   components: {
@@ -51,7 +56,8 @@ export default {
     ChecksTab,
     AutomatedTasksTab,
     WindowsUpdates,
-    SoftwareTab
+    SoftwareTab,
+    AssetsTab
   },
   data() {
     return {

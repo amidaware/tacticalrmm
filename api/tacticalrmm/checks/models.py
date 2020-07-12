@@ -149,7 +149,7 @@ class Check(models.Model):
         if self.check_type == "diskspace":
             return f"{self.get_check_type_display()}: Drive {self.disk} < {self.threshold}%"
         elif self.check_type == "ping":
-            return f"{self.get_check_type_display()}: {self.ip}"
+            return f"{self.get_check_type_display()}: {self.name}"
         elif self.check_type == "cpuload" or self.check_type == "memory":
             return f"{self.get_check_type_display()} > {self.threshold}%"
         elif self.check_type == "winsvc":

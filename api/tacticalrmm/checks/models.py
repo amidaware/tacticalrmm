@@ -299,7 +299,7 @@ class Check(models.Model):
 
         if self.check_type == "diskspace":
             percent_used = self.agent.disks[self.disk]["percent"]
-            percent_free = 100 - percent_free
+            percent_free = 100 - percent_used
 
             body = subject + f" - Free: {percent_free}%, Threshold: {self.threshold}%"
 

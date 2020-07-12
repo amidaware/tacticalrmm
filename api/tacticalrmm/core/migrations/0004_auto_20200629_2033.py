@@ -6,23 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0003_coresettings_mesh_token'),
+        ("core", "0003_coresettings_mesh_token"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='coresettings',
-            name='mesh_site',
-            field=models.CharField(blank=True, default='', max_length=255, null=True),
+            model_name="coresettings",
+            name="mesh_site",
+            field=models.CharField(blank=True, default="", max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='coresettings',
-            name='mesh_username',
-            field=models.CharField(blank=True, default='', max_length=255, null=True),
+            model_name="coresettings",
+            name="mesh_username",
+            field=models.CharField(blank=True, default="", max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name='coresettings',
-            name='mesh_token',
-            field=models.CharField(blank=True, default='', max_length=255, null=True),
+            model_name="coresettings",
+            name="mesh_token",
+            field=models.CharField(blank=True, default="", max_length=255, null=True),
         ),
     ]

@@ -6,16 +6,10 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0005_agent_policy'),
+        ("agents", "0005_agent_policy"),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='agent',
-            name='uninstall_inprogress',
-        ),
-        migrations.RemoveField(
-            model_name='agent',
-            name='uninstall_pending',
-        ),
+        migrations.RemoveField(model_name="agent", name="uninstall_inprogress",),
+        migrations.RemoveField(model_name="agent", name="uninstall_pending",),
     ]

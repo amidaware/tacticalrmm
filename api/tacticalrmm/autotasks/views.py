@@ -57,7 +57,9 @@ class AddAutoTask(APIView):
             create_win_task_schedule.delay(pk=obj.pk)
 
         if "policy" in data:
-            automation.tasks.generate_agent_tasks_from_policies_task.delay(data["policy"])
+            automation.tasks.generate_agent_tasks_from_policies_task.delay(
+                data["policy"]
+            )
 
         return Response("Task will be created shortly!")
 

@@ -66,7 +66,10 @@ class Policy(models.Model):
         # Get checks added to agent directly
         agent_checks = list(agent.agentchecks.filter(managed_by_policy=False))
 
-        agent_checks_parent_pks = [check.parent_check for check in agent.agentchecks.filter(managed_by_policy=True)]
+        agent_checks_parent_pks = [
+            check.parent_check
+            for check in agent.agentchecks.filter(managed_by_policy=True)
+        ]
 
         # Get policies applied to agent and agent site and client
         # Get policies applied to agent and agent site and client
@@ -212,7 +215,9 @@ class Policy(models.Model):
             + eventlog_checks
         )
 
-        return [check for check in final_list if check.pk not in agent_checks_parent_pks]
+        return [
+            check for check in final_list if check.pk not in agent_checks_parent_pks
+        ]
 
     @staticmethod
     def generate_policy_checks(agent):

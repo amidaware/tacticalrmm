@@ -7,14 +7,20 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('automation', '0003_auto_20200609_1607'),
-        ('agents', '0004_auto_20200604_1721'),
+        ("automation", "0003_auto_20200609_1607"),
+        ("agents", "0004_auto_20200604_1721"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='agent',
-            name='policy',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='agents', to='automation.Policy'),
+            model_name="agent",
+            name="policy",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="agents",
+                to="automation.Policy",
+            ),
         ),
     ]

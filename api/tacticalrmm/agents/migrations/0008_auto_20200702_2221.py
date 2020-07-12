@@ -6,13 +6,11 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0007_remove_agent_policies_pending'),
+        ("agents", "0007_remove_agent_policies_pending"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='agent',
-            old_name='is_updating',
-            new_name='update_pending',
+            model_name="agent", old_name="is_updating", new_name="update_pending",
         ),
     ]

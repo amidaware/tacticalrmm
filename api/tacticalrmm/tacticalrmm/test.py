@@ -111,8 +111,7 @@ class BaseTestCase(TestCase):
         )
 
         self.policyTask = AutomatedTask.objects.create(
-            policy=self.policy, 
-            name="Test Task"
+            policy=self.policy, name="Test Task"
         )
 
     def check_not_authenticated(self, method, url):

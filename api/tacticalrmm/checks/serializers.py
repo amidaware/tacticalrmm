@@ -38,7 +38,11 @@ class CheckSerializer(serializers.ModelSerializer):
         # disk checks
         # make sure no duplicate diskchecks exist for an agent/policy
         if check_type == "diskspace" and not self.instance:  # only on create
-            checks = Check.objects.filter(**self.context).filter(check_type="diskspace").exclude(managed_by_policy=True)
+            checks = (
+                Check.objects.filter(**self.context)
+                .filter(check_type="diskspace")
+                .exclude(managed_by_policy=True)
+            )
             if checks:
                 for check in checks:
                     if val["disk"] in check.disk:

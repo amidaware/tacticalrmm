@@ -6,12 +6,9 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0006_auto_20200614_0850'),
+        ("agents", "0006_auto_20200614_0850"),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='agent',
-            name='policies_pending',
-        ),
+        migrations.RemoveField(model_name="agent", name="policies_pending",),
     ]

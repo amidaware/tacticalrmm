@@ -57,14 +57,14 @@
           </q-list>
         </q-menu>
       </q-btn>
-      <q-btn 
-        v-if="selectedPolicy !== null" 
-        dense 
-        flat 
+      <q-btn
+        v-if="selectedPolicy !== null"
+        dense
+        flat
         push
-        @click="onRefresh(selectedPolicy)" 
-        icon="refresh" 
-        ref="refresh" 
+        @click="onRefresh(selectedPolicy)"
+        icon="refresh"
+        ref="refresh"
       />
       <template>
         <q-table

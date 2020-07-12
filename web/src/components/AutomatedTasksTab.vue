@@ -59,11 +59,11 @@
                     <q-item-section>Edit</q-item-section>
                   </q-item>
                   <q-item
-                  clickable
-                  v-close-popup
-                  @click="deleteTask(props.row.name, props.row.id)"
-                  v-if="!props.row.managed_by_policy"
-                >
+                    clickable
+                    v-close-popup
+                    @click="deleteTask(props.row.name, props.row.id)"
+                    v-if="!props.row.managed_by_policy"
+                  >
                     <q-item-section side>
                       <q-icon name="delete" />
                     </q-item-section>

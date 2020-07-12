@@ -51,7 +51,10 @@
             <q-item :key="item.pk" v-for="item in related.agents">
               <q-item-section>
                 <q-item-label>{{ item.hostname }}</q-item-label>
-                <q-item-label caption><b>{{ item.client }}</b> {{ item.site }}</q-item-label>
+                <q-item-label caption>
+                  <b>{{ item.client }}</b>
+                  {{ item.site }}
+                </q-item-label>
               </q-item-section>
             </q-item>
           </q-list>
@@ -72,9 +75,9 @@ export default {
   },
   data() {
     return {
-      tab: 'clients',
+      tab: "clients",
       related: {}
-    }
+    };
   },
   mounted() {
     this.$q.loading.show();
@@ -83,11 +86,11 @@ export default {
       .dispatch("automation/getRelated", this.policy.id)
       .then(r => {
         this.$q.loading.hide();
-        this.related = r.data
+        this.related = r.data;
       })
       .catch(e => {
         this.$q.loading.hide();
       });
   }
-}
+};
 </script>

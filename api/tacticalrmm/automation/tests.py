@@ -9,7 +9,7 @@ from .serializers import (
     PolicySerializer,
     AutoTaskPolicySerializer,
     PolicyOverviewSerializer,
-    PolicyCheckStatusSerializer
+    PolicyCheckStatusSerializer,
 )
 
 from checks.serializers import CheckSerializer
@@ -53,7 +53,7 @@ class TestPolicyViews(BaseTestCase):
             "name": "Test Policy",
             "desc": "policy desc",
             "active": True,
-            "enforced": False
+            "enforced": False,
         }
 
         resp = self.client.post(url, valid_payload, format="json")
@@ -65,7 +65,7 @@ class TestPolicyViews(BaseTestCase):
 
         self.check_not_authenticated("post", url)
 
-    @patch('automation.tasks.generate_agent_checks_from_policies_task.delay')
+    @patch("automation.tasks.generate_agent_checks_from_policies_task.delay")
     def test_update_policy(self, mock_task):
         url = f"/automation/policies/{self.policy.pk}/"
 
@@ -73,7 +73,7 @@ class TestPolicyViews(BaseTestCase):
             "name": "Test Policy Update",
             "desc": "policy desc Update",
             "active": True,
-            "enforced": False
+            "enforced": False,
         }
 
         resp = self.client.put(url, valid_payload, format="json")
@@ -86,7 +86,7 @@ class TestPolicyViews(BaseTestCase):
             "name": "Test Policy Update",
             "desc": "policy desc Update",
             "active": False,
-            "enforced": False
+            "enforced": False,
         }
 
         resp = self.client.put(url, valid_payload, format="json")
@@ -178,25 +178,13 @@ class TestPolicyViews(BaseTestCase):
         site = Site.objects.create(client=client, site="Test Site")
 
         # test add client to policy
-        client_payload = {
-            "type": "client",
-            "pk": client.pk,
-            "policy": policy.pk
-        }
+        client_payload = {"type": "client", "pk": client.pk, "policy": policy.pk}
 
         # test add site to policy
-        site_payload = {
-            "type": "site",
-            "pk": site.pk,
-            "policy": policy.pk
-        }
+        site_payload = {"type": "site", "pk": site.pk, "policy": policy.pk}
 
         # test add agent to policy
-        agent_payload = {
-            "type": "agent",
-            "pk": self.agent.pk,
-            "policy": policy.pk
-        }
+        agent_payload = {"type": "agent", "pk": self.agent.pk, "policy": policy.pk}
 
         # test client add
         resp = self.client.post(url, client_payload, format="json")
@@ -209,7 +197,9 @@ class TestPolicyViews(BaseTestCase):
         resp = self.client.post(url, site_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         # called because the relation changed
-        mock_task.assert_called_with(location={"client": site.client.client, "site": site.pk}, clear=True)
+        mock_task.assert_called_with(
+            location={"client": site.client.client, "site": site.pk}, clear=True
+        )
         mock_task.reset_mock()
 
         # test agent add
@@ -234,25 +224,13 @@ class TestPolicyViews(BaseTestCase):
         mock_agent_generate_checks.assert_not_called()
 
         # test remove client from policy
-        client_payload = {
-            "type": "client",
-            "pk": client.pk,
-            "policy": 0
-        }
+        client_payload = {"type": "client", "pk": client.pk, "policy": 0}
 
         # test remove site from policy
-        site_payload = {
-            "type": "site",
-            "pk": site.pk,
-            "policy": 0
-        }
+        site_payload = {"type": "site", "pk": site.pk, "policy": 0}
 
         # test remove agent from policy
-        agent_payload = {
-            "type": "agent",
-            "pk": self.agent.pk,
-            "policy": 0
-        }
+        agent_payload = {"type": "agent", "pk": self.agent.pk, "policy": 0}
 
         # test client remove
         resp = self.client.post(url, client_payload, format="json")
@@ -265,7 +243,9 @@ class TestPolicyViews(BaseTestCase):
         resp = self.client.post(url, site_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         # called because the relation changed
-        mock_task.assert_called_with(location={"client": site.client.client, "site": site.pk}, clear=True)
+        mock_task.assert_called_with(
+            location={"client": site.client.client, "site": site.pk}, clear=True
+        )
         mock_task.reset_mock()
 
         # test agent remove
@@ -305,29 +285,20 @@ class TestPolicyViews(BaseTestCase):
         policy.sites.add(site)
         policy.agents.add(self.agent)
 
-        client_payload = {
-            "type": "client",
-            "pk": client.pk
-        }
+        client_payload = {"type": "client", "pk": client.pk}
 
         # test add site to policy
-        site_payload = {
-            "type": "site",
-            "pk": site.pk
-        }
+        site_payload = {"type": "site", "pk": site.pk}
 
         # test add agent to policy
-        agent_payload = {
-            "type": "agent",
-            "pk": self.agent.pk
-        }
+        agent_payload = {"type": "agent", "pk": self.agent.pk}
 
         # test client relation get
         serializer = PolicySerializer(policy)
         resp = self.client.patch(url, client_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data, serializer.data)
-        
+
         # test site relation get
         serializer = PolicySerializer(policy)
         resp = self.client.patch(url, site_payload, format="json")
@@ -340,11 +311,7 @@ class TestPolicyViews(BaseTestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data, serializer.data)
 
-
-        invalid_payload = {
-            "type": "bad_type",
-            "pk": 5
-        }
+        invalid_payload = {"type": "bad_type", "pk": 5}
 
         resp = self.client.patch(url, invalid_payload, format="json")
         self.assertEqual(resp.status_code, 400)

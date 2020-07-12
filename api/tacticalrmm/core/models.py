@@ -33,15 +33,9 @@ class CoreSettings(models.Model):
     default_time_zone = models.CharField(
         max_length=255, choices=TZ_CHOICES, default="America/Los_Angeles"
     )
-    mesh_token = models.CharField(
-        max_length=255, null=True, blank=True, default=""
-    )
-    mesh_username = models.CharField(
-        max_length=255, null=True, blank=True, default=""
-    )
-    mesh_site = models.CharField(
-        max_length=255, null=True, blank=True, default=""
-    )
+    mesh_token = models.CharField(max_length=255, null=True, blank=True, default="")
+    mesh_username = models.CharField(max_length=255, null=True, blank=True, default="")
+    mesh_site = models.CharField(max_length=255, null=True, blank=True, default="")
 
     def save(self, *args, **kwargs):
         if not self.pk and CoreSettings.objects.exists():

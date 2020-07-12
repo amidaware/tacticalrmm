@@ -148,32 +148,17 @@
                 <q-card-section class="row">
                   <div class="col-4">Username:</div>
                   <div class="col-2"></div>
-                  <q-input
-                    dense
-                    filled
-                    v-model="settings.mesh_username"
-                    class="col-6"
-                  />
+                  <q-input dense filled v-model="settings.mesh_username" class="col-6" />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Mesh Site:</div>
                   <div class="col-2"></div>
-                  <q-input
-                    dense
-                    filled
-                    v-model="settings.mesh_site"
-                    class="col-6"
-                  />
+                  <q-input dense filled v-model="settings.mesh_site" class="col-6" />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Mesh Token:</div>
                   <div class="col-2"></div>
-                  <q-input
-                    dense
-                    filled
-                    v-model="settings.mesh_token"
-                    class="col-6"
-                  />
+                  <q-input dense filled v-model="settings.mesh_token" class="col-6" />
                 </q-card-section>
               </q-tab-panel>
             </q-tab-panels>

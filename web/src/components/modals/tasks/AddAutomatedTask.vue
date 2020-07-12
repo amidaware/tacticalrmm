@@ -191,9 +191,9 @@ export default {
   computed: {
     ...mapGetters(["selectedAgentPk", "scripts"]),
     checks() {
-      return this.policypk ? this.$store.state.automation.checks : this.$store.state.agentChecks.filter(
-          check => check.managed_by_policy === false
-        );
+      return this.policypk
+        ? this.$store.state.automation.checks
+        : this.$store.state.agentChecks.filter(check => check.managed_by_policy === false);
     },
     checksOptions() {
       const r = [];

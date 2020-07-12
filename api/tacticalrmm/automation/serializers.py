@@ -60,6 +60,7 @@ class PolicyCheckStatusSerializer(ModelSerializer):
         model = Check
         fields = "__all__"
 
+
 class PolicyTaskStatusSerializer(ModelSerializer):
 
     hostname = ReadOnlyField(source="agent.hostname")

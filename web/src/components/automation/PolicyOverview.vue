@@ -100,7 +100,6 @@ export default {
       this.$store.dispatch("automation/loadPolicyChecks", this.selectedPolicy.id);
       this.$store.commit("automation/setSelectedPolicy", this.selectedPolicy.id);
       this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.selectedPolicy.id);
-      
     },
     processTreeDataFromApi(data) {
       /* Structure
@@ -166,7 +165,7 @@ export default {
           // Add any policies assigned to site
           if (data[client].sites[site].policy !== null) {
             site_temp["children"] = [];
-         
+
             // Indicate if the policy is active or not
             let disabled = "";
             if (!data[client].sites[site].policy.active) {
@@ -178,7 +177,6 @@ export default {
               icon: "policy",
               id: data[client].sites[site].policy.id
             });
-            
           }
 
           // Add Site to Client children array
@@ -194,6 +192,6 @@ export default {
   },
   mounted() {
     this.getPolicyTree();
-  },
+  }
 };
 </script>

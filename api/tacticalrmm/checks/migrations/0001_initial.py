@@ -12,51 +12,190 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('agents', '0001_initial'),
-        ('automation', '0001_initial'),
-        ('scripts', '0001_initial'),
+        ("agents", "0001_initial"),
+        ("automation", "0001_initial"),
+        ("scripts", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Check',
+            name="Check",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(blank=True, max_length=255, null=True)),
-                ('check_type', models.CharField(choices=[('diskspace', 'Disk Space Check'), ('ping', 'Ping Check'), ('cpuload', 'CPU Load Check'), ('memory', 'Memory Check'), ('winsvc', 'Service Check'), ('script', 'Script Check'), ('eventlog', 'Event Log Check')], default='diskspace', max_length=50)),
-                ('status', models.CharField(choices=[('passing', 'Passing'), ('failing', 'Failing'), ('pending', 'Pending')], default='pending', max_length=100)),
-                ('more_info', models.TextField(blank=True, null=True)),
-                ('last_run', models.DateTimeField(blank=True, null=True)),
-                ('email_alert', models.BooleanField(default=False)),
-                ('text_alert', models.BooleanField(default=False)),
-                ('fails_b4_alert', models.PositiveIntegerField(default=1)),
-                ('fail_count', models.PositiveIntegerField(default=0)),
-                ('email_sent', models.DateTimeField(blank=True, null=True)),
-                ('text_sent', models.DateTimeField(blank=True, null=True)),
-                ('outage_history', django.contrib.postgres.fields.jsonb.JSONField(blank=True, null=True)),
-                ('extra_details', django.contrib.postgres.fields.jsonb.JSONField(blank=True, null=True)),
-                ('threshold', models.PositiveIntegerField(blank=True, null=True, validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(99)])),
-                ('disk', models.CharField(blank=True, max_length=2, null=True)),
-                ('ip', models.CharField(blank=True, max_length=255, null=True)),
-                ('timeout', models.PositiveIntegerField(blank=True, null=True)),
-                ('stdout', models.TextField(blank=True, null=True)),
-                ('stderr', models.TextField(blank=True, null=True)),
-                ('retcode', models.IntegerField(blank=True, null=True)),
-                ('execution_time', models.CharField(blank=True, max_length=100, null=True)),
-                ('history', django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(blank=True), blank=True, default=list, null=True, size=None)),
-                ('svc_name', models.CharField(blank=True, max_length=255, null=True)),
-                ('svc_display_name', models.CharField(blank=True, max_length=255, null=True)),
-                ('pass_if_start_pending', models.BooleanField(blank=True, null=True)),
-                ('restart_if_stopped', models.BooleanField(blank=True, null=True)),
-                ('svc_policy_mode', models.CharField(blank=True, max_length=20, null=True)),
-                ('log_name', models.CharField(blank=True, choices=[('Application', 'Application'), ('System', 'System'), ('Security', 'Security')], max_length=255, null=True)),
-                ('event_id', models.IntegerField(blank=True, null=True)),
-                ('event_type', models.CharField(blank=True, choices=[('INFO', 'Information'), ('WARNING', 'Warning'), ('ERROR', 'Error'), ('AUDIT_SUCCESS', 'Success Audit'), ('AUDIT_FAILURE', 'Failure Audit')], max_length=255, null=True)),
-                ('fail_when', models.CharField(blank=True, choices=[('contains', 'Log contains'), ('not_contains', 'Log does not contain')], max_length=255, null=True)),
-                ('search_last_days', models.PositiveIntegerField(blank=True, null=True)),
-                ('agent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='agentchecks', to='agents.Agent')),
-                ('policy', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='policychecks', to='automation.Policy')),
-                ('script', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='script', to='scripts.Script')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(blank=True, max_length=255, null=True)),
+                (
+                    "check_type",
+                    models.CharField(
+                        choices=[
+                            ("diskspace", "Disk Space Check"),
+                            ("ping", "Ping Check"),
+                            ("cpuload", "CPU Load Check"),
+                            ("memory", "Memory Check"),
+                            ("winsvc", "Service Check"),
+                            ("script", "Script Check"),
+                            ("eventlog", "Event Log Check"),
+                        ],
+                        default="diskspace",
+                        max_length=50,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("passing", "Passing"),
+                            ("failing", "Failing"),
+                            ("pending", "Pending"),
+                        ],
+                        default="pending",
+                        max_length=100,
+                    ),
+                ),
+                ("more_info", models.TextField(blank=True, null=True)),
+                ("last_run", models.DateTimeField(blank=True, null=True)),
+                ("email_alert", models.BooleanField(default=False)),
+                ("text_alert", models.BooleanField(default=False)),
+                ("fails_b4_alert", models.PositiveIntegerField(default=1)),
+                ("fail_count", models.PositiveIntegerField(default=0)),
+                ("email_sent", models.DateTimeField(blank=True, null=True)),
+                ("text_sent", models.DateTimeField(blank=True, null=True)),
+                (
+                    "outage_history",
+                    django.contrib.postgres.fields.jsonb.JSONField(
+                        blank=True, null=True
+                    ),
+                ),
+                (
+                    "extra_details",
+                    django.contrib.postgres.fields.jsonb.JSONField(
+                        blank=True, null=True
+                    ),
+                ),
+                (
+                    "threshold",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        null=True,
+                        validators=[
+                            django.core.validators.MinValueValidator(1),
+                            django.core.validators.MaxValueValidator(99),
+                        ],
+                    ),
+                ),
+                ("disk", models.CharField(blank=True, max_length=2, null=True)),
+                ("ip", models.CharField(blank=True, max_length=255, null=True)),
+                ("timeout", models.PositiveIntegerField(blank=True, null=True)),
+                ("stdout", models.TextField(blank=True, null=True)),
+                ("stderr", models.TextField(blank=True, null=True)),
+                ("retcode", models.IntegerField(blank=True, null=True)),
+                (
+                    "execution_time",
+                    models.CharField(blank=True, max_length=100, null=True),
+                ),
+                (
+                    "history",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.IntegerField(blank=True),
+                        blank=True,
+                        default=list,
+                        null=True,
+                        size=None,
+                    ),
+                ),
+                ("svc_name", models.CharField(blank=True, max_length=255, null=True)),
+                (
+                    "svc_display_name",
+                    models.CharField(blank=True, max_length=255, null=True),
+                ),
+                ("pass_if_start_pending", models.BooleanField(blank=True, null=True)),
+                ("restart_if_stopped", models.BooleanField(blank=True, null=True)),
+                (
+                    "svc_policy_mode",
+                    models.CharField(blank=True, max_length=20, null=True),
+                ),
+                (
+                    "log_name",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("Application", "Application"),
+                            ("System", "System"),
+                            ("Security", "Security"),
+                        ],
+                        max_length=255,
+                        null=True,
+                    ),
+                ),
+                ("event_id", models.IntegerField(blank=True, null=True)),
+                (
+                    "event_type",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("INFO", "Information"),
+                            ("WARNING", "Warning"),
+                            ("ERROR", "Error"),
+                            ("AUDIT_SUCCESS", "Success Audit"),
+                            ("AUDIT_FAILURE", "Failure Audit"),
+                        ],
+                        max_length=255,
+                        null=True,
+                    ),
+                ),
+                (
+                    "fail_when",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("contains", "Log contains"),
+                            ("not_contains", "Log does not contain"),
+                        ],
+                        max_length=255,
+                        null=True,
+                    ),
+                ),
+                (
+                    "search_last_days",
+                    models.PositiveIntegerField(blank=True, null=True),
+                ),
+                (
+                    "agent",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="agentchecks",
+                        to="agents.Agent",
+                    ),
+                ),
+                (
+                    "policy",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="policychecks",
+                        to="automation.Policy",
+                    ),
+                ),
+                (
+                    "script",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="script",
+                        to="scripts.Script",
+                    ),
+                ),
             ],
         ),
     ]

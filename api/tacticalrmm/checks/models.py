@@ -187,7 +187,7 @@ class Check(models.Model):
             "history_info",
             "parent_check",
             "managed_by_policy",
-            "overriden_by_policy"
+            "overriden_by_policy",
         ]
 
     def handle_check(self, data):
@@ -268,7 +268,7 @@ class Check(models.Model):
             fail_when=self.fail_when,
             search_last_days=self.search_last_days,
         )
-    
+
     def is_duplicate(self, check):
         if self.check_type == "diskspace":
             return self.disk == check.disk

@@ -121,8 +121,7 @@ class AutomatedTask(models.Model):
             task_type=self.task_type,
             win_task_name=self.win_task_name,
             timeout=self.timeout,
-            enabled=self.enabled
+            enabled=self.enabled,
         )
 
         autotasks.tasks.create_win_task_schedule.delay(task.pk)
-

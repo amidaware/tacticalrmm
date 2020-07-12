@@ -8,21 +8,40 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('agents', '0001_initial'),
-        ('clients', '0001_initial'),
+        ("agents", "0001_initial"),
+        ("clients", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Policy',
+            name="Policy",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255, unique=True)),
-                ('desc', models.CharField(max_length=255)),
-                ('active', models.BooleanField(default=False)),
-                ('agents', models.ManyToManyField(related_name='policies', to='agents.Agent')),
-                ('clients', models.ManyToManyField(related_name='policies', to='clients.Client')),
-                ('sites', models.ManyToManyField(related_name='policies', to='clients.Site')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=255, unique=True)),
+                ("desc", models.CharField(max_length=255)),
+                ("active", models.BooleanField(default=False)),
+                (
+                    "agents",
+                    models.ManyToManyField(related_name="policies", to="agents.Agent"),
+                ),
+                (
+                    "clients",
+                    models.ManyToManyField(
+                        related_name="policies", to="clients.Client"
+                    ),
+                ),
+                (
+                    "sites",
+                    models.ManyToManyField(related_name="policies", to="clients.Site"),
+                ),
             ],
         ),
     ]

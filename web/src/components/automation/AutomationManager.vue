@@ -74,7 +74,6 @@
           <template v-slot:header="props">
             <q-tr :props="props">
               <template v-for="col in props.cols">
-
                 <q-th v-if="col.name === 'active'" auto-width :key="col.name">
                   <q-icon name="power_settings_new" size="1.5em">
                     <q-tooltip>Enable Policy</q-tooltip>
@@ -87,19 +86,14 @@
                   </q-icon>
                 </q-th>
 
-                <q-th v-else :key="col.name" :props="props">
-                  {{ col.label }}
-                </q-th>
-
+                <q-th v-else :key="col.name" :props="props">{{ col.label }}</q-th>
               </template>
             </q-tr>
-          </template> 
+          </template>
           <!-- No data Slot -->
-          <template v-slot:no-data >
+          <template v-slot:no-data>
             <div class="full-width row flex-center q-gutter-sm">
-              <span v-if="policies.length === 0">
-                No Policies
-              </span>
+              <span v-if="policies.length === 0">No Policies</span>
             </div>
           </template>
           <!-- body slots -->
@@ -108,9 +102,9 @@
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item 
-                    clickable 
-                    v-close-popup 
+                  <q-item
+                    clickable
+                    v-close-popup
                     @click="showEditPolicyModal(props.row.id)"
                     id="context-edit"
                   >
@@ -174,9 +168,7 @@
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
                   @click="showRelationsModal(props.row)"
-                >
-                  {{ `Show Relations (${props.row.clients_count + props.row.sites_count + props.row.agents_count}+)` }}
-                </span>
+                >{{ `Show Relations (${props.row.clients_count + props.row.sites_count + props.row.agents_count}+)` }}</span>
               </q-td>
             </q-tr>
           </template>
@@ -189,29 +181,17 @@
     </q-card>
 
     <!-- policy form modal -->
-    <q-dialog 
-      v-model="showPolicyFormModal"
-      @hide="closePolicyFormModal" 
-    >
-      <PolicyForm 
-        :pk="editPolicyId" 
-        @close="closePolicyFormModal" 
-      />
+    <q-dialog v-model="showPolicyFormModal" @hide="closePolicyFormModal">
+      <PolicyForm :pk="editPolicyId" @close="closePolicyFormModal" />
     </q-dialog>
 
     <!-- policy overview modal -->
-    <q-dialog 
-      v-model="showPolicyOverviewModal"
-      @hide="clearRow"
-    >
+    <q-dialog v-model="showPolicyOverviewModal" @hide="clearRow">
       <PolicyOverview />
     </q-dialog>
 
     <!-- policy relations modal -->
-    <q-dialog 
-      v-model="showRelationsViewModal"
-      @hide="closeRelationsModal"
-    >
+    <q-dialog v-model="showRelationsViewModal" @hide="closeRelationsModal">
       <RelationsView :policy="policy" />
     </q-dialog>
   </div>
@@ -251,18 +231,18 @@ export default {
           name: "desc",
           label: "Description",
           field: "desc",
-          align: "left",
+          align: "left"
         },
         {
           name: "actions",
           label: "Actions",
           field: "actions",
-          align: "left",
+          align: "left"
         }
       ],
       pagination: {
         rowsPerPage: 9999
-      },
+      }
     };
   },
   methods: {
@@ -323,26 +303,26 @@ export default {
       this.showPolicyFormModal = true;
     },
     showPolicyOverview() {
-      this.showPolicyOverviewModal = true
+      this.showPolicyOverviewModal = true;
       this.clearRow();
     },
     toggleCheckbox(policy, type) {
       let text = "";
 
       if (type === "Active") {
-        text =  policy.active ? "Policy enabled successfully" : "Policy disabled successfully";
+        text = policy.active ? "Policy enabled successfully" : "Policy disabled successfully";
       } else if (type === "Enforced") {
-        text =  policy.enforced ? "Policy enforced successfully" : "Policy enforcement disabled";
+        text = policy.enforced ? "Policy enforced successfully" : "Policy enforcement disabled";
       }
 
-      const data ={
+      const data = {
         id: policy.id,
         name: policy.name,
         desc: policy.desc,
         active: policy.active,
         enforced: policy.enforced
-      }
- 
+      };
+
       this.$store
         .dispatch("automation/editPolicy", data)
         .then(response => {

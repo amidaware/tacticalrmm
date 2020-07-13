@@ -179,11 +179,16 @@ class Agent(models.Model):
             disks = self.wmi_detail["disk"]
             phys = []
             for disk in disks:
-                model = [x["Caption"] for x in disk if "Caption" in x][0]
-                size = [x["Size"] for x in disk if "Size" in x][0]
                 interface_type = [
                     x["InterfaceType"] for x in disk if "InterfaceType" in x
                 ][0]
+
+                if interface_type == "USB":
+                    continue
+
+                model = [x["Caption"] for x in disk if "Caption" in x][0]
+                size = [x["Size"] for x in disk if "Size" in x][0]
+
                 phys.append(
                     {
                         "model": model,

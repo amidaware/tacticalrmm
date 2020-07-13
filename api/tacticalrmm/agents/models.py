@@ -165,13 +165,23 @@ class Agent(models.Model):
             comp_sys = self.wmi_detail["comp_sys"][0]
             comp_sys_prod = self.wmi_detail["comp_sys_prod"][0]
             make = [x["Vendor"] for x in comp_sys_prod if "Vendor" in x][0]
-            model = [x["SystemFamily"] for x in comp_sys if "SystemFamily" in x][0]
-            if not make or not model:
-                return [x["Version"] for x in comp_sys_prod if "Version" in x][0]
-            else:
-                return f"{make} {model}"
+            model = [x["Model"] for x in comp_sys if "Model" in x][0]
+
+            if "to be filled" in model.lower():
+                mobo = self.wmi_detail["base_board"][0]
+                make = [x["Manufacturer"] for x in mobo if "Manufacturer" in x][0]
+                model = [x["Product"] for x in mobo if "Product" in x][0]
+
+            return f"{make} {model}"
         except:
-            return "unknown make/model"
+            pass
+
+        try:
+            return [x["Version"] for x in comp_sys_prod if "Version" in x][0]
+        except:
+            pass
+
+        return "unknown make/model"
 
     @property
     def physical_disks(self):

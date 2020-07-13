@@ -17,11 +17,11 @@
             </q-item-section>
             <q-item-section>{{ summary.make_model }}</q-item-section>
           </q-item>
-          <q-item>
+          <q-item v-for="(cpu, i) in summary.cpu_model" :key="cpu + i">
             <q-item-section avatar>
               <q-icon name="fas fa-microchip" />
             </q-item-section>
-            <q-item-section>{{ summary.cpu_model }}</q-item-section>
+            <q-item-section>{{ cpu }}</q-item-section>
           </q-item>
           <q-item>
             <q-item-section avatar>
@@ -31,11 +31,11 @@
           </q-item>
 
           <!-- physical disks -->
-          <q-item v-for="disk in summary.physical_disks" :key="disk.model">
+          <q-item v-for="(disk, i) in summary.physical_disks" :key="disk + i">
             <q-item-section avatar>
               <q-icon name="far fa-hdd" />
             </q-item-section>
-            <q-item-section>{{ disk.model }} {{ disk.size }}GB {{ disk.interfaceType }}</q-item-section>
+            <q-item-section>{{ disk }}</q-item-section>
           </q-item>
           <q-item>
             <q-item-section avatar>

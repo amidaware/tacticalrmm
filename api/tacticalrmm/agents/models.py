@@ -131,11 +131,14 @@ class Agent(models.Model):
 
     @property
     def cpu_model(self):
+        ret = []
         try:
-            cpu = self.wmi_detail["cpu"][0]
-            return [x["Name"] for x in cpu if "Name" in x][0]
+            cpus = self.wmi_detail["cpu"]
+            for cpu in cpus:
+                ret.append([x["Name"] for x in cpu if "Name" in x][0])
+            return ret
         except:
-            return "unknown cpu model"
+            return ["unknown cpu model"]
 
     @property
     def local_ips(self):
@@ -187,7 +190,7 @@ class Agent(models.Model):
     def physical_disks(self):
         try:
             disks = self.wmi_detail["disk"]
-            phys = []
+            ret = []
             for disk in disks:
                 interface_type = [
                     x["InterfaceType"] for x in disk if "InterfaceType" in x
@@ -199,17 +202,12 @@ class Agent(models.Model):
                 model = [x["Caption"] for x in disk if "Caption" in x][0]
                 size = [x["Size"] for x in disk if "Size" in x][0]
 
-                phys.append(
-                    {
-                        "model": model,
-                        "size": round(int(size) / 1_073_741_824),  # bytes to GB
-                        "interfaceType": interface_type,
-                    }
-                )
+                size_in_gb = round(int(size) / 1_073_741_824)
+                ret.append(f"{model} {size_in_gb:,}GB {interface_type}")
 
-            return phys
+            return ret
         except:
-            return [{"model": "unknown", "size": "unknown", "interfaceType": "unknown"}]
+            return ["unknown disk"]
 
     # clear is used to delete managed policy checks from agent
     # parent_checks specifies a list of checks to delete from agent with matching parent_check field

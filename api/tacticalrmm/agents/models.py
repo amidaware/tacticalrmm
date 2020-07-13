@@ -329,10 +329,10 @@ class Agent(models.Model):
     def salt_batch_async(**kwargs):
         assert isinstance(kwargs["minions"], list)
 
-        targets = ",".join(kwargs["minions"])
         json = {
             "client": "local_async",
-            "tgt": targets,
+            "tgt_type": "list",
+            "tgt": kwargs["minions"],
             "fun": kwargs["func"],
             "username": settings.SALT_USERNAME,
             "password": settings.SALT_PASSWORD,

@@ -227,20 +227,24 @@ def power_action(request):
 
 @api_view(["POST"])
 def send_raw_cmd(request):
-    pk = request.data["pk"]
-    cmd = request.data["rawcmd"]
-    if not cmd:
-        return notify_error("Please enter a command")
+    agent = get_object_or_404(Agent, pk=request.data["pk"])
 
-    agent = get_object_or_404(Agent, pk=pk)
-    # TODO add timeout to frontend
-    r = agent.salt_api_cmd(timeout=30, func="cmd.run", arg=cmd)
+    r = agent.salt_api_cmd(
+        timeout=request.data["timeout"],
+        func="cmd.run",
+        kwargs={
+            "cmd": request.data["cmd"],
+            "shell": request.data["shell"],
+            "timeout": request.data["timeout"],
+        },
+    )
+
     if r == "timeout":
         return notify_error("Unable to contact the agent")
     elif r == "error" or not r:
         return notify_error("Something went wrong")
 
-    logger.info(f"The command {cmd} was sent on agent {agent.hostname}")
+    logger.info(f"The command {request.data['cmd']} was sent on agent {agent.hostname}")
     return Response(r)
 
 

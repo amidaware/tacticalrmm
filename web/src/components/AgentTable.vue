@@ -106,12 +106,7 @@
                 <q-item-section>Remote Desktop</q-item-section>
               </q-item>
 
-              <q-item
-                clickable
-                v-ripple
-                v-close-popup
-                @click="toggleSendCommand(props.row.id, props.row.hostname)"
-              >
+              <q-item clickable v-ripple v-close-popup @click="showSendCommand = true">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-terminal" />
                 </q-item-section>
@@ -298,32 +293,6 @@
     <q-inner-loading :showing="agentTableLoading">
       <q-spinner size="40px" color="primary" />
     </q-inner-loading>
-    <!-- send command modal -->
-    <q-dialog v-model="sendCommandToggle" persistent>
-      <q-card style="min-width: 400px">
-        <q-card-section>
-          <div class="text-h6">Send cmd on {{ sendCommandHostname }}</div>
-        </q-card-section>
-
-        <q-card-section>
-          <q-form @submit.prevent="sendCommand">
-            <q-card-section>
-              <q-input
-                dense
-                v-model="rawCMD"
-                persistent
-                autofocus
-                :rules="[val => !!val || 'Field is required']"
-              />
-            </q-card-section>
-            <q-card-actions align="right" class="text-primary">
-              <q-btn flat color="red" label="Cancel" v-close-popup />
-              <q-btn color="positive" :loading="loadingSendCMD" label="Send" type="submit" />
-            </q-card-actions>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
     <!-- edit agent modal -->
     <q-dialog v-model="showEditAgentModal">
       <EditAgent @close="showEditAgentModal = false" @edited="agentEdited" />
@@ -338,17 +307,23 @@
     <q-dialog v-model="showPolicyAddModal">
       <PolicyAdd @close="showPolicyAddModal = false" type="agent" :pk="policyAddPk" />
     </q-dialog>
+    <!-- send command modal -->
+    <q-dialog v-model="showSendCommand">
+      <SendCommand @close="showSendCommand = false" :pk="selectedAgentPk" />
+    </q-dialog>
   </div>
 </template>
 
 <script>
 import axios from "axios";
 import mixins from "@/mixins/mixins";
+import { mapGetters } from "vuex";
 import { openURL } from "quasar";
 import EditAgent from "@/components/modals/agents/EditAgent";
 import RebootLater from "@/components/modals/agents/RebootLater";
 import PendingActions from "@/components/modals/logs/PendingActions";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
+import SendCommand from "@/components/modals/agents/SendCommand";
 
 export default {
   name: "AgentTable",
@@ -357,7 +332,8 @@ export default {
     EditAgent,
     RebootLater,
     PendingActions,
-    PolicyAdd
+    PolicyAdd,
+    SendCommand
   },
   mixins: [mixins],
   data() {
@@ -367,11 +343,7 @@ export default {
         sortBy: "hostname",
         descending: false
       },
-      sendCommandToggle: false,
-      sendCommandID: null,
-      sendCommandHostname: "",
-      rawCMD: "",
-      loadingSendCMD: false,
+      showSendCommand: false,
       showEditAgentModal: false,
       showRebootLaterModal: false,
       showPolicyAddModal: false,
@@ -504,37 +476,6 @@ export default {
           });
         });
     },
-    toggleSendCommand(pk, hostname) {
-      this.sendCommandToggle = true;
-      this.sendCommandID = pk;
-      this.sendCommandHostname = hostname;
-    },
-    sendCommand() {
-      const rawcmd = this.rawCMD;
-      const hostname = this.sendCommandHostname;
-      const pk = this.sendCommandID;
-      const data = {
-        pk: pk,
-        rawcmd: rawcmd
-      };
-      this.loadingSendCMD = true;
-      axios
-        .post("/agents/sendrawcmd/", data)
-        .then(r => {
-          this.loadingSendCMD = false;
-          this.sendCommandToggle = false;
-          this.$q.dialog({
-            title: `<code>${rawcmd} on ${hostname}`,
-            style: "width: 900px; max-width: 90vw",
-            message: `<pre>${r.data}</pre>`,
-            html: true
-          });
-        })
-        .catch(err => {
-          this.loadingSendCMD = false;
-          this.notifyError(err.response.data);
-        });
-    },
     agentRowSelected(pk) {
       this.$store.commit("setActiveRow", pk);
       this.$store.dispatch("loadSummary", pk);
@@ -590,6 +531,7 @@ export default {
     }
   },
   computed: {
+    ...mapGetters(["selectedAgentPk"]),
     selectedRow() {
       return this.$store.state.selectedRow;
     },

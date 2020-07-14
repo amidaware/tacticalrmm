@@ -1,7 +1,7 @@
 <template>
   <div class="q-pa-md q-gutter-sm">
     <q-dialog :value="toggleScriptManager" @hide="hideScriptManager" @show="getScripts">
-      <q-card style="width: 900px; max-width: 90vw;">
+      <q-card style="min-width: 55vw;">
         <q-bar>
           <q-btn @click="getScripts" class="q-mr-sm" dense flat push icon="refresh" />Script Manager
           <q-space />
@@ -86,7 +86,7 @@
                 @click="scriptpk = props.row.id; filename = props.row.filename; code = props.row.code;"
               >
                 <q-td>{{ props.row.name }}</q-td>
-                <q-td>{{ props.row.description }}</q-td>
+                <q-td>{{ truncateText(props.row.description) }}</q-td>
                 <q-td>{{ props.row.filename }}</q-td>
                 <q-td>{{ props.row.shell }}</q-td>
               </q-tr>
@@ -223,6 +223,9 @@ export default {
           break;
       }
       this.showScriptModal = true;
+    },
+    truncateText(txt) {
+      return txt.length >= 60 ? txt.substring(0, 60) + "..." : txt;
     }
   },
   computed: {

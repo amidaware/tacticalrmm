@@ -117,5 +117,8 @@ def check_for_updates_task(pk, wait=False):
     elif isinstance(needs_reboot, bool) and needs_reboot:
         agent.needs_reboot = True
         agent.save(update_fields=["needs_reboot"])
+    else:
+        agent.needs_reboot = False
+        agent.save(update_fields=["needs_reboot"])
 
     return "ok"

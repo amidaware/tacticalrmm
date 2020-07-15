@@ -54,14 +54,31 @@ logger.configure(**settings.LOG_CONFIG)
 @permission_classes((IsAuthenticated,))
 def trigger_patch_scan(request):
     agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-    check_for_updates_task.delay(agent.pk, wait=False)
+    reboot_policy = agent.winupdatepolicy.get().reboot_after_install
+    reboot = False
+
+    if reboot_policy == "always":
+        reboot = True
 
     if request.data["reboot"]:
-        agent.needs_reboot = True
-    else:
-        agent.needs_reboot = False
+        if reboot_policy == "required":
+            reboot = True
+        elif reboot_policy == "never":
+            agent.needs_reboot = True
+            agent.save(update_fields=["needs_reboot"])
 
-    agent.save(update_fields=["needs_reboot"])
+    if reboot:
+        r = agent.salt_api_cmd(
+            timeout=15, func="system.reboot", arg=7, kwargs={"in_seconds": True},
+        )
+
+        if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
+            check_for_updates_task.delay(agent.pk, wait=False)
+        else:
+            logger.info(f"{agent.hostname} is rebooting after updates were installed.")
+    else:
+        check_for_updates_task.delay(agent.pk, wait=False)
+
     return Response("ok")
 
 
@@ -193,6 +210,7 @@ def update(request):
     sync_salt_modules_task.delay(agent.pk)
     get_installed_software.delay(agent.pk)
     get_wmi_detail_task.delay(agent.pk)
+    check_for_updates_task.delay(agent.pk, wait=True)
 
     if not agent.choco_installed:
         install_chocolatey.delay(agent.pk, wait=True)
@@ -209,9 +227,6 @@ def on_agent_first_install(request):
     if r == "timeout" or r == "error" or not r:
         return notify_error("err")
 
-    get_wmi_detail_task.delay(agent.pk)
-    get_installed_software.delay(agent.pk)
-    check_for_updates_task.delay(agent.pk, wait=True)
     return Response("ok")
 
 

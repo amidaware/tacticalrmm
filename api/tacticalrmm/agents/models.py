@@ -98,7 +98,7 @@ class Agent(models.Model):
     @property
     def has_patches_pending(self):
 
-        if self.winupdates.filter(action="approve").exists():
+        if self.winupdates.filter(action="approve").filter(installed=False).exists():
             return True
         else:
             return False

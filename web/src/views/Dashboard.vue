@@ -240,6 +240,11 @@ export default {
           align: "left"
         },
         {
+          name: "needsreboot",
+          field: "needs_reboot",
+          align: "left"
+        },
+        {
           name: "lastseen",
           label: "Last Response",
           field: "last_seen",

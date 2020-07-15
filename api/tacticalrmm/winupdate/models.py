@@ -79,7 +79,7 @@ class WinUpdatePolicy(models.Model):
     )
 
     reboot_after_install = models.CharField(
-        max_length=50, choices=REBOOT_AFTER_INSTALL_CHOICES, default="required"
+        max_length=50, choices=REBOOT_AFTER_INSTALL_CHOICES, default="never"
     )
 
     reprocess_failed = models.BooleanField(default=False)

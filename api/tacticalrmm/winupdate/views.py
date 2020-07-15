@@ -88,26 +88,18 @@ def results(request):
 
     elif results == "success":
         update.result = "success"
-        update.action = "nothing"
         update.downloaded = True
         update.installed = True
         update.date_installed = djangotime.now()
         update.save(
-            update_fields=[
-                "result",
-                "action",
-                "downloaded",
-                "installed",
-                "date_installed",
-            ]
+            update_fields=["result", "downloaded", "installed", "date_installed",]
         )
 
     elif results == "alreadyinstalled":
         update.result = "success"
-        update.action = "nothing"
         update.downloaded = True
         update.installed = True
-        update.save(update_fields=["result", "action", "downloaded", "installed"])
+        update.save(update_fields=["result", "downloaded", "installed"])
     else:
         pass
 

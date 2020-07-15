@@ -36,7 +36,7 @@
       </template>
       <template v-slot:header-cell-patchespending="props">
         <q-th auto-width :props="props">
-          <q-icon name="system_update_alt" size="1.5em">
+          <q-icon name="verified_user" size="1.5em">
             <q-tooltip>Patches Pending</q-tooltip>
           </q-icon>
         </q-th>
@@ -51,6 +51,13 @@
         <q-th auto-width :props="props">
           <q-icon name="fas fa-signal" size="1.2em">
             <q-tooltip>Agent Status</q-tooltip>
+          </q-icon>
+        </q-th>
+      </template>
+      <template v-slot:header-cell-needsreboot="props">
+        <q-th auto-width :props="props">
+          <q-icon name="fas fa-power-off" size="1.2em">
+            <q-tooltip>Reboot</q-tooltip>
           </q-icon>
         </q-th>
       </template>
@@ -250,7 +257,7 @@
           <q-td key="hostname" :props="props">{{ props.row.hostname }}</q-td>
           <q-td key="description" :props="props">{{ props.row.description }}</q-td>
           <q-td :props="props" key="patchespending">
-            <q-icon v-if="props.row.patches_pending" name="fas fa-power-off" color="primary">
+            <q-icon v-if="props.row.patches_pending" name="far fa-clock" color="primary">
               <q-tooltip>Patches Pending</q-tooltip>
             </q-icon>
           </q-td>
@@ -283,6 +290,12 @@
             </q-icon>
             <q-icon v-else name="fas fa-signal" size="1.2em" color="positive">
               <q-tooltip>Agent online</q-tooltip>
+            </q-icon>
+          </q-td>
+          <!-- needs reboot -->
+          <q-td key="needsreboot">
+            <q-icon v-if="props.row.needs_reboot" name="fas fa-power-off" color="primary">
+              <q-tooltip>Reboot required</q-tooltip>
             </q-icon>
           </q-td>
           <q-td key="lastseen" :props="props">{{ props.row.last_seen }}</q-td>

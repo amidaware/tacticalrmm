@@ -39,6 +39,8 @@ def install_updates(request, pk):
         return notify_error("Unable to contact the agent")
     elif r == "error":
         return notify_error("Something went wrong")
+    elif r == "running":
+        return notify_error(f"Updates are already being installed on {agent.hostname}")
 
     # successful response: {'return': [{'SALT-ID': {'pid': 3316}}]}
     try:

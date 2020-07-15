@@ -53,6 +53,11 @@ def run_manual_checks():
 
 
 def install_updates():
+    for p in psutil.process_iter():
+        with p.oneshot():
+            if p.name() == "tacticalrmm.exe" and "winupdater" in p.cmdline():
+                return "running"
+
     return __salt__["cmd.run_bg"]([TAC_RMM, "-m", "winupdater"])
 
 

@@ -118,7 +118,7 @@
                 :tab="tab"
                 :filter="filteredAgents"
                 :userName="user"
-                @refreshEdit="getTree"
+                @refreshEdit="refreshEntireSite"
               />
             </template>
             <template v-slot:after>

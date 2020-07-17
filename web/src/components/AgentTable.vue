@@ -256,6 +256,10 @@
 
           <q-td key="hostname" :props="props">{{ props.row.hostname }}</q-td>
           <q-td key="description" :props="props">{{ props.row.description }}</q-td>
+          <q-td key="user" :props="props">
+            <span v-if="props.row.logged_in_username !== 'None'">{{ props.row.logged_in_username }}</span>
+            <span v-else>-</span>
+          </q-td>
           <q-td :props="props" key="patchespending">
             <q-icon v-if="props.row.patches_pending" name="far fa-clock" color="primary">
               <q-tooltip>Patches Pending</q-tooltip>

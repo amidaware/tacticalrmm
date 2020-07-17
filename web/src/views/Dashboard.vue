@@ -227,6 +227,13 @@ export default {
           align: "left"
         },
         {
+          name: "user",
+          label: "User",
+          field: "logged_in_username",
+          sortable: true,
+          align: "left"
+        },
+        {
           name: "patchespending",
           align: "left"
         },

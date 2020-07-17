@@ -12,7 +12,7 @@ export default {
 
 <style lang="sass">
 .tabs-tbl-sticky
-  max-height: 25vh
+  max-height: 35vh
 
   .q-table__top,
   .q-table__bottom,

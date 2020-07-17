@@ -20,22 +20,22 @@
     </q-tabs>
     <q-separator />
     <q-tab-panels v-model="subtab" :animated="false">
-      <q-tab-panel name="summary">
+      <q-tab-panel name="summary" class="q-pb-none q-pt-xs">
         <SummaryTab />
       </q-tab-panel>
-      <q-tab-panel name="checks">
+      <q-tab-panel name="checks" class="q-pb-xs q-pt-none">
         <ChecksTab />
       </q-tab-panel>
-      <q-tab-panel name="tasks">
+      <q-tab-panel name="tasks" class="q-pb-xs q-pt-none">
         <AutomatedTasksTab />
       </q-tab-panel>
-      <q-tab-panel name="patches">
+      <q-tab-panel name="patches" class="q-pb-xs q-pt-none">
         <WindowsUpdates />
       </q-tab-panel>
-      <q-tab-panel name="software">
+      <q-tab-panel name="software" class="q-pb-xs q-pt-none">
         <SoftwareTab />
       </q-tab-panel>
-      <q-tab-panel name="assets">
+      <q-tab-panel name="assets" class="q-pb-xs q-pt-none">
         <AssetsTab />
       </q-tab-panel>
     </q-tab-panels>

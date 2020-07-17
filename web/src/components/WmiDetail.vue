@@ -1,5 +1,5 @@
 <template>
-  <div class="scroll" style="max-height: 28vh">
+  <div class="scroll" style="max-height: 32vh">
     <div v-for="i in info" :key="i + randomID()">
       <div v-for="j in i" :key="j + randomID()">
         <div v-for="(v, k) in j" :key="v + randomID()">

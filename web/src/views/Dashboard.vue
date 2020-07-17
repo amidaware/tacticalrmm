@@ -95,7 +95,7 @@
         </template>
 
         <template v-slot:after>
-          <q-splitter v-model="innerModel" horizontal style="height: 88vh">
+          <q-splitter v-model="innerModel" horizontal style="height: 87vh">
             <template v-slot:before>
               <q-tabs
                 v-model="tab"
@@ -180,7 +180,6 @@ export default {
       selectedTree: "",
       innerModel: 50,
       tab: "server",
-      left: true,
       clientActive: "",
       siteActive: "",
       frame: [],

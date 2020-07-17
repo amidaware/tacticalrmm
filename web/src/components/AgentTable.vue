@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-sm">
+  <div class="q-pt-none q-pb-none q-pr-xs q-pl-xs">
     <q-table
       dense
       class="agents-tbl-sticky"

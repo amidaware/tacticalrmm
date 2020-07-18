@@ -1,7 +1,7 @@
 <template>
-  <q-card style="width: 90vw" >
+  <q-card style="width: 90vw">
     <q-card-section class="row items-center">
-      <div class="text-h6">{{ this.item.readable_desc }}</div>
+      <div class="text-h6">{{ this.title }}</div>
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
@@ -21,11 +21,9 @@
           <q-th auto-width :props="props"></q-th>
         </template>
         <!-- No data Slot -->
-        <template v-slot:no-data >
+        <template v-slot:no-data>
           <div class="full-width row flex-center q-gutter-sm">
-            <span>
-              There are no agents applied to this policy
-            </span>
+            <span>There are no agents applied to this policy</span>
           </div>
         </template>
         <!-- body slots -->
@@ -41,13 +39,15 @@
             <q-td v-else-if="props.row.status === 'failing'">
               <q-icon style="font-size: 1.3rem;" color="negative" name="error" />
             </q-td>
+            <q-td v-else></q-td>
             <!-- status text -->
             <q-td v-if="props.row.status === 'pending'">Awaiting First Synchronization</q-td>
-            <q-td v-else-if="props.row.status === 'passing'">
-              <q-badge color="positive">Passing</q-badge>
-            </q-td>
+            <q-td v-else-if="props.row.status === 'passing'"></q-td>
             <q-td v-else-if="props.row.status === 'failing'">
               <q-badge color="negative">Failing</q-badge>
+            </q-td>
+            <q-td v-else>
+              <q-badge color="positive">No Issues</q-badge>
             </q-td>
             <!-- more info -->
             <q-td v-if="props.row.check_type === 'ping'">
@@ -57,7 +57,9 @@
                 class="ping-cell"
               >output</span>
             </q-td>
-            <q-td v-else-if="props.row.check_type === 'script'">
+            <q-td
+              v-else-if="props.row.check_type === 'script' || props.row.retcode || props.row.stdout || props.row.stderr"
+            >
               <span
                 style="cursor:pointer;color:blue;text-decoration:underline"
                 @click="scriptMoreInfo(props.row)"
@@ -74,7 +76,8 @@
             <q-td
               v-else-if="props.row.check_type === 'cpuload' || props.row.check_type === 'memory'"
             >{{ props.row.history_info }}</q-td>
-            <q-td v-else>{{ props.row.more_info }}</q-td>
+            <q-td v-else-if="props.row.more_info">{{ props.row.more_info }}</q-td>
+            <q-td v-else>Awaiting Output</q-td>
             <!-- last run -->
             <q-td>{{ props.row.last_run }}</q-td>
           </q-tr>
@@ -86,10 +89,7 @@
       <ScriptOutput @close="closeScriptOutput" :scriptInfo="scriptInfo" />
     </q-dialog>
     <q-dialog v-model="showEventLogOutput" @hide="closeEventLogOutput">
-      <EventLogCheckOutput
-        @close="closeEventLogOutput"
-        :evtlogdata="evtLogData"
-      />
+      <EventLogCheckOutput @close="closeEventLogOutput" :evtlogdata="evtLogData" />
     </q-dialog>
   </q-card>
 </template>
@@ -112,7 +112,7 @@ export default {
     type: {
       required: true,
       type: String,
-      validator: function (value) {
+      validator: function(value) {
         // The value must match one of these strings
         return ["task", "check"].includes(value);
       }
@@ -145,6 +145,11 @@ export default {
       pagination: {
         rowsPerPage: 9999
       }
+    };
+  },
+  computed: {
+    title() {
+      return this.item.readable_desc ? this.item.readable_desc + " Status" : this.item.name + " Status";
     }
   },
   methods: {
@@ -154,7 +159,7 @@ export default {
         .dispatch("automation/loadCheckStatus", { checkpk: this.item.id })
         .then(r => {
           this.$q.loading.hide();
-          this.tableData = r.data
+          this.tableData = r.data;
         })
         .catch(e => {
           this.$q.loading.hide();
@@ -167,20 +172,20 @@ export default {
         .dispatch("automation/loadAutomatedTaskStatus", { taskpk: this.item.id })
         .then(r => {
           this.$q.loading.hide();
-          this.tableData = r.data
+          this.tableData = r.data;
         })
         .catch(e => {
           this.$q.loading.hide();
           // TODO: Return Error message from api and display
-        });;
+        });
     },
     closeEventLogOutput() {
-      this.showEventLogOutput = false; 
+      this.showEventLogOutput = false;
       this.evtLogdata = {};
     },
     closeScriptOutput() {
-      this.showScriptOutput = false; 
-      this.scriptInfo = {}
+      this.showScriptOutput = false;
+      this.scriptInfo = {};
     },
     pingInfo(check) {
       this.$q.dialog({
@@ -197,16 +202,14 @@ export default {
     eventLogMoreInfo(check) {
       this.evtLogData = check;
       this.showEventLogOutput = true;
-    },
+    }
   },
   mounted() {
     if (this.type === "task") {
       this.getTaskData();
-    } 
-    else {
+    } else {
       this.getCheckData();
-    } 
-
+    }
   }
-}
+};
 </script>

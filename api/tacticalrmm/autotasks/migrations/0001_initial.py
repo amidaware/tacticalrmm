@@ -10,33 +10,115 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('agents', '0001_initial'),
-        ('automation', '0001_initial'),
-        ('checks', '0001_initial'),
-        ('scripts', '0001_initial'),
+        ("agents", "0001_initial"),
+        ("automation", "0001_initial"),
+        ("checks", "0001_initial"),
+        ("scripts", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='AutomatedTask',
+            name="AutomatedTask",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255)),
-                ('run_time_days', django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(blank=True, choices=[(0, 'Monday'), (1, 'Tuesday'), (2, 'Wednesday'), (3, 'Thursday'), (4, 'Friday'), (5, 'Saturday'), (6, 'Sunday')], null=True), blank=True, default=list, null=True, size=None)),
-                ('run_time_minute', models.CharField(blank=True, max_length=5, null=True)),
-                ('task_type', models.CharField(choices=[('scheduled', 'Scheduled'), ('checkfailure', 'On Check Failure'), ('manual', 'Manual')], default='manual', max_length=100)),
-                ('win_task_name', models.CharField(blank=True, max_length=255, null=True)),
-                ('timeout', models.PositiveIntegerField(default=120)),
-                ('retcode', models.IntegerField(blank=True, null=True)),
-                ('stdout', models.TextField(blank=True, null=True)),
-                ('stderr', models.TextField(blank=True, null=True)),
-                ('execution_time', models.CharField(default='0.0000', max_length=100)),
-                ('last_run', models.DateTimeField(blank=True, null=True)),
-                ('enabled', models.BooleanField(default=True)),
-                ('agent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='autotasks', to='agents.Agent')),
-                ('assigned_check', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='assignedtask', to='checks.Check')),
-                ('policy', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='autotasks', to='automation.Policy')),
-                ('script', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='autoscript', to='scripts.Script')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                (
+                    "run_time_days",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.IntegerField(
+                            blank=True,
+                            choices=[
+                                (0, "Monday"),
+                                (1, "Tuesday"),
+                                (2, "Wednesday"),
+                                (3, "Thursday"),
+                                (4, "Friday"),
+                                (5, "Saturday"),
+                                (6, "Sunday"),
+                            ],
+                            null=True,
+                        ),
+                        blank=True,
+                        default=list,
+                        null=True,
+                        size=None,
+                    ),
+                ),
+                (
+                    "run_time_minute",
+                    models.CharField(blank=True, max_length=5, null=True),
+                ),
+                (
+                    "task_type",
+                    models.CharField(
+                        choices=[
+                            ("scheduled", "Scheduled"),
+                            ("checkfailure", "On Check Failure"),
+                            ("manual", "Manual"),
+                        ],
+                        default="manual",
+                        max_length=100,
+                    ),
+                ),
+                (
+                    "win_task_name",
+                    models.CharField(blank=True, max_length=255, null=True),
+                ),
+                ("timeout", models.PositiveIntegerField(default=120)),
+                ("retcode", models.IntegerField(blank=True, null=True)),
+                ("stdout", models.TextField(blank=True, null=True)),
+                ("stderr", models.TextField(blank=True, null=True)),
+                ("execution_time", models.CharField(default="0.0000", max_length=100)),
+                ("last_run", models.DateTimeField(blank=True, null=True)),
+                ("enabled", models.BooleanField(default=True)),
+                (
+                    "agent",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="autotasks",
+                        to="agents.Agent",
+                    ),
+                ),
+                (
+                    "assigned_check",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="assignedtask",
+                        to="checks.Check",
+                    ),
+                ),
+                (
+                    "policy",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="autotasks",
+                        to="automation.Policy",
+                    ),
+                ),
+                (
+                    "script",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="autoscript",
+                        to="scripts.Script",
+                    ),
+                ),
             ],
         ),
     ]

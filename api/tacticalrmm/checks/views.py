@@ -24,9 +24,9 @@ from .tasks import handle_check_email_alert_task, run_checks_task
 from autotasks.tasks import delete_win_task_schedule
 
 from automation.tasks import (
-    generate_agent_checks_from_policies_task, 
+    generate_agent_checks_from_policies_task,
     delete_policy_check_task,
-    update_policy_check_fields_task
+    update_policy_check_fields_task,
 )
 
 
@@ -62,7 +62,20 @@ class GetAddCheck(APIView):
         if policy:
             generate_agent_checks_from_policies_task.delay(policypk=policy.pk)
         elif agent:
-            agent.generate_checks_from_policies()
+            checks = agent.agentchecks.filter(
+                check_type=obj.check_type, managed_by_policy=True
+            )
+
+            # Should only be one
+            duplicate_check = [check for check in checks if check.is_duplicate(obj)]
+
+            if duplicate_check:
+                policy = Check.objects.get(pk=duplicate_check[0].parent_check).policy
+                if policy.enforced:
+                    obj.overriden_by_policy = True
+                    obj.save()
+                else:
+                    duplicate_check[0].delete()
 
         return Response(f"{obj.readable_desc} was added!")
 
@@ -92,20 +105,25 @@ class GetUpdateDeleteCheck(APIView):
     def delete(self, request, pk):
         check = get_object_or_404(Check, pk=pk)
 
+        check_pk = check.pk
+        policy_pk = None
+        if check.policy:
+            policy_pk = check.policy.pk
+
+        check.delete()
+
         # Policy check deleted
         if check.policy:
-            delete_policy_check_task.delay(checkpk=check.pk)
+            delete_policy_check_task.delay(checkpk=check_pk)
 
             # Re-evaluate agent checks is policy was enforced
             if check.policy.enforced:
-                generate_agent_checks_from_policies_task.delay(policypk=check.policy.pk)
+                generate_agent_checks_from_policies_task.delay(policypk=policy_pk)
 
         # Agent check deleted
         elif check.agent:
             check.agent.generate_checks_from_policies()
 
-        check.delete()
-        
         return Response(f"{check.readable_desc} was deleted!")
 
 

@@ -44,6 +44,8 @@ from autotasks.serializers import TaskRunnerGetSerializer, TaskRunnerPatchSerial
 from checks.serializers import CheckRunnerGetSerializer, CheckResultsSerializer
 from software.tasks import install_chocolatey, get_installed_software
 
+from tacticalrmm.utils import notify_error
+
 logger.configure(**settings.LOG_CONFIG)
 
 
@@ -52,14 +54,31 @@ logger.configure(**settings.LOG_CONFIG)
 @permission_classes((IsAuthenticated,))
 def trigger_patch_scan(request):
     agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-    check_for_updates_task.delay(agent.pk, wait=False)
+    reboot_policy = agent.winupdatepolicy.get().reboot_after_install
+    reboot = False
+
+    if reboot_policy == "always":
+        reboot = True
 
     if request.data["reboot"]:
-        agent.needs_reboot = True
-    else:
-        agent.needs_reboot = False
+        if reboot_policy == "required":
+            reboot = True
+        elif reboot_policy == "never":
+            agent.needs_reboot = True
+            agent.save(update_fields=["needs_reboot"])
 
-    agent.save(update_fields=["needs_reboot"])
+    if reboot:
+        r = agent.salt_api_cmd(
+            timeout=15, func="system.reboot", arg=7, kwargs={"in_seconds": True},
+        )
+
+        if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
+            check_for_updates_task.delay(agent.pk, wait=False)
+        else:
+            logger.info(f"{agent.hostname} is rebooting after updates were installed.")
+    else:
+        check_for_updates_task.delay(agent.pk, wait=False)
+
     return Response("ok")
 
 
@@ -179,6 +198,11 @@ def add(request):
 @permission_classes((IsAuthenticated,))
 def update(request):
     agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+
+    if agent.update_pending and request.data["version"] != agent.version:
+        agent.update_pending = False
+        agent.save(update_fields=["update_pending"])
+
     serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
     serializer.save(last_seen=djangotime.now())
@@ -186,6 +210,7 @@ def update(request):
     sync_salt_modules_task.delay(agent.pk)
     get_installed_software.delay(agent.pk)
     get_wmi_detail_task.delay(agent.pk)
+    check_for_updates_task.delay(agent.pk, wait=True)
 
     if not agent.choco_installed:
         install_chocolatey.delay(agent.pk, wait=True)
@@ -197,26 +222,11 @@ def update(request):
 def on_agent_first_install(request):
     pk = request.data["pk"]
     agent = get_object_or_404(Agent, pk=pk)
+    r = agent.salt_api_cmd(timeout=20, func="saltutil.sync_modules")
 
-    resp = agent.salt_api_cmd(
-        hostname=agent.salt_id, timeout=60, func="saltutil.sync_modules"
-    )
-    try:
-        data = resp.json()
-    except Exception:
-        return Response("err", status=status.HTTP_400_BAD_REQUEST)
+    if r == "timeout" or r == "error" or not r:
+        return notify_error("err")
 
-    try:
-        ret = data["return"][0][agent.salt_id]
-    except KeyError:
-        return Response("err", status=status.HTTP_400_BAD_REQUEST)
-
-    if not data["return"][0][agent.salt_id]:
-        return Response("err", status=status.HTTP_400_BAD_REQUEST)
-
-    get_wmi_detail_task.delay(agent.pk)
-    get_installed_software.delay(agent.pk)
-    check_for_updates_task.delay(agent.pk, wait=True)
     return Response("ok")
 
 

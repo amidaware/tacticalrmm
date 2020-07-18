@@ -27,7 +27,10 @@
       <FileBar :clients="clients" @edited="refreshEntireSite" />
       <q-splitter v-model="outsideModel">
         <template v-slot:before>
-          <div class="q-pa-sm q-gutter-sm" v-if="treeReady">
+          <div v-if="!treeReady" class="q-pa-sm q-gutter-sm text-center" style="height: 30vh">
+            <q-spinner size="40px" color="primary" />
+          </div>
+          <div v-else class="q-pa-sm q-gutter-sm">
             <q-list dense class="rounded-borders">
               <q-item clickable v-ripple :active="allClientsActive" @click="clearTreeSelected">
                 <q-item-section avatar>
@@ -89,12 +92,10 @@
               </q-tree>
             </q-list>
           </div>
-          <div v-else>
-            <p>Loading</p>
-          </div>
         </template>
+
         <template v-slot:after>
-          <q-splitter v-model="innerModel" horizontal style="height: 88vh">
+          <q-splitter v-model="innerModel" horizontal style="height: 87vh">
             <template v-slot:before>
               <q-tabs
                 v-model="tab"
@@ -117,7 +118,7 @@
                 :tab="tab"
                 :filter="filteredAgents"
                 :userName="user"
-                @refreshEdit="getTree"
+                @refreshEdit="refreshEntireSite"
               />
             </template>
             <template v-slot:after>
@@ -177,9 +178,8 @@ export default {
       policyAddPk: null,
       outsideModel: 11,
       selectedTree: "",
-      innerModel: 55,
+      innerModel: 50,
       tab: "server",
-      left: true,
       clientActive: "",
       siteActive: "",
       frame: [],
@@ -226,6 +226,13 @@ export default {
           align: "left"
         },
         {
+          name: "user",
+          label: "User",
+          field: "logged_in_username",
+          sortable: true,
+          align: "left"
+        },
+        {
           name: "patchespending",
           align: "left"
         },
@@ -236,6 +243,11 @@ export default {
         {
           name: "agentstatus",
           field: "status",
+          align: "left"
+        },
+        {
+          name: "needsreboot",
+          field: "needs_reboot",
           align: "left"
         },
         {
@@ -363,9 +375,9 @@ export default {
     },
     filteredAgents() {
       if (this.tab === "mixed") {
-        return this.frame;
+        return Object.freeze(this.frame);
       }
-      return this.frame.filter(k => k.monitoring_type === this.tab);
+      return Object.freeze(this.frame.filter(k => k.monitoring_type === this.tab));
     },
     activeNode() {
       return {

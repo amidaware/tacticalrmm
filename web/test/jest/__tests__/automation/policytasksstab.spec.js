@@ -66,6 +66,12 @@ describe("PolicyAutomatedTasksTab.vue with no policy selected", () => {
     expect(wrapper.html()).toContain("Click on a policy to see the tasks");
   });
 
+  it("doesn't show refresh or add button when no policy selected", () => {
+
+    expect(wrapper.findComponent({ ref: "refresh" }).exists()).toBe(false)
+    expect(wrapper.findComponent({ ref: "add" }).exists()).toBe(false)
+  });
+
 });
 
 describe("PolicyAutomatedTasksTab.vue with policy selected and no tasks", () => {

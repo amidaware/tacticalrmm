@@ -12,6 +12,6 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         with open(os.path.join(settings.BASE_DIR, "software/chocos.json")) as f:
             chocos = json.load(f)
-        
+
         ChocoSoftware(chocos=chocos).save()
         self.stdout.write("Chocos saved to db")

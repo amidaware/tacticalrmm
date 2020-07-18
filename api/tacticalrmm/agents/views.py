@@ -22,11 +22,14 @@ from .models import Agent
 from winupdate.models import WinUpdatePolicy
 from clients.models import Client, Site
 from accounts.models import User
+from core.models import CoreSettings
 
 from .serializers import AgentSerializer, AgentHostnameSerializer, AgentTableSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .tasks import uninstall_agent_task, update_agent_task
+from .tasks import uninstall_agent_task
+
+from tacticalrmm.utils import notify_error
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -49,19 +52,34 @@ def update_agents(request):
     pks = request.data["pks"]
     version = request.data["version"]
     ver = version.split("winagent-v")[1]
-    agents = Agent.objects.filter(pk__in=pks)
+    q = Agent.objects.only("pk").filter(pk__in=pks)
 
-    for agent in agents:
-        # don't update if agent's version same or higher
-        if (
-            not pyver.parse(agent.version) >= pyver.parse(ver)
-        ) and not agent.is_updating:
-            agent.is_updating = True
-            agent.save(update_fields=["is_updating"])
+    agents = [i for i in q if pyver.parse(i.version) < pyver.parse(ver)]
 
-            update_agent_task.apply_async(
-                queue="wupdate", kwargs={"pk": agent.pk, "version": version}
-            )
+    if agents:
+        for agent in agents:
+            agent.update_pending = True
+            agent.save(update_fields=["update_pending"])
+
+        minions = [i.salt_id for i in agents]
+
+        r = Agent.get_github_versions()
+        git_versions = r["versions"]
+        data = r["data"]  # full response from github
+        versions = {}
+
+        for i, release in enumerate(data):
+            versions[i] = release["name"]
+
+        key = [k for k, v in versions.items() if v == version][0]
+
+        download_url = data[key]["assets"][0]["browser_download_url"]
+
+        r = Agent.salt_batch_async(
+            minions=minions,
+            func="win_agent.do_agent_update",
+            kwargs={"version": ver, "url": download_url},
+        )
 
     return Response("ok")
 
@@ -69,13 +87,12 @@ def update_agents(request):
 @api_view()
 def ping(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    try:
-        r = agent.salt_api_cmd(hostname=agent.salt_id, timeout=5, func="test.ping")
-    except Exception:
+    r = agent.salt_api_cmd(timeout=5, func="test.ping")
+
+    if r == "timeout" or r == "error":
         return Response({"name": agent.hostname, "status": "offline"})
 
-    data = r.json()["return"][0][agent.salt_id]
-    if isinstance(data, bool) and data:
+    if isinstance(r, bool) and r:
         return Response({"name": agent.hostname, "status": "online"})
     else:
         return Response({"name": agent.hostname, "status": "offline"})
@@ -112,36 +129,36 @@ def edit_agent(request):
 
 
 @api_view()
-def meshcentral_tabs(request, pk):
+def meshcentral(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
+    core = CoreSettings.objects.first()
+
     token = agent.get_login_token(
-        key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}"
-    )
-    terminalurl = f"{settings.MESH_SITE}/?login={token}&node={agent.mesh_node_id}&viewmode=12&hide=31"
-    fileurl = f"{settings.MESH_SITE}/?login={token}&node={agent.mesh_node_id}&viewmode=13&hide=31"
-    return Response(
-        {"hostname": agent.hostname, "terminalurl": terminalurl, "fileurl": fileurl}
+        key=core.mesh_token, user=f"user//{core.mesh_username}"
     )
 
+    if token == "err":
+        return notify_error("Invalid mesh token")
 
-@api_view()
-def take_control(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
-    token = agent.get_login_token(
-        key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}"
+    control = (
+        f"{core.mesh_site}/?login={token}&node={agent.mesh_node_id}&viewmode=11&hide=31"
     )
-    url = f"{settings.MESH_SITE}/?login={token}&node={agent.mesh_node_id}&viewmode=11&hide=31"
-    return Response(url)
-
-
-@api_view()
-def web_rdp(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
-    token = agent.get_login_token(
-        key=settings.MESH_TOKEN_KEY, user=f"user//{settings.MESH_USERNAME}"
+    terminal = (
+        f"{core.mesh_site}/?login={token}&node={agent.mesh_node_id}&viewmode=12&hide=31"
     )
-    url = f"{settings.MESH_SITE}/mstsc.html?login={token}&node={agent.mesh_node_id}"
-    return Response(url)
+    file = (
+        f"{core.mesh_site}/?login={token}&node={agent.mesh_node_id}&viewmode=13&hide=31"
+    )
+    webrdp = f"{core.mesh_site}/mstsc.html?login={token}&node={agent.mesh_node_id}"
+
+    ret = {
+        "hostname": agent.hostname,
+        "control": control,
+        "terminal": terminal,
+        "file": file,
+        "webrdp": webrdp,
+    }
+    return Response(ret)
 
 
 @api_view()
@@ -153,56 +170,43 @@ def agent_detail(request, pk):
 @api_view()
 def get_processes(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    try:
-        resp = agent.salt_api_cmd(
-            hostname=agent.salt_id, timeout=70, func="process_manager.get_procs"
-        )
-        data = resp.json()
-    except Exception:
-        return Response(
-            {"error": "unable to contact the agent"}, status=status.HTTP_400_BAD_REQUEST
-        )
+    r = agent.salt_api_cmd(timeout=20, func="win_agent.get_procs")
 
-    return Response(data["return"][0][agent.salt_id])
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+    elif r == "error":
+        return notify_error("Something went wrong")
+
+    return Response(r)
 
 
 @api_view()
 def kill_proc(request, pk, pid):
     agent = get_object_or_404(Agent, pk=pk)
-    resp = agent.salt_api_cmd(
-        hostname=agent.salt_id, timeout=60, func="ps.kill_pid", arg=int(pid)
-    )
-    data = resp.json()
+    r = agent.salt_api_cmd(timeout=25, func="ps.kill_pid", arg=int(pid))
 
-    if not data["return"][0][agent.salt_id]:
-        return Response(
-            {"error": "Unable to kill the process"}, status=status.HTTP_400_BAD_REQUEST
-        )
-    else:
-        return Response("ok")
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+    elif r == "error":
+        return notify_error("Something went wrong")
+
+    if isinstance(r, bool) and not r:
+        return notify_error("Unable to kill the process")
+
+    return Response("ok")
 
 
 @api_view()
 def get_event_log(request, pk, logtype, days):
     agent = get_object_or_404(Agent, pk=pk)
-    try:
-        resp = agent.salt_api_cmd(
-            hostname=agent.salt_id,
-            timeout=90,
-            salt_timeout=85,
-            func="get_eventlog.get_eventlog",
-            arg=[logtype, int(days)],
-        )
-    except Exception:
-        return Response("Agent timed out", status=status.HTTP_400_BAD_REQUEST)
-
-    return Response(
-        json.loads(
-            zlib.decompress(
-                base64.b64decode(resp.json()["return"][0][agent.salt_id]["wineventlog"])
-            )
-        )
+    r = agent.salt_api_cmd(
+        timeout=30, func="win_agent.get_eventlog", arg=[logtype, int(days)],
     )
+
+    if r == "timeout" or r == "error":
+        return notify_error("Unable to contact the agent")
+
+    return Response(json.loads(zlib.decompress(base64.b64decode(r["wineventlog"]))))
 
 
 @api_view(["POST"])
@@ -212,47 +216,36 @@ def power_action(request):
     agent = get_object_or_404(Agent, pk=pk)
     if action == "rebootnow":
         logger.info(f"{agent.hostname} was scheduled for immediate reboot")
-        resp = agent.salt_api_cmd(
-            hostname=agent.salt_id,
-            timeout=30,
-            func="system.reboot",
-            arg=3,
-            kwargs={"in_seconds": True},
+        r = agent.salt_api_cmd(
+            timeout=30, func="system.reboot", arg=3, kwargs={"in_seconds": True},
         )
-
-    data = resp.json()
-    if not data["return"][0][agent.salt_id]:
-        return Response(
-            "unable to contact the agent", status=status.HTTP_400_BAD_REQUEST
-        )
+    if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
+        return notify_error("Unable to contact the agent")
 
     return Response("ok")
 
 
 @api_view(["POST"])
 def send_raw_cmd(request):
-    pk = request.data["pk"]
-    cmd = request.data["rawcmd"]
-    if not cmd:
-        return Response("please enter a command", status=status.HTTP_400_BAD_REQUEST)
+    agent = get_object_or_404(Agent, pk=request.data["pk"])
 
-    agent = get_object_or_404(Agent, pk=pk)
-    try:
-        resp = agent.salt_api_cmd(
-            hostname=agent.salt_id, timeout=60, func="cmd.run", arg=cmd
-        )
-        data = resp.json()
-    except Exception:
-        return Response(
-            "unable to contact the agent", status=status.HTTP_400_BAD_REQUEST
-        )
+    r = agent.salt_api_cmd(
+        timeout=request.data["timeout"],
+        func="cmd.run",
+        kwargs={
+            "cmd": request.data["cmd"],
+            "shell": request.data["shell"],
+            "timeout": request.data["timeout"],
+        },
+    )
 
-    if not data["return"][0][agent.salt_id]:
-        return Response(
-            "unable to contact the agent", status=status.HTTP_400_BAD_REQUEST
-        )
-    logger.info(f"The command {cmd} was sent on agent {agent.hostname}")
-    return Response(data["return"][0][agent.salt_id])
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+    elif r == "error" or not r:
+        return notify_error("Something went wrong")
+
+    logger.info(f"The command {request.data['cmd']} was sent on agent {agent.hostname}")
+    return Response(r)
 
 
 @api_view()
@@ -312,16 +305,16 @@ def reboot_later(request):
     try:
         obj = dt.datetime.strptime(date_time, "%Y-%m-%d %H:%M")
     except Exception:
-        return Response("invalid date", status=status.HTTP_400_BAD_REQUEST)
+        return notify_error("Invalid date")
 
-    resp = agent.schedule_reboot(obj)
+    r = agent.schedule_reboot(obj)
 
-    if resp["ret"] and resp["success"]:
-        return Response(resp["msg"])
-    elif resp["ret"] and not resp["success"]:
-        return Response(resp["msg"], status=status.HTTP_400_BAD_REQUEST)
-    else:
-        return Response(resp["msg"], status=status.HTTP_400_BAD_REQUEST)
+    if r == "timeout":
+        return notify_error("Unable to contact the agent")
+    elif r == "failed":
+        return notify_error("Something went wrong")
+
+    return Response(r["msg"])
 
 
 @api_view(["POST"])

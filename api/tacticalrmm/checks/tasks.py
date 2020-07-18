@@ -31,23 +31,7 @@ def handle_check_email_alert_task(pk):
 
 
 @app.task
-def restart_win_service_task(pk, svcname):
-    agent = Agent.objects.get(pk=pk)
-    resp = agent.salt_api_cmd(
-        hostname=agent.salt_id, timeout=60, func=f"service.restart", arg=svcname,
-    )
-    data = resp.json()
-    if not data["return"][0][agent.salt_id]:
-        return {"error": f"restart service {svcname} failed on {agent.hostname}"}
-    return "ok"
-
-
-@app.task
 def run_checks_task(pk):
     agent = Agent.objects.get(pk=pk)
-    try:
-        agent.salt_api_async(hostname=agent.salt_id, func="win_agent.run_manual_checks")
-    except:
-        pass
-
+    agent.salt_api_async(func="win_agent.run_manual_checks")
     return "ok"

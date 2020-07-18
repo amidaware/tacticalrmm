@@ -2,6 +2,7 @@
 .quasar
 node_modules
 /dist
+web/dist
 .env.local
 .env.*.local
 npm-debug.log*

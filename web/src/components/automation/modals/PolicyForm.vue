@@ -61,17 +61,14 @@ export default {
     getPolicy() {
       this.$q.loading.show();
 
-      this.$store
-        .dispatch("automation/loadPolicy", this.pk)
-        .then(r => {
+      this.$store.dispatch("automation/loadPolicy", this.pk).then(r => {
+        this.$q.loading.hide();
 
-          this.$q.loading.hide();
-          
-          this.name = r.data.name;
-          this.desc = r.data.desc;
-          this.active = r.data.active;
-          this.enforced = r.data.enforced;
-        });
+        this.name = r.data.name;
+        this.desc = r.data.desc;
+        this.active = r.data.active;
+        this.enforced = r.data.enforced;
+      });
     },
     submit() {
       if (!this.name) {

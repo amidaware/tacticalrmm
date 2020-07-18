@@ -7,6 +7,8 @@ from django.contrib.postgres.fields import ArrayField
 from agents.models import Agent
 from automation.models import Policy
 
+import autotasks
+
 RUN_TIME_DAY_CHOICES = [
     (0, "Monday"),
     (1, "Tuesday"),
@@ -64,6 +66,8 @@ class AutomatedTask(models.Model):
     task_type = models.CharField(
         max_length=100, choices=TASK_TYPE_CHOICES, default="manual"
     )
+    managed_by_policy = models.BooleanField(default=False)
+    parent_task = models.PositiveIntegerField(null=True, blank=True)
     win_task_name = models.CharField(max_length=255, null=True, blank=True)
     timeout = models.PositiveIntegerField(default=120)
     retcode = models.IntegerField(null=True, blank=True)
@@ -103,3 +107,21 @@ class AutomatedTask(models.Model):
     def generate_task_name():
         chars = string.ascii_letters
         return "TacticalRMM_" + "".join(random.choice(chars) for i in range(35))
+
+    def create_policy_task(self, agent):
+        task = AutomatedTask.objects.create(
+            agent=agent,
+            managed_by_policy=True,
+            parent_task=self.pk,
+            script=self.script,
+            assigned_check=self.assigned_check,
+            name=self.name,
+            run_time_days=self.run_time_days,
+            run_time_minute=self.run_time_minute,
+            task_type=self.task_type,
+            win_task_name=self.win_task_name,
+            timeout=self.timeout,
+            enabled=self.enabled,
+        )
+
+        autotasks.tasks.create_win_task_schedule.delay(task.pk)

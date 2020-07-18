@@ -9,7 +9,14 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 
 AUTH_USER_MODEL = "accounts.User"
 
-APP_VER = "0.0.2"
+# bump this version everytime vue code is changed
+# to alert user they need to manually refresh their browser
+APP_VER = "0.0.16"
+
+try:
+    from .local_settings import *
+except ImportError:
+    pass
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -36,6 +43,10 @@ INSTALLED_APPS = [
     "logs",
     "scripts",
 ]
+
+if not "TRAVIS" in os.environ and not "AZPIPELINE" in os.environ:
+    if DEBUG:
+        INSTALLED_APPS += ("django_extensions",)
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -106,11 +117,6 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "tacticalrmm/static/")]
 LOG_CONFIG = {
     "handlers": [{"sink": os.path.join(LOG_DIR, "debug.log"), "serialize": False}]
 }
-
-try:
-    from .local_settings import *
-except ImportError:
-    pass
 
 if "TRAVIS" in os.environ:
     DATABASES = {

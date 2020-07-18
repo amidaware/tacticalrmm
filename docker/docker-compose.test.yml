@@ -1,7 +1,7 @@
-# FOR TESTS 
-version: '3.7'
+# FOR TESTS
+version: "3.7"
 
-networks: 
+networks:
   test:
 
 services:
@@ -12,31 +12,31 @@ services:
     working_dir: /home/node
     volumes:
       - ../web:/home/node
-    networks: 
+    networks:
       - test
-  
+
   api-test:
     build:
       context: ..
       dockerfile: ./docker/api-test/dockerfile
-    depends_on: 
+    depends_on:
       - db-test
       - redis-test
-    networks: 
+    networks:
       - test
 
   # Postgres Database for API service
   db-test:
-    image: postgres:11.7
-    environment: 
+    image: postgres:12
+    environment:
       POSTGRES_DB: tacticalrmm-test
       POSTGRES_USER: test
       POSTGRES_PASSWORD: testpass
-    networks: 
+    networks:
       - test
 
   # Redis Container for Celery tasks
   redis-test:
     image: redis
-    networks: 
+    networks:
       - test

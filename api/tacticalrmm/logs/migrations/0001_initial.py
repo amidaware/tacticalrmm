@@ -10,20 +10,55 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('agents', '0001_initial'),
+        ("agents", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='PendingAction',
+            name="PendingAction",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('entry_time', models.DateTimeField(auto_now_add=True)),
-                ('action_type', models.CharField(blank=True, choices=[('schedreboot', 'Scheduled Reboot')], max_length=255, null=True)),
-                ('status', models.CharField(choices=[('pending', 'Pending'), ('completed', 'Completed')], default='pending', max_length=255)),
-                ('celery_id', models.CharField(blank=True, max_length=255, null=True)),
-                ('details', django.contrib.postgres.fields.jsonb.JSONField(blank=True, null=True)),
-                ('agent', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='pendingactions', to='agents.Agent')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("entry_time", models.DateTimeField(auto_now_add=True)),
+                (
+                    "action_type",
+                    models.CharField(
+                        blank=True,
+                        choices=[("schedreboot", "Scheduled Reboot")],
+                        max_length=255,
+                        null=True,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[("pending", "Pending"), ("completed", "Completed")],
+                        default="pending",
+                        max_length=255,
+                    ),
+                ),
+                ("celery_id", models.CharField(blank=True, max_length=255, null=True)),
+                (
+                    "details",
+                    django.contrib.postgres.fields.jsonb.JSONField(
+                        blank=True, null=True
+                    ),
+                ),
+                (
+                    "agent",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="pendingactions",
+                        to="agents.Agent",
+                    ),
+                ),
             ],
         ),
     ]

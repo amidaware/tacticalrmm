@@ -14,19 +14,18 @@ def cancel_pending_action_task(data):
 
         from agents.models import Agent
 
+        agent = Agent.objects.get(pk=data["agent"])
+
         task_name = data["details"]["taskname"]
-        try:
-            resp = Agent.salt_api_cmd(
-                hostname=data["salt_id"],
-                timeout=45,
-                func="task.delete_task",
-                arg=[f"name={task_name}"],
-            )
-        except Exception as e:
+        r = agent.salt_api_cmd(
+            timeout=30, func="task.delete_task", arg=[f"name={task_name}"]
+        )
+        if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
             logger.error(
-                f"Unable to contact {data['salt_id']}. Task {task_name} will need to cancelled manually."
+                f"Unable to contact {agent.hostname}. Task {task_name} will need to cancelled manually."
             )
+            return
         else:
-            logger.info(f"Scheduled reboot cancellled: {resp.json()}")
+            logger.info(f"Scheduled reboot cancelled on {agent.hostname}")
 
     return "ok"

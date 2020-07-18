@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('checks', '0003_check_overriden_by_policy'),
+        ("checks", "0003_check_overriden_by_policy"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='check',
-            name='parent_check',
+            model_name="check",
+            name="parent_check",
             field=models.PositiveIntegerField(blank=True, null=True),
         ),
     ]

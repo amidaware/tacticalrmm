@@ -1,34 +1,35 @@
-version: '3.7'
+version: "3.7"
 
 # Userdefined Networks
-networks: 
-  database:
-  redis:
-  mesh-mongodb:
+networks:
   proxy:
     driver: bridge
     ipam:
       driver: default
       config:
         - subnet: 172.20.0.0/24
+  database:
+  redis:
+  mesh-mongodb:
 
 # Docker managed persistent volumes
 volumes:
   # Volume for userdefined scripts
   scripts:
+  # Volume for mesh token initial setup
+  mesh_token:
 
 services:
-
   # Postgres Database for API service
   db:
-    image: postgres:11.7
-    environment: 
+    image: postgres:12
+    environment:
       POSTGRES_DB: tacticalrmm
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASS}
-    networks: 
+    networks:
       - database
-  
+
   # Redis Container for Celery tasks
   redis:
     image: redis
@@ -37,33 +38,37 @@ services:
 
   # Salt Master and API
   salt:
-    build: 
+    build:
       context: ..
       dockerfile: ./docker/salt/dockerfile
       args:
         - SALT_USER=${SALT_USER}
         - SALT_PASS=${SALT_PASS}
     ports:
-      - "8123:8123"
       - "4505:4505"
       - "4506:4506"
     volumes:
       - scripts:/srv
     networks:
       - proxy
-  
+
   # MeshCentral Container
   meshcentral:
     build:
       context: ./meshcentral
       args:
         - MESH_HOST=${MESH_HOST}
+        - MESH_USER=${MESH_USER}
+        - MESH_PASS=${MESH_PASS}
+        - EMAIL_USER=${EMAIL_USER}
         - MONGODB_USER=${MONGODB_USER}
         - MONGODB_PASSWORD=${MONGODB_PASSWORD}
     networks:
       - proxy
       - mesh-mongodb
-    depends_on: 
+    volumes:
+      - mesh_token:/token
+    depends_on:
       - mesh-mongodb
       - nginx-proxy
 
@@ -77,10 +82,9 @@ services:
     networks:
       - mesh-mongodb
 
-
   # Nginx Container Reverse Proxy that handles all http/https traffic
   nginx-proxy:
-    build: 
+    build:
       context: ./nginx-proxy
       args:
         - APP_HOST=${APP_HOST}

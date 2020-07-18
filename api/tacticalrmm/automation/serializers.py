@@ -61,6 +61,15 @@ class PolicyCheckStatusSerializer(ModelSerializer):
         fields = "__all__"
 
 
+class PolicyTaskStatusSerializer(ModelSerializer):
+
+    hostname = ReadOnlyField(source="agent.hostname")
+
+    class Meta:
+        model = AutomatedTask
+        fields = "__all__"
+
+
 class AutoTaskPolicySerializer(ModelSerializer):
 
     autotasks = TaskSerializer(many=True, read_only=True)

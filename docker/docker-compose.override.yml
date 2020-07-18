@@ -30,7 +30,6 @@ services:
         - REDIS_HOST=${REDIS_HOST}
         - MESH_USER=${MESH_USER}
         - MESH_HOST=${MESH_HOST}
-        - MESH_TOKEN_KEY=${MESH_TOKEN_KEY}
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
@@ -40,8 +39,10 @@ services:
       - redis
     volumes:
       - scripts:/srv
+      - mesh_token:/token
     depends_on:
       - db
+      - meshcentral
 
   # Container for Celery worker service
   celery-service:
@@ -60,7 +61,6 @@ services:
         - REDIS_HOST=${REDIS_HOST}
         - MESH_USER=${MESH_USER}
         - MESH_HOST=${MESH_HOST}
-        - MESH_TOKEN_KEY=${MESH_TOKEN_KEY}
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
@@ -90,41 +90,10 @@ services:
         - REDIS_HOST=${REDIS_HOST}
         - MESH_USER=${MESH_USER}
         - MESH_HOST=${MESH_HOST}
-        - MESH_TOKEN_KEY=${MESH_TOKEN_KEY}
         - APP_HOST=${APP_HOST}
         - API_HOST=${API_HOST}
         - ADMIN_URL=${ADMIN_URL}
     command: celery -A tacticalrmm beat -l debug
-    networks:
-      - redis
-      - proxy
-      - database
-    depends_on:
-      - db
-      - redis
-
-  # Container for Celery Winupdate tasks
-  celery-winupdate:
-    build:
-      context: ..
-      dockerfile: "./docker/api/dockerfile"
-      args:
-        - DJANGO_SEKRET=${DJANGO_SEKRET}
-        - DJANGO_DEBUG=${DJANGO_DEBUG}
-        - POSTGRES_USER=${POSTGRES_USER}
-        - POSTGRES_PASS=${POSTGRES_PASS}
-        - POSTGRES_HOST=${POSTGRES_HOST}
-        - SALT_PASS=${SALT_PASS}
-        - SALT_USER=${SALT_USER}
-        - SALT_HOST=${SALT_HOST}
-        - REDIS_HOST=${REDIS_HOST}
-        - MESH_USER=${MESH_USER}
-        - MESH_HOST=${MESH_HOST}
-        - MESH_TOKEN_KEY=${MESH_TOKEN_KEY}
-        - APP_HOST=${APP_HOST}
-        - API_HOST=${API_HOST}
-        - ADMIN_URL=${ADMIN_URL}
-    command: celery -A tacticalrmm worker -Q wupdate -l debug
     networks:
       - redis
       - proxy

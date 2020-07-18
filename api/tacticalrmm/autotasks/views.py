@@ -22,6 +22,8 @@ from .tasks import (
     enable_or_disable_win_task,
 )
 
+import automation
+
 
 class AddAutoTask(APIView):
     def post(self, request):
@@ -51,7 +53,13 @@ class AddAutoTask(APIView):
             assigned_check=check,
         )
 
-        create_win_task_schedule.delay(pk=obj.pk)
+        if not "policy" in data:
+            create_win_task_schedule.delay(pk=obj.pk)
+
+        if "policy" in data:
+            automation.tasks.generate_agent_tasks_from_policies_task.delay(
+                data["policy"]
+            )
 
         return Response("Task will be created shortly!")
 
@@ -67,7 +75,13 @@ class AutoTask(APIView):
 
         if "enableordisable" in request.data:
             action = request.data["enableordisable"]
-            enable_or_disable_win_task.delay(pk=task.pk, action=action)
+
+            if not task.policy:
+                enable_or_disable_win_task.delay(pk=task.pk, action=action)
+
+            if task.policy:
+                automation.tasks.update_policy_task_fields_task.delay(task.pk)
+
             task.enabled = action
             task.save(update_fields=["enabled"])
             action = "enabled" if action else "disabled"
@@ -75,7 +89,14 @@ class AutoTask(APIView):
 
     def delete(self, request, pk):
         task = get_object_or_404(AutomatedTask, pk=pk)
-        delete_win_task_schedule.delay(pk=task.pk)
+
+        if not task.policy:
+            delete_win_task_schedule.delay(pk=task.pk)
+
+        if task.policy:
+            automation.tasks.delete_policy_autotask_task.delay(task.pk)
+            task.delete()
+
         return Response(f"{task.name} will be deleted shortly")
 
 

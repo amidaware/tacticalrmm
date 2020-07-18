@@ -1,4 +1,3 @@
-    
 import os
 from datetime import timedelta
 
@@ -106,7 +105,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "tacticalrmm/static/")]
 
 LOG_CONFIG = {
     "handlers": [{"sink": os.path.join(LOG_DIR, "debug.log"), "serialize": False}]
-}   
+}
 
 DATABASES = {
     "default": {

@@ -35,6 +35,7 @@
 
 <script>
 import axios from "axios";
+import mixins from "@/mixins/mixins";
 import { mapGetters } from "vuex";
 import { mapState } from "vuex";
 import InstallSoftware from "@/components/modals/software/InstallSoftware";
@@ -43,6 +44,7 @@ export default {
   components: {
     InstallSoftware
   },
+  mixins: [mixins],
   data() {
     return {
       showInstallSoftware: false,
@@ -82,7 +84,7 @@ export default {
         })
         .catch(e => {
           this.loading = false;
-          this.notifyError("Unable to contact the agent");
+          this.notifyError(e.response.data);
         });
     }
   },

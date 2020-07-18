@@ -6,9 +6,10 @@ if [ $EUID -eq 0 ]; then
 fi
 
 
-DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 50 | head -n 1)
-SALTPW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
-ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 30 | head -n 1)
+DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
+SALTPW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
+ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
+MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -34,16 +35,47 @@ echo -ne "${YELLOW}Create a username for the postgres database${NC}: "
 read pgusername
 echo -ne "${YELLOW}Create a password for the postgres database${NC}: "
 read pgpw
-echo -ne "${YELLOW}Enter the backend API domain for the rmm${NC}: "
+
+while [[ $rmmdomain != *[.]*[.]* ]]
+do
+echo -ne "${YELLOW}Enter the subdomain for the backend (e.g. api.example.com)${NC}: "
 read rmmdomain
-echo -ne "${YELLOW}Enter the frontend  domain for the rmm${NC}: "
+done
+
+while [[ $frontenddomain != *[.]*[.]* ]]
+do
+echo -ne "${YELLOW}Enter the subdomain for the frontend (e.g. app.example.com)${NC}: "
 read frontenddomain
-echo -ne "${YELLOW}Enter the domain for meshcentral${NC}: "
+done
+
+while [[ $meshdomain != *[.]*[.]* ]]
+do
+echo -ne "${YELLOW}Enter the subdomain for meshcentral (e.g. mesh.example.com)${NC}: "
 read meshdomain
-echo -ne "${YELLOW}Enter your username for meshcentral${NC}: "
+done
+
+echo -ne "${YELLOW}Create a username for meshcentral${NC}: "
 read meshusername
-echo -ne "${YELLOW}Enter your email address for let's encrypt renewal notifications${NC}: "
+
+while [[ $letsemail != *[@]*[.]* ]]
+do
+echo -ne "${YELLOW}Enter a valid email address for let's encrypt renewal notifications and meshcentral${NC}: "
 read letsemail
+done
+
+rootdomain=$(expr match "$rmmdomain" '.*\.\(.*\..*\)')
+
+print_green 'Getting wildcard cert'
+
+sudo apt install -y software-properties-common
+sudo apt update
+sudo apt install -y certbot
+
+sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
+while [[ $? -ne 0 ]]
+do
+sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
+done
 
 
 print_green 'Creating saltapi user'
@@ -51,18 +83,10 @@ print_green 'Creating saltapi user'
 sudo adduser --no-create-home --disabled-password --gecos "" saltapi
 echo "saltapi:${SALTPW}" | sudo chpasswd
 
-print_green 'Creating sudoers conf to restart celery'
-
-echo "${USER} ALL=(ALL) NOPASSWD: /bin/systemctl restart celerybeat.service" | sudo tee /etc/sudoers.d/${USER}
-sudo chmod 0440 /etc/sudoers.d/${USER}
-
-
 print_green 'Installing Nginx'
 
-sudo apt install -y software-properties-common
-sudo add-apt-repository -y ppa:nginx/stable
-sudo apt update
 sudo apt install -y nginx
+sudo systemctl stop nginx
 
 print_green 'Installing NodeJS'
 
@@ -88,7 +112,6 @@ sudo mkdir -p /meshcentral/meshcentral-data
 sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
 npm install meshcentral
-cd /home/${USER}
 sudo chown ${USER}:${USER} -R /meshcentral
 
 meshcfg="$(cat << EOF
@@ -112,12 +135,13 @@ meshcfg="$(cat << EOF
   },
   "domains": {
     "": {
-      "Title": "Dev RMM",
-      "Title2": "DevRMM",
+      "Title": "Tactical RMM",
+      "Title2": "Tactical RMM",
       "NewAccounts": false,
-      "mstsc": true,
       "CertUrl": "https://${meshdomain}:443/",
       "GeoLocation": true,
+      "CookieIpCheck": false,
+      "mstsc": true,
       "httpheaders": {
         "Strict-Transport-Security": "max-age=360000",
         "_x-frame-options": "sameorigin",
@@ -132,16 +156,15 @@ echo "${meshcfg}" > /meshcentral/meshcentral-data/config.json
 
 print_green 'Installing python, redis and git'
 
-sudo add-apt-repository -y ppa:deadsnakes/ppa
 sudo apt update
-sudo apt install -y python3.7 python3.7-venv python3.7-dev python3-pip python3-dev python3-venv python3-setuptools ca-certificates redis git python3-cherrypy3
+sudo apt install -y python3.8-venv python3.8-dev python3-pip python3-setuptools python3-wheel ca-certificates redis git
 
 print_green 'Installing postgresql'
 
-sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
-sudo apt install -y postgresql-11
+sudo apt install -y postgresql-12
 
 print_green 'Creating database for the rmm'
 
@@ -152,16 +175,11 @@ sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isola
 sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
 
-
-sudo usermod -a -G www-data ${USER}
-sudo chmod 710 /home/${USER}
-sudo chown ${USER}:www-data /home/${USER}
-
-mkdir -p /home/${USER}/rmm
+sudo mkdir /rmm
+sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
-git clone https://github.com/wh1te909/tacticalrmm.git /home/${USER}/rmm/
-sudo chown ${USER}:www-data -R /home/${USER}/rmm/api/tacticalrmm
+git clone https://github.com/wh1te909/tacticalrmm.git /rmm/
 
 localvars="$(cat << EOF
 SECRET_KEY = "${DJANGO_SEKRET}"
@@ -205,13 +223,6 @@ if not DEBUG:
         )
     })
 
-EMAIL_USE_TLS = True
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'example@gmail.com'
-EMAIL_HOST_PASSWORD = 'yourgmailpassword'
-EMAIL_PORT = 587
-EMAIL_ALERT_RECIPIENTS = ["jsmith@example.com",]
-
 SALT_USERNAME = "saltapi"
 SALT_PASSWORD = "${SALTPW}"
 SALT_HOST     = "127.0.0.1"
@@ -220,20 +231,19 @@ MESH_SITE = "https://${meshdomain}"
 REDIS_HOST    = "localhost"
 EOF
 )"
-echo "${localvars}" > /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/local_settings.py
+echo "${localvars}" > /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
 print_green 'Installing the backend'
 
-cd /home/${USER}/rmm/api
-python3.7 -m venv env
-source /home/${USER}/rmm/api/env/bin/activate
-cd /home/${USER}/rmm/api/tacticalrmm
+cd /rmm/api
+python3 -m venv env
+source /rmm/api/env/bin/activate
+cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir --upgrade setuptools wheel
-pip install -r /home/${USER}/rmm/api/tacticalrmm/requirements.txt
+pip install --no-cache-dir setuptools==47.3.2 wheel==0.34.2
+pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic
-python manage.py initial_db_setup
 python manage.py load_chocos
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
@@ -253,15 +263,15 @@ read -n 1 -s -r -p "Press any key to continue..."
 uwsgini="$(cat << EOF
 [uwsgi]
 
-logto = /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/private/log/uwsgi.log
-chdir = /home/${USER}/rmm/api/tacticalrmm
+logto = /rmm/api/tacticalrmm/tacticalrmm/private/log/uwsgi.log
+chdir = /rmm/api/tacticalrmm
 module = tacticalrmm.wsgi
-home = /home/${USER}/rmm/api/env
+home = /rmm/api/env
 master = true
 processes = 6
 threads = 6
 enable-threads = True
-socket = /home/${USER}/rmm/api/tacticalrmm/tacticalrmm.sock
+socket = /rmm/api/tacticalrmm/tacticalrmm.sock
 harakiri = 300
 chmod-socket = 660
 # clear environment on exit
@@ -271,7 +281,7 @@ max-requests = 500
 max-requests-delta = 1000
 EOF
 )"
-echo "${uwsgini}" > /home/${USER}/rmm/api/tacticalrmm/app.ini
+echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
 
 
 rmmservice="$(cat << EOF
@@ -282,9 +292,9 @@ After=network.target
 [Service]
 User=${USER}
 Group=www-data
-WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
-Environment="PATH=/home/${USER}/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=/home/${USER}/rmm/api/env/bin/uwsgi --ini app.ini
+WorkingDirectory=/rmm/api/tacticalrmm
+Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/rmm/api/env/bin/uwsgi --ini app.ini
 Restart=always
 RestartSec=10s
 
@@ -299,7 +309,7 @@ nginxrmm="$(cat << EOF
 server_tokens off;
 
 upstream tacticalrmm {
-    server unix:////home/${USER}/rmm/api/tacticalrmm/tacticalrmm.sock;
+    server unix:////rmm/api/tacticalrmm/tacticalrmm.sock;
 }
 
 server {
@@ -312,20 +322,20 @@ server {
     listen 443 ssl;
     server_name ${rmmdomain};
     client_max_body_size 300M;
-    access_log /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/private/log/access.log;
-    error_log /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
-    ssl_certificate /etc/letsencrypt/live/${rmmdomain}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${rmmdomain}/privkey.pem;
-    ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
+    access_log /rmm/api/tacticalrmm/tacticalrmm/private/log/access.log;
+    error_log /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
+    ssl_certificate /etc/letsencrypt/live/${rootdomain}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${rootdomain}/privkey.pem;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
 
     location /static/ {
-        root /home/${USER}/rmm/api/tacticalrmm;
+        root /rmm/api/tacticalrmm;
     }
 
     location /private/ {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/private/;
+        alias /rmm/api/tacticalrmm/tacticalrmm/private/;
     }
 
     location /saltscripts/ {
@@ -367,8 +377,8 @@ server {
     proxy_send_timeout 330s;
     proxy_read_timeout 330s;
     server_name ${meshdomain};
-    ssl_certificate /etc/letsencrypt/live/${meshdomain}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${meshdomain}/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/${rootdomain}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${rootdomain}/privkey.pem;
     ssl_session_cache shared:WEBSSL:10m;
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
@@ -393,14 +403,18 @@ sudo ln -s /etc/nginx/sites-available/meshcentral.conf /etc/nginx/sites-enabled/
 
 print_green 'Installing Salt Master'
 
-wget -O - https://repo.saltstack.com/py3/ubuntu/18.04/amd64/latest/SALTSTACK-GPG-KEY.pub | sudo apt-key add -
-echo 'deb http://repo.saltstack.com/py3/ubuntu/18.04/amd64/latest bionic main' | sudo tee /etc/apt/sources.list.d/saltstack.list
+wget -O - https://repo.saltstack.com/py3/ubuntu/20.04/amd64/latest/SALTSTACK-GPG-KEY.pub | sudo apt-key add -
+echo 'deb http://repo.saltstack.com/py3/ubuntu/20.04/amd64/latest focal main' | sudo tee /etc/apt/sources.list.d/saltstack.list
+
 sudo apt update
 sudo apt install -y salt-master
 
+print_green 'Waiting 30 seconds for salt to start'
+sleep 30
+
 saltvars="$(cat << EOF
-timeout: 60
-gather_job_timeout: 30
+timeout: 20
+gather_job_timeout: 25
 max_event_size: 30485760
 external_auth:
   pam:
@@ -417,10 +431,13 @@ rest_cherrypy:
 
 EOF
 )"
-echo "${saltvars}" | sudo tee --append /etc/salt/master > /dev/null
+echo "${saltvars}" | sudo tee /etc/salt/master.d/rmm-salt.conf > /dev/null
 
-print_green 'Waiting 30 seconds for salt to start'
-sleep 30 # wait for salt to start
+# fix the stupid 1 MB limit present in msgpack 0.6.2, which btw was later changed to 100 MB in msgpack 1.0.0
+# but 0.6.2 is the default on ubuntu 20
+sudo sed -i 's/msgpack_kwargs = {"raw": six.PY2}/msgpack_kwargs = {"raw": six.PY2, "max_buffer_size": 2147483647}/g' /usr/lib/python3/dist-packages/salt/transport/ipc.py
+
+
 
 print_green 'Installing Salt API'
 sudo apt install -y salt-api
@@ -431,14 +448,14 @@ celeryservice="$(cat << EOF
 [Unit]
 Description=Celery Service
 After=network.target
-After=redis.service
+After=redis-server.service
 
 [Service]
 Type=forking
 User=${USER}
 Group=${USER}
 EnvironmentFile=/etc/conf.d/celery.conf
-WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
+WorkingDirectory=/rmm/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} multi start \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} \${CELERYD_OPTS}'
 ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \${CELERYD_NODES} --pidfile=\${CELERYD_PID_FILE}'
 ExecReload=/bin/sh -c '\${CELERY_BIN} multi restart \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} \${CELERYD_OPTS}'
@@ -451,34 +468,10 @@ EOF
 )"
 echo "${celeryservice}" | sudo tee /etc/systemd/system/celery.service > /dev/null
 
-celerywinupdatesvc="$(cat << EOF
-[Unit]
-Description=Celery Win Update Service
-After=network.target
-After=redis.service
-
-[Service]
-Type=forking
-User=${USER}
-Group=${USER}
-EnvironmentFile=/etc/conf.d/celery-winupdate.conf
-WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
-ExecStart=/bin/sh -c '\${CELERY_BIN} multi start \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
-ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \${CELERYD_NODES} --pidfile=\${CELERYD_PID_FILE}'
-ExecReload=/bin/sh -c '\${CELERY_BIN} multi restart \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
-Restart=always
-RestartSec=10s
-
-[Install]
-WantedBy=multi-user.target
-EOF
-)"
-echo "${celerywinupdatesvc}" | sudo tee /etc/systemd/system/celery-winupdate.service > /dev/null
-
 celeryconf="$(cat << EOF
 CELERYD_NODES="w1"
 
-CELERY_BIN="/home/${USER}/rmm/api/env/bin/celery"
+CELERY_BIN="/rmm/api/env/bin/celery"
 
 CELERY_APP="tacticalrmm"
 
@@ -486,47 +479,28 @@ CELERYD_MULTI="multi"
 
 CELERYD_OPTS="--time-limit=2900 --autoscale=50,5"
 
-CELERYD_PID_FILE="/home/${USER}/rmm/api/tacticalrmm/%n.pid"
+CELERYD_PID_FILE="/rmm/api/tacticalrmm/%n.pid"
 CELERYD_LOG_FILE="/var/log/celery/%n%I.log"
 CELERYD_LOG_LEVEL="INFO"
 
-CELERYBEAT_PID_FILE="/home/${USER}/rmm/api/tacticalrmm/beat.pid"
+CELERYBEAT_PID_FILE="/rmm/api/tacticalrmm/beat.pid"
 CELERYBEAT_LOG_FILE="/var/log/celery/beat.log"
 EOF
 )"
 echo "${celeryconf}" | sudo tee /etc/conf.d/celery.conf > /dev/null
 
-celerywinupdate="$(cat << EOF
-CELERYD_NODES="w2"
-
-CELERY_BIN="/home/${USER}/rmm/api/env/bin/celery"
-
-CELERY_APP="tacticalrmm"
-
-CELERYD_MULTI="multi"
-
-CELERYD_OPTS="--time-limit=4000 --autoscale=15,1"
-
-CELERYD_PID_FILE="/home/${USER}/rmm/api/tacticalrmm/%n.pid"
-CELERYD_LOG_FILE="/var/log/celery/%n%I.log"
-CELERYD_LOG_LEVEL="INFO"
-EOF
-)"
-echo "${celerywinupdate}" | sudo tee /etc/conf.d/celery-winupdate.conf > /dev/null
-
-
 celerybeatservice="$(cat << EOF
 [Unit]
 Description=Celery Beat Service
 After=network.target
-After=redis.service
+After=redis-server.service
 
 [Service]
 Type=simple
 User=${USER}
 Group=${USER}
 EnvironmentFile=/etc/conf.d/celery.conf
-WorkingDirectory=/home/${USER}/rmm/api/tacticalrmm
+WorkingDirectory=/rmm/api/tacticalrmm
 ExecStart=/bin/sh -c '\${CELERY_BIN} beat -A \${CELERY_APP} --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
 Restart=always
 RestartSec=10s
@@ -538,8 +512,8 @@ EOF
 echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service > /dev/null
 
 sudo mkdir -p /srv/salt
-sudo cp -r /home/${USER}/rmm/_modules /srv/salt/
-sudo cp -r /home/${USER}/rmm/scripts /srv/salt/
+sudo cp -r /rmm/_modules /srv/salt/
+sudo cp -r /rmm/scripts /srv/salt/
 sudo mkdir /srv/salt/scripts/userdefined
 sudo chown ${USER}:${USER} -R /srv/salt/
 sudo chown ${USER}:www-data /srv/salt/scripts/userdefined
@@ -549,6 +523,7 @@ meshservice="$(cat << EOF
 [Unit]
 Description=MeshCentral Server
 After=network.target
+After=mongod.service
 After=nginx.service
 [Service]
 Type=simple
@@ -575,38 +550,23 @@ sudo systemctl enable salt-api
 
 sudo systemctl restart salt-api
 
-print_green 'Installing certbot'
-
-sudo add-apt-repository -y ppa:certbot/certbot
-sudo apt install -y certbot
-sudo systemctl stop nginx
-
-print_green 'Getting https certs'
-
-sudo certbot certonly --standalone --agree-tos -m ${letsemail} --no-eff-email -d ${meshdomain}
-sudo certbot certonly --standalone --agree-tos -m ${letsemail} --no-eff-email -d ${rmmdomain}
-sudo certbot certonly --standalone --agree-tos -m ${letsemail} --no-eff-email -d ${frontenddomain}
-
 sudo chown -R $USER:$GROUP /home/${USER}/.npm
 sudo chown -R $USER:$GROUP /home/${USER}/.config
 
 quasarenv="$(cat << EOF
 PROD_URL = "https://${rmmdomain}"
-DEV_URL = "https://api.example.com"
-APP_URL = "https://app.example.com"
-DEV_HOST = 0.0.0.0
-DEV_PORT = 80
+DEV_URL = "https://${rmmdomain}"
 EOF
 )"
-echo "${quasarenv}" | tee /home/${USER}/rmm/web/.env > /dev/null
+echo "${quasarenv}" | tee /rmm/web/.env > /dev/null
 
 print_green 'Installing the frontend'
 
-cd /home/${USER}/rmm/web
+cd /rmm/web
 npm install
 npm run build
 sudo mkdir -p /var/www/rmm
-sudo cp -pvr /home/${USER}/rmm/web/dist /var/www/rmm/
+sudo cp -pvr /rmm/web/dist /var/www/rmm/
 sudo chown www-data:www-data -R /var/www/rmm/dist
 
 nginxfrontend="$(cat << EOF
@@ -623,9 +583,9 @@ server {
     access_log /var/log/nginx/frontend-access.log;
 
     listen 443 ssl;
-    ssl_certificate /etc/letsencrypt/live/${frontenddomain}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${frontenddomain}/privkey.pem;
-    ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
+    ssl_certificate /etc/letsencrypt/live/${rootdomain}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${rootdomain}/privkey.pem;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
 }
 
 server {
@@ -644,9 +604,9 @@ echo "${nginxfrontend}" | sudo tee /etc/nginx/sites-available/frontend.conf > /d
 sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/frontend.conf
 
 
-print_green 'Restarting Services'
+print_green 'Enabling Services'
 
-for i in nginx celery.service celery-winupdate.service celerybeat.service rmm.service
+for i in nginx celery.service celerybeat.service rmm.service
 do
   sudo systemctl enable ${i}
   sudo systemctl restart ${i}
@@ -668,10 +628,31 @@ meshtoken="$(cat << EOF
 MESH_TOKEN_KEY = "${MESHTOKENKEY}"
 EOF
 )"
-echo "${meshtoken}" | tee --append /home/${USER}/rmm/api/tacticalrmm/tacticalrmm/local_settings.py > /dev/null
+echo "${meshtoken}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py > /dev/null
 
-print_green 'Restarting all services'
-for i in nginx celery.service celery-winupdate.service celerybeat.service rmm.service meshcentral.service
+
+print_green 'Creating meshcentral account and group'
+
+sudo systemctl stop meshcentral
+cd /meshcentral
+
+node node_modules/meshcentral --createaccount ${meshusername} --pass ${MESHPASSWD} --email ${letsemail}
+node node_modules/meshcentral --adminaccount ${meshusername}
+
+sudo systemctl start meshcentral
+sleep 5
+
+node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name TacticalRMM
+MESHEXE=$(node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} GenerateInviteLink --group TacticalRMM --hours 8)
+
+cd /rmm/api/tacticalrmm
+source /rmm/api/env/bin/activate
+python manage.py initial_db_setup
+deactivate
+
+
+print_green 'Restarting services'
+for i in celery.service celerybeat.service rmm.service
 do
   sudo systemctl restart ${i}
 done
@@ -684,8 +665,10 @@ sudo systemctl restart salt-api
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"
 printf >&2 "${YELLOW}Installation complete!${NC}\n\n"
-printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${frontenddomain}${NC}\n"
+printf >&2 "${YELLOW}Download the meshagent 64 bit EXE from: ${GREEN}${MESHEXE}${NC}\n\n"
+printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${frontenddomain}${NC}\n\n"
 printf >&2 "${YELLOW}Django admin url: ${GREEN}https://${rmmdomain}/${ADMINURL}${NC}\n\n"
+printf >&2 "${YELLOW}MeshCentral password: ${GREEN}${MESHPASSWD}${NC}\n\n"
 printf >&2 "${YELLOW}Please refer to the github README for next steps${NC}\n\n"
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"

@@ -2,6 +2,7 @@
   <div class="row">
     <div class="col-12">
       <q-btn
+        v-if="selectedPolicy !== null"
         size="sm"
         color="grey-5"
         icon="fas fa-plus"
@@ -10,12 +11,14 @@
         ref="add"
         @click="showAddAutomatedTask = true"
       />
-      <q-btn 
-        dense 
-        flat push 
-        @click="refreshTasks(selectedPolicy)" 
+      <q-btn
+        v-if="selectedPolicy !== null"
+        dense
+        flat
+        push
+        @click="refreshTasks(selectedPolicy)"
         icon="refresh"
-        ref="refresh" 
+        ref="refresh"
       />
       <template>
         <q-table
@@ -35,14 +38,10 @@
             </q-th>
           </template>
           <!-- No data Slot -->
-          <template v-slot:no-data >
+          <template v-slot:no-data>
             <div class="full-width row flex-center q-gutter-sm">
-              <span v-if="selectedPolicy === null">
-                Click on a policy to see the tasks
-              </span>
-              <span v-else>
-                There are no tasks added to this policy
-              </span>
+              <span v-if="selectedPolicy === null">Click on a policy to see the tasks</span>
+              <span v-else>There are no tasks added to this policy</span>
             </div>
           </template>
           <!-- body slots -->
@@ -51,9 +50,9 @@
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item 
-                    clickable 
-                    v-close-popup 
+                  <q-item
+                    clickable
+                    v-close-popup
                     @click="runTask(props.row.id, props.row.enabled)"
                     id="context-runtask"
                   >
@@ -62,9 +61,9 @@
                     </q-item-section>
                     <q-item-section>Run task now</q-item-section>
                   </q-item>
-                  <q-item 
-                    clickable 
-                    v-close-popup 
+                  <q-item
+                    clickable
+                    v-close-popup
                     @click="showEditAutomatedTask = true"
                     id="context-edit"
                   >
@@ -73,8 +72,8 @@
                     </q-item-section>
                     <q-item-section>Edit</q-item-section>
                   </q-item>
-                  <q-item 
-                    clickable 
+                  <q-item
+                    clickable
                     v-close-popup
                     @click="deleteTask(props.row.name, props.row.id)"
                     id="context-delete"
@@ -85,8 +84,8 @@
                     <q-item-section>Delete</q-item-section>
                   </q-item>
                   <q-separator />
-                  <q-item 
-                    clickable 
+                  <q-item
+                    clickable
                     v-close-popup
                     @click="showStatus(props.row)"
                     id="context-status"
@@ -119,9 +118,7 @@
                   style="cursor:pointer;color:blue;text-decoration:underline"
                   @click="showStatus(props.row)"
                   class="status-cell"
-                >
-                See Status
-                </span>
+                >See Status</span>
               </q-td>
               <q-td v-if="props.row.assigned_check">{{ props.row.assigned_check.name }}</q-td>
               <q-td v-else></q-td>
@@ -132,16 +129,13 @@
     </div>
     <!-- modals -->
     <q-dialog v-model="showAddAutomatedTask" position="top">
-      <AddAutomatedTask 
-        :policypk="selectedPolicy"
-        @close="showAddAutomatedTask = false" 
-      />
+      <AddAutomatedTask :policypk="selectedPolicy" @close="showAddAutomatedTask = false" />
     </q-dialog>
 
     <!-- policy task status -->
     <q-dialog v-model="showPolicyTaskStatus">
-      <PolicyStatus 
-        type="task" 
+      <PolicyStatus
+        type="task"
         :item="statusTask"
         :description="`${statusTask.name} Agent Status`"
       />
@@ -157,7 +151,7 @@ import PolicyStatus from "@/components/automation/modals/PolicyStatus";
 
 export default {
   name: "PolicyAutomatedTasksTab",
-  components: { 
+  components: {
     AddAutomatedTask,
     PolicyStatus
   },
@@ -239,7 +233,7 @@ export default {
           persistent: true
         })
         .onOk(() => {
-          this.$store 
+          this.$store
             .dispatch("deleteAutoTask", pk)
             .then(r => {
               this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.selectedPolicy);
@@ -253,7 +247,7 @@ export default {
     ...mapGetters({
       tasks: "automation/tasks",
       selectedPolicy: "automation/selectedPolicyPk"
-    }),
+    })
   }
 };
 </script>

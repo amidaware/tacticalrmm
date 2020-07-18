@@ -7,4 +7,5 @@ urlpatterns = [
     path("editpolicy/", views.edit_policy),
     path("winupdater/", views.win_updater),
     path("results/", views.results),
+    path("<int:pk>/installnow/", views.install_updates),
 ]

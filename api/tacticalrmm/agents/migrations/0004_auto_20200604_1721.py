@@ -6,17 +6,14 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0003_agent_checks_last_generated'),
+        ("agents", "0003_agent_checks_last_generated"),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='agent',
-            name='checks_last_generated',
-        ),
+        migrations.RemoveField(model_name="agent", name="checks_last_generated",),
         migrations.AddField(
-            model_name='agent',
-            name='policies_pending',
+            model_name="agent",
+            name="policies_pending",
             field=models.BooleanField(default=False),
         ),
     ]

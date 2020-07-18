@@ -149,7 +149,7 @@ class Check(models.Model):
         if self.check_type == "diskspace":
             return f"{self.get_check_type_display()}: Drive {self.disk} < {self.threshold}%"
         elif self.check_type == "ping":
-            return f"{self.get_check_type_display()}: {self.ip}"
+            return f"{self.get_check_type_display()}: {self.name}"
         elif self.check_type == "cpuload" or self.check_type == "memory":
             return f"{self.get_check_type_display()} > {self.threshold}%"
         elif self.check_type == "winsvc":
@@ -187,7 +187,7 @@ class Check(models.Model):
             "history_info",
             "parent_check",
             "managed_by_policy",
-            "overriden_by_policy"
+            "overriden_by_policy",
         ]
 
     def handle_check(self, data):
@@ -269,6 +269,28 @@ class Check(models.Model):
             search_last_days=self.search_last_days,
         )
 
+    def is_duplicate(self, check):
+        if self.check_type == "diskspace":
+            return self.disk == check.disk
+
+        elif self.check_type == "script":
+            return self.script == check.script
+
+        elif self.check_type == "ping":
+            return self.ip == check.ip
+
+        elif self.check_type == "cpuload":
+            return True
+
+        elif self.check_type == "memory":
+            return True
+
+        elif self.check_type == "winsvc":
+            return self.svc_name == check.svc_name
+
+        elif self.check_type == "eventlog":
+            return [self.log_name, self.event_id] == [check.log_name, check.event_id]
+
     def send_email(self):
 
         CORE = CoreSettings.objects.first()
@@ -277,7 +299,7 @@ class Check(models.Model):
 
         if self.check_type == "diskspace":
             percent_used = self.agent.disks[self.disk]["percent"]
-            percent_free = 100 - percent_free
+            percent_free = 100 - percent_used
 
             body = subject + f" - Free: {percent_free}%, Threshold: {self.threshold}%"
 

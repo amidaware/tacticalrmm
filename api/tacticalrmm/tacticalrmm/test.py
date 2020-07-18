@@ -11,6 +11,7 @@ from clients.models import Client, Site
 from automation.models import Policy
 from core.models import CoreSettings
 from checks.models import Check
+from autotasks.models import AutomatedTask
 
 
 class BaseTestCase(TestCase):
@@ -107,6 +108,10 @@ class BaseTestCase(TestCase):
             disk="M:",
             threshold=87,
             fails_b4_alert=1,
+        )
+
+        self.policyTask = AutomatedTask.objects.create(
+            policy=self.policy, name="Test Task"
         )
 
     def check_not_authenticated(self, method, url):

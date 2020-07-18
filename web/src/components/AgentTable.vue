@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-sm">
+  <div class="q-pt-none q-pb-none q-pr-xs q-pl-xs">
     <q-table
       dense
       class="agents-tbl-sticky"
@@ -7,8 +7,10 @@
       :columns="columns"
       row-key="id"
       binary-state-sort
+      virtual-scroll
       :pagination.sync="pagination"
-      hide-bottom
+      :rows-per-page-options="[0]"
+      no-data-label="No Agents"
     >
       <!-- header slots -->
       <template v-slot:header-cell-smsalert="props">
@@ -34,7 +36,7 @@
       </template>
       <template v-slot:header-cell-patchespending="props">
         <q-th auto-width :props="props">
-          <q-icon name="system_update_alt" size="1.5em">
+          <q-icon name="verified_user" size="1.5em">
             <q-tooltip>Patches Pending</q-tooltip>
           </q-icon>
         </q-th>
@@ -49,6 +51,13 @@
         <q-th auto-width :props="props">
           <q-icon name="fas fa-signal" size="1.2em">
             <q-tooltip>Agent Status</q-tooltip>
+          </q-icon>
+        </q-th>
+      </template>
+      <template v-slot:header-cell-needsreboot="props">
+        <q-th auto-width :props="props">
+          <q-icon name="fas fa-power-off" size="1.2em">
+            <q-tooltip>Reboot</q-tooltip>
           </q-icon>
         </q-th>
       </template>
@@ -104,12 +113,7 @@
                 <q-item-section>Remote Desktop</q-item-section>
               </q-item>
 
-              <q-item
-                clickable
-                v-ripple
-                v-close-popup
-                @click="toggleSendCommand(props.row.id, props.row.hostname)"
-              >
+              <q-item clickable v-ripple v-close-popup @click="showSendCommand = true">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-terminal" />
                 </q-item-section>
@@ -144,6 +148,14 @@
                       @click.stop.prevent="runPatchStatusScan(props.row.id, props.row.hostname)"
                     >
                       <q-item-section>Run Patch Status Scan</q-item-section>
+                    </q-item>
+                    <q-item
+                      clickable
+                      v-ripple
+                      v-close-popup
+                      @click.stop.prevent="installPatches(props.row.id)"
+                    >
+                      <q-item-section>Install Patches Now</q-item-section>
                     </q-item>
                   </q-list>
                 </q-menu>
@@ -244,8 +256,12 @@
 
           <q-td key="hostname" :props="props">{{ props.row.hostname }}</q-td>
           <q-td key="description" :props="props">{{ props.row.description }}</q-td>
+          <q-td key="user" :props="props">
+            <span v-if="props.row.logged_in_username !== 'None'">{{ props.row.logged_in_username }}</span>
+            <span v-else>-</span>
+          </q-td>
           <q-td :props="props" key="patchespending">
-            <q-icon v-if="props.row.patches_pending" name="fas fa-power-off" color="primary">
+            <q-icon v-if="props.row.patches_pending" name="far fa-clock" color="primary">
               <q-tooltip>Patches Pending</q-tooltip>
             </q-icon>
           </q-td>
@@ -280,6 +296,12 @@
               <q-tooltip>Agent online</q-tooltip>
             </q-icon>
           </q-td>
+          <!-- needs reboot -->
+          <q-td key="needsreboot">
+            <q-icon v-if="props.row.needs_reboot" name="fas fa-power-off" color="primary">
+              <q-tooltip>Reboot required</q-tooltip>
+            </q-icon>
+          </q-td>
           <q-td key="lastseen" :props="props">{{ props.row.last_seen }}</q-td>
           <q-td key="boottime" :props="props">{{ bootTime(props.row.boot_time) }}</q-td>
         </q-tr>
@@ -288,32 +310,6 @@
     <q-inner-loading :showing="agentTableLoading">
       <q-spinner size="40px" color="primary" />
     </q-inner-loading>
-    <!-- send command modal -->
-    <q-dialog v-model="sendCommandToggle" persistent>
-      <q-card style="min-width: 400px">
-        <q-card-section>
-          <div class="text-h6">Send cmd on {{ sendCommandHostname }}</div>
-        </q-card-section>
-
-        <q-card-section>
-          <q-form @submit.prevent="sendCommand">
-            <q-card-section>
-              <q-input
-                dense
-                v-model="rawCMD"
-                persistent
-                autofocus
-                :rules="[val => !!val || 'Field is required']"
-              />
-            </q-card-section>
-            <q-card-actions align="right" class="text-primary">
-              <q-btn flat color="red" label="Cancel" v-close-popup />
-              <q-btn color="positive" :loading="loadingSendCMD" label="Send" type="submit" />
-            </q-card-actions>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
     <!-- edit agent modal -->
     <q-dialog v-model="showEditAgentModal">
       <EditAgent @close="showEditAgentModal = false" @edited="agentEdited" />
@@ -328,17 +324,23 @@
     <q-dialog v-model="showPolicyAddModal">
       <PolicyAdd @close="showPolicyAddModal = false" type="agent" :pk="policyAddPk" />
     </q-dialog>
+    <!-- send command modal -->
+    <q-dialog v-model="showSendCommand">
+      <SendCommand @close="showSendCommand = false" :pk="selectedAgentPk" />
+    </q-dialog>
   </div>
 </template>
 
 <script>
 import axios from "axios";
 import mixins from "@/mixins/mixins";
+import { mapGetters } from "vuex";
 import { openURL } from "quasar";
 import EditAgent from "@/components/modals/agents/EditAgent";
 import RebootLater from "@/components/modals/agents/RebootLater";
 import PendingActions from "@/components/modals/logs/PendingActions";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
+import SendCommand from "@/components/modals/agents/SendCommand";
 
 export default {
   name: "AgentTable",
@@ -347,21 +349,18 @@ export default {
     EditAgent,
     RebootLater,
     PendingActions,
-    PolicyAdd
+    PolicyAdd,
+    SendCommand
   },
   mixins: [mixins],
   data() {
     return {
       pagination: {
-        rowsPerPage: 9999,
+        rowsPerPage: 0,
         sortBy: "hostname",
         descending: false
       },
-      sendCommandToggle: false,
-      sendCommandID: null,
-      sendCommandHostname: "",
-      rawCMD: "",
-      loadingSendCMD: false,
+      showSendCommand: false,
       showEditAgentModal: false,
       showRebootLaterModal: false,
       showPolicyAddModal: false,
@@ -382,6 +381,19 @@ export default {
       axios.get(`/winupdate/${pk}/runupdatescan/`).then(r => {
         this.notifySuccess(`Scan will be run shortly on ${hostname}`);
       });
+    },
+    installPatches(pk) {
+      this.$q.loading.show();
+      this.$axios
+        .get(`/winupdate/${pk}/installnow/`)
+        .then(r => {
+          this.$q.loading.hide();
+          this.notifySuccess(r.data);
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError(e.response.data, 5000);
+        });
     },
     agentEdited() {
       this.$emit("refreshEdit");
@@ -481,37 +493,6 @@ export default {
           });
         });
     },
-    toggleSendCommand(pk, hostname) {
-      this.sendCommandToggle = true;
-      this.sendCommandID = pk;
-      this.sendCommandHostname = hostname;
-    },
-    sendCommand() {
-      const rawcmd = this.rawCMD;
-      const hostname = this.sendCommandHostname;
-      const pk = this.sendCommandID;
-      const data = {
-        pk: pk,
-        rawcmd: rawcmd
-      };
-      this.loadingSendCMD = true;
-      axios
-        .post("/agents/sendrawcmd/", data)
-        .then(r => {
-          this.loadingSendCMD = false;
-          this.sendCommandToggle = false;
-          this.$q.dialog({
-            title: `<code>${rawcmd} on ${hostname}`,
-            style: "width: 900px; max-width: 90vw",
-            message: `<pre>${r.data}</pre>`,
-            html: true
-          });
-        })
-        .catch(err => {
-          this.loadingSendCMD = false;
-          this.notifyError(err.response.data);
-        });
-    },
     agentRowSelected(pk) {
       this.$store.commit("setActiveRow", pk);
       this.$store.dispatch("loadSummary", pk);
@@ -555,18 +536,19 @@ export default {
     webRDP(pk) {
       this.$q.loading.show();
       this.$axios
-        .get(`/agents/${pk}/webrdp/`)
+        .get(`/agents/${pk}/meshcentral/`)
         .then(r => {
           this.$q.loading.hide();
-          openURL(r.data);
+          openURL(r.data.webrdp);
         })
-        .catch(() => {
+        .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Something went wrong");
+          this.notifyError(e.response.data);
         });
     }
   },
   computed: {
+    ...mapGetters(["selectedAgentPk"]),
     selectedRow() {
       return this.$store.state.selectedRow;
     },

@@ -256,9 +256,9 @@ export default {
           this.refreshServices();
           this.notifySuccess(`Service ${name} was edited!`);
         })
-        .catch(err => {
+        .catch(e => {
           this.serviceDetailVisible = false;
-          this.notifyError(err.response.data.error);
+          this.notifyError(e.response.data);
         });
     },
     startupTypeChanged() {
@@ -281,10 +281,10 @@ export default {
           }
           this.serviceDetailVisible = false;
         })
-        .catch(err => {
+        .catch(e => {
           this.serviceDetailVisible = false;
           this.serviceDetailsModal = false;
-          this.notifyError(err.response.data.error);
+          this.notifyError(e.response.data);
         });
     },
     serviceAction(name, action, fullname) {
@@ -318,9 +318,9 @@ export default {
           this.serviceDetailsModal = false;
           this.notifySuccess(`Service ${fullname} was ${status}!`);
         })
-        .catch(err => {
+        .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(err.response.data.error);
+          this.notifyError(e.response.data);
         });
     },
     async getServices() {
@@ -339,9 +339,9 @@ export default {
           this.servicesData = [r.data][0].services;
           this.$q.loading.hide();
         })
-        .catch(err => {
+        .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(err.response.data.error);
+          this.notifyError(e.response.data);
         });
     }
   },

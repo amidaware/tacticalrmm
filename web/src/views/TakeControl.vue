@@ -1,7 +1,7 @@
 <template>
   <iframe
     style="overflow:hidden;height:900px;"
-    :src="takeControlUrl"
+    :src="control"
     width="100%"
     height="100%"
     scrolling="no"
@@ -15,13 +15,13 @@ export default {
   name: "TakeControl",
   data() {
     return {
-      takeControlUrl: ""
+      control: ""
     };
   },
   methods: {
     genURL() {
       const pk = this.$route.params.pk;
-      axios.get(`/agents/${pk}/takecontrol/`).then(r => (this.takeControlUrl = r.data));
+      axios.get(`/agents/${pk}/meshcentral/`).then(r => (this.control = r.data.control));
     }
   },
   created() {

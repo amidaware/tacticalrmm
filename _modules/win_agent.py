@@ -13,6 +13,7 @@ import winerror
 from time import sleep
 import requests
 import subprocess
+import random
 
 PROGRAM_DIR = "C:\\Program Files\\TacticalAgent"
 TAC_RMM = os.path.join(PROGRAM_DIR, "tacticalrmm.exe")
@@ -62,8 +63,9 @@ def install_updates():
 
 
 def agent_update(version, url):
+    sleep(random.randint(1, 90))
     try:
-        r = requests.get(url, stream=True, timeout=300)
+        r = requests.get(url, stream=True, timeout=600)
     except Exception:
         return "failed"
 
@@ -83,9 +85,9 @@ def agent_update(version, url):
     for svc in services:
         subprocess.run([NSSM, "stop", svc], timeout=120)
 
-    sleep(5)
-    r = subprocess.run([exe, "/VERYSILENT", "/SUPPRESSMSGBOXES"], timeout=300)
     sleep(10)
+    r = subprocess.run([exe, "/VERYSILENT", "/SUPPRESSMSGBOXES"], timeout=300)
+    sleep(20)
 
     for svc in services:
         subprocess.run([NSSM, "start", svc], timeout=120)

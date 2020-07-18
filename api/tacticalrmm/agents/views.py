@@ -1,6 +1,5 @@
 from loguru import logger
 import subprocess
-from packaging import version as pyver
 import zlib
 import json
 import base64
@@ -27,7 +26,7 @@ from core.models import CoreSettings
 from .serializers import AgentSerializer, AgentHostnameSerializer, AgentTableSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .tasks import uninstall_agent_task
+from .tasks import uninstall_agent_task, send_agent_update_task
 
 from tacticalrmm.utils import notify_error
 
@@ -51,36 +50,7 @@ def get_agent_versions(request):
 def update_agents(request):
     pks = request.data["pks"]
     version = request.data["version"]
-    ver = version.split("winagent-v")[1]
-    q = Agent.objects.only("pk").filter(pk__in=pks)
-
-    agents = [i for i in q if pyver.parse(i.version) < pyver.parse(ver)]
-
-    if agents:
-        for agent in agents:
-            agent.update_pending = True
-            agent.save(update_fields=["update_pending"])
-
-        minions = [i.salt_id for i in agents]
-
-        r = Agent.get_github_versions()
-        git_versions = r["versions"]
-        data = r["data"]  # full response from github
-        versions = {}
-
-        for i, release in enumerate(data):
-            versions[i] = release["name"]
-
-        key = [k for k, v in versions.items() if v == version][0]
-
-        download_url = data[key]["assets"][0]["browser_download_url"]
-
-        r = Agent.salt_batch_async(
-            minions=minions,
-            func="win_agent.do_agent_update",
-            kwargs={"version": ver, "url": download_url},
-        )
-
+    send_agent_update_task.delay(pks=pks, version=version)
     return Response("ok")
 
 

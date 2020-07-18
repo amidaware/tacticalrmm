@@ -80,7 +80,7 @@ class Agent(models.Model):
 
     @property
     def status(self):
-        offline = dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=4)
+        offline = dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=6)
         overdue = dt.datetime.now(dt.timezone.utc) - dt.timedelta(
             minutes=self.overdue_time
         )

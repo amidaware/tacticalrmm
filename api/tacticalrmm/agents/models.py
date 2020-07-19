@@ -29,6 +29,7 @@ class Agent(models.Model):
     plat = models.CharField(max_length=255, null=True)
     plat_release = models.CharField(max_length=255, null=True)
     hostname = models.CharField(max_length=255)
+    salt_id = models.CharField(null=True, blank=True, max_length=255)
     local_ip = models.TextField(null=True)
     agent_id = models.CharField(max_length=200)
     last_seen = models.DateTimeField(null=True, blank=True)
@@ -80,7 +81,7 @@ class Agent(models.Model):
 
     @property
     def status(self):
-        offline = dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=4)
+        offline = dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=6)
         overdue = dt.datetime.now(dt.timezone.utc) - dt.timedelta(
             minutes=self.overdue_time
         )
@@ -102,10 +103,6 @@ class Agent(models.Model):
             return True
         else:
             return False
-
-    @property
-    def salt_id(self):
-        return f"{self.hostname}-{self.pk}"
 
     @property
     def checks(self):

@@ -183,6 +183,9 @@ def add(request):
 
         agent.save()
 
+        agent.salt_id = f"{agent.hostname}-{agent.pk}"
+        agent.save(update_fields=["salt_id"])
+
         if agent.monitoring_type == "workstation":
             WinUpdatePolicy(agent=agent, run_time_days=[5, 6]).save()
         else:

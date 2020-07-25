@@ -9,13 +9,13 @@
     "test:unit": "quasar test --unit jest"
   },
   "dependencies": {
-    "@quasar/extras": "^1.8.2",
+    "@quasar/extras": "^1.9.0",
     "axios": "^0.19.2",
     "dotenv": "^8.2.0",
-    "quasar": "^1.12.8"
+    "quasar": "^1.12.13"
   },
   "devDependencies": {
-    "@quasar/app": "^2.0.1",
+    "@quasar/app": "^2.0.6",
     "@quasar/cli": "^1.1.0",
     "@quasar/quasar-app-extension-testing": "^1.0.0",
     "@quasar/quasar-app-extension-testing-unit-jest": "^1.0.1",

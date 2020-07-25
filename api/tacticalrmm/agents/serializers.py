@@ -37,14 +37,17 @@ class AgentTableSerializer(serializers.ModelSerializer):
     patches_pending = serializers.ReadOnlyField(source="has_patches_pending")
     status = serializers.ReadOnlyField()
     checks = serializers.ReadOnlyField()
-    timezone = serializers.ReadOnlyField()
+    last_seen = serializers.SerializerMethodField()
+
+    def get_last_seen(self, obj):
+        agent_tz = pytz.timezone(obj.timezone)
+        return obj.last_seen.astimezone(agent_tz).strftime("%b-%d-%Y - %H:%M")
 
     class Meta:
         model = Agent
         fields = [
             "id",
             "hostname",
-            "plat",
             "agent_id",
             "client",
             "site",
@@ -58,7 +61,6 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "last_seen",
             "boot_time",
             "checks",
-            "timezone",
             "logged_in_username",
         ]
 

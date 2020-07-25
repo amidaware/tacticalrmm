@@ -10,14 +10,13 @@
       </q-card-actions>
     </q-card-section>
     <q-card-section>
-      <p>Download the agent then run the following 2 commands from an elevated command prompt on the device you want to add.</p>
+      <p>Download the agent then run the following command from an elevated command prompt on the device you want to add.</p>
       <br />
       <p>
-        <code>{{ info.exe }} /VERYSILENT /SUPPRESSMSGBOXES</code>
-      </p>
-      <p>
         <code>
-          "C:\Program Files\TacticalAgent\tacticalrmm.exe" -m install --api "{{ info.api }}"
+          {{ info.exe }} /VERYSILENT /SUPPRESSMSGBOXES
+          && timeout /t 20 /nobreak > NUL
+          && "C:\Program Files\TacticalAgent\tacticalrmm.exe" -m install --api "{{ info.api }}"
           --client-id {{ info.data.client }} --site-id {{ info.data.site }} --desc "{{ info.desc }}"
           --agent-type "{{ info.agenttype }}" --auth "{{ info.data.token }}"
         </code>

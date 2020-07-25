@@ -30,7 +30,7 @@ def generate_agent_checks_from_policies_task(
 @app.task
 def generate_agent_checks_by_location_task(location, clear=False, parent_checks=[]):
 
-    policy = Policy.objects.get(pk=policypk)
+    # policy = Policy.objects.get(pk=policypk)
     for agent in Agent.objects.filter(**location):
         agent.generate_checks_from_policies(clear=clear, parent_checks=parent_checks)
 
@@ -86,7 +86,7 @@ def generate_agent_tasks_from_policies_task(
 @app.task
 def generate_agent_tasks_by_location_task(location, clear=False, parent_tasks=[]):
 
-    policy = Policy.objects.get(pk=policypk)
+    # policy = Policy.objects.get(pk=policypk)
     for agent in Agent.objects.filter(**location):
         agent.generate_tasks_from_policies(clear=clear, parent_tasks=parent_tasks)
 

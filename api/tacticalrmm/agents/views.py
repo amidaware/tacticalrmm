@@ -4,6 +4,7 @@ import zlib
 import json
 import base64
 import datetime as dt
+from packaging import version as pyver
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -17,7 +18,7 @@ from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.authentication import BasicAuthentication, TokenAuthentication
 
-from .models import Agent
+from .models import Agent, RecoveryAction
 from winupdate.models import WinUpdatePolicy
 from clients.models import Client, Site
 from accounts.models import User
@@ -298,3 +299,28 @@ def install_agent(request):
 
     resp = {"token": token, "client": client.pk, "site": site.pk}
     return Response(resp)
+
+
+@api_view(["POST"])
+def recover(request):
+    agent = get_object_or_404(Agent, pk=request.data["pk"])
+
+    if pyver.parse(agent.version) <= pyver.parse("0.9.5"):
+        return notify_error("Only available in agent version greater than 0.9.5")
+
+    if agent.recoveryactions.filter(last_run=None).exists():
+        return notify_error(
+            "A recovery action is currently pending. Please wait for the next agent check-in."
+        )
+
+    if request.data["mode"] == "command" and not request.data["cmd"]:
+        return notify_error("Command is required")
+
+    RecoveryAction(
+        agent=agent,
+        mode=request.data["mode"],
+        command=request.data["cmd"] if request.data["mode"] == "command" else None,
+    ).save()
+
+    return Response(f"Recovery will be attempted on the agent's next check-in")
+

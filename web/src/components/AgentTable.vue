@@ -120,7 +120,6 @@
                 <q-item-section>Send Command</q-item-section>
               </q-item>
 
-              <q-separator />
               <q-item clickable v-close-popup @click.stop.prevent="remoteBG(props.row.id)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-cogs" />
@@ -129,7 +128,6 @@
               </q-item>
 
               <!-- patch management -->
-              <q-separator />
               <q-item clickable>
                 <q-item-section side>
                   <q-icon size="xs" name="system_update" />
@@ -160,7 +158,7 @@
                   </q-list>
                 </q-menu>
               </q-item>
-              <q-separator />
+
               <q-item clickable v-close-popup @click.stop.prevent="runChecks(props.row.id)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-check-double" />
@@ -168,7 +166,6 @@
                 <q-item-section>Run Checks</q-item-section>
               </q-item>
 
-              <q-separator />
               <q-item clickable>
                 <q-item-section side>
                   <q-icon size="xs" name="power_settings_new" />
@@ -202,7 +199,6 @@
                 </q-menu>
               </q-item>
 
-              <q-separator />
               <q-item clickable v-close-popup @click.stop.prevent="showPolicyAdd(props.row.id)">
                 <q-item-section side>
                   <q-icon size="xs" name="policy" />
@@ -210,7 +206,13 @@
                 <q-item-section>Edit Policies</q-item-section>
               </q-item>
 
-              <q-separator />
+              <q-item clickable v-close-popup @click.stop.prevent="showAgentRecovery = true">
+                <q-item-section side>
+                  <q-icon size="xs" name="fas fa-first-aid" />
+                </q-item-section>
+                <q-item-section>Agent Recovery</q-item-section>
+              </q-item>
+
               <q-item clickable v-close-popup @click.stop.prevent="pingAgent(props.row.id)">
                 <q-item-section side>
                   <q-icon size="xs" name="delete" />
@@ -328,6 +330,10 @@
     <q-dialog v-model="showSendCommand">
       <SendCommand @close="showSendCommand = false" :pk="selectedAgentPk" />
     </q-dialog>
+    <!-- agent recovery modal -->
+    <q-dialog v-model="showAgentRecovery">
+      <AgentRecovery @close="showAgentRecovery = false" :pk="selectedAgentPk" />
+    </q-dialog>
   </div>
 </template>
 
@@ -341,6 +347,7 @@ import RebootLater from "@/components/modals/agents/RebootLater";
 import PendingActions from "@/components/modals/logs/PendingActions";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
 import SendCommand from "@/components/modals/agents/SendCommand";
+import AgentRecovery from "@/components/modals/agents/AgentRecovery";
 
 export default {
   name: "AgentTable",
@@ -350,7 +357,8 @@ export default {
     RebootLater,
     PendingActions,
     PolicyAdd,
-    SendCommand
+    SendCommand,
+    AgentRecovery,
   },
   mixins: [mixins],
   data() {
@@ -358,13 +366,14 @@ export default {
       pagination: {
         rowsPerPage: 0,
         sortBy: "hostname",
-        descending: false
+        descending: false,
       },
       showSendCommand: false,
       showEditAgentModal: false,
       showRebootLaterModal: false,
       showPolicyAddModal: false,
-      policyAddPk: null
+      showAgentRecovery: false,
+      policyAddPk: null,
     };
   },
   methods: {
@@ -378,7 +387,7 @@ export default {
       }, 500);
     },
     runPatchStatusScan(pk, hostname) {
-      axios.get(`/winupdate/${pk}/runupdatescan/`).then(r => {
+      axios.get(`/winupdate/${pk}/runupdatescan/`).then((r) => {
         this.notifySuccess(`Scan will be run shortly on ${hostname}`);
       });
     },
@@ -386,11 +395,11 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get(`/winupdate/${pk}/installnow/`)
-        .then(r => {
+        .then((r) => {
           this.$q.loading.hide();
           this.notifySuccess(r.data);
         })
-        .catch(e => {
+        .catch((e) => {
           this.$q.loading.hide();
           this.notifyError(e.response.data, 5000);
         });
@@ -413,8 +422,8 @@ export default {
     runChecks(pk) {
       axios
         .get(`/checks/runchecks/${pk}/`)
-        .then(r => this.notifySuccess(`Checks will now be re-run on ${r.data}`))
-        .catch(e => this.notifyError("Something went wrong"));
+        .then((r) => this.notifySuccess(`Checks will now be re-run on ${r.data}`))
+        .catch((e) => this.notifyError("Something went wrong"));
     },
     removeAgent(pk, name) {
       this.$q
@@ -423,18 +432,18 @@ export default {
           prompt: {
             model: "",
             type: "text",
-            isValid: val => val === name
+            isValid: (val) => val === name,
           },
           cancel: true,
           ok: { label: "Uninstall", color: "negative" },
           persistent: true,
-          html: true
+          html: true,
         })
-        .onOk(val => {
+        .onOk((val) => {
           const data = { pk: pk };
           this.$axios
             .delete("/agents/uninstall/", { data: data })
-            .then(r => {
+            .then((r) => {
               this.notifySuccess(r.data);
               setTimeout(() => {
                 location.reload();
@@ -447,7 +456,7 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get(`/agents/${pk}/ping/`)
-        .then(r => {
+        .then((r) => {
           this.$q.loading.hide();
           if (r.data.status === "offline") {
             this.$q
@@ -458,7 +467,7 @@ export default {
                   If so, the agent will need to be manually uninstalled from the computer.`,
                 cancel: { label: "No", color: "negative" },
                 ok: { label: "Yes", color: "positive" },
-                persistent: true
+                persistent: true,
               })
               .onOk(() => this.removeAgent(pk, r.data.name))
               .onCancel(() => {
@@ -470,7 +479,7 @@ export default {
             this.notifyError("Something went wrong");
           }
         })
-        .catch(e => {
+        .catch((e) => {
           this.$q.loading.hide();
           this.notifyError("Something went wrong");
         });
@@ -481,14 +490,14 @@ export default {
           title: "Are you sure?",
           message: `Reboot ${hostname} now`,
           cancel: true,
-          persistent: true
+          persistent: true,
         })
         .onOk(() => {
           const data = { pk: pk, action: "rebootnow" };
-          axios.post("/agents/poweraction/", data).then(r => {
+          axios.post("/agents/poweraction/", data).then((r) => {
             this.$q.dialog({
               title: `Restarting ${hostname}`,
-              message: `${hostname} will now be restarted`
+              message: `${hostname} will now be restarted`,
             });
           });
         });
@@ -506,19 +515,19 @@ export default {
       const data = {
         pk: pk,
         alertType: category,
-        action: action
+        action: action,
       };
       const alertColor = alert_action ? "positive" : "warning";
       axios
         .post("/agents/overdueaction/", data)
-        .then(r => {
+        .then((r) => {
           this.$q.notify({
             color: alertColor,
             icon: "fas fa-check-circle",
-            message: `Overdue ${category} alerts ${action} on ${r.data}`
+            message: `Overdue ${category} alerts ${action} on ${r.data}`,
           });
         })
-        .catch(e => this.notifyError(e.response.data.error));
+        .catch((e) => this.notifyError(e.response.data.error));
     },
     agentClass(status) {
       if (status === "offline") {
@@ -537,15 +546,15 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get(`/agents/${pk}/meshcentral/`)
-        .then(r => {
+        .then((r) => {
           this.$q.loading.hide();
           openURL(r.data.webrdp);
         })
-        .catch(e => {
+        .catch((e) => {
           this.$q.loading.hide();
           this.notifyError(e.response.data);
         });
-    }
+    },
   },
   computed: {
     ...mapGetters(["selectedAgentPk"]),
@@ -554,8 +563,8 @@ export default {
     },
     agentTableLoading() {
       return this.$store.state.agentTableLoading;
-    }
-  }
+    },
+  },
 };
 </script>
 

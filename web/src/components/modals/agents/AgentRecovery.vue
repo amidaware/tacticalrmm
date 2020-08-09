@@ -1,0 +1,92 @@
+<template>
+  <q-card style="min-width: 50vw;">
+    <q-card-section class="row items-center">
+      <div class="text-h6">{{ hostname }} Agent Recovery</div>
+      <q-space />
+      <q-btn icon="close" flat round dense v-close-popup />
+    </q-card-section>
+    <q-form @submit.prevent="recover">
+      <q-card-section></q-card-section>
+      <q-card-section>
+        <div class="q-gutter-sm">
+          <q-radio dense v-model="mode" val="mesh" label="Mesh Agent" />
+          <q-radio dense v-model="mode" val="salt" label="Salt Minion" />
+          <q-radio dense v-model="mode" val="command" label="Shell Command" />
+        </div>
+      </q-card-section>
+      <q-card-section v-show="mode === 'mesh'">
+        <p>Fix issues with the Mesh Agent which handles take control, terminal and file browser.</p>
+      </q-card-section>
+      <q-card-section v-show="mode === 'salt'">
+        <p>Fix issues with the salt-minion (do this if getting alot of errors about not being able to contact the agent even if it's online).</p>
+      </q-card-section>
+      <q-card-section v-show="mode === 'command'">
+        <p>Run a shell command on the agent.</p>
+        <p>You should use the 'Send Command' feature from the agent's context menu for sending shell commands.</p>
+        <p>Only use this as a last resort if unable to recover the salt-minion.</p>
+        <q-input
+          ref="input"
+          v-model="cmd"
+          outlined
+          label="Command"
+          bottom-slots
+          stack-label
+          error-message="*Required"
+          :error="!isValid"
+        />
+      </q-card-section>
+      <q-card-actions align="center">
+        <q-btn label="Recover" color="primary" class="full-width" type="submit" />
+      </q-card-actions>
+    </q-form>
+  </q-card>
+</template>
+
+<script>
+import mixins from "@/mixins/mixins";
+
+export default {
+  name: "AgentRecovery",
+  mixins: [mixins],
+  props: {
+    pk: Number,
+  },
+  data() {
+    return {
+      mode: "mesh",
+      cmd: null,
+    };
+  },
+  computed: {
+    hostname() {
+      return this.$store.state.agentSummary.hostname;
+    },
+    isValid() {
+      if (this.mode === "command") {
+        if (this.cmd === null || this.cmd === "") {
+          return false;
+        }
+      }
+      return true;
+    },
+  },
+  methods: {
+    recover() {
+      const data = {
+        pk: this.pk,
+        cmd: this.cmd,
+        mode: this.mode,
+      };
+      this.$axios
+        .post("/agents/recover/", data)
+        .then((r) => {
+          this.$emit("close");
+          this.notifySuccess(r.data, 5000);
+        })
+        .catch((e) => {
+          this.notifyError(e.response.data, 5000);
+        });
+    },
+  },
+};
+</script>

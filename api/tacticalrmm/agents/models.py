@@ -25,6 +25,7 @@ logger.configure(**settings.LOG_CONFIG)
 
 class Agent(models.Model):
     version = models.CharField(default="0.1.0", max_length=255)
+    salt_ver = models.CharField(default="1.0.3", max_length=255)
     operating_system = models.CharField(null=True, max_length=255)
     plat = models.CharField(max_length=255, null=True)
     plat_release = models.CharField(max_length=255, null=True)
@@ -53,6 +54,7 @@ class Agent(models.Model):
     needs_reboot = models.BooleanField(default=False)
     managed_by_wsus = models.BooleanField(default=False)
     update_pending = models.BooleanField(default=False)
+    salt_update_pending = models.BooleanField(default=False)
     choco_installed = models.BooleanField(default=False)
     wmi_detail = JSONField(null=True)
     time_zone = models.CharField(

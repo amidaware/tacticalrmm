@@ -44,8 +44,20 @@ def uninstall_agent():
 
 
 def update_salt():
-    __salt__["cmd.run_bg"]([TAC_RMM, "-m", "updatesalt"])
-    return "ok"
+    from subprocess import Popen, PIPE
+
+    CREATE_NEW_PROCESS_GROUP = 0x00000200
+    DETACHED_PROCESS = 0x00000008
+    cmd = [TAC_RMM, "-m", "updatesalt"]
+    p = Popen(
+        cmd,
+        stdin=PIPE,
+        stdout=PIPE,
+        stderr=PIPE,
+        close_fds=True,
+        creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
+    )
+    return p.pid
 
 
 def run_manual_checks():

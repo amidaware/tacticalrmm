@@ -319,3 +319,24 @@ class TaskRunner(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save(last_run=djangotime.now())
         return Response("ok")
+
+
+class SaltInfo(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        agent = get_object_or_404(Agent, pk=pk)
+        ret = {
+            "latestVer": settings.LATEST_SALT_VER,
+            "currentVer": agent.salt_ver,
+            "salt_id": agent.salt_id,
+        }
+        return Response(ret)
+
+    def patch(self, request, pk):
+        agent = get_object_or_404(Agent, pk=pk)
+        agent.salt_ver = request.data["ver"]
+        agent.salt_update_pending = False
+        agent.save(update_fields=["salt_ver", "salt_update_pending"])
+        return Response("ok")

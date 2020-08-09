@@ -474,3 +474,28 @@ class AgentOutage(models.Model):
 
     def __str__(self):
         return self.agent.hostname
+
+
+RECOVERY_CHOICES = [
+    ("salt", "Salt"),
+    ("mesh", "Mesh"),
+    ("command", "Command"),
+]
+
+
+class RecoveryAction(models.Model):
+    agent = models.ForeignKey(
+        Agent, related_name="recoveryactions", on_delete=models.CASCADE,
+    )
+    mode = models.CharField(max_length=50, choices=RECOVERY_CHOICES, default="mesh")
+    command = models.TextField(null=True, blank=True)
+    last_run = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.agent.hostname} - {self.mode}"
+
+    def send(self):
+        ret = {"recovery": self.mode}
+        if self.mode == "command":
+            ret["cmd"] = self.command
+        return ret

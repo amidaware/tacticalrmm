@@ -13,4 +13,5 @@ urlpatterns = [
     path("<int:pk>/checkrunner/", views.CheckRunner.as_view()),
     path("<int:pk>/taskrunner/", views.TaskRunner.as_view()),
     path("<int:pk>/saltinfo/", views.SaltInfo.as_view()),
+    path("<int:pk>/meshinfo/", views.MeshInfo.as_view()),
 ]

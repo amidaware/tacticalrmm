@@ -17,7 +17,7 @@
           {{ info.exe }} /VERYSILENT /SUPPRESSMSGBOXES
           && timeout /t 20 /nobreak > NUL
           && "C:\Program Files\TacticalAgent\tacticalrmm.exe" -m install --api "{{ info.api }}"
-          --client-id {{ info.data.client }} --site-id {{ info.data.site }} --desc "{{ info.desc }}"
+          --client-id {{ info.data.client }} --site-id {{ info.data.site }}
           --agent-type "{{ info.agenttype }}" --auth "{{ info.data.token }}"
         </code>
       </p>
@@ -31,6 +31,6 @@
 <script>
 export default {
   name: "AgentDownload",
-  props: ["info"]
+  props: ["info"],
 };
 </script>

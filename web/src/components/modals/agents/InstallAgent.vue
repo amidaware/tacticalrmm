@@ -25,12 +25,6 @@
             <q-select outlined label="Site" v-model="site" :options="sites" />
           </q-card-section>
           <q-card-section>
-            <q-input
-              outlined
-              v-model="desc"
-              label="Description of this device"
-              :rules="[ val => val && val.length > 0 && val.length <= 255 || '*Required']"
-            />
             <div>
               Agent type:
               <br />
@@ -49,7 +43,7 @@
       </q-card-section>
     </q-card>
     <div>
-      <q-dialog v-model="showAgentDownload" @hide="quit">
+      <q-dialog v-model="showAgentDownload">
         <AgentDownload :info="info" @close="showAgentDownload = false" />
       </q-dialog>
     </div>
@@ -72,12 +66,11 @@ export default {
       versions: {},
       client: null,
       site: null,
-      desc: null,
       version: null,
       agenttype: "server",
       github: [],
       showAgentDownload: false,
-      info: {}
+      info: {},
     };
   },
   methods: {
@@ -85,12 +78,12 @@ export default {
       this.$q.loading.show();
       axios
         .get("/clients/loadclients/")
-        .then(r => {
+        .then((r) => {
           this.tree = r.data;
           this.client = Object.keys(r.data)[0];
           axios
             .get("/agents/getagentversions/")
-            .then(r => {
+            .then((r) => {
               this.versions = r.data.versions;
               this.version = Object.values(r.data.versions)[0];
               this.github = r.data.github;
@@ -109,19 +102,16 @@ export default {
     },
     addAgent() {
       const api = axios.defaults.baseURL;
-      const release = this.github.filter(i => i.name === this.version)[0];
+      const release = this.github.filter((i) => i.name === this.version)[0];
       const download = release.assets[0].browser_download_url;
       const exe = `${release.name}.exe`;
 
       const data = { client: this.client, site: this.site };
-      axios.post("/agents/installagent/", data).then(r => {
-        this.info = { exe, download, api, desc: this.desc, agenttype: this.agenttype, data: r.data };
+      axios.post("/agents/installagent/", data).then((r) => {
+        this.info = { exe, download, api, agenttype: this.agenttype, data: r.data };
         this.showAgentDownload = true;
       });
     },
-    quit() {
-      this.$emit("close");
-    }
   },
   computed: {
     sites() {
@@ -129,10 +119,10 @@ export default {
         this.site = this.tree[this.client][0];
         return this.tree[this.client];
       }
-    }
+    },
   },
   created() {
     this.getClientsSites();
-  }
+  },
 };
 </script>

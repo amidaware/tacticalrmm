@@ -22,6 +22,7 @@ pip install --no-cache-dir -r requirements.txt
 python manage.py migrate
 python manage.py delete_tokens
 python manage.py fix_salt_key
+python manage.py collectstatic --no-input
 deactivate
 
 

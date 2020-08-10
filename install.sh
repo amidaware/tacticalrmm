@@ -243,7 +243,7 @@ pip install --no-cache-dir --upgrade pip
 pip install --no-cache-dir setuptools==47.3.2 wheel==0.34.2
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
-python manage.py collectstatic
+python manage.py collectstatic --no-input
 python manage.py load_chocos
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"

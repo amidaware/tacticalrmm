@@ -1,7 +1,6 @@
 import datetime as dt
 
 from django.db import models
-from django.contrib.postgres.fields import JSONField
 
 from agents.models import Agent
 
@@ -28,7 +27,7 @@ class PendingAction(models.Model):
         max_length=255, choices=STATUS_CHOICES, default="pending",
     )
     celery_id = models.CharField(null=True, blank=True, max_length=255)
-    details = JSONField(null=True, blank=True)
+    details = models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.agent.hostname} - {self.action_type}"

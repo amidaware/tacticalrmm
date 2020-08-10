@@ -5,7 +5,7 @@ from statistics import mean
 
 from django.db import models
 from django.conf import settings
-from django.contrib.postgres.fields import ArrayField, JSONField
+from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 from core.models import CoreSettings
@@ -86,8 +86,8 @@ class Check(models.Model):
     fail_count = models.PositiveIntegerField(default=0)
     email_sent = models.DateTimeField(null=True, blank=True)
     text_sent = models.DateTimeField(null=True, blank=True)
-    outage_history = JSONField(null=True, blank=True)  # store
-    extra_details = JSONField(null=True, blank=True)
+    outage_history = models.JSONField(null=True, blank=True)  # store
+    extra_details = models.JSONField(null=True, blank=True)
 
     # check specific fields
 

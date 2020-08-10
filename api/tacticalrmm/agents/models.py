@@ -13,7 +13,6 @@ from loguru import logger
 
 from django.db import models
 from django.conf import settings
-from django.contrib.postgres.fields import JSONField
 
 from core.models import TZ_CHOICES
 
@@ -34,11 +33,11 @@ class Agent(models.Model):
     local_ip = models.TextField(null=True)
     agent_id = models.CharField(max_length=200)
     last_seen = models.DateTimeField(null=True, blank=True)
-    services = JSONField(null=True)
+    services = models.JSONField(null=True)
     public_ip = models.CharField(null=True, max_length=255)
     total_ram = models.IntegerField(null=True)
     used_ram = models.IntegerField(null=True)
-    disks = JSONField(null=True)
+    disks = models.JSONField(null=True)
     boot_time = models.FloatField(null=True)
     logged_in_username = models.CharField(null=True, max_length=200)
     client = models.CharField(max_length=200)
@@ -56,7 +55,7 @@ class Agent(models.Model):
     update_pending = models.BooleanField(default=False)
     salt_update_pending = models.BooleanField(default=False)
     choco_installed = models.BooleanField(default=False)
-    wmi_detail = JSONField(null=True)
+    wmi_detail = models.JSONField(null=True)
     time_zone = models.CharField(
         max_length=255, choices=TZ_CHOICES, null=True, blank=True
     )

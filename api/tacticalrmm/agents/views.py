@@ -295,7 +295,9 @@ def install_agent(request):
     client = get_object_or_404(Client, client=request.data["client"])
     site = get_object_or_404(Site, client=client, site=request.data["site"])
 
-    _, token = AuthToken.objects.create(user=request.user, expiry=dt.timedelta(hours=1))
+    _, token = AuthToken.objects.create(
+        user=request.user, expiry=dt.timedelta(hours=request.data["expires"])
+    )
 
     resp = {"token": token, "client": client.pk, "site": site.pk}
     return Response(resp)

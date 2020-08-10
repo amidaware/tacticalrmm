@@ -1,53 +1,73 @@
 <template>
-  <div>
-    <q-card style="min-width: 25vw" v-if="loaded">
-      <q-card-section class="row">
-        <q-card-actions align="left">
-          <div class="text-h6">Add an agent</div>
-        </q-card-actions>
-        <q-space />
-        <q-card-actions align="right">
-          <q-btn v-close-popup flat round dense icon="close" />
-        </q-card-actions>
-      </q-card-section>
-      <q-card-section>
-        <q-form @submit.prevent="addAgent">
-          <q-card-section v-if="tree !== null">
-            <q-select
-              outlined
-              label="Client"
-              v-model="client"
-              :options="Object.keys(tree)"
-              @input="site = sites[0]"
+  <q-card style="min-width: 35vw" v-if="loaded">
+    <q-card-section class="row">
+      <q-card-actions align="left">
+        <div class="text-h6">Add an agent</div>
+      </q-card-actions>
+      <q-space />
+      <q-card-actions align="right">
+        <q-btn v-close-popup flat round dense icon="close" />
+      </q-card-actions>
+    </q-card-section>
+    <q-card-section>
+      <q-form @submit.prevent="addAgent">
+        <q-card-section v-if="tree !== null" class="q-gutter-sm">
+          <q-select
+            outlined
+            dense
+            label="Client"
+            v-model="client"
+            :options="Object.keys(tree)"
+            @input="site = sites[0]"
+          />
+        </q-card-section>
+        <q-card-section class="q-gutter-sm">
+          <q-select dense outlined label="Site" v-model="site" :options="sites" />
+        </q-card-section>
+        <q-card-section>
+          <div class="q-gutter-sm">
+            <q-radio v-model="agenttype" val="server" label="Server" @input="power = false" />
+            <q-radio v-model="agenttype" val="workstation" label="Workstation" />
+          </div>
+        </q-card-section>
+        <q-card-section>
+          <div class="q-gutter-sm">
+            <q-input
+              v-model.number="expires"
+              dense
+              type="number"
+              filled
+              label="Token expiration (hours)"
+              style="max-width: 200px;"
+              stack-label
             />
-          </q-card-section>
-          <q-card-section>
-            <q-select outlined label="Site" v-model="site" :options="sites" />
-          </q-card-section>
-          <q-card-section>
-            <div>
-              Agent type:
-              <br />
-              <q-radio v-model="agenttype" val="server" label="Server" />
-              <q-radio v-model="agenttype" val="workstation" label="Workstation" />
-            </div>
-          </q-card-section>
-          <q-card-section>
-            Select Version
-            <q-select outlined v-model="version" :options="Object.values(versions)" />
-          </q-card-section>
-          <q-card-actions align="left">
-            <q-btn label="Generate Agent" color="primary" type="submit" />
-          </q-card-actions>
-        </q-form>
-      </q-card-section>
-    </q-card>
-    <div>
-      <q-dialog v-model="showAgentDownload">
-        <AgentDownload :info="info" @close="showAgentDownload = false" />
-      </q-dialog>
-    </div>
-  </div>
+          </div>
+        </q-card-section>
+        <q-card-section>
+          <div class="q-gutter-sm">
+            <q-checkbox v-model="rdp" dense label="Enable RDP" />
+            <q-checkbox v-model="ping" dense label="Enable Ping" />
+            <q-checkbox
+              v-model="power"
+              dense
+              v-show="agenttype === 'workstation'"
+              label="Disable sleep/hibernate"
+            />
+          </div>
+        </q-card-section>
+        <q-card-section>
+          Select Version
+          <q-select dense outlined v-model="version" :options="Object.values(versions)" />
+        </q-card-section>
+        <q-card-actions align="left">
+          <q-btn label="Show Install Command" color="primary" type="submit" />
+        </q-card-actions>
+      </q-form>
+    </q-card-section>
+    <q-dialog v-model="showAgentDownload">
+      <AgentDownload :info="info" @close="showAgentDownload = false" />
+    </q-dialog>
+  </q-card>
 </template>
 
 <script>
@@ -68,6 +88,10 @@ export default {
       site: null,
       version: null,
       agenttype: "server",
+      expires: 1,
+      power: false,
+      rdp: false,
+      ping: false,
       github: [],
       showAgentDownload: false,
       info: {},
@@ -106,9 +130,19 @@ export default {
       const download = release.assets[0].browser_download_url;
       const exe = `${release.name}.exe`;
 
-      const data = { client: this.client, site: this.site };
+      const data = { client: this.client, site: this.site, expires: this.expires };
       axios.post("/agents/installagent/", data).then((r) => {
-        this.info = { exe, download, api, agenttype: this.agenttype, data: r.data };
+        this.info = {
+          exe,
+          download,
+          api,
+          agenttype: this.agenttype,
+          expires: this.expires,
+          power: this.power ? 1 : 0,
+          rdp: this.rdp ? 1 : 0,
+          ping: this.ping ? 1 : 0,
+          data: r.data,
+        };
         this.showAgentDownload = true;
       });
     },

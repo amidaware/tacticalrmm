@@ -1,5 +1,5 @@
 <template>
-  <q-card style="min-width: 60vw">
+  <q-card style="min-width: 70vw">
     <q-card-section class="row">
       <q-card-actions align="left">
         <div class="text-h6">Installation Instructions</div>
@@ -18,11 +18,11 @@
           && timeout /t 20 /nobreak > NUL
           && "C:\Program Files\TacticalAgent\tacticalrmm.exe" -m install --api "{{ info.api }}"
           --client-id {{ info.data.client }} --site-id {{ info.data.site }}
-          --agent-type "{{ info.agenttype }}" --auth "{{ info.data.token }}"
+          --agent-type "{{ info.agenttype }}" --power {{ info.power }} --rdp {{ info.rdp }} --ping {{ info.ping }} --auth "{{ info.data.token }}"
         </code>
       </p>
       <br />
-      <p class="text-italic">Note: the auth token above will be valid for 1 hour.</p>
+      <p class="text-italic">Note: the auth token above will be valid for {{ info.expires }} hours.</p>
       <q-btn type="a" :href="info.download" color="primary" label="Download Agent" />
     </q-card-section>
   </q-card>

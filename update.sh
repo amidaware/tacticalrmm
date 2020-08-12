@@ -1,5 +1,24 @@
 #!/bin/bash
 
+SCRIPT_VERSION="1"
+SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
+curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
+NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
+
+if [ "${SCRIPT_VERSION}" \< "${NEW_VER}" ]; then
+    printf >&2 "${YELLOW}A newer version of this update script is available.${NC}\n"
+    printf >&2 "${YELLOW}Please download the latest version from ${GREEN}${SCRIPT_URL}${YELLOW} and re-run.${NC}\n"
+    rm -f $TMP_FILE
+    exit 1
+fi
+
+rm -f $TMP_FILE
+
 for i in celery celerybeat rmm nginx
 do
 sudo systemctl stop ${i}
@@ -46,3 +65,5 @@ rm -rf node_modules/
 npm install meshcentral@latest
 sudo systemctl start meshcentral
 sleep 10
+
+printf >&2 "${GREEN}Update finished!${NC}\n"

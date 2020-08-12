@@ -44,7 +44,7 @@ done
 
 while [[ $frontenddomain != *[.]*[.]* ]]
 do
-echo -ne "${YELLOW}Enter the subdomain for the frontend (e.g. app.example.com)${NC}: "
+echo -ne "${YELLOW}Enter the subdomain for the frontend (e.g. rmm.example.com)${NC}: "
 read frontenddomain
 done
 

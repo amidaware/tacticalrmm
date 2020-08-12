@@ -25,8 +25,8 @@ class CoreSettings(models.Model):
     smtp_host = models.CharField(
         max_length=255, null=True, blank=True, default="smtp.gmail.com"
     )
-    smtp_host_user = models.EmailField(
-        null=True, blank=True, default="admin@example.com"
+    smtp_host_user = models.CharField(
+        max_length=255, null=True, blank=True, default="admin@example.com"
     )
     smtp_host_password = models.CharField(
         max_length=255, null=True, blank=True, default="changeme"

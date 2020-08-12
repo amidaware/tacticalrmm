@@ -33,3 +33,4 @@ app.ini
 *.pem
 create_services.py
 gen_random.py
+sync_salt_modules.py

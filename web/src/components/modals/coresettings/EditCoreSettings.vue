@@ -108,13 +108,7 @@
                 <q-card-section class="row">
                   <div class="col-2">Username:</div>
                   <div class="col-4"></div>
-                  <q-input
-                    outlined
-                    dense
-                    v-model="settings.smtp_host_user"
-                    class="col-6"
-                    :rules="[val => isValidEmail(val) || 'Invalid email']"
-                  />
+                  <q-input outlined dense v-model="settings.smtp_host_user" class="col-6" />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Password:</div>
@@ -200,13 +194,13 @@ export default {
         borderRadius: "5px",
         backgroundColor: "#027be3",
         width: "5px",
-        opacity: 0.75
-      }
+        opacity: 0.75,
+      },
     };
   },
   methods: {
     getCoreSettings() {
-      axios.get("/core/getcoresettings/").then(r => {
+      axios.get("/core/getcoresettings/").then((r) => {
         this.settings = r.data;
         this.allTimezones = Object.freeze(r.data.all_timezones);
         this.ready = true;
@@ -218,19 +212,19 @@ export default {
           title: "Add email",
           prompt: {
             model: "",
-            isValid: val => this.isValidEmail(val),
-            type: "email"
+            isValid: (val) => this.isValidEmail(val),
+            type: "email",
           },
           cancel: true,
           ok: { label: "Add", color: "primary" },
-          persistent: false
+          persistent: false,
         })
-        .onOk(data => {
+        .onOk((data) => {
           this.settings.email_alert_recipients.push(data);
         });
     },
     removeEmail(email) {
-      const removed = this.settings.email_alert_recipients.filter(k => k !== email);
+      const removed = this.settings.email_alert_recipients.filter((k) => k !== email);
       this.settings.email_alert_recipients = removed;
     },
     isValidEmail(val) {
@@ -241,7 +235,7 @@ export default {
       this.$q.loading.show();
       axios
         .patch("/core/editsettings/", this.settings)
-        .then(r => {
+        .then((r) => {
           this.$q.loading.hide();
           this.notifySuccess("Settings were edited!");
           this.$emit("close");
@@ -250,10 +244,10 @@ export default {
           this.$q.loading.hide();
           this.notifyError("You have some invalid input. Please check all fields");
         });
-    }
+    },
   },
   created() {
     this.getCoreSettings();
-  }
+  },
 };
 </script>

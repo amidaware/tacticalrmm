@@ -54,6 +54,9 @@ echo -ne "${YELLOW}Enter the subdomain for meshcentral (e.g. mesh.example.com)${
 read meshdomain
 done
 
+echo -ne "${YELLOW}Enter the root domain for LetsEncrypt (e.g. example.com or example.co.uk)${NC}: "
+read rootdomain
+
 echo -ne "${YELLOW}Create a username for meshcentral${NC}: "
 read meshusername
 
@@ -62,8 +65,6 @@ do
 echo -ne "${YELLOW}Enter a valid email address for let's encrypt renewal notifications and meshcentral${NC}: "
 read letsemail
 done
-
-rootdomain=$(expr match "$rmmdomain" '.*\.\(.*\..*\)')
 
 print_green 'Getting wildcard cert'
 

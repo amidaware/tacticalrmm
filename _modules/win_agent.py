@@ -75,7 +75,22 @@ def install_updates():
 
 
 def agent_update(version, url):
-    sleep(random.randint(1, 90))
+    # make sure another instance of the update is not running
+    # this function spawns 2 instances of itself so if more than 2 running,
+    # don't continue as an update is already running
+    count = 0
+    for p in psutil.process_iter():
+        try:
+            with p.oneshot():
+                if "win_agent.agent_update" in p.cmdline():
+                    count += 1
+        except Exception:
+            continue
+
+    if count > 2:
+        return "already running"
+
+    sleep(random.randint(1, 60))  # don't flood the rmm
     try:
         r = requests.get(url, stream=True, timeout=600)
     except Exception:
@@ -99,7 +114,7 @@ def agent_update(version, url):
 
     sleep(10)
     r = subprocess.run([exe, "/VERYSILENT", "/SUPPRESSMSGBOXES"], timeout=300)
-    sleep(20)
+    sleep(30)
 
     for svc in services:
         subprocess.run([NSSM, "start", svc], timeout=120)

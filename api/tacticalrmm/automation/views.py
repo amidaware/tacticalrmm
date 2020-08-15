@@ -157,8 +157,10 @@ class GetRelated(APIView):
         related_type = request.data["type"]
         pk = request.data["pk"]
 
+        #If policy is set in request
         if request.data["policy"] != 0:
             policy = get_object_or_404(Policy, pk=request.data["policy"])
+
             if related_type == "client":
                 client = get_object_or_404(Client, pk=pk)
 
@@ -167,10 +169,10 @@ class GetRelated(APIView):
                     client.policy = policy
                     client.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": client.pk}, clear=True
+                        location={"client": client.client}, clear=True
                     )
                     generate_agent_tasks_by_location_task.delay(
-                        location={"client": client.pk}, clear=True
+                        location={"client": client.client}, clear=True
                     )
 
             if related_type == "site":
@@ -181,11 +183,11 @@ class GetRelated(APIView):
                     site.policy = policy
                     site.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.pk},
+                        location={"client": site.client.client, "site": site.site},
                         clear=True,
                     )
                     generate_agent_tasks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.pk},
+                        location={"client": site.client.client, "site": site.site},
                         clear=True,
                     )
 
@@ -207,15 +209,13 @@ class GetRelated(APIView):
                 # Check if policy is not none and update it to None
                 if client.policy:
 
-                    # Get old policy pk to regenerate the checks
-                    old_pk = client.policy.pk
                     client.policy = None
                     client.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": client.pk}, clear=True
+                        location={"client": client.client}, clear=True
                     )
                     generate_agent_tasks_by_location_task.delay(
-                        location={"client": client.pk}, clear=True
+                        location={"client": client.client}, clear=True
                     )
 
             if related_type == "site":
@@ -224,16 +224,14 @@ class GetRelated(APIView):
                 # Check if policy is not none and update it to None
                 if site.policy:
 
-                    # Get old policy pk to regenerate the checks
-                    old_pk = site.policy.pk
                     site.policy = None
                     site.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.pk},
+                        location={"client": site.client.client, "site": site.site},
                         clear=True,
                     )
                     generate_agent_tasks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.pk},
+                        location={"client": site.client.client, "site": site.site},
                         clear=True,
                     )
 

@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "autotasks",
     "logs",
     "scripts",
+    "alerts",
 ]
 
 if not "TRAVIS" in os.environ and not "AZPIPELINE" in os.environ:

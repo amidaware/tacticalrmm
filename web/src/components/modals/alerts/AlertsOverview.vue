@@ -10,40 +10,70 @@
     <q-separator />
     <q-card-section>All Alerts</q-card-section>
     <q-card-section>
-      <q-btn label="Update" color="primary" />
+      <q-list separator>
+        <q-item v-for="alert in alerts" :key="alert.id">
+          <q-item-section>
+            <q-item-label>{{ alert.client }} - {{ alert.hostname }}</q-item-label>
+            <q-item-label caption>
+              <q-icon :class="`text-${alertColor(alert.severity)}`" :name="alert.severity"></q-icon>
+              {{ alert.message }}
+            </q-item-label>
+          </q-item-section>
+
+          <q-item-section side top>
+            <q-item-label caption>{{ alert.timestamp }}</q-item-label>
+          </q-item-section>
+        </q-item>
+      </q-list>
     </q-card-section>
   </q-card>
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
+import { mapGetters } from "vuex";
 
 export default {
   name: "AlertsOverview",
   mixins: [mixins],
   data() {
     return {
-      alerts: []
+
     };
   },
   methods: {
     getAlerts() {
       this.$q.loading.show();
-      axios
-        .get("/alerts/")
-        .then(r => {
-          this.alerts = r.data.alerts;
+
+      this.$store
+        .dispatch("alerts/getAlerts")
+        .then(response => {
+          this.$q.loading.hide();
         })
-        .catch(() => {
+        .catch(error => {
           this.$q.loading.hide();
           this.notifyError("Something went wrong");
         });
-    }
+    },
+    alertColor(severity) {
+      if (severity === "error") {
+        return "red";
+      }
+      if (severity === "warning") {
+        return "orange";
+      }
+      if (severity === "info") {
+        return "blue";
+      }
+    },
   },
-  computed: {},
-  created() {
-    this.getAlerts();
+  computed: {
+    ...mapGetters({
+      alerts: "alerts/getAlerts"
+    })
+  },
+  mounted() {
+    this.getAlerts()
   }
 };
 </script>

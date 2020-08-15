@@ -17,22 +17,22 @@ class Policy(models.Model):
         explicit_clients = self.clients.all()
         explicit_sites = self.sites.all()
 
-        filtered_sites_ids = list()
-        client_ids = list()
+        filtered_sites_pks = list()
+        client_pks = list()
 
         for site in explicit_sites:
             if site.client not in explicit_clients:
-                filtered_sites_ids.append(site.site)
+                filtered_sites_pks.append(site.pk)
 
         for client in explicit_clients:
-            client_ids.append(client.client)
+            client_pks.append(client.pk)
             for site in client.sites.all():
-                filtered_sites_ids.append(site.site)
+                filtered_sites_pks.append(site.pk)
 
         return Agent.objects.filter(
             models.Q(pk__in=explicit_agents.only("pk"))
-            | models.Q(site__in=filtered_sites_ids)
-            | models.Q(client__in=client_ids)
+            | models.Q(pk__in=filtered_sites_pks)
+            | models.Q(pk__in=client_pks)
         ).distinct()
 
     @staticmethod

@@ -98,7 +98,7 @@ For HMR to work with vue you can copy .env.example and modify the setting to fit
 
 Each python container shares the same virtual env to make spinning up faster. It is located in api/tacticalrmm/env.
 
-There is a container dedicated to creating and keeping this up to date. Prior to spinning up the environment you can run `docker-compose -f docker-compose.dev.yml up venv` to make sure the virtual env is ready. Otherwise the api and celery containers will fail to start.
+There is a container dedicated to creating and keeping this up to date. Prior to spinning up the environment you can run `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up venv` to make sure the virtual env is ready. Otherwise the api and celery containers will fail to start.
 
 ### Spinup the environment
 

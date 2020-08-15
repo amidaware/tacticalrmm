@@ -190,7 +190,7 @@ class TestPolicyViews(BaseTestCase):
         resp = self.client.post(url, client_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         # called because the relation changed
-        mock_task.assert_called_with(location={"client": client.pk}, clear=True)
+        mock_task.assert_called_with(location={"client": client.client}, clear=True)
         mock_task.reset_mock()
 
         # test site add
@@ -198,7 +198,7 @@ class TestPolicyViews(BaseTestCase):
         self.assertEqual(resp.status_code, 200)
         # called because the relation changed
         mock_task.assert_called_with(
-            location={"client": site.client.client, "site": site.pk}, clear=True
+            location={"client": site.client.client, "site": site.site}, clear=True
         )
         mock_task.reset_mock()
 
@@ -236,7 +236,7 @@ class TestPolicyViews(BaseTestCase):
         resp = self.client.post(url, client_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         # called because the relation changed
-        mock_task.assert_called_with(location={"client": client.pk}, clear=True)
+        mock_task.assert_called_with(location={"client": client.client}, clear=True)
         mock_task.reset_mock()
 
         # test site remove
@@ -244,7 +244,7 @@ class TestPolicyViews(BaseTestCase):
         self.assertEqual(resp.status_code, 200)
         # called because the relation changed
         mock_task.assert_called_with(
-            location={"client": site.client.client, "site": site.pk}, clear=True
+            location={"client": site.client.client, "site": site.site}, clear=True
         )
         mock_task.reset_mock()
 

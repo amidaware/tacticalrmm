@@ -1,22 +1,23 @@
 <template>
   <q-btn dense flat icon="notifications">
-    <q-badge color="red" floating transparent>{{ test_alerts.length }}</q-badge>
+    <q-badge v-if="alerts.length !== 0" color="red" floating transparent>{{ alertsLengthText() }}</q-badge>
     <q-menu>
       <q-list separator>
-        <q-item v-for="alert in test_alerts" :key="alert.id">
+        <q-item v-if="alerts.length === 0">No Alerts</q-item>
+        <q-item v-for="alert in alerts" :key="alert.id">
           <q-item-section>
             <q-item-label>{{ alert.client }} - {{ alert.hostname }}</q-item-label>
             <q-item-label caption>
-              <q-icon :class="`text-${alertColor(alert.type)}`" :name="alert.type"></q-icon>
+              <q-icon :class="`text-${alertColor(alert.severity)}`" :name="alert.severity"></q-icon>
               {{ alert.message }}
             </q-item-label>
           </q-item-section>
 
           <q-item-section side top>
-            <q-item-label caption>{{ alert.timestamp }}</q-item-label>
+            <q-item-label caption>{{ alert.alert_time }}</q-item-label>
           </q-item-section>
         </q-item>
-        <q-item clickable @click="showAlertsModal = true">View All Alerts ({{test_alerts.length}})</q-item>
+        <q-item clickable @click="showAlertsModal = true">View All Alerts</q-item>
       </q-list>
     </q-menu>
 
@@ -32,38 +33,27 @@
 </template>
 
 <script>
-import { mapState } from "vuex";
+import { mapGetters } from "vuex";
+import mixins from "@/mixins/mixins"
 import AlertsOverview from "@/components/modals/alerts/AlertsOverview";
 
 export default {
   name: "AlertsIcon",
   components: { AlertsOverview },
+  mixins: [mixins],
   data() {
     return {
       showAlertsModal: false,
-      test_alerts: [
-        {
-          id: 1,
-          client: "NMHSI",
-          site: "Default",
-          hostname: "NMSC-BACK01",
-          message: "HDD error. Stuff ain't working",
-          type: "error",
-          timestamp: "2 min ago"
-        },
-        {
-          id: 2,
-          client: "Dove IT",
-          site: "Default",
-          hostname: "NMSC-ANOTHER",
-          message: "Big error. Stuff still ain't working",
-          type: "warning",
-          timestamp: "5 hours ago"
-        }
-      ]
     };
   },
   methods: {
+    getAlerts() {
+      this.$store
+        .dispatch("alerts/getAlerts")
+        .catch(error => {
+          console.error(error)
+        });
+    },
     alertColor(type) {
       if (type === "error") {
         return "red";
@@ -71,12 +61,22 @@ export default {
       if (type === "warning") {
         return "orange";
       }
+    },
+    alertsLengthText() {
+      if (this.alerts.length > 9) {
+        return "9+";
+      } else {
+        return this.alerts.length;
+      }
     }
   },
   computed: {
-    ...mapState("alerts/", {
-      alerts: state => state.alerts
+    ...mapGetters({
+      alerts: "alerts/getNewAlerts"
     })
+  },
+  mounted() {
+    this.getAlerts()
   }
 };
 </script>

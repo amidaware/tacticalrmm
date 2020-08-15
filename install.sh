@@ -1,10 +1,15 @@
 #!/bin/bash
 
+UBU20=$(grep 20.04 "/etc/"*"release")
+if ! [[ $UBU20 ]]; then
+  echo -ne "\033[0;31mThis script will only work on Ubuntu 20.04\e[0m\n"
+  exit 1
+fi
+
 if [ $EUID -eq 0 ]; then
   echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
   exit 1
 fi
-
 
 DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 SALTPW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
@@ -30,12 +35,6 @@ print_green() {
 
 cls
 
-
-echo -ne "${YELLOW}Create a username for the postgres database${NC}: "
-read pgusername
-echo -ne "${YELLOW}Create a password for the postgres database${NC}: "
-read pgpw
-
 while [[ $rmmdomain != *[.]*[.]* ]]
 do
 echo -ne "${YELLOW}Enter the subdomain for the backend (e.g. api.example.com)${NC}: "
@@ -57,8 +56,41 @@ done
 echo -ne "${YELLOW}Enter the root domain for LetsEncrypt (e.g. example.com or example.co.uk)${NC}: "
 read rootdomain
 
+BEHIND_NAT=false
+IPV4=$(ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
+
+# if server is behind NAT we need to add the 3 subdomains to the host file 
+# so that nginx can properly route between the frontend, backend and meshcentral
+if echo "$IPV4" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
+    BEHIND_NAT=true
+    CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain")
+
+    if ! [[ $CHECK_HOSTS ]]; then
+        echo -ne "${GREEN}This server appears to be behind NAT.${NC}\n"
+        echo -ne "${GREEN}If so, you will need append your 3 subdomains to the line starting with 127.0.1.1 in your hosts file.${NC}\n"
+        until [[ $edithosts =~ (y|n) ]]; do
+            echo -ne "${GREEN}Would you like me to do this for you? [y/n]${NC}: "
+            read edithosts
+        done
+
+        if [[ $edithosts == "y" ]]; then
+            sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts
+        else
+            echo -ne "${GREEN}Please manually edit your hosts file to match the line below and re-run this script.${NC}\n"
+            sed "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts | grep 127.0.1.1
+            exit 1
+        fi
+
+    fi
+fi
+
 echo -ne "${YELLOW}Create a username for meshcentral${NC}: "
 read meshusername
+
+echo -ne "${YELLOW}Create a username for the postgres database${NC}: "
+read pgusername
+echo -ne "${YELLOW}Create a password for the postgres database${NC}: "
+read pgpw
 
 while [[ $letsemail != *[@]*[.]* ]]
 do
@@ -670,6 +702,15 @@ printf >&2 "${YELLOW}Download the meshagent 64 bit EXE from: ${GREEN}${MESHEXE}$
 printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${frontenddomain}${NC}\n\n"
 printf >&2 "${YELLOW}Django admin url: ${GREEN}https://${rmmdomain}/${ADMINURL}${NC}\n\n"
 printf >&2 "${YELLOW}MeshCentral password: ${GREEN}${MESHPASSWD}${NC}\n\n"
+
+if [ "$BEHIND_NAT" = true ]; then
+    echo -ne "${YELLOW}Read below if your router does NOT support Hairpin NAT${NC}\n\n"  
+    echo -ne "${GREEN}If you will be accessing the web interface of the RMM from the same LAN as this server,${NC}\n"
+    echo -ne "${GREEN}you'll need to make sure your 3 subdomains resolve to ${IPV4}${NC}\n"
+    echo -ne "${GREEN}This also applies to any agents that will be on the same local network as the rmm.${NC}\n"
+    echo -ne "${GREEN}You'll also need to setup port forwarding in your router on ports 80, 443, 4505 and 4506 tcp.${NC}\n\n"
+fi
+
 printf >&2 "${YELLOW}Please refer to the github README for next steps${NC}\n\n"
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"

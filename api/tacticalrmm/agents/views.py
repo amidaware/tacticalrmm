@@ -294,12 +294,14 @@ def install_agent(request):
 
     client = get_object_or_404(Client, client=request.data["client"])
     site = get_object_or_404(Site, client=client, site=request.data["site"])
+    version = request.data["version"].split("winagent-v")[1]
 
     _, token = AuthToken.objects.create(
         user=request.user, expiry=dt.timedelta(hours=request.data["expires"])
     )
 
     resp = {"token": token, "client": client.pk, "site": site.pk}
+    resp["showextra"] = True if pyver.parse(version) > pyver.parse("0.10.0") else False
     return Response(resp)
 
 

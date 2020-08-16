@@ -102,12 +102,12 @@ export default {
       this.$q.loading.show();
       axios
         .get("/clients/loadclients/")
-        .then((r) => {
+        .then(r => {
           this.tree = r.data;
           this.client = Object.keys(r.data)[0];
           axios
             .get("/agents/getagentversions/")
-            .then((r) => {
+            .then(r => {
               this.versions = r.data.versions;
               this.version = Object.values(r.data.versions)[0];
               this.github = r.data.github;
@@ -126,12 +126,12 @@ export default {
     },
     addAgent() {
       const api = axios.defaults.baseURL;
-      const release = this.github.filter((i) => i.name === this.version)[0];
+      const release = this.github.filter(i => i.name === this.version)[0];
       const download = release.assets[0].browser_download_url;
       const exe = `${release.name}.exe`;
 
-      const data = { client: this.client, site: this.site, expires: this.expires };
-      axios.post("/agents/installagent/", data).then((r) => {
+      const data = { client: this.client, site: this.site, expires: this.expires, version: this.version };
+      axios.post("/agents/installagent/", data).then(r => {
         this.info = {
           exe,
           download,

@@ -317,3 +317,40 @@ class TestPolicyViews(BaseTestCase):
         self.assertEqual(resp.status_code, 400)
 
         self.check_not_authenticated("patch", url)
+
+
+class TestPolicyTasks(BaseTestCase):
+
+    def setUp(self):
+
+        # Generates 5 clients with 5 sites each with 5 agents each
+        self.generate_agents(5, 5, 5)
+
+    def test_policy_related(self):
+
+        agent = self.agents[50]
+        client = agent.client
+        site = agent.site
+
+        policy = Policy.objects.create(
+            name="Policy Relate Tests", desc="my awesome policy", active=True,
+        )
+
+        # Add Client to Policy
+        policy.clients.add(client)
+
+        resp = self.client.get(f"/automation/policies/{policy.pk}/related/", format="json")
+
+        self.assertEquals(len(resp.data.clients), 1)
+        self.assertEquals(len(resp.data.sites), 5)
+        self.assertEquals(len(resp.data.agents), 25)
+        
+        # Add Site to Policy and the agents and sites length shouldn't change
+        policy.sites.add(site)
+        self.assertEquals(len(resp.data.sites), 5)
+        self.assertEquals(len(resp.data.agents), 25)
+
+        # Add Agent to Policy and the agents length shouldn't change
+        policy.agents.add(agent)
+        self.assertEquals(len(resp.data.agents), 25)
+        

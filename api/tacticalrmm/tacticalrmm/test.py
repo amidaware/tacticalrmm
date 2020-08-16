@@ -125,3 +125,70 @@ class BaseTestCase(TestCase):
         }
         r = switch.get(method)
         self.assertEqual(r.status_code, 401)
+
+    def generate_agents(self, numOfAgents, numOfClients, numOfSites):
+        
+        for c in range(numOfClients):
+            client = Client.objects.create(
+                client=f"Client{c}"
+            )
+
+            for s in range(numOfSites):
+                site = Site.objects.create(
+                    client=client,
+                    site=f"Site{s}"
+                )
+
+                for a in range(numOfAgents):
+
+                    Agent.objects.create(
+                        operating_system="Windows 10",
+                        plat="windows",
+                        plat_release="windows-Server2019",
+                        hostname=f"Agent{a}",
+                        local_ip="10.0.25.188",
+                        agent_id=f"71AHC-AA813-HH1BC-AAHH5-00013|Agent{a}",
+                        services=[
+                            {
+                                "pid": 880,
+                                "name": "AeLookupSvc",
+                                "status": "stopped",
+                                "binpath": "C:\\Windows\\system32\\svchost.exe -k netsvcs",
+                                "username": "localSystem",
+                                "start_type": "manual",
+                                "description": "Processes application compatibility cache requests for applications as they are launched",
+                                "display_name": "Application Experience",
+                            },
+                            {
+                                "pid": 812,
+                                "name": "ALG",
+                                "status": "stopped",
+                                "binpath": "C:\\Windows\\System32\\alg.exe",
+                                "username": "NT AUTHORITY\\LocalService",
+                                "start_type": "manual",
+                                "description": "Provides support for 3rd party protocol plug-ins for Internet Connection Sharing",
+                                "display_name": "Application Layer Gateway Service",
+                            },
+                        ],
+                        public_ip="74.13.24.14",
+                        total_ram=16,
+                        used_ram=33,
+                        disks={
+                            "C:": {
+                                "free": "42.3G",
+                                "used": "17.1G",
+                                "total": "59.5G",
+                                "device": "C:",
+                                "fstype": "NTFS",
+                                "percent": 28,
+                            }
+                        },
+                        boot_time=8173231.4,
+                        logged_in_username="John",
+                        client=client.client,
+                        site=site.site,
+                        monitoring_type="server",
+                        description="Test PC",
+                        mesh_node_id="abcdefghijklmnopAABBCCDD77443355##!!AI%@#$%#*",
+                        last_seen=djangotime.now(),
+                    )

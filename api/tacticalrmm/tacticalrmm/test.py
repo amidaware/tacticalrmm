@@ -129,7 +129,7 @@ class BaseTestCase(TestCase):
 
     def generate_agents(self, numOfAgents, numOfClients, numOfSites):
         
-        self.agents = None
+        self.agents = list()
 
         for c in range(numOfClients):
             client = Client.objects.create(

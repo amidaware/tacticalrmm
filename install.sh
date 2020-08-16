@@ -647,11 +647,20 @@ done
 sleep 5
 sudo systemctl enable meshcentral
 
-print_green 'Restarting meshcentral and waiting for it to install plugins'
+print_green 'Starting meshcentral and waiting for it to install plugins'
 
 sudo systemctl restart meshcentral
 
-sleep 30
+sleep 3
+
+# The first time we start meshcentral, it will need some time to generate certs and install plugins.
+# This will take anywhere from a few seconds to a few minutes depending on the server's hardware
+# We will know it's ready once the last line of the systemd service stdout is 'MeshCentral HTTP server running on port.....'
+while ! [[ $CHECK_MESH_READY ]]; do
+  CHECK_MESH_READY=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
+  echo -ne "${GREEN}Mesh Central not ready yet...${NC}\n"
+  sleep 3
+done
 
 print_green 'Generating meshcentral login token key'
 
@@ -667,15 +676,24 @@ echo "${meshtoken}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settin
 print_green 'Creating meshcentral account and group'
 
 sudo systemctl stop meshcentral
+sleep 3
 cd /meshcentral
 
 node node_modules/meshcentral --createaccount ${meshusername} --pass ${MESHPASSWD} --email ${letsemail}
+sleep 2
 node node_modules/meshcentral --adminaccount ${meshusername}
 
 sudo systemctl start meshcentral
 sleep 5
 
+while ! [[ $CHECK_MESH_READY2 ]]; do
+  CHECK_MESH_READY2=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
+  echo -ne "${GREEN}Mesh Central not ready yet...${NC}\n"
+  sleep 3
+done
+
 node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name TacticalRMM
+sleep 5
 MESHEXE=$(node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} GenerateInviteLink --group TacticalRMM --hours 8)
 
 cd /rmm/api/tacticalrmm

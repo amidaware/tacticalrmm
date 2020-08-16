@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="2"
+SCRIPT_VERSION="3"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
@@ -36,7 +36,7 @@ python3 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir setuptools==47.3.2 wheel==0.34.2
+pip install --no-cache-dir setuptools==49.6.0 wheel==0.35.1
 pip install --no-cache-dir -r requirements.txt
 python manage.py pre_update_tasks
 python manage.py migrate

@@ -24,59 +24,7 @@ class BaseTestCase(TestCase):
         self.client.force_authenticate(user=self.john)
 
         self.coresettings = CoreSettings.objects.create()
-
-        self.agent = Agent.objects.create(
-            operating_system="Windows 10",
-            plat="windows",
-            plat_release="windows-Server2019",
-            hostname="DESKTOP-TEST123",
-            local_ip="10.0.25.188",
-            agent_id="71AHC-AA813-HH1BC-AAHH5-00013|DESKTOP-TEST123",
-            services=[
-                {
-                    "pid": 880,
-                    "name": "AeLookupSvc",
-                    "status": "stopped",
-                    "binpath": "C:\\Windows\\system32\\svchost.exe -k netsvcs",
-                    "username": "localSystem",
-                    "start_type": "manual",
-                    "description": "Processes application compatibility cache requests for applications as they are launched",
-                    "display_name": "Application Experience",
-                },
-                {
-                    "pid": 812,
-                    "name": "ALG",
-                    "status": "stopped",
-                    "binpath": "C:\\Windows\\System32\\alg.exe",
-                    "username": "NT AUTHORITY\\LocalService",
-                    "start_type": "manual",
-                    "description": "Provides support for 3rd party protocol plug-ins for Internet Connection Sharing",
-                    "display_name": "Application Layer Gateway Service",
-                },
-            ],
-            public_ip="74.13.24.14",
-            total_ram=16,
-            used_ram=33,
-            disks={
-                "C:": {
-                    "free": "42.3G",
-                    "used": "17.1G",
-                    "total": "59.5G",
-                    "device": "C:",
-                    "fstype": "NTFS",
-                    "percent": 28,
-                }
-            },
-            boot_time=8173231.4,
-            logged_in_username="John",
-            client="Google",
-            site="Main Office",
-            monitoring_type="server",
-            description="Test PC",
-            mesh_node_id="abcdefghijklmnopAABBCCDD77443355##!!AI%@#$%#*",
-            last_seen=djangotime.now(),
-        )
-
+        self.agent = self.create_agent("DESKTOP-TEST123", "Google", "Main Office")
         self.update_policy = WinUpdatePolicy.objects.create(agent=self.agent)
 
         Client.objects.create(client="Google")
@@ -125,3 +73,77 @@ class BaseTestCase(TestCase):
         }
         r = switch.get(method)
         self.assertEqual(r.status_code, 401)
+
+    def create_agent(self, hostname, client, site):
+        return Agent.objects.create(
+            operating_system="Windows 10",
+            plat="windows",
+            plat_release="windows-Server2019",
+            hostname=f"{hostname}",
+            local_ip="10.0.25.188",
+            agent_id="71AHC-AA813-HH1BC-AAHH5-00013|DESKTOP-TEST123",
+            services=[
+                {
+                    "pid": 880,
+                    "name": "AeLookupSvc",
+                    "status": "stopped",
+                    "binpath": "C:\\Windows\\system32\\svchost.exe -k netsvcs",
+                    "username": "localSystem",
+                    "start_type": "manual",
+                    "description": "Processes application compatibility cache requests for applications as they are launched",
+                    "display_name": "Application Experience",
+                },
+                {
+                    "pid": 812,
+                    "name": "ALG",
+                    "status": "stopped",
+                    "binpath": "C:\\Windows\\System32\\alg.exe",
+                    "username": "NT AUTHORITY\\LocalService",
+                    "start_type": "manual",
+                    "description": "Provides support for 3rd party protocol plug-ins for Internet Connection Sharing",
+                    "display_name": "Application Layer Gateway Service",
+                },
+            ],
+            public_ip="74.13.24.14",
+            total_ram=16,
+            used_ram=33,
+            disks={
+                "C:": {
+                    "free": "42.3G",
+                    "used": "17.1G",
+                    "total": "59.5G",
+                    "device": "C:",
+                    "fstype": "NTFS",
+                    "percent": 28,
+                }
+            },
+            boot_time=8173231.4,
+            logged_in_username="John",
+            client=f"{client}",
+            site=f"{site}",
+            monitoring_type="server",
+            description="Test PC",
+            mesh_node_id="abcdefghijklmnopAABBCCDD77443355##!!AI%@#$%#*",
+            last_seen=djangotime.now(),
+        )
+
+    def generate_agents(self, numOfAgents, numOfClients, numOfSites):
+        
+        self.agents = list()
+
+        for c in range(numOfClients):
+            client = Client.objects.create(
+                client=f"Client{c}"
+            )
+
+            for s in range(numOfSites):
+                site = Site.objects.create(
+                    client=client,
+                    site=f"Site{s}"
+                )
+
+                for a in range(numOfAgents):
+
+                    self.agents.append(
+                        self.create_agent(f"Agent{a}", f"Client{c}", f"Site{s}")
+                    )

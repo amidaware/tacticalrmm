@@ -66,7 +66,8 @@ class TestPolicyViews(BaseTestCase):
         self.check_not_authenticated("post", url)
 
     @patch("automation.tasks.generate_agent_checks_from_policies_task.delay")
-    def test_update_policy(self, mock_task):
+    @patch("automation.tasks.generate_agent_tasks_from_policies_task.delay")
+    def test_update_policy(self, mock_tasks_task, mock_checks_task):
         url = f"/automation/policies/{self.policy.pk}/"
 
         valid_payload = {
@@ -80,7 +81,8 @@ class TestPolicyViews(BaseTestCase):
         self.assertEqual(resp.status_code, 200)
 
         # only called if active or enforced are updated
-        mock_task.assert_not_called()
+        mock_checks_task.assert_not_called()
+        mock_tasks_task.assert_not_called()
 
         valid_payload = {
             "name": "Test Policy Update",
@@ -91,18 +93,21 @@ class TestPolicyViews(BaseTestCase):
 
         resp = self.client.put(url, valid_payload, format="json")
         self.assertEqual(resp.status_code, 200)
-        mock_task.assert_called_with(policypk=self.policy.pk, clear=True)
+        mock_checks_task.assert_called_with(policypk=self.policy.pk, clear=True)
+        mock_tasks_task.assert_called_with(policypk=self.policy.pk, clear=True)
 
         self.check_not_authenticated("put", url)
 
     @patch("automation.tasks.generate_agent_checks_from_policies_task.delay")
-    def test_delete_policy(self, mock_task):
+    @patch("automation.tasks.generate_agent_tasks_from_policies_task.delay")
+    def test_delete_policy(self, mock_tasks_task, mock_checks_task):
         url = f"/automation/policies/{self.policy.pk}/"
 
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        mock_task.assert_called_with(policypk=self.policy.pk, clear=True)
+        mock_checks_task.assert_called_with(policypk=self.policy.pk, clear=True)
+        mock_tasks_task.assert_called_with(policypk=self.policy.pk, clear=True)
 
         self.check_not_authenticated("delete", url)
 
@@ -169,7 +174,9 @@ class TestPolicyViews(BaseTestCase):
 
     @patch("agents.models.Agent.generate_checks_from_policies")
     @patch("automation.tasks.generate_agent_checks_by_location_task.delay")
-    def test_update_policy_add(self, mock_task, mock_agent_generate_checks):
+    @patch("agents.models.Agent.generate_tasks_from_policies")
+    @patch("automation.tasks.generate_agent_tasks_by_location_task.delay")
+    def test_update_policy_add(self, mock_tasks_location_task, mock_tasks_task, mock_checks_location_task, mock_checks_task):
         url = f"/automation/related/"
 
         # data setup
@@ -189,39 +196,57 @@ class TestPolicyViews(BaseTestCase):
         # test client add
         resp = self.client.post(url, client_payload, format="json")
         self.assertEqual(resp.status_code, 200)
+        
         # called because the relation changed
-        mock_task.assert_called_with(location={"client": client.client}, clear=True)
-        mock_task.reset_mock()
+        mock_checks_location_task.assert_called_with(location={"client": client.client}, clear=True)
+        mock_checks_location_task.reset_mock()
+
+        mock_tasks_location_task.assert_called_with(location={"client": client.client}, clear=True)
+        mock_tasks_location_task.reset_mock()
 
         # test site add
         resp = self.client.post(url, site_payload, format="json")
         self.assertEqual(resp.status_code, 200)
+
         # called because the relation changed
-        mock_task.assert_called_with(
+        mock_checks_location_task.assert_called_with(
             location={"client": site.client.client, "site": site.site}, clear=True
         )
-        mock_task.reset_mock()
+        mock_checks_location_task.reset_mock()
+        
+        mock_tasks_location_task.assert_called_with(
+            location={"client": site.client.client, "site": site.site}, clear=True
+        )
+        mock_tasks_location_task.reset_mock()
 
         # test agent add
         resp = self.client.post(url, agent_payload, format="json")
         self.assertEqual(resp.status_code, 200)
+
         # called because the relation changed
-        mock_agent_generate_checks.assert_called_with(clear=True)
-        mock_agent_generate_checks.reset_mock()
+        mock_checks_task.assert_called_with(clear=True)
+        mock_checks_task.reset_mock()
+
+        mock_tasks_task.assert_called_with(clear=True)
+        mock_tasks_task.reset_mock()
 
         # Adding the same relations shouldn't trigger mocks
         resp = self.client.post(url, client_payload, format="json")
         self.assertEqual(resp.status_code, 200)
-        mock_task.assert_not_called()
+        mock_checks_location_task.assert_not_called()
+        mock_tasks_location_task.assert_not_called()
 
         resp = self.client.post(url, site_payload, format="json")
         self.assertEqual(resp.status_code, 200)
-        mock_task.assert_not_called()
+        mock_checks_location_task.assert_not_called()
+        mock_tasks_location_task.assert_not_called()
 
         resp = self.client.post(url, agent_payload, format="json")
         self.assertEqual(resp.status_code, 200)
+
         # called because the relation changed
-        mock_agent_generate_checks.assert_not_called()
+        mock_checks_task.assert_not_called()
+        mock_tasks_task.assert_not_called()
 
         # test remove client from policy
         client_payload = {"type": "client", "pk": client.pk, "policy": 0}
@@ -235,41 +260,60 @@ class TestPolicyViews(BaseTestCase):
         # test client remove
         resp = self.client.post(url, client_payload, format="json")
         self.assertEqual(resp.status_code, 200)
+
         # called because the relation changed
-        mock_task.assert_called_with(location={"client": client.client}, clear=True)
-        mock_task.reset_mock()
+        mock_checks_location_task.assert_called_with(location={"client": client.client}, clear=True)
+        mock_checks_location_task.reset_mock()
+
+        mock_tasks_location_task.assert_called_with(location={"client": client.client}, clear=True)
+        mock_tasks_location_task.reset_mock()
 
         # test site remove
         resp = self.client.post(url, site_payload, format="json")
         self.assertEqual(resp.status_code, 200)
+
         # called because the relation changed
-        mock_task.assert_called_with(
+        mock_checks_location_task.assert_called_with(
             location={"client": site.client.client, "site": site.site}, clear=True
         )
-        mock_task.reset_mock()
+        mock_checks_location_task.reset_mock()
+
+        mock_tasks_location_task.assert_called_with(
+            location={"client": site.client.client, "site": site.site}, clear=True
+        )
+        mock_tasks_location_task.reset_mock()
 
         # test agent remove
         resp = self.client.post(url, agent_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         # called because the relation changed
-        mock_agent_generate_checks.assert_called_with(clear=True)
-        mock_agent_generate_checks.reset_mock()
+        mock_checks_task.assert_called_with(clear=True)
+        mock_checks_task.reset_mock()
+
+        mock_tasks_task.assert_called_with(clear=True)
+        mock_tasks_task.reset_mock()
 
         # adding the same relations shouldn't trigger mocks
         resp = self.client.post(url, client_payload, format="json")
         self.assertEqual(resp.status_code, 200)
+
         # shouldn't be called since nothing changed
-        mock_task.assert_not_called()
+        mock_checks_location_task.assert_not_called()
+        mock_tasks_location_task.assert_not_called()
 
         resp = self.client.post(url, site_payload, format="json")
         self.assertEqual(resp.status_code, 200)
+
         # shouldn't be called since nothing changed
-        mock_task.assert_not_called()
+        mock_checks_location_task.assert_not_called()
+        mock_tasks_location_task.assert_not_called()
 
         resp = self.client.post(url, agent_payload, format="json")
         self.assertEqual(resp.status_code, 200)
+
         # shouldn't be called since nothing changed
-        mock_agent_generate_checks.assert_not_called()
+        mock_checks_task.assert_not_called()
+        mock_tasks_task.assert_not_called()
 
         self.check_not_authenticated("post", url)
 
@@ -317,3 +361,38 @@ class TestPolicyViews(BaseTestCase):
         self.assertEqual(resp.status_code, 400)
 
         self.check_not_authenticated("patch", url)
+
+
+class TestPolicyTasks(BaseTestCase):
+
+    def test_policy_related(self):
+
+        # Generates 5 clients with 5 sites each with 5 agents each
+        self.generate_agents(5, 5, 5)
+
+        agent = self.agents[50]
+        client = Client.objects.get(client=agent.client)
+        site = Site.objects.get(client=client, site=agent.site)
+
+        policy = Policy.objects.create(
+            name="Policy Relate Tests", desc="my awesome policy", active=True,
+        )
+
+        # Add Client to Policy
+        policy.clients.add(client)
+
+        resp = self.client.get(f"/automation/policies/{policy.pk}/related/", format="json")
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEquals(len(resp.data["clients"]), 1)
+        self.assertEquals(len(resp.data["sites"]), 5)
+        self.assertEquals(len(resp.data["agents"]), 25)
+        
+        # Add Site to Policy and the agents and sites length shouldn't change
+        policy.sites.add(site)
+        self.assertEquals(len(resp.data["sites"]), 5)
+        self.assertEquals(len(resp.data["agents"]), 25)
+
+        # Add Agent to Policy and the agents length shouldn't change
+        policy.agents.add(agent)
+        self.assertEquals(len(resp.data["agents"]), 25)

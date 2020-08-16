@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "autotasks",
     "logs",
     "scripts",
+    "alerts"
 ]
 
 MIDDLEWARE = [

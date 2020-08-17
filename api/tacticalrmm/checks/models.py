@@ -295,7 +295,10 @@ class Check(models.Model):
 
         CORE = CoreSettings.objects.first()
 
-        subject = f"{self} Failed"
+        if self.agent:
+            subject = f"{self.agent.client}, {self.agent.site}, {self} Failed"
+        else:
+            subject = f"{self} Failed"
 
         if self.check_type == "diskspace":
             percent_used = self.agent.disks[self.disk]["percent"]

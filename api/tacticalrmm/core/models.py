@@ -32,6 +32,7 @@ class CoreSettings(models.Model):
         max_length=255, null=True, blank=True, default="changeme"
     )
     smtp_port = models.PositiveIntegerField(default=587, null=True, blank=True)
+    smtp_requires_auth = models.BooleanField(default=True)
     default_time_zone = models.CharField(
         max_length=255, choices=TZ_CHOICES, default="America/Los_Angeles"
     )
@@ -61,12 +62,23 @@ class CoreSettings(models.Model):
 
     @property
     def email_is_configured(self):
+        # smtp with username/password authentication
         if (
-            self.email_alert_recipients
+            self.smtp_requires_auth
+            and self.email_alert_recipients
             and self.smtp_from_email
             and self.smtp_host
             and self.smtp_host_user
             and self.smtp_host_password
+            and self.smtp_port
+        ):
+            return True
+        # smtp relay
+        elif (
+            not self.smtp_requires_auth
+            and self.email_alert_recipients
+            and self.smtp_from_email
+            and self.smtp_host
             and self.smtp_port
         ):
             return True
@@ -86,11 +98,16 @@ class CoreSettings(models.Model):
             msg.set_content(body)
 
             with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
-                server.ehlo()
-                server.starttls()
-                server.login(self.smtp_host_user, self.smtp_host_password)
-                server.send_message(msg)
-                server.quit()
+                if self.smtp_requires_auth:
+                    server.ehlo()
+                    server.starttls()
+                    server.login(self.smtp_host_user, self.smtp_host_password)
+                    server.send_message(msg)
+                    server.quit()
+                else:
+                    # smtp relay. no auth required
+                    server.send_message(msg)
+                    server.quit()
 
         except Exception as e:
             logger.error(f"Sending email failed with error: {e}")

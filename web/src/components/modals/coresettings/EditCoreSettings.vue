@@ -90,33 +90,57 @@
                 <div class="text-subtitle2">SMTP Settings</div>
                 <hr />
                 <q-card-section class="row">
-                  <div class="col-2">From Email:</div>
+                  <div class="col-2">From:</div>
                   <div class="col-4"></div>
                   <q-input
                     outlined
                     dense
                     v-model="settings.smtp_from_email"
-                    class="col-6"
+                    class="col-6 q-pa-none"
                     :rules="[val => isValidEmail(val) || 'Invalid email']"
                   />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Host:</div>
                   <div class="col-4"></div>
-                  <q-input outlined dense v-model="settings.smtp_host" class="col-6" />
+                  <q-input outlined dense v-model="settings.smtp_host" class="col-6 q-pa-none" />
                 </q-card-section>
                 <q-card-section class="row">
+                  <div class="col-2">Port:</div>
+                  <div class="col-4"></div>
+                  <q-input
+                    dense
+                    v-model.number="settings.smtp_port"
+                    type="number"
+                    filled
+                    class="q-pa-none"
+                    :rules="[ val => val > 0 && val <= 65535 || 'Invalid Port']"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <q-checkbox
+                    v-model="settings.smtp_requires_auth"
+                    label="My Server Requires Authentication"
+                    class="q-pa-none"
+                  />
+                </q-card-section>
+                <q-card-section class="row" v-show="settings.smtp_requires_auth">
                   <div class="col-2">Username:</div>
                   <div class="col-4"></div>
-                  <q-input outlined dense v-model="settings.smtp_host_user" class="col-6" />
+                  <q-input
+                    outlined
+                    dense
+                    v-model="settings.smtp_host_user"
+                    class="col-6 q-pa-none"
+                  />
                 </q-card-section>
-                <q-card-section class="row">
+                <q-card-section class="row" v-show="settings.smtp_requires_auth">
                   <div class="col-2">Password:</div>
                   <div class="col-4"></div>
                   <q-input
                     outlined
                     dense
-                    class="col-6"
+                    class="col-6 q-pa-none"
                     v-model="settings.smtp_host_password"
                     :type="isPwd ? 'password' : 'text'"
                   >
@@ -128,17 +152,6 @@
                       />
                     </template>
                   </q-input>
-                </q-card-section>
-                <q-card-section class="row">
-                  <div class="col-2">Port:</div>
-                  <div class="col-4"></div>
-                  <q-input
-                    dense
-                    v-model.number="settings.smtp_port"
-                    type="number"
-                    filled
-                    :rules="[ val => val > 0 && val <= 65535 || 'Invalid Port']"
-                  />
                 </q-card-section>
               </q-tab-panel>
               <!-- meshcentral -->
@@ -200,7 +213,7 @@ export default {
   },
   methods: {
     getCoreSettings() {
-      axios.get("/core/getcoresettings/").then((r) => {
+      axios.get("/core/getcoresettings/").then(r => {
         this.settings = r.data;
         this.allTimezones = Object.freeze(r.data.all_timezones);
         this.ready = true;
@@ -212,19 +225,19 @@ export default {
           title: "Add email",
           prompt: {
             model: "",
-            isValid: (val) => this.isValidEmail(val),
+            isValid: val => this.isValidEmail(val),
             type: "email",
           },
           cancel: true,
           ok: { label: "Add", color: "primary" },
           persistent: false,
         })
-        .onOk((data) => {
+        .onOk(data => {
           this.settings.email_alert_recipients.push(data);
         });
     },
     removeEmail(email) {
-      const removed = this.settings.email_alert_recipients.filter((k) => k !== email);
+      const removed = this.settings.email_alert_recipients.filter(k => k !== email);
       this.settings.email_alert_recipients = removed;
     },
     isValidEmail(val) {
@@ -235,7 +248,7 @@ export default {
       this.$q.loading.show();
       axios
         .patch("/core/editsettings/", this.settings)
-        .then((r) => {
+        .then(r => {
           this.$q.loading.hide();
           this.notifySuccess("Settings were edited!");
           this.$emit("close");

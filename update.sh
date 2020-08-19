@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="3"
+SCRIPT_VERSION="4"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'

@@ -1,0 +1,39 @@
+{
+    "python.pythonPath": "api/env/bin/python",
+    "python.formatting.provider": "black",
+    "editor.formatOnSave": true,
+    "vetur.format.defaultFormatter.js": "prettier",
+    "vetur.format.defaultFormatterOptions": {
+        "prettier": {
+            "semi": true,
+            "printWidth": 120,
+            "tabWidth": 2,
+            "useTabs": false,
+            "arrowParens": "avoid",
+        }
+    },
+    "vetur.format.options.tabSize": 2,
+    "vetur.format.options.useTabs": false,
+    "files.watcherExclude": {
+        "files.watcherExclude": {
+            "**/.git/objects/**": true,
+            "**/.git/subtree-cache/**": true,
+            "**/node_modules/": true,
+            "/node_modules/**": true,
+            "**/env/": true,
+            "/env/**": true,
+            "**/__pycache__": true,
+            "/__pycache__/**": true,
+            "**/.cache": true,
+            "**/.eggs": true,
+            "**/.ipynb_checkpoints": true,
+            "**/.mypy_cache": true,
+            "**/.pytest_cache": true,
+            "**/*.egg-info": true,
+            "**/*.feather": true,
+            "**/*.parquet*": true,
+            "**/*.pyc": true,
+            "**/*.zip": true
+        },
+    },
+}

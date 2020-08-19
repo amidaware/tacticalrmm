@@ -39,6 +39,15 @@ class Command(BaseCommand):
                 alias /srv/salt/scripts/;
             }
             """
+
+            after_this = """
+            location /saltscripts/ {
+                internal;
+                add_header "Access-Control-Allow-Origin" "https://rmm.yourwebsite.com";
+                alias /srv/salt/scripts/userdefined/;
+            }
+            """
+
             self.stdout.write(self.style.ERROR("*" * 100))
             self.stdout.write("\n")
             self.stdout.write(
@@ -52,6 +61,13 @@ class Command(BaseCommand):
                 + self.style.WARNING(rmm_conf)
             )
             self.stdout.write(self.style.SUCCESS(new_conf))
+            self.stdout.write("\n")
+            self.stdout.write(
+                self.style.ERROR(
+                    "You can paste the above right after the following block that's already in your nginx config:"
+                )
+            )
+            self.stdout.write(after_this)
             self.stdout.write("\n")
             self.stdout.write(
                 self.style.ERROR(

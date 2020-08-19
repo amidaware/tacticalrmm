@@ -19,6 +19,11 @@ fi
 
 rm -f $TMP_FILE
 
+if [ $EUID -eq 0 ]; then
+  echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
+  exit 1
+fi
+
 for i in celery celerybeat rmm nginx
 do
 sudo systemctl stop ${i}

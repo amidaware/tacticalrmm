@@ -1,4 +1,5 @@
 import os
+from loguru import logger
 
 from django.shortcuts import get_object_or_404
 from django.conf import settings
@@ -11,6 +12,9 @@ from rest_framework.parsers import FileUploadParser
 
 from .models import Script
 from .serializers import ScriptSerializer
+from tacticalrmm.utils import notify_error
+
+logger.configure(**settings.LOG_CONFIG)
 
 
 class GetAddScripts(APIView):
@@ -32,6 +36,7 @@ class GetAddScripts(APIView):
             "filename": filename,
             "description": request.data["description"],
             "shell": request.data["shell"],
+            "script_type": "userdefined",  # force all uploads to be userdefined. built in scripts cannot be edited by user
         }
 
         serializer = ScriptSerializer(data=data, partial=True)
@@ -54,6 +59,10 @@ class GetUpdateDeleteScript(APIView):
 
     def put(self, request, pk, format=None):
         script = get_object_or_404(Script, pk=pk)
+
+        # this will never trigger but check anyway
+        if script.script_type == "builtin":
+            return notify_error("Built in scripts cannot be edited")
 
         data = {
             "name": request.data["name"],
@@ -86,6 +95,10 @@ class GetUpdateDeleteScript(APIView):
     def delete(self, request, pk):
         script = get_object_or_404(Script, pk=pk)
 
+        # this will never trigger but check anyway
+        if script.script_type == "builtin":
+            return notify_error("Built in scripts cannot be deleted")
+
         try:
             os.remove(script.file)
         except OSError:
@@ -98,8 +111,22 @@ class GetUpdateDeleteScript(APIView):
 @api_view()
 def download(request, pk):
     script = get_object_or_404(Script, pk=pk)
+    use_nginx = False
+    conf = "/etc/nginx/sites-available/rmm.conf"
 
-    if settings.DEBUG:
+    if os.path.exists(conf):
+        try:
+            with open(conf) as f:
+                for line in f.readlines():
+                    if "location" and "builtin" in line:
+                        use_nginx = True
+                        break
+        except Exception as e:
+            logger.error(e)
+    else:
+        use_nginx = True
+
+    if settings.DEBUG or not use_nginx:
         with open(script.file, "rb") as f:
             response = HttpResponse(f.read(), content_type="text/plain")
             response["Content-Disposition"] = f"attachment; filename={script.filename}"
@@ -107,5 +134,10 @@ def download(request, pk):
     else:
         response = HttpResponse()
         response["Content-Disposition"] = f"attachment; filename={script.filename}"
-        response["X-Accel-Redirect"] = f"/saltscripts/{script.filename}"
+
+        response["X-Accel-Redirect"] = (
+            f"/saltscripts/{script.filename}"
+            if script.script_type == "userdefined"
+            else f"/builtin/{script.filename}"
+        )
         return response

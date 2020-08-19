@@ -10,13 +10,25 @@
       <q-card-section class="row">
         <div class="col-2">Name:</div>
         <div class="col-10">
-          <q-input outlined dense v-model="script.name" :rules="[ val => !!val || '*Required']" />
+          <q-input
+            :disable="isBuiltInScript"
+            outlined
+            dense
+            v-model="script.name"
+            :rules="[ val => !!val || '*Required']"
+          />
         </div>
       </q-card-section>
       <q-card-section class="row">
         <div class="col-2">Description:</div>
         <div class="col-10">
-          <q-input outlined dense v-model="script.description" type="textarea" />
+          <q-input
+            :disable="isBuiltInScript"
+            outlined
+            dense
+            v-model="script.description"
+            type="textarea"
+          />
         </div>
       </q-card-section>
       <q-card-section class="row">
@@ -40,6 +52,7 @@
         <div v-if="mode === 'edit'" class="col-10">
           <q-file
             v-model="script.filename"
+            :disable="isBuiltInScript"
             label="Upload new script version"
             stack-label
             filled
@@ -55,6 +68,7 @@
       <q-card-section class="row">
         <div class="col-2">Type:</div>
         <q-select
+          :disable="isBuiltInScript"
           dense
           class="col-10"
           outlined
@@ -67,7 +81,13 @@
       </q-card-section>
       <q-card-section class="row items-center">
         <q-btn v-if="mode === 'add'" label="Upload" color="primary" type="submit" />
-        <q-btn v-else-if="mode === 'edit'" label="Edit" color="primary" type="submit" />
+        <q-btn
+          v-else-if="mode === 'edit'"
+          :disable="isBuiltInScript"
+          label="Edit"
+          color="primary"
+          type="submit"
+        />
       </q-card-section>
     </q-form>
   </q-card>
@@ -75,13 +95,15 @@
 
 <script>
 import axios from "axios";
+import { mapState } from "vuex";
 import mixins from "@/mixins/mixins";
+
 export default {
   name: "ScriptModal",
   mixins: [mixins],
   props: {
     scriptpk: Number,
-    mode: String
+    mode: String,
   },
   data() {
     return {
@@ -90,8 +112,8 @@ export default {
       shellOptions: [
         { label: "Powershell", value: "powershell" },
         { label: "Batch (CMD)", value: "cmd" },
-        { label: "Python", value: "python" }
-      ]
+        { label: "Python", value: "python" },
+      ],
     };
   },
   methods: {
@@ -146,12 +168,24 @@ export default {
           this.$q.loading.hide();
           this.notifyError(e.response.data.non_field_errors, 4000);
         });
-    }
+    },
+  },
+  computed: {
+    ...mapState({
+      scripts: state => state.scripts,
+    }),
+    isBuiltInScript() {
+      if (this.mode === "edit") {
+        return this.scripts.find(i => i.id === this.scriptpk).script_type === "builtin" ? true : false;
+      } else {
+        return false;
+      }
+    },
   },
   created() {
     if (this.mode === "edit") {
       this.getScript();
     }
-  }
+  },
 };
 </script>

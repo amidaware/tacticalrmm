@@ -26,15 +26,22 @@ def get_services():
     return [svc.as_dict() for svc in psutil.win_service_iter()]
 
 
-def run_python_script(filename, timeout):
+def run_python_script(filename, timeout, script_type="userdefined"):
     python_bin = os.path.join("c:\\salt\\bin", "python.exe")
     file_path = os.path.join("c:\\windows\\temp", filename)
-    __salt__["cp.get_file"](
-        "salt://scripts/userdefined/{0}".format(filename), file_path
-    )
-    return __salt__["cmd.run_all"](
-        "{0} {1}".format(python_bin, file_path), timeout=timeout
-    )
+
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except:
+            pass
+
+    if script_type == "userdefined":
+        __salt__["cp.get_file"](f"salt://scripts/userdefined/{filename}", file_path)
+    else:
+        __salt__["cp.get_file"](f"salt://scripts/{filename}", file_path)
+
+    return __salt__["cmd.run_all"](f"{python_bin} {file_path}", timeout=timeout)
 
 
 def uninstall_agent():

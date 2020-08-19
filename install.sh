@@ -377,6 +377,12 @@ server {
         alias /srv/salt/scripts/userdefined/;
     }
 
+    location /builtin/ {
+        internal;
+        add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
+        alias /srv/salt/scripts/;
+    }
+
 
     location / {
         uwsgi_pass  tacticalrmm;

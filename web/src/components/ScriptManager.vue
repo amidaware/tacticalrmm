@@ -34,7 +34,7 @@
             />
             <q-btn
               label="Delete"
-              :disable="scriptpk === null"
+              :disable="scriptpk === null || isBuiltInScript(scriptpk)"
               dense
               flat
               push
@@ -89,6 +89,7 @@
                 <q-td>{{ truncateText(props.row.description) }}</q-td>
                 <q-td>{{ props.row.filename }}</q-td>
                 <q-td>{{ props.row.shell }}</q-td>
+                <q-td>{{ props.row.script_type }}</q-td>
               </q-tr>
             </template>
           </q-table>
@@ -127,8 +128,8 @@ export default {
       code: null,
       pagination: {
         rowsPerPage: 0,
-        sortBy: "id",
-        descending: false
+        sortBy: "script_type",
+        descending: true,
       },
       columns: [
         { name: "id", label: "ID", field: "id" },
@@ -137,31 +138,38 @@ export default {
           label: "Name",
           field: "name",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "desc",
           label: "Description",
           field: "description",
           align: "left",
-          sortable: false
+          sortable: false,
         },
         {
           name: "file",
           label: "File",
           field: "filename",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "shell",
-          label: "Type",
+          label: "Shell",
           field: "shell",
           align: "left",
-          sortable: true
-        }
+          sortable: true,
+        },
+        {
+          name: "script_type",
+          label: "Type",
+          field: "script_type",
+          align: "left",
+          sortable: true,
+        },
       ],
-      visibleColumns: ["name", "desc", "file", "shell"]
+      visibleColumns: ["name", "desc", "file", "shell", "script_type"],
     };
   },
   methods: {
@@ -181,7 +189,7 @@ export default {
         title: this.filename,
         message: `<pre>${this.code}</pre>`,
         html: true,
-        style: "width: 70vw; max-width: 80vw;"
+        style: "width: 70vw; max-width: 80vw;",
       });
     },
     deleteScript() {
@@ -189,7 +197,7 @@ export default {
         .dialog({
           title: "Delete script?",
           cancel: true,
-          ok: { label: "Delete", color: "negative" }
+          ok: { label: "Delete", color: "negative" },
         })
         .onOk(() => {
           axios
@@ -226,16 +234,23 @@ export default {
     },
     truncateText(txt) {
       return txt.length >= 60 ? txt.substring(0, 60) + "..." : txt;
-    }
+    },
+    isBuiltInScript(pk) {
+      try {
+        return this.scripts.find(i => i.id === pk).script_type === "builtin" ? true : false;
+      } catch (e) {
+        return false;
+      }
+    },
   },
   computed: {
     ...mapState({
       toggleScriptManager: state => state.toggleScriptManager,
-      scripts: state => state.scripts
-    })
+      scripts: state => state.scripts,
+    }),
   },
   mounted() {
     this.getScripts();
-  }
+  },
 };
 </script>

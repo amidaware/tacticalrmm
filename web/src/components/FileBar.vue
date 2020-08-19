@@ -69,6 +69,10 @@
               <q-item clickable v-close-popup @click="showAutomationManager = true">
                 <q-item-section>Automation Manager</q-item-section>
               </q-item>
+              <!-- admin manager -->
+              <q-item clickable v-close-popup @click="showAdminManager = true">
+                <q-item-section>Administration</q-item-section>
+              </q-item>
               <!-- core settings -->
               <q-item clickable v-close-popup @click="showEditCoreSettingsModal = true">
                 <q-item-section>Global Settings</q-item-section>
@@ -124,6 +128,12 @@
           <AutomationManager @close="showAutomationManager = false" />
         </q-dialog>
       </div>
+      <!-- Admin Manager -->
+      <div class="q-pa-md q-gutter-sm">
+        <q-dialog v-model="showAdminManager">
+          <AdminManager @close="showAdminManager = false" />
+        </q-dialog>
+      </div>
       <!-- Upload new mesh agent -->
       <q-dialog v-model="showUploadMesh">
         <UploadMesh @close="showUploadMesh = false" />
@@ -142,6 +152,7 @@ import UpdateAgents from "@/components/modals/agents/UpdateAgents";
 import ScriptManager from "@/components/ScriptManager";
 import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
 import AutomationManager from "@/components/automation/AutomationManager";
+import AdminManager from "@/components/AdminManager";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import UploadMesh from "@/components/modals/core/UploadMesh";
 
@@ -158,7 +169,8 @@ export default {
     EditCoreSettings,
     AutomationManager,
     InstallAgent,
-    UploadMesh
+    UploadMesh,
+    AdminManager
   },
   props: ["clients"],
   data() {
@@ -170,6 +182,7 @@ export default {
       showUpdateAgentsModal: false,
       showEditCoreSettingsModal: false,
       showAutomationManager: false,
+      showAdminManager: false,
       showInstallAgent: false,
       showUploadMesh: false
     };

@@ -5,6 +5,7 @@ import { Notify } from "quasar";
 import logModule from "./logs";
 import alertsModule from "./alerts";
 import automationModule from "./automation";
+import adminModule from "./admin.js"
 
 Vue.use(Vuex);
 
@@ -14,6 +15,7 @@ export default function () {
       logs: logModule,
       automation: automationModule,
       alerts: alertsModule,
+      admin: adminModule
     },
     state: {
       username: localStorage.getItem("user_name") || null,

@@ -79,7 +79,12 @@ export default {
       axios
         .post("/checkcreds/", this.credentials)
         .then(r => {
-          this.prompt = true;
+          if (r.data === "totp not set") {
+            this.$router.push({name: "TOTPSetup", params: { username: this.credentials.username }})
+          } else {
+
+            this.prompt = true;
+          }
         })
         .catch(() => {
           this.notifyError("Bad credentials");

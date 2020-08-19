@@ -59,13 +59,10 @@ function getTimeLapse(unixtime) {
 export default {
   methods: {
     bootTime(unixtime) {
-      return getTimeLapse(unixtime)
+      return getTimeLapse(unixtime);
     },
     alertTime(datetime) {
-      console.log(datetime)
-      var unixtime = new Date(datetime).getTime()/1000
-      console.log(unixtime)
-      return getTimeLapse(parseInt(unixtime))
+      return getTimeLapse(Date.parse(datetime)/1000);
 
     },
     notifySuccess(msg, timeout = 2000) {

@@ -62,7 +62,7 @@ export default {
       return getTimeLapse(unixtime);
     },
     alertTime(datetime) {
-      return getTimeLapse(Date.parse(datetime)/1000);
+      return getTimeLapse(Date.parse(datetime) / 1000);
 
     },
     notifySuccess(msg, timeout = 2000) {
@@ -76,6 +76,10 @@ export default {
     },
     notifyInfo(msg, timeout = 2000) {
       Notify.create(notifyInfoConfig(msg, timeout));
-    }
+    },
+    isValidEmail(val) {
+      const email = /^(?=[a-zA-Z0-9@._%+-]{6,254}$)[a-zA-Z0-9._%+-]{1,64}@(?:[a-zA-Z0-9-]{1,63}\.){1,8}[a-zA-Z]{2,63}$/;
+      return email.test(val);
+    },
   }
 };

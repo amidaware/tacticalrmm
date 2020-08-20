@@ -9,19 +9,46 @@
       <q-card-section class="row">
         <div class="col-2">Username:</div>
         <div class="col-10">
-          <q-input outlined dense v-model="username" :rules="[ val => !!val || '*Required']" />
+          <q-input
+            outlined
+            dense
+            v-model="username"
+            :rules="[ val => !!val || '*Required']"
+            class="q-pa-none"
+          />
         </div>
       </q-card-section>
       <q-card-section class="row" v-if="!this.pk">
         <div class="col-2">Password:</div>
         <div class="col-10">
-          <q-input outlined dense v-model="password" :rules="[ val => !!val || '*Required']" />
+          <q-input
+            outlined
+            dense
+            v-model="password"
+            :type="isPwd ? 'password' : 'text'"
+            :rules="[ val => !!val || '*Required']"
+            class="q-pa-none"
+          >
+            <template v-slot:append>
+              <q-icon
+                :name="isPwd ? 'visibility_off' : 'visibility'"
+                class="cursor-pointer"
+                @click="isPwd = !isPwd"
+              />
+            </template>
+          </q-input>
         </div>
       </q-card-section>
       <q-card-section class="row">
         <div class="col-2">Email:</div>
         <div class="col-10">
-          <q-input outlined dense v-model="email" :rules="[ val => !!val || '*Required']" />
+          <q-input
+            outlined
+            dense
+            v-model="email"
+            :rules="[val => isValidEmail(val) || 'Invalid email']"
+            class="q-pa-none"
+          />
         </div>
       </q-card-section>
       <q-card-section class="row">
@@ -63,13 +90,14 @@ export default {
       email: "",
       first_name: "",
       last_name: "",
-      is_active: true
+      is_active: true,
+      isPwd: true,
     };
   },
   computed: {
     title() {
       return this.pk ? "Edit User" : "Add User";
-    }
+    },
   },
   methods: {
     getUser() {
@@ -94,7 +122,7 @@ export default {
         email: this.email,
         is_active: this.is_active,
         first_name: this.first_name,
-        last_name: this.last_name
+        last_name: this.last_name,
       };
 
       if (this.pk) {
@@ -110,8 +138,7 @@ export default {
             this.$q.notify(notifyErrorConfig(e.response.data));
           });
       } else {
-
-        formData.password = this.password
+        formData.password = this.password;
 
         this.$store
           .dispatch("admin/addUser", formData)
@@ -125,13 +152,13 @@ export default {
             this.$q.notify(notifyErrorConfig(e.response.data));
           });
       }
-    }
+    },
   },
   mounted() {
     // If pk prop is set that means we are editting
     if (this.pk) {
       this.getUser();
     }
-  }
+  },
 };
 </script>

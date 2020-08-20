@@ -3,6 +3,7 @@ import pyotp
 from django.contrib.auth import login
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from django.db import IntegrityError
 
 from rest_framework.views import APIView
 from rest_framework.authtoken.serializers import AuthTokenSerializer
@@ -13,6 +14,7 @@ from rest_framework import status
 
 from .models import User
 from agents.models import Agent
+from tacticalrmm.utils import notify_error
 
 from .serializers import UserSerializer, TOTPSetupSerializer
 
@@ -68,9 +70,16 @@ class GetAddUsers(APIView):
 
     def post(self, request):
         # add new user
-        user = User.objects.create_user(
-            request.data["username"], request.data["email"], request.data["password"]
-        )
+        try:
+            user = User.objects.create_user(
+                request.data["username"],
+                request.data["email"],
+                request.data["password"],
+            )
+        except IntegrityError:
+            return notify_error(
+                f"ERROR: User {request.data['username']} already exists!"
+            )
 
         user.first_name = request.data["first_name"]
         user.last_name = request.data["last_name"]

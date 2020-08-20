@@ -25,7 +25,7 @@ class CheckCreds(KnoxLoginView):
         serializer = AuthTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = User.objects.get(username=request.data["username"])
+        user = get_object_or_404(User, username=request.data["username"])
 
         if not user.totp_key:
             return Response("totp not set")
@@ -68,18 +68,15 @@ class GetAddUsers(APIView):
 
     def post(self, request):
 
-        # Remove password from serializer
-        password = request.data.pop("password")
+        user = User.objects.create_user(
+            request.data["username"], request.data["email"], request.data["password"]
+        )
 
-        serializer = UserSerializer(data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-
+        user.first_name = request.data["first_name"]
+        user.last_name = request.data["last_name"]
         # Can be changed once permissions and groups are introduced
         user.is_superuser = True
-        user.set_password = password
         user.save()
-
         return Response("ok")
 
 
@@ -99,7 +96,7 @@ class GetUpdateDeleteUser(APIView):
         return Response("ok")
 
     def delete(self, request, pk):
-        User.objects.get(pk=pk).delete()
+        get_object_or_404(User, pk=pk).delete()
 
         return Response("ok")
 
@@ -109,7 +106,7 @@ class UserActions(APIView):
     # reset password
     def post(self, request):
 
-        user = User.objects.get(pk=request.data["id"])
+        user = get_object_or_404(User, pk=request.data["id"])
         user.set_password(request.data["password"])
         user.save()
 
@@ -118,7 +115,7 @@ class UserActions(APIView):
     # reset two factor token
     def put(self, request):
 
-        user = User.objects.get(pk=request.data["id"])
+        user = get_object_or_404(User, pk=request.data["id"])
         user.totp_key = ""
         user.save()
 

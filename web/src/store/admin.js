@@ -25,16 +25,16 @@ export default {
       })
     },
     loadUser(context, pk) {
-      return axios.get(`/accounts/users/${pk}/`);
+      return axios.get(`/accounts/${pk}/users/`);
     },
     addUser(context, data) {
       return axios.post("/accounts/users/", data);
     },
     editUser(context, data) {
-      return axios.put(`/accounts/users/${data.id}/`, data);
+      return axios.put(`/accounts/${data.id}/users/`, data);
     },
     deleteUser(context, pk) {
-      return axios.delete(`/accounts/users/${pk}/`).then(r => {
+      return axios.delete(`/accounts/${pk}/users/`).then(r => {
         context.dispatch("loadUsers");
       });
     },

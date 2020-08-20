@@ -80,7 +80,13 @@
           </template>
           <!-- body slots -->
           <template v-slot:body="props">
-            <q-tr :props="props" class="cursor-pointer" @click="props.selected = true">
+            <q-tr
+              :props="props"
+              class="cursor-pointer"
+              :class="{highlight: selected.length !== 0 && selected[0].id === props.row.id}"
+              @click="props.selected = true"
+              @contextmenu="editUserId = props.row.id; props.selected = true"
+            >
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
@@ -121,12 +127,7 @@
                     <q-item-section>Reset Password</q-item-section>
                   </q-item>
 
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="reset2FA(props.row)"
-                    id="context-reset"
-                  >
+                  <q-item clickable v-close-popup @click="reset2FA(props.row)" id="context-reset">
                     <q-item-section side>
                       <q-icon name="autorenew" />
                     </q-item-section>
@@ -142,11 +143,7 @@
               </q-menu>
               <!-- enabled checkbox -->
               <q-td>
-                <q-checkbox
-                  dense
-                  @input="toggleEnabled(props.row)"
-                  v-model="props.row.is_active"
-                />
+                <q-checkbox dense @input="toggleEnabled(props.row)" v-model="props.row.is_active" />
               </q-td>
               <q-td>{{ props.row.username }}</q-td>
               <q-td>{{ props.row.first_name }} {{ props.row.last_name }}</q-td>
@@ -167,7 +164,6 @@
     <q-dialog v-model="showResetPasswordModal" @hide="closeResetPasswordModal">
       <UserResetPasswordForm :pk="resetUserId" @close="closeResetPasswordModal" />
     </q-dialog>
-
   </div>
 </template>
 
@@ -195,24 +191,24 @@ export default {
           name: "name",
           label: "Name",
           field: "name",
-          align: "left"
+          align: "left",
         },
         {
           name: "email",
           label: "Email",
           field: "email",
-          align: "left"
+          align: "left",
         },
         {
           name: "last_login",
           label: "Last Login",
           field: "last_login",
-          align: "left"
+          align: "left",
         },
       ],
       pagination: {
-        rowsPerPage: 9999
-      }
+        rowsPerPage: 9999,
+      },
     };
   },
   methods: {
@@ -220,22 +216,22 @@ export default {
       this.$store.dispatch("admin/loadUsers");
     },
     clearRow() {
-      this.selected = []
+      this.selected = [];
     },
     refresh() {
       this.getUsers();
       this.clearRow();
     },
-    deleteUser(id) {
+    deleteUser(data) {
       this.$q
         .dialog({
           title: "Delete user?",
           cancel: true,
-          ok: { label: "Delete", color: "negative" }
+          ok: { label: "Delete", color: "negative" },
         })
         .onOk(() => {
           this.$store
-            .dispatch("admin/deleteUser", id)
+            .dispatch("admin/deleteUser", data.id)
             .then(response => {
               this.$q.notify(notifySuccessConfig("User was deleted!"));
             })
@@ -244,8 +240,8 @@ export default {
             });
         });
     },
-    showEditUserModal(id) {
-      this.editUserId = id;
+    showEditUserModal(data) {
+      this.editUserId = data.id;
       this.showUserFormModal = true;
     },
     closeUserFormModal() {
@@ -257,12 +253,11 @@ export default {
       this.showUserFormModal = true;
     },
     toggleEnabled(user) {
-
       let text = user.is_active ? "User enabled successfully" : "User disabled successfully";
 
       const data = {
         id: user.id,
-        is_active: user.is_active
+        is_active: user.is_active,
       };
 
       this.$store
@@ -283,9 +278,8 @@ export default {
       this.showResetPasswordModal = false;
     },
     reset2FA(user) {
-
       const data = {
-        id: user.id
+        id: user.id,
       };
 
       this.$store
@@ -296,15 +290,15 @@ export default {
         .catch(error => {
           this.$q.notify(notifyErrorConfig("An Error occured while resetting key"));
         });
-    }
+    },
   },
   computed: {
     ...mapState({
-      users: state => state.admin.users
-    })
+      users: state => state.admin.users,
+    }),
   },
   mounted() {
     this.refresh();
-  }
+  },
 };
 </script>

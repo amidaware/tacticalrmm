@@ -43,7 +43,7 @@
             unelevated
             no-caps
             icon="delete"
-            @click="deleteUser(selected[0].id)"
+            @click="deleteUser(selected[0])"
           />
         </div>
         <q-table
@@ -104,7 +104,7 @@
                   <q-item
                     clickable
                     v-close-popup
-                    @click="deleteUser(props.row.id)"
+                    @click="deleteUser(props.row)"
                     id="context-delete"
                   >
                     <q-item-section side>
@@ -163,7 +163,11 @@
 
     <!-- user reset password form modal -->
     <q-dialog v-model="showResetPasswordModal" @hide="closeResetPasswordModal">
-      <UserResetPasswordForm :pk="resetUserId" @close="closeResetPasswordModal" />
+      <UserResetPasswordForm
+        :pk="resetUserId"
+        :username="resetUserName"
+        @close="closeResetPasswordModal"
+      />
     </q-dialog>
   </div>
 </template>
@@ -184,6 +188,7 @@ export default {
       showResetPasswordModal: false,
       editUserId: null,
       resetUserId: null,
+      resetUserName: null,
       selected: [],
       columns: [
         { name: "is_active", label: "Active", field: "is_active", align: "left" },
@@ -223,21 +228,21 @@ export default {
       this.getUsers();
       this.clearRow();
     },
-    deleteUser(id) {
+    deleteUser(data) {
       this.$q
         .dialog({
-          title: "Delete user?",
+          title: `Delete user ${data.username}?`,
           cancel: true,
           ok: { label: "Delete", color: "negative" },
         })
         .onOk(() => {
           this.$store
-            .dispatch("admin/deleteUser", id)
+            .dispatch("admin/deleteUser", data.id)
             .then(response => {
-              this.$q.notify(notifySuccessConfig("User was deleted!"));
+              this.$q.notify(notifySuccessConfig(`User ${data.username} was deleted!`));
             })
             .catch(error => {
-              this.$q.notify(notifyErrorConfig("An Error occured while deleting user"));
+              this.$q.notify(notifyErrorConfig(`An Error occured while deleting user ${data.username}`));
             });
         });
     },
@@ -251,6 +256,8 @@ export default {
       this.refresh();
     },
     showAddUserModal() {
+      this.editUserId = null;
+      this.selected = [];
       this.showUserFormModal = true;
     },
     toggleEnabled(user) {
@@ -272,10 +279,12 @@ export default {
     },
     ResetPassword(user) {
       this.resetUserId = user.id;
+      this.resetUserName = user.username;
       this.showResetPasswordModal = true;
     },
     closeResetPasswordModal(user) {
       this.resetUserId = null;
+      this.resetUserName = null;
       this.showResetPasswordModal = false;
     },
     reset2FA(user) {
@@ -283,13 +292,21 @@ export default {
         id: user.id,
       };
 
-      this.$store
-        .dispatch("admin/resetUserTOTP", data)
-        .then(response => {
-          this.$q.notify(notifySuccessConfig("User Two-Factor key reset. Have the user sign in to setup"));
+      this.$q
+        .dialog({
+          title: `Reset 2FA for ${user.username}?`,
+          cancel: true,
+          ok: { label: "Reset", color: "positive" },
         })
-        .catch(error => {
-          this.$q.notify(notifyErrorConfig("An Error occured while resetting key"));
+        .onOk(() => {
+          this.$store
+            .dispatch("admin/resetUserTOTP", data)
+            .then(response => {
+              this.$q.notify(notifySuccessConfig(response.data, 4000));
+            })
+            .catch(error => {
+              this.$q.notify(notifyErrorConfig("An Error occured while resetting key"));
+            });
         });
     },
   },

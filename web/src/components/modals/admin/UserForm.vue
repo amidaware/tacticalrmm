@@ -145,7 +145,7 @@ export default {
           .then(r => {
             this.$q.loading.hide();
             this.$emit("close");
-            this.$q.notify(notifySuccessConfig("User added!"));
+            this.$q.notify(notifySuccessConfig(`User ${r.data} was added!`));
           })
           .catch(e => {
             this.$q.loading.hide();

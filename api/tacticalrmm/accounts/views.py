@@ -67,7 +67,7 @@ class GetAddUsers(APIView):
         return Response(UserSerializer(users, many=True).data)
 
     def post(self, request):
-
+        # add new user
         user = User.objects.create_user(
             request.data["username"], request.data["email"], request.data["password"]
         )
@@ -77,7 +77,7 @@ class GetAddUsers(APIView):
         # Can be changed once permissions and groups are introduced
         user.is_superuser = True
         user.save()
-        return Response("ok")
+        return Response(user.username)
 
 
 class GetUpdateDeleteUser(APIView):
@@ -119,7 +119,9 @@ class UserActions(APIView):
         user.totp_key = ""
         user.save()
 
-        return Response("ok")
+        return Response(
+            f"{user.username}'s Two-Factor key was reset. Have them sign in again to setup"
+        )
 
 
 class TOTPSetup(APIView):

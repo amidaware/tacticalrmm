@@ -43,7 +43,7 @@
             unelevated
             no-caps
             icon="delete"
-            @click="deleteUser(selected[0])"
+            @click="deleteUser(selected[0].id)"
           />
         </div>
         <q-table
@@ -222,7 +222,7 @@ export default {
       this.getUsers();
       this.clearRow();
     },
-    deleteUser(data) {
+    deleteUser(id) {
       this.$q
         .dialog({
           title: "Delete user?",
@@ -231,7 +231,7 @@ export default {
         })
         .onOk(() => {
           this.$store
-            .dispatch("admin/deleteUser", data.id)
+            .dispatch("admin/deleteUser", id)
             .then(response => {
               this.$q.notify(notifySuccessConfig("User was deleted!"));
             })

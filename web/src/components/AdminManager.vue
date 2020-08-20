@@ -84,7 +84,7 @@
               :props="props"
               class="cursor-pointer"
               :class="{highlight: selected.length !== 0 && selected[0].id === props.row.id}"
-              @click="props.selected = true"
+              @click="editUserId = props.row.id; props.selected = true"
               @contextmenu="editUserId = props.row.id; props.selected = true"
             >
               <!-- context menu -->
@@ -93,7 +93,7 @@
                   <q-item
                     clickable
                     v-close-popup
-                    @click="showEditUserModal(props.row.id)"
+                    @click="showEditUserModal(selected[0])"
                     id="context-edit"
                   >
                     <q-item-section side>
@@ -148,7 +148,8 @@
               <q-td>{{ props.row.username }}</q-td>
               <q-td>{{ props.row.first_name }} {{ props.row.last_name }}</q-td>
               <q-td>{{ props.row.email }}</q-td>
-              <q-td>{{ props.row.last_login }}</q-td>
+              <q-td v-if="props.row.last_login">{{ props.row.last_login }}</q-td>
+              <q-td v-else>Never</q-td>
             </q-tr>
           </template>
         </q-table>

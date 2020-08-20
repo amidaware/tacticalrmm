@@ -153,10 +153,10 @@ class Agent(models.Model):
                         if validators.ipv4(ip):
                             ret.append(ip)
 
-                if len(ret) == 1:
-                    return ret[0]
-                else:
-                    return ", ".join(ret)
+            if len(ret) == 1:
+                return ret[0]
+            else:
+                return ", ".join(ret)
         except:
             return "error getting local ips"
 

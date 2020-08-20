@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from .models import User
+from agents.models import Agent
 
 from .serializers import UserSerializer, TOTPSetupSerializer
 
@@ -57,9 +58,11 @@ class LoginView(KnoxLoginView):
         else:
             return Response("bad credentials", status=status.HTTP_400_BAD_REQUEST)
 
+
 class GetAddUsers(APIView):
     def get(self, request):
-        users = User.objects.all()
+        agents = Agent.objects.values_list("agent_id", flat=True)
+        users = User.objects.exclude(username__in=agents)
 
         return Response(UserSerializer(users, many=True).data)
 
@@ -78,6 +81,7 @@ class GetAddUsers(APIView):
         user.save()
 
         return Response("ok")
+
 
 class GetUpdateDeleteUser(APIView):
     def get(self, request, pk):
@@ -99,6 +103,7 @@ class GetUpdateDeleteUser(APIView):
 
         return Response("ok")
 
+
 class UserActions(APIView):
 
     # reset password
@@ -112,7 +117,7 @@ class UserActions(APIView):
 
     # reset two factor token
     def put(self, request):
-        
+
         user = User.objects.get(pk=request.data["id"])
         user.totp_key = ""
         user.save()
@@ -134,6 +139,6 @@ class TOTPSetup(APIView):
             user.totp_key = code
             user.save(update_fields=["totp_key"])
             return Response(TOTPSetupSerializer(user).data)
-        
+
         return Response("TOTP token already set")
 

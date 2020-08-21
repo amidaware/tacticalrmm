@@ -72,11 +72,17 @@ def ping(request, pk):
 @api_view(["DELETE"])
 def uninstall(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
-    user = get_object_or_404(User, username=agent.agent_id)
     salt_id = agent.salt_id
     name = agent.hostname
-    user.delete()
     agent.delete()
+
+    # just in case agent-user gets deleted accidentaly from django-admin
+    # we can still remove the agent
+    try:
+        user = User.objects.get(username=agent.agent_id)
+        user.delete()
+    except:
+        pass
 
     uninstall_agent_task.delay(salt_id)
     return Response(f"{name} will now be uninstalled.")

@@ -26,8 +26,7 @@ class CheckCreds(KnoxLoginView):
     def post(self, request, format=None):
         serializer = AuthTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        user = get_object_or_404(User, username=request.data["username"])
+        user = serializer.validated_data["user"]
 
         if not user.totp_key:
             return Response("totp not set")

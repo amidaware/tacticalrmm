@@ -1,6 +1,6 @@
 <template>
   <q-card style="width: 60vw">
-    <q-form ref="form" @submit="submit">
+    <q-form ref="form" @submit="onSubmit">
       <q-card-section class="row items-center">
         <div class="text-h6">{{ username }} Password Reset</div>
         <q-space />
@@ -47,9 +47,8 @@ export default {
     };
   },
   methods: {
-    submit() {
+    onSubmit() {
       this.$q.loading.show();
-
       let formData = {
         id: this.pk,
         password: this.password,

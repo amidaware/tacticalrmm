@@ -71,7 +71,7 @@
               </q-item>
               <!-- admin manager -->
               <q-item clickable v-close-popup @click="showAdminManager = true">
-                <q-item-section>Administration</q-item-section>
+                <q-item-section>User Administration</q-item-section>
               </q-item>
               <!-- core settings -->
               <q-item clickable v-close-popup @click="showEditCoreSettingsModal = true">
@@ -170,7 +170,7 @@ export default {
     AutomationManager,
     InstallAgent,
     UploadMesh,
-    AdminManager
+    AdminManager,
   },
   props: ["clients"],
   data() {
@@ -184,7 +184,7 @@ export default {
       showAutomationManager: false,
       showAdminManager: false,
       showInstallAgent: false,
-      showUploadMesh: false
+      showUploadMesh: false,
     };
   },
   methods: {
@@ -200,7 +200,7 @@ export default {
     },
     edited() {
       this.$emit("edited");
-    }
-  }
+    },
+  },
 };
 </script>

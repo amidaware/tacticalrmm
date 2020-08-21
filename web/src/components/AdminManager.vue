@@ -2,7 +2,7 @@
   <div style="width: 900px; max-width: 90vw;">
     <q-card>
       <q-bar>
-        <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />Administration
+        <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />User Administration
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>

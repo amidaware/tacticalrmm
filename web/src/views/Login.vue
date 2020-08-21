@@ -70,7 +70,7 @@ export default {
   data() {
     return {
       credentials: {},
-      prompt: false
+      prompt: false,
     };
   },
 
@@ -80,9 +80,8 @@ export default {
         .post("/checkcreds/", this.credentials)
         .then(r => {
           if (r.data === "totp not set") {
-            this.$router.push({name: "TOTPSetup", params: { username: this.credentials.username }})
+            this.$router.push({ name: "TOTPSetup", params: { username: this.credentials.username } });
           } else {
-
             this.prompt = true;
           }
         })
@@ -102,11 +101,11 @@ export default {
           this.credentials = {};
           this.prompt = false;
         });
-    }
+    },
   },
   created() {
     this.$q.dark.set(true);
-  }
+  },
 };
 </script>
 

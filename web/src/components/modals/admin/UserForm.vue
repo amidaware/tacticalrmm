@@ -1,6 +1,6 @@
 <template>
   <q-card style="width: 60vw">
-    <q-form ref="form" @submit="submit">
+    <q-form ref="form" @submit="onSubmit">
       <q-card-section class="row items-center">
         <div class="text-h6">{{ title }}</div>
         <q-space />
@@ -113,9 +113,8 @@ export default {
         this.last_name = r.data.last_name;
       });
     },
-    submit() {
+    onSubmit() {
       this.$q.loading.show();
-
       let formData = {
         id: this.pk,
         username: this.username,

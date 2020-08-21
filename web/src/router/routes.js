@@ -16,6 +16,11 @@ const routes = [
     }
   },
   {
+    path: "/totp_setup/:username",
+    name: "TOTPSetup",
+    component: () => import("@/views/TOTPSetup")
+  },
+  {
     path: "/takecontrol/:pk",
     name: "TakeControl",
     component: () => import("@/views/TakeControl"),

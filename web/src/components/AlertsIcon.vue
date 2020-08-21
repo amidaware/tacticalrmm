@@ -3,21 +3,33 @@
     <q-badge v-if="alerts.length !== 0" color="red" floating transparent>{{ alertsLengthText() }}</q-badge>
     <q-menu>
       <q-list separator>
-        <q-item v-if="alerts.length === 0">No Alerts</q-item>
+        <q-item v-if="alerts.length === 0">No New Alerts</q-item>
         <q-item v-for="alert in alerts" :key="alert.id">
           <q-item-section>
-            <q-item-label>{{ alert.client }} - {{ alert.hostname }}</q-item-label>
-            <q-item-label caption>
-              <q-icon :class="`text-${alertColor(alert.severity)}`" :name="alert.severity"></q-icon>
+            <q-item-label overline>{{ alert.client }} - {{ alert.site }} - {{ alert.hostname }}</q-item-label>
+            <q-item-label>
+              <q-icon size="xs" :class="`text-${alertColor(alert.severity)}`" :name="alert.severity"></q-icon>
               {{ alert.message }}
             </q-item-label>
           </q-item-section>
 
           <q-item-section side top>
-            <q-item-label caption>{{ alert.alert_time }}</q-item-label>
+            <q-item-label caption>{{ alertTime(alert.alert_time) }}</q-item-label>
+            <q-item-label>
+              <q-icon name="snooze" size="xs">
+                <q-tooltip>
+                  Snooze the alert for 24 hours
+                </q-tooltip>
+              </q-icon>
+              <q-icon name="alarm_off" size="xs">
+                <q-tooltip>
+                  Dismiss alert
+                </q-tooltip>
+              </q-icon>
+            </q-item-label>
           </q-item-section>
         </q-item>
-        <q-item clickable @click="showAlertsModal = true">View All Alerts</q-item>
+        <q-item clickable @click="showAlertsModal = true">View All Alerts ({{ alerts.length }})</q-item>
       </q-list>
     </q-menu>
 
@@ -72,7 +84,8 @@ export default {
   },
   computed: {
     ...mapGetters({
-      alerts: "alerts/getNewAlerts"
+      newAlerts: "alerts/getNewAlerts",
+      alerts: "alerts/getAlerts"
     })
   },
   mounted() {

@@ -15,6 +15,8 @@ DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 SALTPW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
 MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
+pgusername=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)
+pgpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -86,11 +88,6 @@ fi
 
 echo -ne "${YELLOW}Create a username for meshcentral${NC}: "
 read meshusername
-
-echo -ne "${YELLOW}Create a username for the postgres database${NC}: "
-read pgusername
-echo -ne "${YELLOW}Create a password for the postgres database${NC}: "
-read pgpw
 
 while [[ $letsemail != *[@]*[.]* ]]
 do

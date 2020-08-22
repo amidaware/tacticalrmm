@@ -129,7 +129,14 @@ class GetRelated(APIView):
         response = {}
 
         policy = (
-            Policy.objects.filter(pk=pk).prefetch_related("clients", "sites").first()
+            Policy.objects.filter(pk=pk)
+            .prefetch_related(
+                "workstation_clients",
+                "workstation_sites",
+                "server_clients",
+                "server_sites",
+            )
+            .first()
         )
 
         response["clients"] = ClientSerializer(policy.clients.all(), many=True).data
@@ -157,7 +164,7 @@ class GetRelated(APIView):
         related_type = request.data["type"]
         pk = request.data["pk"]
 
-        #If policy is set in request
+        # If policy is set in request
         if request.data["policy"] != 0:
             policy = get_object_or_404(Policy, pk=request.data["policy"])
 

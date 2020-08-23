@@ -102,21 +102,21 @@ export default {
   name: "PolicyStatus",
   components: {
     ScriptOutput,
-    EventLogCheckOutput
+    EventLogCheckOutput,
   },
   props: {
     item: {
       required: true,
-      type: Object
+      type: Object,
     },
     type: {
       required: true,
       type: String,
-      validator: function(value) {
+      validator: function (value) {
         // The value must match one of these strings
         return ["task", "check"].includes(value);
-      }
-    }
+      },
+    },
   },
   data() {
     return {
@@ -126,31 +126,35 @@ export default {
       scriptInfo: {},
       tableData: [],
       columns: [
-        { name: "agent", label: "Hostname", field: "agent", align: "left" },
+        { name: "agent", label: "Hostname", field: "agent", align: "left", sortable: true },
         { name: "statusicon", align: "left" },
-        { name: "status", label: "Status", field: "status", align: "left" },
+        { name: "status", label: "Status", field: "status", align: "left", sortable: true },
         {
           name: "moreinfo",
           label: "More Info",
           field: "more_info",
-          align: "left"
+          align: "left",
+          sortable: true,
         },
         {
           name: "datetime",
           label: "Date / Time",
           field: "last_run",
-          align: "left"
-        }
+          align: "left",
+          sortable: true,
+        },
       ],
       pagination: {
-        rowsPerPage: 9999
-      }
+        rowsPerPage: 9999,
+        sortBy: "status",
+        descending: false,
+      },
     };
   },
   computed: {
     title() {
       return this.item.readable_desc ? this.item.readable_desc + " Status" : this.item.name + " Status";
-    }
+    },
   },
   methods: {
     getCheckData() {
@@ -192,7 +196,7 @@ export default {
         title: check.readable_desc,
         style: "width: 50vw; max-width: 60vw",
         message: `<pre>${check.more_info}</pre>`,
-        html: true
+        html: true,
       });
     },
     scriptMoreInfo(check) {
@@ -202,7 +206,7 @@ export default {
     eventLogMoreInfo(check) {
       this.evtLogData = check;
       this.showEventLogOutput = true;
-    }
+    },
   },
   mounted() {
     if (this.type === "task") {
@@ -210,6 +214,6 @@ export default {
     } else {
       this.getCheckData();
     }
-  }
+  },
 };
 </script>

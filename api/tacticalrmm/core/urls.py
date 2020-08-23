@@ -6,4 +6,5 @@ urlpatterns = [
     path("getcoresettings/", views.get_core_settings),
     path("editsettings/", views.edit_settings),
     path("version/", views.version),
+    path("emailtest/", views.email_test),
 ]

@@ -85,9 +85,11 @@ class CoreSettings(models.Model):
         else:
             return False
 
-    def send_mail(self, subject, body):
+    def send_mail(self, subject, body, test=False):
 
         if not self.email_is_configured:
+            if test:
+                return "Missing required fields (need at least 1 recipient)"
             return False
 
         try:
@@ -97,7 +99,7 @@ class CoreSettings(models.Model):
             msg["To"] = ", ".join(self.email_alert_recipients)
             msg.set_content(body)
 
-            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+            with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=20) as server:
                 if self.smtp_requires_auth:
                     server.ehlo()
                     server.starttls()
@@ -111,6 +113,10 @@ class CoreSettings(models.Model):
 
         except Exception as e:
             logger.error(f"Sending email failed with error: {e}")
+            if test:
+                return str(e)
+        else:
+            return True
 
     def get_initial_mesh_settings(self):
 

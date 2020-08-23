@@ -178,6 +178,14 @@
           </q-scroll-area>
           <q-card-section class="row items-center">
             <q-btn label="Save" color="primary" type="submit" />
+            <q-btn
+              v-show="tab === 'alerts'"
+              label="Save and Test"
+              color="primary"
+              type="submit"
+              class="q-ml-md"
+              @click="emailTest = true"
+            />
           </q-card-section>
         </q-form>
       </template>
@@ -202,6 +210,7 @@ export default {
       splitterModel: 15,
       isPwd: true,
       allTimezones: [],
+      emailTest: false,
       thumbStyle: {
         right: "2px",
         borderRadius: "5px",
@@ -246,8 +255,23 @@ export default {
         .patch("/core/editsettings/", this.settings)
         .then(r => {
           this.$q.loading.hide();
-          this.notifySuccess("Settings were edited!");
-          this.$emit("close");
+          if (this.emailTest) {
+            this.$q.loading.show({ message: "Sending test email..." });
+            this.$axios
+              .get("/core/emailtest/")
+              .then(r => {
+                this.$q.loading.hide();
+                this.getCoreSettings();
+                this.notifySuccess(r.data, 3000);
+              })
+              .catch(e => {
+                this.$q.loading.hide();
+                this.notifyError(e.response.data, 7000);
+              });
+          } else {
+            this.$emit("close");
+            this.notifySuccess("Settings were edited!");
+          }
         })
         .catch(() => {
           this.$q.loading.hide();

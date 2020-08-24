@@ -41,13 +41,9 @@
         <q-input
           dense
           outlined
-          v-model.number="eventlogcheck.event_id"
-          label="Event ID"
-          :rules="[ 
-                    val => !!val.toString() || '*Required',
-                    val => val >= 0 || 'Min 0',
-                    val => val <= 999999 || 'Max 999999'
-                ]"
+          v-model="eventlogcheck.event_id"
+          label="Event ID (Use * to match every event ID)"
+          :rules="[val => validateEventID(val) || 'Invalid Event ID']"
         />
       </q-card-section>
       <q-card-section>
@@ -110,7 +106,7 @@ export default {
     agentpk: Number,
     policypk: Number,
     mode: String,
-    checkpk: Number
+    checkpk: Number,
   },
   mixins: [mixins],
   data() {
@@ -122,25 +118,32 @@ export default {
         event_type: "INFO",
         fail_when: "contains",
         search_last_days: 1,
-        fails_b4_alert: 1
+        fails_b4_alert: 1,
+        event_id_is_wildcard: false,
       },
       logNameOptions: ["Application", "System", "Security"],
       failWhenOptions: [
         { label: "Log contains", value: "contains" },
-        { label: "Log does not contain", value: "not_contains" }
+        { label: "Log does not contain", value: "not_contains" },
       ],
-      failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     };
   },
   methods: {
     getCheck() {
-      axios.get(`/checks/${this.checkpk}/check/`).then(r => (this.eventlogcheck = r.data));
+      axios.get(`/checks/${this.checkpk}/check/`).then(r => {
+        this.eventlogcheck = r.data;
+        if (r.data.check_type === "eventlog" && r.data.event_id_is_wildcard) {
+          this.eventlogcheck.event_id = "*";
+        }
+      });
     },
     addCheck() {
       const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
+      this.eventlogcheck.event_id_is_wildcard = this.eventlogcheck.event_id === "*" ? true : false;
       const data = {
         ...pk,
-        check: this.eventlogcheck
+        check: this.eventlogcheck,
       };
       axios
         .post("/checks/checks/", data)
@@ -152,6 +155,7 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     editCheck() {
+      this.eventlogcheck.event_id_is_wildcard = this.eventlogcheck.event_id === "*" ? true : false;
       axios
         .patch(`/checks/${this.checkpk}/check/`, this.eventlogcheck)
         .then(r => {
@@ -167,12 +171,23 @@ export default {
       } else {
         this.$store.dispatch("loadChecks", this.agentpk);
       }
-    }
+    },
+    validateEventID(val) {
+      if (val === null || val.toString().replace(/\s/g, "") === "") {
+        return false;
+      } else if (val === "*") {
+        return true;
+      } else if (!isNaN(val)) {
+        return true;
+      } else {
+        return false;
+      }
+    },
   },
   mounted() {
     if (this.mode === "edit") {
       this.getCheck();
     }
-  }
+  },
 };
 </script>

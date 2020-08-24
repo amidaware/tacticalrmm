@@ -12,6 +12,7 @@ from rest_framework.decorators import (
     permission_classes,
 )
 
+from tacticalrmm.utils import notify_error
 from agents.models import Agent
 from automation.models import Policy
 
@@ -52,6 +53,21 @@ class GetAddCheck(APIView):
         if "script" in request.data["check"]:
             script = get_object_or_404(Script, pk=request.data["check"]["script"])
 
+        # set event id to 0 if wildcard because it needs to be an integer field for db
+        # will be ignored anyway by the agent when doing wildcard check
+        if (
+            request.data["check"]["check_type"] == "eventlog"
+            and request.data["check"]["event_id_is_wildcard"]
+        ):
+            if agent and agent.not_supported(version_added="0.10.2"):
+                return notify_error(
+                    {
+                        "non_field_errors": "Wildcard is only available in agent 0.10.2 or greater"
+                    }
+                )
+
+            request.data["check"]["event_id"] = 0
+
         serializer = CheckSerializer(
             data=request.data["check"], partial=True, context=parent
         )
@@ -91,6 +107,18 @@ class GetUpdateDeleteCheck(APIView):
         # remove fields that should not be changed when editing a check from the frontend
         if "check_alert" not in request.data.keys():
             [request.data.pop(i) for i in check.non_editable_fields]
+
+        # set event id to 0 if wildcard because it needs to be an integer field for db
+        # will be ignored anyway by the agent when doing wildcard check
+        if check.check_type == "eventlog" and request.data["event_id_is_wildcard"]:
+            if check.agent.not_supported(version_added="0.10.2"):
+                return notify_error(
+                    {
+                        "non_field_errors": "Wildcard is only available in agent 0.10.2 or greater"
+                    }
+                )
+
+            request.data["event_id"] = 0
 
         serializer = CheckSerializer(instance=check, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)

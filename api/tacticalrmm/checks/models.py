@@ -130,6 +130,7 @@ class Check(models.Model):
         max_length=255, choices=EVT_LOG_NAME_CHOICES, null=True, blank=True
     )
     event_id = models.IntegerField(null=True, blank=True)
+    event_id_is_wildcard = models.BooleanField(default=False)
     event_type = models.CharField(
         max_length=255, choices=EVT_LOG_TYPE_CHOICES, null=True, blank=True
     )

@@ -10,6 +10,7 @@ import validators
 import random
 import string
 from loguru import logger
+from packaging import version as pyver
 
 from django.db import models
 from django.conf import settings
@@ -422,6 +423,12 @@ class Agent(models.Model):
             return {"msg": {"time": nice_time, "agent": self.hostname}}
         else:
             return "failed"
+
+    def not_supported(self, version_added):
+        if pyver.parse(self.version) < pyver.parse(version_added):
+            return True
+
+        return False
 
 
 class AgentOutage(models.Model):

@@ -1,5 +1,7 @@
 from loguru import logger
+import os
 import subprocess
+import tempfile
 import zlib
 import json
 import base64
@@ -8,6 +10,7 @@ from packaging import version as pyver
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from django.http import HttpResponse
 
 from rest_framework.decorators import (
     api_view,
@@ -306,9 +309,109 @@ def install_agent(request):
         user=request.user, expiry=dt.timedelta(hours=request.data["expires"])
     )
 
-    resp = {"token": token, "client": client.pk, "site": site.pk}
-    resp["showextra"] = True if pyver.parse(version) > pyver.parse("0.10.0") else False
-    return Response(resp)
+    if request.data["installMethod"] == "exe":
+        go_bin = "/usr/local/rmmgo/go/bin/go"
+
+        if not os.path.exists(go_bin):
+            return Response("nogolang", status=status.HTTP_409_CONFLICT)
+
+        api = request.data["api"]
+        atype = request.data["agenttype"]
+        rdp = request.data["rdp"]
+        ping = request.data["ping"]
+        power = request.data["power"]
+
+        file_name = f"rmm-{''.join(client.client.lower().split())}-{''.join(site.site.lower().split())}.exe"
+        exe = os.path.join(settings.EXE_DIR, file_name)
+
+        if os.path.exists(exe):
+            os.remove(exe)
+
+        cmd = [
+            "env",
+            "GOOS=windows",
+            "GOARCH=amd64",
+            go_bin,
+            "build",
+            f"-ldflags=\"-X 'main.Version={version}'",
+            f"-X 'main.Api={api}'",
+            f"-X 'main.Client={client.pk}'",
+            f"-X 'main.Site={site.pk}'",
+            f"-X 'main.Atype={atype}'",
+            f"-X 'main.Rdp={rdp}'",
+            f"-X 'main.Ping={ping}'",
+            f"-X 'main.Power={power}'",
+            f"-X 'main.Token={token}'\"",
+            "-o",
+            exe,
+            os.path.join(settings.BASE_DIR, "core/installer.go"),
+        ]
+
+        r = subprocess.run(" ".join(cmd), shell=True)
+
+        if settings.DEBUG:
+            with open(exe, "rb") as f:
+                response = HttpResponse(
+                    f.read(),
+                    content_type="application/vnd.microsoft.portable-executable",
+                )
+                response["Content-Disposition"] = f"inline; filename={file_name}"
+                return response
+        else:
+            response = HttpResponse()
+            response["Content-Disposition"] = f"attachment; filename={file_name}"
+            response["X-Accel-Redirect"] = f"/private/exe/{file_name}"
+            return response
+
+    elif request.data["installMethod"] == "manual":
+        resp = {"token": token, "client": client.pk, "site": site.pk}
+        resp["showextra"] = (
+            True if pyver.parse(version) > pyver.parse("0.10.0") else False
+        )
+        return Response(resp)
+
+    elif request.data["installMethod"] == "powershell":
+
+        ps = os.path.join(settings.BASE_DIR, "core/installer.ps1")
+
+        with open(ps, "r") as f:
+            text = f.read()
+
+        replace_dict = {
+            "versionchange": request.data["exe"],
+            "clientchange": str(client.pk),
+            "sitechange": str(site.pk),
+            "apichange": request.data["api"],
+            "atypechange": request.data["agenttype"],
+            "powerchange": str(request.data["power"]),
+            "rdpchange": str(request.data["rdp"]),
+            "pingchange": str(request.data["ping"]),
+            "downloadchange": request.data["download"],
+            "tokenchange": token,
+        }
+
+        for i, j in replace_dict.items():
+            text = text.replace(i, j)
+
+        file_name = os.path.join(settings.EXE_DIR, "rmm-installer.ps1")
+        if os.path.exists(file_name):
+            os.remove(file_name)
+
+        with open(file_name, "w") as f:
+            f.write(text)
+
+        if settings.DEBUG:
+            with open(file_name, "r") as f:
+                response = HttpResponse(f.read(), content_type="text/plain",)
+                response["Content-Disposition"] = f"inline; filename={file_name}"
+                return response
+        else:
+            response = HttpResponse()
+            response["Content-Disposition"] = f"attachment; filename={file_name}"
+            response["X-Accel-Redirect"] = f"/private/exe/{file_name}"
+            return response
+
+        return Response(text)
 
 
 @api_view(["POST"])

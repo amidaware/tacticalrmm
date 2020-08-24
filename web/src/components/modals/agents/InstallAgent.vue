@@ -59,8 +59,16 @@
           Select Version
           <q-select dense outlined v-model="version" :options="Object.values(versions)" />
         </q-card-section>
+        <q-card-section>
+          Installation Method
+          <div class="q-gutter-sm">
+            <q-radio v-model="installMethod" val="exe" label="Dynamically generated exe" />
+            <q-radio v-model="installMethod" val="powershell" label="Powershell" />
+            <q-radio v-model="installMethod" val="manual" label="Manual" />
+          </div>
+        </q-card-section>
         <q-card-actions align="left">
-          <q-btn label="Show Install Command" color="primary" type="submit" />
+          <q-btn :label="installButtonText" color="primary" type="submit" />
         </q-card-actions>
       </q-form>
     </q-card-section>
@@ -88,13 +96,14 @@ export default {
       site: null,
       version: null,
       agenttype: "server",
-      expires: 1,
+      expires: 720,
       power: false,
       rdp: false,
       ping: false,
       github: [],
       showAgentDownload: false,
       info: {},
+      installMethod: "exe",
     };
   },
   methods: {
@@ -129,21 +138,90 @@ export default {
       const release = this.github.filter(i => i.name === this.version)[0];
       const download = release.assets[0].browser_download_url;
       const exe = `${release.name}.exe`;
+      const clientStripped = this.client.replace(/\s/g, "").toLowerCase();
+      const siteStripped = this.site.replace(/\s/g, "").toLowerCase();
 
-      const data = { client: this.client, site: this.site, expires: this.expires, version: this.version };
-      axios.post("/agents/installagent/", data).then(r => {
-        this.info = {
-          exe,
-          download,
-          api,
-          agenttype: this.agenttype,
-          expires: this.expires,
-          power: this.power ? 1 : 0,
-          rdp: this.rdp ? 1 : 0,
-          ping: this.ping ? 1 : 0,
-          data: r.data,
-        };
-        this.showAgentDownload = true;
+      const data = {
+        installMethod: this.installMethod,
+        client: this.client,
+        site: this.site,
+        expires: this.expires,
+        version: this.version,
+        agenttype: this.agenttype,
+        power: this.power ? 1 : 0,
+        rdp: this.rdp ? 1 : 0,
+        ping: this.ping ? 1 : 0,
+        api,
+        release,
+        download,
+        exe,
+      };
+
+      if (this.installMethod === "manual") {
+        axios.post("/agents/installagent/", data).then(r => {
+          this.info = {
+            exe,
+            download,
+            api,
+            agenttype: this.agenttype,
+            expires: this.expires,
+            power: this.power ? 1 : 0,
+            rdp: this.rdp ? 1 : 0,
+            ping: this.ping ? 1 : 0,
+            data: r.data,
+            installMethod: this.installMethod,
+          };
+          this.showAgentDownload = true;
+        });
+      } else if (this.installMethod === "exe") {
+        this.$q.loading.show({ message: "Generating executable..." });
+
+        const fileName = `rmm-${clientStripped}-${siteStripped}.exe`;
+        this.$axios
+          .post("/agents/installagent/", data, { responseType: "blob" })
+          .then(r => {
+            this.$q.loading.hide();
+            const blob = new Blob([r.data], { type: "application/vnd.microsoft.portable-executable" });
+            let link = document.createElement("a");
+            link.href = window.URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+            this.showDLMessage();
+          })
+          .catch(e => {
+            let err;
+            switch (e.response.status) {
+              case 409:
+                err = "Golang is not installed";
+                break;
+              case 412:
+                err = "Golang build failed";
+                break;
+              default:
+                err = "Something went wrong";
+            }
+            this.$q.loading.hide();
+            this.notifyError(err, 4000);
+          });
+      } else if (this.installMethod === "powershell") {
+        const psName = `rmm-${clientStripped}-${siteStripped}.ps1`;
+        this.$axios
+          .post("/agents/installagent/", data, { responseType: "blob" })
+          .then(({ data }) => {
+            const blob = new Blob([data], { type: "text/plain" });
+            let link = document.createElement("a");
+            link.href = window.URL.createObjectURL(blob);
+            link.download = psName;
+            link.click();
+            this.showDLMessage();
+          })
+          .catch(e => this.notifyError("Something went wrong"));
+      }
+    },
+    showDLMessage() {
+      this.$q.dialog({
+        message: `Installer for ${this.client}, ${this.site} (${this.agenttype}) will now be downloaded.
+              You may reuse this installer for ${this.expires} hours before it expires. No command line arguments are needed.`,
       });
     },
   },
@@ -153,6 +231,22 @@ export default {
         this.site = this.tree[this.client][0];
         return this.tree[this.client];
       }
+    },
+    installButtonText() {
+      let text;
+      switch (this.installMethod) {
+        case "exe":
+          text = "Generate and download exe";
+          break;
+        case "powershell":
+          text = "Download powershell script";
+          break;
+        case "manual":
+          text = "Show manual installation instructions";
+          break;
+      }
+
+      return text;
     },
   },
   created() {

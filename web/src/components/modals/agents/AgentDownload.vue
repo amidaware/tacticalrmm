@@ -2,7 +2,7 @@
   <q-card style="min-width: 70vw">
     <q-card-section class="row">
       <q-card-actions align="left">
-        <div class="text-h6">Installation Instructions</div>
+        <div class="text-h6">Manual Installation Instructions</div>
       </q-card-actions>
       <q-space />
       <q-card-actions align="right">

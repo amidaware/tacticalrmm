@@ -1,5 +1,21 @@
 #!/bin/bash
 
+SCRIPT_VERSION="1"
+SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
+
+TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
+curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
+NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
+
+if [ "${SCRIPT_VERSION}" \< "${NEW_VER}" ]; then
+    printf >&2 "${YELLOW}A newer version of this installer script is available.${NC}\n"
+    printf >&2 "${YELLOW}Please download the latest version from ${GREEN}${SCRIPT_URL}${YELLOW} and re-run.${NC}\n"
+    rm -f $TMP_FILE
+    exit 1
+fi
+
+rm -f $TMP_FILE
+
 UBU20=$(grep 20.04 "/etc/"*"release")
 if ! [[ $UBU20 ]]; then
   echo -ne "\033[0;31mThis script will only work on Ubuntu 20.04\e[0m\n"
@@ -107,11 +123,23 @@ do
 sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
 done
 
-
 print_green 'Creating saltapi user'
 
 sudo adduser --no-create-home --disabled-password --gecos "" saltapi
 echo "saltapi:${SALTPW}" | sudo chpasswd
+
+print_green 'Installing golang'
+
+sudo apt install -y curl wget
+
+sudo mkdir -p /usr/local/rmmgo
+go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)
+wget https://golang.org/dl/go1.15.linux-amd64.tar.gz -P ${go_tmp}
+
+tar -xzf ${go_tmp}/go1.15.linux-amd64.tar.gz -C ${go_tmp}
+
+sudo mv ${go_tmp}/go /usr/local/rmmgo/
+rm -rf ${go_tmp}
 
 print_green 'Installing Nginx'
 
@@ -119,8 +147,6 @@ sudo apt install -y nginx
 sudo systemctl stop nginx
 
 print_green 'Installing NodeJS'
-
-sudo apt install -y curl wget
 
 curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 sudo apt update

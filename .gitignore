@@ -9,7 +9,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .idea
-.vscode
 *.suo
 *.ntvs*
 *.njsproj
@@ -19,7 +18,6 @@ yarn-error.log*
 *.pot
 *.pyc
 *.pid
-.vscode
 __pycache__/
 env/
 local_settings.py
@@ -33,3 +31,6 @@ app.ini
 *.pem
 create_services.py
 gen_random.py
+sync_salt_modules.py
+rmm-*.exe
+rmm-*.ps1

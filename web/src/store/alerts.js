@@ -3,15 +3,15 @@ import axios from 'axios'
 export default {
   namespaced: true,
   state: {
-    alerts: [],
+    alerts: []
   },
 
   getters: {
     getAlerts(state) {
       return state.alerts;
     },
-    getUncheckedAlerts(state) {
-      //filter for non-dismissed active alerts
+    getNewAlerts(state) {
+      return state.alerts.filter(alert => !alert.resolved || alert.snoozed_until == undefined)
     }
   },
 
@@ -23,9 +23,12 @@ export default {
 
   actions: {
     getAlerts(context) {
-      axios.get(`/alerts/getAlerts/`).then(r => {
+      axios.get("/alerts/alerts/").then(r => {
         context.commit("SET_ALERTS", r.data);
       });
+    },
+    editAlert(context, pk) {
+      return axios.put(`/alerts/alerts/${pk}`);
     }
   }
 }

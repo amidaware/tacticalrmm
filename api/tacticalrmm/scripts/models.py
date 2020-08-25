@@ -6,6 +6,11 @@ SCRIPT_SHELLS = [
     ("python", "Python"),
 ]
 
+SCRIPT_TYPES = [
+    ("userdefined", "User Defined"),
+    ("builtin", "Built In"),
+]
+
 
 class Script(models.Model):
     name = models.CharField(max_length=255)
@@ -14,6 +19,9 @@ class Script(models.Model):
     shell = models.CharField(
         max_length=100, choices=SCRIPT_SHELLS, default="powershell"
     )
+    script_type = models.CharField(
+        max_length=100, choices=SCRIPT_TYPES, default="userdefined"
+    )
 
     def __str__(self):
         return self.filename
@@ -21,11 +29,17 @@ class Script(models.Model):
     @property
     def filepath(self):
         # for the windows agent when using 'salt-call'
-        return f"salt://scripts//userdefined//{self.filename}"
+        if self.script_type == "userdefined":
+            return f"salt://scripts//userdefined//{self.filename}"
+        else:
+            return f"salt://scripts//{self.filename}"
 
     @property
     def file(self):
-        return f"/srv/salt/scripts/userdefined/{self.filename}"
+        if self.script_type == "userdefined":
+            return f"/srv/salt/scripts/userdefined/{self.filename}"
+        else:
+            return f"/srv/salt/scripts/{self.filename}"
 
     @property
     def code(self):

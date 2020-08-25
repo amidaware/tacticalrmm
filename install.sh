@@ -1,15 +1,38 @@
 #!/bin/bash
 
+SCRIPT_VERSION="1"
+SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
+
+TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
+curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
+NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
+
+if [ "${SCRIPT_VERSION}" \< "${NEW_VER}" ]; then
+    printf >&2 "${YELLOW}A newer version of this installer script is available.${NC}\n"
+    printf >&2 "${YELLOW}Please download the latest version from ${GREEN}${SCRIPT_URL}${YELLOW} and re-run.${NC}\n"
+    rm -f $TMP_FILE
+    exit 1
+fi
+
+rm -f $TMP_FILE
+
+UBU20=$(grep 20.04 "/etc/"*"release")
+if ! [[ $UBU20 ]]; then
+  echo -ne "\033[0;31mThis script will only work on Ubuntu 20.04\e[0m\n"
+  exit 1
+fi
+
 if [ $EUID -eq 0 ]; then
   echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
   exit 1
 fi
 
-
 DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 SALTPW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
 MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
+pgusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
+pgpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -30,12 +53,6 @@ print_green() {
 
 cls
 
-
-echo -ne "${YELLOW}Create a username for the postgres database${NC}: "
-read pgusername
-echo -ne "${YELLOW}Create a password for the postgres database${NC}: "
-read pgpw
-
 while [[ $rmmdomain != *[.]*[.]* ]]
 do
 echo -ne "${YELLOW}Enter the subdomain for the backend (e.g. api.example.com)${NC}: "
@@ -44,7 +61,7 @@ done
 
 while [[ $frontenddomain != *[.]*[.]* ]]
 do
-echo -ne "${YELLOW}Enter the subdomain for the frontend (e.g. app.example.com)${NC}: "
+echo -ne "${YELLOW}Enter the subdomain for the frontend (e.g. rmm.example.com)${NC}: "
 read frontenddomain
 done
 
@@ -54,6 +71,37 @@ echo -ne "${YELLOW}Enter the subdomain for meshcentral (e.g. mesh.example.com)${
 read meshdomain
 done
 
+echo -ne "${YELLOW}Enter the root domain for LetsEncrypt (e.g. example.com or example.co.uk)${NC}: "
+read rootdomain
+
+BEHIND_NAT=false
+IPV4=$(ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
+
+# if server is behind NAT we need to add the 3 subdomains to the host file 
+# so that nginx can properly route between the frontend, backend and meshcentral
+if echo "$IPV4" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
+    BEHIND_NAT=true
+    CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain")
+
+    if ! [[ $CHECK_HOSTS ]]; then
+        echo -ne "${GREEN}This server appears to be behind NAT.${NC}\n"
+        echo -ne "${GREEN}If so, you will need append your 3 subdomains to the line starting with 127.0.1.1 in your hosts file.${NC}\n"
+        until [[ $edithosts =~ (y|n) ]]; do
+            echo -ne "${GREEN}Would you like me to do this for you? [y/n]${NC}: "
+            read edithosts
+        done
+
+        if [[ $edithosts == "y" ]]; then
+            sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts
+        else
+            echo -ne "${GREEN}Please manually edit your hosts file to match the line below and re-run this script.${NC}\n"
+            sed "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts | grep 127.0.1.1
+            exit 1
+        fi
+
+    fi
+fi
+
 echo -ne "${YELLOW}Create a username for meshcentral${NC}: "
 read meshusername
 
@@ -62,8 +110,6 @@ do
 echo -ne "${YELLOW}Enter a valid email address for let's encrypt renewal notifications and meshcentral${NC}: "
 read letsemail
 done
-
-rootdomain=$(expr match "$rmmdomain" '.*\.\(.*\..*\)')
 
 print_green 'Getting wildcard cert'
 
@@ -77,11 +123,23 @@ do
 sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
 done
 
-
 print_green 'Creating saltapi user'
 
 sudo adduser --no-create-home --disabled-password --gecos "" saltapi
 echo "saltapi:${SALTPW}" | sudo chpasswd
+
+print_green 'Installing golang'
+
+sudo apt install -y curl wget
+
+sudo mkdir -p /usr/local/rmmgo
+go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)
+wget https://golang.org/dl/go1.15.linux-amd64.tar.gz -P ${go_tmp}
+
+tar -xzf ${go_tmp}/go1.15.linux-amd64.tar.gz -C ${go_tmp}
+
+sudo mv ${go_tmp}/go /usr/local/rmmgo/
+rm -rf ${go_tmp}
 
 print_green 'Installing Nginx'
 
@@ -89,8 +147,6 @@ sudo apt install -y nginx
 sudo systemctl stop nginx
 
 print_green 'Installing NodeJS'
-
-sudo apt install -y curl wget
 
 curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 sudo apt update
@@ -240,10 +296,10 @@ python3 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir setuptools==47.3.2 wheel==0.34.2
+pip install --no-cache-dir setuptools==49.6.0 wheel==0.35.1
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
-python manage.py collectstatic
+python manage.py collectstatic --no-input
 python manage.py load_chocos
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
@@ -342,6 +398,12 @@ server {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
         alias /srv/salt/scripts/userdefined/;
+    }
+
+    location /builtin/ {
+        internal;
+        add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
+        alias /srv/salt/scripts/;
     }
 
 
@@ -614,11 +676,20 @@ done
 sleep 5
 sudo systemctl enable meshcentral
 
-print_green 'Restarting meshcentral and waiting for it to install plugins'
+print_green 'Starting meshcentral and waiting for it to install plugins'
 
 sudo systemctl restart meshcentral
 
-sleep 30
+sleep 3
+
+# The first time we start meshcentral, it will need some time to generate certs and install plugins.
+# This will take anywhere from a few seconds to a few minutes depending on the server's hardware
+# We will know it's ready once the last line of the systemd service stdout is 'MeshCentral HTTP server running on port.....'
+while ! [[ $CHECK_MESH_READY ]]; do
+  CHECK_MESH_READY=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
+  echo -ne "${GREEN}Mesh Central not ready yet...${NC}\n"
+  sleep 3
+done
 
 print_green 'Generating meshcentral login token key'
 
@@ -634,15 +705,24 @@ echo "${meshtoken}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settin
 print_green 'Creating meshcentral account and group'
 
 sudo systemctl stop meshcentral
+sleep 3
 cd /meshcentral
 
 node node_modules/meshcentral --createaccount ${meshusername} --pass ${MESHPASSWD} --email ${letsemail}
+sleep 2
 node node_modules/meshcentral --adminaccount ${meshusername}
 
 sudo systemctl start meshcentral
 sleep 5
 
+while ! [[ $CHECK_MESH_READY2 ]]; do
+  CHECK_MESH_READY2=$(sudo journalctl -u meshcentral.service -b --no-pager | grep "MeshCentral HTTP server running on port")
+  echo -ne "${GREEN}Mesh Central not ready yet...${NC}\n"
+  sleep 3
+done
+
 node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} AddDeviceGroup --name TacticalRMM
+sleep 5
 MESHEXE=$(node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} GenerateInviteLink --group TacticalRMM --hours 8)
 
 cd /rmm/api/tacticalrmm
@@ -669,6 +749,15 @@ printf >&2 "${YELLOW}Download the meshagent 64 bit EXE from: ${GREEN}${MESHEXE}$
 printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${frontenddomain}${NC}\n\n"
 printf >&2 "${YELLOW}Django admin url: ${GREEN}https://${rmmdomain}/${ADMINURL}${NC}\n\n"
 printf >&2 "${YELLOW}MeshCentral password: ${GREEN}${MESHPASSWD}${NC}\n\n"
+
+if [ "$BEHIND_NAT" = true ]; then
+    echo -ne "${YELLOW}Read below if your router does NOT support Hairpin NAT${NC}\n\n"  
+    echo -ne "${GREEN}If you will be accessing the web interface of the RMM from the same LAN as this server,${NC}\n"
+    echo -ne "${GREEN}you'll need to make sure your 3 subdomains resolve to ${IPV4}${NC}\n"
+    echo -ne "${GREEN}This also applies to any agents that will be on the same local network as the rmm.${NC}\n"
+    echo -ne "${GREEN}You'll also need to setup port forwarding in your router on ports 80, 443, 4505 and 4506 tcp.${NC}\n\n"
+fi
+
 printf >&2 "${YELLOW}Please refer to the github README for next steps${NC}\n\n"
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"

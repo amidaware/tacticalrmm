@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 
 from .models import CoreSettings
 from .serializers import CoreSettingsSerializer
+from tacticalrmm.utils import notify_error
 
 
 class UploadMeshAgent(APIView):
@@ -47,3 +48,16 @@ def edit_settings(request):
 @api_view()
 def version(request):
     return Response(settings.APP_VER)
+
+
+@api_view()
+def email_test(request):
+    core = CoreSettings.objects.first()
+    r = core.send_mail(
+        subject="Test from Tactical RMM", body="This is a test message", test=True
+    )
+
+    if not isinstance(r, bool) and isinstance(r, str):
+        return notify_error(r)
+
+    return Response("Email Test OK!")

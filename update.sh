@@ -1,9 +1,43 @@
 #!/bin/bash
 
+SCRIPT_VERSION="6"
+SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
+curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
+NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
+
+if [ "${SCRIPT_VERSION}" \< "${NEW_VER}" ]; then
+    printf >&2 "${YELLOW}A newer version of this update script is available.${NC}\n"
+    printf >&2 "${YELLOW}Please download the latest version from ${GREEN}${SCRIPT_URL}${YELLOW} and re-run.${NC}\n"
+    rm -f $TMP_FILE
+    exit 1
+fi
+
+rm -f $TMP_FILE
+
+if [ $EUID -eq 0 ]; then
+  echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
+  exit 1
+fi
+
 for i in celery celerybeat rmm nginx
 do
 sudo systemctl stop ${i}
 done
+
+
+sudo chown ${USER}:${USER} -R /rmm
+sudo chown ${USER}:${USER} /var/log/celery
+sudo chown ${USER}:${USER} -R /srv/salt/
+sudo chown ${USER}:www-data /srv/salt/scripts/userdefined
+sudo chown -R $USER:$GROUP /home/${USER}/.npm
+sudo chown -R $USER:$GROUP /home/${USER}/.config
+sudo chown -R $USER:$GROUP /home/${USER}/.cache
+sudo chmod 750 /srv/salt/scripts/userdefined
 
 cd /rmm
 git fetch origin develop
@@ -17,11 +51,14 @@ python3 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir setuptools==47.3.2 wheel==0.34.2
+pip install --no-cache-dir setuptools==49.6.0 wheel==0.35.1
 pip install --no-cache-dir -r requirements.txt
+python manage.py pre_update_tasks
 python manage.py migrate
 python manage.py delete_tokens
 python manage.py fix_salt_key
+python manage.py collectstatic --no-input
+python manage.py post_update_tasks
 deactivate
 
 
@@ -40,8 +77,11 @@ sudo systemctl start ${i}
 done
 
 sudo systemctl stop meshcentral
+sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
 rm -rf node_modules/
 npm install meshcentral@latest
 sudo systemctl start meshcentral
 sleep 10
+
+printf >&2 "${GREEN}Update finished!${NC}\n"

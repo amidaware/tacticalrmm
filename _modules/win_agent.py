@@ -23,18 +23,44 @@ TEMP_DIR = os.path.join("C:\\Windows", "Temp")
 
 
 def get_services():
-    return [svc.as_dict() for svc in psutil.win_service_iter()]
+    # see https://github.com/wh1te909/tacticalrmm/issues/38
+    # for why I am manually implementing the svc.as_dict() method of psutil
+    ret = []
+    for svc in psutil.win_service_iter():
+        i = {}
+        try:
+            i["display_name"] = svc.display_name()
+            i["binpath"] = svc.binpath()
+            i["username"] = svc.username()
+            i["start_type"] = svc.start_type()
+            i["status"] = svc.status()
+            i["pid"] = svc.pid()
+            i["name"] = svc.name()
+            i["description"] = svc.description()
+        except Exception:
+            continue
+        else:
+            ret.append(i)
+
+    return ret
 
 
-def run_python_script(filename, timeout):
+def run_python_script(filename, timeout, script_type="userdefined"):
     python_bin = os.path.join("c:\\salt\\bin", "python.exe")
     file_path = os.path.join("c:\\windows\\temp", filename)
-    __salt__["cp.get_file"](
-        "salt://scripts/userdefined/{0}".format(filename), file_path
-    )
-    return __salt__["cmd.run_all"](
-        "{0} {1}".format(python_bin, file_path), timeout=timeout
-    )
+
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except:
+            pass
+
+    if script_type == "userdefined":
+        __salt__["cp.get_file"](f"salt://scripts/userdefined/{filename}", file_path)
+    else:
+        __salt__["cp.get_file"](f"salt://scripts/{filename}", file_path)
+
+    return __salt__["cmd.run_all"](f"{python_bin} {file_path}", timeout=timeout)
 
 
 def uninstall_agent():
@@ -44,8 +70,20 @@ def uninstall_agent():
 
 
 def update_salt():
-    __salt__["cmd.run_bg"]([TAC_RMM, "-m", "updatesalt"])
-    return "ok"
+    from subprocess import Popen, PIPE
+
+    CREATE_NEW_PROCESS_GROUP = 0x00000200
+    DETACHED_PROCESS = 0x00000008
+    cmd = [TAC_RMM, "-m", "updatesalt"]
+    p = Popen(
+        cmd,
+        stdin=PIPE,
+        stdout=PIPE,
+        stderr=PIPE,
+        close_fds=True,
+        creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
+    )
+    return p.pid
 
 
 def run_manual_checks():
@@ -63,7 +101,22 @@ def install_updates():
 
 
 def agent_update(version, url):
-    sleep(random.randint(1, 90))
+    # make sure another instance of the update is not running
+    # this function spawns 2 instances of itself so if more than 2 running,
+    # don't continue as an update is already running
+    count = 0
+    for p in psutil.process_iter():
+        try:
+            with p.oneshot():
+                if "win_agent.agent_update" in p.cmdline():
+                    count += 1
+        except Exception:
+            continue
+
+    if count > 2:
+        return "already running"
+
+    sleep(random.randint(1, 60))  # don't flood the rmm
     try:
         r = requests.get(url, stream=True, timeout=600)
     except Exception:
@@ -87,7 +140,7 @@ def agent_update(version, url):
 
     sleep(10)
     r = subprocess.run([exe, "/VERYSILENT", "/SUPPRESSMSGBOXES"], timeout=300)
-    sleep(20)
+    sleep(30)
 
     for svc in services:
         subprocess.run([NSSM, "start", svc], timeout=120)

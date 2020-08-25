@@ -5,7 +5,7 @@ from statistics import mean
 
 from django.db import models
 from django.conf import settings
-from django.contrib.postgres.fields import ArrayField, JSONField
+from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 from core.models import CoreSettings
@@ -86,8 +86,8 @@ class Check(models.Model):
     fail_count = models.PositiveIntegerField(default=0)
     email_sent = models.DateTimeField(null=True, blank=True)
     text_sent = models.DateTimeField(null=True, blank=True)
-    outage_history = JSONField(null=True, blank=True)  # store
-    extra_details = JSONField(null=True, blank=True)
+    outage_history = models.JSONField(null=True, blank=True)  # store
+    extra_details = models.JSONField(null=True, blank=True)
 
     # check specific fields
 
@@ -130,6 +130,7 @@ class Check(models.Model):
         max_length=255, choices=EVT_LOG_NAME_CHOICES, null=True, blank=True
     )
     event_id = models.IntegerField(null=True, blank=True)
+    event_id_is_wildcard = models.BooleanField(default=False)
     event_type = models.CharField(
         max_length=255, choices=EVT_LOG_TYPE_CHOICES, null=True, blank=True
     )
@@ -295,7 +296,10 @@ class Check(models.Model):
 
         CORE = CoreSettings.objects.first()
 
-        subject = f"{self} Failed"
+        if self.agent:
+            subject = f"{self.agent.client}, {self.agent.site}, {self} Failed"
+        else:
+            subject = f"{self} Failed"
 
         if self.check_type == "diskspace":
             percent_used = self.agent.disks[self.disk]["percent"]

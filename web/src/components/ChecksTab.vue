@@ -292,7 +292,7 @@ export default {
     EventLogCheck,
     ScriptCheck,
     ScriptOutput,
-    EventLogCheckOutput
+    EventLogCheckOutput,
   },
   mixins: [mixins],
   data() {
@@ -315,25 +315,29 @@ export default {
         { name: "emailalert", field: "email_alert", align: "left" },
         { name: "policystatus", align: "left" },
         { name: "statusicon", align: "left" },
-        { name: "desc", label: "Description", align: "left" },
-        { name: "status", label: "Status", field: "status", align: "left" },
+        { name: "desc", label: "Description", align: "left", sortable: true },
+        { name: "status", label: "Status", field: "status", align: "left", sortable: true },
         {
           name: "moreinfo",
           label: "More Info",
           field: "more_info",
-          align: "left"
+          align: "left",
+          sortable: true,
         },
         {
           name: "datetime",
           label: "Date / Time",
           field: "last_run",
-          align: "left"
+          align: "left",
+          sortable: true,
         },
-        { name: "assignedtasks", label: "Assigned Tasks", field: "assigned_task", align: "left" }
+        { name: "assignedtasks", label: "Assigned Tasks", field: "assigned_task", align: "left", sortable: true },
       ],
       pagination: {
-        rowsPerPage: 9999
-      }
+        rowsPerPage: 9999,
+        sortBy: "status",
+        descending: false,
+      },
     };
   },
   methods: {
@@ -385,7 +389,7 @@ export default {
         this.$q.notify({
           color: color,
           icon: "fas fa-check-circle",
-          message: `${alert_type} alerts ${act}`
+          message: `${alert_type} alerts ${act}`,
         });
       });
     },
@@ -398,7 +402,7 @@ export default {
         title: desc,
         style: "width: 50vw; max-width: 60vw",
         message: `<pre>${output}</pre>`,
-        html: true
+        html: true,
       });
     },
     scriptMoreInfo(props) {
@@ -416,7 +420,7 @@ export default {
           message: `Delete ${desc}`,
           cancel: true,
           ok: { label: "Delete", color: "negative" },
-          persistent: true
+          persistent: true,
         })
         .onOk(() => {
           axios
@@ -428,11 +432,11 @@ export default {
             })
             .catch(e => this.notifyError(e.response.data));
         });
-    }
+    },
   },
   computed: {
-    ...mapGetters(["selectedAgentPk", "checks"])
-  }
+    ...mapGetters(["selectedAgentPk", "checks"]),
+  },
 };
 </script>
 

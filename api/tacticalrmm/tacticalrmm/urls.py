@@ -22,4 +22,6 @@ urlpatterns = [
     path("tasks/", include("autotasks.urls")),
     path("logs/", include("logs.urls")),
     path("scripts/", include("scripts.urls")),
+    path("alerts/", include("alerts.urls")),
+    path("accounts/", include("accounts.urls"))
 ]

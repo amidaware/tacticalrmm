@@ -224,7 +224,7 @@ export default {
     MemCheck,
     WinSvcCheck,
     ScriptCheck,
-    EventLogCheck
+    EventLogCheck,
   },
   mixins: [mixins],
   data() {
@@ -237,13 +237,13 @@ export default {
       columns: [
         { name: "smsalert", field: "text_alert", align: "left" },
         { name: "emailalert", field: "email_alert", align: "left" },
-        { name: "desc", label: "Description", align: "left" },
+        { name: "desc", label: "Description", align: "left", sortable: true },
         { name: "status", label: "Status", field: "status", align: "left" },
-        { name: "assigned_task", label: "Assigned Task", field: "assigned_task", align: "left" }
+        { name: "assigned_task", label: "Assigned Task", field: "assigned_task", align: "left", sortable: true },
       ],
       pagination: {
-        rowsPerPage: 9999
-      }
+        rowsPerPage: 9999,
+      },
     };
   },
   methods: {
@@ -262,7 +262,7 @@ export default {
         this.$q.notify({
           color: color,
           icon: "fas fa-check-circle",
-          message: `${alert_type} alerts ${act}`
+          message: `${alert_type} alerts ${act}`,
         });
       });
     },
@@ -312,7 +312,7 @@ export default {
         .dialog({
           title: `Delete ${check.check_type} check?`,
           ok: { label: "Delete", color: "negative" },
-          cancel: true
+          cancel: true,
         })
         .onOk(() => {
           this.$store
@@ -331,14 +331,14 @@ export default {
     closePolicyCheckStatusModal() {
       this.showPolicyCheckStatus = false;
       this.statusCheck = {};
-    }
+    },
   },
   computed: {
     ...mapGetters({
       checks: "automation/checks",
-      selectedPolicy: "automation/selectedPolicyPk"
-    })
-  }
+      selectedPolicy: "automation/selectedPolicyPk",
+    }),
+  },
 };
 </script>
 

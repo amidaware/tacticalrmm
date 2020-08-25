@@ -17,23 +17,25 @@ class Policy(models.Model):
         explicit_clients = self.clients.all()
         explicit_sites = self.sites.all()
 
-        filtered_sites_ids = list()
-        client_ids = list()
+        filtered_agents_pks = list()
 
         for site in explicit_sites:
             if site.client not in explicit_clients:
-                filtered_sites_ids.append(site.site)
+                filtered_agents_pks.append(
+                    Agent.objects.filter(client=site.client.client, site=site.site)
+                        .values_list('pk', flat=True)
+                )
 
         for client in explicit_clients:
-            client_ids.append(client.client)
-            for site in client.sites.all():
-                filtered_sites_ids.append(site.site)
+            filtered_agents_pks.append(
+                Agent.objects.filter(client=client.client).values_list('pk', flat=True)
+            )
 
         return Agent.objects.filter(
-            models.Q(pk__in=explicit_agents.only("pk"))
-            | models.Q(site__in=filtered_sites_ids)
-            | models.Q(client__in=client_ids)
-        ).distinct()
+            models.Q(pk__in=filtered_agents_pks)
+            | models.Q(pk__in=explicit_agents.only("pk"))
+        )
+        
 
     @staticmethod
     def cascade_policy_tasks(agent):

@@ -256,6 +256,12 @@ def hello(request):
             # TODO
             pass
 
+    recovery = agent.recoveryactions.filter(last_run=None).last()
+    if recovery is not None:
+        recovery.last_run = djangotime.now()
+        recovery.save(update_fields=["last_run"])
+        return Response(recovery.send())
+
     return Response("ok")
 
 
@@ -318,4 +324,40 @@ class TaskRunner(APIView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save(last_run=djangotime.now())
+        return Response("ok")
+
+
+class SaltInfo(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        agent = get_object_or_404(Agent, pk=pk)
+        ret = {
+            "latestVer": settings.LATEST_SALT_VER,
+            "currentVer": agent.salt_ver,
+            "salt_id": agent.salt_id,
+        }
+        return Response(ret)
+
+    def patch(self, request, pk):
+        agent = get_object_or_404(Agent, pk=pk)
+        agent.salt_ver = request.data["ver"]
+        agent.salt_update_pending = False
+        agent.save(update_fields=["salt_ver", "salt_update_pending"])
+        return Response("ok")
+
+
+class MeshInfo(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        agent = get_object_or_404(Agent, pk=pk)
+        return Response(agent.mesh_node_id)
+
+    def patch(self, request, pk):
+        agent = get_object_or_404(Agent, pk=pk)
+        agent.mesh_node_id = request.data["nodeidhex"]
+        agent.save(update_fields=["mesh_node_id"])
         return Response("ok")

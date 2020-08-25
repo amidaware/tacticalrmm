@@ -12,6 +12,7 @@
     "@quasar/extras": "^1.9.0",
     "axios": "^0.19.2",
     "dotenv": "^8.2.0",
+    "qrcode.vue": "^1.7.0",
     "quasar": "^1.12.13"
   },
   "devDependencies": {

@@ -1,3 +1,5 @@
+import string
+
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 
@@ -53,16 +55,24 @@ def refresh_installed(request, pk):
     elif r == "error":
         return notify_error("Something went wrong")
 
+    printable = set(string.printable)
+
     try:
-        software = [{"name": k, "version": v} for k, v in r.items()]
+        software = [
+            {
+                "name": "".join(filter(lambda x: x in printable, k)),
+                "version": "".join(filter(lambda x: x in printable, v)),
+            }
+            for k, v in r.items()
+        ]
     except Exception:
         return notify_error("Something went wrong")
 
     if not InstalledSoftware.objects.filter(agent=agent).exists():
         InstalledSoftware(agent=agent, software=software).save()
     else:
-        current = InstalledSoftware.objects.filter(agent=agent).get()
-        current.software = software
-        current.save(update_fields=["software"])
+        s = agent.installedsoftware_set.get()
+        s.software = software
+        s.save(update_fields=["software"])
 
     return Response("ok")

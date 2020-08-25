@@ -90,39 +90,57 @@
                 <div class="text-subtitle2">SMTP Settings</div>
                 <hr />
                 <q-card-section class="row">
-                  <div class="col-2">From Email:</div>
+                  <div class="col-2">From:</div>
                   <div class="col-4"></div>
                   <q-input
                     outlined
                     dense
                     v-model="settings.smtp_from_email"
-                    class="col-6"
+                    class="col-6 q-pa-none"
                     :rules="[val => isValidEmail(val) || 'Invalid email']"
                   />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Host:</div>
                   <div class="col-4"></div>
-                  <q-input outlined dense v-model="settings.smtp_host" class="col-6" />
+                  <q-input outlined dense v-model="settings.smtp_host" class="col-6 q-pa-none" />
                 </q-card-section>
                 <q-card-section class="row">
+                  <div class="col-2">Port:</div>
+                  <div class="col-4"></div>
+                  <q-input
+                    dense
+                    v-model.number="settings.smtp_port"
+                    type="number"
+                    filled
+                    class="q-pa-none"
+                    :rules="[ val => val > 0 && val <= 65535 || 'Invalid Port']"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <q-checkbox
+                    v-model="settings.smtp_requires_auth"
+                    label="My Server Requires Authentication"
+                    class="q-pa-none"
+                  />
+                </q-card-section>
+                <q-card-section class="row" v-show="settings.smtp_requires_auth">
                   <div class="col-2">Username:</div>
                   <div class="col-4"></div>
                   <q-input
                     outlined
                     dense
                     v-model="settings.smtp_host_user"
-                    class="col-6"
-                    :rules="[val => isValidEmail(val) || 'Invalid email']"
+                    class="col-6 q-pa-none"
                   />
                 </q-card-section>
-                <q-card-section class="row">
+                <q-card-section class="row" v-show="settings.smtp_requires_auth">
                   <div class="col-2">Password:</div>
                   <div class="col-4"></div>
                   <q-input
                     outlined
                     dense
-                    class="col-6"
+                    class="col-6 q-pa-none"
                     v-model="settings.smtp_host_password"
                     :type="isPwd ? 'password' : 'text'"
                   >
@@ -134,17 +152,6 @@
                       />
                     </template>
                   </q-input>
-                </q-card-section>
-                <q-card-section class="row">
-                  <div class="col-2">Port:</div>
-                  <div class="col-4"></div>
-                  <q-input
-                    dense
-                    v-model.number="settings.smtp_port"
-                    type="number"
-                    filled
-                    :rules="[ val => val > 0 && val <= 65535 || 'Invalid Port']"
-                  />
                 </q-card-section>
               </q-tab-panel>
               <!-- meshcentral -->
@@ -171,6 +178,14 @@
           </q-scroll-area>
           <q-card-section class="row items-center">
             <q-btn label="Save" color="primary" type="submit" />
+            <q-btn
+              v-show="tab === 'alerts'"
+              label="Save and Test"
+              color="primary"
+              type="submit"
+              class="q-ml-md"
+              @click="emailTest = true"
+            />
           </q-card-section>
         </q-form>
       </template>
@@ -195,13 +210,14 @@ export default {
       splitterModel: 15,
       isPwd: true,
       allTimezones: [],
+      emailTest: false,
       thumbStyle: {
         right: "2px",
         borderRadius: "5px",
         backgroundColor: "#027be3",
         width: "5px",
-        opacity: 0.75
-      }
+        opacity: 0.75,
+      },
     };
   },
   methods: {
@@ -219,11 +235,11 @@ export default {
           prompt: {
             model: "",
             isValid: val => this.isValidEmail(val),
-            type: "email"
+            type: "email",
           },
           cancel: true,
           ok: { label: "Add", color: "primary" },
-          persistent: false
+          persistent: false,
         })
         .onOk(data => {
           this.settings.email_alert_recipients.push(data);
@@ -233,27 +249,38 @@ export default {
       const removed = this.settings.email_alert_recipients.filter(k => k !== email);
       this.settings.email_alert_recipients = removed;
     },
-    isValidEmail(val) {
-      const email = /^(?=[a-zA-Z0-9@._%+-]{6,254}$)[a-zA-Z0-9._%+-]{1,64}@(?:[a-zA-Z0-9-]{1,63}\.){1,8}[a-zA-Z]{2,63}$/;
-      return email.test(val);
-    },
     editSettings() {
       this.$q.loading.show();
       axios
         .patch("/core/editsettings/", this.settings)
         .then(r => {
           this.$q.loading.hide();
-          this.notifySuccess("Settings were edited!");
-          this.$emit("close");
+          if (this.emailTest) {
+            this.$q.loading.show({ message: "Sending test email..." });
+            this.$axios
+              .get("/core/emailtest/")
+              .then(r => {
+                this.$q.loading.hide();
+                this.getCoreSettings();
+                this.notifySuccess(r.data, 3000);
+              })
+              .catch(e => {
+                this.$q.loading.hide();
+                this.notifyError(e.response.data, 7000);
+              });
+          } else {
+            this.$emit("close");
+            this.notifySuccess("Settings were edited!");
+          }
         })
         .catch(() => {
           this.$q.loading.hide();
           this.notifyError("You have some invalid input. Please check all fields");
         });
-    }
+    },
   },
   created() {
     this.getCoreSettings();
-  }
+  },
 };
 </script>

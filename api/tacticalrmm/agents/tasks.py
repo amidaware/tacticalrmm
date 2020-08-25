@@ -2,6 +2,7 @@ import os
 import subprocess
 from loguru import logger
 from time import sleep
+import random
 import requests
 from packaging import version as pyver
 
@@ -150,6 +151,7 @@ def uninstall_agent_task(salt_id):
 
 @app.task
 def agent_outage_email_task(pk):
+    sleep(random.randint(1, 15))
     outage = AgentOutage.objects.get(pk=pk)
     outage.send_outage_email()
     outage.outage_email_sent = True
@@ -158,6 +160,7 @@ def agent_outage_email_task(pk):
 
 @app.task
 def agent_recovery_email_task(pk):
+    sleep(random.randint(1, 15))
     outage = AgentOutage.objects.get(pk=pk)
     outage.send_recovery_email()
     outage.recovery_email_sent = True

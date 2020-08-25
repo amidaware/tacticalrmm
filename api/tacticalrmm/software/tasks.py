@@ -1,3 +1,4 @@
+import string
 from time import sleep
 from loguru import logger
 from tacticalrmm.celery import app
@@ -80,21 +81,29 @@ def get_installed_software(pk):
     r = agent.salt_api_cmd(timeout=30, func="pkg.list_pkgs")
 
     if r == "timeout" or r == "error":
-        logger.error(f"Unable to get installed software on {agent.salt_id}")
+        logger.error(f"Timed out trying to get installed software on {agent.salt_id}")
         return
 
+    printable = set(string.printable)
+
     try:
-        software = [{"name": k, "version": v} for k, v in r.items()]
-    except Exception:
-        logger.error(f"Unable to get installed software on {agent.salt_id}")
+        software = [
+            {
+                "name": "".join(filter(lambda x: x in printable, k)),
+                "version": "".join(filter(lambda x: x in printable, v)),
+            }
+            for k, v in r.items()
+        ]
+    except Exception as e:
+        logger.error(f"Unable to get installed software on {agent.salt_id}: {e}")
         return
 
     if not InstalledSoftware.objects.filter(agent=agent).exists():
         InstalledSoftware(agent=agent, software=software).save()
     else:
-        current = InstalledSoftware.objects.filter(agent=agent).get()
-        current.software = software
-        current.save(update_fields=["software"])
+        s = agent.installedsoftware_set.get()
+        s.software = software
+        s.save(update_fields=["software"])
 
     return "ok"
 

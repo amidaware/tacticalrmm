@@ -70,7 +70,7 @@ export default {
   data() {
     return {
       credentials: {},
-      prompt: false
+      prompt: false,
     };
   },
 
@@ -79,7 +79,11 @@ export default {
       axios
         .post("/checkcreds/", this.credentials)
         .then(r => {
-          this.prompt = true;
+          if (r.data === "totp not set") {
+            this.$router.push({ name: "TOTPSetup", params: { username: this.credentials.username } });
+          } else {
+            this.prompt = true;
+          }
         })
         .catch(() => {
           this.notifyError("Bad credentials");
@@ -97,11 +101,11 @@ export default {
           this.credentials = {};
           this.prompt = false;
         });
-    }
+    },
   },
   created() {
     this.$q.dark.set(true);
-  }
+  },
 };
 </script>
 

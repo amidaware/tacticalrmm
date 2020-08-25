@@ -13,6 +13,8 @@ Demo database resets every hour. Alot of features are disabled for obvious reaso
 
 *Tactical RMM is currently in alpha and subject to breaking changes. Use in production at your own risk.*
 
+### [Discord Chat](https://discord.gg/upGTkWp)
+
 ## Features
 
 - Teamviewer-like remote desktop control

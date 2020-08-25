@@ -12,6 +12,9 @@ class Policy(models.Model):
     def __str__(self):
         return self.name
 
+    def related_agents(self):
+        return self.related_server_agents() | self.related_workstation_agents()
+
     def related_server_agents(self):
         explicit_agents = self.agents.filter(monitoring_type="server")
         explicit_clients = self.server_clients.all()

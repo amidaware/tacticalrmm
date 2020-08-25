@@ -28,7 +28,7 @@
           </template>
         </q-select>
       </q-card-section>
-      <q-card-section>
+      <q-card-section v-if="type !== 'agent'">
         <q-select
           v-model="selectedWorkstationPolicy"
           :options="options"
@@ -116,7 +116,13 @@ export default {
       let data = {};
       data.pk = this.pk;
       data.type = this.type;
-      data.policy = this.selected === null ? 0 : this.selected.value;
+
+      if (this.type !== "agent") {
+        data.server_policy = this.selectedServerPolicy === null ? 0 : this.selectedServerPolicy.value;
+        data.workstation_policy = this.selectedWorkstationPolicy === null ? 0 : this.selectedWorkstationPolicy.value;
+      } else {
+        data.policy = this.selectedAgentPolicy === null ? 0 : this.selectedAgentPolicy.value;
+      }
 
       this.$store
         .dispatch("automation/updateRelatedPolicies", data)
@@ -148,22 +154,28 @@ export default {
       this.$store
         .dispatch("automation/getRelatedPolicies", { pk, type })
         .then(r => {
-          if (r.data.id !== undefined) {
-            if (type === "agent") {
-              this.selectedAgentPolicy = {
-                label: r.data.name,
-                value: r.data.id,
-              };
+          if (type === "agent") {
+            if (r.data.policy !== null) {
+              if (r.data.policy.id !== null) {
+                this.selectedAgentPolicy = {
+                  label: r.data.policy.name,
+                  value: r.data.policy.id,
+                };
+              }
             }
+          }
 
-            if (type !== "agent") {
+          if (type !== "agent") {
+            if (r.data.server_policy !== null) {
               if (r.data.server_policy.id !== undefined) {
                 this.selectedServerPolicy = {
                   label: r.data.server_policy.name,
                   value: r.data.server_policy.id,
                 };
               }
+            }
 
+            if (r.data.workstation_policy !== null) {
               if (r.data.workstation_policy.id !== undefined) {
                 this.selectedWorkstationPolicy = {
                   label: r.data.workstation_policy.name,

@@ -64,7 +64,7 @@ export default {
   name: "PolicyOverview",
   components: {
     PolicyAutomatedTasksTab,
-    PolicyChecksTab
+    PolicyChecksTab,
   },
   mixins: [mixins],
   data() {
@@ -73,7 +73,7 @@ export default {
       selected: "",
       selectedPolicy: {},
       selectedTab: "checks",
-      clientSiteTree: []
+      clientSiteTree: [],
     };
   },
   methods: {
@@ -135,20 +135,35 @@ export default {
 
         unique_id--;
 
-        // Add any policies assigned to client
-
-        if (data[client].policy !== null) {
+        // Add any server policies assigned to client
+        if (data[client].server_policy !== null) {
           let disabled = "";
 
           // Indicate if the policy is active or not
-          if (!data[client].policy.active) {
+          if (!data[client].server_policy.active) {
             disabled = " (disabled)";
           }
 
           client_temp["children"].push({
-            label: data[client].policy.name + disabled,
+            label: data[client].server_policy.name + " (Servers)" + disabled,
             icon: "policy",
-            id: data[client].policy.id
+            id: data[client].server_policy.id,
+          });
+        }
+
+        // Add any workstation policies assigned to client
+        if (data[client].workstation_policy !== null) {
+          let disabled = "";
+
+          // Indicate if the policy is active or not
+          if (!data[client].workstation_policy.active) {
+            disabled = " (disabled)";
+          }
+
+          client_temp["children"].push({
+            label: data[client].workstation_policy.name + " (Workstations)" + disabled,
+            icon: "policy",
+            id: data[client].workstation_policy.id,
           });
         }
 
@@ -162,20 +177,37 @@ export default {
 
           unique_id--;
 
-          // Add any policies assigned to site
-          if (data[client].sites[site].policy !== null) {
+          // Add any server policies assigned to site
+          if (data[client].sites[site].server_policy !== null) {
             site_temp["children"] = [];
 
             // Indicate if the policy is active or not
             let disabled = "";
-            if (!data[client].sites[site].policy.active) {
+            if (!data[client].sites[site].server_policy.active) {
               disabled = " (disabled)";
             }
 
             site_temp["children"].push({
-              label: data[client].sites[site].policy.name + disabled,
+              label: data[client].sites[site].server_policy.name + " (Servers)" + disabled,
               icon: "policy",
-              id: data[client].sites[site].policy.id
+              id: data[client].sites[site].server_policy.id,
+            });
+          }
+
+          // Add any server policies assigned to site
+          if (data[client].sites[site].workstation_policy !== null) {
+            site_temp["children"] = [];
+
+            // Indicate if the policy is active or not
+            let disabled = "";
+            if (!data[client].sites[site].workstation_policy.active) {
+              disabled = " (disabled)";
+            }
+
+            site_temp["children"].push({
+              label: data[client].sites[site].workstation_policy.name + " (Workstations)" + disabled,
+              icon: "policy",
+              id: data[client].sites[site].workstation_policy.id,
             });
           }
 
@@ -188,10 +220,10 @@ export default {
       }
 
       this.clientSiteTree = result;
-    }
+    },
   },
   mounted() {
     this.getPolicyTree();
-  }
+  },
 };
 </script>

@@ -12,30 +12,63 @@ class Policy(models.Model):
     def __str__(self):
         return self.name
 
-    def related_agents(self):
-        explicit_agents = self.agents.all()
-        explicit_clients = self.clients.all()
-        explicit_sites = self.sites.all()
+    def related_server_agents(self):
+        explicit_agents = self.agents.filter(monitoring_type="server")
+        explicit_clients = self.server_clients.all()
+        explicit_sites = self.server_sites.all()
 
         filtered_agents_pks = list()
 
         for site in explicit_sites:
             if site.client not in explicit_clients:
                 filtered_agents_pks.append(
-                    Agent.objects.filter(client=site.client.client, site=site.site)
-                        .values_list('pk', flat=True)
+                    Agent.objects.filter(
+                        client=site.client.client,
+                        site=site.site,
+                        monitoring_type="server",
+                    ).values_list("pk", flat=True)
                 )
 
         for client in explicit_clients:
             filtered_agents_pks.append(
-                Agent.objects.filter(client=client.client).values_list('pk', flat=True)
+                Agent.objects.filter(
+                    client=client.client, monitoring_type="server"
+                ).values_list("pk", flat=True)
             )
 
         return Agent.objects.filter(
             models.Q(pk__in=filtered_agents_pks)
             | models.Q(pk__in=explicit_agents.only("pk"))
         )
-        
+
+    def related_workstation_agents(self):
+        explicit_agents = self.agents.filter(monitoring_type="workstation")
+        explicit_clients = self.workstation_clients.all()
+        explicit_sites = self.workstation_sites.all()
+
+        filtered_agents_pks = list()
+
+        for site in explicit_sites:
+            if site.client not in explicit_clients:
+                filtered_agents_pks.append(
+                    Agent.objects.filter(
+                        client=site.client.client,
+                        site=site.site,
+                        monitoring_type="workstation",
+                    ).values_list("pk", flat=True)
+                )
+
+        for client in explicit_clients:
+            filtered_agents_pks.append(
+                Agent.objects.filter(
+                    client=client.client, monitoring_type="workstation"
+                ).values_list("pk", flat=True)
+            )
+
+        return Agent.objects.filter(
+            models.Q(pk__in=filtered_agents_pks)
+            | models.Q(pk__in=explicit_agents.only("pk"))
+        )
 
     @staticmethod
     def cascade_policy_tasks(agent):
@@ -47,9 +80,17 @@ class Policy(models.Model):
         client = Client.objects.get(client=agent.client)
         site = Site.objects.filter(client=client).get(site=agent.site)
 
-        client_policy = client.policy
-        site_policy = site.policy
+        client_policy = None
+        site_policy = None
         agent_policy = agent.policy
+
+        # Get the Client/Site policy based on if the agent is server or workstation
+        if agent.monitoring_type == "server":
+            client_policy = client.server_policy
+            site_policy = site.server_policy
+        else:
+            client_policy = client.workstation_policy
+            site_policy = site.workstation_policy
 
         if agent_policy and agent_policy.active:
             for task in agent_policy.autotasks.all():
@@ -74,13 +115,19 @@ class Policy(models.Model):
         ]
 
         # Get policies applied to agent and agent site and client
-        # Get policies applied to agent and agent site and client
         client = Client.objects.get(client=agent.client)
         site = Site.objects.filter(client=client).get(site=agent.site)
 
-        client_policy = client.policy
-        site_policy = site.policy
+        client_policy = None
+        site_policy = None
         agent_policy = agent.policy
+
+        if agent.monitoring_type == "server":
+            client_policy = client.server_policy
+            site_policy = site.server_policy
+        else:
+            client_policy = client.workstation_policy
+            site_policy = site.workstation_policy
 
         # Used to hold the policies that will be applied and the order in which they are applied
         # Enforced policies are applied first

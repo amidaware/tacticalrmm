@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="4"
+SCRIPT_VERSION="5"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
@@ -28,6 +28,14 @@ for i in celery celerybeat rmm nginx
 do
 sudo systemctl stop ${i}
 done
+
+sudo chown ${USER}:${USER} -R /rmm
+sudo chown ${USER}:${USER} /var/log/celery
+sudo chown ${USER}:${USER} -R /srv/salt/
+sudo chown ${USER}:www-data /srv/salt/scripts/userdefined
+sudo chown -R $USER:$GROUP /home/${USER}/.npm
+sudo chown -R $USER:$GROUP /home/${USER}/.config
+sudo chmod 750 /srv/salt/scripts/userdefined
 
 cd /rmm
 git fetch origin develop
@@ -67,6 +75,7 @@ sudo systemctl start ${i}
 done
 
 sudo systemctl stop meshcentral
+sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
 rm -rf node_modules/
 npm install meshcentral@latest

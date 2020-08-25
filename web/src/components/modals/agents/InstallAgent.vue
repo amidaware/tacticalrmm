@@ -138,8 +138,14 @@ export default {
       const release = this.github.filter(i => i.name === this.version)[0];
       const download = release.assets[0].browser_download_url;
       const exe = `${release.name}.exe`;
-      const clientStripped = this.client.replace(/\s/g, "").toLowerCase();
-      const siteStripped = this.site.replace(/\s/g, "").toLowerCase();
+      const clientStripped = this.client
+        .replace(/\s/g, "")
+        .toLowerCase()
+        .replace(/([^a-zA-Z]+)/g, "");
+      const siteStripped = this.site
+        .replace(/\s/g, "")
+        .toLowerCase()
+        .replace(/([^a-zA-Z]+)/g, "");
 
       const data = {
         installMethod: this.installMethod,
@@ -195,7 +201,7 @@ export default {
                 err = "Golang is not installed";
                 break;
               case 412:
-                err = "Golang build failed";
+                err = "Golang build failed. Check debug log for the error message";
                 break;
               default:
                 err = "Something went wrong";

@@ -127,4 +127,9 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		return
 	}
+
+	e := os.Remove(agentBinary)
+	if e != nil {
+		fmt.Println(e)
+	}
 }

@@ -321,11 +321,14 @@ def install_agent(request):
         ping = request.data["ping"]
         power = request.data["power"]
 
-        file_name = f"rmm-{''.join(client.client.lower().split())}-{''.join(site.site.lower().split())}.exe"
+        file_name = "rmm-installer.exe"
         exe = os.path.join(settings.EXE_DIR, file_name)
 
         if os.path.exists(exe):
-            os.remove(exe)
+            try:
+                os.remove(exe)
+            except Exception as e:
+                logger.error(str(e))
 
         cmd = [
             "env",
@@ -347,7 +350,26 @@ def install_agent(request):
             os.path.join(settings.BASE_DIR, "core/installer.go"),
         ]
 
-        r = subprocess.run(" ".join(cmd), shell=True)
+        build_error = False
+
+        try:
+            r = subprocess.run(" ".join(cmd), capture_output=True, shell=True)
+        except Exception as e:
+            build_error = True
+            logger.error(str(e))
+
+        if r.returncode != 0:
+            build_error = True
+            if r.stdout:
+                logger.error(r.stdout.decode("utf-8", errors="ignore"))
+
+            if r.stderr:
+                logger.error(r.stderr.decode("utf-8", errors="ignore"))
+
+            logger.error(f"Go build failed with return code {r.returncode}")
+
+        if build_error:
+            return Response("buildfailed", status=status.HTTP_412_PRECONDITION_FAILED)
 
         if settings.DEBUG:
             with open(exe, "rb") as f:
@@ -393,16 +415,21 @@ def install_agent(request):
         for i, j in replace_dict.items():
             text = text.replace(i, j)
 
-        file_name = os.path.join(settings.EXE_DIR, "rmm-installer.ps1")
-        if os.path.exists(file_name):
-            os.remove(file_name)
+        file_name = "rmm-installer.ps1"
+        ps1 = os.path.join(settings.EXE_DIR, file_name)
 
-        with open(file_name, "w") as f:
+        if os.path.exists(ps1):
+            try:
+                os.remove(ps1)
+            except Exception as e:
+                logger.error(str(e))
+
+        with open(ps1, "w") as f:
             f.write(text)
 
         if settings.DEBUG:
-            with open(file_name, "r") as f:
-                response = HttpResponse(f.read(), content_type="text/plain",)
+            with open(ps1, "r") as f:
+                response = HttpResponse(f.read(), content_type="text/plain")
                 response["Content-Disposition"] = f"inline; filename={file_name}"
                 return response
         else:
@@ -410,8 +437,6 @@ def install_agent(request):
             response["Content-Disposition"] = f"attachment; filename={file_name}"
             response["X-Accel-Redirect"] = f"/private/exe/{file_name}"
             return response
-
-        return Response(text)
 
 
 @api_view(["POST"])

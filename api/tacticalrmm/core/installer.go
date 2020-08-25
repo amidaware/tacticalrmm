@@ -82,6 +82,7 @@ func main() {
 	tacrmm := "C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"
 
 	cmdArgs := []string{
+		"/C", tacrmm,
 		"-m", "install", "--api", Api, "--client-id",
 		Client, "--site-id", Site, "--agent-type", Atype,
 		"--power", Power, "--rdp", Rdp, "--ping", Ping,
@@ -101,7 +102,7 @@ func main() {
 	}
 
 	fmt.Println("Installation starting.")
-	cmd := exec.Command(tacrmm, cmdArgs...)
+	cmd := exec.Command("cmd.exe", cmdArgs...)
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {

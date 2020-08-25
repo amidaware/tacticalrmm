@@ -27,7 +27,7 @@
       <q-tab-panels v-model="tab" :animated="false">
         <q-tab-panel name="clients">
           <q-list separator padding>
-            <q-item :key="item.id" v-for="item in related.server_clients">
+            <q-item :key="item.id+'servers'" v-for="item in related.server_clients">
               <q-item-section>
                 <q-item-label>{{ item.client }}</q-item-label>
               </q-item-section>
@@ -37,7 +37,7 @@
                 </q-item-label>
               </q-item-section>
             </q-item>
-            <q-item :key="item.id" v-for="item in related.workstation_clients">
+            <q-item :key="item.id+'workstations'" v-for="item in related.workstation_clients">
               <q-item-section>
                 <q-item-label>{{ item.client }}</q-item-label>
               </q-item-section>
@@ -52,7 +52,7 @@
 
         <q-tab-panel name="sites">
           <q-list separator padding>
-            <q-item :key="item.id" v-for="item in related.server_sites">
+            <q-item :key="item.id+'servers'" v-for="item in related.server_sites">
               <q-item-section>
                 <q-item-label>{{ item.site }}</q-item-label>
                 <q-item-label caption>{{ item.client_name }}</q-item-label>
@@ -63,7 +63,7 @@
                 </q-item-label>
               </q-item-section>
             </q-item>
-            <q-item :key="item.id" v-for="item in related.workstation_sites">
+            <q-item :key="item.id+'workstations'" v-for="item in related.workstation_sites">
               <q-item-section>
                 <q-item-label>{{ item.site }}</q-item-label>
                 <q-item-label caption>{{ item.client_name }}</q-item-label>

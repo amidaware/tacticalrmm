@@ -1,5 +1,7 @@
 import os
+import shutil
 import subprocess
+import tempfile
 from time import sleep
 
 from django.core.management.base import BaseCommand
@@ -81,3 +83,21 @@ class Command(BaseCommand):
             self.stdout.write("\n")
             self.stdout.write(self.style.ERROR("*" * 100))
             input("Press Enter to continue...")
+
+        # install go
+        if not os.path.exists("/usr/local/rmmgo/"):
+            self.stdout.write(self.style.SUCCESS("Installing golang"))
+            subprocess.run("sudo mkdir -p /usr/local/rmmgo", shell=True)
+            tmpdir = tempfile.mkdtemp()
+            r = subprocess.run(
+                f"wget https://golang.org/dl/go1.15.linux-amd64.tar.gz -P {tmpdir}",
+                shell=True,
+            )
+
+            gotar = os.path.join(tmpdir, "go1.15.linux-amd64.tar.gz")
+
+            subprocess.run(f"tar -xzf {gotar} -C {tmpdir}", shell=True)
+
+            gofolder = os.path.join(tmpdir, "go")
+            subprocess.run(f"sudo mv {gofolder} /usr/local/rmmgo/", shell=True)
+            shutil.rmtree(tmpdir)

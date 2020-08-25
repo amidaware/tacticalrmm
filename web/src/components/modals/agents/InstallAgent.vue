@@ -182,7 +182,7 @@ export default {
       } else if (this.installMethod === "exe") {
         this.$q.loading.show({ message: "Generating executable..." });
 
-        const fileName = `rmm-${clientStripped}-${siteStripped}.exe`;
+        const fileName = `rmm-${clientStripped}-${siteStripped}-${this.agenttype}.exe`;
         this.$axios
           .post("/agents/installagent/", data, { responseType: "blob" })
           .then(r => {
@@ -210,7 +210,7 @@ export default {
             this.notifyError(err, 4000);
           });
       } else if (this.installMethod === "powershell") {
-        const psName = `rmm-${clientStripped}-${siteStripped}.ps1`;
+        const psName = `rmm-${clientStripped}-${siteStripped}-${this.agenttype}.ps1`;
         this.$axios
           .post("/agents/installagent/", data, { responseType: "blob" })
           .then(({ data }) => {

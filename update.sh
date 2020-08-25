@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="5"
+SCRIPT_VERSION="6"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
@@ -29,12 +29,14 @@ do
 sudo systemctl stop ${i}
 done
 
+
 sudo chown ${USER}:${USER} -R /rmm
 sudo chown ${USER}:${USER} /var/log/celery
 sudo chown ${USER}:${USER} -R /srv/salt/
 sudo chown ${USER}:www-data /srv/salt/scripts/userdefined
 sudo chown -R $USER:$GROUP /home/${USER}/.npm
 sudo chown -R $USER:$GROUP /home/${USER}/.config
+sudo chown -R $USER:$GROUP /home/${USER}/.cache
 sudo chmod 750 /srv/salt/scripts/userdefined
 
 cd /rmm

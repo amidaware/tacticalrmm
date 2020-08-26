@@ -83,7 +83,9 @@ class CheckRunnerGetSerializer(serializers.ModelSerializer):
 
     def get_assigned_task(self, obj):
         if obj.assignedtask.exists():
-            task = obj.assignedtask.get()
+            # this will not break agents on version 0.10.2 or lower
+            # newer agents once released will properly handle multiple tasks assigned to a check
+            task = obj.assignedtask.first()
             return AssignedTaskCheckRunnerField(task).data
 
     class Meta:

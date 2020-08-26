@@ -66,7 +66,7 @@
       <q-card-section class="row">
         <div class="col-2">Active:</div>
         <div class="col-10">
-          <q-toggle v-model="is_active" color="green" />
+          <q-toggle v-model="is_active" color="green" :disable="username === logged_in_user" />
         </div>
       </q-card-section>
       <q-card-section class="row items-center">
@@ -77,6 +77,7 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
 import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 
 export default {
@@ -98,6 +99,9 @@ export default {
     title() {
       return this.pk ? "Edit User" : "Add User";
     },
+    ...mapState({
+      logged_in_user: state => state.username,
+    }),
   },
   methods: {
     getUser() {
@@ -125,6 +129,11 @@ export default {
       };
 
       if (this.pk) {
+        // dont allow updating is_active if username is same as logged in user
+        if (formData.username === this.logged_in_user) {
+          delete formData.is_active;
+        }
+
         this.$store
           .dispatch("admin/editUser", formData)
           .then(r => {

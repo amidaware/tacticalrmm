@@ -125,16 +125,18 @@
               <q-td>
                 <q-checkbox
                   dense
-                  @input="checkAlert(props.row.id, 'Text', props.row.text_alert)"
+                  @input="checkAlert(props.row.id, 'Text', props.row.text_alert, props.row.managed_by_policy)"
                   v-model="props.row.text_alert"
+                  :disabled="props.row.managed_by_policy"
                 />
               </q-td>
               <!-- email alert -->
               <q-td>
                 <q-checkbox
                   dense
-                  @input="checkAlert(props.row.id, 'Email', props.row.email_alert)"
+                  @input="checkAlert(props.row.id, 'Email', props.row.email_alert, props.row.managed_by_policy)"
                   v-model="props.row.email_alert"
+                  :disabled="props.row.managed_by_policy"
                 />
               </q-td>
               <!-- policy check icon -->
@@ -375,7 +377,11 @@ export default {
           break;
       }
     },
-    checkAlert(id, alert_type, action) {
+    checkAlert(id, alert_type, action, managed_by_policy) {
+      if (managed_by_policy) {
+        return;
+      }
+
       const data = {};
       if (alert_type === "Email") {
         data.email_alert = action;

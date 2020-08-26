@@ -10,12 +10,11 @@ from .serializers import (
     AutoTaskPolicySerializer,
     PolicyOverviewSerializer,
     PolicyCheckStatusSerializer,
+    PolicyCheckSerializer,
     RelatedAgentPolicySerializer,
     RelatedSitePolicySerializer,
     RelatedClientPolicySerializer,
 )
-
-from checks.serializers import CheckSerializer
 
 from automation.models import Policy
 from checks.models import Check
@@ -128,7 +127,7 @@ class TestPolicyViews(BaseTestCase):
         url = f"/automation/{self.policy.pk}/policychecks/"
 
         resp = self.client.get(url, format="json")
-        serializer = CheckSerializer([self.policyDiskCheck], many=True)
+        serializer = PolicyCheckSerializer([self.policyDiskCheck], many=True)
 
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data, serializer.data)

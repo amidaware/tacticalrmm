@@ -4,9 +4,17 @@ from agents.models import Agent
 
 class Client(models.Model):
     client = models.CharField(max_length=255, unique=True)
-    policy = models.ForeignKey(
+    workstation_policy = models.ForeignKey(
         "automation.Policy",
-        related_name="clients",
+        related_name="workstation_clients",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+
+    server_policy = models.ForeignKey(
+        "automation.Policy",
+        related_name="server_clients",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
@@ -33,9 +41,17 @@ class Client(models.Model):
 class Site(models.Model):
     client = models.ForeignKey(Client, related_name="sites", on_delete=models.CASCADE)
     site = models.CharField(max_length=255)
-    policy = models.ForeignKey(
+    workstation_policy = models.ForeignKey(
         "automation.Policy",
-        related_name="sites",
+        related_name="workstation_sites",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+
+    server_policy = models.ForeignKey(
+        "automation.Policy",
+        related_name="server_sites",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,

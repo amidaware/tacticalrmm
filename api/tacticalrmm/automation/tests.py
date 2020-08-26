@@ -10,6 +10,9 @@ from .serializers import (
     AutoTaskPolicySerializer,
     PolicyOverviewSerializer,
     PolicyCheckStatusSerializer,
+    RelatedAgentPolicySerializer,
+    RelatedSitePolicySerializer,
+    RelatedClientPolicySerializer,
 )
 
 from checks.serializers import CheckSerializer
@@ -166,8 +169,10 @@ class TestPolicyViews(BaseTestCase):
         resp = self.client.get(url, format="json")
 
         self.assertEqual(resp.status_code, 200)
-        self.assertIsInstance(resp.data["clients"], type([]))
-        self.assertIsInstance(resp.data["sites"], type([]))
+        self.assertIsInstance(resp.data["server_clients"], type([]))
+        self.assertIsInstance(resp.data["workstation_clients"], type([]))
+        self.assertIsInstance(resp.data["server_sites"], type([]))
+        self.assertIsInstance(resp.data["workstation_sites"], type([]))
         self.assertIsInstance(resp.data["agents"], type([]))
 
         self.check_not_authenticated("get", url)
@@ -176,7 +181,13 @@ class TestPolicyViews(BaseTestCase):
     @patch("automation.tasks.generate_agent_checks_by_location_task.delay")
     @patch("agents.models.Agent.generate_tasks_from_policies")
     @patch("automation.tasks.generate_agent_tasks_by_location_task.delay")
-    def test_update_policy_add(self, mock_tasks_location_task, mock_tasks_task, mock_checks_location_task, mock_checks_task):
+    def test_update_policy_add(
+        self,
+        mock_tasks_location_task,
+        mock_tasks_task,
+        mock_checks_location_task,
+        mock_checks_task,
+    ):
         url = f"/automation/related/"
 
         # data setup
@@ -184,38 +195,98 @@ class TestPolicyViews(BaseTestCase):
         client = Client.objects.create(client="Test Client")
         site = Site.objects.create(client=client, site="Test Site")
 
-        # test add client to policy
-        client_payload = {"type": "client", "pk": client.pk, "policy": policy.pk}
+        # test add client to policy data
+        client_server_payload = {
+            "type": "client",
+            "pk": client.pk,
+            "server_policy": policy.pk,
+        }
+        client_workstation_payload = {
+            "type": "client",
+            "pk": client.pk,
+            "workstation_policy": policy.pk,
+        }
 
-        # test add site to policy
-        site_payload = {"type": "site", "pk": site.pk, "policy": policy.pk}
+        # test add site to policy data
+        site_server_payload = {
+            "type": "site",
+            "pk": site.pk,
+            "server_policy": policy.pk,
+        }
+        site_workstation_payload = {
+            "type": "site",
+            "pk": site.pk,
+            "workstation_policy": policy.pk,
+        }
 
-        # test add agent to policy
+        # test add agent to policy data
         agent_payload = {"type": "agent", "pk": self.agent.pk, "policy": policy.pk}
 
-        # test client add
-        resp = self.client.post(url, client_payload, format="json")
-        self.assertEqual(resp.status_code, 200)
-        
-        # called because the relation changed
-        mock_checks_location_task.assert_called_with(location={"client": client.client}, clear=True)
-        mock_checks_location_task.reset_mock()
-
-        mock_tasks_location_task.assert_called_with(location={"client": client.client}, clear=True)
-        mock_tasks_location_task.reset_mock()
-
-        # test site add
-        resp = self.client.post(url, site_payload, format="json")
+        # test client server policy add
+        resp = self.client.post(url, client_server_payload, format="json")
         self.assertEqual(resp.status_code, 200)
 
         # called because the relation changed
         mock_checks_location_task.assert_called_with(
-            location={"client": site.client.client, "site": site.site}, clear=True
+            location={"client": client.client}, mon_type="server", clear=True
         )
         mock_checks_location_task.reset_mock()
-        
+
         mock_tasks_location_task.assert_called_with(
-            location={"client": site.client.client, "site": site.site}, clear=True
+            location={"client": client.client}, mon_type="server", clear=True
+        )
+        mock_tasks_location_task.reset_mock()
+
+        # test client workstation policy add
+        resp = self.client.post(url, client_workstation_payload, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        # called because the relation changed
+        mock_checks_location_task.assert_called_with(
+            location={"client": client.client}, mon_type="workstation", clear=True
+        )
+        mock_checks_location_task.reset_mock()
+
+        mock_tasks_location_task.assert_called_with(
+            location={"client": client.client}, mon_type="workstation", clear=True
+        )
+        mock_tasks_location_task.reset_mock()
+
+        # test site add server policy
+        resp = self.client.post(url, site_server_payload, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        # called because the relation changed
+        mock_checks_location_task.assert_called_with(
+            location={"client": site.client.client, "site": site.site},
+            mon_type="server",
+            clear=True,
+        )
+        mock_checks_location_task.reset_mock()
+
+        mock_tasks_location_task.assert_called_with(
+            location={"client": site.client.client, "site": site.site},
+            mon_type="server",
+            clear=True,
+        )
+        mock_tasks_location_task.reset_mock()
+
+        # test site add workstation policy
+        resp = self.client.post(url, site_workstation_payload, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        # called because the relation changed
+        mock_checks_location_task.assert_called_with(
+            location={"client": site.client.client, "site": site.site},
+            mon_type="workstation",
+            clear=True,
+        )
+        mock_checks_location_task.reset_mock()
+
+        mock_tasks_location_task.assert_called_with(
+            location={"client": site.client.client, "site": site.site},
+            mon_type="workstation",
+            clear=True,
         )
         mock_tasks_location_task.reset_mock()
 
@@ -231,12 +302,16 @@ class TestPolicyViews(BaseTestCase):
         mock_tasks_task.reset_mock()
 
         # Adding the same relations shouldn't trigger mocks
-        resp = self.client.post(url, client_payload, format="json")
+        resp = self.client.post(url, client_server_payload, format="json")
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.post(url, client_workstation_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         mock_checks_location_task.assert_not_called()
         mock_tasks_location_task.assert_not_called()
 
-        resp = self.client.post(url, site_payload, format="json")
+        resp = self.client.post(url, site_server_payload, format="json")
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.post(url, site_workstation_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         mock_checks_location_task.assert_not_called()
         mock_tasks_location_task.assert_not_called()
@@ -248,38 +323,90 @@ class TestPolicyViews(BaseTestCase):
         mock_checks_task.assert_not_called()
         mock_tasks_task.assert_not_called()
 
-        # test remove client from policy
-        client_payload = {"type": "client", "pk": client.pk, "policy": 0}
+        # test remove client from policy data
+        client_server_payload = {"type": "client", "pk": client.pk, "server_policy": 0}
+        client_workstation_payload = {
+            "type": "client",
+            "pk": client.pk,
+            "workstation_policy": 0,
+        }
 
-        # test remove site from policy
-        site_payload = {"type": "site", "pk": site.pk, "policy": 0}
+        # test remove site from policy data
+        site_server_payload = {"type": "site", "pk": site.pk, "server_policy": 0}
+        site_workstation_payload = {
+            "type": "site",
+            "pk": site.pk,
+            "workstation_policy": 0,
+        }
 
         # test remove agent from policy
         agent_payload = {"type": "agent", "pk": self.agent.pk, "policy": 0}
 
-        # test client remove
-        resp = self.client.post(url, client_payload, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        # called because the relation changed
-        mock_checks_location_task.assert_called_with(location={"client": client.client}, clear=True)
-        mock_checks_location_task.reset_mock()
-
-        mock_tasks_location_task.assert_called_with(location={"client": client.client}, clear=True)
-        mock_tasks_location_task.reset_mock()
-
-        # test site remove
-        resp = self.client.post(url, site_payload, format="json")
+        # test client server policy remove
+        resp = self.client.post(url, client_server_payload, format="json")
         self.assertEqual(resp.status_code, 200)
 
         # called because the relation changed
         mock_checks_location_task.assert_called_with(
-            location={"client": site.client.client, "site": site.site}, clear=True
+            location={"client": client.client}, mon_type="server", clear=True
         )
         mock_checks_location_task.reset_mock()
 
         mock_tasks_location_task.assert_called_with(
-            location={"client": site.client.client, "site": site.site}, clear=True
+            location={"client": client.client}, mon_type="server", clear=True
+        )
+        mock_tasks_location_task.reset_mock()
+
+        # test client workstation policy remove
+        resp = self.client.post(url, client_workstation_payload, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        # called because the relation changed
+        mock_checks_location_task.assert_called_with(
+            location={"client": client.client}, mon_type="workstation", clear=True
+        )
+        mock_checks_location_task.reset_mock()
+
+        mock_tasks_location_task.assert_called_with(
+            location={"client": client.client}, mon_type="workstation", clear=True
+        )
+        mock_tasks_location_task.reset_mock()
+
+        # test site remove server policy
+        resp = self.client.post(url, site_server_payload, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        # called because the relation changed
+        mock_checks_location_task.assert_called_with(
+            location={"client": site.client.client, "site": site.site},
+            mon_type="server",
+            clear=True,
+        )
+        mock_checks_location_task.reset_mock()
+
+        mock_tasks_location_task.assert_called_with(
+            location={"client": site.client.client, "site": site.site},
+            mon_type="server",
+            clear=True,
+        )
+        mock_tasks_location_task.reset_mock()
+
+        # test site remove workstation policy
+        resp = self.client.post(url, site_workstation_payload, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        # called because the relation changed
+        mock_checks_location_task.assert_called_with(
+            location={"client": site.client.client, "site": site.site},
+            mon_type="workstation",
+            clear=True,
+        )
+        mock_checks_location_task.reset_mock()
+
+        mock_tasks_location_task.assert_called_with(
+            location={"client": site.client.client, "site": site.site},
+            mon_type="workstation",
+            clear=True,
         )
         mock_tasks_location_task.reset_mock()
 
@@ -294,14 +421,20 @@ class TestPolicyViews(BaseTestCase):
         mock_tasks_task.reset_mock()
 
         # adding the same relations shouldn't trigger mocks
-        resp = self.client.post(url, client_payload, format="json")
+        resp = self.client.post(url, client_server_payload, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.client.post(url, client_workstation_payload, format="json")
         self.assertEqual(resp.status_code, 200)
 
         # shouldn't be called since nothing changed
         mock_checks_location_task.assert_not_called()
         mock_tasks_location_task.assert_not_called()
 
-        resp = self.client.post(url, site_payload, format="json")
+        resp = self.client.post(url, site_server_payload, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        resp = self.client.post(url, site_workstation_payload, format="json")
         self.assertEqual(resp.status_code, 200)
 
         # shouldn't be called since nothing changed
@@ -325,8 +458,8 @@ class TestPolicyViews(BaseTestCase):
         client = Client.objects.create(client="Test Client")
         site = Site.objects.create(client=client, site="Test Site")
 
-        policy.clients.add(client)
-        policy.sites.add(site)
+        policy.server_clients.add(client)
+        policy.workstation_sites.add(site)
         policy.agents.add(self.agent)
 
         client_payload = {"type": "client", "pk": client.pk}
@@ -338,19 +471,19 @@ class TestPolicyViews(BaseTestCase):
         agent_payload = {"type": "agent", "pk": self.agent.pk}
 
         # test client relation get
-        serializer = PolicySerializer(policy)
+        serializer = RelatedClientPolicySerializer(client)
         resp = self.client.patch(url, client_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data, serializer.data)
 
         # test site relation get
-        serializer = PolicySerializer(policy)
+        serializer = RelatedSitePolicySerializer(site)
         resp = self.client.patch(url, site_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data, serializer.data)
 
         # test agent relation get
-        serializer = PolicySerializer(policy)
+        serializer = RelatedAgentPolicySerializer(self.agent)
         resp = self.client.patch(url, agent_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data, serializer.data)
@@ -364,35 +497,60 @@ class TestPolicyViews(BaseTestCase):
 
 
 class TestPolicyTasks(BaseTestCase):
-
     def test_policy_related(self):
 
-        # Generates 5 clients with 5 sites each with 5 agents each
-        self.generate_agents(5, 5, 5)
+        # Generates agents (clients, sites, agents, agent_type)
+        server_agents = self.generate_agents(5, 5, 5)
 
-        agent = self.agents[50]
-        client = Client.objects.get(client=agent.client)
-        site = Site.objects.get(client=client, site=agent.site)
+        # Get Site and Client from an agent in list
+        server_agent = server_agents[50]
+        server_client = Client.objects.get(client=server_agent.client)
+        server_site = Site.objects.get(client=server_client, site=server_agent.site)
+
+        # Generate some workstation agents
+        workstation_agents = list()
+        for i in range(2):
+            workstation_agents.append(
+                self.create_agent(
+                    "Agent15", server_client.client, server_site.site, "workstation"
+                )
+            )
+
+        # Pick an agent out of the list
+        workstation_agent = workstation_agents[1]
+
+        workstation_client = Client.objects.get(client=workstation_agent.client)
+        workstation_site = Site.objects.get(
+            client=workstation_client, site=workstation_agent.site
+        )
 
         policy = Policy.objects.create(
             name="Policy Relate Tests", desc="my awesome policy", active=True,
         )
 
         # Add Client to Policy
-        policy.clients.add(client)
+        policy.server_clients.add(server_client)
+        policy.workstation_clients.add(workstation_client)
 
-        resp = self.client.get(f"/automation/policies/{policy.pk}/related/", format="json")
+        resp = self.client.get(
+            f"/automation/policies/{policy.pk}/related/", format="json"
+        )
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEquals(len(resp.data["clients"]), 1)
-        self.assertEquals(len(resp.data["sites"]), 5)
-        self.assertEquals(len(resp.data["agents"]), 25)
-        
+        self.assertEquals(len(resp.data["server_clients"]), 1)
+        self.assertEquals(len(resp.data["server_sites"]), 5)
+        self.assertEquals(len(resp.data["workstation_clients"]), 1)
+        self.assertEquals(len(resp.data["workstation_sites"]), 5)
+        self.assertEquals(len(resp.data["agents"]), 27)
+
         # Add Site to Policy and the agents and sites length shouldn't change
-        policy.sites.add(site)
-        self.assertEquals(len(resp.data["sites"]), 5)
-        self.assertEquals(len(resp.data["agents"]), 25)
+        policy.server_sites.add(server_site)
+        policy.workstation_sites.add(workstation_site)
+        self.assertEquals(len(resp.data["server_sites"]), 5)
+        self.assertEquals(len(resp.data["workstation_sites"]), 5)
+        self.assertEquals(len(resp.data["agents"]), 27)
 
         # Add Agent to Policy and the agents length shouldn't change
-        policy.agents.add(agent)
-        self.assertEquals(len(resp.data["agents"]), 25)
+        policy.agents.add(server_agent)
+        policy.agents.add(workstation_agent)
+        self.assertEquals(len(resp.data["agents"]), 27)

@@ -7,9 +7,10 @@ from rest_framework.serializers import (
 )
 
 from .models import Policy
+from agents.models import Agent
 from autotasks.models import AutomatedTask
 from checks.models import Check
-from clients.models import Client
+from clients.models import Client, Site
 from autotasks.serializers import TaskSerializer
 from checks.serializers import CheckSerializer
 
@@ -22,8 +23,10 @@ class PolicySerializer(ModelSerializer):
 
 class PolicyTableSerializer(ModelSerializer):
 
-    clients = StringRelatedField(many=True, read_only=True)
-    sites = StringRelatedField(many=True, read_only=True)
+    server_clients = StringRelatedField(many=True, read_only=True)
+    server_sites = StringRelatedField(many=True, read_only=True)
+    workstation_clients = StringRelatedField(many=True, read_only=True)
+    workstation_sites = StringRelatedField(many=True, read_only=True)
     agents = StringRelatedField(many=True, read_only=True)
 
     clients_count = SerializerMethodField(read_only=True)
@@ -36,10 +39,10 @@ class PolicyTableSerializer(ModelSerializer):
         depth = 1
 
     def get_clients_count(self, policy):
-        return policy.clients.count()
+        return policy.workstation_clients.count() + policy.server_clients.count()
 
     def get_sites_count(self, policy):
-        return policy.sites.count()
+        return policy.workstation_sites.count() + policy.server_sites.count()
 
     def get_agents_count(self, policy):
         return policy.agents.count()
@@ -48,7 +51,7 @@ class PolicyTableSerializer(ModelSerializer):
 class PolicyOverviewSerializer(ModelSerializer):
     class Meta:
         model = Client
-        fields = ("pk", "client", "sites", "policy")
+        fields = ("pk", "client", "sites", "workstation_policy", "server_policy")
         depth = 2
 
 
@@ -81,3 +84,24 @@ class AutoTaskPolicySerializer(ModelSerializer):
             "name",
             "autotasks",
         )
+
+
+class RelatedClientPolicySerializer(ModelSerializer):
+    class Meta:
+        model = Client
+        fields = ("workstation_policy", "server_policy")
+        depth = 1
+
+
+class RelatedSitePolicySerializer(ModelSerializer):
+    class Meta:
+        model = Site
+        fields = ("workstation_policy", "server_policy")
+        depth = 1
+
+
+class RelatedAgentPolicySerializer(ModelSerializer):
+    class Meta:
+        model = Agent
+        fields = ("policy",)
+        depth = 1

@@ -12,44 +12,66 @@ describe("Relations.vue", () => {
     id: 1,
     name: "Test Policy",
     active: true,
-    clients: [{id: 1, client: "Test Name"}],
-    sites: [{id: 1, site: "Test Name"}],
+    clients: [{ id: 1, client: "Test Name" }],
+    sites: [{ id: 1, site: "Test Name" }],
     agents: []
   };
 
   const related = {
     agents: [
       {
-        pk: 1, 
-        hostname: "Test Name", 
-        site: "Test Site", 
-        client: "Test Client"}, 
+        pk: 1,
+        hostname: "Test Name",
+        site: "Test Site",
+        client: "Test Client"
+      },
       {
-        pk: 2, 
-        site: "Test Site", 
-        hostname: "Test Name2", 
-        site: "Test Site", 
+        pk: 2,
+        site: "Test Site",
+        hostname: "Test Name2",
+        site: "Test Site",
         client: "Test Client"
       }
     ],
-    sites: [
+    server_sites: [
       {
-        id: 1, 
-        client_name: "Test Name", 
+        id: 1,
+        client_name: "Test Name",
         site: "Test Name"
       }
     ],
-    clients: [
+    workstation_sites: [
       {
-        id: 1, 
+        id: 2,
+        client_name: "Test Name",
+        site: "Test Name"
+      }
+    ],
+    server_clients: [
+      {
+        id: 1,
         client: "Test Name"
-      }, 
+      },
       {
-        id: 2, 
+        id: 2,
         client: "Test Name2"
-      }, 
+      },
       {
-        id: 3, 
+        id: 3,
+        client: "Test Name3"
+      }
+    ],
+    workstation_clients: [
+      {
+        id: 4,
+        client: "Test Name"
+      },
+      {
+        id: 5,
+        client: "Test Name2"
+      },
+      {
+        id: 6,
         client: "Test Name3"
       }
     ]
@@ -74,11 +96,11 @@ describe("Relations.vue", () => {
     });
 
     wrapper = mount(RelationsView, {
-        localVue,
-        store,
-        propsData: {
-          policy: policy
-        }
+      localVue,
+      store,
+      propsData: {
+        policy: policy
+      }
     });
 
   });
@@ -92,25 +114,25 @@ describe("Relations.vue", () => {
 
   it("Checks the correct number of list items are rendered in clients tab", async () => {
 
-    await wrapper.findComponent({ref: "clients"}).trigger("click");
+    await wrapper.findComponent({ ref: "clients" }).trigger("click");
 
     const list = wrapper.findAll(".q-item");
-    expect(list.length).toBeGreaterThanOrEqual(related.clients.length);
+    expect(list.length).toBeGreaterThanOrEqual(related.server_clients.length + related.workstation_clients.length);
 
   });
 
   it("Checks the correct number of list items are rendered in sites tab", async () => {
 
-    await wrapper.findComponent({ref: "sites"}).trigger("click");
+    await wrapper.findComponent({ ref: "sites" }).trigger("click");
 
     const list = wrapper.findAll(".q-item");
-    expect(list.length).toBeGreaterThanOrEqual(related.sites.length);
+    expect(list.length).toBeGreaterThanOrEqual(related.server_sites.length + related.workstation_sites.length);
 
   });
 
   it("Checks the correct number of list items are rendered in agents tab", async () => {
 
-    await wrapper.findComponent({ref: "agents"}).trigger("click");
+    await wrapper.findComponent({ ref: "agents" }).trigger("click");
 
     const list = wrapper.findAll(".q-item");
     expect(list.length).toBeGreaterThanOrEqual(related.agents.length);
@@ -118,4 +140,4 @@ describe("Relations.vue", () => {
   });
 
 });
-  
+

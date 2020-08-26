@@ -8,16 +8,32 @@ const localVue = createLocalVue();
 localVue.use(Vuex);
 
 const related = {
+  server_policy: {
     id: 1,
     name: "Test Policy"
-  };
+  },
+  workstation_policy: {
+    id: 1,
+    name: "Test Policy"
+  }
+};
+
+const agentRelated = {
+  policy: {
+    id: 1,
+    name: "Test Policy"
+  }
+};
 
 let state, actions, getters, store;
 beforeEach(() => {
 
   state = {
     policies: [
-      related,
+      {
+        id: 1,
+        name: "Test Policy"
+      },
       {
         id: 2,
         name: "Test Policy 2"
@@ -77,38 +93,47 @@ describe.each([
     await flushpromises();
     expect(actions.loadPolicies).toHaveBeenCalled();
     expect(actions.getRelatedPolicies).toHaveBeenCalledWith(expect.anything(),
-      {pk: pk, type: type}
+      { pk: pk, type: type }
     );
 
   });
 
   it("renders title correctly", () => {
-    
-    expect(wrapper.find(".text-h6").text()).toBe(`Edit policy assigned to ${type}`);
+
+    expect(wrapper.find(".text-h6").text()).toBe(`Edit policies assigned to ${type}`);
   });
 
   it("renders correct amount of policies in dropdown", async () => {
-    
+
     await flushpromises();
     expect(wrapper.vm.options).toHaveLength(3);
   });
 
   it("renders correct policy in selected", async () => {
-    
+
     await flushpromises();
-    expect(wrapper.vm.selected).toStrictEqual({label: related.name, value: related.id});
+    if (type === "client" || type === "site") {
+      expect(wrapper.vm.selectedServerPolicy).toStrictEqual({ label: related.server_policy.name, value: related.server_policy.id });
+      expect(wrapper.vm.selectedWorkstationPolicy).toStrictEqual({ label: related.workstation_policy.name, value: related.workstation_policy.id });
+    }
+
+    // not testing agent
   });
 
   it("sends correct data on form submit", async () => {
-    
+
     await flushpromises();
     const form = wrapper.findComponent({ ref: "form" });
 
     await form.vm.$emit("submit");
 
-    expect(actions.updateRelatedPolicies).toHaveBeenCalledWith(expect.anything(),
-      { pk: pk, type: type, policy: related.id }
-    );
+    if (type === "client" || type === "site") {
+      expect(actions.updateRelatedPolicies).toHaveBeenCalledWith(expect.anything(),
+        { pk: pk, type: type, server_policy: 1, workstation_policy: 1 }
+      );
+    }
+
+    // not testing agent actions
 
   });
 });

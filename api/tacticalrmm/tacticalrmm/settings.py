@@ -11,7 +11,7 @@ AUTH_USER_MODEL = "accounts.User"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.30"
+APP_VER = "0.0.31"
 
 # https://github.com/wh1te909/salt
 LATEST_SALT_VER = "1.0.3"

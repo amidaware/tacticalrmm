@@ -191,6 +191,10 @@ def add(request):
         else:
             WinUpdatePolicy(agent=agent).save()
 
+        # Generate policies for new agent
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
         return Response({"pk": agent.pk})
     else:
         return Response("err", status=status.HTTP_400_BAD_REQUEST)

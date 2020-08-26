@@ -79,8 +79,9 @@
               <q-td>
                 <q-checkbox
                   dense
-                  @input="taskEnableorDisable(props.row.id, props.row.enabled)"
+                  @input="taskEnableorDisable(props.row.id, props.row.enabled, props.row.managed_by_policy)"
                   v-model="props.row.enabled"
+                  :disable="props.row.managed_by_policy"
                 />
               </q-td>
               <!-- policy check icon -->
@@ -147,34 +148,37 @@ export default {
           name: "moreinfo",
           label: "More Info",
           field: "more_info",
-          align: "left"
+          align: "left",
         },
         {
           name: "datetime",
           label: "Last Run Time",
           field: "last_run",
-          align: "left"
+          align: "left",
         },
         {
           name: "schedule",
           label: "Schedule",
           field: "schedule",
-          align: "left"
+          align: "left",
         },
         {
           name: "assignedcheck",
           label: "Assigned Check",
           field: "assigned_check",
-          align: "left"
-        }
+          align: "left",
+        },
       ],
       pagination: {
-        rowsPerPage: 9999
-      }
+        rowsPerPage: 9999,
+      },
     };
   },
   methods: {
-    taskEnableorDisable(pk, action) {
+    taskEnableorDisable(pk, action, managed_by_policy) {
+      if (managed_by_policy) {
+        return;
+      }
       const data = { enableordisable: action };
       axios
         .patch(`/tasks/${pk}/automatedtasks/`, data)
@@ -207,7 +211,7 @@ export default {
           title: "Are you sure?",
           message: `Delete ${name} task`,
           cancel: true,
-          persistent: true
+          persistent: true,
         })
         .onOk(() => {
           axios
@@ -219,17 +223,17 @@ export default {
             })
             .catch(e => this.notifyError("Something went wrong"));
         });
-    }
+    },
   },
   computed: {
     ...mapGetters(["selectedAgentPk"]),
     ...mapState({
-      automatedTasks: state => state.automatedTasks
+      automatedTasks: state => state.automatedTasks,
     }),
     tasks() {
       return this.automatedTasks.autotasks;
-    }
-  }
+    },
+  },
 };
 </script>
 

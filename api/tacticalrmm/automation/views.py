@@ -22,6 +22,7 @@ from .serializers import (
     PolicyTableSerializer,
     PolicyOverviewSerializer,
     PolicyCheckStatusSerializer,
+    PolicyCheckSerializer,
     PolicyTaskStatusSerializer,
     AutoTaskPolicySerializer,
     RelatedClientPolicySerializer,
@@ -112,7 +113,7 @@ class PolicyAutoTask(APIView):
 class PolicyCheck(APIView):
     def get(self, request, pk):
         checks = Check.objects.filter(policy__pk=pk, agent=None)
-        return Response(CheckSerializer(checks, many=True).data)
+        return Response(PolicyCheckSerializer(checks, many=True).data)
 
     def patch(self, request, check):
         checks = Check.objects.filter(parent_check=check)

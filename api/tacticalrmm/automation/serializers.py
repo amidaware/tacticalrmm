@@ -73,9 +73,32 @@ class PolicyTaskStatusSerializer(ModelSerializer):
         fields = "__all__"
 
 
+class PolicyCheckSerializer(ModelSerializer):
+    class Meta:
+        model = Check
+        fields = (
+            "id",
+            "check_type",
+            "readable_desc",
+            "assignedtask",
+            "text_alert",
+            "email_alert",
+        )
+        depth = 1
+
+
+class AutoTasksFieldSerializer(ModelSerializer):
+    assigned_check = PolicyCheckSerializer(read_only=True)
+
+    class Meta:
+        model = AutomatedTask
+        fields = "__all__"
+        depth = 1
+
+
 class AutoTaskPolicySerializer(ModelSerializer):
 
-    autotasks = TaskSerializer(many=True, read_only=True)
+    autotasks = AutoTasksFieldSerializer(many=True, read_only=True)
 
     class Meta:
         model = Policy
@@ -84,6 +107,7 @@ class AutoTaskPolicySerializer(ModelSerializer):
             "name",
             "autotasks",
         )
+        depth = 2
 
 
 class RelatedClientPolicySerializer(ModelSerializer):

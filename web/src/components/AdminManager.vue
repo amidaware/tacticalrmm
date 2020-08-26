@@ -36,7 +36,7 @@
           <q-btn
             ref="delete"
             label="Delete"
-            :disable="selected.length === 0"
+            :disable="selected.length === 0 || selected[0].username === logged_in_user"
             dense
             flat
             push
@@ -106,6 +106,7 @@
                     v-close-popup
                     @click="deleteUser(props.row)"
                     id="context-delete"
+                    v-if="props.row.username !== logged_in_user"
                   >
                     <q-item-section side>
                       <q-icon name="delete" />
@@ -143,7 +144,12 @@
               </q-menu>
               <!-- enabled checkbox -->
               <q-td>
-                <q-checkbox dense @input="toggleEnabled(props.row)" v-model="props.row.is_active" />
+                <q-checkbox
+                  dense
+                  @input="toggleEnabled(props.row)"
+                  v-model="props.row.is_active"
+                  :disable="props.row.username === logged_in_user"
+                />
               </q-td>
               <q-td>{{ props.row.username }}</q-td>
               <q-td>{{ props.row.first_name }} {{ props.row.last_name }}</q-td>
@@ -261,6 +267,9 @@ export default {
       this.showUserFormModal = true;
     },
     toggleEnabled(user) {
+      if (user.username === this.logged_in_user) {
+        return;
+      }
       let text = user.is_active ? "User enabled successfully" : "User disabled successfully";
 
       const data = {
@@ -313,6 +322,7 @@ export default {
   computed: {
     ...mapState({
       users: state => state.admin.users,
+      logged_in_user: state => state.username,
     }),
   },
   mounted() {

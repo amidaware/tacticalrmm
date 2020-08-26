@@ -20,10 +20,14 @@ class CheckSerializer(serializers.ModelSerializer):
     assigned_task = serializers.SerializerMethodField()
     history_info = serializers.ReadOnlyField()
 
+    ## Change to return only array of tasks after 9/25/2020
     def get_assigned_task(self, obj):
         if obj.assignedtask.exists():
-            task = obj.assignedtask.get()
-            return AssignedTaskField(task).data
+            tasks = obj.assignedtask.all()
+            if len(tasks) == 1:
+                return AssignedTaskField(tasks[0]).data
+            else:
+                return AssignedTaskField(tasks, many=True).data
 
     class Meta:
         model = Check

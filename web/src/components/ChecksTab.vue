@@ -193,7 +193,10 @@
               >{{ props.row.history_info }}</q-td>
               <q-td v-else>{{ props.row.more_info }}</q-td>
               <q-td>{{ props.row.last_run }}</q-td>
-              <q-td v-if="props.row.assigned_task">{{ props.row.assigned_task.name }}</q-td>
+              <q-td
+                v-if="props.row.assigned_task !== null && props.row.assigned_task.length > 1"
+              >{{ props.row.assigned_task.length }} Tasks</q-td>
+              <q-td v-else-if="props.row.assigned_task">{{ props.row.assigned_task.name }}</q-td>
               <q-td v-else></q-td>
             </q-tr>
           </template>

@@ -112,7 +112,7 @@
               <q-td>{{ props.row.name }}</q-td>
               <q-td v-if="props.row.last_run">{{ props.row.last_run }}</q-td>
               <q-td v-else>Has not run yet</q-td>
-              <q-td>{{ props.row.schedule }}</q-td>
+              <q-td>{{ props.row.task_type }}</q-td>
               <q-td>
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
@@ -120,7 +120,7 @@
                   class="status-cell"
                 >See Status</span>
               </q-td>
-              <q-td v-if="props.row.assigned_check">{{ props.row.assigned_check.name }}</q-td>
+              <q-td v-if="props.row.assigned_check">{{ props.row.assigned_check.readable_desc }}</q-td>
               <q-td v-else></q-td>
             </q-tr>
           </template>
@@ -153,7 +153,7 @@ export default {
   name: "PolicyAutomatedTasksTab",
   components: {
     AddAutomatedTask,
-    PolicyStatus
+    PolicyStatus,
   },
   mixins: [mixins],
   data() {
@@ -170,30 +170,30 @@ export default {
           name: "datetime",
           label: "Last Run Time",
           field: "last_run",
-          align: "left"
+          align: "left",
         },
         {
           name: "schedule",
           label: "Schedule",
           field: "schedule",
-          align: "left"
+          align: "left",
         },
         {
           name: "status",
           label: "More Info",
           field: "more_info",
-          align: "left"
+          align: "left",
         },
         {
           name: "assignedcheck",
           label: "Assigned Check",
           field: "assigned_check",
-          align: "left"
-        }
+          align: "left",
+        },
       ],
       pagination: {
-        rowsPerPage: 9999
-      }
+        rowsPerPage: 9999,
+      },
     };
   },
   methods: {
@@ -230,7 +230,7 @@ export default {
           title: "Are you sure?",
           message: `Delete ${name} task`,
           cancel: true,
-          persistent: true
+          persistent: true,
         })
         .onOk(() => {
           this.$store
@@ -241,14 +241,14 @@ export default {
             })
             .catch(e => this.$q.notify(notifyErrorConfig("Something went wrong")));
         });
-    }
+    },
   },
   computed: {
     ...mapGetters({
       tasks: "automation/tasks",
-      selectedPolicy: "automation/selectedPolicyPk"
-    })
-  }
+      selectedPolicy: "automation/selectedPolicyPk",
+    }),
+  },
 };
 </script>
 

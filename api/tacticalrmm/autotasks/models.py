@@ -109,7 +109,10 @@ class AutomatedTask(models.Model):
         return "TacticalRMM_" + "".join(random.choice(chars) for i in range(35))
 
     def create_policy_task(self, agent):
-        assigned_check = agent.agentchecks.get(parent_check=self.assigned_check.pk)
+        assigned_check = None
+        if self.assigned_check:
+            assigned_check = agent.agentchecks.get(parent_check=self.assigned_check.pk)
+
         task = AutomatedTask.objects.create(
             agent=agent,
             managed_by_policy=True,

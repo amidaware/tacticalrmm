@@ -78,6 +78,7 @@ class Policy(models.Model):
 
         # List of all tasks to be applied
         tasks = list()
+        added_task_pks = list()
 
         # Get policies applied to agent and agent site and client
         client = Client.objects.get(client=agent.client)
@@ -97,13 +98,19 @@ class Policy(models.Model):
 
         if agent_policy and agent_policy.active:
             for task in agent_policy.autotasks.all():
-                tasks.append(task)
+                if task.pk not in added_task_pks:
+                    tasks.append(task)
+                    added_task_pks.append(task.pk)
         if site_policy and site_policy.active:
             for task in site_policy.autotasks.all():
-                tasks.append(task)
+                if task.pk not in added_task_pks:
+                    tasks.append(task)
+                    added_task_pks.append(task.pk)
         if client_policy and client_policy.active:
             for task in client_policy.autotasks.all():
-                tasks.append(task)
+                if task.pk not in added_task_pks:
+                    tasks.append(task)
+                    added_task_pks.append(task.pk)
 
         return tasks
 

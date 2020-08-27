@@ -68,8 +68,7 @@ class TestPolicyViews(BaseTestCase):
         self.check_not_authenticated("post", url)
 
     @patch("automation.tasks.generate_agent_checks_from_policies_task.delay")
-    @patch("automation.tasks.generate_agent_tasks_from_policies_task.delay")
-    def test_update_policy(self, mock_tasks_task, mock_checks_task):
+    def test_update_policy(self, mock_checks_task):
         url = f"/automation/policies/{self.policy.pk}/"
 
         valid_payload = {
@@ -84,7 +83,6 @@ class TestPolicyViews(BaseTestCase):
 
         # only called if active or enforced are updated
         mock_checks_task.assert_not_called()
-        mock_tasks_task.assert_not_called()
 
         valid_payload = {
             "name": "Test Policy Update",
@@ -95,8 +93,9 @@ class TestPolicyViews(BaseTestCase):
 
         resp = self.client.put(url, valid_payload, format="json")
         self.assertEqual(resp.status_code, 200)
-        mock_checks_task.assert_called_with(policypk=self.policy.pk, clear=True)
-        mock_tasks_task.assert_called_with(policypk=self.policy.pk, clear=True)
+        mock_checks_task.assert_called_with(
+            policypk=self.policy.pk, clear=True, create_tasks=True
+        )
 
         self.check_not_authenticated("put", url)
 
@@ -178,14 +177,8 @@ class TestPolicyViews(BaseTestCase):
 
     @patch("agents.models.Agent.generate_checks_from_policies")
     @patch("automation.tasks.generate_agent_checks_by_location_task.delay")
-    @patch("agents.models.Agent.generate_tasks_from_policies")
-    @patch("automation.tasks.generate_agent_tasks_by_location_task.delay")
     def test_update_policy_add(
-        self,
-        mock_tasks_location_task,
-        mock_tasks_task,
-        mock_checks_location_task,
-        mock_checks_task,
+        self, mock_checks_location_task, mock_checks_task,
     ):
         url = f"/automation/related/"
 
@@ -227,14 +220,12 @@ class TestPolicyViews(BaseTestCase):
 
         # called because the relation changed
         mock_checks_location_task.assert_called_with(
-            location={"client": client.client}, mon_type="server", clear=True
+            location={"client": client.client},
+            mon_type="server",
+            clear=True,
+            create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
-
-        mock_tasks_location_task.assert_called_with(
-            location={"client": client.client}, mon_type="server", clear=True
-        )
-        mock_tasks_location_task.reset_mock()
 
         # test client workstation policy add
         resp = self.client.post(url, client_workstation_payload, format="json")
@@ -242,14 +233,12 @@ class TestPolicyViews(BaseTestCase):
 
         # called because the relation changed
         mock_checks_location_task.assert_called_with(
-            location={"client": client.client}, mon_type="workstation", clear=True
+            location={"client": client.client},
+            mon_type="workstation",
+            clear=True,
+            create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
-
-        mock_tasks_location_task.assert_called_with(
-            location={"client": client.client}, mon_type="workstation", clear=True
-        )
-        mock_tasks_location_task.reset_mock()
 
         # test site add server policy
         resp = self.client.post(url, site_server_payload, format="json")
@@ -260,15 +249,9 @@ class TestPolicyViews(BaseTestCase):
             location={"client": site.client.client, "site": site.site},
             mon_type="server",
             clear=True,
+            create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
-
-        mock_tasks_location_task.assert_called_with(
-            location={"client": site.client.client, "site": site.site},
-            mon_type="server",
-            clear=True,
-        )
-        mock_tasks_location_task.reset_mock()
 
         # test site add workstation policy
         resp = self.client.post(url, site_workstation_payload, format="json")
@@ -279,15 +262,9 @@ class TestPolicyViews(BaseTestCase):
             location={"client": site.client.client, "site": site.site},
             mon_type="workstation",
             clear=True,
+            create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
-
-        mock_tasks_location_task.assert_called_with(
-            location={"client": site.client.client, "site": site.site},
-            mon_type="workstation",
-            clear=True,
-        )
-        mock_tasks_location_task.reset_mock()
 
         # test agent add
         resp = self.client.post(url, agent_payload, format="json")
@@ -297,30 +274,24 @@ class TestPolicyViews(BaseTestCase):
         mock_checks_task.assert_called_with(clear=True)
         mock_checks_task.reset_mock()
 
-        mock_tasks_task.assert_called_with(clear=True)
-        mock_tasks_task.reset_mock()
-
         # Adding the same relations shouldn't trigger mocks
         resp = self.client.post(url, client_server_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         resp = self.client.post(url, client_workstation_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         mock_checks_location_task.assert_not_called()
-        mock_tasks_location_task.assert_not_called()
 
         resp = self.client.post(url, site_server_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         resp = self.client.post(url, site_workstation_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         mock_checks_location_task.assert_not_called()
-        mock_tasks_location_task.assert_not_called()
 
         resp = self.client.post(url, agent_payload, format="json")
         self.assertEqual(resp.status_code, 200)
 
         # called because the relation changed
         mock_checks_task.assert_not_called()
-        mock_tasks_task.assert_not_called()
 
         # test remove client from policy data
         client_server_payload = {"type": "client", "pk": client.pk, "server_policy": 0}
@@ -347,14 +318,12 @@ class TestPolicyViews(BaseTestCase):
 
         # called because the relation changed
         mock_checks_location_task.assert_called_with(
-            location={"client": client.client}, mon_type="server", clear=True
+            location={"client": client.client},
+            mon_type="server",
+            clear=True,
+            create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
-
-        mock_tasks_location_task.assert_called_with(
-            location={"client": client.client}, mon_type="server", clear=True
-        )
-        mock_tasks_location_task.reset_mock()
 
         # test client workstation policy remove
         resp = self.client.post(url, client_workstation_payload, format="json")
@@ -362,14 +331,12 @@ class TestPolicyViews(BaseTestCase):
 
         # called because the relation changed
         mock_checks_location_task.assert_called_with(
-            location={"client": client.client}, mon_type="workstation", clear=True
+            location={"client": client.client},
+            mon_type="workstation",
+            clear=True,
+            create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
-
-        mock_tasks_location_task.assert_called_with(
-            location={"client": client.client}, mon_type="workstation", clear=True
-        )
-        mock_tasks_location_task.reset_mock()
 
         # test site remove server policy
         resp = self.client.post(url, site_server_payload, format="json")
@@ -380,15 +347,9 @@ class TestPolicyViews(BaseTestCase):
             location={"client": site.client.client, "site": site.site},
             mon_type="server",
             clear=True,
+            create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
-
-        mock_tasks_location_task.assert_called_with(
-            location={"client": site.client.client, "site": site.site},
-            mon_type="server",
-            clear=True,
-        )
-        mock_tasks_location_task.reset_mock()
 
         # test site remove workstation policy
         resp = self.client.post(url, site_workstation_payload, format="json")
@@ -399,15 +360,9 @@ class TestPolicyViews(BaseTestCase):
             location={"client": site.client.client, "site": site.site},
             mon_type="workstation",
             clear=True,
+            create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
-
-        mock_tasks_location_task.assert_called_with(
-            location={"client": site.client.client, "site": site.site},
-            mon_type="workstation",
-            clear=True,
-        )
-        mock_tasks_location_task.reset_mock()
 
         # test agent remove
         resp = self.client.post(url, agent_payload, format="json")
@@ -415,9 +370,6 @@ class TestPolicyViews(BaseTestCase):
         # called because the relation changed
         mock_checks_task.assert_called_with(clear=True)
         mock_checks_task.reset_mock()
-
-        mock_tasks_task.assert_called_with(clear=True)
-        mock_tasks_task.reset_mock()
 
         # adding the same relations shouldn't trigger mocks
         resp = self.client.post(url, client_server_payload, format="json")
@@ -428,7 +380,6 @@ class TestPolicyViews(BaseTestCase):
 
         # shouldn't be called since nothing changed
         mock_checks_location_task.assert_not_called()
-        mock_tasks_location_task.assert_not_called()
 
         resp = self.client.post(url, site_server_payload, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -438,14 +389,12 @@ class TestPolicyViews(BaseTestCase):
 
         # shouldn't be called since nothing changed
         mock_checks_location_task.assert_not_called()
-        mock_tasks_location_task.assert_not_called()
 
         resp = self.client.post(url, agent_payload, format="json")
         self.assertEqual(resp.status_code, 200)
 
         # shouldn't be called since nothing changed
         mock_checks_task.assert_not_called()
-        mock_tasks_task.assert_not_called()
 
         self.check_not_authenticated("post", url)
 

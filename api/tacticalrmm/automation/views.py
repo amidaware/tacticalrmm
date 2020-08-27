@@ -1,6 +1,8 @@
 from django.db import DataError
 from django.shortcuts import get_object_or_404
 
+from celery import chain
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -74,12 +76,7 @@ class GetUpdateDeletePolicy(APIView):
             generate_agent_checks_from_policies_task.delay(
                 policypk=policy.pk,
                 clear=(not saved_policy.active or not saved_policy.enforced),
-            )
-
-        # Genereate agent tasks if active was changed
-        if saved_policy.active != old_active:
-            generate_agent_tasks_from_policies_task.delay(
-                policypk=policy.pk, clear=(not saved_policy.active)
+                create_tasks=(saved_policy.active != old_active),
             )
 
         return Response("ok")
@@ -202,15 +199,12 @@ class GetRelated(APIView):
                 ):
                     client.workstation_policy = policy
                     client.save()
+
                     generate_agent_checks_by_location_task.delay(
                         location={"client": client.client},
                         mon_type="workstation",
                         clear=True,
-                    )
-                    generate_agent_tasks_by_location_task.delay(
-                        location={"client": client.client},
-                        mon_type="workstation",
-                        clear=True,
+                        create_tasks=True,
                     )
 
             if related_type == "site":
@@ -228,11 +222,7 @@ class GetRelated(APIView):
                         location={"client": site.client.client, "site": site.site},
                         mon_type="workstation",
                         clear=True,
-                    )
-                    generate_agent_tasks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.site},
-                        mon_type="workstation",
-                        clear=True,
+                        create_tasks=True,
                     )
 
         # server policy is set
@@ -254,11 +244,7 @@ class GetRelated(APIView):
                         location={"client": client.client},
                         mon_type="server",
                         clear=True,
-                    )
-                    generate_agent_tasks_by_location_task.delay(
-                        location={"client": client.client},
-                        mon_type="server",
-                        clear=True,
+                        create_tasks=True,
                     )
 
             if related_type == "site":
@@ -276,11 +262,7 @@ class GetRelated(APIView):
                         location={"client": site.client.client, "site": site.site},
                         mon_type="server",
                         clear=True,
-                    )
-                    generate_agent_tasks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.site},
-                        mon_type="server",
-                        clear=True,
+                        create_tasks=True,
                     )
 
         # If workstation policy was cleared
@@ -300,11 +282,7 @@ class GetRelated(APIView):
                         location={"client": client.client},
                         mon_type="workstation",
                         clear=True,
-                    )
-                    generate_agent_tasks_by_location_task.delay(
-                        location={"client": client.client},
-                        mon_type="workstation",
-                        clear=True,
+                        create_tasks=True,
                     )
 
             if related_type == "site":
@@ -319,11 +297,7 @@ class GetRelated(APIView):
                         location={"client": site.client.client, "site": site.site},
                         mon_type="workstation",
                         clear=True,
-                    )
-                    generate_agent_tasks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.site},
-                        mon_type="workstation",
-                        clear=True,
+                        create_tasks=True,
                     )
 
         # server policy cleared
@@ -341,11 +315,7 @@ class GetRelated(APIView):
                         location={"client": client.client},
                         mon_type="server",
                         clear=True,
-                    )
-                    generate_agent_tasks_by_location_task.delay(
-                        location={"client": client.client},
-                        mon_type="server",
-                        clear=True,
+                        create_tasks=True,
                     )
 
             if related_type == "site":
@@ -359,11 +329,7 @@ class GetRelated(APIView):
                         location={"client": site.client.client, "site": site.site},
                         mon_type="server",
                         clear=True,
-                    )
-                    generate_agent_tasks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.site},
-                        mon_type="server",
-                        clear=True,
+                        create_tasks=True,
                     )
 
         # agent policies

@@ -20,11 +20,12 @@ ARG ADMIN_URL
 
 EXPOSE 80
 
-RUN apt-get update && apt-get install -y gettext-base
+RUN apt-get update && apt-get install -y gettext-base wget
 COPY ./api/tacticalrmm/requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir setuptools==49.6.0 wheel==0.35.1
 RUN pip install --no-cache-dir -r requirements.txt
+RUN wget --no-check-certificate https://golang.org/dl/go1.15.linux-amd64.tar.gz -P /tmp
 COPY ./api/tacticalrmm/ .
 COPY ./docker/api/prestart.sh .
 COPY ./docker/api/uwsgi.ini .
@@ -33,4 +34,8 @@ RUN envsubst '\$APP_HOST, \$API_HOST' < /app/api.conf.tmp > /app/nginx.conf && \
     rm /app/api.conf.tmp
 COPY ./docker/api/local_settings.py.keep ./tacticalrmm/local_settings.py.tmp
 RUN envsubst < /app/tacticalrmm/local_settings.py.tmp > /app/tacticalrmm/local_settings.py && rm /app/tacticalrmm/local_settings.py.tmp
-    
+
+RUN tar -xzf /tmp/go1.15.linux-amd64.tar.gz -C /tmp && \
+    mkdir /usr/local/rmmgo && \
+    mv /tmp/go /usr/local/rmmgo/ && \
+    rm -rf /tmp/go

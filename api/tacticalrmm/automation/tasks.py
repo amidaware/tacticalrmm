@@ -9,7 +9,7 @@ from tacticalrmm.celery import app
 
 @app.task
 def generate_agent_checks_from_policies_task(
-    policypk, many=False, clear=False, parent_checks=[]
+    policypk, many=False, clear=False, parent_checks=[], create_tasks=False
 ):
 
     if many:
@@ -19,21 +19,28 @@ def generate_agent_checks_from_policies_task(
                 agent.generate_checks_from_policies(
                     clear=clear, parent_checks=parent_checks
                 )
+                if create_tasks:
+                    agent.generate_tasks_from_policies(clear=clear,)
     else:
         policy = Policy.objects.get(pk=policypk)
         for agent in policy.related_agents():
             agent.generate_checks_from_policies(
                 clear=clear, parent_checks=parent_checks
             )
+            if create_tasks:
+                agent.generate_tasks_from_policies(clear=clear,)
 
 
 @app.task
 def generate_agent_checks_by_location_task(
-    location, mon_type, clear=False, parent_checks=[]
+    location, mon_type, clear=False, parent_checks=[], create_tasks=False
 ):
 
     for agent in Agent.objects.filter(**location).filter(monitoring_type=mon_type):
         agent.generate_checks_from_policies(clear=clear, parent_checks=parent_checks)
+
+        if create_tasks:
+            agent.generate_tasks_from_policies(clear=clear)
 
 
 @app.task

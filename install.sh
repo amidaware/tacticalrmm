@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="1"
+SCRIPT_VERSION="2"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
@@ -301,6 +301,7 @@ pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input
 python manage.py load_chocos
+python manage.py load_community_scripts
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
 printf >&2 "${YELLOW}Please create your login for the RMM website and django admin${NC}\n"

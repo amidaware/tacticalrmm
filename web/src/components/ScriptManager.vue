@@ -1,7 +1,7 @@
 <template>
   <div class="q-pa-md q-gutter-sm">
     <q-dialog :value="toggleScriptManager" @hide="hideScriptManager" @show="getScripts">
-      <q-card style="min-width: 55vw;">
+      <q-card style="min-width: 70vw;">
         <q-bar>
           <q-btn @click="getScripts" class="q-mr-sm" dense flat push icon="refresh" />Script Manager
           <q-space />
@@ -10,7 +10,7 @@
           </q-btn>
         </q-bar>
         <div class="q-pa-md">
-          <div class="q-gutter-sm">
+          <div class="q-gutter-sm row">
             <q-btn
               label="New"
               dense
@@ -65,11 +65,17 @@
               icon="cloud_download"
               @click="downloadScript"
             />
+            <q-space />
+            <q-toggle
+              :value="showBuiltIn"
+              label="Show Community Scripts"
+              @input="showBuiltIn = !showBuiltIn"
+            />
           </div>
           <q-table
             dense
             class="settings-tbl-sticky"
-            :data="scripts"
+            :data="visibleScripts"
             :columns="columns"
             :visible-columns="visibleColumns"
             :pagination.sync="pagination"
@@ -86,10 +92,17 @@
                 @click="scriptpk = props.row.id; filename = props.row.filename; code = props.row.code;"
               >
                 <q-td>{{ props.row.name }}</q-td>
-                <q-td>{{ truncateText(props.row.description) }}</q-td>
+                <q-td>
+                  {{ truncateText(props.row.description) }}
+                  <q-tooltip
+                    v-if="props.row.description.length >= 60"
+                    content-style="font-size: 12px"
+                  >{{ props.row.description }}</q-tooltip>
+                </q-td>
                 <q-td>{{ props.row.filename }}</q-td>
                 <q-td>{{ props.row.shell }}</q-td>
-                <q-td>{{ props.row.script_type }}</q-td>
+                <q-td v-show="props.row.script_type === 'userdefined'">User Defined</q-td>
+                <q-td v-show="props.row.script_type === 'builtin'">Community Uploaded</q-td>
               </q-tr>
             </template>
           </q-table>
@@ -126,6 +139,7 @@ export default {
       showScriptModal: false,
       filename: null,
       code: null,
+      showBuiltIn: true,
       pagination: {
         rowsPerPage: 0,
         sortBy: "script_type",
@@ -248,6 +262,9 @@ export default {
       toggleScriptManager: state => state.toggleScriptManager,
       scripts: state => state.scripts,
     }),
+    visibleScripts() {
+      return this.showBuiltIn ? this.scripts : this.scripts.filter(i => i.script_type !== "builtin");
+    },
   },
   mounted() {
     this.getScripts();

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="2"
+SCRIPT_VERSION="3"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
@@ -746,7 +746,9 @@ sudo systemctl restart salt-api
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"
 printf >&2 "${YELLOW}Installation complete!${NC}\n\n"
-printf >&2 "${YELLOW}Download the meshagent 64 bit EXE from: ${GREEN}${MESHEXE}${NC}\n\n"
+printf >&2 "${YELLOW}Download the meshagent 64 bit EXE from:\n\n${GREEN}"
+echo ${MESHEXE} | sed 's/{.*}//'
+printf >&2 "${NC}\n\n"
 printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${frontenddomain}${NC}\n\n"
 printf >&2 "${YELLOW}Django admin url: ${GREEN}https://${rmmdomain}/${ADMINURL}${NC}\n\n"
 printf >&2 "${YELLOW}MeshCentral password: ${GREEN}${MESHPASSWD}${NC}\n\n"

@@ -54,5 +54,12 @@
         "name": "Windows Defender Quick Scan",
         "description": "Runs a Quick Scan using Windows Defender in the Background.",
         "shell": "powershell"
+    },
+    {
+        "filename": "speedtest.py",
+        "submittedBy": "https://github.com/wh1te909",
+        "name": "Speed Test",
+        "description": "Runs a Speed Test",
+        "shell": "python"
     }
 ]

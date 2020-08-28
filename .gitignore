@@ -34,3 +34,6 @@ gen_random.py
 sync_salt_modules.py
 rmm-*.exe
 rmm-*.ps1
+api/tacticalrmm/accounts/management/commands/*.json
+api/tacticalrmm/accounts/management/commands/random_data.py
+

@@ -63,6 +63,26 @@ def run_python_script(filename, timeout, script_type="userdefined"):
     return __salt__["cmd.run_all"](f"{python_bin} {file_path}", timeout=timeout)
 
 
+def run_script(filepath, filename, shell, timeout):
+    if shell == "powershell" or shell == "cmd":
+
+        return __salt__["cmd.script"](filepath, shell=shell, timeout=timeout)
+
+    elif shell == "python":
+        python_bin = os.path.join("c:\\salt\\bin", "python.exe")
+        file_path = os.path.join("c:\\windows\\temp", filename)
+
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except:
+                pass
+
+        __salt__["cp.get_file"](filepath, file_path)
+
+        return __salt__["cmd.run_all"](f"{python_bin} {file_path}", timeout=timeout)
+
+
 def uninstall_agent():
     remove_exe = os.path.join(PROGRAM_DIR, "unins000.exe")
     __salt__["cmd.run_bg"]([remove_exe, "/VERYSILENT", "/SUPPRESSMSGBOXES"])

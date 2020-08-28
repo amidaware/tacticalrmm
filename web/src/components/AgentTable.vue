@@ -121,6 +121,13 @@
                 <q-item-section>Send Command</q-item-section>
               </q-item>
 
+              <q-item clickable v-ripple v-close-popup @click="showRunScript = true">
+                <q-item-section side>
+                  <q-icon size="xs" name="fas fa-terminal" />
+                </q-item-section>
+                <q-item-section>Run Script</q-item-section>
+              </q-item>
+
               <q-item clickable v-close-popup @click.stop.prevent="remoteBG(props.row.id)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-cogs" />
@@ -335,6 +342,10 @@
     <q-dialog v-model="showAgentRecovery">
       <AgentRecovery @close="showAgentRecovery = false" :pk="selectedAgentPk" />
     </q-dialog>
+    <!-- run script modal -->
+    <q-dialog v-model="showRunScript">
+      <RunScript @close="showRunScript = false" :pk="selectedAgentPk" />
+    </q-dialog>
   </div>
 </template>
 
@@ -349,6 +360,7 @@ import PendingActions from "@/components/modals/logs/PendingActions";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
 import SendCommand from "@/components/modals/agents/SendCommand";
 import AgentRecovery from "@/components/modals/agents/AgentRecovery";
+import RunScript from "@/components/modals/agents/RunScript";
 
 export default {
   name: "AgentTable",
@@ -360,6 +372,7 @@ export default {
     PolicyAdd,
     SendCommand,
     AgentRecovery,
+    RunScript,
   },
   mixins: [mixins],
   data() {
@@ -374,6 +387,7 @@ export default {
       showRebootLaterModal: false,
       showPolicyAddModal: false,
       showAgentRecovery: false,
+      showRunScript: false,
       policyAddPk: null,
     };
   },

@@ -22,4 +22,5 @@ urlpatterns = [
     path("installagent/", views.install_agent),
     path("<int:pk>/ping/", views.ping),
     path("recover/", views.recover),
+    path("runscript/", views.run_script),
 ]

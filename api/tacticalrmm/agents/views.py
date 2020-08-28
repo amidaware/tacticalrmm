@@ -26,6 +26,7 @@ from winupdate.models import WinUpdatePolicy
 from clients.models import Client, Site
 from accounts.models import User
 from core.models import CoreSettings
+from scripts.models import Script
 
 from .serializers import AgentSerializer, AgentHostnameSerializer, AgentTableSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
@@ -461,4 +462,58 @@ def recover(request):
     ).save()
 
     return Response(f"Recovery will be attempted on the agent's next check-in")
+
+
+@api_view(["POST"])
+def run_script(request):
+    agent = get_object_or_404(Agent, pk=request.data["pk"])
+    script = get_object_or_404(Script, pk=request.data["scriptPK"])
+
+    output = request.data["output"]
+
+    req_timeout = int(request.data["timeout"]) + 3
+
+    if output == "wait":
+        r = agent.salt_api_cmd(
+            timeout=req_timeout,
+            func="win_agent.run_script",
+            arg=script.filepath,
+            kwargs={
+                "filename": script.filename,
+                "shell": script.shell,
+                "timeout": request.data["timeout"],
+            },
+        )
+
+        if isinstance(r, dict):
+            if r["stdout"]:
+                return Response(r["stdout"])
+            elif r["stderr"]:
+                return Response(r["stderr"])
+            else:
+                try:
+                    r["retcode"]
+                except KeyError:
+                    return notify_error("Something went wrong")
+
+                return Response(f"Return code: {r['retcode']}")
+
+        else:
+            return notify_error(str(r))
+
+    else:
+        r = agent.salt_api_async(
+            func="win_agent.run_script",
+            arg=script.filepath,
+            kwargs={
+                "filename": script.filename,
+                "shell": script.shell,
+                "timeout": request.data["timeout"],
+            },
+        )
+
+        if r != "timeout":
+            return Response(f"{script.name} will now be run on {agent.hostname}")
+        else:
+            return notify_error("Something went wrong")
 

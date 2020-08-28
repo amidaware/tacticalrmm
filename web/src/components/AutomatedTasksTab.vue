@@ -19,6 +19,7 @@
         <q-table
           dense
           class="tabs-tbl-sticky"
+          :style="{'max-height': tabsTableHeight}"
           :data="tasks"
           :columns="columns"
           :row-key="row => row.id"
@@ -226,7 +227,7 @@ export default {
     },
   },
   computed: {
-    ...mapGetters(["selectedAgentPk"]),
+    ...mapGetters(["selectedAgentPk", "tabsTableHeight"]),
     ...mapState({
       automatedTasks: state => state.automatedTasks,
     }),

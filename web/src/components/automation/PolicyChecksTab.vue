@@ -70,6 +70,7 @@
         <q-table
           dense
           class="tabs-tbl-sticky"
+          style="max-height: 35vh"
           :data="checks"
           :columns="columns"
           row-key="id"

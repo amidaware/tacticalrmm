@@ -95,7 +95,13 @@
         </template>
 
         <template v-slot:after>
-          <q-splitter v-model="innerModel" horizontal style="height: 87vh">
+          <q-splitter
+            v-model="innerModel"
+            reverse
+            horizontal
+            style="height: 87vh"
+            @input="setSplitter(innerModel)"
+          >
             <template v-slot:before>
               <q-tabs
                 v-model="tab"
@@ -120,6 +126,9 @@
                 :userName="user"
                 @refreshEdit="refreshEntireSite"
               />
+            </template>
+            <template v-slot:separator>
+              <q-avatar color="primary" text-color="white" size="30px" icon="drag_indicator" />
             </template>
             <template v-slot:after>
               <SubTableTabs />
@@ -167,7 +176,7 @@ export default {
     AlertsIcon,
     PolicyAdd,
     EditSites,
-    EditClients
+    EditClients,
   },
   data() {
     return {
@@ -187,54 +196,54 @@ export default {
       columns: [
         {
           name: "smsalert",
-          align: "left"
+          align: "left",
         },
         {
           name: "emailalert",
-          align: "left"
+          align: "left",
         },
         {
           name: "checks-status",
-          align: "left"
+          align: "left",
         },
         {
           name: "client",
           label: "Client",
           field: "client",
           sortable: true,
-          align: "left"
+          align: "left",
         },
         {
           name: "site",
           label: "Site",
           field: "site",
           sortable: true,
-          align: "left"
+          align: "left",
         },
         {
           name: "hostname",
           label: "Hostname",
           field: "hostname",
           sortable: true,
-          align: "left"
+          align: "left",
         },
         {
           name: "description",
           label: "Description",
           field: "description",
           sortable: true,
-          align: "left"
+          align: "left",
         },
         {
           name: "user",
           label: "User",
           field: "logged_in_username",
           sortable: true,
-          align: "left"
+          align: "left",
         },
         {
           name: "patchespending",
-          align: "left"
+          align: "left",
         },
         /* {
           name: "antivirus",
@@ -243,28 +252,28 @@ export default {
         {
           name: "agentstatus",
           field: "status",
-          align: "left"
+          align: "left",
         },
         {
           name: "needsreboot",
           field: "needs_reboot",
-          align: "left"
+          align: "left",
         },
         {
           name: "lastseen",
           label: "Last Response",
           field: "last_seen",
           sortable: true,
-          align: "left"
+          align: "left",
         },
         {
           name: "boottime",
           label: "Boot Time",
           field: "boot_time",
           sortable: true,
-          align: "left"
-        }
-      ]
+          align: "left",
+        },
+      ],
     };
   },
   methods: {
@@ -360,14 +369,17 @@ export default {
       this.poll = setInterval(() => {
         this.$store.dispatch("checkVer");
       }, 60 * 5 * 1000);
-    }
+    },
+    setSplitter(val) {
+      this.$store.commit("SET_SPLITTER", val);
+    },
   },
   computed: {
     ...mapState({
       user: state => state.username,
       clientsTree: state => state.tree,
       treeReady: state => state.treeReady,
-      clients: state => state.clients
+      clients: state => state.clients,
     }),
     ...mapGetters(["selectedAgentPk", "needRefresh"]),
     allClientsActive() {
@@ -382,9 +394,9 @@ export default {
     activeNode() {
       return {
         client: this.clientActive,
-        site: this.siteActive
+        site: this.siteActive,
       };
-    }
+    },
   },
   created() {
     this.getTree();
@@ -397,7 +409,7 @@ export default {
   },
   beforeDestroy() {
     clearInterval(this.poll);
-  }
+  },
 };
 </script>
 

@@ -58,6 +58,7 @@
         <q-table
           dense
           class="tabs-tbl-sticky"
+          :style="{'max-height': tabsTableHeight}"
           :data="checks"
           :columns="columns"
           :row-key="row => row.id + row.check_type"
@@ -444,7 +445,7 @@ export default {
     },
   },
   computed: {
-    ...mapGetters(["selectedAgentPk", "checks"]),
+    ...mapGetters(["selectedAgentPk", "checks", "tabsTableHeight"]),
   },
 };
 </script>

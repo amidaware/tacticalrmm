@@ -34,6 +34,8 @@ export default function () {
       scripts: [],
       toggleScriptManager: false,
       needrefresh: false,
+      tableHeight: "35vh",
+      tabHeight: "35vh",
     },
     getters: {
       loggedIn(state) {
@@ -75,7 +77,13 @@ export default function () {
       },
       needRefresh(state) {
         return state.needrefresh;
-      }
+      },
+      agentTableHeight(state) {
+        return state.tableHeight;
+      },
+      tabsTableHeight(state) {
+        return state.tabHeight;
+      },
     },
     mutations: {
       TOGGLE_SCRIPT_MANAGER(state, action) {
@@ -129,7 +137,13 @@ export default function () {
       },
       SET_REFRESH_NEEDED(state, action) {
         state.needrefresh = action;
-      }
+      },
+      SET_SPLITTER(state, val) {
+        const agentHeight = Math.abs(100 - val - 15);
+        const tabsHeight = Math.abs(val - 10);
+        agentHeight <= 15.0 ? state.tableHeight = "15vh" : state.tableHeight = `${agentHeight}vh`;
+        tabsHeight <= 15.0 ? state.tabHeight = "15vh" : state.tabHeight = `${tabsHeight}vh`;
+      },
     },
     actions: {
       loadAutomatedTasks(context, pk) {

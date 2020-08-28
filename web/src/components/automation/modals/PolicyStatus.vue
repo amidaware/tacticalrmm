@@ -9,6 +9,7 @@
       <q-table
         dense
         class="tabs-tbl-sticky"
+        style="max-height: 35vh"
         :data="tableData"
         :columns="columns"
         row-key="id"

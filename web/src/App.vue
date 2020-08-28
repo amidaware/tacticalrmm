@@ -6,13 +6,12 @@
 
 <script>
 export default {
-  name: "App"
+  name: "App",
 };
 </script>
 
 <style lang="sass">
 .tabs-tbl-sticky
-  max-height: 35vh
 
   .q-table__top,
   .q-table__bottom,
@@ -54,7 +53,6 @@ export default {
     top: 0
 
 .agents-tbl-sticky
-  max-height: 35vh
 
   .q-table__top,
   .q-table__bottom,

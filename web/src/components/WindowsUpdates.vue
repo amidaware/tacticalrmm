@@ -9,6 +9,7 @@
     <q-table
       dense
       class="tabs-tbl-sticky"
+      :style="{'max-height': tabsTableHeight}"
       :data="sortedUpdates"
       :columns="columns"
       :visible-columns="visibleColumns"
@@ -120,50 +121,50 @@ export default {
       pagination: {
         rowsPerPage: 0,
         sortBy: "installed",
-        descending: false
+        descending: false,
       },
       columns: [
         { name: "id", label: "ID", field: "id" },
         {
           name: "action",
           field: "action",
-          align: "left"
+          align: "left",
         },
         {
           name: "installed",
           field: "installed",
-          align: "left"
+          align: "left",
         },
         {
           name: "severity",
           label: "Severity",
           field: "severity",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "title",
           label: "Name",
           field: "title",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "description",
           label: "Description",
           field: "description",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "date_installed",
           label: "Installed On",
           field: "date_installed",
           align: "left",
-          sortable: true
-        }
+          sortable: true,
+        },
       ],
-      visibleColumns: ["action", "installed", "severity", "title", "description", "date_installed"]
+      visibleColumns: ["action", "installed", "severity", "title", "description", "date_installed"],
     };
   },
   methods: {
@@ -185,15 +186,15 @@ export default {
         title: title,
         message: msg.split(". ").join(".<br />"),
         html: true,
-        fullWidth: true
+        fullWidth: true,
       });
-    }
+    },
   },
   computed: {
     ...mapState({
-      updates: state => Object.freeze(state.winUpdates)
+      updates: state => Object.freeze(state.winUpdates),
     }),
-    ...mapGetters(["sortedUpdates", "selectedAgentPk", "managedByWsus"])
-  }
+    ...mapGetters(["sortedUpdates", "selectedAgentPk", "managedByWsus", "tabsTableHeight"]),
+  },
 };
 </script>

@@ -52,7 +52,19 @@ class WinUpdate(models.Model):
 
 class WinUpdatePolicy(models.Model):
     agent = models.ForeignKey(
-        Agent, related_name="winupdatepolicy", on_delete=models.CASCADE
+        "agents.Agent",
+        related_name="winupdatepolicy",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+    )
+
+    policy = models.ForeignKey(
+        "automation.Policy",
+        related_name="winupdatepolicy",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
 
     critical = models.CharField(
@@ -87,4 +99,7 @@ class WinUpdatePolicy(models.Model):
     email_if_fail = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.agent.hostname
+        if self.agent:
+            return self.agent.hostname
+        else:
+            return self.policy.name

@@ -103,27 +103,43 @@
             @input="setSplitter(innerModel)"
           >
             <template v-slot:before>
-              <q-tabs
-                v-model="tab"
-                dense
-                no-caps
-                inline-label
-                class="text-grey"
-                active-color="primary"
-                indicator-color="primary"
-                align="left"
-                narrow-indicator
-              >
-                <q-tab name="server" icon="fas fa-server" label="Servers" />
-                <q-tab name="workstation" icon="computer" label="Workstations" />
-                <q-tab name="mixed" label="Mixed" />
-              </q-tabs>
+              <div class="row">
+                <q-tabs
+                  v-model="tab"
+                  dense
+                  no-caps
+                  inline-label
+                  class="text-grey"
+                  active-color="primary"
+                  indicator-color="primary"
+                  align="left"
+                  narrow-indicator
+                >
+                  <q-tab name="server" icon="fas fa-server" label="Servers" />
+                  <q-tab name="workstation" icon="computer" label="Workstations" />
+                  <q-tab name="mixed" label="Mixed" />
+                </q-tabs>
+                <q-space />
+                <q-input
+                  v-model="search"
+                  label="Search"
+                  dense
+                  outlined
+                  clearable
+                  class="q-pr-md q-pb-xs"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="search" color="primary" />
+                  </template>
+                </q-input>
+              </div>
               <AgentTable
                 :frame="frame"
                 :columns="columns"
                 :tab="tab"
                 :filter="filteredAgents"
                 :userName="user"
+                :search="search"
                 @refreshEdit="refreshEntireSite"
               />
             </template>
@@ -193,6 +209,7 @@ export default {
       siteActive: "",
       frame: [],
       poll: null,
+      search: null,
       columns: [
         {
           name: "smsalert",

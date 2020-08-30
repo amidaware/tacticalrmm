@@ -5,6 +5,7 @@
       class="agents-tbl-sticky"
       :style="{'max-height': agentTableHeight}"
       :data="filter"
+      :filter="search"
       :columns="columns"
       row-key="id"
       binary-state-sort
@@ -364,7 +365,7 @@ import RunScript from "@/components/modals/agents/RunScript";
 
 export default {
   name: "AgentTable",
-  props: ["frame", "columns", "tab", "filter", "userName"],
+  props: ["frame", "columns", "tab", "filter", "userName", "search"],
   components: {
     EditAgent,
     RebootLater,

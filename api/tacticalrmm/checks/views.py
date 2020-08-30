@@ -110,15 +110,21 @@ class GetUpdateDeleteCheck(APIView):
 
         # set event id to 0 if wildcard because it needs to be an integer field for db
         # will be ignored anyway by the agent when doing wildcard check
-        if check.check_type == "eventlog" and request.data["event_id_is_wildcard"]:
-            if check.agent.not_supported(version_added="0.10.2"):
-                return notify_error(
-                    {
-                        "non_field_errors": "Wildcard is only available in agent 0.10.2 or greater"
-                    }
-                )
+        if check.check_type == "eventlog":
+            try:
+                request.data["event_id_is_wildcard"]
+            except KeyError:
+                pass
+            else:
+                if request.data["event_id_is_wildcard"]:
+                    if check.agent.not_supported(version_added="0.10.2"):
+                        return notify_error(
+                            {
+                                "non_field_errors": "Wildcard is only available in agent 0.10.2 or greater"
+                            }
+                        )
 
-            request.data["event_id"] = 0
+                    request.data["event_id"] = 0
 
         serializer = CheckSerializer(instance=check, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)

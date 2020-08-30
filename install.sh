@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="3"
+SCRIPT_VERSION="4"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
@@ -74,32 +74,34 @@ done
 echo -ne "${YELLOW}Enter the root domain for LetsEncrypt (e.g. example.com or example.co.uk)${NC}: "
 read rootdomain
 
-BEHIND_NAT=false
-IPV4=$(ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
-
 # if server is behind NAT we need to add the 3 subdomains to the host file 
 # so that nginx can properly route between the frontend, backend and meshcentral
-if echo "$IPV4" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
-    BEHIND_NAT=true
-    CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain")
+# EDIT 8-29-2020
+# running this even if server is __not__ behind NAT just to make DNS resolving faster
+# this also allows the install script to properly finish even if DNS has not fully propagated
+CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain")
 
-    if ! [[ $CHECK_HOSTS ]]; then
-        echo -ne "${GREEN}This server appears to be behind NAT.${NC}\n"
-        echo -ne "${GREEN}If so, you will need append your 3 subdomains to the line starting with 127.0.1.1 in your hosts file.${NC}\n"
-        until [[ $edithosts =~ (y|n) ]]; do
-            echo -ne "${GREEN}Would you like me to do this for you? [y/n]${NC}: "
-            read edithosts
-        done
+if ! [[ $CHECK_HOSTS ]]; then
+    echo -ne "${GREEN}We need to append your 3 subdomains to the line starting with 127.0.1.1 in your hosts file.${NC}\n"
+    until [[ $edithosts =~ (y|n) ]]; do
+        echo -ne "${GREEN}Would you like me to do this for you? [y/n]${NC}: "
+        read edithosts
+    done
 
-        if [[ $edithosts == "y" ]]; then
-            sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts
-        else
-            echo -ne "${GREEN}Please manually edit your hosts file to match the line below and re-run this script.${NC}\n"
-            sed "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts | grep 127.0.1.1
-            exit 1
-        fi
-
+    if [[ $edithosts == "y" ]]; then
+        sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts
+    else
+        echo -ne "${GREEN}Please manually edit your /etc/hosts file to match the line below and re-run this script.${NC}\n"
+        sed "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts | grep 127.0.1.1
+        exit 1
     fi
+fi
+
+
+BEHIND_NAT=false
+IPV4=$(ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
+if echo "$IPV4" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
+    BEHIND_NAT=true 
 fi
 
 echo -ne "${YELLOW}Create a username for meshcentral${NC}: "

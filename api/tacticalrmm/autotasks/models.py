@@ -48,6 +48,12 @@ class AutomatedTask(models.Model):
         related_name="autoscript",
         on_delete=models.CASCADE,
     )
+    script_args = ArrayField(
+        models.CharField(max_length=255, null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
     assigned_check = models.ForeignKey(
         "checks.Check",
         null=True,

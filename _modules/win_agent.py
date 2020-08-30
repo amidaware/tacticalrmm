@@ -46,6 +46,7 @@ def get_services():
 
 
 def run_python_script(filename, timeout, script_type="userdefined"):
+    # no longer used in agent version 0.11.0
     python_bin = os.path.join("c:\\salt\\bin", "python.exe")
     file_path = os.path.join("c:\\windows\\temp", filename)
 
@@ -63,10 +64,20 @@ def run_python_script(filename, timeout, script_type="userdefined"):
     return __salt__["cmd.run_all"](f"{python_bin} {file_path}", timeout=timeout)
 
 
-def run_script(filepath, filename, shell, timeout):
+def run_script(filepath, filename, shell, timeout, args=[], bg=False):
     if shell == "powershell" or shell == "cmd":
-
-        return __salt__["cmd.script"](filepath, shell=shell, timeout=timeout)
+        if args:
+            return __salt__["cmd.script"](
+                source=filepath,
+                args=" ".join(map(lambda x: f'"{x}"', args)),
+                shell=shell,
+                timeout=timeout,
+                bg=bg,
+            )
+        else:
+            return __salt__["cmd.script"](
+                source=filepath, shell=shell, timeout=timeout, bg=bg
+            )
 
     elif shell == "python":
         python_bin = os.path.join("c:\\salt\\bin", "python.exe")
@@ -80,7 +91,14 @@ def run_script(filepath, filename, shell, timeout):
 
         __salt__["cp.get_file"](filepath, file_path)
 
-        return __salt__["cmd.run_all"](f"{python_bin} {file_path}", timeout=timeout)
+        salt_cmd = "cmd.run_bg" if bg else "cmd.run_all"
+
+        if args:
+            a = " ".join(map(lambda x: f'"{x}"', args))
+            cmd = f"{python_bin} {file_path} {a}"
+            return __salt__[salt_cmd](cmd, timeout=timeout)
+        else:
+            return __salt__[salt_cmd](f"{python_bin} {file_path}", timeout=timeout)
 
 
 def uninstall_agent():

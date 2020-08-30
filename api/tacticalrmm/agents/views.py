@@ -470,6 +470,7 @@ def run_script(request):
     script = get_object_or_404(Script, pk=request.data["scriptPK"])
 
     output = request.data["output"]
+    args = request.data["args"]
 
     req_timeout = int(request.data["timeout"]) + 3
 
@@ -477,11 +478,12 @@ def run_script(request):
         r = agent.salt_api_cmd(
             timeout=req_timeout,
             func="win_agent.run_script",
-            arg=script.filepath,
             kwargs={
+                "filepath": script.filepath,
                 "filename": script.filename,
                 "shell": script.shell,
                 "timeout": request.data["timeout"],
+                "args": args,
             },
         )
 
@@ -499,16 +501,23 @@ def run_script(request):
                 return Response(f"Return code: {r['retcode']}")
 
         else:
-            return notify_error(str(r))
+            if r == "timeout":
+                return notify_error("Unable to contact the agent")
+            elif r == "error":
+                return notify_error("Something went wrong")
+            else:
+                return notify_error(str(r))
 
     else:
         r = agent.salt_api_async(
             func="win_agent.run_script",
-            arg=script.filepath,
             kwargs={
+                "filepath": script.filepath,
                 "filename": script.filename,
                 "shell": script.shell,
                 "timeout": request.data["timeout"],
+                "args": args,
+                "bg": True,
             },
         )
 

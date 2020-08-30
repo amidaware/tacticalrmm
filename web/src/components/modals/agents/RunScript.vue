@@ -16,6 +16,20 @@
           label="Select script"
           map-options
           emit-value
+          options-dense
+        />
+      </q-card-section>
+      <q-card-section>
+        <q-select
+          label="Script Arguments (press Enter after typing each argument)"
+          filled
+          v-model="args"
+          use-input
+          use-chips
+          multiple
+          hide-dropdown-icon
+          input-debounce="0"
+          new-value-mode="add"
         />
       </q-card-section>
       <q-card-section>
@@ -71,6 +85,7 @@ export default {
       timeout: 30,
       ret: null,
       output: "wait",
+      args: [],
     };
   },
   computed: {
@@ -98,6 +113,7 @@ export default {
         timeout: this.timeout,
         scriptPK: this.scriptPK,
         output: this.output,
+        args: this.args,
       };
       this.$axios
         .post("/agents/runscript/", data)

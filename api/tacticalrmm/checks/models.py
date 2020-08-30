@@ -107,6 +107,12 @@ class Check(models.Model):
         null=True,
         blank=True,
     )
+    script_args = ArrayField(
+        models.CharField(max_length=255, null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
     timeout = models.PositiveIntegerField(null=True, blank=True)
     stdout = models.TextField(null=True, blank=True)
     stderr = models.TextField(null=True, blank=True)

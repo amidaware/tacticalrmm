@@ -32,6 +32,7 @@
                   <q-select
                     outlined
                     dense
+                    options-dense
                     v-model="settings.default_time_zone"
                     :options="allTimezones"
                     class="col-6"

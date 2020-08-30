@@ -70,6 +70,7 @@
         <q-select
           :disable="isBuiltInScript"
           dense
+          options-dense
           class="col-10"
           outlined
           v-model="script.shell"

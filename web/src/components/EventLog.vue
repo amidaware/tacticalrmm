@@ -4,6 +4,7 @@
       <div class="col-2">
         <q-select
           dense
+          options-dense
           outlined
           v-model="days"
           :options="lastDays"
@@ -88,15 +89,15 @@ export default {
       pagination: {
         rowsPerPage: 0,
         sortBy: "record",
-        descending: true
+        descending: true,
       },
       columns: [
         { name: "eventType", label: "Type", field: "eventType", align: "left", sortable: true },
         { name: "source", label: "Source", field: "source", align: "left", sortable: true },
         { name: "eventID", label: "Event ID", field: "eventID", align: "left", sortable: true },
         { name: "time", label: "Time", field: "time", align: "left", sortable: true },
-        { name: "message", label: "Message (click to view full)", field: "message", align: "left", sortable: true }
-      ]
+        { name: "message", label: "Message (click to view full)", field: "message", align: "left", sortable: true },
+      ],
     };
   },
   computed: {
@@ -105,7 +106,7 @@ export default {
     },
     showDays() {
       return `Show last ${this.days} days`;
-    }
+    },
   },
   methods: {
     formatMessage(msg) {
@@ -115,7 +116,7 @@ export default {
       this.$q.dialog({
         message: `<pre>${msg}</pre>`,
         html: true,
-        fullWidth: true
+        fullWidth: true,
       });
     },
     getEventLog() {
@@ -131,10 +132,10 @@ export default {
           this.$q.loading.hide();
           this.notifyError(e.response.data);
         });
-    }
+    },
   },
   created() {
     this.getEventLog();
-  }
+  },
 };
 </script>

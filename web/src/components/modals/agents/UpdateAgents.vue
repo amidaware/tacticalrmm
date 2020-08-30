@@ -10,7 +10,14 @@
     <q-separator />
     <q-card-section>
       Select Version
-      <q-select square outlined v-model="version" :options="Object.values(versions)" />
+      <q-select
+        square
+        dense
+        options-dense
+        outlined
+        v-model="version"
+        :options="Object.values(versions)"
+      />
     </q-card-section>
     <q-card-section v-show="version !== null">
       Select Agent
@@ -38,7 +45,7 @@ export default {
       version: null,
       agents: [],
       group: [],
-      selectAll: false
+      selectAll: false,
     };
   },
   methods: {
@@ -68,7 +75,7 @@ export default {
           this.notifySuccess("Agents will now be updated");
         })
         .catch(() => this.notifyError("Something went wrong"));
-    }
+    },
   },
   computed: {
     agentPKs() {
@@ -83,10 +90,10 @@ export default {
         options.push(opt);
       }
       return options;
-    }
+    },
   },
   created() {
     this.getVersions();
-  }
+  },
 };
 </script>

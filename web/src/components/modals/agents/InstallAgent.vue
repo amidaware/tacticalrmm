@@ -15,6 +15,7 @@
           <q-select
             outlined
             dense
+            options-dense
             label="Client"
             v-model="client"
             :options="Object.keys(tree)"
@@ -22,7 +23,7 @@
           />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
-          <q-select dense outlined label="Site" v-model="site" :options="sites" />
+          <q-select dense options-dense outlined label="Site" v-model="site" :options="sites" />
         </q-card-section>
         <q-card-section>
           <div class="q-gutter-sm">
@@ -57,7 +58,13 @@
         </q-card-section>
         <q-card-section>
           Select Version
-          <q-select dense outlined v-model="version" :options="Object.values(versions)" />
+          <q-select
+            dense
+            options-dense
+            outlined
+            v-model="version"
+            :options="Object.values(versions)"
+          />
         </q-card-section>
         <q-card-section>
           Installation Method

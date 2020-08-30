@@ -23,6 +23,7 @@
             <q-select
               dark
               dense
+              options-dense
               outlined
               v-model="agent"
               :options="agents"
@@ -34,6 +35,7 @@
             <q-select
               dark
               dense
+              options-dense
               outlined
               v-model="order"
               :options="orders"
@@ -88,7 +90,7 @@ export default {
       agent: "all",
       agents: [],
       order: "latest",
-      orders: ["latest", "oldest"]
+      orders: ["latest", "oldest"],
     };
   },
   methods: {
@@ -113,12 +115,12 @@ export default {
     },
     hideLogModal() {
       this.$store.commit("logs/TOGGLE_LOG_MODAL", false);
-    }
+    },
   },
   computed: {
     ...mapState({
-      toggleLogModal: state => state.logs.toggleLogModal
-    })
-  }
+      toggleLogModal: state => state.logs.toggleLogModal,
+    }),
+  },
 };
 </script>

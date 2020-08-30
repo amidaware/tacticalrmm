@@ -20,6 +20,7 @@
       <q-card-section>
         <q-select
           dense
+          options-dense
           outlined
           v-model="eventlogcheck.log_name"
           :options="logNameOptions"
@@ -29,6 +30,7 @@
       <q-card-section>
         <q-select
           dense
+          options-dense
           outlined
           v-model="eventlogcheck.fail_when"
           :options="failWhenOptions"
@@ -83,6 +85,7 @@
         <q-select
           outlined
           dense
+          options-dense
           v-model="eventlogcheck.fails_b4_alert"
           :options="failOptions"
           label="Number of consecutive failures before alert"

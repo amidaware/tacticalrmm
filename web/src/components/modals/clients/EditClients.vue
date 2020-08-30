@@ -15,6 +15,7 @@
           <q-select
             :rules="[val => !!val || '*Required']"
             outlined
+            options-dense
             label="Select client"
             v-model="client.id"
             :options="clients"
@@ -50,8 +51,8 @@ export default {
       clients: [],
       client: {
         client: null,
-        id: null
-      }
+        id: null,
+      },
     };
   },
   computed: {
@@ -60,7 +61,7 @@ export default {
         const origName = this.clients.find(i => i.value === this.client.id).label;
         return this.client.client === origName ? false : true;
       }
-    }
+    },
   },
   methods: {
     getClients() {
@@ -88,10 +89,10 @@ export default {
             this.notifyError(e.response.data.non_field_errors);
           }
         });
-    }
+    },
   },
   created() {
     this.getClients();
-  }
+  },
 };
 </script>

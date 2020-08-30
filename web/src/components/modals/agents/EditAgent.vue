@@ -29,6 +29,7 @@
                   <q-select
                     @input="agent.site = sites[0]"
                     dense
+                    options-dense
                     outlined
                     v-model="agent.client"
                     :options="Object.keys(tree)"
@@ -38,13 +39,21 @@
                 <q-card-section class="row">
                   <div class="col-2">Site:</div>
                   <div class="col-2"></div>
-                  <q-select class="col-8" dense outlined v-model="agent.site" :options="sites" />
+                  <q-select
+                    class="col-8"
+                    dense
+                    options-dense
+                    outlined
+                    v-model="agent.site"
+                    :options="sites"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Type:</div>
                   <div class="col-2"></div>
                   <q-select
                     dense
+                    options-dense
                     outlined
                     v-model="agent.monitoring_type"
                     :options="monTypes"
@@ -68,6 +77,7 @@
                   <q-select
                     outlined
                     dense
+                    options-dense
                     v-model="timezone"
                     :options="allTimezones"
                     class="col-8"
@@ -125,6 +135,7 @@
                   <div class="col-4"></div>
                   <q-select
                     dense
+                    options-dense
                     class="col-5"
                     outlined
                     v-model="agent.winupdatepolicy[0].critical"
@@ -138,6 +149,7 @@
                   <div class="col-4"></div>
                   <q-select
                     dense
+                    options-dense
                     class="col-5"
                     outlined
                     v-model="agent.winupdatepolicy[0].important"
@@ -151,6 +163,7 @@
                   <div class="col-4"></div>
                   <q-select
                     dense
+                    options-dense
                     class="col-5"
                     outlined
                     v-model="agent.winupdatepolicy[0].moderate"
@@ -164,6 +177,7 @@
                   <div class="col-4"></div>
                   <q-select
                     dense
+                    options-dense
                     class="col-5"
                     outlined
                     v-model="agent.winupdatepolicy[0].low"
@@ -177,6 +191,7 @@
                   <div class="col-4"></div>
                   <q-select
                     dense
+                    options-dense
                     class="col-5"
                     outlined
                     v-model="agent.winupdatepolicy[0].other"
@@ -193,6 +208,7 @@
                   <div class="col-4"></div>
                   <q-select
                     dense
+                    options-dense
                     class="col-5"
                     outlined
                     v-model="agent.winupdatepolicy[0].run_time_hour"
@@ -326,7 +342,7 @@ export default {
       severityOptions: [
         { label: "Manual", value: "manual" },
         { label: "Approve", value: "approve" },
-        { label: "Ignore", value: "ignore" }
+        { label: "Ignore", value: "ignore" },
       ],
       timeOptions: scheduledTimes,
       thumbStyle: {
@@ -334,8 +350,8 @@ export default {
         borderRadius: "5px",
         backgroundColor: "#027be3",
         width: "5px",
-        opacity: 0.75
-      }
+        opacity: 0.75,
+      },
     };
   },
   methods: {
@@ -388,7 +404,7 @@ export default {
           this.notifySuccess("Agent was edited!");
         })
         .catch(() => this.notifyError("Something went wrong"));
-    }
+    },
   },
   computed: {
     ...mapGetters(["selectedAgentPk"]),
@@ -396,11 +412,11 @@ export default {
       if (this.agentLoaded && this.clientsLoaded) {
         return this.tree[this.agent.client];
       }
-    }
+    },
   },
   created() {
     this.getAgentInfo();
     this.getClientsSites();
-  }
+  },
 };
 </script>

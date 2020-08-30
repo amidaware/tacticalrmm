@@ -22,6 +22,7 @@
           <q-select
             :rules="[val => !!val || '*Required']"
             dense
+            options-dense
             outlined
             v-model="autotask.script"
             :options="scriptOptions"
@@ -82,6 +83,7 @@
           <q-select
             :rules="[val => !!val || '*Required']"
             dense
+            options-dense
             outlined
             v-model="autotask.assigned_check"
             :options="checksOptions"
@@ -124,7 +126,7 @@ import mixins from "@/mixins/mixins";
 export default {
   name: "AddAutomatedTask",
   props: {
-    policypk: Number
+    policypk: Number,
   },
   mixins: [mixins],
   data() {
@@ -137,7 +139,7 @@ export default {
         run_time_days: [],
         run_time_minute: null,
         task_type: "scheduled",
-        timeout: 120
+        timeout: 120,
       },
       dayOptions: [
         { label: "Monday", value: 0 },
@@ -146,8 +148,8 @@ export default {
         { label: "Thursday", value: 3 },
         { label: "Friday", value: 4 },
         { label: "Saturday", value: 5 },
-        { label: "Sunday", value: 6 }
-      ]
+        { label: "Sunday", value: 6 },
+      ],
     };
   },
   methods: {
@@ -164,7 +166,7 @@ export default {
 
         const data = {
           ...pk,
-          autotask: this.autotask
+          autotask: this.autotask,
         };
 
         axios
@@ -186,7 +188,7 @@ export default {
     },
     getScripts() {
       this.$store.dispatch("getScripts");
-    }
+    },
   },
   computed: {
     ...mapGetters(["selectedAgentPk", "scripts"]),
@@ -224,10 +226,10 @@ export default {
       } else {
         return false;
       }
-    }
+    },
   },
   created() {
     this.getScripts();
-  }
+  },
 };
 </script>

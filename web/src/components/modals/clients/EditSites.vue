@@ -15,6 +15,7 @@
           <q-select
             :rules="[val => !!val || '*Required']"
             outlined
+            options-dense
             label="Select client"
             v-model="client"
             :options="Object.keys(tree)"
@@ -25,6 +26,7 @@
           <q-select
             :rules="[val => !!val || '*Required']"
             outlined
+            options-dense
             label="Select site"
             v-model="site"
             :options="sites"
@@ -58,7 +60,7 @@ export default {
       tree: null,
       client: null,
       site: null,
-      newName: null
+      newName: null,
     };
   },
   computed: {
@@ -73,7 +75,7 @@ export default {
       if (this.site !== null) {
         return this.newName === this.site ? false : true;
       }
-    }
+    },
   },
   methods: {
     getTree() {
@@ -86,7 +88,7 @@ export default {
       const data = {
         client: this.client,
         site: this.site,
-        name: this.newName
+        name: this.newName,
       };
       axios
         .patch("/clients/editsite/", data)
@@ -96,10 +98,10 @@ export default {
           this.notifySuccess("Site was edited");
         })
         .catch(e => this.notifyError(e.response.data));
-    }
+    },
   },
   created() {
     this.getTree();
-  }
+  },
 };
 </script>

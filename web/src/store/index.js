@@ -231,6 +231,8 @@ export default function () {
                 color: sites_arr[i].split("|")[2]
               });
             }
+            // sort alphabetically by site name
+            let alphaSort = child_single.sort((a, b) => a.label.toLowerCase() > b.label.toLowerCase() ? 1 : -1);
             output.push({
               label: prop.split("|")[0],
               id: prop.split("|")[1],
@@ -238,14 +240,14 @@ export default function () {
               header: "root",
               icon: "business",
               color: prop.split("|")[2],
-              children: child_single
+              children: alphaSort
             });
           }
 
           // first sort alphabetically, then move failing clients to the top
-          const sortedAlpha = output.sort((a, b) => (a.label > b.label ? 1 : -1));
+          const sortedAlpha = output.sort((a, b) => (a.label.toLowerCase() > b.label.toLowerCase() ? 1 : -1));
           const sortedByFailing = sortedAlpha.sort(a =>
-            a.iconColor === "negative" ? -1 : 1
+            a.color === "negative" ? -1 : 1
           );
           commit("loadTree", sortedByFailing);
           //commit("destroySubTable");

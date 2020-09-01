@@ -91,13 +91,13 @@
     </q-card-section>
     <q-card-section>
       <div class="q-gutter-sm">
-        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="0" label="Monday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="1" label="Tuesday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="2" label="Wednesday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="3" label="Thursday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="4" label="Friday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="5" label="Saturday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="6" label="Sunday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_day_mon" label="Monday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_day_tue" label="Tuesday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_day_wed" label="Wednesday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_day_thur" label="Thursday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_day_fri" label="Friday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_day_sat" label="Saturday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_day_sun" label="Sunday" />
       </div>
     </q-card-section>
     <!-- Reboot After Installation -->
@@ -145,18 +145,26 @@
 import { scheduledTimes } from "@/mixins/data";
 
 export default {
-  name: "WindowsUpdateForm",
+  name: "PatchPolicyForm",
   data() {
     return {
       winupdatepolicy: {
-        policy: "",
-        critical: "",
-        important: "",
-        moderate: "",
-        low: "",
-        other: "",
-        run_time_hour: "",
-        run_time_days: "",
+        agent: null,
+        policy: null,
+        critical: "ignore",
+        important: "ignore",
+        moderate: "ignore",
+        low: "ignore",
+        other: "ignore",
+        run_time_hour: 0,
+        repeat: 0,
+        run_time_day_mon: false,
+        run_time_day_tue: false,
+        run_time_day_wed: false,
+        run_time_day_thur: false,
+        run_time_day_fri: false,
+        run_time_day_sat: false,
+        run_time_day_sun: false,
         reboot_after_install: "never",
         reprocess_failed: false,
         reprocess_failed_times: 5,

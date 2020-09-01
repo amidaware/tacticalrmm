@@ -139,6 +139,32 @@
                     <q-item-section>Show Relations</q-item-section>
                   </q-item>
 
+                  <q-item
+                    clickable
+                    v-close-popup
+                    @click="showPatchPolicyModal(props.row)"
+                    id="context-winupdate"
+                    v-if="props.row.patch_policy !== undefined"
+                  >
+                    <q-item-section side>
+                      <q-icon name="system_update" />
+                    </q-item-section>
+                    <q-item-section>Show Patch Policy</q-item-section>
+                  </q-item>
+
+                  <q-item
+                    clickable
+                    v-close-popup
+                    @click="showNewPatchPolicyModal(props.row)"
+                    id="context-winupdate"
+                    v-else
+                  >
+                    <q-item-section side>
+                      <q-icon name="system_update" />
+                    </q-item-section>
+                    <q-item-section>Create Patch Policy</q-item-section>
+                  </q-item>
+
                   <q-separator></q-separator>
 
                   <q-item clickable v-close-popup>
@@ -169,6 +195,21 @@
                   style="cursor:pointer;color:blue;text-decoration:underline"
                   @click="showRelationsModal(props.row)"
                 >{{ `Show Relations (${props.row.clients_count + props.row.sites_count + props.row.agents_count}+)` }}</span>
+              </q-td>
+              <q-td>
+                <span
+                  style="cursor:pointer;color:blue;text-decoration:underline"
+                  @click="showPatchPolicyModal(props.row)"
+                  v-if="props.row.winupdatepolicy !== undefined"
+                >Show Patch Policy</span>
+                <span
+                  style="cursor:pointer;color:blue;text-decoration:underline"
+                  @click="showNewPatchPolicyModal(props.row)"
+                  v-else
+                >Create Patch Policy</span>
+              </q-td>
+              <q-td>
+                <q-icon name="content-copy" />
               </q-td>
             </q-tr>
           </template>
@@ -204,10 +245,11 @@ import PolicyForm from "@/components/automation/modals/PolicyForm";
 import PolicyOverview from "@/components/automation/PolicyOverview";
 import PolicySubTableTabs from "@/components/automation/PolicySubTableTabs";
 import RelationsView from "@/components/automation/modals/RelationsView";
+import PatchPolicyForm from "@/components/modals/agents/PatchPolicyForm";
 
 export default {
   name: "AutomationManager",
-  components: { PolicyForm, PolicyOverview, PolicySubTableTabs, RelationsView },
+  components: { PolicyForm, PolicyOverview, PolicySubTableTabs, RelationsView, PatchPolicyForm },
   mixins: [mixins],
   data() {
     return {
@@ -225,24 +267,36 @@ export default {
           label: "Name",
           field: "name",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "desc",
           label: "Description",
           field: "desc",
-          align: "left"
+          align: "left",
+        },
+        {
+          name: "relations",
+          label: "Relations",
+          field: "relations",
+          align: "left",
+        },
+        {
+          name: "patch_policy",
+          label: "Patch Policy",
+          field: "patch_policy",
+          align: "left",
         },
         {
           name: "actions",
           label: "Actions",
           field: "actions",
-          align: "left"
-        }
+          align: "left",
+        },
       ],
       pagination: {
-        rowsPerPage: 9999
-      }
+        rowsPerPage: 9999,
+      },
     };
   },
   methods: {
@@ -269,7 +323,7 @@ export default {
         .dialog({
           title: "Delete policy?",
           cancel: true,
-          ok: { label: "Delete", color: "negative" }
+          ok: { label: "Delete", color: "negative" },
         })
         .onOk(() => {
           this.$store
@@ -320,7 +374,7 @@ export default {
         name: policy.name,
         desc: policy.desc,
         active: policy.active,
-        enforced: policy.enforced
+        enforced: policy.enforced,
       };
 
       this.$store
@@ -331,16 +385,16 @@ export default {
         .catch(error => {
           this.$q.notify(notifyErrorConfig("An Error occured while editing policy"));
         });
-    }
+    },
   },
   computed: {
     ...mapState({
       policies: state => state.automation.policies,
-      selectedRow: state => state.automation.selectedPolicy
-    })
+      selectedRow: state => state.automation.selectedPolicy,
+    }),
   },
   mounted() {
     this.refresh();
-  }
+  },
 };
 </script>

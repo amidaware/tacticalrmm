@@ -15,7 +15,7 @@ services:
   # Builds Python Virtual Env to share between containers
   venv:
     image: python:3.8
-    command: /bin/bash -c "pip install virtualenv && python -m virtualenv env && ./env/bin/pip install -r requirements.txt"
+    command: /bin/bash -c "pip install virtualenv && python -m virtualenv env && ./env/bin/pip install -r requirements.txt && ./env/bin/pip install -r requirements-dev.txt"
     working_dir: /app
     volumes:
       - ../api/tacticalrmm:/app

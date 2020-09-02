@@ -321,7 +321,7 @@ export default {
         { name: "emailalert", field: "email_alert", align: "left" },
         { name: "policystatus", align: "left" },
         { name: "statusicon", align: "left" },
-        { name: "desc", label: "Description", align: "left", sortable: true },
+        { name: "desc", field: "readable_desc", label: "Description", align: "left", sortable: true },
         { name: "status", label: "Status", field: "status", align: "left", sortable: true },
         {
           name: "moreinfo",

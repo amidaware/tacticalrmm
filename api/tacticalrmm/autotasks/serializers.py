@@ -50,4 +50,4 @@ class TaskRunnerGetSerializer(serializers.ModelSerializer):
 class TaskRunnerPatchSerializer(serializers.ModelSerializer):
     class Meta:
         model = AutomatedTask
-        fields = ["id", "stdout", "stderr", "retcode", "last_run"]
+        fields = "__all__"

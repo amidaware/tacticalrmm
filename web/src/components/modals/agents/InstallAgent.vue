@@ -148,11 +148,11 @@ export default {
       const clientStripped = this.client
         .replace(/\s/g, "")
         .toLowerCase()
-        .replace(/([^a-zA-Z]+)/g, "");
+        .replace(/([^a-zA-Z0-9]+)/g, "");
       const siteStripped = this.site
         .replace(/\s/g, "")
         .toLowerCase()
-        .replace(/([^a-zA-Z]+)/g, "");
+        .replace(/([^a-zA-Z0-9]+)/g, "");
 
       const data = {
         installMethod: this.installMethod,

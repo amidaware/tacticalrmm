@@ -12,15 +12,17 @@ import (
 	"strings"
 )
 
-var Version string
-var Api string
-var Client string
-var Site string
-var Atype string
-var Power string
-var Rdp string
-var Ping string
-var Token string
+var (
+	Version string
+	Api string
+	Client string
+	Site string
+	Atype string
+	Power string
+	Rdp string
+	Ping string
+	Token string
+)
 
 func downloadAgent(filepath string, url string) (err error) {
 

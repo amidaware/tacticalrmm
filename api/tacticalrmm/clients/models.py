@@ -35,6 +35,10 @@ class Client(models.Model):
             if agent.checks["has_failing_checks"]:
                 return True
 
+            if agent.overdue_email_alert or agent.overdue_text_alert:
+                if agent.status == "overdue":
+                    return True
+
         return False
 
 
@@ -72,6 +76,10 @@ class Site(models.Model):
         for agent in agents:
             if agent.checks["has_failing_checks"]:
                 return True
+
+            if agent.overdue_email_alert or agent.overdue_text_alert:
+                if agent.status == "overdue":
+                    return True
 
         return False
 

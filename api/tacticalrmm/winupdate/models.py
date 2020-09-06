@@ -16,6 +16,7 @@ AUTO_APPROVAL_CHOICES = [
     ("manual", "Manual"),
     ("approve", "Approve"),
     ("ignore", "Ignore"),
+    ("inherit", "Inherit"),
 ]
 
 RUN_TIME_HOUR_CHOICES = [(i, dt.time(i).strftime("%I %p")) for i in range(24)]
@@ -68,19 +69,19 @@ class WinUpdatePolicy(models.Model):
     )
 
     critical = models.CharField(
-        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="manual"
+        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="inherit"
     )
     important = models.CharField(
-        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="manual"
+        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="inherit"
     )
     moderate = models.CharField(
-        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="manual"
+        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="inherit"
     )
     low = models.CharField(
-        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="manual"
+        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="inherit"
     )
     other = models.CharField(
-        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="manual"
+        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="inherit"
     )
 
     run_time_hour = models.IntegerField(choices=RUN_TIME_HOUR_CHOICES, default=3)

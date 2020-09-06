@@ -54,7 +54,7 @@ logger.configure(**settings.LOG_CONFIG)
 @permission_classes((IsAuthenticated,))
 def trigger_patch_scan(request):
     agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-    reboot_policy = agent.winupdatepolicy.get().reboot_after_install
+    reboot_policy = agent.get_patch_policy().reboot_after_install
     reboot = False
 
     if reboot_policy == "always":

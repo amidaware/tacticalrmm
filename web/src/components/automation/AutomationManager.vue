@@ -82,7 +82,7 @@
 
                 <q-th v-else-if="col.name === 'enforced'" auto-width :key="col.name">
                   <q-icon name="security" size="1.5em">
-                    <q-tooltip>Enforce Policy (Will override Agent checks)</q-tooltip>
+                    <q-tooltip>Enforce Policy (Will override Agent tasks/checks)</q-tooltip>
                   </q-icon>
                 </q-th>
 
@@ -142,27 +142,13 @@
                   <q-item
                     clickable
                     v-close-popup
-                    @click="showPatchPolicyModal(props.row)"
+                    @click="showEditPatchPolicyModal(props.row)"
                     id="context-winupdate"
-                    v-if="props.row.patch_policy !== undefined"
                   >
                     <q-item-section side>
                       <q-icon name="system_update" />
                     </q-item-section>
-                    <q-item-section>Show Patch Policy</q-item-section>
-                  </q-item>
-
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="showNewPatchPolicyModal(props.row)"
-                    id="context-winupdate"
-                    v-else
-                  >
-                    <q-item-section side>
-                      <q-icon name="system_update" />
-                    </q-item-section>
-                    <q-item-section>Create Patch Policy</q-item-section>
+                    <q-item-section>{{ patchPolicyText(props.row) }}</q-item-section>
                   </q-item>
 
                   <q-separator></q-separator>
@@ -199,14 +185,8 @@
               <q-td>
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
-                  @click="showPatchPolicyModal(props.row)"
-                  v-if="props.row.winupdatepolicy !== undefined"
-                >Show Patch Policy</span>
-                <span
-                  style="cursor:pointer;color:blue;text-decoration:underline"
-                  @click="showNewPatchPolicyModal(props.row)"
-                  v-else
-                >Create Patch Policy</span>
+                  @click="showEditPatchPolicyModal(props.row)"
+                >{{ patchPolicyText(props.row) }}</span>
               </q-td>
               <q-td>
                 <q-icon name="content-copy" />
@@ -235,6 +215,22 @@
     <q-dialog v-model="showRelationsViewModal" @hide="closeRelationsModal">
       <RelationsView :policy="policy" />
     </q-dialog>
+
+    <!-- patch policy modal -->
+    <q-dialog v-model="showPatchPolicyModal" @hide="closePatchPolicyModal">
+      <q-card style="width: 900px; max-width: 90vw;">
+        <q-bar>
+          {{ patchPolicyModalText() }}
+          <q-space />
+          <q-btn dense flat icon="close" v-close-popup>
+            <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          </q-btn>
+        </q-bar>
+        <q-scroll-area :thumb-style="thumbStyle" style="height: 500px;">
+          <PatchPolicyForm :policy="policy" @close="closePatchPolicyModal" />
+        </q-scroll-area>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -256,6 +252,7 @@ export default {
       showPolicyFormModal: false,
       showPolicyOverviewModal: false,
       showRelationsViewModal: false,
+      showPatchPolicyModal: false,
       policy: null,
       editPolicyId: null,
       selected: [],
@@ -282,9 +279,9 @@ export default {
           align: "left",
         },
         {
-          name: "patch_policy",
+          name: "winupdatepolicy",
           label: "Patch Policy",
-          field: "patch_policy",
+          field: "winupdatepolicy",
           align: "left",
         },
         {
@@ -296,6 +293,13 @@ export default {
       ],
       pagination: {
         rowsPerPage: 9999,
+      },
+      thumbStyle: {
+        right: "2px",
+        borderRadius: "5px",
+        backgroundColor: "#027be3",
+        width: "5px",
+        opacity: 0.75,
       },
     };
   },
@@ -385,6 +389,23 @@ export default {
         .catch(error => {
           this.$q.notify(notifyErrorConfig("An Error occured while editing policy"));
         });
+    },
+    showEditPatchPolicyModal(policy) {
+      this.policy = policy;
+      this.showPatchPolicyModal = true;
+    },
+    closePatchPolicyModal(policy) {
+      this.policy = null;
+      this.showPatchPolicyModal = false;
+      this.refresh();
+    },
+    patchPolicyText(policy) {
+      return policy.winupdatepolicy.length === 1 ? "Show Patch Policy" : "Create Patch Policy";
+    },
+    patchPolicyModalText() {
+      if (this.policy !== null) {
+        return this.policy.winupdatepolicy.length === 1 ? "Edit Patch Policy" : "Add Patch Policy";
+      }
     },
   },
   computed: {

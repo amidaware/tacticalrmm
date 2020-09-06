@@ -13,6 +13,7 @@ from checks.models import Check
 from clients.models import Client, Site
 from autotasks.serializers import TaskSerializer
 from checks.serializers import CheckSerializer
+from winupdate.serializers import WinUpdatePolicySerializer
 
 
 class PolicySerializer(ModelSerializer):
@@ -32,6 +33,8 @@ class PolicyTableSerializer(ModelSerializer):
     clients_count = SerializerMethodField(read_only=True)
     sites_count = SerializerMethodField(read_only=True)
     agents_count = SerializerMethodField(read_only=True)
+
+    winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
 
     class Meta:
         model = Policy

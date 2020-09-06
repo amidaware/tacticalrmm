@@ -78,9 +78,6 @@ export default {
     runPolicyTask(context, pk) {
       return axios.put(`/automation/runwintask/${pk}/`);
     },
-    runPolicyCheck(context, pk) {
-      return axios.put(`/automation/runpolicycheck/${pk}/`);
-    },
     getRelated(context, pk) {
       return axios.get(`/automation/policies/${pk}/related/`);
     },
@@ -92,6 +89,15 @@ export default {
     },
     loadPolicyTreeData(context) {
       return axios.get("/automation/policies/overview/");
+    },
+    addPatchPolicy(context, data) {
+      return axios.post("/automation/winupdatepolicy/", data)
+    },
+    editPatchPolicy(context, data) {
+      return axios.put(`/automation/winupdatepolicy/${data.id}/`, data)
+    },
+    deletePatchPolicy(context, pk) {
+      return axios.delete(`/automation/winupdatepolicy/${pk}/`)
     }
   }
 }

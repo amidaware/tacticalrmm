@@ -27,7 +27,7 @@ class Client(models.Model):
     def has_failing_checks(self):
 
         agents = (
-            Agent.objects.only("pk")
+            Agent.objects.only("pk", "overdue_email_alert", "overdue_text_alert")
             .filter(client=self.client)
             .prefetch_related("agentchecks")
         )
@@ -68,7 +68,7 @@ class Site(models.Model):
     def has_failing_checks(self):
 
         agents = (
-            Agent.objects.only("pk")
+            Agent.objects.only("pk", "overdue_email_alert", "overdue_text_alert")
             .filter(client=self.client.client)
             .filter(site=self.site)
             .prefetch_related("agentchecks")

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="q-pa-md">
     <!-- Auto Approval -->
     <div class="text-subtitle2">Auto Approval</div>
     <hr />
@@ -91,13 +91,13 @@
     </q-card-section>
     <q-card-section>
       <div class="q-gutter-sm">
-        <q-checkbox v-model="winupdatepolicy.run_time_day_mon" label="Monday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_day_tue" label="Tuesday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_day_wed" label="Wednesday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_day_thur" label="Thursday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_day_fri" label="Friday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_day_sat" label="Saturday" />
-        <q-checkbox v-model="winupdatepolicy.run_time_day_sun" label="Sunday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="1" label="Monday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="2" label="Tuesday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="3" label="Wednesday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="4" label="Thursday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="5" label="Friday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="6" label="Saturday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="0" label="Sunday" />
       </div>
     </q-card-section>
     <!-- Reboot After Installation -->
@@ -138,19 +138,29 @@
         label="Send an email when patch installation fails"
       />
     </q-card-section>
+    <q-card-actions align="left" v-if="policy">
+      <q-btn label="Apply" color="primary" @click="submit" />
+      <q-space />
+      <q-btn v-if="editing" label="Remove Policy" color="negative" @click="deletePolicy" />
+    </q-card-actions>
   </div>
 </template>
 
 <script>
 import { scheduledTimes } from "@/mixins/data";
+import { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 
 export default {
   name: "PatchPolicyForm",
+  props: {
+    policy: Object,
+    agent: Object,
+  },
   data() {
     return {
-      winupdatepolicy: {
-        agent: null,
-        policy: null,
+      editing: true,
+      winupdatepolicy: {},
+      defaultWinUpdatePolicy: {
         critical: "ignore",
         important: "ignore",
         moderate: "ignore",
@@ -158,13 +168,7 @@ export default {
         other: "ignore",
         run_time_hour: 0,
         repeat: 0,
-        run_time_day_mon: false,
-        run_time_day_tue: false,
-        run_time_day_wed: false,
-        run_time_day_thur: false,
-        run_time_day_fri: false,
-        run_time_day_sat: false,
-        run_time_day_sun: false,
+        run_time_days: [],
         reboot_after_install: "never",
         reprocess_failed: false,
         reprocess_failed_times: 5,
@@ -177,6 +181,79 @@ export default {
       ],
       timeOptions: scheduledTimes,
     };
+  },
+  methods: {
+    submit() {
+      this.$q.loading.show();
+
+      // modifying patch policy in automation manager
+      if (this.policy) {
+        // editing patch policy
+        if (this.editing) {
+          this.$store
+            .dispatch("automation/editPatchPolicy", this.winupdatepolicy)
+            .then(response => {
+              this.$q.loading.hide();
+              this.$emit("close");
+              this.$q.notify(notifySuccessConfig("Patch policy was edited successfully!"));
+            })
+            .catch(error => {
+              this.$q.loading.hide();
+              this.$q.notify(notifyErrorConfig("An Error occured while editing patch policy"));
+            });
+        } else {
+          // adding patch policy
+          this.$store
+            .dispatch("automation/addPatchPolicy", this.winupdatepolicy)
+            .then(response => {
+              this.$q.loading.hide();
+              this.$emit("close");
+              this.$q.notify(notifySuccessConfig("Patch policy was created successfully!"));
+            })
+            .catch(error => {
+              this.$q.loading.hide();
+              this.$q.notify(notifyErrorConfig("An Error occured while adding patch policy"));
+            });
+        }
+      }
+    },
+    deletePolicy() {
+      this.$q
+        .dialog({
+          title: "Delete patch policy?",
+          cancel: true,
+          ok: { label: "Delete", color: "negative" },
+        })
+        .onOk(() => {
+          this.$q.loading.show();
+          this.$store
+            .dispatch("automation/deletePatchPolicy", this.winupdatepolicy.id)
+            .then(response => {
+              this.$q.loading.hide();
+              this.$emit("close");
+              this.$q.notify(notifySuccessConfig("Patch policy was cleared successfully!"));
+            })
+            .catch(error => {
+              this.$q.loading.hide();
+              this.$q.notify(notifyErrorConfig("An Error occured while clearing the patch policy"));
+            });
+        });
+    },
+  },
+  mounted() {
+    if (this.policy) {
+      if (this.policy.winupdatepolicy.length === 1) {
+        this.winupdatepolicy = this.policy.winupdatepolicy[0];
+        this.editing = true;
+      } else {
+        this.winupdatepolicy = this.defaultWinUpdatePolicy;
+        this.winupdatepolicy.policy = this.policy.id;
+        this.editing = false;
+      }
+    } else if (this.agent) {
+      this.winupdatepolicy = this.agent.winupdatepolicy[0];
+      this.severityOptions.push({ label: "Inherit", value: "inherit" });
+    }
   },
 };
 </script>

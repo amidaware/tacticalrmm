@@ -19,6 +19,7 @@ from core.models import TZ_CHOICES
 
 import automation
 import autotasks
+import clients
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -57,6 +58,7 @@ class Agent(models.Model):
     salt_update_pending = models.BooleanField(default=False)
     choco_installed = models.BooleanField(default=False)
     wmi_detail = models.JSONField(null=True)
+    patches_last_installed = models.DateTimeField(null=True, blank=True)
     time_zone = models.CharField(
         max_length=255, choices=TZ_CHOICES, null=True, blank=True
     )
@@ -207,6 +209,53 @@ class Agent(models.Model):
             return ret
         except:
             return ["unknown disk"]
+
+    def get_patch_policy(self):
+
+        # check if site has a patch policy and if so use it
+        client = clients.models.Client.objects.get(client=self.client)
+        site = clients.models.Site.objects.get(client=client, site=self.site)
+        patch_policy = None
+        agent_policy = self.winupdatepolicy.get()
+
+        if self.monitoring_type == "server":
+            if site.server_policy and site.server_policy.winupdatepolicy:
+                patch_policy = site.server_policy.winupdatepolicy.get()
+
+            # if site doesn't have a patch policy check the client
+            elif site.client.server_policy and site.client.server_policy.winupdatepolicy:
+                patch_policy = site.client.server_policy.winupdatepolicy.get()
+
+        elif self.monitoring_type == "workstation":
+            if site.workstation_policy and site.workstation_policy.winupdatepolicy:
+                patch_policy = site.workstation_policy.winupdatepolicy.get()
+
+            # if site doesn't have a patch policy check the client
+            elif site.client.workstation_policy and site.client.workstation_policy.winupdatepolicy:
+                patch_policy = site.client.workstation_policy.winupdatepolicy.get()           
+
+        # if policy still doesn't exist return the agent patch policy
+        if not patch_policy:
+            return agent_policy
+
+        # patch policy exists. check if any agent settings are set to override patch policy
+        if agent_policy.critical != "inherit":
+            patch_policy.critical = agent_policy.critical
+
+        if agent_policy.important != "inherit":
+            patch_policy.important = agent_policy.important
+
+        if agent_policy.moderate != "inherit":
+            patch_policy.moderate = agent_policy.moderate
+
+        if agent_policy.low != "inherit":
+            patch_policy.low = agent_policy.low
+
+        if agent_policy.other != "inherit":
+            patch_policy.other = agent_policy.other
+
+        return patch_policy
+
 
     # clear is used to delete managed policy checks from agent
     # parent_checks specifies a list of checks to delete from agent with matching parent_check field

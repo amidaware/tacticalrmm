@@ -27,13 +27,17 @@ class Client(models.Model):
     def has_failing_checks(self):
 
         agents = (
-            Agent.objects.only("pk")
+            Agent.objects.only("pk", "overdue_email_alert", "overdue_text_alert")
             .filter(client=self.client)
             .prefetch_related("agentchecks")
         )
         for agent in agents:
             if agent.checks["has_failing_checks"]:
                 return True
+
+            if agent.overdue_email_alert or agent.overdue_text_alert:
+                if agent.status == "overdue":
+                    return True
 
         return False
 
@@ -64,7 +68,7 @@ class Site(models.Model):
     def has_failing_checks(self):
 
         agents = (
-            Agent.objects.only("pk")
+            Agent.objects.only("pk", "overdue_email_alert", "overdue_text_alert")
             .filter(client=self.client.client)
             .filter(site=self.site)
             .prefetch_related("agentchecks")
@@ -72,6 +76,10 @@ class Site(models.Model):
         for agent in agents:
             if agent.checks["has_failing_checks"]:
                 return True
+
+            if agent.overdue_email_alert or agent.overdue_text_alert:
+                if agent.status == "overdue":
+                    return True
 
         return False
 

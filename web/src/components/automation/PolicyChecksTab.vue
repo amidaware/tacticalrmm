@@ -241,7 +241,7 @@ export default {
       columns: [
         { name: "smsalert", field: "text_alert", align: "left" },
         { name: "emailalert", field: "email_alert", align: "left" },
-        { name: "desc", label: "Description", align: "left", sortable: true },
+        { name: "desc", field: "readable_desc", label: "Description", align: "left", sortable: true },
         { name: "status", label: "Status", field: "status", align: "left" },
         { name: "assigned_task", label: "Assigned Tasks", field: "assigned_task", align: "left", sortable: true },
       ],

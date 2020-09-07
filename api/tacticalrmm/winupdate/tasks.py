@@ -14,7 +14,7 @@ def auto_approve_updates_task():
     agents = Agent.objects.all()
 
     for agent in agents:
-        
+
         # check for updates on agent
         check_for_updates_task(agent.pk, wait=False)
 
@@ -22,24 +22,35 @@ def auto_approve_updates_task():
 
         updates = list()
         if patch_policy.critical == "approve":
-            updates += agent.winupdates.filter(severity="Critical", installed=False).exclude(action="approve")
+            updates += agent.winupdates.filter(
+                severity="Critical", installed=False
+            ).exclude(action="approve")
 
         if patch_policy.important == "approve":
-            updates += agent.winupdates.filter(severity="Important", installed=False).exclude(action="approve")
+            updates += agent.winupdates.filter(
+                severity="Important", installed=False
+            ).exclude(action="approve")
 
         if patch_policy.moderate == "approve":
-            updates += agent.winupdates.filter(severity="Moderate", installed=False).exclude(action="approve")
+            updates += agent.winupdates.filter(
+                severity="Moderate", installed=False
+            ).exclude(action="approve")
 
         if patch_policy.low == "approve":
-            updates += agent.winupdates.filter(severity="Low", installed=False).exclude(action="approve")
-        
+            updates += agent.winupdates.filter(severity="Low", installed=False).exclude(
+                action="approve"
+            )
+
         if patch_policy.other == "approve":
-            updates += agent.winupdates.filter(severity="", installed=False).exclude(action="approve")
-        
+            updates += agent.winupdates.filter(severity="", installed=False).exclude(
+                action="approve"
+            )
+
         if updates:
             for update in updates:
                 update.action = "approve"
                 update.save()
+
 
 @app.task
 def check_agent_update_schedule_task():
@@ -49,7 +60,13 @@ def check_agent_update_schedule_task():
         patch_policy = agent.get_patch_policy()
 
         # check if auto approval is enabled
-        if patch_policy.critical == "approve" or patch_policy.important == "approve" or patch_policy.moderate == "approve" or patch_policy.low == "approve" or patch_policy.other == "approve":
+        if (
+            patch_policy.critical == "approve"
+            or patch_policy.important == "approve"
+            or patch_policy.moderate == "approve"
+            or patch_policy.low == "approve"
+            or patch_policy.other == "approve"
+        ):
             now = None
 
             # If agent timezone isn't set fallback to server time
@@ -62,18 +79,23 @@ def check_agent_update_schedule_task():
 
             # check if patches were scheduled to run today
             if weekday in patch_policy.run_time_days:
-                
+
                 # check if patches are past due
                 if patch_policy.run_time_hour < hour:
-                    
+
                     # check if patches were already run for this cycle
-                    if agent.patches_last_installed and int(agent.patches_last_installed.strftime("%w")) == weekday:
+                    if (
+                        agent.patches_last_installed
+                        and int(agent.patches_last_installed.strftime("%w")) == weekday
+                    ):
                         return
 
                     # initiate update on agent asynchronously and don't worry about ret code
                     agent.salt_api_async(
-                        func="cmd.run_bg", 
-                        arg=['"C:\\Program Files\\TacticalAgent\\tacticalrmm.exe" -m winupdater']
+                        func="cmd.run_bg",
+                        arg=[
+                            '"C:\\Program Files\\TacticalAgent\\tacticalrmm.exe" -m winupdater'
+                        ],
                     )
                     agent.patches_last_installed = now
                     agent.save()
@@ -87,7 +109,9 @@ def check_for_updates_task(pk, wait=False):
 
     agent = Agent.objects.get(pk=pk)
     ret = agent.salt_api_cmd(
-        timeout=310, func="win_wua.list", arg="skip_installed=False",
+        timeout=310,
+        func="win_wua.list",
+        arg="skip_installed=False",
     )
 
     if ret == "timeout" or ret == "error":

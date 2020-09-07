@@ -8,9 +8,12 @@ from Crypto.Hash import SHA3_384
 from Crypto.Util.Padding import pad
 import validators
 import random
+import re
 import string
+from collections import Counter
 from loguru import logger
 from packaging import version as pyver
+from distutils.version import LooseVersion
 
 from django.db import models
 from django.conf import settings
@@ -483,6 +486,37 @@ class Agent(models.Model):
             return True
 
         return False
+
+    def delete_superseded_updates(self):
+        try:
+            pks = []  # list of pks to delete
+            kbs = list(self.winupdates.values_list("kb", flat=True))
+            d = Counter(kbs)
+            dupes = [k for k, v in d.items() if v > 1]
+
+            for dupe in dupes:
+                if self.winupdates.filter(kb=dupe).filter(installed=True):
+                    pks.extend(
+                        self.winupdates.filter(kb=dupe)
+                        .filter(installed=False)
+                        .values_list("pk", flat=True)
+                    )
+
+                titles = self.winupdates.filter(kb=dupe).values_list("title", flat=True)
+                # extract the version from the title and sort from oldest to newest
+                vers = [
+                    re.search(r"\(Version(.*?)\)", i).group(1).strip() for i in titles
+                ]
+                sorted_vers = sorted(vers, key=LooseVersion)
+                # append all but the latest version to our list of pks to delete
+                for ver in sorted_vers[:-1]:
+                    q = self.winupdates.filter(kb=dupe).filter(title__contains=ver)
+                    pks.append(q.first().pk)
+
+            pks = list(set(pks))
+            self.winupdates.filter(pk__in=pks).delete()
+        except:
+            pass
 
 
 class AgentOutage(models.Model):

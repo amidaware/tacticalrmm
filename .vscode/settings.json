@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "api/env/bin/python",
+    "python.pythonPath": "api/tacticalrmm/env/bin/python",
     "python.formatting.provider": "black",
     "editor.formatOnSave": true,
     "vetur.format.defaultFormatter.js": "prettier",

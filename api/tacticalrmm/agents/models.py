@@ -212,6 +212,43 @@ class Agent(models.Model):
         except:
             return ["unknown disk"]
 
+
+    # auto approves updates
+    def approve_updates(self):
+        patch_policy = self.get_patch_policy()
+
+        updates = list()
+        if patch_policy.critical == "approve":
+            updates += self.winupdates.filter(
+                severity="Critical", installed=False
+            ).exclude(action="approve")
+
+        if patch_policy.important == "approve":
+            updates += self.winupdates.filter(
+                severity="Important", installed=False
+            ).exclude(action="approve")
+
+        if patch_policy.moderate == "approve":
+            updates += self.winupdates.filter(
+                severity="Moderate", installed=False
+            ).exclude(action="approve")
+
+        if patch_policy.low == "approve":
+            updates += self.winupdates.filter(severity="Low", installed=False).exclude(
+                action="approve"
+            )
+
+        if patch_policy.other == "approve":
+            updates += self.winupdates.filter(severity="", installed=False).exclude(
+                action="approve"
+            )
+
+        for update in updates:
+            update.action = "approve"
+            update.save(update_fields=["action"])
+
+
+    # returns agent policy merged with a client or site specific policy
     def get_patch_policy(self):
 
         # check if site has a patch policy and if so use it

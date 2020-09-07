@@ -13,49 +13,19 @@ logger.configure(**settings.LOG_CONFIG)
 
 @app.task
 def auto_approve_updates_task():
+    # scheduled task that checks and approves updates daily
 
     agents = Agent.objects.all()
 
     for agent in agents:
 
         # check for updates on agent
-        check_for_updates_task(agent.pk, wait=False)
-
-        patch_policy = agent.get_patch_policy()
-
-        updates = list()
-        if patch_policy.critical == "approve":
-            updates += agent.winupdates.filter(
-                severity="Critical", installed=False
-            ).exclude(action="approve")
-
-        if patch_policy.important == "approve":
-            updates += agent.winupdates.filter(
-                severity="Important", installed=False
-            ).exclude(action="approve")
-
-        if patch_policy.moderate == "approve":
-            updates += agent.winupdates.filter(
-                severity="Moderate", installed=False
-            ).exclude(action="approve")
-
-        if patch_policy.low == "approve":
-            updates += agent.winupdates.filter(severity="Low", installed=False).exclude(
-                action="approve"
-            )
-
-        if patch_policy.other == "approve":
-            updates += agent.winupdates.filter(severity="", installed=False).exclude(
-                action="approve"
-            )
-
-        for update in updates:
-            update.action = "approve"
-            update.save(update_fields=["action"])
+        check_for_updates_task.delay(agent.pk, wait=False, auto_approve=True)
 
 
 @app.task
 def check_agent_update_schedule_task():
+    # scheduled task that installs updates on agents if enabled
     agents = Agent.objects.all()
 
     for agent in agents:
@@ -100,11 +70,11 @@ def check_agent_update_schedule_task():
                         ],
                     )
                     agent.patches_last_installed = now
-                    agent.save()
+                    agent.save(update_fields=["patches_last_installed"])
 
 
 @app.task
-def check_for_updates_task(pk, wait=False):
+def check_for_updates_task(pk, wait=False, auto_approve=False):
 
     if wait:
         sleep(70)
@@ -193,5 +163,9 @@ def check_for_updates_task(pk, wait=False):
     else:
         agent.needs_reboot = False
         agent.save(update_fields=["needs_reboot"])
+
+    # approve updates if specified
+    if auto_approve:
+        agent.approve_updates()
 
     return "ok"

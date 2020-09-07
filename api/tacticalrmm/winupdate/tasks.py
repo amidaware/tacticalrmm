@@ -27,8 +27,9 @@ def auto_approve_updates_task():
 def check_agent_update_schedule_task():
     # scheduled task that installs updates on agents if enabled
     agents = Agent.objects.all()
+    online = [i for i in agents if i.status == "online"]
 
-    for agent in agents:
+    for agent in online:
         patch_policy = agent.get_patch_policy()
 
         # check if auto approval is enabled
@@ -63,12 +64,7 @@ def check_agent_update_schedule_task():
                         return
 
                     # initiate update on agent asynchronously and don't worry about ret code
-                    agent.salt_api_async(
-                        func="cmd.run_bg",
-                        arg=[
-                            '"C:\\Program Files\\TacticalAgent\\tacticalrmm.exe" -m winupdater'
-                        ],
-                    )
+                    agent.salt_api_async(func="win_agent.install_updates")
                     agent.patches_last_installed = now
                     agent.save(update_fields=["patches_last_installed"])
 
@@ -142,7 +138,7 @@ def check_for_updates_task(pk, wait=False, auto_approve=False):
     # use win_wua.installed to check for any updates that it missed
     # and then change update status to match
     installed = agent.salt_api_cmd(
-        timeout=300, func="win_wua.installed", arg="kbs_only=True"
+        timeout=60, func="win_wua.installed", arg="kbs_only=True"
     )
 
     if installed == "timeout" or installed == "error":

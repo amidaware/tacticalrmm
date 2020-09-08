@@ -212,7 +212,6 @@ class Agent(models.Model):
         except:
             return ["unknown disk"]
 
-
     # auto approves updates
     def approve_updates(self):
         patch_policy = self.get_patch_policy()
@@ -247,10 +246,8 @@ class Agent(models.Model):
             update.action = "approve"
             update.save(update_fields=["action"])
 
-
     # returns agent policy merged with a client or site specific policy
     def get_patch_policy(self):
-
         # check if site has a patch policy and if so use it
         client = clients.models.Client.objects.get(client=self.client)
         site = clients.models.Site.objects.get(client=client, site=self.site)
@@ -258,7 +255,11 @@ class Agent(models.Model):
         agent_policy = self.winupdatepolicy.get()
 
         if self.monitoring_type == "server":
-            if site.server_policy and site.server_policy.winupdatepolicy:
+            # check agent policy first which should override client or site policy
+            if self.policy and self.policy.winupdatepolicy:
+                patch_policy = self.policy.winupdatepolicy.get()
+
+            elif site.server_policy and site.server_policy.winupdatepolicy:
                 patch_policy = site.server_policy.winupdatepolicy.get()
 
             # if site doesn't have a patch policy check the client
@@ -268,7 +269,11 @@ class Agent(models.Model):
                 patch_policy = site.client.server_policy.winupdatepolicy.get()
 
         elif self.monitoring_type == "workstation":
-            if site.workstation_policy and site.workstation_policy.winupdatepolicy:
+            # check agent policy first which should override client or site policy
+            if self.policy and self.policy.winupdatepolicy:
+                patch_policy = self.policy.winupdatepolicy.get()
+
+            elif site.workstation_policy and site.workstation_policy.winupdatepolicy:
                 patch_policy = site.workstation_policy.winupdatepolicy.get()
 
             # if site doesn't have a patch policy check the client

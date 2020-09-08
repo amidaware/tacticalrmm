@@ -67,6 +67,7 @@ EOF
 echo "${celerywinupdate}" | sudo tee /etc/conf.d/celery-winupdate.conf > /dev/null
 
 sudo systemctl daemon-reload
+sudo systemctl enable celery-winupdate
 fi
 
 

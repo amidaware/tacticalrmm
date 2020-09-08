@@ -69,15 +69,22 @@ def trigger_patch_scan(request):
 
     if reboot:
         r = agent.salt_api_cmd(
-            timeout=15, func="system.reboot", arg=7, kwargs={"in_seconds": True},
+            timeout=15,
+            func="system.reboot",
+            arg=7,
+            kwargs={"in_seconds": True},
         )
 
         if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
-            check_for_updates_task.delay(agent.pk, wait=False)
+            check_for_updates_task.apply_async(
+                queue="wupdate", kwargs={"pk": agent.pk, "wait": False}
+            )
         else:
             logger.info(f"{agent.hostname} is rebooting after updates were installed.")
     else:
-        check_for_updates_task.delay(agent.pk, wait=False)
+        check_for_updates_task.apply_async(
+            queue="wupdate", kwargs={"pk": agent.pk, "wait": False}
+        )
 
     return Response("ok")
 
@@ -217,7 +224,9 @@ def update(request):
     sync_salt_modules_task.delay(agent.pk)
     get_installed_software.delay(agent.pk)
     get_wmi_detail_task.delay(agent.pk)
-    check_for_updates_task.delay(agent.pk, wait=True)
+    check_for_updates_task.apply_async(
+        queue="wupdate", kwargs={"pk": agent.pk, "wait": True}
+    )
 
     if not agent.choco_installed:
         install_chocolatey.delay(agent.pk, wait=True)

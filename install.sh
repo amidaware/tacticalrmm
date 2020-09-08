@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="4"
+SCRIPT_VERSION="5"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
@@ -554,6 +554,46 @@ EOF
 )"
 echo "${celeryconf}" | sudo tee /etc/conf.d/celery.conf > /dev/null
 
+celerywinupdatesvc="$(cat << EOF
+[Unit]
+Description=Celery WinUpdate Service
+After=network.target
+After=redis-server.service
+
+[Service]
+Type=forking
+User=${USER}
+Group=${USER}
+EnvironmentFile=/etc/conf.d/celery-winupdate.conf
+WorkingDirectory=/rmm/api/tacticalrmm
+ExecStart=/bin/sh -c '\${CELERY_BIN} multi start \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
+ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \${CELERYD_NODES} --pidfile=\${CELERYD_PID_FILE}'
+ExecReload=/bin/sh -c '\${CELERY_BIN} multi restart \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${celerywinupdatesvc}" | sudo tee /etc/systemd/system/celery-winupdate.service > /dev/null
+
+celerywinupdate="$(cat << EOF
+CELERYD_NODES="w2"
+
+CELERY_BIN="/rmm/api/env/bin/celery"
+CELERY_APP="tacticalrmm"
+CELERYD_MULTI="multi"
+
+CELERYD_OPTS="--time-limit=4000 --autoscale=40,1"
+
+CELERYD_PID_FILE="/rmm/api/tacticalrmm/%n.pid"
+CELERYD_LOG_FILE="/var/log/celery/%n%I.log"
+CELERYD_LOG_LEVEL="ERROR"
+EOF
+)"
+echo "${celerywinupdate}" | sudo tee /etc/conf.d/celery-winupdate.conf > /dev/null
+
 celerybeatservice="$(cat << EOF
 [Unit]
 Description=Celery Beat Service
@@ -583,6 +623,7 @@ sudo mkdir /srv/salt/scripts/userdefined
 sudo chown ${USER}:${USER} -R /srv/salt/
 sudo chown ${USER}:www-data /srv/salt/scripts/userdefined
 sudo chmod 750 /srv/salt/scripts/userdefined
+sudo chown ${USER}:${USER} -R /etc/conf.d/
 
 meshservice="$(cat << EOF
 [Unit]
@@ -671,7 +712,7 @@ sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/fro
 
 print_green 'Enabling Services'
 
-for i in nginx celery.service celerybeat.service rmm.service
+for i in nginx celery.service celerybeat.service celery-winupdate.service rmm.service
 do
   sudo systemctl enable ${i}
   sudo systemctl restart ${i}
@@ -735,7 +776,7 @@ deactivate
 
 
 print_green 'Restarting services'
-for i in celery.service celerybeat.service rmm.service
+for i in celery.service celerybeat.service celery-winupdate.service rmm.service
 do
   sudo systemctl restart ${i}
 done

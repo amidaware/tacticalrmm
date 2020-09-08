@@ -16,11 +16,15 @@ def auto_approve_updates_task():
     # scheduled task that checks and approves updates daily
 
     agents = Agent.objects.all()
+    online = [i for i in agents if i.status == "online"]
 
-    for agent in agents:
+    for agent in online:
 
         # check for updates on agent
-        check_for_updates_task.delay(agent.pk, wait=False, auto_approve=True)
+        check_for_updates_task.apply_async(
+            queue="wupdate",
+            kwargs={"pk": agent.pk, "wait": False, "auto_approve": True},
+        )
 
 
 @app.task

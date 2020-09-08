@@ -26,7 +26,9 @@ def get_win_updates(request, pk):
 @api_view()
 def run_update_scan(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    check_for_updates_task.delay(agent.pk, wait=False)
+    check_for_updates_task.apply_async(
+        queue="wupdate", kwargs={"pk": agent.pk, "wait": False}
+    )
     return Response("ok")
 
 

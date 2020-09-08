@@ -34,13 +34,13 @@ export default {
   name: "PolicySubTableTabs",
   components: {
     PolicyChecksTab,
-    PolicyAutomatedTasksTab
+    PolicyAutomatedTasksTab,
   },
   data() {
     return {
-      subtab: "checks"
+      subtab: "checks",
     };
-  }
+  },
 };
 </script>
 

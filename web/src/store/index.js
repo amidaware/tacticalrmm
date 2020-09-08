@@ -53,9 +53,6 @@ export default function () {
       checks(state) {
         return state.agentChecks;
       },
-      managedByWsus(state) {
-        return state.agentSummary.managed_by_wsus;
-      },
       sortedUpdates(state) {
         // sort patches by latest then not installed
         if (!state.winUpdates.winupdates) {

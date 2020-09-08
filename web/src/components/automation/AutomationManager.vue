@@ -82,7 +82,7 @@
 
                 <q-th v-else-if="col.name === 'enforced'" auto-width :key="col.name">
                   <q-icon name="security" size="1.5em">
-                    <q-tooltip>Enforce Policy (Will override Agent checks)</q-tooltip>
+                    <q-tooltip>Enforce Policy (Will override Agent tasks/checks)</q-tooltip>
                   </q-icon>
                 </q-th>
 
@@ -139,6 +139,18 @@
                     <q-item-section>Show Relations</q-item-section>
                   </q-item>
 
+                  <q-item
+                    clickable
+                    v-close-popup
+                    @click="showEditPatchPolicyModal(props.row)"
+                    id="context-winupdate"
+                  >
+                    <q-item-section side>
+                      <q-icon name="system_update" />
+                    </q-item-section>
+                    <q-item-section>{{ patchPolicyText(props.row) }}</q-item-section>
+                  </q-item>
+
                   <q-separator></q-separator>
 
                   <q-item clickable v-close-popup>
@@ -170,6 +182,15 @@
                   @click="showRelationsModal(props.row)"
                 >{{ `Show Relations (${props.row.clients_count + props.row.sites_count + props.row.agents_count}+)` }}</span>
               </q-td>
+              <q-td>
+                <span
+                  style="cursor:pointer;color:blue;text-decoration:underline"
+                  @click="showEditPatchPolicyModal(props.row)"
+                >{{ patchPolicyText(props.row) }}</span>
+              </q-td>
+              <q-td>
+                <q-icon name="content-copy" />
+              </q-td>
             </q-tr>
           </template>
         </q-table>
@@ -194,6 +215,22 @@
     <q-dialog v-model="showRelationsViewModal" @hide="closeRelationsModal">
       <RelationsView :policy="policy" />
     </q-dialog>
+
+    <!-- patch policy modal -->
+    <q-dialog v-model="showPatchPolicyModal" @hide="closePatchPolicyModal">
+      <q-card style="width: 900px; max-width: 90vw;">
+        <q-bar>
+          {{ patchPolicyModalText() }}
+          <q-space />
+          <q-btn dense flat icon="close" v-close-popup>
+            <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          </q-btn>
+        </q-bar>
+        <q-scroll-area :thumb-style="thumbStyle" style="height: 500px;">
+          <PatchPolicyForm :policy="policy" @close="closePatchPolicyModal" />
+        </q-scroll-area>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -204,16 +241,18 @@ import PolicyForm from "@/components/automation/modals/PolicyForm";
 import PolicyOverview from "@/components/automation/PolicyOverview";
 import PolicySubTableTabs from "@/components/automation/PolicySubTableTabs";
 import RelationsView from "@/components/automation/modals/RelationsView";
+import PatchPolicyForm from "@/components/modals/agents/PatchPolicyForm";
 
 export default {
   name: "AutomationManager",
-  components: { PolicyForm, PolicyOverview, PolicySubTableTabs, RelationsView },
+  components: { PolicyForm, PolicyOverview, PolicySubTableTabs, RelationsView, PatchPolicyForm },
   mixins: [mixins],
   data() {
     return {
       showPolicyFormModal: false,
       showPolicyOverviewModal: false,
       showRelationsViewModal: false,
+      showPatchPolicyModal: false,
       policy: null,
       editPolicyId: null,
       selected: [],
@@ -225,24 +264,43 @@ export default {
           label: "Name",
           field: "name",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "desc",
           label: "Description",
           field: "desc",
-          align: "left"
+          align: "left",
+        },
+        {
+          name: "relations",
+          label: "Relations",
+          field: "relations",
+          align: "left",
+        },
+        {
+          name: "winupdatepolicy",
+          label: "Patch Policy",
+          field: "winupdatepolicy",
+          align: "left",
         },
         {
           name: "actions",
           label: "Actions",
           field: "actions",
-          align: "left"
-        }
+          align: "left",
+        },
       ],
       pagination: {
-        rowsPerPage: 9999
-      }
+        rowsPerPage: 9999,
+      },
+      thumbStyle: {
+        right: "2px",
+        borderRadius: "5px",
+        backgroundColor: "#027be3",
+        width: "5px",
+        opacity: 0.75,
+      },
     };
   },
   methods: {
@@ -269,7 +327,7 @@ export default {
         .dialog({
           title: "Delete policy?",
           cancel: true,
-          ok: { label: "Delete", color: "negative" }
+          ok: { label: "Delete", color: "negative" },
         })
         .onOk(() => {
           this.$store
@@ -320,7 +378,7 @@ export default {
         name: policy.name,
         desc: policy.desc,
         active: policy.active,
-        enforced: policy.enforced
+        enforced: policy.enforced,
       };
 
       this.$store
@@ -331,16 +389,33 @@ export default {
         .catch(error => {
           this.$q.notify(notifyErrorConfig("An Error occured while editing policy"));
         });
-    }
+    },
+    showEditPatchPolicyModal(policy) {
+      this.policy = policy;
+      this.showPatchPolicyModal = true;
+    },
+    closePatchPolicyModal(policy) {
+      this.policy = null;
+      this.showPatchPolicyModal = false;
+      this.refresh();
+    },
+    patchPolicyText(policy) {
+      return policy.winupdatepolicy.length === 1 ? "Show Patch Policy" : "Create Patch Policy";
+    },
+    patchPolicyModalText() {
+      if (this.policy !== null) {
+        return this.policy.winupdatepolicy.length === 1 ? "Edit Patch Policy" : "Add Patch Policy";
+      }
+    },
   },
   computed: {
     ...mapState({
       policies: state => state.automation.policies,
-      selectedRow: state => state.automation.selectedPolicy
-    })
+      selectedRow: state => state.automation.selectedPolicy,
+    }),
   },
   mounted() {
     this.refresh();
-  }
+  },
 };
 </script>

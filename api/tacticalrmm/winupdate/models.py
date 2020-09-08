@@ -16,6 +16,7 @@ AUTO_APPROVAL_CHOICES = [
     ("manual", "Manual"),
     ("approve", "Approve"),
     ("ignore", "Ignore"),
+    ("inherit", "Inherit"),
 ]
 
 RUN_TIME_HOUR_CHOICES = [(i, dt.time(i).strftime("%I %p")) for i in range(24)]
@@ -52,23 +53,35 @@ class WinUpdate(models.Model):
 
 class WinUpdatePolicy(models.Model):
     agent = models.ForeignKey(
-        Agent, related_name="winupdatepolicy", on_delete=models.CASCADE
+        "agents.Agent",
+        related_name="winupdatepolicy",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+    )
+
+    policy = models.ForeignKey(
+        "automation.Policy",
+        related_name="winupdatepolicy",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
 
     critical = models.CharField(
-        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="manual"
+        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="inherit"
     )
     important = models.CharField(
-        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="manual"
+        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="inherit"
     )
     moderate = models.CharField(
-        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="manual"
+        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="inherit"
     )
     low = models.CharField(
-        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="manual"
+        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="inherit"
     )
     other = models.CharField(
-        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="manual"
+        max_length=100, choices=AUTO_APPROVAL_CHOICES, default="inherit"
     )
 
     run_time_hour = models.IntegerField(choices=RUN_TIME_HOUR_CHOICES, default=3)
@@ -87,4 +100,7 @@ class WinUpdatePolicy(models.Model):
     email_if_fail = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.agent.hostname
+        if self.agent:
+            return self.agent.hostname
+        else:
+            return self.policy.name

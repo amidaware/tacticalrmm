@@ -1,8 +1,5 @@
 <template>
   <div v-if="!selectedAgentPk">No agent selected</div>
-  <div
-    v-else-if="managedByWsus"
-  >Patch management is not available for this agent because it is managed by WSUS</div>
   <div v-else-if="Object.keys(sortedUpdates).length === 0">No Patches</div>
   <div v-else class="q-pa-xs">
     <q-btn label="Refresh" dense flat push @click="refreshUpdates(updates.pk)" icon="refresh" />
@@ -194,7 +191,7 @@ export default {
     ...mapState({
       updates: state => Object.freeze(state.winUpdates),
     }),
-    ...mapGetters(["sortedUpdates", "selectedAgentPk", "managedByWsus", "tabsTableHeight"]),
+    ...mapGetters(["sortedUpdates", "selectedAgentPk", "tabsTableHeight"]),
   },
 };
 </script>

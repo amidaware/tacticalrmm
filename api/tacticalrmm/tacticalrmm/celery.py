@@ -27,11 +27,11 @@ app.conf.beat_schedule = {
     },
     "auto-approve-win-updates": {
         "task": "winupdate.tasks.auto_approve_updates_task",
-        "schedule": crontab(minute=0, hour=23),
+        "schedule": crontab(minute=0, hour="*/8"),
     },
     "install-scheduled-win-updates": {
         "task": "winupdate.tasks.check_agent_update_schedule_task",
-        "schedule": crontab(minute=0, hour=1),
+        "schedule": crontab(minute=0, hour="*"),
     },
 }
 

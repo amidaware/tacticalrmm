@@ -74,6 +74,7 @@ def check_agent_update_schedule_task():
                         return
 
                     # initiate update on agent asynchronously and don't worry about ret code
+                    logger.info(f"Installing windows updates on {agent.salt_id}")
                     agent.salt_api_async(func="win_agent.install_updates")
                     agent.patches_last_installed = now
                     agent.save(update_fields=["patches_last_installed"])

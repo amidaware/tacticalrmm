@@ -16,6 +16,12 @@ def auto_approve_updates_task():
     # scheduled task that checks and approves updates daily
 
     agents = Agent.objects.all()
+    for agent in agents:
+        try:
+            agent.approve_updates()
+        except:
+            continue
+
     online = [i for i in agents if i.status == "online"]
 
     for agent in online:
@@ -31,7 +37,7 @@ def auto_approve_updates_task():
 def check_agent_update_schedule_task():
     # scheduled task that installs updates on agents if enabled
     agents = Agent.objects.all()
-    online = [i for i in agents if i.status == "online"]
+    online = [i for i in agents if i.has_patches_pending and i.status == "online"]
 
     for agent in online:
         patch_policy = agent.get_patch_policy()

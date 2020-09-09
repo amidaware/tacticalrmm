@@ -98,6 +98,9 @@ export default {
     },
     deletePatchPolicy(context, pk) {
       return axios.delete(`/automation/winupdatepolicy/${pk}/`)
+    },
+    resetPatchPolicies(context, data) {
+      return axios.patch("/automation/winupdatepolicy/reset/", data)
     }
   }
 }

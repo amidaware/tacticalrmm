@@ -197,7 +197,7 @@ export default function () {
         });
       },
       loadClients(context) {
-        return axios.get("/clients/listclients/");
+        return axios.get("/clients/clients/");
       },
       loadSites(context) {
         return axios.get("/clients/listsites/");

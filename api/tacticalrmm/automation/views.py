@@ -401,6 +401,28 @@ class UpdatePatchPolicy(APIView):
 
         return Response("ok")
 
+    def patch(self, request):
+        
+        agents = None
+        if "client" in request.data and "site" in request.data:
+            agents = Agent.objects.filter(client=request.data["client"], site=request.data["site"])
+        elif "client" in request.data:
+            agents = Agent.objects.filter(client=request.data["client"])
+        else:
+            agents = Agent.objects.all()
+
+        for agent in agents:
+            winupdatepolicy = agent.winupdatepolicy.get()
+            winupdatepolicy.critical = "inherit"
+            winupdatepolicy.important = "inherit"
+            winupdatepolicy.moderate = "inherit"
+            winupdatepolicy.low = "inherit"
+            winupdatepolicy.other = "inherit"
+            winupdatepolicy.save(update_fields=["critical", "important", "moderate", "low", "other"])
+
+        return Response("ok")
+
+
     # delete patch policy
     def delete(self, request, patchpolicy):
         get_object_or_404(WinUpdatePolicy, pk=patchpolicy).delete()

@@ -170,7 +170,7 @@ export default {
   },
   methods: {
     getAgentInfo() {
-      axios.get(`/agents/${this.selectedAgentPk}/agentdetail/`).then(r => {
+      axios.get(`/agents/${this.selectedAgentPk}/agenteditdetails/`).then(r => {
         this.agent = r.data;
         this.allTimezones = Object.freeze(r.data.all_timezones);
 
@@ -206,9 +206,7 @@ export default {
         data.time_zone = this.timezone;
       }
 
-      delete data.services;
-      delete data.disks;
-      delete data.local_ip;
+      delete data.all_timezones;
 
       axios
         .patch("/agents/editagent/", data)

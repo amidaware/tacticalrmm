@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     path("listagents/", views.list_agents),
     path("listagentsnodetail/", views.list_agents_no_detail),
+    path("<int:pk>/agenteditdetails/", views.agent_edit_details),
     path("byclient/<client>/", views.by_client),
     path("bysite/<client>/<site>/", views.by_site),
     path("overdueaction/", views.overdue_action),

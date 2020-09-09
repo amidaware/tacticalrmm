@@ -113,6 +113,19 @@
                     </q-item-section>
                     <q-item-section>Edit</q-item-section>
                   </q-item>
+
+                  <q-item
+                    clickable
+                    v-close-popup
+                    @click="showCopyPolicyModal(props.row)"
+                    id="context-copy"
+                  >
+                    <q-item-section side>
+                      <q-icon name="content_copy" />
+                    </q-item-section>
+                    <q-item-section>Copy</q-item-section>
+                  </q-item>
+
                   <q-item
                     clickable
                     v-close-popup
@@ -189,7 +202,9 @@
                 >{{ patchPolicyText(props.row) }}</span>
               </q-td>
               <q-td>
-                <q-icon name="content-copy" />
+                <q-icon name="content_copy" size="1.5em" @click="showCopyPolicyModal(props.row)">
+                  <q-tooltip>Create a copy of this policy</q-tooltip>
+                </q-icon>
               </q-td>
             </q-tr>
           </template>
@@ -203,7 +218,7 @@
 
     <!-- policy form modal -->
     <q-dialog v-model="showPolicyFormModal" @hide="closePolicyFormModal">
-      <PolicyForm :pk="editPolicyId" @close="closePolicyFormModal" />
+      <PolicyForm :pk="editPolicyId" :copyPolicy="copyPolicy" @close="closePolicyFormModal" />
     </q-dialog>
 
     <!-- policy overview modal -->
@@ -255,6 +270,7 @@ export default {
       showPatchPolicyModal: false,
       policy: null,
       editPolicyId: null,
+      copyPolicy: null,
       selected: [],
       columns: [
         { name: "active", label: "Active", field: "active", align: "left" },
@@ -352,9 +368,14 @@ export default {
       this.editPolicyId = id;
       this.showPolicyFormModal = true;
     },
+    showCopyPolicyModal(policy) {
+      this.copyPolicy = policy;
+      this.showPolicyFormModal = true;
+    },
     closePolicyFormModal() {
       this.showPolicyFormModal = false;
       this.editPolicyId = null;
+      this.copyPolicyId = null;
       this.refresh();
     },
     showAddPolicyModal() {

@@ -275,6 +275,10 @@ def hello(request):
         recovery.save(update_fields=["last_run"])
         return Response(recovery.send())
 
+    # get any pending actions
+    if agent.pendingactions.filter(status="pending").count() > 0:
+        agent.handle_pending_actions()
+
     return Response("ok")
 
 

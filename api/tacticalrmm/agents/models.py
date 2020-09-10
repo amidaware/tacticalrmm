@@ -559,6 +559,26 @@ class Agent(models.Model):
             self.winupdates.filter(pk__in=pks).delete()
         except:
             pass
+    
+    # define how the agent should handle pending actions
+    def handle_pending_actions(self):
+        pending_actions = self.pendingactions.all()
+
+        for action in pending_actions:
+            if action.action_type == "taskaction":
+                from autotasks.tasks import (
+                    create_win_task_schedule,
+                    enable_or_disable_win_task,
+                    delete_win_task_schedule,
+                )
+                task_id = action.details.task_id
+
+                if action.details.action == "taskcreate":
+                    create_win_task_schedule.delay(task_id, pending_action=action.id)
+                elif action.details.action == "tasktoggle":
+                    enable_or_disable_win_task.delay(task_id, action.details.value, pending_action=action.id)
+                elif action.details.action == "taskdelete":
+                    delete_win_task_schedule.delay(task_id, pending_action=action.id)
 
 
 class AgentOutage(models.Model):

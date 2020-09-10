@@ -94,6 +94,7 @@
               </q-td>
               <q-td v-else></q-td>
               <q-td>{{ props.row.name }}</q-td>
+              <q-td>{{ props.sync_status }}</q-td>
               <q-td v-if="props.row.retcode || props.row.stdout || props.row.stderr">
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
@@ -146,6 +147,7 @@ export default {
         { name: "enabled", align: "left", field: "enabled" },
         { name: "policystatus", align: "left" },
         { name: "name", label: "Name", field: "name", align: "left" },
+        { name: "sync_status", label: "Sync Status", field: "sync_status", align: "left" },
         {
           name: "moreinfo",
           label: "More Info",

@@ -6,7 +6,15 @@ from agents.models import Agent
 
 ACTION_TYPE_CHOICES = [
     ("schedreboot", "Scheduled Reboot"),
+    ("taskaction", "Scheduled Task Action"),
 ]
+
+# taskaction details format
+# {
+#   "action": "taskcreate" | "taskdelete" | "tasktoggle",
+#   "value": "Enable" | "Disable" # only needed for task toggle,
+#   "task_id": 1
+# }
 
 STATUS_CHOICES = [
     ("pending", "Pending"),
@@ -42,3 +50,12 @@ class PendingAction(models.Model):
     def description(self):
         if self.action_type == "schedreboot":
             return "Device pending reboot"
+        
+        elif self.action_type == "taskaction":
+            if self.details.action == "taskdelete":
+                return "Device pending task deletion"
+            elif self.details.action == "taskcreate":
+                return "Device pending task creation"
+            elif self.details.action == "tasktoggle":
+                return f"Device pending task {self.details.value}"
+            

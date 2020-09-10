@@ -20,6 +20,7 @@ mkdir ${tmp_dir}/certs
 mkdir ${tmp_dir}/nginx
 mkdir ${tmp_dir}/systemd
 mkdir ${tmp_dir}/rmm
+mkdir ${tmp_dir}/confd
 
 
 pg_dump --dbname=postgresql://${POSTGRES_USER}:${POSTGRES_PW}@127.0.0.1:5432/${POSTGRES_DB} | gzip -9 > ${tmp_dir}/postgres/db-${dt_now}.psql.gz
@@ -34,7 +35,9 @@ sudo tar -czvf ${tmp_dir}/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt .
 
 sudo tar -czvf ${tmp_dir}/nginx/etc-nginx.tar.gz -C /etc/nginx .
 
-sudo cp ${sysd}/rmm.service ${sysd}/celery.service ${sysd}/celerybeat.service ${sysd}/meshcentral.service ${tmp_dir}/systemd/
+sudo tar -czvf ${tmp_dir}/confd/etc-confd.tar.gz -C /etc/conf.d .
+
+sudo cp ${sysd}/rmm.service ${sysd}/celery.service ${sysd}/celerybeat.service ${sysd}/celery-winupdate.service ${sysd}/meshcentral.service ${tmp_dir}/systemd/
 
 cat /rmm/api/tacticalrmm/tacticalrmm/private/log/debug.log | gzip -9 > ${tmp_dir}/rmm/debug.log.gz
 cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py /rmm/api/tacticalrmm/app.ini ${tmp_dir}/rmm/

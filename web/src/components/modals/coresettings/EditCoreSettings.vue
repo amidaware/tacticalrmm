@@ -303,7 +303,6 @@ export default {
     },
     editSettings() {
       this.$q.loading.show();
-      console.log(this.settings);
       axios
         .patch("/core/editsettings/", this.settings)
         .then(r => {

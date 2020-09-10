@@ -5,6 +5,17 @@
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
+    <q-card-section
+      class="row items-center"
+      v-if="related.default_server_policy || related.default_workstation_policy"
+    >
+      <div v-if="related.default_server_policy" class="text-body">
+        <q-icon name="error_outline" color="info" size="1.5em" />This policy is set as the Default Server Policy.
+      </div>
+      <div v-if="related.default_workstation_policy" class="text-body">
+        <q-icon name="error_outline" color="info" size="1.5em" />This policy is set as the Default Workstation Policy.
+      </div>
+    </q-card-section>
     <q-card-section>
       <q-tabs
         v-model="tab"

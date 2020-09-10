@@ -29,6 +29,8 @@ class PolicyTableSerializer(ModelSerializer):
     workstation_clients = StringRelatedField(many=True, read_only=True)
     workstation_sites = StringRelatedField(many=True, read_only=True)
     agents = StringRelatedField(many=True, read_only=True)
+    default_server_policy = ReadOnlyField(source="is_default_server_policy")
+    default_workstation_policy = ReadOnlyField(source="is_default_workstation_policy")
 
     clients_count = SerializerMethodField(read_only=True)
     sites_count = SerializerMethodField(read_only=True)

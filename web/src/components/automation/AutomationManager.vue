@@ -187,7 +187,21 @@
                   v-model="props.row.enforced"
                 />
               </q-td>
-              <q-td>{{ props.row.name }}</q-td>
+              <q-td>
+                {{ props.row.name }}
+                <q-chip
+                  v-if="props.row.default_server_policy"
+                  color="primary"
+                  text-color="white"
+                  size="sm"
+                >Default Server</q-chip>
+                <q-chip
+                  v-if="props.row.default_workstation_policy"
+                  color="primary"
+                  text-color="white"
+                  size="sm"
+                >Default Workstation</q-chip>
+              </q-td>
               <q-td>{{ props.row.desc }}</q-td>
               <q-td>
                 <span

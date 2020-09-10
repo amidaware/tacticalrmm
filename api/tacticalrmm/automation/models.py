@@ -10,6 +10,15 @@ class Policy(models.Model):
     active = models.BooleanField(default=False)
     enforced = models.BooleanField(default=False)
 
+    @property
+    def is_default_server_policy(self):
+        return self.default_server_policy.exists()
+
+    @property
+    def is_default_workstation_policy(self):
+        return self.default_workstation_policy.exists()
+
+
     def __str__(self):
         return self.name
 

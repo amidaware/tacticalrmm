@@ -18,7 +18,7 @@ from distutils.version import LooseVersion
 from django.db import models
 from django.conf import settings
 
-from core.models import TZ_CHOICES
+from core.models import CoreSettings, TZ_CHOICES
 
 import automation
 import autotasks
@@ -251,6 +251,7 @@ class Agent(models.Model):
         # check if site has a patch policy and if so use it
         client = clients.models.Client.objects.get(client=self.client)
         site = clients.models.Site.objects.get(client=client, site=self.site)
+        core_settings = CoreSettings.objects.first()
         patch_policy = None
         agent_policy = self.winupdatepolicy.get()
 
@@ -259,6 +260,7 @@ class Agent(models.Model):
             if self.policy and self.policy.winupdatepolicy:
                 patch_policy = self.policy.winupdatepolicy.get()
 
+            # check site policy if agent policy doesn't have one
             elif site.server_policy and site.server_policy.winupdatepolicy:
                 patch_policy = site.server_policy.winupdatepolicy.get()
 
@@ -267,6 +269,12 @@ class Agent(models.Model):
                 site.client.server_policy and site.client.server_policy.winupdatepolicy
             ):
                 patch_policy = site.client.server_policy.winupdatepolicy.get()
+
+            # if patch policy still doesn't exist check default policy
+            elif (
+                core_settings.server_policy and core_settings.server_policy.winupdatepolicy
+            ):
+                patch_policy = core_settings.server_policy.winupdatepolicy.get()
 
         elif self.monitoring_type == "workstation":
             # check agent policy first which should override client or site policy
@@ -282,6 +290,12 @@ class Agent(models.Model):
                 and site.client.workstation_policy.winupdatepolicy
             ):
                 patch_policy = site.client.workstation_policy.winupdatepolicy.get()
+
+            # if patch policy still doesn't exist check default policy
+            elif (
+                core_settings.workstation_policy and core_settings.workstation_policy.winupdatepolicy
+            ):
+                patch_policy = core_settings.workstation_policy.winupdatepolicy.get()
 
         # if policy still doesn't exist return the agent patch policy
         if not patch_policy:

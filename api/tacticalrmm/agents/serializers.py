@@ -64,6 +64,31 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "logged_in_username",
         ]
 
+class AgentEditSerializer(serializers.ModelSerializer):
+    winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
+    all_timezones = serializers.SerializerMethodField()
+
+    def get_all_timezones(self, obj):
+        return pytz.all_timezones
+
+    class Meta:
+        model = Agent
+        fields = [
+            "id",
+            "hostname",
+            "client",
+            "site",
+            "monitoring_type",
+            "description",
+            "time_zone",
+            "timezone",
+            "check_interval",
+            "overdue_time",
+            "overdue_text_alert",
+            "overdue_email_alert",
+            "all_timezones",
+            "winupdatepolicy",
+        ]
 
 class WinAgentSerializer(serializers.ModelSerializer):
     # for the windows agent

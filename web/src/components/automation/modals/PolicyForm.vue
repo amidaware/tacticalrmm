@@ -6,6 +6,12 @@
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </q-card-section>
+      <q-card-section v-if="copyPolicy">
+        <div class="text-subtitle1">
+          You are copying checks and tasks from Policy:
+          <b>{{ copyPolicy.name }}</b> into a new policy.
+        </div>
+      </q-card-section>
       <q-card-section class="row">
         <div class="col-2">Name:</div>
         <div class="col-10">
@@ -43,19 +49,19 @@ import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins"
 export default {
   name: "PolicyForm",
   mixins: [mixins],
-  props: { pk: Number },
+  props: { pk: Number, copyPolicy: Object },
   data() {
     return {
       name: "",
       desc: "",
       enforced: false,
-      active: false
+      active: false,
     };
   },
   computed: {
     title() {
       return this.pk ? "Edit Policy" : "Add Policy";
-    }
+    },
   },
   methods: {
     getPolicy() {
@@ -83,7 +89,7 @@ export default {
         name: this.name,
         desc: this.desc,
         active: this.active,
-        enforced: this.enforced
+        enforced: this.enforced,
       };
 
       if (this.pk) {
@@ -99,6 +105,10 @@ export default {
             this.$q.notify(notifyErrorConfig(e.response.data));
           });
       } else {
+        if (this.copyPolicy) {
+          formData.copyId = this.copyPolicy.id;
+        }
+
         this.$store
           .dispatch("automation/addPolicy", formData)
           .then(r => {
@@ -111,13 +121,13 @@ export default {
             this.$q.notify(notifyErrorConfig(e.response.data));
           });
       }
-    }
+    },
   },
   mounted() {
     // If pk prop is set that means we are editting
     if (this.pk) {
       this.getPolicy();
     }
-  }
+  },
 };
 </script>

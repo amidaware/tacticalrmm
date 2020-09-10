@@ -53,6 +53,7 @@
                     v-close-popup
                     @click="showEditAutomatedTask = true"
                     v-if="!props.row.managed_by_policy"
+                    v-show="false"
                   >
                     <q-item-section side>
                       <q-icon name="edit" />

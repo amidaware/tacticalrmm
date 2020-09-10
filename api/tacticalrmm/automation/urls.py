@@ -14,4 +14,5 @@ urlpatterns = [
     path("runwintask/<int:task>/", views.PolicyAutoTask.as_view()),
     path("winupdatepolicy/", views.UpdatePatchPolicy.as_view()),
     path("winupdatepolicy/<int:patchpolicy>/", views.UpdatePatchPolicy.as_view()),
+    path("winupdatepolicy/reset/", views.UpdatePatchPolicy.as_view()),
 ]

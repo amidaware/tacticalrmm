@@ -67,6 +67,7 @@
                     v-close-popup
                     @click="showEditAutomatedTask = true"
                     id="context-edit"
+                    v-show="false"
                   >
                     <q-item-section side>
                       <q-icon name="edit" />

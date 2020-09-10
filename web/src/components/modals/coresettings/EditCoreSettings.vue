@@ -38,6 +38,11 @@
                     class="col-6"
                   />
                 </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4">Reset Patch Policy on Agents:</div>
+                  <div class="col-2"></div>
+                  <q-btn color="negative" label="Reset" @click="resetPatchPolicyModal" />
+                </q-card-section>
               </q-tab-panel>
               <!-- alerts -->
               <q-tab-panel name="alerts">
@@ -191,18 +196,25 @@
         </q-form>
       </template>
     </q-splitter>
+
+    <q-dialog v-model="showResetPatchPolicyModal">
+      <ResetPatchPolicy @close="showResetPatchPolicyModal = false" />
+    </q-dialog>
   </q-card>
 </template>
 
 <script>
 import axios from "axios";
 import mixins from "@/mixins/mixins";
+import ResetPatchPolicy from "@/components/modals/coresettings/ResetPatchPolicy";
 
 export default {
   name: "EditCoreSettings",
+  components: { ResetPatchPolicy },
   mixins: [mixins],
   data() {
     return {
+      showResetPatchPolicyModal: false,
       ready: false,
       settings: {},
       email: null,
@@ -249,6 +261,9 @@ export default {
     removeEmail(email) {
       const removed = this.settings.email_alert_recipients.filter(k => k !== email);
       this.settings.email_alert_recipients = removed;
+    },
+    resetPatchPolicyModal() {
+      this.showResetPatchPolicyModal = true;
     },
     editSettings() {
       this.$q.loading.show();

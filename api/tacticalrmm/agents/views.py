@@ -28,7 +28,7 @@ from accounts.models import User
 from core.models import CoreSettings
 from scripts.models import Script
 
-from .serializers import AgentSerializer, AgentHostnameSerializer, AgentTableSerializer
+from .serializers import AgentSerializer, AgentHostnameSerializer, AgentTableSerializer, AgentEditSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .tasks import uninstall_agent_task, send_agent_update_task
@@ -240,6 +240,10 @@ def list_agents_no_detail(request):
     agents = Agent.objects.all()
     return Response(AgentHostnameSerializer(agents, many=True).data)
 
+@api_view()
+def agent_edit_details(request, pk):
+    agent = get_object_or_404(Agent, pk=pk)
+    return Response(AgentEditSerializer(agent).data)
 
 @api_view()
 def by_client(request, client):

@@ -52,7 +52,54 @@ class GetAddPolicies(APIView):
     def post(self, request):
         serializer = PolicySerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        policy = serializer.save()
+
+        # copy checks and tasks from specified policy
+        if "copyId" in request.data:
+            copyPolicy = Policy.objects.get(pk=request.data["copyId"])
+
+            checks = copyPolicy.policychecks.all()
+            for check in checks:
+                Check.objects.create(
+                    policy=policy,
+                    name=check.name,
+                    check_type=check.check_type,
+                    email_alert=check.email_alert,
+                    text_alert=check.text_alert,
+                    fails_b4_alert=check.fails_b4_alert,
+                    extra_details=check.extra_details,
+                    threshold=check.threshold,
+                    disk=check.disk,
+                    ip=check.ip,
+                    script=check.script,
+                    timeout=check.timeout,
+                    svc_name=check.svc_name,
+                    svc_display_name=check.svc_display_name,
+                    pass_if_start_pending=check.pass_if_start_pending,
+                    restart_if_stopped=check.restart_if_stopped,
+                    svc_policy_mode=check.svc_policy_mode,
+                    log_name=check.log_name,
+                    event_id=check.event_id,
+                    event_type=check.event_type,
+                    fail_when=check.fail_when,
+                    search_last_days=check.search_last_days,
+                )
+            
+            tasks = copyPolicy.autotasks.all()
+
+            for task in tasks:
+                task = AutomatedTask.objects.create(
+                    policy=policy,
+                    script=task.script,
+                    assigned_check=task.assigned_check,
+                    name=task.name,
+                    run_time_days=task.run_time_days,
+                    run_time_minute=task.run_time_minute,
+                    task_type=task.task_type,
+                    win_task_name=task.win_task_name,
+                    timeout=task.timeout,
+                    enabled=task.enabled,
+                )
 
         return Response("ok")
 
@@ -400,6 +447,28 @@ class UpdatePatchPolicy(APIView):
         serializer.save()
 
         return Response("ok")
+
+    def patch(self, request):
+        
+        agents = None
+        if "client" in request.data and "site" in request.data:
+            agents = Agent.objects.filter(client=request.data["client"], site=request.data["site"])
+        elif "client" in request.data:
+            agents = Agent.objects.filter(client=request.data["client"])
+        else:
+            agents = Agent.objects.all()
+
+        for agent in agents:
+            winupdatepolicy = agent.winupdatepolicy.get()
+            winupdatepolicy.critical = "inherit"
+            winupdatepolicy.important = "inherit"
+            winupdatepolicy.moderate = "inherit"
+            winupdatepolicy.low = "inherit"
+            winupdatepolicy.other = "inherit"
+            winupdatepolicy.save(update_fields=["critical", "important", "moderate", "low", "other"])
+
+        return Response("ok")
+
 
     # delete patch policy
     def delete(self, request, patchpolicy):

@@ -94,7 +94,11 @@
               </q-td>
               <q-td v-else></q-td>
               <q-td>{{ props.row.name }}</q-td>
-              <q-td>{{ props.sync_status }}</q-td>
+              <q-td v-if="props.row.sync_status === 'notsynced'">Will sync on next agent checkin</q-td>
+              <q-td v-else-if="props.row.sync_status === 'synced'">Synced with agent</q-td>
+              <q-td
+                v-else-if="props.row.sync_status === 'pendingdeletion'"
+              >Pending deletion on agent</q-td>
               <q-td v-if="props.row.retcode || props.row.stdout || props.row.stderr">
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"

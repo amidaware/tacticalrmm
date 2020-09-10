@@ -88,7 +88,7 @@ class AutomatedTask(models.Model):
     execution_time = models.CharField(max_length=100, default="0.0000")
     last_run = models.DateTimeField(null=True, blank=True)
     enabled = models.BooleanField(default=True)
-    sync_status = models.CharField(max_length=100, choices=SYNC_STATUS_CHOICES, default="notsynced")
+    sync_status = models.CharField(max_length=100, choices=SYNC_STATUS_CHOICES, default="synced")
 
     def __str__(self):
         return self.name

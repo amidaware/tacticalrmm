@@ -128,7 +128,7 @@ sudo systemctl stop meshcentral
 sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
 rm -rf node_modules/
-npm install meshcentral@latest
+npm install meshcentral@0.6.27
 sudo systemctl start meshcentral
 sleep 10
 

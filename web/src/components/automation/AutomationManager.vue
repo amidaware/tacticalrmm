@@ -207,7 +207,7 @@
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
                   @click="showRelationsModal(props.row)"
-                >{{ `Show Relations (${props.row.clients_count + props.row.sites_count + props.row.agents_count}+)` }}</span>
+                >{{ `Show Relations (${ props.row.agents_count }+)` }}</span>
               </q-td>
               <q-td>
                 <span

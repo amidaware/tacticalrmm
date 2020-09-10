@@ -18,6 +18,7 @@ jobs:
     steps:
       - script: |
           psql -c 'DROP DATABASE IF EXISTS pipeline;' -U postgres
+          psql -c 'DROP DATABASE IF EXISTS test_pipeline;' -U postgres
           psql -c 'CREATE DATABASE pipeline;' -U postgres
 
           rm -rf /home/steam/myagent/_work/1/s/api/env

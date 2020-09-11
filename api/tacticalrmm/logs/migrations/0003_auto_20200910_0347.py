@@ -6,13 +6,21 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('logs', '0002_auto_20200810_0544'),
+        ("logs", "0002_auto_20200810_0544"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='pendingaction',
-            name='action_type',
-            field=models.CharField(blank=True, choices=[('schedreboot', 'Scheduled Reboot'), ('taskaction', 'Scheduled Task Action')], max_length=255, null=True),
+            model_name="pendingaction",
+            name="action_type",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("schedreboot", "Scheduled Reboot"),
+                    ("taskaction", "Scheduled Task Action"),
+                ],
+                max_length=255,
+                null=True,
+            ),
         ),
     ]

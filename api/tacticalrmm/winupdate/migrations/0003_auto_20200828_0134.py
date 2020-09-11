@@ -7,20 +7,32 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('automation', '0004_auto_20200617_0332'),
-        ('agents', '0012_auto_20200810_0544'),
-        ('winupdate', '0002_auto_20200715_0445'),
+        ("automation", "0004_auto_20200617_0332"),
+        ("agents", "0012_auto_20200810_0544"),
+        ("winupdate", "0002_auto_20200715_0445"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='winupdatepolicy',
-            name='policy',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='winupdatepolicy', to='automation.policy'),
+            model_name="winupdatepolicy",
+            name="policy",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="winupdatepolicy",
+                to="automation.policy",
+            ),
         ),
         migrations.AlterField(
-            model_name='winupdatepolicy',
-            name='agent',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='winupdatepolicy', to='agents.agent'),
+            model_name="winupdatepolicy",
+            name="agent",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="winupdatepolicy",
+                to="agents.agent",
+            ),
         ),
     ]

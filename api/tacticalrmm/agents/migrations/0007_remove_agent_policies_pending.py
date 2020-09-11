@@ -10,5 +10,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="agent", name="policies_pending",),
+        migrations.RemoveField(
+            model_name="agent",
+            name="policies_pending",
+        ),
     ]

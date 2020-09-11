@@ -113,7 +113,9 @@ def install_program(pk, name, version):
     agent = Agent.objects.get(pk=pk)
 
     r = agent.salt_api_cmd(
-        timeout=900, func="chocolatey.install", arg=[name, f"version={version}"],
+        timeout=900,
+        func="chocolatey.install",
+        arg=[name, f"version={version}"],
     )
 
     if r == "timeout" or r == "error":

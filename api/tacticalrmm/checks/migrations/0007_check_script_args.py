@@ -7,13 +7,19 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('checks', '0006_check_event_id_is_wildcard'),
+        ("checks", "0006_check_event_id_is_wildcard"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='check',
-            name='script_args',
-            field=django.contrib.postgres.fields.ArrayField(base_field=models.CharField(blank=True, max_length=255, null=True), blank=True, default=list, null=True, size=None),
+            model_name="check",
+            name="script_args",
+            field=django.contrib.postgres.fields.ArrayField(
+                base_field=models.CharField(blank=True, max_length=255, null=True),
+                blank=True,
+                default=list,
+                null=True,
+                size=None,
+            ),
         ),
     ]

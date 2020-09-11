@@ -9,6 +9,7 @@ from .models import Alert
 
 from .serializers import AlertSerializer
 
+
 class GetAddAlerts(APIView):
     def get(self, request):
         alerts = Alert.objects.all()

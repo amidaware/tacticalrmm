@@ -18,7 +18,6 @@ class Policy(models.Model):
     def is_default_workstation_policy(self):
         return self.default_workstation_policy.exists()
 
-
     def __str__(self):
         return self.name
 

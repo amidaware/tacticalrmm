@@ -17,7 +17,10 @@ TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
 
 class CoreSettings(models.Model):
     email_alert_recipients = ArrayField(
-        models.EmailField(null=True, blank=True), null=True, blank=True, default=list,
+        models.EmailField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
     )
     smtp_from_email = models.CharField(
         max_length=255, null=True, blank=True, default="from@example.com"

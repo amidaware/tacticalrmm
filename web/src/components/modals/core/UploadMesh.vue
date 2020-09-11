@@ -37,7 +37,7 @@ export default {
   mixins: [mixins],
   data() {
     return {
-      meshagent: null
+      meshagent: null,
     };
   },
   methods: {
@@ -56,7 +56,7 @@ export default {
           this.$q.loading.hide();
           this.notifyError("Unable to upload");
         });
-    }
-  }
+    },
+  },
 };
 </script>

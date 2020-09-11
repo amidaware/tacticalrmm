@@ -64,6 +64,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "logged_in_username",
         ]
 
+
 class AgentEditSerializer(serializers.ModelSerializer):
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
     all_timezones = serializers.SerializerMethodField()
@@ -89,6 +90,7 @@ class AgentEditSerializer(serializers.ModelSerializer):
             "all_timezones",
             "winupdatepolicy",
         ]
+
 
 class WinAgentSerializer(serializers.ModelSerializer):
     # for the windows agent

@@ -100,7 +100,7 @@ export default {
   methods: {
     awaitingSync(total, passing, failing) {
       return total !== 0 && passing === 0 && failing === 0 ? true : false;
-    }
+    },
   },
   computed: {
     summary() {
@@ -117,8 +117,8 @@ export default {
         ret.push(v);
       }
       return ret;
-    }
-  }
+    },
+  },
 };
 </script>
 

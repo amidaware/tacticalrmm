@@ -112,4 +112,3 @@ class TestCheckViews(BaseTestCase):
         self.assertEqual(resp.status_code, 200)
 
         self.check_not_authenticated("patch", url_a)
-

@@ -25,14 +25,18 @@ STATUS_CHOICES = [
 class PendingAction(models.Model):
 
     agent = models.ForeignKey(
-        Agent, related_name="pendingactions", on_delete=models.CASCADE,
+        Agent,
+        related_name="pendingactions",
+        on_delete=models.CASCADE,
     )
     entry_time = models.DateTimeField(auto_now_add=True)
     action_type = models.CharField(
         max_length=255, choices=ACTION_TYPE_CHOICES, null=True, blank=True
     )
     status = models.CharField(
-        max_length=255, choices=STATUS_CHOICES, default="pending",
+        max_length=255,
+        choices=STATUS_CHOICES,
+        default="pending",
     )
     celery_id = models.CharField(null=True, blank=True, max_length=255)
     details = models.JSONField(null=True, blank=True)
@@ -50,7 +54,7 @@ class PendingAction(models.Model):
     def description(self):
         if self.action_type == "schedreboot":
             return "Device pending reboot"
-        
+
         elif self.action_type == "taskaction":
             if self.details.action == "taskdelete":
                 return "Device pending task deletion"
@@ -58,4 +62,3 @@ class PendingAction(models.Model):
                 return "Device pending task creation"
             elif self.details.action == "tasktoggle":
                 return f"Device pending task {self.details.value}"
-            

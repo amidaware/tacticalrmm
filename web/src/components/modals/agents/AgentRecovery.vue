@@ -79,11 +79,11 @@ export default {
       };
       this.$axios
         .post("/agents/recover/", data)
-        .then((r) => {
+        .then(r => {
           this.$emit("close");
           this.notifySuccess(r.data, 5000);
         })
-        .catch((e) => {
+        .catch(e => {
           this.notifyError(e.response.data, 5000);
         });
     },

@@ -63,7 +63,11 @@ def create_win_task_schedule(pk, pending_action=False):
     if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
         # don't create pending action if this task was initiated by a pending action
         if not pending_action:
-            PendingAction(agent = task.agent, action_type="taskaction", details={"action": "createtask", "task_id": task.id}).save()
+            PendingAction(
+                agent=task.agent,
+                action_type="taskaction",
+                details={"action": "createtask", "task_id": task.id},
+            ).save()
             task.sync_status = "notsynced"
             task.save(update_fields=["sync_status"])
 
@@ -71,17 +75,16 @@ def create_win_task_schedule(pk, pending_action=False):
             f"Unable to create scheduled task {task.win_task_name} on {task.agent.hostname}. It will be created when the agent checks in."
         )
         return
-    
+
     # clear pending action since it was successful
     if pending_action:
         pendingaction = PendingAction.objects.get(pk=pending_action)
         pendingaction.status = "completed"
         pendingaction.save(update_fields=["status"])
 
-
     task.sync_status = "synced"
     task.save(update_fields=["sync_status"])
-    
+
     logger.info(f"{task.agent.hostname} task {task.name} was successfully created")
 
     return "ok"
@@ -92,13 +95,23 @@ def enable_or_disable_win_task(pk, action, pending_action=False):
     task = AutomatedTask.objects.get(pk=pk)
 
     r = task.agent.salt_api_cmd(
-        timeout=20, func="task.edit_task", arg=[f"name={task.win_task_name}", f"enabled={action}"]
+        timeout=20,
+        func="task.edit_task",
+        arg=[f"name={task.win_task_name}", f"enabled={action}"],
     )
 
     if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
         # don't create pending action if this task was initiated by a pending action
         if not pending_action:
-            PendingAction(agent = task.agent, action_type="taskaction", details={"action": "tasktoggle", "value":task.enabled, "task_id": task.id}).save()
+            PendingAction(
+                agent=task.agent,
+                action_type="taskaction",
+                details={
+                    "action": "tasktoggle",
+                    "value": task.enabled,
+                    "task_id": task.id,
+                },
+            ).save()
             task.sync_status = "notsynced"
             task.save(update_fields=["sync_status"])
 
@@ -124,13 +137,19 @@ def delete_win_task_schedule(pk, pending_action=False):
     task = AutomatedTask.objects.get(pk=pk)
 
     r = task.agent.salt_api_cmd(
-        timeout=20, func="task.delete_task", arg=[f"name={task.win_task_name}"],
+        timeout=20,
+        func="task.delete_task",
+        arg=[f"name={task.win_task_name}"],
     )
 
     if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
         # don't create pending action if this task was initiated by a pending action
         if not pending_action:
-            PendingAction(agent = task.agent, action_type="taskaction", details={"action": "taskdelete", "task_id": task.id}).save()
+            PendingAction(
+                agent=task.agent,
+                action_type="taskaction",
+                details={"action": "taskdelete", "task_id": task.id},
+            ).save()
             task.sync_status = "pendingdeletion"
             task.save(update_fields=["sync_status"])
 

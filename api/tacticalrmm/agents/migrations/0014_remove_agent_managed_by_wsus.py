@@ -6,12 +6,12 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0013_agent_patches_last_installed'),
+        ("agents", "0013_agent_patches_last_installed"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='agent',
-            name='managed_by_wsus',
+            model_name="agent",
+            name="managed_by_wsus",
         ),
     ]

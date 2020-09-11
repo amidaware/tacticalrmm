@@ -82,7 +82,7 @@ class GetAddPolicies(APIView):
                     fail_when=check.fail_when,
                     search_last_days=check.search_last_days,
                 )
-            
+
             tasks = copyPolicy.autotasks.all()
 
             for task in tasks:
@@ -173,7 +173,7 @@ class OverviewPolicy(APIView):
 
 class GetRelated(APIView):
     def get(self, request, pk):
-        
+
         response = {}
 
         policy = (
@@ -426,6 +426,7 @@ class GetRelated(APIView):
         content = {"error": "Data was submitted incorrectly"}
         return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
+
 class UpdatePatchPolicy(APIView):
 
     # create new patch policy
@@ -438,22 +439,26 @@ class UpdatePatchPolicy(APIView):
         serializer.save()
 
         return Response("ok")
-    
+
     # update patch policy
     def put(self, request, patchpolicy):
         policy = get_object_or_404(WinUpdatePolicy, pk=patchpolicy)
 
-        serializer = WinUpdatePolicySerializer(instance=policy, data=request.data, partial=True)
+        serializer = WinUpdatePolicySerializer(
+            instance=policy, data=request.data, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
         return Response("ok")
 
     def patch(self, request):
-        
+
         agents = None
         if "client" in request.data and "site" in request.data:
-            agents = Agent.objects.filter(client=request.data["client"], site=request.data["site"])
+            agents = Agent.objects.filter(
+                client=request.data["client"], site=request.data["site"]
+            )
         elif "client" in request.data:
             agents = Agent.objects.filter(client=request.data["client"])
         else:
@@ -472,7 +477,6 @@ class UpdatePatchPolicy(APIView):
             winupdatepolicy.save()
 
         return Response("ok")
-
 
     # delete patch policy
     def delete(self, request, patchpolicy):

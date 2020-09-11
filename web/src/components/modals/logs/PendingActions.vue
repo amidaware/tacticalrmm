@@ -95,7 +95,7 @@ export default {
       pagination: {
         rowsPerPage: 0,
         sortBy: "due",
-        descending: true
+        descending: true,
       },
       all_columns: [
         { name: "id", field: "id" },
@@ -105,7 +105,7 @@ export default {
         { name: "desc", label: "Description", align: "left", sortable: true },
         { name: "agent", label: "Agent", align: "left", sortable: true },
         { name: "client", label: "Client", align: "left", sortable: true },
-        { name: "site", label: "Site", align: "left", sortable: true }
+        { name: "site", label: "Site", align: "left", sortable: true },
       ],
       all_visibleColumns: ["type", "due", "desc", "agent", "client", "site"],
       agent_columns: [
@@ -113,9 +113,9 @@ export default {
         { name: "status", field: "status" },
         { name: "type", label: "Type", align: "left", sortable: true },
         { name: "due", label: "Due", field: "due", align: "left", sortable: true },
-        { name: "desc", label: "Description", align: "left", sortable: true }
+        { name: "desc", label: "Description", align: "left", sortable: true },
       ],
-      agent_visibleColumns: ["type", "due", "desc"]
+      agent_visibleColumns: ["type", "due", "desc"],
     };
   },
   methods: {
@@ -128,7 +128,7 @@ export default {
         .dialog({
           title: "Delete this pending action?",
           cancel: true,
-          ok: { label: "Delete", color: "negative" }
+          ok: { label: "Delete", color: "negative" },
         })
         .onOk(() => {
           this.$q.loading.show();
@@ -164,7 +164,7 @@ export default {
       } else if (status === "completed") {
         return "action-completed";
       }
-    }
+    },
   },
   computed: {
     ...mapGetters({
@@ -172,7 +172,7 @@ export default {
       togglePendingActions: "logs/togglePendingActions",
       actions: "logs/allPendingActions",
       agentpk: "logs/actionsAgentPk",
-      actionsLoading: "logs/pendingActionsLoading"
+      actionsLoading: "logs/pendingActionsLoading",
     }),
     filter() {
       return this.showCompleted ? this.actions : this.actions.filter(k => k.status === "pending");
@@ -188,7 +188,7 @@ export default {
     },
     completedCount() {
       return this.actions.filter(k => k.status === "completed").length;
-    }
-  }
+    },
+  },
 };
 </script>

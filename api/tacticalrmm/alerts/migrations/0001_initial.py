@@ -9,20 +9,37 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('agents', '0012_auto_20200810_0544'),
+        ("agents", "0012_auto_20200810_0544"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Alert',
+            name="Alert",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('subject', models.TextField(blank=True, null=True)),
-                ('message', models.TextField(blank=True, null=True)),
-                ('alert_time', models.DateTimeField(blank=True, null=True)),
-                ('snooze_until', models.DateTimeField(blank=True, null=True)),
-                ('resolved', models.BooleanField(default=False)),
-                ('agent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='agent', to='agents.agent')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("subject", models.TextField(blank=True, null=True)),
+                ("message", models.TextField(blank=True, null=True)),
+                ("alert_time", models.DateTimeField(blank=True, null=True)),
+                ("snooze_until", models.DateTimeField(blank=True, null=True)),
+                ("resolved", models.BooleanField(default=False)),
+                (
+                    "agent",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="agent",
+                        to="agents.agent",
+                    ),
+                ),
             ],
         ),
     ]

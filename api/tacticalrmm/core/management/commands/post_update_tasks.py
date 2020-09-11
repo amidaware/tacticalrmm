@@ -105,4 +105,3 @@ class Command(BaseCommand):
 
         # load community scripts into the db
         Script.load_community_scripts()
-

@@ -148,4 +148,3 @@ class TOTPSetup(APIView):
             return Response(TOTPSetupSerializer(user).data)
 
         return Response("TOTP token already set")
-

@@ -38,7 +38,9 @@ class BaseTestCase(TestCase):
         Site.objects.create(client=facebook, site="NY Office")
 
         self.policy = Policy.objects.create(
-            name="testpolicy", desc="my awesome policy", active=True,
+            name="testpolicy",
+            desc="my awesome policy",
+            active=True,
         )
         self.policy.server_clients.add(google)
         self.policy.workstation_clients.add(facebook)

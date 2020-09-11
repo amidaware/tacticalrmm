@@ -15,17 +15,17 @@ export default {
   name: "TakeControl",
   data() {
     return {
-      control: ""
+      control: "",
     };
   },
   methods: {
     genURL() {
       const pk = this.$route.params.pk;
       axios.get(`/agents/${pk}/meshcentral/`).then(r => (this.control = r.data.control));
-    }
+    },
   },
   created() {
     this.genURL();
-  }
+  },
 };
 </script>

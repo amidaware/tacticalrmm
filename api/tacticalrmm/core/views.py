@@ -44,13 +44,17 @@ def edit_settings(request):
     serializer.is_valid(raise_exception=True)
     new_settings = serializer.save()
 
-    #check if default policies changed
+    # check if default policies changed
     if settings.server_policy != new_settings.server_policy:
-        generate_all_agent_checks_task.delay(mon_type="server", clear=True, create_tasks=True)
-    
+        generate_all_agent_checks_task.delay(
+            mon_type="server", clear=True, create_tasks=True
+        )
+
     if settings.workstation_policy != new_settings.workstation_policy:
-        generate_all_agent_checks_task.delay(mon_type="workstation", clear=True, create_tasks=True)
-        
+        generate_all_agent_checks_task.delay(
+            mon_type="workstation", clear=True, create_tasks=True
+        )
+
     return Response("ok")
 
 

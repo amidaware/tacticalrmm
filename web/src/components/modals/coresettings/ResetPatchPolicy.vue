@@ -82,6 +82,7 @@ export default {
           this.$emit("close");
         })
         .catch(e => {
+          this.$q.loading.hide();
           this.$q.notify(notifyErrorConfig("There was an error reseting policies"));
         });
     },

@@ -178,7 +178,9 @@ class TestPolicyViews(BaseTestCase):
     @patch("agents.models.Agent.generate_checks_from_policies")
     @patch("automation.tasks.generate_agent_checks_by_location_task.delay")
     def test_update_policy_add(
-        self, mock_checks_location_task, mock_checks_task,
+        self,
+        mock_checks_location_task,
+        mock_checks_task,
     ):
         url = f"/automation/related/"
 
@@ -473,7 +475,9 @@ class TestPolicyTasks(BaseTestCase):
         )
 
         policy = Policy.objects.create(
-            name="Policy Relate Tests", desc="my awesome policy", active=True,
+            name="Policy Relate Tests",
+            desc="my awesome policy",
+            active=True,
         )
 
         # Add Client to Policy

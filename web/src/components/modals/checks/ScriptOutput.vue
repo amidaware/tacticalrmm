@@ -39,6 +39,6 @@ export default {
   props: ["scriptInfo"],
   beforeDestroy() {
     this.$emit("close");
-  }
+  },
 };
 </script>

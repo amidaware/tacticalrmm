@@ -10,7 +10,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="coresettings", name="smtp_use_tls",),
+        migrations.RemoveField(
+            model_name="coresettings",
+            name="smtp_use_tls",
+        ),
         migrations.AddField(
             model_name="coresettings",
             name="smtp_from_email",

@@ -64,10 +64,9 @@ def check_agent_update_schedule_task():
             last_installed = agent.patches_last_installed.astimezone(timezone)
 
             # check if patches were already run for this cycle and exit if so
-            if (
-                last_installed
-                and last_installed.strftime("%d/%m/%Y") == agent_localtime_now.strftime("%d/%m/%Y")
-            ):
+            if last_installed and last_installed.strftime(
+                "%d/%m/%Y"
+            ) == agent_localtime_now.strftime("%d/%m/%Y"):
                 return
 
             # check if schedule is set to daily/weekly
@@ -83,7 +82,7 @@ def check_agent_update_schedule_task():
             elif patch_policy.run_time_frequency == "monthly":
 
                 if patch_policy.run_time_day > 28:
-                    months_with_30_days = [3,6,9,11]
+                    months_with_30_days = [3, 6, 9, 11]
                     current_month = agent_localtime_now.strftime("%-m")
 
                     if current_month == 2:
@@ -96,7 +95,7 @@ def check_agent_update_schedule_task():
                     # check if patches are past due
                     if patch_policy.run_time_hour < hour:
                         install = True
-            
+
             if install:
                 # initiate update on agent asynchronously and don't worry about ret code
                 logger.info(f"Installing windows updates on {agent.salt_id}")

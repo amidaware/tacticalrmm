@@ -272,7 +272,8 @@ class Agent(models.Model):
 
             # if patch policy still doesn't exist check default policy
             elif (
-                core_settings.server_policy and core_settings.server_policy.winupdatepolicy
+                core_settings.server_policy
+                and core_settings.server_policy.winupdatepolicy
             ):
                 patch_policy = core_settings.server_policy.winupdatepolicy.get()
 
@@ -293,7 +294,8 @@ class Agent(models.Model):
 
             # if patch policy still doesn't exist check default policy
             elif (
-                core_settings.workstation_policy and core_settings.workstation_policy.winupdatepolicy
+                core_settings.workstation_policy
+                and core_settings.workstation_policy.winupdatepolicy
             ):
                 patch_policy = core_settings.workstation_policy.winupdatepolicy.get()
 
@@ -321,7 +323,7 @@ class Agent(models.Model):
             patch_policy.run_time_frequency = agent_policy.run_time_frequency
             patch_policy.run_time_hour = agent_policy.run_time_hour
             patch_policy.run_time_days = agent_policy.run_time_days
-            
+
         if agent_policy.reboot_after_install != "inherit":
             patch_policy.reboot_after_install = agent_policy.reboot_after_install
 
@@ -586,7 +588,7 @@ class Agent(models.Model):
             self.winupdates.filter(pk__in=pks).delete()
         except:
             pass
-    
+
     # define how the agent should handle pending actions
     def handle_pending_actions(self):
         pending_actions = self.pendingactions.all()
@@ -598,12 +600,15 @@ class Agent(models.Model):
                     enable_or_disable_win_task,
                     delete_win_task_schedule,
                 )
+
                 task_id = action.details.task_id
 
                 if action.details.action == "taskcreate":
                     create_win_task_schedule.delay(task_id, pending_action=action.id)
                 elif action.details.action == "tasktoggle":
-                    enable_or_disable_win_task.delay(task_id, action.details.value, pending_action=action.id)
+                    enable_or_disable_win_task.delay(
+                        task_id, action.details.value, pending_action=action.id
+                    )
                 elif action.details.action == "taskdelete":
                     delete_win_task_schedule.delay(task_id, pending_action=action.id)
 

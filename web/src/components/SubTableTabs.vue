@@ -57,13 +57,13 @@ export default {
     AutomatedTasksTab,
     WindowsUpdates,
     SoftwareTab,
-    AssetsTab
+    AssetsTab,
   },
   data() {
     return {
-      subtab: "summary"
+      subtab: "summary",
     };
-  }
+  },
 };
 </script>
 

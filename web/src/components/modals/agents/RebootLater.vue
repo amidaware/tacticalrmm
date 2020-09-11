@@ -43,7 +43,7 @@ export default {
   mixins: [mixins],
   data() {
     return {
-      datetime: null
+      datetime: null,
     };
   },
   methods: {
@@ -72,15 +72,15 @@ export default {
         style: "width: 40vw",
         message: `A reboot has been scheduled for <strong>${data.time}</strong> on ${data.agent}.
           <br />It can be cancelled from the Pending Actions menu until the scheduled time.`,
-        html: true
+        html: true,
       });
-    }
+    },
   },
   computed: {
-    ...mapGetters(["selectedAgentPk"])
+    ...mapGetters(["selectedAgentPk"]),
   },
   created() {
     this.getCurrentDate();
-  }
+  },
 };
 </script>

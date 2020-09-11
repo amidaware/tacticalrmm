@@ -71,7 +71,7 @@ export default {
       pagination: {
         rowsPerPage: 99999,
         sortBy: "cpu_percent",
-        descending: true
+        descending: true,
       },
       columns: [
         {
@@ -79,44 +79,44 @@ export default {
           label: "Name",
           field: "name",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "cpu_percent",
           label: "CPU",
           field: "cpu_percent",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "memory_percent",
           label: "Memory",
           field: "memory_percent",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "username",
           label: "User",
           field: "username",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "pid",
           label: "PID",
           field: "pid",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "status",
           label: "Status",
           field: "status",
           align: "left",
-          sortable: true
-        }
-      ]
+          sortable: true,
+        },
+      ],
     };
   },
   methods: {
@@ -170,7 +170,7 @@ export default {
     convert(percent) {
       const mb = this.mem * 1024;
       return Math.ceil((percent * mb) / 100).toLocaleString();
-    }
+    },
   },
   beforeDestroy() {
     clearInterval(this.polling);
@@ -184,6 +184,6 @@ export default {
   },
   mounted() {
     this.refreshProcs();
-  }
+  },
 };
 </script>

@@ -8,12 +8,14 @@
             <div class="text-h6">Setup 2-Factor</div>
           </q-card-section>
           <q-card-section>
-            <p> Scan the QR Code with your authenticator app and then click 
-              Finish to be redirected back to the signin page.</p>
+            <p>
+              Scan the QR Code with your authenticator app and then click
+              Finish to be redirected back to the signin page.
+            </p>
             <qrcode-vue :value="qr_url" size="200" level="H" />
           </q-card-section>
           <q-card-section>
-            <p> You can also use the below code to configure the authenticator manually.</p>
+            <p>You can also use the below code to configure the authenticator manually.</p>
             <p>{{ totp_key }}</p>
           </q-card-section>
           <q-card-actions align="center">
@@ -27,7 +29,7 @@
 </template>
 
 <script>
-import QrcodeVue from 'qrcode.vue';
+import QrcodeVue from "qrcode.vue";
 
 export default {
   name: "TOTPSetup",
@@ -35,7 +37,7 @@ export default {
   data() {
     return {
       totp_key: "",
-      qr_url: ""
+      qr_url: "",
     };
   },
   methods: {
@@ -43,7 +45,7 @@ export default {
       this.$q.loading = true;
 
       const data = {
-        username: this.$route.params.username
+        username: this.$route.params.username,
       };
 
       this.$store
@@ -61,16 +63,15 @@ export default {
         .catch(e => {
           this.$q.loading = false;
           console.log(e.response);
-
         });
     },
     finish() {
       this.$router.push({ name: "Login" });
-    }
+    },
   },
   created() {
     this.$q.dark.set(false);
     this.getQRCodeData();
-  }
+  },
 };
 </script>

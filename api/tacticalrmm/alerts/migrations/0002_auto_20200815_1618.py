@@ -6,17 +6,25 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('alerts', '0001_initial'),
+        ("alerts", "0001_initial"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='alert',
-            name='subject',
+            model_name="alert",
+            name="subject",
         ),
         migrations.AddField(
-            model_name='alert',
-            name='severity',
-            field=models.CharField(choices=[('info', 'Informational'), ('warning', 'Warning'), ('error', 'Error')], default='info', max_length=100),
+            model_name="alert",
+            name="severity",
+            field=models.CharField(
+                choices=[
+                    ("info", "Informational"),
+                    ("warning", "Warning"),
+                    ("error", "Error"),
+                ],
+                default="info",
+                max_length=100,
+            ),
         ),
     ]

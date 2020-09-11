@@ -62,7 +62,7 @@ export default {
       pagination: {
         rowsPerPage: 0,
         sortBy: "name",
-        descending: false
+        descending: false,
       },
       columns: [
         { name: "install", align: "left", label: "Install", sortable: false },
@@ -71,16 +71,16 @@ export default {
           align: "left",
           label: "Name",
           field: "name",
-          sortable: true
+          sortable: true,
         },
         {
           name: "version",
           align: "left",
           label: "Version",
           field: "version",
-          sortable: false
-        }
-      ]
+          sortable: false,
+        },
+      ],
     };
   },
   methods: {
@@ -100,7 +100,7 @@ export default {
           message: `Install ${name} on ${this.agentHostname}?`,
           persistent: true,
           ok: { label: "Install" },
-          cancel: { color: "negative" }
+          cancel: { color: "negative" },
         })
         .onOk(() => {
           axios
@@ -113,13 +113,13 @@ export default {
               this.notifyError("Something went wrong");
             });
         });
-    }
+    },
   },
   computed: {
-    ...mapGetters(["agentHostname"])
+    ...mapGetters(["agentHostname"]),
   },
   created() {
     this.getChocos();
-  }
+  },
 };
 </script>

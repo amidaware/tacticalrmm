@@ -10,6 +10,6 @@ export default {
   name: "SessionExpired",
   created() {
     this.$store.dispatch("destroyToken");
-  }
+  },
 };
 </script>

@@ -33,19 +33,19 @@ export default {
       pagination: {
         rowsPerPage: 0,
         sortBy: "time",
-        descending: true
+        descending: true,
       },
       columns: [
         { name: "eventType", label: "Type", field: "eventType", align: "left", sortable: true },
         { name: "source", label: "Source", field: "source", align: "left", sortable: true },
         { name: "eventID", label: "Event ID", field: "eventID", align: "left", sortable: true },
         { name: "time", label: "Time", field: "time", align: "left", sortable: true },
-        { name: "message", label: "Message", field: "message", align: "left", sortable: true }
-      ]
+        { name: "message", label: "Message", field: "message", align: "left", sortable: true },
+      ],
     };
   },
   beforeDestroy() {
     this.$emit("close");
-  }
+  },
 };
 </script>

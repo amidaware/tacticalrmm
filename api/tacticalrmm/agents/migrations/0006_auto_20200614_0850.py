@@ -10,6 +10,12 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="agent", name="uninstall_inprogress",),
-        migrations.RemoveField(model_name="agent", name="uninstall_pending",),
+        migrations.RemoveField(
+            model_name="agent",
+            name="uninstall_inprogress",
+        ),
+        migrations.RemoveField(
+            model_name="agent",
+            name="uninstall_pending",
+        ),
     ]

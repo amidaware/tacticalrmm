@@ -28,7 +28,12 @@ from accounts.models import User
 from core.models import CoreSettings
 from scripts.models import Script
 
-from .serializers import AgentSerializer, AgentHostnameSerializer, AgentTableSerializer, AgentEditSerializer
+from .serializers import (
+    AgentSerializer,
+    AgentHostnameSerializer,
+    AgentTableSerializer,
+    AgentEditSerializer,
+)
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .tasks import uninstall_agent_task, send_agent_update_task
@@ -181,7 +186,9 @@ def kill_proc(request, pk, pid):
 def get_event_log(request, pk, logtype, days):
     agent = get_object_or_404(Agent, pk=pk)
     r = agent.salt_api_cmd(
-        timeout=30, func="win_agent.get_eventlog", arg=[logtype, int(days)],
+        timeout=30,
+        func="win_agent.get_eventlog",
+        arg=[logtype, int(days)],
     )
 
     if r == "timeout" or r == "error":
@@ -198,7 +205,10 @@ def power_action(request):
     if action == "rebootnow":
         logger.info(f"{agent.hostname} was scheduled for immediate reboot")
         r = agent.salt_api_cmd(
-            timeout=30, func="system.reboot", arg=3, kwargs={"in_seconds": True},
+            timeout=30,
+            func="system.reboot",
+            arg=3,
+            kwargs={"in_seconds": True},
         )
     if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
         return notify_error("Unable to contact the agent")
@@ -240,10 +250,12 @@ def list_agents_no_detail(request):
     agents = Agent.objects.all()
     return Response(AgentHostnameSerializer(agents, many=True).data)
 
+
 @api_view()
 def agent_edit_details(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     return Response(AgentEditSerializer(agent).data)
+
 
 @api_view()
 def by_client(request, client):
@@ -529,4 +541,3 @@ def run_script(request):
             return Response(f"{script.name} will now be run on {agent.hostname}")
         else:
             return notify_error("Something went wrong")
-

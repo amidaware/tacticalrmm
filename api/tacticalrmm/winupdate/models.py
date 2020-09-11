@@ -21,7 +21,7 @@ AUTO_APPROVAL_CHOICES = [
 
 RUN_TIME_HOUR_CHOICES = [(i, dt.time(i).strftime("%I %p")) for i in range(24)]
 
-RUN_TIME_DAY_CHOICES = [(i, dt.date(1970,1,1).strftime("%-d")) for i in range(31)]
+RUN_TIME_DAY_CHOICES = [(i, dt.date(1970, 1, 1).strftime("%-d")) for i in range(31)]
 
 REBOOT_AFTER_INSTALL_CHOICES = [
     ("never", "Never"),
@@ -94,8 +94,10 @@ class WinUpdatePolicy(models.Model):
     )
 
     run_time_hour = models.IntegerField(choices=RUN_TIME_HOUR_CHOICES, default=3)
-    
-    run_time_frequency = models.CharField(max_length=100, choices=SCHEDULE_FREQUENCY_CHOICES, default="inherit")
+
+    run_time_frequency = models.CharField(
+        max_length=100, choices=SCHEDULE_FREQUENCY_CHOICES, default="inherit"
+    )
 
     # 0 to 6 = Monday to Sunday
     run_time_days = ArrayField(

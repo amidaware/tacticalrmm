@@ -21,7 +21,7 @@ AUTO_APPROVAL_CHOICES = [
 
 RUN_TIME_HOUR_CHOICES = [(i, dt.time(i).strftime("%I %p")) for i in range(24)]
 
-RUN_TIME_DAY_CHOICES = [(i, dt.date(1970, 1, 1).strftime("%-d")) for i in range(31)]
+RUN_TIME_DAY_CHOICES = [(i + 1, i + 1) for i in range(31)]
 
 REBOOT_AFTER_INSTALL_CHOICES = [
     ("never", "Never"),

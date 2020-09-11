@@ -1,6 +1,7 @@
 from django.db import models
 from agents.models import Agent
 from clients.models import Site, Client
+from core.models import CoreSettings
 
 
 class Policy(models.Model):
@@ -8,6 +9,15 @@ class Policy(models.Model):
     desc = models.CharField(max_length=255, null=True, blank=True)
     active = models.BooleanField(default=False)
     enforced = models.BooleanField(default=False)
+
+    @property
+    def is_default_server_policy(self):
+        return self.default_server_policy.exists()
+
+    @property
+    def is_default_workstation_policy(self):
+        return self.default_workstation_policy.exists()
+
 
     def __str__(self):
         return self.name
@@ -75,7 +85,6 @@ class Policy(models.Model):
 
     @staticmethod
     def cascade_policy_tasks(agent):
-
         # List of all tasks to be applied
         tasks = list()
         added_task_pks = list()
@@ -84,15 +93,18 @@ class Policy(models.Model):
         client = Client.objects.get(client=agent.client)
         site = Site.objects.filter(client=client).get(site=agent.site)
 
+        default_policy = None
         client_policy = None
         site_policy = None
         agent_policy = agent.policy
 
         # Get the Client/Site policy based on if the agent is server or workstation
         if agent.monitoring_type == "server":
+            default_policy = CoreSettings.objects.first().server_policy
             client_policy = client.server_policy
             site_policy = site.server_policy
         else:
+            default_policy = CoreSettings.objects.first().workstation_policy
             client_policy = client.workstation_policy
             site_policy = site.workstation_policy
 
@@ -108,6 +120,12 @@ class Policy(models.Model):
                     added_task_pks.append(task.pk)
         if client_policy and client_policy.active:
             for task in client_policy.autotasks.all():
+                if task.pk not in added_task_pks:
+                    tasks.append(task)
+                    added_task_pks.append(task.pk)
+
+        if default_policy and default_policy.active:
+            for task in default_policy.autotasks.all():
                 if task.pk not in added_task_pks:
                     tasks.append(task)
                     added_task_pks.append(task.pk)
@@ -128,14 +146,17 @@ class Policy(models.Model):
         client = Client.objects.get(client=agent.client)
         site = Site.objects.filter(client=client).get(site=agent.site)
 
+        default_policy = None
         client_policy = None
         site_policy = None
         agent_policy = agent.policy
 
         if agent.monitoring_type == "server":
+            default_policy = CoreSettings.objects.first().server_policy
             client_policy = client.server_policy
             site_policy = site.server_policy
         else:
+            default_policy = CoreSettings.objects.first().workstation_policy
             client_policy = client.workstation_policy
             site_policy = site.workstation_policy
 
@@ -166,6 +187,14 @@ class Policy(models.Model):
                     enforced_checks.append(check)
             else:
                 for check in client_policy.policychecks.all():
+                    policy_checks.append(check)
+
+        if default_policy and default_policy.active:
+            if default_policy.enforced:
+                for check in default_policy.policychecks.all():
+                    enforced_checks.append(check)
+            else:
+                for check in default_policy.policychecks.all():
                     policy_checks.append(check)
 
         # Sorted Checks already added

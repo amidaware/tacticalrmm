@@ -29,11 +29,9 @@ class PolicyTableSerializer(ModelSerializer):
     workstation_clients = StringRelatedField(many=True, read_only=True)
     workstation_sites = StringRelatedField(many=True, read_only=True)
     agents = StringRelatedField(many=True, read_only=True)
-
-    clients_count = SerializerMethodField(read_only=True)
-    sites_count = SerializerMethodField(read_only=True)
+    default_server_policy = ReadOnlyField(source="is_default_server_policy")
+    default_workstation_policy = ReadOnlyField(source="is_default_workstation_policy")
     agents_count = SerializerMethodField(read_only=True)
-
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
 
     class Meta:
@@ -41,14 +39,8 @@ class PolicyTableSerializer(ModelSerializer):
         fields = "__all__"
         depth = 1
 
-    def get_clients_count(self, policy):
-        return policy.workstation_clients.count() + policy.server_clients.count()
-
-    def get_sites_count(self, policy):
-        return policy.workstation_sites.count() + policy.server_sites.count()
-
     def get_agents_count(self, policy):
-        return policy.agents.count()
+        return policy.related_agents().count()
 
 
 class PolicyOverviewSerializer(ModelSerializer):

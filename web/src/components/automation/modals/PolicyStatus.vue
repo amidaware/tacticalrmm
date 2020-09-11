@@ -43,13 +43,15 @@
             <q-td v-else></q-td>
             <!-- status text -->
             <q-td v-if="props.row.status === 'pending'">Awaiting First Synchronization</q-td>
-            <q-td v-else-if="props.row.status === 'passing'"></q-td>
+            <q-td v-else-if="props.row.status === 'passing'">
+              <q-badge color="positive">No Issues</q-badge>
+            </q-td>
             <q-td v-else-if="props.row.status === 'failing'">
               <q-badge color="negative">Failing</q-badge>
             </q-td>
-            <q-td v-else>
-              <q-badge color="positive">No Issues</q-badge>
-            </q-td>
+            <q-td v-else-if="props.row.sync_status === 'notsynced'">Will sync on next agent checkin</q-td>
+            <q-td v-else-if="props.row.sync_status === 'synced'">Synced with agent</q-td>
+            <q-td v-else-if="props.row.sync_status === 'pendingdeletion'">Pending deletion on agent</q-td>
             <!-- more info -->
             <q-td v-if="props.row.check_type === 'ping'">
               <span

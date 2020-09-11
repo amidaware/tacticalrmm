@@ -42,6 +42,13 @@ def generate_agent_checks_by_location_task(
         if create_tasks:
             agent.generate_tasks_from_policies(clear=clear)
 
+@app.task
+def generate_all_agent_checks_task(mon_type, clear=False, create_tasks=False):
+    for agent in Agent.objects.filter(monitoring_type=mon_type):
+        agent.generate_checks_from_policies(clear=clear)
+
+        if create_tasks:
+            agent.generate_tasks_from_policies(clear=clear)
 
 @app.task
 def delete_policy_check_task(checkpk):
@@ -98,6 +105,12 @@ def generate_agent_tasks_by_location_task(
 
     for agent in Agent.objects.filter(**location).filter(monitoring_type=mon_type):
         agent.generate_tasks_from_policies(clear=clear, parent_tasks=parent_tasks)
+
+
+@app.task
+def generate_all_agent_tasks_task(mon_type, clear=False):
+    for agent in Agent.objects.filter(monitoring_type=mon_type):
+        agent.generate_tasks_from_policies(clear=clear)
 
 
 @app.task

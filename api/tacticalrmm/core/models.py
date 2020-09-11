@@ -39,6 +39,20 @@ class CoreSettings(models.Model):
     mesh_token = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_username = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_site = models.CharField(max_length=255, null=True, blank=True, default="")
+    workstation_policy = models.ForeignKey(
+        "automation.Policy",
+        related_name="default_workstation_policy",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    server_policy = models.ForeignKey(
+        "automation.Policy",
+        related_name="default_server_policy",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
 
     def save(self, *args, **kwargs):
         if not self.pk and CoreSettings.objects.exists():

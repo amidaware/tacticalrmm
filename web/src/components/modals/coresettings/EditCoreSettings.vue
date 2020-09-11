@@ -39,6 +39,36 @@
                   />
                 </q-card-section>
                 <q-card-section class="row">
+                  <div class="col-4">Default server policy:</div>
+                  <div class="col-2"></div>
+                  <q-select
+                    clearable
+                    map-options
+                    emit-value
+                    outlined
+                    dense
+                    options-dense
+                    v-model="settings.server_policy"
+                    :options="policies"
+                    class="col-6"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4">Default workstation policy:</div>
+                  <div class="col-2"></div>
+                  <q-select
+                    clearable
+                    map-options
+                    emit-value
+                    outlined
+                    dense
+                    options-dense
+                    v-model="settings.workstation_policy"
+                    :options="policies"
+                    class="col-6"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
                   <div class="col-4">Reset Patch Policy on Agents:</div>
                   <div class="col-2"></div>
                   <q-btn color="negative" label="Reset" @click="resetPatchPolicyModal" />
@@ -206,6 +236,7 @@
 <script>
 import axios from "axios";
 import mixins from "@/mixins/mixins";
+import { mapState } from "vuex";
 import ResetPatchPolicy from "@/components/modals/coresettings/ResetPatchPolicy";
 
 export default {
@@ -239,6 +270,11 @@ export default {
         this.settings = r.data;
         this.allTimezones = Object.freeze(r.data.all_timezones);
         this.ready = true;
+      });
+    },
+    getPolicies() {
+      this.$store.dispatch("automation/loadPolicies").catch(e => {
+        this.notifyError(e.response.data);
       });
     },
     toggleAddEmail() {
@@ -295,8 +331,14 @@ export default {
         });
     },
   },
+  computed: {
+    ...mapState({
+      policies: state => state.automation.policies.map(policy => ({ label: policy.name, value: policy.id })),
+    }),
+  },
   created() {
     this.getCoreSettings();
+    this.getPolicies();
   },
 };
 </script>

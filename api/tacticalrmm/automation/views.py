@@ -1,8 +1,6 @@
 from django.db import DataError
 from django.shortcuts import get_object_or_404
 
-from celery import chain
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -175,7 +173,7 @@ class OverviewPolicy(APIView):
 
 class GetRelated(APIView):
     def get(self, request, pk):
-
+        
         response = {}
 
         policy = (
@@ -188,6 +186,9 @@ class GetRelated(APIView):
             )
             .first()
         )
+
+        response["default_server_policy"] = policy.is_default_server_policy
+        response["default_workstation_policy"] = policy.is_default_workstation_policy
 
         response["server_clients"] = ClientSerializer(
             policy.server_clients.all(), many=True
@@ -465,7 +466,10 @@ class UpdatePatchPolicy(APIView):
             winupdatepolicy.moderate = "inherit"
             winupdatepolicy.low = "inherit"
             winupdatepolicy.other = "inherit"
-            winupdatepolicy.save(update_fields=["critical", "important", "moderate", "low", "other"])
+            winupdatepolicy.run_time_frequency = "inherit"
+            winupdatepolicy.reboot_after_install = "inherit"
+            winupdatepolicy.reprocess_failed_inherit = "inherit"
+            winupdatepolicy.save()
 
         return Response("ok")
 

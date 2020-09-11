@@ -18,7 +18,7 @@ from distutils.version import LooseVersion
 from django.db import models
 from django.conf import settings
 
-from core.models import TZ_CHOICES
+from core.models import CoreSettings, TZ_CHOICES
 
 import automation
 import autotasks
@@ -251,6 +251,7 @@ class Agent(models.Model):
         # check if site has a patch policy and if so use it
         client = clients.models.Client.objects.get(client=self.client)
         site = clients.models.Site.objects.get(client=client, site=self.site)
+        core_settings = CoreSettings.objects.first()
         patch_policy = None
         agent_policy = self.winupdatepolicy.get()
 
@@ -259,6 +260,7 @@ class Agent(models.Model):
             if self.policy and self.policy.winupdatepolicy:
                 patch_policy = self.policy.winupdatepolicy.get()
 
+            # check site policy if agent policy doesn't have one
             elif site.server_policy and site.server_policy.winupdatepolicy:
                 patch_policy = site.server_policy.winupdatepolicy.get()
 
@@ -267,6 +269,12 @@ class Agent(models.Model):
                 site.client.server_policy and site.client.server_policy.winupdatepolicy
             ):
                 patch_policy = site.client.server_policy.winupdatepolicy.get()
+
+            # if patch policy still doesn't exist check default policy
+            elif (
+                core_settings.server_policy and core_settings.server_policy.winupdatepolicy
+            ):
+                patch_policy = core_settings.server_policy.winupdatepolicy.get()
 
         elif self.monitoring_type == "workstation":
             # check agent policy first which should override client or site policy
@@ -282,6 +290,12 @@ class Agent(models.Model):
                 and site.client.workstation_policy.winupdatepolicy
             ):
                 patch_policy = site.client.workstation_policy.winupdatepolicy.get()
+
+            # if patch policy still doesn't exist check default policy
+            elif (
+                core_settings.workstation_policy and core_settings.workstation_policy.winupdatepolicy
+            ):
+                patch_policy = core_settings.workstation_policy.winupdatepolicy.get()
 
         # if policy still doesn't exist return the agent patch policy
         if not patch_policy:
@@ -302,6 +316,19 @@ class Agent(models.Model):
 
         if agent_policy.other != "inherit":
             patch_policy.other = agent_policy.other
+
+        if agent_policy.run_time_frequency != "inherit":
+            patch_policy.run_time_frequency = agent_policy.run_time_frequency
+            patch_policy.run_time_hour = agent_policy.run_time_hour
+            patch_policy.run_time_days = agent_policy.run_time_days
+            
+        if agent_policy.reboot_after_install != "inherit":
+            patch_policy.reboot_after_install = agent_policy.reboot_after_install
+
+        if not agent_policy.reprocess_failed_inherit:
+            patch_policy.reprocess_failed = agent_policy.reprocess_failed
+            patch_policy.reprocess_failed_times = agent_policy.reprocess_failed_times
+            patch_policy.email_if_fail = agent_policy.email_if_fail
 
         return patch_policy
 
@@ -559,6 +586,26 @@ class Agent(models.Model):
             self.winupdates.filter(pk__in=pks).delete()
         except:
             pass
+    
+    # define how the agent should handle pending actions
+    def handle_pending_actions(self):
+        pending_actions = self.pendingactions.all()
+
+        for action in pending_actions:
+            if action.action_type == "taskaction":
+                from autotasks.tasks import (
+                    create_win_task_schedule,
+                    enable_or_disable_win_task,
+                    delete_win_task_schedule,
+                )
+                task_id = action.details.task_id
+
+                if action.details.action == "taskcreate":
+                    create_win_task_schedule.delay(task_id, pending_action=action.id)
+                elif action.details.action == "tasktoggle":
+                    enable_or_disable_win_task.delay(task_id, action.details.value, pending_action=action.id)
+                elif action.details.action == "taskdelete":
+                    delete_win_task_schedule.delay(task_id, pending_action=action.id)
 
 
 class AgentOutage(models.Model):

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="5"
+SCRIPT_VERSION="6"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
@@ -169,7 +169,7 @@ print_green 'Installing MeshCentral'
 sudo mkdir -p /meshcentral/meshcentral-data
 sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
-npm install meshcentral@0.6.27
+npm install meshcentral@0.6.33
 sudo chown ${USER}:${USER} -R /meshcentral
 
 meshcfg="$(cat << EOF

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="7"
+SCRIPT_VERSION="8"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
@@ -128,7 +128,7 @@ sudo systemctl stop meshcentral
 sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
 rm -rf node_modules/
-npm install meshcentral@0.6.27
+npm install meshcentral@0.6.33
 sudo systemctl start meshcentral
 sleep 10
 

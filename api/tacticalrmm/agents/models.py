@@ -317,6 +317,19 @@ class Agent(models.Model):
         if agent_policy.other != "inherit":
             patch_policy.other = agent_policy.other
 
+        if agent_policy.run_time_frequency != "inherit":
+            patch_policy.run_time_frequency = agent_policy.run_time_frequency
+            patch_policy.run_time_hour = agent_policy.run_time_hour
+            patch_policy.run_time_days = agent_policy.run_time_days
+            
+        if agent_policy.reboot_after_install != "inherit":
+            patch_policy.reboot_after_install = agent_policy.reboot_after_install
+
+        if not agent_policy.reprocess_failed_inherit:
+            patch_policy.reprocess_failed = agent_policy.reprocess_failed
+            patch_policy.reprocess_failed_times = agent_policy.reprocess_failed_times
+            patch_policy.email_if_fail = agent_policy.email_if_fail
+
         return patch_policy
 
     # clear is used to delete managed policy checks from agent

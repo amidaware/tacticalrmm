@@ -1,6 +1,7 @@
 from time import sleep
-from django.utils import timezone
+from django.utils import timezone as djangotime
 from django.conf import settings
+import datetime as dt
 import pytz
 from loguru import logger
 
@@ -40,6 +41,7 @@ def check_agent_update_schedule_task():
     online = [i for i in agents if i.has_patches_pending and i.status == "online"]
 
     for agent in online:
+        install = False
         patch_policy = agent.get_patch_policy()
 
         # check if auto approval is enabled
@@ -50,34 +52,57 @@ def check_agent_update_schedule_task():
             or patch_policy.low == "approve"
             or patch_policy.other == "approve"
         ):
-            now = None
 
-            # If agent timezone isn't set fallback to server time
-            timezone.activate(pytz.timezone(agent.timezone))
-            now = timezone.localtime(timezone.now())
+            # get current time in agent local time
+            timezone = pytz.timezone(agent.timezone)
+            agent_localtime_now = dt.datetime.now(timezone)
+            weekday = int(agent_localtime_now.strftime("%w"))
+            hour = int(agent_localtime_now.strftime("%-H"))
+            day = int(agent_localtime_now.strftime("%-d"))
 
-            # get schedule and compare to agent's time
-            weekday = int(now.strftime("%w"))
-            hour = int(now.strftime("%-H"))
+            # get agent last installed time in local time zone
+            last_installed = agent.patches_last_installed.astimezone(timezone)
 
-            # check if patches were scheduled to run today
-            if weekday in patch_policy.run_time_days:
+            # check if patches were already run for this cycle and exit if so
+            if (
+                last_installed
+                and last_installed.strftime("%d/%m/%Y") == agent_localtime_now.strftime("%d/%m/%Y")
+            ):
+                return
 
-                # check if patches are past due
-                if patch_policy.run_time_hour < hour:
+            # check if schedule is set to daily/weekly
+            if patch_policy.run_time_frequency == "weekly":
 
-                    # check if patches were already run for this cycle
-                    if (
-                        agent.patches_last_installed
-                        and int(agent.patches_last_installed.strftime("%w")) == weekday
-                    ):
-                        return
+                # check if patches were scheduled to run today
+                if weekday in patch_policy.run_time_days:
 
-                    # initiate update on agent asynchronously and don't worry about ret code
-                    logger.info(f"Installing windows updates on {agent.salt_id}")
-                    agent.salt_api_async(func="win_agent.install_updates")
-                    agent.patches_last_installed = now
-                    agent.save(update_fields=["patches_last_installed"])
+                    # check if patches are past due
+                    if patch_policy.run_time_hour < hour:
+                        install = True
+
+            elif patch_policy.run_time_frequency == "monthly":
+
+                if patch_policy.run_time_day > 28:
+                    months_with_30_days = [3,6,9,11]
+                    current_month = agent_localtime_now.strftime("%-m")
+
+                    if current_month == 2:
+                        patch_policy.run_time_day = 28
+                    elif current_month in months_with_30_days:
+                        patch_policy.run_time_day = 30
+
+                # check if patches were scheduled to run today
+                if day == patch_policy.run_time_day:
+                    # check if patches are past due
+                    if patch_policy.run_time_hour < hour:
+                        install = True
+            
+            if install:
+                # initiate update on agent asynchronously and don't worry about ret code
+                logger.info(f"Installing windows updates on {agent.salt_id}")
+                agent.salt_api_async(func="win_agent.install_updates")
+                agent.patches_last_installed = djangotime.now()
+                agent.save(update_fields=["patches_last_installed"])
 
 
 @app.task

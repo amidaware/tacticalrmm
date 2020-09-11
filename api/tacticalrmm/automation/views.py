@@ -466,7 +466,10 @@ class UpdatePatchPolicy(APIView):
             winupdatepolicy.moderate = "inherit"
             winupdatepolicy.low = "inherit"
             winupdatepolicy.other = "inherit"
-            winupdatepolicy.save(update_fields=["critical", "important", "moderate", "low", "other"])
+            winupdatepolicy.run_time_frequency = "inherit"
+            winupdatepolicy.reboot_after_install = "inherit"
+            winupdatepolicy.reprocess_failed_inherit = "inherit"
+            winupdatepolicy.save()
 
         return Response("ok")
 

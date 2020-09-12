@@ -7,4 +7,5 @@ urlpatterns = [
     path("saltminion/", views.SaltMinion.as_view()),
     path("<str:agentid>/saltminion/", views.SaltMinion.as_view()),
     path("sysinfo/", views.SysInfo.as_view()),
+    path("hello/", views.Hello.as_view()),
 ]

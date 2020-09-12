@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "accounts",
     "api",
+    "apiv2",
     "clients",
     "agents",
     "checks",

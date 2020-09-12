@@ -14,12 +14,16 @@ from time import sleep
 import requests
 import subprocess
 import random
+import platform
 
-PROGRAM_DIR = "C:\\Program Files\\TacticalAgent"
+ARCH = "64" if platform.machine().endswith("64") else "32"
+PROGRAM_DIR = os.path.join(os.environ["ProgramFiles"], "TacticalAgent")
 TAC_RMM = os.path.join(PROGRAM_DIR, "tacticalrmm.exe")
-NSSM = os.path.join(PROGRAM_DIR, "nssm.exe")
-SALT_CALL = os.path.join("C:\\salt", "salt-call.bat")
-TEMP_DIR = os.path.join("C:\\Windows", "Temp")
+NSSM = os.path.join(PROGRAM_DIR, "nssm.exe" if ARCH == "64" else "nssm-x86.exe")
+TEMP_DIR = os.path.join(os.environ["WINDIR"], "Temp")
+SYS_DRIVE = os.environ["SystemDrive"]
+PY_BIN = os.path.join(SYS_DRIVE, "\\salt", "bin", "python.exe")
+SALT_CALL = os.path.join(SYS_DRIVE, "\\salt", "salt-call.bat")
 
 
 def get_services():
@@ -47,8 +51,7 @@ def get_services():
 
 def run_python_script(filename, timeout, script_type="userdefined"):
     # no longer used in agent version 0.11.0
-    python_bin = os.path.join("c:\\salt\\bin", "python.exe")
-    file_path = os.path.join("c:\\windows\\temp", filename)
+    file_path = os.path.join(TEMP_DIR, filename)
 
     if os.path.exists(file_path):
         try:
@@ -61,7 +64,7 @@ def run_python_script(filename, timeout, script_type="userdefined"):
     else:
         __salt__["cp.get_file"](f"salt://scripts/{filename}", file_path)
 
-    return __salt__["cmd.run_all"](f"{python_bin} {file_path}", timeout=timeout)
+    return __salt__["cmd.run_all"](f"{PY_BIN} {file_path}", timeout=timeout)
 
 
 def run_script(filepath, filename, shell, timeout, args=[], bg=False):
@@ -80,8 +83,7 @@ def run_script(filepath, filename, shell, timeout, args=[], bg=False):
             )
 
     elif shell == "python":
-        python_bin = os.path.join("c:\\salt\\bin", "python.exe")
-        file_path = os.path.join("c:\\windows\\temp", filename)
+        file_path = os.path.join(TEMP_DIR, filename)
 
         if os.path.exists(file_path):
             try:
@@ -95,10 +97,10 @@ def run_script(filepath, filename, shell, timeout, args=[], bg=False):
 
         if args:
             a = " ".join(map(lambda x: f'"{x}"', args))
-            cmd = f"{python_bin} {file_path} {a}"
+            cmd = f"{PY_BIN} {file_path} {a}"
             return __salt__[salt_cmd](cmd, timeout=timeout)
         else:
-            return __salt__[salt_cmd](f"{python_bin} {file_path}", timeout=timeout)
+            return __salt__[salt_cmd](f"{PY_BIN} {file_path}", timeout=timeout)
 
 
 def uninstall_agent():
@@ -194,7 +196,7 @@ def agent_update(version, url):
 def do_agent_update(version, url):
     return __salt__["cmd.run_bg"](
         [
-            "C:\\salt\\salt-call.bat",
+            SALT_CALL,
             "win_agent.agent_update",
             f"version={version}",
             f"url={url}",

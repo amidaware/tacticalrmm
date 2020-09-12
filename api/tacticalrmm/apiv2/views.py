@@ -192,3 +192,18 @@ class SaltMinion(APIView):
         agent.salt_update_pending = False
         agent.save(update_fields=["salt_ver", "salt_update_pending"])
         return Response("ok")
+
+
+class SysInfo(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+
+        if not isinstance(request.data["sysinfo"], dict):
+            return notify_error("err")
+
+        agent.wmi_detail = request.data["sysinfo"]
+        agent.save(update_fields=["wmi_detail"])
+        return Response("ok")

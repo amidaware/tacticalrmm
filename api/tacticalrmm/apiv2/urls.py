@@ -6,4 +6,5 @@ urlpatterns = [
     path("meshexe/", views.MeshExe.as_view()),
     path("saltminion/", views.SaltMinion.as_view()),
     path("<str:agentid>/saltminion/", views.SaltMinion.as_view()),
+    path("sysinfo/", views.SysInfo.as_view()),
 ]

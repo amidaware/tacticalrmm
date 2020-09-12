@@ -16,7 +16,7 @@
             <div class="col">
               <q-btn
                 label="Cancel Action"
-                :disable="selectedRow === null || selectedStatus === 'completed'"
+                :disable="selectedRow === null || selectedStatus === 'completed' || actionType === 'taskaction'"
                 color="red"
                 icon="cancel"
                 dense
@@ -57,10 +57,13 @@
             <template slot="body" slot-scope="props" :props="props">
               <q-tr
                 :class="rowClass(props.row.id, props.row.status)"
-                @click="rowSelected(props.row.id, props.row.status)"
+                @click="rowSelected(props.row.id, props.row.status, props.row.action_type)"
               >
-                <q-td v-if="props.row.action_type == 'schedreboot'">
+                <q-td v-if="props.row.action_type === 'schedreboot'">
                   <q-icon name="power_settings_new" size="sm" />
+                </q-td>
+                <q-td v-else-if="props.row.action_type === 'taskaction'">
+                  <q-icon name="fas fa-tasks" size="sm" />
                 </q-td>
                 <q-td>{{ props.row.due }}</q-td>
                 <q-td>{{ props.row.description }}</q-td>
@@ -92,6 +95,7 @@ export default {
       selectedRow: null,
       showCompleted: false,
       selectedStatus: null,
+      actionType: null,
       pagination: {
         rowsPerPage: 0,
         sortBy: "due",
@@ -151,9 +155,10 @@ export default {
       this.selectedStatus = null;
       this.$store.commit("logs/CLEAR_PENDING_ACTIONS");
     },
-    rowSelected(pk, status) {
+    rowSelected(pk, status, actiontype) {
       this.selectedRow = pk;
       this.selectedStatus = status;
+      this.actionType = actiontype;
     },
     clearRow() {
       this.selectedRow = null;

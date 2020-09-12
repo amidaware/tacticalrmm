@@ -66,7 +66,7 @@ def create_win_task_schedule(pk, pending_action=False):
             PendingAction(
                 agent=task.agent,
                 action_type="taskaction",
-                details={"action": "createtask", "task_id": task.id},
+                details={"action": "taskcreate", "task_id": task.id},
             ).save()
             task.sync_status = "notsynced"
             task.save(update_fields=["sync_status"])
@@ -108,7 +108,7 @@ def enable_or_disable_win_task(pk, action, pending_action=False):
                 action_type="taskaction",
                 details={
                     "action": "tasktoggle",
-                    "value": task.enabled,
+                    "value": action,
                     "task_id": task.id,
                 },
             ).save()

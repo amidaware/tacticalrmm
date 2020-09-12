@@ -591,7 +591,7 @@ class Agent(models.Model):
 
     # define how the agent should handle pending actions
     def handle_pending_actions(self):
-        pending_actions = self.pendingactions.all()
+        pending_actions = self.pendingactions.filter(status="pending")
 
         for action in pending_actions:
             if action.action_type == "taskaction":
@@ -601,15 +601,15 @@ class Agent(models.Model):
                     delete_win_task_schedule,
                 )
 
-                task_id = action.details.task_id
+                task_id = action.details["task_id"]
 
-                if action.details.action == "taskcreate":
+                if action.details["action"] == "taskcreate":
                     create_win_task_schedule.delay(task_id, pending_action=action.id)
-                elif action.details.action == "tasktoggle":
+                elif action.details["action"] == "tasktoggle":
                     enable_or_disable_win_task.delay(
-                        task_id, action.details.value, pending_action=action.id
+                        task_id, action.details["value"], pending_action=action.id
                     )
-                elif action.details.action == "taskdelete":
+                elif action.details["action"] == "taskdelete":
                     delete_win_task_schedule.delay(task_id, pending_action=action.id)
 
 

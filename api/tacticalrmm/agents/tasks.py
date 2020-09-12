@@ -97,6 +97,21 @@ def batch_sync_modules_task():
 
 
 @app.task
+def batch_sysinfo_task():
+    # update system info using WMI
+    agents = Agent.objects.all()
+    online = [
+        i.salt_id
+        for i in agents
+        if not i.not_supported("0.11.0") and i.status == "online"
+    ]
+    chunks = (online[i : i + 30] for i in range(0, len(online), 30))
+    for chunk in chunks:
+        Agent.salt_batch_async(minions=chunk, func="win_agent.local_sys_info")
+        sleep(10)
+
+
+@app.task
 def uninstall_agent_task(salt_id):
     attempts = 0
     error = False

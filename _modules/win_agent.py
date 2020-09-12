@@ -252,6 +252,10 @@ def system_info():
     }
 
 
+def local_sys_info():
+    return __salt__["cmd.run_bg"]([TAC_RMM, "-m", "sysinfo"])
+
+
 def get_procs():
     ret = []
 

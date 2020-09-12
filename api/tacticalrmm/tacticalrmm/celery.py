@@ -37,6 +37,10 @@ app.conf.beat_schedule = {
         "task": "agents.tasks.batch_sync_modules_task",
         "schedule": crontab(minute=40, hour="*/4"),
     },
+    "sys-info": {
+        "task": "agents.tasks.batch_sysinfo_task",
+        "schedule": crontab(minute=15, hour="*/2"),
+    },
 }
 
 

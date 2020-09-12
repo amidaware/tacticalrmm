@@ -108,6 +108,11 @@ def uninstall_agent():
 
 
 def update_salt():
+    for p in psutil.process_iter():
+        with p.oneshot():
+            if p.name() == "tacticalrmm.exe" and "updatesalt" in p.cmdline():
+                return "running"
+
     from subprocess import Popen, PIPE
 
     CREATE_NEW_PROCESS_GROUP = 0x00000200

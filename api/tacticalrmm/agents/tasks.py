@@ -86,6 +86,17 @@ def sync_salt_modules_task(pk):
 
 
 @app.task
+def batch_sync_modules_task():
+    # sync modules, split into chunks of 50 agents to not overload salt
+    agents = Agent.objects.all()
+    online = [i.salt_id for i in agents if i.status == "online"]
+    chunks = (online[i : i + 50] for i in range(0, len(online), 50))
+    for chunk in chunks:
+        Agent.salt_batch_async(minions=chunk, func="saltutil.sync_modules")
+        sleep(10)
+
+
+@app.task
 def uninstall_agent_task(salt_id):
     attempts = 0
     error = False

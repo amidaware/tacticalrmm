@@ -33,6 +33,10 @@ app.conf.beat_schedule = {
         "task": "winupdate.tasks.check_agent_update_schedule_task",
         "schedule": crontab(minute=0, hour="*"),
     },
+    "sync-modules": {
+        "task": "agents.tasks.batch_sync_modules_task",
+        "schedule": crontab(minute=40, hour="*/4"),
+    },
 }
 
 

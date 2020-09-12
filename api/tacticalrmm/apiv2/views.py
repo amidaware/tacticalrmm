@@ -186,8 +186,8 @@ class SaltMinion(APIView):
 
         return Response("Successfully synced salt modules")
 
-    def put(self, request, agentid):
-        agent = get_object_or_404(Agent, agent_id=agentid)
+    def put(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
         agent.salt_ver = request.data["ver"]
         agent.salt_update_pending = False
         agent.save(update_fields=["salt_ver", "salt_update_pending"])

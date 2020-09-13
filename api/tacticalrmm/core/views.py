@@ -19,11 +19,14 @@ class UploadMeshAgent(APIView):
     parser_class = (FileUploadParser,)
 
     def put(self, request, format=None):
-        if "meshagent" not in request.data:
+        if "meshagent" not in request.data and "arch" not in request.data:
             raise ParseError("Empty content")
 
+        arch = request.data["arch"]
         f = request.data["meshagent"]
-        mesh_exe = os.path.join(settings.EXE_DIR, "meshagent.exe")
+        mesh_exe = os.path.join(
+            settings.EXE_DIR, "meshagent.exe" if arch == "64" else "meshagent-x86.exe"
+        )
         with open(mesh_exe, "wb+") as j:
             for chunk in f.chunks():
                 j.write(chunk)

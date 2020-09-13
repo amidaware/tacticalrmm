@@ -25,6 +25,7 @@ db.sqlite3
 api/tacticalrmm/static
 celerybeat-schedule
 meshagent.exe
+meshagent-x86.exe
 app.ini
 .env.dev
 .env

@@ -296,6 +296,8 @@ class Check(models.Model):
                             self.more_info = f"Status RUNNING"
                         else:
                             self.status = "failing"
+                    else:
+                        self.status = "failing"
 
             else:
                 self.status = "failing"

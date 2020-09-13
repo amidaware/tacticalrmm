@@ -14,7 +14,7 @@ AUTH_USER_MODEL = "accounts.User"
 APP_VER = "0.0.46"
 
 # https://github.com/wh1te909/salt
-LATEST_SALT_VER = "1.0.3"
+LATEST_SALT_VER = "1.1.0"
 
 try:
     from .local_settings import *

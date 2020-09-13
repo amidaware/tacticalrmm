@@ -45,7 +45,11 @@ def send_agent_update_task(pks, version):
 
         key = [k for k, v in versions.items() if v == version][0]
 
-        download_url = data[key]["assets"][0]["browser_download_url"]
+        # download_url = data[key]["assets"][1]["browser_download_url"]
+
+        # emergency patch for now until fix tomorrow, otherwise all 64 bit agents
+        # will get 32 bit agents and crash
+        download_url = "https://github.com/wh1te909/winagent/releases/download/v0.11.0/winagent-v0.11.0.exe"
 
         # split into chunks to not overload salt
         chunks = (minions[i : i + 30] for i in range(0, len(minions), 30))

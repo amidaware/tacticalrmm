@@ -320,7 +320,14 @@ def install_agent(request):
 
     client = get_object_or_404(Client, client=request.data["client"])
     site = get_object_or_404(Site, client=client, site=request.data["site"])
-    version = request.data["version"].split("winagent-v")[1]
+    version = settings.LATEST_AGENT_VER
+    arch = request.data["arch"]
+    inno = (
+        f"winagent-v{version}.exe" if arch == "64" else f"winagent-v{version}-x86.exe"
+    )
+    download_url = (
+        f"https://github.com/wh1te909/winagent/releases/download/v{version}/{inno}"
+    )
 
     _, token = AuthToken.objects.create(
         user=request.user, expiry=dt.timedelta(hours=request.data["expires"])
@@ -347,13 +354,14 @@ def install_agent(request):
             except Exception as e:
                 logger.error(str(e))
 
+        goarch = "amd64" if arch == "64" else "386"
         cmd = [
             "env",
             "GOOS=windows",
-            "GOARCH=amd64",
+            f"GOARCH={goarch}",
             go_bin,
             "build",
-            f"-ldflags=\"-X 'main.Version={version}'",
+            f"-ldflags=\"-X 'main.Inno={inno}'",
             f"-X 'main.Api={api}'",
             f"-X 'main.Client={client.pk}'",
             f"-X 'main.Site={site.pk}'",
@@ -361,6 +369,7 @@ def install_agent(request):
             f"-X 'main.Rdp={rdp}'",
             f"-X 'main.Ping={ping}'",
             f"-X 'main.Power={power}'",
+            f"-X 'main.DownloadUrl={download_url}'",
             f"-X 'main.Token={token}'\"",
             "-o",
             exe,
@@ -403,10 +412,42 @@ def install_agent(request):
             return response
 
     elif request.data["installMethod"] == "manual":
-        resp = {"token": token, "client": client.pk, "site": site.pk}
-        resp["showextra"] = (
-            True if pyver.parse(version) > pyver.parse("0.10.0") else False
-        )
+        cmd = [
+            inno,
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "&&",
+            "timeout",
+            "/t",
+            "20",
+            "/nobreak",
+            ">",
+            "NUL",
+            "&&",
+            r'"C:\Program Files\TacticalAgent\tacticalrmm.exe"',
+            "-m",
+            "install",
+            "--api",
+            request.data["api"],
+            "--client-id",
+            client.pk,
+            "--site-id",
+            site.pk,
+            "--agent-type",
+            request.data["agenttype"],
+            "--auth",
+            token,
+        ]
+
+        if int(request.data["rdp"]):
+            cmd.append("--rdp")
+        if int(request.data["ping"]):
+            cmd.append("--ping")
+        if int(request.data["power"]):
+            cmd.append("--power")
+
+        resp = {"cmd": " ".join(str(i) for i in cmd), "url": download_url}
+
         return Response(resp)
 
     elif request.data["installMethod"] == "powershell":

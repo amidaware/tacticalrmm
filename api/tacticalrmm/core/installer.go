@@ -2,29 +2,31 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
-	"time"
-	"flag"
+	"path/filepath"
 	"strings"
+	"time"
 )
 
 var (
-	Version string
-	Api string
-	Client string
-	Site string
-	Atype string
-	Power string
-	Rdp string
-	Ping string
-	Token string
+	Inno        string
+	Api         string
+	Client      string
+	Site        string
+	Atype       string
+	Power       string
+	Rdp         string
+	Ping        string
+	Token       string
+	DownloadUrl string
 )
 
-func downloadAgent(filepath string, url string) (err error) {
+func downloadAgent(filepath string) (err error) {
 
 	out, err := os.Create(filepath)
 	if err != nil {
@@ -32,7 +34,7 @@ func downloadAgent(filepath string, url string) (err error) {
 	}
 	defer out.Close()
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(DownloadUrl)
 	if err != nil {
 		return err
 	}
@@ -50,8 +52,6 @@ func downloadAgent(filepath string, url string) (err error) {
 	return nil
 }
 
-
-
 func main() {
 
 	debugLog := flag.String("log", "", "Verbose output")
@@ -59,14 +59,12 @@ func main() {
 	localMesh := flag.String("local-mesh", "", "Use local mesh agent")
 	flag.Parse()
 
-	agentBinary := fmt.Sprintf("C:\\Windows\\Temp\\winagent-v%s.exe", Version)
+	agentBinary := filepath.Join(os.Getenv("windir"), "Temp", Inno)
 
-	
-	url := fmt.Sprintf("https://github.com/wh1te909/winagent/releases/download/v%s/winagent-v%s.exe", Version, Version)
 	fmt.Println("Downloading agent...")
-	dl := downloadAgent(agentBinary, url)
+	dl := downloadAgent(agentBinary)
 	if dl != nil {
-		fmt.Println("ERROR: unable to download agent from", url)
+		fmt.Println("ERROR: unable to download agent from", DownloadUrl)
 		fmt.Println(dl)
 		os.Exit(1)
 	}
@@ -81,13 +79,12 @@ func main() {
 
 	time.Sleep(20 * time.Second)
 
-	tacrmm := "C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"
+	tacrmm := filepath.Join(os.Getenv("PROGRAMFILES"), "TacticalAgent", "tacticalrmm.exe")
 
 	cmdArgs := []string{
 		"/C", tacrmm,
 		"-m", "install", "--api", Api, "--client-id",
 		Client, "--site-id", Site, "--agent-type", Atype,
-		"--power", Power, "--rdp", Rdp, "--ping", Ping,
 		"--auth", Token,
 	}
 
@@ -101,6 +98,18 @@ func main() {
 
 	if len(strings.TrimSpace(*localMesh)) != 0 {
 		cmdArgs = append(cmdArgs, "--local-mesh", *localMesh)
+	}
+
+	if Rdp == "1" {
+		cmdArgs = append(cmdArgs, "--rdp")
+	}
+
+	if Ping == "1" {
+		cmdArgs = append(cmdArgs, "--ping")
+	}
+
+	if Power == "1" {
+		cmdArgs = append(cmdArgs, "--power")
 	}
 
 	fmt.Println("Installation starting.")

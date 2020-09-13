@@ -90,21 +90,23 @@ def trigger_patch_scan(request):
 
 
 @api_view(["POST"])
-def get_mesh_exe(request):
-    mesh_exe = os.path.join(settings.EXE_DIR, "meshagent.exe")
+def get_mesh_exe(request, arch):
+    filename = "meshagent.exe" if arch == "64" else "meshagent-x86.exe"
+    mesh_exe = os.path.join(settings.EXE_DIR, filename)
     if not os.path.exists(mesh_exe):
-        return Response("error", status=status.HTTP_400_BAD_REQUEST)
+        return notify_error(f"File {filename} has not been uploaded.")
+
     if settings.DEBUG:
         with open(mesh_exe, "rb") as f:
             response = HttpResponse(
                 f.read(), content_type="application/vnd.microsoft.portable-executable"
             )
-            response["Content-Disposition"] = "inline; filename=meshagent.exe"
+            response["Content-Disposition"] = f"inline; filename={filename}"
             return response
     else:
         response = HttpResponse()
-        response["Content-Disposition"] = "attachment; filename=meshagent.exe"
-        response["X-Accel-Redirect"] = "/private/exe/meshagent.exe"
+        response["Content-Disposition"] = f"attachment; filename={filename}"
+        response["X-Accel-Redirect"] = f"/private/exe/{filename}"
         return response
 
 

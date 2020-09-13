@@ -99,7 +99,7 @@
               <q-td
                 v-else-if="props.row.sync_status === 'pendingdeletion'"
               >Pending deletion on agent</q-td>
-              <q-td v-if="props.row.retcode || props.row.stdout || props.row.stderr">
+              <q-td v-if="props.row.retcode !== null || props.row.stdout || props.row.stderr">
                 <span
                   style="cursor:pointer;color:blue;text-decoration:underline"
                   @click="scriptMoreInfo(props.row)"

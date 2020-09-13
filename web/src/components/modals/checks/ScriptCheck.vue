@@ -10,7 +10,7 @@
       <p>Settings -> Script Manager</p>
     </q-card-section>
   </q-card>
-  <q-card v-else style="min-width: 400px">
+  <q-card v-else style="min-width: 50vw">
     <q-card-section class="row items-center">
       <div v-if="mode === 'add'" class="text-h6">Add Script Check</div>
       <div v-else-if="mode === 'edit'" class="text-h6">Edit Script Check</div>
@@ -31,6 +31,20 @@
           map-options
           emit-value
           :disable="this.mode === 'edit'"
+        />
+      </q-card-section>
+      <q-card-section>
+        <q-select
+          dense
+          label="Script Arguments (press Enter after typing each argument)"
+          filled
+          v-model="scriptcheck.script_args"
+          use-input
+          use-chips
+          multiple
+          hide-dropdown-icon
+          input-debounce="0"
+          new-value-mode="add"
         />
       </q-card-section>
       <q-card-section>
@@ -83,6 +97,7 @@ export default {
       scriptcheck: {
         check_type: "script",
         script: null,
+        script_args: [],
         timeout: 120,
         fails_b4_alert: 1,
       },

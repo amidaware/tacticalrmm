@@ -31,7 +31,11 @@ from agents.tasks import (
 from autotasks.models import AutomatedTask
 from autotasks.serializers import TaskRunnerGetSerializer, TaskRunnerPatchSerializer
 from checks.models import Check
-from checks.serializers import CheckResultsSerializer, CheckRunnerGetSerializer
+from checks.serializers import (
+    CheckResultsSerializer,
+    CheckRunnerGetSerializer,
+    CheckRunnerGetSerializerV2,
+)
 from clients.models import Client, Site
 from software.tasks import get_installed_software, install_chocolatey
 from tacticalrmm.utils import notify_error
@@ -167,6 +171,33 @@ class NewAgent(APIView):
         agent.generate_tasks_from_policies()
 
         return Response({"pk": agent.pk, "saltid": f"{agent.hostname}-{agent.pk}"})
+
+
+class CheckRunner(APIView):
+    """
+    For windows agent
+    """
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, agentid):
+        agent = get_object_or_404(Agent, agent_id=agentid)
+        checks = Check.objects.filter(agent__pk=agent.pk, overriden_by_policy=False)
+
+        ret = {
+            "agent": agent.pk,
+            "check_interval": agent.check_interval,
+            "checks": CheckRunnerGetSerializerV2(checks, many=True).data,
+        }
+        return Response(ret)
+
+    def patch(self, request):
+        check = get_object_or_404(Check, pk=request.data["id"])
+        check.last_run = djangotime.now()
+        check.save(update_fields=["last_run"])
+        status = check.handle_checkv2(request.data)
+        return Response(status)
 
 
 class MeshExe(APIView):

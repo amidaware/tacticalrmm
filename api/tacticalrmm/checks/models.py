@@ -1,6 +1,8 @@
+import base64
 import string
 import os
 import json
+import zlib
 from statistics import mean
 
 from django.db import models
@@ -13,6 +15,7 @@ from core.models import CoreSettings
 import agents
 
 from .tasks import handle_check_email_alert_task
+from .utils import bytes2human
 
 CHECK_TYPE_CHOICES = [
     ("diskspace", "Disk Space Check"),
@@ -196,6 +199,157 @@ class Check(models.Model):
             "managed_by_policy",
             "overriden_by_policy",
         ]
+
+    def handle_checkv2(self, data):
+        # cpuload or mem checks
+        if self.check_type == "cpuload" or self.check_type == "memory":
+
+            self.history.append(data["percent"])
+
+            if len(self.history) > 15:
+                self.history = self.history[-15:]
+
+            self.save(update_fields=["history"])
+
+            avg = int(mean(self.history))
+
+            if avg > self.threshold:
+                self.status = "failing"
+            else:
+                self.status = "passing"
+
+        # diskspace checks
+        elif self.check_type == "diskspace":
+            if data["exists"]:
+                percent_used = round(data["percent_used"])
+                total = bytes2human(data["total"])
+                free = bytes2human(data["free"])
+
+                if (100 - percent_used) < self.threshold:
+                    self.status = "failing"
+                else:
+                    self.status = "passing"
+
+                self.more_info = f"Total: {total}B, Free: {free}B"
+            else:
+                self.status = "failing"
+                self.more_info = f"Disk {self.disk} does not exist"
+
+            self.save(update_fields=["more_info"])
+
+        # script checks
+        elif self.check_type == "script":
+            self.stdout = data["stdout"]
+            self.stderr = data["stderr"]
+            self.retcode = data["retcode"]
+            self.execution_time = "{:.4f}".format(data["stop"] - data["start"])
+
+            if data["retcode"] != 0:
+                self.status = "failing"
+            else:
+                self.status = "passing"
+
+            self.save(
+                update_fields=[
+                    "stdout",
+                    "stderr",
+                    "retcode",
+                    "execution_time",
+                ]
+            )
+
+        # ping checks
+        elif self.check_type == "ping":
+            success = ["Reply", "bytes", "time", "TTL"]
+            output = data["output"]
+
+            if data["has_stdout"]:
+                if all(x in output for x in success):
+                    self.status = "passing"
+                else:
+                    self.status = "failing"
+            elif data["has_stderr"]:
+                self.status = "failing"
+
+            self.more_info = output
+            self.save(update_fields=["more_info"])
+
+        # windows service checks
+        elif self.check_type == "winsvc":
+            svc_stat = data["status"]
+            self.more_info = f"Status {svc_stat.upper()}"
+
+            if data["exists"]:
+                if svc_stat == "running":
+                    self.status = "passing"
+                elif svc_stat == "start_pending" and self.pass_if_start_pending:
+                    self.status = "passing"
+                else:
+                    if self.agent and self.restart_if_stopped:
+                        r = self.agent.salt_api_cmd(
+                            func="service.restart", arg=self.svc_name, timeout=45
+                        )
+                        if r == "timeout" or r == "error":
+                            self.status = "failing"
+                        elif isinstance(r, bool) and r:
+                            self.status = "passing"
+                            self.more_info = f"Status RUNNING"
+                        else:
+                            self.status = "failing"
+
+            else:
+                self.status = "failing"
+                self.more_info = f"Service {self.svc_name} does not exist"
+
+            self.save(update_fields=["more_info"])
+
+        elif self.check_type == "eventlog":
+            log = []
+            is_wildcard = self.event_id_is_wildcard
+            eventType = self.event_type
+            eventID = self.event_id
+            r = json.loads(zlib.decompress(base64.b64decode(data["log"])))
+
+            for i in r:
+                if is_wildcard and i["eventType"] == eventType:
+                    log.append(i)
+                elif int(i["eventID"]) == eventID and i["eventType"] == eventType:
+                    log.append(i)
+
+            if self.fail_when == "contains":
+                if log:
+                    self.status = "failing"
+                    self.extra_details = {"log": log}
+                else:
+                    self.status = "passing"
+                    self.extra_details = {"log": []}
+
+            elif self.fail_when == "not_contains":
+                if log:
+                    self.status = "passing"
+                    self.extra_details = {"log": log}
+                else:
+                    self.status = "failing"
+                    self.extra_details = {"log": []}
+
+            self.save(update_fields=["extra_details"])
+
+        # handle status
+        if self.status == "failing":
+            self.fail_count += 1
+            self.save(update_fields=["status", "fail_count"])
+
+        elif self.status == "passing":
+            if self.fail_count != 0:
+                self.fail_count = 0
+                self.save(update_fields=["status", "fail_count"])
+            else:
+                self.save(update_fields=["status"])
+
+        if self.email_alert and self.fail_count >= self.fails_b4_alert:
+            handle_check_email_alert_task.delay(self.pk)
+
+        return self.status
 
     def handle_check(self, data):
         if self.check_type != "cpuload" and self.check_type != "memory":

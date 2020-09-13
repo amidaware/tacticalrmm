@@ -21,6 +21,7 @@ from .tasks import (
     run_win_task,
     enable_or_disable_win_task,
 )
+from tacticalrmm.utils import notify_error
 
 import automation
 
@@ -39,6 +40,11 @@ class AddAutoTask(APIView):
         else:
             agent = get_object_or_404(Agent, pk=data["agent"])
             parent = {"agent": agent}
+            added = "0.11.0"
+            if data["autotask"]["script_args"] and agent.not_supported(added):
+                return notify_error(
+                    f"Script arguments only available in agent {added} or greater"
+                )
 
         check = None
         if data["autotask"]["assigned_check"]:

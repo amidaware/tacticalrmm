@@ -10,7 +10,7 @@
       <p>Settings -> Script Manager</p>
     </q-card-section>
   </q-card>
-  <q-card v-else class="q-pa-xs" style="min-width: 550px">
+  <q-card v-else class="q-pa-xs" style="min-width: 30vw">
     <q-card-section class="row items-center">
       <div class="text-h6">Add Automated Task</div>
       <q-space />
@@ -29,6 +29,20 @@
             label="Select task"
             map-options
             emit-value
+          />
+        </q-card-section>
+        <q-card-section>
+          <q-select
+            dense
+            label="Script Arguments (press Enter after typing each argument)"
+            filled
+            v-model="autotask.script_args"
+            use-input
+            use-chips
+            multiple
+            hide-dropdown-icon
+            input-debounce="0"
+            new-value-mode="add"
           />
         </q-card-section>
         <q-card-section>
@@ -134,6 +148,7 @@ export default {
       step: 1,
       autotask: {
         script: null,
+        script_args: [],
         assigned_check: null,
         name: null,
         run_time_days: [],

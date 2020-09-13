@@ -17,6 +17,7 @@ importlib-metadata==1.7.0
 kombu==4.6.11
 loguru==0.5.1
 more-itertools==8.5.0
+msgpack==1.0.0
 packaging==20.4
 psycopg2-binary==2.8.5
 pycparser==2.20

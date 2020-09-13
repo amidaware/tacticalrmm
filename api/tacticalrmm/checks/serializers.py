@@ -88,6 +88,19 @@ class CheckRunnerGetSerializer(serializers.ModelSerializer):
             task = obj.assignedtask.first()
             return AssignedTaskCheckRunnerField(task).data
 
+
+class CheckRunnerGetSerializerV2(serializers.ModelSerializer):
+    # for the windows agent
+    # only send data needed for agent to run a check
+
+    assigned_tasks = serializers.SerializerMethodField()
+    script = ScriptSerializer(read_only=True)
+
+    def get_assigned_tasks(self, obj):
+        if obj.assignedtask.exists():
+            tasks = obj.assignedtask.all()
+            return AssignedTaskCheckRunnerField(tasks, many=True).data
+
     class Meta:
         model = Check
         exclude = [

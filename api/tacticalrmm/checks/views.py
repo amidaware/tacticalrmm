@@ -48,6 +48,17 @@ class GetAddCheck(APIView):
         else:
             agent = get_object_or_404(Agent, pk=request.data["pk"])
             parent = {"agent": agent}
+            added = "0.11.0"
+            if (
+                request.data["check"]["check_type"] == "script"
+                and request.data["check"]["script_args"]
+                and agent.not_supported(version_added=added)
+            ):
+                return notify_error(
+                    {
+                        "non_field_errors": f"Script arguments only available in agent {added} or greater"
+                    }
+                )
 
         script = None
         if "script" in request.data["check"]:
@@ -125,6 +136,22 @@ class GetUpdateDeleteCheck(APIView):
                         )
 
                     request.data["event_id"] = 0
+
+        elif check.check_type == "script":
+            added = "0.11.0"
+            try:
+                request.data["script_args"]
+            except KeyError:
+                pass
+            else:
+                if request.data["script_args"] and check.agent.not_supported(
+                    version_added=added
+                ):
+                    return notify_error(
+                        {
+                            "non_field_errors": f"Script arguments only available in agent {added} or greater"
+                        }
+                    )
 
         serializer = CheckSerializer(instance=check, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)

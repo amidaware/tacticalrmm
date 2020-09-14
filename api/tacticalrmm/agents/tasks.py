@@ -19,48 +19,38 @@ logger.configure(**settings.LOG_CONFIG)
 @app.task
 def send_agent_update_task(pks, version):
     assert isinstance(pks, list)
-    ver = version.split("winagent-v")[1]
-    q = Agent.objects.only("pk").filter(pk__in=pks)
 
-    agents = [
-        i
-        for i in q
-        if pyver.parse(i.version) < pyver.parse(ver) and i.status == "online"
-    ]
+    q = Agent.objects.filter(pk__in=pks)
+    agents = [i.pk for i in q if pyver.parse(i.version) < pyver.parse(version)]
 
-    if agents:
-        for agent in agents:
-            agent.update_pending = True
-            agent.save(update_fields=["update_pending"])
+    chunks = (agents[i : i + 30] for i in range(0, len(agents), 30))
 
-        minions = [i.salt_id for i in agents]
+    for chunk in chunks:
+        for pk in chunk:
+            agent = Agent.objects.get(pk=pk)
+            if agent.operating_system is not None:
+                if "64bit" in agent.operating_system:
+                    arch = "64"
+                elif "32bit" in agent.operating_system:
+                    arch = "32"
+                else:
+                    arch = "64"
 
-        r = Agent.get_github_versions()
-        git_versions = r["versions"]
-        data = r["data"]  # full response from github
-        versions = {}
+                url = settings.DL_64 if arch == "64" else settings.DL_32
+                inno = (
+                    f"winagent-v{version}.exe"
+                    if arch == "64"
+                    else f"winagent-v{version}-x86.exe"
+                )
 
-        for i, release in enumerate(data):
-            versions[i] = release["name"]
-
-        key = [k for k, v in versions.items() if v == version][0]
-
-        # download_url = data[key]["assets"][1]["browser_download_url"]
-
-        # emergency patch for now until fix tomorrow, otherwise all 64 bit agents
-        # will get 32 bit agents and crash
-        download_url = "https://github.com/wh1te909/winagent/releases/download/v0.11.0/winagent-v0.11.0.exe"
-
-        # split into chunks to not overload salt
-        chunks = (minions[i : i + 30] for i in range(0, len(minions), 30))
-
-        for chunk in chunks:
-            r = Agent.salt_batch_async(
-                minions=chunk,
-                func="win_agent.do_agent_update",
-                kwargs={"version": ver, "url": download_url},
-            )
-            sleep(5)
+                r = agent.salt_api_async(
+                    func="win_agent.do_agent_update_v2",
+                    kwargs={
+                        "inno": inno,
+                        "url": url,
+                    },
+                )
+        sleep(10)
 
 
 @app.task

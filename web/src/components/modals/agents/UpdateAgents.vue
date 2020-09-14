@@ -10,14 +10,7 @@
     <q-separator />
     <q-card-section>
       Select Version
-      <q-select
-        square
-        dense
-        options-dense
-        outlined
-        v-model="version"
-        :options="Object.values(versions)"
-      />
+      <q-select square disable dense options-dense outlined v-model="version" :options="versions" />
     </q-card-section>
     <q-card-section v-show="version !== null">
       Select Agent
@@ -41,7 +34,7 @@ export default {
   mixins: [mixins],
   data() {
     return {
-      versions: {},
+      versions: [],
       version: null,
       agents: [],
       group: [],
@@ -58,6 +51,7 @@ export default {
         .get("/agents/getagentversions/")
         .then(r => {
           this.versions = r.data.versions;
+          this.version = r.data.versions[0];
           this.agents = r.data.agents;
           this.$q.loading.hide();
         })

@@ -145,6 +145,62 @@ def install_updates():
     return __salt__["cmd.run_bg"]([TAC_RMM, "-m", "winupdater"])
 
 
+def agent_update_v2(inno, url):
+    # make sure another instance of the update is not running
+    # this function spawns 2 instances of itself (because we call it twice with salt run_bg)
+    # so if more than 2 running, don't continue as an update is already running
+    count = 0
+    for p in psutil.process_iter():
+        try:
+            with p.oneshot():
+                if "win_agent.agent_update_v2" in p.cmdline():
+                    count += 1
+        except Exception:
+            continue
+
+    if count > 2:
+        return "already running"
+
+    sleep(random.randint(1, 20))  # don't flood the rmm
+
+    exe = os.path.join(TEMP_DIR, inno)
+
+    if os.path.exists(exe):
+        try:
+            os.remove(exe)
+        except:
+            pass
+
+    try:
+        r = requests.get(url, stream=True, timeout=600)
+    except Exception:
+        return "failed"
+
+    if r.status_code != 200:
+        return "failed"
+
+    with open(exe, "wb") as f:
+        for chunk in r.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+    del r
+
+    ret = subprocess.run([exe, "/VERYSILENT", "/SUPPRESSMSGBOXES"], timeout=90)
+    return "ok"
+
+
+def do_agent_update_v2(inno, url):
+    return __salt__["cmd.run_bg"](
+        [
+            SALT_CALL,
+            "win_agent.agent_update_v2",
+            f"inno={inno}",
+            f"url={url}",
+            "--local",
+        ]
+    )
+
+
 def agent_update(version, url):
     # make sure another instance of the update is not running
     # this function spawns 2 instances of itself so if more than 2 running,

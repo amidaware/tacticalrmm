@@ -46,11 +46,9 @@ logger.configure(**settings.LOG_CONFIG)
 @api_view()
 def get_agent_versions(request):
     agents = Agent.objects.only("pk")
-    ret = Agent.get_github_versions()
     return Response(
         {
-            "versions": ret["versions"],
-            "github": ret["data"],
+            "versions": [settings.LATEST_AGENT_VER],
             "agents": AgentHostnameSerializer(agents, many=True).data,
         }
     )
@@ -325,9 +323,7 @@ def install_agent(request):
     inno = (
         f"winagent-v{version}.exe" if arch == "64" else f"winagent-v{version}-x86.exe"
     )
-    download_url = (
-        f"https://github.com/wh1te909/winagent/releases/download/v{version}/{inno}"
-    )
+    download_url = settings.DL_64 if arch == "64" else settings.DL_32
 
     _, token = AuthToken.objects.create(
         user=request.user, expiry=dt.timedelta(hours=request.data["expires"])

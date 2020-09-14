@@ -320,6 +320,19 @@ def install_agent(request):
     site = get_object_or_404(Site, client=client, site=request.data["site"])
     version = settings.LATEST_AGENT_VER
     arch = request.data["arch"]
+
+    # response type is blob so we have to use
+    # status codes and render error message on the frontend
+    if arch == "64" and not os.path.exists(
+        os.path.join(settings.EXE_DIR, "meshagent.exe")
+    ):
+        return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
+
+    if arch == "32" and not os.path.exists(
+        os.path.join(settings.EXE_DIR, "meshagent-x86.exe")
+    ):
+        return Response(status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
     inno = (
         f"winagent-v{version}.exe" if arch == "64" else f"winagent-v{version}-x86.exe"
     )

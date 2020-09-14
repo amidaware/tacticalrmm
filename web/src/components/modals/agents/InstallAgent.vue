@@ -149,14 +149,30 @@ export default {
       };
 
       if (this.installMethod === "manual") {
-        axios.post("/agents/installagent/", data).then(r => {
-          this.info = {
-            expires: this.expires,
-            data: r.data,
-            arch: this.arch,
-          };
-          this.showAgentDownload = true;
-        });
+        this.$axios
+          .post("/agents/installagent/", data)
+          .then(r => {
+            this.info = {
+              expires: this.expires,
+              data: r.data,
+              arch: this.arch,
+            };
+            this.showAgentDownload = true;
+          })
+          .catch(e => {
+            let err;
+            switch (e.response.status) {
+              case 406:
+                err = "Missing 64 bit meshagent.exe. Upload it from File > Upload Mesh Agent";
+                break;
+              case 415:
+                err = "Missing 32 bit meshagent-x86.exe. Upload it from File > Upload Mesh Agent";
+                break;
+              default:
+                err = "Something went wrong";
+            }
+            this.notifyError(err, 4000);
+          });
       } else if (this.installMethod === "exe") {
         this.$q.loading.show({ message: "Generating executable..." });
 
@@ -184,6 +200,12 @@ export default {
               case 412:
                 err = "Golang build failed. Check debug log for the error message";
                 break;
+              case 406:
+                err = "Missing 64 bit meshagent.exe. Upload it from File > Upload Mesh Agent";
+                break;
+              case 415:
+                err = "Missing 32 bit meshagent-x86.exe. Upload it from File > Upload Mesh Agent";
+                break;
               default:
                 err = "Something went wrong";
             }
@@ -202,7 +224,20 @@ export default {
             link.click();
             this.showDLMessage();
           })
-          .catch(e => this.notifyError("Something went wrong"));
+          .catch(e => {
+            let err;
+            switch (e.response.status) {
+              case 406:
+                err = "Missing 64 bit meshagent.exe. Upload it from File > Upload Mesh Agent";
+                break;
+              case 415:
+                err = "Missing 32 bit meshagent-x86.exe. Upload it from File > Upload Mesh Agent";
+                break;
+              default:
+                err = "Something went wrong";
+            }
+            this.notifyError(err, 4000);
+          });
       }
     },
     showDLMessage() {

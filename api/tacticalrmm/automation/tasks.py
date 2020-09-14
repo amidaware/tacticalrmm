@@ -75,6 +75,7 @@ def update_policy_check_fields_task(checkpk):
         ip=check.ip,
         script=check.script,
         pass_if_start_pending=check.pass_if_start_pending,
+        pass_if_svc_not_exist=check.pass_if_svc_not_exist,
         restart_if_stopped=check.restart_if_stopped,
         log_name=check.log_name,
         event_id=check.event_id,

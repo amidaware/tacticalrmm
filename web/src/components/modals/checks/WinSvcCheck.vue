@@ -90,6 +90,11 @@
         />
         <br />
         <q-checkbox
+          v-model="winsvccheck.pass_if_svc_not_exist"
+          label="PASS if service doesn't exist"
+        />
+        <br />
+        <q-checkbox
           v-model="winsvccheck.restart_if_stopped"
           label="Restart service if it's stopped"
         />
@@ -134,6 +139,7 @@ export default {
         svc_display_name: null,
         svc_policy_mode: null,
         pass_if_start_pending: false,
+        pass_if_svc_not_exist: false,
         restart_if_stopped: false,
         fails_b4_alert: 1,
       },

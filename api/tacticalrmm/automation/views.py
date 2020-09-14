@@ -74,6 +74,7 @@ class GetAddPolicies(APIView):
                     svc_name=check.svc_name,
                     svc_display_name=check.svc_display_name,
                     pass_if_start_pending=check.pass_if_start_pending,
+                    pass_if_svc_not_exist=check.pass_if_svc_not_exist,
                     restart_if_stopped=check.restart_if_stopped,
                     svc_policy_mode=check.svc_policy_mode,
                     log_name=check.log_name,

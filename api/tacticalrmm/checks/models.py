@@ -129,6 +129,7 @@ class Check(models.Model):
     svc_name = models.CharField(max_length=255, null=True, blank=True)
     svc_display_name = models.CharField(max_length=255, null=True, blank=True)
     pass_if_start_pending = models.BooleanField(null=True, blank=True)
+    pass_if_svc_not_exist = models.BooleanField(default=False)
     restart_if_stopped = models.BooleanField(null=True, blank=True)
     svc_policy_mode = models.CharField(
         max_length=20, null=True, blank=True
@@ -300,7 +301,11 @@ class Check(models.Model):
                         self.status = "failing"
 
             else:
-                self.status = "failing"
+                if self.pass_if_svc_not_exist:
+                    self.status = "passing"
+                else:
+                    self.status = "failing"
+
                 self.more_info = f"Service {self.svc_name} does not exist"
 
             self.save(update_fields=["more_info"])
@@ -423,6 +428,7 @@ class Check(models.Model):
             svc_name=self.svc_name,
             svc_display_name=self.svc_display_name,
             pass_if_start_pending=self.pass_if_start_pending,
+            pass_if_svc_not_exist=self.pass_if_svc_not_exist,
             restart_if_stopped=self.restart_if_stopped,
             svc_policy_mode=self.svc_policy_mode,
             log_name=self.log_name,

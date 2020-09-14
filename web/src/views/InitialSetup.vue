@@ -82,6 +82,7 @@ export default {
       meshagent: null,
       allTimezones: [],
       timezone: null,
+      arch: "64",
     };
   },
   methods: {
@@ -96,6 +97,7 @@ export default {
         .post("/clients/clients/", data)
         .then(r => {
           let formData = new FormData();
+          formData.append("arch", this.arch);
           formData.append("meshagent", this.meshagent);
           axios
             .put("/core/uploadmesh/", formData)

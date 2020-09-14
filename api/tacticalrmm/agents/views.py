@@ -454,7 +454,7 @@ def install_agent(request):
             text = f.read()
 
         replace_dict = {
-            "versionchange": request.data["exe"],
+            "innosetupchange": inno,
             "clientchange": str(client.pk),
             "sitechange": str(site.pk),
             "apichange": request.data["api"],
@@ -462,7 +462,7 @@ def install_agent(request):
             "powerchange": str(request.data["power"]),
             "rdpchange": str(request.data["rdp"]),
             "pingchange": str(request.data["ping"]),
-            "downloadchange": request.data["download"],
+            "downloadchange": download_url,
             "tokenchange": token,
         }
 

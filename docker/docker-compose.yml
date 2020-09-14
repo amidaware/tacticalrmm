@@ -18,6 +18,8 @@ volumes:
   scripts:
   # Volume for mesh token initial setup
   mesh_token:
+  # Useds to make the salt data persistent
+  salt_data:
 
 services:
   # Postgres Database for API service
@@ -49,6 +51,7 @@ services:
       - "4506:4506"
     volumes:
       - scripts:/srv
+      - salt_data:/etc/salt/pki
     networks:
       - proxy
 

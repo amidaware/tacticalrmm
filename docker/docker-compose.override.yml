@@ -1,6 +1,9 @@
 # FOR PROD
 version: "3.7"
 
+volumes: 
+  # Gives access to the debug log for celery tasks
+  debug_log:
 services:
   # Container that hosts Vue frontend
   app:
@@ -40,6 +43,7 @@ services:
     volumes:
       - scripts:/srv
       - mesh_token:/token
+      - debug_log:/app/tacticalrmm/private/log
     depends_on:
       - db
       - meshcentral
@@ -69,6 +73,8 @@ services:
       - redis
       - proxy
       - database
+    volumes:
+      - debug_log:/app/tacticalrmm/private/log
     depends_on:
       - db
       - redis
@@ -98,6 +104,8 @@ services:
       - redis
       - proxy
       - database
+    volumes:
+      - debug_log:/app/tacticalrmm/private/log
     depends_on:
       - db
       - redis
@@ -127,6 +135,8 @@ services:
       - redis
       - proxy
       - database
+    volumes:
+      - debug_log:/app/tacticalrmm/private/log
     depends_on:
       - db
       - redis

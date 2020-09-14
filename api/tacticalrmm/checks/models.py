@@ -424,6 +424,7 @@ class Check(models.Model):
             disk=self.disk,
             ip=self.ip,
             script=self.script,
+            script_args=self.script_args,
             timeout=self.timeout,
             svc_name=self.svc_name,
             svc_display_name=self.svc_display_name,
@@ -434,6 +435,7 @@ class Check(models.Model):
             log_name=self.log_name,
             event_id=self.event_id,
             event_type=self.event_type,
+            event_id_is_wildcard=self.event_id_is_wildcard,
             fail_when=self.fail_when,
             search_last_days=self.search_last_days,
         )

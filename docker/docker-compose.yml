@@ -18,8 +18,10 @@ volumes:
   scripts:
   # Volume for mesh token initial setup
   mesh_token:
-  # Useds to make the salt data persistent
+  # Used to make the salt data persistent
   salt_data:
+  # Makes Postgres data persistent
+  postgres_data:
 
 services:
   # Postgres Database for API service
@@ -29,6 +31,8 @@ services:
       POSTGRES_DB: tacticalrmm
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASS}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - database
 

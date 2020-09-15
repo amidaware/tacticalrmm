@@ -4,6 +4,7 @@ version: "3.7"
 volumes: 
   # Gives access to the debug log for celery tasks
   debug_log:
+    
 services:
   # Container that hosts Vue frontend
   app:

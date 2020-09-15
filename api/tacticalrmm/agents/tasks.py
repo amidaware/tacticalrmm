@@ -59,7 +59,8 @@ def update_salt_minion_task():
     agents = [
         i.pk
         for i in q
-        if pyver.parse(i.salt_ver) < pyver.parse(settings.LATEST_SALT_VER)
+        if pyver.parse(i.version) >= pyver.parse("0.11.0")
+        and pyver.parse(i.salt_ver) < pyver.parse(settings.LATEST_SALT_VER)
     ]
 
     chunks = (agents[i : i + 50] for i in range(0, len(agents), 50))

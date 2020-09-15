@@ -54,6 +54,24 @@ def send_agent_update_task(pks, version):
 
 
 @app.task
+def update_salt_minion_task():
+    q = Agent.objects.all()
+    agents = [
+        i.pk
+        for i in q
+        if pyver.parse(i.salt_ver) < pyver.parse(settings.LATEST_SALT_VER)
+    ]
+
+    chunks = (agents[i : i + 50] for i in range(0, len(agents), 50))
+
+    for chunk in chunks:
+        for pk in chunk:
+            agent = Agent.objects.get(pk=pk)
+            r = agent.salt_api_async(func="win_agent.update_salt")
+        sleep(20)
+
+
+@app.task
 def get_wmi_detail_task(pk):
     agent = Agent.objects.get(pk=pk)
     r = agent.salt_api_cmd(timeout=30, func="win_agent.system_info")

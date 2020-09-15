@@ -41,6 +41,10 @@ app.conf.beat_schedule = {
         "task": "agents.tasks.batch_sysinfo_task",
         "schedule": crontab(minute=15, hour="*/2"),
     },
+    "update-salt": {
+        "task": "agents.update_salt_minion_task",
+        "schedule": crontab(minute=30, hour="*/6"),
+    },
 }
 
 

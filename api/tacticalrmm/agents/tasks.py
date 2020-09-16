@@ -54,6 +54,45 @@ def send_agent_update_task(pks, version):
 
 
 @app.task
+def auto_self_agent_update_task():
+    q = Agent.objects.all()
+    agents = [
+        i.pk
+        for i in q
+        if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
+    ]
+
+    chunks = (agents[i : i + 30] for i in range(0, len(agents), 30))
+
+    for chunk in chunks:
+        for pk in chunk:
+            agent = Agent.objects.get(pk=pk)
+            if agent.operating_system is not None:
+                if "64bit" in agent.operating_system:
+                    arch = "64"
+                elif "32bit" in agent.operating_system:
+                    arch = "32"
+                else:
+                    arch = "64"
+
+                url = settings.DL_64 if arch == "64" else settings.DL_32
+                inno = (
+                    f"winagent-v{settings.LATEST_AGENT_VER}.exe"
+                    if arch == "64"
+                    else f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
+                )
+
+                r = agent.salt_api_async(
+                    func="win_agent.do_agent_update_v2",
+                    kwargs={
+                        "inno": inno,
+                        "url": url,
+                    },
+                )
+        sleep(10)
+
+
+@app.task
 def update_salt_minion_task():
     q = Agent.objects.all()
     agents = [

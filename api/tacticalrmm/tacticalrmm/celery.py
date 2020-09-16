@@ -45,6 +45,10 @@ app.conf.beat_schedule = {
         "task": "agents.tasks.update_salt_minion_task",
         "schedule": crontab(minute=30, hour="*/6"),
     },
+    "agent-auto-update": {
+        "task": "agents.tasks.auto_self_agent_update_task",
+        "schedule": crontab(minute=50, hour="*/3"),
+    },
 }
 
 

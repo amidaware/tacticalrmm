@@ -8,6 +8,12 @@
       </q-btn>
     </q-bar>
     <q-separator />
+    <q-banner class="bg-warning">
+      <template v-slot:avatar>
+        <q-icon name="info" />
+      </template>
+      Agents will now automatically self update, this tool is no longer needed.
+    </q-banner>
     <q-card-section>
       Select Version
       <q-select square disable dense options-dense outlined v-model="version" :options="versions" />

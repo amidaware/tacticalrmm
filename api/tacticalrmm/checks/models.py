@@ -144,6 +144,8 @@ class Check(models.Model):
     event_type = models.CharField(
         max_length=255, choices=EVT_LOG_TYPE_CHOICES, null=True, blank=True
     )
+    event_source = models.CharField(max_length=255, null=True, blank=True)
+    event_message = models.TextField(null=True, blank=True)
     fail_when = models.CharField(
         max_length=255, choices=EVT_LOG_FAIL_WHEN_CHOICES, null=True, blank=True
     )
@@ -315,30 +317,59 @@ class Check(models.Model):
             is_wildcard = self.event_id_is_wildcard
             eventType = self.event_type
             eventID = self.event_id
+            source = self.event_source
+            message = self.event_message
+
             r = json.loads(zlib.decompress(base64.b64decode(data["log"])))
 
             for i in r:
-                if is_wildcard and i["eventType"] == eventType:
-                    log.append(i)
-                elif int(i["eventID"]) == eventID and i["eventType"] == eventType:
-                    log.append(i)
+                if i["eventType"] == eventType:
+                    if not is_wildcard and not int(i["eventID"]) == eventID:
+                        continue
+
+                    if not source and not message:
+                        if is_wildcard:
+                            log.append(i)
+                        elif int(i["eventID"]) == eventID:
+                            log.append(i)
+                        continue
+
+                    if source and message:
+                        if is_wildcard:
+                            if source in i["source"] and message in i["message"]:
+                                log.append(i)
+
+                        elif int(i["eventID"]) == eventID:
+                            if source in i["source"] and message in i["message"]:
+                                log.append(i)
+
+                        continue
+
+                    if source and source in i["source"]:
+                        if is_wildcard:
+                            log.append(i)
+                        elif int(i["eventID"]) == eventID:
+                            log.append(i)
+
+                    if message and message in i["message"]:
+                        if is_wildcard:
+                            log.append(i)
+                        elif int(i["eventID"]) == eventID:
+                            log.append(i)
 
             if self.fail_when == "contains":
                 if log:
                     self.status = "failing"
-                    self.extra_details = {"log": log}
                 else:
                     self.status = "passing"
-                    self.extra_details = {"log": []}
 
             elif self.fail_when == "not_contains":
                 if log:
                     self.status = "passing"
-                    self.extra_details = {"log": log}
                 else:
                     self.status = "failing"
-                    self.extra_details = {"log": []}
 
+            self.extra_details = {"log": log}
             self.save(update_fields=["extra_details"])
 
         # handle status
@@ -435,6 +466,8 @@ class Check(models.Model):
             log_name=self.log_name,
             event_id=self.event_id,
             event_type=self.event_type,
+            event_source=self.event_source,
+            event_message=self.event_message,
             event_id_is_wildcard=self.event_id_is_wildcard,
             fail_when=self.fail_when,
             search_last_days=self.search_last_days,

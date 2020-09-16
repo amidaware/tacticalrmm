@@ -82,6 +82,8 @@ def update_policy_check_fields_task(checkpk):
         event_id=check.event_id,
         event_id_is_wildcard=check.event_id_is_wildcard,
         event_type=check.event_type,
+        event_source=check.event_source,
+        event_message=check.event_message,
         fail_when=check.fail_when,
         search_last_days=check.search_last_days,
         email_alert=check.email_alert,

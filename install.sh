@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="6"
+SCRIPT_VERSION="7"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
@@ -215,7 +215,7 @@ echo "${meshcfg}" > /meshcentral/meshcentral-data/config.json
 print_green 'Installing python, redis and git'
 
 sudo apt update
-sudo apt install -y python3.8-venv python3.8-dev python3-pip python3-setuptools python3-wheel ca-certificates redis git
+sudo apt install -y python3.8-venv python3.8-dev python3-pip python3-cherrypy3 python3-setuptools python3-wheel ca-certificates redis git
 
 print_green 'Installing postgresql'
 

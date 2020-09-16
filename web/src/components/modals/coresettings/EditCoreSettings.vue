@@ -27,6 +27,12 @@
                 <div class="text-subtitle2">General</div>
                 <hr />
                 <q-card-section class="row">
+                  <q-checkbox
+                    v-model="settings.agent_auto_update"
+                    label="Enable agent automatic self update"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
                   <div class="col-4">Default agent timezone:</div>
                   <div class="col-2"></div>
                   <q-select

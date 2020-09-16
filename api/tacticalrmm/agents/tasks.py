@@ -12,6 +12,7 @@ from django.conf import settings
 
 from tacticalrmm.celery import app
 from agents.models import Agent, AgentOutage
+from core.models import CoreSettings
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -55,6 +56,10 @@ def send_agent_update_task(pks, version):
 
 @app.task
 def auto_self_agent_update_task():
+    core = CoreSettings.objects.first()
+    if not core.agent_auto_update:
+        return
+
     q = Agent.objects.all()
     agents = [
         i.pk

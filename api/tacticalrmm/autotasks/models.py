@@ -133,6 +133,7 @@ class AutomatedTask(models.Model):
             managed_by_policy=True,
             parent_task=self.pk,
             script=self.script,
+            script_args=self.script_args,
             assigned_check=assigned_check,
             name=self.name,
             run_time_days=self.run_time_days,

@@ -566,19 +566,17 @@ class Agent(models.Model):
             dupes = [k for k, v in d.items() if v > 1]
 
             for dupe in dupes:
-                if self.winupdates.filter(kb=dupe).filter(installed=True):
-                    pks.extend(
-                        self.winupdates.filter(kb=dupe)
-                        .filter(installed=False)
-                        .values_list("pk", flat=True)
-                    )
-
                 titles = self.winupdates.filter(kb=dupe).values_list("title", flat=True)
                 # extract the version from the title and sort from oldest to newest
-                vers = [
-                    re.search(r"\(Version(.*?)\)", i).group(1).strip() for i in titles
-                ]
-                sorted_vers = sorted(vers, key=LooseVersion)
+                # skip if no version info is available therefore nothing to parse
+                try:
+                    vers = [
+                        re.search(r"\(Version(.*?)\)", i).group(1).strip()
+                        for i in titles
+                    ]
+                    sorted_vers = sorted(vers, key=LooseVersion)
+                except:
+                    continue
                 # append all but the latest version to our list of pks to delete
                 for ver in sorted_vers[:-1]:
                     q = self.winupdates.filter(kb=dupe).filter(title__contains=ver)

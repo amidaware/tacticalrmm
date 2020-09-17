@@ -3,6 +3,7 @@ from time import sleep
 from loguru import logger
 from tacticalrmm.celery import app
 from django.conf import settings
+from django.utils import timezone as djangotime
 
 from agents.models import Agent
 from .models import ChocoSoftware, ChocoLog, InstalledSoftware
@@ -42,6 +43,16 @@ def install_chocolatey(pk, wait=False):
 
 @app.task
 def update_chocos():
+    # delete choco software older than 10 days
+    try:
+        first = ChocoSoftware.objects.first().pk
+        q = ChocoSoftware.objects.exclude(pk=first).filter(
+            added__lte=djangotime.now() - djangotime.timedelta(days=10)
+        )
+        q.delete()
+    except:
+        pass
+
     agents = Agent.objects.only("pk")
     online = [x for x in agents if x.status == "online" and x.choco_installed]
 

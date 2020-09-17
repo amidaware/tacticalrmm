@@ -145,6 +145,29 @@ def install_updates():
     return __salt__["cmd.run_bg"]([TAC_RMM, "-m", "winupdater"])
 
 
+def _wait_for_service(svc, status, retries=10):
+    attempts = 0
+    while 1:
+        try:
+            service = psutil.win_service_get(svc)
+        except psutil.NoSuchProcess:
+            stat = "fail"
+            attempts += 1
+            sleep(5)
+        else:
+            stat = service.status()
+            if stat != status:
+                attempts += 1
+                sleep(5)
+            else:
+                attempts = 0
+
+        if attempts == 0 or attempts > retries:
+            break
+
+    return stat
+
+
 def agent_update_v2(inno, url):
     # make sure another instance of the update is not running
     # this function spawns 2 instances of itself (because we call it twice with salt run_bg)
@@ -185,7 +208,16 @@ def agent_update_v2(inno, url):
                 f.write(chunk)
     del r
 
-    ret = subprocess.run([exe, "/VERYSILENT", "/SUPPRESSMSGBOXES"], timeout=90)
+    ret = subprocess.run([exe, "/VERYSILENT", "/SUPPRESSMSGBOXES"], timeout=120)
+
+    tac = _wait_for_service(svc="tacticalagent", status="running")
+    if tac != "running":
+        subprocess.run([NSSM, "start", "tacticalagent"], timeout=30)
+
+    chk = _wait_for_service(svc="checkrunner", status="running")
+    if chk != "running":
+        subprocess.run([NSSM, "start", "checkrunner"], timeout=30)
+
     return "ok"
 
 

@@ -42,11 +42,8 @@ class CoreSettings(models.Model):
     mesh_token = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_username = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_site = models.CharField(max_length=255, null=True, blank=True, default="")
-<<<<<<< HEAD
     agent_auto_update = models.BooleanField(default=True)
-=======
     initial_setup = models.BooleanField(default=True)
->>>>>>> totp setup rework
     workstation_policy = models.ForeignKey(
         "automation.Policy",
         related_name="default_workstation_policy",

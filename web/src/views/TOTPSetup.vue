@@ -1,6 +1,6 @@
 <template>
   <div class="q-pa-md">
-    <div class="row">
+    <div class="row" v-if="valid">
       <div class="col"></div>
       <div class="col">
         <q-card>
@@ -25,25 +25,66 @@
       </div>
       <div class="col"></div>
     </div>
+    <div v-else>
+      <q-dialog v-model="prompt" persistent>
+        <q-card style="min-width: 400px">
+          <q-form @submit.prevent="checkPass">
+            <q-card-section class="text-center text-h6">Enter your password</q-card-section>
+
+            <q-card-section>
+              <q-input
+                type="password"
+                autofocus
+                outlined
+                v-model="password"
+                :rules="[ val => val && val.length > 0 || 'This field is required']"
+              />
+            </q-card-section>
+
+            <q-card-actions align="right" class="text-primary">
+              <q-btn flat label="Submit" type="submit" />
+            </q-card-actions>
+          </q-form>
+        </q-card>
+      </q-dialog>
+    </div>
   </div>
 </template>
 
 <script>
 import QrcodeVue from "qrcode.vue";
+import mixins from "@/mixins/mixins";
 
 export default {
   name: "TOTPSetup",
+  mixins: [mixins],
   components: { QrcodeVue },
   data() {
     return {
       totp_key: "",
       qr_url: "",
+      password: null,
+      valid: false,
+      prompt: true,
     };
   },
   methods: {
+    checkPass() {
+      const data = {
+        username: this.$route.params.username,
+        password: this.password,
+      };
+      this.$axios
+        .post("/checkcreds/", data)
+        .then(r => {
+          this.getQRCodeData();
+        })
+        .catch(() => {
+          this.notifyError("Bad credentials");
+        });
+    },
     getQRCodeData() {
-      this.$q.loading = true;
-
+      this.$q.loading.show();
       const data = {
         username: this.$route.params.username,
       };
@@ -51,18 +92,20 @@ export default {
       this.$store
         .dispatch("admin/setupTOTP", data)
         .then(r => {
-          this.$q.loading = false;
+          this.$q.loading.hide();
 
           if (r.data === "TOTP token already set") {
             this.$router.push({ name: "Login" });
           } else {
+            this.valid = true;
+            this.prompt = false;
             this.totp_key = r.data.totp_key;
             this.qr_url = r.data.qr_url;
           }
         })
         .catch(e => {
-          this.$q.loading = false;
-          console.log(e.response);
+          this.$q.loading.hide();
+          this.notifyError(e.response.data);
         });
     },
     finish() {
@@ -71,7 +114,6 @@ export default {
   },
   created() {
     this.$q.dark.set(false);
-    this.getQRCodeData();
   },
 };
 </script>

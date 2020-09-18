@@ -20,6 +20,7 @@ export default function () {
     state: {
       username: localStorage.getItem("user_name") || null,
       token: localStorage.getItem("access_token") || null,
+      twoFactorInitialSetup: localStorage.getItem("totp_setup") || false,
       clients: {},
       tree: [],
       treeReady: false,
@@ -41,6 +42,9 @@ export default function () {
     getters: {
       loggedIn(state) {
         return state.token !== null;
+      },
+      twoFactorSetup(state) {
+        return state.twoFactorInitialSetup;
       },
       selectedAgentPk(state) {
         return state.agentSummary.id;
@@ -89,6 +93,10 @@ export default function () {
       },
       AGENT_TABLE_LOADING(state, visible) {
         state.agentTableLoading = visible;
+      },
+      setTwoFactorStatus(state, value) {
+        localStorage.setItem("totp_setup", value)
+        state.twoFactorInitialSetup = value;
       },
       setActiveRow(state, pk) {
         state.selectedRow = pk;

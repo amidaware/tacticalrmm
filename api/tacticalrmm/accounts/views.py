@@ -8,6 +8,7 @@ from django.db import IntegrityError
 from rest_framework.views import APIView
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from knox.views import LoginView as KnoxLoginView
+from knox.models import AuthToken
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
@@ -24,13 +25,19 @@ class CheckCreds(KnoxLoginView):
     permission_classes = (AllowAny,)
 
     def post(self, request, format=None):
+        
+        # check credentials
         serializer = AuthTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
 
+        # if totp token not set modify response to notify frontend
         if not user.totp_key:
-            return Response("totp not set")
-
+            login(request, user)
+            response = super(CheckCreds, self).post(request, format=None)
+            response.data["totp"] = "totp not set"
+            return response
+        
         return Response("ok")
 
 
@@ -134,13 +141,10 @@ class UserActions(APIView):
 
 class TOTPSetup(APIView):
 
-    permission_classes = (AllowAny,)
-
     # totp setup
     def post(self, request):
 
-        user = get_object_or_404(User, username=request.data["username"])
-
+        user = request.user
         if not user.totp_key:
             code = pyotp.random_base32()
             user.totp_key = code

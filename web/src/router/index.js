@@ -19,7 +19,23 @@ export default function ({ store }) {
         next({
           name: "Login"
         });
-      } else {
+      }
+      else if (store.getters.twoFactorSetup) {
+        if (from.path === "/totp_setup") {
+          store.dispatch("destroyToken")
+          store.commit("setTwoFactorStatus", false);
+          next({ name: "Login" })
+        }
+        else if (to.path === "/totp_setup") {
+          next()
+        }
+        else {
+          next({
+            name: "TOTPSetup"
+          });
+        }
+      }
+      else {
         next();
       }
     } else if (to.meta.requiresVisitor) {

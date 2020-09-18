@@ -22,6 +22,8 @@ volumes:
   salt_data:
   # Makes Postgres data persistent
   postgres_data:
+  # Makes mesh central data persistent
+  mongo_data:
 
 services:
   # Postgres Database for API service
@@ -55,7 +57,7 @@ services:
       - "4506:4506"
     volumes:
       - scripts:/srv
-      - salt_data:/etc/salt/pki
+      - salt_data:/etc/salt
     networks:
       - proxy
 
@@ -88,6 +90,8 @@ services:
       MONGO_INITDB_DATABASE: meshcentral
     networks:
       - mesh-mongodb
+    volumes:
+      - mongo_data:/data
 
   # Nginx Container Reverse Proxy that handles all http/https traffic
   nginx-proxy:

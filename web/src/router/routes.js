@@ -11,14 +11,14 @@ const routes = [
     path: "/setup",
     name: "InitialSetup",
     component: () => import("@/views/InitialSetup"),
+  },
+  {
+    path: "/totp_setup",
+    name: "TOTPSetup",
+    component: () => import("@/views/TOTPSetup"),
     meta: {
       requireAuth: true
     }
-  },
-  {
-    path: "/totp_setup/:username",
-    name: "TOTPSetup",
-    component: () => import("@/views/TOTPSetup")
   },
   {
     path: "/takecontrol/:pk",

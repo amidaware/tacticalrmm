@@ -52,3 +52,4 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         self.mesh_settings = CoreSettings.objects.first()
         asyncio.get_event_loop().run_until_complete(self.websocket_call())
+        self.stdout.write("Initial Mesh Central setup complete")

@@ -14,6 +14,9 @@
               <q-item clickable v-close-popup @click="showUploadMesh = true">
                 <q-item-section>Upload MeshAgent</q-item-section>
               </q-item>
+              <q-item clickable v-close-popup @click="showAuditManager = true">
+                <q-item-section>Audit Log</q-item-section>
+              </q-item>
               <q-item clickable v-close-popup @click="getLog">
                 <q-item-section>Debug Log</q-item-section>
               </q-item>
@@ -102,6 +105,17 @@
       </q-dialog>
       <!-- debug log modal -->
       <LogModal />
+      <!-- audit log modal -->
+      <div class="q-pa-md q-gutter-sm">
+        <q-dialog
+          v-model="showAuditManager"
+          maximized
+          transition-show="slide-up"
+          transition-hide="slide-down"
+        >
+          <AuditManager @close="showAuditManager = false" />
+        </q-dialog>
+      </div>
       <!-- Install Agents -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showInstallAgent">
@@ -155,6 +169,7 @@ import AutomationManager from "@/components/automation/AutomationManager";
 import AdminManager from "@/components/AdminManager";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import UploadMesh from "@/components/modals/core/UploadMesh";
+import AuditManager from "@/components/AuditManager";
 
 export default {
   name: "FileBar",
@@ -171,6 +186,7 @@ export default {
     InstallAgent,
     UploadMesh,
     AdminManager,
+    AuditManager,
   },
   props: ["clients"],
   data() {
@@ -185,6 +201,7 @@ export default {
       showAdminManager: false,
       showInstallAgent: false,
       showUploadMesh: false,
+      showAuditManager: false,
     };
   },
   methods: {

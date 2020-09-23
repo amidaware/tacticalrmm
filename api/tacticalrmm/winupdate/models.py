@@ -114,9 +114,19 @@ class WinUpdatePolicy(models.Model):
     reprocess_failed = models.BooleanField(default=False)
     reprocess_failed_times = models.PositiveIntegerField(default=5)
     email_if_fail = models.BooleanField(default=False)
+    created_by = models.CharField(max_length=100, null=True, blank=True)
+    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    modified_by = models.CharField(max_length=100, null=True, blank=True)
+    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         if self.agent:
             return self.agent.hostname
         else:
             return self.policy.name
+
+    @staticmethod
+    def serialize(policy):
+        # serializes the policy and returns json
+        from .serializers import WinUpdatePolicySerializer
+        return WinUpdatePolicySerializer(policy).data

@@ -43,7 +43,6 @@ class CoreSettings(models.Model):
     mesh_username = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_site = models.CharField(max_length=255, null=True, blank=True, default="")
     agent_auto_update = models.BooleanField(default=True)
-    initial_setup = models.BooleanField(default=True)
     workstation_policy = models.ForeignKey(
         "automation.Policy",
         related_name="default_workstation_policy",
@@ -187,3 +186,9 @@ class CoreSettings(models.Model):
                 time.sleep(10)
 
         return mesh_settings
+
+    @staticmethod
+    def serialize(core):
+        # serializes the core and returns json
+        from .serializers import CoreSerializer
+        return CoreSerializer(core).data

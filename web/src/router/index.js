@@ -20,21 +20,6 @@ export default function ({ store }) {
           name: "Login"
         });
       }
-      else if (store.getters.twoFactorSetup) {
-        if (from.path === "/totp_setup") {
-          store.dispatch("destroyToken")
-          store.commit("setTwoFactorStatus", false);
-          next({ name: "Login" })
-        }
-        else if (to.path === "/totp_setup") {
-          next()
-        }
-        else {
-          next({
-            name: "TOTPSetup"
-          });
-        }
-      }
       else {
         next();
       }

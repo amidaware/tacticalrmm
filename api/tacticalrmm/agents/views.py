@@ -28,6 +28,7 @@ from clients.models import Client, Site
 from accounts.models import User
 from core.models import CoreSettings
 from scripts.models import Script
+from logs.models import AuditLog
 
 from .serializers import (
     AgentSerializer,
@@ -138,6 +139,8 @@ def meshcentral(request, pk):
     )
     webrdp = f"{core.mesh_site}/mstsc.html?login={token}&node={agent.mesh_node_id}"
 
+    AuditLog.audit_mesh_session(username=request.user.username, agent=agent.hostname)
+
     ret = {
         "hostname": agent.hostname,
         "control": control,
@@ -236,6 +239,8 @@ def send_raw_cmd(request):
         return notify_error("Unable to contact the agent")
     elif r == "error" or not r:
         return notify_error("Something went wrong")
+
+    AuditLog.audit_raw_command(username=request.user.username, agent=agent.hostname, cmd=request.data["cmd"], shell=request.data["shell"])
 
     logger.info(f"The command {request.data['cmd']} was sent on agent {agent.hostname}")
     return Response(r)
@@ -592,6 +597,7 @@ def run_script(request):
         )
 
         if r != "timeout":
+            AuditLog.audit_script_run(username=request.user.username, agent=agent.hostname, script=script.name)
             return Response(f"{script.name} will now be run on {agent.hostname}")
         else:
             return notify_error("Something went wrong")

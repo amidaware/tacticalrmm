@@ -22,6 +22,10 @@ class Script(models.Model):
     script_type = models.CharField(
         max_length=100, choices=SCRIPT_TYPES, default="userdefined"
     )
+    created_by = models.CharField(max_length=100, null=True, blank=True)
+    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    modified_by = models.CharField(max_length=100, null=True, blank=True)
+    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         return self.filename
@@ -87,3 +91,9 @@ class Script(models.Model):
                         shell=script["shell"],
                         script_type="builtin",
                     ).save()
+
+    @staticmethod
+    def serialize(script):
+        # serializes the script and returns json
+        from .serializers import ScriptSerializer
+        return ScriptSerializer(script).data

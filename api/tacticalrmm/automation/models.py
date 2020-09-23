@@ -9,6 +9,10 @@ class Policy(models.Model):
     desc = models.CharField(max_length=255, null=True, blank=True)
     active = models.BooleanField(default=False)
     enforced = models.BooleanField(default=False)
+    created_by = models.CharField(max_length=100, null=True, blank=True)
+    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    modified_by = models.CharField(max_length=100, null=True, blank=True)
+    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     @property
     def is_default_server_policy(self):
@@ -81,6 +85,12 @@ class Policy(models.Model):
             models.Q(pk__in=filtered_agents_pks)
             | models.Q(pk__in=explicit_agents.only("pk"))
         )
+
+    @staticmethod
+    def serialize(policy):
+        # serializes the policy and returns json
+        from .serializers import PolicySerializer
+        return PolicySerializer(policy).data
 
     @staticmethod
     def cascade_policy_tasks(agent):

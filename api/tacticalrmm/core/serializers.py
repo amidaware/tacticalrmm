@@ -15,3 +15,10 @@ class CoreSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoreSettings
         fields = "__all__"
+
+
+# for audting
+class CoreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CoreSettings
+        fields = "__all__"

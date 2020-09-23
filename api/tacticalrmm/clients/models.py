@@ -19,6 +19,10 @@ class Client(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
     )
+    created_by = models.CharField(max_length=100, null=True, blank=True)
+    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    modified_by = models.CharField(max_length=100, null=True, blank=True)
+    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         return self.client
@@ -41,6 +45,12 @@ class Client(models.Model):
 
         return False
 
+    @staticmethod
+    def serialize(client):
+        # serializes the client and returns json
+        from .serializers import ClientSerializer
+        return serializers.ClientSerializer(client).data
+
 
 class Site(models.Model):
     client = models.ForeignKey(Client, related_name="sites", on_delete=models.CASCADE)
@@ -60,6 +70,10 @@ class Site(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
     )
+    created_by = models.CharField(max_length=100, null=True, blank=True)
+    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    modified_by = models.CharField(max_length=100, null=True, blank=True)
+    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         return self.site
@@ -83,9 +97,14 @@ class Site(models.Model):
 
         return False
 
-
 def validate_name(name):
     if "|" in name:
         return False
     else:
         return True
+
+    @staticmethod
+    def serialize(site):
+        # serializes the site and returns json
+        from .serializers import SiteSerializer
+        return SiteSerializer(site).data

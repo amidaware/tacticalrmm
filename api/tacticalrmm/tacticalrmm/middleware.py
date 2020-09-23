@@ -1,0 +1,118 @@
+from django.db.models import signals
+from functools import partial
+from logs.models import AuditLog
+
+# Audited Models
+from automation.models import Policy
+from agents.models import Agent
+from checks.models import Check
+from autotasks.models import AutomatedTask
+from winupdate.models import WinUpdatePolicy
+from clients.models import Client, Site
+from accounts.models import User
+from scripts.models import Script
+from core.models import CoreSettings
+
+audit_models = (
+    Policy,
+    Agent,
+    Check,
+    AutomatedTask,
+    WinUpdatePolicy,
+    Client,
+    Site,
+    User,
+    Script,
+    CoreSettings
+)
+
+class AuditMiddleware:
+
+    before_value = {}
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+
+        response = self.get_response(request)
+
+        # disconnecting signals
+        signals.pre_save.disconnect(dispatch_uid=(self.__class__, request,))
+        signals.post_save.disconnect(dispatch_uid=(self.__class__, request,))
+        signals.post_delete.disconnect(dispatch_uid=(self.__class__, request,))
+
+        return response
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
+            #https://stackoverflow.com/questions/26240832/django-and-middleware-which-uses-request-user-is-always-anonymous
+            # DRF saves the class of the view function as the .cls property
+            view_class = view_func.cls
+            try:
+                # We need to instantiate the class
+                view = view_class()
+                # And give it an action_map. It's not relevant for us, but otherwise it errors.
+                view.action_map = {}
+                # Here's our fully formed and authenticated (or not, depending on credentials) request
+                request = view.initialize_request(request)
+            except (AttributeError, TypeError):
+                # Can't initialize the request from this view. Fallback to using default permission classes
+                request = APIView().initialize_request(request)
+
+            # check if user is authenticated
+            if hasattr(request, 'user') and request.user.is_authenticated:
+                
+                # get authentcated user after request
+                user = request.user
+
+                # sets the created_by and modified_by fields on models
+                pre_save_audit = partial(self.pre_save_audit, user)
+                signals.pre_save.connect(
+                    pre_save_audit,
+                    dispatch_uid=(self.__class__, request,),
+                    weak=False
+                )
+
+                # adds audit entry for adds and changes to models
+                add_audit_entry_add_modify = partial(self.add_audit_entry_add_modify, user)
+                signals.post_save.connect(
+                    add_audit_entry_add_modify,
+                    dispatch_uid=(self.__class__, request,),
+                    weak=False
+                )
+
+                # adds audit entry for deletes to models
+                add_audit_entry_delete = partial(self.add_audit_entry_delete, user)
+                signals.post_delete.connect(
+                    add_audit_entry_delete,
+                    dispatch_uid=(self.__class__, request,),
+                    weak=False
+                )
+
+    def pre_save_audit(self, user, sender, instance, **kwargs):
+        
+        # populate created_by and modified_by fields on instance
+        if not getattr(instance, 'created_by', None):
+            instance.created_by = user.username
+        if hasattr(instance, 'modified_by'):
+            instance.modified_by = user.username
+
+        # capture object properties before edit
+        if sender in audit_models:
+            if instance.id:
+                self.before_value = sender.objects.get(pk=instance.id)
+
+    def add_audit_entry_add_modify(self, user, sender, instance, created, **kwargs):
+        # check and see if sender is an auditable instance
+        if sender in audit_models:
+            if created:
+                AuditLog.audit_object_add(user.username, sender.__name__.lower(), sender.serialize(instance), instance.__str__())
+            else:
+                AuditLog.audit_object_changed(user.username, sender.__name__.lower(), sender.serialize(self.before_value), sender.serialize(instance), instance.__str__())
+
+    def add_audit_entry_delete(self, user, sender, instance, **kwargs):
+
+        # check and see if sender is an auditable instance
+        if sender in audit_models:
+            AuditLog.audit_object_delete(user.username, sender.__name__.lower(), sender.serialize(instance), instance.__str__())
+

@@ -84,13 +84,11 @@ export default {
       this.$store
         .dispatch("destroyToken")
         .then(r => {
-          this.$store.commit("setTwoFactorStatus", false);
           this.cleared_token = true;
           this.$q.loading.hide();
           this.$router.push({ name: "Login" });
         })
         .catch(() => {
-          this.$store.commit("setTwoFactorStatus", false);
           this.cleared_token = true;
           this.$q.loading.hide();
           this.$router.push({ name: "Login" });
@@ -100,8 +98,8 @@ export default {
   created() {
     this.$q.dark.set(false);
   },
-  beforeDestroyed() {
-    if (!cleared_token) {
+  beforeDestroy() {
+    if (!this.cleared_token) {
       this.logout();
     }
   },

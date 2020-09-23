@@ -45,20 +45,6 @@ export default {
     };
   },
   methods: {
-    checkPass() {
-      const data = {
-        username: this.$route.params.username,
-        password: this.password,
-      };
-      this.$axios
-        .post("/checkcreds/", data)
-        .then(r => {
-          this.getQRCodeData();
-        })
-        .catch(() => {
-          this.notifyError("Bad credentials");
-        });
-    },
     getQRCodeData() {
       this.$q.loading.show();
 
@@ -67,6 +53,7 @@ export default {
         .then(r => {
           this.$q.loading.hide();
 
+          console.log(r.data);
           if (r.data === "TOTP token already set") {
             this.$router.push({ name: "Login" });
           } else {
@@ -96,6 +83,7 @@ export default {
     },
   },
   created() {
+    this.getQRCodeData();
     this.$q.dark.set(false);
   },
   beforeDestroy() {

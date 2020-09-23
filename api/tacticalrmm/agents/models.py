@@ -473,6 +473,7 @@ class Agent(models.Model):
     def serialize(agent):
         # serializes the agent and returns json
         from .serializers import AgentEditSerializer
+
         return AgentEditSerializer(agent).data
 
     @staticmethod

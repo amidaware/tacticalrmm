@@ -131,6 +131,7 @@ class AutomatedTask(models.Model):
     def serialize(task):
         # serializes the task and returns json
         from .serializers import TaskSerializer
+
         return TaskSerializer(task).data
 
     def create_policy_task(self, agent):

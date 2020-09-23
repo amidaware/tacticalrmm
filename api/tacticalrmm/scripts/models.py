@@ -96,4 +96,5 @@ class Script(models.Model):
     def serialize(script):
         # serializes the script and returns json
         from .serializers import ScriptSerializer
+
         return ScriptSerializer(script).data

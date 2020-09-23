@@ -53,7 +53,6 @@ export default {
         .then(r => {
           this.$q.loading.hide();
 
-          console.log(r.data);
           if (r.data === "TOTP token already set") {
             this.$router.push({ name: "Login" });
           } else {

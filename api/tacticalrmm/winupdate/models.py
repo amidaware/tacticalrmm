@@ -129,4 +129,5 @@ class WinUpdatePolicy(models.Model):
     def serialize(policy):
         # serializes the policy and returns json
         from .serializers import WinUpdatePolicySerializer
+
         return WinUpdatePolicySerializer(policy).data

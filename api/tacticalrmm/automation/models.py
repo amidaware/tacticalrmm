@@ -90,6 +90,7 @@ class Policy(models.Model):
     def serialize(policy):
         # serializes the policy and returns json
         from .serializers import PolicySerializer
+
         return PolicySerializer(policy).data
 
     @staticmethod

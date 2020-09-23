@@ -191,4 +191,5 @@ class CoreSettings(models.Model):
     def serialize(core):
         # serializes the core and returns json
         from .serializers import CoreSerializer
+
         return CoreSerializer(core).data

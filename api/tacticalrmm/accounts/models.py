@@ -14,4 +14,5 @@ class User(AbstractUser):
     def serialize(user):
         # serializes the task and returns json
         from .serializers import UserSerializer
+
         return UserSerializer(user).data

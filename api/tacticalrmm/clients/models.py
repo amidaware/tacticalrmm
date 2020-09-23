@@ -49,6 +49,7 @@ class Client(models.Model):
     def serialize(client):
         # serializes the client and returns json
         from .serializers import ClientSerializer
+
         return ClientSerializer(client).data
 
 
@@ -101,7 +102,9 @@ class Site(models.Model):
     def serialize(site):
         # serializes the site and returns json
         from .serializers import SiteSerializer
+
         return SiteSerializer(site).data
+
 
 def validate_name(name):
     if "|" in name:

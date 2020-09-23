@@ -26,7 +26,7 @@ class CheckCreds(KnoxLoginView):
     permission_classes = (AllowAny,)
 
     def post(self, request, format=None):
-        
+
         # check credentials
         serializer = AuthTokenSerializer(data=request.data)
         if not serializer.is_valid():
@@ -41,7 +41,7 @@ class CheckCreds(KnoxLoginView):
             response = super(CheckCreds, self).post(request, format=None)
             response.data["totp"] = "totp not set"
             return response
-        
+
         return Response("ok")
 
 

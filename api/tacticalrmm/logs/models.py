@@ -30,7 +30,7 @@ AUDIT_OBJECT_TYPE_CHOICES = [
     ("site", "Site"),
     ("check", "Check"),
     ("automatedtask", "Automated Task"),
-    ("coresettings", "Core Settings")
+    ("coresettings", "Core Settings"),
 ]
 
 # taskaction details format
@@ -45,16 +45,13 @@ STATUS_CHOICES = [
     ("completed", "Completed"),
 ]
 
+
 class AuditLog(models.Model):
     username = models.CharField(max_length=100)
     agent = models.CharField(max_length=255, null=True, blank=True)
     entry_time = models.DateTimeField(auto_now_add=True)
-    action = models.CharField(
-        max_length=100, choices=AUDIT_ACTION_TYPE_CHOICES
-    )
-    object_type = models.CharField(
-        max_length=100, choices=AUDIT_OBJECT_TYPE_CHOICES
-    )
+    action = models.CharField(max_length=100, choices=AUDIT_ACTION_TYPE_CHOICES)
+    object_type = models.CharField(max_length=100, choices=AUDIT_OBJECT_TYPE_CHOICES)
     before_value = models.JSONField(null=True, blank=True)
     after_value = models.JSONField(null=True, blank=True)
     message = models.CharField(max_length=255, null=True, blank=True)
@@ -65,20 +62,20 @@ class AuditLog(models.Model):
     @staticmethod
     def audit_mesh_session(username, hostname):
         AuditLog.objects.create(
-            username=username, 
-            agent=hostname, 
+            username=username,
+            agent=hostname,
             object_type="agent",
-            action="remote_session", 
+            action="remote_session",
             message=f"{username} used Mesh Central to initiate a remote session to {hostname}.",
         )
-    
+
     @staticmethod
     def audit_raw_command(username, hostname, cmd, shell):
         AuditLog.objects.create(
-            username=username, 
-            agent=hostname, 
+            username=username,
+            agent=hostname,
             object_type="agent",
-            action="execute_command", 
+            action="execute_command",
             message=f"{username} issued {shell} command on {hostname}.",
             after_value=cmd,
         )
@@ -88,7 +85,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
-            action="modify", 
+            action="modify",
             message=f"{username} modified {object_type} {name}",
             before_value=before,
             after_value=after,
@@ -99,7 +96,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
-            action="add", 
+            action="add",
             message=f"{username} added {object_type} {name}",
             after_value=after,
         )
@@ -109,7 +106,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
-            action="delete", 
+            action="delete",
             message=f"{username} deleted {object_type} {name}",
             before_value=before,
         )
@@ -119,8 +116,8 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type="agent",
-            action="execute_script", 
-            message=f"{username} ran script: \"{script}\" on {hostname}",
+            action="execute_script",
+            message=f'{username} ran script: "{script}" on {hostname}',
         )
 
     @staticmethod
@@ -128,7 +125,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type="user",
-            action="failed_login", 
+            action="failed_login",
             message=f"{username} failed to login: Credentials were rejected",
         )
 
@@ -137,7 +134,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type="user",
-            action="failed_login", 
+            action="failed_login",
             message=f"{username} failed to login: Two Factor token rejected",
         )
 
@@ -146,12 +143,14 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type="user",
-            action="login", 
+            action="login",
             message=f"{username} logged in successfully",
         )
 
+
 class DebugLog(models.Model):
     pass
+
 
 class PendingAction(models.Model):
 

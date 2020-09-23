@@ -433,6 +433,7 @@ class Check(models.Model):
     def serialize(check):
         # serializes the check and returns json
         from .serializers import CheckSerializer
+
         return CheckSerializer(check).data
 
     # for policy diskchecks

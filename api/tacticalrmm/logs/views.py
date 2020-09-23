@@ -3,8 +3,8 @@ import subprocess
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
+from django.utils import timezone as djangotime
 from datetime import datetime as dt
-from datetime import timedelta
 
 from rest_framework.response import Response
 from rest_framework import status
@@ -43,8 +43,9 @@ class GetAuditLogs(APIView):
 
         if audit_logs and request.data["timeFilter"]:
             audit_logs = audit_logs.filter(
-                entry_time__lte=dt.today(),
-                entry_time__gt=dt.today() - timedelta(days=request.data["timeFilter"]),
+                entry_time__lte=djangotime.make_aware(dt.today()),
+                entry_time__gt=djangotime.make_aware(dt.today())
+                - djangotime.timedelta(days=request.data["timeFilter"]),
             )
 
         return Response(AuditLogSerializer(audit_logs, many=True).data)

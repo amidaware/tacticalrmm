@@ -240,7 +240,7 @@ def send_raw_cmd(request):
     elif r == "error" or not r:
         return notify_error("Something went wrong")
 
-    AuditLog.audit_raw_command(username=request.user.username, agent=agent.hostname, cmd=request.data["cmd"], shell=request.data["shell"])
+    AuditLog.audit_raw_command(username=request.user.username, hostname=agent.hostname, cmd=request.data["cmd"], shell=request.data["shell"])
 
     logger.info(f"The command {request.data['cmd']} was sent on agent {agent.hostname}")
     return Response(r)
@@ -597,7 +597,7 @@ def run_script(request):
         )
 
         if r != "timeout":
-            AuditLog.audit_script_run(username=request.user.username, agent=agent.hostname, script=script.name)
+            AuditLog.audit_script_run(username=request.user.username, hostname=agent.hostname, script=script.name)
             return Response(f"{script.name} will now be run on {agent.hostname}")
         else:
             return notify_error("Something went wrong")

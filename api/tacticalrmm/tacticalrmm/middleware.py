@@ -1,5 +1,7 @@
 from django.db.models import signals
+from django.conf import settings
 from functools import partial
+from tacticalrmm.utils import get_random_string
 from logs.models import AuditLog
 
 # Audited Models
@@ -29,6 +31,10 @@ audit_models = (
 class AuditMiddleware:
 
     before_value = {}
+    pre_save_uid = ""
+    post_save_uid = ""
+    post_delete_uid = ""
+
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -37,18 +43,18 @@ class AuditMiddleware:
         response = self.get_response(request)
 
         # disconnect signals
-        signals.pre_save.disconnect(dispatch_uid="pre_save")
-        signals.post_save.disconnect(dispatch_uid="post_save")
-        signals.post_delete.disconnect(dispatch_uid="post_delete")
+        signals.pre_save.disconnect(dispatch_uid=self.pre_save_uid)
+        signals.post_save.disconnect(dispatch_uid=self.post_save_uid)
+        signals.post_delete.disconnect(dispatch_uid=self.post_delete_uid)
 
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        if request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
+        if not request.path.startswith("/" + settings.ADMIN_URL) and request.method not in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
             #https://stackoverflow.com/questions/26240832/django-and-middleware-which-uses-request-user-is-always-anonymous
-            # DRF saves the class of the view function as the .cls property
-            view_class = view_func.cls
             try:
+                # DRF saves the class of the view function as the .cls property
+                view_class = view_func.cls
                 # We need to instantiate the class
                 view = view_class()
                 # And give it an action_map. It's not relevant for us, but otherwise it errors.
@@ -62,13 +68,17 @@ class AuditMiddleware:
             # check if user is authenticated
             if hasattr(request, 'user') and request.user.is_authenticated:
                 
+                self.pre_save_uid = get_random_string(8)
+                self.post_save_uid = get_random_string(8)
+                self.post_delete_uid = get_random_string(8)
+
                 # get authentcated user after request
                 user = request.user
                 # sets the created_by and modified_by fields on models
                 pre_save_audit = partial(self.pre_save_audit, user)
                 signals.pre_save.connect(
                     pre_save_audit,
-                    dispatch_uid="pre_save",
+                    dispatch_uid=self.pre_save_uid,
                     weak=False
                 )
 
@@ -76,7 +86,7 @@ class AuditMiddleware:
                 add_audit_entry_add_modify = partial(self.add_audit_entry_add_modify, user)
                 signals.post_save.connect(
                     add_audit_entry_add_modify,
-                    dispatch_uid="post_save",
+                    dispatch_uid=self.post_save_uid,
                     weak=False
                 )
 
@@ -84,7 +94,7 @@ class AuditMiddleware:
                 add_audit_entry_delete = partial(self.add_audit_entry_delete, user)
                 signals.post_delete.connect(
                     add_audit_entry_delete,
-                    dispatch_uid="post_delete",
+                    dispatch_uid=self.post_delete_uid,
                     weak=False
                 )
 

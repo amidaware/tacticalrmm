@@ -41,7 +41,7 @@ class GetAuditLogs(APIView):
         else:
             audit_logs = AuditLog.objects.all()
 
-        if audit_logs and request.data["timeFilter"]:
+        if audit_logs and "timeFilter" in request.data:
             audit_logs = audit_logs.filter(
                 entry_time__lte=djangotime.make_aware(dt.today()),
                 entry_time__gt=djangotime.make_aware(dt.today())

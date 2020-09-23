@@ -28,6 +28,17 @@ audit_models = (
     CoreSettings,
 )
 
+EXCLUDE_METHODS = ("GET", "HEAD", "OPTIONS", "TRACE")
+
+# these routes are stricly called only by agents
+EXCLUDE_PATHS = (
+    "/api/v2",
+    "/api/v1",
+    "/winupdate/winupdater",
+    "/winupdate/results",
+    f"/{settings.ADMIN_URL}",
+)
+
 
 class AuditMiddleware:
 
@@ -51,9 +62,9 @@ class AuditMiddleware:
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        if not request.path.startswith(
-            "/" + settings.ADMIN_URL
-        ) and request.method not in ("GET", "HEAD", "OPTIONS", "TRACE"):
+        if request.method not in EXCLUDE_METHODS and not request.path.startswith(
+            EXCLUDE_PATHS
+        ):
             # https://stackoverflow.com/questions/26240832/django-and-middleware-which-uses-request-user-is-always-anonymous
             try:
                 # DRF saves the class of the view function as the .cls property

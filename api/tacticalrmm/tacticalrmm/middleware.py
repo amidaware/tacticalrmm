@@ -33,7 +33,7 @@ class AuditMiddleware:
     before_value = {}
     pre_save_uid = ""
     post_save_uid = ""
-    post_delete_uid = ""
+    pre_delete_uid = ""
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -45,7 +45,7 @@ class AuditMiddleware:
         # disconnect signals
         signals.pre_save.disconnect(dispatch_uid=self.pre_save_uid)
         signals.post_save.disconnect(dispatch_uid=self.post_save_uid)
-        signals.post_delete.disconnect(dispatch_uid=self.post_delete_uid)
+        signals.pre_delete.disconnect(dispatch_uid=self.pre_delete_uid)
 
         return response
 
@@ -70,7 +70,7 @@ class AuditMiddleware:
                 
                 self.pre_save_uid = get_random_string(8)
                 self.post_save_uid = get_random_string(8)
-                self.post_delete_uid = get_random_string(8)
+                self.pre_delete_uid = get_random_string(8)
 
                 # get authentcated user after request
                 user = request.user
@@ -92,9 +92,9 @@ class AuditMiddleware:
 
                 # adds audit entry for deletes to models
                 add_audit_entry_delete = partial(self.add_audit_entry_delete, user)
-                signals.post_delete.connect(
+                signals.pre_delete.connect(
                     add_audit_entry_delete,
-                    dispatch_uid=self.post_delete_uid,
+                    dispatch_uid=self.pre_delete_uid,
                     weak=False
                 )
 

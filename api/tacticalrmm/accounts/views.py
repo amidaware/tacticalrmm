@@ -15,6 +15,7 @@ from rest_framework import status
 
 from .models import User
 from agents.models import Agent
+from logs.models import AuditLog
 from tacticalrmm.utils import notify_error
 
 from .serializers import UserSerializer, TOTPSetupSerializer
@@ -28,7 +29,10 @@ class CheckCreds(KnoxLoginView):
         
         # check credentials
         serializer = AuthTokenSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            AuditLog.audit_user_failed_login(request.data["username"])
+            return Response("bad credentials", status=status.HTTP_400_BAD_REQUEST)
+
         user = serializer.validated_data["user"]
 
         # if totp token not set modify response to notify frontend
@@ -62,8 +66,10 @@ class LoginView(KnoxLoginView):
 
         if valid:
             login(request, user)
+            AuditLog.audit_user_login_successful(request.data["username"])
             return super(LoginView, self).post(request, format=None)
         else:
+            AuditLog.audit_user_failed_twofactor(request.data["username"])
             return Response("bad credentials", status=status.HTTP_400_BAD_REQUEST)
 
 

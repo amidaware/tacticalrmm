@@ -1,7 +1,6 @@
 import datetime as dt
-
 from django.db import models
-
+from django.utils import timezone
 from agents.models import Agent
 
 ACTION_TYPE_CHOICES = [
@@ -22,13 +21,16 @@ AUDIT_ACTION_TYPE_CHOICES = [
 ]
 
 AUDIT_OBJECT_TYPE_CHOICES = [
+    ("user", "User"),
+    ("script", "Script"),
     ("agent", "Agent"),
     ("policy", "Policy"),
-    ("patch_policy", "Patch Policy"),
+    ("winupdatepolicy", "Patch Policy"),
     ("client", "Client"),
     ("site", "Site"),
     ("check", "Check"),
-    ("task", "Automated Task")
+    ("automatedtask", "Automated Task"),
+    ("coresettings", "Core Settings")
 ]
 
 # taskaction details format
@@ -118,7 +120,34 @@ class AuditLog(models.Model):
             username=username,
             object_type="agent",
             action="execute_script", 
-            message=f"{username} ran script: \"{script}\" on {hostname}.",
+            message=f"{username} ran script: \"{script}\" on {hostname}",
+        )
+
+    @staticmethod
+    def audit_user_failed_login(username):
+        AuditLog.objects.create(
+            username=username,
+            object_type="user",
+            action="failed_login", 
+            message=f"{username} failed to login: Credentials were rejected",
+        )
+
+    @staticmethod
+    def audit_user_failed_twofactor(username):
+        AuditLog.objects.create(
+            username=username,
+            object_type="user",
+            action="failed_login", 
+            message=f"{username} failed to login: Two Factor token rejected",
+        )
+
+    @staticmethod
+    def audit_user_login_successful(username):
+        AuditLog.objects.create(
+            username=username,
+            object_type="user",
+            action="login", 
+            message=f"{username} logged in successfully",
         )
 
 class DebugLog(models.Model):

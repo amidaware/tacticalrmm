@@ -1,9 +1,8 @@
 <template>
   <q-card>
     <q-bar>
-      <q-btn @click="search" class="q-mr-sm" dense flat push icon="refresh" label="Refresh" />Audit Log
-      <q-space />
-      <q-btn color="primary" text-color="white" label="Export to CSV" @click="exportLog" />
+      <q-btn @click="search" class="q-mr-sm" dense flat push icon="refresh" />
+      <q-space />Audit Manager
       <q-space />
       <q-btn dense flat icon="close" v-close-popup>
         <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
@@ -90,8 +89,19 @@
         :columns="columns"
         row-key="id"
         :pagination.sync="pagination"
+        :no-data-label="noDataText"
         @row-click="showDetails"
-      ></q-table>
+      >
+        <template v-slot:top-right>
+          <q-btn
+            color="primary"
+            icon-right="archive"
+            label="Export to csv"
+            no-caps
+            @click="exportLog"
+          />
+        </template>
+      </q-table>
     </q-card-section>
     <div class="q-pa-md q-gutter-sm">
       <q-dialog v-model="showLogDetails" @hide="closeDetails">
@@ -128,6 +138,7 @@ export default {
     return {
       showLogDetails: false,
       logDetails: null,
+      searched: false,
       auditLogs: [],
       userOptions: [],
       agentOptions: [],
@@ -241,6 +252,7 @@ export default {
     },
     search() {
       this.$q.loading.show();
+      this.searched = true;
       let data = {};
 
       if (this.agentFilter.length > 0) {
@@ -272,6 +284,11 @@ export default {
     closeDetails() {
       this.logDetails = null;
       this.showLogDetails = false;
+    },
+  },
+  computed: {
+    noDataText() {
+      return this.searched ? "No data found. Try to refine you search" : "Click search to find audit logs";
     },
   },
 };

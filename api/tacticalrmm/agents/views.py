@@ -17,11 +17,12 @@ from rest_framework.decorators import (
     authentication_classes,
     permission_classes,
 )
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.authentication import BasicAuthentication, TokenAuthentication
 
-from .models import Agent, RecoveryAction
+from .models import Agent, RecoveryAction, Note
 from winupdate.models import WinUpdatePolicy
 from clients.models import Client, Site
 from accounts.models import User
@@ -33,6 +34,8 @@ from .serializers import (
     AgentHostnameSerializer,
     AgentTableSerializer,
     AgentEditSerializer,
+    NoteSerializer,
+    NotesSerializer,
 )
 from winupdate.serializers import WinUpdatePolicySerializer
 
@@ -621,3 +624,34 @@ def recover_mesh(request, pk):
         return notify_error("Unable to contact the agent")
 
     return Response(f"Repaired mesh agent on {agent.hostname}")
+
+
+class GetAddNotes(APIView):
+    def get(self, request, pk):
+        agent = get_object_or_404(Agent, pk=pk)
+        return Response(NotesSerializer(agent).data)
+
+    def post(self, request, pk):
+        agent = get_object_or_404(Agent, pk=pk)
+        serializer = NoteSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(agent=agent, user=request.user)
+        return Response("Note added!")
+
+
+class GetEditDeleteNote(APIView):
+    def get(self, request, pk):
+        note = get_object_or_404(Note, pk=pk)
+        return Response(NoteSerializer(note).data)
+
+    def patch(self, request, pk):
+        note = get_object_or_404(Note, pk=pk)
+        serializer = NoteSerializer(instance=note, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response("Note edited!")
+
+    def delete(self, request, pk):
+        note = get_object_or_404(Note, pk=pk)
+        note.delete()
+        return Response("Note was deleted!")

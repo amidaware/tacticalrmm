@@ -310,6 +310,7 @@ export default {
         this.$store.dispatch("loadAutomatedTasks", pk);
         this.$store.dispatch("loadWinUpdates", pk);
         this.$store.dispatch("loadInstalledSoftware", pk);
+        this.$store.dispatch("loadNotes", pk);
       }
     },
     loadFrame(activenode, destroySub = true) {

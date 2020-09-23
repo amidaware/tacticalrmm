@@ -32,6 +32,7 @@ export default function () {
       treeLoading: false,
       installedSoftware: [],
       scripts: [],
+      notes: [],
       toggleScriptManager: false,
       needrefresh: false,
       tableHeight: "35vh",
@@ -141,6 +142,9 @@ export default function () {
         agentHeight <= 15.0 ? state.tableHeight = "15vh" : state.tableHeight = `${agentHeight}vh`;
         tabsHeight <= 15.0 ? state.tabHeight = "15vh" : state.tabHeight = `${tabsHeight}vh`;
       },
+      SET_NOTES(state, notes) {
+        state.notes = notes;
+      }
     },
     actions: {
       loadAutomatedTasks(context, pk) {
@@ -171,6 +175,11 @@ export default function () {
       loadChecks(context, pk) {
         axios.get(`/checks/${pk}/loadchecks/`).then(r => {
           context.commit("setChecks", r.data);
+        });
+      },
+      loadNotes(context, pk) {
+        axios.get(`/agents/${pk}/notes/`).then(r => {
+          context.commit("SET_NOTES", r.data.notes);
         });
       },
       loadDefaultServices(context) {

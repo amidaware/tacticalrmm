@@ -26,4 +26,6 @@ urlpatterns = [
     path("runscript/", views.run_script),
     path("<int:pk>/restartmesh/", views.restart_mesh),
     path("<int:pk>/recovermesh/", views.recover_mesh),
+    path("<int:pk>/notes/", views.GetAddNotes.as_view()),
+    path("<int:pk>/note/", views.GetEditDeleteNote.as_view()),
 ]

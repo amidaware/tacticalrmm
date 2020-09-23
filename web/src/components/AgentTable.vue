@@ -525,6 +525,7 @@ export default {
       this.$store.dispatch("loadAutomatedTasks", pk);
       this.$store.dispatch("loadWinUpdates", pk);
       this.$store.dispatch("loadInstalledSoftware", pk);
+      this.$store.dispatch("loadNotes", pk);
     },
     overdueAlert(category, pk, alert_action) {
       const action = alert_action ? "enabled" : "disabled";

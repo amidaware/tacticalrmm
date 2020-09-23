@@ -16,6 +16,7 @@
       <q-tab name="tasks" icon="fas fa-tasks" label="Tasks" />
       <q-tab name="patches" icon="system_update" label="Patches" />
       <q-tab name="software" icon="fab fa-windows" label="Software" />
+      <q-tab name="notes" icon="far fa-sticky-note" label="Notes" />
       <q-tab name="assets" icon="fas fa-barcode" label="Assets" />
     </q-tabs>
     <q-separator />
@@ -35,6 +36,9 @@
       <q-tab-panel name="software" class="q-pb-xs q-pt-none">
         <SoftwareTab />
       </q-tab-panel>
+      <q-tab-panel name="notes" class="q-pb-xs q-pt-none">
+        <NotesTab />
+      </q-tab-panel>
       <q-tab-panel name="assets" class="q-pb-xs q-pt-none">
         <AssetsTab />
       </q-tab-panel>
@@ -49,6 +53,7 @@ import AutomatedTasksTab from "@/components/AutomatedTasksTab";
 import WindowsUpdates from "@/components/WindowsUpdates";
 import SoftwareTab from "@/components/SoftwareTab";
 import AssetsTab from "@/components/AssetsTab";
+import NotesTab from "@/components/NotesTab";
 export default {
   name: "SubTableTabs",
   components: {
@@ -58,6 +63,7 @@ export default {
     WindowsUpdates,
     SoftwareTab,
     AssetsTab,
+    NotesTab,
   },
   data() {
     return {

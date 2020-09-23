@@ -687,3 +687,23 @@ class RecoveryAction(models.Model):
         if self.mode == "command":
             ret["cmd"] = self.command
         return ret
+
+
+class Note(models.Model):
+    agent = models.ForeignKey(
+        Agent,
+        related_name="notes",
+        on_delete=models.CASCADE,
+    )
+    user = models.ForeignKey(
+        "accounts.User",
+        related_name="user",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    note = models.TextField(null=True, blank=True)
+    entry_time = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.agent.hostname

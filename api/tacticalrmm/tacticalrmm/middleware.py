@@ -36,10 +36,10 @@ class AuditMiddleware:
 
         response = self.get_response(request)
 
-        # disconnecting signals
-        signals.pre_save.disconnect(dispatch_uid=(self.__class__, request,))
-        signals.post_save.disconnect(dispatch_uid=(self.__class__, request,))
-        signals.post_delete.disconnect(dispatch_uid=(self.__class__, request,))
+        # disconnect signals
+        signals.pre_save.disconnect(dispatch_uid="pre_save")
+        signals.post_save.disconnect(dispatch_uid="post_save")
+        signals.post_delete.disconnect(dispatch_uid="post_delete")
 
         return response
 
@@ -64,12 +64,11 @@ class AuditMiddleware:
                 
                 # get authentcated user after request
                 user = request.user
-
                 # sets the created_by and modified_by fields on models
                 pre_save_audit = partial(self.pre_save_audit, user)
                 signals.pre_save.connect(
                     pre_save_audit,
-                    dispatch_uid=(self.__class__, request,),
+                    dispatch_uid="pre_save",
                     weak=False
                 )
 
@@ -77,7 +76,7 @@ class AuditMiddleware:
                 add_audit_entry_add_modify = partial(self.add_audit_entry_add_modify, user)
                 signals.post_save.connect(
                     add_audit_entry_add_modify,
-                    dispatch_uid=(self.__class__, request,),
+                    dispatch_uid="post_save",
                     weak=False
                 )
 
@@ -85,7 +84,7 @@ class AuditMiddleware:
                 add_audit_entry_delete = partial(self.add_audit_entry_delete, user)
                 signals.post_delete.connect(
                     add_audit_entry_delete,
-                    dispatch_uid=(self.__class__, request,),
+                    dispatch_uid="post_delete",
                     weak=False
                 )
 
@@ -103,6 +102,7 @@ class AuditMiddleware:
                 self.before_value = sender.objects.get(pk=instance.id)
 
     def add_audit_entry_add_modify(self, user, sender, instance, created, **kwargs):
+        
         # check and see if sender is an auditable instance
         if sender in audit_models:
             if created:

@@ -86,7 +86,6 @@ export default {
             localStorage.setItem("access_token", token);
             localStorage.setItem("user_name", username);
             this.$store.commit("retrieveToken", { token, username });
-            this.$store.commit("setTwoFactorStatus", true);
             this.$router.push({ name: "TOTPSetup" });
             this;
           } else {

@@ -49,7 +49,7 @@ class Client(models.Model):
     def serialize(client):
         # serializes the client and returns json
         from .serializers import ClientSerializer
-        return serializers.ClientSerializer(client).data
+        return ClientSerializer(client).data
 
 
 class Site(models.Model):
@@ -97,14 +97,14 @@ class Site(models.Model):
 
         return False
 
-def validate_name(name):
-    if "|" in name:
-        return False
-    else:
-        return True
-
     @staticmethod
     def serialize(site):
         # serializes the site and returns json
         from .serializers import SiteSerializer
         return SiteSerializer(site).data
+
+def validate_name(name):
+    if "|" in name:
+        return False
+    else:
+        return True

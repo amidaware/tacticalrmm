@@ -139,7 +139,7 @@ def meshcentral(request, pk):
     )
     webrdp = f"{core.mesh_site}/mstsc.html?login={token}&node={agent.mesh_node_id}"
 
-    AuditLog.audit_mesh_session(username=request.user.username, agent=agent.hostname)
+    AuditLog.audit_mesh_session(username=request.user.username, hostname=agent.hostname)
 
     ret = {
         "hostname": agent.hostname,

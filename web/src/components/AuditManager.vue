@@ -82,6 +82,8 @@
     <q-separator />
     <q-card-section>
       <q-table
+        dense
+        class="audit-mgr-tbl-sticky"
         binary-state-sort
         virtual-scroll
         title="Audit Logs"

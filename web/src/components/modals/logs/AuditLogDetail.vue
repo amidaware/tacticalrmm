@@ -1,7 +1,7 @@
 <template>
-  <q-card style="width: 900px; max-width: 90vw;">
+  <q-card style="max-width: 90vw;">
     <q-bar>
-      {{ log.message }}
+      <span class="text-caption">{{ log.message }}</span>
       <q-space />
       <q-btn dense flat icon="close" v-close-popup />
     </q-bar>

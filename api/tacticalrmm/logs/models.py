@@ -114,6 +114,7 @@ class AuditLog(models.Model):
     @staticmethod
     def audit_script_run(username, hostname, script):
         AuditLog.objects.create(
+            agent=hostname,
             username=username,
             object_type="agent",
             action="execute_script",

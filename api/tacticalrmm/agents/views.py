@@ -553,6 +553,12 @@ def run_script(request):
 
     req_timeout = int(request.data["timeout"]) + 3
 
+    AuditLog.audit_script_run(
+        username=request.user.username,
+        hostname=agent.hostname,
+        script=script.name,
+    )
+
     if output == "wait":
         r = agent.salt_api_cmd(
             timeout=req_timeout,
@@ -601,11 +607,6 @@ def run_script(request):
         )
 
         if r != "timeout":
-            AuditLog.audit_script_run(
-                username=request.user.username,
-                hostname=agent.hostname,
-                script=script.name,
-            )
             return Response(f"{script.name} will now be run on {agent.hostname}")
         else:
             return notify_error("Something went wrong")

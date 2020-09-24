@@ -242,7 +242,7 @@ export default {
         )
         .join("\r\n");
 
-      const status = exportFile("table-export.csv", content, "text/csv");
+      const status = exportFile("rmm-audit-export.csv", content, "text/csv");
 
       if (status !== true) {
         this.$q.notify({

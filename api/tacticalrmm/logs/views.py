@@ -58,8 +58,11 @@ class FilterOptionsAuditLog(APIView):
             return Response(AgentHostnameSerializer(agents, many=True).data)
 
         if request.data["type"] == "user":
-            agents = User.objects.filter(username__icontains=request.data["pattern"])
-            return Response(UserSerializer(agents, many=True).data)
+            agents = Agent.objects.values_list("agent_id", flat=True)
+            users = User.objects.exclude(username__in=agents).filter(
+                username__icontains=request.data["pattern"]
+            )
+            return Response(UserSerializer(users, many=True).data)
 
 
 @api_view()

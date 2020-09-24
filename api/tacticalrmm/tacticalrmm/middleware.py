@@ -37,6 +37,7 @@ EXCLUDE_PATHS = (
     "/winupdate/winupdater",
     "/winupdate/results",
     f"/{settings.ADMIN_URL}",
+    "/logout",
 )
 
 

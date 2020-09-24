@@ -555,6 +555,24 @@ class Check(models.Model):
 
         elif self.check_type == "eventlog":
 
-            body = f"Event ID {self.event_id} was found in the {self.log_name} log"
+            if self.event_source and self.event_message:
+                start = f"Event ID {self.event_id}, source {self.event_source}, containing string {self.event_message} "
+            elif self.event_source:
+                start = f"Event ID {self.event_id}, source {self.event_source} "
+            elif self.event_message:
+                start = (
+                    f"Event ID {self.event_id}, containing string {self.event_message} "
+                )
+            else:
+                start = f"Event ID {self.event_id} "
+
+            body = start + f"was found in the {self.log_name} log\n\n"
+
+            for i in self.extra_details["log"]:
+                try:
+                    if i["message"]:
+                        body += f"<pre>{i['message']}</pre>"
+                except:
+                    continue
 
         CORE.send_mail(subject, body)

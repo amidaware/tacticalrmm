@@ -160,10 +160,10 @@ export default {
           if (r.data.check_type === "eventlog" && r.data.event_id_is_wildcard) {
             this.eventlogcheck.event_id = "*";
           }
-          if (r.data.check_type === "eventlog" && r.data.event_source !== null) {
+          if (r.data.check_type === "eventlog" && r.data.event_source !== null && r.data.event_source !== "") {
             this.eventSource = true;
           }
-          if (r.data.check_type === "eventlog" && r.data.event_message !== null) {
+          if (r.data.check_type === "eventlog" && r.data.event_message !== null && r.data.event_message !== "") {
             this.eventMessage = true;
           }
         })

@@ -60,16 +60,12 @@
                           </q-item-section>
                           <q-item-section>Edit</q-item-section>
                         </q-item>
-                        <!--<q-item
-                          clickable
-                          v-close-popup
-                          @click="showDelete(props.node)"
-                        >
+                        <q-item clickable v-close-popup @click="showDeleteModal(props.node)">
                           <q-item-section side>
                             <q-icon name="delete" />
                           </q-item-section>
                           <q-item-section>Delete</q-item-section>
-                        </q-item>-->
+                        </q-item>
 
                         <q-separator></q-separator>
 
@@ -156,11 +152,19 @@
 
     <!-- edit client modal -->
     <q-dialog v-model="showEditClientModal">
-      <EditClients @close="showEditClientModal = false" />
+      <EditClients @close="showEditClientModal = false" @edited="refreshEntireSite" />
     </q-dialog>
     <!-- edit site modal -->
     <q-dialog v-model="showEditSiteModal">
-      <EditSites @close="showEditSiteModal = false" />
+      <EditSites @close="showEditSiteModal = false" @edited="refreshEntireSite" />
+    </q-dialog>
+    <!-- delete client modal -->
+    <q-dialog v-model="showDeleteClientModal">
+      <DeleteClient @close="showDeleteClientModal = false" @edited="refreshEntireSite" />
+    </q-dialog>
+    <!-- delete site modal -->
+    <q-dialog v-model="showDeleteSiteModal">
+      <DeleteSite @close="showDeleteSiteModal = false" @edited="refreshEntireSite" />
     </q-dialog>
     <!-- add policy modal -->
     <q-dialog v-model="showPolicyAddModal">
@@ -183,6 +187,8 @@ import AlertsIcon from "@/components/AlertsIcon";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
 import EditSites from "@/components/modals/clients/EditSites";
 import EditClients from "@/components/modals/clients/EditClients";
+import DeleteClient from "@/components/modals/clients/DeleteClient";
+import DeleteSite from "@/components/modals/clients/DeleteSite";
 
 export default {
   components: {
@@ -193,11 +199,15 @@ export default {
     PolicyAdd,
     EditSites,
     EditClients,
+    DeleteClient,
+    DeleteSite,
   },
   data() {
     return {
       showEditClientModal: false,
       showEditSiteModal: false,
+      showDeleteClientModal: false,
+      showDeleteSiteModal: false,
       showPolicyAddModal: false,
       policyAddType: null,
       policyAddPk: null,
@@ -378,6 +388,13 @@ export default {
         this.showEditClientModal = true;
       } else {
         this.showEditSiteModal = true;
+      }
+    },
+    showDeleteModal(node) {
+      if (node.children) {
+        this.showDeleteClientModal = true;
+      } else {
+        this.showDeleteSiteModal = true;
       }
     },
     reload() {

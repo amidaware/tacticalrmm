@@ -20,7 +20,6 @@ from rest_framework.decorators import (
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
-from rest_framework.authentication import BasicAuthentication, TokenAuthentication
 
 from .models import Agent, RecoveryAction, Note
 from winupdate.models import WinUpdatePolicy
@@ -639,6 +638,27 @@ def recover_mesh(request, pk):
         return notify_error("Unable to contact the agent")
 
     return Response(f"Repaired mesh agent on {agent.hostname}")
+
+
+@api_view(["POST"])
+def get_mesh_exe(request, arch):
+    filename = "meshagent.exe" if arch == "64" else "meshagent-x86.exe"
+    mesh_exe = os.path.join(settings.EXE_DIR, filename)
+    if not os.path.exists(mesh_exe):
+        return notify_error(f"File {filename} has not been uploaded.")
+
+    if settings.DEBUG:
+        with open(mesh_exe, "rb") as f:
+            response = HttpResponse(
+                f.read(), content_type="application/vnd.microsoft.portable-executable"
+            )
+            response["Content-Disposition"] = f"inline; filename={filename}"
+            return response
+    else:
+        response = HttpResponse()
+        response["Content-Disposition"] = f"attachment; filename={filename}"
+        response["X-Accel-Redirect"] = f"/private/exe/{filename}"
+        return response
 
 
 class GetAddNotes(APIView):

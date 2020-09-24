@@ -474,7 +474,9 @@ class Agent(models.Model):
         # serializes the agent and returns json
         from .serializers import AgentEditSerializer
 
-        return AgentEditSerializer(agent).data
+        ret = AgentEditSerializer(agent).data
+        del ret["all_timezones"]
+        return ret
 
     @staticmethod
     def salt_batch_async(**kwargs):

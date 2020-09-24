@@ -1,42 +1,37 @@
 # FOR TESTS
 version: "3.7"
 
-networks:
-  test:
-
 services:
-  # Container that hosts Vue frontend
+  # Runs Vue unit tests
   app-unit-test:
     image: node:12
     command: npm run test:unit
     working_dir: /home/node
     volumes:
       - ../web:/home/node
-    networks:
-      - test
-
+  
+  # Runs python unit tests
   api-test:
-    build:
-      context: ..
-      dockerfile: ./docker/api-test/dockerfile
-    depends_on:
-      - db-test
-      - redis-test
-    networks:
-      - test
-
-  # Postgres Database for API service
-  db-test:
-    image: postgres:12
+    image: python:3.8
+    command: python manage.py test -v 2 --no-input
+    working_dir: /app
     environment:
-      POSTGRES_DB: tacticalrmm-test
-      POSTGRES_USER: test
-      POSTGRES_PASSWORD: testpass
+      VIRTUAL_ENV: /app/env
+      PATH: /app/env/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    volumes:
+      - ../api/tacticalrmm:/app
+    depends_on: 
+      - db
+      - redis
+      - venv
     networks:
-      - test
+      - database
+      - redis
 
-  # Redis Container for Celery tasks
-  redis-test:
-    image: redis
-    networks:
-      - test
+  # Builds Python Virtual Env to share between containers
+  venv:
+    image: python:3.8
+    command: /bin/bash -c "pip install virtualenv && python -m virtualenv env && ./env/bin/pip install -r requirements.txt && ./env/bin/pip install -r requirements-dev.txt"
+    working_dir: /app
+    volumes:
+      - ../api/tacticalrmm:/app

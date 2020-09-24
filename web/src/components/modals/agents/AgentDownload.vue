@@ -77,7 +77,7 @@ export default {
     downloadMesh() {
       const fileName = this.info.arch === "64" ? "meshagent.exe" : "meshagent-x86.exe";
       this.$axios
-        .post(`/api/v1/${this.info.arch}/getmeshexe/`, {}, { responseType: "blob" })
+        .post(`/agents/${this.info.arch}/getmeshexe/`, {}, { responseType: "blob" })
         .then(({ data }) => {
           const blob = new Blob([data], { type: "application/vnd.microsoft.portable-executable" });
           let link = document.createElement("a");

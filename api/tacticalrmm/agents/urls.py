@@ -11,6 +11,7 @@ urlpatterns = [
     path("sendrawcmd/", views.send_raw_cmd),
     path("<pk>/agentdetail/", views.agent_detail),
     path("<int:pk>/meshcentral/", views.meshcentral),
+    path("<str:arch>/getmeshexe/", views.get_mesh_exe),
     path("poweraction/", views.power_action),
     path("uninstall/", views.uninstall),
     path("editagent/", views.edit_agent),

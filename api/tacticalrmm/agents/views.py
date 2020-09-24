@@ -20,7 +20,6 @@ from rest_framework.decorators import (
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
-from rest_framework.authentication import BasicAuthentication, TokenAuthentication
 
 from .models import Agent, RecoveryAction, Note
 from winupdate.models import WinUpdatePolicy
@@ -28,6 +27,7 @@ from clients.models import Client, Site
 from accounts.models import User
 from core.models import CoreSettings
 from scripts.models import Script
+from logs.models import AuditLog
 
 from .serializers import (
     AgentSerializer,
@@ -138,6 +138,8 @@ def meshcentral(request, pk):
     )
     webrdp = f"{core.mesh_site}/mstsc.html?login={token}&node={agent.mesh_node_id}"
 
+    AuditLog.audit_mesh_session(username=request.user.username, hostname=agent.hostname)
+
     ret = {
         "hostname": agent.hostname,
         "control": control,
@@ -236,6 +238,13 @@ def send_raw_cmd(request):
         return notify_error("Unable to contact the agent")
     elif r == "error" or not r:
         return notify_error("Something went wrong")
+
+    AuditLog.audit_raw_command(
+        username=request.user.username,
+        hostname=agent.hostname,
+        cmd=request.data["cmd"],
+        shell=request.data["shell"],
+    )
 
     logger.info(f"The command {request.data['cmd']} was sent on agent {agent.hostname}")
     return Response(r)
@@ -544,6 +553,12 @@ def run_script(request):
 
     req_timeout = int(request.data["timeout"]) + 3
 
+    AuditLog.audit_script_run(
+        username=request.user.username,
+        hostname=agent.hostname,
+        script=script.name,
+    )
+
     if output == "wait":
         r = agent.salt_api_cmd(
             timeout=req_timeout,
@@ -624,6 +639,27 @@ def recover_mesh(request, pk):
         return notify_error("Unable to contact the agent")
 
     return Response(f"Repaired mesh agent on {agent.hostname}")
+
+
+@api_view(["POST"])
+def get_mesh_exe(request, arch):
+    filename = "meshagent.exe" if arch == "64" else "meshagent-x86.exe"
+    mesh_exe = os.path.join(settings.EXE_DIR, filename)
+    if not os.path.exists(mesh_exe):
+        return notify_error(f"File {filename} has not been uploaded.")
+
+    if settings.DEBUG:
+        with open(mesh_exe, "rb") as f:
+            response = HttpResponse(
+                f.read(), content_type="application/vnd.microsoft.portable-executable"
+            )
+            response["Content-Disposition"] = f"inline; filename={filename}"
+            return response
+    else:
+        response = HttpResponse()
+        response["Content-Disposition"] = f"attachment; filename={filename}"
+        response["X-Accel-Redirect"] = f"/private/exe/{filename}"
+        return response
 
 
 class GetAddNotes(APIView):

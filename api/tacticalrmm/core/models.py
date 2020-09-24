@@ -186,3 +186,10 @@ class CoreSettings(models.Model):
                 time.sleep(10)
 
         return mesh_settings
+
+    @staticmethod
+    def serialize(core):
+        # serializes the core and returns json
+        from .serializers import CoreSerializer
+
+        return CoreSerializer(core).data

@@ -91,6 +91,10 @@ class Check(models.Model):
     text_sent = models.DateTimeField(null=True, blank=True)
     outage_history = models.JSONField(null=True, blank=True)  # store
     extra_details = models.JSONField(null=True, blank=True)
+    created_by = models.CharField(max_length=100, null=True, blank=True)
+    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    modified_by = models.CharField(max_length=100, null=True, blank=True)
+    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     # check specific fields
 
@@ -424,6 +428,13 @@ class Check(models.Model):
 
         if self.email_alert and self.fail_count >= self.fails_b4_alert:
             handle_check_email_alert_task.delay(self.pk)
+
+    @staticmethod
+    def serialize(check):
+        # serializes the check and returns json
+        from .serializers import CheckSerializer
+
+        return CheckSerializer(check).data
 
     # for policy diskchecks
     @staticmethod

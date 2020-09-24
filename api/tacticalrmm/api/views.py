@@ -1,12 +1,9 @@
 import requests
-
-import os
 from time import sleep
 from loguru import logger
 
 from django.conf import settings
 from django.db import IntegrityError
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 
@@ -87,27 +84,6 @@ def trigger_patch_scan(request):
         )
 
     return Response("ok")
-
-
-@api_view(["POST"])
-def get_mesh_exe(request, arch):
-    filename = "meshagent.exe" if arch == "64" else "meshagent-x86.exe"
-    mesh_exe = os.path.join(settings.EXE_DIR, filename)
-    if not os.path.exists(mesh_exe):
-        return notify_error(f"File {filename} has not been uploaded.")
-
-    if settings.DEBUG:
-        with open(mesh_exe, "rb") as f:
-            response = HttpResponse(
-                f.read(), content_type="application/vnd.microsoft.portable-executable"
-            )
-            response["Content-Disposition"] = f"inline; filename={filename}"
-            return response
-    else:
-        response = HttpResponse()
-        response["Content-Disposition"] = f"attachment; filename={filename}"
-        response["X-Accel-Redirect"] = f"/private/exe/{filename}"
-        return response
 
 
 @api_view(["POST"])

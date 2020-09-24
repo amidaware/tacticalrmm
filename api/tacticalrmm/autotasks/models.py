@@ -91,6 +91,10 @@ class AutomatedTask(models.Model):
     sync_status = models.CharField(
         max_length=100, choices=SYNC_STATUS_CHOICES, default="synced"
     )
+    created_by = models.CharField(max_length=100, null=True, blank=True)
+    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    modified_by = models.CharField(max_length=100, null=True, blank=True)
+    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -122,6 +126,13 @@ class AutomatedTask(models.Model):
     def generate_task_name():
         chars = string.ascii_letters
         return "TacticalRMM_" + "".join(random.choice(chars) for i in range(35))
+
+    @staticmethod
+    def serialize(task):
+        # serializes the task and returns json
+        from .serializers import TaskSerializer
+
+        return TaskSerializer(task).data
 
     def create_policy_task(self, agent):
         assigned_check = None

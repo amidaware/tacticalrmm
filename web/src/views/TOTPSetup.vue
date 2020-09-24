@@ -9,9 +9,8 @@
           </q-card-section>
           <q-card-section v-if="qr_url">
             <p>
-              Scan the QR Code with your authenticator app and then click
-              Finish to be redirected back to the signin page.
-              If you navigate away from this page you 2FA signin will need to be reset!
+              Scan the QR Code with your authenticator app and then click Finish to be redirected back to the signin
+              page. If you navigate away from this page you 2FA signin will need to be reset!
             </p>
             <qrcode-vue :value="qr_url" size="200" level="H" />
           </q-card-section>
@@ -54,9 +53,10 @@ export default {
           this.$q.loading.hide();
 
           if (r.data === "TOTP token already set") {
+            //don't logout user if totp is already set
+            this.cleared_token = true;
             this.$router.push({ name: "Login" });
           } else {
-            this.prompt = false;
             this.totp_key = r.data.totp_key;
             this.qr_url = r.data.qr_url;
           }

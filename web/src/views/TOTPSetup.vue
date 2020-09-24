@@ -52,7 +52,7 @@ export default {
         .then(r => {
           this.$q.loading.hide();
 
-          if (r.data === "TOTP token already set") {
+          if (r.data === "totp token already set") {
             //don't logout user if totp is already set
             this.cleared_token = true;
             this.$router.push({ name: "Login" });

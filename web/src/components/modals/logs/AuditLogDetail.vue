@@ -1,5 +1,5 @@
 <template>
-  <q-card style="max-width: 90vw;">
+  <q-card style="width: 70vw; max-width: 90vw;">
     <q-bar>
       <span class="text-caption">{{ log.message }}</span>
       <q-space />

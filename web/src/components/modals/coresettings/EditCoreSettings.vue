@@ -318,11 +318,13 @@ export default {
             this.$axios
               .get("/core/emailtest/")
               .then(r => {
+                this.emailTest = false;
                 this.$q.loading.hide();
                 this.getCoreSettings();
                 this.notifySuccess(r.data, 3000);
               })
               .catch(e => {
+                this.emailTest = false;
                 this.$q.loading.hide();
                 this.notifyError(e.response.data, 7000);
               });

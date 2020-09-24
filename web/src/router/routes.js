@@ -11,6 +11,9 @@ const routes = [
     path: "/setup",
     name: "InitialSetup",
     component: () => import("@/views/InitialSetup"),
+    meta: {
+      requireAuth: true
+    }
   },
   {
     path: "/totp_setup",

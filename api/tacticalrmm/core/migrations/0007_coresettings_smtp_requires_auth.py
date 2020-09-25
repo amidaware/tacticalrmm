@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0006_auto_20200812_0223'),
+        ("core", "0006_auto_20200812_0223"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='coresettings',
-            name='smtp_requires_auth',
+            model_name="coresettings",
+            name="smtp_requires_auth",
             field=models.BooleanField(default=True),
         ),
     ]

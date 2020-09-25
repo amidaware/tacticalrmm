@@ -19,7 +19,8 @@ export default function ({ store }) {
         next({
           name: "Login"
         });
-      } else {
+      }
+      else {
         next();
       }
     } else if (to.meta.requiresVisitor) {

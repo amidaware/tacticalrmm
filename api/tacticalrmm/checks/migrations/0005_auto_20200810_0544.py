@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('checks', '0004_check_parent_check'),
+        ("checks", "0004_check_parent_check"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='check',
-            name='extra_details',
+            model_name="check",
+            name="extra_details",
             field=models.JSONField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='check',
-            name='outage_history',
+            model_name="check",
+            name="outage_history",
             field=models.JSONField(blank=True, null=True),
         ),
     ]

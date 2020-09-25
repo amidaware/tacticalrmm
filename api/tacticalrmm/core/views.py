@@ -12,17 +12,21 @@ from rest_framework.views import APIView
 from .models import CoreSettings
 from .serializers import CoreSettingsSerializer
 from tacticalrmm.utils import notify_error
+from automation.tasks import generate_all_agent_checks_task
 
 
 class UploadMeshAgent(APIView):
     parser_class = (FileUploadParser,)
 
     def put(self, request, format=None):
-        if "meshagent" not in request.data:
+        if "meshagent" not in request.data and "arch" not in request.data:
             raise ParseError("Empty content")
 
+        arch = request.data["arch"]
         f = request.data["meshagent"]
-        mesh_exe = os.path.join(settings.EXE_DIR, "meshagent.exe")
+        mesh_exe = os.path.join(
+            settings.EXE_DIR, "meshagent.exe" if arch == "64" else "meshagent-x86.exe"
+        )
         with open(mesh_exe, "wb+") as j:
             for chunk in f.chunks():
                 j.write(chunk)
@@ -41,7 +45,19 @@ def edit_settings(request):
     settings = CoreSettings.objects.first()
     serializer = CoreSettingsSerializer(instance=settings, data=request.data)
     serializer.is_valid(raise_exception=True)
-    serializer.save()
+    new_settings = serializer.save()
+
+    # check if default policies changed
+    if settings.server_policy != new_settings.server_policy:
+        generate_all_agent_checks_task.delay(
+            mon_type="server", clear=True, create_tasks=True
+        )
+
+    if settings.workstation_policy != new_settings.workstation_policy:
+        generate_all_agent_checks_task.delay(
+            mon_type="workstation", clear=True, create_tasks=True
+        )
+
     return Response("ok")
 
 

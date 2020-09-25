@@ -20,10 +20,14 @@ class CheckSerializer(serializers.ModelSerializer):
     assigned_task = serializers.SerializerMethodField()
     history_info = serializers.ReadOnlyField()
 
+    ## Change to return only array of tasks after 9/25/2020
     def get_assigned_task(self, obj):
         if obj.assignedtask.exists():
-            task = obj.assignedtask.get()
-            return AssignedTaskField(task).data
+            tasks = obj.assignedtask.all()
+            if len(tasks) == 1:
+                return AssignedTaskField(tasks[0]).data
+            else:
+                return AssignedTaskField(tasks, many=True).data
 
     class Meta:
         model = Check
@@ -79,8 +83,23 @@ class CheckRunnerGetSerializer(serializers.ModelSerializer):
 
     def get_assigned_task(self, obj):
         if obj.assignedtask.exists():
-            task = obj.assignedtask.get()
+            # this will not break agents on version 0.10.2 or lower
+            # newer agents once released will properly handle multiple tasks assigned to a check
+            task = obj.assignedtask.first()
             return AssignedTaskCheckRunnerField(task).data
+
+
+class CheckRunnerGetSerializerV2(serializers.ModelSerializer):
+    # for the windows agent
+    # only send data needed for agent to run a check
+
+    assigned_tasks = serializers.SerializerMethodField()
+    script = ScriptSerializer(read_only=True)
+
+    def get_assigned_tasks(self, obj):
+        if obj.assignedtask.exists():
+            tasks = obj.assignedtask.all()
+            return AssignedTaskCheckRunnerField(tasks, many=True).data
 
     class Meta:
         model = Check

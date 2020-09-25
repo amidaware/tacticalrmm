@@ -1,6 +1,21 @@
 from rest_framework import serializers
+from .models import PendingAction, AuditLog
+from core.models import CoreSettings
 
-from .models import PendingAction
+import pytz
+
+
+class AuditLogSerializer(serializers.ModelSerializer):
+
+    entry_time = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = AuditLog
+        fields = "__all__"
+
+    def get_entry_time(self, log):
+        timezone = pytz.timezone(CoreSettings.objects.first().default_time_zone)
+        return log.entry_time.astimezone(timezone).strftime("%m/%d/%Y %H:%M:%S")
 
 
 class PendingActionSerializer(serializers.ModelSerializer):

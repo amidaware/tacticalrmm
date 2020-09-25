@@ -1,0 +1,72 @@
+[
+    {
+        "filename": "ClearFirefoxCache.ps1",
+        "submittedBy": "https://github.com/Omnicef",
+        "name": "Clear Firefox Cache",
+        "description": "This script will clean up Mozilla Firefox for all users.",
+        "shell": "powershell"
+    },
+    {
+        "filename": "ClearGoogleChromeCache.ps1",
+        "submittedBy": "https://github.com/Omnicef",
+        "name": "Clear Google Chrome Cache",
+        "description": "This script will clean up Google Chrome for all users.",
+        "shell": "powershell"
+    },
+    {
+        "filename": "InstallAdobeReader.ps1",
+        "submittedBy": "https://github.com/Omnicef",
+        "name": "Install Adobe Reader DC",
+        "description": "Installs Adobe Reader DC.",
+        "shell": "powershell"
+    },
+    {
+        "filename": "InstallDuplicati.ps1",
+        "submittedBy": "https://github.com/Omnicef",
+        "name": "Install Duplicati",
+        "description": "This script installs Duplicati 2.0.5.1 as a service.",
+        "shell": "powershell"
+    },
+    {
+        "filename": "Reset-WindowsUpdate.ps1",
+        "submittedBy": "https://github.com/Omnicef",
+        "name": "Reset Windows Update",
+        "description": "This script will reset all of the Windows Updates components to DEFAULT SETTINGS.",
+        "shell": "powershell"
+    },
+    {
+        "filename": "Start-Cleanup.ps1",
+        "submittedBy": "https://github.com/Omnicef",
+        "name": "Cleanup C: drive",
+        "description": "Cleans the C: drive's Window Temperary files, Windows SoftwareDistribution folder, the local users Temperary folder, IIS logs (if applicable) and empties the recycling bin. All deleted files will go into a log transcript in $env:TEMP. By default this script leaves files that are newer than 7 days old however this variable can be edited.",
+        "shell": "powershell"
+    },
+    {
+        "filename": "WindowsDefenderFullScanBackground.ps1",
+        "submittedBy": "https://github.com/Omnicef",
+        "name": "Windows Defender Full Scan",
+        "description": "Runs a Windows Defender Full background scan.",
+        "shell": "powershell"
+    },
+    {
+        "filename": "WindowsDefenderQuickScanBackground.ps1",
+        "submittedBy": "https://github.com/Omnicef",
+        "name": "Windows Defender Quick Scan",
+        "description": "Runs a Quick Scan using Windows Defender in the Background.",
+        "shell": "powershell"
+    },
+    {
+        "filename": "speedtest.py",
+        "submittedBy": "https://github.com/wh1te909",
+        "name": "Speed Test",
+        "description": "Runs a Speed Test",
+        "shell": "python"
+    },
+    {
+        "filename": "Rename-Installed-App.ps1",
+        "submittedBy": "https://github.com/bradhawkins85",
+        "name": "Rename Tactical RMM Agent",
+        "description": "Updates the DisplayName registry entry for the Tactical RMM windows agent to your desired name. This script takes 1 required argument: the name you wish to set.",
+        "shell": "powershell"
+    }
+]

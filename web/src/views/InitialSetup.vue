@@ -36,7 +36,7 @@
             </q-card-section>
             <q-card-section>
               <div>Default timezone for agents:</div>
-              <q-select dense outlined v-model="timezone" :options="allTimezones" />
+              <q-select dense options-dense outlined v-model="timezone" :options="allTimezones" />
             </q-card-section>
             <q-card-section>
               <div class="row">
@@ -77,11 +77,12 @@ export default {
     return {
       client: {
         client: null,
-        site: null
+        site: null,
       },
       meshagent: null,
       allTimezones: [],
-      timezone: null
+      timezone: null,
+      arch: "64",
     };
   },
   methods: {
@@ -90,12 +91,13 @@ export default {
       const data = {
         client: this.client,
         timezone: this.timezone,
-        initialsetup: true
+        initialsetup: true,
       };
       axios
         .post("/clients/clients/", data)
         .then(r => {
           let formData = new FormData();
+          formData.append("arch", this.arch);
           formData.append("meshagent", this.meshagent);
           axios
             .put("/core/uploadmesh/", formData)
@@ -122,10 +124,10 @@ export default {
         this.allTimezones = Object.freeze(r.data.all_timezones);
         this.timezone = r.data.default_time_zone;
       });
-    }
+    },
   },
   created() {
     this.getSettings();
-  }
+  },
 };
 </script>

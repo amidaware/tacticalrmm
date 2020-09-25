@@ -9,7 +9,6 @@ from .models import User
 
 
 class UserSerializer(ModelSerializer):
-
     class Meta:
         model = User
         fields = (
@@ -21,6 +20,7 @@ class UserSerializer(ModelSerializer):
             "is_active",
             "last_login",
         )
+
 
 class TOTPSetupSerializer(ModelSerializer):
 
@@ -35,4 +35,6 @@ class TOTPSetupSerializer(ModelSerializer):
         )
 
     def get_qr_url(self, obj):
-        return pyotp.totp.TOTP(obj.totp_key).provisioning_uri(obj.username, issuer_name="Tactical RMM")
+        return pyotp.totp.TOTP(obj.totp_key).provisioning_uri(
+            obj.username, issuer_name="Tactical RMM"
+        )

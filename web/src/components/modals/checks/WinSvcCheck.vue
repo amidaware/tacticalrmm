@@ -28,6 +28,7 @@
           v-if="policypk && winsvccheck.svc_policy_mode === 'default' && this.mode !== 'edit'"
           :rules="[val => !!val || '*Required']"
           dense
+          options-dense
           outlined
           v-model="winsvccheck.svc_name"
           :options="serviceOptions"
@@ -41,6 +42,7 @@
           v-if="policypk && winsvccheck.svc_policy_mode === 'default' && this.mode === 'edit'"
           disable
           dense
+          options-dense
           outlined
           v-model="winsvccheck.svc_name"
           :options="serviceOptions"
@@ -70,6 +72,7 @@
           v-if="agentpk"
           :rules="[val => !!val || '*Required']"
           dense
+          options-dense
           outlined
           v-model="winsvccheck.svc_name"
           :options="serviceOptions"
@@ -87,6 +90,11 @@
         />
         <br />
         <q-checkbox
+          v-model="winsvccheck.pass_if_svc_not_exist"
+          label="PASS if service doesn't exist"
+        />
+        <br />
+        <q-checkbox
           v-model="winsvccheck.restart_if_stopped"
           label="Restart service if it's stopped"
         />
@@ -95,6 +103,7 @@
         <q-select
           outlined
           dense
+          options-dense
           v-model="winsvccheck.fails_b4_alert"
           :options="failOptions"
           label="Number of consecutive failures before alert"
@@ -119,7 +128,7 @@ export default {
     agentpk: Number,
     policypk: Number,
     mode: String,
-    checkpk: Number
+    checkpk: Number,
   },
   mixins: [mixins],
   data() {
@@ -130,11 +139,12 @@ export default {
         svc_display_name: null,
         svc_policy_mode: null,
         pass_if_start_pending: false,
+        pass_if_svc_not_exist: false,
         restart_if_stopped: false,
-        fails_b4_alert: 1
+        fails_b4_alert: 1,
       },
       svcData: [],
-      failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     };
   },
   computed: {
@@ -147,7 +157,7 @@ export default {
       });
       // sort alphabetically by display name
       return ret.sort((a, b) => (a.label > b.label ? 1 : -1));
-    }
+    },
   },
   methods: {
     clearServiceOptions() {
@@ -174,7 +184,7 @@ export default {
       const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
       const data = {
         ...pk,
-        check: this.winsvccheck
+        check: this.winsvccheck,
       };
       axios
         .post("/checks/checks/", data)
@@ -201,7 +211,7 @@ export default {
       } else {
         this.$store.dispatch("loadChecks", this.agentpk);
       }
-    }
+    },
   },
   created() {
     this.setServices();
@@ -210,6 +220,6 @@ export default {
     if (this.mode === "edit") {
       this.getCheck();
     }
-  }
+  },
 };
 </script>

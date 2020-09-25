@@ -16,9 +16,12 @@ const routes = [
     }
   },
   {
-    path: "/totp_setup/:username",
+    path: "/totp_setup",
     name: "TOTPSetup",
-    component: () => import("@/views/TOTPSetup")
+    component: () => import("@/views/TOTPSetup"),
+    meta: {
+      requireAuth: true
+    }
   },
   {
     path: "/takecontrol/:pk",

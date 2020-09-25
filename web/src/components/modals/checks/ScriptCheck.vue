@@ -10,7 +10,7 @@
       <p>Settings -> Script Manager</p>
     </q-card-section>
   </q-card>
-  <q-card v-else style="min-width: 400px">
+  <q-card v-else style="min-width: 50vw">
     <q-card-section class="row items-center">
       <div v-if="mode === 'add'" class="text-h6">Add Script Check</div>
       <div v-else-if="mode === 'edit'" class="text-h6">Edit Script Check</div>
@@ -23,6 +23,7 @@
         <q-select
           :rules="[val => !!val || '*Required']"
           dense
+          options-dense
           outlined
           v-model="scriptcheck.script"
           :options="scriptOptions"
@@ -30,6 +31,20 @@
           map-options
           emit-value
           :disable="this.mode === 'edit'"
+        />
+      </q-card-section>
+      <q-card-section>
+        <q-select
+          dense
+          label="Script Arguments (press Enter after typing each argument)"
+          filled
+          v-model="scriptcheck.script_args"
+          use-input
+          use-chips
+          multiple
+          hide-dropdown-icon
+          input-debounce="0"
+          new-value-mode="add"
         />
       </q-card-section>
       <q-card-section>
@@ -49,6 +64,7 @@
         <q-select
           outlined
           dense
+          options-dense
           v-model="scriptcheck.fails_b4_alert"
           :options="failOptions"
           label="Number of consecutive failures before alert"
@@ -73,7 +89,7 @@ export default {
     agentpk: Number,
     policypk: Number,
     mode: String,
-    checkpk: Number
+    checkpk: Number,
   },
   mixins: [mixins],
   data() {
@@ -81,10 +97,11 @@ export default {
       scriptcheck: {
         check_type: "script",
         script: null,
+        script_args: [],
         timeout: 120,
-        fails_b4_alert: 1
+        fails_b4_alert: 1,
       },
-      failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     };
   },
   computed: {
@@ -95,7 +112,7 @@ export default {
         ret.push({ label: i.name, value: i.id });
       });
       return ret;
-    }
+    },
   },
   methods: {
     getCheck() {
@@ -108,7 +125,7 @@ export default {
       const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
       const data = {
         ...pk,
-        check: this.scriptcheck
+        check: this.scriptcheck,
       };
       axios
         .post("/checks/checks/", data)
@@ -135,12 +152,12 @@ export default {
       } else {
         this.$store.dispatch("loadChecks", this.agentpk);
       }
-    }
+    },
   },
   created() {
     if (this.mode === "edit") {
       this.getCheck();
     }
-  }
+  },
 };
 </script>

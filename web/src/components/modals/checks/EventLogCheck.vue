@@ -20,6 +20,7 @@
       <q-card-section>
         <q-select
           dense
+          options-dense
           outlined
           v-model="eventlogcheck.log_name"
           :options="logNameOptions"
@@ -29,6 +30,7 @@
       <q-card-section>
         <q-select
           dense
+          options-dense
           outlined
           v-model="eventlogcheck.fail_when"
           :options="failWhenOptions"
@@ -45,6 +47,22 @@
           label="Event ID (Use * to match every event ID)"
           :rules="[val => validateEventID(val) || 'Invalid Event ID']"
         />
+      </q-card-section>
+      <q-card-section>
+        <q-checkbox
+          v-model="eventSource"
+          label="Event source"
+          @input="eventlogcheck.event_source = null"
+        />
+        <q-input dense outlined v-model="eventlogcheck.event_source" :disable="!eventSource" />
+      </q-card-section>
+      <q-card-section>
+        <q-checkbox
+          v-model="eventMessage"
+          label="Message contains string"
+          @input="eventlogcheck.event_message = null"
+        />
+        <q-input dense outlined v-model="eventlogcheck.event_message" :disable="!eventMessage" />
       </q-card-section>
       <q-card-section>
         <q-input
@@ -83,6 +101,7 @@
         <q-select
           outlined
           dense
+          options-dense
           v-model="eventlogcheck.fails_b4_alert"
           :options="failOptions"
           label="Number of consecutive failures before alert"
@@ -98,7 +117,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 export default {
   name: "EventLogCheck",
@@ -115,12 +133,16 @@ export default {
         check_type: "eventlog",
         log_name: "Application",
         event_id: null,
+        event_source: null,
+        event_message: null,
         event_type: "INFO",
         fail_when: "contains",
         search_last_days: 1,
         fails_b4_alert: 1,
         event_id_is_wildcard: false,
       },
+      eventMessage: false,
+      eventSource: false,
       logNameOptions: ["Application", "System", "Security"],
       failWhenOptions: [
         { label: "Log contains", value: "contains" },
@@ -131,21 +153,39 @@ export default {
   },
   methods: {
     getCheck() {
-      axios.get(`/checks/${this.checkpk}/check/`).then(r => {
-        this.eventlogcheck = r.data;
-        if (r.data.check_type === "eventlog" && r.data.event_id_is_wildcard) {
-          this.eventlogcheck.event_id = "*";
-        }
-      });
+      this.$axios
+        .get(`/checks/${this.checkpk}/check/`)
+        .then(r => {
+          this.eventlogcheck = r.data;
+          if (r.data.check_type === "eventlog" && r.data.event_id_is_wildcard) {
+            this.eventlogcheck.event_id = "*";
+          }
+          if (r.data.check_type === "eventlog" && r.data.event_source !== null && r.data.event_source !== "") {
+            this.eventSource = true;
+          }
+          if (r.data.check_type === "eventlog" && r.data.event_message !== null && r.data.event_message !== "") {
+            this.eventMessage = true;
+          }
+        })
+        .catch(() => this.notifyError("Something went wrong"));
     },
     addCheck() {
       const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
       this.eventlogcheck.event_id_is_wildcard = this.eventlogcheck.event_id === "*" ? true : false;
+
+      if (this.eventlogcheck.event_source === "") {
+        this.eventlogcheck.event_source = null;
+      }
+
+      if (this.eventlogcheck.event_message === "") {
+        this.eventlogcheck.event_message = null;
+      }
+
       const data = {
         ...pk,
         check: this.eventlogcheck,
       };
-      axios
+      this.$axios
         .post("/checks/checks/", data)
         .then(r => {
           this.$emit("close");
@@ -156,7 +196,16 @@ export default {
     },
     editCheck() {
       this.eventlogcheck.event_id_is_wildcard = this.eventlogcheck.event_id === "*" ? true : false;
-      axios
+
+      if (this.eventlogcheck.event_source === "") {
+        this.eventlogcheck.event_source = null;
+      }
+
+      if (this.eventlogcheck.event_message === "") {
+        this.eventlogcheck.event_message = null;
+      }
+
+      this.$axios
         .patch(`/checks/${this.checkpk}/check/`, this.eventlogcheck)
         .then(r => {
           this.$emit("close");

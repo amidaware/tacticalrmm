@@ -3,7 +3,9 @@
     <q-table
       dense
       class="agents-tbl-sticky"
+      :style="{'max-height': agentTableHeight}"
       :data="filter"
+      :filter="search"
       :columns="columns"
       row-key="id"
       binary-state-sort
@@ -118,6 +120,13 @@
                   <q-icon size="xs" name="fas fa-terminal" />
                 </q-item-section>
                 <q-item-section>Send Command</q-item-section>
+              </q-item>
+
+              <q-item clickable v-ripple v-close-popup @click="showRunScript = true">
+                <q-item-section side>
+                  <q-icon size="xs" name="fas fa-terminal" />
+                </q-item-section>
+                <q-item-section>Run Script</q-item-section>
               </q-item>
 
               <q-item clickable v-close-popup @click.stop.prevent="remoteBG(props.row.id)">
@@ -334,6 +343,10 @@
     <q-dialog v-model="showAgentRecovery">
       <AgentRecovery @close="showAgentRecovery = false" :pk="selectedAgentPk" />
     </q-dialog>
+    <!-- run script modal -->
+    <q-dialog v-model="showRunScript">
+      <RunScript @close="showRunScript = false" :pk="selectedAgentPk" />
+    </q-dialog>
   </div>
 </template>
 
@@ -348,10 +361,11 @@ import PendingActions from "@/components/modals/logs/PendingActions";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
 import SendCommand from "@/components/modals/agents/SendCommand";
 import AgentRecovery from "@/components/modals/agents/AgentRecovery";
+import RunScript from "@/components/modals/agents/RunScript";
 
 export default {
   name: "AgentTable",
-  props: ["frame", "columns", "tab", "filter", "userName"],
+  props: ["frame", "columns", "tab", "filter", "userName", "search"],
   components: {
     EditAgent,
     RebootLater,
@@ -359,6 +373,7 @@ export default {
     PolicyAdd,
     SendCommand,
     AgentRecovery,
+    RunScript,
   },
   mixins: [mixins],
   data() {
@@ -373,6 +388,7 @@ export default {
       showRebootLaterModal: false,
       showPolicyAddModal: false,
       showAgentRecovery: false,
+      showRunScript: false,
       policyAddPk: null,
     };
   },
@@ -387,7 +403,7 @@ export default {
       }, 500);
     },
     runPatchStatusScan(pk, hostname) {
-      axios.get(`/winupdate/${pk}/runupdatescan/`).then((r) => {
+      axios.get(`/winupdate/${pk}/runupdatescan/`).then(r => {
         this.notifySuccess(`Scan will be run shortly on ${hostname}`);
       });
     },
@@ -395,11 +411,11 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get(`/winupdate/${pk}/installnow/`)
-        .then((r) => {
+        .then(r => {
           this.$q.loading.hide();
           this.notifySuccess(r.data);
         })
-        .catch((e) => {
+        .catch(e => {
           this.$q.loading.hide();
           this.notifyError(e.response.data, 5000);
         });
@@ -422,8 +438,8 @@ export default {
     runChecks(pk) {
       axios
         .get(`/checks/runchecks/${pk}/`)
-        .then((r) => this.notifySuccess(`Checks will now be re-run on ${r.data}`))
-        .catch((e) => this.notifyError("Something went wrong"));
+        .then(r => this.notifySuccess(`Checks will now be re-run on ${r.data}`))
+        .catch(e => this.notifyError("Something went wrong"));
     },
     removeAgent(pk, name) {
       this.$q
@@ -432,18 +448,18 @@ export default {
           prompt: {
             model: "",
             type: "text",
-            isValid: (val) => val === name,
+            isValid: val => val === name,
           },
           cancel: true,
           ok: { label: "Uninstall", color: "negative" },
           persistent: true,
           html: true,
         })
-        .onOk((val) => {
+        .onOk(val => {
           const data = { pk: pk };
           this.$axios
             .delete("/agents/uninstall/", { data: data })
-            .then((r) => {
+            .then(r => {
               this.notifySuccess(r.data);
               setTimeout(() => {
                 location.reload();
@@ -456,7 +472,7 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get(`/agents/${pk}/ping/`)
-        .then((r) => {
+        .then(r => {
           this.$q.loading.hide();
           if (r.data.status === "offline") {
             this.$q
@@ -479,7 +495,7 @@ export default {
             this.notifyError("Something went wrong");
           }
         })
-        .catch((e) => {
+        .catch(e => {
           this.$q.loading.hide();
           this.notifyError("Something went wrong");
         });
@@ -494,7 +510,7 @@ export default {
         })
         .onOk(() => {
           const data = { pk: pk, action: "rebootnow" };
-          axios.post("/agents/poweraction/", data).then((r) => {
+          axios.post("/agents/poweraction/", data).then(r => {
             this.$q.dialog({
               title: `Restarting ${hostname}`,
               message: `${hostname} will now be restarted`,
@@ -509,6 +525,7 @@ export default {
       this.$store.dispatch("loadAutomatedTasks", pk);
       this.$store.dispatch("loadWinUpdates", pk);
       this.$store.dispatch("loadInstalledSoftware", pk);
+      this.$store.dispatch("loadNotes", pk);
     },
     overdueAlert(category, pk, alert_action) {
       const action = alert_action ? "enabled" : "disabled";
@@ -520,14 +537,14 @@ export default {
       const alertColor = alert_action ? "positive" : "warning";
       axios
         .post("/agents/overdueaction/", data)
-        .then((r) => {
+        .then(r => {
           this.$q.notify({
             color: alertColor,
             icon: "fas fa-check-circle",
             message: `Overdue ${category} alerts ${action} on ${r.data}`,
           });
         })
-        .catch((e) => this.notifyError(e.response.data.error));
+        .catch(e => this.notifyError(e.response.data.error));
     },
     agentClass(status) {
       if (status === "offline") {
@@ -546,18 +563,18 @@ export default {
       this.$q.loading.show();
       this.$axios
         .get(`/agents/${pk}/meshcentral/`)
-        .then((r) => {
+        .then(r => {
           this.$q.loading.hide();
           openURL(r.data.webrdp);
         })
-        .catch((e) => {
+        .catch(e => {
           this.$q.loading.hide();
           this.notifyError(e.response.data);
         });
     },
   },
   computed: {
-    ...mapGetters(["selectedAgentPk"]),
+    ...mapGetters(["selectedAgentPk", "agentTableHeight"]),
     selectedRow() {
       return this.$store.state.selectedRow;
     },

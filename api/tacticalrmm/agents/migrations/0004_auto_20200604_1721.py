@@ -10,7 +10,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="agent", name="checks_last_generated",),
+        migrations.RemoveField(
+            model_name="agent",
+            name="checks_last_generated",
+        ),
         migrations.AddField(
             model_name="agent",
             name="policies_pending",

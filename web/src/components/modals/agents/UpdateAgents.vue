@@ -8,9 +8,15 @@
       </q-btn>
     </q-bar>
     <q-separator />
+    <q-banner class="bg-warning">
+      <template v-slot:avatar>
+        <q-icon name="info" />
+      </template>
+      Agents will now automatically self update, this tool is no longer needed.
+    </q-banner>
     <q-card-section>
       Select Version
-      <q-select square outlined v-model="version" :options="Object.values(versions)" />
+      <q-select square disable dense options-dense outlined v-model="version" :options="versions" />
     </q-card-section>
     <q-card-section v-show="version !== null">
       Select Agent
@@ -34,11 +40,11 @@ export default {
   mixins: [mixins],
   data() {
     return {
-      versions: {},
+      versions: [],
       version: null,
       agents: [],
       group: [],
-      selectAll: false
+      selectAll: false,
     };
   },
   methods: {
@@ -51,6 +57,7 @@ export default {
         .get("/agents/getagentversions/")
         .then(r => {
           this.versions = r.data.versions;
+          this.version = r.data.versions[0];
           this.agents = r.data.agents;
           this.$q.loading.hide();
         })
@@ -68,7 +75,7 @@ export default {
           this.notifySuccess("Agents will now be updated");
         })
         .catch(() => this.notifyError("Something went wrong"));
-    }
+    },
   },
   computed: {
     agentPKs() {
@@ -83,10 +90,10 @@ export default {
         options.push(opt);
       }
       return options;
-    }
+    },
   },
   created() {
     this.getVersions();
-  }
+  },
 };
 </script>

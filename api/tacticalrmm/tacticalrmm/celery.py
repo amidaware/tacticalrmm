@@ -25,6 +25,30 @@ app.conf.beat_schedule = {
         "task": "software.tasks.update_chocos",
         "schedule": crontab(minute=0, hour=4),
     },
+    "auto-approve-win-updates": {
+        "task": "winupdate.tasks.auto_approve_updates_task",
+        "schedule": crontab(minute=0, hour="*/8"),
+    },
+    "install-scheduled-win-updates": {
+        "task": "winupdate.tasks.check_agent_update_schedule_task",
+        "schedule": crontab(minute=0, hour="*"),
+    },
+    "sync-modules": {
+        "task": "agents.tasks.batch_sync_modules_task",
+        "schedule": crontab(minute=40, hour="*/4"),
+    },
+    "sys-info": {
+        "task": "agents.tasks.batch_sysinfo_task",
+        "schedule": crontab(minute=15, hour="*/2"),
+    },
+    "update-salt": {
+        "task": "agents.tasks.update_salt_minion_task",
+        "schedule": crontab(minute=30, hour="*/6"),
+    },
+    "agent-auto-update": {
+        "task": "agents.tasks.auto_self_agent_update_task",
+        "schedule": crontab(minute=50, hour="*/3"),
+    },
 }
 
 

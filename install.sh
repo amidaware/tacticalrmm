@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="1"
+SCRIPT_VERSION="7"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
@@ -74,32 +74,34 @@ done
 echo -ne "${YELLOW}Enter the root domain for LetsEncrypt (e.g. example.com or example.co.uk)${NC}: "
 read rootdomain
 
-BEHIND_NAT=false
-IPV4=$(ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
-
 # if server is behind NAT we need to add the 3 subdomains to the host file 
 # so that nginx can properly route between the frontend, backend and meshcentral
-if echo "$IPV4" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
-    BEHIND_NAT=true
-    CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain")
+# EDIT 8-29-2020
+# running this even if server is __not__ behind NAT just to make DNS resolving faster
+# this also allows the install script to properly finish even if DNS has not fully propagated
+CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain")
 
-    if ! [[ $CHECK_HOSTS ]]; then
-        echo -ne "${GREEN}This server appears to be behind NAT.${NC}\n"
-        echo -ne "${GREEN}If so, you will need append your 3 subdomains to the line starting with 127.0.1.1 in your hosts file.${NC}\n"
-        until [[ $edithosts =~ (y|n) ]]; do
-            echo -ne "${GREEN}Would you like me to do this for you? [y/n]${NC}: "
-            read edithosts
-        done
+if ! [[ $CHECK_HOSTS ]]; then
+    echo -ne "${GREEN}We need to append your 3 subdomains to the line starting with 127.0.1.1 in your hosts file.${NC}\n"
+    until [[ $edithosts =~ (y|n) ]]; do
+        echo -ne "${GREEN}Would you like me to do this for you? [y/n]${NC}: "
+        read edithosts
+    done
 
-        if [[ $edithosts == "y" ]]; then
-            sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts
-        else
-            echo -ne "${GREEN}Please manually edit your hosts file to match the line below and re-run this script.${NC}\n"
-            sed "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts | grep 127.0.1.1
-            exit 1
-        fi
-
+    if [[ $edithosts == "y" ]]; then
+        sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts
+    else
+        echo -ne "${GREEN}Please manually edit your /etc/hosts file to match the line below and re-run this script.${NC}\n"
+        sed "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts | grep 127.0.1.1
+        exit 1
     fi
+fi
+
+
+BEHIND_NAT=false
+IPV4=$(ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
+if echo "$IPV4" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
+    BEHIND_NAT=true 
 fi
 
 echo -ne "${YELLOW}Create a username for meshcentral${NC}: "
@@ -167,7 +169,7 @@ print_green 'Installing MeshCentral'
 sudo mkdir -p /meshcentral/meshcentral-data
 sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
-npm install meshcentral
+npm install meshcentral@0.6.33
 sudo chown ${USER}:${USER} -R /meshcentral
 
 meshcfg="$(cat << EOF
@@ -213,7 +215,7 @@ echo "${meshcfg}" > /meshcentral/meshcentral-data/config.json
 print_green 'Installing python, redis and git'
 
 sudo apt update
-sudo apt install -y python3.8-venv python3.8-dev python3-pip python3-setuptools python3-wheel ca-certificates redis git
+sudo apt install -y python3.8-venv python3.8-dev python3-pip python3-cherrypy3 python3-setuptools python3-wheel ca-certificates redis git
 
 print_green 'Installing postgresql'
 
@@ -301,6 +303,7 @@ pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input
 python manage.py load_chocos
+python manage.py load_community_scripts
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n"
 printf >&2 "${YELLOW}Please create your login for the RMM website and django admin${NC}\n"
@@ -551,6 +554,46 @@ EOF
 )"
 echo "${celeryconf}" | sudo tee /etc/conf.d/celery.conf > /dev/null
 
+celerywinupdatesvc="$(cat << EOF
+[Unit]
+Description=Celery WinUpdate Service
+After=network.target
+After=redis-server.service
+
+[Service]
+Type=forking
+User=${USER}
+Group=${USER}
+EnvironmentFile=/etc/conf.d/celery-winupdate.conf
+WorkingDirectory=/rmm/api/tacticalrmm
+ExecStart=/bin/sh -c '\${CELERY_BIN} multi start \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
+ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \${CELERYD_NODES} --pidfile=\${CELERYD_PID_FILE}'
+ExecReload=/bin/sh -c '\${CELERY_BIN} multi restart \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${celerywinupdatesvc}" | sudo tee /etc/systemd/system/celery-winupdate.service > /dev/null
+
+celerywinupdate="$(cat << EOF
+CELERYD_NODES="w2"
+
+CELERY_BIN="/rmm/api/env/bin/celery"
+CELERY_APP="tacticalrmm"
+CELERYD_MULTI="multi"
+
+CELERYD_OPTS="--time-limit=4000 --autoscale=40,1"
+
+CELERYD_PID_FILE="/rmm/api/tacticalrmm/%n.pid"
+CELERYD_LOG_FILE="/var/log/celery/%n%I.log"
+CELERYD_LOG_LEVEL="ERROR"
+EOF
+)"
+echo "${celerywinupdate}" | sudo tee /etc/conf.d/celery-winupdate.conf > /dev/null
+
 celerybeatservice="$(cat << EOF
 [Unit]
 Description=Celery Beat Service
@@ -580,6 +623,7 @@ sudo mkdir /srv/salt/scripts/userdefined
 sudo chown ${USER}:${USER} -R /srv/salt/
 sudo chown ${USER}:www-data /srv/salt/scripts/userdefined
 sudo chmod 750 /srv/salt/scripts/userdefined
+sudo chown ${USER}:${USER} -R /etc/conf.d/
 
 meshservice="$(cat << EOF
 [Unit]
@@ -668,7 +712,7 @@ sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/fro
 
 print_green 'Enabling Services'
 
-for i in nginx celery.service celerybeat.service rmm.service
+for i in nginx celery.service celerybeat.service celery-winupdate.service rmm.service
 do
   sudo systemctl enable ${i}
   sudo systemctl restart ${i}
@@ -732,7 +776,7 @@ deactivate
 
 
 print_green 'Restarting services'
-for i in celery.service celerybeat.service rmm.service
+for i in celery.service celerybeat.service celery-winupdate.service rmm.service
 do
   sudo systemctl restart ${i}
 done
@@ -745,7 +789,9 @@ sudo systemctl restart salt-api
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"
 printf >&2 "${YELLOW}Installation complete!${NC}\n\n"
-printf >&2 "${YELLOW}Download the meshagent 64 bit EXE from: ${GREEN}${MESHEXE}${NC}\n\n"
+printf >&2 "${YELLOW}Download the meshagent 64 bit EXE from:\n\n${GREEN}"
+echo ${MESHEXE} | sed 's/{.*}//'
+printf >&2 "${NC}\n\n"
 printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${frontenddomain}${NC}\n\n"
 printf >&2 "${YELLOW}Django admin url: ${GREEN}https://${rmmdomain}/${ADMINURL}${NC}\n\n"
 printf >&2 "${YELLOW}MeshCentral password: ${GREEN}${MESHPASSWD}${NC}\n\n"

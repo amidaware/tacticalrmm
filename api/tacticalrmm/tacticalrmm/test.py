@@ -3,6 +3,7 @@ from django.utils import timezone as djangotime
 
 from rest_framework.test import APIClient
 from rest_framework.test import force_authenticate
+from rest_framework.authtoken.models import Token
 
 from accounts.models import User
 from agents.models import Agent
@@ -25,6 +26,10 @@ class BaseTestCase(TestCase):
 
         self.coresettings = CoreSettings.objects.create()
         self.agent = self.create_agent("DESKTOP-TEST123", "Google", "Main Office")
+        self.agent_user = User.objects.create_user(
+            username=self.agent.agent_id, password=User.objects.make_random_password(60)
+        )
+        self.agent_token = Token.objects.create(user=self.agent_user)
         self.update_policy = WinUpdatePolicy.objects.create(agent=self.agent)
 
         Client.objects.create(client="Google")
@@ -38,10 +43,12 @@ class BaseTestCase(TestCase):
         Site.objects.create(client=facebook, site="NY Office")
 
         self.policy = Policy.objects.create(
-            name="testpolicy", desc="my awesome policy", active=True,
+            name="testpolicy",
+            desc="my awesome policy",
+            active=True,
         )
-        self.policy.clients.add(google)
-        self.policy.clients.add(facebook)
+        self.policy.server_clients.add(google)
+        self.policy.workstation_clients.add(facebook)
 
         self.agentDiskCheck = Check.objects.create(
             agent=self.agent,
@@ -74,7 +81,7 @@ class BaseTestCase(TestCase):
         r = switch.get(method)
         self.assertEqual(r.status_code, 401)
 
-    def create_agent(self, hostname, client, site):
+    def create_agent(self, hostname, client, site, monitoring_type="server"):
         return Agent.objects.create(
             operating_system="Windows 10",
             plat="windows",
@@ -121,29 +128,30 @@ class BaseTestCase(TestCase):
             logged_in_username="John",
             client=f"{client}",
             site=f"{site}",
-            monitoring_type="server",
+            monitoring_type=monitoring_type,
             description="Test PC",
             mesh_node_id="abcdefghijklmnopAABBCCDD77443355##!!AI%@#$%#*",
             last_seen=djangotime.now(),
         )
 
-    def generate_agents(self, numOfAgents, numOfClients, numOfSites):
-        
-        self.agents = list()
+    def generate_agents(
+        self, numOfAgents, numOfClients, numOfSites, monitoring_type="server"
+    ):
+
+        agents = list()
 
         for c in range(numOfClients):
-            client = Client.objects.create(
-                client=f"Client{c}"
-            )
+            client = Client.objects.create(client=f"Client{c}")
 
             for s in range(numOfSites):
-                site = Site.objects.create(
-                    client=client,
-                    site=f"Site{s}"
-                )
+                site = Site.objects.create(client=client, site=f"Site{s}")
 
                 for a in range(numOfAgents):
 
-                    self.agents.append(
-                        self.create_agent(f"Agent{a}", f"Client{c}", f"Site{s}")
+                    agents.append(
+                        self.create_agent(
+                            f"Agent{a}", f"Client{c}", f"Site{s}", monitoring_type
+                        )
                     )
+
+        return agents

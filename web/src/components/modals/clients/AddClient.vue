@@ -46,8 +46,8 @@ export default {
     return {
       client: {
         client: null,
-        site: null
-      }
+        site: null,
+      },
     };
   },
   methods: {
@@ -67,7 +67,7 @@ export default {
             this.notifyError(e.response.data.non_field_errors);
           }
         });
-    }
-  }
+    },
+  },
 };
 </script>

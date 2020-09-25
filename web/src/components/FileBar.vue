@@ -5,14 +5,45 @@
         <q-btn size="md" dense no-caps flat label="File">
           <q-menu>
             <q-list dense style="min-width: 100px">
-              <q-item clickable v-close-popup @click="showAddClientModal = true">
-                <q-item-section>Add Client</q-item-section>
+              <q-item clickable>
+                <q-item-section>Add</q-item-section>
+                <q-item-section side>
+                  <q-icon name="keyboard_arrow_right" />
+                </q-item-section>
+                <q-menu anchor="top right" self="top left">
+                  <q-list dense style="min-width: 100px">
+                    <q-item clickable v-close-popup @click="showAddClientModal = true">
+                      <q-item-section>Add Client</q-item-section>
+                    </q-item>
+                    <q-item clickable v-close-popup @click="showAddSiteModal = true">
+                      <q-item-section>Add Site</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-menu>
               </q-item>
-              <q-item clickable v-close-popup @click="showAddSiteModal = true">
-                <q-item-section>Add Site</q-item-section>
+
+              <q-item clickable>
+                <q-item-section>Delete</q-item-section>
+                <q-item-section side>
+                  <q-icon name="keyboard_arrow_right" />
+                </q-item-section>
+                <q-menu anchor="top right" self="top left">
+                  <q-list dense style="min-width: 100px">
+                    <q-item clickable v-close-popup @click="showDeleteClientModal = true">
+                      <q-item-section>Delete Client</q-item-section>
+                    </q-item>
+                    <q-item clickable v-close-popup @click="showDeleteSiteModal = true">
+                      <q-item-section>Delete Site</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-menu>
               </q-item>
+
               <q-item clickable v-close-popup @click="showUploadMesh = true">
                 <q-item-section>Upload MeshAgent</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="showAuditManager = true">
+                <q-item-section>Audit Log</q-item-section>
               </q-item>
               <q-item clickable v-close-popup @click="getLog">
                 <q-item-section>Debug Log</q-item-section>
@@ -96,12 +127,30 @@
       <q-dialog v-model="showEditSitesModal">
         <EditSites @close="showEditSitesModal = false" @edited="edited" />
       </q-dialog>
+      <!-- delete -->
+      <q-dialog v-model="showDeleteClientModal">
+        <DeleteClient @close="showDeleteClientModal = false" @edited="edited" />
+      </q-dialog>
+      <q-dialog v-model="showDeleteSiteModal">
+        <DeleteSite @close="showDeleteSiteModal = false" @edited="edited" />
+      </q-dialog>
       <!-- edit core settings modal -->
       <q-dialog v-model="showEditCoreSettingsModal">
         <EditCoreSettings @close="showEditCoreSettingsModal = false" />
       </q-dialog>
       <!-- debug log modal -->
       <LogModal />
+      <!-- audit log modal -->
+      <div class="q-pa-md q-gutter-sm">
+        <q-dialog
+          v-model="showAuditManager"
+          maximized
+          transition-show="slide-up"
+          transition-hide="slide-down"
+        >
+          <AuditManager @close="showAuditManager = false" />
+        </q-dialog>
+      </div>
       <!-- Install Agents -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showInstallAgent">
@@ -148,6 +197,8 @@ import AddClient from "@/components/modals/clients/AddClient";
 import EditClients from "@/components/modals/clients/EditClients";
 import AddSite from "@/components/modals/clients/AddSite";
 import EditSites from "@/components/modals/clients/EditSites";
+import DeleteClient from "@/components/modals/clients/DeleteClient";
+import DeleteSite from "@/components/modals/clients/DeleteSite";
 import UpdateAgents from "@/components/modals/agents/UpdateAgents";
 import ScriptManager from "@/components/ScriptManager";
 import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
@@ -155,6 +206,7 @@ import AutomationManager from "@/components/automation/AutomationManager";
 import AdminManager from "@/components/AdminManager";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import UploadMesh from "@/components/modals/core/UploadMesh";
+import AuditManager from "@/components/AuditManager";
 
 export default {
   name: "FileBar",
@@ -164,6 +216,8 @@ export default {
     EditClients,
     AddSite,
     EditSites,
+    DeleteClient,
+    DeleteSite,
     UpdateAgents,
     ScriptManager,
     EditCoreSettings,
@@ -171,6 +225,7 @@ export default {
     InstallAgent,
     UploadMesh,
     AdminManager,
+    AuditManager,
   },
   props: ["clients"],
   data() {
@@ -179,12 +234,15 @@ export default {
       showEditClientsModal: false,
       showAddSiteModal: false,
       showEditSitesModal: false,
+      showDeleteClientModal: false,
+      showDeleteSiteModal: false,
       showUpdateAgentsModal: false,
       showEditCoreSettingsModal: false,
       showAutomationManager: false,
       showAdminManager: false,
       showInstallAgent: false,
       showUploadMesh: false,
+      showAuditManager: false,
     };
   },
   methods: {

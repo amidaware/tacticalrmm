@@ -6,23 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0011_recoveryaction'),
+        ("agents", "0011_recoveryaction"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='agent',
-            name='disks',
+            model_name="agent",
+            name="disks",
             field=models.JSONField(null=True),
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='services',
+            model_name="agent",
+            name="services",
             field=models.JSONField(null=True),
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='wmi_detail',
+            model_name="agent",
+            name="wmi_detail",
             field=models.JSONField(null=True),
         ),
     ]

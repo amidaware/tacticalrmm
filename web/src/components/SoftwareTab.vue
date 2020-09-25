@@ -13,6 +13,7 @@
     <q-btn dense flat push @click="refreshSoftware" icon="refresh" />
     <q-table
       class="tabs-tbl-sticky"
+      :style="{'max-height': tabsTableHeight}"
       dense
       :data="software"
       :columns="columns"
@@ -42,7 +43,7 @@ import InstallSoftware from "@/components/modals/software/InstallSoftware";
 export default {
   name: "SoftwareTab",
   components: {
-    InstallSoftware
+    InstallSoftware,
   },
   mixins: [mixins],
   data() {
@@ -52,7 +53,7 @@ export default {
       pagination: {
         rowsPerPage: 0,
         sortBy: "name",
-        descending: false
+        descending: false,
       },
       columns: [
         {
@@ -60,16 +61,16 @@ export default {
           align: "left",
           label: "Name",
           field: "name",
-          sortable: true
+          sortable: true,
         },
         {
           name: "version",
           align: "left",
           label: "Version",
           field: "version",
-          sortable: false
-        }
-      ]
+          sortable: false,
+        },
+      ],
     };
   },
   methods: {
@@ -86,14 +87,14 @@ export default {
           this.loading = false;
           this.notifyError(e.response.data);
         });
-    }
+    },
   },
   computed: {
-    ...mapGetters(["selectedAgentPk"]),
+    ...mapGetters(["selectedAgentPk", "tabsTableHeight"]),
     ...mapState({
-      software: state => state.installedSoftware
-    })
-  }
+      software: state => state.installedSoftware,
+    }),
+  },
 };
 </script>
 

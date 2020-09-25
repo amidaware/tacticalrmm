@@ -8,36 +8,44 @@ localVue.use(Vuex);
 
 describe("PolicyOverview.vue", () => {
 
-  const policyTreeData = [ 
+  const policyTreeData = [
     {
       // node 0
       client: "Client Name 1",
-      policy: {
+      workstation_policy: {
         id: 1,
         name: "Policy Name 1",
         active: true
       },
+      server_policy: null,
       // node -1
       sites: [
         {
           site: "Site Name 1",
-          policy: null
+          server_policy: null,
+          workstation_policy: null
         }
       ]
     },
     {
       // node -2
       client: "Client Name 2",
-      policy: {
+      server_policy: {
         id: 2,
         name: "Policy Name 2",
         active: true
       },
+      workstation_policy: null,
       sites: [
         {
           // node -3
           site: "Site Name 2",
-          policy: {
+          workstation_policy: {
+            id: 3,
+            name: "Policy Name 3",
+            active: false
+          },
+          server_policy: {
             id: 3,
             name: "Policy Name 3",
             active: false
@@ -46,7 +54,7 @@ describe("PolicyOverview.vue", () => {
       ]
     }
   ];
-   
+
   let wrapper, actions, mutations, store;
 
   // Runs before every test
@@ -98,13 +106,15 @@ describe("PolicyOverview.vue", () => {
 
     const policy1 = tree.vm.getNodeByKey(1);
     const policy2 = tree.vm.getNodeByKey(2);
+    const policy3 = tree.vm.getNodeByKey(3);
     const client1 = tree.vm.getNodeByKey(0);
     const client2 = tree.vm.getNodeByKey(-2);
     const site1 = tree.vm.getNodeByKey(-1);
     const site2 = tree.vm.getNodeByKey(-3);
 
-    expect(policy1.label).toBe("Policy Name 1");
-    expect(policy2.label).toBe("Policy Name 2");
+    expect(policy1.label).toBe("Policy Name 1 (Workstations)");
+    expect(policy2.label).toBe("Policy Name 2 (Servers)");
+    expect(policy3.label).toBe("Policy Name 3 (Workstations) (disabled)");
     expect(client1.label).toBe("Client Name 1");
     expect(client2.label).toBe("Client Name 2");
     expect(site1.label).toBe("Site Name 1");
@@ -117,11 +127,11 @@ describe("PolicyOverview.vue", () => {
     const returnData = {
       icon: "policy",
       id: 1,
-      label: "Policy Name 1"
+      label: "Policy Name 1 (Workstations)"
     };
 
     await localVue.nextTick();
-    
+
     // Get second tree node which should be the first policy
     wrapper.findAll(".q-tree__node-header").wrappers[1].trigger("click");
 
@@ -133,4 +143,4 @@ describe("PolicyOverview.vue", () => {
   });
 
 });
-  
+

@@ -36,7 +36,7 @@ Demo database resets every hour. Alot of features are disabled for obvious reaso
 ## Installation
 
 ### Requirements
-- VPS with 2GB ram (an install script is provided for Ubuntu Server 20.04)
+- VPS with 4GB ram (an install script is provided for Ubuntu Server 20.04)
 - A domain you own with at least 3 subdomains
 - Google Authenticator app (2 factor is NOT optional)
 
@@ -91,5 +91,9 @@ chmod +x install.sh
 From the app's dashboard, choose Agents > Install Agent to generate an installer.
 
 ## Updating
-
-Download and run [update.sh](./update.sh)
+Download and run [update.sh](./update.sh) ([Raw](https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh))
+```
+wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh
+chmod +x update.sh
+./update.sh
+```

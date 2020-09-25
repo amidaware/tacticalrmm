@@ -81,7 +81,7 @@ export default {
   components: { WmiDetail },
   data() {
     return {
-      tab: "os"
+      tab: "os",
     };
   },
   computed: {
@@ -124,8 +124,8 @@ export default {
     },
     network_adapter() {
       return this.assets.network_adapter;
-    }
-  }
+    },
+  },
 };
 </script>
 

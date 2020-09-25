@@ -6,13 +6,21 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('winupdate', '0001_initial'),
+        ("winupdate", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='winupdatepolicy',
-            name='reboot_after_install',
-            field=models.CharField(choices=[('never', 'Never'), ('required', 'When Required'), ('always', 'Always')], default='never', max_length=50),
+            model_name="winupdatepolicy",
+            name="reboot_after_install",
+            field=models.CharField(
+                choices=[
+                    ("never", "Never"),
+                    ("required", "When Required"),
+                    ("always", "Always"),
+                ],
+                default="never",
+                max_length=50,
+            ),
         ),
     ]

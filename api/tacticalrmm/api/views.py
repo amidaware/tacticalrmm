@@ -1,12 +1,9 @@
 import requests
-
-import os
 from time import sleep
 from loguru import logger
 
 from django.conf import settings
 from django.db import IntegrityError
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 
@@ -54,7 +51,7 @@ logger.configure(**settings.LOG_CONFIG)
 @permission_classes((IsAuthenticated,))
 def trigger_patch_scan(request):
     agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-    reboot_policy = agent.winupdatepolicy.get().reboot_after_install
+    reboot_policy = agent.get_patch_policy().reboot_after_install
     reboot = False
 
     if reboot_policy == "always":
@@ -69,36 +66,24 @@ def trigger_patch_scan(request):
 
     if reboot:
         r = agent.salt_api_cmd(
-            timeout=15, func="system.reboot", arg=7, kwargs={"in_seconds": True},
+            timeout=15,
+            func="system.reboot",
+            arg=7,
+            kwargs={"in_seconds": True},
         )
 
         if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
-            check_for_updates_task.delay(agent.pk, wait=False)
+            check_for_updates_task.apply_async(
+                queue="wupdate", kwargs={"pk": agent.pk, "wait": False}
+            )
         else:
             logger.info(f"{agent.hostname} is rebooting after updates were installed.")
     else:
-        check_for_updates_task.delay(agent.pk, wait=False)
+        check_for_updates_task.apply_async(
+            queue="wupdate", kwargs={"pk": agent.pk, "wait": False}
+        )
 
     return Response("ok")
-
-
-@api_view(["POST"])
-def get_mesh_exe(request):
-    mesh_exe = os.path.join(settings.EXE_DIR, "meshagent.exe")
-    if not os.path.exists(mesh_exe):
-        return Response("error", status=status.HTTP_400_BAD_REQUEST)
-    if settings.DEBUG:
-        with open(mesh_exe, "rb") as f:
-            response = HttpResponse(
-                f.read(), content_type="application/vnd.microsoft.portable-executable"
-            )
-            response["Content-Disposition"] = "inline; filename=meshagent.exe"
-            return response
-    else:
-        response = HttpResponse()
-        response["Content-Disposition"] = "attachment; filename=meshagent.exe"
-        response["X-Accel-Redirect"] = "/private/exe/meshagent.exe"
-        return response
 
 
 @api_view(["POST"])
@@ -191,6 +176,10 @@ def add(request):
         else:
             WinUpdatePolicy(agent=agent).save()
 
+        # Generate policies for new agent
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
         return Response({"pk": agent.pk})
     else:
         return Response("err", status=status.HTTP_400_BAD_REQUEST)
@@ -213,7 +202,9 @@ def update(request):
     sync_salt_modules_task.delay(agent.pk)
     get_installed_software.delay(agent.pk)
     get_wmi_detail_task.delay(agent.pk)
-    check_for_updates_task.delay(agent.pk, wait=True)
+    check_for_updates_task.apply_async(
+        queue="wupdate", kwargs={"pk": agent.pk, "wait": True}
+    )
 
     if not agent.choco_installed:
         install_chocolatey.delay(agent.pk, wait=True)
@@ -261,6 +252,10 @@ def hello(request):
         recovery.last_run = djangotime.now()
         recovery.save(update_fields=["last_run"])
         return Response(recovery.send())
+
+    # get any pending actions
+    if agent.pendingactions.filter(status="pending").count() > 0:
+        agent.handle_pending_actions()
 
     return Response("ok")
 

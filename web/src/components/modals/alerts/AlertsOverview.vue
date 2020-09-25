@@ -10,24 +10,22 @@
 
     <q-separator />
 
-      <q-card-section class="row">
-        <div class="col-3">
-          <q-input outlined dense v-model="search">
-            <template v-slot:append>
-              <q-icon v-if="search !== ''" name="close" @click="search = ''" class="cursor-pointer" />
-              <q-icon name="search" />
-            </template>
+    <q-card-section class="row">
+      <div class="col-3">
+        <q-input outlined dense v-model="search">
+          <template v-slot:append>
+            <q-icon v-if="search !== ''" name="close" @click="search = ''" class="cursor-pointer" />
+            <q-icon name="search" />
+          </template>
 
-            <template v-slot:hint>
-              Type in client, site, or agent name
-            </template>
-          </q-input>
-        </div>
+          <template v-slot:hint>Type in client, site, or agent name</template>
+        </q-input>
+      </div>
 
-        <div class="col-3">
-          <q-checkbox outlined dense v-model="includeDismissed" label="Include dismissed alerts?"/>
-        </div>
-      </q-card-section>
+      <div class="col-3">
+        <q-checkbox outlined dense v-model="includeDismissed" label="Include dismissed alerts?" />
+      </div>
+    </q-card-section>
 
     <q-separator />
 
@@ -46,14 +44,10 @@
           <q-item-label caption>{{ alertTime(alert.alert_time) }}</q-item-label>
           <q-item-label>
             <q-icon name="snooze" size="sm">
-              <q-tooltip>
-                Snooze the alert for 24 hours
-              </q-tooltip>
+              <q-tooltip>Snooze the alert for 24 hours</q-tooltip>
             </q-icon>
             <q-icon name="alarm_off" size="sm">
-              <q-tooltip>
-                Dismiss alert
-              </q-tooltip>
+              <q-tooltip>Dismiss alert</q-tooltip>
             </q-icon>
           </q-item-label>
         </q-item-section>
@@ -72,7 +66,7 @@ export default {
   data() {
     return {
       search: "",
-      includeDismissed: false
+      includeDismissed: false,
     };
   },
   methods: {
@@ -103,11 +97,11 @@ export default {
   },
   computed: {
     ...mapGetters({
-      alerts: "alerts/getAlerts"
-    })
+      alerts: "alerts/getAlerts",
+    }),
   },
   mounted() {
-    this.getAlerts()
-  }
+    this.getAlerts();
+  },
 };
 </script>

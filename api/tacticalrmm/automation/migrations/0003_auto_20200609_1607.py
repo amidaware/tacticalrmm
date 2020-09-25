@@ -10,8 +10,20 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="policy", name="agents",),
-        migrations.RemoveField(model_name="policy", name="clients",),
-        migrations.RemoveField(model_name="policy", name="sites",),
-        migrations.RemoveField(model_name="policyexclusions", name="clients",),
+        migrations.RemoveField(
+            model_name="policy",
+            name="agents",
+        ),
+        migrations.RemoveField(
+            model_name="policy",
+            name="clients",
+        ),
+        migrations.RemoveField(
+            model_name="policy",
+            name="sites",
+        ),
+        migrations.RemoveField(
+            model_name="policyexclusions",
+            name="clients",
+        ),
     ]

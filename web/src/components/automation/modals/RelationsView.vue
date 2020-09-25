@@ -5,6 +5,17 @@
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
+    <q-card-section
+      class="row items-center"
+      v-if="related.default_server_policy || related.default_workstation_policy"
+    >
+      <div v-if="related.default_server_policy" class="text-body">
+        <q-icon name="error_outline" color="info" size="1.5em" />This policy is set as the Default Server Policy.
+      </div>
+      <div v-if="related.default_workstation_policy" class="text-body">
+        <q-icon name="error_outline" color="info" size="1.5em" />This policy is set as the Default Workstation Policy.
+      </div>
+    </q-card-section>
     <q-card-section>
       <q-tabs
         v-model="tab"
@@ -27,9 +38,24 @@
       <q-tab-panels v-model="tab" :animated="false">
         <q-tab-panel name="clients">
           <q-list separator padding>
-            <q-item :key="item.id" v-for="item in related.clients">
+            <q-item :key="item.id+'servers'" v-for="item in related.server_clients">
               <q-item-section>
                 <q-item-label>{{ item.client }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label>
+                  <i>Applied to Servers</i>
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item :key="item.id+'workstations'" v-for="item in related.workstation_clients">
+              <q-item-section>
+                <q-item-label>{{ item.client }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label>
+                  <i>Applied to Workstations</i>
+                </q-item-label>
               </q-item-section>
             </q-item>
           </q-list>
@@ -37,10 +63,26 @@
 
         <q-tab-panel name="sites">
           <q-list separator padding>
-            <q-item :key="item.id" v-for="item in related.sites">
+            <q-item :key="item.id+'servers'" v-for="item in related.server_sites">
               <q-item-section>
                 <q-item-label>{{ item.site }}</q-item-label>
                 <q-item-label caption>{{ item.client_name }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label>
+                  <i>Applied to Servers</i>
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item :key="item.id+'workstations'" v-for="item in related.workstation_sites">
+              <q-item-section>
+                <q-item-label>{{ item.site }}</q-item-label>
+                <q-item-label caption>{{ item.client_name }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label>
+                  <i>Applied to Workstations</i>
+                </q-item-label>
               </q-item-section>
             </q-item>
           </q-list>
@@ -70,13 +112,13 @@ export default {
   props: {
     policy: {
       type: Object,
-      required: true
-    }
+      required: true,
+    },
   },
   data() {
     return {
       tab: "clients",
-      related: {}
+      related: {},
     };
   },
   mounted() {
@@ -91,6 +133,6 @@ export default {
       .catch(e => {
         this.$q.loading.hide();
       });
-  }
+  },
 };
 </script>

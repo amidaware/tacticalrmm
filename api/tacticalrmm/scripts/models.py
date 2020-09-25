@@ -22,6 +22,10 @@ class Script(models.Model):
     script_type = models.CharField(
         max_length=100, choices=SCRIPT_TYPES, default="userdefined"
     )
+    created_by = models.CharField(max_length=100, null=True, blank=True)
+    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    modified_by = models.CharField(max_length=100, null=True, blank=True)
+    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         return self.filename
@@ -50,3 +54,47 @@ class Script(models.Model):
             text = "n/a"
 
         return text
+
+    @classmethod
+    def load_community_scripts(cls):
+        import json
+        import os
+        from pathlib import Path
+        from django.conf import settings
+
+        # load community uploaded scripts into the database
+        # skip ones that already exist, only updating name / desc in case it changes
+        # files will be copied by the update script or in docker to /srv/salt/scripts
+        scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[1], "scripts")
+
+        with open(
+            os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")
+        ) as f:
+            info = json.load(f)
+
+        for script in info:
+            if os.path.exists(os.path.join(scripts_dir, script["filename"])):
+                s = cls.objects.filter(script_type="builtin").filter(
+                    filename=script["filename"]
+                )
+                if s.exists():
+                    i = s.first()
+                    i.name = script["name"]
+                    i.description = script["description"]
+                    i.save(update_fields=["name", "description"])
+                else:
+                    print(f"Adding new community script: {script['name']}")
+                    cls(
+                        name=script["name"],
+                        description=script["description"],
+                        filename=script["filename"],
+                        shell=script["shell"],
+                        script_type="builtin",
+                    ).save()
+
+    @staticmethod
+    def serialize(script):
+        # serializes the script and returns json
+        from .serializers import ScriptSerializer
+
+        return ScriptSerializer(script).data

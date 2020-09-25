@@ -3,16 +3,66 @@ import subprocess
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
+from django.utils import timezone as djangotime
+from datetime import datetime as dt
 
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 
-from .models import PendingAction
+from .models import PendingAction, AuditLog
 from agents.models import Agent
-from .serializers import PendingActionSerializer
+from accounts.models import User
+from .serializers import PendingActionSerializer, AuditLogSerializer
 from agents.serializers import AgentHostnameSerializer
+from accounts.serializers import UserSerializer
 from .tasks import cancel_pending_action_task
+
+
+class GetAuditLogs(APIView):
+    def patch(self, request):
+
+        auditLogs = None
+        if "agentFilter" in request.data and "userFilter" in request.data:
+            audit_logs = AuditLog.objects.filter(
+                agent__in=request.data["agentFilter"],
+                username__in=request.data["userFilter"],
+            )
+
+        elif "userFilter" in request.data:
+            audit_logs = AuditLog.objects.filter(
+                username__in=request.data["userFilter"]
+            )
+
+        elif "agentFilter" in request.data:
+            audit_logs = AuditLog.objects.filter(agent__in=request.data["agentFilter"])
+
+        else:
+            audit_logs = AuditLog.objects.all()
+
+        if audit_logs and "timeFilter" in request.data:
+            audit_logs = audit_logs.filter(
+                entry_time__lte=djangotime.make_aware(dt.today()),
+                entry_time__gt=djangotime.make_aware(dt.today())
+                - djangotime.timedelta(days=request.data["timeFilter"]),
+            )
+
+        return Response(AuditLogSerializer(audit_logs, many=True).data)
+
+
+class FilterOptionsAuditLog(APIView):
+    def post(self, request):
+        if request.data["type"] == "agent":
+            agents = Agent.objects.filter(hostname__icontains=request.data["pattern"])
+            return Response(AgentHostnameSerializer(agents, many=True).data)
+
+        if request.data["type"] == "user":
+            agents = Agent.objects.values_list("agent_id", flat=True)
+            users = User.objects.exclude(username__in=agents).filter(
+                username__icontains=request.data["pattern"]
+            )
+            return Response(UserSerializer(users, many=True).data)
 
 
 @api_view()

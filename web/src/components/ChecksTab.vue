@@ -58,6 +58,7 @@
         <q-table
           dense
           class="tabs-tbl-sticky"
+          :style="{'max-height': tabsTableHeight}"
           :data="checks"
           :columns="columns"
           :row-key="row => row.id + row.check_type"
@@ -125,16 +126,18 @@
               <q-td>
                 <q-checkbox
                   dense
-                  @input="checkAlert(props.row.id, 'Text', props.row.text_alert)"
+                  @input="checkAlert(props.row.id, 'Text', props.row.text_alert, props.row.managed_by_policy)"
                   v-model="props.row.text_alert"
+                  :disabled="props.row.managed_by_policy"
                 />
               </q-td>
               <!-- email alert -->
               <q-td>
                 <q-checkbox
                   dense
-                  @input="checkAlert(props.row.id, 'Email', props.row.email_alert)"
+                  @input="checkAlert(props.row.id, 'Email', props.row.email_alert, props.row.managed_by_policy)"
                   v-model="props.row.email_alert"
+                  :disabled="props.row.managed_by_policy"
                 />
               </q-td>
               <!-- policy check icon -->
@@ -191,7 +194,10 @@
               >{{ props.row.history_info }}</q-td>
               <q-td v-else>{{ props.row.more_info }}</q-td>
               <q-td>{{ props.row.last_run }}</q-td>
-              <q-td v-if="props.row.assigned_task">{{ props.row.assigned_task.name }}</q-td>
+              <q-td
+                v-if="props.row.assigned_task !== null && props.row.assigned_task.length > 1"
+              >{{ props.row.assigned_task.length }} Tasks</q-td>
+              <q-td v-else-if="props.row.assigned_task">{{ props.row.assigned_task.name }}</q-td>
               <q-td v-else></q-td>
             </q-tr>
           </template>
@@ -315,7 +321,7 @@ export default {
         { name: "emailalert", field: "email_alert", align: "left" },
         { name: "policystatus", align: "left" },
         { name: "statusicon", align: "left" },
-        { name: "desc", label: "Description", align: "left", sortable: true },
+        { name: "desc", field: "readable_desc", label: "Description", align: "left", sortable: true },
         { name: "status", label: "Status", field: "status", align: "left", sortable: true },
         {
           name: "moreinfo",
@@ -375,7 +381,11 @@ export default {
           break;
       }
     },
-    checkAlert(id, alert_type, action) {
+    checkAlert(id, alert_type, action, managed_by_policy) {
+      if (managed_by_policy) {
+        return;
+      }
+
       const data = {};
       if (alert_type === "Email") {
         data.email_alert = action;
@@ -435,7 +445,7 @@ export default {
     },
   },
   computed: {
-    ...mapGetters(["selectedAgentPk", "checks"]),
+    ...mapGetters(["selectedAgentPk", "checks", "tabsTableHeight"]),
   },
 };
 </script>

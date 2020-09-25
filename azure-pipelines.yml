@@ -4,11 +4,11 @@ trigger:
 
 jobs:
   - job: setup_env
-    displayName: "Setup Environment"
+    displayName: "Setup"
     strategy:
       matrix:
-        Ubuntu18:
-          AGENT_NAME: "rmm-ubuntu18"
+        Ubuntu20:
+          AGENT_NAME: "rmm-ubu20"
 
     pool:
       name: linux-vms
@@ -17,32 +17,34 @@ jobs:
 
     steps:
       - script: |
-          psql -c 'DROP DATABASE IF EXISTS pipeline;' -U postgres
-          psql -c 'CREATE DATABASE pipeline;' -U postgres
+          sudo -u postgres psql -c 'DROP DATABASE IF EXISTS pipeline'
+          sudo -u postgres psql -c 'DROP DATABASE IF EXISTS test_pipeline'
+          sudo -u postgres psql -c 'CREATE DATABASE pipeline'
 
-          rm -rf /home/steam/myagent/_work/1/s/api/env
-          cd /home/steam/myagent/_work/1/s/api
-          python3.7 -m venv env
+          rm -rf /myagent/_work/1/s/api/env
+          cd /myagent/_work/1/s/api
+          python3 -m venv env
           source env/bin/activate
-          cd /home/steam/myagent/_work/1/s/api/tacticalrmm
-          pip install --upgrade pip
-          pip install -r requirements.txt
+          cd /myagent/_work/1/s/api/tacticalrmm
+          pip install --no-cache-dir --upgrade pip
+          pip install --no-cache-dir setuptools==49.6.0 wheel==0.35.1
+          pip install --no-cache-dir -r requirements.txt
         displayName: "Install Python Dependencies"
 
       - script: |
-          cd /home/steam/myagent/_work/1/s/api
+          cd /myagent/_work/1/s/api
           source env/bin/activate
-          cd /home/steam/myagent/_work/1/s/api/tacticalrmm
+          cd /myagent/_work/1/s/api/tacticalrmm
           python manage.py test -v 2
         displayName: "Run django tests"
 
       - script: |
-          rm -rf /home/steam/myagent/_work/1/s/web/node_modules
-          cd /home/steam/myagent/_work/1/s/web
+          rm -rf /myagent/_work/1/s/web/node_modules
+          cd /myagent/_work/1/s/web
           npm install
         displayName: "Install Frontend"
 
       - script: |
-          cd /home/steam/myagent/_work/1/s/web
+          cd /myagent/_work/1/s/web
           npm run test:unit
         displayName: "Run Vue Tests"

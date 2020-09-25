@@ -79,13 +79,20 @@ export default {
       axios
         .post("/checkcreds/", this.credentials)
         .then(r => {
-          if (r.data === "totp not set") {
-            this.$router.push({ name: "TOTPSetup", params: { username: this.credentials.username } });
+          if (r.data.totp === "totp not set") {
+            // sign in to setup two factor temporarily
+            const token = r.data.token;
+            const username = r.data.username;
+            localStorage.setItem("access_token", token);
+            localStorage.setItem("user_name", username);
+            this.$store.commit("retrieveToken", { token, username });
+            this.$router.push({ name: "TOTPSetup" });
+            this;
           } else {
             this.prompt = true;
           }
         })
-        .catch(() => {
+        .catch(e => {
           this.notifyError("Bad credentials");
         });
     },

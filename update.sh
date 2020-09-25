@@ -1,9 +1,10 @@
 #!/bin/bash
 
-SCRIPT_VERSION="6"
+SCRIPT_VERSION="9"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
+RED='\033[0;31m'
 NC='\033[0m'
 
 TMP_FILE=$(mktemp -p "" "rmmupdate_XXXXXXXXXX")
@@ -24,7 +25,62 @@ if [ $EUID -eq 0 ]; then
   exit 1
 fi
 
-for i in celery celerybeat rmm nginx
+strip="User="
+ORIGUSER=$(grep ${strip} /etc/systemd/system/rmm.service | sed -e "s/^${strip}//")
+
+if [ "$ORIGUSER" != "$USER" ]; then
+  printf >&2 "${RED}ERROR: You must run this update script from the same user account used during install: ${GREEN}${ORIGUSER}${NC}\n"
+  exit 1
+fi
+
+# added new celery queue 9-7-2020
+if [ ! -f /etc/systemd/system/celery-winupdate.service ]; then
+celerywinupdatesvc="$(cat << EOF
+[Unit]
+Description=Celery WinUpdate Service
+After=network.target
+After=redis-server.service
+
+[Service]
+Type=forking
+User=${USER}
+Group=${USER}
+EnvironmentFile=/etc/conf.d/celery-winupdate.conf
+WorkingDirectory=/rmm/api/tacticalrmm
+ExecStart=/bin/sh -c '\${CELERY_BIN} multi start \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
+ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \${CELERYD_NODES} --pidfile=\${CELERYD_PID_FILE}'
+ExecReload=/bin/sh -c '\${CELERY_BIN} multi restart \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${celerywinupdatesvc}" | sudo tee /etc/systemd/system/celery-winupdate.service > /dev/null
+
+celerywinupdate="$(cat << EOF
+CELERYD_NODES="w2"
+
+CELERY_BIN="/rmm/api/env/bin/celery"
+CELERY_APP="tacticalrmm"
+CELERYD_MULTI="multi"
+
+CELERYD_OPTS="--time-limit=4000 --autoscale=40,1"
+
+CELERYD_PID_FILE="/rmm/api/tacticalrmm/%n.pid"
+CELERYD_LOG_FILE="/var/log/celery/%n%I.log"
+CELERYD_LOG_LEVEL="ERROR"
+EOF
+)"
+echo "${celerywinupdate}" | sudo tee /etc/conf.d/celery-winupdate.conf > /dev/null
+
+sudo systemctl daemon-reload
+sudo systemctl enable celery-winupdate
+fi
+
+
+for i in celery celerybeat celery-winupdate rmm nginx
 do
 sudo systemctl stop ${i}
 done
@@ -33,6 +89,7 @@ done
 sudo chown ${USER}:${USER} -R /rmm
 sudo chown ${USER}:${USER} /var/log/celery
 sudo chown ${USER}:${USER} -R /srv/salt/
+sudo chown ${USER}:${USER} -R /etc/conf.d/
 sudo chown ${USER}:www-data /srv/salt/scripts/userdefined
 sudo chown -R $USER:$GROUP /home/${USER}/.npm
 sudo chown -R $USER:$GROUP /home/${USER}/.config
@@ -71,7 +128,7 @@ sudo rm -rf /var/www/rmm/dist
 sudo cp -pvr /rmm/web/dist /var/www/rmm/
 sudo chown www-data:www-data -R /var/www/rmm/dist
 
-for i in celery celerybeat rmm nginx
+for i in celery celerybeat celery-winupdate rmm nginx
 do
 sudo systemctl start ${i}
 done
@@ -80,7 +137,7 @@ sudo systemctl stop meshcentral
 sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
 rm -rf node_modules/
-npm install meshcentral@latest
+npm install meshcentral@0.6.33
 sudo systemctl start meshcentral
 sleep 10
 

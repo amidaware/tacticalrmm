@@ -7,6 +7,7 @@ SEVERITY_CHOICES = [
     ("error", "Error"),
 ]
 
+
 class Alert(models.Model):
     agent = models.ForeignKey(
         "agents.Agent",

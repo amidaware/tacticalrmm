@@ -8,7 +8,11 @@
           <q-item-section>
             <q-item-label overline>{{ alert.client }} - {{ alert.site }} - {{ alert.hostname }}</q-item-label>
             <q-item-label>
-              <q-icon size="xs" :class="`text-${alertColor(alert.severity)}`" :name="alert.severity"></q-icon>
+              <q-icon
+                size="xs"
+                :class="`text-${alertColor(alert.severity)}`"
+                :name="alert.severity"
+              ></q-icon>
               {{ alert.message }}
             </q-item-label>
           </q-item-section>
@@ -17,14 +21,10 @@
             <q-item-label caption>{{ alertTime(alert.alert_time) }}</q-item-label>
             <q-item-label>
               <q-icon name="snooze" size="xs">
-                <q-tooltip>
-                  Snooze the alert for 24 hours
-                </q-tooltip>
+                <q-tooltip>Snooze the alert for 24 hours</q-tooltip>
               </q-icon>
               <q-icon name="alarm_off" size="xs">
-                <q-tooltip>
-                  Dismiss alert
-                </q-tooltip>
+                <q-tooltip>Dismiss alert</q-tooltip>
               </q-icon>
             </q-item-label>
           </q-item-section>
@@ -46,7 +46,7 @@
 
 <script>
 import { mapGetters } from "vuex";
-import mixins from "@/mixins/mixins"
+import mixins from "@/mixins/mixins";
 import AlertsOverview from "@/components/modals/alerts/AlertsOverview";
 
 export default {
@@ -60,11 +60,9 @@ export default {
   },
   methods: {
     getAlerts() {
-      this.$store
-        .dispatch("alerts/getAlerts")
-        .catch(error => {
-          console.error(error)
-        });
+      this.$store.dispatch("alerts/getAlerts").catch(error => {
+        console.error(error);
+      });
     },
     alertColor(type) {
       if (type === "error") {
@@ -80,16 +78,16 @@ export default {
       } else {
         return this.alerts.length;
       }
-    }
+    },
   },
   computed: {
     ...mapGetters({
       newAlerts: "alerts/getNewAlerts",
-      alerts: "alerts/getAlerts"
-    })
+      alerts: "alerts/getAlerts",
+    }),
   },
   mounted() {
-    this.getAlerts()
-  }
+    this.getAlerts();
+  },
 };
 </script>

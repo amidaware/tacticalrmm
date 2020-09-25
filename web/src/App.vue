@@ -6,13 +6,12 @@
 
 <script>
 export default {
-  name: "App"
+  name: "App",
 };
 </script>
 
 <style lang="sass">
 .tabs-tbl-sticky
-  max-height: 35vh
 
   .q-table__top,
   .q-table__bottom,
@@ -39,6 +38,20 @@ export default {
   thead tr:first-child th
     top: 0
 
+.audit-mgr-tbl-sticky
+  max-height: 75vh
+
+  .q-table__top,
+  .q-table__bottom,
+  thead tr:first-child th
+    background-color: #fffefe
+
+  thead tr th
+    position: sticky
+    z-index: 1
+  thead tr:first-child th
+    top: 0
+
 .settings-tbl-sticky
   max-height: 60vh
 
@@ -54,7 +67,6 @@ export default {
     top: 0
 
 .agents-tbl-sticky
-  max-height: 35vh
 
   .q-table__top,
   .q-table__bottom,

@@ -2,7 +2,7 @@ import pytz
 
 from rest_framework import serializers
 
-from .models import Agent
+from .models import Agent, Note
 from autotasks.models import AutomatedTask
 
 from winupdate.serializers import WinUpdatePolicySerializer
@@ -65,6 +65,33 @@ class AgentTableSerializer(serializers.ModelSerializer):
         ]
 
 
+class AgentEditSerializer(serializers.ModelSerializer):
+    winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
+    all_timezones = serializers.SerializerMethodField()
+
+    def get_all_timezones(self, obj):
+        return pytz.all_timezones
+
+    class Meta:
+        model = Agent
+        fields = [
+            "id",
+            "hostname",
+            "client",
+            "site",
+            "monitoring_type",
+            "description",
+            "time_zone",
+            "timezone",
+            "check_interval",
+            "overdue_time",
+            "overdue_text_alert",
+            "overdue_email_alert",
+            "all_timezones",
+            "winupdatepolicy",
+        ]
+
+
 class WinAgentSerializer(serializers.ModelSerializer):
     # for the windows agent
     patches_pending = serializers.ReadOnlyField(source="has_patches_pending")
@@ -85,3 +112,19 @@ class AgentHostnameSerializer(serializers.ModelSerializer):
             "client",
             "site",
         )
+
+
+class NoteSerializer(serializers.ModelSerializer):
+    username = serializers.ReadOnlyField(source="user.username")
+
+    class Meta:
+        model = Note
+        fields = "__all__"
+
+
+class NotesSerializer(serializers.ModelSerializer):
+    notes = NoteSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Agent
+        fields = ["hostname", "pk", "notes"]

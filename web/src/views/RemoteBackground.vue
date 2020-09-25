@@ -60,14 +60,14 @@ export default {
   components: {
     Services,
     EventLog,
-    ProcessManager
+    ProcessManager,
   },
   data() {
     return {
       terminal: "",
       file: "",
       tab: "terminal",
-      title: ""
+      title: "",
     };
   },
   methods: {
@@ -77,20 +77,20 @@ export default {
         this.file = r.data.file;
         this.title = `${r.data.hostname} | Remote Background`;
       });
-    }
+    },
   },
   meta() {
     return {
-      title: this.title
+      title: this.title,
     };
   },
   computed: {
     pk() {
       return this.$route.params.pk;
-    }
+    },
   },
   created() {
     this.genURLS();
-  }
+  },
 };
 </script>

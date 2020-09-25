@@ -7,3 +7,4 @@ python manage.py initial_db_setup
 python manage.py initial_mesh_setup
 python manage.py load_chocos
 python manage.py fix_salt_key
+python manage.py load_community_scripts

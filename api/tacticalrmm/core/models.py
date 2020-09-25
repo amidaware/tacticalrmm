@@ -17,7 +17,10 @@ TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
 
 class CoreSettings(models.Model):
     email_alert_recipients = ArrayField(
-        models.EmailField(null=True, blank=True), null=True, blank=True, default=list,
+        models.EmailField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
     )
     smtp_from_email = models.CharField(
         max_length=255, null=True, blank=True, default="from@example.com"
@@ -39,6 +42,21 @@ class CoreSettings(models.Model):
     mesh_token = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_username = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_site = models.CharField(max_length=255, null=True, blank=True, default="")
+    agent_auto_update = models.BooleanField(default=True)
+    workstation_policy = models.ForeignKey(
+        "automation.Policy",
+        related_name="default_workstation_policy",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    server_policy = models.ForeignKey(
+        "automation.Policy",
+        related_name="default_server_policy",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
 
     def save(self, *args, **kwargs):
         if not self.pk and CoreSettings.objects.exists():
@@ -168,3 +186,10 @@ class CoreSettings(models.Model):
                 time.sleep(10)
 
         return mesh_settings
+
+    @staticmethod
+    def serialize(core):
+        # serializes the core and returns json
+        from .serializers import CoreSerializer
+
+        return CoreSerializer(core).data

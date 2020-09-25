@@ -11,6 +11,7 @@ urlpatterns = [
     path("logout/", knox_views.LogoutView.as_view()),
     path("logoutall/", knox_views.LogoutAllView.as_view()),
     path("api/v1/", include("api.urls")),
+    path("api/v2/", include("apiv2.urls")),
     path("clients/", include("clients.urls")),
     path("agents/", include("agents.urls")),
     path("checks/", include("checks.urls")),
@@ -23,5 +24,5 @@ urlpatterns = [
     path("logs/", include("logs.urls")),
     path("scripts/", include("scripts.urls")),
     path("alerts/", include("alerts.urls")),
-    path("accounts/", include("accounts.urls"))
+    path("accounts/", include("accounts.urls")),
 ]

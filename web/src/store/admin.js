@@ -8,7 +8,7 @@ export default {
 
   getters: {
     users(state) {
-      return state.checks;
+      return state.users;
     }
   },
 

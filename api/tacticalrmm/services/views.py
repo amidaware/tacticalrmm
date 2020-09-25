@@ -56,7 +56,9 @@ def service_action(request):
     service_action = data["sv_action"]
     agent = get_object_or_404(Agent, pk=pk)
     r = agent.salt_api_cmd(
-        timeout=45, func=f"service.{service_action}", arg=service_name,
+        timeout=45,
+        func=f"service.{service_action}",
+        arg=service_name,
     )
 
     if r == "timeout":
@@ -97,7 +99,10 @@ def edit_service(request):
         kwargs = {"start_type": edit_action}
 
     r = agent.salt_api_cmd(
-        timeout=20, func="service.modify", arg=service_name, kwargs=kwargs,
+        timeout=20,
+        func="service.modify",
+        arg=service_name,
+        kwargs=kwargs,
     )
 
     if r == "timeout":

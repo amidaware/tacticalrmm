@@ -29,6 +29,7 @@
                   <q-select
                     @input="agent.site = sites[0]"
                     dense
+                    options-dense
                     outlined
                     v-model="agent.client"
                     :options="Object.keys(tree)"
@@ -38,13 +39,21 @@
                 <q-card-section class="row">
                   <div class="col-2">Site:</div>
                   <div class="col-2"></div>
-                  <q-select class="col-8" dense outlined v-model="agent.site" :options="sites" />
+                  <q-select
+                    class="col-8"
+                    dense
+                    options-dense
+                    outlined
+                    v-model="agent.site"
+                    :options="sites"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Type:</div>
                   <div class="col-2"></div>
                   <q-select
                     dense
+                    options-dense
                     outlined
                     v-model="agent.monitoring_type"
                     :options="monTypes"
@@ -68,6 +77,7 @@
                   <q-select
                     outlined
                     dense
+                    options-dense
                     v-model="timezone"
                     :options="allTimezones"
                     class="col-8"
@@ -112,183 +122,7 @@
               </q-tab-panel>
               <!-- patch -->
               <q-tab-panel name="patch">
-                <!-- Auto Approval -->
-                <div class="text-subtitle2">Auto Approval</div>
-                <hr />
-                <q-card-section class="row">
-                  <div class="col-3">Severity</div>
-                  <div class="col-4"></div>
-                  <div class="col-5">Action</div>
-                </q-card-section>
-                <q-card-section class="row">
-                  <div class="col-3">Critical:</div>
-                  <div class="col-4"></div>
-                  <q-select
-                    dense
-                    class="col-5"
-                    outlined
-                    v-model="agent.winupdatepolicy[0].critical"
-                    :options="severityOptions"
-                    emit-value
-                    map-options
-                  />
-                </q-card-section>
-                <q-card-section class="row">
-                  <div class="col-3">Important:</div>
-                  <div class="col-4"></div>
-                  <q-select
-                    dense
-                    class="col-5"
-                    outlined
-                    v-model="agent.winupdatepolicy[0].important"
-                    :options="severityOptions"
-                    emit-value
-                    map-options
-                  />
-                </q-card-section>
-                <q-card-section class="row">
-                  <div class="col-3">Moderate:</div>
-                  <div class="col-4"></div>
-                  <q-select
-                    dense
-                    class="col-5"
-                    outlined
-                    v-model="agent.winupdatepolicy[0].moderate"
-                    :options="severityOptions"
-                    emit-value
-                    map-options
-                  />
-                </q-card-section>
-                <q-card-section class="row">
-                  <div class="col-3">Low:</div>
-                  <div class="col-4"></div>
-                  <q-select
-                    dense
-                    class="col-5"
-                    outlined
-                    v-model="agent.winupdatepolicy[0].low"
-                    :options="severityOptions"
-                    emit-value
-                    map-options
-                  />
-                </q-card-section>
-                <q-card-section class="row">
-                  <div class="col-3">Other:</div>
-                  <div class="col-4"></div>
-                  <q-select
-                    dense
-                    class="col-5"
-                    outlined
-                    v-model="agent.winupdatepolicy[0].other"
-                    :options="severityOptions"
-                    emit-value
-                    map-options
-                  />
-                </q-card-section>
-                <!-- Installation Schedule -->
-                <div class="text-subtitle2">Installation Schedule</div>
-                <hr />
-                <q-card-section class="row">
-                  <div class="col-3">Scheduled Time:</div>
-                  <div class="col-4"></div>
-                  <q-select
-                    dense
-                    class="col-5"
-                    outlined
-                    v-model="agent.winupdatepolicy[0].run_time_hour"
-                    :options="timeOptions"
-                    emit-value
-                    map-options
-                  />
-                </q-card-section>
-                <q-card-section>
-                  <div class="q-gutter-sm">
-                    <q-checkbox
-                      v-model="agent.winupdatepolicy[0].run_time_days"
-                      :val="0"
-                      label="Monday"
-                    />
-                    <q-checkbox
-                      v-model="agent.winupdatepolicy[0].run_time_days"
-                      :val="1"
-                      label="Tuesday"
-                    />
-                    <q-checkbox
-                      v-model="agent.winupdatepolicy[0].run_time_days"
-                      :val="2"
-                      label="Wednesday"
-                    />
-                    <q-checkbox
-                      v-model="agent.winupdatepolicy[0].run_time_days"
-                      :val="3"
-                      label="Thursday"
-                    />
-                    <q-checkbox
-                      v-model="agent.winupdatepolicy[0].run_time_days"
-                      :val="4"
-                      label="Friday"
-                    />
-                    <q-checkbox
-                      v-model="agent.winupdatepolicy[0].run_time_days"
-                      :val="5"
-                      label="Saturday"
-                    />
-                    <q-checkbox
-                      v-model="agent.winupdatepolicy[0].run_time_days"
-                      :val="6"
-                      label="Sunday"
-                    />
-                  </div>
-                </q-card-section>
-                <!-- Reboot After Installation -->
-                <div class="text-subtitle2">Reboot After Installation</div>
-                <hr />
-                <q-card-section class="row">
-                  <div class="q-gutter-sm">
-                    <q-radio
-                      v-model="agent.winupdatepolicy[0].reboot_after_install"
-                      val="never"
-                      label="Never"
-                    />
-                    <q-radio
-                      v-model="agent.winupdatepolicy[0].reboot_after_install"
-                      val="required"
-                      label="When Required"
-                    />
-                    <q-radio
-                      v-model="agent.winupdatepolicy[0].reboot_after_install"
-                      val="always"
-                      label="Always"
-                    />
-                  </div>
-                </q-card-section>
-                <!-- Failed Patches -->
-                <div class="text-subtitle2">Failed Patches</div>
-                <hr />
-                <q-card-section class="row">
-                  <div class="col-5">
-                    <q-checkbox
-                      v-model="agent.winupdatepolicy[0].reprocess_failed"
-                      label="Reprocess failed patches"
-                    />
-                  </div>
-
-                  <div class="col-3">
-                    <q-input
-                      dense
-                      v-model.number="agent.winupdatepolicy[0].reprocess_failed_times"
-                      type="number"
-                      filled
-                      label="Times"
-                      :rules="[ val => val > 0 || 'Must be greater than 0']"
-                    />
-                  </div>
-                  <div class="col-3"></div>
-                  <q-checkbox
-                    v-model="agent.winupdatepolicy[0].email_if_fail"
-                    label="Send an email when patch installation fails"
-                  />
-                </q-card-section>
+                <PatchPolicyForm :agent="agent" />
               </q-tab-panel>
             </q-tab-panels>
           </q-scroll-area>
@@ -306,9 +140,11 @@
 import axios from "axios";
 import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
-import { scheduledTimes } from "@/mixins/data";
+import PatchPolicyForm from "@/components/modals/agents/PatchPolicyForm";
+
 export default {
   name: "EditAgent",
+  components: { PatchPolicyForm },
   mixins: [mixins],
   data() {
     return {
@@ -323,24 +159,18 @@ export default {
       tz_inherited: true,
       original_tz: null,
       allTimezones: [],
-      severityOptions: [
-        { label: "Manual", value: "manual" },
-        { label: "Approve", value: "approve" },
-        { label: "Ignore", value: "ignore" }
-      ],
-      timeOptions: scheduledTimes,
       thumbStyle: {
         right: "2px",
         borderRadius: "5px",
         backgroundColor: "#027be3",
         width: "5px",
-        opacity: 0.75
-      }
+        opacity: 0.75,
+      },
     };
   },
   methods: {
     getAgentInfo() {
-      axios.get(`/agents/${this.selectedAgentPk}/agentdetail/`).then(r => {
+      axios.get(`/agents/${this.selectedAgentPk}/agenteditdetails/`).then(r => {
         this.agent = r.data;
         this.allTimezones = Object.freeze(r.data.all_timezones);
 
@@ -376,9 +206,7 @@ export default {
         data.time_zone = this.timezone;
       }
 
-      delete data.services;
-      delete data.disks;
-      delete data.local_ip;
+      delete data.all_timezones;
 
       axios
         .patch("/agents/editagent/", data)
@@ -388,7 +216,7 @@ export default {
           this.notifySuccess("Agent was edited!");
         })
         .catch(() => this.notifyError("Something went wrong"));
-    }
+    },
   },
   computed: {
     ...mapGetters(["selectedAgentPk"]),
@@ -396,11 +224,11 @@ export default {
       if (this.agentLoaded && this.clientsLoaded) {
         return this.tree[this.agent.client];
       }
-    }
+    },
   },
   created() {
     this.getAgentInfo();
     this.getClientsSites();
-  }
+  },
 };
 </script>

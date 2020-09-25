@@ -4,7 +4,6 @@ from django.utils import timezone as djangotime
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import (
     api_view,
@@ -48,6 +47,17 @@ class GetAddCheck(APIView):
         else:
             agent = get_object_or_404(Agent, pk=request.data["pk"])
             parent = {"agent": agent}
+            added = "0.11.0"
+            if (
+                request.data["check"]["check_type"] == "script"
+                and request.data["check"]["script_args"]
+                and agent.not_supported(version_added=added)
+            ):
+                return notify_error(
+                    {
+                        "non_field_errors": f"Script arguments only available in agent {added} or greater"
+                    }
+                )
 
         script = None
         if "script" in request.data["check"]:
@@ -110,15 +120,37 @@ class GetUpdateDeleteCheck(APIView):
 
         # set event id to 0 if wildcard because it needs to be an integer field for db
         # will be ignored anyway by the agent when doing wildcard check
-        if check.check_type == "eventlog" and request.data["event_id_is_wildcard"]:
-            if check.agent.not_supported(version_added="0.10.2"):
-                return notify_error(
-                    {
-                        "non_field_errors": "Wildcard is only available in agent 0.10.2 or greater"
-                    }
-                )
+        if check.check_type == "eventlog":
+            try:
+                request.data["event_id_is_wildcard"]
+            except KeyError:
+                pass
+            else:
+                if request.data["event_id_is_wildcard"]:
+                    if check.agent.not_supported(version_added="0.10.2"):
+                        return notify_error(
+                            {
+                                "non_field_errors": "Wildcard is only available in agent 0.10.2 or greater"
+                            }
+                        )
 
-            request.data["event_id"] = 0
+                    request.data["event_id"] = 0
+
+        elif check.check_type == "script":
+            added = "0.11.0"
+            try:
+                request.data["script_args"]
+            except KeyError:
+                pass
+            else:
+                if request.data["script_args"] and check.agent.not_supported(
+                    version_added=added
+                ):
+                    return notify_error(
+                        {
+                            "non_field_errors": f"Script arguments only available in agent {added} or greater"
+                        }
+                    )
 
         serializer = CheckSerializer(instance=check, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)

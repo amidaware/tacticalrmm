@@ -9,7 +9,7 @@ from tacticalrmm.celery import app
 
 @app.task
 def generate_agent_checks_from_policies_task(
-    policypk, many=False, clear=False, parent_checks=[]
+    policypk, many=False, clear=False, parent_checks=[], create_tasks=False
 ):
 
     if many:
@@ -19,19 +19,41 @@ def generate_agent_checks_from_policies_task(
                 agent.generate_checks_from_policies(
                     clear=clear, parent_checks=parent_checks
                 )
+                if create_tasks:
+                    agent.generate_tasks_from_policies(
+                        clear=clear,
+                    )
     else:
         policy = Policy.objects.get(pk=policypk)
         for agent in policy.related_agents():
             agent.generate_checks_from_policies(
                 clear=clear, parent_checks=parent_checks
             )
+            if create_tasks:
+                agent.generate_tasks_from_policies(
+                    clear=clear,
+                )
 
 
 @app.task
-def generate_agent_checks_by_location_task(location, clear=False, parent_checks=[]):
+def generate_agent_checks_by_location_task(
+    location, mon_type, clear=False, parent_checks=[], create_tasks=False
+):
 
-    for agent in Agent.objects.filter(**location):
+    for agent in Agent.objects.filter(**location).filter(monitoring_type=mon_type):
         agent.generate_checks_from_policies(clear=clear, parent_checks=parent_checks)
+
+        if create_tasks:
+            agent.generate_tasks_from_policies(clear=clear)
+
+
+@app.task
+def generate_all_agent_checks_task(mon_type, clear=False, create_tasks=False):
+    for agent in Agent.objects.filter(monitoring_type=mon_type):
+        agent.generate_checks_from_policies(clear=clear)
+
+        if create_tasks:
+            agent.generate_tasks_from_policies(clear=clear)
 
 
 @app.task
@@ -52,11 +74,16 @@ def update_policy_check_fields_task(checkpk):
         disk=check.disk,
         ip=check.ip,
         script=check.script,
+        script_args=check.script_args,
         pass_if_start_pending=check.pass_if_start_pending,
+        pass_if_svc_not_exist=check.pass_if_svc_not_exist,
         restart_if_stopped=check.restart_if_stopped,
         log_name=check.log_name,
         event_id=check.event_id,
+        event_id_is_wildcard=check.event_id_is_wildcard,
         event_type=check.event_type,
+        event_source=check.event_source,
+        event_message=check.event_message,
         fail_when=check.fail_when,
         search_last_days=check.search_last_days,
         email_alert=check.email_alert,
@@ -83,10 +110,18 @@ def generate_agent_tasks_from_policies_task(
 
 
 @app.task
-def generate_agent_tasks_by_location_task(location, clear=False, parent_tasks=[]):
+def generate_agent_tasks_by_location_task(
+    location, mon_type, clear=False, parent_tasks=[]
+):
 
-    for agent in Agent.objects.filter(**location):
+    for agent in Agent.objects.filter(**location).filter(monitoring_type=mon_type):
         agent.generate_tasks_from_policies(clear=clear, parent_tasks=parent_tasks)
+
+
+@app.task
+def generate_all_agent_tasks_task(mon_type, clear=False):
+    for agent in Agent.objects.filter(monitoring_type=mon_type):
+        agent.generate_tasks_from_policies(clear=clear)
 
 
 @app.task

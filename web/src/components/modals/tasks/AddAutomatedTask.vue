@@ -10,7 +10,7 @@
       <p>Settings -> Script Manager</p>
     </q-card-section>
   </q-card>
-  <q-card v-else class="q-pa-xs" style="min-width: 550px">
+  <q-card v-else class="q-pa-xs" style="min-width: 30vw">
     <q-card-section class="row items-center">
       <div class="text-h6">Add Automated Task</div>
       <q-space />
@@ -22,12 +22,27 @@
           <q-select
             :rules="[val => !!val || '*Required']"
             dense
+            options-dense
             outlined
             v-model="autotask.script"
             :options="scriptOptions"
             label="Select task"
             map-options
             emit-value
+          />
+        </q-card-section>
+        <q-card-section>
+          <q-select
+            dense
+            label="Script Arguments (press Enter after typing each argument)"
+            filled
+            v-model="autotask.script_args"
+            use-input
+            use-chips
+            multiple
+            hide-dropdown-icon
+            input-debounce="0"
+            new-value-mode="add"
           />
         </q-card-section>
         <q-card-section>
@@ -82,6 +97,7 @@
           <q-select
             :rules="[val => !!val || '*Required']"
             dense
+            options-dense
             outlined
             v-model="autotask.assigned_check"
             :options="checksOptions"
@@ -124,7 +140,7 @@ import mixins from "@/mixins/mixins";
 export default {
   name: "AddAutomatedTask",
   props: {
-    policypk: Number
+    policypk: Number,
   },
   mixins: [mixins],
   data() {
@@ -132,12 +148,13 @@ export default {
       step: 1,
       autotask: {
         script: null,
+        script_args: [],
         assigned_check: null,
         name: null,
         run_time_days: [],
         run_time_minute: null,
         task_type: "scheduled",
-        timeout: 120
+        timeout: 120,
       },
       dayOptions: [
         { label: "Monday", value: 0 },
@@ -146,8 +163,8 @@ export default {
         { label: "Thursday", value: 3 },
         { label: "Friday", value: 4 },
         { label: "Saturday", value: 5 },
-        { label: "Sunday", value: 6 }
-      ]
+        { label: "Sunday", value: 6 },
+      ],
     };
   },
   methods: {
@@ -164,7 +181,7 @@ export default {
 
         const data = {
           ...pk,
-          autotask: this.autotask
+          autotask: this.autotask,
         };
 
         axios
@@ -186,7 +203,7 @@ export default {
     },
     getScripts() {
       this.$store.dispatch("getScripts");
-    }
+    },
   },
   computed: {
     ...mapGetters(["selectedAgentPk", "scripts"]),
@@ -224,10 +241,10 @@ export default {
       } else {
         return false;
       }
-    }
+    },
   },
   created() {
     this.getScripts();
-  }
+  },
 };
 </script>

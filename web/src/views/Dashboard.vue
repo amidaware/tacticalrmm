@@ -60,16 +60,12 @@
                           </q-item-section>
                           <q-item-section>Edit</q-item-section>
                         </q-item>
-                        <!--<q-item
-                          clickable
-                          v-close-popup
-                          @click="showDelete(props.node)"
-                        >
+                        <q-item clickable v-close-popup @click="showDeleteModal(props.node)">
                           <q-item-section side>
                             <q-icon name="delete" />
                           </q-item-section>
                           <q-item-section>Delete</q-item-section>
-                        </q-item>-->
+                        </q-item>
 
                         <q-separator></q-separator>
 
@@ -95,31 +91,56 @@
         </template>
 
         <template v-slot:after>
-          <q-splitter v-model="innerModel" horizontal style="height: 87vh">
+          <q-splitter
+            v-model="innerModel"
+            reverse
+            horizontal
+            style="height: 87vh"
+            @input="setSplitter(innerModel)"
+          >
             <template v-slot:before>
-              <q-tabs
-                v-model="tab"
-                dense
-                no-caps
-                inline-label
-                class="text-grey"
-                active-color="primary"
-                indicator-color="primary"
-                align="left"
-                narrow-indicator
-              >
-                <q-tab name="server" icon="fas fa-server" label="Servers" />
-                <q-tab name="workstation" icon="computer" label="Workstations" />
-                <q-tab name="mixed" label="Mixed" />
-              </q-tabs>
+              <div class="row">
+                <q-tabs
+                  v-model="tab"
+                  dense
+                  no-caps
+                  inline-label
+                  class="text-grey"
+                  active-color="primary"
+                  indicator-color="primary"
+                  align="left"
+                  narrow-indicator
+                >
+                  <q-tab name="server" icon="fas fa-server" label="Servers" />
+                  <q-tab name="workstation" icon="computer" label="Workstations" />
+                  <q-tab name="mixed" label="Mixed" />
+                </q-tabs>
+                <q-space />
+                <q-input
+                  v-model="search"
+                  label="Search"
+                  dense
+                  outlined
+                  clearable
+                  class="q-pr-md q-pb-xs"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="search" color="primary" />
+                  </template>
+                </q-input>
+              </div>
               <AgentTable
                 :frame="frame"
                 :columns="columns"
                 :tab="tab"
                 :filter="filteredAgents"
                 :userName="user"
+                :search="search"
                 @refreshEdit="refreshEntireSite"
               />
+            </template>
+            <template v-slot:separator>
+              <q-avatar color="primary" text-color="white" size="30px" icon="drag_indicator" />
             </template>
             <template v-slot:after>
               <SubTableTabs />
@@ -131,11 +152,19 @@
 
     <!-- edit client modal -->
     <q-dialog v-model="showEditClientModal">
-      <EditClients @close="showEditClientModal = false" />
+      <EditClients @close="showEditClientModal = false" @edited="refreshEntireSite" />
     </q-dialog>
     <!-- edit site modal -->
     <q-dialog v-model="showEditSiteModal">
-      <EditSites @close="showEditSiteModal = false" />
+      <EditSites @close="showEditSiteModal = false" @edited="refreshEntireSite" />
+    </q-dialog>
+    <!-- delete client modal -->
+    <q-dialog v-model="showDeleteClientModal">
+      <DeleteClient @close="showDeleteClientModal = false" @edited="refreshEntireSite" />
+    </q-dialog>
+    <!-- delete site modal -->
+    <q-dialog v-model="showDeleteSiteModal">
+      <DeleteSite @close="showDeleteSiteModal = false" @edited="refreshEntireSite" />
     </q-dialog>
     <!-- add policy modal -->
     <q-dialog v-model="showPolicyAddModal">
@@ -158,6 +187,8 @@ import AlertsIcon from "@/components/AlertsIcon";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
 import EditSites from "@/components/modals/clients/EditSites";
 import EditClients from "@/components/modals/clients/EditClients";
+import DeleteClient from "@/components/modals/clients/DeleteClient";
+import DeleteSite from "@/components/modals/clients/DeleteSite";
 
 export default {
   components: {
@@ -167,12 +198,16 @@ export default {
     AlertsIcon,
     PolicyAdd,
     EditSites,
-    EditClients
+    EditClients,
+    DeleteClient,
+    DeleteSite,
   },
   data() {
     return {
       showEditClientModal: false,
       showEditSiteModal: false,
+      showDeleteClientModal: false,
+      showDeleteSiteModal: false,
       showPolicyAddModal: false,
       policyAddType: null,
       policyAddPk: null,
@@ -184,57 +219,58 @@ export default {
       siteActive: "",
       frame: [],
       poll: null,
+      search: null,
       columns: [
         {
           name: "smsalert",
-          align: "left"
+          align: "left",
         },
         {
           name: "emailalert",
-          align: "left"
+          align: "left",
         },
         {
           name: "checks-status",
-          align: "left"
+          align: "left",
         },
         {
           name: "client",
           label: "Client",
           field: "client",
           sortable: true,
-          align: "left"
+          align: "left",
         },
         {
           name: "site",
           label: "Site",
           field: "site",
           sortable: true,
-          align: "left"
+          align: "left",
         },
         {
           name: "hostname",
           label: "Hostname",
           field: "hostname",
           sortable: true,
-          align: "left"
+          align: "left",
         },
         {
           name: "description",
           label: "Description",
           field: "description",
           sortable: true,
-          align: "left"
+          align: "left",
         },
         {
           name: "user",
           label: "User",
           field: "logged_in_username",
           sortable: true,
-          align: "left"
+          align: "left",
         },
         {
           name: "patchespending",
-          align: "left"
+          align: "left",
         },
         /* {
           name: "antivirus",
@@ -243,28 +279,28 @@ export default {
         {
           name: "agentstatus",
           field: "status",
-          align: "left"
+          align: "left",
         },
         {
           name: "needsreboot",
           field: "needs_reboot",
-          align: "left"
+          align: "left",
         },
         {
           name: "lastseen",
           label: "Last Response",
           field: "last_seen",
           sortable: true,
-          align: "left"
+          align: "left",
         },
         {
           name: "boottime",
           label: "Boot Time",
           field: "boot_time",
           sortable: true,
-          align: "left"
-        }
-      ]
+          align: "left",
+        },
+      ],
     };
   },
   methods: {
@@ -284,6 +320,7 @@ export default {
         this.$store.dispatch("loadAutomatedTasks", pk);
         this.$store.dispatch("loadWinUpdates", pk);
         this.$store.dispatch("loadInstalledSoftware", pk);
+        this.$store.dispatch("loadNotes", pk);
       }
     },
     loadFrame(activenode, destroySub = true) {
@@ -353,6 +390,13 @@ export default {
         this.showEditSiteModal = true;
       }
     },
+    showDeleteModal(node) {
+      if (node.children) {
+        this.showDeleteClientModal = true;
+      } else {
+        this.showDeleteSiteModal = true;
+      }
+    },
     reload() {
       this.$store.dispatch("reload");
     },
@@ -360,14 +404,17 @@ export default {
       this.poll = setInterval(() => {
         this.$store.dispatch("checkVer");
       }, 60 * 5 * 1000);
-    }
+    },
+    setSplitter(val) {
+      this.$store.commit("SET_SPLITTER", val);
+    },
   },
   computed: {
     ...mapState({
       user: state => state.username,
       clientsTree: state => state.tree,
       treeReady: state => state.treeReady,
-      clients: state => state.clients
+      clients: state => state.clients,
     }),
     ...mapGetters(["selectedAgentPk", "needRefresh"]),
     allClientsActive() {
@@ -382,9 +429,9 @@ export default {
     activeNode() {
       return {
         client: this.clientActive,
-        site: this.siteActive
+        site: this.siteActive,
       };
-    }
+    },
   },
   created() {
     this.getTree();
@@ -397,7 +444,7 @@ export default {
   },
   beforeDestroy() {
     clearInterval(this.poll);
-  }
+  },
 };
 </script>
 

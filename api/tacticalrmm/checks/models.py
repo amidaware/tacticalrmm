@@ -1,6 +1,8 @@
+import base64
 import string
 import os
 import json
+import zlib
 from statistics import mean
 
 from django.db import models
@@ -13,6 +15,7 @@ from core.models import CoreSettings
 import agents
 
 from .tasks import handle_check_email_alert_task
+from .utils import bytes2human
 
 CHECK_TYPE_CHOICES = [
     ("diskspace", "Disk Space Check"),
@@ -88,6 +91,10 @@ class Check(models.Model):
     text_sent = models.DateTimeField(null=True, blank=True)
     outage_history = models.JSONField(null=True, blank=True)  # store
     extra_details = models.JSONField(null=True, blank=True)
+    created_by = models.CharField(max_length=100, null=True, blank=True)
+    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    modified_by = models.CharField(max_length=100, null=True, blank=True)
+    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     # check specific fields
 
@@ -107,6 +114,12 @@ class Check(models.Model):
         null=True,
         blank=True,
     )
+    script_args = ArrayField(
+        models.CharField(max_length=255, null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
     timeout = models.PositiveIntegerField(null=True, blank=True)
     stdout = models.TextField(null=True, blank=True)
     stderr = models.TextField(null=True, blank=True)
@@ -120,6 +133,7 @@ class Check(models.Model):
     svc_name = models.CharField(max_length=255, null=True, blank=True)
     svc_display_name = models.CharField(max_length=255, null=True, blank=True)
     pass_if_start_pending = models.BooleanField(null=True, blank=True)
+    pass_if_svc_not_exist = models.BooleanField(default=False)
     restart_if_stopped = models.BooleanField(null=True, blank=True)
     svc_policy_mode = models.CharField(
         max_length=20, null=True, blank=True
@@ -134,6 +148,8 @@ class Check(models.Model):
     event_type = models.CharField(
         max_length=255, choices=EVT_LOG_TYPE_CHOICES, null=True, blank=True
     )
+    event_source = models.CharField(max_length=255, null=True, blank=True)
+    event_message = models.TextField(null=True, blank=True)
     fail_when = models.CharField(
         max_length=255, choices=EVT_LOG_FAIL_WHEN_CHOICES, null=True, blank=True
     )
@@ -191,6 +207,192 @@ class Check(models.Model):
             "overriden_by_policy",
         ]
 
+    def handle_checkv2(self, data):
+        # cpuload or mem checks
+        if self.check_type == "cpuload" or self.check_type == "memory":
+
+            self.history.append(data["percent"])
+
+            if len(self.history) > 15:
+                self.history = self.history[-15:]
+
+            self.save(update_fields=["history"])
+
+            avg = int(mean(self.history))
+
+            if avg > self.threshold:
+                self.status = "failing"
+            else:
+                self.status = "passing"
+
+        # diskspace checks
+        elif self.check_type == "diskspace":
+            if data["exists"]:
+                percent_used = round(data["percent_used"])
+                total = bytes2human(data["total"])
+                free = bytes2human(data["free"])
+
+                if (100 - percent_used) < self.threshold:
+                    self.status = "failing"
+                else:
+                    self.status = "passing"
+
+                self.more_info = f"Total: {total}B, Free: {free}B"
+            else:
+                self.status = "failing"
+                self.more_info = f"Disk {self.disk} does not exist"
+
+            self.save(update_fields=["more_info"])
+
+        # script checks
+        elif self.check_type == "script":
+            self.stdout = data["stdout"]
+            self.stderr = data["stderr"]
+            self.retcode = data["retcode"]
+            self.execution_time = "{:.4f}".format(data["stop"] - data["start"])
+
+            if data["retcode"] != 0:
+                self.status = "failing"
+            else:
+                self.status = "passing"
+
+            self.save(
+                update_fields=[
+                    "stdout",
+                    "stderr",
+                    "retcode",
+                    "execution_time",
+                ]
+            )
+
+        # ping checks
+        elif self.check_type == "ping":
+            success = ["Reply", "bytes", "time", "TTL"]
+            output = data["output"]
+
+            if data["has_stdout"]:
+                if all(x in output for x in success):
+                    self.status = "passing"
+                else:
+                    self.status = "failing"
+            elif data["has_stderr"]:
+                self.status = "failing"
+
+            self.more_info = output
+            self.save(update_fields=["more_info"])
+
+        # windows service checks
+        elif self.check_type == "winsvc":
+            svc_stat = data["status"]
+            self.more_info = f"Status {svc_stat.upper()}"
+
+            if data["exists"]:
+                if svc_stat == "running":
+                    self.status = "passing"
+                elif svc_stat == "start_pending" and self.pass_if_start_pending:
+                    self.status = "passing"
+                else:
+                    if self.agent and self.restart_if_stopped:
+                        r = self.agent.salt_api_cmd(
+                            func="service.restart", arg=self.svc_name, timeout=45
+                        )
+                        if r == "timeout" or r == "error":
+                            self.status = "failing"
+                        elif isinstance(r, bool) and r:
+                            self.status = "passing"
+                            self.more_info = f"Status RUNNING"
+                        else:
+                            self.status = "failing"
+                    else:
+                        self.status = "failing"
+
+            else:
+                if self.pass_if_svc_not_exist:
+                    self.status = "passing"
+                else:
+                    self.status = "failing"
+
+                self.more_info = f"Service {self.svc_name} does not exist"
+
+            self.save(update_fields=["more_info"])
+
+        elif self.check_type == "eventlog":
+            log = []
+            is_wildcard = self.event_id_is_wildcard
+            eventType = self.event_type
+            eventID = self.event_id
+            source = self.event_source
+            message = self.event_message
+
+            r = json.loads(zlib.decompress(base64.b64decode(data["log"])))
+
+            for i in r:
+                if i["eventType"] == eventType:
+                    if not is_wildcard and not int(i["eventID"]) == eventID:
+                        continue
+
+                    if not source and not message:
+                        if is_wildcard:
+                            log.append(i)
+                        elif int(i["eventID"]) == eventID:
+                            log.append(i)
+                        continue
+
+                    if source and message:
+                        if is_wildcard:
+                            if source in i["source"] and message in i["message"]:
+                                log.append(i)
+
+                        elif int(i["eventID"]) == eventID:
+                            if source in i["source"] and message in i["message"]:
+                                log.append(i)
+
+                        continue
+
+                    if source and source in i["source"]:
+                        if is_wildcard:
+                            log.append(i)
+                        elif int(i["eventID"]) == eventID:
+                            log.append(i)
+
+                    if message and message in i["message"]:
+                        if is_wildcard:
+                            log.append(i)
+                        elif int(i["eventID"]) == eventID:
+                            log.append(i)
+
+            if self.fail_when == "contains":
+                if log:
+                    self.status = "failing"
+                else:
+                    self.status = "passing"
+
+            elif self.fail_when == "not_contains":
+                if log:
+                    self.status = "passing"
+                else:
+                    self.status = "failing"
+
+            self.extra_details = {"log": log}
+            self.save(update_fields=["extra_details"])
+
+        # handle status
+        if self.status == "failing":
+            self.fail_count += 1
+            self.save(update_fields=["status", "fail_count"])
+
+        elif self.status == "passing":
+            if self.fail_count != 0:
+                self.fail_count = 0
+                self.save(update_fields=["status", "fail_count"])
+            else:
+                self.save(update_fields=["status"])
+
+        if self.email_alert and self.fail_count >= self.fails_b4_alert:
+            handle_check_email_alert_task.delay(self.pk)
+
+        return self.status
+
     def handle_check(self, data):
         if self.check_type != "cpuload" and self.check_type != "memory":
 
@@ -227,6 +429,13 @@ class Check(models.Model):
         if self.email_alert and self.fail_count >= self.fails_b4_alert:
             handle_check_email_alert_task.delay(self.pk)
 
+    @staticmethod
+    def serialize(check):
+        # serializes the check and returns json
+        from .serializers import CheckSerializer
+
+        return CheckSerializer(check).data
+
     # for policy diskchecks
     @staticmethod
     def all_disks():
@@ -257,15 +466,20 @@ class Check(models.Model):
             disk=self.disk,
             ip=self.ip,
             script=self.script,
+            script_args=self.script_args,
             timeout=self.timeout,
             svc_name=self.svc_name,
             svc_display_name=self.svc_display_name,
             pass_if_start_pending=self.pass_if_start_pending,
+            pass_if_svc_not_exist=self.pass_if_svc_not_exist,
             restart_if_stopped=self.restart_if_stopped,
             svc_policy_mode=self.svc_policy_mode,
             log_name=self.log_name,
             event_id=self.event_id,
             event_type=self.event_type,
+            event_source=self.event_source,
+            event_message=self.event_message,
+            event_id_is_wildcard=self.event_id_is_wildcard,
             fail_when=self.fail_when,
             search_last_days=self.search_last_days,
         )
@@ -341,6 +555,24 @@ class Check(models.Model):
 
         elif self.check_type == "eventlog":
 
-            body = f"Event ID {self.event_id} was found in the {self.log_name} log"
+            if self.event_source and self.event_message:
+                start = f"Event ID {self.event_id}, source {self.event_source}, containing string {self.event_message} "
+            elif self.event_source:
+                start = f"Event ID {self.event_id}, source {self.event_source} "
+            elif self.event_message:
+                start = (
+                    f"Event ID {self.event_id}, containing string {self.event_message} "
+                )
+            else:
+                start = f"Event ID {self.event_id} "
+
+            body = start + f"was found in the {self.log_name} log\n\n"
+
+            for i in self.extra_details["log"]:
+                try:
+                    if i["message"]:
+                        body += f"<pre>{i['message']}</pre>"
+                except:
+                    continue
 
         CORE.send_mail(subject, body)

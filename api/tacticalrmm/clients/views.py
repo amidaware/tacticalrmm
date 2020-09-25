@@ -12,6 +12,7 @@ from .serializers import ClientSerializer, SiteSerializer, TreeSerializer
 from .models import Client, Site, validate_name
 from agents.models import Agent
 from core.models import CoreSettings
+from tacticalrmm.utils import notify_error
 
 
 class GetAddClients(APIView):
@@ -50,7 +51,23 @@ class GetUpdateDeleteClient(APIView):
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()
 
+        agents = Agent.objects.filter(client=orig)
+        for agent in agents:
+            agent.client = obj.client
+            agent.save(update_fields=["client"])
+
         return Response(f"{orig} renamed to {obj}")
+
+    def delete(self, request, pk):
+        client = get_object_or_404(Client, pk=pk)
+        agents = Agent.objects.filter(client=client.client)
+        if agents.exists():
+            return notify_error(
+                f"Cannot delete {client} while {agents.count()} agents exist in it. Move the agents to another client first."
+            )
+
+        client.delete()
+        return Response(f"{client.client} was deleted!")
 
 
 class GetAddSites(APIView):
@@ -82,28 +99,6 @@ def add_site(request):
 
 
 @api_view(["PATCH"])
-def edit_client(request):
-
-    new_name = request.data["name"].strip()
-
-    if not validate_name(new_name):
-        err = "Client name cannot contain the | character"
-        return Response(err, status=status.HTTP_400_BAD_REQUEST)
-
-    client = get_object_or_404(Client, pk=request.data["pk"])
-    agents = Agent.objects.filter(client=client.client)
-
-    client.client = new_name
-    client.save(update_fields=["client"])
-
-    for agent in agents:
-        agent.client = new_name
-        agent.save(update_fields=["client"])
-
-    return Response("ok")
-
-
-@api_view(["PATCH"])
 def edit_site(request):
     new_name = request.data["name"].strip()
 
@@ -124,6 +119,24 @@ def edit_site(request):
         agent.save(update_fields=["site"])
 
     return Response("ok")
+
+
+@api_view(["DELETE"])
+def delete_site(request):
+    client = get_object_or_404(Client, client=request.data["client"])
+    if client.sites.count() == 1:
+        return notify_error(f"A client must have at least 1 site.")
+
+    site = Site.objects.filter(client=client).filter(site=request.data["site"]).get()
+    agents = Agent.objects.filter(client=client.client).filter(site=site.site)
+
+    if agents.exists():
+        return notify_error(
+            f"Cannot delete {site} while {agents.count()} agents exist in it. Move the agents to another site first."
+        )
+
+    site.delete()
+    return Response(f"{site} was deleted!")
 
 
 @api_view()

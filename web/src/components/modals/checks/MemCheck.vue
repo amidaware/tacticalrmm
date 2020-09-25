@@ -24,6 +24,7 @@
         <q-select
           outlined
           dense
+          options-dense
           v-model="memcheck.fails_b4_alert"
           :options="failOptions"
           label="Number of consecutive failures before alert"
@@ -47,7 +48,7 @@ export default {
     agentpk: Number,
     policypk: Number,
     mode: String,
-    checkpk: Number
+    checkpk: Number,
   },
   mixins: [mixins],
   data() {
@@ -55,9 +56,9 @@ export default {
       memcheck: {
         check_type: "memory",
         threshold: 85,
-        fails_b4_alert: 1
+        fails_b4_alert: 1,
       },
-      failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     };
   },
   methods: {
@@ -68,7 +69,7 @@ export default {
       const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
       const data = {
         ...pk,
-        check: this.memcheck
+        check: this.memcheck,
       };
       axios
         .post("/checks/checks/", data)
@@ -95,12 +96,12 @@ export default {
       } else {
         this.$store.dispatch("loadChecks", this.agentpk);
       }
-    }
+    },
   },
   created() {
     if (this.mode === "edit") {
       this.getCheck();
     }
-  }
+  },
 };
 </script>

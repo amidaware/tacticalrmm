@@ -15,6 +15,7 @@
           <q-select
             outlined
             dense
+            options-dense
             label="Client"
             v-model="client"
             :options="Object.keys(tree)"
@@ -22,7 +23,7 @@
           />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
-          <q-select dense outlined label="Site" v-model="site" :options="sites" />
+          <q-select dense options-dense outlined label="Site" v-model="site" :options="sites" />
         </q-card-section>
         <q-card-section>
           <div class="q-gutter-sm">
@@ -56,8 +57,11 @@
           </div>
         </q-card-section>
         <q-card-section>
-          Select Version
-          <q-select dense outlined v-model="version" :options="Object.values(versions)" />
+          OS
+          <div class="q-gutter-sm">
+            <q-radio v-model="arch" val="64" label="64 bit" />
+            <q-radio v-model="arch" val="32" label="32 bit" />
+          </div>
         </q-card-section>
         <q-card-section>
           Installation Method
@@ -91,19 +95,17 @@ export default {
     return {
       loaded: false,
       tree: {},
-      versions: {},
       client: null,
       site: null,
-      version: null,
       agenttype: "server",
       expires: 720,
       power: false,
       rdp: false,
       ping: false,
-      github: [],
       showAgentDownload: false,
       info: {},
       installMethod: "exe",
+      arch: "64",
     };
   },
   methods: {
@@ -114,19 +116,8 @@ export default {
         .then(r => {
           this.tree = r.data;
           this.client = Object.keys(r.data)[0];
-          axios
-            .get("/agents/getagentversions/")
-            .then(r => {
-              this.versions = r.data.versions;
-              this.version = Object.values(r.data.versions)[0];
-              this.github = r.data.github;
-              this.loaded = true;
-              this.$q.loading.hide();
-            })
-            .catch(() => {
-              this.notifyError("Something went wrong");
-              this.$q.loading.hide();
-            });
+          this.loaded = true;
+          this.$q.loading.hide();
         })
         .catch(() => {
           this.notifyError("Something went wrong");
@@ -135,54 +126,60 @@ export default {
     },
     addAgent() {
       const api = axios.defaults.baseURL;
-      const release = this.github.filter(i => i.name === this.version)[0];
-      const download = release.assets[0].browser_download_url;
-      const exe = `${release.name}.exe`;
       const clientStripped = this.client
         .replace(/\s/g, "")
         .toLowerCase()
-        .replace(/([^a-zA-Z]+)/g, "");
+        .replace(/([^a-zA-Z0-9]+)/g, "");
       const siteStripped = this.site
         .replace(/\s/g, "")
         .toLowerCase()
-        .replace(/([^a-zA-Z]+)/g, "");
+        .replace(/([^a-zA-Z0-9]+)/g, "");
 
       const data = {
         installMethod: this.installMethod,
         client: this.client,
         site: this.site,
         expires: this.expires,
-        version: this.version,
         agenttype: this.agenttype,
         power: this.power ? 1 : 0,
         rdp: this.rdp ? 1 : 0,
         ping: this.ping ? 1 : 0,
+        arch: this.arch,
         api,
-        release,
-        download,
-        exe,
       };
 
       if (this.installMethod === "manual") {
-        axios.post("/agents/installagent/", data).then(r => {
-          this.info = {
-            exe,
-            download,
-            api,
-            agenttype: this.agenttype,
-            expires: this.expires,
-            power: this.power ? 1 : 0,
-            rdp: this.rdp ? 1 : 0,
-            ping: this.ping ? 1 : 0,
-            data: r.data,
-            installMethod: this.installMethod,
-          };
-          this.showAgentDownload = true;
-        });
+        this.$axios
+          .post("/agents/installagent/", data)
+          .then(r => {
+            this.info = {
+              expires: this.expires,
+              data: r.data,
+              arch: this.arch,
+            };
+            this.showAgentDownload = true;
+          })
+          .catch(e => {
+            let err;
+            switch (e.response.status) {
+              case 406:
+                err = "Missing 64 bit meshagent.exe. Upload it from File > Upload Mesh Agent";
+                break;
+              case 415:
+                err = "Missing 32 bit meshagent-x86.exe. Upload it from File > Upload Mesh Agent";
+                break;
+              default:
+                err = "Something went wrong";
+            }
+            this.notifyError(err, 4000);
+          });
       } else if (this.installMethod === "exe") {
         this.$q.loading.show({ message: "Generating executable..." });
 
-        const fileName = `rmm-${clientStripped}-${siteStripped}-${this.agenttype}.exe`;
+        const fileName =
+          this.arch === "64"
+            ? `rmm-${clientStripped}-${siteStripped}-${this.agenttype}.exe`
+            : `rmm-${clientStripped}-${siteStripped}-${this.agenttype}-x86.exe`;
         this.$axios
           .post("/agents/installagent/", data, { responseType: "blob" })
           .then(r => {
@@ -203,6 +200,12 @@ export default {
               case 412:
                 err = "Golang build failed. Check debug log for the error message";
                 break;
+              case 406:
+                err = "Missing 64 bit meshagent.exe. Upload it from File > Upload Mesh Agent";
+                break;
+              case 415:
+                err = "Missing 32 bit meshagent-x86.exe. Upload it from File > Upload Mesh Agent";
+                break;
               default:
                 err = "Something went wrong";
             }
@@ -221,7 +224,20 @@ export default {
             link.click();
             this.showDLMessage();
           })
-          .catch(e => this.notifyError("Something went wrong"));
+          .catch(e => {
+            let err;
+            switch (e.response.status) {
+              case 406:
+                err = "Missing 64 bit meshagent.exe. Upload it from File > Upload Mesh Agent";
+                break;
+              case 415:
+                err = "Missing 32 bit meshagent-x86.exe. Upload it from File > Upload Mesh Agent";
+                break;
+              default:
+                err = "Something went wrong";
+            }
+            this.notifyError(err, 4000);
+          });
       }
     },
     showDLMessage() {

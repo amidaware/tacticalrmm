@@ -25,6 +25,12 @@ TASK_TYPE_CHOICES = [
     ("manual", "Manual"),
 ]
 
+SYNC_STATUS_CHOICES = [
+    ("synced", "Synced With Agent"),
+    ("notsynced", "Waiting On Agent Checkin"),
+    ("pendingdeletion", "Pending Deletion on Agent"),
+]
+
 
 class AutomatedTask(models.Model):
     agent = models.ForeignKey(
@@ -47,6 +53,12 @@ class AutomatedTask(models.Model):
         blank=True,
         related_name="autoscript",
         on_delete=models.CASCADE,
+    )
+    script_args = ArrayField(
+        models.CharField(max_length=255, null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
     )
     assigned_check = models.ForeignKey(
         "checks.Check",
@@ -76,6 +88,13 @@ class AutomatedTask(models.Model):
     execution_time = models.CharField(max_length=100, default="0.0000")
     last_run = models.DateTimeField(null=True, blank=True)
     enabled = models.BooleanField(default=True)
+    sync_status = models.CharField(
+        max_length=100, choices=SYNC_STATUS_CHOICES, default="synced"
+    )
+    created_by = models.CharField(max_length=100, null=True, blank=True)
+    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    modified_by = models.CharField(max_length=100, null=True, blank=True)
+    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -108,13 +127,25 @@ class AutomatedTask(models.Model):
         chars = string.ascii_letters
         return "TacticalRMM_" + "".join(random.choice(chars) for i in range(35))
 
+    @staticmethod
+    def serialize(task):
+        # serializes the task and returns json
+        from .serializers import TaskSerializer
+
+        return TaskSerializer(task).data
+
     def create_policy_task(self, agent):
+        assigned_check = None
+        if self.assigned_check:
+            assigned_check = agent.agentchecks.get(parent_check=self.assigned_check.pk)
+
         task = AutomatedTask.objects.create(
             agent=agent,
             managed_by_policy=True,
             parent_task=self.pk,
             script=self.script,
-            assigned_check=self.assigned_check,
+            script_args=self.script_args,
+            assigned_check=assigned_check,
             name=self.name,
             run_time_days=self.run_time_days,
             run_time_minute=self.run_time_minute,

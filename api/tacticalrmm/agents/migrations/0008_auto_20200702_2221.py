@@ -11,6 +11,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RenameField(
-            model_name="agent", old_name="is_updating", new_name="update_pending",
+            model_name="agent",
+            old_name="is_updating",
+            new_name="update_pending",
         ),
     ]

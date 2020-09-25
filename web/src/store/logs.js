@@ -60,6 +60,12 @@ export default {
         commit("SET_PENDING_ACTIONS", r.data);
         commit("PENDING_ACTIONS_LOADING", false);
       })
+    },
+    loadAuditLogs(context, data) {
+      return axios.patch("/logs/auditlogs/", data)
+    },
+    optionsFilter(context, data) {
+      return axios.post(`logs/auditlogs/optionsfilter/`, data)
     }
   }
 }

@@ -7,7 +7,6 @@ urlpatterns = [
     path("add/", views.add),
     path("token/", views.create_auth_token),
     path("acceptsaltkey/", views.accept_salt_key),
-    path("getmeshexe/", views.get_mesh_exe),
     path("triggerpatchscan/", views.trigger_patch_scan),
     path("firstinstall/", views.on_agent_first_install),
     path("<int:pk>/checkrunner/", views.CheckRunner.as_view()),

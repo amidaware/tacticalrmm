@@ -26,7 +26,9 @@ def get_win_updates(request, pk):
 @api_view()
 def run_update_scan(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    check_for_updates_task.delay(agent.pk, wait=False)
+    check_for_updates_task.apply_async(
+        queue="wupdate", kwargs={"pk": agent.pk, "wait": False}
+    )
     return Response("ok")
 
 
@@ -64,6 +66,7 @@ def edit_policy(request):
 @permission_classes((IsAuthenticated,))
 def win_updater(request):
     agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+    agent.delete_superseded_updates()
     patches = (
         WinUpdate.objects.filter(agent=agent)
         .exclude(installed=True)
@@ -94,7 +97,12 @@ def results(request):
         update.installed = True
         update.date_installed = djangotime.now()
         update.save(
-            update_fields=["result", "downloaded", "installed", "date_installed",]
+            update_fields=[
+                "result",
+                "downloaded",
+                "installed",
+                "date_installed",
+            ]
         )
 
     elif results == "alreadyinstalled":

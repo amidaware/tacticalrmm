@@ -32,8 +32,11 @@ export default function () {
       treeLoading: false,
       installedSoftware: [],
       scripts: [],
+      notes: [],
       toggleScriptManager: false,
       needrefresh: false,
+      tableHeight: "35vh",
+      tabHeight: "35vh",
     },
     getters: {
       loggedIn(state) {
@@ -50,9 +53,6 @@ export default function () {
       },
       checks(state) {
         return state.agentChecks;
-      },
-      managedByWsus(state) {
-        return state.agentSummary.managed_by_wsus;
       },
       sortedUpdates(state) {
         // sort patches by latest then not installed
@@ -75,7 +75,13 @@ export default function () {
       },
       needRefresh(state) {
         return state.needrefresh;
-      }
+      },
+      agentTableHeight(state) {
+        return state.tableHeight;
+      },
+      tabsTableHeight(state) {
+        return state.tabHeight;
+      },
     },
     mutations: {
       TOGGLE_SCRIPT_MANAGER(state, action) {
@@ -129,6 +135,15 @@ export default function () {
       },
       SET_REFRESH_NEEDED(state, action) {
         state.needrefresh = action;
+      },
+      SET_SPLITTER(state, val) {
+        const agentHeight = Math.abs(100 - val - 15);
+        const tabsHeight = Math.abs(val - 10);
+        agentHeight <= 15.0 ? state.tableHeight = "15vh" : state.tableHeight = `${agentHeight}vh`;
+        tabsHeight <= 15.0 ? state.tabHeight = "15vh" : state.tabHeight = `${tabsHeight}vh`;
+      },
+      SET_NOTES(state, notes) {
+        state.notes = notes;
       }
     },
     actions: {
@@ -162,6 +177,11 @@ export default function () {
           context.commit("setChecks", r.data);
         });
       },
+      loadNotes(context, pk) {
+        axios.get(`/agents/${pk}/notes/`).then(r => {
+          context.commit("SET_NOTES", r.data.notes);
+        });
+      },
       loadDefaultServices(context) {
         return axios.get("/services/getdefaultservices/");
       },
@@ -186,7 +206,7 @@ export default function () {
         });
       },
       loadClients(context) {
-        return axios.get("/clients/listclients/");
+        return axios.get("/clients/clients/");
       },
       loadSites(context) {
         return axios.get("/clients/listsites/");
@@ -217,6 +237,8 @@ export default function () {
                 color: sites_arr[i].split("|")[2]
               });
             }
+            // sort alphabetically by site name
+            let alphaSort = child_single.sort((a, b) => a.label.toLowerCase() > b.label.toLowerCase() ? 1 : -1);
             output.push({
               label: prop.split("|")[0],
               id: prop.split("|")[1],
@@ -224,14 +246,14 @@ export default function () {
               header: "root",
               icon: "business",
               color: prop.split("|")[2],
-              children: child_single
+              children: alphaSort
             });
           }
 
           // first sort alphabetically, then move failing clients to the top
-          const sortedAlpha = output.sort((a, b) => (a.label > b.label ? 1 : -1));
+          const sortedAlpha = output.sort((a, b) => (a.label.toLowerCase() > b.label.toLowerCase() ? 1 : -1));
           const sortedByFailing = sortedAlpha.sort(a =>
-            a.iconColor === "negative" ? -1 : 1
+            a.color === "negative" ? -1 : 1
           );
           commit("loadTree", sortedByFailing);
           //commit("destroySubTable");

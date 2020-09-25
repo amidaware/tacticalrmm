@@ -2,27 +2,31 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
-	"time"
-	"flag"
+	"path/filepath"
 	"strings"
+	"time"
 )
 
-var Version string
-var Api string
-var Client string
-var Site string
-var Atype string
-var Power string
-var Rdp string
-var Ping string
-var Token string
+var (
+	Inno        string
+	Api         string
+	Client      string
+	Site        string
+	Atype       string
+	Power       string
+	Rdp         string
+	Ping        string
+	Token       string
+	DownloadUrl string
+)
 
-func downloadAgent(filepath string, url string) (err error) {
+func downloadAgent(filepath string) (err error) {
 
 	out, err := os.Create(filepath)
 	if err != nil {
@@ -30,7 +34,7 @@ func downloadAgent(filepath string, url string) (err error) {
 	}
 	defer out.Close()
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(DownloadUrl)
 	if err != nil {
 		return err
 	}
@@ -48,8 +52,6 @@ func downloadAgent(filepath string, url string) (err error) {
 	return nil
 }
 
-
-
 func main() {
 
 	debugLog := flag.String("log", "", "Verbose output")
@@ -57,14 +59,57 @@ func main() {
 	localMesh := flag.String("local-mesh", "", "Use local mesh agent")
 	flag.Parse()
 
-	agentBinary := fmt.Sprintf("C:\\Windows\\Temp\\winagent-v%s.exe", Version)
+	var debug bool = false
 
-	
-	url := fmt.Sprintf("https://github.com/wh1te909/winagent/releases/download/v%s/winagent-v%s.exe", Version, Version)
+	if strings.TrimSpace(*debugLog) == "DEBUG" {
+		debug = true
+	}
+
+	agentBinary := filepath.Join(os.Getenv("windir"), "Temp", Inno)
+	tacrmm := filepath.Join(os.Getenv("PROGRAMFILES"), "TacticalAgent", "tacticalrmm.exe")
+
+	cmdArgs := []string{
+		"/C", tacrmm,
+		"-m", "install", "--api", Api, "--client-id",
+		Client, "--site-id", Site, "--agent-type", Atype,
+		"--auth", Token,
+	}
+
+	if debug {
+		cmdArgs = append(cmdArgs, "--log", "DEBUG")
+	}
+
+	if len(strings.TrimSpace(*localSalt)) != 0 {
+		cmdArgs = append(cmdArgs, "--local-salt", *localSalt)
+	}
+
+	if len(strings.TrimSpace(*localMesh)) != 0 {
+		cmdArgs = append(cmdArgs, "--local-mesh", *localMesh)
+	}
+
+	if Rdp == "1" {
+		cmdArgs = append(cmdArgs, "--rdp")
+	}
+
+	if Ping == "1" {
+		cmdArgs = append(cmdArgs, "--ping")
+	}
+
+	if Power == "1" {
+		cmdArgs = append(cmdArgs, "--power")
+	}
+
+	if debug {
+		fmt.Println("Installer:", agentBinary)
+		fmt.Println("Tactical Agent:", tacrmm)
+		fmt.Println("Download URL:", DownloadUrl)
+		fmt.Println("Install command:", "cmd.exe", strings.Join(cmdArgs, " "))
+	}
+
 	fmt.Println("Downloading agent...")
-	dl := downloadAgent(agentBinary, url)
+	dl := downloadAgent(agentBinary)
 	if dl != nil {
-		fmt.Println("ERROR: unable to download agent from", url)
+		fmt.Println("ERROR: unable to download agent from", DownloadUrl)
 		fmt.Println(dl)
 		os.Exit(1)
 	}
@@ -78,28 +123,6 @@ func main() {
 	}
 
 	time.Sleep(20 * time.Second)
-
-	tacrmm := "C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"
-
-	cmdArgs := []string{
-		"/C", tacrmm,
-		"-m", "install", "--api", Api, "--client-id",
-		Client, "--site-id", Site, "--agent-type", Atype,
-		"--power", Power, "--rdp", Rdp, "--ping", Ping,
-		"--auth", Token,
-	}
-
-	if strings.TrimSpace(*debugLog) == "DEBUG" {
-		cmdArgs = append(cmdArgs, "--log", "DEBUG")
-	}
-
-	if len(strings.TrimSpace(*localSalt)) != 0 {
-		cmdArgs = append(cmdArgs, "--local-salt", *localSalt)
-	}
-
-	if len(strings.TrimSpace(*localMesh)) != 0 {
-		cmdArgs = append(cmdArgs, "--local-mesh", *localMesh)
-	}
 
 	fmt.Println("Installation starting.")
 	cmd := exec.Command("cmd.exe", cmdArgs...)

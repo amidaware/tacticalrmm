@@ -18,6 +18,12 @@ volumes:
   scripts:
   # Volume for mesh token initial setup
   mesh_token:
+  # Used to make the salt data persistent
+  salt_data:
+  # Makes Postgres data persistent
+  postgres_data:
+  # Makes mesh central data persistent
+  mongo_data:
 
 services:
   # Postgres Database for API service
@@ -27,6 +33,8 @@ services:
       POSTGRES_DB: tacticalrmm
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASS}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - database
 
@@ -49,6 +57,7 @@ services:
       - "4506:4506"
     volumes:
       - scripts:/srv
+      - salt_data:/etc/salt
     networks:
       - proxy
 
@@ -81,6 +90,8 @@ services:
       MONGO_INITDB_DATABASE: meshcentral
     networks:
       - mesh-mongodb
+    volumes:
+      - mongo_data:/data
 
   # Nginx Container Reverse Proxy that handles all http/https traffic
   nginx-proxy:

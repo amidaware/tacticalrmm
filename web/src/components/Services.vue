@@ -101,6 +101,7 @@
               <q-select
                 @input="startupTypeChanged"
                 dense
+                options-dense
                 outlined
                 v-model="startupType"
                 :options="startupOptions"
@@ -182,7 +183,7 @@ export default {
       pagination: {
         rowsPerPage: 9999,
         sortBy: "display_name",
-        descending: false
+        descending: false,
       },
       columns: [
         {
@@ -190,37 +191,37 @@ export default {
           label: "Name",
           field: "display_name",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "start_type",
           label: "Startup",
           field: "start_type",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "pid",
           label: "PID",
           field: "pid",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "status",
           label: "Status",
           field: "status",
           align: "left",
-          sortable: true
+          sortable: true,
         },
         {
           name: "username",
           label: "Log On As",
           field: "username",
           align: "left",
-          sortable: true
-        }
-      ]
+          sortable: true,
+        },
+      ],
     };
   },
   methods: {
@@ -245,7 +246,7 @@ export default {
       const data = {
         pk: this.pk,
         sv_name: name,
-        edit_action: changed
+        edit_action: changed,
       };
       this.serviceDetailVisible = true;
       axios
@@ -309,7 +310,7 @@ export default {
       const data = {
         pk: this.pk,
         sv_name: name,
-        sv_action: action
+        sv_action: action,
       };
       axios
         .post("/services/serviceaction/", data)
@@ -343,10 +344,10 @@ export default {
           this.$q.loading.hide();
           this.notifyError(e.response.data);
         });
-    }
+    },
   },
   created() {
     this.getServices();
-  }
+  },
 };
 </script>

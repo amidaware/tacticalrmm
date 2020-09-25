@@ -59,7 +59,7 @@ export default {
   name: "SendCommand",
   mixins: [mixins],
   props: {
-    pk: Number
+    pk: Number,
   },
   data() {
     return {
@@ -67,7 +67,7 @@ export default {
       shell: "cmd",
       cmd: null,
       timeout: 30,
-      ret: null
+      ret: null,
     };
   },
   computed: {
@@ -76,7 +76,7 @@ export default {
     },
     width() {
       return this.ret === null ? "40vw" : "70vw";
-    }
+    },
   },
   methods: {
     send() {
@@ -86,7 +86,7 @@ export default {
         pk: this.pk,
         cmd: this.cmd,
         shell: this.shell,
-        timeout: this.timeout
+        timeout: this.timeout,
       };
       this.$axios
         .post("/agents/sendrawcmd/", data)
@@ -98,7 +98,7 @@ export default {
           this.loading = false;
           this.notifyError(e.response.data);
         });
-    }
-  }
+    },
+  },
 };
 </script>

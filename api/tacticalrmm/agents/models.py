@@ -8,17 +8,21 @@ from Crypto.Hash import SHA3_384
 from Crypto.Util.Padding import pad
 import validators
 import random
+import re
 import string
+from collections import Counter
 from loguru import logger
 from packaging import version as pyver
+from distutils.version import LooseVersion
 
 from django.db import models
 from django.conf import settings
 
-from core.models import TZ_CHOICES
+from core.models import CoreSettings, TZ_CHOICES
 
 import automation
 import autotasks
+import clients
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -52,14 +56,18 @@ class Agent(models.Model):
     overdue_time = models.PositiveIntegerField(default=30)
     check_interval = models.PositiveIntegerField(default=120)
     needs_reboot = models.BooleanField(default=False)
-    managed_by_wsus = models.BooleanField(default=False)
     update_pending = models.BooleanField(default=False)
     salt_update_pending = models.BooleanField(default=False)
     choco_installed = models.BooleanField(default=False)
     wmi_detail = models.JSONField(null=True)
+    patches_last_installed = models.DateTimeField(null=True, blank=True)
     time_zone = models.CharField(
         max_length=255, choices=TZ_CHOICES, null=True, blank=True
     )
+    created_by = models.CharField(max_length=100, null=True, blank=True)
+    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    modified_by = models.CharField(max_length=100, null=True, blank=True)
+    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
     policy = models.ForeignKey(
         "automation.Policy",
         related_name="agents",
@@ -208,6 +216,128 @@ class Agent(models.Model):
         except:
             return ["unknown disk"]
 
+    # auto approves updates
+    def approve_updates(self):
+        patch_policy = self.get_patch_policy()
+
+        updates = list()
+        if patch_policy.critical == "approve":
+            updates += self.winupdates.filter(
+                severity="Critical", installed=False
+            ).exclude(action="approve")
+
+        if patch_policy.important == "approve":
+            updates += self.winupdates.filter(
+                severity="Important", installed=False
+            ).exclude(action="approve")
+
+        if patch_policy.moderate == "approve":
+            updates += self.winupdates.filter(
+                severity="Moderate", installed=False
+            ).exclude(action="approve")
+
+        if patch_policy.low == "approve":
+            updates += self.winupdates.filter(severity="Low", installed=False).exclude(
+                action="approve"
+            )
+
+        if patch_policy.other == "approve":
+            updates += self.winupdates.filter(severity="", installed=False).exclude(
+                action="approve"
+            )
+
+        for update in updates:
+            update.action = "approve"
+            update.save(update_fields=["action"])
+
+    # returns agent policy merged with a client or site specific policy
+    def get_patch_policy(self):
+        # check if site has a patch policy and if so use it
+        client = clients.models.Client.objects.get(client=self.client)
+        site = clients.models.Site.objects.get(client=client, site=self.site)
+        core_settings = CoreSettings.objects.first()
+        patch_policy = None
+        agent_policy = self.winupdatepolicy.get()
+
+        if self.monitoring_type == "server":
+            # check agent policy first which should override client or site policy
+            if self.policy and self.policy.winupdatepolicy:
+                patch_policy = self.policy.winupdatepolicy.get()
+
+            # check site policy if agent policy doesn't have one
+            elif site.server_policy and site.server_policy.winupdatepolicy:
+                patch_policy = site.server_policy.winupdatepolicy.get()
+
+            # if site doesn't have a patch policy check the client
+            elif (
+                site.client.server_policy and site.client.server_policy.winupdatepolicy
+            ):
+                patch_policy = site.client.server_policy.winupdatepolicy.get()
+
+            # if patch policy still doesn't exist check default policy
+            elif (
+                core_settings.server_policy
+                and core_settings.server_policy.winupdatepolicy
+            ):
+                patch_policy = core_settings.server_policy.winupdatepolicy.get()
+
+        elif self.monitoring_type == "workstation":
+            # check agent policy first which should override client or site policy
+            if self.policy and self.policy.winupdatepolicy:
+                patch_policy = self.policy.winupdatepolicy.get()
+
+            elif site.workstation_policy and site.workstation_policy.winupdatepolicy:
+                patch_policy = site.workstation_policy.winupdatepolicy.get()
+
+            # if site doesn't have a patch policy check the client
+            elif (
+                site.client.workstation_policy
+                and site.client.workstation_policy.winupdatepolicy
+            ):
+                patch_policy = site.client.workstation_policy.winupdatepolicy.get()
+
+            # if patch policy still doesn't exist check default policy
+            elif (
+                core_settings.workstation_policy
+                and core_settings.workstation_policy.winupdatepolicy
+            ):
+                patch_policy = core_settings.workstation_policy.winupdatepolicy.get()
+
+        # if policy still doesn't exist return the agent patch policy
+        if not patch_policy:
+            return agent_policy
+
+        # patch policy exists. check if any agent settings are set to override patch policy
+        if agent_policy.critical != "inherit":
+            patch_policy.critical = agent_policy.critical
+
+        if agent_policy.important != "inherit":
+            patch_policy.important = agent_policy.important
+
+        if agent_policy.moderate != "inherit":
+            patch_policy.moderate = agent_policy.moderate
+
+        if agent_policy.low != "inherit":
+            patch_policy.low = agent_policy.low
+
+        if agent_policy.other != "inherit":
+            patch_policy.other = agent_policy.other
+
+        if agent_policy.run_time_frequency != "inherit":
+            patch_policy.run_time_frequency = agent_policy.run_time_frequency
+            patch_policy.run_time_hour = agent_policy.run_time_hour
+            patch_policy.run_time_days = agent_policy.run_time_days
+
+        if agent_policy.reboot_after_install != "inherit":
+            patch_policy.reboot_after_install = agent_policy.reboot_after_install
+
+        if not agent_policy.reprocess_failed_inherit:
+            patch_policy.reprocess_failed = agent_policy.reprocess_failed
+            patch_policy.reprocess_failed_times = agent_policy.reprocess_failed_times
+            patch_policy.email_if_fail = agent_policy.email_if_fail
+
+        return patch_policy
+
     # clear is used to delete managed policy checks from agent
     # parent_checks specifies a list of checks to delete from agent with matching parent_check field
     def generate_checks_from_policies(self, clear=False, parent_checks=[]):
@@ -301,7 +431,9 @@ class Agent(models.Model):
 
         try:
             resp = requests.post(
-                f"http://{settings.SALT_HOST}:8123/run", json=[json], timeout=timeout,
+                f"http://{settings.SALT_HOST}:8123/run",
+                json=[json],
+                timeout=timeout,
             )
         except Exception:
             return "timeout"
@@ -336,6 +468,15 @@ class Agent(models.Model):
             return "timeout"
 
         return resp
+
+    @staticmethod
+    def serialize(agent):
+        # serializes the agent and returns json
+        from .serializers import AgentEditSerializer
+
+        ret = AgentEditSerializer(agent).data
+        del ret["all_timezones"]
+        return ret
 
     @staticmethod
     def salt_batch_async(**kwargs):
@@ -430,6 +571,58 @@ class Agent(models.Model):
 
         return False
 
+    def delete_superseded_updates(self):
+        try:
+            pks = []  # list of pks to delete
+            kbs = list(self.winupdates.values_list("kb", flat=True))
+            d = Counter(kbs)
+            dupes = [k for k, v in d.items() if v > 1]
+
+            for dupe in dupes:
+                titles = self.winupdates.filter(kb=dupe).values_list("title", flat=True)
+                # extract the version from the title and sort from oldest to newest
+                # skip if no version info is available therefore nothing to parse
+                try:
+                    vers = [
+                        re.search(r"\(Version(.*?)\)", i).group(1).strip()
+                        for i in titles
+                    ]
+                    sorted_vers = sorted(vers, key=LooseVersion)
+                except:
+                    continue
+                # append all but the latest version to our list of pks to delete
+                for ver in sorted_vers[:-1]:
+                    q = self.winupdates.filter(kb=dupe).filter(title__contains=ver)
+                    pks.append(q.first().pk)
+
+            pks = list(set(pks))
+            self.winupdates.filter(pk__in=pks).delete()
+        except:
+            pass
+
+    # define how the agent should handle pending actions
+    def handle_pending_actions(self):
+        pending_actions = self.pendingactions.filter(status="pending")
+
+        for action in pending_actions:
+            if action.action_type == "taskaction":
+                from autotasks.tasks import (
+                    create_win_task_schedule,
+                    enable_or_disable_win_task,
+                    delete_win_task_schedule,
+                )
+
+                task_id = action.details["task_id"]
+
+                if action.details["action"] == "taskcreate":
+                    create_win_task_schedule.delay(task_id, pending_action=action.id)
+                elif action.details["action"] == "tasktoggle":
+                    enable_or_disable_win_task.delay(
+                        task_id, action.details["value"], pending_action=action.id
+                    )
+                elif action.details["action"] == "taskdelete":
+                    delete_win_task_schedule.delay(task_id, pending_action=action.id)
+
 
 class AgentOutage(models.Model):
     agent = models.ForeignKey(
@@ -491,7 +684,9 @@ RECOVERY_CHOICES = [
 
 class RecoveryAction(models.Model):
     agent = models.ForeignKey(
-        Agent, related_name="recoveryactions", on_delete=models.CASCADE,
+        Agent,
+        related_name="recoveryactions",
+        on_delete=models.CASCADE,
     )
     mode = models.CharField(max_length=50, choices=RECOVERY_CHOICES, default="mesh")
     command = models.TextField(null=True, blank=True)
@@ -505,3 +700,23 @@ class RecoveryAction(models.Model):
         if self.mode == "command":
             ret["cmd"] = self.command
         return ret
+
+
+class Note(models.Model):
+    agent = models.ForeignKey(
+        Agent,
+        related_name="notes",
+        on_delete=models.CASCADE,
+    )
+    user = models.ForeignKey(
+        "accounts.User",
+        related_name="user",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    note = models.TextField(null=True, blank=True)
+    entry_time = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.agent.hostname

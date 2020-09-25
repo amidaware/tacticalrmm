@@ -27,15 +27,57 @@
                 <div class="text-subtitle2">General</div>
                 <hr />
                 <q-card-section class="row">
+                  <q-checkbox
+                    v-model="settings.agent_auto_update"
+                    label="Enable agent automatic self update"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
                   <div class="col-4">Default agent timezone:</div>
                   <div class="col-2"></div>
                   <q-select
                     outlined
                     dense
+                    options-dense
                     v-model="settings.default_time_zone"
                     :options="allTimezones"
                     class="col-6"
                   />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4">Default server policy:</div>
+                  <div class="col-2"></div>
+                  <q-select
+                    clearable
+                    map-options
+                    emit-value
+                    outlined
+                    dense
+                    options-dense
+                    v-model="settings.server_policy"
+                    :options="policies"
+                    class="col-6"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4">Default workstation policy:</div>
+                  <div class="col-2"></div>
+                  <q-select
+                    clearable
+                    map-options
+                    emit-value
+                    outlined
+                    dense
+                    options-dense
+                    v-model="settings.workstation_policy"
+                    :options="policies"
+                    class="col-6"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4">Reset Patch Policy on Agents:</div>
+                  <div class="col-2"></div>
+                  <q-btn color="negative" label="Reset" @click="resetPatchPolicyModal" />
                 </q-card-section>
               </q-tab-panel>
               <!-- alerts -->
@@ -190,18 +232,26 @@
         </q-form>
       </template>
     </q-splitter>
+
+    <q-dialog v-model="showResetPatchPolicyModal">
+      <ResetPatchPolicy @close="showResetPatchPolicyModal = false" />
+    </q-dialog>
   </q-card>
 </template>
 
 <script>
 import axios from "axios";
 import mixins from "@/mixins/mixins";
+import { mapState } from "vuex";
+import ResetPatchPolicy from "@/components/modals/coresettings/ResetPatchPolicy";
 
 export default {
   name: "EditCoreSettings",
+  components: { ResetPatchPolicy },
   mixins: [mixins],
   data() {
     return {
+      showResetPatchPolicyModal: false,
       ready: false,
       settings: {},
       email: null,
@@ -228,6 +278,11 @@ export default {
         this.ready = true;
       });
     },
+    getPolicies() {
+      this.$store.dispatch("automation/loadPolicies").catch(e => {
+        this.notifyError(e.response.data);
+      });
+    },
     toggleAddEmail() {
       this.$q
         .dialog({
@@ -249,6 +304,9 @@ export default {
       const removed = this.settings.email_alert_recipients.filter(k => k !== email);
       this.settings.email_alert_recipients = removed;
     },
+    resetPatchPolicyModal() {
+      this.showResetPatchPolicyModal = true;
+    },
     editSettings() {
       this.$q.loading.show();
       axios
@@ -260,11 +318,13 @@ export default {
             this.$axios
               .get("/core/emailtest/")
               .then(r => {
+                this.emailTest = false;
                 this.$q.loading.hide();
                 this.getCoreSettings();
                 this.notifySuccess(r.data, 3000);
               })
               .catch(e => {
+                this.emailTest = false;
                 this.$q.loading.hide();
                 this.notifyError(e.response.data, 7000);
               });
@@ -279,8 +339,14 @@ export default {
         });
     },
   },
+  computed: {
+    ...mapState({
+      policies: state => state.automation.policies.map(policy => ({ label: policy.name, value: policy.id })),
+    }),
+  },
   created() {
     this.getCoreSettings();
+    this.getPolicies();
   },
 };
 </script>

@@ -14,12 +14,16 @@ from time import sleep
 import requests
 import subprocess
 import random
+import platform
 
-PROGRAM_DIR = "C:\\Program Files\\TacticalAgent"
+ARCH = "64" if platform.machine().endswith("64") else "32"
+PROGRAM_DIR = os.path.join(os.environ["ProgramFiles"], "TacticalAgent")
 TAC_RMM = os.path.join(PROGRAM_DIR, "tacticalrmm.exe")
-NSSM = os.path.join(PROGRAM_DIR, "nssm.exe")
-SALT_CALL = os.path.join("C:\\salt", "salt-call.bat")
-TEMP_DIR = os.path.join("C:\\Windows", "Temp")
+NSSM = os.path.join(PROGRAM_DIR, "nssm.exe" if ARCH == "64" else "nssm-x86.exe")
+TEMP_DIR = os.path.join(os.environ["WINDIR"], "Temp")
+SYS_DRIVE = os.environ["SystemDrive"]
+PY_BIN = os.path.join(SYS_DRIVE, "\\salt", "bin", "python.exe")
+SALT_CALL = os.path.join(SYS_DRIVE, "\\salt", "salt-call.bat")
 
 
 def get_services():
@@ -46,8 +50,8 @@ def get_services():
 
 
 def run_python_script(filename, timeout, script_type="userdefined"):
-    python_bin = os.path.join("c:\\salt\\bin", "python.exe")
-    file_path = os.path.join("c:\\windows\\temp", filename)
+    # no longer used in agent version 0.11.0
+    file_path = os.path.join(TEMP_DIR, filename)
 
     if os.path.exists(file_path):
         try:
@@ -60,7 +64,43 @@ def run_python_script(filename, timeout, script_type="userdefined"):
     else:
         __salt__["cp.get_file"](f"salt://scripts/{filename}", file_path)
 
-    return __salt__["cmd.run_all"](f"{python_bin} {file_path}", timeout=timeout)
+    return __salt__["cmd.run_all"](f"{PY_BIN} {file_path}", timeout=timeout)
+
+
+def run_script(filepath, filename, shell, timeout, args=[], bg=False):
+    if shell == "powershell" or shell == "cmd":
+        if args:
+            return __salt__["cmd.script"](
+                source=filepath,
+                args=" ".join(map(lambda x: f'"{x}"', args)),
+                shell=shell,
+                timeout=timeout,
+                bg=bg,
+            )
+        else:
+            return __salt__["cmd.script"](
+                source=filepath, shell=shell, timeout=timeout, bg=bg
+            )
+
+    elif shell == "python":
+        file_path = os.path.join(TEMP_DIR, filename)
+
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except:
+                pass
+
+        __salt__["cp.get_file"](filepath, file_path)
+
+        salt_cmd = "cmd.run_bg" if bg else "cmd.run_all"
+
+        if args:
+            a = " ".join(map(lambda x: f'"{x}"', args))
+            cmd = f"{PY_BIN} {file_path} {a}"
+            return __salt__[salt_cmd](cmd, timeout=timeout)
+        else:
+            return __salt__[salt_cmd](f"{PY_BIN} {file_path}", timeout=timeout)
 
 
 def uninstall_agent():
@@ -70,6 +110,11 @@ def uninstall_agent():
 
 
 def update_salt():
+    for p in psutil.process_iter():
+        with p.oneshot():
+            if p.name() == "tacticalrmm.exe" and "updatesalt" in p.cmdline():
+                return "running"
+
     from subprocess import Popen, PIPE
 
     CREATE_NEW_PROCESS_GROUP = 0x00000200
@@ -98,6 +143,94 @@ def install_updates():
                 return "running"
 
     return __salt__["cmd.run_bg"]([TAC_RMM, "-m", "winupdater"])
+
+
+def _wait_for_service(svc, status, retries=10):
+    attempts = 0
+    while 1:
+        try:
+            service = psutil.win_service_get(svc)
+        except psutil.NoSuchProcess:
+            stat = "fail"
+            attempts += 1
+            sleep(5)
+        else:
+            stat = service.status()
+            if stat != status:
+                attempts += 1
+                sleep(5)
+            else:
+                attempts = 0
+
+        if attempts == 0 or attempts > retries:
+            break
+
+    return stat
+
+
+def agent_update_v2(inno, url):
+    # make sure another instance of the update is not running
+    # this function spawns 2 instances of itself (because we call it twice with salt run_bg)
+    # so if more than 2 running, don't continue as an update is already running
+    count = 0
+    for p in psutil.process_iter():
+        try:
+            with p.oneshot():
+                if "win_agent.agent_update_v2" in p.cmdline():
+                    count += 1
+        except Exception:
+            continue
+
+    if count > 2:
+        return "already running"
+
+    sleep(random.randint(1, 20))  # don't flood the rmm
+
+    exe = os.path.join(TEMP_DIR, inno)
+
+    if os.path.exists(exe):
+        try:
+            os.remove(exe)
+        except:
+            pass
+
+    try:
+        r = requests.get(url, stream=True, timeout=600)
+    except Exception:
+        return "failed"
+
+    if r.status_code != 200:
+        return "failed"
+
+    with open(exe, "wb") as f:
+        for chunk in r.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+    del r
+
+    ret = subprocess.run([exe, "/VERYSILENT", "/SUPPRESSMSGBOXES"], timeout=120)
+
+    tac = _wait_for_service(svc="tacticalagent", status="running")
+    if tac != "running":
+        subprocess.run([NSSM, "start", "tacticalagent"], timeout=30)
+
+    chk = _wait_for_service(svc="checkrunner", status="running")
+    if chk != "running":
+        subprocess.run([NSSM, "start", "checkrunner"], timeout=30)
+
+    return "ok"
+
+
+def do_agent_update_v2(inno, url):
+    return __salt__["cmd.run_bg"](
+        [
+            SALT_CALL,
+            "win_agent.agent_update_v2",
+            f"inno={inno}",
+            f"url={url}",
+            "--local",
+        ]
+    )
 
 
 def agent_update(version, url):
@@ -151,7 +284,7 @@ def agent_update(version, url):
 def do_agent_update(version, url):
     return __salt__["cmd.run_bg"](
         [
-            "C:\\salt\\salt-call.bat",
+            SALT_CALL,
             "win_agent.agent_update",
             f"version={version}",
             f"url={url}",
@@ -205,6 +338,10 @@ def system_info():
         "cpu": info.get_all(info.cpu),
         "usb": info.get_all(info.usb),
     }
+
+
+def local_sys_info():
+    return __salt__["cmd.run_bg"]([TAC_RMM, "-m", "sysinfo"])
 
 
 def get_procs():

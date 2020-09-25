@@ -5,6 +5,12 @@
     </q-card-section>
     <q-form @submit.prevent="upload">
       <q-card-section>
+        <div class="q-gutter-sm">
+          <q-radio v-model="arch" val="64" label="64 bit" />
+          <q-radio v-model="arch" val="32" label="32 bit" />
+        </div>
+      </q-card-section>
+      <q-card-section>
         <div class="row">
           <q-file
             v-model="meshagent"
@@ -37,13 +43,15 @@ export default {
   mixins: [mixins],
   data() {
     return {
-      meshagent: null
+      meshagent: null,
+      arch: "64",
     };
   },
   methods: {
     upload() {
       this.$q.loading.show({ message: "Uploading..." });
       let formData = new FormData();
+      formData.append("arch", this.arch);
       formData.append("meshagent", this.meshagent);
       axios
         .put("/core/uploadmesh/", formData)
@@ -56,7 +64,7 @@ export default {
           this.$q.loading.hide();
           this.notifyError("Unable to upload");
         });
-    }
-  }
+    },
+  },
 };
 </script>

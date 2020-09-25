@@ -2,7 +2,22 @@ from rest_framework.serializers import ModelSerializer, ReadOnlyField, Validatio
 from .models import Client, Site
 
 
+class SiteSerializer(ModelSerializer):
+    class Meta:
+        model = Site
+        fields = "__all__"
+
+    def validate(self, val):
+        if "|" in val["site"]:
+            raise ValidationError("Site name cannot contain the | character")
+
+        return val
+
+
 class ClientSerializer(ModelSerializer):
+
+    sites = SiteSerializer(many=True, read_only=True)
+
     class Meta:
         model = Client
         fields = "__all__"
@@ -17,18 +32,6 @@ class ClientSerializer(ModelSerializer):
 
         if "|" in val["client"]:
             raise ValidationError("Client name cannot contain the | character")
-
-        return val
-
-
-class SiteSerializer(ModelSerializer):
-    class Meta:
-        model = Site
-        fields = "__all__"
-
-    def validate(self, val):
-        if "|" in val["site"]:
-            raise ValidationError("Site name cannot contain the | character")
 
         return val
 

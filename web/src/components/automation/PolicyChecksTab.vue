@@ -70,6 +70,7 @@
         <q-table
           dense
           class="tabs-tbl-sticky"
+          style="max-height: 35vh"
           :data="checks"
           :columns="columns"
           row-key="id"
@@ -175,7 +176,10 @@
                   class="status-cell"
                 >See Status</span>
               </q-td>
-              <q-td v-if="props.row.assigned_task">{{ props.row.assigned_task.name }}</q-td>
+              <q-td
+                v-if="props.row.assignedtask !== null && props.row.assignedtask.length === 1"
+              >{{ props.row.assignedtask[0].name }}</q-td>
+              <q-td v-else-if="props.row.assignedtask">{{ props.row.assignedtask.length }} Tasks</q-td>
               <q-td v-else></q-td>
             </q-tr>
           </template>
@@ -237,9 +241,9 @@ export default {
       columns: [
         { name: "smsalert", field: "text_alert", align: "left" },
         { name: "emailalert", field: "email_alert", align: "left" },
-        { name: "desc", label: "Description", align: "left", sortable: true },
+        { name: "desc", field: "readable_desc", label: "Description", align: "left", sortable: true },
         { name: "status", label: "Status", field: "status", align: "left" },
-        { name: "assigned_task", label: "Assigned Task", field: "assigned_task", align: "left", sortable: true },
+        { name: "assigned_task", label: "Assigned Tasks", field: "assigned_task", align: "left", sortable: true },
       ],
       pagination: {
         rowsPerPage: 9999,

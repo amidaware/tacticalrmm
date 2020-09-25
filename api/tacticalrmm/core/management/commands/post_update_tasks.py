@@ -7,6 +7,7 @@ from time import sleep
 from django.core.management.base import BaseCommand
 
 from agents.models import Agent
+from scripts.models import Script
 
 
 class Command(BaseCommand):
@@ -101,3 +102,6 @@ class Command(BaseCommand):
             gofolder = os.path.join(tmpdir, "go")
             subprocess.run(f"sudo mv {gofolder} /usr/local/rmmgo/", shell=True)
             shutil.rmtree(tmpdir)
+
+        # load community scripts into the db
+        Script.load_community_scripts()

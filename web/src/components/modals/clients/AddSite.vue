@@ -12,7 +12,7 @@
     <q-card-section>
       <q-form @submit.prevent="addSite">
         <q-card-section>
-          <q-select outlined v-model="clientName" :options="Object.keys(clients)" />
+          <q-select options-dense outlined v-model="clientName" :options="Object.keys(clients)" />
         </q-card-section>
         <q-card-section>
           <q-input
@@ -41,7 +41,7 @@ export default {
   data() {
     return {
       clientName: "",
-      siteName: ""
+      siteName: "",
     };
   },
   methods: {
@@ -54,7 +54,7 @@ export default {
       axios
         .post("/clients/addsite/", {
           client: this.clientName,
-          site: this.siteName
+          site: this.siteName,
         })
         .then(() => {
           this.$emit("close");
@@ -62,10 +62,10 @@ export default {
           this.notifySuccess(`Site ${this.siteName} was added!`);
         })
         .catch(err => this.notifyError(err.response.data.error));
-    }
+    },
   },
   created() {
     this.loadFirstClient();
-  }
+  },
 };
 </script>

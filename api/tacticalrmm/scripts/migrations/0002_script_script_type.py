@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('scripts', '0001_initial'),
+        ("scripts", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='script',
-            name='script_type',
-            field=models.CharField(choices=[('userdefined', 'User Defined'), ('builtin', 'Built In')], default='userdefined', max_length=100),
+            model_name="script",
+            name="script_type",
+            field=models.CharField(
+                choices=[("userdefined", "User Defined"), ("builtin", "Built In")],
+                default="userdefined",
+                max_length=100,
+            ),
         ),
     ]

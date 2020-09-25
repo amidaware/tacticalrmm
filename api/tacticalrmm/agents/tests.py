@@ -130,13 +130,9 @@ class TestAgentViews(BaseTestCase):
         ) as f:
             decoded = json.load(f)
 
-        _decode = json.loads(
-            zlib.decompress(base64.b64decode(mock_ret.return_value["wineventlog"]))
-        )
-
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(_decode, decoded)
+        self.assertEqual(decoded, r.json())
 
         self.check_not_authenticated("get", url)
 

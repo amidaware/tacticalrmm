@@ -34,7 +34,7 @@ jobs:
       - script: |
           cd /myagent/_work/1/s/api
           source env/bin/activate
-          cd /home/steam/myagent/_work/1/s/api/tacticalrmm
+          cd /myagent/_work/1/s/api/tacticalrmm
           python manage.py test -v 2
         displayName: "Run django tests"
 

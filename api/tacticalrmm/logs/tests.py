@@ -1,9 +1,9 @@
-from tacticalrmm.test import PlainTestCase
+from tacticalrmm.test import TacticalTestCase
 from logs.models import AuditLog
 from django.utils import timezone as djangotime
 
 
-class TestAuditViews(PlainTestCase):
+class TestAuditViews(TacticalTestCase):
 
     def setUp(self):
         self.authenticate()

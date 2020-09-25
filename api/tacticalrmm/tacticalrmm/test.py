@@ -18,14 +18,17 @@ from checks.models import Check
 from autotasks.models import AutomatedTask
 
 
-class PlainTestCase(TestCase):
+class TacticalTestCase(TestCase):
 
     def authenticate(self):
         self.john = User(username="john")
-        self.john.set_password("password")
+        self.john.set_password("hunter2")
         self.john.save()
-        self.client = APIClient()
+        self.client_setup()
         self.client.force_authenticate(user=self.john)
+
+    def client_setup(self):
+        self.client = APIClient()
 
     # fixes tests waiting 2 minutes for mesh token to appear
     @override_settings(MESH_TOKEN_KEY="123456")

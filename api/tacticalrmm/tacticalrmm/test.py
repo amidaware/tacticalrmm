@@ -3,6 +3,7 @@ from django.utils import timezone as djangotime
 
 from rest_framework.test import APIClient
 from rest_framework.test import force_authenticate
+from rest_framework.authtoken.models import Token
 
 from accounts.models import User
 from agents.models import Agent
@@ -25,6 +26,10 @@ class BaseTestCase(TestCase):
 
         self.coresettings = CoreSettings.objects.create()
         self.agent = self.create_agent("DESKTOP-TEST123", "Google", "Main Office")
+        self.agent_user = User.objects.create_user(
+            username=self.agent.agent_id, password=User.objects.make_random_password(60)
+        )
+        self.agent_token = Token.objects.create(user=self.agent_user)
         self.update_policy = WinUpdatePolicy.objects.create(agent=self.agent)
 
         Client.objects.create(client="Google")

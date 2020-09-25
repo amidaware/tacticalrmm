@@ -1,3 +1,6 @@
+import random
+import string
+
 from django.test import TestCase
 from django.utils import timezone as djangotime
 
@@ -87,6 +90,7 @@ class BaseTestCase(TestCase):
             plat="windows",
             plat_release="windows-Server2019",
             hostname=f"{hostname}",
+            salt_id=self.generate_agent_id(hostname),
             local_ip="10.0.25.188",
             agent_id="71AHC-AA813-HH1BC-AAHH5-00013|DESKTOP-TEST123",
             services=[
@@ -155,3 +159,7 @@ class BaseTestCase(TestCase):
                     )
 
         return agents
+
+    def generate_agent_id(self, hostname):
+        rand = "".join(random.choice(string.ascii_letters) for _ in range(35))
+        return f"{rand}-{hostname}"

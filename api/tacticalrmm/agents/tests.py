@@ -1,7 +1,12 @@
-from unittest import mock
+import base64
+import json
+import os
+import zlib
+from unittest.mock import patch
+
+from django.conf import settings
 
 from tacticalrmm.test import BaseTestCase
-
 from .serializers import AgentSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 from .models import Agent
@@ -9,6 +14,132 @@ from winupdate.models import WinUpdatePolicy
 
 
 class TestAgentViews(BaseTestCase):
+    def test_get_agent_versions(self):
+        url = "/agents/getagentversions/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        assert any(i["hostname"] == self.agent.hostname for i in r.json()["agents"])
+
+        self.check_not_authenticated("get", url)
+
+    @patch("agents.tasks.send_agent_update_task.delay")
+    def test_update_agents(self, mock_task):
+        url = "/agents/updateagents/"
+        data = {"pks": [1, 2, 3, 5, 10], "version": "0.11.1"}
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        mock_task.assert_called_with(pks=data["pks"], version=data["version"])
+
+        self.check_not_authenticated("post", url)
+
+    @patch("agents.models.Agent.salt_api_cmd")
+    def test_ping(self, mock_ret):
+        url = f"/agents/{self.agent.pk}/ping/"
+
+        mock_ret.return_value = "timeout"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        ret = {"name": self.agent.hostname, "status": "offline"}
+        self.assertEqual(r.json(), ret)
+
+        mock_ret.return_value = "error"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        ret = {"name": self.agent.hostname, "status": "offline"}
+        self.assertEqual(r.json(), ret)
+
+        mock_ret.return_value = True
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        ret = {"name": self.agent.hostname, "status": "online"}
+        self.assertEqual(r.json(), ret)
+
+        mock_ret.return_value = False
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        ret = {"name": self.agent.hostname, "status": "offline"}
+        self.assertEqual(r.json(), ret)
+
+        self.check_not_authenticated("get", url)
+
+    @patch("agents.tasks.uninstall_agent_task.delay")
+    def test_uninstall(self, mock_task):
+        url = "/agents/uninstall/"
+        data = {"pk": self.agent.pk}
+
+        r = self.client.delete(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        mock_task.assert_called_with(self.agent.salt_id)
+
+        self.check_not_authenticated("delete", url)
+
+    @patch("agents.models.Agent.salt_api_cmd")
+    def test_get_processes(self, mock_ret):
+        url = f"/agents/{self.agent.pk}/getprocs/"
+
+        with open(
+            os.path.join(settings.BASE_DIR, "tacticalrmm/test_data/procs.json")
+        ) as f:
+            mock_ret.return_value = json.load(f)
+
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        assert any(i["name"] == "Registry" for i in mock_ret.return_value)
+        assert any(
+            i["memory_percent"] == 0.004843281375620747 for i in mock_ret.return_value
+        )
+
+        mock_ret.return_value = "timeout"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
+
+        self.check_not_authenticated("get", url)
+
+    @patch("agents.models.Agent.salt_api_cmd")
+    def test_kill_proc(self, mock_ret):
+        url = f"/agents/{self.agent.pk}/8234/killproc/"
+
+        mock_ret.return_value = True
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+
+        mock_ret.return_value = False
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
+
+        mock_ret.return_value = "timeout"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
+
+        self.check_not_authenticated("get", url)
+
+    @patch("agents.models.Agent.salt_api_cmd")
+    def test_get_event_log(self, mock_ret):
+        url = f"/agents/{self.agent.pk}/geteventlog/Application/30/"
+
+        with open(
+            os.path.join(settings.BASE_DIR, "tacticalrmm/test_data/eventlograw.json")
+        ) as f:
+            mock_ret.return_value = json.load(f)
+
+        with open(
+            os.path.join(settings.BASE_DIR, "tacticalrmm/test_data/appeventlog.json")
+        ) as f:
+            decoded = json.load(f)
+
+        _decode = json.loads(
+            zlib.decompress(base64.b64decode(mock_ret.return_value["wineventlog"]))
+        )
+
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(_decode, decoded)
+
+        self.check_not_authenticated("get", url)
+
     def test_agents_list(self):
         url = "/agents/listagents/"
 
@@ -82,7 +213,7 @@ class TestAgentViews(BaseTestCase):
         self.assertIn("&viewmode=11", r.data["control"])
         self.assertIn("mstsc.html?login=", r.data["webrdp"])
 
-        self.assertEqual("DESKTOP-TEST123", r.data["hostname"])
+        self.assertEqual(self.agent.hostname, r.data["hostname"])
 
         self.assertEqual(r.status_code, 200)
 

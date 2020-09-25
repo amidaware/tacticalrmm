@@ -1,0 +1,1102 @@
+[
+    {
+        "name": "System",
+        "cpu_percent": 0.0,
+        "memory_percent": 7.754021906781984e-05,
+        "pid": 4,
+        "ppid": 0,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 2
+    },
+    {
+        "name": "Registry",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.009720362333912082,
+        "pid": 280,
+        "ppid": 4,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 4
+    },
+    {
+        "name": "smss.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0006223099632878874,
+        "pid": 976,
+        "ppid": 4,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 5
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.005682306310149464,
+        "pid": 1160,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\LOCAL SERVICE",
+        "id": 6
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.004793576106987529,
+        "pid": 1172,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 7
+    },
+    {
+        "name": "csrss.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.002459416691971619,
+        "pid": 1240,
+        "ppid": 1220,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 8
+    },
+    {
+        "name": "wininit.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0031970428784885716,
+        "pid": 1316,
+        "ppid": 1220,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 9
+    },
+    {
+        "name": "csrss.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0023719354191771556,
+        "pid": 1324,
+        "ppid": 1308,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 10
+    },
+    {
+        "name": "services.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.00596662044673147,
+        "pid": 1388,
+        "ppid": 1316,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 11
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.006052113508780605,
+        "pid": 1396,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 12
+    },
+    {
+        "name": "LsaIso.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0016124389144615866,
+        "pid": 1408,
+        "ppid": 1316,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 13
+    },
+    {
+        "name": "lsass.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.012698702030414497,
+        "pid": 1416,
+        "ppid": 1316,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 14
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.007129723732748768,
+        "pid": 1444,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\LOCAL SERVICE",
+        "id": 15
+    },
+    {
+        "name": "winlogon.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.005396003962822129,
+        "pid": 1492,
+        "ppid": 1308,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 16
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0027815068327148706,
+        "pid": 1568,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\LOCAL SERVICE",
+        "id": 17
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.001936517265950167,
+        "pid": 1604,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 18
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.011187661863964672,
+        "pid": 1628,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 19
+    },
+    {
+        "name": "fontdrvhost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.002765601146752241,
+        "pid": 1652,
+        "ppid": 1492,
+        "status": "running",
+        "username": "Font Driver Host\\UMFD-1",
+        "id": 20
+    },
+    {
+        "name": "fontdrvhost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0017794486170691988,
+        "pid": 1660,
+        "ppid": 1316,
+        "status": "running",
+        "username": "Font Driver Host\\UMFD-0",
+        "id": 21
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.006676411682813821,
+        "pid": 1752,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\NETWORK SERVICE",
+        "id": 22
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.004892986644253965,
+        "pid": 1796,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 23
+    },
+    {
+        "name": "dwm.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.02493216274642207,
+        "pid": 1868,
+        "ppid": 1492,
+        "status": "running",
+        "username": "Window Manager\\DWM-1",
+        "id": 24
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.011945170157934911,
+        "pid": 1972,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\LOCAL SERVICE",
+        "id": 25
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.006616765360453959,
+        "pid": 1980,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\NETWORK SERVICE",
+        "id": 26
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0034435810109093323,
+        "pid": 2008,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\LOCAL SERVICE",
+        "id": 27
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.004722000520155695,
+        "pid": 2160,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\LOCAL SERVICE",
+        "id": 28
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.004264712048730091,
+        "pid": 2196,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 29
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.005493426289343236,
+        "pid": 2200,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 30
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.002757648303770926,
+        "pid": 2212,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 31
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0038113999987951447,
+        "pid": 2224,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\LOCAL SERVICE",
+        "id": 32
+    },
+    {
+        "name": "mmc.exe",
+        "cpu_percent": 0.084375,
+        "memory_percent": 0.027600341566653204,
+        "pid": 2272,
+        "ppid": 4664,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 33
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.004185183618916942,
+        "pid": 2312,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\LOCAL SERVICE",
+        "id": 34
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.003334229419916253,
+        "pid": 2352,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 35
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.003841223159975075,
+        "pid": 2400,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 36
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.00720527574107126,
+        "pid": 2440,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 37
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.008088041311997208,
+        "pid": 2512,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 38
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.005859257066483719,
+        "pid": 2600,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\NETWORK SERVICE",
+        "id": 39
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.004566920082020056,
+        "pid": 2724,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\NETWORK SERVICE",
+        "id": 40
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.004475462387734934,
+        "pid": 2732,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\LOCAL SERVICE",
+        "id": 41
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.004006244651837358,
+        "pid": 2748,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\NETWORK SERVICE",
+        "id": 42
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.003240783514885803,
+        "pid": 2796,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 43
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0036404138746968747,
+        "pid": 2852,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\LOCAL SERVICE",
+        "id": 44
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.005932820864060882,
+        "pid": 2936,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 45
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.004240853519786147,
+        "pid": 2944,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\LOCAL SERVICE",
+        "id": 46
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.009068229209444265,
+        "pid": 2952,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\LOCAL SERVICE",
+        "id": 47
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.008205345745971602,
+        "pid": 3036,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\LOCAL SERVICE",
+        "id": 48
+    },
+    {
+        "name": "spaceman.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0003360076159605526,
+        "pid": 3112,
+        "ppid": 2440,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 49
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.00409571413537715,
+        "pid": 3216,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\LOCAL SERVICE",
+        "id": 50
+    },
+    {
+        "name": "ShellExperienceHost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.030085604998314096,
+        "pid": 3228,
+        "ppid": 1628,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 51
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.004664342408541163,
+        "pid": 3244,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 52
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.004843281375620747,
+        "pid": 3268,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 53
+    },
+    {
+        "name": "python.exe",
+        "cpu_percent": 0.559375,
+        "memory_percent": 0.029455342192044896,
+        "pid": 3288,
+        "ppid": 4708,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 54
+    },
+    {
+        "name": "RuntimeBroker.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.010283025974840107,
+        "pid": 3296,
+        "ppid": 1628,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 55
+    },
+    {
+        "name": "RuntimeBroker.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.006596883253000673,
+        "pid": 3308,
+        "ppid": 1628,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 56
+    },
+    {
+        "name": "spoolsv.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.008095994154978522,
+        "pid": 3708,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 57
+    },
+    {
+        "name": "conhost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.011507763793962596,
+        "pid": 3752,
+        "ppid": 6620,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 58
+    },
+    {
+        "name": "LogMeInSystray.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.010300919871548067,
+        "pid": 3780,
+        "ppid": 4664,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 59
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.005767799372198599,
+        "pid": 3808,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 60
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.007070077410388906,
+        "pid": 3816,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\NETWORK SERVICE",
+        "id": 61
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.014217695039845633,
+        "pid": 3824,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 62
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.022611920806623463,
+        "pid": 3832,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 63
+    },
+    {
+        "name": "nssm.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.003163243295817984,
+        "pid": 3840,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 64
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0030717856015328626,
+        "pid": 3856,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 65
+    },
+    {
+        "name": "LMIGuardianSvc.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.004441662805064347,
+        "pid": 3868,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 66
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0026781198739577773,
+        "pid": 3876,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 67
+    },
+    {
+        "name": "ramaint.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0038471877922110613,
+        "pid": 3884,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 68
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.005374133644623514,
+        "pid": 3892,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\NETWORK SERVICE",
+        "id": 69
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.006421920707411746,
+        "pid": 3900,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 70
+    },
+    {
+        "name": "ssm.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0031612550850726546,
+        "pid": 3908,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 71
+    },
+    {
+        "name": "MeshAgent.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.01894963661372797,
+        "pid": 3920,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 72
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.006905055918526623,
+        "pid": 4076,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\LOCAL SERVICE",
+        "id": 73
+    },
+    {
+        "name": "sihost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.012527715906316225,
+        "pid": 4136,
+        "ppid": 3268,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 74
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.004169277932954313,
+        "pid": 4160,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 75
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.006851374228402747,
+        "pid": 4192,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\NETWORK SERVICE",
+        "id": 76
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.006024278558346003,
+        "pid": 4208,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 77
+    },
+    {
+        "name": "LogMeIn.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.017691099211934895,
+        "pid": 4232,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 78
+    },
+    {
+        "name": "vmms.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.017331233067030397,
+        "pid": 4292,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 79
+    },
+    {
+        "name": "TabTip32.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0023441004687425535,
+        "pid": 4304,
+        "ppid": 5916,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 80
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.022273924979917578,
+        "pid": 4436,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 81
+    },
+    {
+        "name": "explorer.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.040491900039364585,
+        "pid": 4664,
+        "ppid": 2804,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 82
+    },
+    {
+        "name": "tacticalrmm.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.019854272502852533,
+        "pid": 4696,
+        "ppid": 3840,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 83
+    },
+    {
+        "name": "python.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.03651547854870715,
+        "pid": 4708,
+        "ppid": 3908,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 84
+    },
+    {
+        "name": "conhost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0060938659344325075,
+        "pid": 4728,
+        "ppid": 4708,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 85
+    },
+    {
+        "name": "conhost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.006127665517103096,
+        "pid": 4736,
+        "ppid": 4696,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 86
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0035111801762505086,
+        "pid": 4752,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 87
+    },
+    {
+        "name": "vmcompute.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.005598801458845658,
+        "pid": 5020,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 88
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.005260805632139777,
+        "pid": 5088,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 89
+    },
+    {
+        "name": "vmwp.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.011384494727752215,
+        "pid": 5276,
+        "ppid": 5020,
+        "status": "running",
+        "username": "NT VIRTUAL MACHINE\\A501B6E4-9443-49AA-99BD-E52CCF508915",
+        "id": 90
+    },
+    {
+        "name": "python.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.020685344594399937,
+        "pid": 5472,
+        "ppid": 4708,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 91
+    },
+    {
+        "name": "WmiPrvSE.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.010167709751611041,
+        "pid": 5712,
+        "ppid": 1628,
+        "status": "running",
+        "username": "NT AUTHORITY\\NETWORK SERVICE",
+        "id": 92
+    },
+    {
+        "name": "TabTip.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.008543341572677483,
+        "pid": 5916,
+        "ppid": 4752,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 93
+    },
+    {
+        "name": "vmwp.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.011780148666072628,
+        "pid": 5924,
+        "ppid": 5020,
+        "status": "running",
+        "username": "NT VIRTUAL MACHINE\\0C89E8DE-7E85-4955-832E-36F786714D55",
+        "id": 94
+    },
+    {
+        "name": "msdtc.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.004956609388104484,
+        "pid": 6016,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\NETWORK SERVICE",
+        "id": 95
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0025468979647660824,
+        "pid": 6056,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 96
+    },
+    {
+        "name": "vmwp.exe",
+        "cpu_percent": 0.06875,
+        "memory_percent": 0.01141034146744149,
+        "pid": 6092,
+        "ppid": 5020,
+        "status": "running",
+        "username": "NT VIRTUAL MACHINE\\21F47B3B-DD44-40D4-8E12-FAC50D80B841",
+        "id": 97
+    },
+    {
+        "name": "vmwp.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.011595245066757059,
+        "pid": 6296,
+        "ppid": 5020,
+        "status": "running",
+        "username": "NT VIRTUAL MACHINE\\6F192157-71F5-4F33-AEAF-F1CB4478EDFD",
+        "id": 98
+    },
+    {
+        "name": "cmd.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.00203990422470726,
+        "pid": 6620,
+        "ppid": 4664,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 99
+    },
+    {
+        "name": "ctfmon.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.007632741051316932,
+        "pid": 6648,
+        "ppid": 4752,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 100
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.007199311108835272,
+        "pid": 6716,
+        "ppid": 1388,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 101
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0038054353665591583,
+        "pid": 6760,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 102
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.013456210324384736,
+        "pid": 6868,
+        "ppid": 1388,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 103
+    },
+    {
+        "name": "SearchUI.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.04596743243199986,
+        "pid": 6904,
+        "ppid": 1628,
+        "status": "stopped",
+        "username": "VMHOST4\\Administrator",
+        "id": 104
+    },
+    {
+        "name": "tacticalrmm.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.023025468641651836,
+        "pid": 6908,
+        "ppid": 7592,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 105
+    },
+    {
+        "name": "taskhostw.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.006147547624556384,
+        "pid": 6984,
+        "ppid": 2440,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 106
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.017520113087836627,
+        "pid": 7092,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 107
+    },
+    {
+        "name": "RuntimeBroker.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.011543551587378511,
+        "pid": 7148,
+        "ppid": 1628,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 108
+    },
+    {
+        "name": "dllhost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.006175382574990985,
+        "pid": 7232,
+        "ppid": 1628,
+        "status": "running",
+        "username": "VMHOST4\\Administrator",
+        "id": 109
+    },
+    {
+        "name": "conhost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.006191288260953614,
+        "pid": 7288,
+        "ppid": 6908,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 110
+    },
+    {
+        "name": "nssm.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.003252712779357776,
+        "pid": 7592,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 111
+    },
+    {
+        "name": "svchost.exe",
+        "cpu_percent": 0.0,
+        "memory_percent": 0.005972585078967456,
+        "pid": 8012,
+        "ppid": 1388,
+        "status": "running",
+        "username": "NT AUTHORITY\\SYSTEM",
+        "id": 112
+    }
+]

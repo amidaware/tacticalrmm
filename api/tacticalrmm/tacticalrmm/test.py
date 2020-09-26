@@ -1,7 +1,7 @@
 import random
 import string
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone as djangotime
 
 from rest_framework.test import APIClient
@@ -16,6 +16,36 @@ from automation.models import Policy
 from core.models import CoreSettings
 from checks.models import Check
 from autotasks.models import AutomatedTask
+
+
+class TacticalTestCase(TestCase):
+
+    def authenticate(self):
+        self.john = User(username="john")
+        self.john.set_password("hunter2")
+        self.john.save()
+        self.client_setup()
+        self.client.force_authenticate(user=self.john)
+
+    def client_setup(self):
+        self.client = APIClient()
+
+    # fixes tests waiting 2 minutes for mesh token to appear
+    @override_settings(MESH_TOKEN_KEY="123456")
+    def setup_coresettings(self):
+        self.coresettings = CoreSettings.objects.create()
+
+    def check_not_authenticated(self, method, url):
+        self.client.logout()
+        switch = {
+            "get": self.client.get(url),
+            "post": self.client.post(url),
+            "put": self.client.put(url),
+            "patch": self.client.patch(url),
+            "delete": self.client.delete(url),
+        }
+        r = switch.get(method)
+        self.assertEqual(r.status_code, 401)
 
 
 class BaseTestCase(TestCase):

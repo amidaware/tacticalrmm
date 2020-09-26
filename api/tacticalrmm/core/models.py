@@ -179,7 +179,7 @@ class CoreSettings(models.Model):
                         # readlines() returns an array. Get first item
                         mesh_settings["mesh_token"] = key[0].rstrip()
                         break
-                except IOError:
+                except (IOError, IndexError):
                     pass
 
                 counter = counter + 1

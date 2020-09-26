@@ -1,24 +1,17 @@
 from unittest.mock import patch
 
-from django.test import TestCase
-
-from rest_framework.test import APIClient
-from rest_framework.test import force_authenticate
-
+from tacticalrmm.test import TacticalTestCase
 from accounts.models import User
-from tacticalrmm.test import BaseTestCase
 
 
-class AccountBase(TestCase):
+class TestAccounts(TacticalTestCase):
+
     def setUp(self):
+        self.client_setup()
         self.bob = User(username="bob")
         self.bob.set_password("hunter2")
         self.bob.save()
-        self.client = APIClient()
-        self.client.force_authenticate(user=self.bob)
 
-
-class TestAccounts(AccountBase):
     def test_check_creds(self):
         url = "/checkcreds/"
 
@@ -68,7 +61,12 @@ class TestAccounts(AccountBase):
         self.assertIn("non_field_errors", r.data.keys())
 
 
-class TestGetAddUsers(BaseTestCase):
+class TestGetAddUsers(TacticalTestCase):
+
+    def setUp(self):
+        self.authenticate()
+        self.setup_coresettings()
+
     def test_get(self):
         url = "/accounts/users/"
         r = self.client.get(url)
@@ -111,7 +109,12 @@ class TestGetAddUsers(BaseTestCase):
         self.check_not_authenticated("post", url)
 
 
-class GetUpdateDeleteUser(BaseTestCase):
+class GetUpdateDeleteUser(TacticalTestCase):
+
+    def setUp(self):
+        self.authenticate()
+        self.setup_coresettings()
+
     def test_get(self):
         url = f"/accounts/{self.john.pk}/users/"
         r = self.client.get(url)
@@ -154,7 +157,12 @@ class GetUpdateDeleteUser(BaseTestCase):
         self.check_not_authenticated("delete", url)
 
 
-class TestUserAction(BaseTestCase):
+class TestUserAction(TacticalTestCase):
+
+    def setUp(self):
+        self.authenticate()
+        self.setup_coresettings()
+
     def test_post(self):
         url = "/accounts/users/reset/"
         data = {"id": self.john.pk, "password": "3ASDjh2345kJA!@#)#@__123"}
@@ -179,7 +187,12 @@ class TestUserAction(BaseTestCase):
         self.check_not_authenticated("put", url)
 
 
-class TestTOTPSetup(BaseTestCase):
+class TestTOTPSetup(TacticalTestCase):
+
+    def setUp(self):
+        self.authenticate()
+        self.setup_coresettings()
+
     def test_post(self):
         url = "/accounts/users/setup_totp/"
         r = self.client.post(url)
@@ -199,4 +212,4 @@ class TestTOTPSetup(BaseTestCase):
 
         r = self.client.post(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, "TOTP token already set")
+        self.assertEqual(r.data, "totp token already set")

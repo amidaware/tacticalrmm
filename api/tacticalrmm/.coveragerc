@@ -9,3 +9,10 @@ omit =
     */management/*
     */migrations/*
     */static/*
+    manage.py
+    */local_settings.py
+    */apps.py
+    */admin.py
+    */celery.py
+    */wsgi.py
+    */settings.py

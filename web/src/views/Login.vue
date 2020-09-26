@@ -2,7 +2,7 @@
   <q-layout>
     <q-page-container>
       <q-page class="flex bg-image flex-center">
-        <q-card v-bind:style="$q.screen.lt.sm?{'width': '80%'}:{'width':'30%'}">
+        <q-card v-bind:style="$q.screen.lt.sm ? { width: '80%' } : { width: '30%' }">
           <q-card-section>
             <div class="text-center q-pt-lg">
               <div class="col text-h4 ellipsis">Tactical RMM</div>
@@ -15,7 +15,7 @@
                 v-model="credentials.username"
                 label="Username"
                 lazy-rules
-                :rules="[ val => val && val.length > 0 || 'This field is required']"
+                :rules="[val => (val && val.length > 0) || 'This field is required']"
               />
 
               <q-input
@@ -24,7 +24,7 @@
                 v-model="credentials.password"
                 label="Password"
                 lazy-rules
-                :rules="[ val => val && val.length > 0 || 'This field is required']"
+                :rules="[val => (val && val.length > 0) || 'This field is required']"
               />
 
               <div>
@@ -44,7 +44,7 @@
                   autofocus
                   outlined
                   v-model="credentials.twofactor"
-                  :rules="[ val => val && val.length > 0 || 'This field is required']"
+                  :rules="[val => (val && val.length > 0) || 'This field is required']"
                 />
               </q-card-section>
 
@@ -87,7 +87,6 @@ export default {
             localStorage.setItem("user_name", username);
             this.$store.commit("retrieveToken", { token, username });
             this.$router.push({ name: "TOTPSetup" });
-            this;
           } else {
             this.prompt = true;
           }

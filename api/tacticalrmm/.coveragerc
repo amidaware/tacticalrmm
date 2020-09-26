@@ -1,0 +1,11 @@
+[run]
+source = .
+[report]
+show_missing = True
+include = *.py
+omit =
+    */__pycache__/*
+    */env/*
+    */management/*
+    */migrations/*
+    */static/*

@@ -167,11 +167,11 @@ class TestPolicyViews(BaseTestCase):
         resp = self.client.get(url, format="json")
 
         self.assertEqual(resp.status_code, 200)
-        self.assertIsInstance(resp.data["server_clients"], type([]))
-        self.assertIsInstance(resp.data["workstation_clients"], type([]))
-        self.assertIsInstance(resp.data["server_sites"], type([]))
-        self.assertIsInstance(resp.data["workstation_sites"], type([]))
-        self.assertIsInstance(resp.data["agents"], type([]))
+        self.assertIsInstance(resp.data["server_clients"], list)
+        self.assertIsInstance(resp.data["workstation_clients"], list)
+        self.assertIsInstance(resp.data["server_sites"], list)
+        self.assertIsInstance(resp.data["workstation_sites"], list)
+        self.assertIsInstance(resp.data["agents"], list)
 
         self.check_not_authenticated("get", url)
 

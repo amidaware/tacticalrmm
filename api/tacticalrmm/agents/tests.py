@@ -136,6 +136,162 @@ class TestAgentViews(BaseTestCase):
 
         self.check_not_authenticated("get", url)
 
+    @patch("agents.models.Agent.salt_api_cmd")
+    def test_power_action(self, mock_ret):
+        url = f"/agents/poweraction/"
+
+        data = {"pk": self.agent.pk, "action": "rebootnow"}
+        mock_ret.return_value = True
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        mock_ret.return_value = "error"
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        mock_ret.return_value = False
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        self.check_not_authenticated("post", url)
+
+    @patch("agents.models.Agent.salt_api_cmd")
+    def test_send_raw_cmd(self, mock_ret):
+        url = f"/agents/sendrawcmd/"
+
+        data = {
+            "pk": self.agent.pk,
+            "cmd": "ipconfig",
+            "shell": "cmd",
+            "timeout": 30,
+        }
+        mock_ret.return_value = "nt authority\system"
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertIsInstance(r.data, str)
+
+        mock_ret.return_value = "timeout"
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        mock_ret.return_value = False
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        self.check_not_authenticated("post", url)
+
+    @patch("agents.models.Agent.salt_api_cmd")
+    def test_reboot_later(self, mock_ret):
+        url = f"/agents/rebootlater/"
+
+        data = {
+            "pk": self.agent.pk,
+            "datetime": "2025-08-29 18:41",
+        }
+
+        mock_ret.return_value = True
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["time"], "August 29, 2025 at 06:41 PM")
+        self.assertEqual(r.data["agent"], self.agent.hostname)
+
+        mock_ret.return_value = "failed"
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        mock_ret.return_value = False
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        data_invalid = {
+            "pk": self.agent.pk,
+            "datetime": "rm -rf /",
+        }
+        r = self.client.post(url, data_invalid, format="json")
+
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data, "Invalid date")
+
+        self.check_not_authenticated("post", url)
+
+    @patch("os.path.exists")
+    @patch("subprocess.run")
+    def test_install_agent(self, mock_subprocess, mock_file_exists):
+        url = f"/agents/installagent/"
+
+        data = {
+            "client": "Google",
+            "site": "LA Office",
+            "arch": "64",
+            "expires": 23,
+            "installMethod": "exe",
+            "api": "https://api.example.com",
+            "agenttype": "server",
+            "rdp": 1,
+            "ping": 0,
+            "power": 0,
+        }
+
+        mock_file_exists.return_value = False
+        mock_subprocess.return_value.returncode = 0
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 406)
+
+        mock_file_exists.return_value = True
+        mock_subprocess.return_value.returncode = 1
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 412)
+
+        mock_file_exists.return_value = True
+        mock_subprocess.return_value.returncode = 0
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        data["installMethod"] = "manual"
+        r = self.client.post(url, data, format="json")
+        self.assertIn("rdp", r.json()["cmd"])
+        self.assertNotIn("power", r.json()["cmd"])
+        self.assertNotIn("ping", r.json()["cmd"])
+
+        self.check_not_authenticated("post", url)
+
+    def test_recover(self):
+        from agents.models import RecoveryAction
+
+        self.agent.version = "0.11.1"
+        self.agent.save(update_fields=["version"])
+        url = "/agents/recover/"
+        data = {"pk": self.agent.pk, "cmd": None, "mode": "mesh"}
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        data["mode"] = "salt"
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("pending", r.json())
+
+        RecoveryAction.objects.all().delete()
+        data["mode"] = "command"
+        data["cmd"] = "ipconfig /flushdns"
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        RecoveryAction.objects.all().delete()
+        data["cmd"] = None
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        RecoveryAction.objects.all().delete()
+
+        self.agent.version = "0.9.4"
+        self.agent.save(update_fields=["version"])
+        data["mode"] = "salt"
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("0.9.5", r.json())
+
+        self.check_not_authenticated("post", url)
+
     def test_agents_list(self):
         url = "/agents/listagents/"
 

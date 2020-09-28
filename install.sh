@@ -1,13 +1,13 @@
 #!/bin/bash
 
-SCRIPT_VERSION="7"
+SCRIPT_VERSION="8"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
 NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
 
-if [ "${SCRIPT_VERSION}" \< "${NEW_VER}" ]; then
+if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
     printf >&2 "${YELLOW}A newer version of this installer script is available.${NC}\n"
     printf >&2 "${YELLOW}Please download the latest version from ${GREEN}${SCRIPT_URL}${YELLOW} and re-run.${NC}\n"
     rm -f $TMP_FILE
@@ -26,6 +26,9 @@ if [ $EUID -eq 0 ]; then
   echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
   exit 1
 fi
+
+# prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
+sudo systemctl restart systemd-journald.service
 
 DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 SALTPW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)

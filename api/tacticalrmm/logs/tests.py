@@ -4,8 +4,8 @@ from tacticalrmm.test import TacticalTestCase
 from .serializers import PendingActionSerializer
 from unittest.mock import patch
 
-class TestAuditViews(TacticalTestCase):
 
+class TestAuditViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -15,64 +15,64 @@ class TestAuditViews(TacticalTestCase):
         baker.make_recipe(
             "logs.agent_logs",
             username="jim",
-            agent="AgentHostname1", 
+            agent="AgentHostname1",
             entry_time=seq(datetime.now(), timedelta(days=3)),
-            _quantity=15
+            _quantity=15,
         )
         baker.make_recipe(
-            "logs.agent_logs", 
+            "logs.agent_logs",
             username="jim",
             agent="AgentHostname2",
             entry_time=seq(datetime.now(), timedelta(days=100)),
-            _quantity=8
+            _quantity=8,
         )
 
         # user james agent logs
         baker.make_recipe(
-            "logs.agent_logs", 
+            "logs.agent_logs",
             username="james",
-            agent="AgentHostname1", 
+            agent="AgentHostname1",
             entry_time=seq(datetime.now(), timedelta(days=55)),
-            _quantity=7
+            _quantity=7,
         )
         baker.make_recipe(
             "logs.agent_logs",
             username="james",
             agent="AgentHostname2",
             entry_time=seq(datetime.now(), timedelta(days=20)),
-            _quantity=10
+            _quantity=10,
         )
 
         # generate agent logs with random usernames
         baker.make_recipe(
-            "logs.agent_logs", 
-            agent=seq("AgentHostname"), 
+            "logs.agent_logs",
+            agent=seq("AgentHostname"),
             entry_time=seq(datetime.now(), timedelta(days=29)),
-            _quantity=5
+            _quantity=5,
         )
 
         # generate random object data
         baker.make_recipe(
-            "logs.object_logs", 
-            username="james", 
+            "logs.object_logs",
+            username="james",
             entry_time=seq(datetime.now(), timedelta(days=5)),
-            _quantity=17
+            _quantity=17,
         )
 
         # generate login data for james
         baker.make_recipe(
-            "logs.login_logs", 
-            username="james", 
+            "logs.login_logs",
+            username="james",
             entry_time=seq(datetime.now(), timedelta(days=7)),
-            _quantity=11
+            _quantity=11,
         )
 
         # generate login data for jim
         baker.make_recipe(
-            "logs.login_logs", 
-            username="jim", 
+            "logs.login_logs",
+            username="jim",
             entry_time=seq(datetime.now(), timedelta(days=11)),
-            _quantity=13
+            _quantity=13,
         )
 
     def test_get_audit_logs(self):
@@ -80,40 +80,43 @@ class TestAuditViews(TacticalTestCase):
 
         # create data
         self.create_audit_records()
-        
+
         # test data and result counts
         data = [
+            {"filter": {"timeFilter": 30}, "count": 86},
             {
-                "filter": {"timeFilter": 30}, "count": 86
+                "filter": {"timeFilter": 45, "agentFilter": ["AgentHostname2"]},
+                "count": 19,
             },
             {
-                "filter": {"timeFilter": 45, "agentFilter": ["AgentHostname2"]}, "count": 19
+                "filter": {"userFilter": ["jim"], "agentFilter": ["AgentHostname1"]},
+                "count": 15,
             },
             {
-                "filter": {"userFilter": ["jim"], "agentFilter": ["AgentHostname1"]}, "count": 15
+                "filter": {
+                    "timeFilter": 180,
+                    "userFilter": ["james"],
+                    "agentFilter": ["AgentHostname1"],
+                },
+                "count": 7,
             },
+            {"filter": {}, "count": 86},
+            {"filter": {"agentFilter": ["DoesntExist"]}, "count": 0},
             {
-                "filter": {"timeFilter": 180, "userFilter": ["james"], "agentFilter": ["AgentHostname1"]}, "count": 7
+                "filter": {
+                    "timeFilter": 35,
+                    "userFilter": ["james", "jim"],
+                    "agentFilter": ["AgentHostname1", "AgentHostname2"],
+                },
+                "count": 40,
             },
-            {
-                "filter": {}, "count": 86
-            },
-            {
-                "filter": {"agentFilter": ["DoesntExist"]}, "count": 0
-            },
-            {
-                "filter": {"timeFilter": 35, "userFilter": ["james", "jim"], "agentFilter": ["AgentHostname1", "AgentHostname2"]}, "count": 40
-            },
-            {
-                "filter": {"timeFilter": 35, "userFilter": ["james", "jim"]}, "count": 81
-            },
+            {"filter": {"timeFilter": 35, "userFilter": ["james", "jim"]}, "count": 81},
         ]
 
         for req in data:
             resp = self.client.patch(url, req["filter"], format="json")
             self.assertEqual(resp.status_code, 200)
             self.assertEqual(len(resp.data), req["count"])
-
 
         self.check_not_authenticated("patch", url)
 
@@ -126,12 +129,12 @@ class TestAuditViews(TacticalTestCase):
         baker.make("accounts.User", username=seq("soemthing"), _quantity=3)
 
         data = [
-            { "req": { "type": "agent", "pattern": "AgeNt" }, "count": 5 },
-            { "req": { "type": "agent", "pattern": "AgentHostname1" }, "count": 1 },
-            { "req": { "type": "agent", "pattern": "hasjhd" }, "count": 0 },
-            { "req": { "type": "user", "pattern": "UsEr" }, "count": 7 },
-            { "req": { "type": "user", "pattern": "UserName1" }, "count": 1 },
-            { "req": { "type": "user", "pattern": "dfdsadf" }, "count": 0 },
+            {"req": {"type": "agent", "pattern": "AgeNt"}, "count": 5},
+            {"req": {"type": "agent", "pattern": "AgentHostname1"}, "count": 1},
+            {"req": {"type": "agent", "pattern": "hasjhd"}, "count": 0},
+            {"req": {"type": "user", "pattern": "UsEr"}, "count": 7},
+            {"req": {"type": "user", "pattern": "UserName1"}, "count": 1},
+            {"req": {"type": "user", "pattern": "dfdsadf"}, "count": 0},
         ]
 
         for req in data:
@@ -140,10 +143,7 @@ class TestAuditViews(TacticalTestCase):
             self.assertEqual(len(resp.data), req["count"])
 
         # test for invalid payload. needs to have either type: user or agent
-        invalid_data = {
-            "type": "object",
-            "pattern": "SomeString"
-        }
+        invalid_data = {"type": "object", "pattern": "SomeString"}
 
         resp = self.client.post(url, invalid_data, format="json")
         self.assertEqual(resp.status_code, 400)
@@ -175,28 +175,26 @@ class TestAuditViews(TacticalTestCase):
         self.assertEqual(resp.data, serializer.data)
 
         self.check_not_authenticated("get", url)
-    
+
     @patch("logs.tasks.cancel_pending_action_task.delay")
     def test_cancel_pending_action(self, mock_task):
         url = "/logs/cancelpendingaction/"
         pending_action = baker.make("logs.PendingAction")
 
         serializer = PendingActionSerializer(pending_action).data
-        data = {
-            "pk": pending_action.id
-        }
+        data = {"pk": pending_action.id}
         resp = self.client.delete(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         mock_task.assert_called_with(serializer)
-        
+
         # try request again and it should fail since pending action doesn't exist
         resp = self.client.delete(url, data, format="json")
         self.assertEqual(resp.status_code, 404)
 
         self.check_not_authenticated("delete", url)
 
-class TestLogsTasks(TacticalTestCase):
 
+class TestLogsTasks(TacticalTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -204,11 +202,12 @@ class TestLogsTasks(TacticalTestCase):
     @patch("agents.models.Agent.salt_api_cmd")
     def test_cancel_pending_action_task(self, mock_salt_cmd):
         from .tasks import cancel_pending_action_task
+
         pending_action = baker.make(
-            "logs.PendingAction", 
-            action_type="schedreboot", 
+            "logs.PendingAction",
+            action_type="schedreboot",
             status="pending",
-            details={"taskname": "test_name"}
+            details={"taskname": "test_name"},
         )
 
         # data that is passed to the task

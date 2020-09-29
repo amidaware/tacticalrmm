@@ -9,6 +9,7 @@ class TestAuditViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
+        self.agent_setup()
 
     def create_audit_records(self):
         # user jim agent logs
@@ -151,14 +152,21 @@ class TestAuditViews(TacticalTestCase):
         self.check_not_authenticated("post", url)
 
     def test_agent_pending_actions(self):
-        pending_actions = baker.make("logs.PendingAction", _quantity=6)
-        url = f"/logs/{pending_actions[0].id}/pendingactions/"
+        pending_actions = baker.make(
+            "logs.PendingAction",
+            agent__pk=self.agent.pk,
+            agent__hostname=self.agent.hostname,
+            agent__client=self.agent.client,
+            agent__site=self.agent.site,
+            _quantity=6,
+        )
+        url = f"/logs/{self.agent.pk}/pendingactions/"
 
         resp = self.client.get(url, format="json")
-        serializer = PendingActionSerializer([pending_actions[0]], many=True)
+        serializer = PendingActionSerializer(pending_actions, many=True)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 1)
+        self.assertEqual(len(resp.data), 6)
         self.assertEqual(resp.data, serializer.data)
 
         self.check_not_authenticated("get", url)

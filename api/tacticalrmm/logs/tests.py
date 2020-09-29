@@ -3,7 +3,6 @@ from model_bakery import baker, seq
 from tacticalrmm.test import TacticalTestCase
 from .serializers import PendingActionSerializer
 from unittest.mock import patch
-from pprint import pprint
 
 class TestAuditViews(TacticalTestCase):
 

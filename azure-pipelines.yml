@@ -28,7 +28,7 @@ jobs:
           cd /myagent/_work/1/s/api/tacticalrmm
           pip install --no-cache-dir --upgrade pip
           pip install --no-cache-dir setuptools==49.6.0 wheel==0.35.1
-          pip install --no-cache-dir -r requirements.txt
+          pip install --no-cache-dir -r requirements.txt -r requirements-test.txt
         displayName: "Install Python Dependencies"
 
       - script: |

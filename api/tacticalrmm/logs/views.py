@@ -64,6 +64,8 @@ class FilterOptionsAuditLog(APIView):
             )
             return Response(UserSerializer(users, many=True).data)
 
+        return Response("error", status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view()
 def agent_pending_actions(request, pk):

@@ -44,6 +44,7 @@ EXCLUDE_PATHS = (
 class AuditMiddleware:
 
     before_value = {}
+    debug_info = {}
     pre_save_uid = ""
     post_save_uid = ""
     pre_delete_uid = ""
@@ -86,6 +87,14 @@ class AuditMiddleware:
                 self.pre_save_uid = get_random_string(8)
                 self.post_save_uid = get_random_string(8)
                 self.pre_delete_uid = get_random_string(8)
+
+                # gather and save debug info
+                self.debug_info["url"] = request.path
+                self.debug_info["method"] = request.method
+                self.debug_info["view_class"] = view_func.cls.__name__
+                self.debug_info["view_func"] = view_func.__name__
+                self.debug_info["view_args"] = view_args
+                self.debug_info["view_kwargs"] = view_kwargs
 
                 # get authentcated user after request
                 user = request.user
@@ -134,6 +143,7 @@ class AuditMiddleware:
                     sender.__name__.lower(),
                     sender.serialize(instance),
                     instance.__str__(),
+                    debug_info=self.debug_info,
                 )
             else:
                 AuditLog.audit_object_changed(
@@ -142,6 +152,7 @@ class AuditMiddleware:
                     sender.serialize(self.before_value),
                     sender.serialize(instance),
                     instance.__str__(),
+                    debug_info=self.debug_info,
                 )
 
     def add_audit_entry_delete(self, user, sender, instance, **kwargs):
@@ -153,4 +164,5 @@ class AuditMiddleware:
                 sender.__name__.lower(),
                 sender.serialize(instance),
                 instance.__str__(),
+                debug_info=self.debug_info,
             )

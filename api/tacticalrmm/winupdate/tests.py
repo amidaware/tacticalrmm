@@ -1,3 +1,8 @@
-from django.test import TestCase
+from tacticalrmm.test import TacticalTestCase
 
-# Create your tests here.
+class TestWinUpdateViews(TacticalTestCase):
+
+    def setUp(self):
+        self.authenticate()
+        self.setup_coresettings()
+

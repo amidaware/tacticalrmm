@@ -74,14 +74,14 @@ class TestWinUpdateViews(TacticalTestCase):
 
         # can't get this to work right
         # test agent command no pid field
-        #mock_cmd.return_value = ""
-        #resp = self.client.get(url, format="json")
-        #self.assertEqual(resp.status_code, 400)
+        mock_cmd.return_value = {}
+        resp = self.client.get(url, format="json")
+        self.assertEqual(resp.status_code, 400)
 
         # test agent command success
-        # mock_cmd.return_value = {"pid", 3316}
-        # resp = self.client.get(url, format="json")
-        # self.assertEqual(resp.status_code, 200)
+        mock_cmd.return_value = {"pid": 3316}
+        resp = self.client.get(url, format="json")
+        self.assertEqual(resp.status_code, 200)
 
     def test_edit_policy(self):
         url = "/winupdate/editpolicy/"

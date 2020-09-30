@@ -47,7 +47,7 @@ def install_updates(request, pk):
     # successful response: {'return': [{'SALT-ID': {'pid': 3316}}]}
     try:
         r["pid"]
-    except KeyError:
+    except (KeyError):
         return notify_error(str(r))
 
     return Response(f"Patches will now be installed on {agent.hostname}")

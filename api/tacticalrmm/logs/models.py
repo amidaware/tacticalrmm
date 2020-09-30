@@ -55,22 +55,24 @@ class AuditLog(models.Model):
     before_value = models.JSONField(null=True, blank=True)
     after_value = models.JSONField(null=True, blank=True)
     message = models.CharField(max_length=255, null=True, blank=True)
+    debug_info = models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.username} {self.action} {self.object_type}"
 
     @staticmethod
-    def audit_mesh_session(username, hostname):
+    def audit_mesh_session(username, hostname, debug_info={}):
         AuditLog.objects.create(
             username=username,
             agent=hostname,
             object_type="agent",
             action="remote_session",
             message=f"{username} used Mesh Central to initiate a remote session to {hostname}.",
+            debug_info=debug_info,
         )
 
     @staticmethod
-    def audit_raw_command(username, hostname, cmd, shell):
+    def audit_raw_command(username, hostname, cmd, shell, debug_info={}):
         AuditLog.objects.create(
             username=username,
             agent=hostname,
@@ -78,10 +80,13 @@ class AuditLog(models.Model):
             action="execute_command",
             message=f"{username} issued {shell} command on {hostname}.",
             after_value=cmd,
+            debug_info=debug_info,
         )
 
     @staticmethod
-    def audit_object_changed(username, object_type, before, after, name=""):
+    def audit_object_changed(
+        username, object_type, before, after, name="", debug_info={}
+    ):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
@@ -89,63 +94,70 @@ class AuditLog(models.Model):
             message=f"{username} modified {object_type} {name}",
             before_value=before,
             after_value=after,
+            debug_info=debug_info,
         )
 
     @staticmethod
-    def audit_object_add(username, object_type, after, name=""):
+    def audit_object_add(username, object_type, after, name="", debug_info={}):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
             action="add",
             message=f"{username} added {object_type} {name}",
             after_value=after,
+            debug_info=debug_info,
         )
 
     @staticmethod
-    def audit_object_delete(username, object_type, before, name=""):
+    def audit_object_delete(username, object_type, before, name="", debug_info={}):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
             action="delete",
             message=f"{username} deleted {object_type} {name}",
             before_value=before,
+            debug_info=debug_info,
         )
 
     @staticmethod
-    def audit_script_run(username, hostname, script):
+    def audit_script_run(username, hostname, script, debug_info={}):
         AuditLog.objects.create(
             agent=hostname,
             username=username,
             object_type="agent",
             action="execute_script",
             message=f'{username} ran script: "{script}" on {hostname}',
+            debug_info=debug_info,
         )
 
     @staticmethod
-    def audit_user_failed_login(username):
+    def audit_user_failed_login(username, debug_info={}):
         AuditLog.objects.create(
             username=username,
             object_type="user",
             action="failed_login",
             message=f"{username} failed to login: Credentials were rejected",
+            debug_info=debug_info,
         )
 
     @staticmethod
-    def audit_user_failed_twofactor(username):
+    def audit_user_failed_twofactor(username, debug_info={}):
         AuditLog.objects.create(
             username=username,
             object_type="user",
             action="failed_login",
             message=f"{username} failed to login: Two Factor token rejected",
+            debug_info=debug_info,
         )
 
     @staticmethod
-    def audit_user_login_successful(username):
+    def audit_user_login_successful(username, debug_info={}):
         AuditLog.objects.create(
             username=username,
             object_type="user",
             action="login",
             message=f"{username} logged in successfully",
+            debug_info=debug_info,
         )
 
 
@@ -156,18 +168,14 @@ class DebugLog(models.Model):
 class PendingAction(models.Model):
 
     agent = models.ForeignKey(
-        Agent,
-        related_name="pendingactions",
-        on_delete=models.CASCADE,
+        Agent, related_name="pendingactions", on_delete=models.CASCADE,
     )
     entry_time = models.DateTimeField(auto_now_add=True)
     action_type = models.CharField(
         max_length=255, choices=ACTION_TYPE_CHOICES, null=True, blank=True
     )
     status = models.CharField(
-        max_length=255,
-        choices=STATUS_CHOICES,
-        default="pending",
+        max_length=255, choices=STATUS_CHOICES, default="pending",
     )
     celery_id = models.CharField(null=True, blank=True, max_length=255)
     details = models.JSONField(null=True, blank=True)

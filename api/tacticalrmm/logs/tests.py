@@ -152,15 +152,9 @@ class TestAuditViews(TacticalTestCase):
         self.check_not_authenticated("post", url)
 
     def test_agent_pending_actions(self):
-        pending_actions = baker.make(
-            "logs.PendingAction",
-            agent__pk=self.agent.pk,
-            agent__hostname=self.agent.hostname,
-            agent__client=self.agent.client,
-            agent__site=self.agent.site,
-            _quantity=6,
-        )
-        url = f"/logs/{self.agent.pk}/pendingactions/"
+        agent = baker.make_recipe("agents.agent")
+        pending_actions = baker.make("logs.PendingAction", agent=agent, _quantity=6,)
+        url = f"/logs/{agent.pk}/pendingactions/"
 
         resp = self.client.get(url, format="json")
         serializer = PendingActionSerializer(pending_actions, many=True)
@@ -205,7 +199,6 @@ class TestAuditViews(TacticalTestCase):
 class TestLogsTasks(TacticalTestCase):
     def setUp(self):
         self.authenticate()
-        self.setup_coresettings()
 
     @patch("agents.models.Agent.salt_api_cmd")
     def test_cancel_pending_action_task(self, mock_salt_cmd):

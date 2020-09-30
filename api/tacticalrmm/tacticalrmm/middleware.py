@@ -34,6 +34,7 @@ EXCLUDE_METHODS = ("GET", "HEAD", "OPTIONS", "TRACE")
 EXCLUDE_PATHS = (
     "/api/v2",
     "/api/v1",
+    "/logs/auditlogs",
     "/winupdate/winupdater",
     "/winupdate/results",
     f"/{settings.ADMIN_URL}",

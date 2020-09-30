@@ -16,7 +16,7 @@ APP_VER = "0.0.64"
 # https://github.com/wh1te909/salt
 LATEST_SALT_VER = "1.1.0"
 
-LATEST_AGENT_VER = "0.11.1"
+LATEST_AGENT_VER = "0.11.2"
 
 DL_64 = f"https://github.com/wh1te909/winagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
 DL_32 = f"https://github.com/wh1te909/winagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"

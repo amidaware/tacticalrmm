@@ -57,6 +57,8 @@ func main() {
 	debugLog := flag.String("log", "", "Verbose output")
 	localSalt := flag.String("local-salt", "", "Use local salt minion")
 	localMesh := flag.String("local-mesh", "", "Use local mesh agent")
+	cert := flag.String("cert", "", "Path to ca.pem")
+	timeout := flag.String("timeout", "", "Timeout for subprocess calls")
 	flag.Parse()
 
 	var debug bool = false
@@ -85,6 +87,14 @@ func main() {
 
 	if len(strings.TrimSpace(*localMesh)) != 0 {
 		cmdArgs = append(cmdArgs, "--local-mesh", *localMesh)
+	}
+
+	if len(strings.TrimSpace(*cert)) != 0 {
+		cmdArgs = append(cmdArgs, "--cert", *cert)
+	}
+
+	if len(strings.TrimSpace(*timeout)) != 0 {
+		cmdArgs = append(cmdArgs, "--timeout", *timeout)
 	}
 
 	if Rdp == "1" {

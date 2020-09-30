@@ -67,13 +67,18 @@ class TestWinUpdateViews(TacticalTestCase):
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 400)
 
-        # test agent command no pid field
-        mock_cmd.return_value = ""
+        # test agent command running
+        mock_cmd.return_value = "running"
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 400)
 
-        # test agent command success
         # can't get this to work right
+        # test agent command no pid field
+        #mock_cmd.return_value = ""
+        #resp = self.client.get(url, format="json")
+        #self.assertEqual(resp.status_code, 400)
+
+        # test agent command success
         # mock_cmd.return_value = {"pid", 3316}
         # resp = self.client.get(url, format="json")
         # self.assertEqual(resp.status_code, 200)
@@ -89,7 +94,7 @@ class TestWinUpdateViews(TacticalTestCase):
 
         data = {"pk": winupdate.pk, "policy": "inherit"}
 
-        resp = self.client.patch(url, format="json")
+        resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
 # TODO: add agent api to test

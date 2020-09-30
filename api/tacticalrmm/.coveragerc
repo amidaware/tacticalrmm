@@ -16,3 +16,4 @@ omit =
     */celery.py
     */wsgi.py
     */settings.py
+    */baker_recipes.py

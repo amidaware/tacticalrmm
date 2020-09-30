@@ -152,15 +152,8 @@ class TestAuditViews(TacticalTestCase):
         self.check_not_authenticated("post", url)
 
     def test_agent_pending_actions(self):
-        agent = baker.make("agents.Agent")
-        pending_actions = baker.make(
-            "logs.PendingAction",
-            agent__pk=agent.pk,
-            agent__hostname=agent.hostname,
-            agent__client=agent.client,
-            agent__site=agent.site,
-            _quantity=6,
-        )
+        agent = baker.make_recipe("agents.agent")
+        pending_actions = baker.make("logs.PendingAction", agent=agent, _quantity=6,)
         url = f"/logs/{agent.pk}/pendingactions/"
 
         resp = self.client.get(url, format="json")

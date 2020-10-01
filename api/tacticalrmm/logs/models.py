@@ -168,14 +168,18 @@ class DebugLog(models.Model):
 class PendingAction(models.Model):
 
     agent = models.ForeignKey(
-        Agent, related_name="pendingactions", on_delete=models.CASCADE,
+        Agent,
+        related_name="pendingactions",
+        on_delete=models.CASCADE,
     )
     entry_time = models.DateTimeField(auto_now_add=True)
     action_type = models.CharField(
         max_length=255, choices=ACTION_TYPE_CHOICES, null=True, blank=True
     )
     status = models.CharField(
-        max_length=255, choices=STATUS_CHOICES, default="pending",
+        max_length=255,
+        choices=STATUS_CHOICES,
+        default="pending",
     )
     celery_id = models.CharField(null=True, blank=True, max_length=255)
     details = models.JSONField(null=True, blank=True)

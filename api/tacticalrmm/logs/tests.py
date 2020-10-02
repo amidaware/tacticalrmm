@@ -9,7 +9,6 @@ class TestAuditViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
-        self.agent_setup()
 
     def create_audit_records(self):
         # user jim agent logs

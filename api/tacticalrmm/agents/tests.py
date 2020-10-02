@@ -356,6 +356,7 @@ class TestAgentViews(BaseTestCase):
         url = f"/agents/{self.agent.pk}/meshcentral/"
 
         r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
 
         # TODO
         # decode the cookie

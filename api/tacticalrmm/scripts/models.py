@@ -1,4 +1,5 @@
 from django.db import models
+from logs.models import BaseAuditModel
 
 SCRIPT_SHELLS = [
     ("powershell", "Powershell"),
@@ -12,7 +13,7 @@ SCRIPT_TYPES = [
 ]
 
 
-class Script(models.Model):
+class Script(BaseAuditModel):
     name = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
     filename = models.CharField(max_length=255)
@@ -22,10 +23,6 @@ class Script(models.Model):
     script_type = models.CharField(
         max_length=100, choices=SCRIPT_TYPES, default="userdefined"
     )
-    created_by = models.CharField(max_length=100, null=True, blank=True)
-    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    modified_by = models.CharField(max_length=100, null=True, blank=True)
-    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         return self.filename

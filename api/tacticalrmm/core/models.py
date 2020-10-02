@@ -9,13 +9,14 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.contrib.postgres.fields import ArrayField
 from django.conf import settings
+from logs.models import BaseAuditModel
 
 logger.configure(**settings.LOG_CONFIG)
 
 TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
 
 
-class CoreSettings(models.Model):
+class CoreSettings(BaseAuditModel):
     email_alert_recipients = ArrayField(
         models.EmailField(null=True, blank=True),
         null=True,

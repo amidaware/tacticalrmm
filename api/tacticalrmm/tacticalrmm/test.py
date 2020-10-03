@@ -100,6 +100,7 @@ class TacticalTestCase(TestCase):
             last_seen=djangotime.now(),
         )
 
+
 class BaseTestCase(TestCase):
     def setUp(self):
 

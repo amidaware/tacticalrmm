@@ -220,7 +220,7 @@ class PendingAction(models.Model):
 class BaseAuditModel(models.Model):
     # abstract base class for auditing models
     class Meta:
-        abstract=True
+        abstract = True
 
     # create audit fields
     created_by = models.CharField(max_length=100, null=True, blank=True)
@@ -248,7 +248,6 @@ class BaseAuditModel(models.Model):
             if self.pk:
                 before_value = object_class.objects.get(pk=self.id)
 
-            
             if not self.pk:
                 AuditLog.audit_object_add(
                     get_username(),
@@ -270,7 +269,7 @@ class BaseAuditModel(models.Model):
         return super(BaseAuditModel, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        
+
         if get_username():
             object_class = type(self)
             AuditLog.audit_object_delete(
@@ -280,5 +279,5 @@ class BaseAuditModel(models.Model):
                 self.__str__(),
                 debug_info=get_debug_info(),
             )
-        
+
         return super(BaseAuditModel, self).delete(*args, **kwargs)

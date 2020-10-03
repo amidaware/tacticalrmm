@@ -3,11 +3,14 @@ import threading
 
 request_local = threading.local()
 
+
 def get_username():
-    return getattr(request_local, 'username', None)
+    return getattr(request_local, "username", None)
+
 
 def get_debug_info():
-    return getattr(request_local, 'debug_info', {})
+    return getattr(request_local, "debug_info", {})
+
 
 # these routes are stricly called only by agents
 EXCLUDE_PATHS = (
@@ -22,7 +25,6 @@ EXCLUDE_PATHS = (
 
 
 class AuditMiddleware:
-
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -49,7 +51,7 @@ class AuditMiddleware:
 
             # check if user is authenticated
             if hasattr(request, "user") and request.user.is_authenticated:
-                
+
                 debug_info = {}
                 # gather and save debug info
                 debug_info["url"] = request.path

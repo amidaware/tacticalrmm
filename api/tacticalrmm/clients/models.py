@@ -2,6 +2,7 @@ from django.db import models
 from agents.models import Agent
 from logs.models import BaseAuditModel
 
+
 class Client(BaseAuditModel):
     client = models.CharField(max_length=255, unique=True)
     workstation_policy = models.ForeignKey(

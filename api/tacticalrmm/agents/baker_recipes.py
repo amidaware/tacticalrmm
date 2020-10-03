@@ -2,7 +2,7 @@ from .models import Agent
 from model_bakery.recipe import Recipe, seq
 from model_bakery import baker
 from itertools import cycle
-import datetime as dt
+from django.utils import timezone as djangotime
 
 agent = Recipe(
     Agent,
@@ -20,8 +20,8 @@ workstation_agent = agent.extend(
     monitoring_type="workstation",
 )
 
-online_agent = agent.extend(last_seen=dt.datetime.now())
+online_agent = agent.extend(last_seen=djangotime.now())
 
 overdue_agent = agent.extend(
-    last_seen=dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=6)
+    last_seen=djangotime.now() - djangotime.timedelta(minutes=6)
 )

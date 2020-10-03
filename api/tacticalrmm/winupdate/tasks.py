@@ -56,9 +56,9 @@ def check_agent_update_schedule_task():
             # get current time in agent local time
             timezone = pytz.timezone(agent.timezone)
             agent_localtime_now = dt.datetime.now(timezone)
-            weekday = int(agent_localtime_now.strftime("%w"))
-            hour = int(agent_localtime_now.strftime("%-H"))
-            day = int(agent_localtime_now.strftime("%-d"))
+            weekday = agent_localtime_now.weekday()
+            hour = agent_localtime_now.hour
+            day = agent_localtime_now.day
 
             if agent.patches_last_installed:
                 # get agent last installed time in local time zone
@@ -82,8 +82,7 @@ def check_agent_update_schedule_task():
 
                 if patch_policy.run_time_day > 28:
                     months_with_30_days = [3, 6, 9, 11]
-                    current_month = int(agent_localtime_now.strftime("%-m"))
-
+                    current_month = agent_localtime_now.month
                     if current_month == 2:
                         patch_policy.run_time_day = 28
                     elif current_month in months_with_30_days:

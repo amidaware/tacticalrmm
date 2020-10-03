@@ -4,6 +4,7 @@ from django.db import models
 from django.contrib.postgres.fields import ArrayField
 
 from agents.models import Agent
+from logs.models import BaseAuditModel
 
 PATCH_ACTION_CHOICES = [
     ("inherit", "Inherit"),
@@ -60,7 +61,7 @@ class WinUpdate(models.Model):
         return f"{self.agent.hostname} {self.kb}"
 
 
-class WinUpdatePolicy(models.Model):
+class WinUpdatePolicy(BaseAuditModel):
     agent = models.ForeignKey(
         "agents.Agent",
         related_name="winupdatepolicy",
@@ -114,10 +115,6 @@ class WinUpdatePolicy(models.Model):
     reprocess_failed = models.BooleanField(default=False)
     reprocess_failed_times = models.PositiveIntegerField(default=5)
     email_if_fail = models.BooleanField(default=False)
-    created_by = models.CharField(max_length=100, null=True, blank=True)
-    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    modified_by = models.CharField(max_length=100, null=True, blank=True)
-    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         if self.agent:

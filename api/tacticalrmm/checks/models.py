@@ -11,6 +11,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 from core.models import CoreSettings
+from logs.models import BaseAuditModel
 
 import agents
 
@@ -53,7 +54,7 @@ EVT_LOG_FAIL_WHEN_CHOICES = [
 ]
 
 
-class Check(models.Model):
+class Check(BaseAuditModel):
 
     # common fields
 
@@ -91,10 +92,6 @@ class Check(models.Model):
     text_sent = models.DateTimeField(null=True, blank=True)
     outage_history = models.JSONField(null=True, blank=True)  # store
     extra_details = models.JSONField(null=True, blank=True)
-    created_by = models.CharField(max_length=100, null=True, blank=True)
-    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    modified_by = models.CharField(max_length=100, null=True, blank=True)
-    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     # check specific fields
 

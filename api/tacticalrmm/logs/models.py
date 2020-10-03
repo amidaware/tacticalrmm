@@ -1,7 +1,8 @@
 import datetime as dt
+from abc import abstractmethod
 from django.db import models
 from django.utils import timezone
-from agents.models import Agent
+from tacticalrmm.middleware import get_username, get_debug_info
 
 ACTION_TYPE_CHOICES = [
     ("schedreboot", "Scheduled Reboot"),
@@ -168,14 +169,18 @@ class DebugLog(models.Model):
 class PendingAction(models.Model):
 
     agent = models.ForeignKey(
-        Agent, related_name="pendingactions", on_delete=models.CASCADE,
+        "agents.Agent",
+        related_name="pendingactions",
+        on_delete=models.CASCADE,
     )
     entry_time = models.DateTimeField(auto_now_add=True)
     action_type = models.CharField(
         max_length=255, choices=ACTION_TYPE_CHOICES, null=True, blank=True
     )
     status = models.CharField(
-        max_length=255, choices=STATUS_CHOICES, default="pending",
+        max_length=255,
+        choices=STATUS_CHOICES,
+        default="pending",
     )
     celery_id = models.CharField(null=True, blank=True, max_length=255)
     details = models.JSONField(null=True, blank=True)
@@ -210,3 +215,70 @@ class PendingAction(models.Model):
                     action = "disable"
 
                 return f"Device pending task {action}"
+
+
+class BaseAuditModel(models.Model):
+    # abstract base class for auditing models
+    class Meta:
+        abstract=True
+
+    # create audit fields
+    created_by = models.CharField(max_length=100, null=True, blank=True)
+    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    modified_by = models.CharField(max_length=100, null=True, blank=True)
+    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
+
+    @abstractmethod
+    def serialize():
+        pass
+
+    def save(self, *args, **kwargs):
+        if get_username():
+
+            before_value = {}
+            object_class = type(self)
+
+            # populate created_by and modified_by fields on instance
+            if not getattr(self, "created_by", None):
+                self.created_by = get_username()
+            if hasattr(self, "modified_by"):
+                self.modified_by = get_username()
+
+            # capture object properties before edit
+            if self.pk:
+                before_value = object_class.objects.get(pk=self.id)
+
+            
+            if not self.pk:
+                AuditLog.audit_object_add(
+                    get_username(),
+                    object_class.__name__.lower(),
+                    object_class.serialize(self),
+                    self.__str__(),
+                    debug_info=get_debug_info(),
+                )
+            else:
+                AuditLog.audit_object_changed(
+                    get_username(),
+                    object_class.__name__.lower(),
+                    object_class.serialize(before_value),
+                    object_class.serialize(self),
+                    self.__str__(),
+                    debug_info=get_debug_info(),
+                )
+
+        return super(BaseAuditModel, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        
+        if get_username():
+            object_class = type(self)
+            AuditLog.audit_object_delete(
+                get_username(),
+                object_class.__name__.lower(),
+                object_class.serialize(self),
+                self.__str__(),
+                debug_info=get_debug_info(),
+            )
+        
+        return super(BaseAuditModel, self).delete(*args, **kwargs)

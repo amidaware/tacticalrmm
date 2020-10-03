@@ -6,6 +6,7 @@ from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from agents.models import Agent
 from automation.models import Policy
+from logs.models import BaseAuditModel
 
 import autotasks
 
@@ -32,7 +33,7 @@ SYNC_STATUS_CHOICES = [
 ]
 
 
-class AutomatedTask(models.Model):
+class AutomatedTask(BaseAuditModel):
     agent = models.ForeignKey(
         "agents.Agent",
         related_name="autotasks",
@@ -91,10 +92,6 @@ class AutomatedTask(models.Model):
     sync_status = models.CharField(
         max_length=100, choices=SYNC_STATUS_CHOICES, default="synced"
     )
-    created_by = models.CharField(max_length=100, null=True, blank=True)
-    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    modified_by = models.CharField(max_length=100, null=True, blank=True)
-    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         return self.name

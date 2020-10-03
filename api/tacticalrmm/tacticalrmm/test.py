@@ -29,6 +29,23 @@ class TacticalTestCase(TestCase):
     def client_setup(self):
         self.client = APIClient()
 
+    # fixes tests waiting 2 minutes for mesh token to appear
+    @override_settings(MESH_TOKEN_KEY="123456")
+    def setup_coresettings(self):
+        self.coresettings = CoreSettings.objects.create()
+
+    def check_not_authenticated(self, method, url):
+        self.client.logout()
+        switch = {
+            "get": self.client.get(url),
+            "post": self.client.post(url),
+            "put": self.client.put(url),
+            "patch": self.client.patch(url),
+            "delete": self.client.delete(url),
+        }
+        r = switch.get(method)
+        self.assertEqual(r.status_code, 401)
+
     def agent_setup(self):
         self.agent = Agent.objects.create(
             operating_system="Windows 10",
@@ -82,24 +99,6 @@ class TacticalTestCase(TestCase):
             mesh_node_id="abcdefghijklmnopAABBCCDD77443355##!!AI%@#$%#*",
             last_seen=djangotime.now(),
         )
-
-    # fixes tests waiting 2 minutes for mesh token to appear
-    @override_settings(MESH_TOKEN_KEY="123456")
-    def setup_coresettings(self):
-        self.coresettings = CoreSettings.objects.create()
-
-    def check_not_authenticated(self, method, url):
-        self.client.logout()
-        switch = {
-            "get": self.client.get(url),
-            "post": self.client.post(url),
-            "put": self.client.put(url),
-            "patch": self.client.patch(url),
-            "delete": self.client.delete(url),
-        }
-        r = switch.get(method)
-        self.assertEqual(r.status_code, 401)
-
 
 class BaseTestCase(TestCase):
     def setUp(self):

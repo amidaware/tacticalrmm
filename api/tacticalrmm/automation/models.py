@@ -2,17 +2,14 @@ from django.db import models
 from agents.models import Agent
 from clients.models import Site, Client
 from core.models import CoreSettings
+from logs.models import BaseAuditModel
 
 
-class Policy(models.Model):
+class Policy(BaseAuditModel):
     name = models.CharField(max_length=255, unique=True)
     desc = models.CharField(max_length=255, null=True, blank=True)
     active = models.BooleanField(default=False)
     enforced = models.BooleanField(default=False)
-    created_by = models.CharField(max_length=100, null=True, blank=True)
-    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    modified_by = models.CharField(max_length=100, null=True, blank=True)
-    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     @property
     def is_default_server_policy(self):

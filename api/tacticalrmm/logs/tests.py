@@ -9,7 +9,6 @@ class TestAuditViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
-        self.agent_setup()
 
     def create_audit_records(self):
         # user jim agent logs
@@ -153,7 +152,11 @@ class TestAuditViews(TacticalTestCase):
 
     def test_agent_pending_actions(self):
         agent = baker.make_recipe("agents.agent")
-        pending_actions = baker.make("logs.PendingAction", agent=agent, _quantity=6,)
+        pending_actions = baker.make(
+            "logs.PendingAction",
+            agent=agent,
+            _quantity=6,
+        )
         url = f"/logs/{agent.pk}/pendingactions/"
 
         resp = self.client.get(url, format="json")

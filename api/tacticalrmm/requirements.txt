@@ -7,10 +7,10 @@ cffi==1.14.3
 chardet==3.0.4
 cryptography==3.1.1
 decorator==4.4.2
-Django==3.1.1
+Django==3.1.2
 django-cors-headers==3.5.0
 django-rest-knox==4.1.0
-djangorestframework==3.11.1
+djangorestframework==3.12.1
 future==0.18.2
 idna==2.10
 kombu==4.6.11
@@ -33,4 +33,4 @@ uWSGI==2.0.19.1
 validators==0.18.1
 vine==1.3.0
 websockets==8.1
-zipp==3.1.0
+zipp==3.3.0

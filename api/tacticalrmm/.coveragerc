@@ -17,3 +17,6 @@ omit =
     */wsgi.py
     */settings.py
     */baker_recipes.py
+    */urls.py
+    */tests.py
+    */test.py

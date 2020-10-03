@@ -1,7 +1,12 @@
 #!/bin/bash
 
-SCRIPT_VERSION="8"
+SCRIPT_VERSION="9"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
+
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
@@ -36,11 +41,6 @@ ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
 MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
 pgusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
 pgpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
-
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
 
 cls() {
   printf "\033c"
@@ -83,6 +83,7 @@ read rootdomain
 # running this even if server is __not__ behind NAT just to make DNS resolving faster
 # this also allows the install script to properly finish even if DNS has not fully propagated
 CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain")
+HAS_11=$(grep 127.0.1.1 /etc/hosts)
 
 if ! [[ $CHECK_HOSTS ]]; then
     echo -ne "${GREEN}We need to append your 3 subdomains to the line starting with 127.0.1.1 in your hosts file.${NC}\n"
@@ -92,10 +93,19 @@ if ! [[ $CHECK_HOSTS ]]; then
     done
 
     if [[ $edithosts == "y" ]]; then
-        sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts
-    else
-        echo -ne "${GREEN}Please manually edit your /etc/hosts file to match the line below and re-run this script.${NC}\n"
-        sed "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts | grep 127.0.1.1
+        if [[ $HAS_11 ]]; then
+          sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts
+        else
+          echo "127.0.1.1 ${rmmdomain} $frontenddomain $meshdomain" | sudo tee --append /etc/hosts > /dev/null
+        fi
+    else 
+        if [[ $HAS_11 ]]; then
+          echo -ne "${GREEN}Please manually edit your /etc/hosts file to match the line below and re-run this script.${NC}\n"
+          sed "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts | grep 127.0.1.1
+        else
+          echo -ne "\n${GREEN}Append the following line to your /etc/hosts file${NC}\n"
+          echo "127.0.1.1 ${rmmdomain} $frontenddomain $meshdomain"
+        fi
         exit 1
     fi
 fi

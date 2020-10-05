@@ -38,6 +38,7 @@ if [ "$LANG" != "en_US.UTF-8" ]; then
   printf >&2 "${RED}Run the following command and change the default locale to ${GREEN}en_US.UTF-8${NC}\n\n"
   printf >&2 "${GREEN}sudo dpkg-reconfigure locales${NC}\n\n"
   printf >&2 "${RED}You will need to log out and back in for changes to take effect, then re-run this script.${NC}\n\n"
+  exit 1
 fi
 
 # prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet

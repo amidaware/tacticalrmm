@@ -202,3 +202,113 @@ class WinupdateTasks(TacticalTestCase):
         check_agent_update_schedule_task()
         agent_salt_cmd.assert_called_with(func="win_agent.install_updates")
         self.assertEquals(agent_salt_cmd.call_count, 2)
+
+    @patch("agents.models.Agent.salt_api_cmd")
+    def test_check_for_updates(self, salt_api_cmd):
+        from .tasks import check_for_updates_task
+
+        # create a matching update returned from salt
+        baker.make_recipe(
+            "winupdate.approved_winupdate",
+            agent=self.online_agents[0],
+            kb="KB12341234",
+            guid="GUID1",
+            downloaded=True,
+            severity="",
+            installed=True
+        )
+
+        salt_success_return = {
+            'GUID1': {
+                'Title': "Update Title",
+                'KBs': ["KB12341234"],
+                'GUID': "GUID1",
+                'Description': "Description",
+                'Downloaded': False,
+                'Installed': False,
+                'Mandatory': False,
+                'Severity': "",
+                'NeedsReboot': True,
+            },
+            'GUID2': {
+                'Title': "Update Title 2",
+                'KBs': ["KB12341235"],
+                'GUID': "GUID2",
+                'Description': "Description",
+                'Downloaded': False,
+                'Installed': True,
+                'Mandatory': False,
+                'Severity': "",
+                'NeedsReboot': True,
+            }
+        }
+
+        salt_kb_list = ["KB12341235"]
+
+        # mock failed attempt
+        salt_api_cmd.return_value = "timeout"
+        ret = check_for_updates_task(self.online_agents[0].pk)
+        salt_api_cmd.assert_called_with(
+            timeout=310,
+            func="win_wua.list",
+            arg="skip_installed=False",
+        )
+        self.assertFalse(ret)
+        salt_api_cmd.reset_mock()
+
+        # mock failed attempt
+        salt_api_cmd.return_value = "error"
+        ret = check_for_updates_task(self.online_agents[0].pk)
+        salt_api_cmd.assert_called_with(
+            timeout=310,
+            func="win_wua.list",
+            arg="skip_installed=False",
+        )
+        self.assertFalse(ret)
+        salt_api_cmd.reset_mock()
+
+        # mock failed attempt
+        salt_api_cmd.return_value = "unknown failure"
+        ret = check_for_updates_task(self.online_agents[0].pk)
+        salt_api_cmd.assert_called_with(
+            timeout=310,
+            func="win_wua.list",
+            arg="skip_installed=False",
+        )
+        self.assertEquals(ret, "failed")
+        salt_api_cmd.reset_mock()
+
+        # mock failed attempt at salt list updates with reboot
+        salt_api_cmd.side_effect = [salt_success_return, "timeout", True]
+        ret = check_for_updates_task(self.online_agents[0].pk)
+        salt_api_cmd.assert_any_call(
+            timeout=310,
+            func="win_wua.list",
+            arg="skip_installed=False",
+        )
+        salt_api_cmd.assert_any_call(
+            timeout=60, func="win_wua.installed", arg="kbs_only=True"
+        )
+
+        salt_api_cmd.assert_any_call(
+            timeout=30, func="win_wua.get_needs_reboot"
+        )
+
+        salt_api_cmd.reset_mock()
+
+        # mock successful attempt without reboot
+        salt_api_cmd.side_effect = [salt_success_return, salt_kb_list, False]
+        ret = check_for_updates_task(self.online_agents[0].pk)
+        salt_api_cmd.assert_any_call(
+            timeout=310,
+            func="win_wua.list",
+            arg="skip_installed=False",
+        )
+
+        salt_api_cmd.assert_any_call(
+            timeout=60, func="win_wua.installed", arg="kbs_only=True"
+        )
+
+        salt_api_cmd.assert_any_call(
+            timeout=30, func="win_wua.get_needs_reboot"
+        )

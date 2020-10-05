@@ -1,11 +1,12 @@
 #!/bin/bash
 
-SCRIPT_VERSION="9"
+SCRIPT_VERSION="10"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+RED='\033[0;31m'
 NC='\033[0m'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
@@ -30,6 +31,13 @@ fi
 if [ $EUID -eq 0 ]; then
   echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
   exit 1
+fi
+
+if [ "$LANG" != "en_US.UTF-8" ]; then
+  printf >&2 "\n${RED}System locale must be ${GREEN}en_US.UTF-8${RED} not ${YELLOW}${LANG}${NC}\n"
+  printf >&2 "${RED}Run the following command and change the default locale to ${GREEN}en_US.UTF-8${NC}\n\n"
+  printf >&2 "${GREEN}sudo dpkg-reconfigure locales${NC}\n\n"
+  printf >&2 "${RED}You will need to log out and back in for changes to take effect, then re-run this script.${NC}\n\n"
 fi
 
 # prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet

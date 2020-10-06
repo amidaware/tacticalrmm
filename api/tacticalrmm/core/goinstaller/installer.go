@@ -1,3 +1,4 @@
+//go:generate goversioninfo -icon=onit.ico -manifest=goversioninfo.exe.manifest -gofile=versioninfo.go
 package main
 
 import (

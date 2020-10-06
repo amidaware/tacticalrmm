@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="10"
+SCRIPT_VERSION="11"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 GREEN='\033[0;32m'
@@ -312,6 +312,11 @@ REDIS_HOST    = "localhost"
 EOF
 )"
 echo "${localvars}" > /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
+
+/usr/local/rmmgo/go/bin/go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
+sudo cp /rmm/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/
+sudo chown ${USER}:${USER} /usr/local/bin/goversioninfo
+sudo chmod +x /usr/local/bin/goversioninfo
 
 print_green 'Installing the backend'
 

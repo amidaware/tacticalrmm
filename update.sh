@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="91"
+SCRIPT_VERSION="92"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
@@ -102,6 +102,10 @@ git reset --hard FETCH_HEAD
 git clean -df
 cp /rmm/_modules/* /srv/salt/_modules/
 cp /rmm/scripts/* /srv/salt/scripts/
+/usr/local/rmmgo/go/bin/go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
+sudo cp /rmm/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/
+sudo chown ${USER}:${USER} /usr/local/bin/goversioninfo
+sudo chmod +x /usr/local/bin/goversioninfo
 rm -rf /rmm/api/env
 cd /rmm/api
 python3 -m venv env

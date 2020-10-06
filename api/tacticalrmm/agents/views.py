@@ -395,16 +395,58 @@ def install_agent(request):
             f"-X 'main.Token={token}'\"",
             "-o",
             exe,
-            os.path.join(settings.BASE_DIR, "core/installer.go"),
         ]
 
         build_error = False
+        gen_error = False
+
+        gen = [
+            "env",
+            "GOOS=windows",
+            f"GOARCH={goarch}",
+            go_bin,
+            "generate",
+        ]
+        try:
+            r1 = subprocess.run(
+                " ".join(gen),
+                capture_output=True,
+                shell=True,
+                cwd=os.path.join(settings.BASE_DIR, "core/goinstaller"),
+            )
+        except Exception as e:
+            gen_error = True
+            logger.error(str(e))
+            return Response(
+                "genfailed", status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+            )
+
+        if r1.returncode != 0:
+            gen_error = True
+            if r1.stdout:
+                logger.error(r1.stdout.decode("utf-8", errors="ignore"))
+
+            if r1.stderr:
+                logger.error(r1.stderr.decode("utf-8", errors="ignore"))
+
+            logger.error(f"Go build failed with return code {r1.returncode}")
+
+        if gen_error:
+            return Response(
+                "genfailed", status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+            )
 
         try:
-            r = subprocess.run(" ".join(cmd), capture_output=True, shell=True)
+            r = subprocess.run(
+                " ".join(cmd),
+                capture_output=True,
+                shell=True,
+                cwd=os.path.join(settings.BASE_DIR, "core/goinstaller"),
+            )
         except Exception as e:
             build_error = True
             logger.error(str(e))
+            return Response("buildfailed", status=status.HTTP_412_PRECONDITION_FAILED)
 
         if r.returncode != 0:
             build_error = True

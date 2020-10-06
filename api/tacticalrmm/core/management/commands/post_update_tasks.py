@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 from time import sleep
 
@@ -14,6 +15,18 @@ class Command(BaseCommand):
     help = "Collection of tasks to run after updating the rmm, after migrations"
 
     def handle(self, *args, **kwargs):
+
+        if not os.path.exists("/usr/local/bin/goversioninfo"):
+            self.stdout.write(self.style.ERROR("*" * 100))
+            self.stdout.write("\n")
+            self.stdout.write(
+                self.style.ERROR(
+                    "ERROR: New update script available. Delete this one and re-download."
+                )
+            )
+            self.stdout.write("\n")
+            sys.exit(1)
+
         # sync modules. split into chunks of 30 agents to not overload the salt master
         agents = Agent.objects.all()
         online = [i.salt_id for i in agents if i.status == "online"]

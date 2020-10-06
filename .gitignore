@@ -38,4 +38,5 @@ rmm-*.exe
 rmm-*.ps1
 api/tacticalrmm/accounts/management/commands/*.json
 api/tacticalrmm/accounts/management/commands/random_data.py
-
+versioninfo.go
+resource.syso

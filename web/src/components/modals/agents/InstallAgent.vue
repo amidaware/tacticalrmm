@@ -39,7 +39,7 @@
               type="number"
               filled
               label="Token expiration (hours)"
-              style="max-width: 200px;"
+              style="max-width: 200px"
               stack-label
             />
           </div>
@@ -48,12 +48,7 @@
           <div class="q-gutter-sm">
             <q-checkbox v-model="rdp" dense label="Enable RDP" />
             <q-checkbox v-model="ping" dense label="Enable Ping" />
-            <q-checkbox
-              v-model="power"
-              dense
-              v-show="agenttype === 'workstation'"
-              label="Disable sleep/hibernate"
-            />
+            <q-checkbox v-model="power" dense v-show="agenttype === 'workstation'" label="Disable sleep/hibernate" />
           </div>
         </q-card-section>
         <q-card-section>
@@ -199,6 +194,9 @@ export default {
                 break;
               case 412:
                 err = "Golang build failed. Check debug log for the error message";
+                break;
+              case 413:
+                err = "Golang generate failed. Check debug log for the error message";
                 break;
               case 406:
                 err = "Missing 64 bit meshagent.exe. Upload it from File > Upload Mesh Agent";

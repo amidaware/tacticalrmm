@@ -240,7 +240,7 @@ class TestAgentViews(BaseTestCase):
         mock_file_exists.return_value = True
         mock_subprocess.return_value.returncode = 1
         r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 412)
+        self.assertEqual(r.status_code, 413)
 
         mock_file_exists.return_value = True
         mock_subprocess.return_value.returncode = 0

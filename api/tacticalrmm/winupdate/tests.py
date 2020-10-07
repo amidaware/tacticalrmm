@@ -215,32 +215,32 @@ class WinupdateTasks(TacticalTestCase):
             guid="GUID1",
             downloaded=True,
             severity="",
-            installed=True
+            installed=True,
         )
 
         salt_success_return = {
-            'GUID1': {
-                'Title': "Update Title",
-                'KBs': ["KB12341234"],
-                'GUID': "GUID1",
-                'Description': "Description",
-                'Downloaded': False,
-                'Installed': False,
-                'Mandatory': False,
-                'Severity': "",
-                'NeedsReboot': True,
+            "GUID1": {
+                "Title": "Update Title",
+                "KBs": ["KB12341234"],
+                "GUID": "GUID1",
+                "Description": "Description",
+                "Downloaded": False,
+                "Installed": False,
+                "Mandatory": False,
+                "Severity": "",
+                "NeedsReboot": True,
             },
-            'GUID2': {
-                'Title': "Update Title 2",
-                'KBs': ["KB12341235"],
-                'GUID': "GUID2",
-                'Description': "Description",
-                'Downloaded': False,
-                'Installed': True,
-                'Mandatory': False,
-                'Severity': "",
-                'NeedsReboot': True,
-            }
+            "GUID2": {
+                "Title": "Update Title 2",
+                "KBs": ["KB12341235"],
+                "GUID": "GUID2",
+                "Description": "Description",
+                "Downloaded": False,
+                "Installed": True,
+                "Mandatory": False,
+                "Severity": "",
+                "NeedsReboot": True,
+            },
         }
 
         salt_kb_list = ["KB12341235"]
@@ -290,9 +290,7 @@ class WinupdateTasks(TacticalTestCase):
             timeout=60, func="win_wua.installed", arg="kbs_only=True"
         )
 
-        salt_api_cmd.assert_any_call(
-            timeout=30, func="win_wua.get_needs_reboot"
-        )
+        salt_api_cmd.assert_any_call(timeout=30, func="win_wua.get_needs_reboot")
 
         salt_api_cmd.reset_mock()
 
@@ -309,6 +307,4 @@ class WinupdateTasks(TacticalTestCase):
             timeout=60, func="win_wua.installed", arg="kbs_only=True"
         )
 
-        salt_api_cmd.assert_any_call(
-            timeout=30, func="win_wua.get_needs_reboot"
-        )
+        salt_api_cmd.assert_any_call(timeout=30, func="win_wua.get_needs_reboot")

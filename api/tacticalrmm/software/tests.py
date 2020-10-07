@@ -6,8 +6,8 @@ from unittest.mock import patch
 from .models import InstalledSoftware, ChocoLog
 from agents.models import Agent
 
-class TestSoftwareViews(TacticalTestCase):
 
+class TestSoftwareViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()
 
@@ -23,19 +23,11 @@ class TestSoftwareViews(TacticalTestCase):
         agent = baker.make_recipe("agents.agent")
 
         # test a call where agent doesn't exist
-        invalid_data = {
-            "pk": 500,
-            "name": "Test Software",
-            "version": "1.0.0"
-        }
+        invalid_data = {"pk": 500, "name": "Test Software", "version": "1.0.0"}
         resp = self.client.post(url, invalid_data, format="json")
         self.assertEqual(resp.status_code, 404)
 
-        data = {
-            "pk": agent.pk,
-            "name": "Test Software",
-            "version": "1.0.0"
-        }
+        data = {"pk": agent.pk, "name": "Test Software", "version": "1.0.0"}
 
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -43,7 +35,6 @@ class TestSoftwareViews(TacticalTestCase):
         install_program.assert_called_with(data["pk"], data["name"], data["version"])
 
         self.check_not_authenticated("post", url)
-
 
     def test_chocos_installed(self):
         # test a call where agent doesn't exist
@@ -59,7 +50,11 @@ class TestSoftwareViews(TacticalTestCase):
         self.assertEquals(resp.data, [])
 
         # make some software
-        software = baker.make("software.InstalledSoftware", agent=agent, software={},)
+        software = baker.make(
+            "software.InstalledSoftware",
+            agent=agent,
+            software={},
+        )
 
         serializer = InstalledSoftwareSerializer(software)
         resp = self.client.get(url, format="json")
@@ -71,10 +66,7 @@ class TestSoftwareViews(TacticalTestCase):
     @patch("agents.models.Agent.salt_api_cmd")
     def test_chocos_refresh(self, salt_api_cmd):
 
-        salt_return = {
-            'git': '2.3.4',
-            'docker': '1.0.2'
-        }
+        salt_return = {"git": "2.3.4", "docker": "1.0.2"}
 
         # test a call where agent doesn't exist
         resp = self.client.get("/software/refresh/500/", format="json")
@@ -112,24 +104,17 @@ class TestSoftwareViews(TacticalTestCase):
         software = agent.installedsoftware_set.get()
 
         expected = [
-            {
-                "name": "git",
-                "version": "2.3.4"
-            },
-            {
-                "name": "docker",
-                "version": "1.0.2"
-            }
+            {"name": "git", "version": "2.3.4"},
+            {"name": "docker", "version": "1.0.2"},
         ]
 
         self.assertTrue(InstalledSoftware.objects.filter(agent=agent).exists())
         self.assertEquals(software.software, expected)
 
         self.check_not_authenticated("get", url)
-        
+
 
 class TestSoftwareTasks(TacticalTestCase):
-
     @patch("agents.models.Agent.salt_api_cmd")
     def test_install_chocolatey(self, salt_api_cmd):
         from .tasks import install_chocolatey
@@ -140,14 +125,18 @@ class TestSoftwareTasks(TacticalTestCase):
         salt_api_cmd.return_value = "timeout"
         ret = install_chocolatey(agent.pk)
 
-        salt_api_cmd.assert_called_with(timeout=120, func="chocolatey.bootstrap", arg="force=True")
+        salt_api_cmd.assert_called_with(
+            timeout=120, func="chocolatey.bootstrap", arg="force=True"
+        )
         self.assertFalse(ret)
 
         # test successful
         salt_api_cmd.return_value = "chocolatey is now ready"
         ret = install_chocolatey(agent.pk)
 
-        salt_api_cmd.assert_called_with(timeout=120, func="chocolatey.bootstrap", arg="force=True")
+        salt_api_cmd.assert_called_with(
+            timeout=120, func="chocolatey.bootstrap", arg="force=True"
+        )
         self.assertTrue(ret)
         self.assertTrue(Agent.objects.get(pk=agent.pk).choco_installed)
 
@@ -188,10 +177,7 @@ class TestSoftwareTasks(TacticalTestCase):
 
         agent = baker.make_recipe("agents.agent")
 
-        salt_return = {
-            'git': '2.3.4',
-            'docker': '1.0.2'
-        }
+        salt_return = {"git": "2.3.4", "docker": "1.0.2"}
 
         # test failed attempt
         salt_api_cmd.return_value = "timeout"
@@ -208,19 +194,12 @@ class TestSoftwareTasks(TacticalTestCase):
         software = agent.installedsoftware_set.get()
 
         expected = [
-            {
-                "name": "git",
-                "version": "2.3.4"
-            },
-            {
-                "name": "docker",
-                "version": "1.0.2"
-            }
+            {"name": "git", "version": "2.3.4"},
+            {"name": "docker", "version": "1.0.2"},
         ]
 
         self.assertTrue(InstalledSoftware.objects.filter(agent=agent).exists())
         self.assertEquals(software.software, expected)
-        
 
     @patch("agents.models.Agent.salt_api_cmd")
     @patch("software.tasks.get_installed_software.delay")
@@ -234,9 +213,7 @@ class TestSoftwareTasks(TacticalTestCase):
         ret = install_program(agent.pk, "git", "2.3.4")
         self.assertFalse(ret)
         salt_api_cmd.assert_called_with(
-            timeout=900,
-            func="chocolatey.install",
-            arg=["git", "version=2.3.4"]
+            timeout=900, func="chocolatey.install", arg=["git", "version=2.3.4"]
         )
         salt_api_cmd.reset_mock()
 
@@ -245,9 +222,7 @@ class TestSoftwareTasks(TacticalTestCase):
         ret = install_program(agent.pk, "git", "2.3.4")
         self.assertTrue(ret)
         salt_api_cmd.assert_called_with(
-            timeout=900,
-            func="chocolatey.install",
-            arg=["git", "version=2.3.4"]
+            timeout=900, func="chocolatey.install", arg=["git", "version=2.3.4"]
         )
         get_installed_software.assert_called_with(agent.pk)
 

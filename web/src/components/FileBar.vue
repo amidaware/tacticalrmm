@@ -111,6 +111,21 @@
             </q-list>
           </q-menu>
         </q-btn>
+        <!-- tools -->
+        <q-btn size="md" dense no-caps flat label="Tools">
+          <q-menu auto-close>
+            <q-list dense style="min-width: 100px">
+              <!-- bulk command -->
+              <q-item clickable v-close-popup @click="showBulkCommand = true">
+                <q-item-section>Bulk Command</q-item-section>
+              </q-item>
+              <!-- bulk script -->
+              <q-item clickable v-close-popup @click="showBulkScript = true">
+                <q-item-section>Bulk Script</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
       </q-btn-group>
       <q-space />
       <!-- add client modal -->
@@ -142,12 +157,7 @@
       <LogModal />
       <!-- audit log modal -->
       <div class="q-pa-md q-gutter-sm">
-        <q-dialog
-          v-model="showAuditManager"
-          maximized
-          transition-show="slide-up"
-          transition-hide="slide-down"
-        >
+        <q-dialog v-model="showAuditManager" maximized transition-show="slide-up" transition-hide="slide-down">
           <AuditManager @close="showAuditManager = false" />
         </q-dialog>
       </div>
@@ -159,12 +169,7 @@
       </div>
       <!-- Update Agents Modal -->
       <div class="q-pa-md q-gutter-sm">
-        <q-dialog
-          v-model="showUpdateAgentsModal"
-          maximized
-          transition-show="slide-up"
-          transition-hide="slide-down"
-        >
+        <q-dialog v-model="showUpdateAgentsModal" maximized transition-show="slide-up" transition-hide="slide-down">
           <UpdateAgents @close="showUpdateAgentsModal = false" />
         </q-dialog>
       </div>
@@ -187,6 +192,16 @@
       <q-dialog v-model="showUploadMesh">
         <UploadMesh @close="showUploadMesh = false" />
       </q-dialog>
+
+      <!-- Bulk command modal -->
+      <q-dialog v-model="showBulkCommand" position="top">
+        <BulkCommand @close="showBulkCommand = false" />
+      </q-dialog>
+
+      <!-- Bulk script modal -->
+      <q-dialog v-model="showBulkScript" position="top">
+        <BulkScript @close="showBulkScript = false" />
+      </q-dialog>
     </q-bar>
   </div>
 </template>
@@ -207,6 +222,8 @@ import AdminManager from "@/components/AdminManager";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import UploadMesh from "@/components/modals/core/UploadMesh";
 import AuditManager from "@/components/AuditManager";
+import BulkCommand from "@/components/modals/agents/BulkCommand";
+import BulkScript from "@/components/modals/agents/BulkScript";
 
 export default {
   name: "FileBar",
@@ -226,6 +243,8 @@ export default {
     UploadMesh,
     AdminManager,
     AuditManager,
+    BulkCommand,
+    BulkScript,
   },
   props: ["clients"],
   data() {
@@ -243,6 +262,8 @@ export default {
       showInstallAgent: false,
       showUploadMesh: false,
       showAuditManager: false,
+      showBulkCommand: false,
+      showBulkScript: false,
     };
   },
   methods: {

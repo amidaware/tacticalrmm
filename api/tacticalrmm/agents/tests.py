@@ -409,3 +409,97 @@ class TestAgentViews(BaseTestCase):
         self.assertTrue(agent.overdue_email_alert)
 
         self.check_not_authenticated("post", url)
+
+    @patch("agents.models.Agent.salt_batch_async")
+    def test_bulk_cmd_script(self, mock_ret):
+        url = "/agents/bulk/"
+
+        mock_ret.return_value = "ok"
+
+        payload = {
+            "mode": "command",
+            "target": "agents",
+            "client": None,
+            "site": None,
+            "agentPKs": [
+                self.agent.pk,
+            ],
+            "cmd": "gpupdate /force",
+            "timeout": 300,
+            "shell": "cmd",
+        }
+
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        payload = {
+            "mode": "command",
+            "target": "agents",
+            "client": None,
+            "site": None,
+            "agentPKs": [],
+            "cmd": "gpupdate /force",
+            "timeout": 300,
+            "shell": "cmd",
+        }
+
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        payload = {
+            "mode": "command",
+            "target": "client",
+            "client": "Google",
+            "site": None,
+            "agentPKs": [
+                self.agent.pk,
+            ],
+            "cmd": "gpupdate /force",
+            "timeout": 300,
+            "shell": "cmd",
+        }
+
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        payload = {
+            "mode": "command",
+            "target": "client",
+            "client": "Google",
+            "site": "Main Office",
+            "agentPKs": [
+                self.agent.pk,
+            ],
+            "cmd": "gpupdate /force",
+            "timeout": 300,
+            "shell": "cmd",
+        }
+
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        payload = {
+            "mode": "command",
+            "target": "site",
+            "client": "A ASJDHkjASHDASD",
+            "site": "asdasdasdasda",
+            "agentPKs": [
+                self.agent.pk,
+            ],
+            "cmd": "gpupdate /force",
+            "timeout": 300,
+            "shell": "cmd",
+        }
+
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 404)
+
+        mock_ret.return_value = "timeout"
+        payload["client"] = "Google"
+        payload["site"] = "Main Office"
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        # TODO mock the script
+
+        self.check_not_authenticated("post", url)

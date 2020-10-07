@@ -733,3 +733,62 @@ class GetEditDeleteNote(APIView):
         note = get_object_or_404(Note, pk=pk)
         note.delete()
         return Response("Note was deleted!")
+
+
+@api_view(["POST"])
+def bulk_cmd_script(request):
+    if request.data["target"] == "agents" and not request.data["agentPKs"]:
+        return notify_error("Must select at least 1 agent")
+
+    if request.data["target"] == "client":
+        client = get_object_or_404(Client, client=request.data["client"])
+        agents = Agent.objects.filter(client=client.client)
+    elif request.data["target"] == "site":
+        client = get_object_or_404(Client, client=request.data["client"])
+        site = (
+            Site.objects.filter(client=client).filter(site=request.data["site"]).get()
+        )
+        agents = Agent.objects.filter(client=client.client).filter(site=site.site)
+    elif request.data["target"] == "agents":
+        agents = Agent.objects.filter(pk__in=request.data["agentPKs"])
+    elif request.data["target"] == "all":
+        agents = Agent.objects.all()
+    else:
+        return notify_error("Something went wrong")
+
+    minions = [agent.salt_id for agent in agents]
+
+    if request.data["mode"] == "command":
+        r = Agent.salt_batch_async(
+            minions=minions,
+            func="cmd.run_bg",
+            kwargs={
+                "cmd": request.data["cmd"],
+                "shell": request.data["shell"],
+                "timeout": request.data["timeout"],
+            },
+        )
+        if r == "timeout":
+            return notify_error("Salt API not running")
+        return Response(f"Command will now be run on {len(minions)} agents")
+
+    elif request.data["mode"] == "script":
+        script = get_object_or_404(Script, pk=request.data["scriptPK"])
+
+        r = Agent.salt_batch_async(
+            minions=minions,
+            func="win_agent.run_script",
+            kwargs={
+                "filepath": script.filepath,
+                "filename": script.filename,
+                "shell": script.shell,
+                "timeout": request.data["timeout"],
+                "args": request.data["args"],
+                "bg": True,
+            },
+        )
+        if r == "timeout":
+            return notify_error("Salt API not running")
+        return Response(f"{script.name} will now be run on {len(minions)} agents")
+    else:
+        return notify_error("Something went wrong")

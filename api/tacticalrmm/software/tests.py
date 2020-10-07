@@ -79,20 +79,32 @@ class TestSoftwareViews(TacticalTestCase):
         salt_api_cmd.return_value = "timeout"
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 400)
-        salt_api_cmd.assert_called_with(timeout=20, func="pkg.list_pkgs")
+        salt_api_cmd.assert_called_with(
+            timeout=20,
+            func="pkg.list_pkgs",
+            kwargs={"include_components": False, "include_updates": False},
+        )
         salt_api_cmd.reset_mock()
 
         salt_api_cmd.return_value = "error"
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 400)
-        salt_api_cmd.assert_called_with(timeout=20, func="pkg.list_pkgs")
+        salt_api_cmd.assert_called_with(
+            timeout=20,
+            func="pkg.list_pkgs",
+            kwargs={"include_components": False, "include_updates": False},
+        )
         salt_api_cmd.reset_mock()
 
         # test success and created new software object
         salt_api_cmd.return_value = salt_return
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        salt_api_cmd.assert_called_with(timeout=20, func="pkg.list_pkgs")
+        salt_api_cmd.assert_called_with(
+            timeout=20,
+            func="pkg.list_pkgs",
+            kwargs={"include_components": False, "include_updates": False},
+        )
         self.assertTrue(InstalledSoftware.objects.filter(agent=agent).exists())
         salt_api_cmd.reset_mock()
 
@@ -100,7 +112,11 @@ class TestSoftwareViews(TacticalTestCase):
         salt_api_cmd.return_value = salt_return
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        salt_api_cmd.assert_called_with(timeout=20, func="pkg.list_pkgs")
+        salt_api_cmd.assert_called_with(
+            timeout=20,
+            func="pkg.list_pkgs",
+            kwargs={"include_components": False, "include_updates": False},
+        )
         software = agent.installedsoftware_set.get()
 
         expected = [
@@ -183,14 +199,22 @@ class TestSoftwareTasks(TacticalTestCase):
         salt_api_cmd.return_value = "timeout"
         ret = get_installed_software(agent.pk)
         self.assertFalse(ret)
-        salt_api_cmd.assert_called_with(timeout=30, func="pkg.list_pkgs")
+        salt_api_cmd.assert_called_with(
+            timeout=30,
+            func="pkg.list_pkgs",
+            kwargs={"include_components": False, "include_updates": False},
+        )
         salt_api_cmd.reset_mock()
 
         # test successful attempt
         salt_api_cmd.return_value = salt_return
         ret = get_installed_software(agent.pk)
         self.assertTrue(ret)
-        salt_api_cmd.assert_called_with(timeout=30, func="pkg.list_pkgs")
+        salt_api_cmd.assert_called_with(
+            timeout=30,
+            func="pkg.list_pkgs",
+            kwargs={"include_components": False, "include_updates": False},
+        )
         software = agent.installedsoftware_set.get()
 
         expected = [

@@ -131,15 +131,24 @@ class AutomatedTask(BaseAuditModel):
 
         return TaskSerializer(task).data
 
-    def create_policy_task(self, agent):
+    def create_policy_task(self, agent=None, policy=None):
+        
+        # exit is neither are set or if both are set
+        if not agent and not policy or agent and policy:
+            return
+
         assigned_check = None
-        if self.assigned_check:
+
+        if agent and self.assigned_check:
             assigned_check = agent.agentchecks.get(parent_check=self.assigned_check.pk)
+        elif policy and self.assigned_check:
+            assigned_check = policy.policychecks.get(name=self.assigned_check.name)
 
         task = AutomatedTask.objects.create(
             agent=agent,
-            managed_by_policy=True,
-            parent_task=self.pk,
+            policy=policy,
+            managed_by_policy=bool(agent),
+            parent_task=(self.pk if agent else None),
             script=self.script,
             script_args=self.script_args,
             assigned_check=assigned_check,

@@ -58,51 +58,12 @@ class GetAddPolicies(APIView):
 
             checks = copyPolicy.policychecks.all()
             for check in checks:
-                Check.objects.create(
-                    policy=policy,
-                    name=check.name,
-                    check_type=check.check_type,
-                    email_alert=check.email_alert,
-                    text_alert=check.text_alert,
-                    fails_b4_alert=check.fails_b4_alert,
-                    extra_details=check.extra_details,
-                    threshold=check.threshold,
-                    disk=check.disk,
-                    ip=check.ip,
-                    script=check.script,
-                    script_args=check.script_args,
-                    timeout=check.timeout,
-                    svc_name=check.svc_name,
-                    svc_display_name=check.svc_display_name,
-                    pass_if_start_pending=check.pass_if_start_pending,
-                    pass_if_svc_not_exist=check.pass_if_svc_not_exist,
-                    restart_if_stopped=check.restart_if_stopped,
-                    svc_policy_mode=check.svc_policy_mode,
-                    log_name=check.log_name,
-                    event_id=check.event_id,
-                    event_id_is_wildcard=check.event_id_is_wildcard,
-                    event_type=check.event_type,
-                    event_source=check.event_source,
-                    event_message=check.event_message,
-                    fail_when=check.fail_when,
-                    search_last_days=check.search_last_days,
-                )
+                check.create_policy_check(policy=policy)
 
             tasks = copyPolicy.autotasks.all()
 
             for task in tasks:
-                task = AutomatedTask.objects.create(
-                    policy=policy,
-                    script=task.script,
-                    assigned_check=task.assigned_check,
-                    name=task.name,
-                    run_time_days=task.run_time_days,
-                    run_time_minute=task.run_time_minute,
-                    task_type=task.task_type,
-                    win_task_name=task.win_task_name,
-                    timeout=task.timeout,
-                    enabled=task.enabled,
-                )
+                task.create_policy_task(policy=policy)
 
         return Response("ok")
 
@@ -134,7 +95,7 @@ class GetUpdateDeletePolicy(APIView):
         return Response("ok")
 
     def delete(self, request, pk):
-        policy = Policy.objects.get(pk=pk)
+        policy = get_object_or_404(Policy, pk=pk)
 
         # delete all managed policy checks off of agents
         generate_agent_checks_from_policies_task.delay(policypk=policy.pk, clear=True)

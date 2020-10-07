@@ -61,6 +61,14 @@ class AuditLog(models.Model):
     def __str__(self):
         return f"{self.username} {self.action} {self.object_type}"
 
+    def save(self, *args, **kwargs):
+        
+        if not self.pk and self.message:
+            # truncate message field if longer than 255 characters
+            self.message = (self.message[:253] + '..') if len(self.message) > 255 else self.message
+
+        return super(AuditLog, self).save(*args, **kwargs)
+
     @staticmethod
     def audit_mesh_session(username, hostname, debug_info={}):
         AuditLog.objects.create(

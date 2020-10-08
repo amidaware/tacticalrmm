@@ -68,5 +68,33 @@
         "name": "Rename Tactical RMM Agent",
         "description": "Updates the DisplayName registry entry for the Tactical RMM windows agent to your desired name. This script takes 1 required argument: the name you wish to set.",
         "shell": "powershell"
+    },
+    {
+        "filename": "bitlocker_encrypted_drive_c.ps1",
+        "submittedBy": "https://github.com/ThatsNASt",
+        "name": "Check C Drive for Bitlocker Status",
+        "description": "Runs a check on drive C for Bitlocker status.",
+        "shell": "powershell"
+    },
+    {
+        "filename": "bitlocker_create_status_report.ps1",
+        "submittedBy": "https://github.com/ThatsNASt",
+        "name": "Create Bitlocker Status Report",
+        "description": "Creates a Bitlocker status report.",
+        "shell": "powershell"
+    },
+    {
+        "filename": "bitlocker_retrieve_status_report.ps1",
+        "submittedBy": "https://github.com/ThatsNASt",
+        "name": "Retreive Bitlocker Status Report",
+        "description": "Retreives a Bitlocker status report.",
+        "shell": "powershell"
+    },
+    {
+        "filename": "bios_check.ps1",
+        "submittedBy": "https://github.com/ThatsNASt",
+        "name": "Check BIOS Information",
+        "description": "Retreives and reports on BIOS make, version, and date   .",
+        "shell": "powershell"
     }
 ]

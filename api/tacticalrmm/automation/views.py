@@ -418,6 +418,7 @@ class UpdatePatchPolicy(APIView):
 
         return Response("ok")
 
+    # bulk reset agent patch policy
     def patch(self, request):
 
         agents = None

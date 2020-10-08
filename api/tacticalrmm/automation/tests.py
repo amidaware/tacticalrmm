@@ -2,7 +2,8 @@ from unittest.mock import patch
 from tacticalrmm.test import TacticalTestCase
 from model_bakery import baker, seq
 from itertools import cycle
-from clients.models import Client, Site
+from agents.models import Agent
+from winupdate.models import WinUpdatePolicy
 
 from .serializers import (
     PolicyTableSerializer,
@@ -221,13 +222,30 @@ class TestPolicyViews(TacticalTestCase):
     def test_policy_overview(self):
         url = "/automation/policies/overview/"
 
-        clients = Client.objects.all()
+        policies = baker.make(
+            "automation.Policy", active=cycle([True, False]), _quantity=5
+        )
+        clients = baker.make(
+            "clients.Client",
+            server_policy=cycle(policies),
+            workstation_policy=cycle(policies),
+            _quantity=5,
+        )
+        sites = baker.make(
+            "clients.Site",
+            client=cycle(clients),
+            server_policy=cycle(policies),
+            workstation_policy=cycle(policies),
+            _quantity=4,
+        )
 
+        sites = baker.make("clients.Site", client=cycle(clients), _quantity=3)
         resp = self.client.get(url, format="json")
         serializer = PolicyOverviewSerializer(clients, many=True)
 
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data, serializer.data)
+
         self.check_not_authenticated("get", url)
 
     def test_get_related(self):
@@ -515,9 +533,14 @@ class TestPolicyViews(TacticalTestCase):
 
     @patch("automation.tasks.run_win_policy_autotask_task.delay")
     def test_run_win_task(self, mock_task):
-        
+
         # create managed policy tasks
-        tasks = baker.make("autotasks.AutomatedTask", managed_by_policy=True, parent_task=1, _quantity=6)
+        tasks = baker.make(
+            "autotasks.AutomatedTask",
+            managed_by_policy=True,
+            parent_task=1,
+            _quantity=6,
+        )
         url = "/automation/runwintask/1/"
         resp = self.client.put(url, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -527,16 +550,146 @@ class TestPolicyViews(TacticalTestCase):
         self.check_not_authenticated("put", url)
 
     def test_create_new_patch_policy(self):
-        pass
+        url = "/automation/winupdatepolicy/"
+
+        # test policy doesn't exist
+        data = {"policy": 500}
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 404)
+
+        policy = baker.make("automation.Policy")
+
+        data = {
+            "policy": policy.pk,
+            "critical": "approve",
+            "important": "approve",
+            "moderate": "ignore",
+            "low": "ignore",
+            "other": "approve",
+            "run_time_hour": 3,
+            "run_time_frequency": "daily",
+            "run_time_days": [0, 3, 5],
+            "run_time_day": "15",
+            "reboot_after_install": "always",
+        }
+
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        self.check_not_authenticated("post", url)
 
     def test_update_patch_policy(self):
-        pass
+
+        # test policy doesn't exist
+        resp = self.client.put("/automation/winupdatepolicy/500/", format="json")
+        self.assertEqual(resp.status_code, 404)
+
+        policy = baker.make("automation.Policy")
+        patch_policy = baker.make("winupdate.WinUpdatePolicy", policy=policy)
+        url = f"/automation/winupdatepolicy/{patch_policy.pk}/"
+
+        data = {
+            "id": patch_policy.pk,
+            "policy": policy.pk,
+            "critical": "approve",
+            "important": "approve",
+            "moderate": "ignore",
+            "low": "ignore",
+            "other": "approve",
+            "run_time_days": [4, 5, 6],
+        }
+
+        resp = self.client.put(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        self.check_not_authenticated("put", url)
 
     def test_reset_patch_policy(self):
-        pass
+        url = "/automation/winupdatepolicy/reset/"
+
+        inherit_fields = {
+            "critical": "inherit",
+            "important": "inherit",
+            "moderate": "inherit",
+            "low": "inherit",
+            "other": "inherit",
+            "run_time_frequency": "inherit",
+            "reboot_after_install": "inherit",
+            "reprocess_failed_inherit": True,
+        }
+
+        # create agents in sites
+        clients = baker.make("clients.Client", client=seq("Client"), _quantity=3)
+        sites = baker.make(
+            "clients.Site", client=cycle(clients), site=seq("Site"), _quantity=6
+        )
+
+        agents = baker.make_recipe(
+            "agents.agent",
+            client=cycle([x.client for x in clients]),
+            site=cycle([x.site for x in sites]),
+            _quantity=6,
+        )
+
+        # create patch policies
+        patch_policies = baker.make_recipe(
+            "winupdate.winupdate_approve", agent=cycle(agents), _quantity=6
+        )
+
+        # test reset agents in site
+        data = {"client": clients[0].client, "site": "Site0"}
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        agents = Agent.objects.filter(client=clients[0].client, site="Site0")
+
+        for agent in agents:
+            for k, v in inherit_fields.items():
+                self.assertEqual(getattr(agent.winupdatepolicy.get(), k), v)
+
+        # test reset agents in client
+        data = {"client": clients[1].client}
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        agents = Agent.objects.filter(client=clients[1].client)
+
+        for agent in agents:
+            for k, v in inherit_fields.items():
+                self.assertEqual(getattr(agent.winupdatepolicy.get(), k), v)
+
+        # test reset all agents
+        data = {}
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        agents = Agent.objects.all()
+        for agent in agents:
+            for k, v in inherit_fields.items():
+                self.assertEqual(getattr(agent.winupdatepolicy.get(), k), v)
+
+        self.check_not_authenticated("patch", url)
 
     def test_delete_patch_policy(self):
-        pass
+        # test patch policy doesn't exist
+        resp = self.client.delete("/automation/winupdatepolicy/500/", format="json")
+        self.assertEqual(resp.status_code, 404)
+
+        winupdate_policy = baker.make_recipe(
+            "winupdate.winupdate_policy", policy__name="Test Policy"
+        )
+        url = f"/automation/winupdatepolicy/{winupdate_policy.pk}/"
+
+        resp = self.client.delete(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(
+            WinUpdatePolicy.objects.filter(pk=winupdate_policy.pk).exists()
+        )
+
+        self.check_not_authenticated("delete", url)
 
 
 class TestPolicyTasks(TacticalTestCase):

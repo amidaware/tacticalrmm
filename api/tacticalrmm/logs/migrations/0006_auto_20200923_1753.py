@@ -6,13 +6,27 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('logs', '0005_auto_20200923_1711'),
+        ("logs", "0005_auto_20200923_1711"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='auditlog',
-            name='object_type',
-            field=models.CharField(choices=[('user', 'User'), ('script', 'Script'), ('agent', 'Agent'), ('policy', 'Policy'), ('winupdatepolicy', 'Patch Policy'), ('client', 'Client'), ('site', 'Site'), ('check', 'Check'), ('automatedtask', 'Automated Task'), ('coresettings', 'Core Settings')], max_length=100),
+            model_name="auditlog",
+            name="object_type",
+            field=models.CharField(
+                choices=[
+                    ("user", "User"),
+                    ("script", "Script"),
+                    ("agent", "Agent"),
+                    ("policy", "Policy"),
+                    ("winupdatepolicy", "Patch Policy"),
+                    ("client", "Client"),
+                    ("site", "Site"),
+                    ("check", "Check"),
+                    ("automatedtask", "Automated Task"),
+                    ("coresettings", "Core Settings"),
+                ],
+                max_length=100,
+            ),
         ),
     ]

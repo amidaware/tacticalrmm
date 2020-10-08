@@ -126,13 +126,12 @@ def check_for_updates_task(pk, wait=False, auto_approve=False):
             return "failed"
 
     guids = []
-    # this exception will trigger on win 10 2004 until I release new salt minion with the fix
     try:
         for k in ret.keys():
             guids.append(k)
     except Exception as e:
         logger.error(f"{agent.salt_id}: {str(e)}")
-        return "failed 2004"
+        return
 
     for i in guids:
         # check if existing update install / download status has changed

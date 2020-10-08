@@ -42,7 +42,8 @@ class TestWinUpdateViews(TacticalTestCase):
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
         mock_task.assert_called_with(
-            queue="wupdate", kwargs={"pk": agent.pk, "wait": False}
+            queue="wupdate",
+            kwargs={"pk": agent.pk, "wait": False, "auto_approve": True},
         )
 
         self.check_not_authenticated("get", url)

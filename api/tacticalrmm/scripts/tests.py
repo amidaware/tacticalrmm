@@ -1,3 +1,7 @@
+import json
+import os
+from pathlib import Path
+from django.conf import settings
 from tacticalrmm.test import TacticalTestCase
 from model_bakery import baker
 from itertools import cycle
@@ -89,3 +93,23 @@ class TestScriptViews(TacticalTestCase):
     # TODO Need to mock file open
     def test_download_script(self):
         pass
+
+    def test_load_community_scripts(self):
+        valid_shells = ["powershell", "python", "cmd"]
+        scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[1], "scripts")
+
+        with open(
+            os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")
+        ) as f:
+            info = json.load(f)
+
+        for script in info:
+            self.assertTrue(
+                os.path.exists(os.path.join(scripts_dir, script["filename"]))
+            )
+            self.assertTrue(script["filename"])
+            self.assertTrue(script["name"])
+            self.assertTrue(script["description"])
+            self.assertTrue(script["shell"])
+            self.assertTrue(script["description"])
+            self.assertIn(script["shell"], valid_shells)

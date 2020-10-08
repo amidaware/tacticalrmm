@@ -198,3 +198,17 @@ def check_for_updates_task(pk, wait=False, auto_approve=False):
         agent.approve_updates()
 
     return "ok"
+
+
+@app.task
+def bulk_check_for_updates_task(minions):
+    # don't flood the celery queue
+    chunks = (minions[i : i + 30] for i in range(0, len(minions), 30))
+    for chunk in chunks:
+        for i in chunk:
+            agent = Agent.objects.get(salt_id=i)
+            check_for_updates_task.apply_async(
+                queue="wupdate",
+                kwargs={"pk": agent.pk, "wait": False, "auto_approve": True},
+            )
+        sleep(30)

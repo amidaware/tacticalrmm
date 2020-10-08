@@ -40,6 +40,7 @@ from .serializers import (
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .tasks import uninstall_agent_task, send_agent_update_task
+from winupdate.tasks import bulk_check_for_updates_task
 
 from tacticalrmm.utils import notify_error
 
@@ -736,7 +737,7 @@ class GetEditDeleteNote(APIView):
 
 
 @api_view(["POST"])
-def bulk_cmd_script(request):
+def bulk(request):
     if request.data["target"] == "agents" and not request.data["agentPKs"]:
         return notify_error("Must select at least 1 agent")
 
@@ -790,5 +791,16 @@ def bulk_cmd_script(request):
         if r == "timeout":
             return notify_error("Salt API not running")
         return Response(f"{script.name} will now be run on {len(minions)} agents")
-    else:
-        return notify_error("Something went wrong")
+
+    elif request.data["mode"] == "install":
+        r = Agent.salt_batch_async(minions=minions, func="win_agent.install_updates")
+        if r == "timeout":
+            return notify_error("Salt API not running")
+        return Response(
+            f"Pending updates will now be installed on {len(minions)} agents"
+        )
+    elif request.data["mode"] == "scan":
+        bulk_check_for_updates_task.delay(minions=minions)
+        return Response(f"Patch status scan will now run on {len(minions)} agents")
+
+    return notify_error("Something went wrong")

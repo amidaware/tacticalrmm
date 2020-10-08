@@ -29,5 +29,5 @@ urlpatterns = [
     path("<int:pk>/recovermesh/", views.recover_mesh),
     path("<int:pk>/notes/", views.GetAddNotes.as_view()),
     path("<int:pk>/note/", views.GetEditDeleteNote.as_view()),
-    path("bulk/", views.bulk_cmd_script),
+    path("bulk/", views.bulk),
 ]

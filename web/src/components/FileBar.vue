@@ -123,6 +123,10 @@
               <q-item clickable v-close-popup @click="showBulkScript = true">
                 <q-item-section>Bulk Script</q-item-section>
               </q-item>
+              <!-- bulk patch management -->
+              <q-item clickable v-close-popup @click="showBulkPatchManagement = true">
+                <q-item-section>Bulk Patch Management</q-item-section>
+              </q-item>
             </q-list>
           </q-menu>
         </q-btn>
@@ -202,6 +206,11 @@
       <q-dialog v-model="showBulkScript" position="top">
         <BulkScript @close="showBulkScript = false" />
       </q-dialog>
+
+      <!-- Bulk patch management -->
+      <q-dialog v-model="showBulkPatchManagement" position="top">
+        <BulkPatchManagement @close="showBulkPatchManagement = false" />
+      </q-dialog>
     </q-bar>
   </div>
 </template>
@@ -224,6 +233,7 @@ import UploadMesh from "@/components/modals/core/UploadMesh";
 import AuditManager from "@/components/AuditManager";
 import BulkCommand from "@/components/modals/agents/BulkCommand";
 import BulkScript from "@/components/modals/agents/BulkScript";
+import BulkPatchManagement from "@/components/modals/agents/BulkPatchManagement";
 
 export default {
   name: "FileBar",
@@ -245,6 +255,7 @@ export default {
     AuditManager,
     BulkCommand,
     BulkScript,
+    BulkPatchManagement,
   },
   props: ["clients"],
   data() {
@@ -264,6 +275,7 @@ export default {
       showAuditManager: false,
       showBulkCommand: false,
       showBulkScript: false,
+      showBulkPatchManagement: false,
     };
   },
   methods: {

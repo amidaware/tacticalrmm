@@ -410,8 +410,9 @@ class TestAgentViews(BaseTestCase):
 
         self.check_not_authenticated("post", url)
 
+    @patch("winupdate.tasks.bulk_check_for_updates_task.delay")
     @patch("agents.models.Agent.salt_batch_async")
-    def test_bulk_cmd_script(self, mock_ret):
+    def test_bulk_cmd_script(self, mock_ret, mock_update):
         url = "/agents/bulk/"
 
         mock_ret.return_value = "ok"
@@ -499,6 +500,32 @@ class TestAgentViews(BaseTestCase):
         payload["site"] = "Main Office"
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 400)
+
+        payload = {
+            "mode": "scan",
+            "target": "agents",
+            "client": None,
+            "site": None,
+            "agentPKs": [
+                self.agent.pk,
+            ],
+        }
+        mock_ret.return_value = "ok"
+        r = self.client.post(url, payload, format="json")
+        mock_update.assert_called_once()
+        self.assertEqual(r.status_code, 200)
+
+        payload = {
+            "mode": "install",
+            "target": "client",
+            "client": "Google",
+            "site": None,
+            "agentPKs": [
+                self.agent.pk,
+            ],
+        }
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
 
         # TODO mock the script
 

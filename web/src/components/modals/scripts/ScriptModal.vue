@@ -15,20 +15,14 @@
             outlined
             dense
             v-model="script.name"
-            :rules="[ val => !!val || '*Required']"
+            :rules="[val => !!val || '*Required']"
           />
         </div>
       </q-card-section>
       <q-card-section class="row">
         <div class="col-2">Description:</div>
         <div class="col-10">
-          <q-input
-            :disable="isBuiltInScript"
-            outlined
-            dense
-            v-model="script.description"
-            type="textarea"
-          />
+          <q-input :disable="isBuiltInScript" outlined dense v-model="script.description" type="textarea" />
         </div>
       </q-card-section>
       <q-card-section class="row">
@@ -41,7 +35,7 @@
             filled
             counter
             accept=".ps1, .bat, .py"
-            :rules="[ val => !!val || '*Required']"
+            :rules="[val => !!val || '*Required']"
           >
             <template v-slot:prepend>
               <q-icon name="attach_file" />
@@ -77,18 +71,12 @@
           :options="shellOptions"
           emit-value
           map-options
-          :rules="[ val => !!val || '*Required']"
+          :rules="[val => !!val || '*Required']"
         />
       </q-card-section>
       <q-card-section class="row items-center">
         <q-btn v-if="mode === 'add'" label="Upload" color="primary" type="submit" />
-        <q-btn
-          v-else-if="mode === 'edit'"
-          :disable="isBuiltInScript"
-          label="Edit"
-          color="primary"
-          type="submit"
-        />
+        <q-btn v-else-if="mode === 'edit'" :disable="isBuiltInScript" label="Edit" color="primary" type="submit" />
       </q-card-section>
     </q-form>
   </q-card>

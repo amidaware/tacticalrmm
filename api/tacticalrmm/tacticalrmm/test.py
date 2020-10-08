@@ -30,7 +30,7 @@ class TacticalTestCase(TestCase):
         self.client = APIClient()
 
     # fixes tests waiting 2 minutes for mesh token to appear
-    @override_settings(MESH_TOKEN_KEY="123456")
+    @override_settings(MESH_TOKEN_KEY="41410834b8bb4481446027f87d88ec6f119eb9aa97860366440b778540c7399613f7cabfef4f1aa5c0bd9beae03757e17b2e990e5876b0d9924da59bdf24d3437b3ed1a8593b78d65a72a76c794160d9")
     def setup_coresettings(self):
         self.coresettings = CoreSettings.objects.create()
 
@@ -220,28 +220,6 @@ class BaseTestCase(TestCase):
             mesh_node_id="abcdefghijklmnopAABBCCDD77443355##!!AI%@#$%#*",
             last_seen=djangotime.now(),
         )
-
-    def generate_agents(
-        self, numOfAgents, numOfClients, numOfSites, monitoring_type="server"
-    ):
-
-        agents = list()
-
-        for c in range(numOfClients):
-            client = Client.objects.create(client=f"Client{c}")
-
-            for s in range(numOfSites):
-                site = Site.objects.create(client=client, site=f"Site{s}")
-
-                for a in range(numOfAgents):
-
-                    agents.append(
-                        self.create_agent(
-                            f"Agent{a}", f"Client{c}", f"Site{s}", monitoring_type
-                        )
-                    )
-
-        return agents
 
     def generate_agent_id(self, hostname):
         rand = "".join(random.choice(string.ascii_letters) for _ in range(35))

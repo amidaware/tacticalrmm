@@ -6,28 +6,28 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('winupdate', '0008_auto_20200911_0415'),
+        ("winupdate", "0008_auto_20200911_0415"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='winupdatepolicy',
-            name='created_by',
+            model_name="winupdatepolicy",
+            name="created_by",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AddField(
-            model_name='winupdatepolicy',
-            name='created_time',
+            model_name="winupdatepolicy",
+            name="created_time",
             field=models.DateTimeField(auto_now_add=True, null=True),
         ),
         migrations.AddField(
-            model_name='winupdatepolicy',
-            name='modified_by',
+            model_name="winupdatepolicy",
+            name="modified_by",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AddField(
-            model_name='winupdatepolicy',
-            name='modified_time',
+            model_name="winupdatepolicy",
+            name="modified_time",
             field=models.DateTimeField(auto_now=True, null=True),
         ),
     ]

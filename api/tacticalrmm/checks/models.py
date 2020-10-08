@@ -448,11 +448,16 @@ class Check(BaseAuditModel):
 
         return default_services
 
-    def create_policy_check(self, agent):
+    def create_policy_check(self, agent=None, policy=None):
+
+        if not agent and not policy or agent and policy:
+            return
+
         Check.objects.create(
             agent=agent,
-            managed_by_policy=True,
-            parent_check=self.pk,
+            policy=policy,
+            managed_by_policy=bool(agent),
+            parent_check=(self.pk if agent else None),
             name=self.name,
             check_type=self.check_type,
             email_alert=self.email_alert,
@@ -473,10 +478,10 @@ class Check(BaseAuditModel):
             svc_policy_mode=self.svc_policy_mode,
             log_name=self.log_name,
             event_id=self.event_id,
+            event_id_is_wildcard=self.event_id_is_wildcard,
             event_type=self.event_type,
             event_source=self.event_source,
             event_message=self.event_message,
-            event_id_is_wildcard=self.event_id_is_wildcard,
             fail_when=self.fail_when,
             search_last_days=self.search_last_days,
         )

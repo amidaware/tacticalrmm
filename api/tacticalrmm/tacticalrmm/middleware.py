@@ -1,8 +1,8 @@
 from django.conf import settings
+from rest_framework.exceptions import AuthenticationFailed
 import threading
 
 request_local = threading.local()
-
 
 def get_username():
     return getattr(request_local, "username", None)
@@ -50,21 +50,24 @@ class AuditMiddleware:
                 request = APIView().initialize_request(request)
 
             # check if user is authenticated
-            if hasattr(request, "user") and request.user.is_authenticated:
+            try:
+                if hasattr(request, "user") and request.user.is_authenticated:
 
-                debug_info = {}
-                # gather and save debug info
-                debug_info["url"] = request.path
-                debug_info["method"] = request.method
-                debug_info["view_class"] = view_func.cls.__name__
-                debug_info["view_func"] = view_func.__name__
-                debug_info["view_args"] = view_args
-                debug_info["view_kwargs"] = view_kwargs
+                    debug_info = {}
+                    # gather and save debug info
+                    debug_info["url"] = request.path
+                    debug_info["method"] = request.method
+                    debug_info["view_class"] = view_func.cls.__name__
+                    debug_info["view_func"] = view_func.__name__
+                    debug_info["view_args"] = view_args
+                    debug_info["view_kwargs"] = view_kwargs
 
-                request_local.debug_info = debug_info
+                    request_local.debug_info = debug_info
 
-                # get authentcated user after request
-                request_local.username = request.user.username
+                    # get authenticated user after request
+                    request_local.username = request.user.username
+            except AuthenticationFailed:
+                pass
 
     def process_exception(self, request, exception):
         request_local.debug_info = None

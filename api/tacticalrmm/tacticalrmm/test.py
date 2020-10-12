@@ -1,8 +1,11 @@
+import json
+import os
 import random
 import string
 
 from django.test import TestCase, override_settings
 from django.utils import timezone as djangotime
+from django.conf import settings
 
 from rest_framework.test import APIClient
 from rest_framework.test import force_authenticate
@@ -30,7 +33,9 @@ class TacticalTestCase(TestCase):
         self.client = APIClient()
 
     # fixes tests waiting 2 minutes for mesh token to appear
-    @override_settings(MESH_TOKEN_KEY="41410834b8bb4481446027f87d88ec6f119eb9aa97860366440b778540c7399613f7cabfef4f1aa5c0bd9beae03757e17b2e990e5876b0d9924da59bdf24d3437b3ed1a8593b78d65a72a76c794160d9")
+    @override_settings(
+        MESH_TOKEN_KEY="41410834b8bb4481446027f87d88ec6f119eb9aa97860366440b778540c7399613f7cabfef4f1aa5c0bd9beae03757e17b2e990e5876b0d9924da59bdf24d3437b3ed1a8593b78d65a72a76c794160d9"
+    )
     def setup_coresettings(self):
         self.coresettings = CoreSettings.objects.create()
 
@@ -168,6 +173,13 @@ class BaseTestCase(TestCase):
         self.assertEqual(r.status_code, 401)
 
     def create_agent(self, hostname, client, site, monitoring_type="server"):
+        with open(
+            os.path.join(
+                settings.BASE_DIR, "tacticalrmm/test_data/wmi_python_agent.json"
+            )
+        ) as f:
+            wmi_py = json.load(f)
+
         return Agent.objects.create(
             operating_system="Windows 10",
             plat="windows",
@@ -219,6 +231,7 @@ class BaseTestCase(TestCase):
             description="Test PC",
             mesh_node_id="abcdefghijklmnopAABBCCDD77443355##!!AI%@#$%#*",
             last_seen=djangotime.now(),
+            wmi_detail=wmi_py,
         )
 
     def generate_agent_id(self, hostname):

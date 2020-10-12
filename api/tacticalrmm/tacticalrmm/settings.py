@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "accounts",
     "api",
     "apiv2",
+    "apiv3",
     "clients",
     "agents",
     "checks",

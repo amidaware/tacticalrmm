@@ -246,7 +246,12 @@ class Check(BaseAuditModel):
             self.stdout = data["stdout"]
             self.stderr = data["stderr"]
             self.retcode = data["retcode"]
-            self.execution_time = "{:.4f}".format(data["stop"] - data["start"])
+            try:
+                # python agent
+                self.execution_time = "{:.4f}".format(data["stop"] - data["start"])
+            except:
+                # golang agent
+                self.execution_time = "{:.4f}".format(data["runtime"])
 
             if data["retcode"] != 0:
                 self.status = "failing"

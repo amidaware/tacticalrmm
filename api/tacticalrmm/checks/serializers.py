@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from .models import Check
 from autotasks.models import AutomatedTask
-from scripts.serializers import ScriptSerializer
+from scripts.serializers import ScriptSerializer, ScriptCheckSerializer
 
 
 class AssignedTaskField(serializers.ModelSerializer):
@@ -88,23 +88,13 @@ class CheckRunnerGetSerializer(serializers.ModelSerializer):
             task = obj.assignedtask.first()
             return AssignedTaskCheckRunnerField(task).data
 
-
-class CheckRunnerGetSerializerV2(serializers.ModelSerializer):
-    # for the windows agent
-    # only send data needed for agent to run a check
-
-    assigned_tasks = serializers.SerializerMethodField()
-    script = ScriptSerializer(read_only=True)
-
-    def get_assigned_tasks(self, obj):
-        if obj.assignedtask.exists():
-            tasks = obj.assignedtask.all()
-            return AssignedTaskCheckRunnerField(tasks, many=True).data
-
     class Meta:
         model = Check
         exclude = [
             "policy",
+            "managed_by_policy",
+            "overriden_by_policy",
+            "parent_check",
             "name",
             "more_info",
             "last_run",
@@ -122,6 +112,101 @@ class CheckRunnerGetSerializerV2(serializers.ModelSerializer):
             "execution_time",
             "svc_display_name",
             "svc_policy_mode",
+            "created_by",
+            "created_time",
+            "modified_by",
+            "modified_time",
+            "history",
+        ]
+
+
+class CheckRunnerGetSerializerV2(serializers.ModelSerializer):
+    # for the windows __python__ agent
+    # only send data needed for agent to run a check
+
+    assigned_tasks = serializers.SerializerMethodField()
+    script = ScriptSerializer(read_only=True)
+
+    def get_assigned_tasks(self, obj):
+        if obj.assignedtask.exists():
+            tasks = obj.assignedtask.all()
+            return AssignedTaskCheckRunnerField(tasks, many=True).data
+
+    class Meta:
+        model = Check
+        exclude = [
+            "policy",
+            "managed_by_policy",
+            "overriden_by_policy",
+            "parent_check",
+            "name",
+            "more_info",
+            "last_run",
+            "email_alert",
+            "text_alert",
+            "fails_b4_alert",
+            "fail_count",
+            "email_sent",
+            "text_sent",
+            "outage_history",
+            "extra_details",
+            "stdout",
+            "stderr",
+            "retcode",
+            "execution_time",
+            "svc_display_name",
+            "svc_policy_mode",
+            "created_by",
+            "created_time",
+            "modified_by",
+            "modified_time",
+            "history",
+        ]
+
+
+class CheckRunnerGetSerializerV3(serializers.ModelSerializer):
+    # for the windows __golang__ agent
+    # only send data needed for agent to run a check
+    # the difference here is in the script serializer
+    # script checks no longer rely on salt and are executed directly by the go agent
+
+    assigned_tasks = serializers.SerializerMethodField()
+    script = ScriptCheckSerializer(read_only=True)
+
+    def get_assigned_tasks(self, obj):
+        if obj.assignedtask.exists():
+            tasks = obj.assignedtask.all()
+            return AssignedTaskCheckRunnerField(tasks, many=True).data
+
+    class Meta:
+        model = Check
+        exclude = [
+            "policy",
+            "managed_by_policy",
+            "overriden_by_policy",
+            "parent_check",
+            "name",
+            "more_info",
+            "last_run",
+            "email_alert",
+            "text_alert",
+            "fails_b4_alert",
+            "fail_count",
+            "email_sent",
+            "text_sent",
+            "outage_history",
+            "extra_details",
+            "stdout",
+            "stderr",
+            "retcode",
+            "execution_time",
+            "svc_display_name",
+            "svc_policy_mode",
+            "created_by",
+            "created_time",
+            "modified_by",
+            "modified_time",
+            "history",
         ]
 
 

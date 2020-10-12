@@ -146,25 +146,29 @@ class Agent(BaseAuditModel):
 
     @property
     def local_ips(self):
+        ret = []
         try:
             ips = self.wmi_detail["network_config"]
-            ret = []
-            for _ in ips:
-                try:
-                    addr = [x["IPAddress"] for x in _ if "IPAddress" in x][0]
-                except:
-                    continue
-                else:
-                    for ip in addr:
-                        if validators.ipv4(ip):
-                            ret.append(ip)
-
-            if len(ret) == 1:
-                return ret[0]
-            else:
-                return ", ".join(ret)
-        except:
+        except KeyError:
             return "error getting local ips"
+
+        for i in ips:
+            try:
+                addr = [x["IPAddress"] for x in i if "IPAddress" in x][0]
+            except:
+                continue
+
+            if addr is None:
+                continue
+
+            for ip in addr:
+                if validators.ipv4(ip):
+                    ret.append(ip)
+
+        if len(ret) == 1:
+            return ret[0]
+        else:
+            return ", ".join(ret) if ret else "error getting local ips"
 
     @property
     def make_model(self):

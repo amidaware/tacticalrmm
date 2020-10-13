@@ -29,7 +29,10 @@ matrix:
       install:
         - pip install --no-cache-dir --upgrade pip
         - pip install --no-cache-dir setuptools==49.6.0 wheel==0.35.1
-        - pip install --no-cache-dir -r requirements.txt
+        - pip install --no-cache-dir -r requirements.txt -r requirements-test.txt
 
       script:
-        - python manage.py test -v 2
+        - coverage run manage.py test -v 2
+
+      after_success:
+        - coveralls

@@ -40,6 +40,7 @@ from .serializers import (
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .tasks import uninstall_agent_task, send_agent_update_task
+from winupdate.tasks import bulk_check_for_updates_task
 
 from tacticalrmm.utils import notify_error
 
@@ -395,16 +396,58 @@ def install_agent(request):
             f"-X 'main.Token={token}'\"",
             "-o",
             exe,
-            os.path.join(settings.BASE_DIR, "core/installer.go"),
         ]
 
         build_error = False
+        gen_error = False
+
+        gen = [
+            "env",
+            "GOOS=windows",
+            f"GOARCH={goarch}",
+            go_bin,
+            "generate",
+        ]
+        try:
+            r1 = subprocess.run(
+                " ".join(gen),
+                capture_output=True,
+                shell=True,
+                cwd=os.path.join(settings.BASE_DIR, "core/goinstaller"),
+            )
+        except Exception as e:
+            gen_error = True
+            logger.error(str(e))
+            return Response(
+                "genfailed", status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+            )
+
+        if r1.returncode != 0:
+            gen_error = True
+            if r1.stdout:
+                logger.error(r1.stdout.decode("utf-8", errors="ignore"))
+
+            if r1.stderr:
+                logger.error(r1.stderr.decode("utf-8", errors="ignore"))
+
+            logger.error(f"Go build failed with return code {r1.returncode}")
+
+        if gen_error:
+            return Response(
+                "genfailed", status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+            )
 
         try:
-            r = subprocess.run(" ".join(cmd), capture_output=True, shell=True)
+            r = subprocess.run(
+                " ".join(cmd),
+                capture_output=True,
+                shell=True,
+                cwd=os.path.join(settings.BASE_DIR, "core/goinstaller"),
+            )
         except Exception as e:
             build_error = True
             logger.error(str(e))
+            return Response("buildfailed", status=status.HTTP_412_PRECONDITION_FAILED)
 
         if r.returncode != 0:
             build_error = True
@@ -691,3 +734,73 @@ class GetEditDeleteNote(APIView):
         note = get_object_or_404(Note, pk=pk)
         note.delete()
         return Response("Note was deleted!")
+
+
+@api_view(["POST"])
+def bulk(request):
+    if request.data["target"] == "agents" and not request.data["agentPKs"]:
+        return notify_error("Must select at least 1 agent")
+
+    if request.data["target"] == "client":
+        client = get_object_or_404(Client, client=request.data["client"])
+        agents = Agent.objects.filter(client=client.client)
+    elif request.data["target"] == "site":
+        client = get_object_or_404(Client, client=request.data["client"])
+        site = (
+            Site.objects.filter(client=client).filter(site=request.data["site"]).get()
+        )
+        agents = Agent.objects.filter(client=client.client).filter(site=site.site)
+    elif request.data["target"] == "agents":
+        agents = Agent.objects.filter(pk__in=request.data["agentPKs"])
+    elif request.data["target"] == "all":
+        agents = Agent.objects.all()
+    else:
+        return notify_error("Something went wrong")
+
+    minions = [agent.salt_id for agent in agents]
+
+    if request.data["mode"] == "command":
+        r = Agent.salt_batch_async(
+            minions=minions,
+            func="cmd.run_bg",
+            kwargs={
+                "cmd": request.data["cmd"],
+                "shell": request.data["shell"],
+                "timeout": request.data["timeout"],
+            },
+        )
+        if r == "timeout":
+            return notify_error("Salt API not running")
+        return Response(f"Command will now be run on {len(minions)} agents")
+
+    elif request.data["mode"] == "script":
+        script = get_object_or_404(Script, pk=request.data["scriptPK"])
+
+        r = Agent.salt_batch_async(
+            minions=minions,
+            func="win_agent.run_script",
+            kwargs={
+                "filepath": script.filepath,
+                "filename": script.filename,
+                "shell": script.shell,
+                "timeout": request.data["timeout"],
+                "args": request.data["args"],
+                "bg": True,
+            },
+        )
+        if r == "timeout":
+            return notify_error("Salt API not running")
+        return Response(f"{script.name} will now be run on {len(minions)} agents")
+
+    elif request.data["mode"] == "install":
+        r = Agent.salt_batch_async(minions=minions, func="win_agent.install_updates")
+        if r == "timeout":
+            return notify_error("Salt API not running")
+        return Response(
+            f"Pending updates will now be installed on {len(minions)} agents"
+        )
+    elif request.data["mode"] == "scan":
+        bulk_check_for_updates_task.delay(minions=minions)
+        return Response(f"Patch status scan will now run on {len(minions)} agents")
+
+    return notify_error("Something went wrong")

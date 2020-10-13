@@ -89,7 +89,11 @@ def update_chocos():
 @app.task
 def get_installed_software(pk):
     agent = Agent.objects.get(pk=pk)
-    r = agent.salt_api_cmd(timeout=30, func="pkg.list_pkgs")
+    r = agent.salt_api_cmd(
+        timeout=30,
+        func="pkg.list_pkgs",
+        kwargs={"include_components": False, "include_updates": False},
+    )
 
     if r == "timeout" or r == "error":
         logger.error(f"Timed out trying to get installed software on {agent.salt_id}")

@@ -1,8 +1,9 @@
 from django.db import models
 from agents.models import Agent
+from logs.models import BaseAuditModel
 
 
-class Client(models.Model):
+class Client(BaseAuditModel):
     client = models.CharField(max_length=255, unique=True)
     workstation_policy = models.ForeignKey(
         "automation.Policy",
@@ -19,10 +20,6 @@ class Client(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
     )
-    created_by = models.CharField(max_length=100, null=True, blank=True)
-    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    modified_by = models.CharField(max_length=100, null=True, blank=True)
-    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         return self.client
@@ -53,7 +50,7 @@ class Client(models.Model):
         return ClientSerializer(client).data
 
 
-class Site(models.Model):
+class Site(BaseAuditModel):
     client = models.ForeignKey(Client, related_name="sites", on_delete=models.CASCADE)
     site = models.CharField(max_length=255)
     workstation_policy = models.ForeignKey(
@@ -71,10 +68,6 @@ class Site(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
     )
-    created_by = models.CharField(max_length=100, null=True, blank=True)
-    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    modified_by = models.CharField(max_length=100, null=True, blank=True)
-    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         return self.site

@@ -1,13 +1,19 @@
 #!/bin/bash
 
-SCRIPT_VERSION="7"
+SCRIPT_VERSION="12"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
+
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+RED='\033[0;31m'
+NC='\033[0m'
 
 TMP_FILE=$(mktemp -p "" "rmminstall_XXXXXXXXXX")
 curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
 NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
 
-if [ "${SCRIPT_VERSION}" \< "${NEW_VER}" ]; then
+if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
     printf >&2 "${YELLOW}A newer version of this installer script is available.${NC}\n"
     printf >&2 "${YELLOW}Please download the latest version from ${GREEN}${SCRIPT_URL}${YELLOW} and re-run.${NC}\n"
     rm -f $TMP_FILE
@@ -27,17 +33,23 @@ if [ $EUID -eq 0 ]; then
   exit 1
 fi
 
+if [ "$LANG" != "en_US.UTF-8" ]; then
+  printf >&2 "\n${RED}System locale must be ${GREEN}en_US.UTF-8${RED} not ${YELLOW}${LANG}${NC}\n"
+  printf >&2 "${RED}Run the following command and change the default locale to ${GREEN}en_US.UTF-8${NC}\n\n"
+  printf >&2 "${GREEN}sudo dpkg-reconfigure locales${NC}\n\n"
+  printf >&2 "${RED}You will need to log out and back in for changes to take effect, then re-run this script.${NC}\n\n"
+  exit 1
+fi
+
+# prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
+sudo systemctl restart systemd-journald.service
+
 DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 SALTPW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
 MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
 pgusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
 pgpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
-
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
 
 cls() {
   printf "\033c"
@@ -80,6 +92,7 @@ read rootdomain
 # running this even if server is __not__ behind NAT just to make DNS resolving faster
 # this also allows the install script to properly finish even if DNS has not fully propagated
 CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$rmmdomain" | grep "$meshdomain" | grep "$frontenddomain")
+HAS_11=$(grep 127.0.1.1 /etc/hosts)
 
 if ! [[ $CHECK_HOSTS ]]; then
     echo -ne "${GREEN}We need to append your 3 subdomains to the line starting with 127.0.1.1 in your hosts file.${NC}\n"
@@ -89,10 +102,19 @@ if ! [[ $CHECK_HOSTS ]]; then
     done
 
     if [[ $edithosts == "y" ]]; then
-        sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts
-    else
-        echo -ne "${GREEN}Please manually edit your /etc/hosts file to match the line below and re-run this script.${NC}\n"
-        sed "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts | grep 127.0.1.1
+        if [[ $HAS_11 ]]; then
+          sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts
+        else
+          echo "127.0.1.1 ${rmmdomain} $frontenddomain $meshdomain" | sudo tee --append /etc/hosts > /dev/null
+        fi
+    else 
+        if [[ $HAS_11 ]]; then
+          echo -ne "${GREEN}Please manually edit your /etc/hosts file to match the line below and re-run this script.${NC}\n"
+          sed "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts | grep 127.0.1.1
+        else
+          echo -ne "\n${GREEN}Append the following line to your /etc/hosts file${NC}\n"
+          echo "127.0.1.1 ${rmmdomain} $frontenddomain $meshdomain"
+        fi
         exit 1
     fi
 fi
@@ -169,7 +191,7 @@ print_green 'Installing MeshCentral'
 sudo mkdir -p /meshcentral/meshcentral-data
 sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
-npm install meshcentral@0.6.33
+npm install meshcentral@0.6.62
 sudo chown ${USER}:${USER} -R /meshcentral
 
 meshcfg="$(cat << EOF
@@ -290,6 +312,11 @@ REDIS_HOST    = "localhost"
 EOF
 )"
 echo "${localvars}" > /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
+
+/usr/local/rmmgo/go/bin/go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
+sudo cp /rmm/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/
+sudo chown ${USER}:${USER} /usr/local/bin/goversioninfo
+sudo chmod +x /usr/local/bin/goversioninfo
 
 print_green 'Installing the backend'
 

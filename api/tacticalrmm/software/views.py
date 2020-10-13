@@ -48,7 +48,11 @@ def get_installed(request, pk):
 @api_view()
 def refresh_installed(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(timeout=20, func="pkg.list_pkgs")
+    r = agent.salt_api_cmd(
+        timeout=20,
+        func="pkg.list_pkgs",
+        kwargs={"include_components": False, "include_updates": False},
+    )
 
     if r == "timeout":
         return notify_error("Unable to contact the agent")

@@ -2,8 +2,9 @@
 
 - install docker and docker-compose
 - Obtain wildcard cert or individual certs for each subdomain
+- You can copy any wildcard cert public and private key to the docker/nginx-proxy/certs folder.
 
-## Generate certificates with certbot
+## Generate certificates with certbot (Optional if you already have the certs)
 
 Install Certbot
 
@@ -33,33 +34,12 @@ cd docker
 sudo docker-compose up -d
 ```
 
-You may need to run this twice since some of the dependant containers won't be ready
+You may need to run this twice if some containers fail to start
 
 ## Create a super user
 
 ```
 sudo docker-compose exec api python manage.py createsuperuser
-```
-
-## Setup 2FA authentication
-
-Get the 2FA code with 
-
-```
-sudo docker-compose exec api python manage.py generate_totp
-```
-
-Use the generated code and the username to generate a bar code for your authenticator app
-(domain is the domain name of your site, for example: rmm.example.com)
-
-```
-sudo docker-compose exec api python manage.py generate_barcode [2FAcode] [username] [domain]
-```
-
-## Rebuild the api container
-
-```
-sudo docker-compose up -d --build api
 ```
 
 ## Get MeshCentral EXE download link
@@ -80,7 +60,7 @@ sudo docker-compose exec api /bin/bash
 
 If /bin/bash doesn't work then /bin/sh might need to be used.
 
-## Using Docker for Dev
+## Using Docker for Dev (optional)
 
 This allows you to edit the files locally and those changes will be presented to the containers. Hot Module Reload (Vue/webpack) and the Python equivalent will also work!
 
@@ -106,22 +86,6 @@ Now run `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d` t
 
 This will mount the local vue and python files in the app container with hot reload. Does not require rebuilding when changes to code are made and the changes will take effect immediately!
 
-### Running the Tests
-
-There is a container that is dedicated to run the vue unit tests. The below command will run them and display the output. You can ignore the orphaned containers message.
-
-```
-docker-compose -f docker-compose.test.yml up app-unit-test
-```
-
 ### Other Considerations
 
-- Using Docker Desktop on Windows will provide more visibility into which containers are running. You also can easily view the logs for each container in real-time, and view container environment variables.
-
-- If you are on a *nix system, you can get equivalent logging by using `docker-compose logs [service_name]`.
-
-- `docker ps` will show running containers.
-
-- `docker system prune` will remove items that are not in use by running containers. There are also `--all and --volumes` options to remove everything if you want to start over. Stop running containers first. `docker-compose -f docker-compose.yml -f docker-compose.dev.yml down`
-
-- If the docker container isn't getting file changes you can restart the host or do a `docker system prune --volumes`. This will remove the docker volumes and will create a new one once the containers are started.
+- It is recommended that you use the vscode docker plugin to manage containers. Docker desktop works well too on Windows.

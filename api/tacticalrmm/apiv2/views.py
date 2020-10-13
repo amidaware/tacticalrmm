@@ -276,12 +276,17 @@ class SaltMinion(APIView):
     def patch(self, request):
         # sync modules
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-        r = agent.salt_api_cmd(timeout=20, func="saltutil.sync_modules")
+        r = agent.salt_api_cmd(timeout=45, func="saltutil.sync_modules")
 
-        if r == "timeout" or r == "error" or not r:
+        if r == "timeout" or r == "error":
             return notify_error("Failed to sync salt modules")
 
-        return Response("Successfully synced salt modules")
+        if isinstance(r, list) and any("modules" in i for i in r):
+            return Response("Successfully synced salt modules")
+        elif isinstance(r, list) and not r:
+            return Response("Modules are already in sync")
+        else:
+            return notify_error(f"Failed to sync salt modules: {str(r)}")
 
     def put(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])

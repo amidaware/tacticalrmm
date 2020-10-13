@@ -19,6 +19,7 @@ from django.db import models
 from django.conf import settings
 
 from core.models import CoreSettings, TZ_CHOICES
+from logs.models import BaseAuditModel
 
 import automation
 import autotasks
@@ -27,7 +28,7 @@ import clients
 logger.configure(**settings.LOG_CONFIG)
 
 
-class Agent(models.Model):
+class Agent(BaseAuditModel):
     version = models.CharField(default="0.1.0", max_length=255)
     salt_ver = models.CharField(default="1.0.3", max_length=255)
     operating_system = models.CharField(null=True, max_length=255)
@@ -64,10 +65,6 @@ class Agent(models.Model):
     time_zone = models.CharField(
         max_length=255, choices=TZ_CHOICES, null=True, blank=True
     )
-    created_by = models.CharField(max_length=100, null=True, blank=True)
-    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    modified_by = models.CharField(max_length=100, null=True, blank=True)
-    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
     policy = models.ForeignKey(
         "automation.Policy",
         related_name="agents",
@@ -149,25 +146,29 @@ class Agent(models.Model):
 
     @property
     def local_ips(self):
+        ret = []
         try:
             ips = self.wmi_detail["network_config"]
-            ret = []
-            for _ in ips:
-                try:
-                    addr = [x["IPAddress"] for x in _ if "IPAddress" in x][0]
-                except:
-                    continue
-                else:
-                    for ip in addr:
-                        if validators.ipv4(ip):
-                            ret.append(ip)
-
-            if len(ret) == 1:
-                return ret[0]
-            else:
-                return ", ".join(ret)
-        except:
+        except KeyError:
             return "error getting local ips"
+
+        for i in ips:
+            try:
+                addr = [x["IPAddress"] for x in i if "IPAddress" in x][0]
+            except:
+                continue
+
+            if addr is None:
+                continue
+
+            for ip in addr:
+                if validators.ipv4(ip):
+                    ret.append(ip)
+
+        if len(ret) == 1:
+            return ret[0]
+        else:
+            return ", ".join(ret) if ret else "error getting local ips"
 
     @property
     def make_model(self):

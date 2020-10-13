@@ -10,9 +10,9 @@
       </q-card-actions>
     </q-card-section>
     <q-card-section>
-      <p
-        class="text-subtitle1"
-      >Download the agent then run the following command from an elevated command prompt on the device you want to add.</p>
+      <p class="text-subtitle1">
+        Download the agent then run the following command from an elevated command prompt on the device you want to add.
+      </p>
       <p>
         <q-field outlined color="black">
           <code>{{ info.data.cmd }}</code>
@@ -39,11 +39,9 @@
             <a
               v-if="info.arch === '64'"
               href="https://github.com/wh1te909/winagent/raw/master/bin/salt-minion-setup.exe"
-            >here</a>
-            <a
-              v-else
-              href="https://github.com/wh1te909/winagent/raw/master/bin/salt-minion-setup-x86.exe"
-            >here</a>
+              >here</a
+            >
+            <a v-else href="https://github.com/wh1te909/winagent/raw/master/bin/salt-minion-setup-x86.exe">here</a>
           </span>
         </div>
         <div class="q-pa-xs q-gutter-xs">
@@ -52,11 +50,20 @@
           </q-badge>
           <span>
             To skip downloading the Mesh Agent during the install. Download it
-            <span
-              style="cursor:pointer;color:blue;text-decoration:underline"
-              @click="downloadMesh"
-            >here</span>
+            <span style="cursor: pointer; color: blue; text-decoration: underline" @click="downloadMesh">here</span>
           </span>
+        </div>
+        <div class="q-pa-xs q-gutter-xs">
+          <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
+            <code>--cert "C:\\&lt;some folder or path&gt;\\ca.pem"</code>
+          </q-badge>
+          <span> To use a domain CA </span>
+        </div>
+        <div class="q-pa-xs q-gutter-xs">
+          <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
+            <code>--timeout NUMBER_IN_SECONDS</code>
+          </q-badge>
+          <span> To increase the default timeout of 900 seconds for the installer. Use on slow computers.</span>
         </div>
       </q-expansion-item>
       <br />

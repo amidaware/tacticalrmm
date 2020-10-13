@@ -1,0 +1,2769 @@
+{
+    "os": [
+        [
+            {
+                "BootDevice": "\\Device\\HarddiskVolume2"
+            },
+            {
+                "BuildNumber": "18363"
+            },
+            {
+                "BuildType": "Multiprocessor Free"
+            },
+            {
+                "Caption": "Microsoft Windows 10 Pro"
+            },
+            {
+                "CodeSet": "1252"
+            },
+            {
+                "CountryCode": "1"
+            },
+            {
+                "CreationClassName": "Win32_OperatingSystem"
+            },
+            {
+                "CSCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "CSName": "LAPTOP-123456"
+            },
+            {
+                "CurrentTimeZone": -420
+            },
+            {
+                "DataExecutionPrevention_32BitApplications": true
+            },
+            {
+                "DataExecutionPrevention_Available": true
+            },
+            {
+                "DataExecutionPrevention_Drivers": true
+            },
+            {
+                "DataExecutionPrevention_SupportPolicy": 2
+            },
+            {
+                "Debug": false
+            },
+            {
+                "Description": ""
+            },
+            {
+                "Distributed": false
+            },
+            {
+                "EncryptionLevel": 256
+            },
+            {
+                "ForegroundApplicationBoost": 2
+            },
+            {
+                "FreePhysicalMemory": "5796432"
+            },
+            {
+                "FreeSpaceInPagingFiles": "1310720"
+            },
+            {
+                "FreeVirtualMemory": "7207656"
+            },
+            {
+                "InstallDate": "20200603204443.000000-420"
+            },
+            {
+                "LastBootUpTime": "20200716115725.500000-420"
+            },
+            {
+                "LocalDateTime": "20200716120354.469000-420"
+            },
+            {
+                "Locale": "0409"
+            },
+            {
+                "Manufacturer": "Microsoft Corporation"
+            },
+            {
+                "MaxNumberOfProcesses": -1
+            },
+            {
+                "MaxProcessMemorySize": "137438953344"
+            },
+            {
+                "MUILanguages": [
+                    "en-US"
+                ]
+            },
+            {
+                "Name": "Microsoft Windows 10 Pro|C:\\Windows|\\Device\\Harddisk0\\Partition4"
+            },
+            {
+                "NumberOfLicensedUsers": 0
+            },
+            {
+                "NumberOfProcesses": 155
+            },
+            {
+                "NumberOfUsers": 7
+            },
+            {
+                "OperatingSystemSKU": 48
+            },
+            {
+                "Organization": ""
+            },
+            {
+                "OSArchitecture": "64-bit"
+            },
+            {
+                "OSLanguage": 1033
+            },
+            {
+                "OSProductSuite": 256
+            },
+            {
+                "OSType": 18
+            },
+            {
+                "PortableOperatingSystem": false
+            },
+            {
+                "Primary": true
+            },
+            {
+                "ProductType": 1
+            },
+            {
+                "RegisteredUser": "leeroyjenkins"
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "ServicePackMajorVersion": 0
+            },
+            {
+                "ServicePackMinorVersion": 0
+            },
+            {
+                "SizeStoredInPagingFiles": "1310720"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SuiteMask": 272
+            },
+            {
+                "SystemDevice": "\\Device\\HarddiskVolume4"
+            },
+            {
+                "SystemDirectory": "C:\\Windows\\system32"
+            },
+            {
+                "SystemDrive": "C:"
+            },
+            {
+                "TotalVirtualMemorySize": "9461200"
+            },
+            {
+                "TotalVisibleMemorySize": "8150480"
+            },
+            {
+                "Version": "10.0.18363"
+            },
+            {
+                "WindowsDirectory": "C:\\Windows"
+            }
+        ]
+    ],
+    "cpu": [
+        [
+            {
+                "AddressWidth": 64
+            },
+            {
+                "Architecture": 9
+            },
+            {
+                "AssetTag": "To Be Filled By O.E.M."
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "Intel64 Family 6 Model 126 Stepping 5"
+            },
+            {
+                "Characteristics": 252
+            },
+            {
+                "CpuStatus": 1
+            },
+            {
+                "CreationClassName": "Win32_Processor"
+            },
+            {
+                "CurrentClockSpeed": 1098
+            },
+            {
+                "CurrentVoltage": 10
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Intel64 Family 6 Model 126 Stepping 5"
+            },
+            {
+                "DeviceID": "CPU0"
+            },
+            {
+                "ExtClock": 100
+            },
+            {
+                "Family": 205
+            },
+            {
+                "L2CacheSize": 2048
+            },
+            {
+                "L3CacheSize": 6144
+            },
+            {
+                "L3CacheSpeed": 0
+            },
+            {
+                "Level": 6
+            },
+            {
+                "LoadPercentage": 48
+            },
+            {
+                "Manufacturer": "GenuineIntel"
+            },
+            {
+                "MaxClockSpeed": 1498
+            },
+            {
+                "Name": "Intel(R) Core(TM) i5-1035G4 CPU @ 1.10GHz"
+            },
+            {
+                "NumberOfCores": 4
+            },
+            {
+                "NumberOfEnabledCore": 4
+            },
+            {
+                "NumberOfLogicalProcessors": 8
+            },
+            {
+                "PartNumber": "To Be Filled By O.E.M."
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProcessorId": "BFEBFBFF000706E5"
+            },
+            {
+                "ProcessorType": 3
+            },
+            {
+                "Revision": 32261
+            },
+            {
+                "Role": "CPU"
+            },
+            {
+                "SecondLevelAddressTranslationExtensions": true
+            },
+            {
+                "SerialNumber": "To Be Filled By O.E.M."
+            },
+            {
+                "SocketDesignation": "CPU 1"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "StatusInfo": 3
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "ThreadCount": 8
+            },
+            {
+                "UpgradeMethod": 1
+            },
+            {
+                "Version": ""
+            },
+            {
+                "VirtualizationFirmwareEnabled": true
+            },
+            {
+                "VMMonitorModeExtensions": true
+            }
+        ]
+    ],
+    "mem": [
+        [
+            {
+                "Attributes": 1
+            },
+            {
+                "BankLabel": ""
+            },
+            {
+                "Capacity": "4294967296"
+            },
+            {
+                "Caption": "Physical Memory"
+            },
+            {
+                "ConfiguredClockSpeed": 2667
+            },
+            {
+                "ConfiguredVoltage": 1200
+            },
+            {
+                "CreationClassName": "Win32_PhysicalMemory"
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Physical Memory"
+            },
+            {
+                "DeviceLocator": "DIMM A"
+            },
+            {
+                "FormFactor": 12
+            },
+            {
+                "Manufacturer": "Samsung"
+            },
+            {
+                "MaxVoltage": 0
+            },
+            {
+                "MemoryType": 0
+            },
+            {
+                "MinVoltage": 0
+            },
+            {
+                "Name": "Physical Memory"
+            },
+            {
+                "PartNumber": "M471A5244CB0-CTD    "
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "SMBIOSMemoryType": 26
+            },
+            {
+                "Speed": 2667
+            },
+            {
+                "Tag": "Physical Memory 0"
+            },
+            {
+                "TotalWidth": 64
+            },
+            {
+                "TypeDetail": 128
+            }
+        ],
+        [
+            {
+                "Attributes": 1
+            },
+            {
+                "BankLabel": ""
+            },
+            {
+                "Capacity": "4294967296"
+            },
+            {
+                "Caption": "Physical Memory"
+            },
+            {
+                "ConfiguredClockSpeed": 2667
+            },
+            {
+                "ConfiguredVoltage": 1200
+            },
+            {
+                "CreationClassName": "Win32_PhysicalMemory"
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Physical Memory"
+            },
+            {
+                "DeviceLocator": "DIMM B"
+            },
+            {
+                "FormFactor": 12
+            },
+            {
+                "Manufacturer": "SK Hynix"
+            },
+            {
+                "MaxVoltage": 0
+            },
+            {
+                "MemoryType": 0
+            },
+            {
+                "MinVoltage": 0
+            },
+            {
+                "Name": "Physical Memory"
+            },
+            {
+                "PartNumber": "HMA851S6JJR6N-VK    "
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "SMBIOSMemoryType": 26
+            },
+            {
+                "Speed": 2667
+            },
+            {
+                "Tag": "Physical Memory 1"
+            },
+            {
+                "TotalWidth": 64
+            },
+            {
+                "TypeDetail": 128
+            }
+        ]
+    ],
+    "usb": [
+        [
+            {
+                "Caption": "Intel(R) USB 3.10 eXtensible Host Controller - 1.10 (Microsoft)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_USBController"
+            },
+            {
+                "Description": "USB xHCI Compliant Host Controller"
+            },
+            {
+                "DeviceID": "PCI\\VEN_8086&DEV_34ED&SUBSYS_09781028&REV_30\\3&11583659&0&A0"
+            },
+            {
+                "Manufacturer": "Generic USB xHCI Host Controller"
+            },
+            {
+                "Name": "Intel(R) USB 3.10 eXtensible Host Controller - 1.10 (Microsoft)"
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_8086&DEV_34ED&SUBSYS_09781028&REV_30\\3&11583659&0&A0"
+            },
+            {
+                "ProtocolSupported": 16
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            }
+        ]
+    ],
+    "bios": [
+        [
+            {
+                "BiosCharacteristics": [
+                    7,
+                    9,
+                    11,
+                    12,
+                    15,
+                    16,
+                    19,
+                    26,
+                    27,
+                    28,
+                    29,
+                    32,
+                    33,
+                    39,
+                    40,
+                    41,
+                    42,
+                    43
+                ]
+            },
+            {
+                "BIOSVersion": [
+                    "DELL   - 20170001",
+                    "1.1.0",
+                    "Dell - 10000"
+                ]
+            },
+            {
+                "Caption": "1.1.0"
+            },
+            {
+                "CurrentLanguage": "enUS"
+            },
+            {
+                "Description": "1.1.0"
+            },
+            {
+                "EmbeddedControllerMajorVersion": 255
+            },
+            {
+                "EmbeddedControllerMinorVersion": 255
+            },
+            {
+                "InstallableLanguages": 1
+            },
+            {
+                "ListOfLanguages": [
+                    "enUS"
+                ]
+            },
+            {
+                "Manufacturer": "Dell Inc."
+            },
+            {
+                "Name": "1.1.0"
+            },
+            {
+                "PrimaryBIOS": true
+            },
+            {
+                "ReleaseDate": "20190816000000.000000+000"
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "SMBIOSBIOSVersion": "1.1.0"
+            },
+            {
+                "SMBIOSMajorVersion": 3
+            },
+            {
+                "SMBIOSMinorVersion": 1
+            },
+            {
+                "SMBIOSPresent": true
+            },
+            {
+                "SoftwareElementID": "1.1.0"
+            },
+            {
+                "SoftwareElementState": 3
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemBiosMajorVersion": 1
+            },
+            {
+                "SystemBiosMinorVersion": 1
+            },
+            {
+                "TargetOperatingSystem": 0
+            },
+            {
+                "Version": "DELL   - 20170001"
+            }
+        ]
+    ],
+    "disk": [
+        [
+            {
+                "BytesPerSector": 512
+            },
+            {
+                "Capabilities": [
+                    3,
+                    4,
+                    10
+                ]
+            },
+            {
+                "CapabilityDescriptions": [
+                    "Random Access",
+                    "Supports Writing",
+                    "SMART Notification"
+                ]
+            },
+            {
+                "Caption": "NVMe SAMSUNG MZVLW256"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_DiskDrive"
+            },
+            {
+                "Description": "Disk drive"
+            },
+            {
+                "DeviceID": "\\\\.\\PHYSICALDRIVE0"
+            },
+            {
+                "FirmwareRevision": "CXB7"
+            },
+            {
+                "Index": 0
+            },
+            {
+                "InterfaceType": "SCSI"
+            },
+            {
+                "Manufacturer": "(Standard disk drives)"
+            },
+            {
+                "MediaLoaded": true
+            },
+            {
+                "MediaType": "Fixed hard disk media"
+            },
+            {
+                "Model": "NVMe SAMSUNG MZVLW256"
+            },
+            {
+                "Name": "\\\\.\\PHYSICALDRIVE0"
+            },
+            {
+                "Partitions": 3
+            },
+            {
+                "PNPDeviceID": "SCSI\\DISK&VEN_NVME&PROD_SAMSUNG_MZVLW256\\4&6CEC9A&0&030000"
+            },
+            {
+                "SCSIBus": 3
+            },
+            {
+                "SCSILogicalUnit": 0
+            },
+            {
+                "SCSIPort": 0
+            },
+            {
+                "SCSITargetId": 0
+            },
+            {
+                "SectorsPerTrack": 63
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "Size": "256052966400"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TotalCylinders": "31130"
+            },
+            {
+                "TotalHeads": 255
+            },
+            {
+                "TotalSectors": "500103450"
+            },
+            {
+                "TotalTracks": "7938150"
+            },
+            {
+                "TracksPerCylinder": 255
+            }
+        ]
+    ],
+    "comp_sys": [
+        [
+            {
+                "AdminPasswordStatus": 2
+            },
+            {
+                "AutomaticManagedPagefile": true
+            },
+            {
+                "AutomaticResetBootOption": true
+            },
+            {
+                "AutomaticResetCapability": true
+            },
+            {
+                "BootROMSupported": true
+            },
+            {
+                "BootStatus": [
+                    0,
+                    0,
+                    0,
+                    39,
+                    22,
+                    0,
+                    39,
+                    1,
+                    1,
+                    2
+                ]
+            },
+            {
+                "BootupState": "Normal boot"
+            },
+            {
+                "Caption": "LAPTOP-123456"
+            },
+            {
+                "ChassisBootupState": 3
+            },
+            {
+                "ChassisSKUNumber": "Notebook"
+            },
+            {
+                "CreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "CurrentTimeZone": -420
+            },
+            {
+                "DaylightInEffect": true
+            },
+            {
+                "Description": "AT/AT COMPATIBLE"
+            },
+            {
+                "DNSHostName": "LAPTOP-123456"
+            },
+            {
+                "Domain": "contoso.local"
+            },
+            {
+                "DomainRole": 1
+            },
+            {
+                "EnableDaylightSavingsTime": true
+            },
+            {
+                "FrontPanelResetStatus": 2
+            },
+            {
+                "HypervisorPresent": false
+            },
+            {
+                "InfraredSupported": false
+            },
+            {
+                "KeyboardPasswordStatus": 2
+            },
+            {
+                "Manufacturer": "Dell Inc."
+            },
+            {
+                "Model": "Inspiron 3493"
+            },
+            {
+                "Name": "LAPTOP-123456"
+            },
+            {
+                "NetworkServerModeEnabled": true
+            },
+            {
+                "NumberOfLogicalProcessors": 8
+            },
+            {
+                "NumberOfProcessors": 1
+            },
+            {
+                "OEMStringArray": [
+                    "Dell System",
+                    "1[0978]",
+                    "3[1.0]",
+                    "12[www.dell.com]",
+                    "14[1]",
+                    "15[0]",
+                    "27[5969131059]"
+                ]
+            },
+            {
+                "PartOfDomain": true
+            },
+            {
+                "PauseAfterReset": "-1"
+            },
+            {
+                "PCSystemType": 2
+            },
+            {
+                "PCSystemTypeEx": 2
+            },
+            {
+                "PowerOnPasswordStatus": 2
+            },
+            {
+                "PowerState": 0
+            },
+            {
+                "PowerSupplyState": 3
+            },
+            {
+                "PrimaryOwnerName": "leeroyjenkins"
+            },
+            {
+                "ResetCapability": 1
+            },
+            {
+                "ResetCount": -1
+            },
+            {
+                "ResetLimit": -1
+            },
+            {
+                "Roles": [
+                    "LM_Workstation",
+                    "LM_Server",
+                    "NT"
+                ]
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemFamily": "Inspiron"
+            },
+            {
+                "SystemSKUNumber": "0978"
+            },
+            {
+                "SystemType": "x64-based PC"
+            },
+            {
+                "ThermalState": 3
+            },
+            {
+                "TotalPhysicalMemory": "8346091520"
+            },
+            {
+                "WakeUpType": 6
+            }
+        ]
+    ],
+    "base_board": [
+        [
+            {
+                "Caption": "Base Board"
+            },
+            {
+                "ConfigOptions": [
+                    "J6H1:1-X Boot with Default; J8H1:1-X BIOS RECOVERY"
+                ]
+            },
+            {
+                "CreationClassName": "Win32_BaseBoard"
+            },
+            {
+                "Description": "Base Board"
+            },
+            {
+                "HostingBoard": true
+            },
+            {
+                "HotSwappable": false
+            },
+            {
+                "Manufacturer": "Dell Inc."
+            },
+            {
+                "Name": "Base Board"
+            },
+            {
+                "PoweredOn": true
+            },
+            {
+                "Product": "088RVF"
+            },
+            {
+                "Removable": false
+            },
+            {
+                "Replaceable": true
+            },
+            {
+                "RequiresDaughterBoard": false
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "Tag": "Base Board"
+            },
+            {
+                "Version": "A00"
+            }
+        ]
+    ],
+    "comp_sys_prod": [
+        [
+            {
+                "Caption": "Computer System Product"
+            },
+            {
+                "Description": "Computer System Product"
+            },
+            {
+                "IdentifyingNumber": "123456"
+            },
+            {
+                "Name": "Inspiron 3493"
+            },
+            {
+                "UUID": "123456"
+            },
+            {
+                "Vendor": "Dell Inc."
+            },
+            {
+                "Version": ""
+            }
+        ]
+    ],
+    "network_config": [
+        [
+            {
+                "Caption": "[00000000] Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "Description": "Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "Index": 0
+            },
+            {
+                "InterfaceIndex": 16
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "kdnic"
+            },
+            {
+                "SettingID": "{CD3D8A87-2CB0-487C-A007-92BA52D69B64}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000001] Realtek PCIe FE Family Controller"
+            },
+            {
+                "Description": "Realtek PCIe FE Family Controller"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "Index": 1
+            },
+            {
+                "InterfaceIndex": 4
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "98:E7:43:25:82:76"
+            },
+            {
+                "ServiceName": "rt640x64"
+            },
+            {
+                "SettingID": "{2E4391C1-097F-485A-93F8-6D0A8FBE5B7B}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000002] Bluetooth Device (Personal Area Network)"
+            },
+            {
+                "Description": "Bluetooth Device (Personal Area Network)"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "Index": 2
+            },
+            {
+                "InterfaceIndex": 8
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "40:23:43:D0:3B:80"
+            },
+            {
+                "ServiceName": "BthPan"
+            },
+            {
+                "SettingID": "{54B632E2-F16B-422F-B94A-480D87FEF8B5}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000003] Qualcomm QCA9377 802.11ac Wireless Adapter"
+            },
+            {
+                "DatabasePath": "%SystemRoot%\\System32\\drivers\\etc"
+            },
+            {
+                "DefaultIPGateway": [
+                    "172.17.0.1"
+                ]
+            },
+            {
+                "Description": "Qualcomm QCA9377 802.11ac Wireless Adapter"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "DHCPLeaseExpires": "20200717115739.000000-420"
+            },
+            {
+                "DHCPLeaseObtained": "20200716115739.000000-420"
+            },
+            {
+                "DHCPServer": "172.17.0.1"
+            },
+            {
+                "DNSDomainSuffixSearchOrder": [
+                    "contoso.local"
+                ]
+            },
+            {
+                "DNSEnabledForWINSResolution": false
+            },
+            {
+                "DNSHostName": "LAPTOP-123456"
+            },
+            {
+                "DNSServerSearchOrder": [
+                    "172.17.4.11",
+                    "172.17.4.22",
+                    "172.17.4.86"
+                ]
+            },
+            {
+                "DomainDNSRegistrationEnabled": false
+            },
+            {
+                "FullDNSRegistrationEnabled": true
+            },
+            {
+                "GatewayCostMetric": [
+                    0
+                ]
+            },
+            {
+                "Index": 3
+            },
+            {
+                "InterfaceIndex": 13
+            },
+            {
+                "IPAddress": [
+                    "172.17.9.241",
+                    "fe80::1c68:fb0f:380d:9a43"
+                ]
+            },
+            {
+                "IPConnectionMetric": 45
+            },
+            {
+                "IPEnabled": true
+            },
+            {
+                "IPFilterSecurityEnabled": false
+            },
+            {
+                "IPSecPermitIPProtocols": []
+            },
+            {
+                "IPSecPermitTCPPorts": []
+            },
+            {
+                "IPSecPermitUDPPorts": []
+            },
+            {
+                "IPSubnet": [
+                    "255.255.240.0",
+                    "64"
+                ]
+            },
+            {
+                "MACAddress": "40:23:43:D0:3B:7F"
+            },
+            {
+                "ServiceName": "Qcamain10x64"
+            },
+            {
+                "SettingID": "{BFFDA0A7-D8A7-46F7-901C-564FF682FD43}"
+            },
+            {
+                "TcpipNetbiosOptions": 0
+            },
+            {
+                "WINSEnableLMHostsLookup": true
+            },
+            {
+                "WINSScopeID": ""
+            }
+        ],
+        [
+            {
+                "Caption": "[00000004] Microsoft Wi-Fi Direct Virtual Adapter"
+            },
+            {
+                "Description": "Microsoft Wi-Fi Direct Virtual Adapter"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "Index": 4
+            },
+            {
+                "InterfaceIndex": 6
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "42:23:43:D0:3B:7F"
+            },
+            {
+                "ServiceName": "vwifimp"
+            },
+            {
+                "SettingID": "{3BDD9913-E692-4143-AC71-1B61E5800435}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000005] Microsoft Wi-Fi Direct Virtual Adapter"
+            },
+            {
+                "Description": "Microsoft Wi-Fi Direct Virtual Adapter"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "Index": 5
+            },
+            {
+                "InterfaceIndex": 17
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "52:23:43:D0:3B:7F"
+            },
+            {
+                "ServiceName": "vwifimp"
+            },
+            {
+                "SettingID": "{E74D273B-CDA1-4F8D-850C-13E3C9290B3E}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000006] WAN Miniport (SSTP)"
+            },
+            {
+                "Description": "WAN Miniport (SSTP)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 6
+            },
+            {
+                "InterfaceIndex": 9
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "RasSstp"
+            },
+            {
+                "SettingID": "{715DBEE4-9120-438D-940E-A8C1E5B771D0}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000007] WAN Miniport (IKEv2)"
+            },
+            {
+                "Description": "WAN Miniport (IKEv2)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 7
+            },
+            {
+                "InterfaceIndex": 19
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "RasAgileVpn"
+            },
+            {
+                "SettingID": "{F52C9C92-34F1-48AC-91EC-A992F14D98CC}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000008] WAN Miniport (L2TP)"
+            },
+            {
+                "Description": "WAN Miniport (L2TP)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 8
+            },
+            {
+                "InterfaceIndex": 15
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "Rasl2tp"
+            },
+            {
+                "SettingID": "{C49862CD-80B2-4888-B6AE-C06CBD241100}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000009] WAN Miniport (PPTP)"
+            },
+            {
+                "Description": "WAN Miniport (PPTP)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 9
+            },
+            {
+                "InterfaceIndex": 3
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "PptpMiniport"
+            },
+            {
+                "SettingID": "{0F87F7F9-1D3E-4077-AF13-63BBB1FF44B9}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000010] WAN Miniport (PPPOE)"
+            },
+            {
+                "Description": "WAN Miniport (PPPOE)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 10
+            },
+            {
+                "InterfaceIndex": 7
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "RasPppoe"
+            },
+            {
+                "SettingID": "{3F1C1E0A-F1EC-45EF-963C-F124F6A285A3}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000011] WAN Miniport (IP)"
+            },
+            {
+                "Description": "WAN Miniport (IP)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 11
+            },
+            {
+                "InterfaceIndex": 12
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "8C:6E:20:52:41:53"
+            },
+            {
+                "ServiceName": "NdisWan"
+            },
+            {
+                "SettingID": "{B7D885BD-D492-4FFC-AB4B-9759FCD9D26B}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000012] WAN Miniport (IPv6)"
+            },
+            {
+                "Description": "WAN Miniport (IPv6)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 12
+            },
+            {
+                "InterfaceIndex": 18
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "8E:47:20:52:41:53"
+            },
+            {
+                "ServiceName": "NdisWan"
+            },
+            {
+                "SettingID": "{F5067E83-474C-43D8-BAD8-63A6B4D82EA0}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000013] WAN Miniport (Network Monitor)"
+            },
+            {
+                "Description": "WAN Miniport (Network Monitor)"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 13
+            },
+            {
+                "InterfaceIndex": 14
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "8E:DF:20:52:41:53"
+            },
+            {
+                "ServiceName": "NdisWan"
+            },
+            {
+                "SettingID": "{C269157B-9F6E-443B-B956-875754FAF75E}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000014] TAP-Windows Adapter V9"
+            },
+            {
+                "DatabasePath": "%SystemRoot%\\System32\\drivers\\etc"
+            },
+            {
+                "Description": "TAP-Windows Adapter V9"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "DHCPLeaseExpires": "20210716115745.000000-420"
+            },
+            {
+                "DHCPLeaseObtained": "20200716115745.000000-420"
+            },
+            {
+                "DHCPServer": "10.8.0.254"
+            },
+            {
+                "DNSDomain": "contoso.local"
+            },
+            {
+                "DNSDomainSuffixSearchOrder": [
+                    "contoso.local"
+                ]
+            },
+            {
+                "DNSEnabledForWINSResolution": false
+            },
+            {
+                "DNSHostName": "LAPTOP-123456"
+            },
+            {
+                "DNSServerSearchOrder": [
+                    "172.17.4.86",
+                    "172.17.4.15",
+                    "172.17.4.22"
+                ]
+            },
+            {
+                "DomainDNSRegistrationEnabled": false
+            },
+            {
+                "FullDNSRegistrationEnabled": true
+            },
+            {
+                "Index": 14
+            },
+            {
+                "InterfaceIndex": 10
+            },
+            {
+                "IPAddress": [
+                    "10.8.0.188",
+                    "fe80::8997:aade:2a5c:cdd0"
+                ]
+            },
+            {
+                "IPConnectionMetric": 25
+            },
+            {
+                "IPEnabled": true
+            },
+            {
+                "IPFilterSecurityEnabled": false
+            },
+            {
+                "IPSecPermitIPProtocols": []
+            },
+            {
+                "IPSecPermitTCPPorts": []
+            },
+            {
+                "IPSecPermitUDPPorts": []
+            },
+            {
+                "IPSubnet": [
+                    "255.255.255.0",
+                    "64"
+                ]
+            },
+            {
+                "MACAddress": "00:FF:77:A0:ED:F6"
+            },
+            {
+                "ServiceName": "tap0901"
+            },
+            {
+                "SettingID": "{77A0EDF6-3CF1-456E-B19B-B0C829A066F1}"
+            },
+            {
+                "TcpipNetbiosOptions": 0
+            },
+            {
+                "WINSEnableLMHostsLookup": true
+            },
+            {
+                "WINSScopeID": ""
+            }
+        ]
+    ],
+    "desktop_monitor": [
+        [
+            {
+                "Availability": 8
+            },
+            {
+                "Caption": "Default Monitor"
+            },
+            {
+                "CreationClassName": "Win32_DesktopMonitor"
+            },
+            {
+                "Description": "Default Monitor"
+            },
+            {
+                "DeviceID": "DesktopMonitor1"
+            },
+            {
+                "MonitorType": "Default Monitor"
+            },
+            {
+                "Name": "Default Monitor"
+            },
+            {
+                "PixelsPerXLogicalInch": 96
+            },
+            {
+                "PixelsPerYLogicalInch": 96
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            }
+        ],
+        [
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "Generic PnP Monitor"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_DesktopMonitor"
+            },
+            {
+                "Description": "Generic PnP Monitor"
+            },
+            {
+                "DeviceID": "DesktopMonitor2"
+            },
+            {
+                "MonitorManufacturer": "(Standard monitor types)"
+            },
+            {
+                "MonitorType": "Generic PnP Monitor"
+            },
+            {
+                "Name": "Generic PnP Monitor"
+            },
+            {
+                "PixelsPerXLogicalInch": 96
+            },
+            {
+                "PixelsPerYLogicalInch": 96
+            },
+            {
+                "PNPDeviceID": "DISPLAY\\CMN14C3\\4&34094D01&0&UID8388688"
+            },
+            {
+                "ScreenHeight": 768
+            },
+            {
+                "ScreenWidth": 1366
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            }
+        ]
+    ],
+    "network_adapter": [
+        [
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000000] Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "DeviceID": "0"
+            },
+            {
+                "Index": 0
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 16
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "ROOT\\KDNIC\\0000"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "ServiceName": "kdnic"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TimeOfLastReset": "20200716115725.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000001] Realtek PCIe FE Family Controller"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Realtek PCIe FE Family Controller"
+            },
+            {
+                "DeviceID": "1"
+            },
+            {
+                "GUID": "{2E4391C1-097F-485A-93F8-6D0A8FBE5B7B}"
+            },
+            {
+                "Index": 1
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 4
+            },
+            {
+                "MACAddress": "98:E7:43:25:82:76"
+            },
+            {
+                "Manufacturer": "Realtek"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Realtek PCIe FE Family Controller"
+            },
+            {
+                "NetConnectionID": "Ethernet"
+            },
+            {
+                "NetConnectionStatus": 7
+            },
+            {
+                "NetEnabled": false
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_10EC&DEV_8136&SUBSYS_09781028&REV_07\\01000000364CE00000"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Realtek PCIe FE Family Controller"
+            },
+            {
+                "ServiceName": "rt640x64"
+            },
+            {
+                "Speed": "9223372036854775807"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TimeOfLastReset": "20200716115725.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000002] Bluetooth Device (Personal Area Network)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Bluetooth Device (Personal Area Network)"
+            },
+            {
+                "DeviceID": "2"
+            },
+            {
+                "GUID": "{54B632E2-F16B-422F-B94A-480D87FEF8B5}"
+            },
+            {
+                "Index": 2
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 8
+            },
+            {
+                "MACAddress": "40:23:43:D0:3B:80"
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Bluetooth Device (Personal Area Network)"
+            },
+            {
+                "NetConnectionID": "Bluetooth Network Connection"
+            },
+            {
+                "NetConnectionStatus": 7
+            },
+            {
+                "NetEnabled": false
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "BTH\\MS_BTHPAN\\6&10819D91&0&2"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Bluetooth Device (Personal Area Network)"
+            },
+            {
+                "ServiceName": "BthPan"
+            },
+            {
+                "Speed": "3000000"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TimeOfLastReset": "20200716115725.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000003] Qualcomm QCA9377 802.11ac Wireless Adapter"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Qualcomm QCA9377 802.11ac Wireless Adapter"
+            },
+            {
+                "DeviceID": "3"
+            },
+            {
+                "GUID": "{BFFDA0A7-D8A7-46F7-901C-564FF682FD43}"
+            },
+            {
+                "Index": 3
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 13
+            },
+            {
+                "MACAddress": "40:23:43:D0:3B:7F"
+            },
+            {
+                "Manufacturer": "Qualcomm Atheros Communications Inc."
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Qualcomm QCA9377 802.11ac Wireless Adapter"
+            },
+            {
+                "NetConnectionID": "Wi-Fi"
+            },
+            {
+                "NetConnectionStatus": 2
+            },
+            {
+                "NetEnabled": true
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_168C&DEV_0042&SUBSYS_18101028&REV_31\\4&4795A9D&0&00E9"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Qualcomm QCA9377 802.11ac Wireless Adapter"
+            },
+            {
+                "ServiceName": "Qcamain10x64"
+            },
+            {
+                "Speed": "300000000"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TimeOfLastReset": "20200716115725.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000004] Microsoft Wi-Fi Direct Virtual Adapter"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Microsoft Wi-Fi Direct Virtual Adapter"
+            },
+            {
+                "DeviceID": "4"
+            },
+            {
+                "Index": 4
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 6
+            },
+            {
+                "MACAddress": "42:23:43:D0:3B:7F"
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Microsoft Wi-Fi Direct Virtual Adapter"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "{5D624F94-8850-40C3-A3FA-A4FD2080BAF3}\\VWIFIMP_WFD\\5&1126C615&0&11"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Microsoft Wi-Fi Direct Virtual Adapter"
+            },
+            {
+                "ServiceName": "vwifimp"
+            },
+            {
+                "Speed": "9223372036854775807"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TimeOfLastReset": "20200716115725.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000005] Microsoft Wi-Fi Direct Virtual Adapter"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Microsoft Wi-Fi Direct Virtual Adapter"
+            },
+            {
+                "DeviceID": "5"
+            },
+            {
+                "Index": 5
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 17
+            },
+            {
+                "MACAddress": "52:23:43:D0:3B:7F"
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Microsoft Wi-Fi Direct Virtual Adapter #2"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "{5D624F94-8850-40C3-A3FA-A4FD2080BAF3}\\VWIFIMP_WFD\\5&1126C615&0&12"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Microsoft Wi-Fi Direct Virtual Adapter"
+            },
+            {
+                "ServiceName": "vwifimp"
+            },
+            {
+                "Speed": "9223372036854775807"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TimeOfLastReset": "20200716115725.500000-420"
+            }
+        ],
+        [
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000006] WAN Miniport (SSTP)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (SSTP)"
+            },
+            {
+                "DeviceID": "6"
+            },
+            {
+                "Index": 6
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 9
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (SSTP)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_SSTPMINIPORT"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (SSTP)"
+            },
+            {
+                "ServiceName": "RasSstp"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TimeOfLastReset": "20200716115725.500000-420"
+            }
+        ],
+        [
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000007] WAN Miniport (IKEv2)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (IKEv2)"
+            },
+            {
+                "DeviceID": "7"
+            },
+            {
+                "Index": 7
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 19
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (IKEv2)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_AGILEVPNMINIPORT"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (IKEv2)"
+            },
+            {
+                "ServiceName": "RasAgileVpn"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TimeOfLastReset": "20200716115725.500000-420"
+            }
+        ],
+        [
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000008] WAN Miniport (L2TP)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (L2TP)"
+            },
+            {
+                "DeviceID": "8"
+            },
+            {
+                "Index": 8
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 15
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (L2TP)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_L2TPMINIPORT"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (L2TP)"
+            },
+            {
+                "ServiceName": "Rasl2tp"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TimeOfLastReset": "20200716115725.500000-420"
+            }
+        ],
+        [
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000009] WAN Miniport (PPTP)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (PPTP)"
+            },
+            {
+                "DeviceID": "9"
+            },
+            {
+                "Index": 9
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 3
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (PPTP)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_PPTPMINIPORT"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (PPTP)"
+            },
+            {
+                "ServiceName": "PptpMiniport"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TimeOfLastReset": "20200716115725.500000-420"
+            }
+        ],
+        [
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000010] WAN Miniport (PPPOE)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (PPPOE)"
+            },
+            {
+                "DeviceID": "10"
+            },
+            {
+                "Index": 10
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 7
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (PPPOE)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_PPPOEMINIPORT"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (PPPOE)"
+            },
+            {
+                "ServiceName": "RasPppoe"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TimeOfLastReset": "20200716115725.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000011] WAN Miniport (IP)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (IP)"
+            },
+            {
+                "DeviceID": "11"
+            },
+            {
+                "Index": 11
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 12
+            },
+            {
+                "MACAddress": "8C:6E:20:52:41:53"
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (IP)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_NDISWANIP"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (IP)"
+            },
+            {
+                "ServiceName": "NdisWan"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TimeOfLastReset": "20200716115725.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000012] WAN Miniport (IPv6)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (IPv6)"
+            },
+            {
+                "DeviceID": "12"
+            },
+            {
+                "Index": 12
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 18
+            },
+            {
+                "MACAddress": "8E:47:20:52:41:53"
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (IPv6)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_NDISWANIPV6"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (IPv6)"
+            },
+            {
+                "ServiceName": "NdisWan"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TimeOfLastReset": "20200716115725.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000013] WAN Miniport (Network Monitor)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "WAN Miniport (Network Monitor)"
+            },
+            {
+                "DeviceID": "13"
+            },
+            {
+                "Index": 13
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 14
+            },
+            {
+                "MACAddress": "8E:DF:20:52:41:53"
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "WAN Miniport (Network Monitor)"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "SWD\\MSRRAS\\MS_NDISWANBH"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "WAN Miniport (Network Monitor)"
+            },
+            {
+                "ServiceName": "NdisWan"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TimeOfLastReset": "20200716115725.500000-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000014] TAP-Windows Adapter V9"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "TAP-Windows Adapter V9"
+            },
+            {
+                "DeviceID": "14"
+            },
+            {
+                "GUID": "{77A0EDF6-3CF1-456E-B19B-B0C829A066F1}"
+            },
+            {
+                "Index": 14
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 10
+            },
+            {
+                "MACAddress": "00:FF:77:A0:ED:F6"
+            },
+            {
+                "Manufacturer": "TAP-Windows Provider V9"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "TAP-Windows Adapter V9"
+            },
+            {
+                "NetConnectionID": "Local Area Connection"
+            },
+            {
+                "NetConnectionStatus": 2
+            },
+            {
+                "NetEnabled": true
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "ROOT\\NET\\0000"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "TAP-Windows Adapter V9"
+            },
+            {
+                "ServiceName": "tap0901"
+            },
+            {
+                "Speed": "1000000000"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "LAPTOP-123456"
+            },
+            {
+                "TimeOfLastReset": "20200716115725.500000-420"
+            }
+        ]
+    ]
+}

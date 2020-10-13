@@ -56,9 +56,9 @@ def check_agent_update_schedule_task():
             # get current time in agent local time
             timezone = pytz.timezone(agent.timezone)
             agent_localtime_now = dt.datetime.now(timezone)
-            weekday = int(agent_localtime_now.strftime("%w"))
-            hour = int(agent_localtime_now.strftime("%-H"))
-            day = int(agent_localtime_now.strftime("%-d"))
+            weekday = agent_localtime_now.weekday()
+            hour = agent_localtime_now.hour
+            day = agent_localtime_now.day
 
             if agent.patches_last_installed:
                 # get agent last installed time in local time zone
@@ -82,8 +82,7 @@ def check_agent_update_schedule_task():
 
                 if patch_policy.run_time_day > 28:
                     months_with_30_days = [3, 6, 9, 11]
-                    current_month = int(agent_localtime_now.strftime("%-m"))
-
+                    current_month = agent_localtime_now.month
                     if current_month == 2:
                         patch_policy.run_time_day = 28
                     elif current_month in months_with_30_days:
@@ -127,13 +126,12 @@ def check_for_updates_task(pk, wait=False, auto_approve=False):
             return "failed"
 
     guids = []
-    # this exception will trigger on win 10 2004 until I release new salt minion with the fix
     try:
         for k in ret.keys():
             guids.append(k)
     except Exception as e:
         logger.error(f"{agent.salt_id}: {str(e)}")
-        return "failed 2004"
+        return
 
     for i in guids:
         # check if existing update install / download status has changed
@@ -200,3 +198,17 @@ def check_for_updates_task(pk, wait=False, auto_approve=False):
         agent.approve_updates()
 
     return "ok"
+
+
+@app.task
+def bulk_check_for_updates_task(minions):
+    # don't flood the celery queue
+    chunks = (minions[i : i + 30] for i in range(0, len(minions), 30))
+    for chunk in chunks:
+        for i in chunk:
+            agent = Agent.objects.get(salt_id=i)
+            check_for_updates_task.apply_async(
+                queue="wupdate",
+                kwargs={"pk": agent.pk, "wait": False, "auto_approve": True},
+            )
+        sleep(30)

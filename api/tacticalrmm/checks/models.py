@@ -11,6 +11,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 from core.models import CoreSettings
+from logs.models import BaseAuditModel
 
 import agents
 
@@ -53,7 +54,7 @@ EVT_LOG_FAIL_WHEN_CHOICES = [
 ]
 
 
-class Check(models.Model):
+class Check(BaseAuditModel):
 
     # common fields
 
@@ -91,10 +92,6 @@ class Check(models.Model):
     text_sent = models.DateTimeField(null=True, blank=True)
     outage_history = models.JSONField(null=True, blank=True)  # store
     extra_details = models.JSONField(null=True, blank=True)
-    created_by = models.CharField(max_length=100, null=True, blank=True)
-    created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    modified_by = models.CharField(max_length=100, null=True, blank=True)
-    modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     # check specific fields
 
@@ -249,7 +246,12 @@ class Check(models.Model):
             self.stdout = data["stdout"]
             self.stderr = data["stderr"]
             self.retcode = data["retcode"]
-            self.execution_time = "{:.4f}".format(data["stop"] - data["start"])
+            try:
+                # python agent
+                self.execution_time = "{:.4f}".format(data["stop"] - data["start"])
+            except:
+                # golang agent
+                self.execution_time = "{:.4f}".format(data["runtime"])
 
             if data["retcode"] != 0:
                 self.status = "failing"
@@ -451,11 +453,16 @@ class Check(models.Model):
 
         return default_services
 
-    def create_policy_check(self, agent):
+    def create_policy_check(self, agent=None, policy=None):
+
+        if not agent and not policy or agent and policy:
+            return
+
         Check.objects.create(
             agent=agent,
-            managed_by_policy=True,
-            parent_check=self.pk,
+            policy=policy,
+            managed_by_policy=bool(agent),
+            parent_check=(self.pk if agent else None),
             name=self.name,
             check_type=self.check_type,
             email_alert=self.email_alert,
@@ -476,10 +483,10 @@ class Check(models.Model):
             svc_policy_mode=self.svc_policy_mode,
             log_name=self.log_name,
             event_id=self.event_id,
+            event_id_is_wildcard=self.event_id_is_wildcard,
             event_type=self.event_type,
             event_source=self.event_source,
             event_message=self.event_message,
-            event_id_is_wildcard=self.event_id_is_wildcard,
             fail_when=self.fail_when,
             search_last_days=self.search_last_days,
         )

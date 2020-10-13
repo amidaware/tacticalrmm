@@ -39,3 +39,7 @@ RUN tar -xzf /tmp/go1.15.linux-amd64.tar.gz -C /tmp && \
     mkdir /usr/local/rmmgo && \
     mv /tmp/go /usr/local/rmmgo/ && \
     rm -rf /tmp/go
+
+RUN /usr/local/rmmgo/go/bin/go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo && \
+    cp ./api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/ && \
+    chmod +x /usr/local/bin/goversioninfo

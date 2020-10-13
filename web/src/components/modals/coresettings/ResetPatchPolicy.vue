@@ -11,9 +11,8 @@
     </q-card-section>
     <q-card-section>
       <div class="text-subtitle3">
-        Reset the patch policies for agents in a specific client or site.
-        You can also leave the client and site blank to reset the patch policy for all agents.
-        (This might take a while)
+        Reset the patch policies for agents in a specific client or site. You can also leave the client and site blank
+        to reset the patch policy for all agents. (This might take a while)
       </div>
       <q-form @submit.prevent="submit">
         <q-card-section>
@@ -40,7 +39,7 @@
           />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn label="Reset Policies" color="primary" type="submit" />
+          <q-btn :label="buttonText" color="primary" type="submit" />
           <q-btn label="Cancel" v-close-popup />
         </q-card-actions>
       </q-form>
@@ -109,7 +108,7 @@ export default {
       return !!this.client ? this.client.sites.map(site => ({ label: site.site, value: site.id })) : [];
     },
     buttonText() {
-      return !!this.client ? "Clear Policies for ALL Agents" : "Clear Policies";
+      return !this.client ? "Clear Policies for ALL Agents" : "Clear Policies";
     },
   },
   mounted() {

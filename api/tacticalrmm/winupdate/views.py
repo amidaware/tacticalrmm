@@ -27,7 +27,7 @@ def get_win_updates(request, pk):
 def run_update_scan(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     check_for_updates_task.apply_async(
-        queue="wupdate", kwargs={"pk": agent.pk, "wait": False}
+        queue="wupdate", kwargs={"pk": agent.pk, "wait": False, "auto_approve": True}
     )
     return Response("ok")
 
@@ -47,7 +47,7 @@ def install_updates(request, pk):
     # successful response: {'return': [{'SALT-ID': {'pid': 3316}}]}
     try:
         r["pid"]
-    except KeyError:
+    except (KeyError):
         return notify_error(str(r))
 
     return Response(f"Patches will now be installed on {agent.hostname}")

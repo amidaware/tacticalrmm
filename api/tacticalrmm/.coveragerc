@@ -1,0 +1,22 @@
+[run]
+source = .
+[report]
+show_missing = True
+include = *.py
+omit =
+    */__pycache__/*
+    */env/*
+    */management/*
+    */migrations/*
+    */static/*
+    manage.py
+    */local_settings.py
+    */apps.py
+    */admin.py
+    */celery.py
+    */wsgi.py
+    */settings.py
+    */baker_recipes.py
+    */urls.py
+    */tests.py
+    */test.py

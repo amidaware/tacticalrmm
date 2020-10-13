@@ -35,3 +35,11 @@ class ScriptSerializer(ModelSerializer):
                     )
 
         return val
+
+
+class ScriptCheckSerializer(ModelSerializer):
+    code = ReadOnlyField()
+
+    class Meta:
+        model = Script
+        fields = ["code", "shell"]

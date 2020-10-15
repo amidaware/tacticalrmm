@@ -578,7 +578,7 @@ class Check(BaseAuditModel):
             for i in self.extra_details["log"]:
                 try:
                     if i["message"]:
-                        body += f"<pre>{i['message']}</pre>"
+                        body += f"{i['message']}\n"
                 except:
                     continue
 

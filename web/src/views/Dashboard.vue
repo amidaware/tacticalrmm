@@ -91,13 +91,7 @@
         </template>
 
         <template v-slot:after>
-          <q-splitter
-            v-model="innerModel"
-            reverse
-            horizontal
-            style="height: 87vh"
-            @input="setSplitter(innerModel)"
-          >
+          <q-splitter v-model="innerModel" reverse horizontal style="height: 87vh" @input="setSplitter(innerModel)">
             <template v-slot:before>
               <div class="row">
                 <q-tabs
@@ -116,14 +110,7 @@
                   <q-tab name="mixed" label="Mixed" />
                 </q-tabs>
                 <q-space />
-                <q-input
-                  v-model="search"
-                  label="Search"
-                  dense
-                  outlined
-                  clearable
-                  class="q-pr-md q-pb-xs"
-                >
+                <q-input v-model="search" label="Search" dense outlined clearable class="q-pr-md q-pb-xs">
                   <template v-slot:prepend>
                     <q-icon name="search" color="primary" />
                   </template>
@@ -168,11 +155,7 @@
     </q-dialog>
     <!-- add policy modal -->
     <q-dialog v-model="showPolicyAddModal">
-      <PolicyAdd
-        @close="showPolicyAddModal = false"
-        :type="policyAddType"
-        :pk="parseInt(policyAddPk)"
-      />
+      <PolicyAdd @close="showPolicyAddModal = false" :type="policyAddType" :pk="parseInt(policyAddPk)" />
     </q-dialog>
   </q-layout>
 </template>

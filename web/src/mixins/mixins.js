@@ -56,6 +56,13 @@ function getTimeLapse(unixtime) {
   }
 }
 
+function appendLeadingZeroes(n) {
+  if (n <= 9) {
+    return "0" + n;
+  }
+  return n
+}
+
 export default {
   methods: {
     bootTime(unixtime) {
@@ -81,5 +88,12 @@ export default {
       const email = /^(?=[a-zA-Z0-9@._%+-]{6,254}$)[a-zA-Z0-9._%+-]{1,64}@(?:[a-zA-Z0-9-]{1,63}\.){1,8}[a-zA-Z]{2,63}$/;
       return email.test(val);
     },
+    formatDate(date, includeSeconds = false) {
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      let dt = new Date(date)
+      let formatted = months[dt.getMonth()] + "-" + appendLeadingZeroes(dt.getDate()) + "-" + appendLeadingZeroes(dt.getFullYear()) + " - " + appendLeadingZeroes(dt.getHours()) + ":" + appendLeadingZeroes(dt.getMinutes())
+
+      return includeSeconds ? formatted + ":" + appendLeadingZeroes(dt.getSeconds()) : formatted
+    }
   }
 };

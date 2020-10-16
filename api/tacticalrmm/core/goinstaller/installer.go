@@ -64,7 +64,7 @@ func main() {
 
 	var debug bool = false
 
-	if strings.TrimSpace(*debugLog) == "DEBUG" {
+	if strings.TrimSpace(strings.ToLower(*debugLog)) == "debug" {
 		debug = true
 	}
 

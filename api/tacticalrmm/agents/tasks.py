@@ -119,12 +119,7 @@ def update_salt_minion_task():
 @app.task
 def get_wmi_detail_task(pk):
     agent = Agent.objects.get(pk=pk)
-    r = agent.salt_api_cmd(timeout=30, func="win_agent.system_info")
-    if r == "timeout" or r == "error":
-        return "failed"
-
-    agent.wmi_detail = r
-    agent.save(update_fields=["wmi_detail"])
+    r = agent.salt_api_async(timeout=30, func="win_agent.local_sys_info")
     return "ok"
 
 
@@ -135,11 +130,9 @@ def sync_salt_modules_task(pk):
     # successful sync if new/charnged files: {'return': [{'MINION-15': ['modules.get_eventlog', 'modules.win_agent', 'etc...']}]}
     # successful sync with no new/changed files: {'return': [{'MINION-15': []}]}
     if r == "timeout" or r == "error":
-        logger.error(f"Unable to sync modules {agent.salt_id}")
-        return
+        return f"Unable to sync modules {agent.salt_id}"
 
-    logger.info(f"Successfully synced salt modules on {agent.hostname}")
-    return "ok"
+    return f"Successfully synced salt modules on {agent.hostname}"
 
 
 @app.task

@@ -22,11 +22,11 @@
           outlined
           v-model.number="diskcheck.threshold"
           label="Threshold (%)"
-          :rules="[ 
-                    val => !!val || '*Required',
-                    val => val >= 1 || 'Minimum threshold is 1',
-                    val => val < 100 || 'Maximum threshold is 99'
-                ]"
+          :rules="[
+            val => !!val || '*Required',
+            val => val >= 1 || 'Minimum threshold is 1',
+            val => val < 100 || 'Maximum threshold is 99',
+          ]"
         />
       </q-card-section>
       <q-card-section>
@@ -81,7 +81,7 @@ export default {
           this.diskcheck.disk = "C:";
         });
       } else {
-        this.diskOptions = Object.keys(this.agentDisks);
+        this.diskOptions = this.agentDisks.map(i => i.device);
         this.diskcheck.disk = this.diskOptions[0];
       }
     },

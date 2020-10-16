@@ -21,13 +21,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
-from agents.models import Agent, AgentOutage
-from agents.serializers import AgentSerializer, WinAgentSerializer
-from agents.tasks import (
-    agent_recovery_email_task,
-    get_wmi_detail_task,
-    sync_salt_modules_task,
-)
+from agents.models import Agent
 from autotasks.models import AutomatedTask
 from autotasks.serializers import TaskRunnerGetSerializer, TaskRunnerPatchSerializer
 from checks.models import Check
@@ -37,78 +31,10 @@ from checks.serializers import (
     CheckRunnerGetSerializerV2,
 )
 from clients.models import Client, Site
-from software.tasks import get_installed_software, install_chocolatey
 from tacticalrmm.utils import notify_error
-from winupdate.models import WinUpdate, WinUpdatePolicy
-from winupdate.tasks import check_for_updates_task
+from winupdate.models import WinUpdatePolicy
 
 logger.configure(**settings.LOG_CONFIG)
-
-
-class Hello(APIView):
-    """
-    The agent's checkin endpoint
-    patch: called every 30 to 120 seconds
-    post: called on agent windows service startup
-    """
-
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def patch(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-
-        serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(last_seen=djangotime.now())
-
-        outages = AgentOutage.objects.filter(agent=agent)
-
-        if outages.exists() and outages.last().is_active:
-            last_outage = outages.last()
-            last_outage.recovery_time = djangotime.now()
-            last_outage.save(update_fields=["recovery_time"])
-
-            if agent.overdue_email_alert:
-                agent_recovery_email_task.delay(pk=last_outage.pk)
-            if agent.overdue_text_alert:
-                # TODO
-                pass
-
-        recovery = agent.recoveryactions.filter(last_run=None).last()
-        if recovery is not None:
-            recovery.last_run = djangotime.now()
-            recovery.save(update_fields=["last_run"])
-            return Response(recovery.send())
-
-        # get any pending actions
-        if agent.pendingactions.filter(status="pending").exists():
-            agent.handle_pending_actions()
-
-        return Response("ok")
-
-    def post(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-
-        if agent.update_pending and request.data["version"] != agent.version:
-            agent.update_pending = False
-            agent.save(update_fields=["update_pending"])
-
-        serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(last_seen=djangotime.now())
-
-        sync_salt_modules_task.delay(agent.pk)
-        get_installed_software.delay(agent.pk)
-        get_wmi_detail_task.delay(agent.pk)
-        check_for_updates_task.apply_async(
-            queue="wupdate", kwargs={"pk": agent.pk, "wait": True}
-        )
-
-        if not agent.choco_installed:
-            install_chocolatey.delay(agent.pk, wait=True)
-
-        return Response("ok")
 
 
 class NewAgent(APIView):
@@ -291,21 +217,5 @@ class SaltMinion(APIView):
     def put(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
         agent.salt_ver = request.data["ver"]
-        agent.salt_update_pending = False
-        agent.save(update_fields=["salt_ver", "salt_update_pending"])
-        return Response("ok")
-
-
-class SysInfo(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def patch(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-
-        if not isinstance(request.data["sysinfo"], dict):
-            return notify_error("err")
-
-        agent.wmi_detail = request.data["sysinfo"]
-        agent.save(update_fields=["wmi_detail"])
+        agent.save(update_fields=["salt_ver"])
         return Response("ok")

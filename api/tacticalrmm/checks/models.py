@@ -523,7 +523,9 @@ class Check(BaseAuditModel):
             subject = f"{self} Failed"
 
         if self.check_type == "diskspace":
-            percent_used = self.agent.disks[self.disk]["percent"]
+            percent_used = [
+                d["percent"] for d in self.agent.disks if d["device"] == self.disk
+            ][0]
             percent_free = 100 - percent_used
 
             body = subject + f" - Free: {percent_free}%, Threshold: {self.threshold}%"

@@ -4,4 +4,5 @@ from . import views
 urlpatterns = [
     path("checkrunner/", views.CheckRunner.as_view()),
     path("<str:agentid>/checkrunner/", views.CheckRunner.as_view()),
+    path("<int:pk>/<str:agentid>/taskrunner/", views.TaskRunner.as_view()),
 ]

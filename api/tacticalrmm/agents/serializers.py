@@ -41,7 +41,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
 
     def get_last_seen(self, obj):
         agent_tz = pytz.timezone(obj.timezone)
-        return obj.last_seen.astimezone(agent_tz).strftime("%b-%d-%Y - %H:%M")
+        return obj.last_seen.astimezone(agent_tz).strftime("%m %d %Y %H:%M:%S")
 
     class Meta:
         model = Agent

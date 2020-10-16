@@ -59,15 +59,7 @@
         </q-select>
       </div>
       <div class="q-pa-sm col-2">
-        <q-select
-          filled
-          dense
-          v-model="timeFilter"
-          label="Time"
-          emit-value
-          map-options
-          :options="timeOptions"
-        >
+        <q-select filled dense v-model="timeFilter" label="Time" emit-value map-options :options="timeOptions">
           <template v-slot:no-option>
             <q-item>
               <q-item-section class="text-grey">No results</q-item-section>
@@ -95,13 +87,7 @@
         @row-click="showDetails"
       >
         <template v-slot:top-right>
-          <q-btn
-            color="primary"
-            icon-right="archive"
-            label="Export to csv"
-            no-caps
-            @click="exportLog"
-          />
+          <q-btn color="primary" icon-right="archive" label="Export to csv" no-caps @click="exportLog" />
         </template>
       </q-table>
     </q-card-section>
@@ -115,6 +101,7 @@
 
 <script>
 import AuditLogDetail from "@/components/modals/logs/AuditLogDetail";
+import mixins from "@/mixins/mixins";
 import { exportFile } from "quasar";
 
 function wrapCsvValue(val, formatFn) {
@@ -135,6 +122,7 @@ function wrapCsvValue(val, formatFn) {
 
 export default {
   name: "AuditManager",
+  mixins: [mixins],
   components: { AuditLogDetail },
   data() {
     return {
@@ -148,7 +136,14 @@ export default {
       userFilter: [],
       timeFilter: 30,
       columns: [
-        { name: "entry_time", label: "Time", field: "entry_time", align: "left", sortable: true },
+        {
+          name: "entry_time",
+          label: "Time",
+          field: "entry_time",
+          align: "left",
+          sortable: true,
+          format: (val, row) => this.formatDate(val, true),
+        },
         { name: "username", label: "Username", field: "username", align: "left", sortable: true },
         { name: "agent", label: "Agent", field: "agent", align: "left", sortable: true },
         { name: "action", label: "Action", field: "action", align: "left", sortable: true },

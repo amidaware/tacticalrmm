@@ -98,3 +98,30 @@ wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh
 chmod +x update.sh
 ./update.sh
 ```
+
+## Backup
+Download [backup.sh](./backup.sh) ([Raw](https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/backup.sh))
+```
+wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/backup.sh
+```
+Change the postgres username and password at the top of the file (you can find them in `/rmm/api/tacticalrmm/tacticalrmm/local_settings.py` under the DATABASES section)
+
+Run it
+```
+chmod +x backup.sh
+./backup.sh
+```
+
+## Restore
+Change your 3 A records to point to new server's public IP
+
+Create same linux user account as old server and add to sudoers group and setup firewall (see install instructions above)
+
+Copy backup file to new server
+
+Download and run the restore script, passing it the backup tar file as the first argument
+```
+wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/restore.sh
+chmod +x restore.sh
+./restore.sh rmm-backup-xxxxxxx.tar
+```

@@ -1,11 +1,18 @@
 #!/bin/bash
 
+if [ $EUID -eq 0 ]; then
+  echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
+  exit 1
+fi
+
+GREEN='\033[0;32m'
+NC='\033[0m'
+
 if [ ! -d /rmmbackups ]; then
     sudo mkdir /rmmbackups
     sudo chown ${USER}:${USER} /rmmbackups
 fi
 
-POSTGRES_DB="tacticalrmm"
 POSTGRES_USER="changeme"
 POSTGRES_PW="hunter2"
 
@@ -23,7 +30,7 @@ mkdir ${tmp_dir}/rmm
 mkdir ${tmp_dir}/confd
 
 
-pg_dump --dbname=postgresql://${POSTGRES_USER}:${POSTGRES_PW}@127.0.0.1:5432/${POSTGRES_DB} | gzip -9 > ${tmp_dir}/postgres/db-${dt_now}.psql.gz
+pg_dump --dbname=postgresql://${POSTGRES_USER}:${POSTGRES_PW}@127.0.0.1:5432/tacticalrmm | gzip -9 > ${tmp_dir}/postgres/db-${dt_now}.psql.gz
 
 tar -czvf ${tmp_dir}/meshcentral/mesh.tar.gz --exclude=/meshcentral/node_modules /meshcentral
 mongodump --gzip --out=${tmp_dir}/meshcentral/mongo
@@ -42,7 +49,10 @@ sudo cp ${sysd}/rmm.service ${sysd}/celery.service ${sysd}/celerybeat.service ${
 cat /rmm/api/tacticalrmm/tacticalrmm/private/log/debug.log | gzip -9 > ${tmp_dir}/rmm/debug.log.gz
 cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py /rmm/api/tacticalrmm/app.ini ${tmp_dir}/rmm/
 cp /rmm/web/.env ${tmp_dir}/rmm/env
+cp /rmm/api/tacticalrmm/tacticalrmm/private/exe/mesh*.exe ${tmp_dir}/rmm/
 
 tar -cf /rmmbackups/rmm-backup-${dt_now}.tar -C ${tmp_dir} .
 
 rm -rf ${tmp_dir}
+
+echo -ne "${GREEN}Backup saved to /rmmbackups/rmm-backup-${dt_now}.tar${NC}\n"

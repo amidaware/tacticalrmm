@@ -125,3 +125,14 @@ wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/restore.sh
 chmod +x restore.sh
 ./restore.sh rmm-backup-xxxxxxx.tar
 ```
+
+## Using another ssl certificate
+During the install you can opt out of using the Let's Encrypt certificate. If you do this the script will create a self-signed certificate, so that https continues to work. You can replace the certificates in /certs/example.com/(privkey.pem | pubkey.pem) with your own. 
+
+If you are migrating from Let's Encrypt to another certificate provider, you can create the /certs directory and copy your certificates there. It is recommended to do this because this directory will be backed up with the backup script provided. Then modify the nginx configurations to use your new certificates
+
+The cert that is generated is a wildcard certificate and is used in the nginx configurations: rmm.conf, api.conf, and mesh.conf. If you can't generate wildcard certificates you can create a cert for each subdomain and configure each nginx configuration file to use its own certificate. Then restart nginx:
+
+```
+sudo systemctl restart nginx
+```

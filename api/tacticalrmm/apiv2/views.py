@@ -24,6 +24,8 @@ class CheckRunner(APIView):
 
     def get(self, request, agentid):
         agent = get_object_or_404(Agent, agent_id=agentid)
+        agent.last_seen = djangotime.now()
+        agent.save(update_fields=["last_seen"])
         checks = Check.objects.filter(agent__pk=agent.pk, overriden_by_policy=False)
 
         ret = {

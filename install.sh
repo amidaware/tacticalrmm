@@ -157,7 +157,7 @@ if [[ $LETS_ENCRYPT == "y" ]]; then
     done
 
     CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
-    CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchainkey.pem
+    CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
 
 else
     echo -ne "\n${GREEN}We will generate a self-signed certificate for you.${NC}\n"

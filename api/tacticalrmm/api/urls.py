@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from apiv3 import views as v3_views
 
 urlpatterns = [
     path("hello/", views.hello),
@@ -12,5 +13,5 @@ urlpatterns = [
     path("<int:pk>/checkrunner/", views.CheckRunner.as_view()),
     path("<int:pk>/taskrunner/", views.TaskRunner.as_view()),
     path("<int:pk>/saltinfo/", views.SaltInfo.as_view()),
-    path("<int:pk>/meshinfo/", views.MeshInfo.as_view()),
+    path("<int:pk>/meshinfo/", v3_views.MeshInfo.as_view()),
 ]

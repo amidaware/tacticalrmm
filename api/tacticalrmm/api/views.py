@@ -296,7 +296,7 @@ class CheckRunner(APIView):
 
 class TaskRunner(APIView):
     """
-    For windows agent
+    For the windows python agent
     """
 
     authentication_classes = [TokenAuthentication]
@@ -335,19 +335,4 @@ class SaltInfo(APIView):
         agent = get_object_or_404(Agent, pk=pk)
         agent.salt_ver = request.data["ver"]
         agent.save(update_fields=["salt_ver"])
-        return Response("ok")
-
-
-class MeshInfo(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, pk):
-        agent = get_object_or_404(Agent, pk=pk)
-        return Response(agent.mesh_node_id)
-
-    def patch(self, request, pk):
-        agent = get_object_or_404(Agent, pk=pk)
-        agent.mesh_node_id = request.data["nodeidhex"]
-        agent.save(update_fields=["mesh_node_id"])
         return Response("ok")

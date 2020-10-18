@@ -9,7 +9,7 @@
     "test:unit": "quasar test --unit jest"
   },
   "dependencies": {
-    "@quasar/extras": "^1.9.7",
+    "@quasar/extras": "^1.9.9",
     "axios": "^0.19.2",
     "dotenv": "^8.2.0",
     "qrcode.vue": "^1.7.0",

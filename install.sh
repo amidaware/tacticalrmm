@@ -161,7 +161,8 @@ if [[ $LETS_ENCRYPT == "y" ]]; then
 
 else
     echo -ne "\n${GREEN}We will generate a self-signed certificate for you.${NC}\n"
-    echo "\n${GREEN}You can replace this certificate later by generating the certificates and editting the nginx configuration\n"
+    echo -ne "\n${GREEN}You can replace this certificate later by generating the certificates and editing the nginx configuration${NC}\n"
+    read -n 1 -s -r -p "Press any key to continue..."
     sudo mkdir /certs/${rootdomain}
     sudo openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /certs/${rootdomain}/pubkey.pem -keyout /certs/${rootdomain}/privkey.pem -subj "/C=US/ST=Some-State/L=city/O=Internet Widgits Pty Ltd/CN=*.${rootdomain}"
 

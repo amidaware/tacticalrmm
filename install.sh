@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="12"
+SCRIPT_VERSION="13"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 GREEN='\033[0;32m'
@@ -83,8 +83,14 @@ echo -ne "${YELLOW}Enter the subdomain for meshcentral (e.g. mesh.example.com)${
 read meshdomain
 done
 
-echo -ne "${YELLOW}Enter the root domain for LetsEncrypt (e.g. example.com or example.co.uk)${NC}: "
+echo -ne "${YELLOW}Enter the root domain (e.g. example.com or example.co.uk)${NC}: "
 read rootdomain
+
+while [[ $letsemail != *[@]*[.]* ]]
+do
+echo -ne "${YELLOW}Enter a valid email address for django and meshcentral${NC}: "
+read letsemail
+done
 
 # if server is behind NAT we need to add the 3 subdomains to the host file 
 # so that nginx can properly route between the frontend, backend and meshcentral
@@ -141,12 +147,6 @@ until [[ $LETS_ENCRYPT =~ (y|n) ]]; do
 done
 
 if [[ $LETS_ENCRYPT == "y" ]]; then
-
-    while [[ $letsemail != *[@]*[.]* ]]
-    do
-    echo -ne "${YELLOW}Enter a valid email address for let's encrypt renewal notifications and meshcentral${NC}: "
-    read letsemail
-    done
 
     print_green 'Getting wildcard cert'
 

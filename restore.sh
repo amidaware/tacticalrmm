@@ -122,6 +122,8 @@ sudo apt install -y certbot
 sudo rm -rf /etc/letsencrypt
 sudo mkdir /etc/letsencrypt
 sudo tar -xzf $tmp_dir/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt
+sudo mkdir /certs
+sudo tar -xzf $tmp_dir/certs/certs.tar.gz -C /certs
 
 print_green 'Restoring celery configs'
 

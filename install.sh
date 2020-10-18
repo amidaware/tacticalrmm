@@ -133,6 +133,8 @@ sudo apt install -y software-properties-common
 sudo apt update
 sudo apt install -y certbot openssl
 
+sudo mkdir /certs
+
 until [[ $LETS_ENCRYPT =~ (y|n) ]]; do
     echo -ne "${YELLOW}Do you want to generate a Let's Encrypt certificate?[y,n]${NC}: "
     read LETS_ENCRYPT
@@ -160,7 +162,6 @@ if [[ $LETS_ENCRYPT == "y" ]]; then
 else
     echo -ne "\n${GREEN}We will generate a self-signed certificate for you.${NC}\n"
     echo "\n${GREEN}You can replace this certificate later by generating the certificates and editting the nginx configuration\n"
-    sudo mkdir /certs
     sudo mkdir /certs/${rootdomain}
     sudo openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /certs/${rootdomain}/pubkey.pem -keyout /certs/${rootdomain}/privkey.pem -subj "/C=US/ST=Some-State/L=city/O=Internet Widgits Pty Ltd/CN=*.${rootdomain}"
 

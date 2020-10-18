@@ -39,6 +39,7 @@ sudo tar -czvf ${tmp_dir}/salt/etc-salt.tar.gz -C /etc/salt .
 tar -czvf ${tmp_dir}/salt/srv-salt.tar.gz -C /srv/salt .
 
 sudo tar -czvf ${tmp_dir}/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt .
+sudo tar -czvf ${tmp_dir}/certs/certs.tar.gz -C /certs .
 
 sudo tar -czvf ${tmp_dir}/nginx/etc-nginx.tar.gz -C /etc/nginx .
 

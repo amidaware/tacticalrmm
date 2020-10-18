@@ -131,7 +131,7 @@ During the install you can opt out of using the Let's Encrypt certificate. If yo
 
 If you are migrating from Let's Encrypt to another certificate provider, you can create the /certs directory and copy your certificates there. It is recommended to do this because this directory will be backed up with the backup script provided. Then modify the nginx configurations to use your new certificates
 
-The cert that is generated in a wildcard certificate and is used in the nginx configurations: rmm.conf, api.conf, and mesh.conf. If you can't generate wildcard certificates you can create a cert for each subdomain and configure each nginx configuration file to use it's own certificate. Then restart nginx:
+The cert that is generated is a wildcard certificate and is used in the nginx configurations: rmm.conf, api.conf, and mesh.conf. If you can't generate wildcard certificates you can create a cert for each subdomain and configure each nginx configuration file to use its own certificate. Then restart nginx:
 
 ```
 sudo systemctl restart nginx

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="1"
+SCRIPT_VERSION="2"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/restore.sh'
 
 GREEN='\033[0;32m'
@@ -118,12 +118,17 @@ fi
 print_green 'Restoring certbot'
 
 sudo apt install -y software-properties-common
-sudo apt install -y certbot
-sudo rm -rf /etc/letsencrypt
-sudo mkdir /etc/letsencrypt
-sudo tar -xzf $tmp_dir/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt
-sudo mkdir /certs
-sudo tar -xzf $tmp_dir/certs/certs.tar.gz -C /certs
+sudo apt install -y certbot openssl
+
+if [ -f "${tmp_dir}/certs/certs.tar.gz" ]; then
+  sudo mkdir /certs
+  sudo tar -xzf $tmp_dir/certs/certs.tar.gz -C /certs
+else
+  sudo rm -rf /etc/letsencrypt
+  sudo mkdir /etc/letsencrypt
+  sudo tar -xzf $tmp_dir/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt
+fi
+
 
 print_green 'Restoring celery configs'
 

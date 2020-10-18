@@ -147,7 +147,7 @@ class Agent(BaseAuditModel):
         ret = []
         try:
             ips = self.wmi_detail["network_config"]
-        except KeyError:
+        except:
             return "error getting local ips"
 
         for i in ips:

@@ -85,6 +85,31 @@ class Agent(BaseAuditModel):
             return CoreSettings.objects.first().default_time_zone
 
     @property
+    def arch(self):
+        if self.operating_system is not None:
+            if "64bit" in self.operating_system:
+                return "64"
+            elif "32bit" in self.operating_system:
+                return "32"
+        return "64"
+
+    @property
+    def winagent_dl(self):
+        return settings.DL_64 if self.arch == "64" else settings.DL_32
+
+    @property
+    def winsalt_dl(self):
+        return settings.SALT_64 if self.arch == "64" else settings.SALT_32
+
+    @property
+    def win_inno_exe(self):
+        return (
+            f"winagent-v{settings.LATEST_AGENT_VER}.exe"
+            if self.arch == "64"
+            else f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
+        )
+
+    @property
     def status(self):
         offline = dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=6)
         overdue = dt.datetime.now(dt.timezone.utc) - dt.timedelta(

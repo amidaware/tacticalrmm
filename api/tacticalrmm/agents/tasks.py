@@ -29,28 +29,13 @@ def send_agent_update_task(pks, version):
     for chunk in chunks:
         for pk in chunk:
             agent = Agent.objects.get(pk=pk)
-            if agent.operating_system is not None:
-                if "64bit" in agent.operating_system:
-                    arch = "64"
-                elif "32bit" in agent.operating_system:
-                    arch = "32"
-                else:
-                    arch = "64"
-
-                url = settings.DL_64 if arch == "64" else settings.DL_32
-                inno = (
-                    f"winagent-v{version}.exe"
-                    if arch == "64"
-                    else f"winagent-v{version}-x86.exe"
-                )
-
-                r = agent.salt_api_async(
-                    func="win_agent.do_agent_update_v2",
-                    kwargs={
-                        "inno": inno,
-                        "url": url,
-                    },
-                )
+            r = agent.salt_api_async(
+                func="win_agent.do_agent_update_v2",
+                kwargs={
+                    "inno": agent.win_inno_exe,
+                    "url": agent.winagent_dl,
+                },
+            )
         sleep(10)
 
 
@@ -72,28 +57,13 @@ def auto_self_agent_update_task():
     for chunk in chunks:
         for pk in chunk:
             agent = Agent.objects.get(pk=pk)
-            if agent.operating_system is not None:
-                if "64bit" in agent.operating_system:
-                    arch = "64"
-                elif "32bit" in agent.operating_system:
-                    arch = "32"
-                else:
-                    arch = "64"
-
-                url = settings.DL_64 if arch == "64" else settings.DL_32
-                inno = (
-                    f"winagent-v{settings.LATEST_AGENT_VER}.exe"
-                    if arch == "64"
-                    else f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
-                )
-
-                r = agent.salt_api_async(
-                    func="win_agent.do_agent_update_v2",
-                    kwargs={
-                        "inno": inno,
-                        "url": url,
-                    },
-                )
+            r = agent.salt_api_async(
+                func="win_agent.do_agent_update_v2",
+                kwargs={
+                    "inno": agent.win_inno_exe,
+                    "url": agent.winagent_dl,
+                },
+            )
         sleep(10)
 
 

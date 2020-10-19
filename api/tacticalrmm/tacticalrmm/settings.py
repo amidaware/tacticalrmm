@@ -21,6 +21,9 @@ LATEST_AGENT_VER = "0.11.2"
 DL_64 = f"https://github.com/wh1te909/winagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
 DL_32 = f"https://github.com/wh1te909/winagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
 
+SALT_64 = f"https://github.com/wh1te909/salt/releases/download/{LATEST_SALT_VER}/salt-minion-setup.exe"
+SALT_32 = f"https://github.com/wh1te909/salt/releases/download/{LATEST_SALT_VER}/salt-minion-setup-x86.exe"
+
 try:
     from .local_settings import *
 except ImportError:

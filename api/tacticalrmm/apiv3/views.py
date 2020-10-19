@@ -181,7 +181,7 @@ class SaltMinion(APIView):
             "latestVer": settings.LATEST_SALT_VER,
             "currentVer": agent.salt_ver,
             "salt_id": agent.salt_id,
-            "downloadURL": "changeme",  # TODO
+            "downloadURL": agent.winsalt_dl,
         }
         return Response(ret)
 

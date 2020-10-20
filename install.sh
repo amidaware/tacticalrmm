@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="13"
+SCRIPT_VERSION="14"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 GREEN='\033[0;32m'
@@ -33,9 +33,9 @@ if [ $EUID -eq 0 ]; then
   exit 1
 fi
 
-if [ "$LANG" != "en_US.UTF-8" ]; then
-  printf >&2 "\n${RED}System locale must be ${GREEN}en_US.UTF-8${RED} not ${YELLOW}${LANG}${NC}\n"
-  printf >&2 "${RED}Run the following command and change the default locale to ${GREEN}en_US.UTF-8${NC}\n\n"
+if [[ "$LANG" != *".UTF-8" ]]; then
+  printf >&2 "\n${RED}System locale must be ${GREEN}<some language>.UTF-8${RED} not ${YELLOW}${LANG}${NC}\n"
+  printf >&2 "${RED}Run the following command and change the default locale to your language of choice${NC}\n\n"
   printf >&2 "${GREEN}sudo dpkg-reconfigure locales${NC}\n\n"
   printf >&2 "${RED}You will need to log out and back in for changes to take effect, then re-run this script.${NC}\n\n"
   exit 1

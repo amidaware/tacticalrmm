@@ -27,13 +27,17 @@ class Client(BaseAuditModel):
     @property
     def has_failing_checks(self):
 
-        agents = Agent.objects.only(
-            "pk",
-            "overdue_email_alert",
-            "overdue_text_alert",
-            "last_seen",
-            "overdue_time",
-        ).filter(client=self.client)
+        agents = (
+            Agent.objects.only(
+                "pk",
+                "overdue_email_alert",
+                "overdue_text_alert",
+                "last_seen",
+                "overdue_time",
+            )
+            .filter(client=self.client)
+            .prefetch_related("agentchecks")
+        )
         for agent in agents:
             if agent.checks["has_failing_checks"]:
                 return True
@@ -77,13 +81,17 @@ class Site(BaseAuditModel):
     @property
     def has_failing_checks(self):
 
-        agents = Agent.objects.only(
-            "pk",
-            "overdue_email_alert",
-            "overdue_text_alert",
-            "last_seen",
-            "overdue_time",
-        ).filter(client=self.client.client, site=self.site)
+        agents = (
+            Agent.objects.only(
+                "pk",
+                "overdue_email_alert",
+                "overdue_text_alert",
+                "last_seen",
+                "overdue_time",
+            )
+            .filter(client=self.client.client, site=self.site)
+            .prefetch_related("agentchecks")
+        )
         for agent in agents:
             if agent.checks["has_failing_checks"]:
                 return True

@@ -17,6 +17,7 @@ from distutils.version import LooseVersion
 
 from django.db import models
 from django.conf import settings
+from django.utils import timezone as djangotime
 
 from core.models import CoreSettings, TZ_CHOICES
 from logs.models import BaseAuditModel
@@ -111,10 +112,8 @@ class Agent(BaseAuditModel):
 
     @property
     def status(self):
-        offline = dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=6)
-        overdue = dt.datetime.now(dt.timezone.utc) - dt.timedelta(
-            minutes=self.overdue_time
-        )
+        offline = djangotime.now() - djangotime.timedelta(minutes=6)
+        overdue = djangotime.now() - djangotime.timedelta(minutes=self.overdue_time)
 
         if self.last_seen is not None:
             if (self.last_seen < offline) and (self.last_seen > overdue):

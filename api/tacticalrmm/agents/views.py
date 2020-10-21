@@ -1,7 +1,6 @@
 from loguru import logger
 import os
 import subprocess
-import tempfile
 import zlib
 import json
 import base64
@@ -12,11 +11,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 
-from rest_framework.decorators import (
-    api_view,
-    authentication_classes,
-    permission_classes,
-)
+from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
@@ -251,10 +246,30 @@ def send_raw_cmd(request):
     return Response(r)
 
 
-@api_view()
-def list_agents(request):
-    agents = Agent.objects.all()
-    return Response(AgentTableSerializer(agents, many=True).data)
+class AgentsTableList(generics.ListAPIView):
+    queryset = Agent.objects.prefetch_related("agentchecks").only(
+        "pk",
+        "hostname",
+        "agent_id",
+        "client",
+        "site",
+        "monitoring_type",
+        "description",
+        "needs_reboot",
+        "overdue_text_alert",
+        "overdue_email_alert",
+        "overdue_time",
+        "last_seen",
+        "boot_time",
+        "logged_in_username",
+    )
+    serializer_class = AgentTableSerializer
+
+    def list(self, request):
+        queryset = self.get_queryset()
+        ctx = {"default_tz": CoreSettings.objects.first().default_time_zone}
+        serializer = AgentTableSerializer(queryset, many=True, context=ctx)
+        return Response(serializer.data)
 
 
 @api_view()
@@ -271,14 +286,54 @@ def agent_edit_details(request, pk):
 
 @api_view()
 def by_client(request, client):
-    agents = Agent.objects.filter(client=client)
-    return Response(AgentTableSerializer(agents, many=True).data)
+    agents = (
+        Agent.objects.filter(client=client)
+        .prefetch_related("agentchecks")
+        .only(
+            "pk",
+            "hostname",
+            "agent_id",
+            "client",
+            "site",
+            "monitoring_type",
+            "description",
+            "needs_reboot",
+            "overdue_text_alert",
+            "overdue_email_alert",
+            "overdue_time",
+            "last_seen",
+            "boot_time",
+            "logged_in_username",
+        )
+    )
+    ctx = {"default_tz": CoreSettings.objects.first().default_time_zone}
+    return Response(AgentTableSerializer(agents, many=True, context=ctx).data)
 
 
 @api_view()
 def by_site(request, client, site):
-    agents = Agent.objects.filter(client=client).filter(site=site)
-    return Response(AgentTableSerializer(agents, many=True).data)
+    agents = (
+        Agent.objects.filter(client=client, site=site)
+        .prefetch_related("agentchecks")
+        .only(
+            "pk",
+            "hostname",
+            "agent_id",
+            "client",
+            "site",
+            "monitoring_type",
+            "description",
+            "needs_reboot",
+            "overdue_text_alert",
+            "overdue_email_alert",
+            "overdue_time",
+            "last_seen",
+            "boot_time",
+            "logged_in_username",
+        )
+    )
+    ctx = {"default_tz": CoreSettings.objects.first().default_time_zone}
+    return Response(AgentTableSerializer(agents, many=True, context=ctx).data)
 
 
 @api_view(["POST"])

@@ -40,7 +40,11 @@ class AgentTableSerializer(serializers.ModelSerializer):
     last_seen = serializers.SerializerMethodField()
 
     def get_last_seen(self, obj):
-        agent_tz = pytz.timezone(obj.timezone)
+        if obj.time_zone is not None:
+            agent_tz = pytz.timezone(obj.time_zone)
+        else:
+            agent_tz = pytz.timezone(self.context["default_tz"])
+
         return obj.last_seen.astimezone(agent_tz).strftime("%m %d %Y %H:%M:%S")
 
     class Meta:

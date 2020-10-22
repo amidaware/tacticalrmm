@@ -807,18 +807,9 @@ def bulk(request):
 
 @api_view(["POST"])
 def agent_counts(request):
-    if "selected" in request.data:
-        # expects { "client": "client_name", "site": "site_name" }
-        return Response({
-            "total_server_count": Agent.objects.filter(monitoring_type="server", **request.data["selected"]).count(),
-            "total_server_offline_count": AgentOutage.objects.filter(agent__monitoring_type="server", **request.data["selected"]).count(),
-            "total_workstation_count": Agent.objects.filter(monitoring_type="workstation", **request.data["selected"]).count(),
-            "total_workstation_offline_count": AgentOutage.objects.filter(agent__monitoring_type="workstation", **request.data["selected"]).count(),
-        })
-    else:
-        return Response({
-            "total_server_count": Agent.objects.filter(monitoring_type="server").count(),
-            "total_server_offline_count": AgentOutage.objects.filter(agent__monitoring_type="server").count(),
-            "total_workstation_count": Agent.objects.filter(monitoring_type="workstation").count(),
-            "total_workstation_offline_count": AgentOutage.objects.filter(agent__monitoring_type="workstation").count(),
-        })
+    return Response({
+        "total_server_count": Agent.objects.filter(monitoring_type="server").count(),
+        "total_server_offline_count": AgentOutage.objects.filter(agent__monitoring_type="server").count(),
+        "total_workstation_count": Agent.objects.filter(monitoring_type="workstation").count(),
+        "total_workstation_offline_count": AgentOutage.objects.filter(agent__monitoring_type="workstation").count(),
+    })

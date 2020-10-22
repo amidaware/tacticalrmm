@@ -497,12 +497,6 @@ export default {
     totalOfflineAgents() {
       return this.serverOfflineCount + this.workstationOfflineCount;
     },
-    totalSelectedAgents() {
-      return this.serverCount + this.workstationCount;
-    },
-    totalSelectedOfflineAgents() {
-      return this.serverOfflineCount + this.workstationOfflineCount;
-    },
   },
   created() {
     this.getTree();

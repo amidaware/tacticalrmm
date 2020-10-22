@@ -805,11 +805,22 @@ def bulk(request):
 
     return notify_error("Something went wrong")
 
+
 @api_view(["POST"])
 def agent_counts(request):
-    return Response({
-        "total_server_count": Agent.objects.filter(monitoring_type="server").count(),
-        "total_server_offline_count": AgentOutage.objects.filter(agent__monitoring_type="server").count(),
-        "total_workstation_count": Agent.objects.filter(monitoring_type="workstation").count(),
-        "total_workstation_offline_count": AgentOutage.objects.filter(agent__monitoring_type="workstation").count(),
-    })
+    return Response(
+        {
+            "total_server_count": Agent.objects.filter(
+                monitoring_type="server"
+            ).count(),
+            "total_server_offline_count": AgentOutage.objects.filter(
+                recovery_time=None, agent__monitoring_type="server"
+            ).count(),
+            "total_workstation_count": Agent.objects.filter(
+                monitoring_type="workstation"
+            ).count(),
+            "total_workstation_offline_count": AgentOutage.objects.filter(
+                recovery_time=None, agent__monitoring_type="workstation"
+            ).count(),
+        }
+    )

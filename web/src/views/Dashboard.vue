@@ -357,6 +357,7 @@ export default {
   methods: {
     refreshEntireSite() {
       this.$store.dispatch("loadTree");
+      this.getAgentCounts();
 
       if (this.allClientsActive) {
         this.loadAllClients();
@@ -454,6 +455,7 @@ export default {
     livePoll() {
       this.poll = setInterval(() => {
         this.$store.dispatch("checkVer");
+        this.getAgentCounts();
       }, 60 * 5 * 1000);
     },
     setSplitter(val) {

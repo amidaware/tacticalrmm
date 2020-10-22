@@ -9,6 +9,70 @@
         <q-btn dense flat push @click="refreshEntireSite" icon="refresh" />
         <q-toolbar-title>Tactical RMM</q-toolbar-title>
 
+        <!-- Devices Chip -->
+        <q-chip color="white" class="cursor-pointer">
+          <q-avatar size="md" icon="devices" color="primary" text-color="white" />
+          <!--<q-tooltip> Total Managed Agents </q-tooltip>-->
+          {{ totalAgents }}
+          <q-menu>
+            <q-list>
+              <q-item-label header>Total Managed Agents</q-item-label>
+              <q-item class="q-my-sm">
+                <q-item-section avatar>
+                  <q-avatar color="primary" text-color="white">
+                    <q-icon name="fa fa-server" />
+                  </q-avatar>
+                </q-item-section>
+
+                <q-item-section>
+                  <q-item-label>Server: {{ serverCount }}</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item class="q-my-sm">
+                <q-item-section avatar>
+                  <q-avatar color="primary" text-color="white">
+                    <q-icon name="computer" />
+                  </q-avatar>
+                </q-item-section>
+
+                <q-item-section>
+                  <q-item-label>Workstation: {{ workstationCount }}</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-chip>
+
+        <!-- Devices Offline Chip -->
+        <q-chip color="white" class="cursor-pointer">
+          <q-avatar size="md" icon="power_off" color="negative" text-color="white" />
+          <!--<q-tooltip> Total Offline Agents </q-tooltip>-->
+          {{ totalOfflineAgents }}
+          <q-menu>
+            <q-list>
+              <q-item-label header>Total Offline Agents</q-item-label>
+              <q-item class="q-my-sm">
+                <q-item-section avatar>
+                  <q-avatar color="negative" text-color="white"> <q-icon name="fa fa-server" /> </q-avatar>
+                </q-item-section>
+
+                <q-item-section>
+                  <q-item-label>Server: {{ serverOfflineCount }}</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item class="q-my-sm">
+                <q-item-section avatar>
+                  <q-avatar color="negative" text-color="white"> <q-icon name="computer" /> </q-avatar>
+                </q-item-section>
+
+                <q-item-section>
+                  <q-item-label>Workstation: {{ workstationOfflineCount }}</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-chip>
+
         <AlertsIcon />
 
         <q-btn-dropdown flat no-caps stretch :label="user">
@@ -194,6 +258,10 @@ export default {
       showPolicyAddModal: false,
       policyAddType: null,
       policyAddPk: null,
+      serverCount: 0,
+      serverOfflineCount: 0,
+      workstationCount: 0,
+      workstationOfflineCount: 0,
       outsideModel: 11,
       selectedTree: "",
       innerModel: 50,
@@ -391,6 +459,14 @@ export default {
     setSplitter(val) {
       this.$store.commit("SET_SPLITTER", val);
     },
+    getAgentCounts(selected) {
+      this.$store.dispatch("getAgentCounts").then(r => {
+        this.serverCount = r.data.total_server_count;
+        this.serverOfflineCount = r.data.total_server_offline_count;
+        this.workstationCount = r.data.total_workstation_count;
+        this.workstationOfflineCount = r.data.total_workstation_offline_count;
+      });
+    },
   },
   computed: {
     ...mapState({
@@ -415,11 +491,24 @@ export default {
         site: this.siteActive,
       };
     },
+    totalAgents() {
+      return this.serverCount + this.workstationCount;
+    },
+    totalOfflineAgents() {
+      return this.serverOfflineCount + this.workstationOfflineCount;
+    },
+    totalSelectedAgents() {
+      return this.serverCount + this.workstationCount;
+    },
+    totalSelectedOfflineAgents() {
+      return this.serverOfflineCount + this.workstationOfflineCount;
+    },
   },
   created() {
     this.getTree();
     this.$store.dispatch("getUpdatedSites");
     this.$store.dispatch("checkVer");
+    this.getAgentCounts();
   },
   mounted() {
     this.loadFrame(this.activeNode);

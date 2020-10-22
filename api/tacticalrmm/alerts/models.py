@@ -12,17 +12,19 @@ class Alert(models.Model):
     agent = models.ForeignKey(
         "agents.Agent",
         related_name="agent",
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
     )
-    check = models.ForeignKey(
+    assigned_check = models.ForeignKey(
         "checks.Check",
-        related_name="check",
+        related_name="alert",
         on_delete=models.CASCADE,
         null=True,
         blank=True,
     )
     message = models.TextField(null=True, blank=True)
-    alert_time = models.DateTimeField(auto_add_new=True)
+    alert_time = models.DateTimeField(auto_now_add=True, null=True)
     snooze_until = models.DateTimeField(null=True, blank=True)
     resolved = models.BooleanField(default=False)
     severity = models.CharField(

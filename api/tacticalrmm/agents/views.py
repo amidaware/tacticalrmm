@@ -21,7 +21,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 
-from .models import Agent, RecoveryAction, Note
+from .models import Agent, AgentOutage, RecoveryAction, Note
 from winupdate.models import WinUpdatePolicy
 from clients.models import Client, Site
 from accounts.models import User
@@ -804,3 +804,21 @@ def bulk(request):
         return Response(f"Patch status scan will now run on {len(minions)} agents")
 
     return notify_error("Something went wrong")
+
+@api_view(["POST"])
+def agent_counts(request):
+    if "selected" in request.data:
+        # expects { "client": "client_name", "site": "site_name" }
+        return Response({
+            "total_server_count": Agent.objects.filter(monitoring_type="server", **request.data["selected"]).count(),
+            "total_server_offline_count": AgentOutage.objects.filter(agent__monitoring_type="server", **request.data["selected"]).count(),
+            "total_workstation_count": Agent.objects.filter(monitoring_type="workstation", **request.data["selected"]).count(),
+            "total_workstation_offline_count": AgentOutage.objects.filter(agent__monitoring_type="workstation", **request.data["selected"]).count(),
+        })
+    else:
+        return Response({
+            "total_server_count": Agent.objects.filter(monitoring_type="server").count(),
+            "total_server_offline_count": AgentOutage.objects.filter(agent__monitoring_type="server").count(),
+            "total_workstation_count": Agent.objects.filter(monitoring_type="workstation").count(),
+            "total_workstation_offline_count": AgentOutage.objects.filter(agent__monitoring_type="workstation").count(),
+        })

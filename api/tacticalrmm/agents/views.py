@@ -16,7 +16,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 
-from .models import Agent, RecoveryAction, Note
+from .models import Agent, AgentOutage, RecoveryAction, Note
 from winupdate.models import WinUpdatePolicy
 from clients.models import Client, Site
 from accounts.models import User
@@ -859,3 +859,23 @@ def bulk(request):
         return Response(f"Patch status scan will now run on {len(minions)} agents")
 
     return notify_error("Something went wrong")
+
+
+@api_view(["POST"])
+def agent_counts(request):
+    return Response(
+        {
+            "total_server_count": Agent.objects.filter(
+                monitoring_type="server"
+            ).count(),
+            "total_server_offline_count": AgentOutage.objects.filter(
+                recovery_time=None, agent__monitoring_type="server"
+            ).count(),
+            "total_workstation_count": Agent.objects.filter(
+                monitoring_type="workstation"
+            ).count(),
+            "total_workstation_offline_count": AgentOutage.objects.filter(
+                recovery_time=None, agent__monitoring_type="workstation"
+            ).count(),
+        }
+    )

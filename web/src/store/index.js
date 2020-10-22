@@ -148,7 +148,7 @@ export default function () {
     },
     actions: {
       getAgentCounts(context, data = {}) {
-        return axios.post("/agents/agent_counts", data)
+        return axios.post("/agents/agent_counts/", data)
       },
       loadAutomatedTasks(context, pk) {
         axios.get(`/tasks/${pk}/automatedtasks/`).then(r => {

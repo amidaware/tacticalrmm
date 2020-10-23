@@ -527,15 +527,6 @@ class Agent(BaseAuditModel):
 
         return resp
 
-    @staticmethod
-    def get_github_versions():
-        r = requests.get("https://api.github.com/repos/wh1te909/winagent/releases")
-        versions = {}
-        for i, release in enumerate(r.json()):
-            versions[i] = release["name"]
-
-        return {"versions": versions, "data": r.json()}
-
     def schedule_reboot(self, obj):
 
         start_date = dt.datetime.strftime(obj, "%Y-%m-%d")

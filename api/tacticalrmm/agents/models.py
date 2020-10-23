@@ -33,8 +33,8 @@ class Agent(BaseAuditModel):
     version = models.CharField(default="0.1.0", max_length=255)
     salt_ver = models.CharField(default="1.0.3", max_length=255)
     operating_system = models.CharField(null=True, blank=True, max_length=255)
-    plat = models.CharField(max_length=255, null=True)
-    plat_release = models.CharField(max_length=255, null=True)
+    plat = models.CharField(max_length=255, null=True, blank=True)
+    plat_release = models.CharField(max_length=255, null=True, blank=True)
     hostname = models.CharField(max_length=255)
     salt_id = models.CharField(null=True, blank=True, max_length=255)
     local_ip = models.TextField(null=True, blank=True)  # deprecated
@@ -42,11 +42,12 @@ class Agent(BaseAuditModel):
     last_seen = models.DateTimeField(null=True, blank=True)
     services = models.JSONField(null=True, blank=True)
     public_ip = models.CharField(null=True, max_length=255)
-    total_ram = models.IntegerField(null=True)
+    total_ram = models.IntegerField(null=True, blank=True)
     used_ram = models.IntegerField(null=True, blank=True)  # deprecated
     disks = models.JSONField(null=True, blank=True)
     boot_time = models.FloatField(null=True, blank=True)
-    logged_in_username = models.CharField(null=True, max_length=200)
+    logged_in_username = models.CharField(null=True, blank=True, max_length=255)
+    last_logged_in_user = models.CharField(null=True, blank=True, max_length=255)
     client = models.CharField(max_length=200)
     antivirus = models.CharField(default="n/a", max_length=255)  # deprecated
     site = models.CharField(max_length=150)

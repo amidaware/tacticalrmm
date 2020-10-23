@@ -72,7 +72,14 @@ class Hello(APIView):
                     tmp["percent"] = int(disk["percent"])
                 new.append(tmp)
 
-        serializer.save(last_seen=djangotime.now(), disks=new)
+        if request.data["logged_in_username"] == "None":
+            serializer.save(last_seen=djangotime.now(), disks=new)
+        else:
+            serializer.save(
+                last_seen=djangotime.now(),
+                disks=new,
+                last_logged_in_user=request.data["logged_in_username"],
+            )
 
         if agent.agentoutages.exists() and agent.agentoutages.last().is_active:
             last_outage = agent.agentoutages.last()

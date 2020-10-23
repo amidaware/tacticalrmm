@@ -7,6 +7,7 @@
       :data="filter"
       :filter="search"
       :columns="columns"
+      :visible-columns="visibleColumns"
       row-key="id"
       binary-state-sort
       virtual-scroll
@@ -244,7 +245,10 @@
           <q-td key="hostname" :props="props">{{ props.row.hostname }}</q-td>
           <q-td key="description" :props="props">{{ props.row.description }}</q-td>
           <q-td key="user" :props="props">
-            <span v-if="props.row.logged_in_username !== 'None'">{{ props.row.logged_in_username }}</span>
+            <span class="text-italic" v-if="props.row.logged_in_username === 'None' && props.row.status === 'online'">{{
+              props.row.last_logged_in_user
+            }}</span>
+            <span v-else-if="props.row.logged_in_username !== 'None'">{{ props.row.logged_in_username }}</span>
             <span v-else>-</span>
           </q-td>
           <q-td :props="props" key="patchespending">
@@ -252,16 +256,6 @@
               <q-tooltip>Patches Pending</q-tooltip>
             </q-icon>
           </q-td>
-          <!--
-          <q-td :props="props" key="antivirus">
-            <q-icon v-if="props.row.antivirus !== 'n/a' && props.row.antivirus === 'windowsdefender'" name="fas fa-exclamation" color="warning">
-              <q-tooltip>{{ props.row.antivirus }}</q-tooltip>
-            </q-icon>
-            <q-icon v-else-if="props.row.antivirus !== 'n/a'" name="fas fa-check" color="positive">
-              <q-tooltip>{{ props.row.antivirus }}</q-tooltip>
-            </q-icon>
-            <q-icon v-else name="fas fa-times-circle" color="negative" />
-          </q-td>-->
           <q-td key="agentstatus">
             <q-icon v-if="props.row.status === 'overdue'" name="fas fa-signal" size="1.2em" color="negative">
               <q-tooltip>Agent overdue</q-tooltip>
@@ -331,7 +325,7 @@ import RunScript from "@/components/modals/agents/RunScript";
 
 export default {
   name: "AgentTable",
-  props: ["frame", "columns", "tab", "filter", "userName", "search"],
+  props: ["frame", "columns", "tab", "filter", "userName", "search", "visibleColumns"],
   components: {
     EditAgent,
     RebootLater,

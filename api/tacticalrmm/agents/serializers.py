@@ -63,6 +63,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "boot_time",
             "checks",
             "logged_in_username",
+            "last_logged_in_user",
         ]
 
 

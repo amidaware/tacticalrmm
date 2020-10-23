@@ -262,6 +262,7 @@ class AgentsTableList(generics.ListAPIView):
         "last_seen",
         "boot_time",
         "logged_in_username",
+        "last_logged_in_user",
     )
     serializer_class = AgentTableSerializer
 
@@ -304,6 +305,7 @@ def by_client(request, client):
             "last_seen",
             "boot_time",
             "logged_in_username",
+            "last_logged_in_user",
         )
     )
     ctx = {"default_tz": CoreSettings.objects.first().default_time_zone}
@@ -330,6 +332,7 @@ def by_site(request, client, site):
             "last_seen",
             "boot_time",
             "logged_in_username",
+            "last_logged_in_user",
         )
     )
     ctx = {"default_tz": CoreSettings.objects.first().default_time_zone}

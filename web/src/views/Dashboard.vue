@@ -187,6 +187,7 @@
                 :filter="filteredAgents"
                 :userName="user"
                 :search="search"
+                :visibleColumns="visibleColumns"
                 @refreshEdit="refreshEntireSite"
               />
             </template>
@@ -320,13 +321,16 @@ export default {
           align: "left",
         },
         {
+          name: "lastuser",
+          label: "Last User",
+          field: "last_logged_in_user",
+          sortable: true,
+          align: "left",
+        },
+        {
           name: "patchespending",
           align: "left",
         },
-        /* {
-          name: "antivirus",
-          align: "left"
-        }, */
         {
           name: "agentstatus",
           field: "status",
@@ -351,6 +355,21 @@ export default {
           sortable: true,
           align: "left",
         },
+      ],
+      visibleColumns: [
+        "smsalert",
+        "emailalert",
+        "checks-status",
+        "client",
+        "site",
+        "hostname",
+        "description",
+        "user",
+        "patchespending",
+        "agentstatus",
+        "needsreboot",
+        "lastseen",
+        "boottime",
       ],
     };
   },

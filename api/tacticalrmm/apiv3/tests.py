@@ -72,3 +72,20 @@ class TestAPIv3(BaseTestCase):
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("patch", url)
+
+    def test_hello_patch(self):
+        url = f"/api/v3/hello/"
+        payload = {
+            "agent_id": self.agent.agent_id,
+            "logged_in_username": "None",
+            "disks": [],
+        }
+
+        r = self.client.patch(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        payload["logged_in_username"] = "Bob"
+        r = self.client.patch(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        self.check_not_authenticated("patch", url)

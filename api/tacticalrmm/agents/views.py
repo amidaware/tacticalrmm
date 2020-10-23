@@ -566,7 +566,12 @@ def install_agent(request):
         if int(request.data["power"]):
             cmd.append("--power")
 
-        resp = {"cmd": " ".join(str(i) for i in cmd), "url": download_url}
+        resp = {
+            "cmd": " ".join(str(i) for i in cmd),
+            "url": download_url,
+            "salt64": settings.SALT_64,
+            "salt32": settings.SALT_32,
+        }
 
         return Response(resp)
 

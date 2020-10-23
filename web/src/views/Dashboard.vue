@@ -12,61 +12,46 @@
         <!-- Devices Chip -->
         <q-chip color="white" class="cursor-pointer">
           <q-avatar size="md" icon="devices" color="primary" text-color="white" />
-          <!--<q-tooltip> Total Managed Agents </q-tooltip>-->
+          <q-tooltip delay="600" anchor="top middle" self="top middle">Agent Count</q-tooltip>
           {{ totalAgents }}
           <q-menu>
-            <q-list>
-              <q-item-label header>Total Managed Agents</q-item-label>
-              <q-item class="q-my-sm">
+            <q-list dense>
+              <q-item-label header>Servers</q-item-label>
+              <q-item>
                 <q-item-section avatar>
-                  <q-avatar color="primary" text-color="white">
-                    <q-icon name="fa fa-server" />
-                  </q-avatar>
+                  <q-icon name="fa fa-server" size="sm" color="primary" text-color="white" />
                 </q-item-section>
 
-                <q-item-section>
-                  <q-item-label>Server: {{ serverCount }}</q-item-label>
+                <q-item-section no-wrap>
+                  <q-item-label>Total: {{ serverCount }}</q-item-label>
                 </q-item-section>
               </q-item>
-              <q-item class="q-my-sm">
+              <q-item>
                 <q-item-section avatar>
-                  <q-avatar color="primary" text-color="white">
-                    <q-icon name="computer" />
-                  </q-avatar>
+                  <q-icon name="power_off" size="sm" color="negative" text-color="white" />
                 </q-item-section>
 
-                <q-item-section>
-                  <q-item-label>Workstation: {{ workstationCount }}</q-item-label>
+                <q-item-section no-wrap>
+                  <q-item-label>Offline: {{ serverOfflineCount }}</q-item-label>
                 </q-item-section>
               </q-item>
-            </q-list>
-          </q-menu>
-        </q-chip>
-
-        <!-- Devices Offline Chip -->
-        <q-chip color="white" class="cursor-pointer">
-          <q-avatar size="md" icon="power_off" color="negative" text-color="white" />
-          <!--<q-tooltip> Total Offline Agents </q-tooltip>-->
-          {{ totalOfflineAgents }}
-          <q-menu>
-            <q-list>
-              <q-item-label header>Total Offline Agents</q-item-label>
-              <q-item class="q-my-sm">
+              <q-item-label header>Workstations</q-item-label>
+              <q-item>
                 <q-item-section avatar>
-                  <q-avatar color="negative" text-color="white"> <q-icon name="fa fa-server" /> </q-avatar>
+                  <q-icon name="computer" size="sm" color="primary" text-color="white" />
                 </q-item-section>
 
-                <q-item-section>
-                  <q-item-label>Server: {{ serverOfflineCount }}</q-item-label>
+                <q-item-section no-wrap>
+                  <q-item-label>Total: {{ workstationCount }}</q-item-label>
                 </q-item-section>
               </q-item>
-              <q-item class="q-my-sm">
+              <q-item>
                 <q-item-section avatar>
-                  <q-avatar color="negative" text-color="white"> <q-icon name="computer" /> </q-avatar>
+                  <q-icon name="power_off" size="sm" color="negative" text-color="white" />
                 </q-item-section>
 
-                <q-item-section>
-                  <q-item-label>Workstation: {{ workstationOfflineCount }}</q-item-label>
+                <q-item-section no-wrap>
+                  <q-item-label>Offline: {{ workstationOfflineCount }}</q-item-label>
                 </q-item-section>
               </q-item>
             </q-list>

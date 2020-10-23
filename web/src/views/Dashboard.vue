@@ -12,7 +12,7 @@
         <!-- Devices Chip -->
         <q-chip color="white" class="cursor-pointer">
           <q-avatar size="md" icon="devices" color="primary" text-color="white" />
-          <q-tooltip delay="600" anchor="top middle" self="top middle">Agent Count</q-tooltip>
+          <q-tooltip :delay="600" anchor="top middle" self="top middle">Agent Count</q-tooltip>
           {{ totalAgents }}
           <q-menu>
             <q-list dense>

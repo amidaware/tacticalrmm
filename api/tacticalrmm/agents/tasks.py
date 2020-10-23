@@ -14,6 +14,9 @@ from core.models import CoreSettings
 
 logger.configure(**settings.LOG_CONFIG)
 
+OLD_64_PY_AGENT = "https://github.com/wh1te909/winagent/releases/download/v0.11.2/winagent-v0.11.2.exe"
+OLD_32_PY_AGENT = "https://github.com/wh1te909/winagent/releases/download/v0.11.2/winagent-v0.11.2-x86.exe"
+
 
 @app.task
 def send_agent_update_task(pks, version):
@@ -27,11 +30,23 @@ def send_agent_update_task(pks, version):
     for chunk in chunks:
         for pk in chunk:
             agent = Agent.objects.get(pk=pk)
+            # golang agent only backwards compatible with py agent 0.11.2
+            # force an upgrade to the latest python agent if version < 0.11.2
+            if pyver.parse(agent.version) < pyver.parse("0.11.2"):
+                url = OLD_64_PY_AGENT if agent.arch == "64" else OLD_32_PY_AGENT
+                inno = (
+                    "winagent-v0.11.2.exe"
+                    if agent.arch == "64"
+                    else "winagent-v0.11.2-x86.exe"
+                )
+            else:
+                url = agent.winagent_dl
+                inno = agent.win_inno_exe
             r = agent.salt_api_async(
                 func="win_agent.do_agent_update_v2",
                 kwargs={
-                    "inno": agent.win_inno_exe,
-                    "url": agent.winagent_dl,
+                    "inno": inno,
+                    "url": url,
                 },
             )
         sleep(10)
@@ -43,7 +58,7 @@ def auto_self_agent_update_task():
     if not core.agent_auto_update:
         return
 
-    q = Agent.objects.all()
+    q = Agent.objects.only("pk", "version")
     agents = [
         i.pk
         for i in q
@@ -55,11 +70,23 @@ def auto_self_agent_update_task():
     for chunk in chunks:
         for pk in chunk:
             agent = Agent.objects.get(pk=pk)
+            # golang agent only backwards compatible with py agent 0.11.2
+            # force an upgrade to the latest python agent if version < 0.11.2
+            if pyver.parse(agent.version) < pyver.parse("0.11.2"):
+                url = OLD_64_PY_AGENT if agent.arch == "64" else OLD_32_PY_AGENT
+                inno = (
+                    "winagent-v0.11.2.exe"
+                    if agent.arch == "64"
+                    else "winagent-v0.11.2-x86.exe"
+                )
+            else:
+                url = agent.winagent_dl
+                inno = agent.win_inno_exe
             r = agent.salt_api_async(
                 func="win_agent.do_agent_update_v2",
                 kwargs={
-                    "inno": agent.win_inno_exe,
-                    "url": agent.winagent_dl,
+                    "inno": inno,
+                    "url": url,
                 },
             )
         sleep(10)

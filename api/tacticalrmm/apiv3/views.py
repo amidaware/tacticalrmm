@@ -250,9 +250,7 @@ class WinUpdater(APIView):
     def get(self, request, agentid):
         agent = get_object_or_404(Agent, agent_id=agentid)
         agent.delete_superseded_updates()
-        patches = WinUpdate.objects.filter(agent=agent, action="approve").exclude(
-            installed=True
-        )
+        patches = agent.winupdates.filter(action="approve").exclude(installed=True)
         return Response(ApprovedUpdateSerializer(patches, many=True).data)
 
     # agent sends patch results as it's installing them

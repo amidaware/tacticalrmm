@@ -18,11 +18,6 @@ from agents.models import Agent
 from checks.models import Check
 from autotasks.models import AutomatedTask
 
-from agents.tasks import (
-    sync_salt_modules_task,
-    get_wmi_detail_task,
-    agent_recovery_email_task,
-)
 from winupdate.tasks import check_for_updates_task
 
 from autotasks.serializers import TaskRunnerGetSerializer, TaskRunnerPatchSerializer

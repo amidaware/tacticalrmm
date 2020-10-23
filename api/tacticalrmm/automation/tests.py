@@ -15,7 +15,6 @@ from .serializers import (
     RelatedAgentPolicySerializer,
     RelatedSitePolicySerializer,
     RelatedClientPolicySerializer,
-    WinUpdatePolicySerializer,
 )
 
 

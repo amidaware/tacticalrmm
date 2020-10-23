@@ -1,5 +1,6 @@
 import os
 import requests
+from loguru import logger
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -19,10 +20,7 @@ from winupdate.models import WinUpdate
 from accounts.models import User
 from clients.models import Client, Site
 from winupdate.models import WinUpdatePolicy
-from checks.serializers import (
-    CheckResultsSerializer,
-    CheckRunnerGetSerializerV3,
-)
+from checks.serializers import CheckRunnerGetSerializerV3
 from agents.serializers import WinAgentSerializer
 from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
 from winupdate.serializers import ApprovedUpdateSerializer
@@ -36,6 +34,8 @@ from winupdate.tasks import check_for_updates_task
 from software.tasks import get_installed_software, install_chocolatey
 from checks.utils import bytes2human
 from tacticalrmm.utils import notify_error
+
+logger.configure(**settings.LOG_CONFIG)
 
 
 class Hello(APIView):
@@ -254,6 +254,76 @@ class WinUpdater(APIView):
             installed=True
         )
         return Response(ApprovedUpdateSerializer(patches, many=True).data)
+
+    # agent sends patch results as it's installing them
+    def patch(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        kb = request.data["kb"]
+        results = request.data["results"]
+        update = agent.winupdates.get(kb=kb)
+
+        if results == "error" or results == "failed":
+            update.result = results
+            update.save(update_fields=["result"])
+        elif results == "success":
+            update.result = "success"
+            update.downloaded = True
+            update.installed = True
+            update.date_installed = djangotime.now()
+            update.save(
+                update_fields=[
+                    "result",
+                    "downloaded",
+                    "installed",
+                    "date_installed",
+                ]
+            )
+        elif results == "alreadyinstalled":
+            update.result = "success"
+            update.downloaded = True
+            update.installed = True
+            update.save(update_fields=["result", "downloaded", "installed"])
+
+        return Response("ok")
+
+    # agent calls this after it's finished installing all patches
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        reboot_policy = agent.get_patch_policy().reboot_after_install
+        reboot = False
+
+        if reboot_policy == "always":
+            reboot = True
+
+        if request.data["reboot"]:
+            if reboot_policy == "required":
+                reboot = True
+            elif reboot_policy == "never":
+                agent.needs_reboot = True
+                agent.save(update_fields=["needs_reboot"])
+
+        if reboot:
+            r = agent.salt_api_cmd(
+                timeout=15,
+                func="system.reboot",
+                arg=7,
+                kwargs={"in_seconds": True},
+            )
+
+            if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
+                check_for_updates_task.apply_async(
+                    queue="wupdate", kwargs={"pk": agent.pk, "wait": False}
+                )
+            else:
+                logger.info(
+                    f"{agent.hostname} is rebooting after updates were installed."
+                )
+        else:
+            check_for_updates_task.apply_async(
+                queue="wupdate", kwargs={"pk": agent.pk, "wait": False}
+            )
+
+        return Response("ok")
 
 
 class SysInfo(APIView):

@@ -12,4 +12,6 @@ urlpatterns = [
     path("meshexe/", views.MeshExe.as_view()),
     path("sysinfo/", views.SysInfo.as_view()),
     path("newagent/", views.NewAgent.as_view()),
+    path("winupdater/", views.WinUpdater.as_view()),
+    path("<str:agentid>/winupdater/", views.WinUpdater.as_view()),
 ]

@@ -3,7 +3,6 @@ from rest_framework.serializers import (
     SerializerMethodField,
     StringRelatedField,
     ReadOnlyField,
-    ValidationError,
 )
 
 from .models import Policy

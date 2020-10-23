@@ -1,5 +1,4 @@
 from django.shortcuts import get_object_or_404
-from django.utils import timezone as djangotime
 
 from rest_framework.decorators import (
     api_view,
@@ -12,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from agents.models import Agent
 from .models import WinUpdate
-from .serializers import UpdateSerializer, WinUpdateSerializer, ApprovedUpdateSerializer
+from .serializers import UpdateSerializer, ApprovedUpdateSerializer
 from .tasks import check_for_updates_task
 from tacticalrmm.utils import notify_error
 
@@ -76,41 +75,3 @@ def win_updater(request):
         return Response(ApprovedUpdateSerializer(patches, many=True).data)
 
     return Response("nopatches")
-
-
-@api_view(["PATCH"])
-@authentication_classes((TokenAuthentication,))
-@permission_classes((IsAuthenticated,))
-def results(request):
-    agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-    kb = request.data["kb"]
-    results = request.data["results"]
-    update = WinUpdate.objects.filter(agent=agent).get(kb=kb)
-
-    if results == "error" or results == "failed":
-        update.result = results
-        update.save(update_fields=["result"])
-
-    elif results == "success":
-        update.result = "success"
-        update.downloaded = True
-        update.installed = True
-        update.date_installed = djangotime.now()
-        update.save(
-            update_fields=[
-                "result",
-                "downloaded",
-                "installed",
-                "date_installed",
-            ]
-        )
-
-    elif results == "alreadyinstalled":
-        update.result = "success"
-        update.downloaded = True
-        update.installed = True
-        update.save(update_fields=["result", "downloaded", "installed"])
-    else:
-        pass
-
-    return Response("ok")

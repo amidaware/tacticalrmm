@@ -3,11 +3,9 @@ import random
 from time import sleep
 
 from tacticalrmm.celery import app
-from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone as djangotime
 
 from agents.models import Agent
-from clients.models import Client, Site
 
 
 @app.task

@@ -4,7 +4,6 @@ import datetime as dt
 
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
-from agents.models import Agent
 from automation.models import Policy
 from logs.models import BaseAuditModel
 
@@ -132,7 +131,7 @@ class AutomatedTask(BaseAuditModel):
         return TaskSerializer(task).data
 
     def create_policy_task(self, agent=None, policy=None):
-        
+
         # exit is neither are set or if both are set
         if not agent and not policy or agent and policy:
             return

@@ -1,7 +1,5 @@
 from .models import Script
-from model_bakery.recipe import Recipe, seq
-from model_bakery import baker
-from itertools import cycle
+from model_bakery.recipe import Recipe
 
 script = Recipe(
     Script,

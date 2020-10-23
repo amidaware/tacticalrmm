@@ -7,16 +7,13 @@ from rest_framework import status
 
 from .models import Policy
 from agents.models import Agent
-from scripts.models import Script
 from clients.models import Client, Site
 from checks.models import Check
 from autotasks.models import AutomatedTask
 from winupdate.models import WinUpdatePolicy
 
 from clients.serializers import ClientSerializer, TreeSerializer
-from checks.serializers import CheckSerializer
 from agents.serializers import AgentHostnameSerializer
-from autotasks.serializers import TaskSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .serializers import (

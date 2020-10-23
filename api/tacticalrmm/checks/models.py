@@ -12,9 +12,6 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 from core.models import CoreSettings
 from logs.models import BaseAuditModel
-
-import agents
-
 from .tasks import handle_check_email_alert_task
 from .utils import bytes2human
 

@@ -11,8 +11,6 @@ from checks.models import Check
 
 from checks.serializers import CheckRunnerGetSerializerV2
 
-from tacticalrmm.utils import notify_error
-
 
 class CheckRunner(APIView):
     """

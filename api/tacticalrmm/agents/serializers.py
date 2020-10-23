@@ -3,11 +3,8 @@ import pytz
 from rest_framework import serializers
 
 from .models import Agent, Note
-from autotasks.models import AutomatedTask
 
 from winupdate.serializers import WinUpdatePolicySerializer
-from automation.serializers import PolicySerializer
-from autotasks.serializers import TaskSerializer
 
 
 class AgentSerializer(serializers.ModelSerializer):

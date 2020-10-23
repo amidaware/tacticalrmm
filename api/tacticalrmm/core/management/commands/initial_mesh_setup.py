@@ -3,10 +3,8 @@ from django.conf import settings
 from core.models import CoreSettings
 from .helpers import get_auth_token
 import asyncio
-import ssl
 import websockets
 import json
-import time
 
 
 class Command(BaseCommand):

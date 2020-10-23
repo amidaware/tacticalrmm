@@ -1,10 +1,7 @@
-import base64
 import json
 import os
-import zlib
 from unittest.mock import patch
 
-from model_bakery.recipe import seq
 from model_bakery import baker
 from itertools import cycle
 
@@ -535,17 +532,25 @@ class TestAgentViews(BaseTestCase):
 
         self.check_not_authenticated("post", url)
 
-class TestAgentViewsNew(TacticalTestCase):
 
+class TestAgentViewsNew(TacticalTestCase):
     def setUp(self):
         self.authenticate()
 
     def test_agent_counts(self):
         url = "/agents/agent_counts/"
 
-        # create some data 
-        baker.make_recipe("agents.online_agent", monitoring_type=cycle(["server", "workstation"]), _quantity=6)
-        agents = baker.make_recipe("agents.overdue_agent", monitoring_type=cycle(["server", "workstation"]), _quantity=6)
+        # create some data
+        baker.make_recipe(
+            "agents.online_agent",
+            monitoring_type=cycle(["server", "workstation"]),
+            _quantity=6,
+        )
+        agents = baker.make_recipe(
+            "agents.overdue_agent",
+            monitoring_type=cycle(["server", "workstation"]),
+            _quantity=6,
+        )
 
         # make an AgentOutage for every overdue agent
         baker.make("agents.AgentOutage", agent=cycle(agents), _quantity=6)

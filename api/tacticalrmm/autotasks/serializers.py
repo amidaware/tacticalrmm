@@ -4,7 +4,7 @@ from .models import AutomatedTask
 from agents.models import Agent
 from scripts.models import Script
 
-from scripts.serializers import ScriptSerializer, ScriptCheckSerializer
+from scripts.serializers import ScriptCheckSerializer
 from checks.serializers import CheckSerializer
 
 

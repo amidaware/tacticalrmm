@@ -8,7 +8,6 @@ from django.utils import timezone as djangotime
 from django.conf import settings
 
 from rest_framework.test import APIClient
-from rest_framework.test import force_authenticate
 from rest_framework.authtoken.models import Token
 
 from accounts.models import User

@@ -1,5 +1,4 @@
 from django.shortcuts import get_object_or_404
-from django.utils import timezone as djangotime
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -13,7 +12,6 @@ from scripts.models import Script
 from automation.models import Policy
 
 from .serializers import TaskSerializer, AutoTaskSerializer
-from scripts.serializers import ScriptSerializer
 
 from .tasks import (
     create_win_task_schedule,

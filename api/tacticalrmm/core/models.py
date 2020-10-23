@@ -1,6 +1,5 @@
 from loguru import logger
 import pytz
-import os
 import time
 import smtplib
 from email.message import EmailMessage

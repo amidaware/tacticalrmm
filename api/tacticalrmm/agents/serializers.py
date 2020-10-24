@@ -40,7 +40,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
         if obj.time_zone is not None:
             agent_tz = pytz.timezone(obj.time_zone)
         else:
-            agent_tz = pytz.timezone(self.context["default_tz"])
+            agent_tz = self.context["default_tz"]
 
         return obj.last_seen.astimezone(agent_tz).strftime("%m %d %Y %H:%M:%S")
 

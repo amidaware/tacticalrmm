@@ -4,6 +4,7 @@ import subprocess
 import zlib
 import json
 import base64
+import pytz
 import datetime as dt
 from packaging import version as pyver
 
@@ -263,12 +264,15 @@ class AgentsTableList(generics.ListAPIView):
         "boot_time",
         "logged_in_username",
         "last_logged_in_user",
+        "time_zone",
     )
     serializer_class = AgentTableSerializer
 
     def list(self, request):
         queryset = self.get_queryset()
-        ctx = {"default_tz": CoreSettings.objects.first().default_time_zone}
+        ctx = {
+            "default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone)
+        }
         serializer = AgentTableSerializer(queryset, many=True, context=ctx)
         return Response(serializer.data)
 
@@ -306,9 +310,10 @@ def by_client(request, client):
             "boot_time",
             "logged_in_username",
             "last_logged_in_user",
+            "time_zone",
         )
     )
-    ctx = {"default_tz": CoreSettings.objects.first().default_time_zone}
+    ctx = {"default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone)}
     return Response(AgentTableSerializer(agents, many=True, context=ctx).data)
 
 
@@ -333,9 +338,10 @@ def by_site(request, client, site):
             "boot_time",
             "logged_in_username",
             "last_logged_in_user",
+            "time_zone",
         )
     )
-    ctx = {"default_tz": CoreSettings.objects.first().default_time_zone}
+    ctx = {"default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone)}
     return Response(AgentTableSerializer(agents, many=True, context=ctx).data)
 
 

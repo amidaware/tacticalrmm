@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="14"
+SCRIPT_VERSION="15"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 GREEN='\033[0;32m'

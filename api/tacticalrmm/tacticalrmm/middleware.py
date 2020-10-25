@@ -23,6 +23,7 @@ EXCLUDE_PATHS = (
     f"/{settings.ADMIN_URL}",
     "/logout",
     "/agents/installagent",
+    "/logs/downloadlog",
 )
 
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="15"
+SCRIPT_VERSION="16"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 GREEN='\033[0;32m'
@@ -266,7 +266,7 @@ print_green 'Installing postgresql'
 sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
-sudo apt install -y postgresql-12
+sudo apt install -y postgresql-13
 
 print_green 'Creating database for the rmm'
 

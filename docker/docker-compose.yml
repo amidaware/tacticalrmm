@@ -28,7 +28,7 @@ volumes:
 services:
   # Postgres Database for API service
   db:
-    image: postgres:12
+    image: postgres:13
     environment:
       POSTGRES_DB: tacticalrmm
       POSTGRES_USER: ${POSTGRES_USER}

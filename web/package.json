@@ -9,14 +9,14 @@
     "test:unit": "quasar test --unit jest"
   },
   "dependencies": {
-    "@quasar/extras": "^1.9.9",
+    "@quasar/extras": "^1.9.10",
     "axios": "^0.19.2",
     "dotenv": "^8.2.0",
     "qrcode.vue": "^1.7.0",
-    "quasar": "^1.14.1"
+    "quasar": "^1.14.2"
   },
   "devDependencies": {
-    "@quasar/app": "^2.1.1",
+    "@quasar/app": "^2.1.5",
     "@quasar/cli": "^1.1.2",
     "@quasar/quasar-app-extension-testing": "^1.0.0",
     "@quasar/quasar-app-extension-testing-unit-jest": "^1.0.1",

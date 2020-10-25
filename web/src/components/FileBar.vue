@@ -81,6 +81,9 @@
               <q-item clickable v-close-popup @click="showInstallAgent = true">
                 <q-item-section>Install Agent</q-item-section>
               </q-item>
+              <q-item clickable v-close-popup @click="showDeployment = true">
+                <q-item-section>Manage Deployments</q-item-section>
+              </q-item>
               <q-item clickable v-close-popup @click="showUpdateAgentsModal = true">
                 <q-item-section>Update Agents</q-item-section>
               </q-item>
@@ -211,6 +214,11 @@
       <q-dialog v-model="showBulkPatchManagement" position="top">
         <BulkPatchManagement @close="showBulkPatchManagement = false" />
       </q-dialog>
+
+      <!-- Agent Deployment -->
+      <q-dialog v-model="showDeployment">
+        <Deployment @close="showDeployment = false" />
+      </q-dialog>
     </q-bar>
   </div>
 </template>
@@ -234,6 +242,7 @@ import AuditManager from "@/components/AuditManager";
 import BulkCommand from "@/components/modals/agents/BulkCommand";
 import BulkScript from "@/components/modals/agents/BulkScript";
 import BulkPatchManagement from "@/components/modals/agents/BulkPatchManagement";
+import Deployment from "@/components/Deployment";
 
 export default {
   name: "FileBar",
@@ -256,6 +265,7 @@ export default {
     BulkCommand,
     BulkScript,
     BulkPatchManagement,
+    Deployment,
   },
   props: ["clients"],
   data() {
@@ -276,6 +286,7 @@ export default {
       showBulkCommand: false,
       showBulkScript: false,
       showBulkPatchManagement: false,
+      showDeployment: false,
     };
   },
   methods: {

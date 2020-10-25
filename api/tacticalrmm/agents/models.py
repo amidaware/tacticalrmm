@@ -65,6 +65,7 @@ class Agent(BaseAuditModel):
     time_zone = models.CharField(
         max_length=255, choices=TZ_CHOICES, null=True, blank=True
     )
+    maintenance_mode = models.BooleanField(default=False)
     policy = models.ForeignKey(
         "automation.Policy",
         related_name="agents",

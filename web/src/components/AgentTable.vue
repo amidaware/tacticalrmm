@@ -128,6 +128,14 @@
                 <q-item-section>Remote Background</q-item-section>
               </q-item>
 
+              <!-- maintenance mode -->
+              <q-item clickable @click="toggleMaintenance(props.row)">
+                <q-item-section side>
+                  <q-icon size="xs" name="construction" />
+                </q-item-section>
+                <q-item-section>{{ menuMaintenanceText(props.row.maintenance_mode) }}</q-item-section>
+              </q-item>
+
               <!-- patch management -->
               <q-item clickable>
                 <q-item-section side>
@@ -232,7 +240,15 @@
             />
           </q-td>
           <q-td key="checks-status" :props="props">
-            <q-icon v-if="props.row.checks.has_failing_checks" name="fas fa-check-double" size="1.2em" color="negative">
+            <q-icon v-if="props.row.maintenance_mode" name="fas fa-check-double" size="1.2em" color="warning">
+              <q-tooltip>Maintenance Mode Enabled</q-tooltip>
+            </q-icon>
+            <q-icon
+              v-else-if="props.row.checks.has_failing_checks"
+              name="fas fa-check-double"
+              size="1.2em"
+              color="negative"
+            >
               <q-tooltip>Checks failing</q-tooltip>
             </q-icon>
             <q-icon v-else name="fas fa-check-double" size="1.2em" color="positive">
@@ -312,6 +328,7 @@
 
 <script>
 import axios from "axios";
+import { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import mixins from "@/mixins/mixins";
 import { mapGetters } from "vuex";
 import { openURL } from "quasar";
@@ -531,6 +548,29 @@ export default {
           this.$q.loading.hide();
           this.notifyError(e.response.data);
         });
+    },
+    toggleMaintenance(agent) {
+      let data = {
+        id: agent.id,
+        type: "Agent",
+        action: !agent.maintenance_mode,
+      };
+
+      const text = agent.maintenance_mode ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
+      this.$store
+        .dispatch("toggleMaintenaceMode", data)
+        .then(response => {
+          this.$q.notify(notifySuccessConfig(text));
+          this.$store.commit("destroySubTable");
+          this.$store.dispatch("loadTree");
+          this.$emit("refreshEdit");
+        })
+        .catch(error => {
+          this.$q.notify(notifyErrorConfig("An Error occured. Please try again"));
+        });
+    },
+    menuMaintenanceText(mode) {
+      return mode ? "Disable Maintenace Mode" : "Enable Maintenace Mode";
     },
   },
   computed: {

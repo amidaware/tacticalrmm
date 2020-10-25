@@ -118,6 +118,13 @@
 
                         <q-separator></q-separator>
 
+                        <q-item clickable v-close-popup @click="showToggleMaintenance(props.node)">
+                          <q-item-section side>
+                            <q-icon name="construction" />
+                          </q-item-section>
+                          <q-item-section>{{ menuMaintenanceText(props.node) }}</q-item-section>
+                        </q-item>
+
                         <q-item clickable v-close-popup @click="showPolicyAdd(props.node)">
                           <q-item-section side>
                             <q-icon name="policy" />
@@ -212,6 +219,7 @@
 
 <script>
 import axios from "axios";
+import { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import { mapState, mapGetters } from "vuex";
 import FileBar from "@/components/FileBar";
 import AgentTable from "@/components/AgentTable";
@@ -472,6 +480,27 @@ export default {
         this.workstationCount = r.data.total_workstation_count;
         this.workstationOfflineCount = r.data.total_workstation_offline_count;
       });
+    },
+    showToggleMaintenance(node) {
+      let data = {
+        id: node.id,
+        type: node.raw.split("|")[0],
+        action: node.color === "warning" ? false : true,
+      };
+
+      const text = node.color === "warning" ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
+      this.$store
+        .dispatch("toggleMaintenaceMode", data)
+        .then(response => {
+          this.$q.notify(notifySuccessConfig(text));
+          this.getTree();
+        })
+        .catch(error => {
+          this.$q.notify(notifyErrorConfig("An Error occured. Please try again"));
+        });
+    },
+    menuMaintenanceText(node) {
+      return node.color === "warning" ? "Disable Maintenace Mode" : "Enable Maintenace Mode";
     },
   },
   computed: {

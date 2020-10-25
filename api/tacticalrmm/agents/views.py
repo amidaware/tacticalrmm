@@ -900,13 +900,16 @@ def agent_maintenance(request):
         client = Client.objects.get(pk=request.data["id"])
         Agent.objects.filter(client=client.client).update(maintenance_mode=request.data["action"])
 
-    if request.data["type"] == "Site":
+    elif request.data["type"] == "Site":
         site = Site.objects.get(pk=request.data["id"])
         Agent.objects.filter(client=site.client.client, site=site.site).update(maintenance_mode=request.data["action"])
 
-    if request.data["type"] == "Agent":
+    elif request.data["type"] == "Agent":
         agent = Agent.objects.get(pk=request.data["id"])
         agent.maintenance_mode=request.data["action"]
         agent.save(update_fields=["maintenance_mode"])
+
+    else:
+        return notify_error("Invalid data")
 
     return Response("ok")

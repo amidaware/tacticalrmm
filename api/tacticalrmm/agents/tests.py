@@ -706,3 +706,56 @@ class TestAgentViewsNew(TacticalTestCase):
         self.assertEqual(r.data, data)
 
         self.check_not_authenticated("post", url)
+
+    def test_agent_maintenance_mode(self):
+        url = "/agents/maintenance/"
+        # create data
+        client = baker.make("clients.Client", client="Default")
+        site = baker.make("clients.Site", client=client, site="Site")
+        agent = baker.make_recipe("agents.agent", client=client.client, site=site.site)
+
+        # Test client toggle maintenance mode
+        data = {
+            "type": "Client",
+            "id": client.id,
+            "action": True
+        }
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(Agent.objects.get(pk=agent.pk).maintenance_mode)
+
+        # Test site toggle maintenance mode
+        data = {
+            "type": "Site",
+            "id": site.id,
+            "action": False
+        }
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(Agent.objects.get(pk=agent.pk).maintenance_mode)
+
+        # Test agent toggle maintenance mode
+        data = {
+            "type": "Agent",
+            "id": agent.id,
+            "action": True
+        }
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(Agent.objects.get(pk=agent.pk).maintenance_mode)
+
+        # Test invalid payload
+        data = {
+            "type": "Invalid",
+            "id": agent.id,
+            "action": True
+        }
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        self.check_not_authenticated("post", url)
+        

@@ -561,8 +561,6 @@ export default {
         .dispatch("toggleMaintenaceMode", data)
         .then(response => {
           this.$q.notify(notifySuccessConfig(text));
-          this.$store.commit("destroySubTable");
-          this.$store.dispatch("loadTree");
           this.$emit("refreshEdit");
         })
         .catch(error => {

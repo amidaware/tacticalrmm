@@ -3,6 +3,7 @@
   <div v-else>
     <span>
       <b>{{ summary.hostname }}</b>
+      <span v-if="summary.maintenance_mode"> &bull; <q-badge color="warning"> Maintenance Mode </q-badge> </span>
       &bull; {{ summary.operating_system }} &bull; Agent v{{ summary.version }}
     </span>
     <hr />
@@ -27,7 +28,7 @@
             <q-item-section avatar>
               <q-icon name="fas fa-memory" />
             </q-item-section>
-            <q-item-section>{{ summary.total_ram}} GB RAM</q-item-section>
+            <q-item-section>{{ summary.total_ram }} GB RAM</q-item-section>
           </q-item>
 
           <!-- physical disks -->
@@ -41,7 +42,7 @@
             <q-item-section avatar>
               <q-icon name="fas fa-globe-americas" />
             </q-item-section>
-            <q-item-section>Public IP: {{ summary.public_ip}}</q-item-section>
+            <q-item-section>Public IP: {{ summary.public_ip }}</q-item-section>
           </q-item>
           <q-item>
             <q-item-section avatar>
@@ -63,9 +64,9 @@
             <q-avatar size="lg" square icon="cancel" color="red" text-color="white" />
             <small>{{ summary.checks.failing }} checks failing</small>
           </q-chip>
-          <span
-            v-if="awaitingSync(summary.checks.total, summary.checks.passing, summary.checks.failing)"
-          >{{ summary.checks.total }} checks awaiting first synchronization</span>
+          <span v-if="awaitingSync(summary.checks.total, summary.checks.passing, summary.checks.failing)"
+            >{{ summary.checks.total }} checks awaiting first synchronization</span
+          >
         </template>
         <template v-else>No checks</template>
       </div>
@@ -75,13 +76,7 @@
         <span class="text-subtitle2 text-bold">Disks</span>
         <div v-for="disk in disks" :key="disk.device">
           <span>{{ disk.device }} ({{ disk.fstype }})</span>
-          <q-linear-progress
-            rounded
-            size="15px"
-            :value="disk.percent / 100"
-            color="green"
-            class="q-mt-sm"
-          />
+          <q-linear-progress rounded size="15px" :value="disk.percent / 100" color="green" class="q-mt-sm" />
           <span>{{ disk.free }} free of {{ disk.total }}</span>
           <hr />
         </div>

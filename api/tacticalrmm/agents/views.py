@@ -265,6 +265,7 @@ class AgentsTableList(generics.ListAPIView):
         "logged_in_username",
         "last_logged_in_user",
         "time_zone",
+        "maintenance_mode",
     )
     serializer_class = AgentTableSerializer
 
@@ -311,6 +312,7 @@ def by_client(request, client):
             "logged_in_username",
             "last_logged_in_user",
             "time_zone",
+            "maintenance_mode",
         )
     )
     ctx = {"default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone)}
@@ -339,6 +341,7 @@ def by_site(request, client, site):
             "logged_in_username",
             "last_logged_in_user",
             "time_zone",
+            "maintenance_mode",
         )
     )
     ctx = {"default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone)}
@@ -893,3 +896,28 @@ def agent_counts(request):
             ).count(),
         }
     )
+
+
+@api_view(["POST"])
+def agent_maintenance(request):
+    if request.data["type"] == "Client":
+        client = Client.objects.get(pk=request.data["id"])
+        Agent.objects.filter(client=client.client).update(
+            maintenance_mode=request.data["action"]
+        )
+
+    elif request.data["type"] == "Site":
+        site = Site.objects.get(pk=request.data["id"])
+        Agent.objects.filter(client=site.client.client, site=site.site).update(
+            maintenance_mode=request.data["action"]
+        )
+
+    elif request.data["type"] == "Agent":
+        agent = Agent.objects.get(pk=request.data["id"])
+        agent.maintenance_mode = request.data["action"]
+        agent.save(update_fields=["maintenance_mode"])
+
+    else:
+        return notify_error("Invalid data")
+
+    return Response("ok")

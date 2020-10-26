@@ -251,9 +251,9 @@ def agent_outages_task():
             outage = AgentOutage(agent=agent)
             outage.save()
 
-            if agent.overdue_email_alert:
+            if agent.overdue_email_alert and not agent.maintenance_mode:
                 agent_outage_email_task.delay(pk=outage.pk)
 
-            if agent.overdue_text_alert:
+            if agent.overdue_text_alert and not agent.maintenance_mode:
                 # TODO
                 pass

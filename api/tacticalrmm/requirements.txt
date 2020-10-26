@@ -28,6 +28,7 @@ redis==3.5.3
 requests==2.24.0
 six==1.15.0
 sqlparse==0.4.1
+twilio==6.46.0
 urllib3==1.25.10
 uWSGI==2.0.19.1
 validators==0.18.1

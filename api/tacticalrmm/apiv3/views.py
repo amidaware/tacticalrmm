@@ -27,6 +27,7 @@ from winupdate.serializers import ApprovedUpdateSerializer
 
 from agents.tasks import (
     agent_recovery_email_task,
+    agent_recovery_sms_task,
     get_wmi_detail_task,
     sync_salt_modules_task,
 )
@@ -89,8 +90,7 @@ class Hello(APIView):
             if agent.overdue_email_alert:
                 agent_recovery_email_task.delay(pk=last_outage.pk)
             if agent.overdue_text_alert:
-                # TODO
-                pass
+                agent_recovery_sms_task.delay(pk=last_outage.pk)
 
         recovery = agent.recoveryactions.filter(last_run=None).last()
         if recovery is not None:

@@ -4,7 +4,8 @@
       <template v-slot:before>
         <q-tabs dense v-model="tab" vertical class="text-primary">
           <q-tab name="general" label="General" />
-          <q-tab name="alerts" label="Alerts" />
+          <q-tab name="emailalerts" label="Email Alerts" />
+          <q-tab name="smsalerts" label="SMS Alerts" />
           <q-tab name="meshcentral" label="MeshCentral" />
         </q-tabs>
       </template>
@@ -15,22 +16,14 @@
             <q-space />
             <q-btn icon="close" flat round dense v-close-popup />
           </q-card-section>
-          <q-scroll-area :thumb-style="thumbStyle" style="height: 60vh;">
-            <q-tab-panels
-              v-model="tab"
-              animated
-              transition-prev="jump-up"
-              transition-next="jump-up"
-            >
+          <q-scroll-area :thumb-style="thumbStyle" style="height: 60vh">
+            <q-tab-panels v-model="tab" animated transition-prev="jump-up" transition-next="jump-up">
               <!-- general -->
               <q-tab-panel name="general">
                 <div class="text-subtitle2">General</div>
                 <hr />
                 <q-card-section class="row">
-                  <q-checkbox
-                    v-model="settings.agent_auto_update"
-                    label="Enable agent automatic self update"
-                  />
+                  <q-checkbox v-model="settings.agent_auto_update" label="Enable agent automatic self update" />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Default agent timezone:</div>
@@ -80,8 +73,8 @@
                   <q-btn color="negative" label="Reset" @click="resetPatchPolicyModal" />
                 </q-card-section>
               </q-tab-panel>
-              <!-- alerts -->
-              <q-tab-panel name="alerts">
+              <!-- email alerts -->
+              <q-tab-panel name="emailalerts">
                 <div class="text-subtitle2 row">
                   <div>Email Alert Routing</div>
                   <q-space />
@@ -101,11 +94,7 @@
                   <div class="col-3">Recipients</div>
                   <div class="col-4"></div>
                   <div class="col-5">
-                    <q-list
-                      bordered
-                      dense
-                      v-if="ready && settings.email_alert_recipients.length !== 0"
-                    >
+                    <q-list bordered dense v-if="ready && settings.email_alert_recipients.length !== 0">
                       <q-item
                         v-for="email in settings.email_alert_recipients"
                         :key="email"
@@ -156,7 +145,7 @@
                     type="number"
                     filled
                     class="q-pa-none"
-                    :rules="[ val => val > 0 && val <= 65535 || 'Invalid Port']"
+                    :rules="[val => (val > 0 && val <= 65535) || 'Invalid Port']"
                   />
                 </q-card-section>
                 <q-card-section class="row">
@@ -169,12 +158,7 @@
                 <q-card-section class="row" v-show="settings.smtp_requires_auth">
                   <div class="col-2">Username:</div>
                   <div class="col-4"></div>
-                  <q-input
-                    outlined
-                    dense
-                    v-model="settings.smtp_host_user"
-                    class="col-6 q-pa-none"
-                  />
+                  <q-input outlined dense v-model="settings.smtp_host_user" class="col-6 q-pa-none" />
                 </q-card-section>
                 <q-card-section class="row" v-show="settings.smtp_requires_auth">
                   <div class="col-2">Password:</div>
@@ -194,6 +178,75 @@
                       />
                     </template>
                   </q-input>
+                </q-card-section>
+              </q-tab-panel>
+              <!-- twilio sms alerts -->
+              <q-tab-panel name="smsalerts">
+                <div class="text-subtitle2 row">
+                  <div>SMS Alert Routing</div>
+                  <q-space />
+                  <div>
+                    <q-btn
+                      size="sm"
+                      color="grey-5"
+                      icon="fas fa-plus"
+                      text-color="black"
+                      label="Add numbers"
+                      @click="toggleAddSMSNumber"
+                    />
+                  </div>
+                </div>
+                <hr />
+                <q-card-section class="row">
+                  <div class="col-3">Recipients</div>
+                  <div class="col-4"></div>
+                  <div class="col-5">
+                    <q-list bordered dense v-if="ready && settings.sms_alert_recipients.length !== 0">
+                      <q-item
+                        v-for="num in settings.sms_alert_recipients"
+                        :key="num"
+                        clickable
+                        v-ripple
+                        @click="removeSMSNumber(num)"
+                      >
+                        <q-item-section>
+                          <q-item-label>{{ num }}</q-item-label>
+                        </q-item-section>
+                        <q-item-section side>
+                          <q-icon name="delete" color="red" />
+                        </q-item-section>
+                      </q-item>
+                    </q-list>
+                    <q-list v-else>
+                      <q-item-section>
+                        <q-item-label>No recipients</q-item-label>
+                      </q-item-section>
+                    </q-list>
+                  </div>
+                </q-card-section>
+                <!-- smtp -->
+                <div class="text-subtitle2">Twilio Settings</div>
+                <hr />
+                <q-card-section class="row">
+                  <div class="col-3">Twilio Number:</div>
+                  <div class="col-3"></div>
+                  <q-input
+                    outlined
+                    dense
+                    v-model="settings.twilio_number"
+                    class="col-6 q-pa-none"
+                    placeholder="+12131231234"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-3">Twilio Account SID:</div>
+                  <div class="col-3"></div>
+                  <q-input outlined dense v-model="settings.twilio_account_sid" class="col-6 q-pa-none" />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-3">Twilio Auth Token:</div>
+                  <div class="col-3"></div>
+                  <q-input outlined dense v-model="settings.twilio_auth_token" class="col-6 q-pa-none" />
                 </q-card-section>
               </q-tab-panel>
               <!-- meshcentral -->
@@ -221,7 +274,7 @@
           <q-card-section class="row items-center">
             <q-btn label="Save" color="primary" type="submit" />
             <q-btn
-              v-show="tab === 'alerts'"
+              v-show="tab === 'emailalerts'"
               label="Save and Test"
               color="primary"
               type="submit"
@@ -255,7 +308,6 @@ export default {
       ready: false,
       settings: {},
       email: null,
-      AddEmailModal: false,
       tab: "general",
       splitterModel: 15,
       isPwd: true,
@@ -300,9 +352,31 @@ export default {
           this.settings.email_alert_recipients.push(data);
         });
     },
+    toggleAddSMSNumber() {
+      this.$q
+        .dialog({
+          title: "Add number",
+          message:
+            "Use E.164 format: must have the <b>+</b> symbol and <span class='text-red'>country code</span>, followed by the <span class='text-green'>phone number</span> e.g. <b>+<span class='text-red'>1</span><span class='text-green'>2131231234</span></b>",
+          prompt: {
+            model: "",
+          },
+          html: true,
+          cancel: true,
+          ok: { label: "Add", color: "primary" },
+          persistent: false,
+        })
+        .onOk(data => {
+          this.settings.sms_alert_recipients.push(data);
+        });
+    },
     removeEmail(email) {
       const removed = this.settings.email_alert_recipients.filter(k => k !== email);
       this.settings.email_alert_recipients = removed;
+    },
+    removeSMSNumber(num) {
+      const removed = this.settings.sms_alert_recipients.filter(k => k !== num);
+      this.settings.sms_alert_recipients = removed;
     },
     resetPatchPolicyModal() {
       this.showResetPatchPolicyModal = true;

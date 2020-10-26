@@ -687,6 +687,22 @@ class AgentOutage(models.Model):
             ),
         )
 
+    def send_outage_sms(self):
+        from core.models import CoreSettings
+
+        CORE = CoreSettings.objects.first()
+        CORE.send_sms(
+            f"{self.agent.client}, {self.agent.site}, {self.agent.hostname} - data overdue"
+        )
+
+    def send_recovery_sms(self):
+        from core.models import CoreSettings
+
+        CORE = CoreSettings.objects.first()
+        CORE.send_sms(
+            f"{self.agent.client}, {self.agent.site}, {self.agent.hostname} - data received"
+        )
+
     def __str__(self):
         return self.agent.hostname
 

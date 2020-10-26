@@ -3,6 +3,7 @@ import pytz
 import time
 import smtplib
 from email.message import EmailMessage
+from twilio.rest import Client as TwClient
 
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -22,6 +23,15 @@ class CoreSettings(BaseAuditModel):
         blank=True,
         default=list,
     )
+    sms_alert_recipients = ArrayField(
+        models.CharField(max_length=255, null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
+    twilio_number = models.CharField(max_length=255, null=True, blank=True)
+    twilio_account_sid = models.CharField(max_length=255, null=True, blank=True)
+    twilio_auth_token = models.CharField(max_length=255, null=True, blank=True)
     smtp_from_email = models.CharField(
         max_length=255, null=True, blank=True, default="from@example.com"
     )
@@ -77,6 +87,17 @@ class CoreSettings(BaseAuditModel):
 
     def __str__(self):
         return "Global Site Settings"
+
+    @property
+    def sms_is_configured(self):
+        return all(
+            [
+                self.sms_alert_recipients,
+                self.twilio_auth_token,
+                self.twilio_account_sid,
+                self.twilio_number,
+            ]
+        )
 
     @property
     def email_is_configured(self):
@@ -135,6 +156,17 @@ class CoreSettings(BaseAuditModel):
                 return str(e)
         else:
             return True
+
+    def send_sms(self, body):
+        if not self.sms_is_configured:
+            return
+
+        tw_client = TwClient(self.twilio_account_sid, self.twilio_auth_token)
+        for num in self.sms_alert_recipients:
+            try:
+                tw_client.messages.create(body=body, to=num, from_=self.twilio_number)
+            except Exception as e:
+                logger.error(f"SMS failed to send: {e}")
 
     def get_initial_mesh_settings(self):
 

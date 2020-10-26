@@ -239,6 +239,24 @@ def agent_recovery_email_task(pk):
 
 
 @app.task
+def agent_outage_sms_task(pk):
+    sleep(random.randint(1, 3))
+    outage = AgentOutage.objects.get(pk=pk)
+    outage.send_outage_sms()
+    outage.outage_sms_sent = True
+    outage.save(update_fields=["outage_sms_sent"])
+
+
+@app.task
+def agent_recovery_sms_task(pk):
+    sleep(random.randint(1, 3))
+    outage = AgentOutage.objects.get(pk=pk)
+    outage.send_recovery_sms()
+    outage.recovery_sms_sent = True
+    outage.save(update_fields=["recovery_sms_sent"])
+
+
+@app.task
 def agent_outages_task():
     agents = Agent.objects.only("pk")
 
@@ -255,5 +273,4 @@ def agent_outages_task():
                 agent_outage_email_task.delay(pk=outage.pk)
 
             if agent.overdue_text_alert and not agent.maintenance_mode:
-                # TODO
-                pass
+                agent_outage_sms_task.delay(pk=outage.pk)

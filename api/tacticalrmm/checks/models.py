@@ -12,7 +12,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 from core.models import CoreSettings
 from logs.models import BaseAuditModel
-from .tasks import handle_check_email_alert_task
+from .tasks import handle_check_email_alert_task, handle_check_sms_alert_task
 from .utils import bytes2human
 
 CHECK_TYPE_CHOICES = [
@@ -387,8 +387,11 @@ class Check(BaseAuditModel):
             else:
                 self.save(update_fields=["status"])
 
-        if self.email_alert and self.fail_count >= self.fails_b4_alert:
-            handle_check_email_alert_task.delay(self.pk)
+        if self.fail_count >= self.fails_b4_alert:
+            if self.email_alert:
+                handle_check_email_alert_task.delay(self.pk)
+            if self.text_alert:
+                handle_check_sms_alert_task.delay(self.pk)
 
         return self.status
 
@@ -582,3 +585,44 @@ class Check(BaseAuditModel):
                     continue
 
         CORE.send_mail(subject, body)
+
+    def send_sms(self):
+
+        CORE = CoreSettings.objects.first()
+
+        if self.agent:
+            subject = f"{self.agent.client}, {self.agent.site}, {self} Failed"
+        else:
+            subject = f"{self} Failed"
+
+        if self.check_type == "diskspace":
+            percent_used = [
+                d["percent"] for d in self.agent.disks if d["device"] == self.disk
+            ][0]
+            percent_free = 100 - percent_used
+            body = subject + f" - Free: {percent_free}%, Threshold: {self.threshold}%"
+        elif self.check_type == "script":
+            body = subject + f" - Return code: {self.retcode}"
+        elif self.check_type == "ping":
+            body = subject
+        elif self.check_type == "cpuload" or self.check_type == "memory":
+            avg = int(mean(self.history))
+            if self.check_type == "cpuload":
+                body = (
+                    subject
+                    + f" - Average CPU utilization: {avg}%, Threshold: {self.threshold}%"
+                )
+            elif self.check_type == "memory":
+                body = (
+                    subject
+                    + f" - Average memory usage: {avg}%, Threshold: {self.threshold}%"
+                )
+        elif self.check_type == "winsvc":
+            status = list(
+                filter(lambda x: x["name"] == self.svc_name, self.agent.services)
+            )[0]["status"]
+            body = subject + f" - Status: {status.upper()}"
+        elif self.check_type == "eventlog":
+            body = subject
+
+        CORE.send_sms(body)

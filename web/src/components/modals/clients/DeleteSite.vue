@@ -18,7 +18,7 @@
             options-dense
             label="Select client"
             v-model="client"
-            :options="Object.keys(tree)"
+            :options="Object.keys(tree).sort()"
             @input="site = sites[0]"
           />
         </q-card-section>
@@ -33,13 +33,7 @@
           />
         </q-card-section>
         <q-card-actions align="left">
-          <q-btn
-            :disable="site === null"
-            :label="`Delete ${site}`"
-            class="full-width"
-            color="negative"
-            type="submit"
-          />
+          <q-btn :disable="site === null" :label="`Delete ${site}`" class="full-width" color="negative" type="submit" />
         </q-card-actions>
       </q-form>
     </q-card-section>
@@ -61,8 +55,8 @@ export default {
   computed: {
     sites() {
       if (this.tree !== null && this.client !== null) {
-        this.site = this.tree[this.client][0];
-        return this.tree[this.client];
+        this.site = this.tree[this.client].sort()[0];
+        return this.tree[this.client].sort();
       }
     },
   },
@@ -70,7 +64,7 @@ export default {
     getTree() {
       this.$axios.get("/clients/loadclients/").then(r => {
         this.tree = r.data;
-        this.client = Object.keys(r.data)[0];
+        this.client = Object.keys(r.data).sort()[0];
       });
     },
     deleteSite() {

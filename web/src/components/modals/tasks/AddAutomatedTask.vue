@@ -68,22 +68,12 @@
 
       <q-step :name="2" title="Choose Schedule" :done="step2Done" :error="!step2Done">
         <q-radio v-model="autotask.task_type" val="scheduled" label="Scheduled" @input="clear" />
-        <q-radio
-          v-model="autotask.task_type"
-          val="checkfailure"
-          label="On check failure"
-          @input="clear"
-        />
+        <q-radio v-model="autotask.task_type" val="checkfailure" label="On check failure" @input="clear" />
         <q-radio v-model="autotask.task_type" val="manual" label="Manual" @input="clear" />
         <div v-if="autotask.task_type === 'scheduled'" class="row q-pa-lg">
           <div class="col-3">
             Run on Days:
-            <q-option-group
-              :options="dayOptions"
-              label="Days"
-              type="checkbox"
-              v-model="autotask.run_time_days"
-            />
+            <q-option-group :options="dayOptions" label="Days" type="checkbox" v-model="autotask.run_time_days" />
           </div>
           <div class="col-2"></div>
           <div class="col-6">
@@ -118,14 +108,7 @@
             label="Add Task"
           />
           <q-btn v-else @click="$refs.stepper.next()" color="primary" label="Next" />
-          <q-btn
-            v-if="step > 1"
-            flat
-            color="primary"
-            @click="$refs.stepper.previous()"
-            label="Back"
-            class="q-ml-sm"
-          />
+          <q-btn v-if="step > 1" flat color="primary" @click="$refs.stepper.previous()" label="Back" class="q-ml-sm" />
         </q-stepper-navigation>
       </template>
     </q-stepper>
@@ -217,14 +200,14 @@ export default {
       this.checks.forEach(i => {
         r.push({ label: i.readable_desc, value: i.id });
       });
-      return r;
+      return r.sort((a, b) => a.label.localeCompare(b.label));
     },
     scriptOptions() {
       const r = [];
       this.scripts.forEach(i => {
         r.push({ label: i.name, value: i.id });
       });
-      return r;
+      return r.sort((a, b) => a.label.localeCompare(b.label));
     },
     step1Done() {
       return this.step > 1 && this.autotask.script !== null && this.autotask.name && this.autotask.timeout

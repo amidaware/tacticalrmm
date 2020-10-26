@@ -84,20 +84,11 @@
         />
       </q-card-section>
       <q-card-section>
-        <q-checkbox
-          v-model="winsvccheck.pass_if_start_pending"
-          label="PASS if service is in 'Start Pending' mode"
-        />
+        <q-checkbox v-model="winsvccheck.pass_if_start_pending" label="PASS if service is in 'Start Pending' mode" />
         <br />
-        <q-checkbox
-          v-model="winsvccheck.pass_if_svc_not_exist"
-          label="PASS if service doesn't exist"
-        />
+        <q-checkbox v-model="winsvccheck.pass_if_svc_not_exist" label="PASS if service doesn't exist" />
         <br />
-        <q-checkbox
-          v-model="winsvccheck.restart_if_stopped"
-          label="Restart service if it's stopped"
-        />
+        <q-checkbox v-model="winsvccheck.restart_if_stopped" label="Restart service if it's stopped" />
       </q-card-section>
       <q-card-section>
         <q-select
@@ -156,7 +147,7 @@ export default {
         ret.push({ label: i.display_name, value: i.name });
       });
       // sort alphabetically by display name
-      return ret.sort((a, b) => (a.label > b.label ? 1 : -1));
+      return ret.sort((a, b) => a.label.localeCompare(b.label));
     },
   },
   methods: {

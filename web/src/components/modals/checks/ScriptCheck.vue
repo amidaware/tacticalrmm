@@ -53,10 +53,10 @@
           dense
           v-model.number="scriptcheck.timeout"
           label="Timeout (seconds)"
-          :rules="[ 
-              val => !!val || '*Required',
-              val => val >= 10 || 'Minimum is 10 seconds',
-              val => val <= 86400 || 'Maximum is 86400 seconds'
+          :rules="[
+            val => !!val || '*Required',
+            val => val >= 10 || 'Minimum is 10 seconds',
+            val => val <= 86400 || 'Maximum is 86400 seconds',
           ]"
         />
       </q-card-section>
@@ -111,7 +111,7 @@ export default {
       this.scripts.forEach(i => {
         ret.push({ label: i.name, value: i.id });
       });
-      return ret;
+      return ret.sort((a, b) => a.label.localeCompare(b.label));
     },
   },
   methods: {

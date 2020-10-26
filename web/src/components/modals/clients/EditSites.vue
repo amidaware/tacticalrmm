@@ -18,8 +18,11 @@
             options-dense
             label="Select client"
             v-model="client"
-            :options="Object.keys(tree)"
-            @input="site = sites[0]; newName=sites[0]"
+            :options="Object.keys(tree).sort()"
+            @input="
+              site = sites[0];
+              newName = sites[0];
+            "
           />
         </q-card-section>
         <q-card-section>
@@ -34,12 +37,7 @@
           />
         </q-card-section>
         <q-card-section>
-          <q-input
-            :rules="[val => !!val || '*Required']"
-            outlined
-            v-model="newName"
-            label="Rename site"
-          />
+          <q-input :rules="[val => !!val || '*Required']" outlined v-model="newName" label="Rename site" />
         </q-card-section>
         <q-card-actions align="left">
           <q-btn :disable="!nameChanged" label="Save" color="primary" type="submit" />
@@ -66,9 +64,9 @@ export default {
   computed: {
     sites() {
       if (this.tree !== null && this.client !== null) {
-        this.site = this.tree[this.client][0];
-        this.newName = this.tree[this.client][0];
-        return this.tree[this.client];
+        this.site = this.tree[this.client].sort()[0];
+        this.newName = this.tree[this.client].sort()[0];
+        return this.tree[this.client].sort();
       }
     },
     nameChanged() {
@@ -81,7 +79,7 @@ export default {
     getTree() {
       axios.get("/clients/loadclients/").then(r => {
         this.tree = r.data;
-        this.client = Object.keys(r.data)[0];
+        this.client = Object.keys(r.data).sort()[0];
       });
     },
     editSite() {

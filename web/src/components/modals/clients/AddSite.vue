@@ -12,14 +12,14 @@
     <q-card-section>
       <q-form @submit.prevent="addSite">
         <q-card-section>
-          <q-select options-dense outlined v-model="clientName" :options="Object.keys(clients)" />
+          <q-select options-dense outlined v-model="clientName" :options="Object.keys(clients).sort()" />
         </q-card-section>
         <q-card-section>
           <q-input
             outlined
             v-model="siteName"
             label="Site Name:"
-            :rules="[ val => val && val.length > 0 || 'This field is required']"
+            :rules="[val => (val && val.length > 0) || 'This field is required']"
           />
         </q-card-section>
         <q-card-actions align="right">
@@ -47,7 +47,7 @@ export default {
   methods: {
     loadFirstClient() {
       axios.get("/clients/listclients/").then(resp => {
-        this.clientName = resp.data.map(k => k.client)[0];
+        this.clientName = resp.data.map(k => k.client).sort()[0];
       });
     },
     addSite() {

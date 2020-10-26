@@ -490,7 +490,7 @@ export default {
 
       const text = node.color === "warning" ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
       this.$store
-        .dispatch("toggleMaintenaceMode", data)
+        .dispatch("toggleMaintenanceMode", data)
         .then(response => {
           this.$q.notify(notifySuccessConfig(text));
           this.getTree();
@@ -500,7 +500,7 @@ export default {
         });
     },
     menuMaintenanceText(node) {
-      return node.color === "warning" ? "Disable Maintenace Mode" : "Enable Maintenace Mode";
+      return node.color === "warning" ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
     },
   },
   computed: {

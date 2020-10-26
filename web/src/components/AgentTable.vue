@@ -558,7 +558,7 @@ export default {
 
       const text = agent.maintenance_mode ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
       this.$store
-        .dispatch("toggleMaintenaceMode", data)
+        .dispatch("toggleMaintenanceMode", data)
         .then(response => {
           this.$q.notify(notifySuccessConfig(text));
           this.$emit("refreshEdit");
@@ -568,7 +568,7 @@ export default {
         });
     },
     menuMaintenanceText(mode) {
-      return mode ? "Disable Maintenace Mode" : "Enable Maintenace Mode";
+      return mode ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
     },
   },
   computed: {

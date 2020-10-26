@@ -147,7 +147,7 @@ export default function () {
       }
     },
     actions: {
-      toggleMaintenaceMode(context, data) {
+      toggleMaintenanceMode(context, data) {
         return axios.post("/agents/maintenance/", data)
       },
       getAgentCounts(context, data = {}) {

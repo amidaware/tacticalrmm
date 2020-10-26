@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@quasar/extras": "^1.9.10",
-    "axios": "^0.19.2",
+    "axios": "^0.21.0",
     "dotenv": "^8.2.0",
     "qrcode.vue": "^1.7.0",
     "quasar": "^1.14.2"

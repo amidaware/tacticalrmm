@@ -64,7 +64,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "checks",
             "logged_in_username",
             "last_logged_in_user",
-            "maintenance_mode"
+            "maintenance_mode",
         ]
 
 

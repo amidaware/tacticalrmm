@@ -186,7 +186,7 @@ def load_tree(request):
                 b.append(f"{i.site}|{i.pk}|negative")
             else:
                 b.append(f"{i.site}|{i.pk}|black")
-                
+
             if i.has_maintenanace_mode_agents:
                 new[f"{x.client}|{x.pk}|warning"] = b
             elif x.has_failing_checks:

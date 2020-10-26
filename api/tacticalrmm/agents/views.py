@@ -265,6 +265,7 @@ class AgentsTableList(generics.ListAPIView):
         "logged_in_username",
         "last_logged_in_user",
         "time_zone",
+        "maintenance_mode",
     )
     serializer_class = AgentTableSerializer
 
@@ -311,6 +312,7 @@ def by_client(request, client):
             "logged_in_username",
             "last_logged_in_user",
             "time_zone",
+            "maintenance_mode",
         )
     )
     ctx = {"default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone)}
@@ -339,6 +341,7 @@ def by_site(request, client, site):
             "logged_in_username",
             "last_logged_in_user",
             "time_zone",
+            "maintenance_mode",
         )
     )
     ctx = {"default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone)}

@@ -22,10 +22,6 @@ from django.utils import timezone as djangotime
 from core.models import CoreSettings, TZ_CHOICES
 from logs.models import BaseAuditModel
 
-import automation
-import autotasks
-import clients
-
 logger.configure(**settings.LOG_CONFIG)
 
 
@@ -277,9 +273,11 @@ class Agent(BaseAuditModel):
 
     # returns agent policy merged with a client or site specific policy
     def get_patch_policy(self):
+        from clients.models import Client, Site
+
         # check if site has a patch policy and if so use it
-        client = clients.models.Client.objects.get(client=self.client)
-        site = clients.models.Site.objects.get(client=client, site=self.site)
+        client = Client.objects.get(client=self.client)
+        site = Site.objects.get(client=client, site=self.site)
         core_settings = CoreSettings.objects.first()
         patch_policy = None
         agent_policy = self.winupdatepolicy.get()
@@ -365,39 +363,32 @@ class Agent(BaseAuditModel):
 
     # clear is used to delete managed policy checks from agent
     # parent_checks specifies a list of checks to delete from agent with matching parent_check field
-    def generate_checks_from_policies(self, clear=False, parent_checks=[]):
+    def generate_checks_from_policies(self, clear=False):
+        from automation.models import Policy
+
         # Clear agent checks managed by policy
         if clear:
-            if parent_checks:
-                self.agentchecks.filter(managed_by_policy=True).filter(
-                    parent_checks__in=parent_checks
-                ).delete()
-            else:
-                self.agentchecks.filter(managed_by_policy=True).delete()
+            self.agentchecks.filter(managed_by_policy=True).delete()
 
         # Clear agent checks that have overriden_by_policy set
         self.agentchecks.update(overriden_by_policy=False)
 
         # Generate checks based on policies
-        automation.models.Policy.generate_policy_checks(self)
+        Policy.generate_policy_checks(self)
 
     # clear is used to delete managed policy tasks from agent
     # parent_tasks specifies a list of tasks to delete from agent with matching parent_task field
-    def generate_tasks_from_policies(self, clear=False, parent_tasks=[]):
+    def generate_tasks_from_policies(self, clear=False):
+        from autotasks.tasks import delete_win_task_schedule
+        from automation.models import Policy
+
         # Clear agent tasks managed by policy
         if clear:
-            if parent_tasks:
-                tasks = self.autotasks.filter(managed_by_policy=True).filter(
-                    parent_tasks__in=parent_tasks
-                )
-                for task in tasks:
-                    autotasks.tasks.delete_win_task_schedule.delay(task.pk)
-            else:
-                for task in self.autotasks.filter(managed_by_policy=True):
-                    autotasks.tasks.delete_win_task_schedule.delay(task.pk)
+            for task in self.autotasks.filter(managed_by_policy=True):
+                delete_win_task_schedule.delay(task.pk)
 
         # Generate tasks based on policies
-        automation.models.Policy.generate_policy_tasks(self)
+        Policy.generate_policy_tasks(self)
 
     # https://github.com/Ylianst/MeshCentral/issues/59#issuecomment-521965347
     def get_login_token(self, key, user, action=3):

@@ -2,46 +2,38 @@ from automation.models import Policy
 from checks.models import Check
 from agents.models import Agent
 
-import autotasks
-
 from tacticalrmm.celery import app
 
 
 @app.task
 def generate_agent_checks_from_policies_task(
-    policypk, many=False, clear=False, parent_checks=[], create_tasks=False
+    ### 
+    # copies the policy checks to all affected agents
+    # 
+    # clear: clears all policy checks first
+    # create_tasks: also create tasks after checks are generated
+    ###
+    policypk, clear=False, create_tasks=False
 ):
 
-    if many:
-        policy_list = Policy.objects.filter(pk__in=policypk)
-        for policy in policy_list:
-            for agent in policy.related_agents():
-                agent.generate_checks_from_policies(
-                    clear=clear, parent_checks=parent_checks
-                )
-                if create_tasks:
-                    agent.generate_tasks_from_policies(
-                        clear=clear,
-                    )
-    else:
-        policy = Policy.objects.get(pk=policypk)
-        for agent in policy.related_agents():
-            agent.generate_checks_from_policies(
-                clear=clear, parent_checks=parent_checks
+    policy = Policy.objects.get(pk=policypk)
+    for agent in policy.related_agents():
+        agent.generate_checks_from_policies(
+            clear=clear
+        )
+        if create_tasks:
+            agent.generate_tasks_from_policies(
+                clear=clear,
             )
-            if create_tasks:
-                agent.generate_tasks_from_policies(
-                    clear=clear,
-                )
 
 
 @app.task
 def generate_agent_checks_by_location_task(
-    location, mon_type, clear=False, parent_checks=[], create_tasks=False
+    location, mon_type, clear=False, create_tasks=False
 ):
 
     for agent in Agent.objects.filter(**location).filter(monitoring_type=mon_type):
-        agent.generate_checks_from_policies(clear=clear, parent_checks=parent_checks)
+        agent.generate_checks_from_policies(clear=clear)
 
         if create_tasks:
             agent.generate_tasks_from_policies(clear=clear)
@@ -93,59 +85,50 @@ def update_policy_check_fields_task(checkpk):
 
 @app.task
 def generate_agent_tasks_from_policies_task(
-    policypk, many=False, clear=False, parent_tasks=[]
+    policypk, clear=False
 ):
 
-    if many:
-        policy_list = Policy.objects.filter(pk__in=policypk)
-        for policy in policy_list:
-            for agent in policy.related_agents():
-                agent.generate_tasks_from_policies(
-                    clear=clear, parent_tasks=parent_tasks
-                )
-    else:
-        policy = Policy.objects.get(pk=policypk)
-        for agent in policy.related_agents():
-            agent.generate_tasks_from_policies(clear=clear, parent_tasks=parent_tasks)
+    policy = Policy.objects.get(pk=policypk)
+    for agent in policy.related_agents():
+        agent.generate_tasks_from_policies(clear=clear)
 
 
 @app.task
 def generate_agent_tasks_by_location_task(
-    location, mon_type, clear=False, parent_tasks=[]
+    location, mon_type, clear=False
 ):
 
     for agent in Agent.objects.filter(**location).filter(monitoring_type=mon_type):
-        agent.generate_tasks_from_policies(clear=clear, parent_tasks=parent_tasks)
-
-
-@app.task
-def generate_all_agent_tasks_task(mon_type, clear=False):
-    for agent in Agent.objects.filter(monitoring_type=mon_type):
         agent.generate_tasks_from_policies(clear=clear)
 
 
 @app.task
 def delete_policy_autotask_task(taskpk):
+    from autotasks.tasks import delete_win_task_schedule
+    from autotasks.models import AutomatedTask
 
-    for task in autotasks.models.AutomatedTask.objects.filter(parent_task=taskpk):
-        autotasks.tasks.delete_win_task_schedule.delay(task.pk)
+    for task in AutomatedTask.objects.filter(parent_task=taskpk):
+        delete_win_task_schedule.delay(task.pk)
 
 
 @app.task
 def run_win_policy_autotask_task(task_pks):
+    from autotasks.tasks import run_win_task
 
     for task in task_pks:
-        autotasks.tasks.run_win_task.delay(task)
+        run_win_task.delay(task)
 
 
 @app.task
-def update_policy_task_fields_task(taskpk):
+def update_policy_task_fields_task(taskpk, enabled):
+    from autotasks.models import AutomatedTask
+    from autotasks.tasks import enable_or_disable_win_task
 
-    task = autotasks.models.AutomatedTask.objects.get(pk=taskpk)
-
-    tasks = autotasks.models.AutomatedTask.objects.filter(parent_task=taskpk).update(
-        enabled=task.enabled
+    tasks = AutomatedTask.objects.filter(parent_task=taskpk)
+    
+    tasks.update(
+        enabled=enabled
     )
 
     for autotask in tasks:
-        autotasks.tasks.enable_or_disable_win_task(autotask.pk, task.enabled)
+        enable_or_disable_win_task(autotask.pk, enabled)

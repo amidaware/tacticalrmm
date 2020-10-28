@@ -103,14 +103,18 @@ class GetUpdateDeletePolicy(APIView):
 
 
 class PolicyAutoTask(APIView):
+
+    # tasks associated with policy
     def get(self, request, pk):
         policy = get_object_or_404(Policy, pk=pk)
         return Response(AutoTaskPolicySerializer(policy).data)
 
+    # get status of all tasks
     def patch(self, request, task):
         tasks = AutomatedTask.objects.filter(parent_task=task)
         return Response(PolicyTaskStatusSerializer(tasks, many=True).data)
 
+    # bulk run win tasks associated with policy
     def put(self, request, task):
         tasks = AutomatedTask.objects.filter(parent_task=task)
         run_win_policy_autotask_task.delay([task.id for task in tasks])

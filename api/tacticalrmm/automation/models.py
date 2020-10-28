@@ -281,8 +281,8 @@ class Policy(BaseAuditModel):
 
             if check.check_type == "script":
                 # Check if script id was already added
-                if check.script not in added_script_checks:
-                    added_script_checks.append(check.script)
+                if check.script.id not in added_script_checks:
+                    added_script_checks.append(check.script.id)
                     # Dont create the check if it is an agent check
                     if not check.agent:
                         script_checks.append(check)

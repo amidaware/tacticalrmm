@@ -6,6 +6,7 @@ import string
 from django.test import TestCase, override_settings
 from django.utils import timezone as djangotime
 from django.conf import settings
+from model_bakery import baker
 
 from rest_framework.test import APIClient
 from rest_framework.authtoken.models import Token
@@ -103,6 +104,30 @@ class TacticalTestCase(TestCase):
             mesh_node_id="abcdefghijklmnopAABBCCDD77443355##!!AI%@#$%#*",
             last_seen=djangotime.now(),
         )
+
+    def create_checks(self, policy=None, agent=None, script=None):
+
+        if not policy and not agent:
+            return
+
+        # will create 1 of every check and associate it with the policy object passed
+        check_recipes = [
+            "checks.diskspace_check",
+            "checks.ping_check",
+            "checks.cpuload_check",
+            "checks.memory_check",
+            "checks.winsvc_check",
+            "checks.script_check",
+            "checks.eventlog_check",
+        ]
+
+        checks = list()
+        for recipe in check_recipes:
+            if not script:
+                checks.append(baker.make_recipe(recipe, policy=policy, agent=agent))
+            else:
+                checks.append(baker.make_recipe(recipe, policy=policy, agent=agent, script=script))
+        return checks
 
 
 class BaseTestCase(TestCase):

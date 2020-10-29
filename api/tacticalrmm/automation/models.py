@@ -23,37 +23,12 @@ class Policy(BaseAuditModel):
         return self.name
 
     def related_agents(self):
-        return self.related_server_agents() | self.related_workstation_agents()
+        return self.get_related("server") | self.get_related("workstation")
 
-    def related_server_agents(self):
-        explicit_agents = self.agents.filter(monitoring_type="server")
-        explicit_clients = self.server_clients.all()
-        explicit_sites = self.server_sites.all()
-
-        filtered_agents_pks = Policy.objects.none()
-
-        for site in explicit_sites:
-            if site.client not in explicit_clients:
-                filtered_agents_pks |= Agent.objects.filter(
-                    client=site.client.client,
-                    site=site.site,
-                    monitoring_type="server",
-                ).values_list("pk", flat=True)
-
-        filtered_agents_pks |= Agent.objects.filter(
-            client__in=[client.client for client in explicit_clients],
-            monitoring_type="server",
-        ).values_list("pk", flat=True)
-
-        return Agent.objects.filter(
-            models.Q(pk__in=filtered_agents_pks)
-            | models.Q(pk__in=explicit_agents.only("pk"))
-        )
-
-    def related_workstation_agents(self):
-        explicit_agents = self.agents.filter(monitoring_type="workstation")
-        explicit_clients = self.workstation_clients.all()
-        explicit_sites = self.workstation_sites.all()
+    def get_related(self, mon_type):
+        explicit_agents = self.agents.filter(monitoring_type=mon_type)
+        explicit_clients = getattr(self, f"{mon_type}_clients").all()
+        explicit_sites = getattr(self, f"{mon_type}_sites").all()
 
         filtered_agents_pks = Policy.objects.none()
 
@@ -62,12 +37,12 @@ class Policy(BaseAuditModel):
                 filtered_agents_pks |= Agent.objects.filter(
                     client=site.client.client,
                     site=site.site,
-                    monitoring_type="workstation",
+                    monitoring_type=mon_type,
                 ).values_list("pk", flat=True)
 
         filtered_agents_pks |= Agent.objects.filter(
             client__in=[client.client for client in explicit_clients],
-            monitoring_type="workstation",
+            monitoring_type=mon_type,
         ).values_list("pk", flat=True)
 
         return Agent.objects.filter(

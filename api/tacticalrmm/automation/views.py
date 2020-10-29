@@ -186,7 +186,7 @@ class GetRelated(APIView):
         ).data
 
         response["agents"] = AgentHostnameSerializer(
-            policy.related_server_agents() | policy.related_workstation_agents(),
+            policy.related_agents(),
             many=True,
         ).data
 

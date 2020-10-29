@@ -37,6 +37,7 @@ from winupdate.serializers import WinUpdatePolicySerializer
 
 from .tasks import uninstall_agent_task, send_agent_update_task
 from winupdate.tasks import bulk_check_for_updates_task
+from scripts.tasks import run_script_bg_task
 
 from tacticalrmm.utils import notify_error
 
@@ -709,22 +710,14 @@ def run_script(request):
                 return notify_error(str(r))
 
     else:
-        r = agent.salt_api_async(
-            func="win_agent.run_script",
-            kwargs={
-                "filepath": script.filepath,
-                "filename": script.filename,
-                "shell": script.shell,
-                "timeout": request.data["timeout"],
-                "args": args,
-                "bg": True,
-            },
-        )
-
-        if r != "timeout":
-            return Response(f"{script.name} will now be run on {agent.hostname}")
-        else:
-            return notify_error("Something went wrong")
+        data = {
+            "agentpk": agent.pk,
+            "scriptpk": script.pk,
+            "timeout": request.data["timeout"],
+            "args": args,
+        }
+        run_script_bg_task.delay(data)
+        return Response(f"{script.name} will now be run on {agent.hostname}")
 
 
 @api_view()

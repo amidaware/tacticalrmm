@@ -532,7 +532,10 @@ class Check(BaseAuditModel):
 
         elif self.check_type == "script":
 
-            body = subject + f" - Return code: {self.retcode}, Error: {self.stderr}"
+            body = (
+                subject
+                + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
+            )
 
         elif self.check_type == "ping":
 

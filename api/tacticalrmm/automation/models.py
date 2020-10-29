@@ -30,24 +30,20 @@ class Policy(BaseAuditModel):
         explicit_clients = self.server_clients.all()
         explicit_sites = self.server_sites.all()
 
-        filtered_agents_pks = list()
+        filtered_agents_pks = Policy.objects.none()
 
         for site in explicit_sites:
             if site.client not in explicit_clients:
-                filtered_agents_pks.append(
-                    Agent.objects.filter(
-                        client=site.client.client,
-                        site=site.site,
-                        monitoring_type="server",
-                    ).values_list("pk", flat=True)
-                )
-
-        for client in explicit_clients:
-            filtered_agents_pks.append(
-                Agent.objects.filter(
-                    client=client.client, monitoring_type="server"
+                filtered_agents_pks |= Agent.objects.filter(
+                    client=site.client.client,
+                    site=site.site,
+                    monitoring_type="server",
                 ).values_list("pk", flat=True)
-            )
+
+        filtered_agents_pks |= Agent.objects.filter(
+            client__in=[client.client for client in explicit_clients],
+            monitoring_type="server",
+        ).values_list("pk", flat=True)
 
         return Agent.objects.filter(
             models.Q(pk__in=filtered_agents_pks)
@@ -59,24 +55,20 @@ class Policy(BaseAuditModel):
         explicit_clients = self.workstation_clients.all()
         explicit_sites = self.workstation_sites.all()
 
-        filtered_agents_pks = list()
+        filtered_agents_pks = Policy.objects.none()
 
         for site in explicit_sites:
             if site.client not in explicit_clients:
-                filtered_agents_pks.append(
-                    Agent.objects.filter(
-                        client=site.client.client,
-                        site=site.site,
-                        monitoring_type="workstation",
-                    ).values_list("pk", flat=True)
-                )
-
-        for client in explicit_clients:
-            filtered_agents_pks.append(
-                Agent.objects.filter(
-                    client=client.client, monitoring_type="workstation"
+                filtered_agents_pks |= Agent.objects.filter(
+                    client=site.client.client,
+                    site=site.site,
+                    monitoring_type="workstation",
                 ).values_list("pk", flat=True)
-            )
+
+        filtered_agents_pks |= Agent.objects.filter(
+            client__in=[client.client for client in explicit_clients],
+            monitoring_type="workstation",
+        ).values_list("pk", flat=True)
 
         return Agent.objects.filter(
             models.Q(pk__in=filtered_agents_pks)

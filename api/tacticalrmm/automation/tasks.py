@@ -7,20 +7,20 @@ from tacticalrmm.celery import app
 
 @app.task
 def generate_agent_checks_from_policies_task(
-    ### 
+    ###
     # copies the policy checks to all affected agents
-    # 
+    #
     # clear: clears all policy checks first
     # create_tasks: also create tasks after checks are generated
     ###
-    policypk, clear=False, create_tasks=False
+    policypk,
+    clear=False,
+    create_tasks=False,
 ):
 
     policy = Policy.objects.get(pk=policypk)
     for agent in policy.related_agents():
-        agent.generate_checks_from_policies(
-            clear=clear
-        )
+        agent.generate_checks_from_policies(clear=clear)
         if create_tasks:
             agent.generate_tasks_from_policies(
                 clear=clear,
@@ -63,10 +63,9 @@ def update_policy_check_fields_task(checkpk):
         threshold=check.threshold,
         name=check.name,
         fails_b4_alert=check.fails_b4_alert,
-        disk=check.disk,
         ip=check.ip,
-        script=check.script,
         script_args=check.script_args,
+        timeout=check.timeout,
         pass_if_start_pending=check.pass_if_start_pending,
         pass_if_svc_not_exist=check.pass_if_svc_not_exist,
         restart_if_stopped=check.restart_if_stopped,
@@ -84,9 +83,7 @@ def update_policy_check_fields_task(checkpk):
 
 
 @app.task
-def generate_agent_tasks_from_policies_task(
-    policypk, clear=False
-):
+def generate_agent_tasks_from_policies_task(policypk, clear=False):
 
     policy = Policy.objects.get(pk=policypk)
     for agent in policy.related_agents():
@@ -94,9 +91,7 @@ def generate_agent_tasks_from_policies_task(
 
 
 @app.task
-def generate_agent_tasks_by_location_task(
-    location, mon_type, clear=False
-):
+def generate_agent_tasks_by_location_task(location, mon_type, clear=False):
 
     for agent in Agent.objects.filter(**location).filter(monitoring_type=mon_type):
         agent.generate_tasks_from_policies(clear=clear)
@@ -125,10 +120,8 @@ def update_policy_task_fields_task(taskpk, enabled):
     from autotasks.tasks import enable_or_disable_win_task
 
     tasks = AutomatedTask.objects.filter(parent_task=taskpk)
-    
-    tasks.update(
-        enabled=enabled
-    )
+
+    tasks.update(enabled=enabled)
 
     for autotask in tasks:
         enable_or_disable_win_task(autotask.pk, enabled)

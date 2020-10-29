@@ -73,7 +73,7 @@
         </q-select>
       </q-card-section>
       <q-card-section class="row items-center">
-        <q-btn label="Add Policies" color="primary" type="submit" />
+        <q-btn label="Edit Policies" color="primary" type="submit" />
       </q-card-section>
     </q-form>
   </q-card>

@@ -15,6 +15,29 @@ from winupdate.models import WinUpdatePolicy
 
 
 class TestAgentViews(BaseTestCase):
+    def test_get_patch_policy(self):
+        # make sure get_patch_policy doesn't error out when agent has policy with
+        # an empty patch policy
+        self.agent.policy = self.policy
+        self.agent.save(update_fields=["policy"])
+        _ = self.agent.get_patch_policy()
+
+        self.agent.monitoring_type = "workstation"
+        self.agent.save(update_fields=["monitoring_type"])
+        _ = self.agent.get_patch_policy()
+
+        self.agent.policy = None
+        self.agent.save(update_fields=["policy"])
+
+        self.coresettings.server_policy = self.policy
+        self.coresettings.workstation_policy = self.policy
+        self.coresettings.save(update_fields=["server_policy", "workstation_policy"])
+        _ = self.agent.get_patch_policy()
+
+        self.agent.monitoring_type = "server"
+        self.agent.save(update_fields=["monitoring_type"])
+        _ = self.agent.get_patch_policy()
+
     def test_get_agent_versions(self):
         url = "/agents/getagentversions/"
         r = self.client.get(url)

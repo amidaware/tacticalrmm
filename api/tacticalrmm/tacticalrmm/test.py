@@ -105,6 +105,8 @@ class TacticalTestCase(TestCase):
             last_seen=djangotime.now(),
         )
 
+        self.update_policy = WinUpdatePolicy.objects.create(agent=self.agent)
+
     def create_checks(self, policy=None, agent=None, script=None):
 
         if not policy and not agent:
@@ -126,7 +128,9 @@ class TacticalTestCase(TestCase):
             if not script:
                 checks.append(baker.make_recipe(recipe, policy=policy, agent=agent))
             else:
-                checks.append(baker.make_recipe(recipe, policy=policy, agent=agent, script=script))
+                checks.append(
+                    baker.make_recipe(recipe, policy=policy, agent=agent, script=script)
+                )
         return checks
 
 

@@ -284,45 +284,49 @@ class Agent(BaseAuditModel):
 
         if self.monitoring_type == "server":
             # check agent policy first which should override client or site policy
-            if self.policy and self.policy.winupdatepolicy:
+            if self.policy and self.policy.winupdatepolicy.exists():
                 patch_policy = self.policy.winupdatepolicy.get()
 
             # check site policy if agent policy doesn't have one
-            elif site.server_policy and site.server_policy.winupdatepolicy:
+            elif site.server_policy and site.server_policy.winupdatepolicy.exists():
                 patch_policy = site.server_policy.winupdatepolicy.get()
 
             # if site doesn't have a patch policy check the client
             elif (
-                site.client.server_policy and site.client.server_policy.winupdatepolicy
+                site.client.server_policy
+                and site.client.server_policy.winupdatepolicy.exists()
             ):
                 patch_policy = site.client.server_policy.winupdatepolicy.get()
 
             # if patch policy still doesn't exist check default policy
             elif (
                 core_settings.server_policy
-                and core_settings.server_policy.winupdatepolicy
+                and core_settings.server_policy.winupdatepolicy.exists()
             ):
                 patch_policy = core_settings.server_policy.winupdatepolicy.get()
 
         elif self.monitoring_type == "workstation":
             # check agent policy first which should override client or site policy
-            if self.policy and self.policy.winupdatepolicy:
+            if self.policy and self.policy.winupdatepolicy.exists():
                 patch_policy = self.policy.winupdatepolicy.get()
 
-            elif site.workstation_policy and site.workstation_policy.winupdatepolicy:
+            elif (
+                site.workstation_policy
+                and site.workstation_policy.winupdatepolicy.exists()
+            ):
                 patch_policy = site.workstation_policy.winupdatepolicy.get()
 
             # if site doesn't have a patch policy check the client
             elif (
                 site.client.workstation_policy
-                and site.client.workstation_policy.winupdatepolicy
+                and site.client.workstation_policy.winupdatepolicy.exists()
             ):
                 patch_policy = site.client.workstation_policy.winupdatepolicy.get()
 
             # if patch policy still doesn't exist check default policy
             elif (
                 core_settings.workstation_policy
-                and core_settings.workstation_policy.winupdatepolicy
+                and core_settings.workstation_policy.winupdatepolicy.exists()
             ):
                 patch_policy = core_settings.workstation_policy.winupdatepolicy.get()
 

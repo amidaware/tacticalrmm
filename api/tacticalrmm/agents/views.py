@@ -37,7 +37,7 @@ from winupdate.serializers import WinUpdatePolicySerializer
 
 from .tasks import uninstall_agent_task, send_agent_update_task
 from winupdate.tasks import bulk_check_for_updates_task
-from scripts.tasks import run_script_bg_task
+from scripts.tasks import run_script_bg_task, run_bulk_script_task
 
 from tacticalrmm.utils import notify_error
 
@@ -841,20 +841,30 @@ def bulk(request):
     elif request.data["mode"] == "script":
         script = get_object_or_404(Script, pk=request.data["scriptPK"])
 
-        r = Agent.salt_batch_async(
-            minions=minions,
-            func="win_agent.run_script",
-            kwargs={
-                "filepath": script.filepath,
-                "filename": script.filename,
-                "shell": script.shell,
+        if script.shell == "python":
+            r = Agent.salt_batch_async(
+                minions=minions,
+                func="win_agent.run_script",
+                kwargs={
+                    "filepath": script.filepath,
+                    "filename": script.filename,
+                    "shell": script.shell,
+                    "timeout": request.data["timeout"],
+                    "args": request.data["args"],
+                    "bg": True,
+                },
+            )
+            if r == "timeout":
+                return notify_error("Salt API not running")
+        else:
+            data = {
+                "minions": minions,
+                "scriptpk": script.pk,
                 "timeout": request.data["timeout"],
                 "args": request.data["args"],
-                "bg": True,
-            },
-        )
-        if r == "timeout":
-            return notify_error("Salt API not running")
+            }
+            run_bulk_script_task.delay(data)
+
         return Response(f"{script.name} will now be run on {len(minions)} agents")
 
     elif request.data["mode"] == "install":

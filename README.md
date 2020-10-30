@@ -119,9 +119,13 @@ Create same linux user account as old server and add to sudoers group and setup 
 
 Copy backup file to new server
 
-Download and run the restore script, passing it the backup tar file as the first argument
+Download the restore script, and edit the postgres username/password at the top of the file. Same instructions as above in the backup steps.
 ```
 wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/restore.sh
+```
+
+Run the restore script, passing it the backup tar file as the first argument
+```
 chmod +x restore.sh
 ./restore.sh rmm-backup-xxxxxxx.tar
 ```

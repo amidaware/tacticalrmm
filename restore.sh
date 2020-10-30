@@ -1,6 +1,13 @@
 #!/bin/bash
 
-SCRIPT_VERSION="3"
+#####################################################
+
+pgusername="changeme"
+pgpw="hunter2"
+
+#####################################################
+
+SCRIPT_VERSION="4"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/restore.sh'
 
 GREEN='\033[0;32m'
@@ -21,6 +28,12 @@ if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
 fi
 
 rm -f $TMP_FILE
+
+if [[ "$pgusername" == "changeme" || "$pgpw" == "hunter2" ]]; then
+  printf >&2 "${RED}You must change the postgres username/password at the top of this file.${NC}\n"
+  printf >&2 "${RED}Check the github readme for where to find them.${NC}\n"
+  exit 1
+fi
 
 UBU20=$(grep 20.04 "/etc/"*"release")
 if ! [[ $UBU20 ]]; then
@@ -160,9 +173,6 @@ sudo apt install -y postgresql-12
 sleep 2
 
 print_green 'Restoring the database'
-
-pgusername=$(grep -A 6 DATABASES $tmp_dir/rmm/local_settings.py | grep USER | tr -d " \t" | sed 's/.*://' | tr -d "',")
-pgpw=$(grep -A 6 DATABASES $tmp_dir/rmm/local_settings.py | grep PASSWORD | tr -d " \t" | sed 's/.*://' | tr -d "',")
 
 sudo -u postgres psql -c "DROP DATABASE IF EXISTS tacticalrmm"
 sudo -u postgres psql -c "CREATE DATABASE tacticalrmm"

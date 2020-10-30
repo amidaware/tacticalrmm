@@ -100,6 +100,20 @@ class TestAgentViews(BaseTestCase):
 
         self.check_not_authenticated("delete", url)
 
+    @patch("agents.tasks.uninstall_agent_task.delay")
+    def test_uninstall_catch_no_user(self, mock_task):
+        url = "/agents/uninstall/"
+        data = {"pk": self.agent.pk}
+
+        self.agent_user.delete()
+
+        r = self.client.delete(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        mock_task.assert_called_with(self.agent.salt_id)
+
+        self.check_not_authenticated("delete", url)
+
     @patch("agents.models.Agent.salt_api_cmd")
     def test_get_processes(self, mock_ret):
         url = f"/agents/{self.agent.pk}/getprocs/"

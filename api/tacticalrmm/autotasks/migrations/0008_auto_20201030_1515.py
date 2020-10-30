@@ -6,13 +6,21 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('autotasks', '0007_auto_20201029_1410'),
+        ("autotasks", "0007_auto_20201029_1410"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='automatedtask',
-            name='sync_status',
-            field=models.CharField(choices=[('synced', 'Synced With Agent'), ('notsynced', 'Waiting On Agent Checkin'), ('pendingdeletion', 'Pending Deletion on Agent')], default='notsynced', max_length=100),
+            model_name="automatedtask",
+            name="sync_status",
+            field=models.CharField(
+                choices=[
+                    ("synced", "Synced With Agent"),
+                    ("notsynced", "Waiting On Agent Checkin"),
+                    ("pendingdeletion", "Pending Deletion on Agent"),
+                ],
+                default="notsynced",
+                max_length=100,
+            ),
         ),
     ]

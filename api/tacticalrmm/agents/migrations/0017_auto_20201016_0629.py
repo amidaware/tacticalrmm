@@ -6,61 +6,61 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0016_merge_20200923_0225'),
+        ("agents", "0016_merge_20200923_0225"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='agent',
-            name='salt_update_pending',
+            model_name="agent",
+            name="salt_update_pending",
         ),
         migrations.RemoveField(
-            model_name='agent',
-            name='update_pending',
+            model_name="agent",
+            name="update_pending",
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='boot_time',
+            model_name="agent",
+            name="boot_time",
             field=models.FloatField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='description',
+            model_name="agent",
+            name="description",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='disks',
+            model_name="agent",
+            name="disks",
             field=models.JSONField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='local_ip',
+            model_name="agent",
+            name="local_ip",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='mesh_node_id',
+            model_name="agent",
+            name="mesh_node_id",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='operating_system',
+            model_name="agent",
+            name="operating_system",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='services',
+            model_name="agent",
+            name="services",
             field=models.JSONField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='used_ram',
+            model_name="agent",
+            name="used_ram",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='wmi_detail',
+            model_name="agent",
+            name="wmi_detail",
             field=models.JSONField(blank=True, null=True),
         ),
     ]

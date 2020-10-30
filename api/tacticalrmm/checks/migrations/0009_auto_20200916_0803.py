@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('checks', '0008_check_pass_if_svc_not_exist'),
+        ("checks", "0008_check_pass_if_svc_not_exist"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='check',
-            name='event_message',
+            model_name="check",
+            name="event_message",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='check',
-            name='event_source',
+            model_name="check",
+            name="event_source",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
     ]

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="1"
+SCRIPT_VERSION="2"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/backup.sh'
 
 GREEN='\033[0;32m'
@@ -50,7 +50,7 @@ mkdir ${tmp_dir}/rmm
 mkdir ${tmp_dir}/confd
 
 
-pg_dump --dbname=postgresql://${POSTGRES_USER}:${POSTGRES_PW}@127.0.0.1:5432/tacticalrmm | gzip -9 > ${tmp_dir}/postgres/db-${dt_now}.psql.gz
+pg_dump --dbname=postgresql://"${POSTGRES_USER}":"${POSTGRES_PW}"@127.0.0.1:5432/tacticalrmm | gzip -9 > ${tmp_dir}/postgres/db-${dt_now}.psql.gz
 
 tar -czvf ${tmp_dir}/meshcentral/mesh.tar.gz --exclude=/meshcentral/node_modules /meshcentral
 mongodump --gzip --out=${tmp_dir}/meshcentral/mongo

@@ -82,7 +82,7 @@ class AutoTask(APIView):
             if not task.policy:
                 enable_or_disable_win_task.delay(pk=task.pk, action=action)
 
-            if task.policy:
+            else:
                 update_policy_task_fields_task.delay(task.pk, action)
 
             task.enabled = action

@@ -63,6 +63,10 @@ class Policy(BaseAuditModel):
         tasks = list()
         added_task_pks = list()
 
+        agent_tasks_parent_pks = [
+            task.parent_task for task in agent.autotasks.filter(managed_by_policy=True)
+        ]
+
         # Get policies applied to agent and agent site and client
         client = Client.objects.get(client=agent.client)
         site = Site.objects.filter(client=client).get(site=agent.site)
@@ -104,7 +108,7 @@ class Policy(BaseAuditModel):
                     tasks.append(task)
                     added_task_pks.append(task.pk)
 
-        return tasks
+        return [task for task in tasks if task.pk not in agent_tasks_parent_pks]
 
     @staticmethod
     def cascade_policy_checks(agent):

@@ -1,6 +1,7 @@
 from loguru import logger
 from tacticalrmm.celery import app
 from django.conf import settings
+from datetime import datetime as dt
 
 from .models import AutomatedTask
 from logs.models import PendingAction
@@ -43,7 +44,8 @@ def create_win_task_schedule(pk, pending_action=False):
             kwargs={"days_of_week": run_days},
         )
 
-    elif task.task_type == "checkfailure" or task.task_type == "manual":
+    elif task.task_type == "runonce":
+
         r = task.agent.salt_api_cmd(
             timeout=20,
             func="task.create_task",
@@ -55,6 +57,24 @@ def create_win_task_schedule(pk, pending_action=False):
                 f'arguments="-m taskrunner -p {task.pk}"',
                 "start_in=C:\\Program Files\\TacticalAgent",
                 "trigger_type=Once",
+                f'start_date="{task.run_time_date.strftime("%Y-%m-%d")}"',
+                f'start_time="{task.run_time_date.strftime("%H:%M")}"',
+                "ac_only=False",
+                "stop_if_on_batteries=False",
+            ],
+        )
+
+    elif task.task_type == "checkfailure" or task.task_type == "manual":
+        r = task.agent.salt_api_cmd(
+            timeout=20,
+            func="task.create_task",
+            arg=[
+                f"name={task.win_task_name}",
+                "force=True",
+                "action_type=Execute",
+                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
+                f'arguments="-m taskrunner -p {task.pk}"',
+                "start_in=C:\\Program Files\\TacticalAgent",
                 "ac_only=False",
                 "stop_if_on_batteries=False",
             ],
@@ -174,3 +194,40 @@ def run_win_task(pk):
     task = AutomatedTask.objects.get(pk=pk)
     task.agent.salt_api_async(func="task.run", arg=[f"name={task.win_task_name}"])
     return "ok"
+
+
+@app.task
+def remove_orphaned_win_tasks(agentpk):
+    from agents.models import Agent
+
+    agent = Agent.objects.get(pk=agentpk)
+
+    logger.info(f"Orphaned task cleanup initiated on {agent.hostname}.")
+
+    r = agent.salt_api_cmd(
+        timeout=15,
+        func="task.list_tasks",
+    )
+
+    if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
+        logger.error(
+            f"Unable to clean up scheduled tasks on {agent.hostname}. Agent might be offline"
+        )
+        return
+
+    agent_task_names = list(agent.autotasks.only("win_task_name"))
+
+    # append any system tasks to the list so they aren't removed
+    agent_task_names.append("TacticalRMM_fixmesh")
+
+    for task in r:
+        if "TacticalRMM" in task:
+
+            # delete task since it doesn't exist in UI
+            if task not in agent_task_names:
+                delete_win_task_schedule.delay(
+                    agent.autotasks.get(win_task_name=task).pk
+                )
+                logger.info(f"Removing task {task} from {agent.hostname}.")
+
+    logger.info(f"Orphaned task cleanup finished on {agent.hostname}.")

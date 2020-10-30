@@ -10,8 +10,6 @@ from agents.models import Agent
 from autotasks.models import AutomatedTask
 from checks.models import Check
 from clients.models import Client, Site
-from autotasks.serializers import TaskSerializer
-from checks.serializers import CheckSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
 
@@ -86,7 +84,7 @@ class AutoTasksFieldSerializer(ModelSerializer):
 
     class Meta:
         model = AutomatedTask
-        fields = "__all__"
+        fields = ("id", "enabled", "name", "schedule", "assigned_check")
         depth = 1
 
 

@@ -91,7 +91,7 @@ class AutoTask(APIView):
             return Response(f"Task will be {action} shortly")
 
     def delete(self, request, pk):
-        from autotasks.tasks import delete_policy_autotask_task
+        from automation.tasks import delete_policy_autotask_task
 
         task = get_object_or_404(AutomatedTask, pk=pk)
 

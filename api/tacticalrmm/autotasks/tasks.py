@@ -75,6 +75,9 @@ def create_win_task_schedule(pk, pending_action=False):
                 'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
                 f'arguments="-m taskrunner -p {task.pk}"',
                 "start_in=C:\\Program Files\\TacticalAgent",
+                "trigger_type=Once",
+                'start_date="1975-01-01"',
+                'start_time="01:00"',
                 "ac_only=False",
                 "stop_if_on_batteries=False",
             ],
@@ -213,11 +216,11 @@ def remove_orphaned_win_tasks(agentpk):
         logger.error(
             f"Unable to clean up scheduled tasks on {agent.hostname}. Agent might be offline"
         )
-        return
+        return "errtimeout"
 
     if not isinstance(r, list):
         logger.error(f"Unable to clean up scheduled tasks on {agent.hostname}: {r}")
-        return
+        return "notlist"
 
     agent_task_names = list(agent.autotasks.values_list("win_task_name", flat=True))
 

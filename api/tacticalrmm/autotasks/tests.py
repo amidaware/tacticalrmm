@@ -1,11 +1,11 @@
 from unittest.mock import patch
-from model_bakery import baker, seq
-from itertools import cycle
-from autotasks.models import AutomatedTask
+from model_bakery import baker
 
-from tacticalrmm.test import TacticalTestCase
+from tacticalrmm.test import TacticalTestCase, BaseTestCase
 
+from .models import AutomatedTask
 from .serializers import AutoTaskSerializer
+from .tasks import remove_orphaned_win_tasks
 
 
 class TestAutotaskViews(TacticalTestCase):
@@ -196,3 +196,44 @@ class TestAutotaskViews(TacticalTestCase):
         run_win_task.assert_called_with(task.id)
 
         self.check_not_authenticated("get", url)
+
+
+class TestAutoTaskCelery(BaseTestCase):
+    @patch("agents.models.Agent.salt_api_cmd")
+    def test_remove_orphaned_win_tasks(self, salt_ret):
+        salt_ret.return_value = "timeout"
+        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
+        self.assertEqual(ret.result, "errtimeout")
+
+        salt_ret.return_value = "error"
+        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
+        self.assertEqual(ret.result, "errtimeout")
+
+        salt_ret.return_value = "task not found in"
+        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
+        self.assertEqual(ret.result, "notlist")
+
+        self.task1 = AutomatedTask.objects.create(
+            agent=self.agent,
+            name="test task 1",
+            win_task_name=AutomatedTask.generate_task_name(),
+        )
+
+        salt_ret.return_value = [
+            "Adobe Acrobat Update Task",
+            "AdobeGCInvoker-1.0",
+            "GoogleUpdateTaskMachineCore",
+            "GoogleUpdateTaskMachineUA",
+            "OneDrive Standalone Update Task-S-1-5-21-717461175-241712648-1206041384-1001",
+            self.task1.win_task_name,
+            "TacticalRMM_fixmesh",
+            "TacticalRMM_SchedReboot_jk324kajd",
+            "TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb",  # orphaned task
+        ]
+        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
+        salt_ret.assert_called_with(
+            timeout=20,
+            func="task.delete_task",
+            arg=["name=TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb"],
+        )
+        self.assertEqual(ret.status, "SUCCESS")

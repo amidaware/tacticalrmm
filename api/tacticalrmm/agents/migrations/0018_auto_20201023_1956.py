@@ -6,33 +6,33 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0017_auto_20201016_0629'),
+        ("agents", "0017_auto_20201016_0629"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='agent',
-            name='last_logged_in_user',
+            model_name="agent",
+            name="last_logged_in_user",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='logged_in_username',
+            model_name="agent",
+            name="logged_in_username",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='plat',
+            model_name="agent",
+            name="plat",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='plat_release',
+            model_name="agent",
+            name="plat_release",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='total_ram',
+            model_name="agent",
+            name="total_ram",
             field=models.IntegerField(blank=True, null=True),
         ),
     ]

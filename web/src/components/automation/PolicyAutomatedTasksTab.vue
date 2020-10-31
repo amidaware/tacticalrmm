@@ -74,24 +74,14 @@
                     </q-item-section>
                     <q-item-section>Edit</q-item-section>
                   </q-item>
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="deleteTask(props.row.name, props.row.id)"
-                    id="context-delete"
-                  >
+                  <q-item clickable v-close-popup @click="deleteTask(props.row.name, props.row.id)" id="context-delete">
                     <q-item-section side>
                       <q-icon name="delete" />
                     </q-item-section>
                     <q-item-section>Delete</q-item-section>
                   </q-item>
                   <q-separator />
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="showStatus(props.row)"
-                    id="context-status"
-                  >
+                  <q-item clickable v-close-popup @click="showStatus(props.row)" id="context-status">
                     <q-item-section side>
                       <q-icon name="sync" />
                     </q-item-section>
@@ -112,15 +102,14 @@
                 />
               </q-td>
               <q-td>{{ props.row.name }}</q-td>
-              <q-td v-if="props.row.last_run">{{ props.row.last_run }}</q-td>
-              <q-td v-else>Has not run yet</q-td>
-              <q-td>{{ props.row.task_type }}</q-td>
+              <q-td>{{ props.row.schedule }}</q-td>
               <q-td>
                 <span
-                  style="cursor:pointer;color:blue;text-decoration:underline"
+                  style="cursor: pointer; color: blue; text-decoration: underline"
                   @click="showStatus(props.row)"
                   class="status-cell"
-                >See Status</span>
+                  >See Status</span
+                >
               </q-td>
               <q-td v-if="props.row.assigned_check">{{ props.row.assigned_check.readable_desc }}</q-td>
               <q-td v-else></q-td>
@@ -136,11 +125,7 @@
 
     <!-- policy task status -->
     <q-dialog v-model="showPolicyTaskStatus">
-      <PolicyStatus
-        type="task"
-        :item="statusTask"
-        :description="`${statusTask.name} Agent Status`"
-      />
+      <PolicyStatus type="task" :item="statusTask" :description="`${statusTask.name} Agent Status`" />
     </q-dialog>
   </div>
 </template>
@@ -168,12 +153,6 @@ export default {
       columns: [
         { name: "enabled", align: "left", field: "enabled" },
         { name: "name", label: "Name", field: "name", align: "left" },
-        {
-          name: "datetime",
-          label: "Last Run Time",
-          field: "last_run",
-          align: "left",
-        },
         {
           name: "schedule",
           label: "Schedule",

@@ -21,7 +21,7 @@ volumes:
   # Used to make the salt data persistent
   salt_data:
   # Makes Postgres data persistent
-  postgres_data:
+  postgres_data13:
   # Makes mesh central data persistent
   mongo_data:
 
@@ -34,7 +34,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASS}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data13:/var/lib/postgresql/data
     networks:
       - database
 

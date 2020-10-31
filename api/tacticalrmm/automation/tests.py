@@ -4,7 +4,6 @@ from model_bakery import baker, seq
 from itertools import cycle
 from agents.models import Agent
 from winupdate.models import WinUpdatePolicy
-from pprint import pprint
 
 from .serializers import (
     PolicyTableSerializer,

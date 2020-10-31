@@ -209,25 +209,41 @@ def remove_orphaned_win_tasks(agentpk):
         func="task.list_tasks",
     )
 
-    if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
+    if r == "timeout" or r == "error":
         logger.error(
             f"Unable to clean up scheduled tasks on {agent.hostname}. Agent might be offline"
         )
         return
 
-    agent_task_names = list(agent.autotasks.only("win_task_name"))
+    if not isinstance(r, list):
+        logger.error(f"Unable to clean up scheduled tasks on {agent.hostname}: {r}")
+        return
 
-    # append any system tasks to the list so they aren't removed
-    agent_task_names.append("TacticalRMM_fixmesh")
+    agent_task_names = list(agent.autotasks.values_list("win_task_name", flat=True))
+
+    exclude_tasks = (
+        "TacticalRMM_fixmesh",
+        "TacticalRMM_SchedReboot",
+        "TacticalRMM_saltwatchdog",  # will be implemented in future
+    )
 
     for task in r:
-        if "TacticalRMM" in task:
+        if task.startswith(exclude_tasks):
+            # skip system tasks or any pending reboots
+            continue
 
+        if task.startswith("TacticalRMM_") and task not in agent_task_names:
             # delete task since it doesn't exist in UI
-            if task not in agent_task_names:
-                delete_win_task_schedule.delay(
-                    agent.autotasks.get(win_task_name=task).pk
+            ret = agent.salt_api_cmd(
+                timeout=20,
+                func="task.delete_task",
+                arg=[f"name={task}"],
+            )
+            if isinstance(ret, bool) and ret is True:
+                logger.info(f"Removed orphaned task {task} from {agent.hostname}")
+            else:
+                logger.error(
+                    f"Unable to clean up orphaned task {task} on {agent.hostname}: {ret}"
                 )
-                logger.info(f"Removing task {task} from {agent.hostname}.")
 
-    logger.info(f"Orphaned task cleanup finished on {agent.hostname}.")
+    logger.info(f"Orphaned task cleanup finished on {agent.hostname}")

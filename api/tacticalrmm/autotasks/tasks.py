@@ -1,8 +1,6 @@
 from loguru import logger
 from tacticalrmm.celery import app
 from django.conf import settings
-from datetime import datetime as dt
-from datetime import timedelta
 import pytz
 from django.utils import timezone as djangotime
 
@@ -55,8 +53,8 @@ def create_win_task_schedule(pk, pending_action=False):
         now = djangotime.now()
         if task_time_utc < now:
             task.run_time_date = now.astimezone(agent_tz).replace(
-                tzinfo=None
-            ) + timedelta(minutes=5)
+                tzinfo=pytz.utc
+            ) + djangotime.timedelta(minutes=5)
             task.save()
 
         r = task.agent.salt_api_cmd(

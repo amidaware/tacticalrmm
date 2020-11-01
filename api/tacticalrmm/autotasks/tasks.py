@@ -61,6 +61,7 @@ def create_win_task_schedule(pk, pending_action=False):
                 f'start_time="{task.run_time_date.strftime("%H:%M")}"',
                 "ac_only=False",
                 "stop_if_on_batteries=False",
+                "start_when_available=True",
             ],
         )
 

@@ -25,8 +25,9 @@ def core_maintenance_tasks():
 
     # cleanup expired runonce tasks
     tasks = AutomatedTask.objects.filter(
-        task_type="runonce", remove_if_not_scheduled=True
-    )
+        task_type="runonce",
+        remove_if_not_scheduled=True,
+    ).exclude(last_run=None)
 
     for task in tasks:
         agent_tz = pytz.timezone(task.agent.timezone)

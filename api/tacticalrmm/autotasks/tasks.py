@@ -195,7 +195,7 @@ def delete_win_task_schedule(pk, pending_action=False):
 @app.task
 def run_win_task(pk):
     task = AutomatedTask.objects.get(pk=pk)
-    task.agent.salt_api_async(func="task.run", arg=[f"name={task.win_task_name}"])
+    r = task.agent.salt_api_async(func="task.run", arg=[f"name={task.win_task_name}"])
     return "ok"
 
 

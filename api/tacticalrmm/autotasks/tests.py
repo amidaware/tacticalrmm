@@ -279,5 +279,5 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             win_task_name=AutomatedTask.generate_task_name(),
         )
         salt_api_async.return_value = "Response 200"
-        ret = run_win_task.s(self.agent.pk).apply()
+        ret = run_win_task.s(self.task1.pk).apply()
         self.assertEqual(ret.status, "SUCCESS")

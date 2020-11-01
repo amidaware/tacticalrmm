@@ -7,4 +7,5 @@ urlpatterns = [
     path("editsettings/", views.edit_settings),
     path("version/", views.version),
     path("emailtest/", views.email_test),
+    path("dashinfo/", views.dashboard_info),
 ]

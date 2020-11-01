@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="16"
+SCRIPT_VERSION="17"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 GREEN='\033[0;32m'
@@ -282,6 +282,8 @@ sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
 git clone https://github.com/wh1te909/tacticalrmm.git /rmm/
+cd /rmm
+git checkout master
 
 localvars="$(cat << EOF
 SECRET_KEY = "${DJANGO_SEKRET}"

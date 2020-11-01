@@ -1,11 +1,13 @@
 from unittest.mock import patch, call
 from model_bakery import baker
+from django.utils import timezone as djangotime
 
 from tacticalrmm.test import TacticalTestCase
 
 from .models import AutomatedTask
+from logs.models import PendingAction
 from .serializers import AutoTaskSerializer
-from .tasks import remove_orphaned_win_tasks, run_win_task
+from .tasks import remove_orphaned_win_tasks, run_win_task, create_win_task_schedule
 
 
 class TestAutotaskViews(TacticalTestCase):
@@ -280,4 +282,202 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         )
         salt_api_async.return_value = "Response 200"
         ret = run_win_task.s(self.task1.pk).apply()
+        self.assertEqual(ret.status, "SUCCESS")
+
+    @patch("agents.models.Agent.salt_api_cmd")
+    def test_create_win_task_schedule(self, salt_api_cmd):
+        self.agent = baker.make_recipe("agents.agent")
+
+        task_name = AutomatedTask.generate_task_name()
+        # test scheduled task
+        self.task1 = AutomatedTask.objects.create(
+            agent=self.agent,
+            name="test task 1",
+            win_task_name=task_name,
+            task_type="scheduled",
+            run_time_days=[0, 1, 6],
+            run_time_minute="21:55",
+        )
+        self.assertEqual(self.task1.sync_status, "notsynced")
+        salt_api_cmd.return_value = True
+        ret = create_win_task_schedule.s(pk=self.task1.pk, pending_action=False).apply()
+        self.assertEqual(salt_api_cmd.call_count, 1)
+        salt_api_cmd.assert_called_with(
+            timeout=20,
+            func="task.create_task",
+            arg=[
+                f"name={task_name}",
+                "force=True",
+                "action_type=Execute",
+                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
+                f'arguments="-m taskrunner -p {self.task1.pk}"',
+                "start_in=C:\\Program Files\\TacticalAgent",
+                "trigger_type=Weekly",
+                'start_time="21:55"',
+                "ac_only=False",
+                "stop_if_on_batteries=False",
+            ],
+            kwargs={"days_of_week": ["Monday", "Tuesday", "Sunday"]},
+        )
+        self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
+        self.assertEqual(self.task1.sync_status, "synced")
+
+        salt_api_cmd.return_value = "timeout"
+        ret = create_win_task_schedule.s(pk=self.task1.pk, pending_action=False).apply()
+        self.assertEqual(ret.status, "SUCCESS")
+        self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
+        self.assertEqual(self.task1.sync_status, "notsynced")
+
+        salt_api_cmd.return_value = "error"
+        ret = create_win_task_schedule.s(pk=self.task1.pk, pending_action=False).apply()
+        self.assertEqual(ret.status, "SUCCESS")
+        self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
+        self.assertEqual(self.task1.sync_status, "notsynced")
+
+        salt_api_cmd.return_value = False
+        ret = create_win_task_schedule.s(pk=self.task1.pk, pending_action=False).apply()
+        self.assertEqual(ret.status, "SUCCESS")
+        self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
+        self.assertEqual(self.task1.sync_status, "notsynced")
+
+        # test pending action
+        self.pending_action = PendingAction.objects.create(
+            agent=self.agent, action_type="taskaction"
+        )
+        self.assertEqual(self.pending_action.status, "pending")
+        salt_api_cmd.return_value = True
+        ret = create_win_task_schedule.s(
+            pk=self.task1.pk, pending_action=self.pending_action.pk
+        ).apply()
+        self.assertEqual(ret.status, "SUCCESS")
+        self.pending_action = PendingAction.objects.get(pk=self.pending_action.pk)
+        self.assertEqual(self.pending_action.status, "completed")
+
+        # test runonce with future date
+        salt_api_cmd.reset_mock()
+        task_name = AutomatedTask.generate_task_name()
+        run_time_date = djangotime.now() + djangotime.timedelta(hours=22)
+        self.task2 = AutomatedTask.objects.create(
+            agent=self.agent,
+            name="test task 2",
+            win_task_name=task_name,
+            task_type="runonce",
+            run_time_date=run_time_date,
+        )
+        salt_api_cmd.return_value = True
+        ret = create_win_task_schedule.s(pk=self.task2.pk, pending_action=False).apply()
+        salt_api_cmd.assert_called_with(
+            timeout=20,
+            func="task.create_task",
+            arg=[
+                f"name={task_name}",
+                "force=True",
+                "action_type=Execute",
+                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
+                f'arguments="-m taskrunner -p {self.task2.pk}"',
+                "start_in=C:\\Program Files\\TacticalAgent",
+                "trigger_type=Once",
+                f'start_date="{run_time_date.strftime("%Y-%m-%d")}"',
+                f'start_time="{run_time_date.strftime("%H:%M")}"',
+                "ac_only=False",
+                "stop_if_on_batteries=False",
+                "start_when_available=True",
+            ],
+        )
+        self.assertEqual(ret.status, "SUCCESS")
+
+        # test runonce with date in the past
+        salt_api_cmd.reset_mock()
+        task_name = AutomatedTask.generate_task_name()
+        run_time_date = djangotime.now() - djangotime.timedelta(days=13)
+        self.task3 = AutomatedTask.objects.create(
+            agent=self.agent,
+            name="test task 3",
+            win_task_name=task_name,
+            task_type="runonce",
+            run_time_date=run_time_date,
+        )
+        salt_api_cmd.return_value = True
+        ret = create_win_task_schedule.s(pk=self.task3.pk, pending_action=False).apply()
+        self.task3 = AutomatedTask.objects.get(pk=self.task3.pk)
+        salt_api_cmd.assert_called_with(
+            timeout=20,
+            func="task.create_task",
+            arg=[
+                f"name={task_name}",
+                "force=True",
+                "action_type=Execute",
+                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
+                f'arguments="-m taskrunner -p {self.task3.pk}"',
+                "start_in=C:\\Program Files\\TacticalAgent",
+                "trigger_type=Once",
+                f'start_date="{self.task3.run_time_date.strftime("%Y-%m-%d")}"',
+                f'start_time="{self.task3.run_time_date.strftime("%H:%M")}"',
+                "ac_only=False",
+                "stop_if_on_batteries=False",
+                "start_when_available=True",
+            ],
+        )
+        self.assertEqual(ret.status, "SUCCESS")
+
+        # test checkfailure
+        salt_api_cmd.reset_mock()
+        self.check = baker.make_recipe("checks.diskspace_check", agent=self.agent)
+        task_name = AutomatedTask.generate_task_name()
+        self.task4 = AutomatedTask.objects.create(
+            agent=self.agent,
+            name="test task 4",
+            win_task_name=task_name,
+            task_type="checkfailure",
+            assigned_check=self.check,
+        )
+        salt_api_cmd.return_value = True
+        ret = create_win_task_schedule.s(pk=self.task4.pk, pending_action=False).apply()
+        salt_api_cmd.assert_called_with(
+            timeout=20,
+            func="task.create_task",
+            arg=[
+                f"name={task_name}",
+                "force=True",
+                "action_type=Execute",
+                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
+                f'arguments="-m taskrunner -p {self.task4.pk}"',
+                "start_in=C:\\Program Files\\TacticalAgent",
+                "trigger_type=Once",
+                'start_date="1975-01-01"',
+                'start_time="01:00"',
+                "ac_only=False",
+                "stop_if_on_batteries=False",
+            ],
+        )
+        self.assertEqual(ret.status, "SUCCESS")
+
+        # test manual
+        salt_api_cmd.reset_mock()
+        task_name = AutomatedTask.generate_task_name()
+        self.task5 = AutomatedTask.objects.create(
+            agent=self.agent,
+            name="test task 5",
+            win_task_name=task_name,
+            task_type="manual",
+        )
+        salt_api_cmd.return_value = True
+        ret = create_win_task_schedule.s(pk=self.task5.pk, pending_action=False).apply()
+        salt_api_cmd.assert_called_with(
+            timeout=20,
+            func="task.create_task",
+            arg=[
+                f"name={task_name}",
+                "force=True",
+                "action_type=Execute",
+                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
+                f'arguments="-m taskrunner -p {self.task5.pk}"',
+                "start_in=C:\\Program Files\\TacticalAgent",
+                "trigger_type=Once",
+                'start_date="1975-01-01"',
+                'start_time="01:00"',
+                "ac_only=False",
+                "stop_if_on_batteries=False",
+            ],
+        )
         self.assertEqual(ret.status, "SUCCESS")

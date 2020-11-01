@@ -1,11 +1,11 @@
-from unittest.mock import patch
+from unittest.mock import patch, call
 from model_bakery import baker
 
-from tacticalrmm.test import TacticalTestCase, BaseTestCase
+from tacticalrmm.test import TacticalTestCase
 
 from .models import AutomatedTask
 from .serializers import AutoTaskSerializer
-from .tasks import remove_orphaned_win_tasks
+from .tasks import remove_orphaned_win_tasks, run_win_task
 
 
 class TestAutotaskViews(TacticalTestCase):
@@ -198,28 +198,36 @@ class TestAutotaskViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
 
-class TestAutoTaskCelery(BaseTestCase):
+class TestAutoTaskCeleryTasks(TacticalTestCase):
+    def setUp(self):
+        self.authenticate()
+        self.setup_coresettings()
+
     @patch("agents.models.Agent.salt_api_cmd")
-    def test_remove_orphaned_win_tasks(self, salt_ret):
-        salt_ret.return_value = "timeout"
-        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
-        self.assertEqual(ret.result, "errtimeout")
-
-        salt_ret.return_value = "error"
-        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
-        self.assertEqual(ret.result, "errtimeout")
-
-        salt_ret.return_value = "task not found in"
-        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
-        self.assertEqual(ret.result, "notlist")
-
+    def test_remove_orphaned_win_task(self, salt_api_cmd):
+        self.agent = baker.make_recipe("agents.agent")
         self.task1 = AutomatedTask.objects.create(
             agent=self.agent,
             name="test task 1",
             win_task_name=AutomatedTask.generate_task_name(),
         )
 
-        salt_ret.return_value = [
+        salt_api_cmd.return_value = "timeout"
+        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
+        self.assertEqual(ret.result, "errtimeout")
+
+        salt_api_cmd.return_value = "error"
+        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
+        self.assertEqual(ret.result, "errtimeout")
+
+        salt_api_cmd.return_value = "task not found in"
+        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
+        self.assertEqual(ret.result, "notlist")
+
+        salt_api_cmd.reset_mock()
+
+        # test removing an orphaned task
+        win_tasks = [
             "Adobe Acrobat Update Task",
             "AdobeGCInvoker-1.0",
             "GoogleUpdateTaskMachineCore",
@@ -230,10 +238,46 @@ class TestAutoTaskCelery(BaseTestCase):
             "TacticalRMM_SchedReboot_jk324kajd",
             "TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb",  # orphaned task
         ]
+
+        self.calls = [
+            call(timeout=15, func="task.list_tasks"),
+            call(
+                timeout=20,
+                func="task.delete_task",
+                arg=["name=TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb"],
+            ),
+        ]
+
+        salt_api_cmd.side_effect = [win_tasks, True]
         ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
-        salt_ret.assert_called_with(
-            timeout=20,
-            func="task.delete_task",
-            arg=["name=TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb"],
+        self.assertEqual(salt_api_cmd.call_count, 2)
+        salt_api_cmd.assert_has_calls(self.calls)
+        self.assertEqual(ret.status, "SUCCESS")
+
+        # test salt delete_task fail
+        salt_api_cmd.reset_mock()
+        salt_api_cmd.side_effect = [win_tasks, False]
+        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
+        salt_api_cmd.assert_has_calls(self.calls)
+        self.assertEqual(salt_api_cmd.call_count, 2)
+        self.assertEqual(ret.status, "SUCCESS")
+
+        # no orphaned tasks
+        salt_api_cmd.reset_mock()
+        win_tasks.remove("TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb")
+        salt_api_cmd.side_effect = [win_tasks, True]
+        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
+        self.assertEqual(salt_api_cmd.call_count, 1)
+        self.assertEqual(ret.status, "SUCCESS")
+
+    @patch("agents.models.Agent.salt_api_async")
+    def test_run_win_task(self, salt_api_async):
+        self.agent = baker.make_recipe("agents.agent")
+        self.task1 = AutomatedTask.objects.create(
+            agent=self.agent,
+            name="test task 1",
+            win_task_name=AutomatedTask.generate_task_name(),
         )
+        salt_api_async.return_value = "Response 200"
+        ret = run_win_task.s(self.agent.pk).apply()
         self.assertEqual(ret.status, "SUCCESS")

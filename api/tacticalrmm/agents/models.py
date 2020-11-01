@@ -44,9 +44,7 @@ class Agent(BaseAuditModel):
     boot_time = models.FloatField(null=True, blank=True)
     logged_in_username = models.CharField(null=True, blank=True, max_length=255)
     last_logged_in_user = models.CharField(null=True, blank=True, max_length=255)
-    client = models.CharField(max_length=200)
     antivirus = models.CharField(default="n/a", max_length=255)  # deprecated
-    site = models.CharField(max_length=150)
     monitoring_type = models.CharField(max_length=30)
     description = models.CharField(null=True, blank=True, max_length=255)
     mesh_node_id = models.CharField(null=True, blank=True, max_length=255)
@@ -62,6 +60,12 @@ class Agent(BaseAuditModel):
         max_length=255, choices=TZ_CHOICES, null=True, blank=True
     )
     maintenance_mode = models.BooleanField(default=False)
+    site = models.ForeignKey(
+        "clients.Site",
+        related_name="agents",
+        null=True,
+        on_delete=models.SET_NULL,
+    )
     policy = models.ForeignKey(
         "automation.Policy",
         related_name="agents",

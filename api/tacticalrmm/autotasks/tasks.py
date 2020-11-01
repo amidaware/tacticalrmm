@@ -54,7 +54,9 @@ def create_win_task_schedule(pk, pending_action=False):
         task_time_utc = task.run_time_date.replace(tzinfo=agent_tz).astimezone(pytz.utc)
         now = djangotime.now()
         if task_time_utc < now:
-            task.run_time_date = now.astimezone(agent_tz) + timedelta(minutes=5)
+            task.run_time_date = now.astimezone(agent_tz).replace(
+                tzinfo=None
+            ) + timedelta(minutes=5)
             task.save()
 
         r = task.agent.salt_api_cmd(

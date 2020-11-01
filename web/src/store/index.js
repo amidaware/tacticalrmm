@@ -153,6 +153,9 @@ export default function () {
       getAgentCounts(context, data = {}) {
         return axios.post("/agents/agent_counts/", data)
       },
+      getDashInfo(context) {
+        return axios.get("/core/dashinfo/");
+      },
       loadAutomatedTasks(context, pk) {
         axios.get(`/tasks/${pk}/automatedtasks/`).then(r => {
           context.commit("SET_AUTOMATED_TASKS", r.data);

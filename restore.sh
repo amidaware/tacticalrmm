@@ -7,7 +7,7 @@ pgpw="hunter2"
 
 #####################################################
 
-SCRIPT_VERSION="4"
+SCRIPT_VERSION="5"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/restore.sh'
 
 GREEN='\033[0;32m'
@@ -212,6 +212,8 @@ sudo chown ${USER}:${USER} /rmm
 sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
 git clone https://github.com/wh1te909/tacticalrmm.git /rmm/
+cd /rmm
+git checkout master
 
 cp $tmp_dir/rmm/local_settings.py /rmm/api/tacticalrmm/tacticalrmm/
 cp $tmp_dir/rmm/env /rmm/web/.env

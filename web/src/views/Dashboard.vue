@@ -7,7 +7,9 @@
       </q-banner>
       <q-toolbar>
         <q-btn dense flat push @click="refreshEntireSite" icon="refresh" />
-        <q-toolbar-title>Tactical RMM</q-toolbar-title>
+        <q-toolbar-title
+          >Tactical RMM<span class="text-overline">&nbsp;&nbsp;&nbsp;v{{ currentTRMMVersion }}</span></q-toolbar-title
+        >
 
         <!-- Devices Chip -->
         <q-chip color="white" class="cursor-pointer">
@@ -265,6 +267,7 @@ export default {
       frame: [],
       poll: null,
       search: null,
+      currentTRMMVersion: null,
       columns: [
         {
           name: "smsalert",
@@ -369,6 +372,7 @@ export default {
   methods: {
     refreshEntireSite() {
       this.$store.dispatch("loadTree");
+      this.getDashInfo();
       this.getAgentCounts();
 
       if (this.allClientsActive) {
@@ -468,6 +472,7 @@ export default {
       this.poll = setInterval(() => {
         this.$store.dispatch("checkVer");
         this.getAgentCounts();
+        this.getDashInfo();
       }, 60 * 5 * 1000);
     },
     setSplitter(val) {
@@ -480,6 +485,9 @@ export default {
         this.workstationCount = r.data.total_workstation_count;
         this.workstationOfflineCount = r.data.total_workstation_offline_count;
       });
+    },
+    getDashInfo() {
+      this.$store.dispatch("getDashInfo").then(r => (this.currentTRMMVersion = r.data.trmm_version));
     },
     showToggleMaintenance(node) {
       let data = {
@@ -537,6 +545,7 @@ export default {
     this.getTree();
     this.$store.dispatch("getUpdatedSites");
     this.$store.dispatch("checkVer");
+    this.getDashInfo();
     this.getAgentCounts();
   },
   mounted() {

@@ -67,6 +67,11 @@ def version(request):
 
 
 @api_view()
+def dashboard_info(request):
+    return Response({"trmm_version": settings.TRMM_VERSION})
+
+
+@api_view()
 def email_test(request):
     core = CoreSettings.objects.first()
     r = core.send_mail(

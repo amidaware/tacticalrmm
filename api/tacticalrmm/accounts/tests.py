@@ -1,11 +1,11 @@
 from unittest.mock import patch
+from django.test import override_settings
 
 from tacticalrmm.test import TacticalTestCase
 from accounts.models import User
 
 
 class TestAccounts(TacticalTestCase):
-
     def setUp(self):
         self.client_setup()
         self.bob = User(username="bob")
@@ -60,9 +60,20 @@ class TestAccounts(TacticalTestCase):
         self.assertEqual(r.status_code, 400)
         self.assertIn("non_field_errors", r.data.keys())
 
+    @override_settings(DEBUG=True)
+    @patch("pyotp.TOTP.verify")
+    def test_debug_login_view(self, mock_verify):
+        url = "/login/"
+        mock_verify.return_value = True
+
+        data = {"username": "bob", "password": "hunter2", "twofactor": "sekret"}
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("expiry", r.data.keys())
+        self.assertIn("token", r.data.keys())
+
 
 class TestGetAddUsers(TacticalTestCase):
-
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -110,7 +121,6 @@ class TestGetAddUsers(TacticalTestCase):
 
 
 class GetUpdateDeleteUser(TacticalTestCase):
-
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -158,7 +168,6 @@ class GetUpdateDeleteUser(TacticalTestCase):
 
 
 class TestUserAction(TacticalTestCase):
-
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
@@ -188,7 +197,6 @@ class TestUserAction(TacticalTestCase):
 
 
 class TestTOTPSetup(TacticalTestCase):
-
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()

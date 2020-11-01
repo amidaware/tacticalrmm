@@ -17,13 +17,10 @@ from distutils.version import LooseVersion
 
 from django.db import models
 from django.conf import settings
+from django.utils import timezone as djangotime
 
 from core.models import CoreSettings, TZ_CHOICES
 from logs.models import BaseAuditModel
-
-import automation
-import autotasks
-import clients
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -31,40 +28,40 @@ logger.configure(**settings.LOG_CONFIG)
 class Agent(BaseAuditModel):
     version = models.CharField(default="0.1.0", max_length=255)
     salt_ver = models.CharField(default="1.0.3", max_length=255)
-    operating_system = models.CharField(null=True, max_length=255)
-    plat = models.CharField(max_length=255, null=True)
-    plat_release = models.CharField(max_length=255, null=True)
+    operating_system = models.CharField(null=True, blank=True, max_length=255)
+    plat = models.CharField(max_length=255, null=True, blank=True)
+    plat_release = models.CharField(max_length=255, null=True, blank=True)
     hostname = models.CharField(max_length=255)
     salt_id = models.CharField(null=True, blank=True, max_length=255)
-    local_ip = models.TextField(null=True)
+    local_ip = models.TextField(null=True, blank=True)  # deprecated
     agent_id = models.CharField(max_length=200)
     last_seen = models.DateTimeField(null=True, blank=True)
-    services = models.JSONField(null=True)
+    services = models.JSONField(null=True, blank=True)
     public_ip = models.CharField(null=True, max_length=255)
-    total_ram = models.IntegerField(null=True)
-    used_ram = models.IntegerField(null=True)
-    disks = models.JSONField(null=True)
-    boot_time = models.FloatField(null=True)
-    logged_in_username = models.CharField(null=True, max_length=200)
+    total_ram = models.IntegerField(null=True, blank=True)
+    used_ram = models.IntegerField(null=True, blank=True)  # deprecated
+    disks = models.JSONField(null=True, blank=True)
+    boot_time = models.FloatField(null=True, blank=True)
+    logged_in_username = models.CharField(null=True, blank=True, max_length=255)
+    last_logged_in_user = models.CharField(null=True, blank=True, max_length=255)
     client = models.CharField(max_length=200)
-    antivirus = models.CharField(default="n/a", max_length=255)
+    antivirus = models.CharField(default="n/a", max_length=255)  # deprecated
     site = models.CharField(max_length=150)
     monitoring_type = models.CharField(max_length=30)
-    description = models.CharField(null=True, max_length=255)
-    mesh_node_id = models.CharField(null=True, max_length=255)
+    description = models.CharField(null=True, blank=True, max_length=255)
+    mesh_node_id = models.CharField(null=True, blank=True, max_length=255)
     overdue_email_alert = models.BooleanField(default=False)
     overdue_text_alert = models.BooleanField(default=False)
     overdue_time = models.PositiveIntegerField(default=30)
     check_interval = models.PositiveIntegerField(default=120)
     needs_reboot = models.BooleanField(default=False)
-    update_pending = models.BooleanField(default=False)
-    salt_update_pending = models.BooleanField(default=False)
     choco_installed = models.BooleanField(default=False)
-    wmi_detail = models.JSONField(null=True)
+    wmi_detail = models.JSONField(null=True, blank=True)
     patches_last_installed = models.DateTimeField(null=True, blank=True)
     time_zone = models.CharField(
         max_length=255, choices=TZ_CHOICES, null=True, blank=True
     )
+    maintenance_mode = models.BooleanField(default=False)
     policy = models.ForeignKey(
         "automation.Policy",
         related_name="agents",
@@ -87,11 +84,34 @@ class Agent(BaseAuditModel):
             return CoreSettings.objects.first().default_time_zone
 
     @property
-    def status(self):
-        offline = dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=6)
-        overdue = dt.datetime.now(dt.timezone.utc) - dt.timedelta(
-            minutes=self.overdue_time
+    def arch(self):
+        if self.operating_system is not None:
+            if "64bit" in self.operating_system:
+                return "64"
+            elif "32bit" in self.operating_system:
+                return "32"
+        return "64"
+
+    @property
+    def winagent_dl(self):
+        return settings.DL_64 if self.arch == "64" else settings.DL_32
+
+    @property
+    def winsalt_dl(self):
+        return settings.SALT_64 if self.arch == "64" else settings.SALT_32
+
+    @property
+    def win_inno_exe(self):
+        return (
+            f"winagent-v{settings.LATEST_AGENT_VER}.exe"
+            if self.arch == "64"
+            else f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
         )
+
+    @property
+    def status(self):
+        offline = djangotime.now() - djangotime.timedelta(minutes=6)
+        overdue = djangotime.now() - djangotime.timedelta(minutes=self.overdue_time)
 
         if self.last_seen is not None:
             if (self.last_seen < offline) and (self.last_seen > overdue):
@@ -149,7 +169,7 @@ class Agent(BaseAuditModel):
         ret = []
         try:
             ips = self.wmi_detail["network_config"]
-        except KeyError:
+        except:
             return "error getting local ips"
 
         for i in ips:
@@ -253,54 +273,60 @@ class Agent(BaseAuditModel):
 
     # returns agent policy merged with a client or site specific policy
     def get_patch_policy(self):
+        from clients.models import Client, Site
+
         # check if site has a patch policy and if so use it
-        client = clients.models.Client.objects.get(client=self.client)
-        site = clients.models.Site.objects.get(client=client, site=self.site)
+        client = Client.objects.get(client=self.client)
+        site = Site.objects.get(client=client, site=self.site)
         core_settings = CoreSettings.objects.first()
         patch_policy = None
         agent_policy = self.winupdatepolicy.get()
 
         if self.monitoring_type == "server":
             # check agent policy first which should override client or site policy
-            if self.policy and self.policy.winupdatepolicy:
+            if self.policy and self.policy.winupdatepolicy.exists():
                 patch_policy = self.policy.winupdatepolicy.get()
 
             # check site policy if agent policy doesn't have one
-            elif site.server_policy and site.server_policy.winupdatepolicy:
+            elif site.server_policy and site.server_policy.winupdatepolicy.exists():
                 patch_policy = site.server_policy.winupdatepolicy.get()
 
             # if site doesn't have a patch policy check the client
             elif (
-                site.client.server_policy and site.client.server_policy.winupdatepolicy
+                site.client.server_policy
+                and site.client.server_policy.winupdatepolicy.exists()
             ):
                 patch_policy = site.client.server_policy.winupdatepolicy.get()
 
             # if patch policy still doesn't exist check default policy
             elif (
                 core_settings.server_policy
-                and core_settings.server_policy.winupdatepolicy
+                and core_settings.server_policy.winupdatepolicy.exists()
             ):
                 patch_policy = core_settings.server_policy.winupdatepolicy.get()
 
         elif self.monitoring_type == "workstation":
             # check agent policy first which should override client or site policy
-            if self.policy and self.policy.winupdatepolicy:
+            if self.policy and self.policy.winupdatepolicy.exists():
                 patch_policy = self.policy.winupdatepolicy.get()
 
-            elif site.workstation_policy and site.workstation_policy.winupdatepolicy:
+            elif (
+                site.workstation_policy
+                and site.workstation_policy.winupdatepolicy.exists()
+            ):
                 patch_policy = site.workstation_policy.winupdatepolicy.get()
 
             # if site doesn't have a patch policy check the client
             elif (
                 site.client.workstation_policy
-                and site.client.workstation_policy.winupdatepolicy
+                and site.client.workstation_policy.winupdatepolicy.exists()
             ):
                 patch_policy = site.client.workstation_policy.winupdatepolicy.get()
 
             # if patch policy still doesn't exist check default policy
             elif (
                 core_settings.workstation_policy
-                and core_settings.workstation_policy.winupdatepolicy
+                and core_settings.workstation_policy.winupdatepolicy.exists()
             ):
                 patch_policy = core_settings.workstation_policy.winupdatepolicy.get()
 
@@ -341,39 +367,32 @@ class Agent(BaseAuditModel):
 
     # clear is used to delete managed policy checks from agent
     # parent_checks specifies a list of checks to delete from agent with matching parent_check field
-    def generate_checks_from_policies(self, clear=False, parent_checks=[]):
+    def generate_checks_from_policies(self, clear=False):
+        from automation.models import Policy
+
         # Clear agent checks managed by policy
         if clear:
-            if parent_checks:
-                self.agentchecks.filter(managed_by_policy=True).filter(
-                    parent_checks__in=parent_checks
-                ).delete()
-            else:
-                self.agentchecks.filter(managed_by_policy=True).delete()
+            self.agentchecks.filter(managed_by_policy=True).delete()
 
         # Clear agent checks that have overriden_by_policy set
         self.agentchecks.update(overriden_by_policy=False)
 
         # Generate checks based on policies
-        automation.models.Policy.generate_policy_checks(self)
+        Policy.generate_policy_checks(self)
 
     # clear is used to delete managed policy tasks from agent
     # parent_tasks specifies a list of tasks to delete from agent with matching parent_task field
-    def generate_tasks_from_policies(self, clear=False, parent_tasks=[]):
+    def generate_tasks_from_policies(self, clear=False):
+        from autotasks.tasks import delete_win_task_schedule
+        from automation.models import Policy
+
         # Clear agent tasks managed by policy
         if clear:
-            if parent_tasks:
-                tasks = self.autotasks.filter(managed_by_policy=True).filter(
-                    parent_tasks__in=parent_tasks
-                )
-                for task in tasks:
-                    autotasks.tasks.delete_win_task_schedule.delay(task.pk)
-            else:
-                for task in self.autotasks.filter(managed_by_policy=True):
-                    autotasks.tasks.delete_win_task_schedule.delay(task.pk)
+            for task in self.autotasks.filter(managed_by_policy=True):
+                delete_win_task_schedule.delay(task.pk)
 
         # Generate tasks based on policies
-        automation.models.Policy.generate_policy_tasks(self)
+        Policy.generate_policy_tasks(self)
 
     # https://github.com/Ylianst/MeshCentral/issues/59#issuecomment-521965347
     def get_login_token(self, key, user, action=3):
@@ -504,15 +523,6 @@ class Agent(BaseAuditModel):
             return "timeout"
 
         return resp
-
-    @staticmethod
-    def get_github_versions():
-        r = requests.get("https://api.github.com/repos/wh1te909/winagent/releases")
-        versions = {}
-        for i, release in enumerate(r.json()):
-            versions[i] = release["name"]
-
-        return {"versions": versions, "data": r.json()}
 
     def schedule_reboot(self, obj):
 
@@ -670,6 +680,22 @@ class AgentOutage(models.Model):
                 f"agent {self.agent.hostname} "
                 "after an interruption in data transmission."
             ),
+        )
+
+    def send_outage_sms(self):
+        from core.models import CoreSettings
+
+        CORE = CoreSettings.objects.first()
+        CORE.send_sms(
+            f"{self.agent.client}, {self.agent.site}, {self.agent.hostname} - data overdue"
+        )
+
+    def send_recovery_sms(self):
+        from core.models import CoreSettings
+
+        CORE = CoreSettings.objects.first()
+        CORE.send_sms(
+            f"{self.agent.client}, {self.agent.site}, {self.agent.hostname} - data received"
         )
 
     def __str__(self):

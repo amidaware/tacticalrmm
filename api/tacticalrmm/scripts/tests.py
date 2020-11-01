@@ -4,8 +4,6 @@ from pathlib import Path
 from django.conf import settings
 from tacticalrmm.test import TacticalTestCase
 from model_bakery import baker
-from itertools import cycle
-from unittest.mock import patch
 from .serializers import ScriptSerializer
 from .models import Script
 

@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('checks', '0007_check_script_args'),
+        ("checks", "0007_check_script_args"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='check',
-            name='pass_if_svc_not_exist',
+            model_name="check",
+            name="pass_if_svc_not_exist",
             field=models.BooleanField(default=False),
         ),
     ]

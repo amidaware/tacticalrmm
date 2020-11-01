@@ -97,7 +97,7 @@ export default {
       this.scripts.forEach(i => {
         ret.push({ label: i.name, value: i.id });
       });
-      return ret;
+      return ret.sort((a, b) => a.label.localeCompare(b.label));
     },
   },
   methods: {

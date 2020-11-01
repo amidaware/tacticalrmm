@@ -1,5 +1,5 @@
 from rest_framework.serializers import ModelSerializer, ReadOnlyField, ValidationError
-from .models import Client, Site
+from .models import Client, Site, Deployment
 
 
 class SiteSerializer(ModelSerializer):
@@ -46,3 +46,25 @@ class TreeSerializer(ModelSerializer):
             "site",
             "client_name",
         )
+
+
+class DeploymentSerializer(ModelSerializer):
+    client_id = ReadOnlyField(source="client.id")
+    site_id = ReadOnlyField(source="site.id")
+    client_name = ReadOnlyField(source="client.client")
+    site_name = ReadOnlyField(source="site.site")
+
+    class Meta:
+        model = Deployment
+        fields = [
+            "id",
+            "uid",
+            "client_id",
+            "site_id",
+            "client_name",
+            "site_name",
+            "mon_type",
+            "arch",
+            "expiry",
+            "install_flags",
+        ]

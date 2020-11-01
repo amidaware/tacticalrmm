@@ -1,7 +1,6 @@
 import datetime as dt
 from abc import abstractmethod
 from django.db import models
-from django.utils import timezone
 from tacticalrmm.middleware import get_username, get_debug_info
 
 ACTION_TYPE_CHOICES = [

@@ -6,28 +6,28 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0014_remove_agent_managed_by_wsus'),
+        ("agents", "0014_remove_agent_managed_by_wsus"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='agent',
-            name='created_by',
+            model_name="agent",
+            name="created_by",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AddField(
-            model_name='agent',
-            name='created_time',
+            model_name="agent",
+            name="created_time",
             field=models.DateTimeField(auto_now_add=True, null=True),
         ),
         migrations.AddField(
-            model_name='agent',
-            name='modified_by',
+            model_name="agent",
+            name="modified_by",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AddField(
-            model_name='agent',
-            name='modified_time',
+            model_name="agent",
+            name="modified_time",
             field=models.DateTimeField(auto_now=True, null=True),
         ),
     ]

@@ -18,7 +18,7 @@
             options-dense
             label="Client"
             v-model="client"
-            :options="Object.keys(tree)"
+            :options="Object.keys(tree).sort()"
             @input="site = sites[0]"
           />
         </q-card-section>
@@ -110,7 +110,7 @@ export default {
         .get("/clients/loadclients/")
         .then(r => {
           this.tree = r.data;
-          this.client = Object.keys(r.data)[0];
+          this.client = Object.keys(r.data).sort()[0];
           this.loaded = true;
           this.$q.loading.hide();
         })
@@ -248,8 +248,8 @@ export default {
   computed: {
     sites() {
       if (this.tree !== null && this.client !== null) {
-        this.site = this.tree[this.client][0];
-        return this.tree[this.client];
+        this.site = this.tree[this.client].sort()[0];
+        return this.tree[this.client].sort();
       }
     },
     installButtonText() {

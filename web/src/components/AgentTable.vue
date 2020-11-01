@@ -3,10 +3,11 @@
     <q-table
       dense
       class="agents-tbl-sticky"
-      :style="{'max-height': agentTableHeight}"
+      :style="{ 'max-height': agentTableHeight }"
       :data="filter"
       :filter="search"
       :columns="columns"
+      :visible-columns="visibleColumns"
       row-key="id"
       binary-state-sort
       virtual-scroll
@@ -68,7 +69,7 @@
         <q-tr
           @contextmenu="agentRowSelected(props.row.id, props.row.agent_id)"
           :props="props"
-          :class="{highlight: selectedRow === props.row.id}"
+          :class="{ highlight: selectedRow === props.row.id }"
           @click="agentRowSelected(props.row.id, props.row.agent_id)"
           @dblclick="rowDoubleClicked(props.row.id)"
         >
@@ -83,23 +84,14 @@
                 <q-item-section>Edit {{ props.row.hostname }}</q-item-section>
               </q-item>
               <!-- agent pending actions -->
-              <q-item
-                clickable
-                v-close-popup
-                @click="showPendingActions(props.row.id, props.row.hostname)"
-              >
+              <q-item clickable v-close-popup @click="showPendingActions(props.row.id, props.row.hostname)">
                 <q-item-section side>
                   <q-icon size="xs" name="far fa-clock" />
                 </q-item-section>
                 <q-item-section>Pending Agent Actions</q-item-section>
               </q-item>
               <!-- take control -->
-              <q-item
-                clickable
-                v-ripple
-                v-close-popup
-                @click.stop.prevent="takeControl(props.row.id)"
-              >
+              <q-item clickable v-ripple v-close-popup @click.stop.prevent="takeControl(props.row.id)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-desktop" />
                 </q-item-section>
@@ -136,6 +128,14 @@
                 <q-item-section>Remote Background</q-item-section>
               </q-item>
 
+              <!-- maintenance mode -->
+              <q-item clickable @click="toggleMaintenance(props.row)">
+                <q-item-section side>
+                  <q-icon size="xs" name="construction" />
+                </q-item-section>
+                <q-item-section>{{ menuMaintenanceText(props.row.maintenance_mode) }}</q-item-section>
+              </q-item>
+
               <!-- patch management -->
               <q-item clickable>
                 <q-item-section side>
@@ -156,12 +156,7 @@
                     >
                       <q-item-section>Run Patch Status Scan</q-item-section>
                     </q-item>
-                    <q-item
-                      clickable
-                      v-ripple
-                      v-close-popup
-                      @click.stop.prevent="installPatches(props.row.id)"
-                    >
+                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="installPatches(props.row.id)">
                       <q-item-section>Install Patches Now</q-item-section>
                     </q-item>
                   </q-list>
@@ -196,12 +191,7 @@
                       <q-item-section>Now</q-item-section>
                     </q-item>
                     <!-- reboot later -->
-                    <q-item
-                      clickable
-                      v-ripple
-                      v-close-popup
-                      @click.stop.prevent="showRebootLaterModal = true"
-                    >
+                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="showRebootLaterModal = true">
                       <q-item-section>Later</q-item-section>
                     </q-item>
                   </q-list>
@@ -250,8 +240,11 @@
             />
           </q-td>
           <q-td key="checks-status" :props="props">
+            <q-icon v-if="props.row.maintenance_mode" name="fas fa-check-double" size="1.2em" color="warning">
+              <q-tooltip>Maintenance Mode Enabled</q-tooltip>
+            </q-icon>
             <q-icon
-              v-if="props.row.checks.has_failing_checks"
+              v-else-if="props.row.checks.has_failing_checks"
               name="fas fa-check-double"
               size="1.2em"
               color="negative"
@@ -268,7 +261,10 @@
           <q-td key="hostname" :props="props">{{ props.row.hostname }}</q-td>
           <q-td key="description" :props="props">{{ props.row.description }}</q-td>
           <q-td key="user" :props="props">
-            <span v-if="props.row.logged_in_username !== 'None'">{{ props.row.logged_in_username }}</span>
+            <span class="text-italic" v-if="props.row.logged_in_username === 'None' && props.row.status === 'online'">{{
+              props.row.last_logged_in_user
+            }}</span>
+            <span v-else-if="props.row.logged_in_username !== 'None'">{{ props.row.logged_in_username }}</span>
             <span v-else>-</span>
           </q-td>
           <q-td :props="props" key="patchespending">
@@ -276,31 +272,11 @@
               <q-tooltip>Patches Pending</q-tooltip>
             </q-icon>
           </q-td>
-          <!--
-          <q-td :props="props" key="antivirus">
-            <q-icon v-if="props.row.antivirus !== 'n/a' && props.row.antivirus === 'windowsdefender'" name="fas fa-exclamation" color="warning">
-              <q-tooltip>{{ props.row.antivirus }}</q-tooltip>
-            </q-icon>
-            <q-icon v-else-if="props.row.antivirus !== 'n/a'" name="fas fa-check" color="positive">
-              <q-tooltip>{{ props.row.antivirus }}</q-tooltip>
-            </q-icon>
-            <q-icon v-else name="fas fa-times-circle" color="negative" />
-          </q-td>-->
           <q-td key="agentstatus">
-            <q-icon
-              v-if="props.row.status ==='overdue'"
-              name="fas fa-signal"
-              size="1.2em"
-              color="negative"
-            >
+            <q-icon v-if="props.row.status === 'overdue'" name="fas fa-signal" size="1.2em" color="negative">
               <q-tooltip>Agent overdue</q-tooltip>
             </q-icon>
-            <q-icon
-              v-else-if="props.row.status ==='offline'"
-              name="fas fa-signal"
-              size="1.2em"
-              color="warning"
-            >
+            <q-icon v-else-if="props.row.status === 'offline'" name="fas fa-signal" size="1.2em" color="warning">
               <q-tooltip>Agent offline</q-tooltip>
             </q-icon>
             <q-icon v-else name="fas fa-signal" size="1.2em" color="positive">
@@ -313,7 +289,7 @@
               <q-tooltip>Reboot required</q-tooltip>
             </q-icon>
           </q-td>
-          <q-td key="lastseen" :props="props">{{ props.row.last_seen }}</q-td>
+          <q-td key="lastseen" :props="props">{{ formatDate(props.row.last_seen) }}</q-td>
           <q-td key="boottime" :props="props">{{ bootTime(props.row.boot_time) }}</q-td>
         </q-tr>
       </template>
@@ -352,6 +328,7 @@
 
 <script>
 import axios from "axios";
+import { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import mixins from "@/mixins/mixins";
 import { mapGetters } from "vuex";
 import { openURL } from "quasar";
@@ -365,7 +342,7 @@ import RunScript from "@/components/modals/agents/RunScript";
 
 export default {
   name: "AgentTable",
-  props: ["frame", "columns", "tab", "filter", "userName", "search"],
+  props: ["frame", "columns", "tab", "filter", "userName", "search", "visibleColumns"],
   components: {
     EditAgent,
     RebootLater,
@@ -571,6 +548,27 @@ export default {
           this.$q.loading.hide();
           this.notifyError(e.response.data);
         });
+    },
+    toggleMaintenance(agent) {
+      let data = {
+        id: agent.id,
+        type: "Agent",
+        action: !agent.maintenance_mode,
+      };
+
+      const text = agent.maintenance_mode ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
+      this.$store
+        .dispatch("toggleMaintenanceMode", data)
+        .then(response => {
+          this.$q.notify(notifySuccessConfig(text));
+          this.$emit("refreshEdit");
+        })
+        .catch(error => {
+          this.$q.notify(notifyErrorConfig("An Error occured. Please try again"));
+        });
+    },
+    menuMaintenanceText(mode) {
+      return mode ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
     },
   },
   computed: {

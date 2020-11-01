@@ -36,12 +36,8 @@
           </q-badge>
           <span>
             To skip downloading the salt-minion during the install. Download it
-            <a
-              v-if="info.arch === '64'"
-              href="https://github.com/wh1te909/winagent/raw/master/bin/salt-minion-setup.exe"
-              >here</a
-            >
-            <a v-else href="https://github.com/wh1te909/winagent/raw/master/bin/salt-minion-setup-x86.exe">here</a>
+            <a v-if="info.arch === '64'" :href="info.data.salt64">here</a>
+            <a v-else :href="info.data.salt32">here</a>
           </span>
         </div>
         <div class="q-pa-xs q-gutter-xs">

@@ -1,15 +1,8 @@
 from django.shortcuts import get_object_or_404
-from django.utils import timezone as djangotime
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import (
-    api_view,
-    authentication_classes,
-    permission_classes,
-)
+from rest_framework.decorators import api_view
 
 from tacticalrmm.utils import notify_error
 from agents.models import Agent
@@ -20,8 +13,7 @@ from scripts.models import Script
 
 from .serializers import CheckSerializer
 
-from .tasks import handle_check_email_alert_task, run_checks_task
-from autotasks.tasks import delete_win_task_schedule
+from .tasks import run_checks_task
 
 from automation.tasks import (
     generate_agent_checks_from_policies_task,

@@ -46,29 +46,15 @@
         </div>
         <q-card-section>
           <q-radio dark v-model="loglevel" color="cyan" val="info" label="Info" @input="getLog" />
-          <q-radio
-            dark
-            v-model="loglevel"
-            color="red"
-            val="critical"
-            label="Critical"
-            @input="getLog"
-          />
+          <q-radio dark v-model="loglevel" color="red" val="critical" label="Critical" @input="getLog" />
           <q-radio dark v-model="loglevel" color="red" val="error" label="Error" @input="getLog" />
-          <q-radio
-            dark
-            v-model="loglevel"
-            color="yellow"
-            val="warning"
-            label="Warning"
-            @input="getLog"
-          />
+          <q-radio dark v-model="loglevel" color="yellow" val="warning" label="Warning" @input="getLog" />
         </q-card-section>
         <q-separator />
         <q-card-section>
           <q-scroll-area
             :thumb-style="{ right: '4px', borderRadius: '5px', background: 'red', width: '10px', opacity: 1 }"
-            style="height: 60vh;"
+            style="height: 60vh"
           >
             <pre>{{ logContent }}</pre>
           </q-scroll-area>
@@ -109,7 +95,7 @@ export default {
     getLog() {
       axios.get(`/logs/debuglog/${this.loglevel}/${this.agent}/${this.order}/`).then(r => {
         this.logContent = r.data.log;
-        this.agents = r.data.agents.map(k => k.hostname);
+        this.agents = r.data.agents.map(k => k.hostname).sort();
         this.agents.unshift("all");
       });
     },

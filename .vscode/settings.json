@@ -1,5 +1,10 @@
 {
     "python.pythonPath": "api/tacticalrmm/env/bin/python",
+    "python.languageServer": "Pylance",
+    "python.analysis.extraPaths": [
+        "api/tacticalrmm"
+    ],
+    "python.analysis.typeCheckingMode": "basic",
     "python.formatting.provider": "black",
     "editor.formatOnSave": true,
     "vetur.format.defaultFormatter.js": "prettier",

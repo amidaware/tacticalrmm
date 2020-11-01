@@ -1,5 +1,3 @@
-import os
-import subprocess
 from loguru import logger
 from time import sleep
 import random
@@ -16,6 +14,9 @@ from core.models import CoreSettings
 
 logger.configure(**settings.LOG_CONFIG)
 
+OLD_64_PY_AGENT = "https://github.com/wh1te909/winagent/releases/download/v0.11.2/winagent-v0.11.2.exe"
+OLD_32_PY_AGENT = "https://github.com/wh1te909/winagent/releases/download/v0.11.2/winagent-v0.11.2-x86.exe"
+
 
 @app.task
 def send_agent_update_task(pks, version):
@@ -29,28 +30,25 @@ def send_agent_update_task(pks, version):
     for chunk in chunks:
         for pk in chunk:
             agent = Agent.objects.get(pk=pk)
-            if agent.operating_system is not None:
-                if "64bit" in agent.operating_system:
-                    arch = "64"
-                elif "32bit" in agent.operating_system:
-                    arch = "32"
-                else:
-                    arch = "64"
-
-                url = settings.DL_64 if arch == "64" else settings.DL_32
+            # golang agent only backwards compatible with py agent 0.11.2
+            # force an upgrade to the latest python agent if version < 0.11.2
+            if pyver.parse(agent.version) < pyver.parse("0.11.2"):
+                url = OLD_64_PY_AGENT if agent.arch == "64" else OLD_32_PY_AGENT
                 inno = (
-                    f"winagent-v{version}.exe"
-                    if arch == "64"
-                    else f"winagent-v{version}-x86.exe"
+                    "winagent-v0.11.2.exe"
+                    if agent.arch == "64"
+                    else "winagent-v0.11.2-x86.exe"
                 )
-
-                r = agent.salt_api_async(
-                    func="win_agent.do_agent_update_v2",
-                    kwargs={
-                        "inno": inno,
-                        "url": url,
-                    },
-                )
+            else:
+                url = agent.winagent_dl
+                inno = agent.win_inno_exe
+            r = agent.salt_api_async(
+                func="win_agent.do_agent_update_v2",
+                kwargs={
+                    "inno": inno,
+                    "url": url,
+                },
+            )
         sleep(10)
 
 
@@ -60,7 +58,7 @@ def auto_self_agent_update_task():
     if not core.agent_auto_update:
         return
 
-    q = Agent.objects.all()
+    q = Agent.objects.only("pk", "version")
     agents = [
         i.pk
         for i in q
@@ -72,28 +70,25 @@ def auto_self_agent_update_task():
     for chunk in chunks:
         for pk in chunk:
             agent = Agent.objects.get(pk=pk)
-            if agent.operating_system is not None:
-                if "64bit" in agent.operating_system:
-                    arch = "64"
-                elif "32bit" in agent.operating_system:
-                    arch = "32"
-                else:
-                    arch = "64"
-
-                url = settings.DL_64 if arch == "64" else settings.DL_32
+            # golang agent only backwards compatible with py agent 0.11.2
+            # force an upgrade to the latest python agent if version < 0.11.2
+            if pyver.parse(agent.version) < pyver.parse("0.11.2"):
+                url = OLD_64_PY_AGENT if agent.arch == "64" else OLD_32_PY_AGENT
                 inno = (
-                    f"winagent-v{settings.LATEST_AGENT_VER}.exe"
-                    if arch == "64"
-                    else f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
+                    "winagent-v0.11.2.exe"
+                    if agent.arch == "64"
+                    else "winagent-v0.11.2-x86.exe"
                 )
-
-                r = agent.salt_api_async(
-                    func="win_agent.do_agent_update_v2",
-                    kwargs={
-                        "inno": inno,
-                        "url": url,
-                    },
-                )
+            else:
+                url = agent.winagent_dl
+                inno = agent.win_inno_exe
+            r = agent.salt_api_async(
+                func="win_agent.do_agent_update_v2",
+                kwargs={
+                    "inno": inno,
+                    "url": url,
+                },
+            )
         sleep(10)
 
 
@@ -119,12 +114,7 @@ def update_salt_minion_task():
 @app.task
 def get_wmi_detail_task(pk):
     agent = Agent.objects.get(pk=pk)
-    r = agent.salt_api_cmd(timeout=30, func="win_agent.system_info")
-    if r == "timeout" or r == "error":
-        return "failed"
-
-    agent.wmi_detail = r
-    agent.save(update_fields=["wmi_detail"])
+    r = agent.salt_api_async(timeout=30, func="win_agent.local_sys_info")
     return "ok"
 
 
@@ -135,11 +125,9 @@ def sync_salt_modules_task(pk):
     # successful sync if new/charnged files: {'return': [{'MINION-15': ['modules.get_eventlog', 'modules.win_agent', 'etc...']}]}
     # successful sync with no new/changed files: {'return': [{'MINION-15': []}]}
     if r == "timeout" or r == "error":
-        logger.error(f"Unable to sync modules {agent.salt_id}")
-        return
+        return f"Unable to sync modules {agent.salt_id}"
 
-    logger.info(f"Successfully synced salt modules on {agent.hostname}")
-    return "ok"
+    return f"Successfully synced salt modules on {agent.hostname}"
 
 
 @app.task
@@ -251,6 +239,24 @@ def agent_recovery_email_task(pk):
 
 
 @app.task
+def agent_outage_sms_task(pk):
+    sleep(random.randint(1, 3))
+    outage = AgentOutage.objects.get(pk=pk)
+    outage.send_outage_sms()
+    outage.outage_sms_sent = True
+    outage.save(update_fields=["outage_sms_sent"])
+
+
+@app.task
+def agent_recovery_sms_task(pk):
+    sleep(random.randint(1, 3))
+    outage = AgentOutage.objects.get(pk=pk)
+    outage.send_recovery_sms()
+    outage.recovery_sms_sent = True
+    outage.save(update_fields=["recovery_sms_sent"])
+
+
+@app.task
 def agent_outages_task():
     agents = Agent.objects.only("pk")
 
@@ -263,9 +269,8 @@ def agent_outages_task():
             outage = AgentOutage(agent=agent)
             outage.save()
 
-            if agent.overdue_email_alert:
+            if agent.overdue_email_alert and not agent.maintenance_mode:
                 agent_outage_email_task.delay(pk=outage.pk)
 
-            if agent.overdue_text_alert:
-                # TODO
-                pass
+            if agent.overdue_text_alert and not agent.maintenance_mode:
+                agent_outage_sms_task.delay(pk=outage.pk)

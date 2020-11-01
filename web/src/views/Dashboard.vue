@@ -9,6 +9,55 @@
         <q-btn dense flat push @click="refreshEntireSite" icon="refresh" />
         <q-toolbar-title>Tactical RMM</q-toolbar-title>
 
+        <!-- Devices Chip -->
+        <q-chip color="white" class="cursor-pointer">
+          <q-avatar size="md" icon="devices" color="primary" text-color="white" />
+          <q-tooltip :delay="600" anchor="top middle" self="top middle">Agent Count</q-tooltip>
+          {{ totalAgents }}
+          <q-menu>
+            <q-list dense>
+              <q-item-label header>Servers</q-item-label>
+              <q-item>
+                <q-item-section avatar>
+                  <q-icon name="fa fa-server" size="sm" color="primary" text-color="white" />
+                </q-item-section>
+
+                <q-item-section no-wrap>
+                  <q-item-label>Total: {{ serverCount }}</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section avatar>
+                  <q-icon name="power_off" size="sm" color="negative" text-color="white" />
+                </q-item-section>
+
+                <q-item-section no-wrap>
+                  <q-item-label>Offline: {{ serverOfflineCount }}</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item-label header>Workstations</q-item-label>
+              <q-item>
+                <q-item-section avatar>
+                  <q-icon name="computer" size="sm" color="primary" text-color="white" />
+                </q-item-section>
+
+                <q-item-section no-wrap>
+                  <q-item-label>Total: {{ workstationCount }}</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section avatar>
+                  <q-icon name="power_off" size="sm" color="negative" text-color="white" />
+                </q-item-section>
+
+                <q-item-section no-wrap>
+                  <q-item-label>Offline: {{ workstationOfflineCount }}</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-chip>
+
         <AlertsIcon />
 
         <q-btn-dropdown flat no-caps stretch :label="user">
@@ -69,6 +118,13 @@
 
                         <q-separator></q-separator>
 
+                        <q-item clickable v-close-popup @click="showToggleMaintenance(props.node)">
+                          <q-item-section side>
+                            <q-icon name="construction" />
+                          </q-item-section>
+                          <q-item-section>{{ menuMaintenanceText(props.node) }}</q-item-section>
+                        </q-item>
+
                         <q-item clickable v-close-popup @click="showPolicyAdd(props.node)">
                           <q-item-section side>
                             <q-icon name="policy" />
@@ -91,13 +147,7 @@
         </template>
 
         <template v-slot:after>
-          <q-splitter
-            v-model="innerModel"
-            reverse
-            horizontal
-            style="height: 87vh"
-            @input="setSplitter(innerModel)"
-          >
+          <q-splitter v-model="innerModel" reverse horizontal style="height: 87vh" @input="setSplitter(innerModel)">
             <template v-slot:before>
               <div class="row">
                 <q-tabs
@@ -116,14 +166,7 @@
                   <q-tab name="mixed" label="Mixed" />
                 </q-tabs>
                 <q-space />
-                <q-input
-                  v-model="search"
-                  label="Search"
-                  dense
-                  outlined
-                  clearable
-                  class="q-pr-md q-pb-xs"
-                >
+                <q-input v-model="search" label="Search" dense outlined clearable class="q-pr-md q-pb-xs">
                   <template v-slot:prepend>
                     <q-icon name="search" color="primary" />
                   </template>
@@ -136,6 +179,7 @@
                 :filter="filteredAgents"
                 :userName="user"
                 :search="search"
+                :visibleColumns="visibleColumns"
                 @refreshEdit="refreshEntireSite"
               />
             </template>
@@ -168,17 +212,14 @@
     </q-dialog>
     <!-- add policy modal -->
     <q-dialog v-model="showPolicyAddModal">
-      <PolicyAdd
-        @close="showPolicyAddModal = false"
-        :type="policyAddType"
-        :pk="parseInt(policyAddPk)"
-      />
+      <PolicyAdd @close="showPolicyAddModal = false" :type="policyAddType" :pk="parseInt(policyAddPk)" />
     </q-dialog>
   </q-layout>
 </template>
 
 <script>
 import axios from "axios";
+import { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import { mapState, mapGetters } from "vuex";
 import FileBar from "@/components/FileBar";
 import AgentTable from "@/components/AgentTable";
@@ -211,6 +252,10 @@ export default {
       showPolicyAddModal: false,
       policyAddType: null,
       policyAddPk: null,
+      serverCount: 0,
+      serverOfflineCount: 0,
+      workstationCount: 0,
+      workstationOfflineCount: 0,
       outsideModel: 11,
       selectedTree: "",
       innerModel: 50,
@@ -269,13 +314,16 @@ export default {
           align: "left",
         },
         {
+          name: "lastuser",
+          label: "Last User",
+          field: "last_logged_in_user",
+          sortable: true,
+          align: "left",
+        },
+        {
           name: "patchespending",
           align: "left",
         },
-        /* {
-          name: "antivirus",
-          align: "left"
-        }, */
         {
           name: "agentstatus",
           field: "status",
@@ -301,11 +349,27 @@ export default {
           align: "left",
         },
       ],
+      visibleColumns: [
+        "smsalert",
+        "emailalert",
+        "checks-status",
+        "client",
+        "site",
+        "hostname",
+        "description",
+        "user",
+        "patchespending",
+        "agentstatus",
+        "needsreboot",
+        "lastseen",
+        "boottime",
+      ],
     };
   },
   methods: {
     refreshEntireSite() {
       this.$store.dispatch("loadTree");
+      this.getAgentCounts();
 
       if (this.allClientsActive) {
         this.loadAllClients();
@@ -403,10 +467,40 @@ export default {
     livePoll() {
       this.poll = setInterval(() => {
         this.$store.dispatch("checkVer");
+        this.getAgentCounts();
       }, 60 * 5 * 1000);
     },
     setSplitter(val) {
       this.$store.commit("SET_SPLITTER", val);
+    },
+    getAgentCounts(selected) {
+      this.$store.dispatch("getAgentCounts").then(r => {
+        this.serverCount = r.data.total_server_count;
+        this.serverOfflineCount = r.data.total_server_offline_count;
+        this.workstationCount = r.data.total_workstation_count;
+        this.workstationOfflineCount = r.data.total_workstation_offline_count;
+      });
+    },
+    showToggleMaintenance(node) {
+      let data = {
+        id: node.id,
+        type: node.raw.split("|")[0],
+        action: node.color === "warning" ? false : true,
+      };
+
+      const text = node.color === "warning" ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
+      this.$store
+        .dispatch("toggleMaintenanceMode", data)
+        .then(response => {
+          this.$q.notify(notifySuccessConfig(text));
+          this.getTree();
+        })
+        .catch(error => {
+          this.$q.notify(notifyErrorConfig("An Error occured. Please try again"));
+        });
+    },
+    menuMaintenanceText(node) {
+      return node.color === "warning" ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
     },
   },
   computed: {
@@ -432,11 +526,18 @@ export default {
         site: this.siteActive,
       };
     },
+    totalAgents() {
+      return this.serverCount + this.workstationCount;
+    },
+    totalOfflineAgents() {
+      return this.serverOfflineCount + this.workstationOfflineCount;
+    },
   },
   created() {
     this.getTree();
     this.$store.dispatch("getUpdatedSites");
     this.$store.dispatch("checkVer");
+    this.getAgentCounts();
   },
   mounted() {
     this.loadFrame(this.activeNode);

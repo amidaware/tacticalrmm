@@ -64,7 +64,7 @@ func main() {
 
 	var debug bool = false
 
-	if strings.TrimSpace(*debugLog) == "DEBUG" {
+	if strings.TrimSpace(strings.ToLower(*debugLog)) == "debug" {
 		debug = true
 	}
 
@@ -72,7 +72,6 @@ func main() {
 	tacrmm := filepath.Join(os.Getenv("PROGRAMFILES"), "TacticalAgent", "tacticalrmm.exe")
 
 	cmdArgs := []string{
-		"/C", tacrmm,
 		"-m", "install", "--api", Api, "--client-id",
 		Client, "--site-id", Site, "--agent-type", Atype,
 		"--auth", Token,
@@ -114,7 +113,7 @@ func main() {
 		fmt.Println("Installer:", agentBinary)
 		fmt.Println("Tactical Agent:", tacrmm)
 		fmt.Println("Download URL:", DownloadUrl)
-		fmt.Println("Install command:", "cmd.exe", strings.Join(cmdArgs, " "))
+		fmt.Println("Install command:", tacrmm, strings.Join(cmdArgs, " "))
 	}
 
 	fmt.Println("Downloading agent...")
@@ -124,6 +123,7 @@ func main() {
 		fmt.Println(dl)
 		os.Exit(1)
 	}
+	defer os.Remove(agentBinary)
 
 	fmt.Println("Extracting files...")
 	winagentCmd := exec.Command(agentBinary, "/VERYSILENT", "/SUPPRESSMSGBOXES")
@@ -136,7 +136,7 @@ func main() {
 	time.Sleep(20 * time.Second)
 
 	fmt.Println("Installation starting.")
-	cmd := exec.Command("cmd.exe", cmdArgs...)
+	cmd := exec.Command(tacrmm, cmdArgs...)
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -144,10 +144,23 @@ func main() {
 		return
 	}
 
+	cmdErrReader, oerr := cmd.StderrPipe()
+	if oerr != nil {
+		fmt.Fprintln(os.Stderr, oerr)
+		return
+	}
+
 	scanner := bufio.NewScanner(cmdReader)
+	escanner := bufio.NewScanner(cmdErrReader)
 	go func() {
 		for scanner.Scan() {
 			fmt.Println(scanner.Text())
+		}
+	}()
+
+	go func() {
+		for escanner.Scan() {
+			fmt.Println(escanner.Text())
 		}
 	}()
 
@@ -161,10 +174,5 @@ func main() {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
-	}
-
-	e := os.Remove(agentBinary)
-	if e != nil {
-		fmt.Println(e)
 	}
 }

@@ -1,6 +1,5 @@
 from tacticalrmm.test import TacticalTestCase
 from model_bakery import baker
-from itertools import cycle
 from unittest.mock import patch
 from .serializers import ServicesSerializer
 from agents.models import Agent

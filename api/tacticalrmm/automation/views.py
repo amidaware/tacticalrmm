@@ -7,16 +7,13 @@ from rest_framework import status
 
 from .models import Policy
 from agents.models import Agent
-from scripts.models import Script
 from clients.models import Client, Site
 from checks.models import Check
 from autotasks.models import AutomatedTask
 from winupdate.models import WinUpdatePolicy
 
 from clients.serializers import ClientSerializer, TreeSerializer
-from checks.serializers import CheckSerializer
 from agents.serializers import AgentHostnameSerializer
-from autotasks.serializers import TaskSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .serializers import (
@@ -106,14 +103,18 @@ class GetUpdateDeletePolicy(APIView):
 
 
 class PolicyAutoTask(APIView):
+
+    # tasks associated with policy
     def get(self, request, pk):
         policy = get_object_or_404(Policy, pk=pk)
         return Response(AutoTaskPolicySerializer(policy).data)
 
+    # get status of all tasks
     def patch(self, request, task):
         tasks = AutomatedTask.objects.filter(parent_task=task)
         return Response(PolicyTaskStatusSerializer(tasks, many=True).data)
 
+    # bulk run win tasks associated with policy
     def put(self, request, task):
         tasks = AutomatedTask.objects.filter(parent_task=task)
         run_win_policy_autotask_task.delay([task.id for task in tasks])
@@ -185,7 +186,7 @@ class GetRelated(APIView):
         ).data
 
         response["agents"] = AgentHostnameSerializer(
-            policy.related_server_agents() | policy.related_workstation_agents(),
+            policy.related_agents(),
             many=True,
         ).data
 

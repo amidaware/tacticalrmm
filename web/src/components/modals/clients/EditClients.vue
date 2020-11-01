@@ -25,12 +25,7 @@
           />
         </q-card-section>
         <q-card-section>
-          <q-input
-            :rules="[val => !!val || '*Required']"
-            outlined
-            v-model="client.client"
-            label="Rename client"
-          />
+          <q-input :rules="[val => !!val || '*Required']" outlined v-model="client.client" label="Rename client" />
         </q-card-section>
         <q-card-actions align="left">
           <q-btn :disable="!nameChanged" label="Save" color="primary" type="submit" />
@@ -69,6 +64,7 @@ export default {
         r.data.forEach(client => {
           this.clients.push({ label: client.client, value: client.id });
         });
+        this.clients.sort((a, b) => a.label.localeCompare(b.label));
       });
     },
     onChange() {

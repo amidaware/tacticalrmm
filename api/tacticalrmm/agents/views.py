@@ -1,10 +1,10 @@
 from loguru import logger
 import os
 import subprocess
-import tempfile
 import zlib
 import json
 import base64
+import pytz
 import datetime as dt
 from packaging import version as pyver
 
@@ -12,16 +12,12 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 
-from rest_framework.decorators import (
-    api_view,
-    authentication_classes,
-    permission_classes,
-)
+from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 
-from .models import Agent, RecoveryAction, Note
+from .models import Agent, AgentOutage, RecoveryAction, Note
 from winupdate.models import WinUpdatePolicy
 from clients.models import Client, Site
 from accounts.models import User
@@ -41,6 +37,7 @@ from winupdate.serializers import WinUpdatePolicySerializer
 
 from .tasks import uninstall_agent_task, send_agent_update_task
 from winupdate.tasks import bulk_check_for_updates_task
+from scripts.tasks import run_script_bg_task, run_bulk_script_task
 
 from tacticalrmm.utils import notify_error
 
@@ -83,17 +80,17 @@ def ping(request, pk):
 @api_view(["DELETE"])
 def uninstall(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
-    salt_id = agent.salt_id
-    name = agent.hostname
-    agent.delete()
-
     # just in case agent-user gets deleted accidentaly from django-admin
     # we can still remove the agent
     try:
         user = User.objects.get(username=agent.agent_id)
         user.delete()
-    except:
-        pass
+    except Exception as e:
+        logger.warning(e)
+
+    salt_id = agent.salt_id
+    name = agent.hostname
+    agent.delete()
 
     uninstall_agent_task.delay(salt_id)
     return Response(f"{name} will now be uninstalled.")
@@ -251,10 +248,35 @@ def send_raw_cmd(request):
     return Response(r)
 
 
-@api_view()
-def list_agents(request):
-    agents = Agent.objects.all()
-    return Response(AgentTableSerializer(agents, many=True).data)
+class AgentsTableList(generics.ListAPIView):
+    queryset = Agent.objects.prefetch_related("agentchecks").only(
+        "pk",
+        "hostname",
+        "agent_id",
+        "client",
+        "site",
+        "monitoring_type",
+        "description",
+        "needs_reboot",
+        "overdue_text_alert",
+        "overdue_email_alert",
+        "overdue_time",
+        "last_seen",
+        "boot_time",
+        "logged_in_username",
+        "last_logged_in_user",
+        "time_zone",
+        "maintenance_mode",
+    )
+    serializer_class = AgentTableSerializer
+
+    def list(self, request):
+        queryset = self.get_queryset()
+        ctx = {
+            "default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone)
+        }
+        serializer = AgentTableSerializer(queryset, many=True, context=ctx)
+        return Response(serializer.data)
 
 
 @api_view()
@@ -271,14 +293,60 @@ def agent_edit_details(request, pk):
 
 @api_view()
 def by_client(request, client):
-    agents = Agent.objects.filter(client=client)
-    return Response(AgentTableSerializer(agents, many=True).data)
+    agents = (
+        Agent.objects.filter(client=client)
+        .prefetch_related("agentchecks")
+        .only(
+            "pk",
+            "hostname",
+            "agent_id",
+            "client",
+            "site",
+            "monitoring_type",
+            "description",
+            "needs_reboot",
+            "overdue_text_alert",
+            "overdue_email_alert",
+            "overdue_time",
+            "last_seen",
+            "boot_time",
+            "logged_in_username",
+            "last_logged_in_user",
+            "time_zone",
+            "maintenance_mode",
+        )
+    )
+    ctx = {"default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone)}
+    return Response(AgentTableSerializer(agents, many=True, context=ctx).data)
 
 
 @api_view()
 def by_site(request, client, site):
-    agents = Agent.objects.filter(client=client).filter(site=site)
-    return Response(AgentTableSerializer(agents, many=True).data)
+    agents = (
+        Agent.objects.filter(client=client, site=site)
+        .prefetch_related("agentchecks")
+        .only(
+            "pk",
+            "hostname",
+            "agent_id",
+            "client",
+            "site",
+            "monitoring_type",
+            "description",
+            "needs_reboot",
+            "overdue_text_alert",
+            "overdue_email_alert",
+            "overdue_time",
+            "last_seen",
+            "boot_time",
+            "logged_in_username",
+            "last_logged_in_user",
+            "time_zone",
+            "maintenance_mode",
+        )
+    )
+    ctx = {"default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone)}
+    return Response(AgentTableSerializer(agents, many=True, context=ctx).data)
 
 
 @api_view(["POST"])
@@ -511,7 +579,12 @@ def install_agent(request):
         if int(request.data["power"]):
             cmd.append("--power")
 
-        resp = {"cmd": " ".join(str(i) for i in cmd), "url": download_url}
+        resp = {
+            "cmd": " ".join(str(i) for i in cmd),
+            "url": download_url,
+            "salt64": settings.SALT_64,
+            "salt32": settings.SALT_32,
+        }
 
         return Response(resp)
 
@@ -637,22 +710,14 @@ def run_script(request):
                 return notify_error(str(r))
 
     else:
-        r = agent.salt_api_async(
-            func="win_agent.run_script",
-            kwargs={
-                "filepath": script.filepath,
-                "filename": script.filename,
-                "shell": script.shell,
-                "timeout": request.data["timeout"],
-                "args": args,
-                "bg": True,
-            },
-        )
-
-        if r != "timeout":
-            return Response(f"{script.name} will now be run on {agent.hostname}")
-        else:
-            return notify_error("Something went wrong")
+        data = {
+            "agentpk": agent.pk,
+            "scriptpk": script.pk,
+            "timeout": request.data["timeout"],
+            "args": args,
+        }
+        run_script_bg_task.delay(data)
+        return Response(f"{script.name} will now be run on {agent.hostname}")
 
 
 @api_view()
@@ -776,20 +841,30 @@ def bulk(request):
     elif request.data["mode"] == "script":
         script = get_object_or_404(Script, pk=request.data["scriptPK"])
 
-        r = Agent.salt_batch_async(
-            minions=minions,
-            func="win_agent.run_script",
-            kwargs={
-                "filepath": script.filepath,
-                "filename": script.filename,
-                "shell": script.shell,
+        if script.shell == "python":
+            r = Agent.salt_batch_async(
+                minions=minions,
+                func="win_agent.run_script",
+                kwargs={
+                    "filepath": script.filepath,
+                    "filename": script.filename,
+                    "shell": script.shell,
+                    "timeout": request.data["timeout"],
+                    "args": request.data["args"],
+                    "bg": True,
+                },
+            )
+            if r == "timeout":
+                return notify_error("Salt API not running")
+        else:
+            data = {
+                "minions": minions,
+                "scriptpk": script.pk,
                 "timeout": request.data["timeout"],
                 "args": request.data["args"],
-                "bg": True,
-            },
-        )
-        if r == "timeout":
-            return notify_error("Salt API not running")
+            }
+            run_bulk_script_task.delay(data)
+
         return Response(f"{script.name} will now be run on {len(minions)} agents")
 
     elif request.data["mode"] == "install":
@@ -804,3 +879,48 @@ def bulk(request):
         return Response(f"Patch status scan will now run on {len(minions)} agents")
 
     return notify_error("Something went wrong")
+
+
+@api_view(["POST"])
+def agent_counts(request):
+    return Response(
+        {
+            "total_server_count": Agent.objects.filter(
+                monitoring_type="server"
+            ).count(),
+            "total_server_offline_count": AgentOutage.objects.filter(
+                recovery_time=None, agent__monitoring_type="server"
+            ).count(),
+            "total_workstation_count": Agent.objects.filter(
+                monitoring_type="workstation"
+            ).count(),
+            "total_workstation_offline_count": AgentOutage.objects.filter(
+                recovery_time=None, agent__monitoring_type="workstation"
+            ).count(),
+        }
+    )
+
+
+@api_view(["POST"])
+def agent_maintenance(request):
+    if request.data["type"] == "Client":
+        client = Client.objects.get(pk=request.data["id"])
+        Agent.objects.filter(client=client.client).update(
+            maintenance_mode=request.data["action"]
+        )
+
+    elif request.data["type"] == "Site":
+        site = Site.objects.get(pk=request.data["id"])
+        Agent.objects.filter(client=site.client.client, site=site.site).update(
+            maintenance_mode=request.data["action"]
+        )
+
+    elif request.data["type"] == "Agent":
+        agent = Agent.objects.get(pk=request.data["id"])
+        agent.maintenance_mode = request.data["action"]
+        agent.save(update_fields=["maintenance_mode"])
+
+    else:
+        return notify_error("Invalid data")
+
+    return Response("ok")

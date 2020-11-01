@@ -27,11 +27,27 @@ class Command(BaseCommand):
             self.stdout.write("\n")
             sys.exit(1)
 
-        # sync modules. split into chunks of 30 agents to not overload the salt master
+        # 10-16-2020 changed the type of the agent's 'disks' model field
+        # from a dict of dicts, to a list of disks in the golang agent
+        # the following will convert dicts to lists for agent's still on the python agent
+        agents = Agent.objects.all()
+        for agent in agents:
+            if agent.disks is not None and isinstance(agent.disks, dict):
+                new = []
+                for k, v in agent.disks.items():
+                    new.append(v)
+
+                agent.disks = new
+                agent.save(update_fields=["disks"])
+                self.stdout.write(
+                    self.style.SUCCESS(f"Migrated disks on {agent.hostname}")
+                )
+
+        # sync modules. split into chunks of 60 agents to not overload the salt master
         agents = Agent.objects.all()
         online = [i.salt_id for i in agents if i.status == "online"]
 
-        chunks = (online[i : i + 30] for i in range(0, len(online), 30))
+        chunks = (online[i : i + 60] for i in range(0, len(online), 60))
 
         self.stdout.write(self.style.SUCCESS("Syncing agent modules..."))
         for chunk in chunks:

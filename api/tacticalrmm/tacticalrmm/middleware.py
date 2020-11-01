@@ -4,6 +4,7 @@ import threading
 
 request_local = threading.local()
 
+
 def get_username():
     return getattr(request_local, "username", None)
 
@@ -12,8 +13,8 @@ def get_debug_info():
     return getattr(request_local, "debug_info", {})
 
 
-# these routes are stricly called only by agents
 EXCLUDE_PATHS = (
+    "/api/v3",
     "/api/v2",
     "/api/v1",
     "/logs/auditlogs",
@@ -21,6 +22,8 @@ EXCLUDE_PATHS = (
     "/winupdate/results",
     f"/{settings.ADMIN_URL}",
     "/logout",
+    "/agents/installagent",
+    "/logs/downloadlog",
 )
 
 

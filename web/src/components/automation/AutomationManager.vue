@@ -1,5 +1,5 @@
 <template>
-  <div style="width: 900px; max-width: 90vw;">
+  <div style="width: 900px; max-width: 90vw">
     <q-card>
       <q-bar>
         <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />Automation Manager
@@ -10,17 +10,7 @@
       </q-bar>
       <div class="q-pa-md">
         <div class="q-gutter-sm">
-          <q-btn
-            ref="new"
-            label="New"
-            dense
-            flat
-            push
-            unelevated
-            no-caps
-            icon="add"
-            @click="showAddPolicyModal"
-          />
+          <q-btn ref="new" label="New" dense flat push unelevated no-caps icon="add" @click="showAddPolicyModal" />
           <q-btn
             ref="edit"
             label="Edit"
@@ -102,36 +92,21 @@
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="showEditPolicyModal(props.row.id)"
-                    id="context-edit"
-                  >
+                  <q-item clickable v-close-popup @click="showEditPolicyModal(props.row.id)" id="context-edit">
                     <q-item-section side>
                       <q-icon name="edit" />
                     </q-item-section>
                     <q-item-section>Edit</q-item-section>
                   </q-item>
 
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="showCopyPolicyModal(props.row)"
-                    id="context-copy"
-                  >
+                  <q-item clickable v-close-popup @click="showCopyPolicyModal(props.row)" id="context-copy">
                     <q-item-section side>
                       <q-icon name="content_copy" />
                     </q-item-section>
                     <q-item-section>Copy</q-item-section>
                   </q-item>
 
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="deletePolicy(props.row.id)"
-                    id="context-delete"
-                  >
+                  <q-item clickable v-close-popup @click="deletePolicy(props.row.id)" id="context-delete">
                     <q-item-section side>
                       <q-icon name="delete" />
                     </q-item-section>
@@ -140,24 +115,14 @@
 
                   <q-separator></q-separator>
 
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="showRelationsModal(props.row)"
-                    id="context-relation"
-                  >
+                  <q-item clickable v-close-popup @click="showRelationsModal(props.row)" id="context-relation">
                     <q-item-section side>
                       <q-icon name="account_tree" />
                     </q-item-section>
                     <q-item-section>Show Relations</q-item-section>
                   </q-item>
 
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="showEditPatchPolicyModal(props.row)"
-                    id="context-winupdate"
-                  >
+                  <q-item clickable v-close-popup @click="showEditPatchPolicyModal(props.row)" id="context-winupdate">
                     <q-item-section side>
                       <q-icon name="system_update" />
                     </q-item-section>
@@ -173,47 +138,35 @@
               </q-menu>
               <!-- enabled checkbox -->
               <q-td>
-                <q-checkbox
-                  dense
-                  @input="toggleCheckbox(props.row, 'Active')"
-                  v-model="props.row.active"
-                />
+                <q-checkbox dense @input="toggleCheckbox(props.row, 'Active')" v-model="props.row.active" />
               </q-td>
               <!-- enforced checkbox -->
               <q-td>
-                <q-checkbox
-                  dense
-                  @input="toggleCheckbox(props.row, 'Enforced')"
-                  v-model="props.row.enforced"
-                />
+                <q-checkbox dense @input="toggleCheckbox(props.row, 'Enforced')" v-model="props.row.enforced" />
               </q-td>
               <q-td>
                 {{ props.row.name }}
-                <q-chip
-                  v-if="props.row.default_server_policy"
-                  color="primary"
-                  text-color="white"
-                  size="sm"
-                >Default Server</q-chip>
-                <q-chip
-                  v-if="props.row.default_workstation_policy"
-                  color="primary"
-                  text-color="white"
-                  size="sm"
-                >Default Workstation</q-chip>
+                <q-chip v-if="props.row.default_server_policy" color="primary" text-color="white" size="sm"
+                  >Default Server</q-chip
+                >
+                <q-chip v-if="props.row.default_workstation_policy" color="primary" text-color="white" size="sm"
+                  >Default Workstation</q-chip
+                >
               </q-td>
               <q-td>{{ props.row.desc }}</q-td>
               <q-td>
                 <span
-                  style="cursor:pointer;color:blue;text-decoration:underline"
+                  style="cursor: pointer; color: blue; text-decoration: underline"
                   @click="showRelationsModal(props.row)"
-                >{{ `Show Relations (${ props.row.agents_count }+)` }}</span>
+                  >{{ `Show Relations (${props.row.agents_count}+)` }}</span
+                >
               </q-td>
               <q-td>
                 <span
-                  style="cursor:pointer;color:blue;text-decoration:underline"
+                  style="cursor: pointer; color: blue; text-decoration: underline"
                   @click="showEditPatchPolicyModal(props.row)"
-                >{{ patchPolicyText(props.row) }}</span>
+                  >{{ patchPolicyText(props.row) }}</span
+                >
               </q-td>
               <q-td>
                 <q-icon name="content_copy" size="1.5em" @click="showCopyPolicyModal(props.row)">
@@ -247,7 +200,7 @@
 
     <!-- patch policy modal -->
     <q-dialog v-model="showPatchPolicyModal" @hide="closePatchPolicyModal">
-      <q-card style="width: 900px; max-width: 90vw;">
+      <q-card style="width: 900px; max-width: 90vw">
         <q-bar>
           {{ patchPolicyModalText() }}
           <q-space />
@@ -255,7 +208,7 @@
             <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
           </q-btn>
         </q-bar>
-        <q-scroll-area :thumb-style="thumbStyle" style="height: 500px;">
+        <q-scroll-area :thumb-style="thumbStyle" style="height: 70vh">
           <PatchPolicyForm :policy="policy" @close="closePatchPolicyModal" />
         </q-scroll-area>
       </q-card>

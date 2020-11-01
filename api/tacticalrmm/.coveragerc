@@ -20,3 +20,6 @@ omit =
     */urls.py
     */tests.py
     */test.py
+    api/*.py
+    checks/utils.py
+    

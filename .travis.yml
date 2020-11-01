@@ -14,8 +14,13 @@ matrix:
     - language: python
       python: "3.8"
       services:
-        - postgresql
         - redis
+
+      addons:
+        postgresql: "13"
+        apt:
+          packages:
+            - postgresql-13
 
       before_script:
         - psql -c 'CREATE DATABASE travisci;' -U postgres

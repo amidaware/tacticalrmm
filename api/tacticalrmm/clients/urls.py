@@ -12,4 +12,7 @@ urlpatterns = [
     path("deletesite/", views.delete_site),
     path("loadtree/", views.load_tree),
     path("loadclients/", views.load_clients),
+    path("deployments/", views.AgentDeployment.as_view()),
+    path("<int:pk>/deployment/", views.AgentDeployment.as_view()),
+    path("<str:uid>/deploy/", views.GenerateAgent.as_view()),
 ]

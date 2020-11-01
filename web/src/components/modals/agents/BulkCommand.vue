@@ -29,7 +29,7 @@
           options-dense
           label="Select client"
           v-model="client"
-          :options="Object.keys(tree)"
+          :options="Object.keys(tree).sort()"
         />
       </q-card-section>
 
@@ -41,7 +41,7 @@
           options-dense
           label="Select client"
           v-model="client"
-          :options="Object.keys(tree)"
+          :options="Object.keys(tree).sort()"
           @input="site = sites[0]"
         />
         <q-select
@@ -135,8 +135,8 @@ export default {
   computed: {
     sites() {
       if (this.tree !== null && this.client !== null) {
-        this.site = this.tree[this.client][0];
-        return this.tree[this.client];
+        this.site = this.tree[this.client].sort()[0];
+        return this.tree[this.client].sort();
       }
     },
   },
@@ -168,7 +168,7 @@ export default {
     getTree() {
       this.$axios.get("/clients/loadclients/").then(r => {
         this.tree = r.data;
-        this.client = Object.keys(r.data)[0];
+        this.client = Object.keys(r.data).sort()[0];
       });
     },
     getAgents() {
@@ -177,7 +177,7 @@ export default {
         r.data.forEach(i => {
           ret.push({ label: i.hostname, value: i.pk });
         });
-        this.agents = Object.freeze(ret);
+        this.agents = Object.freeze(ret.sort((a, b) => a.label.localeCompare(b.label)));
       });
     },
   },

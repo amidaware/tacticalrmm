@@ -1,7 +1,6 @@
 from tacticalrmm.test import TacticalTestCase
 from .serializers import InstalledSoftwareSerializer
 from model_bakery import baker
-from itertools import cycle
 from unittest.mock import patch
 from .models import InstalledSoftware, ChocoLog
 from agents.models import Agent

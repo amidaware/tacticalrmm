@@ -4,7 +4,7 @@ from .models import AutomatedTask
 from agents.models import Agent
 from scripts.models import Script
 
-from scripts.serializers import ScriptSerializer
+from scripts.serializers import ScriptCheckSerializer
 from checks.serializers import CheckSerializer
 
 
@@ -41,6 +41,14 @@ class TaskRunnerScriptField(serializers.ModelSerializer):
 class TaskRunnerGetSerializer(serializers.ModelSerializer):
 
     script = TaskRunnerScriptField(read_only=True)
+
+    class Meta:
+        model = AutomatedTask
+        fields = ["id", "script", "timeout", "enabled", "script_args"]
+
+
+class TaskGOGetSerializer(serializers.ModelSerializer):
+    script = ScriptCheckSerializer(read_only=True)
 
     class Meta:
         model = AutomatedTask

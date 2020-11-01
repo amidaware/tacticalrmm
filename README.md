@@ -2,12 +2,12 @@
 
 [![Build Status](https://travis-ci.com/wh1te909/tacticalrmm.svg?branch=develop)](https://travis-ci.com/wh1te909/tacticalrmm)
 [![Build Status](https://dev.azure.com/dcparsi/Tactical%20RMM/_apis/build/status/wh1te909.tacticalrmm?branchName=develop)](https://dev.azure.com/dcparsi/Tactical%20RMM/_build/latest?definitionId=4&branchName=develop)
-[![Coverage Status](https://coveralls.io/repos/github/wh1te909/tacticalrmm/badge.svg?branch=develop&kill_cache=1)](https://coveralls.io/github/wh1te909/tacticalrmm?branch=develop)
+[![Coverage Status](https://coveralls.io/repos/github/wh1te909/tacticalrmm/badge.png?branch=develop&kill_cache=1)](https://coveralls.io/github/wh1te909/tacticalrmm?branch=develop)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
 Tactical RMM is a remote monitoring & management tool for Windows computers, built with Django and Vue.\
-It uses an [agent](https://github.com/wh1te909/winagent) written in python, as well as the [SaltStack](https://github.com/saltstack/salt) api and [MeshCentral](https://github.com/Ylianst/MeshCentral)
+It uses an [agent](https://github.com/wh1te909/rmmagent) written in golang, as well as the [SaltStack](https://github.com/saltstack/salt) api and [MeshCentral](https://github.com/Ylianst/MeshCentral)
 
 # [LIVE DEMO](https://rmm.xlawgaming.com/)
 Demo database resets every hour. Alot of features are disabled for obvious reasons due to the nature of this app.
@@ -97,4 +97,46 @@ Download and run [update.sh](./update.sh) ([Raw](https://raw.githubusercontent.c
 wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh
 chmod +x update.sh
 ./update.sh
+```
+
+## Backup
+Download [backup.sh](./backup.sh) ([Raw](https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/backup.sh))
+```
+wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/backup.sh
+```
+Change the postgres username and password at the top of the file (you can find them in `/rmm/api/tacticalrmm/tacticalrmm/local_settings.py` under the DATABASES section)
+
+Run it
+```
+chmod +x backup.sh
+./backup.sh
+```
+
+## Restore
+Change your 3 A records to point to new server's public IP
+
+Create same linux user account as old server and add to sudoers group and setup firewall (see install instructions above)
+
+Copy backup file to new server
+
+Download the restore script, and edit the postgres username/password at the top of the file. Same instructions as above in the backup steps.
+```
+wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/restore.sh
+```
+
+Run the restore script, passing it the backup tar file as the first argument
+```
+chmod +x restore.sh
+./restore.sh rmm-backup-xxxxxxx.tar
+```
+
+## Using another ssl certificate
+During the install you can opt out of using the Let's Encrypt certificate. If you do this the script will create a self-signed certificate, so that https continues to work. You can replace the certificates in /certs/example.com/(privkey.pem | pubkey.pem) with your own. 
+
+If you are migrating from Let's Encrypt to another certificate provider, you can create the /certs directory and copy your certificates there. It is recommended to do this because this directory will be backed up with the backup script provided. Then modify the nginx configurations to use your new certificates
+
+The cert that is generated is a wildcard certificate and is used in the nginx configurations: rmm.conf, api.conf, and mesh.conf. If you can't generate wildcard certificates you can create a cert for each subdomain and configure each nginx configuration file to use its own certificate. Then restart nginx:
+
+```
+sudo systemctl restart nginx
 ```

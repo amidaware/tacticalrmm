@@ -89,7 +89,7 @@ export default {
         opt["value"] = i.pk;
         options.push(opt);
       }
-      return options;
+      return options.sort((a, b) => a.label.localeCompare(b.label));
     },
   },
   created() {

@@ -4,11 +4,9 @@ import datetime as dt
 
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
-from agents.models import Agent
+from django.db.models.fields import DateTimeField
 from automation.models import Policy
 from logs.models import BaseAuditModel
-
-import autotasks
 
 RUN_TIME_DAY_CHOICES = [
     (0, "Monday"),
@@ -24,6 +22,7 @@ TASK_TYPE_CHOICES = [
     ("scheduled", "Scheduled"),
     ("checkfailure", "On Check Failure"),
     ("manual", "Manual"),
+    ("runonce", "Run Once"),
 ]
 
 SYNC_STATUS_CHOICES = [
@@ -79,6 +78,8 @@ class AutomatedTask(BaseAuditModel):
     task_type = models.CharField(
         max_length=100, choices=TASK_TYPE_CHOICES, default="manual"
     )
+    run_time_date = DateTimeField(null=True, blank=True)
+    remove_if_not_scheduled = models.BooleanField(default=False)
     managed_by_policy = models.BooleanField(default=False)
     parent_task = models.PositiveIntegerField(null=True, blank=True)
     win_task_name = models.CharField(max_length=255, null=True, blank=True)
@@ -90,7 +91,7 @@ class AutomatedTask(BaseAuditModel):
     last_run = models.DateTimeField(null=True, blank=True)
     enabled = models.BooleanField(default=True)
     sync_status = models.CharField(
-        max_length=100, choices=SYNC_STATUS_CHOICES, default="synced"
+        max_length=100, choices=SYNC_STATUS_CHOICES, default="notsynced"
     )
 
     def __str__(self):
@@ -102,6 +103,8 @@ class AutomatedTask(BaseAuditModel):
             return "Manual"
         elif self.task_type == "checkfailure":
             return "Every time check fails"
+        elif self.task_type == "runonce":
+            return f'Run once on {self.run_time_date.strftime("%m/%d/%Y %I:%M%p")}'
         elif self.task_type == "scheduled":
             ret = []
             for i in self.run_time_days:
@@ -132,7 +135,8 @@ class AutomatedTask(BaseAuditModel):
         return TaskSerializer(task).data
 
     def create_policy_task(self, agent=None, policy=None):
-        
+        from .tasks import create_win_task_schedule
+
         # exit is neither are set or if both are set
         if not agent and not policy or agent and policy:
             return
@@ -155,10 +159,12 @@ class AutomatedTask(BaseAuditModel):
             name=self.name,
             run_time_days=self.run_time_days,
             run_time_minute=self.run_time_minute,
+            run_time_date=self.run_time_date,
             task_type=self.task_type,
             win_task_name=self.win_task_name,
             timeout=self.timeout,
             enabled=self.enabled,
+            remove_if_not_scheduled=self.remove_if_not_scheduled,
         )
 
-        autotasks.tasks.create_win_task_schedule.delay(task.pk)
+        create_win_task_schedule.delay(task.pk)

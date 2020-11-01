@@ -1,4 +1,7 @@
+import uuid
+
 from django.db import models
+
 from agents.models import Agent
 from logs.models import BaseAuditModel
 
@@ -25,10 +28,22 @@ class Client(BaseAuditModel):
         return self.client
 
     @property
+    def has_maintenanace_mode_agents(self):
+        return (
+            Agent.objects.filter(client=self.client, maintenance_mode=True).count() > 0
+        )
+
+    @property
     def has_failing_checks(self):
 
         agents = (
-            Agent.objects.only("pk", "overdue_email_alert", "overdue_text_alert")
+            Agent.objects.only(
+                "pk",
+                "overdue_email_alert",
+                "overdue_text_alert",
+                "last_seen",
+                "overdue_time",
+            )
             .filter(client=self.client)
             .prefetch_related("agentchecks")
         )
@@ -73,12 +88,26 @@ class Site(BaseAuditModel):
         return self.site
 
     @property
+    def has_maintenanace_mode_agents(self):
+        return (
+            Agent.objects.filter(
+                client=self.client.client, site=self.site, maintenance_mode=True
+            ).count()
+            > 0
+        )
+
+    @property
     def has_failing_checks(self):
 
         agents = (
-            Agent.objects.only("pk", "overdue_email_alert", "overdue_text_alert")
-            .filter(client=self.client.client)
-            .filter(site=self.site)
+            Agent.objects.only(
+                "pk",
+                "overdue_email_alert",
+                "overdue_text_alert",
+                "last_seen",
+                "overdue_time",
+            )
+            .filter(client=self.client.client, site=self.site)
             .prefetch_related("agentchecks")
         )
         for agent in agents:
@@ -104,3 +133,37 @@ def validate_name(name):
         return False
     else:
         return True
+
+
+MON_TYPE_CHOICES = [
+    ("server", "Server"),
+    ("workstation", "Workstation"),
+]
+
+ARCH_CHOICES = [
+    ("64", "64 bit"),
+    ("32", "32 bit"),
+]
+
+
+class Deployment(models.Model):
+    uid = models.UUIDField(primary_key=False, default=uuid.uuid4, editable=False)
+    client = models.ForeignKey(
+        "clients.Client", related_name="deployclients", on_delete=models.CASCADE
+    )
+    site = models.ForeignKey(
+        "clients.Site", related_name="deploysites", on_delete=models.CASCADE
+    )
+    mon_type = models.CharField(
+        max_length=255, choices=MON_TYPE_CHOICES, default="server"
+    )
+    arch = models.CharField(max_length=255, choices=ARCH_CHOICES, default="64")
+    expiry = models.DateTimeField(null=True, blank=True)
+    auth_token = models.ForeignKey(
+        "knox.AuthToken", related_name="deploytokens", on_delete=models.CASCADE
+    )
+    token_key = models.CharField(max_length=255)
+    install_flags = models.JSONField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.client} - {self.site} - {self.mon_type}"

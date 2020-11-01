@@ -1,20 +1,13 @@
 import string
 
-from django.conf import settings
 from django.shortcuts import get_object_or_404
 
-from rest_framework.decorators import (
-    api_view,
-    authentication_classes,
-    permission_classes,
-)
-
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
 
 from agents.models import Agent
 from .models import ChocoSoftware, InstalledSoftware
-from .serializers import ChocoSoftwareSerializer, InstalledSoftwareSerializer
+from .serializers import InstalledSoftwareSerializer
 from .tasks import install_program
 from tacticalrmm.utils import notify_error
 

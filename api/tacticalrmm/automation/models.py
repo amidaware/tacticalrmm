@@ -23,60 +23,27 @@ class Policy(BaseAuditModel):
         return self.name
 
     def related_agents(self):
-        return self.related_server_agents() | self.related_workstation_agents()
+        return self.get_related("server") | self.get_related("workstation")
 
-    def related_server_agents(self):
-        explicit_agents = self.agents.filter(monitoring_type="server")
-        explicit_clients = self.server_clients.all()
-        explicit_sites = self.server_sites.all()
+    def get_related(self, mon_type):
+        explicit_agents = self.agents.filter(monitoring_type=mon_type)
+        explicit_clients = getattr(self, f"{mon_type}_clients").all()
+        explicit_sites = getattr(self, f"{mon_type}_sites").all()
 
-        filtered_agents_pks = list()
-
-        for site in explicit_sites:
-            if site.client not in explicit_clients:
-                filtered_agents_pks.append(
-                    Agent.objects.filter(
-                        client=site.client.client,
-                        site=site.site,
-                        monitoring_type="server",
-                    ).values_list("pk", flat=True)
-                )
-
-        for client in explicit_clients:
-            filtered_agents_pks.append(
-                Agent.objects.filter(
-                    client=client.client, monitoring_type="server"
-                ).values_list("pk", flat=True)
-            )
-
-        return Agent.objects.filter(
-            models.Q(pk__in=filtered_agents_pks)
-            | models.Q(pk__in=explicit_agents.only("pk"))
-        )
-
-    def related_workstation_agents(self):
-        explicit_agents = self.agents.filter(monitoring_type="workstation")
-        explicit_clients = self.workstation_clients.all()
-        explicit_sites = self.workstation_sites.all()
-
-        filtered_agents_pks = list()
+        filtered_agents_pks = Policy.objects.none()
 
         for site in explicit_sites:
             if site.client not in explicit_clients:
-                filtered_agents_pks.append(
-                    Agent.objects.filter(
-                        client=site.client.client,
-                        site=site.site,
-                        monitoring_type="workstation",
-                    ).values_list("pk", flat=True)
-                )
-
-        for client in explicit_clients:
-            filtered_agents_pks.append(
-                Agent.objects.filter(
-                    client=client.client, monitoring_type="workstation"
+                filtered_agents_pks |= Agent.objects.filter(
+                    client=site.client.client,
+                    site=site.site,
+                    monitoring_type=mon_type,
                 ).values_list("pk", flat=True)
-            )
+
+        filtered_agents_pks |= Agent.objects.filter(
+            client__in=[client.client for client in explicit_clients],
+            monitoring_type=mon_type,
+        ).values_list("pk", flat=True)
 
         return Agent.objects.filter(
             models.Q(pk__in=filtered_agents_pks)
@@ -95,6 +62,10 @@ class Policy(BaseAuditModel):
         # List of all tasks to be applied
         tasks = list()
         added_task_pks = list()
+
+        agent_tasks_parent_pks = [
+            task.parent_task for task in agent.autotasks.filter(managed_by_policy=True)
+        ]
 
         # Get policies applied to agent and agent site and client
         client = Client.objects.get(client=agent.client)
@@ -137,7 +108,7 @@ class Policy(BaseAuditModel):
                     tasks.append(task)
                     added_task_pks.append(task.pk)
 
-        return tasks
+        return [task for task in tasks if task.pk not in agent_tasks_parent_pks]
 
     @staticmethod
     def cascade_policy_checks(agent):
@@ -281,8 +252,8 @@ class Policy(BaseAuditModel):
 
             if check.check_type == "script":
                 # Check if script id was already added
-                if check.script not in added_script_checks:
-                    added_script_checks.append(check.script)
+                if check.script.id not in added_script_checks:
+                    added_script_checks.append(check.script.id)
                     # Dont create the check if it is an agent check
                     if not check.agent:
                         script_checks.append(check)

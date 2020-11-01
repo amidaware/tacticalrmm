@@ -10,7 +10,7 @@
       <p>Settings -> Script Manager</p>
     </q-card-section>
   </q-card>
-  <q-card v-else class="q-pa-xs" style="min-width: 30vw">
+  <q-card v-else class="q-pa-xs" style="min-width: 40vw">
     <q-card-section class="row items-center">
       <div class="text-h6">Add Automated Task</div>
       <q-space />
@@ -68,27 +68,48 @@
 
       <q-step :name="2" title="Choose Schedule" :done="step2Done" :error="!step2Done">
         <q-radio v-model="autotask.task_type" val="scheduled" label="Scheduled" @input="clear" />
-        <q-radio
-          v-model="autotask.task_type"
-          val="checkfailure"
-          label="On check failure"
-          @input="clear"
-        />
+        <q-radio v-model="autotask.task_type" val="runonce" label="Run Once" @input="clear" />
+        <q-radio v-model="autotask.task_type" val="checkfailure" label="On check failure" @input="clear" />
         <q-radio v-model="autotask.task_type" val="manual" label="Manual" @input="clear" />
         <div v-if="autotask.task_type === 'scheduled'" class="row q-pa-lg">
           <div class="col-3">
             Run on Days:
-            <q-option-group
-              :options="dayOptions"
-              label="Days"
-              type="checkbox"
-              v-model="autotask.run_time_days"
-            />
+            <q-option-group :options="dayOptions" label="Days" type="checkbox" v-model="autotask.run_time_days" />
           </div>
           <div class="col-2"></div>
           <div class="col-6">
             At time:
             <q-time v-model="autotask.run_time_minute" />
+          </div>
+          <div class="col-1"></div>
+        </div>
+        <div v-if="autotask.task_type === 'runonce'" class="row q-pa-lg">
+          <div class="col-11">
+            <q-input filled v-model="autotask.run_time_date" hint="Agent timezone will be used">
+              <template v-slot:append>
+                <q-icon name="event" class="cursor-pointer">
+                  <q-popup-proxy transition-show="scale" transition-hide="scale">
+                    <q-date v-model="autotask.run_time_date" mask="YYYY-MM-DD HH:mm">
+                      <div class="row items-center justify-end">
+                        <q-btn v-close-popup label="Close" color="primary" flat />
+                      </div>
+                    </q-date>
+                  </q-popup-proxy>
+                </q-icon>
+                <q-icon name="access_time" class="cursor-pointer">
+                  <q-popup-proxy transition-show="scale" transition-hide="scale">
+                    <q-time v-model="autotask.run_time_date" mask="YYYY-MM-DD HH:mm">
+                      <div class="row items-center justify-end">
+                        <q-btn v-close-popup label="Close" color="primary" flat />
+                      </div>
+                    </q-time>
+                  </q-popup-proxy>
+                </q-icon>
+              </template>
+            </q-input>
+            <div class="q-gutter-sm">
+              <q-checkbox v-model="autotask.remove_if_not_scheduled" label="Delete task after schedule date" />
+            </div>
           </div>
           <div class="col-1"></div>
         </div>
@@ -118,14 +139,7 @@
             label="Add Task"
           />
           <q-btn v-else @click="$refs.stepper.next()" color="primary" label="Next" />
-          <q-btn
-            v-if="step > 1"
-            flat
-            color="primary"
-            @click="$refs.stepper.previous()"
-            label="Back"
-            class="q-ml-sm"
-          />
+          <q-btn v-if="step > 1" flat color="primary" @click="$refs.stepper.previous()" label="Back" class="q-ml-sm" />
         </q-stepper-navigation>
       </template>
     </q-stepper>
@@ -153,6 +167,8 @@ export default {
         name: null,
         run_time_days: [],
         run_time_minute: null,
+        run_time_date: null,
+        remove_if_not_scheduled: false,
         task_type: "scheduled",
         timeout: 120,
       },
@@ -172,6 +188,8 @@ export default {
       this.autotask.assigned_check = null;
       this.autotask.run_time_days = [];
       this.autotask.run_time_minute = null;
+      this.autotask.run_time_date = null;
+      this.autotask.remove_if_not_scheduled = false;
     },
     addTask() {
       if (!this.step1Done || !this.step2Done) {
@@ -217,14 +235,14 @@ export default {
       this.checks.forEach(i => {
         r.push({ label: i.readable_desc, value: i.id });
       });
-      return r;
+      return r.sort((a, b) => a.label.localeCompare(b.label));
     },
     scriptOptions() {
       const r = [];
       this.scripts.forEach(i => {
         r.push({ label: i.name, value: i.id });
       });
-      return r;
+      return r.sort((a, b) => a.label.localeCompare(b.label));
     },
     step1Done() {
       return this.step > 1 && this.autotask.script !== null && this.autotask.name && this.autotask.timeout
@@ -238,6 +256,8 @@ export default {
         return this.autotask.assigned_check !== null ? true : false;
       } else if (this.autotask.task_type === "manual") {
         return true;
+      } else if (this.autotask.task_type === "runonce") {
+        return this.autotask.run_time_date !== null ? true : false;
       } else {
         return false;
       }

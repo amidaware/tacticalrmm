@@ -1,12 +1,13 @@
-import base64
 import json
 import os
-import zlib
 from unittest.mock import patch
+
+from model_bakery import baker
+from itertools import cycle
 
 from django.conf import settings
 
-from tacticalrmm.test import BaseTestCase
+from tacticalrmm.test import BaseTestCase, TacticalTestCase
 from .serializers import AgentSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 from .models import Agent
@@ -14,6 +15,29 @@ from winupdate.models import WinUpdatePolicy
 
 
 class TestAgentViews(BaseTestCase):
+    def test_get_patch_policy(self):
+        # make sure get_patch_policy doesn't error out when agent has policy with
+        # an empty patch policy
+        self.agent.policy = self.policy
+        self.agent.save(update_fields=["policy"])
+        _ = self.agent.get_patch_policy()
+
+        self.agent.monitoring_type = "workstation"
+        self.agent.save(update_fields=["monitoring_type"])
+        _ = self.agent.get_patch_policy()
+
+        self.agent.policy = None
+        self.agent.save(update_fields=["policy"])
+
+        self.coresettings.server_policy = self.policy
+        self.coresettings.workstation_policy = self.policy
+        self.coresettings.save(update_fields=["server_policy", "workstation_policy"])
+        _ = self.agent.get_patch_policy()
+
+        self.agent.monitoring_type = "server"
+        self.agent.save(update_fields=["monitoring_type"])
+        _ = self.agent.get_patch_policy()
+
     def test_get_agent_versions(self):
         url = "/agents/getagentversions/"
         r = self.client.get(url)
@@ -76,6 +100,20 @@ class TestAgentViews(BaseTestCase):
 
         self.check_not_authenticated("delete", url)
 
+    @patch("agents.tasks.uninstall_agent_task.delay")
+    def test_uninstall_catch_no_user(self, mock_task):
+        url = "/agents/uninstall/"
+        data = {"pk": self.agent.pk}
+
+        self.agent_user.delete()
+
+        r = self.client.delete(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        mock_task.assert_called_with(self.agent.salt_id)
+
+        self.check_not_authenticated("delete", url)
+
     @patch("agents.models.Agent.salt_api_cmd")
     def test_get_processes(self, mock_ret):
         url = f"/agents/{self.agent.pk}/getprocs/"
@@ -96,6 +134,10 @@ class TestAgentViews(BaseTestCase):
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
 
+        mock_ret.return_value = "error"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
+
         self.check_not_authenticated("get", url)
 
     @patch("agents.models.Agent.salt_api_cmd")
@@ -111,6 +153,10 @@ class TestAgentViews(BaseTestCase):
         self.assertEqual(r.status_code, 400)
 
         mock_ret.return_value = "timeout"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
+
+        mock_ret.return_value = "error"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
 
@@ -133,6 +179,14 @@ class TestAgentViews(BaseTestCase):
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(decoded, r.json())
+
+        mock_ret.return_value = "timeout"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
+
+        mock_ret.return_value = "error"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
 
         self.check_not_authenticated("get", url)
 
@@ -199,6 +253,10 @@ class TestAgentViews(BaseTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
 
+        mock_ret.return_value = "timeout"
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+
         mock_ret.return_value = False
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
@@ -247,11 +305,25 @@ class TestAgentViews(BaseTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
 
+        data["arch"] = "32"
+        mock_subprocess.return_value.returncode = 0
+        mock_file_exists.return_value = False
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 415)
+
         data["installMethod"] = "manual"
+        data["arch"] = "64"
+        mock_subprocess.return_value.returncode = 0
+        mock_file_exists.return_value = True
         r = self.client.post(url, data, format="json")
         self.assertIn("rdp", r.json()["cmd"])
         self.assertNotIn("power", r.json()["cmd"])
         self.assertNotIn("ping", r.json()["cmd"])
+
+        data.update({"ping": 1, "power": 1})
+        r = self.client.post(url, data, format="json")
+        self.assertIn("power", r.json()["cmd"])
+        self.assertIn("ping", r.json()["cmd"])
 
         self.check_not_authenticated("post", url)
 
@@ -352,9 +424,10 @@ class TestAgentViews(BaseTestCase):
 
         self.check_not_authenticated("patch", url)
 
-    def test_meshcentral_tabs(self):
+    @patch("agents.models.Agent.get_login_token")
+    def test_meshcentral_tabs(self, mock_token):
         url = f"/agents/{self.agent.pk}/meshcentral/"
-
+        mock_token.return_value = "askjh1k238uasdhk487234jadhsajksdhasd"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
 
@@ -369,6 +442,10 @@ class TestAgentViews(BaseTestCase):
         self.assertEqual(self.agent.hostname, r.data["hostname"])
 
         self.assertEqual(r.status_code, 200)
+
+        mock_token.return_value = "err"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
 
         self.check_not_authenticated("get", url)
 
@@ -404,11 +481,58 @@ class TestAgentViews(BaseTestCase):
         payload = {"pk": self.agent.pk, "alertType": "email", "action": "enabled"}
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
-
         agent = Agent.objects.get(pk=self.agent.pk)
         self.assertTrue(agent.overdue_email_alert)
+        self.assertEqual(self.agent.hostname, r.data)
+
+        payload.update({"alertType": "email", "action": "disabled"})
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+        agent = Agent.objects.get(pk=self.agent.pk)
+        self.assertFalse(agent.overdue_email_alert)
+        self.assertEqual(self.agent.hostname, r.data)
+
+        payload.update({"alertType": "text", "action": "enabled"})
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+        agent = Agent.objects.get(pk=self.agent.pk)
+        self.assertTrue(agent.overdue_text_alert)
+        self.assertEqual(self.agent.hostname, r.data)
+
+        payload.update({"alertType": "text", "action": "disabled"})
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+        agent = Agent.objects.get(pk=self.agent.pk)
+        self.assertFalse(agent.overdue_text_alert)
+        self.assertEqual(self.agent.hostname, r.data)
+
+        payload.update({"alertType": "email", "action": "523423"})
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        payload.update({"alertType": "text", "action": "asdasd3434asdasd"})
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 400)
 
         self.check_not_authenticated("post", url)
+
+    def test_list_agents_no_detail(self):
+        url = "/agents/listagentsnodetail/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+
+        self.check_not_authenticated("get", url)
+
+    def test_agent_edit_details(self):
+        url = f"/agents/{self.agent.pk}/agenteditdetails/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+
+        url = "/agents/48234982/agenteditdetails/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 404)
+
+        self.check_not_authenticated("get", url)
 
     @patch("winupdate.tasks.bulk_check_for_updates_task.delay")
     @patch("agents.models.Agent.salt_batch_async")
@@ -527,6 +651,131 @@ class TestAgentViews(BaseTestCase):
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
 
+        payload["target"] = "all"
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        payload["target"] = "asdasdsd"
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 400)
+
         # TODO mock the script
+
+        self.check_not_authenticated("post", url)
+
+    @patch("agents.models.Agent.salt_api_cmd")
+    def test_restart_mesh(self, mock_ret):
+        url = f"/agents/{self.agent.pk}/restartmesh/"
+
+        mock_ret.return_value = "timeout"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
+
+        mock_ret.return_value = "error"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
+
+        mock_ret.return_value = False
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
+
+        mock_ret.return_value = True
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+
+        self.check_not_authenticated("get", url)
+
+    @patch("agents.models.Agent.salt_api_cmd")
+    def test_recover_mesh(self, mock_ret):
+        url = f"/agents/{self.agent.pk}/recovermesh/"
+        mock_ret.return_value = True
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertIn(self.agent.hostname, r.data)
+
+        mock_ret.return_value = "timeout"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
+
+        mock_ret.return_value = "error"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
+
+        url = f"/agents/543656/recovermesh/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 404)
+
+        self.check_not_authenticated("get", url)
+
+
+class TestAgentViewsNew(TacticalTestCase):
+    def setUp(self):
+        self.authenticate()
+
+    def test_agent_counts(self):
+        url = "/agents/agent_counts/"
+
+        # create some data
+        baker.make_recipe(
+            "agents.online_agent",
+            monitoring_type=cycle(["server", "workstation"]),
+            _quantity=6,
+        )
+        agents = baker.make_recipe(
+            "agents.overdue_agent",
+            monitoring_type=cycle(["server", "workstation"]),
+            _quantity=6,
+        )
+
+        # make an AgentOutage for every overdue agent
+        baker.make("agents.AgentOutage", agent=cycle(agents), _quantity=6)
+
+        # returned data should be this
+        data = {
+            "total_server_count": 6,
+            "total_server_offline_count": 3,
+            "total_workstation_count": 6,
+            "total_workstation_offline_count": 3,
+        }
+
+        r = self.client.post(url, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data, data)
+
+        self.check_not_authenticated("post", url)
+
+    def test_agent_maintenance_mode(self):
+        url = "/agents/maintenance/"
+        # create data
+        client = baker.make("clients.Client", client="Default")
+        site = baker.make("clients.Site", client=client, site="Site")
+        agent = baker.make_recipe("agents.agent", client=client.client, site=site.site)
+
+        # Test client toggle maintenance mode
+        data = {"type": "Client", "id": client.id, "action": True}
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(Agent.objects.get(pk=agent.pk).maintenance_mode)
+
+        # Test site toggle maintenance mode
+        data = {"type": "Site", "id": site.id, "action": False}
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(Agent.objects.get(pk=agent.pk).maintenance_mode)
+
+        # Test agent toggle maintenance mode
+        data = {"type": "Agent", "id": agent.id, "action": True}
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(Agent.objects.get(pk=agent.pk).maintenance_mode)
+
+        # Test invalid payload
+        data = {"type": "Invalid", "id": agent.id, "action": True}
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
 
         self.check_not_authenticated("post", url)

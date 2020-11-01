@@ -64,6 +64,7 @@ export default {
         r.data.forEach(client => {
           this.clients.push({ label: client.client, value: client.id });
         });
+        this.clients.sort((a, b) => a.label.localeCompare(b.label));
       });
     },
     onChange() {

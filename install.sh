@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="12"
+SCRIPT_VERSION="16"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 GREEN='\033[0;32m'
@@ -33,9 +33,9 @@ if [ $EUID -eq 0 ]; then
   exit 1
 fi
 
-if [ "$LANG" != "en_US.UTF-8" ]; then
-  printf >&2 "\n${RED}System locale must be ${GREEN}en_US.UTF-8${RED} not ${YELLOW}${LANG}${NC}\n"
-  printf >&2 "${RED}Run the following command and change the default locale to ${GREEN}en_US.UTF-8${NC}\n\n"
+if [[ "$LANG" != *".UTF-8" ]]; then
+  printf >&2 "\n${RED}System locale must be ${GREEN}<some language>.UTF-8${RED} not ${YELLOW}${LANG}${NC}\n"
+  printf >&2 "${RED}Run the following command and change the default locale to your language of choice${NC}\n\n"
   printf >&2 "${GREEN}sudo dpkg-reconfigure locales${NC}\n\n"
   printf >&2 "${RED}You will need to log out and back in for changes to take effect, then re-run this script.${NC}\n\n"
   exit 1
@@ -83,8 +83,14 @@ echo -ne "${YELLOW}Enter the subdomain for meshcentral (e.g. mesh.example.com)${
 read meshdomain
 done
 
-echo -ne "${YELLOW}Enter the root domain for LetsEncrypt (e.g. example.com or example.co.uk)${NC}: "
+echo -ne "${YELLOW}Enter the root domain (e.g. example.com or example.co.uk)${NC}: "
 read rootdomain
+
+while [[ $letsemail != *[@]*[.]* ]]
+do
+echo -ne "${YELLOW}Enter a valid email address for django and meshcentral${NC}: "
+read letsemail
+done
 
 # if server is behind NAT we need to add the 3 subdomains to the host file 
 # so that nginx can properly route between the frontend, backend and meshcentral
@@ -129,23 +135,39 @@ fi
 echo -ne "${YELLOW}Create a username for meshcentral${NC}: "
 read meshusername
 
-while [[ $letsemail != *[@]*[.]* ]]
-do
-echo -ne "${YELLOW}Enter a valid email address for let's encrypt renewal notifications and meshcentral${NC}: "
-read letsemail
-done
-
-print_green 'Getting wildcard cert'
-
 sudo apt install -y software-properties-common
 sudo apt update
-sudo apt install -y certbot
+sudo apt install -y certbot openssl
 
-sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
-while [[ $? -ne 0 ]]
-do
-sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
+until [[ $LETS_ENCRYPT =~ (y|n) ]]; do
+    echo -ne "${YELLOW}Do you want to generate a Let's Encrypt certificate?[y,n]${NC}: "
+    read LETS_ENCRYPT
 done
+
+if [[ $LETS_ENCRYPT == "y" ]]; then
+
+    print_green 'Getting wildcard cert'
+
+    sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
+    while [[ $? -ne 0 ]]
+    do
+    sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
+    done
+
+    CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
+    CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
+
+else
+    echo -ne "\n${GREEN}We will generate a self-signed certificate for you.${NC}\n"
+    echo -ne "\n${GREEN}You can replace this certificate later by generating the certificates and editing the nginx configuration${NC}\n"
+    read -n 1 -s -r -p "Press any key to continue..."
+    sudo mkdir -p /certs/${rootdomain}
+    sudo openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /certs/${rootdomain}/pubkey.pem -keyout /certs/${rootdomain}/privkey.pem -subj "/C=US/ST=Some-State/L=city/O=Internet Widgits Pty Ltd/CN=*.${rootdomain}"
+
+    CERT_PRIV_KEY=/certs/${rootdomain}/privkey.pem
+    CERT_PUB_KEY=/certs/${rootdomain}/pubkey.pem
+
+fi
 
 print_green 'Creating saltapi user'
 
@@ -244,7 +266,7 @@ print_green 'Installing postgresql'
 sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
-sudo apt install -y postgresql-12
+sudo apt install -y postgresql-13
 
 print_green 'Creating database for the rmm'
 
@@ -410,8 +432,8 @@ server {
     client_max_body_size 300M;
     access_log /rmm/api/tacticalrmm/tacticalrmm/private/log/access.log;
     error_log /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
-    ssl_certificate /etc/letsencrypt/live/${rootdomain}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${rootdomain}/privkey.pem;
+    ssl_certificate ${CERT_PUB_KEY};
+    ssl_certificate_key ${CERT_PRIV_KEY};
     ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
 
     location /static/ {
@@ -469,8 +491,8 @@ server {
     proxy_send_timeout 330s;
     proxy_read_timeout 330s;
     server_name ${meshdomain};
-    ssl_certificate /etc/letsencrypt/live/${rootdomain}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${rootdomain}/privkey.pem;
+    ssl_certificate ${CERT_PUB_KEY};
+    ssl_certificate_key ${CERT_PRIV_KEY};
     ssl_session_cache shared:WEBSSL:10m;
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
@@ -506,6 +528,7 @@ sleep 30
 
 saltvars="$(cat << EOF
 timeout: 20
+worker_threads: 15
 gather_job_timeout: 25
 max_event_size: 30485760
 external_auth:
@@ -520,6 +543,8 @@ rest_cherrypy:
   port: 8123
   disable_ssl: True
   max_request_body_size: 30485760
+  thread_pool: 300
+  socket_queue_size: 100
 
 EOF
 )"
@@ -716,8 +741,8 @@ server {
     access_log /var/log/nginx/frontend-access.log;
 
     listen 443 ssl;
-    ssl_certificate /etc/letsencrypt/live/${rootdomain}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${rootdomain}/privkey.pem;
+    ssl_certificate ${CERT_PUB_KEY};
+    ssl_certificate_key ${CERT_PRIV_KEY};
     ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
 }
 

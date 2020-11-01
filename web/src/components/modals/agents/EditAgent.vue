@@ -14,13 +14,8 @@
             <q-space />
             <q-btn icon="close" flat round dense v-close-popup />
           </q-card-section>
-          <q-scroll-area :thumb-style="thumbStyle" style="height: 500px;">
-            <q-tab-panels
-              v-model="tab"
-              animated
-              transition-prev="jump-up"
-              transition-next="jump-up"
-            >
+          <q-scroll-area :thumb-style="thumbStyle" style="height: 500px">
+            <q-tab-panels v-model="tab" animated transition-prev="jump-up" transition-next="jump-up">
               <!-- general -->
               <q-tab-panel name="general">
                 <q-card-section class="row">
@@ -32,21 +27,14 @@
                     options-dense
                     outlined
                     v-model="agent.client"
-                    :options="Object.keys(tree)"
+                    :options="Object.keys(tree).sort()"
                     class="col-8"
                   />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Site:</div>
                   <div class="col-2"></div>
-                  <q-select
-                    class="col-8"
-                    dense
-                    options-dense
-                    outlined
-                    v-model="agent.site"
-                    :options="sites"
-                  />
+                  <q-select class="col-8" dense options-dense outlined v-model="agent.site" :options="sites" />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Type:</div>
@@ -74,14 +62,7 @@
                 <q-card-section class="row">
                   <div class="col-2">Timezone:</div>
                   <div class="col-2"></div>
-                  <q-select
-                    outlined
-                    dense
-                    options-dense
-                    v-model="timezone"
-                    :options="allTimezones"
-                    class="col-8"
-                  />
+                  <q-select outlined dense options-dense v-model="timezone" :options="allTimezones" class="col-8" />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-10">Check interval:</div>
@@ -92,11 +73,11 @@
                     label="Seconds"
                     v-model.number="agent.check_interval"
                     class="col-2"
-                    :rules="[ 
+                    :rules="[
                       val => !!val || '*Required',
                       val => val >= 60 || 'Minimum is 60 seconds',
-                      val => val <= 3600 || 'Maximum is 3600 seconds'
-                  ]"
+                      val => val <= 3600 || 'Maximum is 3600 seconds',
+                    ]"
                   />
                 </q-card-section>
                 <q-card-section class="row">
@@ -108,11 +89,11 @@
                     label="Minutes"
                     v-model.number="agent.overdue_time"
                     class="col-2"
-                    :rules="[ 
+                    :rules="[
                       val => !!val || '*Required',
                       val => val >= 5 || 'Minimum is 5 minutes',
-                      val => val < 9999999 || 'Maximum is 9999999 minutes'
-                  ]"
+                      val => val < 9999999 || 'Maximum is 9999999 minutes',
+                    ]"
                   />
                 </q-card-section>
                 <q-card-section class="row">
@@ -222,7 +203,7 @@ export default {
     ...mapGetters(["selectedAgentPk"]),
     sites() {
       if (this.agentLoaded && this.clientsLoaded) {
-        return this.tree[this.agent.client];
+        return this.tree[this.agent.client].sort();
       }
     },
   },

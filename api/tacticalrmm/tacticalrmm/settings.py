@@ -11,15 +11,18 @@ AUTH_USER_MODEL = "accounts.User"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.69"
+APP_VER = "0.0.83"
 
 # https://github.com/wh1te909/salt
 LATEST_SALT_VER = "1.1.0"
 
-LATEST_AGENT_VER = "0.11.2"
+LATEST_AGENT_VER = "1.0.1"
 
-DL_64 = f"https://github.com/wh1te909/winagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
-DL_32 = f"https://github.com/wh1te909/winagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
+DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
+DL_32 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
+
+SALT_64 = f"https://github.com/wh1te909/salt/releases/download/{LATEST_SALT_VER}/salt-minion-setup.exe"
+SALT_32 = f"https://github.com/wh1te909/salt/releases/download/{LATEST_SALT_VER}/salt-minion-setup-x86.exe"
 
 try:
     from .local_settings import *

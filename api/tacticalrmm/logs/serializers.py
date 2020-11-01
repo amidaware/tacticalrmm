@@ -15,7 +15,7 @@ class AuditLogSerializer(serializers.ModelSerializer):
 
     def get_entry_time(self, log):
         timezone = pytz.timezone(CoreSettings.objects.first().default_time_zone)
-        return log.entry_time.astimezone(timezone).strftime("%m/%d/%Y %H:%M:%S")
+        return log.entry_time.astimezone(timezone).strftime("%m %d %Y %H:%M:%S")
 
 
 class PendingActionSerializer(serializers.ModelSerializer):

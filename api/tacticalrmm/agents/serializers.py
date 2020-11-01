@@ -3,11 +3,8 @@ import pytz
 from rest_framework import serializers
 
 from .models import Agent, Note
-from autotasks.models import AutomatedTask
 
 from winupdate.serializers import WinUpdatePolicySerializer
-from automation.serializers import PolicySerializer
-from autotasks.serializers import TaskSerializer
 
 
 class AgentSerializer(serializers.ModelSerializer):
@@ -40,8 +37,12 @@ class AgentTableSerializer(serializers.ModelSerializer):
     last_seen = serializers.SerializerMethodField()
 
     def get_last_seen(self, obj):
-        agent_tz = pytz.timezone(obj.timezone)
-        return obj.last_seen.astimezone(agent_tz).strftime("%b-%d-%Y - %H:%M")
+        if obj.time_zone is not None:
+            agent_tz = pytz.timezone(obj.time_zone)
+        else:
+            agent_tz = self.context["default_tz"]
+
+        return obj.last_seen.astimezone(agent_tz).strftime("%m %d %Y %H:%M:%S")
 
     class Meta:
         model = Agent
@@ -62,6 +63,8 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "boot_time",
             "checks",
             "logged_in_username",
+            "last_logged_in_user",
+            "maintenance_mode",
         ]
 
 

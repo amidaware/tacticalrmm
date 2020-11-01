@@ -64,6 +64,7 @@ class Agent(BaseAuditModel):
         "clients.Site",
         related_name="agents",
         null=True,
+        blank=True,
         on_delete=models.SET_NULL,
     )
     policy = models.ForeignKey(

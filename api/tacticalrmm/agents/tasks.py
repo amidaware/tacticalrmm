@@ -58,7 +58,7 @@ def send_agent_update_task(pks, version):
 
 
 @app.task
-def auto_self_agent_update_task(test=False):
+def auto_self_agent_update_task():
     core = CoreSettings.objects.first()
     if not core.agent_auto_update:
         return
@@ -99,8 +99,7 @@ def auto_self_agent_update_task(test=False):
                     "url": url,
                 },
             )
-        if not test:
-            sleep(10)
+        sleep(10)
 
 
 @app.task

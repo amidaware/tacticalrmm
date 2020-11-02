@@ -6,12 +6,22 @@ from model_bakery import baker
 from itertools import cycle
 
 from django.conf import settings
+from django.utils import timezone as djangotime
 
 from tacticalrmm.test import BaseTestCase, TacticalTestCase
 from .serializers import AgentSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 from .models import Agent
-from .tasks import auto_self_agent_update_task, OLD_64_PY_AGENT, OLD_32_PY_AGENT
+from .tasks import (
+    auto_self_agent_update_task,
+    update_salt_minion_task,
+    get_wmi_detail_task,
+    sync_salt_modules_task,
+    batch_sync_modules_task,
+    batch_sysinfo_task,
+    OLD_64_PY_AGENT,
+    OLD_32_PY_AGENT,
+)
 from winupdate.models import WinUpdatePolicy
 
 
@@ -712,7 +722,6 @@ class TestAgentViews(BaseTestCase):
 class TestAgentViewsNew(TacticalTestCase):
     def setUp(self):
         self.authenticate()
-        self.setup_coresettings()
 
     def test_agent_counts(self):
         url = "/agents/agent_counts/"
@@ -782,8 +791,126 @@ class TestAgentViewsNew(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
+
+class TestAgentTasks(TacticalTestCase):
+    def setUp(self):
+        self.authenticate()
+        self.setup_coresettings()
+
+    @patch("agents.models.Agent.salt_api_async", return_value=None)
+    def test_get_wmi_detail_task(self, salt_api_async):
+        self.agent = baker.make_recipe("agents.agent")
+        ret = get_wmi_detail_task.s(self.agent.pk).apply()
+        salt_api_async.assert_called_with(timeout=30, func="win_agent.local_sys_info")
+        self.assertEqual(ret.status, "SUCCESS")
+
+    @patch("agents.models.Agent.salt_api_cmd")
+    def test_sync_salt_modules_task(self, salt_api_cmd):
+        self.agent = baker.make_recipe("agents.agent")
+        salt_api_cmd.return_value = {"return": [{f"{self.agent.salt_id}": []}]}
+        ret = sync_salt_modules_task.s(self.agent.pk).apply()
+        salt_api_cmd.assert_called_with(timeout=35, func="saltutil.sync_modules")
+        self.assertEqual(
+            ret.result, f"Successfully synced salt modules on {self.agent.hostname}"
+        )
+        self.assertEqual(ret.status, "SUCCESS")
+
+        salt_api_cmd.return_value = "timeout"
+        ret = sync_salt_modules_task.s(self.agent.pk).apply()
+        self.assertEqual(ret.result, f"Unable to sync modules {self.agent.salt_id}")
+
+        salt_api_cmd.return_value = "error"
+        ret = sync_salt_modules_task.s(self.agent.pk).apply()
+        self.assertEqual(ret.result, f"Unable to sync modules {self.agent.salt_id}")
+
+    @patch("agents.models.Agent.salt_batch_async", return_value=None)
+    @patch("agents.tasks.sleep", return_value=None)
+    def test_batch_sync_modules_task(self, mock_sleep, salt_batch_async):
+        # chunks of 50, 60 online should run only 2 times
+        # can't use baker agent.online_agent or agent.overdue_agent here
+        # cuz it breaks test_generating_policy_checks_for_all_agents
+        # with error self.assertEqual(Agent.objects.get(pk=agent1.id).agentchecks.count(), 7): AssertionError: 0 != 7
+        baker.make_recipe("agents.agent", last_seen=djangotime.now(), _quantity=60)
+        baker.make_recipe(
+            "agents.agent",
+            last_seen=djangotime.now() - djangotime.timedelta(minutes=9),
+            _quantity=115,
+        )
+        ret = batch_sync_modules_task.s().apply()
+        self.assertEqual(salt_batch_async.call_count, 2)
+        self.assertEqual(ret.status, "SUCCESS")
+
+    @patch("agents.models.Agent.salt_batch_async", return_value=None)
+    @patch("agents.tasks.sleep", return_value=None)
+    def test_batch_sysinfo_task(self, mock_sleep, salt_batch_async):
+        # chunks of 30, 70 online should run only 3 times
+        self.online = baker.make_recipe(
+            "agents.online_agent", version=settings.LATEST_AGENT_VER, _quantity=70
+        )
+        self.overdue = baker.make_recipe(
+            "agents.overdue_agent", version=settings.LATEST_AGENT_VER, _quantity=115
+        )
+        ret = batch_sysinfo_task.s().apply()
+        self.assertEqual(salt_batch_async.call_count, 3)
+        self.assertEqual(ret.status, "SUCCESS")
+        salt_batch_async.reset_mock()
+        [i.delete() for i in self.online]
+        [i.delete() for i in self.overdue]
+
+        # test old agents, should not run
+        self.online_old = baker.make_recipe(
+            "agents.online_agent", version="0.10.2", _quantity=70
+        )
+        self.overdue_old = baker.make_recipe(
+            "agents.overdue_agent", version="0.10.2", _quantity=115
+        )
+        ret = batch_sysinfo_task.s().apply()
+        salt_batch_async.assert_not_called()
+        self.assertEqual(ret.status, "SUCCESS")
+
+    @patch("agents.models.Agent.salt_api_async", return_value=None)
+    @patch("agents.tasks.sleep", return_value=None)
+    def test_update_salt_minion_task(self, mock_sleep, salt_api_async):
+        # test agents that need salt update
+        self.agents = baker.make_recipe(
+            "agents.agent",
+            version=settings.LATEST_AGENT_VER,
+            salt_ver="1.0.3",
+            _quantity=53,
+        )
+        ret = update_salt_minion_task.s().apply()
+        self.assertEqual(salt_api_async.call_count, 53)
+        self.assertEqual(ret.status, "SUCCESS")
+        [i.delete() for i in self.agents]
+        salt_api_async.reset_mock()
+
+        # test agents that need salt update but agent version too low
+        self.agents = baker.make_recipe(
+            "agents.agent",
+            version="0.10.2",
+            salt_ver="1.0.3",
+            _quantity=53,
+        )
+        ret = update_salt_minion_task.s().apply()
+        self.assertEqual(ret.status, "SUCCESS")
+        salt_api_async.assert_not_called()
+        [i.delete() for i in self.agents]
+        salt_api_async.reset_mock()
+
+        # test agents already on latest salt ver
+        self.agents = baker.make_recipe(
+            "agents.agent",
+            version=settings.LATEST_AGENT_VER,
+            salt_ver=settings.LATEST_SALT_VER,
+            _quantity=53,
+        )
+        ret = update_salt_minion_task.s().apply()
+        self.assertEqual(ret.status, "SUCCESS")
+        salt_api_async.assert_not_called()
+
     @patch("agents.models.Agent.salt_api_async")
-    def test_auto_self_agent_update_task(self, salt_api_async):
+    @patch("agents.tasks.sleep", return_value=None)
+    def test_auto_self_agent_update_task(self, mock_sleep, salt_api_async):
         # test 64bit golang agent
         self.agent64 = baker.make_recipe(
             "agents.agent",
@@ -791,7 +918,7 @@ class TestAgentViewsNew(TacticalTestCase):
             version="1.0.0",
         )
         salt_api_async.return_value = True
-        ret = auto_self_agent_update_task.s(test=True).apply()
+        ret = auto_self_agent_update_task.s().apply()
         salt_api_async.assert_called_with(
             func="win_agent.do_agent_update_v2",
             kwargs={
@@ -810,7 +937,7 @@ class TestAgentViewsNew(TacticalTestCase):
             version="1.0.0",
         )
         salt_api_async.return_value = True
-        ret = auto_self_agent_update_task.s(test=True).apply()
+        ret = auto_self_agent_update_task.s().apply()
         salt_api_async.assert_called_with(
             func="win_agent.do_agent_update_v2",
             kwargs={
@@ -828,7 +955,7 @@ class TestAgentViewsNew(TacticalTestCase):
             operating_system=None,
             version="1.0.0",
         )
-        ret = auto_self_agent_update_task.s(test=True).apply()
+        ret = auto_self_agent_update_task.s().apply()
         salt_api_async.assert_not_called()
         self.agentNone.delete()
         salt_api_async.reset_mock()
@@ -841,7 +968,7 @@ class TestAgentViewsNew(TacticalTestCase):
         )
         self.coresettings.agent_auto_update = False
         self.coresettings.save(update_fields=["agent_auto_update"])
-        ret = auto_self_agent_update_task.s(test=True).apply()
+        ret = auto_self_agent_update_task.s().apply()
         salt_api_async.assert_not_called()
 
         # reset core settings
@@ -857,7 +984,7 @@ class TestAgentViewsNew(TacticalTestCase):
             version="0.11.1",
         )
         salt_api_async.return_value = True
-        ret = auto_self_agent_update_task.s(test=True).apply()
+        ret = auto_self_agent_update_task.s().apply()
         salt_api_async.assert_called_with(
             func="win_agent.do_agent_update_v2",
             kwargs={
@@ -876,7 +1003,7 @@ class TestAgentViewsNew(TacticalTestCase):
             version="0.11.1",
         )
         salt_api_async.return_value = True
-        ret = auto_self_agent_update_task.s(test=True).apply()
+        ret = auto_self_agent_update_task.s().apply()
         salt_api_async.assert_called_with(
             func="win_agent.do_agent_update_v2",
             kwargs={

@@ -827,12 +827,11 @@ class TestAgentTasks(TacticalTestCase):
     @patch("agents.tasks.sleep", return_value=None)
     def test_batch_sync_modules_task(self, mock_sleep, salt_batch_async):
         # chunks of 50, 60 online should run only 2 times
-        # can't use baker agent.online_agent or agent.overdue_agent here
-        # cuz it breaks test_generating_policy_checks_for_all_agents
-        # with error self.assertEqual(Agent.objects.get(pk=agent1.id).agentchecks.count(), 7): AssertionError: 0 != 7
-        baker.make_recipe("agents.agent", last_seen=djangotime.now(), _quantity=60)
         baker.make_recipe(
-            "agents.agent",
+            "agents.online_agent", last_seen=djangotime.now(), _quantity=60
+        )
+        baker.make_recipe(
+            "agents.overdue_agent",
             last_seen=djangotime.now() - djangotime.timedelta(minutes=9),
             _quantity=115,
         )

@@ -11,6 +11,7 @@ from tacticalrmm.test import BaseTestCase, TacticalTestCase
 from .serializers import AgentSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 from .models import Agent
+from .tasks import auto_self_agent_update_task, OLD_64_PY_AGENT, OLD_32_PY_AGENT
 from winupdate.models import WinUpdatePolicy
 
 
@@ -711,6 +712,7 @@ class TestAgentViews(BaseTestCase):
 class TestAgentViewsNew(TacticalTestCase):
     def setUp(self):
         self.authenticate()
+        self.setup_coresettings()
 
     def test_agent_counts(self):
         url = "/agents/agent_counts/"
@@ -779,3 +781,107 @@ class TestAgentViewsNew(TacticalTestCase):
         self.assertEqual(r.status_code, 400)
 
         self.check_not_authenticated("post", url)
+
+    @patch("agents.models.Agent.salt_api_async")
+    def test_auto_self_agent_update_task(self, salt_api_async):
+        # test 64bit golang agent
+        self.agent64 = baker.make_recipe(
+            "agents.agent",
+            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
+            version="1.0.0",
+        )
+        salt_api_async.return_value = True
+        ret = auto_self_agent_update_task.s(test=True).apply()
+        salt_api_async.assert_called_with(
+            func="win_agent.do_agent_update_v2",
+            kwargs={
+                "inno": f"winagent-v{settings.LATEST_AGENT_VER}.exe",
+                "url": settings.DL_64,
+            },
+        )
+        self.assertEqual(ret.status, "SUCCESS")
+        self.agent64.delete()
+        salt_api_async.reset_mock()
+
+        # test 32bit golang agent
+        self.agent32 = baker.make_recipe(
+            "agents.agent",
+            operating_system="Windows 7 Professional, 32 bit (build 7601.24544)",
+            version="1.0.0",
+        )
+        salt_api_async.return_value = True
+        ret = auto_self_agent_update_task.s(test=True).apply()
+        salt_api_async.assert_called_with(
+            func="win_agent.do_agent_update_v2",
+            kwargs={
+                "inno": f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe",
+                "url": settings.DL_32,
+            },
+        )
+        self.assertEqual(ret.status, "SUCCESS")
+        self.agent32.delete()
+        salt_api_async.reset_mock()
+
+        # test agent that has a null os field
+        self.agentNone = baker.make_recipe(
+            "agents.agent",
+            operating_system=None,
+            version="1.0.0",
+        )
+        ret = auto_self_agent_update_task.s(test=True).apply()
+        salt_api_async.assert_not_called()
+        self.agentNone.delete()
+        salt_api_async.reset_mock()
+
+        # test auto update disabled in global settings
+        self.agent64 = baker.make_recipe(
+            "agents.agent",
+            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
+            version="1.0.0",
+        )
+        self.coresettings.agent_auto_update = False
+        self.coresettings.save(update_fields=["agent_auto_update"])
+        ret = auto_self_agent_update_task.s(test=True).apply()
+        salt_api_async.assert_not_called()
+
+        # reset core settings
+        self.agent64.delete()
+        salt_api_async.reset_mock()
+        self.coresettings.agent_auto_update = True
+        self.coresettings.save(update_fields=["agent_auto_update"])
+
+        # test 64bit python agent
+        self.agent64py = baker.make_recipe(
+            "agents.agent",
+            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
+            version="0.11.1",
+        )
+        salt_api_async.return_value = True
+        ret = auto_self_agent_update_task.s(test=True).apply()
+        salt_api_async.assert_called_with(
+            func="win_agent.do_agent_update_v2",
+            kwargs={
+                "inno": "winagent-v0.11.2.exe",
+                "url": OLD_64_PY_AGENT,
+            },
+        )
+        self.assertEqual(ret.status, "SUCCESS")
+        self.agent64py.delete()
+        salt_api_async.reset_mock()
+
+        # test 32bit python agent
+        self.agent32py = baker.make_recipe(
+            "agents.agent",
+            operating_system="Windows 7 Professional, 32 bit (build 7601.24544)",
+            version="0.11.1",
+        )
+        salt_api_async.return_value = True
+        ret = auto_self_agent_update_task.s(test=True).apply()
+        salt_api_async.assert_called_with(
+            func="win_agent.do_agent_update_v2",
+            kwargs={
+                "inno": "winagent-v0.11.2-x86.exe",
+                "url": OLD_32_PY_AGENT,
+            },
+        )
+        self.assertEqual(ret.status, "SUCCESS")

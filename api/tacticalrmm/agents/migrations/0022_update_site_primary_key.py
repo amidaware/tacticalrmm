@@ -12,6 +12,14 @@ def link_sites_to_agents(apps, schema_editor):
         agent.save()
 
 
+def reverse(apps, schema_editor):
+    Agent = apps.get_model("agents", "Agent")
+    for agent in Agent.objects.all():
+        agent.site = agent.site_link.site
+        agent.client = agent.site_link.client.client
+        agent.save()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -19,5 +27,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(link_sites_to_agents),
+        migrations.RunPython(link_sites_to_agents, reverse),
     ]

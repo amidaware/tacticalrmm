@@ -30,7 +30,7 @@ class Client(BaseAuditModel):
     @property
     def has_maintenanace_mode_agents(self):
         return (
-            Agent.objects.filter(client=self.client, maintenance_mode=True).count() > 0
+            Agent.objects.filter(site__client=self, maintenance_mode=True).count() > 0
         )
 
     @property
@@ -44,7 +44,7 @@ class Client(BaseAuditModel):
                 "last_seen",
                 "overdue_time",
             )
-            .filter(client=self.client)
+            .filter(site__client=self)
             .prefetch_related("agentchecks")
         )
         for agent in agents:
@@ -89,12 +89,7 @@ class Site(BaseAuditModel):
 
     @property
     def has_maintenanace_mode_agents(self):
-        return (
-            Agent.objects.filter(
-                client=self.client.client, site=self.site, maintenance_mode=True
-            ).count()
-            > 0
-        )
+        return Agent.objects.filter(site=self, maintenance_mode=True).count() > 0
 
     @property
     def has_failing_checks(self):
@@ -107,7 +102,7 @@ class Site(BaseAuditModel):
                 "last_seen",
                 "overdue_time",
             )
-            .filter(client=self.client.client, site=self.site)
+            .filter(site=self)
             .prefetch_related("agentchecks")
         )
         for agent in agents:

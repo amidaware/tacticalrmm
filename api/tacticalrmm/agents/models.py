@@ -79,6 +79,10 @@ class Agent(BaseAuditModel):
         return self.hostname
 
     @property
+    def client(self):
+        return self.site.client
+
+    @property
     def timezone(self):
         # return the default timezone unless the timezone is explicity set per agent
         if self.time_zone is not None:
@@ -286,11 +290,9 @@ class Agent(BaseAuditModel):
 
     # returns agent policy merged with a client or site specific policy
     def get_patch_policy(self):
-        from clients.models import Client, Site
 
         # check if site has a patch policy and if so use it
-        client = Client.objects.get(client=self.client)
-        site = Site.objects.get(client=client, site=self.site)
+        site = self.site
         core_settings = CoreSettings.objects.first()
         patch_policy = None
         agent_policy = self.winupdatepolicy.get()
@@ -672,10 +674,10 @@ class AgentOutage(models.Model):
 
         CORE = CoreSettings.objects.first()
         CORE.send_mail(
-            f"{self.agent.client}, {self.agent.site}, {self.agent.hostname} - data overdue",
+            f"{self.agent.client.client}, {self.agent.site.site}, {self.agent.hostname} - data overdue",
             (
-                f"Data has not been received from client {self.agent.client}, "
-                f"site {self.agent.site}, "
+                f"Data has not been received from client {self.agent.client.client}, "
+                f"site {self.agent.site.site}, "
                 f"agent {self.agent.hostname} "
                 "within the expected time."
             ),
@@ -686,10 +688,10 @@ class AgentOutage(models.Model):
 
         CORE = CoreSettings.objects.first()
         CORE.send_mail(
-            f"{self.agent.client}, {self.agent.site}, {self.agent.hostname} - data received",
+            f"{self.agent.client.client}, {self.agent.site.site}, {self.agent.hostname} - data received",
             (
-                f"Data has been received from client {self.agent.client}, "
-                f"site {self.agent.site}, "
+                f"Data has been received from client {self.agent.client.client}, "
+                f"site {self.agent.site.site}, "
                 f"agent {self.agent.hostname} "
                 "after an interruption in data transmission."
             ),
@@ -700,7 +702,7 @@ class AgentOutage(models.Model):
 
         CORE = CoreSettings.objects.first()
         CORE.send_sms(
-            f"{self.agent.client}, {self.agent.site}, {self.agent.hostname} - data overdue"
+            f"{self.agent.client.client}, {self.agent.site.site}, {self.agent.hostname} - data overdue"
         )
 
     def send_recovery_sms(self):
@@ -708,7 +710,7 @@ class AgentOutage(models.Model):
 
         CORE = CoreSettings.objects.first()
         CORE.send_sms(
-            f"{self.agent.client}, {self.agent.site}, {self.agent.hostname} - data received"
+            f"{self.agent.client.client}, {self.agent.site.site}, {self.agent.hostname} - data received"
         )
 
     def __str__(self):

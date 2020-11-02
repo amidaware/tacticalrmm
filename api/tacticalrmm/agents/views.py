@@ -253,7 +253,6 @@ class AgentsTableList(generics.ListAPIView):
         "pk",
         "hostname",
         "agent_id",
-        "client",
         "site",
         "monitoring_type",
         "description",
@@ -292,9 +291,9 @@ def agent_edit_details(request, pk):
 
 
 @api_view()
-def by_client(request, client):
+def by_client(request, clientpk):
     agents = (
-        Agent.objects.filter(client=client)
+        Agent.objects.filter(site__client_id=clientpk)
         .prefetch_related("agentchecks")
         .only(
             "pk",
@@ -321,15 +320,14 @@ def by_client(request, client):
 
 
 @api_view()
-def by_site(request, client, site):
+def by_site(request, sitepk):
     agents = (
-        Agent.objects.filter(client=client, site=site)
+        Agent.objects.filter(site_id=sitepk)
         .prefetch_related("agentchecks")
         .only(
             "pk",
             "hostname",
             "agent_id",
-            "client",
             "site",
             "monitoring_type",
             "description",
@@ -807,14 +805,9 @@ def bulk(request):
         return notify_error("Must select at least 1 agent")
 
     if request.data["target"] == "client":
-        client = get_object_or_404(Client, client=request.data["client"])
-        agents = Agent.objects.filter(client=client.client)
+        agents = Agent.objects.filter(site__client_id=request.data["client"])
     elif request.data["target"] == "site":
-        client = get_object_or_404(Client, client=request.data["client"])
-        site = (
-            Site.objects.filter(client=client).filter(site=request.data["site"]).get()
-        )
-        agents = Agent.objects.filter(client=client.client).filter(site=site.site)
+        agents = Agent.objects.filter(site_id=request.data["site"])
     elif request.data["target"] == "agents":
         agents = Agent.objects.filter(pk__in=request.data["agentPKs"])
     elif request.data["target"] == "all":
@@ -904,14 +897,12 @@ def agent_counts(request):
 @api_view(["POST"])
 def agent_maintenance(request):
     if request.data["type"] == "Client":
-        client = Client.objects.get(pk=request.data["id"])
-        Agent.objects.filter(client=client.client).update(
+        Agent.objects.filter(site__client_id=request.data["id"]).update(
             maintenance_mode=request.data["action"]
         )
 
     elif request.data["type"] == "Site":
-        site = Site.objects.get(pk=request.data["id"])
-        Agent.objects.filter(client=site.client.client, site=site.site).update(
+        Agent.objects.filter(site_id=request.data["id"]).update(
             maintenance_mode=request.data["action"]
         )
 

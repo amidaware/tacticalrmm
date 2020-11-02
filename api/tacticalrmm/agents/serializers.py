@@ -35,6 +35,8 @@ class AgentTableSerializer(serializers.ModelSerializer):
     status = serializers.ReadOnlyField()
     checks = serializers.ReadOnlyField()
     last_seen = serializers.SerializerMethodField()
+    client = serializers.ReadOnlyField(source="client.client")
+    site = serializers.ReadOnlyField(source="site.site")
 
     def get_last_seen(self, obj):
         if obj.time_zone is not None:
@@ -50,8 +52,8 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "id",
             "hostname",
             "agent_id",
-            "client",
             "site",
+            "client",
             "monitoring_type",
             "description",
             "needs_reboot",
@@ -66,6 +68,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "last_logged_in_user",
             "maintenance_mode",
         ]
+        depth = 2
 
 
 class AgentEditSerializer(serializers.ModelSerializer):

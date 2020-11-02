@@ -394,21 +394,20 @@ export default {
     loadFrame(activenode, destroySub = true) {
       if (destroySub) this.$store.commit("destroySubTable");
 
-      let client, site, url;
+      let client_id, site_id, url;
       try {
-        client = this.$refs.tree.meta[activenode].parent.key.split("|")[1];
-        site = activenode.split("|")[1];
-        url = `/agents/bysite/${client}/${site}/`;
+        site_id = activenode.split("|")[2];
+        url = `/agents/bysite/${site_id}/`;
       } catch (e) {
         try {
-          client = activenode.split("|")[1];
+          client_id = activenode.split("|")[2];
         } catch (e) {
           return false;
         }
-        if (client === null || client === undefined) {
+        if (client_id === null || client_id === undefined) {
           url = null;
         } else {
-          url = `/agents/byclient/${client}/`;
+          url = `/agents/byclient/${client_id}/`;
         }
       }
       if (url) {

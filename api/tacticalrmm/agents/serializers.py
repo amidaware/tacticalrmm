@@ -74,6 +74,8 @@ class AgentTableSerializer(serializers.ModelSerializer):
 class AgentEditSerializer(serializers.ModelSerializer):
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
     all_timezones = serializers.SerializerMethodField()
+    client = serializers.ReadOnlyField(source="client.client")
+    site = serializers.ReadOnlyField(source="site.site")
 
     def get_all_timezones(self, obj):
         return pytz.all_timezones
@@ -110,6 +112,9 @@ class WinAgentSerializer(serializers.ModelSerializer):
 
 
 class AgentHostnameSerializer(serializers.ModelSerializer):
+    client = serializers.ReadOnlyField(source="client.client")
+    site = serializers.ReadOnlyField(source="site.site")
+
     class Meta:
         model = Agent
         fields = (

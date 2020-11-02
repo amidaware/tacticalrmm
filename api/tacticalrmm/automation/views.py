@@ -1,4 +1,3 @@
-from django.db import DataError
 from django.shortcuts import get_object_or_404
 
 from rest_framework.views import APIView
@@ -33,7 +32,6 @@ from .tasks import (
     generate_agent_checks_from_policies_task,
     generate_agent_checks_by_location_task,
     generate_agent_tasks_from_policies_task,
-    generate_agent_tasks_by_location_task,
     run_win_policy_autotask_task,
 )
 
@@ -218,7 +216,7 @@ class GetRelated(APIView):
                     client.save()
 
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": client.client},
+                        location={"site__client": client},
                         mon_type="workstation",
                         clear=True,
                         create_tasks=True,
@@ -236,7 +234,7 @@ class GetRelated(APIView):
                     site.workstation_policy = policy
                     site.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.site},
+                        location={"site": site},
                         mon_type="workstation",
                         clear=True,
                         create_tasks=True,
@@ -258,7 +256,7 @@ class GetRelated(APIView):
                     client.server_policy = policy
                     client.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": client.client},
+                        location={"site__client": client},
                         mon_type="server",
                         clear=True,
                         create_tasks=True,
@@ -276,7 +274,7 @@ class GetRelated(APIView):
                     site.server_policy = policy
                     site.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.site},
+                        location={"site": site},
                         mon_type="server",
                         clear=True,
                         create_tasks=True,
@@ -296,7 +294,7 @@ class GetRelated(APIView):
                     client.workstation_policy = None
                     client.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": client.client},
+                        location={"site__client": client},
                         mon_type="workstation",
                         clear=True,
                         create_tasks=True,
@@ -311,7 +309,7 @@ class GetRelated(APIView):
                     site.workstation_policy = None
                     site.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.site},
+                        location={"site": site},
                         mon_type="workstation",
                         clear=True,
                         create_tasks=True,
@@ -329,7 +327,7 @@ class GetRelated(APIView):
                     client.server_policy = None
                     client.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": client.client},
+                        location={"site__client": client},
                         mon_type="server",
                         clear=True,
                         create_tasks=True,
@@ -343,7 +341,7 @@ class GetRelated(APIView):
                     site.server_policy = None
                     site.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.site},
+                        location={"site": site},
                         mon_type="server",
                         clear=True,
                         create_tasks=True,
@@ -424,11 +422,9 @@ class UpdatePatchPolicy(APIView):
 
         agents = None
         if "client" in request.data and "site" in request.data:
-            agents = Agent.objects.filter(
-                client=request.data["client"], site=request.data["site"]
-            )
+            agents = Agent.objects.filter(site_id=request.data["site"])
         elif "client" in request.data:
-            agents = Agent.objects.filter(client=request.data["client"])
+            agents = Agent.objects.filter(site__client_id=request.data["client"])
         else:
             agents = Agent.objects.all()
 

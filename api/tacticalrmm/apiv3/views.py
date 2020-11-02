@@ -16,9 +16,7 @@ from rest_framework.authtoken.models import Token
 from agents.models import Agent
 from checks.models import Check
 from autotasks.models import AutomatedTask
-from winupdate.models import WinUpdate
 from accounts.models import User
-from clients.models import Client, Site
 from winupdate.models import WinUpdatePolicy
 from checks.serializers import CheckRunnerGetSerializerV3
 from agents.serializers import WinAgentSerializer
@@ -419,14 +417,10 @@ class NewAgent(APIView):
                 "Agent already exists. Remove old agent first if trying to re-install"
             )
 
-        client = get_object_or_404(Client, pk=int(request.data["client"]))
-        site = get_object_or_404(Site, pk=int(request.data["site"]))
-
         agent = Agent(
             agent_id=request.data["agent_id"],
             hostname=request.data["hostname"],
-            client=client.client,
-            site=site.site,
+            site_id=int(request.data["site"]),
             monitoring_type=request.data["monitoring_type"],
             description=request.data["description"],
             mesh_node_id=request.data["mesh_node_id"],

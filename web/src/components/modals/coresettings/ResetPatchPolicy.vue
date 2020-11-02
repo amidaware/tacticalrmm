@@ -66,11 +66,11 @@ export default {
       let data = {};
 
       if (this.client !== null) {
-        data.client = this.client.label;
+        data.client = this.client.id;
       }
 
       if (this.site !== null) {
-        data.site = this.site.label;
+        data.site = this.site.id;
       }
 
       this.$store

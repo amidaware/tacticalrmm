@@ -30,6 +30,11 @@ def send_agent_update_task(pks, version):
     for chunk in chunks:
         for pk in chunk:
             agent = Agent.objects.get(pk=pk)
+
+            # skip if we can't determine the arch
+            if agent.arch is None:
+                continue
+
             # golang agent only backwards compatible with py agent 0.11.2
             # force an upgrade to the latest python agent if version < 0.11.2
             if pyver.parse(agent.version) < pyver.parse("0.11.2"):
@@ -53,7 +58,7 @@ def send_agent_update_task(pks, version):
 
 
 @app.task
-def auto_self_agent_update_task():
+def auto_self_agent_update_task(test=False):
     core = CoreSettings.objects.first()
     if not core.agent_auto_update:
         return
@@ -70,6 +75,11 @@ def auto_self_agent_update_task():
     for chunk in chunks:
         for pk in chunk:
             agent = Agent.objects.get(pk=pk)
+
+            # skip if we can't determine the arch
+            if agent.arch is None:
+                continue
+
             # golang agent only backwards compatible with py agent 0.11.2
             # force an upgrade to the latest python agent if version < 0.11.2
             if pyver.parse(agent.version) < pyver.parse("0.11.2"):
@@ -89,7 +99,8 @@ def auto_self_agent_update_task():
                     "url": url,
                 },
             )
-        sleep(10)
+        if not test:
+            sleep(10)
 
 
 @app.task

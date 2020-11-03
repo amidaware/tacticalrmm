@@ -198,19 +198,19 @@
 
     <!-- edit client modal -->
     <q-dialog v-model="showEditClientModal">
-      <EditClients @close="showEditClientModal = false" @edited="refreshEntireSite" />
+      <EditClients @close="closeDeleteEditModal" :clientpk="deleteEditModalPk" @edited="refreshEntireSite" />
     </q-dialog>
     <!-- edit site modal -->
     <q-dialog v-model="showEditSiteModal">
-      <EditSites @close="showEditSiteModal = false" @edited="refreshEntireSite" />
+      <EditSites @close="closeDeleteEditModal" :sitepk="deleteEditModalPk" @edited="refreshEntireSite" />
     </q-dialog>
     <!-- delete client modal -->
     <q-dialog v-model="showDeleteClientModal">
-      <DeleteClient @close="showDeleteClientModal = false" @edited="refreshEntireSite" />
+      <DeleteClient @close="closeDeleteEditModal" :clientpk="deleteEditModalPk" @edited="refreshEntireSite" />
     </q-dialog>
     <!-- delete site modal -->
     <q-dialog v-model="showDeleteSiteModal">
-      <DeleteSite @close="showDeleteSiteModal = false" @edited="refreshEntireSite" />
+      <DeleteSite @close="closeDeleteEditModal" :sitepk="deleteEditModalPk" @edited="refreshEntireSite" />
     </q-dialog>
     <!-- add policy modal -->
     <q-dialog v-model="showPolicyAddModal">
@@ -268,6 +268,7 @@ export default {
       poll: null,
       search: null,
       currentTRMMVersion: null,
+      deleteEditModalPk: null,
       columns: [
         {
           name: "smsalert",
@@ -396,11 +397,11 @@ export default {
 
       let client_id, site_id, url;
       try {
-        site_id = activenode.split("|")[2];
+        site_id = activenode.split("|")[1];
         url = `/agents/bysite/${site_id}/`;
       } catch (e) {
         try {
-          client_id = activenode.split("|")[2];
+          client_id = activenode.split("|")[1];
         } catch (e) {
           return false;
         }
@@ -452,17 +453,26 @@ export default {
     },
     showEditModal(node) {
       if (node.children) {
+        this.deleteEditModalPk = node.id;
         this.showEditClientModal = true;
       } else {
         this.showEditSiteModal = true;
       }
     },
     showDeleteModal(node) {
+      this.deleteEditModalPk = node.id;
       if (node.children) {
         this.showDeleteClientModal = true;
       } else {
         this.showDeleteSiteModal = true;
       }
+    },
+    closeDeleteEditModal() {
+      this.showDeleteClientModal = false;
+      this.showDeleteSiteModal = false;
+      this.showEditSiteModal = false;
+      this.showEditClientModal = false;
+      this.deleteEditModalPk = null;
     },
     reload() {
       this.$store.dispatch("reload");

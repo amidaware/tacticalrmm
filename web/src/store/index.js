@@ -210,7 +210,7 @@ export default function () {
         return axios.delete(`/tasks/${pk}/automatedtasks/`);
       },
       getUpdatedSites(context) {
-        axios.get("/clients/loadclients/").then(r => {
+        axios.get("/clients/clients/").then(r => {
           context.commit("getUpdatedSites", r.data);
         });
       },
@@ -218,53 +218,54 @@ export default function () {
         return axios.get("/clients/clients/");
       },
       loadSites(context) {
-        return axios.get("/clients/listsites/");
+        return axios.get("/clients/sites/");
       },
       loadAgents(context) {
         return axios.get("/agents/listagents/");
       },
       loadTree({ commit }) {
-        axios.get("/clients/loadtree/").then(r => {
-          const input = r.data;
-          if (
-            Object.entries(input).length === 0 &&
-            input.constructor === Object
-          ) {
+        axios.get("/clients/tree/").then(r => {
+
+          if (r.data.length === 0) {
             this.$router.push({ name: "InitialSetup" });
           }
-          const output = [];
-          for (let prop in input) {
-            let sites_arr = input[prop];
-            let child_single = [];
-            for (let i = 0; i < sites_arr.length; i++) {
-              child_single.push({
-                label: sites_arr[i].split("|")[0],
-                id: sites_arr[i].split("|")[1],
-                raw: `Site|${sites_arr[i]}`,
+
+          let output = [];
+          for (let client of r.data) {
+
+            let childSites = [];
+            for (let site of client.sites) {
+
+              let site_color = "black"
+              if (site.maintenance_mode) { site_color = "orange" }
+              else if (site.failing_checks) { site_color = "red" }
+
+              childSites.push({
+                label: site.name,
+                id: site.id,
+                raw: `Site|${site.id}`,
                 header: "generic",
                 icon: "apartment",
-                color: sites_arr[i].split("|")[2]
+                color: site_color
               });
             }
-            // sort alphabetically by site name
-            let alphaSort = child_single.sort((a, b) => a.label.toLowerCase() > b.label.toLowerCase() ? 1 : -1);
+
+            let client_color = "black"
+            if (client.maintenance_mode) { client_color = "orange" }
+            else if (client.failing_checks) { client_color = "red" }
+
             output.push({
-              label: prop.split("|")[0],
-              id: prop.split("|")[1],
-              raw: `Client|${prop}`,
+              label: client.name,
+              id: client.id,
+              raw: `Client|${client.id}`,
               header: "root",
               icon: "business",
-              color: prop.split("|")[2],
-              children: alphaSort
+              color: client_color,
+              children: childSites
             });
           }
 
-          // first sort alphabetically, then move failing clients to the top
-          const sortedAlpha = output.sort((a, b) => (a.label.toLowerCase() > b.label.toLowerCase() ? 1 : -1));
-          const sortedByFailing = sortedAlpha.sort(a =>
-            a.color === "negative" ? -1 : 1
-          );
-          commit("loadTree", sortedByFailing);
+          commit("loadTree", output);
           //commit("destroySubTable");
         });
       },

@@ -11,14 +11,14 @@
     </q-card-section>
     <q-card-section>
       <q-form @submit.prevent="deleteSite">
-        <q-card-section v-if="tree !== null">
+        <q-card-section>
           <q-select
             :rules="[val => !!val || '*Required']"
             outlined
             options-dense
             label="Select client"
             v-model="client"
-            :options="Object.keys(tree).sort()"
+            :options="client_options"
             @input="site = sites[0]"
           />
         </q-card-section>
@@ -30,10 +30,12 @@
             label="Select site"
             v-model="site"
             :options="sites"
+            emit-value
+            map-options
           />
         </q-card-section>
         <q-card-actions align="left">
-          <q-btn :disable="site === null" :label="`Delete ${site}`" class="full-width" color="negative" type="submit" />
+          <q-btn :disable="site === null" label="Delete" class="full-width" color="negative" type="submit" />
         </q-card-actions>
       </q-form>
     </q-card-section>
@@ -45,43 +47,51 @@ import mixins from "@/mixins/mixins";
 export default {
   name: "DeleteSite",
   mixins: [mixins],
+  props: {
+    sitepk: Number,
+  },
   data() {
     return {
-      tree: null,
+      client_options: [],
       client: null,
       site: null,
     };
   },
   computed: {
     sites() {
-      if (this.tree !== null && this.client !== null) {
-        this.site = this.tree[this.client].sort()[0];
-        return this.tree[this.client].sort();
-      }
+      return !!this.client ? this.client.sites.map(site => ({ label: site.name, value: site.id })) : [];
     },
   },
   methods: {
-    getTree() {
-      this.$axios.get("/clients/loadclients/").then(r => {
-        this.tree = r.data;
-        this.client = Object.keys(r.data).sort()[0];
+    getClients() {
+      this.$axios.get("/clients/clients/").then(r => {
+        this.client_options = this.formatClientOptions(r.data);
+
+        if (this.sitepk !== null && this.sitepk !== undefined) {
+          this.client_options.forEach(client => {
+            let site = client.sites.find(site => (site.id = this.sitepk));
+
+            if (site !== undefined) {
+              this.site = site.id;
+              this.client = client;
+            }
+          });
+        } else {
+          this.client = this.client_options[0];
+        }
       });
     },
     deleteSite() {
-      const data = {
-        client: this.client,
-        site: this.site,
-      };
       this.$q
         .dialog({
           title: "Are you sure?",
-          message: `Delete site ${this.site}`,
+          message: "Delete site",
           cancel: true,
           ok: { label: "Delete", color: "negative" },
         })
         .onOk(() => {
           this.$axios
-            .delete("/clients/deletesite/", { data })
+            .delete(`/clients/${this.site}/site/`)
             .then(r => {
               this.$emit("edited");
               this.$emit("close");
@@ -92,7 +102,7 @@ export default {
     },
   },
   created() {
-    this.getTree();
+    this.getClients();
   },
 };
 </script>

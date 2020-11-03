@@ -255,8 +255,8 @@
               <q-tooltip>Checks passing</q-tooltip>
             </q-icon>
           </q-td>
-          <q-td key="client" :props="props">{{ props.row.client }}</q-td>
-          <q-td key="site" :props="props">{{ props.row.site }}</q-td>
+          <q-td key="client" :props="props">{{ props.row.client_name }}</q-td>
+          <q-td key="site" :props="props">{{ props.row.site_name }}</q-td>
 
           <q-td key="hostname" :props="props">{{ props.row.hostname }}</q-td>
           <q-td key="description" :props="props">{{ props.row.description }}</q-td>

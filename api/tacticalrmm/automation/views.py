@@ -11,7 +11,7 @@ from checks.models import Check
 from autotasks.models import AutomatedTask
 from winupdate.models import WinUpdatePolicy
 
-from clients.serializers import ClientSerializer, TreeSerializer
+from clients.serializers import ClientSerializer, SiteSerializer
 from agents.serializers import AgentHostnameSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
@@ -170,7 +170,7 @@ class GetRelated(APIView):
                 if site not in policy.server_sites.all():
                     filtered_server_sites.append(site)
 
-        response["server_sites"] = TreeSerializer(
+        response["server_sites"] = SiteSerializer(
             filtered_server_sites + list(policy.server_sites.all()), many=True
         ).data
 
@@ -179,7 +179,7 @@ class GetRelated(APIView):
                 if site not in policy.workstation_sites.all():
                     filtered_workstation_sites.append(site)
 
-        response["workstation_sites"] = TreeSerializer(
+        response["workstation_sites"] = SiteSerializer(
             filtered_workstation_sites + list(policy.workstation_sites.all()), many=True
         ).data
 

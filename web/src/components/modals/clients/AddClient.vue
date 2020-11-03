@@ -16,7 +16,7 @@
             outlined
             v-model="client.client"
             label="Client:"
-            :rules="[ val => val && val.length > 0 || '*Required']"
+            :rules="[val => (val && val.length > 0) || '*Required']"
           />
         </q-card-section>
         <q-card-section>
@@ -24,7 +24,7 @@
             outlined
             v-model="client.site"
             label="Default first site:"
-            :rules="[ val => val && val.length > 0 || '*Required']"
+            :rules="[val => (val && val.length > 0) || '*Required']"
           />
         </q-card-section>
         <q-card-actions align="right">
@@ -52,15 +52,19 @@ export default {
   },
   methods: {
     addClient() {
+      this.$q.loading.show();
+
       axios
         .post("/clients/clients/", this.client)
         .then(r => {
           this.$emit("close");
           this.$store.dispatch("loadTree");
           this.$store.dispatch("getUpdatedSites");
+          this.$q.loading.hide();
           this.notifySuccess(r.data);
         })
         .catch(e => {
+          this.$q.loading.hide();
           if (e.response.data.client) {
             this.notifyError(e.response.data.client);
           } else {

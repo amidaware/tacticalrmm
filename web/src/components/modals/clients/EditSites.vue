@@ -18,11 +18,8 @@
             options-dense
             label="Select client"
             v-model="client"
-            :options="Object.keys(tree).sort()"
-            @input="
-              site = sites[0];
-              newName = sites[0];
-            "
+            :options="client_options"
+            @input="site = sites[0]"
           />
         </q-card-section>
         <q-card-section>
@@ -33,11 +30,10 @@
             label="Select site"
             v-model="site"
             :options="sites"
-            @input="newName = site"
           />
         </q-card-section>
         <q-card-section>
-          <q-input :rules="[val => !!val || '*Required']" outlined v-model="newName" label="Rename site" />
+          <q-input :rules="[val => !!val || '*Required']" outlined v-model="site.label" label="Rename site" />
         </q-card-section>
         <q-card-actions align="left">
           <q-btn :disable="!nameChanged" label="Save" color="primary" type="submit" />
@@ -53,43 +49,47 @@ import mixins from "@/mixins/mixins";
 export default {
   name: "EditSites",
   mixins: [mixins],
+  props: {
+    sitepk: Number,
+  },
   data() {
     return {
-      tree: null,
+      client_options: [],
       client: null,
-      site: null,
-      newName: null,
+      site: {},
     };
   },
   computed: {
     sites() {
-      if (this.tree !== null && this.client !== null) {
-        this.site = this.tree[this.client].sort()[0];
-        this.newName = this.tree[this.client].sort()[0];
-        return this.tree[this.client].sort();
-      }
-    },
-    nameChanged() {
-      if (this.site !== null) {
-        return this.newName === this.site ? false : true;
-      }
+      return !!this.client ? this.client.sites(site => ({ label: site.name, value: site.id })) : [];
     },
   },
   methods: {
-    getTree() {
-      axios.get("/clients/loadclients/").then(r => {
-        this.tree = r.data;
-        this.client = Object.keys(r.data).sort()[0];
+    getClients() {
+      axios.get("/clients/clients/").then(r => {
+        this.client_options = this.formatClientoptions(r.data);
+
+        if (this.sitepk !== undefined && this.sitepk !== null) {
+          this.client_options.forEach(client => {
+            let site = client.sites.find(site => (site.id = this.sitepk));
+
+            if (site !== undefined) {
+              this.site = site.id;
+              this.client = client;
+            }
+          });
+        } else {
+          this.client = this.client_options[0];
+        }
       });
     },
     editSite() {
       const data = {
-        client: this.client,
-        site: this.site,
-        name: this.newName,
+        id: this.site.value,
+        name: this.site.label,
       };
       axios
-        .patch("/clients/editsite/", data)
+        .put(`/clients/${this.site.value}/site/`, data)
         .then(() => {
           this.$emit("edited");
           this.$emit("close");
@@ -99,7 +99,7 @@ export default {
     },
   },
   created() {
-    this.getTree();
+    this.getClients();
   },
 };
 </script>

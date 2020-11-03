@@ -396,8 +396,8 @@ def reboot_later(request):
 def install_agent(request):
     from knox.models import AuthToken
 
-    client = get_object_or_404(Client, client=request.data["client"])
-    site = get_object_or_404(Site, client=client, site=request.data["site"])
+    client = get_object_or_404(Client, name=request.data["client"])
+    site = get_object_or_404(Site, client=client, name=request.data["site"])
     version = settings.LATEST_AGENT_VER
     arch = request.data["arch"]
 

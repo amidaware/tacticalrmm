@@ -10,25 +10,22 @@
       </q-card-actions>
     </q-card-section>
     <q-card-section>
-      <q-form @submit.prevent="editClient">
+      <q-form @submit="editClient">
         <q-card-section>
           <q-select
             :rules="[val => !!val || '*Required']"
             outlined
             options-dense
             label="Select client"
-            v-model="client.id"
-            :options="clients"
-            @input="onChange"
-            emit-value
-            map-options
+            v-model="client"
+            :options="client_options"
           />
         </q-card-section>
         <q-card-section>
-          <q-input :rules="[val => !!val || '*Required']" outlined v-model="client.client" label="Rename client" />
+          <q-input :rules="[val => !!val || '*Required']" outlined v-model="client.label" label="Rename client" />
         </q-card-section>
         <q-card-actions align="left">
-          <q-btn :disable="!nameChanged" label="Save" color="primary" type="submit" />
+          <q-btn label="Save" color="primary" type="submit" />
         </q-card-actions>
       </q-form>
     </q-card-section>
@@ -41,38 +38,36 @@ import mixins from "@/mixins/mixins";
 export default {
   name: "EditClients",
   mixins: [mixins],
+  props: {
+    clientpk: Number,
+  },
   data() {
     return {
-      clients: [],
-      client: {
-        client: null,
-        id: null,
-      },
+      client_options: [],
+      client: {},
     };
-  },
-  computed: {
-    nameChanged() {
-      if (this.clients.length !== 0 && this.client.client !== null) {
-        const origName = this.clients.find(i => i.value === this.client.id).label;
-        return this.client.client === origName ? false : true;
-      }
-    },
   },
   methods: {
     getClients() {
       axios.get("/clients/clients/").then(r => {
-        r.data.forEach(client => {
-          this.clients.push({ label: client.client, value: client.id });
-        });
-        this.clients.sort((a, b) => a.label.localeCompare(b.label));
+        this.client_options = r.data.map(client => ({ label: client.name, value: client.id }));
+
+        if (this.clientpk !== undefined && this.clientpk !== null) {
+          let client = this.client_options.find(client => client.value === this.clientpk);
+
+          this.client = client;
+        } else {
+          this.client = this.client_options[0];
+        }
       });
     },
-    onChange() {
-      this.client.client = this.clients.find(i => i.value === this.client.id).label;
-    },
     editClient() {
+      const data = {
+        id: this.client.value,
+        name: this.client.label,
+      };
       axios
-        .patch(`/clients/${this.client.id}/client/`, this.client)
+        .put(`/clients/${this.client.value}/client/`, data)
         .then(r => {
           this.$emit("edited");
           this.$emit("close");

@@ -22,10 +22,10 @@ from rest_framework.decorators import api_view
 from .serializers import (
     ClientSerializer,
     SiteSerializer,
-    TreeSerializer,
+    ClientTreeSerializer,
     DeploymentSerializer,
 )
-from .models import Client, Site, Deployment, validate_name
+from .models import Client, Site, Deployment
 from agents.models import Agent
 from core.models import CoreSettings
 from tacticalrmm.utils import notify_error
@@ -40,50 +40,50 @@ class GetAddClients(APIView):
 
         if "initialsetup" in request.data:
             client = {"client": request.data["client"]["client"].strip()}
-            site = {"site": request.data["client"]["site"].strip()}
+            site = {"name": request.data["client"]["site"].strip()}
             serializer = ClientSerializer(data=client, context=request.data["client"])
             serializer.is_valid(raise_exception=True)
             core = CoreSettings.objects.first()
             core.default_time_zone = request.data["timezone"]
             core.save(update_fields=["default_time_zone"])
         else:
-            client = {"client": request.data["client"].strip()}
-            site = {"site": request.data["site"].strip()}
+            client = {"name": request.data["client"].strip()}
+            site = {"name": request.data["site"].strip()}
             serializer = ClientSerializer(data=client, context=request.data)
             serializer.is_valid(raise_exception=True)
 
         obj = serializer.save()
-        Site(client=obj, site=site["site"]).save()
+        Site(client=obj, name=site["name"]).save()
 
         return Response(f"{obj} was added!")
 
 
 class GetUpdateDeleteClient(APIView):
-    def patch(self, request, pk):
+    def put(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
-        orig = client.client
 
         serializer = ClientSerializer(data=request.data, instance=client)
         serializer.is_valid(raise_exception=True)
-        obj = serializer.save()
+        serializer.save()
 
-        agents = Agent.objects.filter(client=orig)
-        for agent in agents:
-            agent.client = obj.client
-            agent.save(update_fields=["client"])
-
-        return Response(f"{orig} renamed to {obj}")
+        return Response(f"The Client was renamed")
 
     def delete(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
-        agents = Agent.objects.filter(client=client.client)
-        if agents.exists():
+        agent_count = Agent.objects.filter(site__client=client).count()
+        if agent_count > 0:
             return notify_error(
-                f"Cannot delete {client} while {agents.count()} agents exist in it. Move the agents to another client first."
+                f"Cannot delete {client} while {agent_count} agents exist in it. Move the agents to another client first."
             )
 
         client.delete()
-        return Response(f"{client.client} was deleted!")
+        return Response(f"{client.name} was deleted!")
+
+
+class GetClientTree(APIView):
+    def get(self, request):
+        clients = Client.objects.all()
+        return Response(ClientTreeSerializer(clients, many=True).data)
 
 
 class GetAddSites(APIView):
@@ -91,126 +91,42 @@ class GetAddSites(APIView):
         sites = Site.objects.all()
         return Response(SiteSerializer(sites, many=True).data)
 
+    def post(self, request):
+        name = request.data["name"].strip()
 
-@api_view(["POST"])
-def add_site(request):
-    client = Client.objects.get(client=request.data["client"].strip())
-    site = request.data["site"].strip()
+        serializer = SiteSerializer(
+            data={"name": name, "client": request.data["client"]}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-    if not validate_name(site):
-        content = {"error": "Site name cannot contain the | character"}
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
-
-    if Site.objects.filter(client=client).filter(site=site):
-        content = {"error": f"Site {site} already exists"}
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        Site(client=client, site=site).save()
-    except DataError:
-        content = {"error": "Site name too long (max 255 chars)"}
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
-    else:
         return Response("ok")
 
 
-@api_view(["PATCH"])
-def edit_site(request):
-    new_name = request.data["name"].strip()
+class GetUpdateDeleteSite(APIView):
+    def put(self, request, pk):
 
-    if not validate_name(new_name):
-        err = "Site name cannot contain the | character"
-        return Response(err, status=status.HTTP_400_BAD_REQUEST)
+        site = Site.objects.get(pk=pk)
+        serializer = SiteSerializer(data=request.data, instance=site)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-    client = get_object_or_404(Client, client=request.data["client"])
-    site = Site.objects.filter(client=client).filter(site=request.data["site"]).get()
+        return Response("ok")
 
-    agents = Agent.objects.filter(client=client.client).filter(site=site.site)
+    def delete(self, request, pk):
+        site = Site.objects.get(pk=pk)
+        if site.client.sites.count() == 1:
+            return notify_error(f"A client must have at least 1 site.")
 
-    site.site = new_name
-    site.save(update_fields=["site"])
+        agent_count = Agent.objects.filter(site=site).count()
 
-    for agent in agents:
-        agent.site = new_name
-        agent.save(update_fields=["site"])
+        if agent_count > 0:
+            return notify_error(
+                f"Cannot delete {site.name} while {agent_count} agents exist in it. Move the agents to another site first."
+            )
 
-    return Response("ok")
-
-
-@api_view(["DELETE"])
-def delete_site(request):
-    client = get_object_or_404(Client, client=request.data["client"])
-    if client.sites.count() == 1:
-        return notify_error(f"A client must have at least 1 site.")
-
-    site = Site.objects.filter(client=client).filter(site=request.data["site"]).get()
-    agents = Agent.objects.filter(client=client.client).filter(site=site.site)
-
-    if agents.exists():
-        return notify_error(
-            f"Cannot delete {site} while {agents.count()} agents exist in it. Move the agents to another site first."
-        )
-
-    site.delete()
-    return Response(f"{site} was deleted!")
-
-
-@api_view()
-# for vue
-def list_clients(request):
-    clients = Client.objects.all()
-    return Response(ClientSerializer(clients, many=True).data)
-
-
-@api_view()
-# for vue
-def list_sites(request):
-    sites = Site.objects.all()
-    return Response(TreeSerializer(sites, many=True).data)
-
-
-@api_view()
-def load_tree(request):
-    clients = Client.objects.all()
-    new = {}
-
-    for x in clients:
-        b = []
-
-        sites = Site.objects.filter(client=x)
-        for i in sites:
-
-            if i.has_maintenanace_mode_agents:
-                b.append(f"{i.site}|{i.pk}|warning")
-            elif i.has_failing_checks:
-                b.append(f"{i.site}|{i.pk}|negative")
-            else:
-                b.append(f"{i.site}|{i.pk}|black")
-
-            if x.has_maintenanace_mode_agents:
-                new[f"{x.client}|{x.pk}|warning"] = b
-            elif x.has_failing_checks:
-                new[f"{x.client}|{x.pk}|negative"] = b
-            else:
-                new[f"{x.client}|{x.pk}|black"] = b
-
-    return Response(new)
-
-
-@api_view()
-def load_clients(request):
-    clients = Client.objects.all()
-    new = {}
-
-    for x in clients:
-        b = []
-
-        sites = Site.objects.filter(client=x)
-        for i in sites:
-            b.append(i.site)
-            new[x.client] = b
-
-    return Response(new)
+        site.delete()
+        return Response(f"{site.name} was deleted!")
 
 
 class AgentDeployment(APIView):
@@ -285,8 +201,8 @@ class GenerateAgent(APIView):
         )
         download_url = settings.DL_64 if d.arch == "64" else settings.DL_32
 
-        client = d.client.client.replace(" ", "").lower()
-        site = d.site.site.replace(" ", "").lower()
+        client = d.client.name.replace(" ", "").lower()
+        site = d.site.name.replace(" ", "").lower()
         client = re.sub(r"([^a-zA-Z0-9]+)", "", client)
         site = re.sub(r"([^a-zA-Z0-9]+)", "", site)
 

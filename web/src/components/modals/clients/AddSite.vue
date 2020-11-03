@@ -12,7 +12,7 @@
     <q-card-section>
       <q-form @submit.prevent="addSite">
         <q-card-section>
-          <q-select options-dense outlined v-model="clientName" :options="Object.keys(clients).sort()" />
+          <q-select options-dense emit-value map-options outlined v-model="client" :options="client_options" />
         </q-card-section>
         <q-card-section>
           <q-input
@@ -40,32 +40,32 @@ export default {
   mixins: [mixins],
   data() {
     return {
-      clientName: "",
+      client: null,
       siteName: "",
     };
   },
   methods: {
-    loadFirstClient() {
-      axios.get("/clients/listclients/").then(resp => {
-        this.clientName = resp.data.map(k => k.client).sort()[0];
-      });
-    },
     addSite() {
       axios
-        .post("/clients/addsite/", {
-          client: this.clientName,
-          site: this.siteName,
+        .post("/clients/sites/", {
+          client: this.client,
+          name: this.siteName,
         })
         .then(() => {
           this.$emit("close");
           this.$store.dispatch("loadTree");
           this.notifySuccess(`Site ${this.siteName} was added!`);
         })
-        .catch(err => this.notifyError(err.response.data.error));
+        .catch(err => this.notifyError(err.response.data));
+    },
+  },
+  computed: {
+    client_options() {
+      return this.clients.map(client => ({ label: client.name, value: client.id }));
     },
   },
   created() {
-    this.loadFirstClient();
+    this.client = this.clients[0].id;
   },
 };
 </script>

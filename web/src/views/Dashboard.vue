@@ -105,13 +105,13 @@
 
                     <q-menu context-menu>
                       <q-list dense style="min-width: 200px">
-                        <q-item clickable v-close-popup @click="showEditModal(props.node)">
+                        <q-item clickable v-close-popup @click="showEditModal(props.node, 'edit')">
                           <q-item-section side>
                             <q-icon name="edit" />
                           </q-item-section>
                           <q-item-section>Edit</q-item-section>
                         </q-item>
-                        <q-item clickable v-close-popup @click="showDeleteModal(props.node)">
+                        <q-item clickable v-close-popup @click="showDeleteModal(props.node, 'delete')">
                           <q-item-section side>
                             <q-icon name="delete" />
                           </q-item-section>
@@ -196,21 +196,23 @@
       </q-splitter>
     </q-page-container>
 
-    <!-- edit client modal -->
-    <q-dialog v-model="showEditClientModal">
-      <EditClients @close="closeDeleteEditModal" :clientpk="deleteEditModalPk" @edited="refreshEntireSite" />
+    <!-- client form modal -->
+    <q-dialog v-model="showClientsFormModal" @hide="closeClientsFormModal">
+      <ClientsForm
+        @close="closeClientsFormModal"
+        :op="clientOp"
+        :clientpk="deleteEditModalPk"
+        @edited="refreshEntireSite"
+      />
     </q-dialog>
     <!-- edit site modal -->
-    <q-dialog v-model="showEditSiteModal">
-      <EditSites @close="closeDeleteEditModal" :sitepk="deleteEditModalPk" @edited="refreshEntireSite" />
-    </q-dialog>
-    <!-- delete client modal -->
-    <q-dialog v-model="showDeleteClientModal">
-      <DeleteClient @close="closeDeleteEditModal" :clientpk="deleteEditModalPk" @edited="refreshEntireSite" />
-    </q-dialog>
-    <!-- delete site modal -->
-    <q-dialog v-model="showDeleteSiteModal">
-      <DeleteSite @close="closeDeleteEditModal" :sitepk="deleteEditModalPk" @edited="refreshEntireSite" />
+    <q-dialog v-model="showSitesFormModal" @hide="closeClientsFormModal">
+      <SitesForm
+        @close="closeClientsFormModal"
+        :op="clientOp"
+        :sitepk="deleteEditModalPk"
+        @edited="refreshEntireSite"
+      />
     </q-dialog>
     <!-- add policy modal -->
     <q-dialog v-model="showPolicyAddModal">
@@ -228,10 +230,8 @@ import AgentTable from "@/components/AgentTable";
 import SubTableTabs from "@/components/SubTableTabs";
 import AlertsIcon from "@/components/AlertsIcon";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
-import EditSites from "@/components/modals/clients/EditSites";
-import EditClients from "@/components/modals/clients/EditClients";
-import DeleteClient from "@/components/modals/clients/DeleteClient";
-import DeleteSite from "@/components/modals/clients/DeleteSite";
+import ClientsForm from "@/components/modals/clients/ClientsForm";
+import SitesForm from "@/components/modals/clients/SitesForm";
 
 export default {
   components: {
@@ -240,18 +240,16 @@ export default {
     SubTableTabs,
     AlertsIcon,
     PolicyAdd,
-    EditSites,
-    EditClients,
-    DeleteClient,
-    DeleteSite,
+    ClientsForm,
+    SitesForm,
   },
   data() {
     return {
-      showEditClientModal: false,
-      showEditSiteModal: false,
-      showDeleteClientModal: false,
-      showDeleteSiteModal: false,
+      showClientsFormModal: false,
+      showSitesFormModal: false,
       showPolicyAddModal: false,
+      deleteEditModalPk: null,
+      clientOp: null,
       policyAddType: null,
       policyAddPk: null,
       serverCount: 0,
@@ -268,7 +266,6 @@ export default {
       poll: null,
       search: null,
       currentTRMMVersion: null,
-      deleteEditModalPk: null,
       columns: [
         {
           name: "smsalert",
@@ -451,28 +448,29 @@ export default {
         this.showPolicyAddModal = true;
       }
     },
-    showEditModal(node) {
-      if (node.children) {
-        this.deleteEditModalPk = node.id;
-        this.showEditClientModal = true;
-      } else {
-        this.showEditSiteModal = true;
-      }
-    },
-    showDeleteModal(node) {
+    showEditModal(node, op) {
       this.deleteEditModalPk = node.id;
+      this.clientOp = op;
       if (node.children) {
-        this.showDeleteClientModal = true;
+        this.showClientsFormModal = true;
       } else {
-        this.showDeleteSiteModal = true;
+        this.showSitesFormModal = true;
       }
     },
-    closeDeleteEditModal() {
-      this.showDeleteClientModal = false;
-      this.showDeleteSiteModal = false;
-      this.showEditSiteModal = false;
-      this.showEditClientModal = false;
+    showDeleteModal(node, op) {
+      this.deleteEditModalPk = node.id;
+      this.clientOp = op;
+      if (node.children) {
+        this.showClientsFormModal = true;
+      } else {
+        this.showSitesFormModal = true;
+      }
+    },
+    closeClientsFormModal() {
+      this.showClientsFormModal = false;
+      this.showSitesFormModal = false;
       this.deleteEditModalPk = null;
+      this.clientOp = null;
     },
     reload() {
       this.$store.dispatch("reload");

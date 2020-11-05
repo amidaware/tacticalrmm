@@ -8,7 +8,7 @@ from itertools import cycle
 from django.conf import settings
 from django.utils import timezone as djangotime
 
-from tacticalrmm.test import BaseTestCase, TacticalTestCase
+from tacticalrmm.test import TacticalTestCase
 from .serializers import AgentSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 from .models import Agent
@@ -25,7 +25,11 @@ from .tasks import (
 from winupdate.models import WinUpdatePolicy
 
 
-class TestAgentViews(BaseTestCase):
+class TestAgentViews(TacticalTestCase):
+    def setUp(self):
+        self.authenticate()
+        self.setup_coresettings()
+
     def test_get_patch_policy(self):
         # make sure get_patch_policy doesn't error out when agent has policy with
         # an empty patch policy

@@ -39,7 +39,7 @@ class GetAddClients(APIView):
     def post(self, request):
 
         if "initialsetup" in request.data:
-            client = {"client": request.data["client"]["client"].strip()}
+            client = {"name": request.data["client"]["client"].strip()}
             site = {"name": request.data["client"]["site"].strip()}
             serializer = ClientSerializer(data=client, context=request.data["client"])
             serializer.is_valid(raise_exception=True)
@@ -106,15 +106,15 @@ class GetAddSites(APIView):
 class GetUpdateDeleteSite(APIView):
     def put(self, request, pk):
 
-        site = Site.objects.get(pk=pk)
-        serializer = SiteSerializer(data=request.data, instance=site)
+        site = get_object_or_404(Site, pk=pk)
+        serializer = SiteSerializer(instance=site, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
         return Response("ok")
 
     def delete(self, request, pk):
-        site = Site.objects.get(pk=pk)
+        site = get_object_or_404(Site, pk=pk)
         if site.client.sites.count() == 1:
             return notify_error(f"A client must have at least 1 site.")
 
@@ -137,8 +137,8 @@ class AgentDeployment(APIView):
     def post(self, request):
         from knox.models import AuthToken
 
-        client = get_object_or_404(Client, client=request.data["client"])
-        site = get_object_or_404(Site, client=client, site=request.data["site"])
+        client = get_object_or_404(Client, pk=request.data["client"])
+        site = get_object_or_404(Site, pk=request.data["site"])
 
         expires = dt.datetime.strptime(
             request.data["expires"], "%Y-%m-%d %H:%M"

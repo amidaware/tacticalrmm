@@ -1,5 +1,5 @@
 <template>
-  <q-card style="min-width: 25vw" v-if="loaded">
+  <q-card style="min-width: 25vw">
     <q-card-section class="row">
       <q-card-actions align="left">
         <div class="text-h6">Create a Deployment</div>
@@ -18,12 +18,12 @@
             options-dense
             label="Client"
             v-model="client"
-            :options="Object.keys(tree).sort()"
-            @input="site = sites[0]"
+            :options="client_options"
+            @input="site = sites[0].value"
           />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
-          <q-select dense options-dense outlined label="Site" v-model="site" :options="sites" />
+          <q-select dense options-dense outlined label="Site" v-model="site" :options="sites" map-options emit-value />
         </q-card-section>
         <q-card-section>
           <div class="q-gutter-sm">
@@ -84,10 +84,9 @@ export default {
   mixins: [mixins],
   data() {
     return {
+      client_options: [],
+      selected_client: {},
       datetime: null,
-      loaded: false,
-      tree: {},
-      client: null,
       site: null,
       agenttype: "server",
       power: false,
@@ -99,7 +98,7 @@ export default {
   methods: {
     create() {
       const data = {
-        client: this.client,
+        client: this.selected_client.value,
         site: this.site,
         expires: this.datetime,
         agenttype: this.agenttype,
@@ -122,14 +121,13 @@ export default {
       d.setDate(d.getDate() + 30);
       this.datetime = date.formatDate(d, "YYYY-MM-DD HH:mm");
     },
-    getClientsSites() {
+    getClients() {
       this.$q.loading.show();
       this.$axios
-        .get("/clients/loadclients/")
+        .get("/clients/clients/")
         .then(r => {
-          this.tree = r.data;
-          this.client = Object.keys(r.data).sort()[0];
-          this.loaded = true;
+          this.client_options = this.formatClientOptions(r.data);
+          this.client = this.client_options[0];
           this.$q.loading.hide();
         })
         .catch(() => {
@@ -140,15 +138,12 @@ export default {
   },
   computed: {
     sites() {
-      if (this.tree !== null && this.client !== null) {
-        this.site = this.tree[this.client].sort()[0];
-        return this.tree[this.client].sort();
-      }
+      return !!this.selected_client ? this.formatSiteOptions(this.selected_client.sites) : [];
     },
   },
   created() {
     this.getCurrentDate();
-    this.getClientsSites();
+    this.getClients();
   },
 };
 </script>

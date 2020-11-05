@@ -12,10 +12,10 @@
                 </q-item-section>
                 <q-menu anchor="top right" self="top left">
                   <q-list dense style="min-width: 100px">
-                    <q-item clickable v-close-popup @click="showAddClientModal = true">
+                    <q-item clickable v-close-popup @click="showClientsFormModal('client', 'add')">
                       <q-item-section>Add Client</q-item-section>
                     </q-item>
-                    <q-item clickable v-close-popup @click="showAddSiteModal = true">
+                    <q-item clickable v-close-popup @click="showClientsFormModal('site', 'add')">
                       <q-item-section>Add Site</q-item-section>
                     </q-item>
                   </q-list>
@@ -29,10 +29,10 @@
                 </q-item-section>
                 <q-menu anchor="top right" self="top left">
                   <q-list dense style="min-width: 100px">
-                    <q-item clickable v-close-popup @click="showDeleteClientModal = true">
+                    <q-item clickable v-close-popup @click="showClientsFormModal('client', 'delete')">
                       <q-item-section>Delete Client</q-item-section>
                     </q-item>
-                    <q-item clickable v-close-popup @click="showDeleteSiteModal = true">
+                    <q-item clickable v-close-popup @click="showClientsFormModal('site', 'delete')">
                       <q-item-section>Delete Site</q-item-section>
                     </q-item>
                   </q-list>
@@ -55,10 +55,10 @@
         <q-btn size="md" dense no-caps flat label="Edit">
           <q-menu>
             <q-list dense style="min-width: 100px">
-              <q-item clickable v-close-popup @click="showEditClientsModal = true">
+              <q-item clickable v-close-popup @click="showClientsFormModal('client', 'edit')">
                 <q-item-section>Edit Clients</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="showEditSitesModal = true">
+              <q-item clickable v-close-popup @click="showClientsFormModal('site', 'edit')">
                 <q-item-section>Edit Sites</q-item-section>
               </q-item>
             </q-list>
@@ -135,26 +135,13 @@
         </q-btn>
       </q-btn-group>
       <q-space />
-      <!-- add client modal -->
-      <q-dialog v-model="showAddClientModal">
-        <AddClient @close="showAddClientModal = false" />
+      <!-- client form modal -->
+      <q-dialog v-model="showClientFormModal" @hide="closeClientsFormModal">
+        <ClientsForm @close="closeClientsFormModal" :op="clientOp" @edited="edited" />
       </q-dialog>
-      <q-dialog v-model="showEditClientsModal">
-        <EditClients @close="showEditClientsModal = false" @edited="edited" />
-      </q-dialog>
-      <!-- add site modal -->
-      <q-dialog v-model="showAddSiteModal">
-        <AddSite @close="showAddSiteModal = false" :clients="clients" />
-      </q-dialog>
-      <q-dialog v-model="showEditSitesModal">
-        <EditSites @close="showEditSitesModal = false" @edited="edited" />
-      </q-dialog>
-      <!-- delete -->
-      <q-dialog v-model="showDeleteClientModal">
-        <DeleteClient @close="showDeleteClientModal = false" @edited="edited" />
-      </q-dialog>
-      <q-dialog v-model="showDeleteSiteModal">
-        <DeleteSite @close="showDeleteSiteModal = false" @edited="edited" />
+      <!-- site form modal -->
+      <q-dialog v-model="showSiteFormModal" @hide="closeClientsFormModal">
+        <SitesForm @close="closeClientsFormModal" :op="clientOp" @edited="edited" />
       </q-dialog>
       <!-- edit core settings modal -->
       <q-dialog v-model="showEditCoreSettingsModal">
@@ -225,12 +212,8 @@
 
 <script>
 import LogModal from "@/components/modals/logs/LogModal";
-import AddClient from "@/components/modals/clients/AddClient";
-import EditClients from "@/components/modals/clients/EditClients";
-import AddSite from "@/components/modals/clients/AddSite";
-import EditSites from "@/components/modals/clients/EditSites";
-import DeleteClient from "@/components/modals/clients/DeleteClient";
-import DeleteSite from "@/components/modals/clients/DeleteSite";
+import ClientsForm from "@/components/modals/clients/ClientsForm";
+import SitesForm from "@/components/modals/clients/SitesForm";
 import UpdateAgents from "@/components/modals/agents/UpdateAgents";
 import ScriptManager from "@/components/ScriptManager";
 import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
@@ -248,12 +231,8 @@ export default {
   name: "FileBar",
   components: {
     LogModal,
-    AddClient,
-    EditClients,
-    AddSite,
-    EditSites,
-    DeleteClient,
-    DeleteSite,
+    ClientsForm,
+    SitesForm,
     UpdateAgents,
     ScriptManager,
     EditCoreSettings,
@@ -270,12 +249,9 @@ export default {
   props: ["clients"],
   data() {
     return {
-      showAddClientModal: false,
-      showEditClientsModal: false,
-      showAddSiteModal: false,
-      showEditSitesModal: false,
-      showDeleteClientModal: false,
-      showDeleteSiteModal: false,
+      showClientFormModal: false,
+      showSiteFormModal: false,
+      clientOp: null,
       showUpdateAgentsModal: false,
       showEditCoreSettingsModal: false,
       showAutomationManager: false,
@@ -290,6 +266,20 @@ export default {
     };
   },
   methods: {
+    showClientsFormModal(type, op) {
+      this.clientOp = op;
+
+      if (type === "client") {
+        this.showClientFormModal = true;
+      } else if (type === "client") {
+        this.showSiteFormModal = true;
+      }
+    },
+    closeClientsFormModal() {
+      this.clientOp = null;
+      this.showClientFormModal = null;
+      this.showSiteFormModal = null;
+    },
     getLog() {
       this.$store.commit("logs/TOGGLE_LOG_MODAL", true);
     },

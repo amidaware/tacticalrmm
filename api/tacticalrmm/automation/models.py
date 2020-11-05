@@ -40,7 +40,7 @@ class Policy(BaseAuditModel):
         ).values_list("pk", flat=True)
 
         filtered_agents_pks |= Agent.objects.filter(
-            site__client__in=[client.client for client in explicit_clients],
+            site__client__in=[client for client in explicit_clients],
             monitoring_type=mon_type,
         ).values_list("pk", flat=True)
 

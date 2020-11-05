@@ -71,8 +71,8 @@ class TestPolicyViews(TacticalTestCase):
 
         # create policy with tasks and checks
         policy = baker.make("automation.Policy")
-        checks = self.create_checks(policy=policy)
-        tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
+        self.create_checks(policy=policy)
+        baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
 
         # test copy tasks and checks to another policy
         data = {
@@ -152,7 +152,7 @@ class TestPolicyViews(TacticalTestCase):
 
         # create policy with tasks
         policy = baker.make("automation.Policy")
-        tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
+        baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
         url = f"/automation/{policy.pk}/policyautomatedtasks/"
 
         resp = self.client.get(url, format="json")
@@ -202,6 +202,8 @@ class TestPolicyViews(TacticalTestCase):
         self.check_not_authenticated("patch", url)
 
     def test_policy_overview(self):
+        from clients.models import Client
+
         url = "/automation/policies/overview/"
 
         policies = baker.make(
@@ -213,7 +215,7 @@ class TestPolicyViews(TacticalTestCase):
             workstation_policy=cycle(policies),
             _quantity=5,
         )
-        sites = baker.make(
+        baker.make(
             "clients.Site",
             client=cycle(clients),
             server_policy=cycle(policies),
@@ -221,8 +223,9 @@ class TestPolicyViews(TacticalTestCase):
             _quantity=4,
         )
 
-        sites = baker.make("clients.Site", client=cycle(clients), _quantity=3)
+        baker.make("clients.Site", client=cycle(clients), _quantity=3)
         resp = self.client.get(url, format="json")
+        clients = Client.objects.all()
         serializer = PolicyOverviewSerializer(clients, many=True)
 
         self.assertEqual(resp.status_code, 200)
@@ -256,31 +259,31 @@ class TestPolicyViews(TacticalTestCase):
 
         # data setup
         policy = baker.make("automation.Policy")
-        client = baker.make("clients.Client", client="Test Client")
-        site = baker.make("clients.Site", client=client, site="Test Site")
-        agent = baker.make_recipe("agents.agent", client=client.client, site=site.site)
+        client = baker.make("clients.Client")
+        site = baker.make("clients.Site", client=client)
+        agent = baker.make_recipe("agents.agent", site=site)
 
         # test add client to policy data
         client_server_payload = {
             "type": "client",
-            "pk": client.pk,
+            "pk": agent.client.pk,
             "server_policy": policy.pk,
         }
         client_workstation_payload = {
             "type": "client",
-            "pk": client.pk,
+            "pk": agent.client.pk,
             "workstation_policy": policy.pk,
         }
 
         # test add site to policy data
         site_server_payload = {
             "type": "site",
-            "pk": site.pk,
+            "pk": agent.site.pk,
             "server_policy": policy.pk,
         }
         site_workstation_payload = {
             "type": "site",
-            "pk": site.pk,
+            "pk": agent.site.pk,
             "workstation_policy": policy.pk,
         }
 
@@ -293,7 +296,7 @@ class TestPolicyViews(TacticalTestCase):
 
         # called because the relation changed
         mock_checks_location_task.assert_called_with(
-            location={"client": client.client},
+            location={"site__client_id": client.id},
             mon_type="server",
             clear=True,
             create_tasks=True,
@@ -306,7 +309,7 @@ class TestPolicyViews(TacticalTestCase):
 
         # called because the relation changed
         mock_checks_location_task.assert_called_with(
-            location={"client": client.client},
+            location={"site__client_id": client.id},
             mon_type="workstation",
             clear=True,
             create_tasks=True,
@@ -319,7 +322,7 @@ class TestPolicyViews(TacticalTestCase):
 
         # called because the relation changed
         mock_checks_location_task.assert_called_with(
-            location={"client": site.client.client, "site": site.site},
+            location={"site_id": site.id},
             mon_type="server",
             clear=True,
             create_tasks=True,
@@ -332,7 +335,7 @@ class TestPolicyViews(TacticalTestCase):
 
         # called because the relation changed
         mock_checks_location_task.assert_called_with(
-            location={"client": site.client.client, "site": site.site},
+            location={"site_id": site.id},
             mon_type="workstation",
             clear=True,
             create_tasks=True,
@@ -391,7 +394,7 @@ class TestPolicyViews(TacticalTestCase):
 
         # called because the relation changed
         mock_checks_location_task.assert_called_with(
-            location={"client": client.client},
+            location={"site__client_id": client.id},
             mon_type="server",
             clear=True,
             create_tasks=True,
@@ -404,7 +407,7 @@ class TestPolicyViews(TacticalTestCase):
 
         # called because the relation changed
         mock_checks_location_task.assert_called_with(
-            location={"client": client.client},
+            location={"site__client_id": client.id},
             mon_type="workstation",
             clear=True,
             create_tasks=True,
@@ -417,7 +420,7 @@ class TestPolicyViews(TacticalTestCase):
 
         # called because the relation changed
         mock_checks_location_task.assert_called_with(
-            location={"client": site.client.client, "site": site.site},
+            location={"site_id": site.id},
             mon_type="server",
             clear=True,
             create_tasks=True,
@@ -430,7 +433,7 @@ class TestPolicyViews(TacticalTestCase):
 
         # called because the relation changed
         mock_checks_location_task.assert_called_with(
-            location={"client": site.client.client, "site": site.site},
+            location={"site_id": site.id},
             mon_type="workstation",
             clear=True,
             create_tasks=True,
@@ -471,14 +474,14 @@ class TestPolicyViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
-    def test_relation_by_type(self):
+    def test_get_relation_by_type(self):
         url = f"/automation/related/"
 
         # data setup
         policy = baker.make("automation.Policy")
-        client = baker.make("clients.Client", client="Test Client")
-        site = baker.make("clients.Site", client=client, site="Test Site")
-        agent = baker.make_recipe("agents.agent", client=client.client, site=site.site)
+        client = baker.make("clients.Client", workstation_policy=policy)
+        site = baker.make("clients.Site", server_policy=policy)
+        agent = baker.make_recipe("agents.agent", site=site, policy=policy)
 
         client_payload = {"type": "client", "pk": client.pk}
 
@@ -621,43 +624,38 @@ class TestPolicyViews(TacticalTestCase):
             "reprocess_failed_inherit": True,
         }
 
-        # create agents in sites
-        clients = baker.make("clients.Client", client=seq("Client"), _quantity=3)
-        sites = baker.make(
-            "clients.Site", client=cycle(clients), site=seq("Site"), _quantity=6
-        )
-
+        clients = baker.make("clients.Client", _quantity=6)
+        sites = baker.make("clients.Site", client=cycle(clients), _quantity=10)
         agents = baker.make_recipe(
             "agents.agent",
-            client=cycle([x.client for x in clients]),
-            site=cycle([x.site for x in sites]),
+            site=cycle(sites),
             _quantity=6,
         )
 
         # create patch policies
-        patch_policies = baker.make_recipe(
+        baker.make_recipe(
             "winupdate.winupdate_approve", agent=cycle(agents), _quantity=6
         )
 
         # test reset agents in site
-        data = {"client": clients[0].client, "site": "Site0"}
+        data = {"site": sites[0].id}
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        agents = Agent.objects.filter(client=clients[0].client, site="Site0")
+        agents = Agent.objects.filter(site=sites[0])
 
         for agent in agents:
             for k, v in inherit_fields.items():
                 self.assertEqual(getattr(agent.winupdatepolicy.get(), k), v)
 
         # test reset agents in client
-        data = {"client": clients[1].client}
+        data = {"client": clients[1].id}
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        agents = Agent.objects.filter(client=clients[1].client)
+        agents = Agent.objects.filter(site__client=clients[1])
 
         for agent in agents:
             for k, v in inherit_fields.items():
@@ -703,40 +701,24 @@ class TestPolicyTasks(TacticalTestCase):
     def test_policy_related(self):
 
         # Get Site and Client from an agent in list
-        clients = baker.make("clients.Client", client=seq("Client"), _quantity=5)
-        sites = baker.make(
-            "clients.Site", client=cycle(clients), site=seq("Site"), _quantity=25
-        )
+        clients = baker.make("clients.Client", _quantity=5)
+        sites = baker.make("clients.Site", client=cycle(clients), _quantity=25)
         server_agents = baker.make_recipe(
             "agents.server_agent",
-            client=cycle([x.client for x in clients]),
-            site=seq("Site"),
+            site=cycle(sites),
             _quantity=25,
         )
         workstation_agents = baker.make_recipe(
             "agents.workstation_agent",
-            client=cycle([x.client for x in clients]),
-            site=seq("Site"),
+            site=cycle(sites),
             _quantity=25,
         )
 
-        server_client = clients[3]
-        server_site = server_client.sites.all()[3]
-        workstation_client = clients[1]
-        workstation_site = server_client.sites.all()[2]
-        server_agent = baker.make_recipe(
-            "agents.server_agent", client=server_client.client, site=server_site.site
-        )
-        workstation_agent = baker.make_recipe(
-            "agents.workstation_agent",
-            client=workstation_client.client,
-            site=workstation_site.site,
-        )
         policy = baker.make("automation.Policy", active=True)
 
         # Add Client to Policy
-        policy.server_clients.add(server_client)
-        policy.workstation_clients.add(workstation_client)
+        policy.server_clients.add(server_agents[13].client)
+        policy.workstation_clients.add(workstation_agents[15].client)
 
         resp = self.client.get(
             f"/automation/policies/{policy.pk}/related/", format="json"
@@ -747,19 +729,19 @@ class TestPolicyTasks(TacticalTestCase):
         self.assertEquals(len(resp.data["server_sites"]), 5)
         self.assertEquals(len(resp.data["workstation_clients"]), 1)
         self.assertEquals(len(resp.data["workstation_sites"]), 5)
-        self.assertEquals(len(resp.data["agents"]), 12)
+        self.assertEquals(len(resp.data["agents"]), 10)
 
         # Add Site to Policy and the agents and sites length shouldn't change
-        policy.server_sites.add(server_site)
-        policy.workstation_sites.add(workstation_site)
+        policy.server_sites.add(server_agents[13].site)
+        policy.workstation_sites.add(workstation_agents[15].site)
         self.assertEquals(len(resp.data["server_sites"]), 5)
         self.assertEquals(len(resp.data["workstation_sites"]), 5)
-        self.assertEquals(len(resp.data["agents"]), 12)
+        self.assertEquals(len(resp.data["agents"]), 10)
 
         # Add Agent to Policy and the agents length shouldn't change
-        policy.agents.add(server_agent)
-        policy.agents.add(workstation_agent)
-        self.assertEquals(len(resp.data["agents"]), 12)
+        policy.agents.add(server_agents[13])
+        policy.agents.add(workstation_agents[15])
+        self.assertEquals(len(resp.data["agents"]), 10)
 
     def test_generating_agent_policy_checks(self):
         from .tasks import generate_agent_checks_from_policies_task
@@ -767,9 +749,8 @@ class TestPolicyTasks(TacticalTestCase):
         # setup data
         policy = baker.make("automation.Policy", active=True)
         checks = self.create_checks(policy=policy)
-        client = baker.make("clients.Client", client="Default")
-        baker.make("clients.Site", client=client, site="Default")
-        agent = baker.make_recipe("agents.agent", policy=policy)
+        site = baker.make("clients.Site")
+        agent = baker.make_recipe("agents.agent", site=site, policy=policy)
 
         # test policy assigned to agent
         generate_agent_checks_from_policies_task(policy.id, clear=True)
@@ -815,9 +796,8 @@ class TestPolicyTasks(TacticalTestCase):
         policy = baker.make("automation.Policy", active=True, enforced=True)
         script = baker.make_recipe("scripts.script")
         self.create_checks(policy=policy, script=script)
-        client = baker.make("clients.Client", client="Default")
-        baker.make("clients.Site", client=client, site="Default")
-        agent = baker.make_recipe("agents.agent", policy=policy)
+        site = baker.make("clients.Site")
+        agent = baker.make_recipe("agents.agent", site=site, policy=policy)
         self.create_checks(agent=agent, script=script)
 
         generate_agent_checks_from_policies_task(policy.id, create_tasks=True)
@@ -839,25 +819,18 @@ class TestPolicyTasks(TacticalTestCase):
         self.create_checks(policy=policy)
         clients = baker.make(
             "clients.Client",
-            client=seq("Default"),
             _quantity=2,
             server_policy=policy,
             workstation_policy=policy,
         )
-        baker.make(
-            "clients.Site", client=cycle(clients), site=seq("Default"), _quantity=4
-        )
-        server_agent = baker.make_recipe(
-            "agents.server_agent", client="Default1", site="Default1"
-        )
-        workstation_agent = baker.make_recipe(
-            "agents.workstation_agent", client="Default1", site="Default3"
-        )
-        agent1 = baker.make_recipe("agents.agent", client="Default2", site="Default2")
-        agent2 = baker.make_recipe("agents.agent", client="Default2", site="Default4")
+        sites = baker.make("clients.Site", client=cycle(clients), _quantity=4)
+        server_agent = baker.make_recipe("agents.server_agent", site=sites[0])
+        workstation_agent = baker.make_recipe("agents.workstation_agent", site=sites[2])
+        agent1 = baker.make_recipe("agents.server_agent", site=sites[1])
+        agent2 = baker.make_recipe("agents.workstation_agent", site=sites[3])
 
         generate_agent_checks_by_location_task(
-            {"client": "Default1", "site": "Default1"},
+            {"site_id": sites[0].id},
             "server",
             clear=True,
             create_tasks=True,
@@ -871,7 +844,10 @@ class TestPolicyTasks(TacticalTestCase):
         self.assertEqual(Agent.objects.get(pk=agent1.id).agentchecks.count(), 0)
 
         generate_agent_checks_by_location_task(
-            {"client": "Default1"}, "workstation", clear=True, create_tasks=True
+            {"site__client_id": clients[0].id},
+            "workstation",
+            clear=True,
+            create_tasks=True,
         )
         # workstation_agent should now have policy checks and the other agents should not
         self.assertEqual(
@@ -888,21 +864,11 @@ class TestPolicyTasks(TacticalTestCase):
         # setup data
         policy = baker.make("automation.Policy", active=True)
         self.create_checks(policy=policy)
-        clients = baker.make("clients.Client", client=seq("Client"), _quantity=2)
-        sites = baker.make(
-            "clients.Site", client=cycle(clients), site=seq("Site"), _quantity=4
-        )
-        server_agent = baker.make_recipe(
-            "agents.server_agent", client=clients[0].client, site=sites[0].site
-        )
-        workstation_agent = baker.make_recipe(
-            "agents.workstation_agent", client=clients[0].client, site=sites[2].site
-        )
-        agent1 = baker.make_recipe(
-            "agents.server_agent", client=clients[1].client, site=sites[1].site
-        )
-        agent2 = baker.make_recipe(
-            "agents.workstation_agent", client=clients[1].client, site=sites[3].site
+
+        site = baker.make("clients.Site")
+        server_agents = baker.make_recipe("agents.server_agent", site=site, _quantity=3)
+        workstation_agents = baker.make_recipe(
+            "agents.workstation_agent", site=site, _quantity=4
         )
         core = CoreSettings.objects.first()
         core.server_policy = policy
@@ -912,22 +878,20 @@ class TestPolicyTasks(TacticalTestCase):
         generate_all_agent_checks_task("server", clear=True, create_tasks=True)
 
         # all servers should have 7 checks
-        self.assertEqual(
-            Agent.objects.get(pk=workstation_agent.id).agentchecks.count(), 0
-        )
-        self.assertEqual(Agent.objects.get(pk=server_agent.id).agentchecks.count(), 7)
-        self.assertEqual(Agent.objects.get(pk=agent1.id).agentchecks.count(), 7)
-        self.assertEqual(Agent.objects.get(pk=agent2.id).agentchecks.count(), 0)
+        for agent in server_agents:
+            self.assertEqual(Agent.objects.get(pk=agent.id).agentchecks.count(), 7)
+
+        for agent in workstation_agents:
+            self.assertEqual(Agent.objects.get(pk=agent.id).agentchecks.count(), 0)
 
         generate_all_agent_checks_task("workstation", clear=True, create_tasks=True)
 
         # all agents should have 7 checks now
-        self.assertEqual(
-            Agent.objects.get(pk=workstation_agent.id).agentchecks.count(), 7
-        )
-        self.assertEqual(Agent.objects.get(pk=server_agent.id).agentchecks.count(), 7)
-        self.assertEqual(Agent.objects.get(pk=agent1.id).agentchecks.count(), 7)
-        self.assertEqual(Agent.objects.get(pk=agent2.id).agentchecks.count(), 7)
+        for agent in server_agents:
+            self.assertEqual(Agent.objects.get(pk=agent.id).agentchecks.count(), 7)
+
+        for agent in workstation_agents:
+            self.assertEqual(Agent.objects.get(pk=agent.id).agentchecks.count(), 7)
 
     def test_delete_policy_check(self):
         from .tasks import delete_policy_check_task
@@ -935,11 +899,8 @@ class TestPolicyTasks(TacticalTestCase):
 
         policy = baker.make("automation.Policy", active=True)
         self.create_checks(policy=policy)
-        client = baker.make("clients.Client", client="Default", server_policy=policy)
-        baker.make("clients.Site", client=client, site="Default")
-        agent = baker.make_recipe(
-            "agents.server_agent", client="Default", site="Default"
-        )
+        site = baker.make("clients.Site")
+        agent = baker.make_recipe("agents.server_agent", site=site, policy=policy)
         agent.generate_checks_from_policies()
 
         # make sure agent has 7 checks
@@ -964,11 +925,7 @@ class TestPolicyTasks(TacticalTestCase):
 
         policy = baker.make("automation.Policy", active=True)
         self.create_checks(policy=policy)
-        client = baker.make("clients.Client", client="Default", server_policy=policy)
-        baker.make("clients.Site", client=client, site="Default")
-        agent = baker.make_recipe(
-            "agents.server_agent", client="Default", site="Default"
-        )
+        agent = baker.make_recipe("agents.server_agent", policy=policy)
         agent.generate_checks_from_policies()
 
         # make sure agent has 7 checks
@@ -1001,11 +958,8 @@ class TestPolicyTasks(TacticalTestCase):
         tasks = baker.make(
             "autotasks.AutomatedTask", policy=policy, name=seq("Task"), _quantity=3
         )
-        client = baker.make("clients.Client", client="Default")
-        baker.make("clients.Site", client=client, site="Default")
-        agent = baker.make_recipe(
-            "agents.server_agent", client="Default", site="Default", policy=policy
-        )
+        site = baker.make("clients.Site")
+        agent = baker.make_recipe("agents.server_agent", site=site, policy=policy)
 
         generate_agent_tasks_from_policies_task(policy.id, clear=True)
 
@@ -1036,28 +990,21 @@ class TestPolicyTasks(TacticalTestCase):
         )
         clients = baker.make(
             "clients.Client",
-            client=seq("Default"),
             _quantity=2,
             server_policy=policy,
             workstation_policy=policy,
         )
-        baker.make(
-            "clients.Site", client=cycle(clients), site=seq("Default"), _quantity=4
-        )
-        server_agent = baker.make_recipe(
-            "agents.server_agent", client="Default1", site="Default1"
-        )
-        workstation_agent = baker.make_recipe(
-            "agents.workstation_agent", client="Default1", site="Default3"
-        )
-        agent1 = baker.make_recipe("agents.agent", client="Default2", site="Default2")
-        agent2 = baker.make_recipe("agents.agent", client="Default2", site="Default4")
+        sites = baker.make("clients.Site", client=cycle(clients), _quantity=4)
+        server_agent = baker.make_recipe("agents.server_agent", site=sites[0])
+        workstation_agent = baker.make_recipe("agents.workstation_agent", site=sites[2])
+        agent1 = baker.make_recipe("agents.agent", site=sites[1])
+        agent2 = baker.make_recipe("agents.agent", site=sites[3])
 
         generate_agent_tasks_by_location_task(
-            {"client": "Default1", "site": "Default1"}, "server", clear=True
+            {"site_id": sites[0].id}, "server", clear=True
         )
 
-        # all servers in Default1 and site Default1 should have 3 tasks
+        # all servers in site1 and site2 should have 3 tasks
         self.assertEqual(
             Agent.objects.get(pk=workstation_agent.id).autotasks.count(), 0
         )
@@ -1066,7 +1013,7 @@ class TestPolicyTasks(TacticalTestCase):
         self.assertEqual(Agent.objects.get(pk=agent2.id).autotasks.count(), 0)
 
         generate_agent_tasks_by_location_task(
-            {"client": "Default1"}, "workstation", clear=True
+            {"site__client_id": clients[0].id}, "workstation", clear=True
         )
 
         # all workstations in Default1 should have 3 tasks
@@ -1083,11 +1030,8 @@ class TestPolicyTasks(TacticalTestCase):
 
         policy = baker.make("automation.Policy", active=True)
         tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
-        client = baker.make("clients.Client", client="Default", server_policy=policy)
-        baker.make("clients.Site", client=client, site="Default")
-        agent = baker.make_recipe(
-            "agents.server_agent", client="Default", site="Default"
-        )
+        site = baker.make("clients.Site")
+        agent = baker.make_recipe("agents.server_agent", site=site, policy=policy)
         agent.generate_tasks_from_policies()
 
         delete_policy_autotask_task(tasks[0].id)
@@ -1107,7 +1051,7 @@ class TestPolicyTasks(TacticalTestCase):
         for task in tasks:
             run_win_task.assert_any_call(task.id)
 
-    def test_updated_policy_tasks(self):
+    def test_update_policy_tasks(self):
         from .tasks import update_policy_task_fields_task
         from autotasks.models import AutomatedTask
 
@@ -1116,11 +1060,8 @@ class TestPolicyTasks(TacticalTestCase):
         tasks = baker.make(
             "autotasks.AutomatedTask", enabled=True, policy=policy, _quantity=3
         )
-        client = baker.make("clients.Client", client="Default", server_policy=policy)
-        baker.make("clients.Site", client=client, site="Default")
-        agent = baker.make_recipe(
-            "agents.server_agent", client="Default", site="Default"
-        )
+        site = baker.make("clients.Site")
+        agent = baker.make_recipe("agents.server_agent", site=site, policy=policy)
         agent.generate_tasks_from_policies()
 
         tasks[0].enabled = False

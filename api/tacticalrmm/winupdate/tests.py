@@ -14,7 +14,7 @@ class TestWinUpdateViews(TacticalTestCase):
     def test_get_winupdates(self):
 
         agent = baker.make_recipe("agents.agent")
-        winupdates = baker.make("winupdate.WinUpdate", agent=agent, _quantity=4)
+        baker.make("winupdate.WinUpdate", agent=agent, _quantity=4)
 
         # test a call where agent doesn't exist
         resp = self.client.get("/winupdate/500/getwinupdates/", format="json")
@@ -107,9 +107,11 @@ class WinupdateTasks(TacticalTestCase):
     def setUp(self):
         self.setup_coresettings()
 
-        baker.make("clients.Site", site="Default", client__client="Default")
-        self.online_agents = baker.make_recipe("agents.online_agent", _quantity=2)
-        self.offline_agent = baker.make_recipe("agents.agent")
+        site = baker.make("clients.Site")
+        self.online_agents = baker.make_recipe(
+            "agents.online_agent", site=site, _quantity=2
+        )
+        self.offline_agent = baker.make_recipe("agents.agent", site=site)
 
     @patch("winupdate.tasks.check_for_updates_task.apply_async")
     def test_auto_approve_task(self, check_updates_task):

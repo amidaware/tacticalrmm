@@ -299,7 +299,6 @@ def by_client(request, clientpk):
             "pk",
             "hostname",
             "agent_id",
-            "client",
             "site",
             "monitoring_type",
             "description",

@@ -7,7 +7,9 @@ from itertools import cycle
 
 from django.conf import settings
 from django.utils import timezone as djangotime
+from rest_framework.authtoken.models import Token
 
+from accounts.models import User
 from tacticalrmm.test import TacticalTestCase
 from .serializers import AgentSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
@@ -30,10 +32,16 @@ class TestAgentViews(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
+        client = baker.make("clients.Client", name="Google")
+        site = baker.make("clients.Site", client=client, name="LA Office")
+        self.agent = baker.make_recipe("agents.online_agent", site=site)
+        baker.make_recipe("winupdate.winupdate_policy", agent=self.agent)
+
     def test_get_patch_policy(self):
         # make sure get_patch_policy doesn't error out when agent has policy with
         # an empty patch policy
-        self.agent.policy = self.policy
+        policy = baker.make("automation.Policy")
+        self.agent.policy = policy
         self.agent.save(update_fields=["policy"])
         _ = self.agent.get_patch_policy()
 
@@ -44,8 +52,8 @@ class TestAgentViews(TacticalTestCase):
         self.agent.policy = None
         self.agent.save(update_fields=["policy"])
 
-        self.coresettings.server_policy = self.policy
-        self.coresettings.workstation_policy = self.policy
+        self.coresettings.server_policy = policy
+        self.coresettings.workstation_policy = policy
         self.coresettings.save(update_fields=["server_policy", "workstation_policy"])
         _ = self.agent.get_patch_policy()
 
@@ -117,10 +125,16 @@ class TestAgentViews(TacticalTestCase):
 
     @patch("agents.tasks.uninstall_agent_task.delay")
     def test_uninstall_catch_no_user(self, mock_task):
+        # setup data
+        agent_user = User.objects.create_user(
+            username=self.agent.agent_id, password=User.objects.make_random_password(60)
+        )
+        agent_token = Token.objects.create(user=agent_user)
+
         url = "/agents/uninstall/"
         data = {"pk": self.agent.pk}
 
-        self.agent_user.delete()
+        agent_user.delete()
 
         r = self.client.delete(url, data, format="json")
         self.assertEqual(r.status_code, 200)
@@ -396,12 +410,14 @@ class TestAgentViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     def test_edit_agent(self):
+        # setup data
+        site = baker.make("clients.Site", name="Ny Office")
+
         url = "/agents/editagent/"
 
         edit = {
             "id": self.agent.pk,
-            "client": "Facebook",
-            "site": "NY Office",
+            "site": site.id,
             "monitoring_type": "workstation",
             "description": "asjdk234andasd",
             "overdue_time": 300,
@@ -431,7 +447,7 @@ class TestAgentViews(TacticalTestCase):
 
         agent = Agent.objects.get(pk=self.agent.pk)
         data = AgentSerializer(agent).data
-        self.assertEqual(data["site"], "NY Office")
+        self.assertEqual(data["site"], site.id)
 
         policy = WinUpdatePolicy.objects.get(agent=self.agent)
         data = WinUpdatePolicySerializer(policy).data
@@ -465,28 +481,28 @@ class TestAgentViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     def test_by_client(self):
-        url = "/agents/byclient/Google/"
+        url = f"/agents/byclient/{self.agent.client.id}/"
 
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.data)
 
-        url = f"/agents/byclient/Majh3 Akj34 ad/"
+        url = f"/agents/byclient/500/"
         r = self.client.get(url)
         self.assertFalse(r.data)  # returns empty list
 
         self.check_not_authenticated("get", url)
 
     def test_by_site(self):
-        url = f"/agents/bysite/Google/Main Office/"
+        url = f"/agents/bysite/{self.agent.site.id}/"
 
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.data)
 
-        url = f"/agents/bysite/Google/Ajdaksd Office/"
+        url = f"/agents/bysite/500/"
         r = self.client.get(url)
-        self.assertFalse(r.data)
+        self.assertEqual(r.data, [])
 
         self.check_not_authenticated("get", url)
 
@@ -589,7 +605,7 @@ class TestAgentViews(TacticalTestCase):
         payload = {
             "mode": "command",
             "target": "client",
-            "client": "Google",
+            "client": self.agent.client.id,
             "site": None,
             "agentPKs": [
                 self.agent.pk,
@@ -605,8 +621,8 @@ class TestAgentViews(TacticalTestCase):
         payload = {
             "mode": "command",
             "target": "client",
-            "client": "Google",
-            "site": "Main Office",
+            "client": self.agent.client.id,
+            "site": self.agent.site.id,
             "agentPKs": [
                 self.agent.pk,
             ],
@@ -618,25 +634,9 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
 
-        payload = {
-            "mode": "command",
-            "target": "site",
-            "client": "A ASJDHkjASHDASD",
-            "site": "asdasdasdasda",
-            "agentPKs": [
-                self.agent.pk,
-            ],
-            "cmd": "gpupdate /force",
-            "timeout": 300,
-            "shell": "cmd",
-        }
-
-        r = self.client.post(url, payload, format="json")
-        self.assertEqual(r.status_code, 404)
-
         mock_ret.return_value = "timeout"
-        payload["client"] = "Google"
-        payload["site"] = "Main Office"
+        payload["client"] = self.agent.client.id
+        payload["site"] = self.agent.site.id
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 400)
 
@@ -657,7 +657,7 @@ class TestAgentViews(TacticalTestCase):
         payload = {
             "mode": "install",
             "target": "client",
-            "client": "Google",
+            "client": self.agent.client.id,
             "site": None,
             "agentPKs": [
                 self.agent.pk,
@@ -761,13 +761,13 @@ class TestAgentViewsNew(TacticalTestCase):
 
     def test_agent_maintenance_mode(self):
         url = "/agents/maintenance/"
-        # create data
-        client = baker.make("clients.Client", client="Default")
-        site = baker.make("clients.Site", client=client, site="Site")
-        agent = baker.make_recipe("agents.agent", client=client.client, site=site.site)
+
+        # setup data
+        site = baker.make("clients.Site")
+        agent = baker.make_recipe("agents.agent", site=site)
 
         # Test client toggle maintenance mode
-        data = {"type": "Client", "id": client.id, "action": True}
+        data = {"type": "Client", "id": site.client.id, "action": True}
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)

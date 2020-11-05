@@ -5,6 +5,7 @@ from rest_framework.test import APIClient
 
 from accounts.models import User
 from core.models import CoreSettings
+from rest_framework.authtoken.models import Token
 
 
 class TacticalTestCase(TestCase):
@@ -14,6 +15,12 @@ class TacticalTestCase(TestCase):
         self.john.save()
         self.client_setup()
         self.client.force_authenticate(user=self.john)
+
+    def setup_agent_auth(self, agent):
+        agent_user = User.objects.create_user(
+            username=agent.agent_id, password=User.objects.make_random_password(60)
+        )
+        Token.objects.create(user=agent_user)
 
     def client_setup(self):
         self.client = APIClient()

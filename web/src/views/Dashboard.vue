@@ -396,20 +396,20 @@ export default {
       if (typeof activenode === "string") {
         urlType = activenode.split("|")[0];
         id = activenode.split("|")[1];
-      }
 
-      if (urlType === "Client") {
-        url = `/agents/byclient/${id}/`;
-      } else if (urlType === "Site") {
-        url = `/agents/bysite/${id}/`;
-      }
+        if (urlType === "Client") {
+          url = `/agents/byclient/${id}/`;
+        } else if (urlType === "Site") {
+          url = `/agents/bysite/${id}/`;
+        }
 
-      if (url) {
-        this.$store.commit("AGENT_TABLE_LOADING", true);
-        axios.get(url).then(r => {
-          this.frame = r.data;
-          this.$store.commit("AGENT_TABLE_LOADING", false);
-        });
+        if (url) {
+          this.$store.commit("AGENT_TABLE_LOADING", true);
+          axios.get(url).then(r => {
+            this.frame = r.data;
+            this.$store.commit("AGENT_TABLE_LOADING", false);
+          });
+        }
       }
     },
     getTree() {

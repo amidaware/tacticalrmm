@@ -22,8 +22,8 @@ class PendingActionSerializer(serializers.ModelSerializer):
 
     hostname = serializers.ReadOnlyField(source="agent.hostname")
     salt_id = serializers.ReadOnlyField(source="agent.salt_id")
-    client = serializers.ReadOnlyField(source="agent.client")
-    site = serializers.ReadOnlyField(source="agent.site")
+    client = serializers.ReadOnlyField(source="agent.client.name")
+    site = serializers.ReadOnlyField(source="agent.site.name")
     due = serializers.ReadOnlyField()
     description = serializers.ReadOnlyField()
 

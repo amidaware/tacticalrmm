@@ -45,7 +45,7 @@
               <q-item clickable v-close-popup @click="showAuditManager = true">
                 <q-item-section>Audit Log</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="getLog">
+              <q-item clickable v-close-popup @click="showDebugLog = true">
                 <q-item-section>Debug Log</q-item-section>
               </q-item>
             </q-list>
@@ -68,7 +68,7 @@
         <q-btn size="md" dense no-caps flat label="View">
           <q-menu auto-close>
             <q-list dense style="min-width: 100px">
-              <q-item clickable v-close-popup @click="showPendingActions">
+              <q-item clickable v-close-popup @click="showPendingActions = true">
                 <q-item-section>Pending Actions</q-item-section>
               </q-item>
             </q-list>
@@ -148,8 +148,24 @@
         <EditCoreSettings @close="showEditCoreSettingsModal = false" />
       </q-dialog>
       <!-- debug log modal -->
-      <LogModal />
+      <div class="q-pa-md q-gutter-sm">
+        <q-dialog v-model="showDebugLog" maximized transition-show="slide-up" transition-hide="slide-down">
+          <LogModal @close="showAuditManager = false" />
+        </q-dialog>
+      </div>
       <!-- audit log modal -->
+      <div class="q-pa-md q-gutter-sm">
+        <q-dialog v-model="showAuditManager" maximized transition-show="slide-up" transition-hide="slide-down">
+          <AuditManager @close="showAuditManager = false" />
+        </q-dialog>
+      </div>
+      <!-- pending actions modal -->
+      <div class="q-pa-md q-gutter-sm">
+        <q-dialog v-model="showPendingActions">
+          <PendingActions @close="showPendingActions = false" />
+        </q-dialog>
+      </div>
+      <!-- audit manager -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showAuditManager" maximized transition-show="slide-up" transition-hide="slide-down">
           <AuditManager @close="showAuditManager = false" />
@@ -202,6 +218,7 @@
 
 <script>
 import LogModal from "@/components/modals/logs/LogModal";
+import PendingActions from "@/components/modals/logs/PendingActions";
 import ClientsForm from "@/components/modals/clients/ClientsForm";
 import SitesForm from "@/components/modals/clients/SitesForm";
 import UpdateAgents from "@/components/modals/agents/UpdateAgents";
@@ -219,6 +236,7 @@ export default {
   name: "FileBar",
   components: {
     LogModal,
+    PendingActions,
     ClientsForm,
     SitesForm,
     UpdateAgents,
@@ -246,8 +264,10 @@ export default {
       showUploadMesh: false,
       showAuditManager: false,
       showBulkAction: false,
+      showPendingActions: false,
       bulkMode: null,
       showDeployment: false,
+      showDebugLog: false,
     };
   },
   methods: {
@@ -272,13 +292,6 @@ export default {
     closeBulkActionModal() {
       this.bulkMode = null;
       this.showBulkAction = false;
-    },
-    getLog() {
-      this.$store.commit("logs/TOGGLE_LOG_MODAL", true);
-    },
-    showPendingActions() {
-      const data = { action: true, agentpk: null, hostname: null };
-      this.$store.commit("logs/TOGGLE_PENDING_ACTIONS", data);
     },
     showScriptManager() {
       this.$store.commit("TOGGLE_SCRIPT_MANAGER", true);

@@ -84,7 +84,7 @@
                 <q-item-section>Edit {{ props.row.hostname }}</q-item-section>
               </q-item>
               <!-- agent pending actions -->
-              <q-item clickable v-close-popup @click="showPendingActions(props.row.id, props.row.hostname)">
+              <q-item clickable v-close-popup @click="showPendingActionsModal(props.row.id)">
                 <q-item-section side>
                   <q-icon size="xs" name="far fa-clock" />
                 </q-item-section>
@@ -306,7 +306,11 @@
       <RebootLater @close="showRebootLaterModal = false" />
     </q-dialog>
     <!-- pending actions modal -->
-    <PendingActions />
+    <div class="q-pa-md q-gutter-sm">
+      <q-dialog v-model="showPendingActions" @hide="closePendingActionsModal">
+        <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" />
+      </q-dialog>
+    </div>
     <!-- add policy modal -->
     <q-dialog v-model="showPolicyAddModal">
       <PolicyAdd @close="showPolicyAddModal = false" type="agent" :pk="policyAddPk" />
@@ -367,6 +371,8 @@ export default {
       showAgentRecovery: false,
       showRunScript: false,
       policyAddPk: null,
+      showPendingActions: false,
+      pendingActionAgentPk: null,
     };
   },
   methods: {
@@ -400,9 +406,13 @@ export default {
     agentEdited() {
       this.$emit("refreshEdit");
     },
-    showPendingActions(pk, hostname) {
-      const data = { action: true, agentpk: pk, hostname: hostname };
-      this.$store.commit("logs/TOGGLE_PENDING_ACTIONS", data);
+    showPendingActionsModal(pk) {
+      this.showPendingActions = true;
+      this.pendingActionAgentPk = pk;
+    },
+    closePendingActionsModal() {
+      this.showPendingActions = false;
+      this.pendingActionAgentPk = null;
     },
     takeControl(pk) {
       const url = this.$router.resolve(`/takecontrol/${pk}`).href;

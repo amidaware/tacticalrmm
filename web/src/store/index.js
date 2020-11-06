@@ -2,7 +2,6 @@ import Vue from "vue";
 import Vuex from "vuex";
 import axios from "axios";
 import { Notify } from "quasar";
-import logModule from "./logs";
 import alertsModule from "./alerts";
 import automationModule from "./automation";
 import adminModule from "./admin.js"
@@ -12,7 +11,6 @@ Vue.use(Vuex);
 export default function () {
   const Store = new Vuex.Store({
     modules: {
-      logs: logModule,
       automation: automationModule,
       alerts: alertsModule,
       admin: adminModule

@@ -33,6 +33,9 @@ def send_agent_update_task(pks, version):
 
             # skip if we can't determine the arch
             if agent.arch is None:
+                logger.warning(
+                    f"Unable to determine arch on {agent.salt_id}. Skipping."
+                )
                 continue
 
             # golang agent only backwards compatible with py agent 0.11.2
@@ -47,6 +50,9 @@ def send_agent_update_task(pks, version):
             else:
                 url = agent.winagent_dl
                 inno = agent.win_inno_exe
+            logger.info(
+                f"Updating {agent.salt_id} current version {agent.version} using {inno}"
+            )
             r = agent.salt_api_async(
                 func="win_agent.do_agent_update_v2",
                 kwargs={
@@ -54,6 +60,7 @@ def send_agent_update_task(pks, version):
                     "url": url,
                 },
             )
+            logger.info(f"{agent.salt_id}: {r}")
         sleep(10)
 
 
@@ -61,6 +68,7 @@ def send_agent_update_task(pks, version):
 def auto_self_agent_update_task():
     core = CoreSettings.objects.first()
     if not core.agent_auto_update:
+        logger.info("Agent auto update is disabled. Skipping.")
         return
 
     q = Agent.objects.only("pk", "version")
@@ -69,6 +77,7 @@ def auto_self_agent_update_task():
         for i in q
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
     ]
+    logger.info(f"Updating {len(agents)}")
 
     chunks = (agents[i : i + 30] for i in range(0, len(agents), 30))
 
@@ -78,6 +87,9 @@ def auto_self_agent_update_task():
 
             # skip if we can't determine the arch
             if agent.arch is None:
+                logger.warning(
+                    f"Unable to determine arch on {agent.salt_id}. Skipping."
+                )
                 continue
 
             # golang agent only backwards compatible with py agent 0.11.2
@@ -92,6 +104,9 @@ def auto_self_agent_update_task():
             else:
                 url = agent.winagent_dl
                 inno = agent.win_inno_exe
+            logger.info(
+                f"Updating {agent.salt_id} current version {agent.version} using {inno}"
+            )
             r = agent.salt_api_async(
                 func="win_agent.do_agent_update_v2",
                 kwargs={
@@ -99,6 +114,7 @@ def auto_self_agent_update_task():
                     "url": url,
                 },
             )
+            logger.info(f"{agent.salt_id}: {r}")
         sleep(10)
 
 

@@ -888,18 +888,22 @@ class TestPolicyTasks(TacticalTestCase):
         # setup data
         policy = baker.make("automation.Policy", active=True)
         self.create_checks(policy=policy)
-        clients = baker.make("clients.Client", client=seq("Default"), _quantity=2)
-        baker.make(
-            "clients.Site", client=cycle(clients), site=seq("Default"), _quantity=4
+        clients = baker.make("clients.Client", client=seq("Client"), _quantity=2)
+        sites = baker.make(
+            "clients.Site", client=cycle(clients), site=seq("Site"), _quantity=4
         )
         server_agent = baker.make_recipe(
-            "agents.server_agent", client="Default1", site="Default1"
+            "agents.server_agent", client=clients[0].client, site=sites[0].site
         )
         workstation_agent = baker.make_recipe(
-            "agents.workstation_agent", client="Default1", site="Default3"
+            "agents.workstation_agent", client=clients[0].client, site=sites[2].site
         )
-        agent1 = baker.make_recipe("agents.agent", client="Default2", site="Default2")
-        agent2 = baker.make_recipe("agents.agent", client="Default2", site="Default4")
+        agent1 = baker.make_recipe(
+            "agents.server_agent", client=clients[1].client, site=sites[1].site
+        )
+        agent2 = baker.make_recipe(
+            "agents.workstation_agent", client=clients[1].client, site=sites[3].site
+        )
         core = CoreSettings.objects.first()
         core.server_policy = policy
         core.workstation_policy = policy
@@ -1027,7 +1031,7 @@ class TestPolicyTasks(TacticalTestCase):
 
         # setup data
         policy = baker.make("automation.Policy", active=True)
-        tasks = baker.make(
+        baker.make(
             "autotasks.AutomatedTask", policy=policy, name=seq("Task"), _quantity=3
         )
         clients = baker.make(

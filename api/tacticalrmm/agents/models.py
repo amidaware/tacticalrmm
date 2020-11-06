@@ -86,9 +86,9 @@ class Agent(BaseAuditModel):
     @property
     def arch(self):
         if self.operating_system is not None:
-            if "64 bit" in self.operating_system:
+            if "64 bit" in self.operating_system or "64bit" in self.operating_system:
                 return "64"
-            elif "32 bit" in self.operating_system:
+            elif "32 bit" in self.operating_system or "32bit" in self.operating_system:
                 return "32"
         return None
 

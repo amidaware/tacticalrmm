@@ -395,8 +395,8 @@ def reboot_later(request):
 def install_agent(request):
     from knox.models import AuthToken
 
-    client = get_object_or_404(Client, name=request.data["client"])
-    site = get_object_or_404(Site, client=client, name=request.data["site"])
+    client_id = request.data["client"]
+    site_id = request.data["site"]
     version = settings.LATEST_AGENT_VER
     arch = request.data["arch"]
 
@@ -451,8 +451,8 @@ def install_agent(request):
             "build",
             f"-ldflags=\"-X 'main.Inno={inno}'",
             f"-X 'main.Api={api}'",
-            f"-X 'main.Client={client.pk}'",
-            f"-X 'main.Site={site.pk}'",
+            f"-X 'main.Client={client_id}'",
+            f"-X 'main.Site={site_id}'",
             f"-X 'main.Atype={atype}'",
             f"-X 'main.Rdp={rdp}'",
             f"-X 'main.Ping={ping}'",
@@ -560,9 +560,9 @@ def install_agent(request):
             "--api",
             request.data["api"],
             "--client-id",
-            client.pk,
+            client_id,
             "--site-id",
-            site.pk,
+            site_id,
             "--agent-type",
             request.data["agenttype"],
             "--auth",
@@ -594,8 +594,8 @@ def install_agent(request):
 
         replace_dict = {
             "innosetupchange": inno,
-            "clientchange": str(client.pk),
-            "sitechange": str(site.pk),
+            "clientchange": str(client_id),
+            "sitechange": str(site_id),
             "apichange": request.data["api"],
             "atypechange": request.data["agenttype"],
             "powerchange": str(request.data["power"]),

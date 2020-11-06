@@ -306,9 +306,10 @@ class TestAgentViews(TacticalTestCase):
     def test_install_agent(self, mock_subprocess, mock_file_exists):
         url = f"/agents/installagent/"
 
+        site = baker.make("clients.Site")
         data = {
-            "client": "Google",
-            "site": "LA Office",
+            "client": site.client.id,
+            "site": site.id,
             "arch": "64",
             "expires": 23,
             "installMethod": "exe",

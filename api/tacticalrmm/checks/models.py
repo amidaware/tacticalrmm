@@ -518,7 +518,7 @@ class Check(BaseAuditModel):
         CORE = CoreSettings.objects.first()
 
         if self.agent:
-            subject = f"{self.agent.client}, {self.agent.site}, {self} Failed"
+            subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Failed"
         else:
             subject = f"{self} Failed"
 
@@ -594,7 +594,7 @@ class Check(BaseAuditModel):
         CORE = CoreSettings.objects.first()
 
         if self.agent:
-            subject = f"{self.agent.client}, {self.agent.site}, {self} Failed"
+            subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Failed"
         else:
             subject = f"{self} Failed"
 

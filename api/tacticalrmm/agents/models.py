@@ -674,10 +674,10 @@ class AgentOutage(models.Model):
 
         CORE = CoreSettings.objects.first()
         CORE.send_mail(
-            f"{self.agent.client.client}, {self.agent.site.site}, {self.agent.hostname} - data overdue",
+            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data overdue",
             (
-                f"Data has not been received from client {self.agent.client.client}, "
-                f"site {self.agent.site.site}, "
+                f"Data has not been received from client {self.agent.client.name}, "
+                f"site {self.agent.site.name}, "
                 f"agent {self.agent.hostname} "
                 "within the expected time."
             ),
@@ -688,10 +688,10 @@ class AgentOutage(models.Model):
 
         CORE = CoreSettings.objects.first()
         CORE.send_mail(
-            f"{self.agent.client.client}, {self.agent.site.site}, {self.agent.hostname} - data received",
+            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data received",
             (
-                f"Data has been received from client {self.agent.client.client}, "
-                f"site {self.agent.site.site}, "
+                f"Data has been received from client {self.agent.client.name}, "
+                f"site {self.agent.site.name}, "
                 f"agent {self.agent.hostname} "
                 "after an interruption in data transmission."
             ),
@@ -702,7 +702,7 @@ class AgentOutage(models.Model):
 
         CORE = CoreSettings.objects.first()
         CORE.send_sms(
-            f"{self.agent.client.client}, {self.agent.site.site}, {self.agent.hostname} - data overdue"
+            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data overdue"
         )
 
     def send_recovery_sms(self):
@@ -710,7 +710,7 @@ class AgentOutage(models.Model):
 
         CORE = CoreSettings.objects.first()
         CORE.send_sms(
-            f"{self.agent.client.client}, {self.agent.site.site}, {self.agent.hostname} - data received"
+            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data received"
         )
 
     def __str__(self):

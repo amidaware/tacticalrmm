@@ -60,7 +60,7 @@
           </q-menu>
         </q-chip>
 
-        <AlertsIcon />
+        <!--<AlertsIcon />-->
 
         <q-btn-dropdown flat no-caps stretch :label="user">
           <q-list>
@@ -392,22 +392,18 @@ export default {
     loadFrame(activenode, destroySub = true) {
       if (destroySub) this.$store.commit("destroySubTable");
 
-      let client_id, site_id, url;
-      try {
-        site_id = activenode.split("|")[1];
-        url = `/agents/bysite/${site_id}/`;
-      } catch (e) {
-        try {
-          client_id = activenode.split("|")[1];
-        } catch (e) {
-          return false;
-        }
-        if (client_id === null || client_id === undefined) {
-          url = null;
-        } else {
-          url = `/agents/byclient/${client_id}/`;
-        }
+      let url, urlType, id;
+      if (typeof activenode === "string") {
+        urlType = activenode.split("|")[0];
+        id = activenode.split("|")[1];
       }
+
+      if (urlType === "Client") {
+        url = `/agents/byclient/${id}/`;
+      } else if (urlType === "Site") {
+        url = `/agents/bysite/${id}/`;
+      }
+
       if (url) {
         this.$store.commit("AGENT_TABLE_LOADING", true);
         axios.get(url).then(r => {

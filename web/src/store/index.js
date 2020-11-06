@@ -237,8 +237,8 @@ export default function () {
             for (let site of client.sites) {
 
               let site_color = "black"
-              if (site.maintenance_mode) { site_color = "orange" }
-              else if (site.failing_checks) { site_color = "red" }
+              if (site.maintenance_mode) { site_color = "warning" }
+              else if (site.failing_checks) { site_color = "negative" }
 
               childSites.push({
                 label: site.name,
@@ -251,8 +251,8 @@ export default function () {
             }
 
             let client_color = "black"
-            if (client.maintenance_mode) { client_color = "orange" }
-            else if (client.failing_checks) { client_color = "red" }
+            if (client.maintenance_mode) { client_color = "warning" }
+            else if (client.failing_checks) { client_color = "negative" }
 
             output.push({
               label: client.name,

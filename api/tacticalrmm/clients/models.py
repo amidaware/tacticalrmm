@@ -7,7 +7,7 @@ from logs.models import BaseAuditModel
 
 
 class Client(BaseAuditModel):
-    client = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255, unique=True)
     workstation_policy = models.ForeignKey(
         "automation.Policy",
         related_name="workstation_clients",
@@ -24,13 +24,16 @@ class Client(BaseAuditModel):
         on_delete=models.SET_NULL,
     )
 
+    class Meta:
+        ordering = ("name",)
+
     def __str__(self):
-        return self.client
+        return self.name
 
     @property
     def has_maintenanace_mode_agents(self):
         return (
-            Agent.objects.filter(client=self.client, maintenance_mode=True).count() > 0
+            Agent.objects.filter(site__client=self, maintenance_mode=True).count() > 0
         )
 
     @property
@@ -44,7 +47,7 @@ class Client(BaseAuditModel):
                 "last_seen",
                 "overdue_time",
             )
-            .filter(client=self.client)
+            .filter(site__client=self)
             .prefetch_related("agentchecks")
         )
         for agent in agents:
@@ -67,7 +70,7 @@ class Client(BaseAuditModel):
 
 class Site(BaseAuditModel):
     client = models.ForeignKey(Client, related_name="sites", on_delete=models.CASCADE)
-    site = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
     workstation_policy = models.ForeignKey(
         "automation.Policy",
         related_name="workstation_sites",
@@ -84,17 +87,15 @@ class Site(BaseAuditModel):
         on_delete=models.SET_NULL,
     )
 
+    class Meta:
+        ordering = ("name",)
+
     def __str__(self):
-        return self.site
+        return self.name
 
     @property
     def has_maintenanace_mode_agents(self):
-        return (
-            Agent.objects.filter(
-                client=self.client.client, site=self.site, maintenance_mode=True
-            ).count()
-            > 0
-        )
+        return Agent.objects.filter(site=self, maintenance_mode=True).count() > 0
 
     @property
     def has_failing_checks(self):
@@ -107,7 +108,7 @@ class Site(BaseAuditModel):
                 "last_seen",
                 "overdue_time",
             )
-            .filter(client=self.client.client, site=self.site)
+            .filter(site=self)
             .prefetch_related("agentchecks")
         )
         for agent in agents:
@@ -126,13 +127,6 @@ class Site(BaseAuditModel):
         from .serializers import SiteSerializer
 
         return SiteSerializer(site).data
-
-
-def validate_name(name):
-    if "|" in name:
-        return False
-    else:
-        return True
 
 
 MON_TYPE_CHOICES = [

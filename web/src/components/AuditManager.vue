@@ -209,8 +209,8 @@ export default {
           pattern: needle,
         };
 
-        this.$store
-          .dispatch("logs/optionsFilter", data)
+        this.$axios
+          .post(`logs/auditlogs/optionsfilter/`, data)
           .then(r => {
             this.agentOptions = r.data.map(agent => agent.hostname);
             this.$q.loading.hide();
@@ -264,8 +264,8 @@ export default {
         data["timeFilter"] = this.timeFilter;
       }
 
-      this.$store
-        .dispatch("logs/loadAuditLogs", data)
+      this.$axios
+        .patch("/logs/auditlogs/", data)
         .then(r => {
           this.$q.loading.hide();
           this.auditLogs = r.data;

@@ -1,101 +1,98 @@
 <template>
-  <div class="q-pa-md q-gutter-sm">
-    <q-dialog :value="togglePendingActions" @hide="hidePendingActions" @show="getPendingActions">
-      <q-card style="width: 900px; max-width: 90vw;">
-        <q-inner-loading :showing="actionsLoading">
-          <q-spinner size="40px" color="primary" />
-        </q-inner-loading>
-        <q-bar>
-          <q-btn @click="getPendingActions" class="q-mr-sm" dense flat push icon="refresh" />
-          {{ title }}
-          <q-space />
-          <q-btn dense flat icon="close" v-close-popup />
-        </q-bar>
-        <div v-if="actions.length !== 0" class="q-pa-md">
-          <div class="row">
-            <div class="col">
-              <q-btn
-                label="Cancel Action"
-                :disable="selectedRow === null || selectedStatus === 'completed' || actionType === 'taskaction'"
-                color="red"
-                icon="cancel"
-                dense
-                unelevated
-                no-caps
-                size="md"
-                @click="cancelPendingAction"
-              />
-            </div>
-            <div class="col-7"></div>
-            <div class="col">
-              <q-btn
-                :label="showCompleted ? `Hide ${completedCount} Completed` : `Show ${completedCount} Completed`"
-                :icon="showCompleted ? 'visibility_off' : 'visibility'"
-                @click="showCompleted = !showCompleted"
-                dense
-                unelevated
-                no-caps
-                size="md"
-              />
-            </div>
-          </div>
-
-          <q-table
+  <q-card style="width: 900px; max-width: 90vw">
+    <q-bar>
+      <q-btn @click="getPendingActions" class="q-mr-sm" dense flat push icon="refresh" />
+      {{ title }}
+      <q-space />
+      <q-btn dense flat icon="close" v-close-popup />
+    </q-bar>
+    <div v-if="actions.length !== 0" class="q-pa-md">
+      <div class="row">
+        <div class="col">
+          <q-btn
+            label="Cancel Action"
+            :disable="selectedRow === null || selectedStatus === 'completed' || actionType === 'taskaction'"
+            color="red"
+            icon="cancel"
             dense
-            class="remote-bg-tbl-sticky"
-            :data="filter"
-            :columns="columns"
-            :visible-columns="visibleColumns"
-            :pagination.sync="pagination"
-            row-key="id"
-            binary-state-sort
-            hide-bottom
-            virtual-scroll
-            flat
-            :rows-per-page-options="[0]"
-          >
-            <template slot="body" slot-scope="props" :props="props">
-              <q-tr
-                :class="rowClass(props.row.id, props.row.status)"
-                @click="rowSelected(props.row.id, props.row.status, props.row.action_type)"
-              >
-                <q-td v-if="props.row.action_type === 'schedreboot'">
-                  <q-icon name="power_settings_new" size="sm" />
-                </q-td>
-                <q-td v-else-if="props.row.action_type === 'taskaction'">
-                  <q-icon name="fas fa-tasks" size="sm" />
-                </q-td>
-                <q-td>{{ props.row.due }}</q-td>
-                <q-td>{{ props.row.description }}</q-td>
-                <q-td v-show="agentpk === null">{{ props.row.hostname }}</q-td>
-                <q-td v-show="agentpk === null">{{ props.row.client }}</q-td>
-                <q-td v-show="agentpk === null">{{ props.row.site }}</q-td>
-              </q-tr>
-            </template>
-          </q-table>
+            unelevated
+            no-caps
+            size="md"
+            @click="cancelPendingAction"
+          />
         </div>
-        <div v-else class="q-pa-md">No pending actions</div>
-        <q-card-section></q-card-section>
-        <q-separator />
-        <q-card-section></q-card-section>
-      </q-card>
-    </q-dialog>
-  </div>
+        <div class="col-7"></div>
+        <div class="col">
+          <q-btn
+            :label="showCompleted ? `Hide ${completedCount} Completed` : `Show ${completedCount} Completed`"
+            :icon="showCompleted ? 'visibility_off' : 'visibility'"
+            @click="showCompleted = !showCompleted"
+            dense
+            unelevated
+            no-caps
+            size="md"
+          />
+        </div>
+      </div>
+
+      <q-table
+        dense
+        class="remote-bg-tbl-sticky"
+        :data="filter"
+        :columns="columns"
+        :visible-columns="visibleColumns"
+        :pagination.sync="pagination"
+        row-key="id"
+        binary-state-sort
+        hide-bottom
+        virtual-scroll
+        flat
+        :rows-per-page-options="[0]"
+      >
+        <template slot="body" slot-scope="props" :props="props">
+          <q-tr
+            :class="rowClass(props.row.id, props.row.status)"
+            @click="rowSelected(props.row.id, props.row.status, props.row.action_type)"
+          >
+            <q-td v-if="props.row.action_type === 'schedreboot'">
+              <q-icon name="power_settings_new" size="sm" />
+            </q-td>
+            <q-td v-else-if="props.row.action_type === 'taskaction'">
+              <q-icon name="fas fa-tasks" size="sm" />
+            </q-td>
+            <q-td>{{ props.row.due }}</q-td>
+            <q-td>{{ props.row.description }}</q-td>
+            <q-td v-show="!!agentpk">{{ props.row.hostname }}</q-td>
+            <q-td v-show="!!agentpk">{{ props.row.client }}</q-td>
+            <q-td v-show="!!agentpk">{{ props.row.site }}</q-td>
+          </q-tr>
+        </template>
+      </q-table>
+    </div>
+    <div v-else class="q-pa-md">No pending actions</div>
+    <q-card-section></q-card-section>
+    <q-separator />
+    <q-card-section></q-card-section>
+  </q-card>
 </template>
 
 <script>
 import axios from "axios";
 import mixins from "@/mixins/mixins";
-import { mapGetters } from "vuex";
 export default {
   name: "PendingActions",
   mixins: [mixins],
+  props: {
+    agentpk: Number,
+  },
   data() {
     return {
+      actions: [],
       selectedRow: null,
       showCompleted: false,
       selectedStatus: null,
       actionType: null,
+      hostname: "",
       pagination: {
         rowsPerPage: 0,
         sortBy: "due",
@@ -124,8 +121,22 @@ export default {
   },
   methods: {
     getPendingActions() {
+      this.$q.loading.show();
       this.clearRow();
-      this.$store.dispatch("logs/getPendingActions");
+      axios
+        .get(this.url)
+        .then(r => {
+          this.actions = Object.freeze(r.data);
+
+          if (this.agentpk !== null && this.agentpk !== undefined) {
+            this.hostname = r.data[0].hostname;
+          }
+
+          this.$q.loading.hide();
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+        });
     },
     cancelPendingAction() {
       this.$q
@@ -150,11 +161,6 @@ export default {
             });
         });
     },
-    hidePendingActions() {
-      this.showCompleted = false;
-      this.selectedStatus = null;
-      this.$store.commit("logs/CLEAR_PENDING_ACTIONS");
-    },
     rowSelected(pk, status, actiontype) {
       this.selectedRow = pk;
       this.selectedStatus = status;
@@ -162,6 +168,8 @@ export default {
     },
     clearRow() {
       this.selectedRow = null;
+      this.selectedStatus = null;
+      this.actionType = null;
     },
     rowClass(id, status) {
       if (this.selectedRow === id && status !== "completed") {
@@ -172,28 +180,27 @@ export default {
     },
   },
   computed: {
-    ...mapGetters({
-      hostname: "logs/actionsHostname",
-      togglePendingActions: "logs/togglePendingActions",
-      actions: "logs/allPendingActions",
-      agentpk: "logs/actionsAgentPk",
-      actionsLoading: "logs/pendingActionsLoading",
-    }),
+    url() {
+      return !!this.agentpk ? `/logs/${this.agentpk}/pendingactions/` : "/logs/allpendingactions/";
+    },
     filter() {
       return this.showCompleted ? this.actions : this.actions.filter(k => k.status === "pending");
     },
     columns() {
-      return this.agentpk === null ? this.all_columns : this.agent_columns;
+      return !!this.agentpk ? this.all_columns : this.agent_columns;
     },
     visibleColumns() {
-      return this.agentpk === null ? this.all_visibleColumns : this.agent_visibleColumns;
+      return !!this.agentpk ? this.all_visibleColumns : this.agent_visibleColumns;
     },
     title() {
-      return this.agentpk === null ? "All Pending Actions" : `Pending Actions for ${this.hostname}`;
+      return !!this.agentpk ? "All Pending Actions" : `Pending Actions for ${this.hostname}`;
     },
     completedCount() {
       return this.actions.filter(k => k.status === "completed").length;
     },
+  },
+  created() {
+    this.getPendingActions();
   },
 };
 </script>

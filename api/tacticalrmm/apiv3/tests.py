@@ -2,11 +2,18 @@ import os
 import json
 
 from django.conf import settings
-from tacticalrmm.test import BaseTestCase
+from tacticalrmm.test import TacticalTestCase
 from unittest.mock import patch
+from model_bakery import baker
+from itertools import cycle
 
 
-class TestAPIv3(BaseTestCase):
+class TestAPIv3(TacticalTestCase):
+    def setUp(self):
+        self.authenticate()
+        self.setup_coresettings()
+        self.agent = baker.make_recipe("agents.agent")
+
     def test_get_checks(self):
         url = f"/api/v3/{self.agent.agent_id}/checkrunner/"
 

@@ -1,14 +1,34 @@
-from .models import Agent
+import random
+import string
+import os
+import json
+
 from model_bakery.recipe import Recipe, seq
 from itertools import cycle
 from django.utils import timezone as djangotime
+from django.conf import settings
+
+from .models import Agent
+
+
+def generate_agent_id(hostname):
+    rand = "".join(random.choice(string.ascii_letters) for _ in range(35))
+    return f"{rand}-{hostname}"
+
+
+def get_wmi_data():
+    with open(
+        os.path.join(settings.BASE_DIR, "tacticalrmm/test_data/wmi_python_agent.json")
+    ) as f:
+        return json.load(f)
+
 
 agent = Recipe(
     Agent,
-    client="Default",
-    site="Default",
-    hostname=seq("TestHostname"),
+    hostname="DESKTOP-TEST123",
     monitoring_type=cycle(["workstation", "server"]),
+    salt_id=generate_agent_id("DESKTOP-TEST123"),
+    agent_id="71AHC-AA813-HH1BC-AAHH5-00013|DESKTOP-TEST123",
 )
 
 server_agent = agent.extend(
@@ -49,3 +69,5 @@ agent_with_services = agent.extend(
         },
     ],
 )
+
+agent_with_wmi = agent.extend(wmi=get_wmi_data())

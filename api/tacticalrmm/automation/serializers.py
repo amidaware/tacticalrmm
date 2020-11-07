@@ -5,6 +5,9 @@ from rest_framework.serializers import (
     ReadOnlyField,
 )
 
+from clients.serializers import ClientSerializer, SiteSerializer
+from agents.serializers import AgentHostnameSerializer
+
 from .models import Policy
 from agents.models import Agent
 from autotasks.models import AutomatedTask
@@ -21,11 +24,11 @@ class PolicySerializer(ModelSerializer):
 
 class PolicyTableSerializer(ModelSerializer):
 
-    server_clients = StringRelatedField(many=True, read_only=True)
-    server_sites = StringRelatedField(many=True, read_only=True)
-    workstation_clients = StringRelatedField(many=True, read_only=True)
-    workstation_sites = StringRelatedField(many=True, read_only=True)
-    agents = StringRelatedField(many=True, read_only=True)
+    server_clients = ClientSerializer(many=True, read_only=True)
+    server_sites = SiteSerializer(many=True, read_only=True)
+    workstation_clients = ClientSerializer(many=True, read_only=True)
+    workstation_sites = SiteSerializer(many=True, read_only=True)
+    agents = AgentHostnameSerializer(many=True, read_only=True)
     default_server_policy = ReadOnlyField(source="is_default_server_policy")
     default_workstation_policy = ReadOnlyField(source="is_default_workstation_policy")
     agents_count = SerializerMethodField(read_only=True)
@@ -43,7 +46,7 @@ class PolicyTableSerializer(ModelSerializer):
 class PolicyOverviewSerializer(ModelSerializer):
     class Meta:
         model = Client
-        fields = ("pk", "client", "sites", "workstation_policy", "server_policy")
+        fields = ("pk", "name", "sites", "workstation_policy", "server_policy")
         depth = 2
 
 

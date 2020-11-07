@@ -37,12 +37,7 @@
           <q-tab name="checks" icon="fas fa-check-double" label="Checks" />
           <q-tab name="tasks" icon="fas fa-tasks" label="Tasks" />
         </q-tabs>
-        <q-tab-panels
-          v-model="selectedTab"
-          animated
-          transition-prev="jump-up"
-          transition-next="jump-up"
-        >
+        <q-tab-panels v-model="selectedTab" animated transition-prev="jump-up" transition-next="jump-up">
           <q-tab-panel name="checks">
             <PolicyChecksTab />
           </q-tab-panel>
@@ -127,7 +122,7 @@ export default {
       for (let client in data) {
         var client_temp = {};
 
-        client_temp["label"] = data[client].client;
+        client_temp["label"] = data[client].name;
         client_temp["id"] = unique_id;
         client_temp["icon"] = "business";
         client_temp["selectable"] = false;
@@ -170,7 +165,7 @@ export default {
         // Iterate through Sites
         for (let site in data[client].sites) {
           var site_temp = {};
-          site_temp["label"] = data[client].sites[site].site;
+          site_temp["label"] = data[client].sites[site].name;
           site_temp["id"] = unique_id;
           site_temp["icon"] = "apartment";
           site_temp["selectable"] = false;

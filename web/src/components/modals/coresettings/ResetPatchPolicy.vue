@@ -66,11 +66,11 @@ export default {
       let data = {};
 
       if (this.client !== null) {
-        data.client = this.client.label;
+        data.client = this.client.id;
       }
 
       if (this.site !== null) {
-        data.site = this.site.label;
+        data.site = this.site.id;
       }
 
       this.$store
@@ -89,7 +89,7 @@ export default {
       this.$store
         .dispatch("loadClients")
         .then(r => {
-          this.client_options = r.data.map(client => ({ label: client.client, value: client.id, sites: client.sites }));
+          this.client_options = this.formatClientOptions(r.data);
         })
         .catch(e => {
           this.$q.notify(notifyErrorConfig("There was an error loading the clients!"));

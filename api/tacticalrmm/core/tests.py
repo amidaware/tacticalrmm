@@ -1,8 +1,12 @@
-from tacticalrmm.test import BaseTestCase
+from tacticalrmm.test import TacticalTestCase
 from core.tasks import core_maintenance_tasks
 
 
-class TestCoreTasks(BaseTestCase):
+class TestCoreTasks(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+        self.authenticate()
+
     def test_core_maintenance_tasks(self):
         task = core_maintenance_tasks.s().apply()
         self.assertEqual(task.state, "SUCCESS")

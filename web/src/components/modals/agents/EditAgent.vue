@@ -27,14 +27,23 @@
                     options-dense
                     outlined
                     v-model="agent.client"
-                    :options="Object.keys(tree).sort()"
+                    :options="client_options"
                     class="col-8"
                   />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Site:</div>
                   <div class="col-2"></div>
-                  <q-select class="col-8" dense options-dense outlined v-model="agent.site" :options="sites" />
+                  <q-select
+                    class="col-8"
+                    dense
+                    options-dense
+                    emit-value
+                    map-options
+                    outlined
+                    v-model="agent.site"
+                    :options="site_options"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Type:</div>
@@ -133,7 +142,7 @@ export default {
       clientsLoaded: false,
       agent: {},
       monTypes: ["server", "workstation"],
-      tree: {},
+      client_options: [],
       splitterModel: 15,
       tab: "general",
       timezone: null,
@@ -168,12 +177,13 @@ export default {
           this.original_tz = r.data.time_zone;
         }
 
+        this.agent.client = { label: r.data.client.name, id: r.data.client.id, sites: r.data.client.sites };
         this.agentLoaded = true;
       });
     },
     getClientsSites() {
-      axios.get("/clients/loadclients/").then(r => {
-        this.tree = r.data;
+      axios.get("/clients/clients/").then(r => {
+        this.client_options = this.formatClientOptions(r.data);
         this.clientsLoaded = true;
       });
     },
@@ -201,9 +211,9 @@ export default {
   },
   computed: {
     ...mapGetters(["selectedAgentPk"]),
-    sites() {
+    site_options() {
       if (this.agentLoaded && this.clientsLoaded) {
-        return this.tree[this.agent.client].sort();
+        return this.formatSiteOptions(this.agent.client["sites"]);
       }
     },
   },

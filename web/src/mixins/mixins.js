@@ -94,6 +94,15 @@ export default {
       let formatted = months[dt.getMonth()] + "-" + appendLeadingZeroes(dt.getDate()) + "-" + appendLeadingZeroes(dt.getFullYear()) + " - " + appendLeadingZeroes(dt.getHours()) + ":" + appendLeadingZeroes(dt.getMinutes())
 
       return includeSeconds ? formatted + ":" + appendLeadingZeroes(dt.getSeconds()) : formatted
+    },
+    formatClientOptions(clients) {
+      return clients.map(client => ({ label: client.name, value: client.id, sites: client.sites }))
+    },
+    formatSiteOptions(sites) {
+      return sites.map(site => ({ label: site.name, value: site.id }))
+    },
+    capitalize(string) {
+      return string[0].toUpperCase() + string.substring(1)
     }
   }
 };

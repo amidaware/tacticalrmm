@@ -37,7 +37,7 @@
             <q-list separator padding>
               <q-item :key="item.id + 'servers'" v-for="item in related.server_clients">
                 <q-item-section>
-                  <q-item-label>{{ item.client }}</q-item-label>
+                  <q-item-label>{{ item.name }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>
                   <q-item-label>
@@ -47,7 +47,7 @@
               </q-item>
               <q-item :key="item.id + 'workstations'" v-for="item in related.workstation_clients">
                 <q-item-section>
-                  <q-item-label>{{ item.client }}</q-item-label>
+                  <q-item-label>{{ item.name }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>
                   <q-item-label>
@@ -62,7 +62,7 @@
             <q-list separator padding>
               <q-item :key="item.id + 'servers'" v-for="item in related.server_sites">
                 <q-item-section>
-                  <q-item-label>{{ item.site }}</q-item-label>
+                  <q-item-label>{{ item.name }}</q-item-label>
                   <q-item-label caption>{{ item.client_name }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>
@@ -73,7 +73,7 @@
               </q-item>
               <q-item :key="item.id + 'workstations'" v-for="item in related.workstation_sites">
                 <q-item-section>
-                  <q-item-label>{{ item.site }}</q-item-label>
+                  <q-item-label>{{ item.name }}</q-item-label>
                   <q-item-label caption>{{ item.client_name }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>

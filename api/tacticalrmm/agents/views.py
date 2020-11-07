@@ -253,7 +253,6 @@ class AgentsTableList(generics.ListAPIView):
         "pk",
         "hostname",
         "agent_id",
-        "client",
         "site",
         "monitoring_type",
         "description",
@@ -292,15 +291,14 @@ def agent_edit_details(request, pk):
 
 
 @api_view()
-def by_client(request, client):
+def by_client(request, clientpk):
     agents = (
-        Agent.objects.filter(client=client)
+        Agent.objects.filter(site__client_id=clientpk)
         .prefetch_related("agentchecks")
         .only(
             "pk",
             "hostname",
             "agent_id",
-            "client",
             "site",
             "monitoring_type",
             "description",
@@ -321,15 +319,14 @@ def by_client(request, client):
 
 
 @api_view()
-def by_site(request, client, site):
+def by_site(request, sitepk):
     agents = (
-        Agent.objects.filter(client=client, site=site)
+        Agent.objects.filter(site_id=sitepk)
         .prefetch_related("agentchecks")
         .only(
             "pk",
             "hostname",
             "agent_id",
-            "client",
             "site",
             "monitoring_type",
             "description",
@@ -398,8 +395,8 @@ def reboot_later(request):
 def install_agent(request):
     from knox.models import AuthToken
 
-    client = get_object_or_404(Client, client=request.data["client"])
-    site = get_object_or_404(Site, client=client, site=request.data["site"])
+    client_id = request.data["client"]
+    site_id = request.data["site"]
     version = settings.LATEST_AGENT_VER
     arch = request.data["arch"]
 
@@ -454,8 +451,8 @@ def install_agent(request):
             "build",
             f"-ldflags=\"-X 'main.Inno={inno}'",
             f"-X 'main.Api={api}'",
-            f"-X 'main.Client={client.pk}'",
-            f"-X 'main.Site={site.pk}'",
+            f"-X 'main.Client={client_id}'",
+            f"-X 'main.Site={site_id}'",
             f"-X 'main.Atype={atype}'",
             f"-X 'main.Rdp={rdp}'",
             f"-X 'main.Ping={ping}'",
@@ -563,9 +560,9 @@ def install_agent(request):
             "--api",
             request.data["api"],
             "--client-id",
-            client.pk,
+            client_id,
             "--site-id",
-            site.pk,
+            site_id,
             "--agent-type",
             request.data["agenttype"],
             "--auth",
@@ -597,8 +594,8 @@ def install_agent(request):
 
         replace_dict = {
             "innosetupchange": inno,
-            "clientchange": str(client.pk),
-            "sitechange": str(site.pk),
+            "clientchange": str(client_id),
+            "sitechange": str(site_id),
             "apichange": request.data["api"],
             "atypechange": request.data["agenttype"],
             "powerchange": str(request.data["power"]),
@@ -807,14 +804,9 @@ def bulk(request):
         return notify_error("Must select at least 1 agent")
 
     if request.data["target"] == "client":
-        client = get_object_or_404(Client, client=request.data["client"])
-        agents = Agent.objects.filter(client=client.client)
+        agents = Agent.objects.filter(site__client_id=request.data["client"])
     elif request.data["target"] == "site":
-        client = get_object_or_404(Client, client=request.data["client"])
-        site = (
-            Site.objects.filter(client=client).filter(site=request.data["site"]).get()
-        )
-        agents = Agent.objects.filter(client=client.client).filter(site=site.site)
+        agents = Agent.objects.filter(site_id=request.data["site"])
     elif request.data["target"] == "agents":
         agents = Agent.objects.filter(pk__in=request.data["agentPKs"])
     elif request.data["target"] == "all":
@@ -904,14 +896,12 @@ def agent_counts(request):
 @api_view(["POST"])
 def agent_maintenance(request):
     if request.data["type"] == "Client":
-        client = Client.objects.get(pk=request.data["id"])
-        Agent.objects.filter(client=client.client).update(
+        Agent.objects.filter(site__client_id=request.data["id"]).update(
             maintenance_mode=request.data["action"]
         )
 
     elif request.data["type"] == "Site":
-        site = Site.objects.get(pk=request.data["id"])
-        Agent.objects.filter(client=site.client.client, site=site.site).update(
+        Agent.objects.filter(site_id=request.data["id"]).update(
             maintenance_mode=request.data["action"]
         )
 

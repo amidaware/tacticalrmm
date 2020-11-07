@@ -44,9 +44,7 @@ class Agent(BaseAuditModel):
     boot_time = models.FloatField(null=True, blank=True)
     logged_in_username = models.CharField(null=True, blank=True, max_length=255)
     last_logged_in_user = models.CharField(null=True, blank=True, max_length=255)
-    client = models.CharField(max_length=200)
     antivirus = models.CharField(default="n/a", max_length=255)  # deprecated
-    site = models.CharField(max_length=150)
     monitoring_type = models.CharField(max_length=30)
     description = models.CharField(null=True, blank=True, max_length=255)
     mesh_node_id = models.CharField(null=True, blank=True, max_length=255)
@@ -62,6 +60,13 @@ class Agent(BaseAuditModel):
         max_length=255, choices=TZ_CHOICES, null=True, blank=True
     )
     maintenance_mode = models.BooleanField(default=False)
+    site = models.ForeignKey(
+        "clients.Site",
+        related_name="agents",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
     policy = models.ForeignKey(
         "automation.Policy",
         related_name="agents",
@@ -72,6 +77,10 @@ class Agent(BaseAuditModel):
 
     def __str__(self):
         return self.hostname
+
+    @property
+    def client(self):
+        return self.site.client
 
     @property
     def timezone(self):
@@ -281,11 +290,9 @@ class Agent(BaseAuditModel):
 
     # returns agent policy merged with a client or site specific policy
     def get_patch_policy(self):
-        from clients.models import Client, Site
 
         # check if site has a patch policy and if so use it
-        client = Client.objects.get(client=self.client)
-        site = Site.objects.get(client=client, site=self.site)
+        site = self.site
         core_settings = CoreSettings.objects.first()
         patch_policy = None
         agent_policy = self.winupdatepolicy.get()
@@ -667,10 +674,10 @@ class AgentOutage(models.Model):
 
         CORE = CoreSettings.objects.first()
         CORE.send_mail(
-            f"{self.agent.client}, {self.agent.site}, {self.agent.hostname} - data overdue",
+            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data overdue",
             (
-                f"Data has not been received from client {self.agent.client}, "
-                f"site {self.agent.site}, "
+                f"Data has not been received from client {self.agent.client.name}, "
+                f"site {self.agent.site.name}, "
                 f"agent {self.agent.hostname} "
                 "within the expected time."
             ),
@@ -681,10 +688,10 @@ class AgentOutage(models.Model):
 
         CORE = CoreSettings.objects.first()
         CORE.send_mail(
-            f"{self.agent.client}, {self.agent.site}, {self.agent.hostname} - data received",
+            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data received",
             (
-                f"Data has been received from client {self.agent.client}, "
-                f"site {self.agent.site}, "
+                f"Data has been received from client {self.agent.client.name}, "
+                f"site {self.agent.site.name}, "
                 f"agent {self.agent.hostname} "
                 "after an interruption in data transmission."
             ),
@@ -695,7 +702,7 @@ class AgentOutage(models.Model):
 
         CORE = CoreSettings.objects.first()
         CORE.send_sms(
-            f"{self.agent.client}, {self.agent.site}, {self.agent.hostname} - data overdue"
+            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data overdue"
         )
 
     def send_recovery_sms(self):
@@ -703,7 +710,7 @@ class AgentOutage(models.Model):
 
         CORE = CoreSettings.objects.first()
         CORE.send_sms(
-            f"{self.agent.client}, {self.agent.site}, {self.agent.hostname} - data received"
+            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data received"
         )
 
     def __str__(self):

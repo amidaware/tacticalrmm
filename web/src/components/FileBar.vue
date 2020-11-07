@@ -12,10 +12,10 @@
                 </q-item-section>
                 <q-menu anchor="top right" self="top left">
                   <q-list dense style="min-width: 100px">
-                    <q-item clickable v-close-popup @click="showAddClientModal = true">
+                    <q-item clickable v-close-popup @click="showClientsFormModal('client', 'add')">
                       <q-item-section>Add Client</q-item-section>
                     </q-item>
-                    <q-item clickable v-close-popup @click="showAddSiteModal = true">
+                    <q-item clickable v-close-popup @click="showClientsFormModal('site', 'add')">
                       <q-item-section>Add Site</q-item-section>
                     </q-item>
                   </q-list>
@@ -29,10 +29,10 @@
                 </q-item-section>
                 <q-menu anchor="top right" self="top left">
                   <q-list dense style="min-width: 100px">
-                    <q-item clickable v-close-popup @click="showDeleteClientModal = true">
+                    <q-item clickable v-close-popup @click="showClientsFormModal('client', 'delete')">
                       <q-item-section>Delete Client</q-item-section>
                     </q-item>
-                    <q-item clickable v-close-popup @click="showDeleteSiteModal = true">
+                    <q-item clickable v-close-popup @click="showClientsFormModal('site', 'delete')">
                       <q-item-section>Delete Site</q-item-section>
                     </q-item>
                   </q-list>
@@ -45,7 +45,7 @@
               <q-item clickable v-close-popup @click="showAuditManager = true">
                 <q-item-section>Audit Log</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="getLog">
+              <q-item clickable v-close-popup @click="showDebugLog = true">
                 <q-item-section>Debug Log</q-item-section>
               </q-item>
             </q-list>
@@ -55,10 +55,10 @@
         <q-btn size="md" dense no-caps flat label="Edit">
           <q-menu>
             <q-list dense style="min-width: 100px">
-              <q-item clickable v-close-popup @click="showEditClientsModal = true">
+              <q-item clickable v-close-popup @click="showClientsFormModal('client', 'edit')">
                 <q-item-section>Edit Clients</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="showEditSitesModal = true">
+              <q-item clickable v-close-popup @click="showClientsFormModal('site', 'edit')">
                 <q-item-section>Edit Sites</q-item-section>
               </q-item>
             </q-list>
@@ -68,7 +68,7 @@
         <q-btn size="md" dense no-caps flat label="View">
           <q-menu auto-close>
             <q-list dense style="min-width: 100px">
-              <q-item clickable v-close-popup @click="showPendingActions">
+              <q-item clickable v-close-popup @click="showPendingActions = true">
                 <q-item-section>Pending Actions</q-item-section>
               </q-item>
             </q-list>
@@ -119,15 +119,15 @@
           <q-menu auto-close>
             <q-list dense style="min-width: 100px">
               <!-- bulk command -->
-              <q-item clickable v-close-popup @click="showBulkCommand = true">
+              <q-item clickable v-close-popup @click="showBulkActionModal('command')">
                 <q-item-section>Bulk Command</q-item-section>
               </q-item>
               <!-- bulk script -->
-              <q-item clickable v-close-popup @click="showBulkScript = true">
+              <q-item clickable v-close-popup @click="showBulkActionModal('script')">
                 <q-item-section>Bulk Script</q-item-section>
               </q-item>
               <!-- bulk patch management -->
-              <q-item clickable v-close-popup @click="showBulkPatchManagement = true">
+              <q-item clickable v-close-popup @click="showBulkActionModal('scan')">
                 <q-item-section>Bulk Patch Management</q-item-section>
               </q-item>
             </q-list>
@@ -135,34 +135,37 @@
         </q-btn>
       </q-btn-group>
       <q-space />
-      <!-- add client modal -->
-      <q-dialog v-model="showAddClientModal">
-        <AddClient @close="showAddClientModal = false" />
+      <!-- client form modal -->
+      <q-dialog v-model="showClientFormModal" @hide="closeClientsFormModal">
+        <ClientsForm @close="closeClientsFormModal" :op="clientOp" @edited="edited" />
       </q-dialog>
-      <q-dialog v-model="showEditClientsModal">
-        <EditClients @close="showEditClientsModal = false" @edited="edited" />
-      </q-dialog>
-      <!-- add site modal -->
-      <q-dialog v-model="showAddSiteModal">
-        <AddSite @close="showAddSiteModal = false" :clients="clients" />
-      </q-dialog>
-      <q-dialog v-model="showEditSitesModal">
-        <EditSites @close="showEditSitesModal = false" @edited="edited" />
-      </q-dialog>
-      <!-- delete -->
-      <q-dialog v-model="showDeleteClientModal">
-        <DeleteClient @close="showDeleteClientModal = false" @edited="edited" />
-      </q-dialog>
-      <q-dialog v-model="showDeleteSiteModal">
-        <DeleteSite @close="showDeleteSiteModal = false" @edited="edited" />
+      <!-- site form modal -->
+      <q-dialog v-model="showSiteFormModal" @hide="closeClientsFormModal">
+        <SitesForm @close="closeClientsFormModal" :op="clientOp" @edited="edited" />
       </q-dialog>
       <!-- edit core settings modal -->
       <q-dialog v-model="showEditCoreSettingsModal">
         <EditCoreSettings @close="showEditCoreSettingsModal = false" />
       </q-dialog>
       <!-- debug log modal -->
-      <LogModal />
+      <div class="q-pa-md q-gutter-sm">
+        <q-dialog v-model="showDebugLog" maximized transition-show="slide-up" transition-hide="slide-down">
+          <LogModal @close="showAuditManager = false" />
+        </q-dialog>
+      </div>
       <!-- audit log modal -->
+      <div class="q-pa-md q-gutter-sm">
+        <q-dialog v-model="showAuditManager" maximized transition-show="slide-up" transition-hide="slide-down">
+          <AuditManager @close="showAuditManager = false" />
+        </q-dialog>
+      </div>
+      <!-- pending actions modal -->
+      <div class="q-pa-md q-gutter-sm">
+        <q-dialog v-model="showPendingActions">
+          <PendingActions @close="showPendingActions = false" />
+        </q-dialog>
+      </div>
+      <!-- audit manager -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showAuditManager" maximized transition-show="slide-up" transition-hide="slide-down">
           <AuditManager @close="showAuditManager = false" />
@@ -200,19 +203,9 @@
         <UploadMesh @close="showUploadMesh = false" />
       </q-dialog>
 
-      <!-- Bulk command modal -->
-      <q-dialog v-model="showBulkCommand" position="top">
-        <BulkCommand @close="showBulkCommand = false" />
-      </q-dialog>
-
-      <!-- Bulk script modal -->
-      <q-dialog v-model="showBulkScript" position="top">
-        <BulkScript @close="showBulkScript = false" />
-      </q-dialog>
-
-      <!-- Bulk patch management -->
-      <q-dialog v-model="showBulkPatchManagement" position="top">
-        <BulkPatchManagement @close="showBulkPatchManagement = false" />
+      <!-- Bulk action modal -->
+      <q-dialog v-model="showBulkAction" @hide="closeBulkActionModal" position="top">
+        <BulkAction :mode="bulkMode" @close="closeBulkActionModal" />
       </q-dialog>
 
       <!-- Agent Deployment -->
@@ -225,12 +218,9 @@
 
 <script>
 import LogModal from "@/components/modals/logs/LogModal";
-import AddClient from "@/components/modals/clients/AddClient";
-import EditClients from "@/components/modals/clients/EditClients";
-import AddSite from "@/components/modals/clients/AddSite";
-import EditSites from "@/components/modals/clients/EditSites";
-import DeleteClient from "@/components/modals/clients/DeleteClient";
-import DeleteSite from "@/components/modals/clients/DeleteSite";
+import PendingActions from "@/components/modals/logs/PendingActions";
+import ClientsForm from "@/components/modals/clients/ClientsForm";
+import SitesForm from "@/components/modals/clients/SitesForm";
 import UpdateAgents from "@/components/modals/agents/UpdateAgents";
 import ScriptManager from "@/components/ScriptManager";
 import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
@@ -239,21 +229,16 @@ import AdminManager from "@/components/AdminManager";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import UploadMesh from "@/components/modals/core/UploadMesh";
 import AuditManager from "@/components/AuditManager";
-import BulkCommand from "@/components/modals/agents/BulkCommand";
-import BulkScript from "@/components/modals/agents/BulkScript";
-import BulkPatchManagement from "@/components/modals/agents/BulkPatchManagement";
+import BulkAction from "@/components/modals/agents/BulkAction";
 import Deployment from "@/components/Deployment";
 
 export default {
   name: "FileBar",
   components: {
     LogModal,
-    AddClient,
-    EditClients,
-    AddSite,
-    EditSites,
-    DeleteClient,
-    DeleteSite,
+    PendingActions,
+    ClientsForm,
+    SitesForm,
     UpdateAgents,
     ScriptManager,
     EditCoreSettings,
@@ -262,20 +247,15 @@ export default {
     UploadMesh,
     AdminManager,
     AuditManager,
-    BulkCommand,
-    BulkScript,
-    BulkPatchManagement,
+    BulkAction,
     Deployment,
   },
   props: ["clients"],
   data() {
     return {
-      showAddClientModal: false,
-      showEditClientsModal: false,
-      showAddSiteModal: false,
-      showEditSitesModal: false,
-      showDeleteClientModal: false,
-      showDeleteSiteModal: false,
+      showClientFormModal: false,
+      showSiteFormModal: false,
+      clientOp: null,
       showUpdateAgentsModal: false,
       showEditCoreSettingsModal: false,
       showAutomationManager: false,
@@ -283,19 +263,35 @@ export default {
       showInstallAgent: false,
       showUploadMesh: false,
       showAuditManager: false,
-      showBulkCommand: false,
-      showBulkScript: false,
-      showBulkPatchManagement: false,
+      showBulkAction: false,
+      showPendingActions: false,
+      bulkMode: null,
       showDeployment: false,
+      showDebugLog: false,
     };
   },
   methods: {
-    getLog() {
-      this.$store.commit("logs/TOGGLE_LOG_MODAL", true);
+    showClientsFormModal(type, op) {
+      this.clientOp = op;
+
+      if (type === "client") {
+        this.showClientFormModal = true;
+      } else if (type === "site") {
+        this.showSiteFormModal = true;
+      }
     },
-    showPendingActions() {
-      const data = { action: true, agentpk: null, hostname: null };
-      this.$store.commit("logs/TOGGLE_PENDING_ACTIONS", data);
+    closeClientsFormModal() {
+      this.clientOp = null;
+      this.showClientFormModal = null;
+      this.showSiteFormModal = null;
+    },
+    showBulkActionModal(mode) {
+      this.bulkMode = mode;
+      this.showBulkAction = true;
+    },
+    closeBulkActionModal() {
+      this.bulkMode = null;
+      this.showBulkAction = false;
     },
     showScriptManager() {
       this.$store.commit("TOGGLE_SCRIPT_MANAGER", true);

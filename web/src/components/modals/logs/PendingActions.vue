@@ -62,9 +62,9 @@
             </q-td>
             <q-td>{{ props.row.due }}</q-td>
             <q-td>{{ props.row.description }}</q-td>
-            <q-td v-show="!!agentpk">{{ props.row.hostname }}</q-td>
-            <q-td v-show="!!agentpk">{{ props.row.client }}</q-td>
-            <q-td v-show="!!agentpk">{{ props.row.site }}</q-td>
+            <q-td v-show="!!!agentpk">{{ props.row.hostname }}</q-td>
+            <q-td v-show="!!!agentpk">{{ props.row.client }}</q-td>
+            <q-td v-show="!!!agentpk">{{ props.row.site }}</q-td>
           </q-tr>
         </template>
       </q-table>
@@ -77,7 +77,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 export default {
   name: "PendingActions",
@@ -123,15 +122,11 @@ export default {
     getPendingActions() {
       this.$q.loading.show();
       this.clearRow();
-      axios
+      this.$axios
         .get(this.url)
         .then(r => {
           this.actions = Object.freeze(r.data);
-
-          if (this.agentpk !== null && this.agentpk !== undefined) {
-            this.hostname = r.data[0].hostname;
-          }
-
+          if (!!this.agentpk) this.hostname = r.data[0].hostname;
           this.$q.loading.hide();
         })
         .catch(e => {
@@ -148,7 +143,7 @@ export default {
         .onOk(() => {
           this.$q.loading.show();
           const data = { pk: this.selectedRow };
-          axios
+          this.$axios
             .delete("/logs/cancelpendingaction/", { data: data })
             .then(r => {
               this.$q.loading.hide();
@@ -187,13 +182,13 @@ export default {
       return this.showCompleted ? this.actions : this.actions.filter(k => k.status === "pending");
     },
     columns() {
-      return !!this.agentpk ? this.all_columns : this.agent_columns;
+      return !!this.agentpk ? this.agent_columns : this.all_columns;
     },
     visibleColumns() {
-      return !!this.agentpk ? this.all_visibleColumns : this.agent_visibleColumns;
+      return !!this.agentpk ? this.agent_visibleColumns : this.all_visibleColumns;
     },
     title() {
-      return !!this.agentpk ? "All Pending Actions" : `Pending Actions for ${this.hostname}`;
+      return !!this.agentpk ? `Pending Actions for ${this.hostname}` : "All Pending Actions";
     },
     completedCount() {
       return this.actions.filter(k => k.status === "completed").length;

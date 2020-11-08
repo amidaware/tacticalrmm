@@ -13,6 +13,11 @@ class SiteSerializer(ModelSerializer):
         if "|" in val["name"]:
             raise ValidationError("Site name cannot contain the | character")
 
+        if self.context:
+            client = Client.objects.get(pk=self.context["clientpk"])
+            if Site.objects.filter(client=client, name=val["name"]).exists():
+                raise ValidationError(f"Site {val['name']} already exists")
+
         return val
 
 

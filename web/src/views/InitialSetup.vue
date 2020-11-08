@@ -10,12 +10,7 @@
           <q-form @submit.prevent="finish">
             <q-card-section>
               <div>Add Client:</div>
-              <q-input
-                dense
-                outlined
-                v-model="client.client"
-                :rules="[ val => !!val || '*Required' ]"
-              >
+              <q-input dense outlined v-model="client.client" :rules="[val => !!val || '*Required']">
                 <template v-slot:prepend>
                   <q-icon name="business" />
                 </template>
@@ -23,12 +18,7 @@
             </q-card-section>
             <q-card-section>
               <div>Add Site:</div>
-              <q-input
-                dense
-                outlined
-                v-model="client.site"
-                :rules="[ val => !!val || '*Required' ]"
-              >
+              <q-input dense outlined v-model="client.site" :rules="[val => !!val || '*Required']">
                 <template v-slot:prepend>
                   <q-icon name="apartment" />
                 </template>
@@ -42,7 +32,7 @@
               <div class="row">
                 <q-file
                   v-model="meshagent"
-                  :rules="[ val => !!val || '*Required' ]"
+                  :rules="[val => !!val || '*Required']"
                   label="Upload MeshAgent"
                   stack-label
                   filled
@@ -112,8 +102,8 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          if (e.response.data.client) {
-            this.notifyError(e.response.data.client);
+          if (e.response.data.name) {
+            this.notifyError(e.response.data.name);
           } else {
             this.notifyError(e.response.data.non_field_errors);
           }

@@ -2,7 +2,7 @@
   <q-card style="min-width: 400px">
     <q-card-section class="row">
       <q-card-actions align="left">
-        <div class="text-h6">Edit Clients</div>
+        <div class="text-h6">{{ modalTitle }}</div>
       </q-card-actions>
       <q-space />
       <q-card-actions align="right">
@@ -10,10 +10,9 @@
       </q-card-actions>
     </q-card-section>
     <q-card-section>
-      <q-form @submit="submit">
-        <q-card-section>
+      <q-form @submit.prevent="submit">
+        <q-card-section v-if="op === 'edit' || op === 'delete'">
           <q-select
-            v-if="op === 'edit' || op === 'delete'"
             :rules="[val => !!val || '*Required']"
             outlined
             options-dense
@@ -22,22 +21,21 @@
             :options="client_options"
           />
         </q-card-section>
-        <q-card-section>
+        <q-card-section v-if="op === 'add'">
           <q-input
-            v-if="op === 'add'"
             outlined
             v-model="client.name"
-            label="Client:"
+            label="Client"
             :rules="[val => (val && val.length > 0) || '*Required']"
           />
         </q-card-section>
-        <q-card-section>
+        <q-card-section v-if="op === 'add' || op === 'edit'">
           <q-input
             v-if="op === 'add'"
             :rules="[val => !!val || '*Required']"
             outlined
             v-model="client.site"
-            label="Default first site:"
+            label="Default first site"
           />
           <q-input
             v-else-if="op === 'edit'"
@@ -48,7 +46,12 @@
           />
         </q-card-section>
         <q-card-actions align="left">
-          <q-btn :label="capitalize(op)" color="primary" type="submit" />
+          <q-btn
+            :label="capitalize(op)"
+            :color="op === 'delete' ? 'negative' : 'primary'"
+            type="submit"
+            class="full-width"
+          />
         </q-card-actions>
       </q-form>
     </q-card-section>
@@ -56,7 +59,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 export default {
   name: "ClientsForm",
@@ -82,6 +84,13 @@ export default {
       this.client.name = newClient.label;
     },
   },
+  computed: {
+    modalTitle() {
+      if (this.op === "add") return "Add Client";
+      if (this.op === "edit") return "Edit Client";
+      if (this.op === "delete") return "Delete Client";
+    },
+  },
   methods: {
     submit() {
       if (this.op === "add") this.addClient();
@@ -89,7 +98,7 @@ export default {
       if (this.op === "delete") this.deleteClient();
     },
     getClients() {
-      axios.get("/clients/clients/").then(r => {
+      this.$axios.get("/clients/clients/").then(r => {
         this.client_options = r.data.map(client => ({ label: client.name, value: client.id }));
 
         if (this.clientpk !== undefined && this.clientpk !== null) {
@@ -103,13 +112,11 @@ export default {
     },
     addClient() {
       this.$q.loading.show();
-
       const data = {
         client: this.client.name,
         site: this.client.site,
       };
-
-      axios
+      this.$axios
         .post("/clients/clients/", data)
         .then(r => {
           this.$emit("close");
@@ -129,13 +136,11 @@ export default {
     },
     editClient() {
       this.$q.loading.show();
-
       const data = {
         id: this.client.id,
         name: this.client.name,
       };
-
-      axios
+      this.$axios
         .put(`/clients/${this.client.id}/client/`, this.client)
         .then(r => {
           this.$emit("edited");
@@ -178,7 +183,7 @@ export default {
     },
   },
   created() {
-    this.getClients();
+    if (this.op !== "add") this.getClients();
   },
 };
 </script>

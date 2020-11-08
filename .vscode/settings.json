@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "api/tacticalrmm/env/bin/python",
+    "python.pythonPath": "api/env/bin/python",
     "python.languageServer": "Pylance",
     "python.analysis.extraPaths": [
         "api/tacticalrmm"

@@ -61,12 +61,11 @@ class GetAddClients(APIView):
 class GetUpdateDeleteClient(APIView):
     def put(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
-
         serializer = ClientSerializer(data=request.data, instance=client)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response(f"The Client was renamed")
+        return Response("The Client was renamed")
 
     def delete(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
@@ -93,9 +92,9 @@ class GetAddSites(APIView):
 
     def post(self, request):
         name = request.data["name"].strip()
-
         serializer = SiteSerializer(
-            data={"name": name, "client": request.data["client"]}
+            data={"name": name, "client": request.data["client"]},
+            context={"clientpk": request.data["client"]},
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()

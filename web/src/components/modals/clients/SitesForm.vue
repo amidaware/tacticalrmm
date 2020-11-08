@@ -2,7 +2,7 @@
   <q-card style="min-width: 400px">
     <q-card-section class="row">
       <q-card-actions align="left">
-        <div class="text-h6">Edit Sites</div>
+        <div class="text-h6">{{ modalTitle }}</div>
       </q-card-actions>
       <q-space />
       <q-card-actions align="right">
@@ -19,12 +19,11 @@
             label="Select client"
             v-model="selected_client"
             :options="client_options"
-            @input="op === 'edit' ? (selected_site = sites[0]) : () => {}"
+            @input="op === 'edit' || op === 'delete' ? (selected_site = sites[0]) : () => {}"
           />
         </q-card-section>
-        <q-card-section>
+        <q-card-section v-if="op === 'edit' || op === 'delete'">
           <q-select
-            v-if="op === 'edit' || op === 'delete'"
             :rules="[val => !!val || '*Required']"
             outlined
             options-dense
@@ -33,12 +32,12 @@
             :options="sites"
           />
         </q-card-section>
-        <q-card-section>
+        <q-card-section v-if="op === 'add' || op === 'edit'">
           <q-input
             v-if="op === 'add'"
             outlined
             v-model="site.name"
-            label="Default first site:"
+            label="Site"
             :rules="[val => !!val || '*Required']"
           />
           <q-input
@@ -50,7 +49,12 @@
           />
         </q-card-section>
         <q-card-actions align="left">
-          <q-btn :label="capitalize(op)" color="primary" type="submit" />
+          <q-btn
+            :label="capitalize(op)"
+            :color="op === 'delete' ? 'negative' : 'primary'"
+            type="submit"
+            class="full-width"
+          />
         </q-card-actions>
       </q-form>
     </q-card-section>
@@ -58,7 +62,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 export default {
   name: "SitesForm",
@@ -88,6 +91,11 @@ export default {
     sites() {
       return !!this.selected_client ? this.formatSiteOptions(this.selected_client.sites) : [];
     },
+    modalTitle() {
+      if (this.op === "add") return "Add Site";
+      if (this.op === "edit") return "Edit Site";
+      if (this.op === "delete") return "Delete Site";
+    },
   },
   methods: {
     submit() {
@@ -96,7 +104,7 @@ export default {
       if (this.op === "delete") this.deleteSite();
     },
     getClients() {
-      axios.get("/clients/clients/").then(r => {
+      this.$axios.get("/clients/clients/").then(r => {
         this.client_options = this.formatClientOptions(r.data);
 
         if (this.sitepk !== undefined && this.sitepk !== null) {
@@ -110,7 +118,7 @@ export default {
           });
         } else {
           this.selected_client = this.client_options[0];
-          this.selected_site = this.sites[0];
+          if (this.op !== "add") this.selected_site = this.sites[0];
         }
       });
     },
@@ -122,7 +130,7 @@ export default {
         name: this.site.name,
       };
 
-      axios
+      this.$axios
         .post("/clients/sites/", data)
         .then(() => {
           this.$emit("close");
@@ -130,9 +138,9 @@ export default {
           this.$q.loading.hide();
           this.notifySuccess(`Site ${this.site.name} was added!`);
         })
-        .catch(err => {
+        .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(err.response.data);
+          this.notifyError(e.response.data.non_field_errors);
         });
     },
     editSite() {
@@ -144,7 +152,7 @@ export default {
         client: this.selected_client.value,
       };
 
-      axios
+      this.$axios
         .put(`/clients/${this.site.id}/site/`, data)
         .then(() => {
           this.$emit("edited");
@@ -154,7 +162,7 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data);
+          this.notifyError(e.response.data.non_field_errors);
         });
     },
     deleteSite() {

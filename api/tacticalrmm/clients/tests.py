@@ -1,9 +1,8 @@
 import uuid
-from unittest.mock import patch
 from tacticalrmm.test import TacticalTestCase
-from model_bakery import baker, seq
-from itertools import cycle
+from model_bakery import baker
 from .models import Client, Site, Deployment
+from rest_framework.serializers import ValidationError
 
 from .serializers import (
     ClientSerializer,
@@ -36,21 +35,44 @@ class TestClientViews(TacticalTestCase):
         payload = {"client": "Company 1", "site": "Site 1"}
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(Client.objects.filter(name="Company 1").exists())
-        self.assertTrue(
-            Site.objects.filter(name="Site 1", client__name="Company 1").exists()
-        )
 
         payload["client"] = "Company1|askd"
+        serializer = ClientSerializer(data={"name": payload["client"]}, context=payload)
+        with self.assertRaisesMessage(
+            ValidationError, "Client name cannot contain the | character"
+        ):
+            self.assertFalse(serializer.is_valid(raise_exception=True))
+
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 400)
 
-        payload = {"client": "Company 1", "site": "Site2|a34"}
+        payload = {"client": "Company 156", "site": "Site2|a34"}
+        serializer = ClientSerializer(data={"name": payload["client"]}, context=payload)
+        with self.assertRaisesMessage(
+            ValidationError, "Site name cannot contain the | character"
+        ):
+            self.assertFalse(serializer.is_valid(raise_exception=True))
+
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 400)
 
         # test unique
         payload = {"client": "Company 1", "site": "Site 1"}
+        serializer = ClientSerializer(data={"name": payload["client"]}, context=payload)
+        with self.assertRaisesMessage(
+            ValidationError, "client with this name already exists."
+        ):
+            self.assertFalse(serializer.is_valid(raise_exception=True))
+
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        # test long site name
+        payload = {"client": "Company 2394", "site": "Site123" * 100}
+        serializer = ClientSerializer(data={"name": payload["client"]}, context=payload)
+        with self.assertRaisesMessage(ValidationError, "Site name too long"):
+            self.assertFalse(serializer.is_valid(raise_exception=True))
+
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 400)
 
@@ -137,8 +159,20 @@ class TestClientViews(TacticalTestCase):
 
         # test with | symbol
         payload = {"client": site.client.id, "name": "LA Off|ice  |*&@#$"}
+        serializer = SiteSerializer(data=payload, context={"clientpk": site.client.id})
+        with self.assertRaisesMessage(
+            ValidationError, "Site name cannot contain the | character"
+        ):
+            self.assertFalse(serializer.is_valid(raise_exception=True))
+
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 400)
+
+        # test site already exists
+        payload = {"client": site.client.id, "name": "LA Office"}
+        serializer = SiteSerializer(data=payload, context={"clientpk": site.client.id})
+        with self.assertRaisesMessage(ValidationError, "Site LA Office already exists"):
+            self.assertFalse(serializer.is_valid(raise_exception=True))
 
         self.check_not_authenticated("post", url)
 

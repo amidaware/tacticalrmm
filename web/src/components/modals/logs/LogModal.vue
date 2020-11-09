@@ -33,13 +33,8 @@
       <q-radio dark v-model="loglevel" color="yellow" val="warning" label="Warning" @input="getLog" />
     </q-card-section>
     <q-separator />
-    <q-card-section>
-      <q-scroll-area
-        :thumb-style="{ right: '4px', borderRadius: '5px', background: 'red', width: '10px', opacity: 1 }"
-        style="height: 60vh"
-      >
-        <pre>{{ logContent }}</pre>
-      </q-scroll-area>
+    <q-card-section class="scroll" style="max-height: 80vh">
+      <pre>{{ logContent }}</pre>
     </q-card-section>
   </q-card>
 </template>

@@ -150,13 +150,7 @@
       <!-- debug log modal -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showDebugLog" maximized transition-show="slide-up" transition-hide="slide-down">
-          <LogModal @close="showAuditManager = false" />
-        </q-dialog>
-      </div>
-      <!-- audit log modal -->
-      <div class="q-pa-md q-gutter-sm">
-        <q-dialog v-model="showAuditManager" maximized transition-show="slide-up" transition-hide="slide-down">
-          <AuditManager @close="showAuditManager = false" />
+          <LogModal @close="showDebugLog = false" />
         </q-dialog>
       </div>
       <!-- pending actions modal -->

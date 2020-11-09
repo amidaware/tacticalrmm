@@ -182,8 +182,8 @@ export default {
           pattern: needle,
         };
 
-        this.$store
-          .dispatch("logs/optionsFilter", data)
+        this.$axios
+          .post(`logs/auditlogs/optionsfilter/`, data)
           .then(r => {
             this.userOptions = r.data.map(user => user.username);
             this.$q.loading.hide();

@@ -6,6 +6,7 @@
       :style="{ 'max-height': agentTableHeight }"
       :data="filter"
       :filter="search"
+      :filter-method="filterTable"
       :columns="columns"
       :visible-columns="visibleColumns"
       row-key="id"
@@ -255,8 +256,8 @@
               <q-tooltip>Checks passing</q-tooltip>
             </q-icon>
           </q-td>
-          <q-td key="client" :props="props">{{ props.row.client_name }}</q-td>
-          <q-td key="site" :props="props">{{ props.row.site_name }}</q-td>
+          <q-td key="client_name" :props="props">{{ props.row.client_name }}</q-td>
+          <q-td key="site_name" :props="props">{{ props.row.site_name }}</q-td>
 
           <q-td key="hostname" :props="props">{{ props.row.hostname }}</q-td>
           <q-td key="description" :props="props">{{ props.row.description }}</q-td>
@@ -376,6 +377,56 @@ export default {
     };
   },
   methods: {
+    filterTable(rows, terms, cols, cellValue) {
+      const lowerTerms = terms ? terms.toLowerCase() : "";
+      let advancedFilter = false;
+      let availability = null;
+      let checks = false;
+      let patches = false;
+      let reboot = false;
+      let search = "";
+
+      const params = lowerTerms.trim().split(" ");
+      // parse search text and set variables
+      params.forEach(param => {
+        if (param.includes("is:")) {
+          advancedFilter = true;
+          let filter = param.split(":")[1];
+          if (filter === "patchespending") patches = true;
+          else if (filter === "checksfailing") checks = true;
+          else if (filter === "rebootneeded") reboot = true;
+          else if (filter === "online" || filter === "offline" || filter === "expired") availability = filter;
+        } else {
+          search = param + "";
+        }
+      });
+
+      return rows.filter(row => {
+        if (advancedFilter) {
+          if (checks && !row.checks.has_failing_checks) return false;
+          if (patches && !row.patches_pending) return false;
+          if (reboot && !row.needs_reboot) return false;
+          if (availability === "online" && row.status !== "online") return false;
+          else if (availability === "offline" && row.status !== "overdue") return false;
+          else if (availability === "expired") {
+            const nowPlus30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            const unixtime = Date.parse(row.last_seen);
+            if (unixtime > nowPlus30Days) return false;
+          }
+        }
+
+        // fix for last_logged_in_user not filtering
+        if (row.logged_in_username === "None" && row.status === "online")
+          return row.last_logged_in_user.toLowerCase().indexOf(search) !== -1;
+
+        // Normal text filter
+        return cols.some(col => {
+          const val = cellValue(col, row) + "";
+          const haystack = val === "undefined" || val === "null" ? "" : val.toLowerCase();
+          return haystack.indexOf(search) !== -1;
+        });
+      });
+    },
     rowDoubleClicked(pk) {
       this.$store.commit("setActiveRow", pk);
       this.$q.loading.show();

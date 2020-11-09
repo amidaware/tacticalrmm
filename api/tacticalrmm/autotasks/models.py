@@ -137,7 +137,7 @@ class AutomatedTask(BaseAuditModel):
     def create_policy_task(self, agent=None, policy=None):
         from .tasks import create_win_task_schedule
 
-        # exit is neither are set or if both are set
+        # exit if neither are set or if both are set
         if not agent and not policy or agent and policy:
             return
 

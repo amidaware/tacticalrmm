@@ -11,7 +11,7 @@
     </q-card-section>
     <q-card-section>
       <q-form @submit.prevent="create">
-        <q-card-section v-if="tree !== null" class="q-gutter-sm">
+        <q-card-section class="q-gutter-sm">
           <q-select
             outlined
             dense
@@ -85,8 +85,8 @@ export default {
   data() {
     return {
       client_options: [],
-      selected_client: {},
       datetime: null,
+      client: null,
       site: null,
       agenttype: "server",
       power: false,
@@ -98,7 +98,7 @@ export default {
   methods: {
     create() {
       const data = {
-        client: this.selected_client.value,
+        client: this.client.value,
         site: this.site,
         expires: this.datetime,
         agenttype: this.agenttype,
@@ -128,6 +128,7 @@ export default {
         .then(r => {
           this.client_options = this.formatClientOptions(r.data);
           this.client = this.client_options[0];
+          this.site = this.formatSiteOptions(this.client.sites)[0].value;
           this.$q.loading.hide();
         })
         .catch(() => {
@@ -138,7 +139,7 @@ export default {
   },
   computed: {
     sites() {
-      return !!this.selected_client ? this.formatSiteOptions(this.selected_client.sites) : [];
+      return this.client !== null ? this.formatSiteOptions(this.client.sites) : [];
     },
   },
   created() {

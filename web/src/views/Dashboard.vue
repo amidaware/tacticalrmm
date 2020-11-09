@@ -184,7 +184,7 @@
                   </template>
                   <template v-slot:after>
                     <q-btn round dense flat icon="filter_alt" :color="isFilteringTable ? 'green' : 'black'">
-                      <q-menu @hide="applyFilter">
+                      <q-menu>
                         <q-list dense>
                           <q-item-label header>Filter Agent Table</q-item-label>
 
@@ -260,6 +260,16 @@
                             </q-item-section>
                           </q-item>
                         </q-list>
+
+                        <div class="row no-wrap q-pa-md">
+                          <div class="column">
+                            <q-btn v-close-popup label="Apply" color="primary" @click="applyFilter" />
+                          </div>
+                          <q-space />
+                          <div class="column">
+                            <q-btn label="Clear" @click="clearFilter" />
+                          </div>
+                        </div>
                       </q-menu>
                     </q-btn>
                   </template>

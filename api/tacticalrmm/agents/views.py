@@ -103,7 +103,7 @@ def edit_agent(request):
     a_serializer.is_valid(raise_exception=True)
     a_serializer.save()
 
-    policy = WinUpdatePolicy.objects.get(agent=agent)
+    policy = agent.winupdatepolicy.get()
     p_serializer = WinUpdatePolicySerializer(
         instance=policy, data=request.data["winupdatepolicy"][0]
     )

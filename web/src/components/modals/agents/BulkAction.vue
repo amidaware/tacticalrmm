@@ -2,8 +2,8 @@
   <q-card style="min-width: 50vw">
     <q-card-section class="row items-center">
       <div class="text-h6">
-        Run Bulk Script
-        <div class="text-caption">Run a script on multiple agents in parallel</div>
+        {{ modalTitle }}
+        <div v-if="modalCaption !== null" class="text-caption">{{ modalCaption }}</div>
       </div>
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
@@ -33,7 +33,7 @@
         </div>
       </q-card-section>
 
-      <q-card-section v-if="target === 'client' || target === 'site'">
+      <q-card-section v-if="target === 'client' || target === 'site'" class="q-pb-none">
         <q-select
           dense
           :rules="[val => !!val || '*Required']"
@@ -44,10 +44,8 @@
           :options="client_options"
           @input="target === 'site' ? (site = sites[0]) : () => {}"
         />
-      </q-card-section>
-
-      <q-card-section v-if="target === 'site'">
         <q-select
+          v-if="target === 'site'"
           dense
           :rules="[val => !!val || '*Required']"
           outlined
@@ -57,7 +55,6 @@
           :options="sites"
         />
       </q-card-section>
-
       <q-card-section v-if="target === 'agents'">
         <q-select
           dense
@@ -74,7 +71,7 @@
         />
       </q-card-section>
 
-      <q-card-section v-if="mode === 'script'">
+      <q-card-section v-if="mode === 'script'" class="q-pt-none">
         <q-select
           :rules="[val => !!val || '*Required']"
           dense
@@ -87,7 +84,7 @@
           options-dense
         />
       </q-card-section>
-      <q-card-section v-if="mode === 'script'">
+      <q-card-section v-if="mode === 'script'" class="q-pt-none">
         <q-select
           label="Script Arguments (press Enter after typing each argument)"
           filled
@@ -161,7 +158,7 @@ import mixins from "@/mixins/mixins";
 import { mapGetters } from "vuex";
 
 export default {
-  name: "BulkScript",
+  name: "BulkAction",
   mixins: [mixins],
   props: {
     mode: !String,
@@ -180,6 +177,8 @@ export default {
       args: [],
       cmd: "",
       shell: "cmd",
+      modalTitle: null,
+      modalCaption: null,
     };
   },
   computed: {
@@ -204,9 +203,9 @@ export default {
         scriptPK: this.scriptPK,
         timeout: this.timeout,
         args: this.args,
-        shell: "cmd",
-        timeout: 300,
-        cmd: null,
+        shell: this.shell,
+        timeout: this.timeout,
+        cmd: this.cmd,
       };
       this.$axios
         .post("/agents/bulk/", data)
@@ -234,8 +233,24 @@ export default {
         this.agents = Object.freeze(ret.sort((a, b) => a.label.localeCompare(b.label)));
       });
     },
+    setTitles() {
+      switch (this.mode) {
+        case "command":
+          this.modalTitle = "Run Bulk Command";
+          this.modalCaption = "Run a shell command on multiple agents in parallel";
+          break;
+        case "script":
+          this.modalTitle = "Run Bulk Script";
+          this.modalCaption = "Run a script on multiple agents in parallel";
+          break;
+        case "scan":
+          this.modalTitle = "Bulk Patch Management";
+          break;
+      }
+    },
   },
   created() {
+    this.setTitles();
     this.getClients();
     this.getAgents();
 

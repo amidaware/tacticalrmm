@@ -1,3 +1,4 @@
+import pytz
 import random
 import string
 import datetime as dt
@@ -121,6 +122,15 @@ class AutomatedTask(BaseAuditModel):
             else:
                 days = ",".join(ret)
                 return f"{days} at {run_time_nice}"
+
+    @property
+    def last_run_as_timezone(self):
+        if self.last_run is not None and self.agent is not None:
+            return self.last_run.astimezone(
+                pytz.timezone(self.agent.timezone)
+            ).strftime("%b-%d-%Y - %H:%M")
+
+        return self.last_run
 
     @staticmethod
     def generate_task_name():

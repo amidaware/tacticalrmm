@@ -1,4 +1,3 @@
-import pytz
 import validators as _v
 
 from rest_framework import serializers
@@ -19,7 +18,7 @@ class CheckSerializer(serializers.ModelSerializer):
     readable_desc = serializers.ReadOnlyField()
     script = ScriptSerializer(read_only=True)
     assigned_task = serializers.SerializerMethodField()
-    last_run = serializers.SerializerMethodField()
+    last_run = serializers.ReadOnlyField(source="last_run_as_timezone")
     history_info = serializers.ReadOnlyField()
 
     ## Change to return only array of tasks after 9/25/2020
@@ -30,17 +29,6 @@ class CheckSerializer(serializers.ModelSerializer):
                 return AssignedTaskField(tasks[0]).data
             else:
                 return AssignedTaskField(tasks, many=True).data
-
-    def get_last_run(self, obj):
-        if self.context and obj.last_run is not None:
-            if self.context["agent_tz"] is not None:
-                agent_tz = pytz.timezone(self.context["agent_tz"])
-            else:
-                agent_tz = self.context["default_tz"]
-
-            return obj.last_run.astimezone(agent_tz).strftime("%b-%d-%Y - %H:%M")
-
-        return obj.last_run
 
     class Meta:
         model = Check
@@ -60,12 +48,11 @@ class CheckSerializer(serializers.ModelSerializer):
                 .filter(check_type="diskspace")
                 .exclude(managed_by_policy=True)
             )
-            if checks:
-                for check in checks:
-                    if val["disk"] in check.disk:
-                        raise serializers.ValidationError(
-                            f"A disk check for Drive {val['disk']} already exists!"
-                        )
+            for check in checks:
+                if val["disk"] in check.disk:
+                    raise serializers.ValidationError(
+                        f"A disk check for Drive {val['disk']} already exists!"
+                    )
 
         # ping checks
         if check_type == "ping":

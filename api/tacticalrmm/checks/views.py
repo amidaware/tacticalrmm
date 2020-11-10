@@ -1,4 +1,3 @@
-import pytz
 from django.shortcuts import get_object_or_404
 
 from rest_framework.views import APIView
@@ -11,7 +10,6 @@ from automation.models import Policy
 
 from .models import Check
 from scripts.models import Script
-from core.models import CoreSettings
 
 from .serializers import CheckSerializer
 
@@ -24,11 +22,7 @@ from automation.tasks import (
 )
 
 
-class GetAddCheck(APIView):
-    def get(self, request):
-        checks = Check.objects.all()
-        return Response(CheckSerializer(checks, many=True).data)
-
+class AddCheck(APIView):
     def post(self, request):
         policy = None
         agent = None
@@ -190,13 +184,8 @@ def run_checks(request, pk):
 
 @api_view()
 def load_checks(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
-    ctx = {
-        "default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone),
-        "agent_tz": agent.time_zone,
-    }
     checks = Check.objects.filter(agent__pk=pk)
-    return Response(CheckSerializer(checks, many=True, context=ctx).data)
+    return Response(CheckSerializer(checks, many=True).data)
 
 
 @api_view()

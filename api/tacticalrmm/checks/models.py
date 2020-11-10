@@ -2,6 +2,7 @@ import base64
 import string
 import os
 import json
+import pytz
 import zlib
 from statistics import mean
 
@@ -178,6 +179,15 @@ class Check(BaseAuditModel):
             return ", ".join(str(f"{x}%") for x in self.history[-6:])
 
     @property
+    def last_run_as_timezone(self):
+        if self.last_run is not None and self.agent is not None:
+            return self.last_run.astimezone(
+                pytz.timezone(self.agent.timezone)
+            ).strftime("%b-%d-%Y - %H:%M")
+
+        return self.last_run
+
+    @property
     def non_editable_fields(self):
         return [
             "check_type",
@@ -199,6 +209,10 @@ class Check(BaseAuditModel):
             "parent_check",
             "managed_by_policy",
             "overriden_by_policy",
+            "created_by",
+            "created_time",
+            "modified_by",
+            "modified_time",
         ]
 
     def handle_checkv2(self, data):

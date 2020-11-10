@@ -24,6 +24,7 @@
             outlined
             v-model="client"
             :options="client_options"
+            @input="client !== null ? (site = site_options[0]) : () => {}"
           />
         </q-card-section>
         <q-card-section>
@@ -48,10 +49,12 @@
 </template>
 
 <script>
+import mixins from "@/mixins/mixins";
 import { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 
 export default {
   name: "ResetPatchPolicy",
+  mixins: [mixins],
   data() {
     return {
       client: null,
@@ -66,11 +69,11 @@ export default {
       let data = {};
 
       if (this.client !== null) {
-        data.client = this.client.id;
+        data.client = this.client.value;
       }
 
       if (this.site !== null) {
-        data.site = this.site.id;
+        data.site = this.site.value;
       }
 
       this.$store
@@ -105,7 +108,7 @@ export default {
   },
   computed: {
     site_options() {
-      return !!this.client ? this.client.sites.map(site => ({ label: site.site, value: site.id })) : [];
+      return !!this.client ? this.formatSiteOptions(this.client.sites) : [];
     },
     buttonText() {
       return !this.client ? "Clear Policies for ALL Agents" : "Clear Policies";

@@ -416,7 +416,7 @@ export default {
         }
 
         // fix for last_logged_in_user not filtering
-        if (row.logged_in_username === "None" && row.status === "online")
+        if (row.logged_in_username === "None" && row.status === "online" && !!row.last_logged_in_user)
           return row.last_logged_in_user.toLowerCase().indexOf(search) !== -1;
 
         // Normal text filter

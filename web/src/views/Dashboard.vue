@@ -168,9 +168,110 @@
                   <q-tab name="mixed" label="Mixed" />
                 </q-tabs>
                 <q-space />
-                <q-input v-model="search" label="Search" dense outlined clearable class="q-pr-md q-pb-xs">
+                <q-input
+                  autogrow
+                  v-model="search"
+                  style="width: 450px"
+                  label="Search"
+                  dense
+                  outlined
+                  clearable
+                  @clear="clearFilter"
+                  class="q-pr-md q-pb-xs"
+                >
                   <template v-slot:prepend>
                     <q-icon name="search" color="primary" />
+                  </template>
+                  <template v-slot:after>
+                    <q-btn round dense flat icon="filter_alt" :color="isFilteringTable ? 'green' : 'black'">
+                      <q-menu>
+                        <q-list dense>
+                          <q-item-label header>Filter Agent Table</q-item-label>
+
+                          <q-item>
+                            <q-item-section side>
+                              <q-checkbox v-model="filterChecksFailing" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Checks Failing</q-item-label>
+                            </q-item-section>
+                          </q-item>
+
+                          <q-item>
+                            <q-item-section side>
+                              <q-checkbox v-model="filterPatchesPending" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Patches Pending</q-item-label>
+                            </q-item-section>
+                          </q-item>
+
+                          <q-item>
+                            <q-item-section side>
+                              <q-checkbox v-model="filterRebootNeeded" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Reboot Needed</q-item-label>
+                            </q-item-section>
+                          </q-item>
+
+                          <q-item-label header>Availability</q-item-label>
+
+                          <q-item>
+                            <q-item-section side>
+                              <q-radio val="all" v-model="filterAvailability" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Show All Agents</q-item-label>
+                            </q-item-section>
+                          </q-item>
+
+                          <q-item>
+                            <q-item-section side>
+                              <q-radio val="online" v-model="filterAvailability" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Show Online Only</q-item-label>
+                            </q-item-section>
+                          </q-item>
+
+                          <q-item>
+                            <q-item-section side>
+                              <q-radio val="offline" v-model="filterAvailability" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Show Offline Only</q-item-label>
+                            </q-item-section>
+                          </q-item>
+
+                          <q-item>
+                            <q-item-section side>
+                              <q-radio val="offline_30days" v-model="filterAvailability" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Show Offline for over 30 days</q-item-label>
+                            </q-item-section>
+                          </q-item>
+                        </q-list>
+
+                        <div class="row no-wrap q-pa-md">
+                          <div class="column">
+                            <q-btn v-close-popup label="Apply" color="primary" @click="applyFilter" />
+                          </div>
+                          <q-space />
+                          <div class="column">
+                            <q-btn label="Clear" @click="clearFilter" />
+                          </div>
+                        </div>
+                      </q-menu>
+                    </q-btn>
                   </template>
                 </q-input>
               </div>
@@ -264,7 +365,12 @@ export default {
       siteActive: "",
       frame: [],
       poll: null,
-      search: null,
+      search: "",
+      filterTextLength: 0,
+      filterAvailability: "all",
+      filterPatchesPending: false,
+      filterChecksFailing: false,
+      filterRebootNeeded: false,
       currentTRMMVersion: null,
       columns: [
         {
@@ -280,16 +386,16 @@ export default {
           align: "left",
         },
         {
-          name: "client",
+          name: "client_name",
           label: "Client",
-          field: "client",
+          field: "client_name",
           sortable: true,
           align: "left",
         },
         {
-          name: "site",
+          name: "site_name",
           label: "Site",
-          field: "site",
+          field: "site_name",
           sortable: true,
           align: "left",
         },
@@ -354,8 +460,8 @@ export default {
         "smsalert",
         "emailalert",
         "checks-status",
-        "client",
-        "site",
+        "client_name",
+        "site_name",
         "hostname",
         "description",
         "user",
@@ -366,6 +472,12 @@ export default {
         "boottime",
       ],
     };
+  },
+  watch: {
+    search(newVal, oldVal) {
+      if (newVal === "") this.clearFilter();
+      else if (newVal.length < this.filterTextLength) this.clearFilter();
+    },
   },
   methods: {
     refreshEntireSite() {
@@ -513,6 +625,51 @@ export default {
     menuMaintenanceText(node) {
       return node.color === "warning" ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
     },
+    clearFilter() {
+      this.filterPatchesPending = false;
+      this.filterRebootNeeded = false;
+      this.filterChecksFailing = false;
+      this.filterAvailability = "all";
+      this.search = "";
+    },
+    applyFilter() {
+      // clear search if availability changes to all
+      if (
+        this.filterAvailability === "all" &&
+        (this.search.includes("is:online") || this.search.includes("is:offline") || this.search.includes("is:expired"))
+      )
+        this.clearFilter();
+
+      // don't apply filter if nothing is being filtered
+      if (!this.isFilteringTable) return;
+
+      let filterText = "";
+
+      if (this.filterPatchesPending) {
+        filterText += "is:patchespending ";
+      }
+
+      if (this.filterChecksFailing) {
+        filterText += "is:checksfailing ";
+      }
+
+      if (this.filterRebootNeeded) {
+        filterText += "is:rebootneeded ";
+      }
+
+      if (this.filterAvailability !== "all") {
+        if (this.filterAvailability === "online") {
+          filterText += "is:online ";
+        } else if (this.filterAvailability === "offline") {
+          filterText += "is:offline ";
+        } else if (this.filterAvailability === "offline_30days") {
+          filterText += "is:expired ";
+        }
+      }
+
+      this.search = filterText;
+      this.filterTextLength = filterText.length - 1;
+    },
   },
   computed: {
     ...mapState({
@@ -536,6 +693,14 @@ export default {
         client: this.clientActive,
         site: this.siteActive,
       };
+    },
+    isFilteringTable() {
+      return (
+        this.filterPatchesPending ||
+        this.filterChecksFailing ||
+        this.filterRebootNeeded ||
+        this.filterAvailability !== "all"
+      );
     },
     totalAgents() {
       return this.serverCount + this.workstationCount;

@@ -282,7 +282,7 @@ class AgentsTableList(generics.ListAPIView):
 
 @api_view()
 def list_agents_no_detail(request):
-    agents = Agent.objects.all()
+    agents = Agent.objects.select_related("site").only("pk", "hostname", "site")
     return Response(AgentHostnameSerializer(agents, many=True).data)
 
 

@@ -1,3 +1,4 @@
+import pytz
 from rest_framework import serializers
 
 from .models import AutomatedTask
@@ -12,6 +13,18 @@ class TaskSerializer(serializers.ModelSerializer):
 
     assigned_check = CheckSerializer(read_only=True)
     schedule = serializers.ReadOnlyField()
+    last_run = serializers.SerializerMethodField()
+
+    def get_last_run(self, obj):
+        if self.context and obj.last_run is not None:
+            if self.context["agent_tz"] is not None:
+                agent_tz = pytz.timezone(self.context["agent_tz"])
+            else:
+                agent_tz = self.context["default_tz"]
+
+            return obj.last_run.astimezone(agent_tz).strftime("%b-%d-%Y - %H:%M")
+
+        return obj.last_run
 
     class Meta:
         model = AutomatedTask

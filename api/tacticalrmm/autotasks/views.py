@@ -1,3 +1,4 @@
+import pytz
 from django.shortcuts import get_object_or_404
 
 from rest_framework.views import APIView
@@ -9,6 +10,7 @@ from agents.models import Agent
 from checks.models import Check
 
 from scripts.models import Script
+from core.models import CoreSettings
 
 from .serializers import TaskSerializer, AutoTaskSerializer
 
@@ -68,8 +70,12 @@ class AddAutoTask(APIView):
 class AutoTask(APIView):
     def get(self, request, pk):
 
-        agent = Agent.objects.only("pk").get(pk=pk)
-        return Response(AutoTaskSerializer(agent).data)
+        agent = get_object_or_404(Agent, pk=pk)
+        ctx = {
+            "default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone),
+            "agent_tz": agent.time_zone,
+        }
+        return Response(AutoTaskSerializer(agent, context=ctx).data)
 
     def patch(self, request, pk):
         from automation.tasks import update_policy_task_fields_task

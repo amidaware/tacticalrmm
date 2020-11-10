@@ -472,6 +472,8 @@ class TestAgentViews(TacticalTestCase):
         self.assertIn("mstsc.html?login=", r.data["webrdp"])
 
         self.assertEqual(self.agent.hostname, r.data["hostname"])
+        self.assertEqual(self.agent.client.name, r.data["client"])
+        self.assertEqual(self.agent.site.name, r.data["site"])
 
         self.assertEqual(r.status_code, 200)
 

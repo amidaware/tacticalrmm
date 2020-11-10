@@ -145,6 +145,8 @@ def meshcentral(request, pk):
         "file": file,
         "webrdp": webrdp,
         "status": agent.status,
+        "client": agent.client.name,
+        "site": agent.site.name,
     }
     return Response(ret)
 

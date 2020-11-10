@@ -20,7 +20,7 @@
     <q-tab-panels v-model="tab">
       <q-tab-panel name="terminal">
         <iframe
-          style="overflow:hidden;height:715px;"
+          style="overflow: hidden; height: 715px"
           :src="terminal"
           width="100%"
           height="100%"
@@ -37,13 +37,7 @@
         <EventLog :pk="pk" />
       </q-tab-panel>
       <q-tab-panel name="filebrowser">
-        <iframe
-          style="overflow:hidden;height:715px;"
-          :src="file"
-          width="100%"
-          height="100%"
-          scrolling="no"
-        ></iframe>
+        <iframe style="overflow: hidden; height: 715px" :src="file" width="100%" height="100%" scrolling="no"></iframe>
       </q-tab-panel>
     </q-tab-panels>
   </div>
@@ -75,7 +69,7 @@ export default {
       axios.get(`/agents/${this.pk}/meshcentral/`).then(r => {
         this.terminal = r.data.terminal;
         this.file = r.data.file;
-        this.title = `${r.data.hostname} | Remote Background`;
+        this.title = `${r.data.hostname} - ${r.data.client} - ${r.data.site} | Remote Background`;
       });
     },
   },

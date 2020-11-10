@@ -6,25 +6,12 @@
         <q-badge :color="statusColor" :label="status" />
       </span>
       <q-space />
-      <q-btn
-        class="q-mr-md"
-        color="primary"
-        size="sm"
-        label="Restart Connection"
-        icon="refresh"
-        @click="restart"
-      />
-      <q-btn
-        color="negative"
-        size="sm"
-        label="Recover Connection"
-        icon="fas fa-first-aid"
-        @click="repair"
-      />
+      <q-btn class="q-mr-md" color="primary" size="sm" label="Restart Connection" icon="refresh" @click="restart" />
+      <q-btn color="negative" size="sm" label="Recover Connection" icon="fas fa-first-aid" @click="repair" />
       <q-space />
     </div>
 
-    <q-video v-show="visible" :ratio="16/9" :src="control"></q-video>
+    <q-video v-show="visible" :ratio="16 / 9" :src="control"></q-video>
   </div>
 </template>
 
@@ -39,6 +26,7 @@ export default {
       control: "",
       visible: true,
       status: null,
+      title: "",
     };
   },
   computed: {
@@ -60,6 +48,11 @@ export default {
       }
     },
   },
+  meta() {
+    return {
+      title: this.title,
+    };
+  },
   methods: {
     genURL() {
       this.$q.loading.show();
@@ -67,6 +60,7 @@ export default {
       this.$axios
         .get(`/agents/${this.$route.params.pk}/meshcentral/`)
         .then(r => {
+          this.title = `${r.data.hostname} - ${r.data.client} - ${r.data.site} | Take Control`;
           this.control = r.data.control;
           this.status = r.data.status;
           this.$q.loading.hide();

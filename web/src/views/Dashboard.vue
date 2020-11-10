@@ -384,6 +384,9 @@ export default {
         {
           name: "checks-status",
           align: "left",
+          field: "checks",
+          sortable: true,
+          sort: (a, b, rowA, rowB) => parseInt(b.failing) - a.failing,
         },
         {
           name: "client_name",
@@ -429,17 +432,21 @@ export default {
         },
         {
           name: "patchespending",
+          field: "patches_pending",
           align: "left",
+          sortable: true,
         },
         {
           name: "agentstatus",
           field: "status",
           align: "left",
+          sortable: true,
         },
         {
           name: "needsreboot",
           field: "needs_reboot",
           align: "left",
+          sortable: true,
         },
         {
           name: "lastseen",

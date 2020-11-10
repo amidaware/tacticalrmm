@@ -263,8 +263,9 @@ export default function () {
             });
           }
 
-          commit("loadTree", output);
-          //commit("destroySubTable");
+          // move failing clients to the top
+          const sortedByFailing = output.sort(a => a.color === "negative" ? -1 : 1)
+          commit("loadTree", sortedByFailing);
         });
       },
       checkVer(context) {

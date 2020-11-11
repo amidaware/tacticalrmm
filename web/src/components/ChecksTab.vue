@@ -58,7 +58,7 @@
         <q-table
           dense
           class="tabs-tbl-sticky"
-          :style="{'max-height': tabsTableHeight}"
+          :style="{ 'max-height': tabsTableHeight }"
           :data="checks"
           :columns="columns"
           :row-key="row => row.id + row.check_type"
@@ -142,12 +142,12 @@
               </q-td>
               <!-- policy check icon -->
               <q-td v-if="props.row.managed_by_policy">
-                <q-icon style="font-size: 1.3rem;" name="policy">
+                <q-icon style="font-size: 1.3rem" name="policy">
                   <q-tooltip>This check is managed by a policy</q-tooltip>
                 </q-icon>
               </q-td>
               <q-td v-else-if="props.row.overriden_by_policy">
-                <q-icon style="font-size: 1.3rem;" name="remove_circle_outline">
+                <q-icon style="font-size: 1.3rem" name="remove_circle_outline">
                   <q-tooltip>This check is overriden by a policy</q-tooltip>
                 </q-icon>
               </q-td>
@@ -155,10 +155,10 @@
               <!-- status icon -->
               <q-td v-if="props.row.status === 'pending'"></q-td>
               <q-td v-else-if="props.row.status === 'passing'">
-                <q-icon style="font-size: 1.3rem;" color="positive" name="check_circle" />
+                <q-icon style="font-size: 1.3rem" color="positive" name="check_circle" />
               </q-td>
               <q-td v-else-if="props.row.status === 'failing'">
-                <q-icon style="font-size: 1.3rem;" color="negative" name="error" />
+                <q-icon style="font-size: 1.3rem" color="negative" name="error" />
               </q-td>
               <!-- check description -->
               <q-td>{{ props.row.readable_desc }}</q-td>
@@ -173,30 +173,36 @@
               <!-- more info -->
               <q-td v-if="props.row.check_type === 'ping'">
                 <span
-                  style="cursor:pointer;color:blue;text-decoration:underline"
+                  style="cursor: pointer; text-decoration: underline"
+                  class="text-primary"
                   @click="pingInfo(props.row.readable_desc, props.row.more_info)"
-                >output</span>
+                  >output</span
+                >
               </q-td>
               <q-td v-else-if="props.row.check_type === 'script'">
                 <span
-                  style="cursor:pointer;color:blue;text-decoration:underline"
+                  style="cursor: pointer; text-decoration: underline"
+                  class="text-primary"
                   @click="scriptMoreInfo(props.row)"
-                >output</span>
+                  >output</span
+                >
               </q-td>
               <q-td v-else-if="props.row.check_type === 'eventlog'">
                 <span
-                  style="cursor:pointer;color:blue;text-decoration:underline"
+                  style="cursor: pointer; text-decoration: underline"
+                  class="text-primary"
                   @click="eventLogMoreInfo(props.row)"
-                >output</span>
+                  >output</span
+                >
               </q-td>
-              <q-td
-                v-else-if="props.row.check_type === 'cpuload' || props.row.check_type === 'memory'"
-              >{{ props.row.history_info }}</q-td>
+              <q-td v-else-if="props.row.check_type === 'cpuload' || props.row.check_type === 'memory'">{{
+                props.row.history_info
+              }}</q-td>
               <q-td v-else>{{ props.row.more_info }}</q-td>
               <q-td>{{ props.row.last_run }}</q-td>
-              <q-td
-                v-if="props.row.assigned_task !== null && props.row.assigned_task.length > 1"
-              >{{ props.row.assigned_task.length }} Tasks</q-td>
+              <q-td v-if="props.row.assigned_task !== null && props.row.assigned_task.length > 1"
+                >{{ props.row.assigned_task.length }} Tasks</q-td
+              >
               <q-td v-else-if="props.row.assigned_task">{{ props.row.assigned_task.name }}</q-td>
               <q-td v-else></q-td>
             </q-tr>
@@ -206,67 +212,41 @@
     </div>
     <!-- modals -->
     <q-dialog v-model="showDiskSpaceCheck">
-      <DiskSpaceCheck
-        @close="showDiskSpaceCheck = false"
-        :agentpk="selectedAgentPk"
-        :mode="mode"
-        :checkpk="checkpk"
-      />
+      <DiskSpaceCheck @close="showDiskSpaceCheck = false" :agentpk="selectedAgentPk" :mode="mode" :checkpk="checkpk" />
     </q-dialog>
     <q-dialog v-model="showMemCheck">
-      <MemCheck
-        @close="showMemCheck = false"
-        :agentpk="selectedAgentPk"
-        :mode="mode"
-        :checkpk="checkpk"
-      />
+      <MemCheck @close="showMemCheck = false" :agentpk="selectedAgentPk" :mode="mode" :checkpk="checkpk" />
     </q-dialog>
     <q-dialog v-model="showCpuLoadCheck">
-      <CpuLoadCheck
-        @close="showCpuLoadCheck = false"
-        :agentpk="selectedAgentPk"
-        :mode="mode"
-        :checkpk="checkpk"
-      />
+      <CpuLoadCheck @close="showCpuLoadCheck = false" :agentpk="selectedAgentPk" :mode="mode" :checkpk="checkpk" />
     </q-dialog>
     <q-dialog v-model="showPingCheck">
-      <PingCheck
-        @close="showPingCheck = false"
-        :agentpk="selectedAgentPk"
-        :mode="mode"
-        :checkpk="checkpk"
-      />
+      <PingCheck @close="showPingCheck = false" :agentpk="selectedAgentPk" :mode="mode" :checkpk="checkpk" />
     </q-dialog>
     <q-dialog v-model="showWinSvcCheck">
-      <WinSvcCheck
-        @close="showWinSvcCheck = false"
-        :agentpk="selectedAgentPk"
-        :mode="mode"
-        :checkpk="checkpk"
-      />
+      <WinSvcCheck @close="showWinSvcCheck = false" :agentpk="selectedAgentPk" :mode="mode" :checkpk="checkpk" />
     </q-dialog>
     <q-dialog v-model="showEventLogCheck">
-      <EventLogCheck
-        @close="showEventLogCheck = false"
-        :agentpk="selectedAgentPk"
-        :mode="mode"
-        :checkpk="checkpk"
-      />
+      <EventLogCheck @close="showEventLogCheck = false" :agentpk="selectedAgentPk" :mode="mode" :checkpk="checkpk" />
     </q-dialog>
     <q-dialog v-model="showScriptCheck">
-      <ScriptCheck
-        @close="showScriptCheck = false"
-        :agentpk="selectedAgentPk"
-        :mode="mode"
-        :checkpk="checkpk"
-      />
+      <ScriptCheck @close="showScriptCheck = false" :agentpk="selectedAgentPk" :mode="mode" :checkpk="checkpk" />
     </q-dialog>
     <q-dialog v-model="showScriptOutput">
-      <ScriptOutput @close="showScriptOutput = false; scriptInfo = {}" :scriptInfo="scriptInfo" />
+      <ScriptOutput
+        @close="
+          showScriptOutput = false;
+          scriptInfo = {};
+        "
+        :scriptInfo="scriptInfo"
+      />
     </q-dialog>
     <q-dialog v-model="showEventLogOutput">
       <EventLogCheckOutput
-        @close="showEventLogOutput = false; evtlogdata = {}"
+        @close="
+          showEventLogOutput = false;
+          evtlogdata = {};
+        "
         :evtlogdata="evtlogdata"
       />
     </q-dialog>

@@ -48,6 +48,7 @@
           />
         </div>
         <q-table
+          :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           dense
           :data="policies"
           :columns="columns"
@@ -156,14 +157,16 @@
               <q-td>{{ props.row.desc }}</q-td>
               <q-td>
                 <span
-                  style="cursor: pointer; color: blue; text-decoration: underline"
+                  style="cursor: pointer; text-decoration: underline"
+                  class="text-primary"
                   @click="showRelationsModal(props.row)"
                   >{{ `Show Relations (${props.row.agents_count}+)` }}</span
                 >
               </q-td>
               <q-td>
                 <span
-                  style="cursor: pointer; color: blue; text-decoration: underline"
+                  style="cursor: pointer; text-decoration: underline"
+                  class="text-primary"
                   @click="showEditPatchPolicyModal(props.row)"
                   >{{ patchPolicyText(props.row) }}</span
                 >

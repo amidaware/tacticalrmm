@@ -1,5 +1,5 @@
 <template>
-  <q-card style="width: 50vw; max-width: 80vw;">
+  <q-card style="width: 50vw; max-width: 80vw">
     <q-card-section>
       <q-table
         class="remote-bg-tbl-sticky"
@@ -36,7 +36,7 @@
               />
             </q-td>
             <q-td @click="showDescription(props.row.name)">
-              <span style="cursor:pointer;color:blue;text-decoration:underline">{{ props.row.name }}</span>
+              <span style="cursor: pointer; text-decoration: underline" class="text-primary">{{ props.row.name }}</span>
             </q-td>
             <q-td>{{ props.row.version }}</q-td>
           </q-tr>

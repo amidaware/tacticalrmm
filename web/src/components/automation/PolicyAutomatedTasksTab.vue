@@ -23,6 +23,7 @@
       <template>
         <q-table
           dense
+          :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="tabs-tbl-sticky"
           style="max-height: 35vh"
           :data="tasks"
@@ -105,9 +106,9 @@
               <q-td>{{ props.row.schedule }}</q-td>
               <q-td>
                 <span
-                  style="cursor: pointer; color: blue; text-decoration: underline"
+                  style="cursor: pointer; text-decoration: underline"
                   @click="showStatus(props.row)"
-                  class="status-cell"
+                  class="status-cell text-primary"
                   >See Status</span
                 >
               </q-td>

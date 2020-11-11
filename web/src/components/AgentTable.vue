@@ -2,6 +2,7 @@
   <div class="q-pt-none q-pb-none q-pr-xs q-pl-xs">
     <q-table
       dense
+      :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       class="agents-tbl-sticky"
       :style="{ 'max-height': agentTableHeight }"
       :data="filter"
@@ -70,7 +71,7 @@
         <q-tr
           @contextmenu="agentRowSelected(props.row.id, props.row.agent_id)"
           :props="props"
-          :class="{ highlight: selectedRow === props.row.id }"
+          :class="rowSelectedClass(props.row.id)"
           @click="agentRowSelected(props.row.id, props.row.agent_id)"
           @dblclick="rowDoubleClicked(props.row.id)"
         >
@@ -630,6 +631,9 @@ export default {
     },
     menuMaintenanceText(mode) {
       return mode ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
+    },
+    rowSelectedClass(id) {
+      if (this.selectedRow === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";
     },
   },
   computed: {

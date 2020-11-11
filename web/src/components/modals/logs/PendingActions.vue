@@ -37,6 +37,7 @@
 
       <q-table
         dense
+        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
         class="remote-bg-tbl-sticky"
         :data="filter"
         :columns="columns"
@@ -168,7 +169,7 @@ export default {
     },
     rowClass(id, status) {
       if (this.selectedRow === id && status !== "completed") {
-        return "highlight";
+        return this.$q.dark.isActive ? "highligh-dark" : "highlight";
       } else if (status === "completed") {
         return "action-completed";
       }

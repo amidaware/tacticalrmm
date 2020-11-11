@@ -35,10 +35,10 @@
             <!-- status icon -->
             <q-td v-if="props.row.status === 'pending'"></q-td>
             <q-td v-else-if="props.row.status === 'passing'">
-              <q-icon style="font-size: 1.3rem;" color="positive" name="check_circle" />
+              <q-icon style="font-size: 1.3rem" color="positive" name="check_circle" />
             </q-td>
             <q-td v-else-if="props.row.status === 'failing'">
-              <q-icon style="font-size: 1.3rem;" color="negative" name="error" />
+              <q-icon style="font-size: 1.3rem" color="negative" name="error" />
             </q-td>
             <q-td v-else></q-td>
             <!-- status text -->
@@ -55,30 +55,33 @@
             <!-- more info -->
             <q-td v-if="props.row.check_type === 'ping'">
               <span
-                style="cursor:pointer;color:blue;text-decoration:underline"
+                style="cursor: pointer; text-decoration: underline"
                 @click="pingInfo(props.row)"
-                class="ping-cell"
-              >output</span>
+                class="ping-cell text-primary"
+                >output</span
+              >
             </q-td>
             <q-td
               v-else-if="props.row.check_type === 'script' || props.row.retcode || props.row.stdout || props.row.stderr"
             >
               <span
-                style="cursor:pointer;color:blue;text-decoration:underline"
+                style="cursor: pointer; text-decoration: underline"
                 @click="scriptMoreInfo(props.row)"
-                class="script-cell"
-              >output</span>
+                class="script-cell text-primary"
+                >output</span
+              >
             </q-td>
             <q-td v-else-if="props.row.check_type === 'eventlog'">
               <span
-                style="cursor:pointer;color:blue;text-decoration:underline"
+                style="cursor: pointer; text-decoration: underline"
                 @click="eventLogMoreInfo(props.row)"
-                class="eventlog-cell"
-              >output</span>
+                class="eventlog-cell text-primary"
+                >output</span
+              >
             </q-td>
-            <q-td
-              v-else-if="props.row.check_type === 'cpuload' || props.row.check_type === 'memory'"
-            >{{ props.row.history_info }}</q-td>
+            <q-td v-else-if="props.row.check_type === 'cpuload' || props.row.check_type === 'memory'">{{
+              props.row.history_info
+            }}</q-td>
             <q-td v-else-if="props.row.more_info">{{ props.row.more_info }}</q-td>
             <q-td v-else>Awaiting Output</q-td>
             <!-- last run -->

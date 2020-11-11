@@ -53,19 +53,9 @@ sudo ufw allow proto tcp from any to any port 4505,4506
 sudo ufw enable && sudo ufw reload
 ```
 
-Our domain for this example is viewsfer.com
-
-In the DNS manager of wherever our domain is hosted, we will create three A records, all pointing to the public IP address of our VPS
-
-Create A record ```api.tacticalrmm.com``` for the django rest backend\
-Create A record ```rmm.tacticalrmm.com``` for the vue frontend\
-Create A record ```mesh.tacticalrmm.com``` for meshcentral
-
 Download the install script and run it
 
 ```
 wget https://raw.githubusercontent.com/softicious/viewsfer/develop/install.sh
 chmod +x install.sh
 ./install.sh
-```
-```

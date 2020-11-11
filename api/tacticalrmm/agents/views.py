@@ -251,23 +251,27 @@ def send_raw_cmd(request):
 
 
 class AgentsTableList(generics.ListAPIView):
-    queryset = Agent.objects.prefetch_related("agentchecks").only(
-        "pk",
-        "hostname",
-        "agent_id",
-        "site",
-        "monitoring_type",
-        "description",
-        "needs_reboot",
-        "overdue_text_alert",
-        "overdue_email_alert",
-        "overdue_time",
-        "last_seen",
-        "boot_time",
-        "logged_in_username",
-        "last_logged_in_user",
-        "time_zone",
-        "maintenance_mode",
+    queryset = (
+        Agent.objects.select_related("site")
+        .prefetch_related("agentchecks")
+        .only(
+            "pk",
+            "hostname",
+            "agent_id",
+            "site",
+            "monitoring_type",
+            "description",
+            "needs_reboot",
+            "overdue_text_alert",
+            "overdue_email_alert",
+            "overdue_time",
+            "last_seen",
+            "boot_time",
+            "logged_in_username",
+            "last_logged_in_user",
+            "time_zone",
+            "maintenance_mode",
+        )
     )
     serializer_class = AgentTableSerializer
 
@@ -295,7 +299,8 @@ def agent_edit_details(request, pk):
 @api_view()
 def by_client(request, clientpk):
     agents = (
-        Agent.objects.filter(site__client_id=clientpk)
+        Agent.objects.select_related("site")
+        .filter(site__client_id=clientpk)
         .prefetch_related("agentchecks")
         .only(
             "pk",
@@ -324,6 +329,7 @@ def by_client(request, clientpk):
 def by_site(request, sitepk):
     agents = (
         Agent.objects.filter(site_id=sitepk)
+        .select_related("site")
         .prefetch_related("agentchecks")
         .only(
             "pk",

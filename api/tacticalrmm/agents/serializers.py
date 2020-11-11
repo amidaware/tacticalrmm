@@ -1,10 +1,12 @@
 import pytz
 
 from rest_framework import serializers
+from rest_framework.fields import ReadOnlyField
 
 from .models import Agent, Note
 
 from winupdate.serializers import WinUpdatePolicySerializer
+from clients.serializers import ClientSerializer
 
 
 class AgentSerializer(serializers.ModelSerializer):
@@ -19,6 +21,8 @@ class AgentSerializer(serializers.ModelSerializer):
     checks = serializers.ReadOnlyField()
     timezone = serializers.ReadOnlyField()
     all_timezones = serializers.SerializerMethodField()
+    client_name = serializers.ReadOnlyField(source="client.name")
+    site_name = serializers.ReadOnlyField(source="site.name")
 
     def get_all_timezones(self, obj):
         return pytz.all_timezones
@@ -35,6 +39,8 @@ class AgentTableSerializer(serializers.ModelSerializer):
     status = serializers.ReadOnlyField()
     checks = serializers.ReadOnlyField()
     last_seen = serializers.SerializerMethodField()
+    client_name = serializers.ReadOnlyField(source="client.name")
+    site_name = serializers.ReadOnlyField(source="site.name")
 
     def get_last_seen(self, obj):
         if obj.time_zone is not None:
@@ -50,8 +56,8 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "id",
             "hostname",
             "agent_id",
-            "client",
-            "site",
+            "site_name",
+            "client_name",
             "monitoring_type",
             "description",
             "needs_reboot",
@@ -66,11 +72,13 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "last_logged_in_user",
             "maintenance_mode",
         ]
+        depth = 2
 
 
 class AgentEditSerializer(serializers.ModelSerializer):
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
     all_timezones = serializers.SerializerMethodField()
+    client = ClientSerializer(read_only=True)
 
     def get_all_timezones(self, obj):
         return pytz.all_timezones
@@ -107,6 +115,9 @@ class WinAgentSerializer(serializers.ModelSerializer):
 
 
 class AgentHostnameSerializer(serializers.ModelSerializer):
+    client = serializers.ReadOnlyField(source="client.name")
+    site = serializers.ReadOnlyField(source="site.name")
+
     class Meta:
         model = Agent
         fields = (

@@ -1,26 +1,38 @@
-from tacticalrmm.test import BaseTestCase
+from tacticalrmm.test import TacticalTestCase
 from .serializers import CheckSerializer
 
+from model_bakery import baker
+from itertools import cycle
 
-class TestCheckViews(BaseTestCase):
+
+class TestCheckViews(TacticalTestCase):
+    def setUp(self):
+        self.authenticate()
+
     def test_get_disk_check(self):
-        url = f"/checks/{self.agentDiskCheck.pk}/check/"
+        # setup data
+        disk_check = baker.make_recipe("checks.diskspace_check")
+
+        url = f"/checks/{disk_check.pk}/check/"
 
         resp = self.client.get(url, format="json")
-        serializer = CheckSerializer(self.agentDiskCheck)
+        serializer = CheckSerializer(disk_check)
 
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data, serializer.data)
         self.check_not_authenticated("post", url)
 
     def test_add_disk_check(self):
+        # setup data
+        agent = baker.make_recipe("agents.agent")
+
         url = "/checks/checks/"
 
         valid_payload = {
-            "pk": self.agent.pk,
+            "pk": agent.pk,
             "check": {
                 "check_type": "diskspace",
-                "disk": "D:",
+                "disk": "C:",
                 "threshold": 55,
                 "fails_b4_alert": 3,
             },
@@ -31,7 +43,7 @@ class TestCheckViews(BaseTestCase):
 
         # this should fail because we already have a check for drive C: in setup
         invalid_payload = {
-            "pk": self.agent.pk,
+            "pk": agent.pk,
             "check": {
                 "check_type": "diskspace",
                 "disk": "C:",
@@ -44,23 +56,30 @@ class TestCheckViews(BaseTestCase):
         self.assertEqual(resp.status_code, 400)
 
     def test_get_policy_disk_check(self):
-        url = f"/checks/{self.policyDiskCheck.pk}/check/"
+        # setup data
+        policy = baker.make("automation.Policy")
+        disk_check = baker.make_recipe("checks.diskspace_check", policy=policy)
+
+        url = f"/checks/{disk_check.pk}/check/"
 
         resp = self.client.get(url, format="json")
-        serializer = CheckSerializer(self.policyDiskCheck)
+        serializer = CheckSerializer(disk_check)
 
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data, serializer.data)
         self.check_not_authenticated("post", url)
 
     def test_add_policy_disk_check(self):
+        # setup data
+        policy = baker.make("automation.Policy")
+
         url = "/checks/checks/"
 
         valid_payload = {
-            "policy": self.policy.pk,
+            "policy": policy.pk,
             "check": {
                 "check_type": "diskspace",
-                "disk": "D:",
+                "disk": "M:",
                 "threshold": 86,
                 "fails_b4_alert": 2,
             },
@@ -71,7 +90,7 @@ class TestCheckViews(BaseTestCase):
 
         # this should fail because we already have a check for drive M: in setup
         invalid_payload = {
-            "policy": self.policy.pk,
+            "policy": policy.pk,
             "check": {
                 "check_type": "diskspace",
                 "disk": "M:",
@@ -90,8 +109,14 @@ class TestCheckViews(BaseTestCase):
         self.assertEqual(26, len(r.data))
 
     def test_edit_check_alert(self):
-        url_a = f"/checks/{self.agentDiskCheck.pk}/check/"
-        url_p = f"/checks/{self.policyDiskCheck.pk}/check/"
+        # setup data
+        policy = baker.make("automation.Policy")
+        agent = baker.make_recipe("agents.agent")
+
+        policy_disk_check = baker.make_recipe("checks.diskspace_check", policy=policy)
+        agent_disk_check = baker.make_recipe("checks.diskspace_check", agent=agent)
+        url_a = f"/checks/{agent_disk_check.pk}/check/"
+        url_p = f"/checks/{policy_disk_check.pk}/check/"
 
         valid_payload = {"email_alert": False, "check_alert": True}
         invalid_payload = {"email_alert": False}

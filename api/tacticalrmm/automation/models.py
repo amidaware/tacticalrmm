@@ -32,16 +32,15 @@ class Policy(BaseAuditModel):
 
         filtered_agents_pks = Policy.objects.none()
 
-        for site in explicit_sites:
-            if site.client not in explicit_clients:
-                filtered_agents_pks |= Agent.objects.filter(
-                    client=site.client.client,
-                    site=site.site,
-                    monitoring_type=mon_type,
-                ).values_list("pk", flat=True)
+        filtered_agents_pks |= Agent.objects.filter(
+            site__in=[
+                site for site in explicit_sites if site.client not in explicit_clients
+            ],
+            monitoring_type=mon_type,
+        ).values_list("pk", flat=True)
 
         filtered_agents_pks |= Agent.objects.filter(
-            client__in=[client.client for client in explicit_clients],
+            site__client__in=[client for client in explicit_clients],
             monitoring_type=mon_type,
         ).values_list("pk", flat=True)
 
@@ -68,8 +67,8 @@ class Policy(BaseAuditModel):
         ]
 
         # Get policies applied to agent and agent site and client
-        client = Client.objects.get(client=agent.client)
-        site = Site.objects.filter(client=client).get(site=agent.site)
+        client = agent.client
+        site = agent.site
 
         default_policy = None
         client_policy = None
@@ -121,8 +120,8 @@ class Policy(BaseAuditModel):
         ]
 
         # Get policies applied to agent and agent site and client
-        client = Client.objects.get(client=agent.client)
-        site = Site.objects.filter(client=client).get(site=agent.site)
+        client = agent.client
+        site = agent.site
 
         default_policy = None
         client_policy = None
@@ -300,11 +299,3 @@ class Policy(BaseAuditModel):
         if tasks:
             for task in tasks:
                 task.create_policy_task(agent)
-
-
-class PolicyExclusions(models.Model):
-    policy = models.ForeignKey(
-        Policy, related_name="exclusions", on_delete=models.CASCADE
-    )
-    agents = models.ManyToManyField(Agent, related_name="policy_exclusions")
-    sites = models.ManyToManyField(Site, related_name="policy_exclusions")

@@ -60,7 +60,7 @@
           </q-menu>
         </q-chip>
 
-        <AlertsIcon />
+        <!--<AlertsIcon />-->
 
         <q-btn-dropdown flat no-caps stretch :label="user">
           <q-list>
@@ -105,13 +105,13 @@
 
                     <q-menu context-menu>
                       <q-list dense style="min-width: 200px">
-                        <q-item clickable v-close-popup @click="showEditModal(props.node)">
+                        <q-item clickable v-close-popup @click="showEditModal(props.node, 'edit')">
                           <q-item-section side>
                             <q-icon name="edit" />
                           </q-item-section>
                           <q-item-section>Edit</q-item-section>
                         </q-item>
-                        <q-item clickable v-close-popup @click="showDeleteModal(props.node)">
+                        <q-item clickable v-close-popup @click="showDeleteModal(props.node, 'delete')">
                           <q-item-section side>
                             <q-icon name="delete" />
                           </q-item-section>
@@ -168,9 +168,110 @@
                   <q-tab name="mixed" label="Mixed" />
                 </q-tabs>
                 <q-space />
-                <q-input v-model="search" label="Search" dense outlined clearable class="q-pr-md q-pb-xs">
+                <q-input
+                  autogrow
+                  v-model="search"
+                  style="width: 450px"
+                  label="Search"
+                  dense
+                  outlined
+                  clearable
+                  @clear="clearFilter"
+                  class="q-pr-md q-pb-xs"
+                >
                   <template v-slot:prepend>
                     <q-icon name="search" color="primary" />
+                  </template>
+                  <template v-slot:after>
+                    <q-btn round dense flat icon="filter_alt" :color="isFilteringTable ? 'green' : 'black'">
+                      <q-menu>
+                        <q-list dense>
+                          <q-item-label header>Filter Agent Table</q-item-label>
+
+                          <q-item>
+                            <q-item-section side>
+                              <q-checkbox v-model="filterChecksFailing" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Checks Failing</q-item-label>
+                            </q-item-section>
+                          </q-item>
+
+                          <q-item>
+                            <q-item-section side>
+                              <q-checkbox v-model="filterPatchesPending" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Patches Pending</q-item-label>
+                            </q-item-section>
+                          </q-item>
+
+                          <q-item>
+                            <q-item-section side>
+                              <q-checkbox v-model="filterRebootNeeded" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Reboot Needed</q-item-label>
+                            </q-item-section>
+                          </q-item>
+
+                          <q-item-label header>Availability</q-item-label>
+
+                          <q-item>
+                            <q-item-section side>
+                              <q-radio val="all" v-model="filterAvailability" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Show All Agents</q-item-label>
+                            </q-item-section>
+                          </q-item>
+
+                          <q-item>
+                            <q-item-section side>
+                              <q-radio val="online" v-model="filterAvailability" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Show Online Only</q-item-label>
+                            </q-item-section>
+                          </q-item>
+
+                          <q-item>
+                            <q-item-section side>
+                              <q-radio val="offline" v-model="filterAvailability" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Show Offline Only</q-item-label>
+                            </q-item-section>
+                          </q-item>
+
+                          <q-item>
+                            <q-item-section side>
+                              <q-radio val="offline_30days" v-model="filterAvailability" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Show Offline for over 30 days</q-item-label>
+                            </q-item-section>
+                          </q-item>
+                        </q-list>
+
+                        <div class="row no-wrap q-pa-md">
+                          <div class="column">
+                            <q-btn v-close-popup label="Apply" color="primary" @click="applyFilter" />
+                          </div>
+                          <q-space />
+                          <div class="column">
+                            <q-btn label="Clear" @click="clearFilter" />
+                          </div>
+                        </div>
+                      </q-menu>
+                    </q-btn>
                   </template>
                 </q-input>
               </div>
@@ -196,21 +297,23 @@
       </q-splitter>
     </q-page-container>
 
-    <!-- edit client modal -->
-    <q-dialog v-model="showEditClientModal">
-      <EditClients @close="showEditClientModal = false" @edited="refreshEntireSite" />
+    <!-- client form modal -->
+    <q-dialog v-model="showClientsFormModal" @hide="closeClientsFormModal">
+      <ClientsForm
+        @close="closeClientsFormModal"
+        :op="clientOp"
+        :clientpk="deleteEditModalPk"
+        @edited="refreshEntireSite"
+      />
     </q-dialog>
     <!-- edit site modal -->
-    <q-dialog v-model="showEditSiteModal">
-      <EditSites @close="showEditSiteModal = false" @edited="refreshEntireSite" />
-    </q-dialog>
-    <!-- delete client modal -->
-    <q-dialog v-model="showDeleteClientModal">
-      <DeleteClient @close="showDeleteClientModal = false" @edited="refreshEntireSite" />
-    </q-dialog>
-    <!-- delete site modal -->
-    <q-dialog v-model="showDeleteSiteModal">
-      <DeleteSite @close="showDeleteSiteModal = false" @edited="refreshEntireSite" />
+    <q-dialog v-model="showSitesFormModal" @hide="closeClientsFormModal">
+      <SitesForm
+        @close="closeClientsFormModal"
+        :op="clientOp"
+        :sitepk="deleteEditModalPk"
+        @edited="refreshEntireSite"
+      />
     </q-dialog>
     <!-- add policy modal -->
     <q-dialog v-model="showPolicyAddModal">
@@ -228,10 +331,8 @@ import AgentTable from "@/components/AgentTable";
 import SubTableTabs from "@/components/SubTableTabs";
 import AlertsIcon from "@/components/AlertsIcon";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
-import EditSites from "@/components/modals/clients/EditSites";
-import EditClients from "@/components/modals/clients/EditClients";
-import DeleteClient from "@/components/modals/clients/DeleteClient";
-import DeleteSite from "@/components/modals/clients/DeleteSite";
+import ClientsForm from "@/components/modals/clients/ClientsForm";
+import SitesForm from "@/components/modals/clients/SitesForm";
 
 export default {
   components: {
@@ -240,18 +341,16 @@ export default {
     SubTableTabs,
     AlertsIcon,
     PolicyAdd,
-    EditSites,
-    EditClients,
-    DeleteClient,
-    DeleteSite,
+    ClientsForm,
+    SitesForm,
   },
   data() {
     return {
-      showEditClientModal: false,
-      showEditSiteModal: false,
-      showDeleteClientModal: false,
-      showDeleteSiteModal: false,
+      showClientsFormModal: false,
+      showSitesFormModal: false,
       showPolicyAddModal: false,
+      deleteEditModalPk: null,
+      clientOp: null,
       policyAddType: null,
       policyAddPk: null,
       serverCount: 0,
@@ -266,7 +365,12 @@ export default {
       siteActive: "",
       frame: [],
       poll: null,
-      search: null,
+      search: "",
+      filterTextLength: 0,
+      filterAvailability: "all",
+      filterPatchesPending: false,
+      filterChecksFailing: false,
+      filterRebootNeeded: false,
       currentTRMMVersion: null,
       columns: [
         {
@@ -280,18 +384,21 @@ export default {
         {
           name: "checks-status",
           align: "left",
+          field: "checks",
+          sortable: true,
+          sort: (a, b, rowA, rowB) => parseInt(b.failing) - a.failing,
         },
         {
-          name: "client",
+          name: "client_name",
           label: "Client",
-          field: "client",
+          field: "client_name",
           sortable: true,
           align: "left",
         },
         {
-          name: "site",
+          name: "site_name",
           label: "Site",
-          field: "site",
+          field: "site_name",
           sortable: true,
           align: "left",
         },
@@ -325,17 +432,21 @@ export default {
         },
         {
           name: "patchespending",
+          field: "patches_pending",
           align: "left",
+          sortable: true,
         },
         {
           name: "agentstatus",
           field: "status",
           align: "left",
+          sortable: true,
         },
         {
           name: "needsreboot",
           field: "needs_reboot",
           align: "left",
+          sortable: true,
         },
         {
           name: "lastseen",
@@ -356,8 +467,8 @@ export default {
         "smsalert",
         "emailalert",
         "checks-status",
-        "client",
-        "site",
+        "client_name",
+        "site_name",
         "hostname",
         "description",
         "user",
@@ -368,6 +479,12 @@ export default {
         "boottime",
       ],
     };
+  },
+  watch: {
+    search(newVal, oldVal) {
+      if (newVal === "") this.clearFilter();
+      else if (newVal.length < this.filterTextLength) this.clearFilter();
+    },
   },
   methods: {
     refreshEntireSite() {
@@ -394,29 +511,24 @@ export default {
     loadFrame(activenode, destroySub = true) {
       if (destroySub) this.$store.commit("destroySubTable");
 
-      let client, site, url;
-      try {
-        client = this.$refs.tree.meta[activenode].parent.key.split("|")[1];
-        site = activenode.split("|")[1];
-        url = `/agents/bysite/${client}/${site}/`;
-      } catch (e) {
-        try {
-          client = activenode.split("|")[1];
-        } catch (e) {
-          return false;
+      let url, urlType, id;
+      if (typeof activenode === "string") {
+        urlType = activenode.split("|")[0];
+        id = activenode.split("|")[1];
+
+        if (urlType === "Client") {
+          url = `/agents/byclient/${id}/`;
+        } else if (urlType === "Site") {
+          url = `/agents/bysite/${id}/`;
         }
-        if (client === null || client === undefined) {
-          url = null;
-        } else {
-          url = `/agents/byclient/${client}/`;
+
+        if (url) {
+          this.$store.commit("AGENT_TABLE_LOADING", true);
+          axios.get(url).then(r => {
+            this.frame = r.data;
+            this.$store.commit("AGENT_TABLE_LOADING", false);
+          });
         }
-      }
-      if (url) {
-        this.$store.commit("AGENT_TABLE_LOADING", true);
-        axios.get(url).then(r => {
-          this.frame = r.data;
-          this.$store.commit("AGENT_TABLE_LOADING", false);
-        });
       }
     },
     getTree() {
@@ -451,19 +563,29 @@ export default {
         this.showPolicyAddModal = true;
       }
     },
-    showEditModal(node) {
+    showEditModal(node, op) {
+      this.deleteEditModalPk = node.id;
+      this.clientOp = op;
       if (node.children) {
-        this.showEditClientModal = true;
+        this.showClientsFormModal = true;
       } else {
-        this.showEditSiteModal = true;
+        this.showSitesFormModal = true;
       }
     },
-    showDeleteModal(node) {
+    showDeleteModal(node, op) {
+      this.deleteEditModalPk = node.id;
+      this.clientOp = op;
       if (node.children) {
-        this.showDeleteClientModal = true;
+        this.showClientsFormModal = true;
       } else {
-        this.showDeleteSiteModal = true;
+        this.showSitesFormModal = true;
       }
+    },
+    closeClientsFormModal() {
+      this.showClientsFormModal = false;
+      this.showSitesFormModal = false;
+      this.deleteEditModalPk = null;
+      this.clientOp = null;
     },
     reload() {
       this.$store.dispatch("reload");
@@ -510,6 +632,51 @@ export default {
     menuMaintenanceText(node) {
       return node.color === "warning" ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
     },
+    clearFilter() {
+      this.filterPatchesPending = false;
+      this.filterRebootNeeded = false;
+      this.filterChecksFailing = false;
+      this.filterAvailability = "all";
+      this.search = "";
+    },
+    applyFilter() {
+      // clear search if availability changes to all
+      if (
+        this.filterAvailability === "all" &&
+        (this.search.includes("is:online") || this.search.includes("is:offline") || this.search.includes("is:expired"))
+      )
+        this.clearFilter();
+
+      // don't apply filter if nothing is being filtered
+      if (!this.isFilteringTable) return;
+
+      let filterText = "";
+
+      if (this.filterPatchesPending) {
+        filterText += "is:patchespending ";
+      }
+
+      if (this.filterChecksFailing) {
+        filterText += "is:checksfailing ";
+      }
+
+      if (this.filterRebootNeeded) {
+        filterText += "is:rebootneeded ";
+      }
+
+      if (this.filterAvailability !== "all") {
+        if (this.filterAvailability === "online") {
+          filterText += "is:online ";
+        } else if (this.filterAvailability === "offline") {
+          filterText += "is:offline ";
+        } else if (this.filterAvailability === "offline_30days") {
+          filterText += "is:expired ";
+        }
+      }
+
+      this.search = filterText;
+      this.filterTextLength = filterText.length - 1;
+    },
   },
   computed: {
     ...mapState({
@@ -533,6 +700,14 @@ export default {
         client: this.clientActive,
         site: this.siteActive,
       };
+    },
+    isFilteringTable() {
+      return (
+        this.filterPatchesPending ||
+        this.filterChecksFailing ||
+        this.filterRebootNeeded ||
+        this.filterAvailability !== "all"
+      );
     },
     totalAgents() {
       return this.serverCount + this.workstationCount;

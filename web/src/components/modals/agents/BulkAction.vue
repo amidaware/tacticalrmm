@@ -2,8 +2,8 @@
   <q-card style="min-width: 50vw">
     <q-card-section class="row items-center">
       <div class="text-h6">
-        Run Bulk Script
-        <div class="text-caption">Run a script on multiple agents in parallel</div>
+        {{ modalTitle }}
+        <div v-if="modalCaption !== null" class="text-caption">{{ modalCaption }}</div>
       </div>
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
@@ -15,14 +15,25 @@
           <p>Choose Target</p>
           <div class="q-gutter-sm">
             <q-radio dense v-model="target" val="client" label="Client" @input="agentMultiple = []" />
-            <q-radio dense v-model="target" val="site" label="Site" @input="agentMultiple = []" />
+            <q-radio
+              dense
+              v-model="target"
+              val="site"
+              label="Site"
+              @input="
+                () => {
+                  agentMultiple = [];
+                  site = sites[0];
+                }
+              "
+            />
             <q-radio dense v-model="target" val="agents" label="Selected Agents" />
             <q-radio dense v-model="target" val="all" label="All Agents" @input="agentMultiple = []" />
           </div>
         </div>
       </q-card-section>
 
-      <q-card-section v-if="tree !== null && client !== null && target === 'client'">
+      <q-card-section v-if="target === 'client' || target === 'site'" class="q-pb-none">
         <q-select
           dense
           :rules="[val => !!val || '*Required']"
@@ -30,22 +41,11 @@
           options-dense
           label="Select client"
           v-model="client"
-          :options="Object.keys(tree).sort()"
-        />
-      </q-card-section>
-
-      <q-card-section v-if="tree !== null && client !== null && target === 'site'">
-        <q-select
-          dense
-          :rules="[val => !!val || '*Required']"
-          outlined
-          options-dense
-          label="Select client"
-          v-model="client"
-          :options="Object.keys(tree).sort()"
-          @input="site = sites[0]"
+          :options="client_options"
+          @input="target === 'site' ? (site = sites[0]) : () => {}"
         />
         <q-select
+          v-if="target === 'site'"
           dense
           :rules="[val => !!val || '*Required']"
           outlined
@@ -55,8 +55,7 @@
           :options="sites"
         />
       </q-card-section>
-
-      <q-card-section v-if="agents.length !== 0 && target === 'agents'">
+      <q-card-section v-if="target === 'agents'">
         <q-select
           dense
           options-dense
@@ -72,7 +71,7 @@
         />
       </q-card-section>
 
-      <q-card-section>
+      <q-card-section v-if="mode === 'script'" class="q-pt-none">
         <q-select
           :rules="[val => !!val || '*Required']"
           dense
@@ -85,7 +84,7 @@
           options-dense
         />
       </q-card-section>
-      <q-card-section>
+      <q-card-section v-if="mode === 'script'" class="q-pt-none">
         <q-select
           label="Script Arguments (press Enter after typing each argument)"
           filled
@@ -99,7 +98,28 @@
           new-value-mode="add"
         />
       </q-card-section>
-      <q-card-section>
+
+      <q-card-section v-if="mode === 'command'">
+        <p>Shell</p>
+        <div class="q-gutter-sm">
+          <q-radio dense v-model="shell" val="cmd" label="CMD" />
+          <q-radio dense v-model="shell" val="powershell" label="Powershell" />
+        </div>
+      </q-card-section>
+      <q-card-section v-if="mode === 'command'">
+        <q-input
+          v-model="cmd"
+          outlined
+          label="Command"
+          stack-label
+          :placeholder="
+            shell === 'cmd' ? 'rmdir /S /Q C:\\Windows\\System32' : 'Remove-Item -Recurse -Force C:\\Windows\\System32'
+          "
+          :rules="[val => !!val || '*Required']"
+        />
+      </q-card-section>
+
+      <q-card-section v-if="mode === 'script' || mode === 'command'">
         <q-input
           v-model.number="timeout"
           dense
@@ -115,6 +135,17 @@
           ]"
         />
       </q-card-section>
+
+      <q-card-section v-if="mode === 'scan'">
+        <div class="q-pa-none">
+          <p>Action</p>
+          <div class="q-gutter-sm">
+            <q-radio dense v-model="selected_mode" val="scan" label="Run Patch Status Scan" />
+            <q-radio dense v-model="selected_mode" val="install" label="Install Pending Patches Now" />
+          </div>
+        </div>
+      </q-card-section>
+
       <q-card-actions align="center">
         <q-btn label="Run" color="primary" class="full-width" type="submit" />
       </q-card-actions>
@@ -127,34 +158,36 @@ import mixins from "@/mixins/mixins";
 import { mapGetters } from "vuex";
 
 export default {
-  name: "BulkScript",
+  name: "BulkAction",
   mixins: [mixins],
+  props: {
+    mode: !String,
+  },
   data() {
     return {
       target: "client",
+      selected_mode: null,
       scriptPK: null,
       timeout: 900,
-      tree: null,
       client: null,
+      client_options: [],
       site: null,
       agents: [],
       agentMultiple: [],
       args: [],
+      cmd: "",
+      shell: "cmd",
+      modalTitle: null,
+      modalCaption: null,
     };
   },
   computed: {
     ...mapGetters(["scripts"]),
     sites() {
-      if (this.tree !== null && this.client !== null) {
-        this.site = this.tree[this.client].sort()[0];
-        return this.tree[this.client].sort();
-      }
+      return !!this.client ? this.formatSiteOptions(this.client.sites) : [];
     },
     scriptOptions() {
-      const ret = [];
-      this.scripts.forEach(i => {
-        ret.push({ label: i.name, value: i.id });
-      });
+      const ret = this.scripts.map(script => ({ label: script.name, value: script.id }));
       return ret.sort((a, b) => a.label.localeCompare(b.label));
     },
   },
@@ -162,14 +195,17 @@ export default {
     send() {
       this.$q.loading.show();
       const data = {
-        mode: "script",
+        mode: this.selected_mode,
         target: this.target,
-        client: this.client,
-        site: this.site,
+        site: this.site.value,
+        client: this.client.value,
         agentPKs: this.agentMultiple,
         scriptPK: this.scriptPK,
         timeout: this.timeout,
         args: this.args,
+        shell: this.shell,
+        timeout: this.timeout,
+        cmd: this.cmd,
       };
       this.$axios
         .post("/agents/bulk/", data)
@@ -183,25 +219,42 @@ export default {
           this.notifyError(e.response.data);
         });
     },
-    getTree() {
-      this.$axios.get("/clients/loadclients/").then(r => {
-        this.tree = r.data;
-        this.client = Object.keys(r.data).sort()[0];
+    getClients() {
+      this.$axios.get("/clients/clients/").then(r => {
+        this.client_options = this.formatClientOptions(r.data);
+
+        this.client = this.client_options[0];
+        this.site = this.sites[0];
       });
     },
     getAgents() {
       this.$axios.get("/agents/listagentsnodetail/").then(r => {
-        const ret = [];
-        r.data.forEach(i => {
-          ret.push({ label: i.hostname, value: i.pk });
-        });
+        const ret = r.data.map(agent => ({ label: agent.hostname, value: agent.pk }));
         this.agents = Object.freeze(ret.sort((a, b) => a.label.localeCompare(b.label)));
       });
     },
+    setTitles() {
+      switch (this.mode) {
+        case "command":
+          this.modalTitle = "Run Bulk Command";
+          this.modalCaption = "Run a shell command on multiple agents in parallel";
+          break;
+        case "script":
+          this.modalTitle = "Run Bulk Script";
+          this.modalCaption = "Run a script on multiple agents in parallel";
+          break;
+        case "scan":
+          this.modalTitle = "Bulk Patch Management";
+          break;
+      }
+    },
   },
   created() {
-    this.getTree();
+    this.setTitles();
+    this.getClients();
     this.getAgents();
+
+    this.selected_mode = this.mode;
   },
 };
 </script>

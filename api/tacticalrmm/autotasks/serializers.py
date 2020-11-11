@@ -1,3 +1,4 @@
+import pytz
 from rest_framework import serializers
 
 from .models import AutomatedTask
@@ -12,6 +13,7 @@ class TaskSerializer(serializers.ModelSerializer):
 
     assigned_check = CheckSerializer(read_only=True)
     schedule = serializers.ReadOnlyField()
+    last_run = serializers.ReadOnlyField(source="last_run_as_timezone")
 
     class Meta:
         model = AutomatedTask

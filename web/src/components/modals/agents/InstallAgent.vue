@@ -1,5 +1,5 @@
 <template>
-  <q-card style="min-width: 35vw" v-if="loaded">
+  <q-card style="min-width: 35vw">
     <q-card-section class="row">
       <q-card-actions align="left">
         <div class="text-h6">Add an agent</div>
@@ -11,14 +11,14 @@
     </q-card-section>
     <q-card-section>
       <q-form @submit.prevent="addAgent">
-        <q-card-section v-if="tree !== null" class="q-gutter-sm">
+        <q-card-section class="q-gutter-sm">
           <q-select
             outlined
             dense
             options-dense
             label="Client"
             v-model="client"
-            :options="Object.keys(tree).sort()"
+            :options="client_options"
             @input="site = sites[0]"
           />
         </q-card-section>
@@ -88,8 +88,7 @@ export default {
   components: { AgentDownload },
   data() {
     return {
-      loaded: false,
-      tree: {},
+      client_options: [],
       client: null,
       site: null,
       agenttype: "server",
@@ -104,14 +103,14 @@ export default {
     };
   },
   methods: {
-    getClientsSites() {
+    getClients() {
       this.$q.loading.show();
       axios
-        .get("/clients/loadclients/")
+        .get("/clients/clients/")
         .then(r => {
-          this.tree = r.data;
-          this.client = Object.keys(r.data).sort()[0];
-          this.loaded = true;
+          this.client_options = this.formatClientOptions(r.data);
+          this.client = this.client_options[0];
+          this.site = this.sites[0];
           this.$q.loading.hide();
         })
         .catch(() => {
@@ -121,19 +120,19 @@ export default {
     },
     addAgent() {
       const api = axios.defaults.baseURL;
-      const clientStripped = this.client
+      const clientStripped = this.client.label
         .replace(/\s/g, "")
         .toLowerCase()
         .replace(/([^a-zA-Z0-9]+)/g, "");
-      const siteStripped = this.site
+      const siteStripped = this.site.label
         .replace(/\s/g, "")
         .toLowerCase()
         .replace(/([^a-zA-Z0-9]+)/g, "");
 
       const data = {
         installMethod: this.installMethod,
-        client: this.client,
-        site: this.site,
+        client: this.client.value,
+        site: this.site.value,
         expires: this.expires,
         agenttype: this.agenttype,
         power: this.power ? 1 : 0,
@@ -240,17 +239,14 @@ export default {
     },
     showDLMessage() {
       this.$q.dialog({
-        message: `Installer for ${this.client}, ${this.site} (${this.agenttype}) will now be downloaded.
+        message: `Installer for ${this.client.label}, ${this.site.label} (${this.agenttype}) will now be downloaded.
               You may reuse this installer for ${this.expires} hours before it expires. No command line arguments are needed.`,
       });
     },
   },
   computed: {
     sites() {
-      if (this.tree !== null && this.client !== null) {
-        this.site = this.tree[this.client].sort()[0];
-        return this.tree[this.client].sort();
-      }
+      return !!this.client ? this.formatSiteOptions(this.client.sites) : [];
     },
     installButtonText() {
       let text;
@@ -270,7 +266,7 @@ export default {
     },
   },
   created() {
-    this.getClientsSites();
+    this.getClients();
   },
 };
 </script>

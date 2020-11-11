@@ -1,4 +1,3 @@
-from django.db import DataError
 from django.shortcuts import get_object_or_404
 
 from rest_framework.views import APIView
@@ -12,7 +11,7 @@ from checks.models import Check
 from autotasks.models import AutomatedTask
 from winupdate.models import WinUpdatePolicy
 
-from clients.serializers import ClientSerializer, TreeSerializer
+from clients.serializers import ClientSerializer, SiteSerializer
 from agents.serializers import AgentHostnameSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
@@ -33,7 +32,6 @@ from .tasks import (
     generate_agent_checks_from_policies_task,
     generate_agent_checks_by_location_task,
     generate_agent_tasks_from_policies_task,
-    generate_agent_tasks_by_location_task,
     run_win_policy_autotask_task,
 )
 
@@ -172,7 +170,7 @@ class GetRelated(APIView):
                 if site not in policy.server_sites.all():
                     filtered_server_sites.append(site)
 
-        response["server_sites"] = TreeSerializer(
+        response["server_sites"] = SiteSerializer(
             filtered_server_sites + list(policy.server_sites.all()), many=True
         ).data
 
@@ -181,7 +179,7 @@ class GetRelated(APIView):
                 if site not in policy.workstation_sites.all():
                     filtered_workstation_sites.append(site)
 
-        response["workstation_sites"] = TreeSerializer(
+        response["workstation_sites"] = SiteSerializer(
             filtered_workstation_sites + list(policy.workstation_sites.all()), many=True
         ).data
 
@@ -218,7 +216,7 @@ class GetRelated(APIView):
                     client.save()
 
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": client.client},
+                        location={"site__client_id": client.id},
                         mon_type="workstation",
                         clear=True,
                         create_tasks=True,
@@ -236,7 +234,7 @@ class GetRelated(APIView):
                     site.workstation_policy = policy
                     site.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.site},
+                        location={"site_id": site.id},
                         mon_type="workstation",
                         clear=True,
                         create_tasks=True,
@@ -258,7 +256,7 @@ class GetRelated(APIView):
                     client.server_policy = policy
                     client.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": client.client},
+                        location={"site__client_id": client.id},
                         mon_type="server",
                         clear=True,
                         create_tasks=True,
@@ -276,7 +274,7 @@ class GetRelated(APIView):
                     site.server_policy = policy
                     site.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.site},
+                        location={"site_id": site.id},
                         mon_type="server",
                         clear=True,
                         create_tasks=True,
@@ -296,7 +294,7 @@ class GetRelated(APIView):
                     client.workstation_policy = None
                     client.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": client.client},
+                        location={"site__client_id": client.id},
                         mon_type="workstation",
                         clear=True,
                         create_tasks=True,
@@ -311,7 +309,7 @@ class GetRelated(APIView):
                     site.workstation_policy = None
                     site.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.site},
+                        location={"site_id": site.id},
                         mon_type="workstation",
                         clear=True,
                         create_tasks=True,
@@ -329,7 +327,7 @@ class GetRelated(APIView):
                     client.server_policy = None
                     client.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": client.client},
+                        location={"site__client_id": client.id},
                         mon_type="server",
                         clear=True,
                         create_tasks=True,
@@ -343,7 +341,7 @@ class GetRelated(APIView):
                     site.server_policy = None
                     site.save()
                     generate_agent_checks_by_location_task.delay(
-                        location={"client": site.client.client, "site": site.site},
+                        location={"site_id": site.pk},
                         mon_type="server",
                         clear=True,
                         create_tasks=True,
@@ -423,12 +421,10 @@ class UpdatePatchPolicy(APIView):
     def patch(self, request):
 
         agents = None
-        if "client" in request.data and "site" in request.data:
-            agents = Agent.objects.filter(
-                client=request.data["client"], site=request.data["site"]
-            )
-        elif "client" in request.data:
-            agents = Agent.objects.filter(client=request.data["client"])
+        if "client" in request.data:
+            agents = Agent.objects.filter(site__client_id=request.data["client"])
+        elif "site" in request.data:
+            agents = Agent.objects.filter(site_id=request.data["site"])
         else:
             agents = Agent.objects.all()
 

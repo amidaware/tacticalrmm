@@ -1,5 +1,5 @@
 <template>
-  <div style="width: 900px; max-width: 90vw">
+  <div style="width: 60vw; max-width: 90vw">
     <q-card>
       <q-bar>
         <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />Automation Manager
@@ -208,9 +208,9 @@
             <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
           </q-btn>
         </q-bar>
-        <q-scroll-area :thumb-style="thumbStyle" style="height: 70vh">
+        <div class="scroll" style="height: 70vh">
           <PatchPolicyForm :policy="policy" @close="closePatchPolicyModal" />
-        </q-scroll-area>
+        </div>
       </q-card>
     </q-dialog>
   </div>
@@ -276,13 +276,6 @@ export default {
       ],
       pagination: {
         rowsPerPage: 9999,
-      },
-      thumbStyle: {
-        right: "2px",
-        borderRadius: "5px",
-        backgroundColor: "#027be3",
-        width: "5px",
-        opacity: 0.75,
       },
     };
   },

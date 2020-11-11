@@ -18,6 +18,7 @@ class CheckSerializer(serializers.ModelSerializer):
     readable_desc = serializers.ReadOnlyField()
     script = ScriptSerializer(read_only=True)
     assigned_task = serializers.SerializerMethodField()
+    last_run = serializers.ReadOnlyField(source="last_run_as_timezone")
     history_info = serializers.ReadOnlyField()
 
     ## Change to return only array of tasks after 9/25/2020
@@ -47,12 +48,11 @@ class CheckSerializer(serializers.ModelSerializer):
                 .filter(check_type="diskspace")
                 .exclude(managed_by_policy=True)
             )
-            if checks:
-                for check in checks:
-                    if val["disk"] in check.disk:
-                        raise serializers.ValidationError(
-                            f"A disk check for Drive {val['disk']} already exists!"
-                        )
+            for check in checks:
+                if val["disk"] in check.disk:
+                    raise serializers.ValidationError(
+                        f"A disk check for Drive {val['disk']} already exists!"
+                    )
 
         # ping checks
         if check_type == "ping":

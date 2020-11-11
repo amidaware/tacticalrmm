@@ -14,7 +14,7 @@
             <q-space />
             <q-btn icon="close" flat round dense v-close-popup />
           </q-card-section>
-          <q-scroll-area :thumb-style="thumbStyle" style="height: 500px">
+          <div class="scroll" style="max-height: 65vh">
             <q-tab-panels v-model="tab" animated transition-prev="jump-up" transition-next="jump-up">
               <!-- general -->
               <q-tab-panel name="general">
@@ -22,19 +22,28 @@
                   <div class="col-2">Client:</div>
                   <div class="col-2"></div>
                   <q-select
-                    @input="agent.site = sites[0]"
+                    @input="agent.site = site_options[0]"
                     dense
                     options-dense
                     outlined
                     v-model="agent.client"
-                    :options="Object.keys(tree).sort()"
+                    :options="client_options"
                     class="col-8"
                   />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Site:</div>
                   <div class="col-2"></div>
-                  <q-select class="col-8" dense options-dense outlined v-model="agent.site" :options="sites" />
+                  <q-select
+                    class="col-8"
+                    dense
+                    options-dense
+                    emit-value
+                    map-options
+                    outlined
+                    v-model="agent.site"
+                    :options="site_options"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Type:</div>
@@ -106,10 +115,9 @@
                 <PatchPolicyForm :agent="agent" />
               </q-tab-panel>
             </q-tab-panels>
-          </q-scroll-area>
+          </div>
           <q-card-section class="row items-center">
             <q-btn label="Save" color="primary" type="submit" />
-            <q-btn label="Cancel" v-close-popup />
           </q-card-section>
         </q-form>
       </template>
@@ -118,7 +126,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import PatchPolicyForm from "@/components/modals/agents/PatchPolicyForm";
@@ -133,25 +140,18 @@ export default {
       clientsLoaded: false,
       agent: {},
       monTypes: ["server", "workstation"],
-      tree: {},
+      client_options: [],
       splitterModel: 15,
       tab: "general",
       timezone: null,
       tz_inherited: true,
       original_tz: null,
       allTimezones: [],
-      thumbStyle: {
-        right: "2px",
-        borderRadius: "5px",
-        backgroundColor: "#027be3",
-        width: "5px",
-        opacity: 0.75,
-      },
     };
   },
   methods: {
     getAgentInfo() {
-      axios.get(`/agents/${this.selectedAgentPk}/agenteditdetails/`).then(r => {
+      this.$axios.get(`/agents/${this.selectedAgentPk}/agenteditdetails/`).then(r => {
         this.agent = r.data;
         this.allTimezones = Object.freeze(r.data.all_timezones);
 
@@ -168,29 +168,38 @@ export default {
           this.original_tz = r.data.time_zone;
         }
 
+        this.agent.client = { label: r.data.client.name, id: r.data.client.id, sites: r.data.client.sites };
         this.agentLoaded = true;
       });
     },
     getClientsSites() {
-      axios.get("/clients/loadclients/").then(r => {
-        this.tree = r.data;
+      this.$axios.get("/clients/clients/").then(r => {
+        this.client_options = this.formatClientOptions(r.data);
         this.clientsLoaded = true;
       });
     },
     editAgent() {
-      let data = this.agent;
+      delete this.agent.all_timezones;
+      delete this.agent.client;
+      delete this.agent.sites;
+      delete this.agent.timezone;
+      delete this.agent.winupdatepolicy[0].created_by;
+      delete this.agent.winupdatepolicy[0].created_time;
+      delete this.agent.winupdatepolicy[0].modified_by;
+      delete this.agent.winupdatepolicy[0].modified_time;
+      delete this.agent.winupdatepolicy[0].policy;
 
       // only send the timezone data if it has changed
       // this way django will keep the db column as null and inherit from the global setting
       // until we explicity change the agent's timezone
       if (this.timezone !== this.original_tz) {
-        data.time_zone = this.timezone;
+        this.agent.time_zone = this.timezone;
       }
 
-      delete data.all_timezones;
+      this.agent.site = this.agent.site.value;
 
-      axios
-        .patch("/agents/editagent/", data)
+      this.$axios
+        .patch("/agents/editagent/", this.agent)
         .then(r => {
           this.$emit("close");
           this.$emit("edited");
@@ -201,9 +210,9 @@ export default {
   },
   computed: {
     ...mapGetters(["selectedAgentPk"]),
-    sites() {
+    site_options() {
       if (this.agentLoaded && this.clientsLoaded) {
-        return this.tree[this.agent.client].sort();
+        return this.formatSiteOptions(this.agent.client["sites"]);
       }
     },
   },

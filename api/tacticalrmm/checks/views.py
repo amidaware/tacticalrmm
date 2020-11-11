@@ -22,11 +22,7 @@ from automation.tasks import (
 )
 
 
-class GetAddCheck(APIView):
-    def get(self, request):
-        checks = Check.objects.all()
-        return Response(CheckSerializer(checks, many=True).data)
-
+class AddCheck(APIView):
     def post(self, request):
         policy = None
         agent = None

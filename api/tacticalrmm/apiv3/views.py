@@ -415,7 +415,7 @@ class NewAgent(APIView):
 
         """ Creates the agent """
 
-        if User.objects.filter(username=request.data["agent_id"]).exists():
+        if Agent.objects.filter(agent_id=request.data["agent_id"]).exists():
             return notify_error(
                 "Agent already exists. Remove old agent first if trying to re-install"
             )

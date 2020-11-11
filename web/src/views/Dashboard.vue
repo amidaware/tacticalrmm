@@ -12,7 +12,7 @@
         </q-toolbar-title>
 
         <!-- temp dark mode toggle -->
-        <q-toggle label="Toggle Dark Mode" @input="$q.dark.toggle()" />
+        <q-toggle :value="$q.dark.isActive" label="Toggle Dark Mode" @input="$q.dark.set(!$q.dark.isActive)" />
 
         <!-- Devices Chip -->
         <q-chip class="cursor-pointer">

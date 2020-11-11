@@ -1,5 +1,4 @@
 import datetime as dt
-import re
 from abc import abstractmethod
 from django.db import models
 from tacticalrmm.middleware import get_username, get_debug_info
@@ -178,11 +177,25 @@ class AuditLog(models.Model):
 
     @staticmethod
     def audit_bulk_action(username, action, affected, debug_info={}):
+        from clients.models import Client, Site
+
+        target = ""
+        if affected["target"] == "all":
+            target = "on all agents"
+        elif affected["target"] == "client":
+            client = Client.objects.get(pk=affected["client"])
+            target = f"on all agents within client: {client.name}"
+        elif affected["target"] == "site":
+            site = Site.objects.get(pk=affected["site"])
+            target = f"on all agents within site: {site.client.name}\\{site.name}"
+        elif affected["target"] == "agent":
+            target = "on multiple agents"
+
         AuditLog.objects.create(
             username=username,
             object_type="bulk",
             action="bulk_action",
-            message=f"{username} executed bulk {action} on agents",
+            message=f"{username} executed bulk {action} {target}",
             debug_info=debug_info,
             after_value=affected,
         )

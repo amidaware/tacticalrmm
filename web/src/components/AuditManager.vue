@@ -89,6 +89,19 @@
         />
       </div>
       <div class="q-pa-sm col-2">
+        <q-select
+          clearable
+          filled
+          multiple
+          dense
+          v-model="objectFilter"
+          label="Object"
+          emit-value
+          map-options
+          :options="objectOptions"
+        />
+      </div>
+      <div class="q-pa-sm col-2">
         <q-select filled dense v-model="timeFilter" label="Time" emit-value map-options :options="timeOptions">
           <template v-slot:no-option>
             <q-item>
@@ -174,7 +187,8 @@ export default {
       actionFilter: null,
       clientsOptions: [],
       clientFilter: null,
-      timeFilter: 30,
+      objectFilter: null,
+      timeFilter: 7,
       filterType: "clients",
       filterTypeOptions: [
         {
@@ -209,26 +223,40 @@ export default {
         { name: "message", label: "Message", field: "message", align: "left", sortable: true },
       ],
       actionOptions: [
-        { value: "login", label: "User Login" },
-        { value: "failed_login", label: "Failed User login" },
-        { value: "add", label: "Add Object" },
-        { value: "modify", label: "Modify Object" },
-        { value: "delete", label: "Delete Object" },
-        { value: "check_run", label: "Check Run Results" },
-        { value: "task_run", label: "Task Run Results" },
         { value: "agent_install", label: "Agent Installs" },
-        { value: "remote_session", label: "Remote Session" },
-        { value: "execute_script", label: "Execute Script" },
-        { value: "execute_command", label: "Execute Command" },
+        { value: "add", label: "Add Object" },
         { value: "bulk_action", label: "Bulk Actions" },
+        { value: "check_run", label: "Check Run Results" },
+        { value: "execute_command", label: "Execute Command" },
+        { value: "execute_script", label: "Execute Script" },
+        { value: "delete", label: "Delete Object" },
+        { value: "failed_login", label: "Failed User login" },
+        { value: "login", label: "User Login" },
+        { value: "modify", label: "Modify Object" },
+        { value: "remote_session", label: "Remote Session" },
+        { value: "task_run", label: "Task Run Results" },
       ],
       timeOptions: [
         { value: 1, label: "1 Day Ago" },
         { value: 7, label: "1 Week Ago" },
         { value: 30, label: "30 Days Ago" },
+        { value: 90, label: "3 Months Ago" },
         { value: 180, label: "6 Months Ago" },
         { value: 365, label: "1 Year Ago" },
         { value: 0, label: "Everything" },
+      ],
+      objectOptions: [
+        { value: "agent", label: "Agent" },
+        { value: "automatedtask", label: "Automated Task" },
+        { value: "bulk", label: "Bullk Actions" },
+        { value: "coresettings", label: "Core Settings" },
+        { value: "check", label: "Check" },
+        { value: "client", label: "Client" },
+        { value: "policy", label: "Policy" },
+        { value: "site", label: "Site" },
+        { value: "script", label: "Script" },
+        { value: "user", label: "User" },
+        { value: "winupdatepolicy", label: "Patch Policy" },
       ],
       pagination: {
         rowsPerPage: 25,
@@ -329,11 +357,12 @@ export default {
       this.searched = true;
       let data = {};
 
-      if (this.agentFilter !== null) data["agentFilter"] = this.agentFilter;
-      else if (this.clientFilter !== null) data["clientFilter"] = this.clientFilter;
-      if (this.userFilter.length > 0) data["userFilter"] = this.userFilter;
-      if (this.timeFilter) data["timeFilter"] = this.timeFilter;
-      if (this.actionFilter !== null) data["actionFilter"] = this.actionFilter;
+      if (!!this.agentFilter && this.agentFilter.length > 0) data["agentFilter"] = this.agentFilter;
+      else if (!!this.clientFilter && this.clientFilter.length > 0) data["clientFilter"] = this.clientFilter;
+      if (!!this.userFilter && this.userFilter.length > 0) data["userFilter"] = this.userFilter;
+      if (!!this.timeFilter) data["timeFilter"] = this.timeFilter;
+      if (!!this.actionFilter && this.actionFilter.length > 0) data["actionFilter"] = this.actionFilter;
+      if (!!this.objectFilter && this.objectFilter.length > 0) data["objectFilter"] = this.objectFilter;
 
       this.$axios
         .patch("/logs/auditlogs/", data)

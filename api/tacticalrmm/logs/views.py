@@ -29,6 +29,7 @@ class GetAuditLogs(APIView):
         agentFilter = Q()
         clientFilter = Q()
         actionFilter = Q()
+        objectFilter = Q()
         userFilter = Q()
         timeFilter = Q()
 
@@ -50,6 +51,9 @@ class GetAuditLogs(APIView):
         if "actionFilter" in request.data:
             actionFilter = Q(action__in=request.data["actionFilter"])
 
+        if "objectFilter" in request.data:
+            objectFilter = Q(object_type__in=request.data["objectFilter"])
+
         if "timeFilter" in request.data:
             timeFilter = Q(
                 entry_time__lte=djangotime.make_aware(dt.today()),
@@ -57,8 +61,12 @@ class GetAuditLogs(APIView):
                 - djangotime.timedelta(days=request.data["timeFilter"]),
             )
 
-        audit_logs = AuditLog.objects.filter(
-            agentFilter | clientFilter | userFilter | actionFilter | timeFilter
+        audit_logs = (
+            AuditLog.objects.filter(agentFilter | clientFilter)
+            .filter(userFilter)
+            .filter(actionFilter)
+            .filter(objectFilter)
+            .filter(timeFilter)
         )
 
         return Response(AuditLogSerializer(audit_logs, many=True).data)

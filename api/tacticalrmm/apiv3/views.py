@@ -156,7 +156,7 @@ class CheckRunner(APIView):
             username=check.agent.hostname,
             agent=check.agent.hostname,
             object_type="agent",
-            action="run_check",
+            action="check_run",
             message=f"Check {check.name} was run on {check.agent.hostname}. Status: {status}",
             after_value=Check.serialize(check),
         )
@@ -193,7 +193,7 @@ class TaskRunner(APIView):
             username=agent.hostname,
             agent=agent.hostname,
             object_type="agent",
-            action="run_task",
+            action="task_run",
             message=f"Scheduled Task {task.name} was run on {agent.hostname}",
             after_value=AutomatedTask.serialize(serializer),
         )

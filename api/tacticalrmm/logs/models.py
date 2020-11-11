@@ -1,4 +1,5 @@
 import datetime as dt
+import re
 from abc import abstractmethod
 from django.db import models
 from tacticalrmm.middleware import get_username, get_debug_info
@@ -15,9 +16,13 @@ AUDIT_ACTION_TYPE_CHOICES = [
     ("modify", "Modify Object"),
     ("add", "Add Object"),
     ("view", "View Object"),
+    ("check_run", "Check Run"),
+    ("task_run", "Task Run"),
+    ("agent_install", "Agent Install"),
     ("remote_session", "Remote Session"),
     ("execute_script", "Execute Script"),
     ("execute_command", "Execute Command"),
+    ("bulk_action", "Bulk Action"),
 ]
 
 AUDIT_OBJECT_TYPE_CHOICES = [
@@ -31,6 +36,7 @@ AUDIT_OBJECT_TYPE_CHOICES = [
     ("check", "Check"),
     ("automatedtask", "Automated Task"),
     ("coresettings", "Core Settings"),
+    ("bulk", "Bulk"),
 ]
 
 # taskaction details format
@@ -170,6 +176,17 @@ class AuditLog(models.Model):
             debug_info=debug_info,
         )
 
+    @staticmethod
+    def audit_bulk_action(username, action, affected, debug_info={}):
+        AuditLog.objects.create(
+            username=username,
+            object_type="bulk",
+            action="bulk_action",
+            message=f"{username} executed bulk {action} on agents",
+            debug_info=debug_info,
+            after_value=affected,
+        )
+
 
 class DebugLog(models.Model):
     pass
@@ -246,28 +263,31 @@ class BaseAuditModel(models.Model):
 
             before_value = {}
             object_class = type(self)
+            object_name = object_class.__name__.lower()
+            username = get_username()
 
             # populate created_by and modified_by fields on instance
             if not getattr(self, "created_by", None):
-                self.created_by = get_username()
+                self.created_by = username
             if hasattr(self, "modified_by"):
-                self.modified_by = get_username()
+                self.modified_by = username
 
             # capture object properties before edit
             if self.pk:
                 before_value = object_class.objects.get(pk=self.id)
 
+            # dont create entry for agent add since that is done in view
             if not self.pk:
                 AuditLog.audit_object_add(
-                    get_username(),
-                    object_class.__name__.lower(),
+                    username,
+                    object_name,
                     object_class.serialize(self),
                     self.__str__(),
                     debug_info=get_debug_info(),
                 )
             else:
                 AuditLog.audit_object_changed(
-                    get_username(),
+                    username,
                     object_class.__name__.lower(),
                     object_class.serialize(before_value),
                     object_class.serialize(self),
@@ -280,6 +300,7 @@ class BaseAuditModel(models.Model):
     def delete(self, *args, **kwargs):
 
         if get_username():
+
             object_class = type(self)
             AuditLog.audit_object_delete(
                 get_username(),

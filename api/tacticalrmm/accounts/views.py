@@ -74,8 +74,7 @@ class LoginView(KnoxLoginView):
 
 class GetAddUsers(APIView):
     def get(self, request):
-        agents = Agent.objects.values_list("agent_id", flat=True)
-        users = User.objects.exclude(username__in=agents)
+        users = User.objects.filter(agent=None)
 
         return Response(UserSerializer(users, many=True).data)
 

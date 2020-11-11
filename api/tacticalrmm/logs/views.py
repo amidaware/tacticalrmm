@@ -4,6 +4,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from django.utils import timezone as djangotime
+from django.db.models import Q
 from datetime import datetime as dt
 
 from rest_framework.response import Response
@@ -22,31 +23,43 @@ from .tasks import cancel_pending_action_task
 
 class GetAuditLogs(APIView):
     def patch(self, request):
+        from clients.models import Client
+        from agents.models import Agent
 
-        auditLogs = None
-        if "agentFilter" in request.data and "userFilter" in request.data:
-            audit_logs = AuditLog.objects.filter(
-                agent__in=request.data["agentFilter"],
-                username__in=request.data["userFilter"],
+        agentFilter = Q()
+        clientFilter = Q()
+        actionFilter = Q()
+        userFilter = Q()
+        timeFilter = Q()
+
+        if "agentFilter" in request.data:
+            agentFilter = Q(agent__in=request.data["agentFilter"])
+
+        elif "clientFilter" in request.data:
+            clients = Client.objects.filter(
+                pk__in=request.data["clientFilter"]
+            ).values_list("id")
+            agents = Agent.objects.filter(site__client_id__in=clients).values_list(
+                "hostname"
             )
+            clientFilter = Q(agent__in=agents)
 
-        elif "userFilter" in request.data:
-            audit_logs = AuditLog.objects.filter(
-                username__in=request.data["userFilter"]
-            )
+        if "userFilter" in request.data:
+            userFilter = Q(username__in=request.data["userFilter"])
 
-        elif "agentFilter" in request.data:
-            audit_logs = AuditLog.objects.filter(agent__in=request.data["agentFilter"])
+        if "actionFilter" in request.data:
+            actionFilter = Q(action__in=request.data["actionFilter"])
 
-        else:
-            audit_logs = AuditLog.objects.all()
-
-        if audit_logs and "timeFilter" in request.data:
-            audit_logs = audit_logs.filter(
+        if "timeFilter" in request.data:
+            timeFilter = Q(
                 entry_time__lte=djangotime.make_aware(dt.today()),
                 entry_time__gt=djangotime.make_aware(dt.today())
                 - djangotime.timedelta(days=request.data["timeFilter"]),
             )
+
+        audit_logs = AuditLog.objects.filter(
+            agentFilter | clientFilter | userFilter | actionFilter | timeFilter
+        )
 
         return Response(AuditLogSerializer(audit_logs, many=True).data)
 
@@ -58,9 +71,8 @@ class FilterOptionsAuditLog(APIView):
             return Response(AgentHostnameSerializer(agents, many=True).data)
 
         if request.data["type"] == "user":
-            agents = Agent.objects.values_list("agent_id", flat=True)
-            users = User.objects.exclude(username__in=agents).filter(
-                username__icontains=request.data["pattern"]
+            users = User.objects.filter(
+                username__icontains=request.data["pattern"], agent=None
             )
             return Response(UserSerializer(users, many=True).data)
 

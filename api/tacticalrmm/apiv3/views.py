@@ -144,10 +144,23 @@ class CheckRunner(APIView):
         return Response(ret)
 
     def patch(self, request):
+        from logs.models import AuditLog
+
         check = get_object_or_404(Check, pk=request.data["id"])
         check.last_run = djangotime.now()
         check.save(update_fields=["last_run"])
         status = check.handle_checkv2(request.data)
+
+        # create audit entry
+        AuditLog.objects.create(
+            username=check.agent.hostname,
+            agent=check.agent.hostname,
+            object_type="agent",
+            action="run_check",
+            message=f"Check {check.name} was run on {check.agent.hostname}. Status: {status}",
+            after_value=Check.serialize(check),
+        )
+
         return Response(status)
 
 
@@ -165,6 +178,8 @@ class TaskRunner(APIView):
         return Response(TaskGOGetSerializer(task).data)
 
     def patch(self, request, pk, agentid):
+        from logs.models import AuditLog
+
         agent = get_object_or_404(Agent, agent_id=agentid)
         task = get_object_or_404(AutomatedTask, pk=pk)
 
@@ -173,6 +188,16 @@ class TaskRunner(APIView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save(last_run=djangotime.now())
+
+        AuditLog.objects.create(
+            username=agent.hostname,
+            agent=agent.hostname,
+            object_type="agent",
+            action="run_task",
+            message=f"Scheduled Task {task.name} was run on {agent.hostname}",
+            after_value=AutomatedTask.serialize(serializer),
+        )
+
         return Response("ok")
 
 
@@ -385,34 +410,12 @@ class MeshExe(APIView):
 
 
 class NewAgent(APIView):
-    """ For the installer """
-
     def post(self, request):
-        """
-        Creates and returns the agents auth token
-        which is stored in the agent's local db
-        and used to authenticate every agent request
-        """
+        from logs.models import AuditLog
 
-        if "agent_id" not in request.data:
-            return notify_error("Invalid payload")
-
-        agentid = request.data["agent_id"]
-        if Agent.objects.filter(agent_id=agentid).exists():
-            return notify_error(
-                "Agent already exists. Remove old agent first if trying to re-install"
-            )
-
-        user = User.objects.create_user(
-            username=agentid, password=User.objects.make_random_password(60)
-        )
-        token = Token.objects.create(user=user)
-        return Response({"token": token.key})
-
-    def patch(self, request):
         """ Creates the agent """
 
-        if Agent.objects.filter(agent_id=request.data["agent_id"]).exists():
+        if User.objects.filter(username=request.data["agent_id"]).exists():
             return notify_error(
                 "Agent already exists. Remove old agent first if trying to re-install"
             )
@@ -430,6 +433,14 @@ class NewAgent(APIView):
         agent.salt_id = f"{agent.hostname}-{agent.pk}"
         agent.save(update_fields=["salt_id"])
 
+        user = User.objects.create_user(
+            username=request.data["agent_id"],
+            agent=agent,
+            password=User.objects.make_random_password(60),
+        )
+
+        token = Token.objects.create(user=user)
+
         if agent.monitoring_type == "workstation":
             WinUpdatePolicy(agent=agent, run_time_days=[5, 6]).save()
         else:
@@ -439,4 +450,20 @@ class NewAgent(APIView):
         agent.generate_checks_from_policies()
         agent.generate_tasks_from_policies()
 
-        return Response({"pk": agent.pk, "saltid": f"{agent.hostname}-{agent.pk}"})
+        # create agent install audit record
+        AuditLog.objects.create(
+            username=request.user,
+            agent=agent.hostname,
+            object_type="agent",
+            action="agent_install",
+            message=f"{request.user} installed new agent {agent.hostname}",
+            after_value=Agent.serialize(agent),
+        )
+
+        return Response(
+            {
+                "pk": agent.pk,
+                "saltid": f"{agent.hostname}-{agent.pk}",
+                "token": token.key,
+            }
+        )

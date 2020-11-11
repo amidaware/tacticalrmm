@@ -6,6 +6,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from django.http import HttpResponse
+from rest_framework import serializers
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -189,13 +190,14 @@ class TaskRunner(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save(last_run=djangotime.now())
 
+        new_task = AutomatedTask.objects.get(pk=task.pk)
         AuditLog.objects.create(
             username=agent.hostname,
             agent=agent.hostname,
             object_type="agent",
             action="task_run",
             message=f"Scheduled Task {task.name} was run on {agent.hostname}",
-            after_value=AutomatedTask.serialize(serializer),
+            after_value=AutomatedTask.serialize(new_task),
         )
 
         return Response("ok")

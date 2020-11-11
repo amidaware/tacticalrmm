@@ -248,7 +248,7 @@ export default {
       objectOptions: [
         { value: "agent", label: "Agent" },
         { value: "automatedtask", label: "Automated Task" },
-        { value: "bulk", label: "Bullk Actions" },
+        { value: "bulk", label: "Bulk Actions" },
         { value: "coresettings", label: "Core Settings" },
         { value: "check", label: "Check" },
         { value: "client", label: "Client" },

@@ -10,11 +10,11 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.1.4"
+TRMM_VERSION = "0.1.5"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.86"
+APP_VER = "0.0.87"
 
 # https://github.com/wh1te909/salt
 LATEST_SALT_VER = "1.1.0"

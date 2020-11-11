@@ -633,6 +633,7 @@ export default {
       return node.color === "warning" ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
     },
     clearFilter() {
+      this.filterTextLength = 0;
       this.filterPatchesPending = false;
       this.filterRebootNeeded = false;
       this.filterChecksFailing = false;

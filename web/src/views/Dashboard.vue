@@ -7,13 +7,22 @@
       </q-banner>
       <q-toolbar>
         <q-btn dense flat push @click="refreshEntireSite" icon="refresh" />
-        <q-toolbar-title
-          >Tactical RMM<span class="text-overline">&nbsp;&nbsp;&nbsp;v{{ currentTRMMVersion }}</span></q-toolbar-title
-        >
+        <q-toolbar-title>
+          Tactical RMM<span class="text-overline">&nbsp;&nbsp;&nbsp;v{{ currentTRMMVersion }}</span>
+        </q-toolbar-title>
+
+        <!-- temp dark mode toggle -->
+        <q-toggle
+          v-model="darkMode"
+          class="q-mr-sm"
+          @input="toggleDark(darkMode)"
+          checked-icon="nights_stay"
+          unchecked-icon="wb_sunny"
+        />
 
         <!-- Devices Chip -->
-        <q-chip color="white" class="cursor-pointer">
-          <q-avatar size="md" icon="devices" color="primary" text-color="white" />
+        <q-chip class="cursor-pointer">
+          <q-avatar size="md" icon="devices" color="primary" />
           <q-tooltip :delay="600" anchor="top middle" self="top middle">Agent Count</q-tooltip>
           {{ totalAgents }}
           <q-menu>
@@ -21,7 +30,7 @@
               <q-item-label header>Servers</q-item-label>
               <q-item>
                 <q-item-section avatar>
-                  <q-icon name="fa fa-server" size="sm" color="primary" text-color="white" />
+                  <q-icon name="fa fa-server" size="sm" color="primary" />
                 </q-item-section>
 
                 <q-item-section no-wrap>
@@ -30,7 +39,7 @@
               </q-item>
               <q-item>
                 <q-item-section avatar>
-                  <q-icon name="power_off" size="sm" color="negative" text-color="white" />
+                  <q-icon name="power_off" size="sm" color="negative" />
                 </q-item-section>
 
                 <q-item-section no-wrap>
@@ -40,7 +49,7 @@
               <q-item-label header>Workstations</q-item-label>
               <q-item>
                 <q-item-section avatar>
-                  <q-icon name="computer" size="sm" color="primary" text-color="white" />
+                  <q-icon name="computer" size="sm" color="primary" />
                 </q-item-section>
 
                 <q-item-section no-wrap>
@@ -49,7 +58,7 @@
               </q-item>
               <q-item>
                 <q-item-section avatar>
-                  <q-icon name="power_off" size="sm" color="negative" text-color="white" />
+                  <q-icon name="power_off" size="sm" color="negative" />
                 </q-item-section>
 
                 <q-item-section no-wrap>
@@ -81,7 +90,7 @@
           <div v-if="!treeReady" class="q-pa-sm q-gutter-sm text-center" style="height: 30vh">
             <q-spinner size="40px" color="primary" />
           </div>
-          <div v-else class="q-pa-sm q-gutter-sm">
+          <div v-else class="q-pa-sm q-gutter-sm scroll" style="height: 85vh">
             <q-list dense class="rounded-borders">
               <q-item clickable v-ripple :active="allClientsActive" @click="clearTreeSelected">
                 <q-item-section avatar>
@@ -183,7 +192,7 @@
                     <q-icon name="search" color="primary" />
                   </template>
                   <template v-slot:after>
-                    <q-btn round dense flat icon="filter_alt" :color="isFilteringTable ? 'green' : 'black'">
+                    <q-btn round dense flat icon="filter_alt" :color="isFilteringTable ? 'green' : ''">
                       <q-menu>
                         <q-list dense>
                           <q-item-label header>Filter Agent Table</q-item-label>
@@ -346,6 +355,7 @@ export default {
   },
   data() {
     return {
+      darkMode: true,
       showClientsFormModal: false,
       showSitesFormModal: false,
       showPolicyAddModal: false,
@@ -487,6 +497,10 @@ export default {
     },
   },
   methods: {
+    toggleDark(val) {
+      this.$q.dark.set(val);
+      this.$axios.patch("/accounts/users/ui/", { dark_mode: val });
+    },
     refreshEntireSite() {
       this.$store.dispatch("loadTree");
       this.getDashInfo();
@@ -609,7 +623,11 @@ export default {
       });
     },
     getDashInfo() {
-      this.$store.dispatch("getDashInfo").then(r => (this.currentTRMMVersion = r.data.trmm_version));
+      this.$store.dispatch("getDashInfo").then(r => {
+        this.darkMode = r.data.dark_mode;
+        this.$q.dark.set(this.darkMode);
+        this.currentTRMMVersion = r.data.trmm_version;
+      });
     },
     showToggleMaintenance(node) {
       let data = {
@@ -718,10 +736,10 @@ export default {
     },
   },
   created() {
+    this.getDashInfo();
     this.getTree();
     this.$store.dispatch("getUpdatedSites");
     this.$store.dispatch("checkVer");
-    this.getDashInfo();
     this.getAgentCounts();
   },
   mounted() {

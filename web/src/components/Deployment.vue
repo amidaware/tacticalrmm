@@ -17,6 +17,7 @@
     <q-card-section>
       <q-table
         dense
+        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
         class="audit-mgr-tbl-sticky"
         binary-state-sort
         virtual-scroll

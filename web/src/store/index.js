@@ -234,33 +234,33 @@ export default function () {
             let childSites = [];
             for (let site of client.sites) {
 
-              let site_color = "black"
-              if (site.maintenance_mode) { site_color = "warning" }
-              else if (site.failing_checks) { site_color = "negative" }
-
-              childSites.push({
+              let siteNode = {
                 label: site.name,
                 id: site.id,
                 raw: `Site|${site.id}`,
                 header: "generic",
                 icon: "apartment",
-                color: site_color
-              });
+              }
+
+              if (site.maintenance_mode) { siteNode["color"] = "warning" }
+              else if (site.failing_checks) { siteNode["color"] = "negative" }
+
+              childSites.push(siteNode);
             }
 
-            let client_color = "black"
-            if (client.maintenance_mode) { client_color = "warning" }
-            else if (client.failing_checks) { client_color = "negative" }
-
-            output.push({
+            let clientNode = {
               label: client.name,
               id: client.id,
               raw: `Client|${client.id}`,
               header: "root",
               icon: "business",
-              color: client_color,
               children: childSites
-            });
+            }
+
+            if (client.maintenance_mode) clientNode["color"] = "warning"
+            else if (client.failing_checks) clientNode["color"] = "negative"
+
+            output.push(clientNode);
           }
 
           // move failing clients to the top

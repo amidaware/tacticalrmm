@@ -74,8 +74,7 @@ class LoginView(KnoxLoginView):
 
 class GetAddUsers(APIView):
     def get(self, request):
-        agents = Agent.objects.values_list("agent_id", flat=True)
-        users = User.objects.exclude(username__in=agents)
+        users = User.objects.filter(agent=None)
 
         return Response(UserSerializer(users, many=True).data)
 
@@ -157,3 +156,11 @@ class TOTPSetup(APIView):
             return Response(TOTPSetupSerializer(user).data)
 
         return Response("totp token already set")
+
+
+class UserUI(APIView):
+    def patch(self, request):
+        user = request.user
+        user.dark_mode = request.data["dark_mode"]
+        user.save(update_fields=["dark_mode"])
+        return Response("ok")

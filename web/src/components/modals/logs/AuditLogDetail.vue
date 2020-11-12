@@ -1,12 +1,12 @@
 <template>
-  <q-card style="width: 70vw; max-width: 90vw;">
+  <q-card style="width: 70vw; max-width: 90vw">
     <q-bar>
       <span class="text-caption">{{ log.message }}</span>
       <q-space />
       <q-btn dense flat icon="close" v-close-popup />
     </q-bar>
-    <q-card-section class="row">
-      <div class="col-6">
+    <q-card-section class="row scroll" style="max-height: 65vh">
+      <div class="col-6" v-if="log.before_value !== null">
         <div class="text-h6">Before</div>
         <pre>{{ JSON.stringify(log.before_value, null, 4) }}</pre>
       </div>

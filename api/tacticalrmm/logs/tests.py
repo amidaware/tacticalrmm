@@ -11,6 +11,10 @@ class TestAuditViews(TacticalTestCase):
         self.setup_coresettings()
 
     def create_audit_records(self):
+
+        # create clients for client filter
+        site = baker.make("clients.Site")
+        baker.make_recipe("agents.agent", site=site, hostname="AgentHostname1")
         # user jim agent logs
         baker.make_recipe(
             "logs.agent_logs",
@@ -75,11 +79,13 @@ class TestAuditViews(TacticalTestCase):
             _quantity=13,
         )
 
+        return site
+
     def test_get_audit_logs(self):
         url = "/logs/auditlogs/"
 
         # create data
-        self.create_audit_records()
+        site = self.create_audit_records()
 
         # test data and result counts
         data = [
@@ -111,6 +117,9 @@ class TestAuditViews(TacticalTestCase):
                 "count": 40,
             },
             {"filter": {"timeFilter": 35, "userFilter": ["james", "jim"]}, "count": 81},
+            {"filter": {"objectFilter": ["user"]}, "count": 26},
+            {"filter": {"actionFilter": ["login"]}, "count": 12},
+            {"filter": {"clientFilter": [site.client.id]}, "count": 23},
         ]
 
         for req in data:

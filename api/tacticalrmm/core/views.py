@@ -68,7 +68,9 @@ def version(request):
 
 @api_view()
 def dashboard_info(request):
-    return Response({"trmm_version": settings.TRMM_VERSION})
+    return Response(
+        {"trmm_version": settings.TRMM_VERSION, "dark_mode": request.user.dark_mode}
+    )
 
 
 @api_view()

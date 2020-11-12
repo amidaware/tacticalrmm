@@ -1,5 +1,5 @@
 <template>
-  <div style="width: 900px; max-width: 90vw;">
+  <div style="width: 900px; max-width: 90vw">
     <q-card>
       <q-bar>
         <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />User Administration
@@ -10,17 +10,7 @@
       </q-bar>
       <div class="q-pa-md">
         <div class="q-gutter-sm">
-          <q-btn
-            ref="new"
-            label="New"
-            dense
-            flat
-            push
-            unelevated
-            no-caps
-            icon="add"
-            @click="showAddUserModal"
-          />
+          <q-btn ref="new" label="New" dense flat push unelevated no-caps icon="add" @click="showAddUserModal" />
           <q-btn
             ref="edit"
             label="Edit"
@@ -83,19 +73,20 @@
             <q-tr
               :props="props"
               class="cursor-pointer"
-              :class="{highlight: selected.length !== 0 && selected[0].id === props.row.id}"
-              @click="editUserId = props.row.id; props.selected = true"
-              @contextmenu="editUserId = props.row.id; props.selected = true"
+              :class="rowSelectedClass(props.row.id, selected)"
+              @click="
+                editUserId = props.row.id;
+                props.selected = true;
+              "
+              @contextmenu="
+                editUserId = props.row.id;
+                props.selected = true;
+              "
             >
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="showEditUserModal(selected[0])"
-                    id="context-edit"
-                  >
+                  <q-item clickable v-close-popup @click="showEditUserModal(selected[0])" id="context-edit">
                     <q-item-section side>
                       <q-icon name="edit" />
                     </q-item-section>
@@ -116,12 +107,7 @@
 
                   <q-separator></q-separator>
 
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="ResetPassword(props.row)"
-                    id="context-reset"
-                  >
+                  <q-item clickable v-close-popup @click="ResetPassword(props.row)" id="context-reset">
                     <q-item-section side>
                       <q-icon name="autorenew" />
                     </q-item-section>
@@ -169,11 +155,7 @@
 
     <!-- user reset password form modal -->
     <q-dialog v-model="showResetPasswordModal" @hide="closeResetPasswordModal">
-      <UserResetPasswordForm
-        :pk="resetUserId"
-        :username="resetUserName"
-        @close="closeResetPasswordModal"
-      />
+      <UserResetPasswordForm :pk="resetUserId" :username="resetUserName" @close="closeResetPasswordModal" />
     </q-dialog>
   </div>
 </template>
@@ -317,6 +299,9 @@ export default {
               this.$q.notify(notifyErrorConfig("An Error occured while resetting key"));
             });
         });
+    },
+    rowSelectedClass(id, selected) {
+      if (selected.length !== 0 && selected[0].id === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";
     },
   },
   computed: {

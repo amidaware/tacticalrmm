@@ -2,6 +2,7 @@
   <div class="q-pa-md">
     <q-table
       dense
+      :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       class="remote-bg-tbl-sticky"
       :data="servicesData"
       :columns="columns"
@@ -24,25 +25,13 @@
         <q-tr :props="props">
           <q-menu context-menu>
             <q-list dense style="min-width: 200px">
-              <q-item
-                clickable
-                v-close-popup
-                @click="serviceAction(props.row.name, 'start', props.row.display_name)"
-              >
+              <q-item clickable v-close-popup @click="serviceAction(props.row.name, 'start', props.row.display_name)">
                 <q-item-section>Start</q-item-section>
               </q-item>
-              <q-item
-                clickable
-                v-close-popup
-                @click="serviceAction(props.row.name, 'stop', props.row.display_name)"
-              >
+              <q-item clickable v-close-popup @click="serviceAction(props.row.name, 'stop', props.row.display_name)">
                 <q-item-section>Stop</q-item-section>
               </q-item>
-              <q-item
-                clickable
-                v-close-popup
-                @click="serviceAction(props.row.name, 'restart', props.row.display_name)"
-              >
+              <q-item clickable v-close-popup @click="serviceAction(props.row.name, 'restart', props.row.display_name)">
                 <q-item-section>Restart</q-item-section>
               </q-item>
               <q-separator />
@@ -64,7 +53,7 @@
     </q-table>
 
     <q-dialog v-model="serviceDetailsModal">
-      <q-card style="width: 600px; max-width: 80vw;">
+      <q-card style="width: 600px; max-width: 80vw">
         <q-card-section>
           <div class="text-h6">Service Details - {{ serviceData.DisplayName }}</div>
         </q-card-section>
@@ -83,7 +72,7 @@
           <div class="row">
             <div class="col-3">Description:</div>
             <div class="col-9">
-              <q-field outlined color="black">{{ serviceData.Description }}</q-field>
+              <q-field outlined :color="$q.dark.isActive ? 'white' : 'black'">{{ serviceData.Description }}</q-field>
             </div>
           </div>
           <br />
@@ -121,7 +110,7 @@
               <q-btn
                 color="gray"
                 glossy
-                text-color="black"
+                :text-color="$q.dark.isActive ? 'white' : 'black'"
                 push
                 label="Start"
                 @click="serviceAction(serviceData.svc_name, 'start', serviceData.DisplayName)"
@@ -129,7 +118,7 @@
               <q-btn
                 color="gray"
                 glossy
-                text-color="black"
+                :text-color="$q.dark.isActive ? 'white' : 'black'"
                 push
                 label="Stop"
                 @click="serviceAction(serviceData.svc_name, 'stop', serviceData.DisplayName)"
@@ -137,7 +126,7 @@
               <q-btn
                 color="gray"
                 glossy
-                text-color="black"
+                :text-color="$q.dark.isActive ? 'white' : 'black'"
                 push
                 label="Restart"
                 @click="serviceAction(serviceData.svc_name, 'restart', serviceData.DisplayName)"
@@ -146,7 +135,7 @@
           </div>
         </q-card-section>
         <hr />
-        <q-card-actions align="left" class="bg-white text-teal">
+        <q-card-actions align="left" :class="$q.dark.isActive ? 'text-teal' : 'bg-white text-teal'">
           <q-btn
             :disable="saveServiceDetailButton"
             dense

@@ -20,16 +20,18 @@ ARG ADMIN_URL
 
 EXPOSE 80
 
-RUN apt-get update && apt-get install -y gettext-base wget
+RUN apt-get update && apt-get install -y gettext-base wget ca-certificates
 COPY ./api/tacticalrmm/requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir setuptools==49.6.0 wheel==0.35.1
 RUN pip install --no-cache-dir -r requirements.txt
-RUN wget --no-check-certificate https://golang.org/dl/go1.15.linux-amd64.tar.gz -P /tmp
+RUN wget https://golang.org/dl/go1.15.linux-amd64.tar.gz -P /tmp
 COPY ./api/tacticalrmm/ .
+COPY ./scripts/ /scripts
 COPY ./docker/api/prestart.sh .
 COPY ./docker/api/uwsgi.ini .
 COPY ./docker/api/api.conf /app/api.conf.tmp
+COPY ./api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/goversioninfo
 RUN envsubst '\$APP_HOST, \$API_HOST' < /app/api.conf.tmp > /app/nginx.conf && \
     rm /app/api.conf.tmp
 COPY ./docker/api/local_settings.py.keep ./tacticalrmm/local_settings.py.tmp
@@ -41,5 +43,4 @@ RUN tar -xzf /tmp/go1.15.linux-amd64.tar.gz -C /tmp && \
     rm -rf /tmp/go
 
 RUN /usr/local/rmmgo/go/bin/go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo && \
-    cp ./api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/ && \
     chmod +x /usr/local/bin/goversioninfo

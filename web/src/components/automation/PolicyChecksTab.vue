@@ -69,6 +69,7 @@
       <template>
         <q-table
           dense
+          :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="tabs-tbl-sticky"
           style="max-height: 35vh"
           :data="checks"
@@ -109,23 +110,13 @@
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="showEditDialog(props.row)"
-                    id="context-edit"
-                  >
+                  <q-item clickable v-close-popup @click="showEditDialog(props.row)" id="context-edit">
                     <q-item-section side>
                       <q-icon name="edit" />
                     </q-item-section>
                     <q-item-section>Edit</q-item-section>
                   </q-item>
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="deleteCheck(props.row)"
-                    id="context-delete"
-                  >
+                  <q-item clickable v-close-popup @click="deleteCheck(props.row)" id="context-delete">
                     <q-item-section side>
                       <q-icon name="delete" />
                     </q-item-section>
@@ -134,12 +125,7 @@
 
                   <q-separator></q-separator>
 
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="showPolicyCheckStatusModal(props.row)"
-                    id="context-status"
-                  >
+                  <q-item clickable v-close-popup @click="showPolicyCheckStatusModal(props.row)" id="context-status">
                     <q-item-section side>
                       <q-icon name="sync" />
                     </q-item-section>
@@ -171,14 +157,15 @@
               <q-td>{{ props.row.readable_desc }}</q-td>
               <q-td>
                 <span
-                  style="cursor:pointer;color:blue;text-decoration:underline"
+                  style="cursor: pointer; text-decoration: underline"
                   @click="showPolicyCheckStatusModal(props.row)"
-                  class="status-cell"
-                >See Status</span>
+                  class="status-cell text-primary"
+                  >See Status</span
+                >
               </q-td>
-              <q-td
-                v-if="props.row.assignedtask !== null && props.row.assignedtask.length === 1"
-              >{{ props.row.assignedtask[0].name }}</q-td>
+              <q-td v-if="props.row.assignedtask !== null && props.row.assignedtask.length === 1">{{
+                props.row.assignedtask[0].name
+              }}</q-td>
               <q-td v-else-if="props.row.assignedtask">{{ props.row.assignedtask.length }} Tasks</q-td>
               <q-td v-else></q-td>
             </q-tr>

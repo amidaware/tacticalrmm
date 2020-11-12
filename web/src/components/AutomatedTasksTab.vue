@@ -19,7 +19,7 @@
         <q-table
           dense
           class="tabs-tbl-sticky"
-          :style="{'max-height': tabsTableHeight}"
+          :style="{ 'max-height': tabsTableHeight }"
           :data="tasks"
           :columns="columns"
           :row-key="row => row.id"
@@ -88,7 +88,7 @@
               </q-td>
               <!-- policy check icon -->
               <q-td v-if="props.row.managed_by_policy">
-                <q-icon style="font-size: 1.3rem;" name="policy">
+                <q-icon style="font-size: 1.3rem" name="policy">
                   <q-tooltip>This task is managed by a policy</q-tooltip>
                 </q-icon>
               </q-td>
@@ -96,14 +96,14 @@
               <q-td>{{ props.row.name }}</q-td>
               <q-td v-if="props.row.sync_status === 'notsynced'">Will sync on next agent checkin</q-td>
               <q-td v-else-if="props.row.sync_status === 'synced'">Synced with agent</q-td>
-              <q-td
-                v-else-if="props.row.sync_status === 'pendingdeletion'"
-              >Pending deletion on agent</q-td>
+              <q-td v-else-if="props.row.sync_status === 'pendingdeletion'">Pending deletion on agent</q-td>
               <q-td v-if="props.row.retcode !== null || props.row.stdout || props.row.stderr">
                 <span
-                  style="cursor:pointer;color:blue;text-decoration:underline"
+                  style="cursor: pointer; text-decoration: underline"
+                  class="text-primary"
                   @click="scriptMoreInfo(props.row)"
-                >output</span>
+                  >output</span
+                >
               </q-td>
               <q-td v-else>Awaiting output</q-td>
               <q-td v-if="props.row.last_run">{{ props.row.last_run }}</q-td>
@@ -122,7 +122,13 @@
     </q-dialog>
 
     <q-dialog v-model="showScriptOutput">
-      <ScriptOutput @close="showScriptOutput = false; scriptInfo = {}" :scriptInfo="scriptInfo" />
+      <ScriptOutput
+        @close="
+          showScriptOutput = false;
+          scriptInfo = {};
+        "
+        :scriptInfo="scriptInfo"
+      />
     </q-dialog>
   </div>
 </template>

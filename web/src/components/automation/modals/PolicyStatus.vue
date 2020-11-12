@@ -8,6 +8,7 @@
     <q-card-section>
       <q-table
         dense
+        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
         class="tabs-tbl-sticky"
         style="max-height: 35vh"
         :data="tableData"

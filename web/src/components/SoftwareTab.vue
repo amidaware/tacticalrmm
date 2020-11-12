@@ -12,8 +12,9 @@
     />
     <q-btn dense flat push @click="refreshSoftware" icon="refresh" />
     <q-table
+      :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       class="tabs-tbl-sticky"
-      :style="{'max-height': tabsTableHeight}"
+      :style="{ 'max-height': tabsTableHeight }"
       dense
       :data="software"
       :columns="columns"

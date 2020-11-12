@@ -3,6 +3,7 @@
     <q-card-section>
       <q-table
         class="remote-bg-tbl-sticky"
+        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
         title="Software"
         dense
         :data="chocos"

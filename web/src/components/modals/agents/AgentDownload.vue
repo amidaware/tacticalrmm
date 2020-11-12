@@ -14,7 +14,7 @@
         Download the agent then run the following command from an elevated command prompt on the device you want to add.
       </p>
       <p>
-        <q-field outlined color="black">
+        <q-field outlined :color="$q.dark.isActive ? 'white' : 'black'">
           <code>{{ info.data.cmd }}</code>
         </q-field>
       </p>

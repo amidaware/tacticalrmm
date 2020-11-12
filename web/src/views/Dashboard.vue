@@ -84,7 +84,7 @@
           <div v-if="!treeReady" class="q-pa-sm q-gutter-sm text-center" style="height: 30vh">
             <q-spinner size="40px" color="primary" />
           </div>
-          <div v-else class="q-pa-sm q-gutter-sm">
+          <div v-else class="q-pa-sm q-gutter-sm scroll" style="height: 85vh">
             <q-list dense class="rounded-borders">
               <q-item clickable v-ripple :active="allClientsActive" @click="clearTreeSelected">
                 <q-item-section avatar>

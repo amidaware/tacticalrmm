@@ -22,11 +22,6 @@ export default {
 .remote-bg-tbl-sticky
   max-height: 70vh
 
-  .q-table__top,
-  .q-table__bottom,
-  thead tr:first-child th
-    background-color: #f5f4f2
-
   thead tr th
     position: sticky
     z-index: 1

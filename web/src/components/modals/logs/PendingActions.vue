@@ -169,7 +169,7 @@ export default {
     },
     rowClass(id, status) {
       if (this.selectedRow === id && status !== "completed") {
-        return this.$q.dark.isActive ? "highligh-dark" : "highlight";
+        return this.$q.dark.isActive ? "highlight-dark" : "highlight";
       } else if (status === "completed") {
         return "action-completed";
       }

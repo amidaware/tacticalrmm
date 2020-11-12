@@ -100,7 +100,6 @@ export default {
         .dispatch("retrieveToken", this.credentials)
         .then(response => {
           this.credentials = {};
-          this.$q.dark.set(false);
           this.$router.push({ name: "Dashboard" });
         })
         .catch(() => {

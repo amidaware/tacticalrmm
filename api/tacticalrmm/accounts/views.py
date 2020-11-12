@@ -156,3 +156,11 @@ class TOTPSetup(APIView):
             return Response(TOTPSetupSerializer(user).data)
 
         return Response("totp token already set")
+
+
+class UserUI(APIView):
+    def patch(self, request):
+        user = request.user
+        user.dark_mode = request.data["dark_mode"]
+        user.save(update_fields=["dark_mode"])
+        return Response("ok")

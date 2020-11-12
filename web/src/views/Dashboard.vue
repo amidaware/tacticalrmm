@@ -12,7 +12,7 @@
         </q-toolbar-title>
 
         <!-- temp dark mode toggle -->
-        <q-toggle :value="$q.dark.isActive" label="Toggle Dark Mode" @input="$q.dark.set(!$q.dark.isActive)" />
+        <q-toggle v-model="darkMode" label="Toggle Dark Mode" @input="toggleDark(darkMode)" />
 
         <!-- Devices Chip -->
         <q-chip class="cursor-pointer">
@@ -349,6 +349,7 @@ export default {
   },
   data() {
     return {
+      darkMode: true,
       showClientsFormModal: false,
       showSitesFormModal: false,
       showPolicyAddModal: false,
@@ -490,6 +491,10 @@ export default {
     },
   },
   methods: {
+    toggleDark(val) {
+      this.$q.dark.set(val);
+      this.$axios.patch("/accounts/users/ui/", { dark_mode: val });
+    },
     refreshEntireSite() {
       this.$store.dispatch("loadTree");
       this.getDashInfo();
@@ -612,7 +617,11 @@ export default {
       });
     },
     getDashInfo() {
-      this.$store.dispatch("getDashInfo").then(r => (this.currentTRMMVersion = r.data.trmm_version));
+      this.$store.dispatch("getDashInfo").then(r => {
+        this.darkMode = r.data.dark_mode;
+        this.$q.dark.set(this.darkMode);
+        this.currentTRMMVersion = r.data.trmm_version;
+      });
     },
     showToggleMaintenance(node) {
       let data = {
@@ -721,10 +730,10 @@ export default {
     },
   },
   created() {
+    this.getDashInfo();
     this.getTree();
     this.$store.dispatch("getUpdatedSites");
     this.$store.dispatch("checkVer");
-    this.getDashInfo();
     this.getAgentCounts();
   },
   mounted() {

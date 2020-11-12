@@ -44,7 +44,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import ProcessManager from "@/components/ProcessManager";
 import Services from "@/components/Services";
 import EventLog from "@/components/EventLog";
@@ -62,14 +61,21 @@ export default {
       file: "",
       tab: "terminal",
       title: "",
+      darkMode: true,
     };
   },
   methods: {
     genURLS() {
-      axios.get(`/agents/${this.pk}/meshcentral/`).then(r => {
+      this.$axios.get(`/agents/${this.pk}/meshcentral/`).then(r => {
         this.terminal = r.data.terminal;
         this.file = r.data.file;
         this.title = `${r.data.hostname} - ${r.data.client} - ${r.data.site} | Remote Background`;
+      });
+    },
+    getDark() {
+      this.$store.dispatch("getDashInfo").then(r => {
+        this.darkMode = r.data.dark_mode;
+        this.$q.dark.set(this.darkMode);
       });
     },
   },
@@ -84,6 +90,7 @@ export default {
     },
   },
   created() {
+    this.getDark();
     this.genURLS();
   },
 };

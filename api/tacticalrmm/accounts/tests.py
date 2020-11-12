@@ -195,6 +195,14 @@ class TestUserAction(TacticalTestCase):
 
         self.check_not_authenticated("put", url)
 
+    def test_darkmode(self):
+        url = "/accounts/users/ui/"
+        data = {"dark_mode": False}
+        r = self.client.patch(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        self.check_not_authenticated("patch", url)
+
 
 class TestTOTPSetup(TacticalTestCase):
     def setUp(self):

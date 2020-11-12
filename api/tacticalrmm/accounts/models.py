@@ -7,6 +7,7 @@ from logs.models import BaseAuditModel
 class User(AbstractUser, BaseAuditModel):
     is_active = models.BooleanField(default=True)
     totp_key = models.CharField(max_length=50, null=True, blank=True)
+    dark_mode = models.BooleanField(default=True)
 
     agent = models.OneToOneField(
         "agents.Agent",

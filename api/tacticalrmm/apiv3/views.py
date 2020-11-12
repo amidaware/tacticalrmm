@@ -158,7 +158,7 @@ class CheckRunner(APIView):
             agent=check.agent.hostname,
             object_type="agent",
             action="check_run",
-            message=f"Check {check.name} was run on {check.agent.hostname}. Status: {status}",
+            message=f"{check.readable_desc} was run on {check.agent.hostname}. Status: {status}",
             after_value=Check.serialize(check),
         )
 

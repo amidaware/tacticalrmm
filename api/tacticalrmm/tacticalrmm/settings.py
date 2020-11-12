@@ -20,7 +20,7 @@ APP_VER = "0.0.89"
 LATEST_SALT_VER = "1.1.0"
 
 # https://github.com/wh1te909/rmmagent
-LATEST_AGENT_VER = "1.0.1"
+LATEST_AGENT_VER = "1.0.2"
 
 MESH_VER = "0.6.62"
 

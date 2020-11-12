@@ -2,6 +2,7 @@
   <div class="q-pa-md">
     <q-table
       dense
+      :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       class="remote-bg-tbl-sticky"
       :data="procs"
       :columns="columns"
@@ -13,15 +14,7 @@
     >
       <template v-slot:top>
         <q-btn v-if="poll" dense flat push @click="stopPoll" icon="stop" label="Stop Live Refresh" />
-        <q-btn
-          v-else
-          dense
-          flat
-          push
-          @click="startPoll"
-          icon="play_arrow"
-          label="Resume Live Refresh"
-        />
+        <q-btn v-else dense flat push @click="startPoll" icon="play_arrow" label="Resume Live Refresh" />
         <q-space />
         <q-input v-model="filter" outlined label="Search" dense clearable>
           <template v-slot:prepend>

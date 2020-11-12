@@ -12,7 +12,13 @@
         </q-toolbar-title>
 
         <!-- temp dark mode toggle -->
-        <q-toggle v-model="darkMode" label="Toggle Dark Mode" @input="toggleDark(darkMode)" />
+        <q-toggle
+          v-model="darkMode"
+          class="q-mr-sm"
+          @input="toggleDark(darkMode)"
+          checked-icon="nights_stay"
+          unchecked-icon="wb_sunny"
+        />
 
         <!-- Devices Chip -->
         <q-chip class="cursor-pointer">

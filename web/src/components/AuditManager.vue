@@ -80,6 +80,7 @@
           clearable
           filled
           multiple
+          use-chips
           dense
           v-model="actionFilter"
           label="Action"
@@ -93,6 +94,7 @@
           clearable
           filled
           multiple
+          use-chips
           dense
           v-model="objectFilter"
           label="Object"
@@ -118,6 +120,7 @@
     <q-card-section>
       <q-table
         dense
+        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
         class="audit-mgr-tbl-sticky"
         binary-state-sort
         title="Audit Logs"

@@ -19,6 +19,7 @@
     </div>
     <q-table
       dense
+      :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       class="remote-bg-tbl-sticky"
       :data="events"
       :columns="columns"

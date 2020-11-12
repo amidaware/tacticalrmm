@@ -32,21 +32,9 @@
       <template v-slot:top>
         <q-btn dense flat push @click="getEventLog" icon="refresh" />
         <q-space />
-        <q-radio
-          v-model="logType"
-          color="cyan"
-          val="Application"
-          label="Application"
-          @input="getEventLog"
-        />
+        <q-radio v-model="logType" color="cyan" val="Application" label="Application" @input="getEventLog" />
         <q-radio v-model="logType" color="cyan" val="System" label="System" @input="getEventLog" />
-        <q-radio
-          v-model="logType"
-          color="cyan"
-          val="Security"
-          label="Security"
-          @input="getEventLog"
-        />
+        <q-radio v-model="logType" color="cyan" val="Security" label="Security" @input="getEventLog" />
         <q-space />
         <q-input v-model="filter" outlined label="Search" dense clearable>
           <template v-slot:prepend>
@@ -61,9 +49,9 @@
           <q-td>{{ props.row.eventID }}</q-td>
           <q-td>{{ props.row.time }}</q-td>
           <q-td @click.native="showFullMsg(props.row.message)">
-            <span
-              style="cursor:pointer;color:blue;text-decoration:underline"
-            >{{ formatMessage(props.row.message) }}</span>
+            <span style="cursor: pointer; text-decoration: underline" class="text-primary">{{
+              formatMessage(props.row.message)
+            }}</span>
           </q-td>
         </q-tr>
       </template>

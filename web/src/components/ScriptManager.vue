@@ -1,7 +1,7 @@
 <template>
   <div class="q-pa-md q-gutter-sm">
     <q-dialog :value="toggleScriptManager" @hide="hideScriptManager" @show="getScripts">
-      <q-card style="min-width: 70vw;">
+      <q-card style="min-width: 70vw">
         <q-bar>
           <q-btn @click="getScripts" class="q-mr-sm" dense flat push icon="refresh" />Script Manager
           <q-space />
@@ -19,7 +19,10 @@
               unelevated
               no-caps
               icon="add"
-              @click="showScript('add'); clearRow()"
+              @click="
+                showScript('add');
+                clearRow();
+              "
             />
             <q-btn
               label="Edit"
@@ -66,14 +69,11 @@
               @click="downloadScript"
             />
             <q-space />
-            <q-toggle
-              :value="showBuiltIn"
-              label="Show Community Scripts"
-              @input="showBuiltIn = !showBuiltIn"
-            />
+            <q-toggle :value="showBuiltIn" label="Show Community Scripts" @input="showBuiltIn = !showBuiltIn" />
           </div>
           <q-table
             dense
+            :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
             class="settings-tbl-sticky"
             :data="visibleScripts"
             :columns="columns"
@@ -88,16 +88,19 @@
           >
             <template slot="body" slot-scope="props" :props="props">
               <q-tr
-                :class="{highlight: scriptpk === props.row.id}"
-                @click="scriptpk = props.row.id; filename = props.row.filename; code = props.row.code;"
+                :class="rowSelectedClass(props.row.id)"
+                @click="
+                  scriptpk = props.row.id;
+                  filename = props.row.filename;
+                  code = props.row.code;
+                "
               >
                 <q-td>{{ props.row.name }}</q-td>
                 <q-td>
                   {{ truncateText(props.row.description) }}
-                  <q-tooltip
-                    v-if="props.row.description.length >= 60"
-                    content-style="font-size: 12px"
-                  >{{ props.row.description }}</q-tooltip>
+                  <q-tooltip v-if="props.row.description.length >= 60" content-style="font-size: 12px">{{
+                    props.row.description
+                  }}</q-tooltip>
                 </q-td>
                 <q-td>{{ props.row.filename }}</q-td>
                 <q-td>{{ props.row.shell }}</q-td>
@@ -113,12 +116,7 @@
       </q-card>
     </q-dialog>
     <q-dialog v-model="showScriptModal">
-      <ScriptModal
-        :mode="mode"
-        :scriptpk="scriptpk"
-        @close="showScriptModal = false"
-        @uploaded="getScripts"
-      />
+      <ScriptModal :mode="mode" :scriptpk="scriptpk" @close="showScriptModal = false" @uploaded="getScripts" />
     </q-dialog>
   </div>
 </template>
@@ -255,6 +253,9 @@ export default {
       } catch (e) {
         return false;
       }
+    },
+    rowSelectedClass(id) {
+      if (this.scriptpk === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";
     },
   },
   computed: {

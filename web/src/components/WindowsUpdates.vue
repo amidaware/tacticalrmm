@@ -6,7 +6,7 @@
     <q-table
       dense
       class="tabs-tbl-sticky"
-      :style="{'max-height': tabsTableHeight}"
+      :style="{ 'max-height': tabsTableHeight }"
       :data="sortedUpdates"
       :columns="columns"
       :visible-columns="visibleColumns"
@@ -22,36 +22,16 @@
         <q-tr :props="props">
           <q-menu context-menu>
             <q-list dense style="min-width: 100px">
-              <q-item
-                v-if="!props.row.installed"
-                clickable
-                v-close-popup
-                @click="editPolicy(props.row.id, 'inherit')"
-              >
+              <q-item v-if="!props.row.installed" clickable v-close-popup @click="editPolicy(props.row.id, 'inherit')">
                 <q-item-section>Inherit</q-item-section>
               </q-item>
-              <q-item
-                v-if="!props.row.installed"
-                clickable
-                v-close-popup
-                @click="editPolicy(props.row.id, 'approve')"
-              >
+              <q-item v-if="!props.row.installed" clickable v-close-popup @click="editPolicy(props.row.id, 'approve')">
                 <q-item-section>Approve</q-item-section>
               </q-item>
-              <q-item
-                v-if="!props.row.installed"
-                clickable
-                v-close-popup
-                @click="editPolicy(props.row.id, 'ignore')"
-              >
+              <q-item v-if="!props.row.installed" clickable v-close-popup @click="editPolicy(props.row.id, 'ignore')">
                 <q-item-section>Ignore</q-item-section>
               </q-item>
-              <q-item
-                v-if="!props.row.installed"
-                clickable
-                v-close-popup
-                @click="editPolicy(props.row.id, 'nothing')"
-              >
+              <q-item v-if="!props.row.installed" clickable v-close-popup @click="editPolicy(props.row.id, 'nothing')">
                 <q-item-section>Do Nothing</q-item-section>
               </q-item>
             </q-list>
@@ -67,11 +47,7 @@
             <q-icon v-else-if="props.row.action === 'ignore'" name="fas fa-check" color="negative">
               <q-tooltip>Ignore</q-tooltip>
             </q-icon>
-            <q-icon
-              v-else-if="props.row.action === 'inherit'"
-              name="fiber_manual_record"
-              color="accent"
-            >
+            <q-icon v-else-if="props.row.action === 'inherit'" name="fiber_manual_record" color="accent">
               <q-tooltip>Inherit</q-tooltip>
             </q-icon>
           </q-td>
@@ -92,9 +68,9 @@
           <q-td>{{ props.row.severity }}</q-td>
           <q-td>{{ formatMessage(props.row.title) }}</q-td>
           <q-td @click.native="showFullMsg(props.row.title, props.row.description)">
-            <span
-              style="cursor:pointer;color:blue;text-decoration:underline"
-            >{{ formatMessage(props.row.description) }}</span>
+            <span style="cursor: pointer; text-decoration: underline" class="text-primary">{{
+              formatMessage(props.row.description)
+            }}</span>
           </q-td>
           <q-td>{{ props.row.date_installed }}</q-td>
         </q-tr>

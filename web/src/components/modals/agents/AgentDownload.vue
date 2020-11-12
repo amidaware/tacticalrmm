@@ -46,7 +46,9 @@
           </q-badge>
           <span>
             To skip downloading the Mesh Agent during the install. Download it
-            <span style="cursor: pointer; color: blue; text-decoration: underline" @click="downloadMesh">here</span>
+            <span style="cursor: pointer; text-decoration: underline" class="text-primary" @click="downloadMesh"
+              >here</span
+            >
           </span>
         </div>
         <div class="q-pa-xs q-gutter-xs">

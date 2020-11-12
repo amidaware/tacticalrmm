@@ -80,13 +80,6 @@ def ping(request, pk):
 @api_view(["DELETE"])
 def uninstall(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
-    # just in case agent-user gets deleted accidentaly from django-admin
-    # we can still remove the agent
-    try:
-        user = User.objects.get(username=agent.agent_id)
-        user.delete()
-    except Exception as e:
-        logger.warning(e)
 
     salt_id = agent.salt_id
     name = agent.hostname
@@ -823,6 +816,8 @@ def bulk(request):
         return notify_error("Something went wrong")
 
     minions = [agent.salt_id for agent in agents]
+
+    AuditLog.audit_bulk_action(request.user, request.data["mode"], request.data)
 
     if request.data["mode"] == "command":
         r = Agent.salt_batch_async(

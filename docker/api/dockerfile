@@ -27,6 +27,7 @@ RUN pip install --no-cache-dir setuptools==49.6.0 wheel==0.35.1
 RUN pip install --no-cache-dir -r requirements.txt
 RUN wget https://golang.org/dl/go1.15.linux-amd64.tar.gz -P /tmp
 COPY ./api/tacticalrmm/ .
+COPY ./scripts/ /scripts
 COPY ./docker/api/prestart.sh .
 COPY ./docker/api/uwsgi.ini .
 COPY ./docker/api/api.conf /app/api.conf.tmp

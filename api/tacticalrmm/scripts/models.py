@@ -62,7 +62,13 @@ class Script(BaseAuditModel):
         # load community uploaded scripts into the database
         # skip ones that already exist, only updating name / desc in case it changes
         # files will be copied by the update script or in docker to /srv/salt/scripts
-        scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[1], "scripts")
+
+        # for install script
+        try:
+            scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[1], "scripts")
+        # for docker
+        except:
+            scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[0], "scripts")
 
         with open(
             os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")

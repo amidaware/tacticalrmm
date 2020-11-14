@@ -1,0 +1,46 @@
+FROM python:3.8-slim AS builder
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG BUILD_DATE
+
+ENV TACTICAL_DIR /opt/tactical/
+ENV TACTICAL_TMP_DIR /tmp/tacticalrmm/
+ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
+ENV TACTICAL_USER tactical
+
+SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
+
+# install tactical
+COPY docker/containers/tactical/setup.sh /tmp
+COPY api/tacticalrmm/requirements.txt ${TACTICAL_TMP_DIR}
+RUN chmod +x /tmp/setup.sh && \
+    /tmp/setup.sh install
+
+FROM python:3.8-slim
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG BUILD_DATE
+
+ENV TACTICAL_DIR /opt/tactical/
+ENV TACTICAL_TMP_DIR /tmp/tacticalrmm/
+ENV TACTICAL_SCRIPTS_DIR  ${TACTICAL_DIR}/scripts/
+ENV TACTICAL_GO_DIR /usr/local/rmmgo/
+ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
+ENV TACTICAL_USER tactical
+
+COPY docker/containers/tactical/setup.sh /tmp
+RUN chmod +x /tmp/setup.sh; \
+    /tmp/setup.sh run
+
+COPY from=builder /tmp/go ${TACTICAL_GO_DIR}
+COPY from=builder ${TACTICAL_TMP_DIR}/env ${TACTICAL_DIR}
+COPY api/tacticalrmm/ ${TACTICAL_DIR}
+COPY scripts/ ${TACTICAL_SCRIPTS_DIR}
+COPY api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/goversioninfo
+
+# docker init
+COPY containers/backend/docker-entrypoint.sh /
+RUN chmod +x /docker-entrypoint.sh
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
+WORKDIR ${TACTICAL_DIR}

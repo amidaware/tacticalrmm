@@ -42,3 +42,5 @@ api/tacticalrmm/accounts/management/commands/random_data.py
 versioninfo.go
 resource.syso
 htmlcov/
+docker-compose.override.yml
+docker-compose.dev.yml

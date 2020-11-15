@@ -1,3 +1,4 @@
+import asyncio
 from loguru import logger
 import os
 import subprocess
@@ -217,20 +218,15 @@ def power_action(request):
 def send_raw_cmd(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
 
-    r = agent.salt_api_cmd(
-        timeout=request.data["timeout"],
-        func="cmd.run",
-        kwargs={
-            "cmd": request.data["cmd"],
-            "shell": request.data["shell"],
-            "timeout": request.data["timeout"],
-        },
-    )
+    data = {
+        "cmd": "rawcmd",
+        "command": request.data["cmd"],
+        "shell": request.data["shell"],
+    }
+    r = asyncio.run(agent.nats_cmd(data, timeout=request.data["timeout"]))
 
     if r == "timeout":
         return notify_error("Unable to contact the agent")
-    elif r == "error" or not r:
-        return notify_error("Something went wrong")
 
     AuditLog.audit_raw_command(
         username=request.user.username,

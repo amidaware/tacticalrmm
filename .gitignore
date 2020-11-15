@@ -43,3 +43,4 @@ versioninfo.go
 resource.syso
 htmlcov/
 docs/.vuepress/dist
+nats-rmm.conf

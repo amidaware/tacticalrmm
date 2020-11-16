@@ -1,0 +1,13 @@
+FROM node:12-alpine AS builder
+
+WORKDIR /home/node/app
+
+COPY ./web/package.json .
+RUN npm install
+COPY ./web .
+RUN echo 'PROD_URL = "https://${API_HOST}"  DEV_URL = "https://${API_HOST}"' > /home/node/.env
+RUN npm run build
+
+FROM nginx:stable
+
+COPY --from=builder /home/node/app/dist/ /usr/share/nginx/html

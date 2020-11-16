@@ -1,5 +1,6 @@
 from django.db import models
 from logs.models import BaseAuditModel
+from django.conf import settings
 
 SCRIPT_SHELLS = [
     ("powershell", "Powershell"),
@@ -38,9 +39,9 @@ class Script(BaseAuditModel):
     @property
     def file(self):
         if self.script_type == "userdefined":
-            return f"/srv/salt/scripts/userdefined/{self.filename}"
+            return f"{settings.SCRIPTS_URL}/userdefined/{self.filename}"
         else:
-            return f"/srv/salt/scripts/{self.filename}"
+            return f"{settings.SCRIPTS_URL}/{self.filename}"
 
     @property
     def code(self):

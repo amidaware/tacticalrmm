@@ -1,0 +1,8 @@
+FROM nginx:stable
+
+ENV TACTICAL_DIR /opt/tactical
+
+COPY docker/containers/tactical-proxy/gen-config.sh /
+RUN chmod +x gen-config.sh && \
+  /gen-config.sh
+

@@ -1,0 +1,17 @@
+FROM ubuntu:20.04
+
+RUN apt-get update && \
+    apt-get install -y ca-certificates wget gnupg2 tzdata supervisor && \
+    wget -O - https://repo.saltstack.com/py3/ubuntu/20.04/amd64/latest/SALTSTACK-GPG-KEY.pub | apt-key add - && \
+    echo 'deb http://repo.saltstack.com/py3/ubuntu/20.04/amd64/latest focal main' | tee /etc/apt/sources.list.d/saltstack.list && \
+    apt-get update && \
+    apt-get install -y salt-master salt-api && \
+    mkdir -p /var/log/supervisor && \
+    sed -i 's/msgpack_kwargs = {"raw": six.PY2}/msgpack_kwargs = {"raw": six.PY2, "max_buffer_size": 2147483647}/g' /usr/lib/python3/dist-packages/salt/transport/ipc.py
+
+EXPOSE 8123 4505 4506
+
+COPY docker/containers/tactical-salt/entrypoint.sh /
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT [ "/entrypoint.sh" ]

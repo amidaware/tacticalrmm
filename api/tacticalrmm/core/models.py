@@ -18,10 +18,7 @@ TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
 
 class CoreSettings(BaseAuditModel):
     email_alert_recipients = ArrayField(
-        models.EmailField(null=True, blank=True),
-        null=True,
-        blank=True,
-        default=list,
+        models.EmailField(null=True, blank=True), null=True, blank=True, default=list,
     )
     sms_alert_recipients = ArrayField(
         models.CharField(max_length=255, null=True, blank=True),
@@ -195,27 +192,9 @@ class CoreSettings(BaseAuditModel):
             if settings.MESH_TOKEN_KEY:
                 mesh_settings["mesh_token"] = settings.MESH_TOKEN_KEY
             else:
-                raise AttributeError("MESH_TOKEN_KEY doesn't exist")
+                raise AttributeError("MESH_SITE doesn't exist")
         except AttributeError:
-            filepath = "/token/token.key"
-            counter = 0
-            while counter < 12:
-                try:
-                    with open(filepath, "r") as read_file:
-                        key = read_file.readlines()
-
-                        # Remove key file contents for security reasons
-                        with open(filepath, "w") as write_file:
-                            write_file.write("")
-
-                        # readlines() returns an array. Get first item
-                        mesh_settings["mesh_token"] = key[0].rstrip()
-                        break
-                except (IOError, IndexError):
-                    pass
-
-                counter = counter + 1
-                time.sleep(10)
+            pass
 
         return mesh_settings
 

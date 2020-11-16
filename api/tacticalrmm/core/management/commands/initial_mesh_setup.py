@@ -49,5 +49,27 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         self.mesh_settings = CoreSettings.objects.first()
+
+        # set mesh token if not set
+        if not self.mesh_settings.mesh_token and not hasattr(
+            settings, "MESH_TOKEN_KEY"
+        ):
+            filepath = "/opt/tactical/tmp/mesh_token"
+
+            try:
+                with open(filepath, "r") as read_file:
+                    key = read_file.readlines()
+
+                    # Remove key file contents for security reasons
+                    with open(filepath, "w") as write_file:
+                        write_file.write("")
+
+                    # readlines() returns an array. Get first item
+                    self.mesh_settings.mesh_token = key[0].rstrip()
+                    self.mesh_settings.save()
+            except:
+                self.stdout.write("Mesh Central key wasn't found")
+                return
+
         asyncio.get_event_loop().run_until_complete(self.websocket_call())
         self.stdout.write("Initial Mesh Central setup complete")

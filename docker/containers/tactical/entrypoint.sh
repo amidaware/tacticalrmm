@@ -33,6 +33,7 @@ function check_tactical_ready {
 if [ "$1" = 'tactical-init' ]; then
 
   mkdir -p ${TACTICAL_DIR}/tmp
+  mkdir -p ${TACTICAL_DIR}/scripts/userdefined
 
   test -f "${TACTICAL_READY_FILE}" && rm "${TACTICAL_READY_FILE}"
 

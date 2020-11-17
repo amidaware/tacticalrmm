@@ -2,15 +2,26 @@
 
 set -e
 
-# check for certificates
+: "${CERT_PRIV_KEY:=none}"
+: "${CERT_PUB_KEY:=none}"
 
+CERT_PRIV_PATH=${TACTICAL_DIR}/certs/privkey.pem
+CERT_PUB_PATH=${TACTICAL_DIR}/certs/pubkey.pem
+
+mkdir -p "${TACTICAL_DIR}/certs"
+
+# check for certificates in env variable
+if [ ! CERT_PRIV_KEY = 'none' ] || [ CERT_PUB_KEY = 'none' ]; then
+    echo "${CERT_PRIV_KEY}" > ${CERT_PRIV_PATH}
+    echo "${CERT_PRIV_KEY}" > ${CERT_PUB_PATH}
+else
 # generate a self signed cert
-sudo mkdir -p /certs/${rootdomain}
-sudo openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /certs/${rootdomain}/pubkey.pem -keyout /certs/${rootdomain}/privkey.pem -subj "/C=US/ST=Some-State/L=city/O=Internet Widgits Pty Ltd/CN=*.${rootdomain}"
 
-CERT_PRIV_KEY=/certs/${rootdomain}/privkey.pem
-CERT_PUB_KEY=/certs/${rootdomain}/pubkey.pem
+  rootdomain=${cut -d "." -f 1,2 ${API_HOST}}
+  sudo openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out ${CERT_PUB_PATH} -keyout ${CERT_PRIV_PATH} -subj "/C=US/ST=Some-State/L=city/O=Internet Widgits Pty Ltd/CN=*.${rootdomain}"
+fi
 
+nginx_config="$(cat << EOF
 # backend config
 server  {
     resolver 127.0.0.11 valid=30s;
@@ -63,8 +74,8 @@ server  {
     client_max_body_size 300M;
 
     listen 443 ssl;
-    ssl_certificate ${CERT_PUB_KEY};
-    ssl_certificate_key ${CERT_PRIV_KEY};
+    ssl_certificate ${CERT_PUB_PATH};
+    ssl_certificate_key ${CERT_PRIV_PATH};
     ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
     
 }
@@ -104,8 +115,8 @@ server  {
     access_log /var/log/nginx/app-access.log;
 
     listen 443 ssl;
-    ssl_certificate ${CERT_PUB_KEY};
-    ssl_certificate_key ${CERT_PRIV_KEY};
+    ssl_certificate ${CERT_PUB_PATH};
+    ssl_certificate_key ${CERT_PRIV_PATH};
     ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
     
 }
@@ -117,7 +128,6 @@ server {
     return 301 https://$server_name$request_uri;
 }
 
-
 # meshcentral config
 server {
     resolver 127.0.0.11 valid=30s;
@@ -126,8 +136,8 @@ server {
     proxy_send_timeout 330s;
     proxy_read_timeout 330s;
     server_name ${MESH_HOST};
-    ssl_certificate ${CERT_PUB_KEY};
-    ssl_certificate_key ${CERT_PRIV_KEY};
+    ssl_certificate ${CERT_PUB_PATH};
+    ssl_certificate_key ${CERT_PRIV_PATH};
     ssl_session_cache shared:WEBSSL:10m;
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
@@ -157,3 +167,7 @@ server {
     server_name ${MESH_HOST};
     return 301 https://$server_name$request_uri;
 }
+EOF
+)"
+
+echo "${nginx_config}" > /tmp/nginx.conf

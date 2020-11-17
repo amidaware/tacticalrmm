@@ -7,7 +7,7 @@ export default function ({ router, store }) {
 
   axios.defaults.baseURL =
     process.env.NODE_ENV === "production"
-      ? process.env.PROD_API
+      ? window._env_.PROD_URL || process.env.PROD_API
       : process.env.DEV_API;
 
   axios.interceptors.request.use(

@@ -39,6 +39,7 @@ services:
     networks:
       - redis
 
+  # used to initialize the docker environment
   tactical-init:
     image: ${IMAGE_REPO}tactical:${VERSION}
     restart: on-failure
@@ -108,8 +109,9 @@ services:
   tactical-frontend:
     image: ${IMAGE_REPO}tactical-frontend:${VERSION}
     restart: always
+    networks:
+      - proxy
     environment:
-      - APP_HOST=${APP_HOST}
       - API_HOST=${API_HOST}
 
   # container for django backend
@@ -141,7 +143,6 @@ services:
       - "443:443"
     volumes:
       - tactical_data:/opt/tactical
-      - tactical_certs:/opt/tactical/certs
 
   # container for celery worker service
   tactical-celery:

@@ -4,10 +4,20 @@ WORKDIR /home/node/app
 
 COPY ./web/package.json .
 RUN npm install
+
 COPY ./web .
-RUN echo 'PROD_URL = "https://${API_HOST}"  DEV_URL = "https://${API_HOST}"' > /home/node/.env
+
+# modify index.html template to allow injection of js variables at runtime
+RUN sed -i '/<\/head>/i <script src="\/env-config.js"><\/script>' src/index.template.html
 RUN npm run build
 
 FROM nginx:stable
 
-COPY --from=builder /home/node/app/dist/ /usr/share/nginx/html
+ENV PUBLIC_DIR /usr/share/nginx/html
+
+COPY --from=builder /home/node/app/dist/ ${PUBLIC_DIR}
+
+COPY docker/containers/tactical-frontend/entrypoint.sh /
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

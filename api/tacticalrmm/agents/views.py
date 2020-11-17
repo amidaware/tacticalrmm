@@ -154,12 +154,9 @@ def agent_detail(request, pk):
 @api_view()
 def get_processes(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(timeout=20, func="win_agent.get_procs")
-
+    r = asyncio.run(agent.nats_cmd(data={"func": "procs"}, timeout=5))
     if r == "timeout":
         return notify_error("Unable to contact the agent")
-    elif r == "error":
-        return notify_error("Something went wrong")
 
     return Response(r)
 
@@ -183,16 +180,19 @@ def kill_proc(request, pk, pid):
 @api_view()
 def get_event_log(request, pk, logtype, days):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(
-        timeout=30,
-        func="win_agent.get_eventlog",
-        arg=[logtype, int(days)],
-    )
-
-    if r == "timeout" or r == "error":
+    data = {
+        "func": "eventlog",
+        "timeout": 30,
+        "payload": {
+            "logname": logtype,
+            "days": str(days),
+        },
+    }
+    r = asyncio.run(agent.nats_cmd(data, timeout=32))
+    if r == "timeout":
         return notify_error("Unable to contact the agent")
 
-    return Response(json.loads(zlib.decompress(base64.b64decode(r["wineventlog"]))))
+    return Response(r)
 
 
 @api_view(["POST"])
@@ -217,13 +217,16 @@ def power_action(request):
 @api_view(["POST"])
 def send_raw_cmd(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
-
+    timeout = int(request.data["timeout"])
     data = {
-        "cmd": "rawcmd",
-        "command": request.data["cmd"],
-        "shell": request.data["shell"],
+        "func": "rawcmd",
+        "timeout": timeout,
+        "payload": {
+            "command": request.data["cmd"],
+            "shell": request.data["shell"],
+        },
     }
-    r = asyncio.run(agent.nats_cmd(data, timeout=request.data["timeout"]))
+    r = asyncio.run(agent.nats_cmd(data, timeout=timeout + 2))
 
     if r == "timeout":
         return notify_error("Unable to contact the agent")

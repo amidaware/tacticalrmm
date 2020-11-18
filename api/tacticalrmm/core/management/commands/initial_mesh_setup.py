@@ -50,26 +50,26 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         self.mesh_settings = CoreSettings.objects.first()
 
-        # set mesh token if not set
-        if not self.mesh_settings.mesh_token and not hasattr(
-            settings, "MESH_TOKEN_KEY"
-        ):
-            filepath = "/opt/tactical/tmp/mesh_token"
+        try:
+        # Check for Mesh Username
+            if not self.mesh_settings.mesh_username and settings.MESH_USERNAME:
+                self.mesh_settings.mesh_username = settings.MESH_USERNAME
 
-            try:
-                with open(filepath, "r") as read_file:
-                    key = read_file.readlines()
+        # Check for Mesh Site
+            if not self.mesh_settings.mesh_site and settings.MESH_SITE:
+                self.mesh_settings.mesh_site = settings.MESH_SITE
 
-                    # Remove key file contents for security reasons
-                    with open(filepath, "w") as write_file:
-                        write_file.write("")
+        # Check for Mesh Token
+            if not self.mesh_settings.mesh_token and settings.MESH_TOKEN_KEY:
+                self.mesh_settings.mesh_token = settings.MESH_TOKEN_KEY
 
-                    # readlines() returns an array. Get first item
-                    self.mesh_settings.mesh_token = key[0].rstrip()
-                    self.mesh_settings.save()
-            except:
-                self.stdout.write("Mesh Central key wasn't found")
-                return
+        except AttributeError:
+            pass
 
-        asyncio.get_event_loop().run_until_complete(self.websocket_call())
-        self.stdout.write("Initial Mesh Central setup complete")
+        if self.mesh_settings.mesh_token:
+            asyncio.get_event_loop().run_until_complete(self.websocket_call())
+            self.stdout.write("Initial Mesh Central setup complete")
+        else:
+            self.stdout.write(
+                "Mesh Setup was skipped being the token wasn't set. Set it up manually."
+            )

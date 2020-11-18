@@ -18,7 +18,10 @@ TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
 
 class CoreSettings(BaseAuditModel):
     email_alert_recipients = ArrayField(
-        models.EmailField(null=True, blank=True), null=True, blank=True, default=list,
+        models.EmailField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
     )
     sms_alert_recipients = ArrayField(
         models.CharField(max_length=255, null=True, blank=True),
@@ -68,17 +71,6 @@ class CoreSettings(BaseAuditModel):
     def save(self, *args, **kwargs):
         if not self.pk and CoreSettings.objects.exists():
             raise ValidationError("There can only be one CoreSettings instance")
-
-        # Only runs on first create
-        if not self.pk:
-            mesh_settings = self.get_initial_mesh_settings()
-
-            if "mesh_token" in mesh_settings:
-                self.mesh_token = mesh_settings["mesh_token"]
-            if "mesh_username" in mesh_settings:
-                self.mesh_username = mesh_settings["mesh_username"]
-            if "mesh_site" in mesh_settings:
-                self.mesh_site = mesh_settings["mesh_site"]
 
         return super(CoreSettings, self).save(*args, **kwargs)
 
@@ -164,39 +156,6 @@ class CoreSettings(BaseAuditModel):
                 tw_client.messages.create(body=body, to=num, from_=self.twilio_number)
             except Exception as e:
                 logger.error(f"SMS failed to send: {e}")
-
-    def get_initial_mesh_settings(self):
-
-        mesh_settings = {}
-
-        # Check for Mesh Username
-        try:
-            if settings.MESH_USERNAME:
-                mesh_settings["mesh_username"] = settings.MESH_USERNAME
-            else:
-                raise AttributeError("MESH_USERNAME doesn't exist")
-        except AttributeError:
-            pass
-
-        # Check for Mesh Site
-        try:
-            if settings.MESH_SITE:
-                mesh_settings["mesh_site"] = settings.MESH_SITE
-            else:
-                raise AttributeError("MESH_SITE doesn't exist")
-        except AttributeError:
-            pass
-
-        # Check for Mesh Token
-        try:
-            if settings.MESH_TOKEN_KEY:
-                mesh_settings["mesh_token"] = settings.MESH_TOKEN_KEY
-            else:
-                raise AttributeError("MESH_SITE doesn't exist")
-        except AttributeError:
-            pass
-
-        return mesh_settings
 
     @staticmethod
     def serialize(core):

@@ -5,10 +5,10 @@ set -e
 : "${SALT_USER:=saltapi}"
 : "${SALT_USER:=saltpass}"
 
-# create salt user
-useradd -M -s /bin/bash -u 1000 "${SALT_USER}"
+# create sal user
+groupadd -g 1000 "${SALT_USER}" 
+useradd -M -d "/opt/tactical" -s /bin/bash -u 1000 -g 1000 "${SALT_USER}"
 echo "${SALT_USER}:${SALT_PASS}" | chpasswd
-
 
 cherrypy_config="$(cat << EOF
 module_dirs: ["/opt/tactical/_modules"]

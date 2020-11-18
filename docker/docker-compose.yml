@@ -15,7 +15,6 @@ networks:
 # docker managed persistent volumes
 volumes:
   tactical_data:
-  tactical_certs:
   salt_data:
   postgres_data:
   mongo_data:
@@ -51,6 +50,8 @@ services:
       APP_HOST: ${APP_HOST}
       API_HOST: ${API_HOST}
       MESH_HOST: ${MESH_HOST}
+      TRMM_USER: ${TRMM_USER}
+      TRMM_PASS: ${TRMM_PASS}
     depends_on:
       - tactical-postgres
       - tactical-meshcentral    
@@ -112,7 +113,7 @@ services:
     networks:
       - proxy
     environment:
-      - API_HOST=${API_HOST}
+      API_HOST: ${API_HOST}
 
   # container for django backend
   tactical-backend:
@@ -132,9 +133,9 @@ services:
     image: ${IMAGE_REPO}tactical-nginx:${VERSION}
     restart: always
     environment:
-      - APP_HOST=${APP_HOST}
-      - API_HOST=${API_HOST}
-      - MESH_HOST=${MESH_HOST}
+      APP_HOST: ${APP_HOST}
+      API_HOST: ${API_HOST}
+      MESH_HOST: ${MESH_HOST}
     networks:
       proxy:
         ipv4_address: 172.20.0.20

@@ -1,5 +1,7 @@
 FROM ubuntu:20.04
 
+ENV TACTICAL_DIR /opt/tactical
+
 RUN apt-get update && \
     apt-get install -y ca-certificates wget gnupg2 tzdata supervisor && \
     wget -O - https://repo.saltstack.com/py3/ubuntu/20.04/amd64/latest/SALTSTACK-GPG-KEY.pub | apt-key add - && \

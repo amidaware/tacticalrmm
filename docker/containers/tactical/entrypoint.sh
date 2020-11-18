@@ -2,6 +2,8 @@
 
 set -e
 
+: "${TRMM_USER:=tactical}"
+: "${TRMM_PASS:=tactical}"
 : "${POSTGRES_HOST:=tactical-postgres}"
 : "${POSTGRES_PORT:=5432}"
 : "${POSTGRES_USER:=tactical}"
@@ -18,8 +20,6 @@ set -e
 : "${APP_HOST:=tactical-frontend}"
 : "${REDIS_HOST:=tactical-redis}"
 
-
-source ${TACTICAL_DIR}/api/env/bin/activate
 
 function check_tactical_ready {
   sleep 15
@@ -42,7 +42,14 @@ if [ "$1" = 'tactical-init' ]; then
     sleep 5
   done
 
+  # check mesh setup and wait for mesh token
+  until [ -f "${TACTICAL_DIR}/tmp/mesh_token" ]; do
+    echo "waiting for mesh token to be generated..."
+    sleep 10
+  done
+
   # configure django settings
+  MESH_TOKEN=$(cat ${TACTICAL_DIR}/tmp/mesh_token)
   DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
   SALT_PASS=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
   ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
@@ -96,18 +103,13 @@ SALT_PASSWORD = '${SALT_PASS}'
 SALT_HOST     = '${SALT_HOST}'
 MESH_USERNAME = '${MESH_USER}'
 MESH_SITE = 'https://${MESH_HOST}'
+MESH_TOKEN_KEY = '${MESH_TOKEN_KEY}'
 REDIS_HOST    = '${REDIS_HOST}'
 MESH_WS_URL = 'ws://${MESH_CONTAINER}:443'
 EOF
 )"
 
   echo "${localvars}" > ${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
-
-  # check mesh setup and wait for mesh token
-  until [ -f "${TACTICAL_DIR}/tmp/mesh_token" ]; do
-    echo "waiting for mesh token to be generated..."
-    sleep 10
-  done
 
   # run migrations and init scripts
   python manage.py migrate --no-input
@@ -116,6 +118,9 @@ EOF
   python manage.py initial_mesh_setup
   python manage.py load_chocos
   python manage.py load_community_scripts
+
+  # create super user
+  echo "from django.contrib.auth.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}')" | python manage.py shell
 
   # chown everything to tactical user
   chown -R "${TACTICAL_USER}":"${TACTICAL_USER}" "${TACTICAL_DIR}"
@@ -130,6 +135,7 @@ if [ "$1" = 'tactical-backend' ]; then
   check_tactical_ready
 
   # Prepare log files and start outputting logs to stdout
+  mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/logs
   touch ${TACTICAL_DIR}/api/tacticalrmm/logs/gunicorn.log
   touch ${TACTICAL_DIR}/api/tacticalrmm/logs/gunicorn-access.log
   tail -n 0 -f ${TACTICAL_DIR}/api/tacticalrmm/logs/gunicorn*.log &
@@ -147,14 +153,17 @@ if [ "$1" = 'tactical-backend' ]; then
 fi
 
 if [ "$1" = 'tactical-celery' ]; then
+  check_tactical_ready
   test -f "${TACTICAL_DIR}/api/celerybeat.pid" && rm "${TACTICAL_DIR}/api/celerybeat.pid"
   celery -A tacticalrmm worker
 fi
 
 if [ "$1" = 'tactical-beat' ]; then
+  check_tactical_ready
   celery -A tacticalrmm beat
 fi
 
 if [ "$1" = 'tactical-celerywinupdate' ]; then
+  check_tactical_ready
   celery -A tacticalrmm worker -Q wupdate
 fi

@@ -4,49 +4,34 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_DATE
 
 ENV TACTICAL_DIR /opt/tactical
-ENV TACTICAL_TMP_DIR /tmp/tacticalrmm/
+ENV TACTICAL_GO_DIR /usr/local/rmmgo
 ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
 ENV TACTICAL_USER tactical
+ENV PATH ${TACTICAL_DIR}/api/env/bin:$PATH
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
-# install tactical reqs
-COPY api/tacticalrmm/requirements.txt ${TACTICAL_TMP_DIR}
+# copy files from repo
+COPY api/tacticalrmm ${TACTICAL_DIR}/api
+COPY scripts ${TACTICAL_DIR}/scripts
+COPY _modules ${TACTICAL_DIR}/_modules
+COPY api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/goversioninfo
 
+# install deps
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends wget ca-certificates gcc libc6-dev && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --upgrade pip && \
-    mkdir -p ${TACTICAL_DIR}/api && \
     pip install --no-cache-dir virtualenv && python -m virtualenv ${TACTICAL_DIR}/api/env && \
     ${TACTICAL_DIR}/api/env/bin/pip install --no-cache-dir setuptools wheel gunicorn && \
-    ${TACTICAL_DIR}/api/env/bin/pip install --no-cache-dir -r ${TACTICAL_TMP_DIR}/requirements.txt && \
+    ${TACTICAL_DIR}/api/env/bin/pip install --no-cache-dir -r ${TACTICAL_DIR}/api/requirements.txt && \
     wget https://golang.org/dl/go1.15.linux-amd64.tar.gz -P /tmp && \
-    tar -xzf /tmp/go1.15.linux-amd64.tar.gz -C /tmp
-
-
-FROM python:3.8-slim
-
-ARG DEBIAN_FRONTEND=noninteractive
-ARG BUILD_DATE
-
-ENV TACTICAL_DIR /opt/tactical
-ENV TACTICAL_TMP_DIR /tmp/tacticalrmm
-ENV TACTICAL_GO_DIR /usr/local/rmmgo
-ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
-ENV TACTICAL_USER tactical
-
-# create tactical user
-RUN groupadd -g 1000 "${TACTICAL_USER}" && \
+    mkdir -p ${TACTICAL_GO_DIR}/go && \
+    tar -xzf /tmp/go1.15.linux-amd64.tar.gz -C ${TACTICAL_GO_DIR}/go && \
+    rm -f /tmp/go1.15.linux-amd64.tar.gz && \
+    groupadd -g 1000 "${TACTICAL_USER}" && \
     useradd -M -d "${TACTICAL_DIR}" -s /bin/bash -u 1000 -g 1000 "${TACTICAL_USER}"
-
-# copy files from repo and 1st build step
-COPY api/tacticalrmm ${TACTICAL_DIR}/api
-COPY scripts ${TACTICAL_DIR}/scripts
-COPY _modules ${TACTICAL_DIR}/_modules
-COPY api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/goversioninfo
-COPY --from=builder /tmp/go ${TACTICAL_GO_DIR}/go
 
 # docker init
 COPY docker/containers/tactical/entrypoint.sh /

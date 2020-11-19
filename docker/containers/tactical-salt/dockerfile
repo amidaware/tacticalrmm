@@ -1,6 +1,7 @@
 FROM ubuntu:20.04
 
 ENV TACTICAL_DIR /opt/tactical
+ENV SALT_USER salt-api
 
 RUN apt-get update && \
     apt-get install -y ca-certificates wget gnupg2 tzdata supervisor && \
@@ -9,7 +10,9 @@ RUN apt-get update && \
     apt-get update && \
     apt-get install -y salt-master salt-api && \
     mkdir -p /var/log/supervisor && \
-    sed -i 's/msgpack_kwargs = {"raw": six.PY2}/msgpack_kwargs = {"raw": six.PY2, "max_buffer_size": 2147483647}/g' /usr/lib/python3/dist-packages/salt/transport/ipc.py
+    sed -i 's/msgpack_kwargs = {"raw": six.PY2}/msgpack_kwargs = {"raw": six.PY2, "max_buffer_size": 2147483647}/g' /usr/lib/python3/dist-packages/salt/transport/ipc.py && \
+    groupadd -g 1000 "${SALT_USER}" && \
+    useradd -M -d "/opt/tactical" -s /bin/bash -u 1000 -g 1000 "${SALT_USER}"
 
 EXPOSE 8123 4505 4506
 

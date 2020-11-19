@@ -1,20 +1,20 @@
-FROM python:3.8-slim AS builder
+FROM python:3.8-slim
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_DATE
 
 ENV TACTICAL_DIR /opt/tactical
+ENV TACTICAL_TMP_DIR /tmp/tactical
 ENV TACTICAL_GO_DIR /usr/local/rmmgo
 ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
 ENV TACTICAL_USER tactical
-ENV PATH ${TACTICAL_DIR}/api/env/bin:$PATH
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
 # copy files from repo
-COPY api/tacticalrmm ${TACTICAL_DIR}/api
-COPY scripts ${TACTICAL_DIR}/scripts
-COPY _modules ${TACTICAL_DIR}/_modules
+COPY api/tacticalrmm ${TACTICAL_TMP_DIR}/api
+COPY scripts ${TACTICAL_TMP_DIR}/scripts
+COPY _modules ${TACTICAL_TMP_DIR}/_modules
 COPY api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/goversioninfo
 
 # install deps
@@ -23,9 +23,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends wget ca-certificates gcc libc6-dev && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --upgrade pip && \
-    pip install --no-cache-dir virtualenv && python -m virtualenv ${TACTICAL_DIR}/api/env && \
-    ${TACTICAL_DIR}/api/env/bin/pip install --no-cache-dir setuptools wheel gunicorn && \
-    ${TACTICAL_DIR}/api/env/bin/pip install --no-cache-dir -r ${TACTICAL_DIR}/api/requirements.txt && \
+    pip install --no-cache-dir setuptools wheel gunicorn && \
+    pip install --no-cache-dir -r ${TACTICAL_TMP_DIR}/api/requirements.txt && \
     wget https://golang.org/dl/go1.15.linux-amd64.tar.gz -P /tmp && \
     mkdir -p ${TACTICAL_GO_DIR}/go && \
     tar -xzf /tmp/go1.15.linux-amd64.tar.gz -C ${TACTICAL_GO_DIR}/go && \

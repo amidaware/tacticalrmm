@@ -58,8 +58,7 @@ echo "${mesh_config}" > /home/node/app/meshcentral-data/config.json
 node node_modules/meshcentral --createaccount ${MESH_USER} --pass ${MESH_PASS} --email example@example.com
 node node_modules/meshcentral --adminaccount ${MESH_USER}
 
-FILE=${TACTICAL_DIR}/mesh_token
-if [ ! -f "$FILE" ]; then
+if [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ]; then
     node node_modules/meshcentral --logintokenkey > ${TACTICAL_DIR}/tmp/mesh_token
 fi
 

@@ -44,7 +44,6 @@ services:
     restart: on-failure
     command: ["tactical-init"]
     environment:
-      SALT_PASS: ${SALT_PASS}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASS: ${POSTGRES_PASS}
       APP_HOST: ${APP_HOST}
@@ -65,8 +64,6 @@ services:
   tactical-salt:
     image: ${IMAGE_REPO}tactical-salt:${VERSION}
     restart: always
-    environment: 
-      SALT_PASS: ${SALT_PASS}
     ports:
       - "4505:4505"
       - "4506:4506"

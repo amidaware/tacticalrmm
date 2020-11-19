@@ -11,7 +11,6 @@ set -e
 : "${POSTGRES_DB:=tacticalrmm}"
 : "${SALT_HOST:=tactical-salt}"
 : "${SALT_USER:=saltapi}"
-: "${SALT_PASS:=saltpass}"
 : "${MESH_CONTAINER:=tactical-meshcentral}"
 : "${MESH_USER:=meshcentral}"
 : "${MESH_PASS:=meshcentralpass}"
@@ -37,6 +36,9 @@ if [ "$1" = 'tactical-init' ]; then
 
   test -f "${TACTICAL_READY_FILE}" && rm "${TACTICAL_READY_FILE}"
 
+  # copy container data to volume
+  cp -af ${TACTICAL_TMP_DIR}/. ${TACTICAL_DIR}/
+
   until (echo > /dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &> /dev/null; do
     echo "waiting for postgresql server to be ready..."
     sleep 5
@@ -51,8 +53,15 @@ if [ "$1" = 'tactical-init' ]; then
   # configure django settings
   MESH_TOKEN=$(cat ${TACTICAL_DIR}/tmp/mesh_token)
   DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
-  SALT_PASS=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
   ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
+
+  # write salt pass to tmp dir
+  if [ ! -f "${TACTICAL__DIR}/tmp/salt_pass" ]; then
+    SALT_PASS=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1) 
+    echo "${SALT_PASS}" > ${TACTICAL_DIR}/tmp/salt_pass
+  else
+    SALT_PASS=$(cat ${TACTICAL_DIR}/tmp/salt_pass)
+  fi
   
   localvars="$(cat << EOF
 SECRET_KEY = '${DJANGO_SEKRET}'
@@ -103,7 +112,7 @@ SALT_PASSWORD = '${SALT_PASS}'
 SALT_HOST     = '${SALT_HOST}'
 MESH_USERNAME = '${MESH_USER}'
 MESH_SITE = 'https://${MESH_HOST}'
-MESH_TOKEN_KEY = '${MESH_TOKEN_KEY}'
+MESH_TOKEN_KEY = '${MESH_TOKEN}'
 REDIS_HOST    = '${REDIS_HOST}'
 MESH_WS_URL = 'ws://${MESH_CONTAINER}:443'
 EOF
@@ -119,8 +128,8 @@ EOF
   python manage.py load_chocos
   python manage.py load_community_scripts
 
-  # create super user
-  echo "from django.contrib.auth.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}')" | python manage.py shell
+  # create super user 
+  echo "from accounts.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else 0;" | python manage.py shell
 
   # chown everything to tactical user
   chown -R "${TACTICAL_USER}":"${TACTICAL_USER}" "${TACTICAL_DIR}"
@@ -140,7 +149,7 @@ if [ "$1" = 'tactical-backend' ]; then
   touch ${TACTICAL_DIR}/api/tacticalrmm/logs/gunicorn-access.log
   tail -n 0 -f ${TACTICAL_DIR}/api/tacticalrmm/logs/gunicorn*.log &
 
-  export DJANGO_SETTINGS_MODULE=tactical.settings
+  export DJANGO_SETTINGS_MODULE=tacticalrmm.settings
 
   exec gunicorn tacticalrmm.wsgi:application \
     --name tactical-backend \
@@ -154,12 +163,12 @@ fi
 
 if [ "$1" = 'tactical-celery' ]; then
   check_tactical_ready
-  test -f "${TACTICAL_DIR}/api/celerybeat.pid" && rm "${TACTICAL_DIR}/api/celerybeat.pid"
   celery -A tacticalrmm worker
 fi
 
-if [ "$1" = 'tactical-beat' ]; then
+if [ "$1" = 'tactical-celerybeat' ]; then
   check_tactical_ready
+  test -f "${TACTICAL_DIR}/api/celerybeat.pid" && rm "${TACTICAL_DIR}/api/celerybeat.pid"
   celery -A tacticalrmm beat
 fi
 

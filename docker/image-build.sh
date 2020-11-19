@@ -5,7 +5,7 @@
 set -o errexit
 set -o pipefail
 
-DOCKER_IMAGES="tactical tactical-meshcentral tactical-frontend tactical-nginx tactical-salt"
+DOCKER_IMAGES="tactical tactical-nginx tactical-meshcentral tactical-salt tactical-frontend"
 
 cd ..
 

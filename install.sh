@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="17"
+SCRIPT_VERSION="18"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 GREEN='\033[0;32m'
@@ -213,7 +213,7 @@ print_green 'Installing MeshCentral'
 sudo mkdir -p /meshcentral/meshcentral-data
 sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
-npm install meshcentral@0.6.62
+npm install meshcentral@0.6.84
 sudo chown ${USER}:${USER} -R /meshcentral
 
 meshcfg="$(cat << EOF
@@ -397,7 +397,7 @@ echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
 rmmservice="$(cat << EOF
 [Unit]
 Description=tacticalrmm uwsgi daemon
-After=network.target
+After=network.target postgresql.service
 
 [Service]
 User=${USER}
@@ -566,8 +566,7 @@ sudo mkdir /etc/conf.d
 celeryservice="$(cat << EOF
 [Unit]
 Description=Celery Service
-After=network.target
-After=redis-server.service
+After=network.target redis-server.service postgresql.service
 
 [Service]
 Type=forking
@@ -611,8 +610,7 @@ echo "${celeryconf}" | sudo tee /etc/conf.d/celery.conf > /dev/null
 celerywinupdatesvc="$(cat << EOF
 [Unit]
 Description=Celery WinUpdate Service
-After=network.target
-After=redis-server.service
+After=network.target redis-server.service postgresql.service
 
 [Service]
 Type=forking
@@ -651,8 +649,7 @@ echo "${celerywinupdate}" | sudo tee /etc/conf.d/celery-winupdate.conf > /dev/nu
 celerybeatservice="$(cat << EOF
 [Unit]
 Description=Celery Beat Service
-After=network.target
-After=redis-server.service
+After=network.target redis-server.service postgresql.service
 
 [Service]
 Type=simple

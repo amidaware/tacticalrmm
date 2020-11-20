@@ -22,7 +22,7 @@
                   <div class="col-2">Client:</div>
                   <div class="col-2"></div>
                   <q-select
-                    @input="agent.site = site_options[0]"
+                    @input="agent.site = site_options[0].value"
                     dense
                     options-dense
                     outlined
@@ -195,8 +195,6 @@ export default {
       if (this.timezone !== this.original_tz) {
         this.agent.time_zone = this.timezone;
       }
-
-      this.agent.site = this.agent.site.value;
 
       this.$axios
         .patch("/agents/editagent/", this.agent)

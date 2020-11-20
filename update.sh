@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="94"
+SCRIPT_VERSION="95"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -50,12 +50,14 @@ fi
 LATEST_MESH_VER=$(grep "^MESH_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 LATEST_PIP_VER=$(grep "^PIP_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 LATEST_NPM_VER=$(grep "^NPM_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
+LATEST_SALT_VER=$(grep "^SALT_MASTER_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 
 CURRENT_PIP_VER=$(grep "^PIP_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 CURRENT_NPM_VER=$(grep "^NPM_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
 for i in nginx rmm celery celerybeat celery-winupdate
 do
+printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}
 done
 
@@ -66,50 +68,22 @@ git reset --hard FETCH_HEAD
 git clean -df
 git pull
 
-# added new celery queue 9-7-2020
-if [ ! -f /etc/systemd/system/celery-winupdate.service ]; then
-celerywinupdatesvc="$(cat << EOF
-[Unit]
-Description=Celery WinUpdate Service
-After=network.target
-After=redis-server.service
-
-[Service]
-Type=forking
-User=${USER}
-Group=${USER}
-EnvironmentFile=/etc/conf.d/celery-winupdate.conf
-WorkingDirectory=/rmm/api/tacticalrmm
-ExecStart=/bin/sh -c '\${CELERY_BIN} multi start \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
-ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \${CELERYD_NODES} --pidfile=\${CELERYD_PID_FILE}'
-ExecReload=/bin/sh -c '\${CELERY_BIN} multi restart \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
-Restart=always
-RestartSec=10s
-
-[Install]
-WantedBy=multi-user.target
-EOF
-)"
-echo "${celerywinupdatesvc}" | sudo tee /etc/systemd/system/celery-winupdate.service > /dev/null
-
-celerywinupdate="$(cat << EOF
-CELERYD_NODES="w2"
-
-CELERY_BIN="/rmm/api/env/bin/celery"
-CELERY_APP="tacticalrmm"
-CELERYD_MULTI="multi"
-
-CELERYD_OPTS="--time-limit=4000 --autoscale=40,1"
-
-CELERYD_PID_FILE="/rmm/api/tacticalrmm/%n.pid"
-CELERYD_LOG_FILE="/var/log/celery/%n%I.log"
-CELERYD_LOG_LEVEL="ERROR"
-EOF
-)"
-echo "${celerywinupdate}" | sudo tee /etc/conf.d/celery-winupdate.conf > /dev/null
-
-sudo systemctl daemon-reload
-sudo systemctl enable celery-winupdate
+CHECK_SALT=$(sudo salt --version | grep ${LATEST_SALT_VER})
+if ! [[ $CHECK_SALT ]]; then
+  printf >&2 "${GREEN}Updating salt${NC}\n"
+  sudo apt update
+  sudo apt install -y salt-master salt-api salt-common
+  printf >&2 "${GREEN}Waiting for salt...${NC}\n"
+  sleep 15
+  sudo systemctl stop salt-master
+  sudo systemctl stop salt-api
+  printf >&2 "${GREEN}Fixing msgpack${NC}\n"
+  sudo sed -i 's/msgpack_kwargs = {"raw": six.PY2}/msgpack_kwargs = {"raw": six.PY2, "max_buffer_size": 2147483647}/g' /usr/lib/python3/dist-packages/salt/transport/ipc.py
+  sudo systemctl start salt-master
+  printf >&2 "${GREEN}Waiting for salt...${NC}\n"
+  sleep 15
+  sudo systemctl start salt-api
+  printf >&2 "${GREEN}Salt update finished${NC}\n"
 fi
 
 sudo chown ${USER}:${USER} -R /rmm
@@ -165,6 +139,7 @@ sudo chown www-data:www-data -R /var/www/rmm/dist
 
 for i in celery celerybeat celery-winupdate rmm nginx
 do
+printf >&2 "${GREEN}Starting ${i} service${NC}\n"
 sudo systemctl start ${i}
 done
 

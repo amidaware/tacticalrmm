@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from datetime import timedelta
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -171,6 +172,7 @@ if "TRAVIS" in os.environ:
 
     ADMIN_URL = "abc123456/"
 
+    SCRIPTS_DIR = os.path.join(Path(BASE_DIR).parents[1], "scripts")
     SALT_USERNAME = "travis"
     SALT_PASSWORD = "travis"
     MESH_USERNAME = "travis"
@@ -203,6 +205,7 @@ if "AZPIPELINE" in os.environ:
 
     ADMIN_URL = "abc123456/"
 
+    SCRIPTS_DIR = os.path.join(Path(BASE_DIR).parents[1], "scripts")
     SALT_USERNAME = "pipeline"
     SALT_PASSWORD = "pipeline"
     MESH_USERNAME = "pipeline"

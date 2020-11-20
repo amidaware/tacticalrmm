@@ -7,6 +7,7 @@ from tacticalrmm.middleware import get_username, get_debug_info
 ACTION_TYPE_CHOICES = [
     ("schedreboot", "Scheduled Reboot"),
     ("taskaction", "Scheduled Task Action"),
+    ("agentupdate", "Agent Update"),
 ]
 
 AUDIT_ACTION_TYPE_CHOICES = [
@@ -248,13 +249,16 @@ class PendingAction(models.Model):
             obj = dt.datetime.strptime(self.details["time"], "%Y-%m-%d %H:%M:%S")
             return dt.datetime.strftime(obj, "%B %d, %Y at %I:%M %p")
 
-        elif self.action_type == "taskaction":
+        elif self.action_type == "taskaction" or self.action_type == "agentupdate":
             return "Next agent check-in"
 
     @property
     def description(self):
         if self.action_type == "schedreboot":
             return "Device pending reboot"
+
+        elif self.action_type == "agentupdate":
+            return f"Agent update to {self.details['version']}"
 
         elif self.action_type == "taskaction":
             if self.details["action"] == "taskdelete":

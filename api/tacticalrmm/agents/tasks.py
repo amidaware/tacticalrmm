@@ -11,6 +11,7 @@ from django.conf import settings
 from tacticalrmm.celery import app
 from agents.models import Agent, AgentOutage
 from core.models import CoreSettings
+from logs.models import PendingAction
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -53,14 +54,32 @@ def send_agent_update_task(pks, version):
             logger.info(
                 f"Updating {agent.salt_id} current version {agent.version} using {inno}"
             )
-            r = agent.salt_api_async(
-                func="win_agent.do_agent_update_v2",
-                kwargs={
-                    "inno": inno,
-                    "url": url,
-                },
-            )
-            logger.info(f"{agent.salt_id}: {r}")
+
+            if pyver.parse(agent.version) >= pyver.parse("1.1.0"):
+                if agent.pendingactions.filter(
+                    action_type="agentupdate", status="pending"
+                ).exists():
+                    continue
+
+                PendingAction.objects.create(
+                    agent=agent,
+                    action_type="agentupdate",
+                    details={
+                        "url": agent.winagent_dl,
+                        "version": settings.LATEST_AGENT_VER,
+                        "inno": agent.win_inno_exe,
+                    },
+                )
+            # TODO
+            # Salt is deprecated, remove this once salt is gone
+            else:
+                r = agent.salt_api_async(
+                    func="win_agent.do_agent_update_v2",
+                    kwargs={
+                        "inno": inno,
+                        "url": url,
+                    },
+                )
         sleep(10)
 
 
@@ -107,14 +126,32 @@ def auto_self_agent_update_task():
             logger.info(
                 f"Updating {agent.salt_id} current version {agent.version} using {inno}"
             )
-            r = agent.salt_api_async(
-                func="win_agent.do_agent_update_v2",
-                kwargs={
-                    "inno": inno,
-                    "url": url,
-                },
-            )
-            logger.info(f"{agent.salt_id}: {r}")
+
+            if pyver.parse(agent.version) >= pyver.parse("1.1.0"):
+                if agent.pendingactions.filter(
+                    action_type="agentupdate", status="pending"
+                ).exists():
+                    continue
+
+                PendingAction.objects.create(
+                    agent=agent,
+                    action_type="agentupdate",
+                    details={
+                        "url": agent.winagent_dl,
+                        "version": settings.LATEST_AGENT_VER,
+                        "inno": agent.win_inno_exe,
+                    },
+                )
+            # TODO
+            # Salt is deprecated, remove this once salt is gone
+            else:
+                r = agent.salt_api_async(
+                    func="win_agent.do_agent_update_v2",
+                    kwargs={
+                        "inno": inno,
+                        "url": url,
+                    },
+                )
         sleep(10)
 
 

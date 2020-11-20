@@ -97,6 +97,17 @@ class Hello(APIView):
             recovery.save(update_fields=["last_run"])
             return Response(recovery.send())
 
+        # handle agent update
+        if agent.pendingactions.filter(
+            action_type="agentupdate", status="pending"
+        ).exists():
+            update = agent.pendingactions.filter(
+                action_type="agentupdate", status="pending"
+            ).last()
+            update.status = "completed"
+            update.save(update_fields=["status"])
+            return Response(update.details)
+
         # get any pending actions
         if agent.pendingactions.filter(status="pending").exists():
             agent.handle_pending_actions()

@@ -139,6 +139,8 @@ services:
       APP_HOST: ${APP_HOST}
       API_HOST: ${API_HOST}
       MESH_HOST: ${MESH_HOST}
+      CERT_PUB_KEY: ${CERT_PUB_KEY}
+      CERT_PRIV_KEY: ${CERT_PRIV_KEY}
     networks:
       proxy:
         ipv4_address: 172.20.0.20

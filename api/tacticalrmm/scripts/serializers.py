@@ -1,5 +1,6 @@
 import os
 
+from django.conf import settings
 from rest_framework.serializers import ModelSerializer, ValidationError, ReadOnlyField
 from .models import Script
 
@@ -27,7 +28,7 @@ class ScriptSerializer(ModelSerializer):
             # but only if adding, not if editing since will overwrite if edit
             if not self.instance:
                 script_path = os.path.join(
-                    "/srv/salt/scripts/userdefined", val["filename"]
+                    f"{settings.SCRIPTS_DIR}/userdefined", val["filename"]
                 )
                 if os.path.exists(script_path):
                     raise ValidationError(

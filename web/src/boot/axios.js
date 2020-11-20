@@ -5,10 +5,9 @@ export default function ({ router, store }) {
 
   Vue.prototype.$axios = axios;
 
-  axios.defaults.baseURL =
-    process.env.NODE_ENV === "production"
-      ? process.env.PROD_API
-      : process.env.DEV_API;
+  axios.defaults.baseURL = process.env.NODE_ENV === "production"
+    ? window._env_.PROD_URL || process.env.PROD_API
+    : process.env.DEV_API;
 
   axios.interceptors.request.use(
     function (config) {

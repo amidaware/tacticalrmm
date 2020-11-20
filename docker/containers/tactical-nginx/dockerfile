@@ -1,0 +1,8 @@
+FROM nginx:stable
+
+ENV TACTICAL_DIR /opt/tactical
+
+COPY docker/containers/tactical-nginx/entrypoint.sh /docker-entrypoint.d/
+RUN chmod +x /docker-entrypoint.d/entrypoint.sh
+
+EXPOSE 443 80

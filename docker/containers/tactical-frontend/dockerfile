@@ -1,0 +1,23 @@
+FROM node:12-alpine AS builder
+
+WORKDIR /home/node/app
+
+COPY ./web/package.json .
+RUN npm install
+
+COPY ./web .
+
+# modify index.html template to allow injection of js variables at runtime
+RUN sed -i '/<\/head>/i <script src="\/env-config.js"><\/script>' src/index.template.html
+RUN npm run build
+
+FROM nginx:stable
+
+ENV PUBLIC_DIR /usr/share/nginx/html
+
+COPY --from=builder /home/node/app/dist/ ${PUBLIC_DIR}
+
+COPY docker/containers/tactical-frontend/entrypoint.sh /docker-entrypoint.d/
+RUN chmod +x /docker-entrypoint.d/entrypoint.sh
+
+EXPOSE 80

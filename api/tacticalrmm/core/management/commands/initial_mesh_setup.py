@@ -49,5 +49,35 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         self.mesh_settings = CoreSettings.objects.first()
-        asyncio.get_event_loop().run_until_complete(self.websocket_call())
-        self.stdout.write("Initial Mesh Central setup complete")
+
+        try:
+            # Check for Mesh Username
+            if not self.mesh_settings.mesh_username and settings.MESH_USERNAME:
+                self.mesh_settings.mesh_username = settings.MESH_USERNAME
+
+            # Check for Mesh Site
+            if not self.mesh_settings.mesh_site and settings.MESH_SITE:
+                self.mesh_settings.mesh_site = settings.MESH_SITE
+
+            # Check for Mesh Token
+            if (
+                not self.mesh_settings.mesh_token
+                or settings.MESH_TOKEN_KEY != self.mesh_settings.mesh_token
+            ):
+                self.mesh_settings.mesh_token = settings.MESH_TOKEN_KEY
+
+            self.mesh_settings.save()
+
+        except AttributeError:
+            self.stdout.write(
+                "Mesh Setup was skipped because the configuration wasn't available. Needs to be setup manually."
+            )
+            return
+
+        try:
+            asyncio.get_event_loop().run_until_complete(self.websocket_call())
+            self.stdout.write("Initial Mesh Central setup complete")
+        except websockets.exceptions.ConnectionClosedError:
+            self.stdout.write(
+                "Unable to connect to MeshCentral. Please verify it is online and the configuration is correct in the settings."
+            )

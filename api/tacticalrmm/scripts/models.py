@@ -1,5 +1,6 @@
 from django.db import models
 from logs.models import BaseAuditModel
+from django.conf import settings
 
 SCRIPT_SHELLS = [
     ("powershell", "Powershell"),
@@ -38,9 +39,9 @@ class Script(BaseAuditModel):
     @property
     def file(self):
         if self.script_type == "userdefined":
-            return f"/srv/salt/scripts/userdefined/{self.filename}"
+            return f"{settings.SCRIPTS_DIR}/userdefined/{self.filename}"
         else:
-            return f"/srv/salt/scripts/{self.filename}"
+            return f"{settings.SCRIPTS_DIR}/{self.filename}"
 
     @property
     def code(self):
@@ -56,7 +57,6 @@ class Script(BaseAuditModel):
     def load_community_scripts(cls):
         import json
         import os
-        from pathlib import Path
         from django.conf import settings
 
         # load community uploaded scripts into the database
@@ -64,11 +64,7 @@ class Script(BaseAuditModel):
         # files will be copied by the update script or in docker to /srv/salt/scripts
 
         # for install script
-        try:
-            scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[1], "scripts")
-        # for docker
-        except:
-            scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[0], "scripts")
+        scripts_dir = settings.SCRIPTS_DIR
 
         with open(
             os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")

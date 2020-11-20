@@ -18,11 +18,13 @@ volumes:
   salt_data:
   postgres_data:
   mongo_data:
+  mesh_data:
 
 services:
   # postgres database for api service
   tactical-postgres:
     image: postgres:13
+    restart: always
     environment:
       POSTGRES_DB: tacticalrmm
       POSTGRES_USER: ${POSTGRES_USER}
@@ -35,6 +37,7 @@ services:
   # redis container for celery tasks
   tactical-redis:
     image: redis
+    restart: always
     networks:
       - redis
 
@@ -88,12 +91,14 @@ services:
       - mesh-db
     volumes:
       - tactical_data:/opt/tactical
+      - mesh_data:/home/node/app/meshcentral-data
     depends_on:
       - tactical-mongodb
 
   # mongodb container for meshCentral
   tactical-mongodb:
     image: mongo
+    restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
@@ -120,6 +125,7 @@ services:
     networks:
       - proxy
       - api-db
+      - redis
     volumes:
       - tactical_data:/opt/tactical
     depends_on:

@@ -15,8 +15,8 @@ rm -f /etc/nginx/conf.d/default.conf
 
 # check for certificates in env variable
 if [ "${CERT_PRIV_KEY}" == 'none' ] || [ "${CERT_PUB_KEY}" == 'none' ]; then
-  echo "${CERT_PRIV_KEY}" > ${CERT_PRIV_PATH}
-  echo "${CERT_PUB_KEY}" > ${CERT_PUB_PATH}
+  echo "${CERT_PRIV_KEY}" | base64 --decode > ${CERT_PRIV_PATH}
+  echo "${CERT_PUB_KEY}" | base64 --decode > ${CERT_PUB_PATH}
 else
   # generate a self signed cert
   if [ ! -f "${CERT_PRIV_PATH}" ] || [ ! -f "${CERT_PUB_PATH}" ]; then

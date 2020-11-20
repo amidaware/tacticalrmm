@@ -38,3 +38,5 @@ RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
 WORKDIR ${TACTICAL_DIR}/api
+
+EXPOSE 80

@@ -19,3 +19,5 @@ COPY --from=builder /home/node/app/dist/ ${PUBLIC_DIR}
 
 COPY docker/containers/tactical-frontend/entrypoint.sh /docker-entrypoint.d/
 RUN chmod +x /docker-entrypoint.d/entrypoint.sh
+
+EXPOSE 80

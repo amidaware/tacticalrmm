@@ -1,7 +1,7 @@
 # Docker Setup
 
 - Install docker and docker-compose
-- Optional (but strongly recommended) obtain valid wildcard cert for domain. If not certs are present a self-signed cert will be generated. See below on how to generate a free Let's Encrypt 
+- Optional (but strongly recommended) obtain valid wildcard certificate for domain. If certificates are not provided, a self-signed cert will be generated. See below on how to generate a free Let's Encrypt!
 
 ## (Optional) Generate certificates with certbot
 Install Certbot

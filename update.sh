@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="95"
+SCRIPT_VERSION="96"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -13,8 +13,9 @@ curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
 NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
 
 if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
-    printf >&2 "${YELLOW}A newer version of this update script is available.${NC}\n"
-    printf >&2 "${YELLOW}Please download the latest version from ${GREEN}${SCRIPT_URL}${YELLOW} and re-run.${NC}\n"
+    printf >&2 "${YELLOW}Old update script detected, downloading and replacing with the latest version...${NC}\n"
+    wget -q "${SCRIPT_URL}" -O update.sh
+    printf >&2 "${YELLOW}Script updated! Please re-run ./update.sh${NC}\n"
     rm -f $TMP_FILE
     exit 1
 fi

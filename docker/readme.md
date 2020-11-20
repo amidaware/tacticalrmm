@@ -7,7 +7,6 @@
 Install Certbot
 
 ```
-sudo add-apt-repository ppa:certbot/certbot
 sudo apt-get install certbot
 ```
 
@@ -64,6 +63,6 @@ private key
 `/etc/letsencrypt/live${rootdomain}/privkey.pem`
 
 ```
-sudo echo "CERT_PUB_KEY=$(base64 /path/to/pub/key)" >> .env
-sudo echo "CERT_PRIV_KEY=$(base64 /path/to/priv/key)" >> .env
+echo "CERT_PUB_KEY=$(sudo base64 -w 0 /path/to/pub/key)" >> .env
+echo "CERT_PRIV_KEY=$(sudo base64 -w 0 /path/to/priv/key)" >> .env
 ```

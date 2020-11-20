@@ -10,16 +10,16 @@ import json
 class Command(BaseCommand):
     help = "Sets up initial mesh central configuration"
 
-    async def websocket_call(self):
+    async def websocket_call(self, mesh_settings):
 
         token = get_auth_token(
-            self.mesh_settings.mesh_username, self.mesh_settings.mesh_token
+            mesh_settings.mesh_username, mesh_settings.mesh_token
         )
 
         if settings.MESH_WS_URL:
             uri = f"{settings.MESH_WS_URL}/control.ashx?auth={token}"
         else:
-            site = self.mesh_settings.mesh_site.replace("https", "wss")
+            site = mesh_settings.mesh_site.replace("https", "wss")
             uri = f"{site}/control.ashx?auth={token}"
 
         async with websockets.connect(uri) as websocket:
@@ -48,25 +48,25 @@ class Command(BaseCommand):
                         break
 
     def handle(self, *args, **kwargs):
-        self.mesh_settings = CoreSettings.objects.first()
+        mesh_settings = CoreSettings.objects.first()
 
         try:
             # Check for Mesh Username
-            if not self.mesh_settings.mesh_username and settings.MESH_USERNAME:
-                self.mesh_settings.mesh_username = settings.MESH_USERNAME
+            if not mesh_settings.mesh_username or settings.MESH_USERNAME != mesh_settings.mesh_username:
+                mesh_settings.mesh_username = settings.MESH_USERNAME
 
             # Check for Mesh Site
-            if not self.mesh_settings.mesh_site and settings.MESH_SITE:
-                self.mesh_settings.mesh_site = settings.MESH_SITE
+            if not mesh_settings.mesh_site or settings.MESH_SITE != mesh_settings.mesh_site:
+                mesh_settings.mesh_site = settings.MESH_SITE
 
             # Check for Mesh Token
             if (
-                not self.mesh_settings.mesh_token
-                or settings.MESH_TOKEN_KEY != self.mesh_settings.mesh_token
+                not mesh_settings.mesh_token
+                or settings.MESH_TOKEN_KEY != mesh_settings.mesh_token
             ):
-                self.mesh_settings.mesh_token = settings.MESH_TOKEN_KEY
+                mesh_settings.mesh_token = settings.MESH_TOKEN_KEY
 
-            self.mesh_settings.save()
+            mesh_settings.save()
 
         except AttributeError:
             self.stdout.write(
@@ -75,7 +75,7 @@ class Command(BaseCommand):
             return
 
         try:
-            asyncio.get_event_loop().run_until_complete(self.websocket_call())
+            asyncio.get_event_loop().run_until_complete(self.websocket_call(mesh_settings))
             self.stdout.write("Initial Mesh Central setup complete")
         except websockets.exceptions.ConnectionClosedError:
             self.stdout.write(

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="18"
+SCRIPT_VERSION="19"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 GREEN='\033[0;32m'
@@ -14,8 +14,9 @@ curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
 NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
 
 if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
-    printf >&2 "${YELLOW}A newer version of this installer script is available.${NC}\n"
-    printf >&2 "${YELLOW}Please download the latest version from ${GREEN}${SCRIPT_URL}${YELLOW} and re-run.${NC}\n"
+    printf >&2 "${YELLOW}Old install script detected, downloading and replacing with the latest version...${NC}\n"
+    wget -q "${SCRIPT_URL}" -O install.sh
+    printf >&2 "${YELLOW}Script updated! Please re-run ./install.sh${NC}\n"
     rm -f $TMP_FILE
     exit 1
 fi
@@ -373,7 +374,7 @@ read -n 1 -s -r -p "Press any key to continue..."
 uwsgini="$(cat << EOF
 [uwsgi]
 
-logto = /rmm/api/tacticalrmm/tacticalrmm/private/log/uwsgi.log
+# logto = /rmm/api/tacticalrmm/tacticalrmm/private/log/uwsgi.log
 chdir = /rmm/api/tacticalrmm
 module = tacticalrmm.wsgi
 home = /rmm/api/env
@@ -420,6 +421,12 @@ server_tokens off;
 
 upstream tacticalrmm {
     server unix:////rmm/api/tacticalrmm/tacticalrmm.sock;
+}
+
+map $http_user_agent $ignore_ua {
+    "~python-requests.*" 0;
+    "~go-resty.*" 0;
+    default 1;
 }
 
 server {

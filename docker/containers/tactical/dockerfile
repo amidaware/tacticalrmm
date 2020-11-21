@@ -20,17 +20,19 @@ COPY api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/goversion
 # install deps
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends wget ca-certificates gcc libc6-dev && \
+    apt-get install -y --no-install-recommends git wget ca-certificates gcc libc6-dev && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --upgrade pip && \
     pip install --no-cache-dir setuptools wheel gunicorn && \
     pip install --no-cache-dir -r ${TACTICAL_TMP_DIR}/api/requirements.txt && \
     wget https://golang.org/dl/go1.15.linux-amd64.tar.gz -P /tmp && \
     mkdir -p ${TACTICAL_GO_DIR}/go && \
-    tar -xzf /tmp/go1.15.linux-amd64.tar.gz -C ${TACTICAL_GO_DIR}/go && \
+    tar -xzf /tmp/go1.15.linux-amd64.tar.gz -C ${TACTICAL_GO_DIR} && \
     rm -f /tmp/go1.15.linux-amd64.tar.gz && \
+    /usr/local/rmmgo/go/bin/go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo && \
     groupadd -g 1000 "${TACTICAL_USER}" && \
-    useradd -M -d "${TACTICAL_DIR}" -s /bin/bash -u 1000 -g 1000 "${TACTICAL_USER}"
+    useradd -M -d "${TACTICAL_DIR}" -s /bin/bash -u 1000 -g 1000 "${TACTICAL_USER}" && \
+    apt-get --purge remove -y git wget gcc libc6-dev && apt-get autoremove -y
 
 # docker init
 COPY docker/containers/tactical/entrypoint.sh /

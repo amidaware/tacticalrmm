@@ -7,6 +7,7 @@ from Crypto.Random import get_random_bytes
 from Crypto.Hash import SHA3_384
 from Crypto.Util.Padding import pad
 import validators
+import msgpack
 import random
 import re
 import string
@@ -14,6 +15,8 @@ from collections import Counter
 from loguru import logger
 from packaging import version as pyver
 from distutils.version import LooseVersion
+from nats.aio.client import Client as NATS
+from nats.aio.errors import ErrTimeout
 
 from django.db import models
 from django.conf import settings
@@ -432,6 +435,30 @@ class Agent(BaseAuditModel):
             return base64.b64encode(iv + msg, altchars=b"@$").decode("utf-8")
         except Exception:
             return "err"
+
+    async def nats_cmd(self, data, timeout=30):
+        nc = NATS()
+        options = {
+            "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
+            "user": "tacticalrmm",
+            "password": settings.SECRET_KEY,
+            "connect_timeout": 3,
+            "max_reconnect_attempts": 2,
+        }
+        try:
+            await nc.connect(**options)
+        except:
+            return "natsdown"
+
+        try:
+            msg = await nc.request(self.agent_id, msgpack.dumps(data), timeout=timeout)
+        except ErrTimeout:
+            ret = "timeout"
+        else:
+            ret = msgpack.loads(msg.data)
+
+        await nc.close()
+        return ret
 
     def salt_api_cmd(self, **kwargs):
 

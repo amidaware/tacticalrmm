@@ -1,9 +1,7 @@
-import base64
 import string
 import os
 import json
 import pytz
-import zlib
 from statistics import mean
 
 from django.db import models
@@ -336,8 +334,7 @@ class Check(BaseAuditModel):
             eventID = self.event_id
             source = self.event_source
             message = self.event_message
-
-            r = json.loads(zlib.decompress(base64.b64decode(data["log"])))
+            r = data["log"]
 
             for i in r:
                 if i["eventType"] == eventType:

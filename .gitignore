@@ -44,3 +44,4 @@ resource.syso
 htmlcov/
 docker-compose.dev.yml
 docs/.vuepress/dist
+nats-rmm.conf

@@ -35,8 +35,10 @@
             </q-list>
           </q-menu>
           <q-td>{{ props.row.name }}</q-td>
-          <q-td>{{ Math.ceil(props.row.cpu_percent) }}%</q-td>
-          <q-td>{{ convert(props.row.memory_percent) }} MB</q-td>
+          <!-- <q-td>{{ Math.ceil(props.row.cpu_percent) }}%</q-td>
+          <q-td>{{ convert(props.row.memory_percent) }} MB</q-td> -->
+          <q-td>{{ props.row.cpu_percent }}%</q-td>
+          <q-td>{{ props.row.memory_percent }}</q-td>
           <q-td>{{ props.row.username }}</q-td>
           <q-td>{{ props.row.pid }}</q-td>
           <q-td>{{ props.row.status }}</q-td>
@@ -47,7 +49,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 
 export default {
@@ -116,7 +117,7 @@ export default {
     getProcesses() {
       this.procs = [];
       this.$q.loading.show({ message: "Loading Processes..." });
-      axios
+      this.$axios
         .get(`/agents/${this.pk}/getprocs/`)
         .then(r => {
           this.procs = r.data;
@@ -129,15 +130,15 @@ export default {
     },
     refreshProcs() {
       this.polling = setInterval(() => {
-        axios
+        this.$axios
           .get(`/agents/${this.pk}/getprocs/`)
           .then(r => (this.procs = r.data))
-          .catch(() => this.notifyError("Unable to contact the agent"));
-      }, 10000);
+          .catch(() => console.log("Unable to contact the agent"));
+      }, 2 * 1000);
     },
     killProc(pid, name) {
       this.$q.loading.show({ message: `Attempting to kill process ${name}` });
-      axios
+      this.$axios
         .get(`/agents/${this.pk}/${pid}/killproc/`)
         .then(r => {
           this.$q.loading.hide();
@@ -154,11 +155,11 @@ export default {
     },
     startPoll() {
       this.poll = true;
-      axios.get(`/agents/${this.pk}/getprocs/`).then(r => (this.procs = r.data));
+      this.$axios.get(`/agents/${this.pk}/getprocs/`).then(r => (this.procs = r.data));
       this.refreshProcs();
     },
     getAgent() {
-      axios.get(`/agents/${this.pk}/agentdetail/`).then(r => (this.mem = r.data.total_ram));
+      this.$axios.get(`/agents/${this.pk}/agentdetail/`).then(r => (this.mem = r.data.total_ram));
     },
     convert(percent) {
       const mb = this.mem * 1024;

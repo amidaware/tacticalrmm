@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="19"
+SCRIPT_VERSION="20"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 GREEN='\033[0;32m'
@@ -423,7 +423,7 @@ upstream tacticalrmm {
     server unix:////rmm/api/tacticalrmm/tacticalrmm.sock;
 }
 
-map $http_user_agent $ignore_ua {
+map \$http_user_agent \$ignore_ua {
     "~python-requests.*" 0;
     "~go-resty.*" 0;
     default 1;

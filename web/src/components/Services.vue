@@ -55,7 +55,7 @@
     <q-dialog v-model="serviceDetailsModal">
       <q-card style="width: 600px; max-width: 80vw">
         <q-card-section>
-          <div class="text-h6">Service Details - {{ serviceData.DisplayName }}</div>
+          <div class="text-h6">Service Details - {{ serviceData.display_name }}</div>
         </q-card-section>
 
         <q-card-section>
@@ -66,20 +66,20 @@
           <br />
           <div class="row">
             <div class="col-3">Display name:</div>
-            <div class="col-9">{{ serviceData.DisplayName }}</div>
+            <div class="col-9">{{ serviceData.display_name }}</div>
           </div>
           <br />
           <div class="row">
             <div class="col-3">Description:</div>
             <div class="col-9">
-              <q-field outlined :color="$q.dark.isActive ? 'white' : 'black'">{{ serviceData.Description }}</q-field>
+              <q-field outlined :color="$q.dark.isActive ? 'white' : 'black'">{{ serviceData.description }}</q-field>
             </div>
           </div>
           <br />
           <div class="row">
             <div class="col-3">Path:</div>
             <div class="col-9">
-              <code>{{ serviceData.BinaryPath }}</code>
+              <code>{{ serviceData.binpath }}</code>
             </div>
           </div>
           <br />
@@ -102,7 +102,7 @@
         <q-card-section>
           <div class="row">
             <div class="col-3">Service status:</div>
-            <div class="col-9">{{ serviceData.Status }}</div>
+            <div class="col-9">{{ serviceData.status }}</div>
           </div>
           <br />
           <div class="row">
@@ -113,7 +113,7 @@
                 :text-color="$q.dark.isActive ? 'white' : 'black'"
                 push
                 label="Start"
-                @click="serviceAction(serviceData.svc_name, 'start', serviceData.DisplayName)"
+                @click="serviceAction(serviceData.svc_name, 'start', serviceData.display_name)"
               />
               <q-btn
                 color="gray"
@@ -121,7 +121,7 @@
                 :text-color="$q.dark.isActive ? 'white' : 'black'"
                 push
                 label="Stop"
-                @click="serviceAction(serviceData.svc_name, 'stop', serviceData.DisplayName)"
+                @click="serviceAction(serviceData.svc_name, 'stop', serviceData.display_name)"
               />
               <q-btn
                 color="gray"
@@ -129,7 +129,7 @@
                 :text-color="$q.dark.isActive ? 'white' : 'black'"
                 push
                 label="Restart"
-                @click="serviceAction(serviceData.svc_name, 'restart', serviceData.DisplayName)"
+                @click="serviceAction(serviceData.svc_name, 'restart', serviceData.display_name)"
               />
             </q-btn-group>
           </div>
@@ -263,10 +263,10 @@ export default {
         .then(r => {
           this.serviceData = r.data;
           this.serviceData.svc_name = name;
-          this.startupType = this.serviceData.StartType;
-          if (this.serviceData.StartType === "Auto" && this.serviceData.StartTypeDelayed === true) {
+          this.startupType = this.serviceData.start_type;
+          if (this.serviceData.start_type === "Automatic" && this.serviceData.autodelay === true) {
             this.startupType = "Automatic (Delayed Start)";
-          } else if (this.serviceData.StartType === "Auto" && this.serviceData.StartTypeDelayed === false) {
+          } else if (this.serviceData.start_type === "Automatic" && this.serviceData.autodelay === false) {
             this.startupType = "Automatic";
           }
           this.serviceDetailVisible = false;

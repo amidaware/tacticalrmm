@@ -57,6 +57,7 @@ class Script(BaseAuditModel):
     def load_community_scripts(cls):
         import json
         import os
+        from pathlib import Path
         from django.conf import settings
 
         # load community uploaded scripts into the database
@@ -64,7 +65,11 @@ class Script(BaseAuditModel):
         # files will be copied by the update script or in docker to /srv/salt/scripts
 
         # for install script
-        scripts_dir = settings.SCRIPTS_DIR
+        try:
+            scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[1], "scripts")
+        # for docker
+        except:
+            scripts_dir = settings.SCRIPTS_DIR
 
         with open(
             os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")

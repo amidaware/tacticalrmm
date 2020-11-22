@@ -682,28 +682,6 @@ class TestAgentViews(TacticalTestCase):
         self.check_not_authenticated("post", url)
 
     @patch("agents.models.Agent.salt_api_cmd")
-    def test_restart_mesh(self, mock_ret):
-        url = f"/agents/{self.agent.pk}/restartmesh/"
-
-        mock_ret.return_value = "timeout"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = "error"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = False
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = True
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 200)
-
-        self.check_not_authenticated("get", url)
-
-    @patch("agents.models.Agent.salt_api_cmd")
     def test_recover_mesh(self, mock_ret):
         url = f"/agents/{self.agent.pk}/recovermesh/"
         mock_ret.return_value = True

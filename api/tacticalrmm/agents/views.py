@@ -688,29 +688,10 @@ def run_script(request):
 
 
 @api_view()
-def restart_mesh(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(func="service.restart", arg="mesh agent", timeout=30)
-    if r == "timeout" or r == "error":
-        return notify_error("Unable to contact the agent")
-    elif isinstance(r, bool) and r:
-        return Response(f"Restarted Mesh Agent on {agent.hostname}")
-    else:
-        return notify_error(f"Failed to restart the Mesh Agent on {agent.hostname}")
-
-
-@api_view()
 def recover_mesh(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(
-        timeout=60,
-        func="cmd.run",
-        kwargs={
-            "cmd": r'"C:\\Program Files\\TacticalAgent\\tacticalrmm.exe" -m recovermesh',
-            "timeout": 55,
-        },
-    )
-    if r == "timeout" or r == "error":
+    r = asyncio.run(agent.nats_cmd({"func": "recovermesh"}, timeout=45))
+    if r == "timeout":
         return notify_error("Unable to contact the agent")
 
     return Response(f"Repaired mesh agent on {agent.hostname}")

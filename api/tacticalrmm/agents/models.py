@@ -748,6 +748,7 @@ RECOVERY_CHOICES = [
     ("salt", "Salt"),
     ("mesh", "Mesh"),
     ("command", "Command"),
+    ("rpc", "Nats RPC"),
 ]
 
 

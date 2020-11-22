@@ -1,5 +1,5 @@
 <template>
-  <q-card style="min-width: 50vw;">
+  <q-card style="min-width: 50vw">
     <q-card-section class="row items-center">
       <div class="text-h6">{{ hostname }} Agent Recovery</div>
       <q-space />
@@ -10,6 +10,7 @@
       <q-card-section>
         <div class="q-gutter-sm">
           <q-radio dense v-model="mode" val="mesh" label="Mesh Agent" />
+          <q-radio dense v-model="mode" val="rpc" label="Tactical RPC" />
           <q-radio dense v-model="mode" val="salt" label="Salt Minion" />
           <q-radio dense v-model="mode" val="command" label="Shell Command" />
         </div>
@@ -18,7 +19,16 @@
         <p>Fix issues with the Mesh Agent which handles take control, terminal and file browser.</p>
       </q-card-section>
       <q-card-section v-show="mode === 'salt'">
-        <p>Fix issues with the salt-minion (do this if getting alot of errors about not being able to contact the agent even if it's online).</p>
+        <p>
+          Fix issues with the salt-minion (do this if getting alot of errors about not being able to contact the agent
+          even if it's online).
+        </p>
+      </q-card-section>
+      <q-card-section v-show="mode === 'rpc'">
+        <p>
+          Fix issues with the Tactical RPC service (do this if getting alot of errors about not being able to contact
+          the agent even if it's online).
+        </p>
       </q-card-section>
       <q-card-section v-show="mode === 'command'">
         <p>Run a shell command on the agent.</p>

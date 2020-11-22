@@ -436,7 +436,7 @@ class Agent(BaseAuditModel):
         except Exception:
             return "err"
 
-    async def nats_cmd(self, data, timeout=30):
+    async def nats_cmd(self, data, timeout=30, wait=True):
         nc = NATS()
         options = {
             "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
@@ -450,15 +450,22 @@ class Agent(BaseAuditModel):
         except:
             return "natsdown"
 
-        try:
-            msg = await nc.request(self.agent_id, msgpack.dumps(data), timeout=timeout)
-        except ErrTimeout:
-            ret = "timeout"
-        else:
-            ret = msgpack.loads(msg.data)
+        if wait:
+            try:
+                msg = await nc.request(
+                    self.agent_id, msgpack.dumps(data), timeout=timeout
+                )
+            except ErrTimeout:
+                ret = "timeout"
+            else:
+                ret = msgpack.loads(msg.data)
 
-        await nc.close()
-        return ret
+            await nc.close()
+            return ret
+        else:
+            await nc.publish(self.agent_id, msgpack.dumps(data))
+            await nc.flush()
+            await nc.close()
 
     def salt_api_cmd(self, **kwargs):
 

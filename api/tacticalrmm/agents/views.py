@@ -38,7 +38,7 @@ from winupdate.serializers import WinUpdatePolicySerializer
 
 from .tasks import uninstall_agent_task, send_agent_update_task
 from winupdate.tasks import bulk_check_for_updates_task
-from scripts.tasks import run_script_bg_task, run_bulk_script_task
+from scripts.tasks import run_bulk_script_task
 
 from tacticalrmm.utils import notify_error
 
@@ -660,10 +660,7 @@ def recover(request):
 def run_script(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
     script = get_object_or_404(Script, pk=request.data["scriptPK"])
-
     output = request.data["output"]
-    args = request.data["args"]
-
     req_timeout = int(request.data["timeout"]) + 3
 
     AuditLog.audit_script_run(
@@ -672,48 +669,21 @@ def run_script(request):
         script=script.name,
     )
 
+    data = {
+        "func": "runscript",
+        "timeout": request.data["timeout"],
+        "script_args": request.data["args"],
+        "payload": {
+            "code": script.code,
+            "shell": script.shell,
+        },
+    }
+
     if output == "wait":
-        r = agent.salt_api_cmd(
-            timeout=req_timeout,
-            func="win_agent.run_script",
-            kwargs={
-                "filepath": script.filepath,
-                "filename": script.filename,
-                "shell": script.shell,
-                "timeout": request.data["timeout"],
-                "args": args,
-            },
-        )
-
-        if isinstance(r, dict):
-            if r["stdout"]:
-                return Response(r["stdout"])
-            elif r["stderr"]:
-                return Response(r["stderr"])
-            else:
-                try:
-                    r["retcode"]
-                except KeyError:
-                    return notify_error("Something went wrong")
-
-                return Response(f"Return code: {r['retcode']}")
-
-        else:
-            if r == "timeout":
-                return notify_error("Unable to contact the agent")
-            elif r == "error":
-                return notify_error("Something went wrong")
-            else:
-                return notify_error(str(r))
-
+        r = asyncio.run(agent.nats_cmd(data, timeout=req_timeout))
+        return Response(r)
     else:
-        data = {
-            "agentpk": agent.pk,
-            "scriptpk": script.pk,
-            "timeout": request.data["timeout"],
-            "args": args,
-        }
-        run_script_bg_task.delay(data)
+        asyncio.run(agent.nats_cmd(data, wait=False))
         return Response(f"{script.name} will now be run on {agent.hostname}")
 
 

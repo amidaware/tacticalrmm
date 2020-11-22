@@ -1,0 +1,10 @@
+FROM nats:2.1-alpine
+
+ENV TACTICAL_DIR /opt/tactical
+
+RUN apk add inotify-tools supervisor
+
+COPY docker/containers/tactical-nats/entrypoint.sh /
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT [ "/entrypoint.sh" ]

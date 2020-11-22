@@ -6,6 +6,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SCRIPTS_DIR = "/srv/salt/scripts"
 
+DOCKER_BUILD = False
+
 LOG_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/log")
 
 EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")

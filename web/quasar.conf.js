@@ -29,7 +29,7 @@ module.exports = function () {
 
     // Full list of options: https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-build
     build: {
-      env: { DEV_API: process.env.DEV_URL, PROD_API: process.env.PROD_URL },
+      env: { DEV_API: process.env.DEV_URL, PROD_API: process.env.PROD_URL, DOCKER_BUILD: process.env.DOCKER_BUILD },
       vueRouterMode: 'history', // available values: 'hash', 'history'
       distDir: "dist/",
 

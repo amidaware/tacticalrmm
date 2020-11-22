@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+from tacticalrmm.settings import DOCKER_BUILD
 import tldextract
 
 from django.conf import settings
@@ -18,12 +19,17 @@ def reload_nats():
     for agent in agents:
         users.append({"user": agent.agent_id, "password": agent.user.auth_token.key})
 
-    tld = tldextract.extract(settings.ALLOWED_HOSTS[0])
-    domain = tld.domain + "." + tld.suffix
+    if not DOCKER_BUILD:
+        tld = tldextract.extract(settings.ALLOWED_HOSTS[0])
+        domain = tld.domain + "." + tld.suffix
+        cert_path = f"/etc/letsencrypt/live/{domain}"
+    else:
+        cert_path = "/opt/tactical/certs"
+        
     config = {
         "tls": {
-            "cert_file": f"/etc/letsencrypt/live/{domain}/fullchain.pem",
-            "key_file": f"/etc/letsencrypt/live/{domain}/privkey.pem",
+            "cert_file": f"{cert_path}/fullchain.pem",
+            "key_file": f"{cert_path}/privkey.pem",
         },
         "authorization": {"users": users},
         "max_payload": 2048576005,
@@ -33,4 +39,5 @@ def reload_nats():
     with open(conf, "w") as f:
         json.dump(config, f)
 
-    subprocess.run(["/usr/local/bin/nats-server", "-signal", "reload"])
+    if not DOCKER_BUILD:
+        subprocess.run(["/usr/local/bin/nats-server", "-signal", "reload"])

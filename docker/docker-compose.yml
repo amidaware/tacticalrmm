@@ -75,6 +75,18 @@ services:
       - salt_data:/etc/salt
     networks:
       - proxy
+  
+  # nats
+  tactical-nats:
+    image: ${IMAGE_REPO}tactical-nats:${VERSION}
+    command: nats-server --config /opt/tactical/api/nats-rmm.conf
+    restart: always
+    ports:
+      - "4222:4222"
+    volumes:
+      - tactical_data:/opt/tactical
+    networks:
+      - proxy
 
   # meshcentral container
   tactical-meshcentral:

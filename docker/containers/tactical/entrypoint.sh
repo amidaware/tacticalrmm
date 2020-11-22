@@ -68,6 +68,8 @@ SECRET_KEY = '${DJANGO_SEKRET}'
 
 DEBUG = False
 
+DOCKER_BUILD = True
+
 SCRIPTS_DIR = '/opt/tactical/scripts'
 
 ALLOWED_HOSTS = ['${API_HOST}']

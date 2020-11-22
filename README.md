@@ -64,6 +64,7 @@ sudo ufw allow ssh
 sudo ufw allow http
 sudo ufw allow https
 sudo ufw allow proto tcp from any to any port 4505,4506
+sudo ufw allow proto tcp from any to any port 4222
 sudo ufw enable && sudo ufw reload
 ```
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="20"
+SCRIPT_VERSION="21"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 GREEN='\033[0;32m'
@@ -859,7 +859,7 @@ if [ "$BEHIND_NAT" = true ]; then
     echo -ne "${GREEN}If you will be accessing the web interface of the RMM from the same LAN as this server,${NC}\n"
     echo -ne "${GREEN}you'll need to make sure your 3 subdomains resolve to ${IPV4}${NC}\n"
     echo -ne "${GREEN}This also applies to any agents that will be on the same local network as the rmm.${NC}\n"
-    echo -ne "${GREEN}You'll also need to setup port forwarding in your router on ports 80, 443, 4505 and 4506 tcp.${NC}\n\n"
+    echo -ne "${GREEN}You'll also need to setup port forwarding in your router on ports 80, 443, 4505, 4506 and 4222 tcp.${NC}\n\n"
 fi
 
 printf >&2 "${YELLOW}Please refer to the github README for next steps${NC}\n\n"

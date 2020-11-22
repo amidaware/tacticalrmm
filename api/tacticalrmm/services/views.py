@@ -94,30 +94,22 @@ def service_detail(request, pk, svcname):
 
 @api_view(["POST"])
 def edit_service(request):
-    data = request.data
-    pk = data["pk"]
-    service_name = data["sv_name"]
-    edit_action = data["edit_action"]
+    agent = get_object_or_404(Agent, pk=request.data["pk"])
+    data = {
+        "func": "editwinsvc",
+        "payload": {
+            "name": request.data["sv_name"],
+            "startType": request.data["edit_action"],
+        },
+    }
 
-    agent = get_object_or_404(Agent, pk=pk)
-
-    if edit_action == "autodelay":
-        kwargs = {"start_type": "auto", "start_delayed": True}
-    elif edit_action == "auto":
-        kwargs = {"start_type": "auto", "start_delayed": False}
-    else:
-        kwargs = {"start_type": edit_action}
-
-    r = agent.salt_api_cmd(
-        timeout=20,
-        func="service.modify",
-        arg=service_name,
-        kwargs=kwargs,
-    )
-
+    r = asyncio.run(agent.nats_cmd(data, timeout=10))
+    # response struct from agent: {success: bool, errormsg: string}
     if r == "timeout":
         return notify_error("Unable to contact the agent")
-    elif r == "error" or not r:
-        return notify_error("Something went wrong")
+    elif not r["success"] and r["errormsg"]:
+        return notify_error(r["errormsg"])
+    elif r["success"]:
+        return Response("ok")
 
-    return Response("ok")
+    return notify_error("Something went wrong")

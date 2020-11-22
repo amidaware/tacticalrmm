@@ -152,7 +152,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 
 export default {
@@ -238,7 +237,7 @@ export default {
         edit_action: changed,
       };
       this.serviceDetailVisible = true;
-      axios
+      this.$axios
         .post("/services/editservice/", data)
         .then(r => {
           this.serviceDetailVisible = false;
@@ -258,7 +257,7 @@ export default {
       this.saveServiceDetailButton = true;
       this.serviceDetailsModal = true;
       this.serviceDetailVisible = true;
-      axios
+      this.$axios
         .get(`/services/${this.pk}/${name}/servicedetail/`)
         .then(r => {
           this.serviceData = r.data;
@@ -274,7 +273,7 @@ export default {
         .catch(e => {
           this.serviceDetailVisible = false;
           this.serviceDetailsModal = false;
-          this.notifyError(e.response.data);
+          this.notifyError(e.response.data, 3000);
         });
     },
     serviceAction(name, action, fullname) {
@@ -301,7 +300,7 @@ export default {
         sv_name: name,
         sv_action: action,
       };
-      axios
+      this.$axios
         .post("/services/serviceaction/", data)
         .then(r => {
           this.refreshServices();
@@ -310,20 +309,22 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
+          this.notifyError(e.response.data, 3000);
+        });
+    },
+    getServices() {
+      this.$axios
+        .get(`/services/${this.pk}/services/`)
+        .then(r => {
+          this.servicesData = [r.data][0].services;
+        })
+        .catch(e => {
           this.notifyError(e.response.data);
         });
     },
-    async getServices() {
-      try {
-        let r = await axios.get(`/services/${this.pk}/services/`);
-        this.servicesData = [r.data][0].services;
-      } catch (e) {
-        console.log(`ERROR!: ${e}`);
-      }
-    },
     refreshServices() {
       this.$q.loading.show({ message: "Reloading services..." });
-      axios
+      this.$axios
         .get(`/services/${this.pk}/refreshedservices/`)
         .then(r => {
           this.servicesData = [r.data][0].services;

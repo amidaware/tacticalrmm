@@ -1,3 +1,4 @@
+import asyncio
 import string
 import os
 import json
@@ -304,12 +305,16 @@ class Check(BaseAuditModel):
                     self.status = "passing"
                 else:
                     if self.agent and self.restart_if_stopped:
-                        r = self.agent.salt_api_cmd(
-                            func="service.restart", arg=self.svc_name, timeout=45
-                        )
-                        if r == "timeout" or r == "error":
+                        nats_data = {
+                            "func": "winsvcaction",
+                            "payload": {"name": self.svc_name, "action": "start"},
+                        }
+                        r = asyncio.run(self.agent.nats_cmd(nats_data, timeout=32))
+                        if r == "timeout" or r == "natsdown":
                             self.status = "failing"
-                        elif isinstance(r, bool) and r:
+                        elif not r["success"] and r["errormsg"]:
+                            self.status = "failing"
+                        elif r["success"]:
                             self.status = "passing"
                             self.more_info = f"Status RUNNING"
                         else:

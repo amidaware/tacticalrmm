@@ -1,6 +1,5 @@
 # Tactical RMM
 
-[![Build Status](https://travis-ci.com/wh1te909/tacticalrmm.svg?branch=develop)](https://travis-ci.com/wh1te909/tacticalrmm)
 [![Build Status](https://dev.azure.com/dcparsi/Tactical%20RMM/_apis/build/status/wh1te909.tacticalrmm?branchName=develop)](https://dev.azure.com/dcparsi/Tactical%20RMM/_build/latest?definitionId=4&branchName=develop)
 [![Coverage Status](https://coveralls.io/repos/github/wh1te909/tacticalrmm/badge.png?branch=develop&kill_cache=1)](https://coveralls.io/github/wh1te909/tacticalrmm?branch=develop)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)

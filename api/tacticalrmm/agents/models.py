@@ -86,6 +86,10 @@ class Agent(BaseAuditModel):
         return self.site.client
 
     @property
+    def has_nats(self):
+        return pyver.parse(self.version) >= pyver.parse("1.1.0")
+
+    @property
     def timezone(self):
         # return the default timezone unless the timezone is explicity set per agent
         if self.time_zone is not None:

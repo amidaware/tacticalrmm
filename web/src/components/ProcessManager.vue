@@ -125,7 +125,7 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data);
+          this.notifyError(e.response.data, 4000);
         });
     },
     refreshProcs() {

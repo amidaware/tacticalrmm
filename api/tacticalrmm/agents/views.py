@@ -154,6 +154,8 @@ def agent_detail(request, pk):
 @api_view()
 def get_processes(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
     r = asyncio.run(agent.nats_cmd(data={"func": "procs"}, timeout=5))
     if r == "timeout":
         return notify_error("Unable to contact the agent")
@@ -180,6 +182,8 @@ def kill_proc(request, pk, pid):
 @api_view()
 def get_event_log(request, pk, logtype, days):
     agent = get_object_or_404(Agent, pk=pk)
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
     data = {
         "func": "eventlog",
         "timeout": 30,
@@ -217,6 +221,8 @@ def power_action(request):
 @api_view(["POST"])
 def send_raw_cmd(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
     timeout = int(request.data["timeout"])
     data = {
         "func": "rawcmd",
@@ -659,6 +665,8 @@ def recover(request):
 @api_view(["POST"])
 def run_script(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
     script = get_object_or_404(Script, pk=request.data["scriptPK"])
     output = request.data["output"]
     req_timeout = int(request.data["timeout"]) + 3
@@ -690,6 +698,8 @@ def run_script(request):
 @api_view()
 def recover_mesh(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
     r = asyncio.run(agent.nats_cmd({"func": "recovermesh"}, timeout=45))
     if r == "timeout":
         return notify_error("Unable to contact the agent")

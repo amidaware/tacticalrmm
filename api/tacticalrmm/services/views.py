@@ -31,6 +31,8 @@ def default_services(request):
 @api_view()
 def get_refreshed_services(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
     r = asyncio.run(agent.nats_cmd(data={"func": "winservices"}, timeout=10))
 
     if r == "timeout":
@@ -44,6 +46,8 @@ def get_refreshed_services(request, pk):
 @api_view(["POST"])
 def service_action(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
     action = request.data["sv_action"]
     data = {
         "func": "winsvcaction",
@@ -84,6 +88,8 @@ def service_action(request):
 @api_view()
 def service_detail(request, pk, svcname):
     agent = get_object_or_404(Agent, pk=pk)
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
     data = {"func": "winsvcdetail", "payload": {"name": svcname}}
     r = asyncio.run(agent.nats_cmd(data, timeout=10))
     if r == "timeout":
@@ -95,6 +101,8 @@ def service_detail(request, pk, svcname):
 @api_view(["POST"])
 def edit_service(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
     data = {
         "func": "editwinsvc",
         "payload": {

@@ -187,20 +187,17 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_power_action(self, mock_ret):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_power_action(self, nats_cmd):
         url = f"/agents/poweraction/"
 
         data = {"pk": self.agent.pk, "action": "rebootnow"}
-        mock_ret.return_value = True
+        nats_cmd.return_value = "ok"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        nats_cmd.assert_called_with({"func": "rebootnow"}, timeout=10)
 
-        mock_ret.return_value = "error"
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = False
+        nats_cmd.return_value = "timeout"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
 

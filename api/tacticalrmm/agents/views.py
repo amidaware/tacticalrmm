@@ -203,19 +203,13 @@ def get_event_log(request, pk, logtype, days):
 
 @api_view(["POST"])
 def power_action(request):
-    pk = request.data["pk"]
-    action = request.data["action"]
-    agent = get_object_or_404(Agent, pk=pk)
-    if action == "rebootnow":
-        logger.info(f"{agent.hostname} was scheduled for immediate reboot")
-        r = agent.salt_api_cmd(
-            timeout=30,
-            func="system.reboot",
-            arg=3,
-            kwargs={"in_seconds": True},
-        )
-    if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
-        return notify_error("Unable to contact the agent")
+    agent = get_object_or_404(Agent, pk=request.data["pk"])
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+    if request.data["action"] == "rebootnow":
+        r = asyncio.run(agent.nats_cmd({"func": "rebootnow"}, timeout=10))
+        if r != "ok":
+            return notify_error("Unable to contact the agent")
 
     return Response("ok")
 

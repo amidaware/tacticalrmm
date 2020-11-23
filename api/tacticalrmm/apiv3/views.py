@@ -33,7 +33,7 @@ from agents.tasks import (
 from winupdate.tasks import check_for_updates_task
 from software.tasks import get_installed_software, install_chocolatey
 from checks.utils import bytes2human
-from tacticalrmm.utils import notify_error
+from tacticalrmm.utils import notify_error, reload_nats
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -456,6 +456,8 @@ class NewAgent(APIView):
             WinUpdatePolicy(agent=agent, run_time_days=[5, 6]).save()
         else:
             WinUpdatePolicy(agent=agent).save()
+
+        reload_nats()
 
         # Generate policies for new agent
         agent.generate_checks_from_policies()

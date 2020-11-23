@@ -34,7 +34,7 @@ from .tasks import uninstall_agent_task, send_agent_update_task
 from winupdate.tasks import bulk_check_for_updates_task
 from scripts.tasks import run_bulk_script_task
 
-from tacticalrmm.utils import notify_error
+from tacticalrmm.utils import notify_error, reload_nats
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -84,6 +84,7 @@ def uninstall(request):
     salt_id = agent.salt_id
     name = agent.hostname
     agent.delete()
+    reload_nats()
 
     uninstall_agent_task.delay(salt_id)
     return Response(f"{name} will now be uninstalled.")
@@ -165,15 +166,17 @@ def get_processes(request, pk):
 @api_view()
 def kill_proc(request, pk, pid):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(timeout=25, func="ps.kill_pid", arg=int(pid))
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+
+    r = asyncio.run(
+        agent.nats_cmd({"func": "killproc", "procpid": int(pid)}, timeout=15)
+    )
 
     if r == "timeout":
         return notify_error("Unable to contact the agent")
-    elif r == "error":
-        return notify_error("Something went wrong")
-
-    if isinstance(r, bool) and not r:
-        return notify_error("Unable to kill the process")
+    elif r != "ok":
+        return notify_error(r)
 
     return Response("ok")
 

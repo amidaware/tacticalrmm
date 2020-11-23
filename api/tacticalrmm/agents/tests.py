@@ -83,29 +83,29 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_ping(self, mock_ret):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_ping(self, nats_cmd):
         url = f"/agents/{self.agent.pk}/ping/"
 
-        mock_ret.return_value = "timeout"
+        nats_cmd.return_value = "timeout"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         ret = {"name": self.agent.hostname, "status": "offline"}
         self.assertEqual(r.json(), ret)
 
-        mock_ret.return_value = "error"
+        nats_cmd.return_value = "natsdown"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         ret = {"name": self.agent.hostname, "status": "offline"}
         self.assertEqual(r.json(), ret)
 
-        mock_ret.return_value = True
+        nats_cmd.return_value = "pong"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         ret = {"name": self.agent.hostname, "status": "online"}
         self.assertEqual(r.json(), ret)
 
-        mock_ret.return_value = False
+        nats_cmd.return_value = "asdasjdaksdasd"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         ret = {"name": self.agent.hostname, "status": "offline"}
@@ -113,34 +113,18 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
+    @patch("agents.models.Agent.nats_cmd")
     @patch("agents.tasks.uninstall_agent_task.delay")
-    def test_uninstall(self, mock_task):
+    @patch("agents.views.reload_nats")
+    def test_uninstall(self, reload_nats, mock_task, nats_cmd):
         url = "/agents/uninstall/"
         data = {"pk": self.agent.pk}
 
         r = self.client.delete(url, data, format="json")
         self.assertEqual(r.status_code, 200)
 
-        mock_task.assert_called_with(self.agent.salt_id)
-
-        self.check_not_authenticated("delete", url)
-
-    @patch("agents.tasks.uninstall_agent_task.delay")
-    def test_uninstall_catch_no_user(self, mock_task):
-        # setup data
-        agent_user = User.objects.create_user(
-            username=self.agent.agent_id, password=User.objects.make_random_password(60)
-        )
-        agent_token = Token.objects.create(user=agent_user)
-
-        url = "/agents/uninstall/"
-        data = {"pk": self.agent.pk}
-
-        agent_user.delete()
-
-        r = self.client.delete(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-
+        nats_cmd.assert_called_with({"func": "uninstall"}, wait=False)
+        reload_nats.assert_called_once()
         mock_task.assert_called_with(self.agent.salt_id)
 
         self.check_not_authenticated("delete", url)
@@ -167,23 +151,19 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_kill_proc(self, mock_ret):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_kill_proc(self, nats_cmd):
         url = f"/agents/{self.agent.pk}/8234/killproc/"
 
-        mock_ret.return_value = True
+        nats_cmd.return_value = "ok"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
 
-        mock_ret.return_value = False
+        nats_cmd.return_value = "timeout"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
 
-        mock_ret.return_value = "timeout"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = "error"
+        nats_cmd.return_value = "process doesn't exist"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
 

@@ -1,23 +1,9 @@
 <template>
   <div v-if="!selectedAgentPk">No agent selected</div>
   <div v-else class="q-pa-xs">
-    <q-btn
-      size="sm"
-      color="grey-5"
-      icon="fas fa-plus"
-      label="Add Note"
-      text-color="black"
-      @click="addNote"
-    />
+    <q-btn size="sm" color="grey-5" icon="fas fa-plus" label="Add Note" text-color="black" @click="addNote" />
     <q-btn dense flat push @click="refreshNotes" icon="refresh" />
-    <q-btn
-      class="q-ml-xl"
-      size="sm"
-      color="primary"
-      icon-right="archive"
-      label="Export to csv"
-      @click="exportTable"
-    />
+    <q-btn class="q-ml-xl" size="sm" color="primary" icon-right="archive" label="Export to csv" @click="exportTable" />
     <template v-if="notes === undefined || notes.length === 0">
       <p>No Notes</p>
     </template>
@@ -25,7 +11,7 @@
       <q-table
         grid
         class="tabs-tbl-sticky"
-        :style="{'max-height': tabsTableHeight}"
+        :style="{ 'max-height': tabsTableHeight }"
         :data="notes"
         :columns="columns"
         :visible-columns="visibleColumns"
@@ -47,14 +33,7 @@
                   <q-btn color="grey-7" round flat icon="more_vert">
                     <q-menu cover auto-close>
                       <q-list>
-                        <q-btn
-                          color="primary"
-                          push
-                          flat
-                          icon="edit"
-                          label="Edit"
-                          @click="editNote(props.row.id)"
-                        />
+                        <q-btn color="primary" push flat icon="edit" label="Edit" @click="editNote(props.row.id)" />
                         <br />
                         <q-btn
                           color="negative"

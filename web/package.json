@@ -13,10 +13,10 @@
     "axios": "^0.21.0",
     "dotenv": "^8.2.0",
     "qrcode.vue": "^1.7.0",
-    "quasar": "^1.14.2"
+    "quasar": "^1.14.5"
   },
   "devDependencies": {
-    "@quasar/app": "^2.1.5",
+    "@quasar/app": "^2.1.8",
     "@quasar/cli": "^1.1.2",
     "@quasar/quasar-app-extension-testing": "^1.0.0",
     "@quasar/quasar-app-extension-testing-unit-jest": "^1.0.1",

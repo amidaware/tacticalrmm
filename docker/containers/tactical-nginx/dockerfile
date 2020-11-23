@@ -1,4 +1,4 @@
-FROM nginx:stable
+FROM nginx:stable-alpine
 
 ENV TACTICAL_DIR /opt/tactical
 

@@ -79,7 +79,6 @@ services:
   # nats
   tactical-nats:
     image: ${IMAGE_REPO}tactical-nats:${VERSION}
-    command: nats-server --config /opt/tactical/api/nats-rmm.conf
     restart: always
     ports:
       - "4222:4222"

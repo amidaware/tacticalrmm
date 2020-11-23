@@ -39,6 +39,11 @@ if [ "$1" = 'tactical-init' ]; then
   # copy container data to volume
   cp -af ${TACTICAL_TMP_DIR}/. ${TACTICAL_DIR}/
 
+  until (echo > /dev/tcp/"${MESH_CONTAINER}"/443) &> /dev/null; do
+    echo "waiting for meshcentral server to be ready..."
+    sleep 5
+  done
+
   until (echo > /dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &> /dev/null; do
     echo "waiting for postgresql server to be ready..."
     sleep 5
@@ -129,6 +134,7 @@ EOF
   python manage.py initial_mesh_setup
   python manage.py load_chocos
   python manage.py load_community_scripts
+  python manage.py reload_nats
 
   # create super user 
   echo "from accounts.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else 0;" | python manage.py shell

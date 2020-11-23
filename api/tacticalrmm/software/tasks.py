@@ -1,3 +1,4 @@
+import asyncio
 import string
 from time import sleep
 from loguru import logger
@@ -89,35 +90,36 @@ def update_chocos():
 @app.task
 def get_installed_software(pk):
     agent = Agent.objects.get(pk=pk)
-    r = agent.salt_api_cmd(
-        timeout=30,
-        func="pkg.list_pkgs",
-        kwargs={"include_components": False, "include_updates": False},
-    )
+    if not agent.has_nats:
+        logger.error(f"{agent.salt_id} software list only available in agent >= 1.1.0")
+        return
 
-    if r == "timeout" or r == "error":
-        logger.error(f"Timed out trying to get installed software on {agent.salt_id}")
+    r = asyncio.run(agent.nats_cmd({"func": "softwarelist"}, timeout=15))
+    if r == "timeout" or r == "natsdown":
+        logger.error(f"{agent.salt_id} {r}")
         return
 
     printable = set(string.printable)
-
-    try:
-        software = [
+    sw = []
+    for s in r:
+        sw.append(
             {
-                "name": "".join(filter(lambda x: x in printable, k)),
-                "version": "".join(filter(lambda x: x in printable, v)),
+                "name": "".join(filter(lambda x: x in printable, s["name"])),
+                "version": "".join(filter(lambda x: x in printable, s["version"])),
+                "publisher": "".join(filter(lambda x: x in printable, s["publisher"])),
+                "install_date": s["install_date"],
+                "size": s["size"],
+                "source": s["source"],
+                "location": s["location"],
+                "uninstall": s["uninstall"],
             }
-            for k, v in r.items()
-        ]
-    except Exception as e:
-        logger.error(f"Unable to get installed software on {agent.salt_id}: {e}")
-        return
+        )
 
     if not InstalledSoftware.objects.filter(agent=agent).exists():
-        InstalledSoftware(agent=agent, software=software).save()
+        InstalledSoftware(agent=agent, software=sw).save()
     else:
-        s = agent.installedsoftware_set.get()
-        s.software = software
+        s = agent.installedsoftware_set.first()
+        s.software = sw
         s.save(update_fields=["software"])
 
     return "ok"

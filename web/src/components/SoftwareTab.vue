@@ -2,15 +2,24 @@
   <div v-if="!this.selectedAgentPk">No agent selected</div>
   <div v-else-if="!Array.isArray(software) || !software.length">No software</div>
   <div v-else>
-    <q-btn
-      size="sm"
-      color="grey-5"
-      icon="fas fa-plus"
-      label="Install Software"
-      text-color="black"
-      @click="showInstallSoftware = true"
-    />
-    <q-btn dense flat push @click="refreshSoftware" icon="refresh" />
+    <div class="row q-pt-xs items-start">
+      <q-btn
+        size="xs"
+        color="grey-5"
+        icon="fas fa-plus"
+        label="Install Software"
+        text-color="black"
+        @click="showInstallSoftware = true"
+      />
+      <q-btn dense flat push @click="refreshSoftware" icon="refresh" />
+      <q-space />
+      <q-input v-model="filter" outlined label="Search" dense clearable>
+        <template v-slot:prepend>
+          <q-icon name="search" color="primary" />
+        </template>
+      </q-input>
+    </div>
+
     <q-table
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       class="tabs-tbl-sticky"
@@ -18,6 +27,7 @@
       dense
       :data="software"
       :columns="columns"
+      :filter="filter"
       :pagination.sync="pagination"
       binary-state-sort
       hide-bottom
@@ -51,6 +61,7 @@ export default {
     return {
       showInstallSoftware: false,
       loading: false,
+      filter: "",
       pagination: {
         rowsPerPage: 0,
         sortBy: "name",
@@ -63,6 +74,27 @@ export default {
           label: "Name",
           field: "name",
           sortable: true,
+        },
+        {
+          name: "publisher",
+          align: "left",
+          label: "Publisher",
+          field: "publisher",
+          sortable: true,
+        },
+        {
+          name: "install_date",
+          align: "left",
+          label: "Installed On",
+          field: "install_date",
+          sortable: false,
+        },
+        {
+          name: "size",
+          align: "left",
+          label: "Size",
+          field: "size",
+          sortable: false,
         },
         {
           name: "version",

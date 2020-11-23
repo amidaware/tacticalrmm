@@ -244,7 +244,6 @@ def send_raw_cmd(request):
         shell=request.data["shell"],
     )
 
-    logger.info(f"The command {request.data['cmd']} was sent on agent {agent.hostname}")
     return Response(r)
 
 

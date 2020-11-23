@@ -2,9 +2,6 @@ import asyncio
 from loguru import logger
 import os
 import subprocess
-import zlib
-import json
-import base64
 import pytz
 import datetime as dt
 from packaging import version as pyver
@@ -19,9 +16,6 @@ from rest_framework.response import Response
 from rest_framework import status, generics
 
 from .models import Agent, AgentOutage, RecoveryAction, Note
-from winupdate.models import WinUpdatePolicy
-from clients.models import Client, Site
-from accounts.models import User
 from core.models import CoreSettings
 from scripts.models import Script
 from logs.models import AuditLog
@@ -67,20 +61,25 @@ def update_agents(request):
 @api_view()
 def ping(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(timeout=5, func="test.ping")
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+    r = asyncio.run(agent.nats_cmd({"func": "ping"}, timeout=10))
 
-    if r == "timeout" or r == "error":
+    if r == "timeout" or r == "natsdown":
         return Response({"name": agent.hostname, "status": "offline"})
-
-    if isinstance(r, bool) and r:
+    elif r == "pong":
         return Response({"name": agent.hostname, "status": "online"})
-    else:
-        return Response({"name": agent.hostname, "status": "offline"})
+
+    return Response({"name": agent.hostname, "status": "offline"})
 
 
 @api_view(["DELETE"])
 def uninstall(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+
+    asyncio.run(agent.nats_cmd({"func": "uninstall"}, wait=False))
 
     salt_id = agent.salt_id
     name = agent.hostname

@@ -536,7 +536,7 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Something went wrong");
+          this.notifyError(e.response.data);
         });
     },
     rebootNow(pk, hostname) {

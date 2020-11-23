@@ -34,7 +34,9 @@ class TestAgentViews(TacticalTestCase):
 
         client = baker.make("clients.Client", name="Google")
         site = baker.make("clients.Site", client=client, name="LA Office")
-        self.agent = baker.make_recipe("agents.online_agent", site=site)
+        self.agent = baker.make_recipe(
+            "agents.online_agent", site=site, version="1.1.0"
+        )
         baker.make_recipe("winupdate.winupdate_policy", agent=self.agent)
 
     def test_get_patch_policy(self):
@@ -143,7 +145,7 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("delete", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
+    @patch("agents.models.Agent.nats_cmd")
     def test_get_processes(self, mock_ret):
         url = f"/agents/{self.agent.pk}/getprocs/"
 
@@ -160,10 +162,6 @@ class TestAgentViews(TacticalTestCase):
         )
 
         mock_ret.return_value = "timeout"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = "error"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
 
@@ -191,29 +189,19 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
+    @patch("agents.models.Agent.nats_cmd")
     def test_get_event_log(self, mock_ret):
         url = f"/agents/{self.agent.pk}/geteventlog/Application/30/"
 
         with open(
-            os.path.join(settings.BASE_DIR, "tacticalrmm/test_data/eventlograw.json")
+            os.path.join(settings.BASE_DIR, "tacticalrmm/test_data/appeventlog.json")
         ) as f:
             mock_ret.return_value = json.load(f)
 
-        with open(
-            os.path.join(settings.BASE_DIR, "tacticalrmm/test_data/appeventlog.json")
-        ) as f:
-            decoded = json.load(f)
-
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(decoded, r.json())
 
         mock_ret.return_value = "timeout"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = "error"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
 
@@ -238,7 +226,7 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
+    @patch("agents.models.Agent.nats_cmd")
     def test_send_raw_cmd(self, mock_ret):
         url = f"/agents/sendrawcmd/"
 
@@ -254,10 +242,6 @@ class TestAgentViews(TacticalTestCase):
         self.assertIsInstance(r.data, str)
 
         mock_ret.return_value = "timeout"
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = False
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
 
@@ -681,7 +665,7 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
+    @patch("agents.models.Agent.nats_cmd")
     def test_recover_mesh(self, mock_ret):
         url = f"/agents/{self.agent.pk}/recovermesh/"
         mock_ret.return_value = True
@@ -690,10 +674,6 @@ class TestAgentViews(TacticalTestCase):
         self.assertIn(self.agent.hostname, r.data)
 
         mock_ret.return_value = "timeout"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = "error"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
 

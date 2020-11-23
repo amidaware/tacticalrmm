@@ -32,8 +32,8 @@ class TestServiceViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_get_refreshed_services(self, salt_api_cmd):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_get_refreshed_services(self, nats_cmd):
         # test a call where agent doesn't exist
         resp = self.client.get("/services/500/refreshedservices/", format="json")
         self.assertEqual(resp.status_code, 404)
@@ -41,7 +41,7 @@ class TestServiceViews(TacticalTestCase):
         agent = baker.make_recipe("agents.agent_with_services")
         url = f"/services/{agent.pk}/refreshedservices/"
 
-        salt_return = [
+        nats_return = [
             {
                 "pid": 880,
                 "name": "AeLookupSvc",
@@ -65,30 +65,23 @@ class TestServiceViews(TacticalTestCase):
         ]
 
         # test failed attempt
-        salt_api_cmd.return_value = "timeout"
+        nats_cmd.return_value = "timeout"
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 400)
-        salt_api_cmd.assert_called_with(timeout=15, func="win_agent.get_services")
-        salt_api_cmd.reset_mock()
-
-        # test failed attempt
-        salt_api_cmd.return_value = "error"
-        resp = self.client.get(url, format="json")
-        self.assertEqual(resp.status_code, 400)
-        salt_api_cmd.assert_called_with(timeout=15, func="win_agent.get_services")
-        salt_api_cmd.reset_mock()
+        nats_cmd.assert_called_with(data={"func": "winservices"}, timeout=10)
+        nats_cmd.reset_mock()
 
         # test successful attempt
-        salt_api_cmd.return_value = salt_return
+        nats_cmd.return_value = nats_return
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        salt_api_cmd.assert_called_with(timeout=15, func="win_agent.get_services")
-        self.assertEquals(Agent.objects.get(pk=agent.pk).services, salt_return)
+        nats_cmd.assert_called_with(data={"func": "winservices"}, timeout=10)
+        self.assertEquals(Agent.objects.get(pk=agent.pk).services, nats_return)
 
         self.check_not_authenticated("get", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_service_action(self, salt_api_cmd):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_service_action(self, nats_cmd):
         url = "/services/serviceaction/"
 
         invalid_data = {"pk": 500, "sv_name": "AeLookupSvc", "sv_action": "restart"}
@@ -101,47 +94,37 @@ class TestServiceViews(TacticalTestCase):
         data = {"pk": agent.pk, "sv_name": "AeLookupSvc", "sv_action": "restart"}
 
         # test failed attempt
-        salt_api_cmd.return_value = "timeout"
+        nats_cmd.return_value = "timeout"
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 400)
-        salt_api_cmd.assert_called_with(
-            timeout=45,
-            func=f"service.restart",
-            arg="AeLookupSvc",
+        nats_cmd.assert_called_with(
+            {
+                "func": "winsvcaction",
+                "payload": {
+                    "name": "AeLookupSvc",
+                    "action": "stop",
+                },
+            },
+            timeout=32,
         )
-        salt_api_cmd.reset_mock()
-
-        salt_api_cmd.return_value = "error"
-        resp = self.client.post(url, data, format="json")
-        self.assertEqual(resp.status_code, 400)
-        salt_api_cmd.assert_called_with(
-            timeout=45,
-            func=f"service.restart",
-            arg="AeLookupSvc",
-        )
-        salt_api_cmd.reset_mock()
+        nats_cmd.reset_mock()
 
         # test successful attempt
-        salt_api_cmd.return_value = True
+        nats_cmd.return_value = {"success": True, "errormsg": ""}
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        salt_api_cmd.assert_called_with(
-            timeout=45,
-            func=f"service.restart",
-            arg="AeLookupSvc",
-        )
 
         self.check_not_authenticated("post", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_service_detail(self, salt_api_cmd):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_service_detail(self, nats_cmd):
         # test a call where agent doesn't exist
         resp = self.client.get(
             "/services/500/doesntexist/servicedetail/", format="json"
         )
         self.assertEqual(resp.status_code, 404)
 
-        salt_return = {
+        nats_return = {
             "pid": 812,
             "name": "ALG",
             "status": "stopped",
@@ -156,29 +139,27 @@ class TestServiceViews(TacticalTestCase):
         url = f"/services/{agent.pk}/alg/servicedetail/"
 
         # test failed attempt
-        salt_api_cmd.return_value = "timeout"
+        nats_cmd.return_value = "timeout"
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 400)
-        salt_api_cmd.assert_called_with(timeout=20, func="service.info", arg="alg")
-        salt_api_cmd.reset_mock()
-
-        salt_api_cmd.return_value = "error"
-        resp = self.client.get(url, format="json")
-        self.assertEqual(resp.status_code, 400)
-        salt_api_cmd.assert_called_with(timeout=20, func="service.info", arg="alg")
-        salt_api_cmd.reset_mock()
+        nats_cmd.assert_called_with(
+            {"func": "winsvcdetail", "payload": {"name": "alg"}}, timeout=10
+        )
+        nats_cmd.reset_mock()
 
         # test successful attempt
-        salt_api_cmd.return_value = salt_return
+        nats_cmd.return_value = nats_return
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        salt_api_cmd.assert_called_with(timeout=20, func="service.info", arg="alg")
-        self.assertEquals(resp.data, salt_return)
+        nats_cmd.assert_called_with(
+            {"func": "winsvcdetail", "payload": {"name": "alg"}}, timeout=10
+        )
+        self.assertEquals(resp.data, nats_return)
 
         self.check_not_authenticated("get", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_edit_service(self, salt_api_cmd):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_edit_service(self, nats_cmd):
         url = "/services/editservice/"
         agent = baker.make_recipe("agents.agent_with_services")
 
@@ -189,64 +170,43 @@ class TestServiceViews(TacticalTestCase):
 
         data = {"pk": agent.pk, "sv_name": "AeLookupSvc", "edit_action": "autodelay"}
 
-        # test failed attempt
-        salt_api_cmd.return_value = "timeout"
+        # test timeout
+        nats_cmd.return_value = "timeout"
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 400)
-        salt_api_cmd.assert_called_with(
-            timeout=20,
-            func="service.modify",
-            arg=data["sv_name"],
-            kwargs={"start_type": "auto", "start_delayed": True},
-        )
-        salt_api_cmd.reset_mock()
-
-        salt_api_cmd.return_value = "error"
-        resp = self.client.post(url, data, format="json")
-        self.assertEqual(resp.status_code, 400)
-        salt_api_cmd.assert_called_with(
-            timeout=20,
-            func="service.modify",
-            arg=data["sv_name"],
-            kwargs={"start_type": "auto", "start_delayed": True},
-        )
-        salt_api_cmd.reset_mock()
+        nats_cmd.reset_mock()
 
         # test successful attempt autodelay
-        salt_api_cmd.return_value = True
+        nats_cmd.return_value = {"success": True, "errormsg": ""}
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        salt_api_cmd.assert_called_with(
-            timeout=20,
-            func="service.modify",
-            arg=data["sv_name"],
-            kwargs={"start_type": "auto", "start_delayed": True},
+        nats_cmd.assert_called_with(
+            {
+                "func": "editwinsvc",
+                "payload": {
+                    "name": "AeLookupSvc",
+                    "startType": "autodelay",
+                },
+            },
+            timeout=10,
         )
-        salt_api_cmd.reset_mock()
+        nats_cmd.reset_mock()
 
-        # test successful attempt with auto
+        # test error message from agent
         data = {"pk": agent.pk, "sv_name": "AeLookupSvc", "edit_action": "auto"}
-        salt_api_cmd.return_value = True
+        nats_cmd.return_value = {
+            "success": False,
+            "errormsg": "The parameter is incorrect",
+        }
         resp = self.client.post(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-        salt_api_cmd.assert_called_with(
-            timeout=20,
-            func="service.modify",
-            arg=data["sv_name"],
-            kwargs={"start_type": "auto", "start_delayed": False},
-        )
-        salt_api_cmd.reset_mock()
+        self.assertEqual(resp.status_code, 400)
+        nats_cmd.reset_mock()
 
-        # test successful attempt with manual
-        data = {"pk": agent.pk, "sv_name": "AeLookupSvc", "edit_action": "manual"}
-        salt_api_cmd.return_value = True
+        # test catch all
+        data = {"pk": agent.pk, "sv_name": "AeLookupSvc", "edit_action": "auto"}
+        nats_cmd.return_value = {"success": False, "errormsg": ""}
         resp = self.client.post(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-        salt_api_cmd.assert_called_with(
-            timeout=20,
-            func="service.modify",
-            arg=data["sv_name"],
-            kwargs={"start_type": "manual"},
-        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.data, "Something went wrong")
 
         self.check_not_authenticated("post", url)

@@ -94,8 +94,8 @@ class TestScriptViews(TacticalTestCase):
 
     def test_load_community_scripts(self):
         valid_shells = ["powershell", "python", "cmd"]
-        scripts_dir = settings.SCRIPTS_DIR
-        
+        scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[1], "scripts")
+
         with open(
             os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")
         ) as f:

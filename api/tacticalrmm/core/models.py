@@ -72,6 +72,15 @@ class CoreSettings(BaseAuditModel):
         if not self.pk and CoreSettings.objects.exists():
             raise ValidationError("There can only be one CoreSettings instance")
 
+        # for install script
+        if not self.pk:
+            try:
+                self.mesh_site = settings.MESH_SITE
+                self.mesh_username = settings.MESH_USERNAME
+                self.mesh_token = settings.MESH_TOKEN_KEY
+            except:
+                pass
+
         return super(CoreSettings, self).save(*args, **kwargs)
 
     def __str__(self):

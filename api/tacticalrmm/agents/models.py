@@ -149,11 +149,7 @@ class Agent(BaseAuditModel):
 
     @property
     def has_patches_pending(self):
-
-        if self.winupdates.filter(action="approve").filter(installed=False).exists():
-            return True
-        else:
-            return False
+        return self.winupdates.filter(action="approve").filter(installed=False).exists()
 
     @property
     def checks(self):

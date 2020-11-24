@@ -32,7 +32,7 @@ from winupdate.serializers import WinUpdatePolicySerializer
 
 from .tasks import uninstall_agent_task, send_agent_update_task
 from winupdate.tasks import bulk_check_for_updates_task
-from scripts.tasks import run_bulk_script_task
+from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 
 from tacticalrmm.utils import notify_error, reload_nats
 
@@ -760,73 +760,44 @@ def bulk(request):
         return notify_error("Must select at least 1 agent")
 
     if request.data["target"] == "client":
-        agents = Agent.objects.filter(site__client_id=request.data["client"])
+        q = Agent.objects.filter(site__client_id=request.data["client"])
     elif request.data["target"] == "site":
-        agents = Agent.objects.filter(site_id=request.data["site"])
+        q = Agent.objects.filter(site_id=request.data["site"])
     elif request.data["target"] == "agents":
-        agents = Agent.objects.filter(pk__in=request.data["agentPKs"])
+        q = Agent.objects.filter(pk__in=request.data["agentPKs"])
     elif request.data["target"] == "all":
-        agents = Agent.objects.all()
+        q = Agent.objects.all()
     else:
         return notify_error("Something went wrong")
 
-    minions = [agent.salt_id for agent in agents]
+    minions = [agent.salt_id for agent in q]
+    agents = [agent.pk for agent in q]
 
     AuditLog.audit_bulk_action(request.user, request.data["mode"], request.data)
 
     if request.data["mode"] == "command":
-        r = Agent.salt_batch_async(
-            minions=minions,
-            func="cmd.run_bg",
-            kwargs={
-                "cmd": request.data["cmd"],
-                "shell": request.data["shell"],
-                "timeout": request.data["timeout"],
-            },
+        handle_bulk_command_task.delay(
+            agents, request.data["cmd"], request.data["shell"], request.data["timeout"]
         )
-        if r == "timeout":
-            return notify_error("Salt API not running")
-        return Response(f"Command will now be run on {len(minions)} agents")
+        return Response(f"Command will now be run on {len(agents)} agents")
 
     elif request.data["mode"] == "script":
         script = get_object_or_404(Script, pk=request.data["scriptPK"])
-
-        if script.shell == "python":
-            r = Agent.salt_batch_async(
-                minions=minions,
-                func="win_agent.run_script",
-                kwargs={
-                    "filepath": script.filepath,
-                    "filename": script.filename,
-                    "shell": script.shell,
-                    "timeout": request.data["timeout"],
-                    "args": request.data["args"],
-                    "bg": True,
-                },
-            )
-            if r == "timeout":
-                return notify_error("Salt API not running")
-        else:
-            data = {
-                "minions": minions,
-                "scriptpk": script.pk,
-                "timeout": request.data["timeout"],
-                "args": request.data["args"],
-            }
-            run_bulk_script_task.delay(data)
-
-        return Response(f"{script.name} will now be run on {len(minions)} agents")
+        handle_bulk_script_task.delay(
+            script.pk, agents, request.data["args"], request.data["timeout"]
+        )
+        return Response(f"{script.name} will now be run on {len(agents)} agents")
 
     elif request.data["mode"] == "install":
         r = Agent.salt_batch_async(minions=minions, func="win_agent.install_updates")
         if r == "timeout":
             return notify_error("Salt API not running")
         return Response(
-            f"Pending updates will now be installed on {len(minions)} agents"
+            f"Pending updates will now be installed on {len(agents)} agents"
         )
     elif request.data["mode"] == "scan":
         bulk_check_for_updates_task.delay(minions=minions)
-        return Response(f"Patch status scan will now run on {len(minions)} agents")
+        return Response(f"Patch status scan will now run on {len(agents)} agents")
 
     return notify_error("Something went wrong")
 

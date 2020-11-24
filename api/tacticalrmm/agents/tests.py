@@ -7,9 +7,7 @@ from itertools import cycle
 
 from django.conf import settings
 from django.utils import timezone as djangotime
-from rest_framework.authtoken.models import Token
 
-from accounts.models import User
 from tacticalrmm.test import TacticalTestCase
 from .serializers import AgentSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
@@ -530,11 +528,13 @@ class TestAgentViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     @patch("winupdate.tasks.bulk_check_for_updates_task.delay")
+    @patch("scripts.tasks.handle_bulk_script_task.delay")
+    @patch("scripts.tasks.handle_bulk_command_task.delay")
     @patch("agents.models.Agent.salt_batch_async")
-    def test_bulk_cmd_script(self, mock_ret, mock_update):
+    def test_bulk_cmd_script(
+        self, salt_batch_async, bulk_command, bulk_script, mock_update
+    ):
         url = "/agents/bulk/"
-
-        mock_ret.return_value = "ok"
 
         payload = {
             "mode": "command",
@@ -550,6 +550,7 @@ class TestAgentViews(TacticalTestCase):
         }
 
         r = self.client.post(url, payload, format="json")
+        bulk_command.assert_called_with([self.agent.pk], "gpupdate /force", "cmd", 300)
         self.assertEqual(r.status_code, 200)
 
         payload = {
@@ -581,6 +582,7 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
+        bulk_command.assert_called_with([self.agent.pk], "gpupdate /force", "cmd", 300)
 
         payload = {
             "mode": "command",
@@ -597,12 +599,7 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
-
-        mock_ret.return_value = "timeout"
-        payload["client"] = self.agent.client.id
-        payload["site"] = self.agent.site.id
-        r = self.client.post(url, payload, format="json")
-        self.assertEqual(r.status_code, 400)
+        bulk_command.assert_called_with([self.agent.pk], "gpupdate /force", "cmd", 300)
 
         payload = {
             "mode": "scan",
@@ -613,9 +610,8 @@ class TestAgentViews(TacticalTestCase):
                 self.agent.pk,
             ],
         }
-        mock_ret.return_value = "ok"
         r = self.client.post(url, payload, format="json")
-        mock_update.assert_called_once()
+        mock_update.assert_called_with(minions=[self.agent.salt_id])
         self.assertEqual(r.status_code, 200)
 
         payload = {
@@ -627,6 +623,7 @@ class TestAgentViews(TacticalTestCase):
                 self.agent.pk,
             ],
         }
+        salt_batch_async.return_value = "ok"
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
 

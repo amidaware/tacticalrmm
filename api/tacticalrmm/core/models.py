@@ -119,8 +119,8 @@ class CoreSettings(BaseAuditModel):
             and self.smtp_port
         ):
             return True
-        else:
-            return False
+
+        return False
 
     def send_mail(self, subject, body, test=False):
 

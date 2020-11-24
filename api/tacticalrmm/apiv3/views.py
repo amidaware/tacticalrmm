@@ -1,3 +1,4 @@
+import asyncio
 import os
 import requests
 from loguru import logger
@@ -342,21 +343,16 @@ class WinUpdater(APIView):
                 agent.save(update_fields=["needs_reboot"])
 
         if reboot:
-            r = agent.salt_api_cmd(
-                timeout=15,
-                func="system.reboot",
-                arg=7,
-                kwargs={"in_seconds": True},
-            )
-
-            if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
-                check_for_updates_task.apply_async(
-                    queue="wupdate", kwargs={"pk": agent.pk, "wait": False}
-                )
+            if agent.has_nats:
+                asyncio.run(agent.nats_cmd({"func": "rebootnow"}, wait=False))
             else:
-                logger.info(
-                    f"{agent.hostname} is rebooting after updates were installed."
+                agent.salt_api_async(
+                    func="system.reboot",
+                    arg=7,
+                    kwargs={"in_seconds": True},
                 )
+
+            logger.info(f"{agent.hostname} is rebooting after updates were installed.")
         else:
             check_for_updates_task.apply_async(
                 queue="wupdate", kwargs={"pk": agent.pk, "wait": False}

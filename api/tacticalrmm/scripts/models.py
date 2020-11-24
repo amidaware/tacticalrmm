@@ -65,10 +65,10 @@ class Script(BaseAuditModel):
         # files will be copied by the update script or in docker to /srv/salt/scripts
 
         # for install script
-        try:
+        if not settings.DOCKER_BUILD:
             scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[1], "scripts")
         # for docker
-        except:
+        else:
             scripts_dir = settings.SCRIPTS_DIR
 
         with open(

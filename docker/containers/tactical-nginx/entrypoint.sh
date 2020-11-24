@@ -3,7 +3,7 @@
 set -e
 
 CERT_PRIV_PATH=${TACTICAL_DIR}/certs/privkey.pem
-CERT_PUB_PATH=${TACTICAL_DIR}/certs/pubkey.pem
+CERT_PUB_PATH=${TACTICAL_DIR}/certs/fullchain.pem
 
 mkdir -p "${TACTICAL_DIR}/certs"
 

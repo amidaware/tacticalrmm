@@ -330,6 +330,7 @@ if not DEBUG:
         )
     })
 
+NATS_HOST = "${rmmdomain}"
 SALT_USERNAME = "saltapi"
 SALT_PASSWORD = "${SALTPW}"
 SALT_HOST     = "127.0.0.1"

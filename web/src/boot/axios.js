@@ -5,19 +5,21 @@ export default function ({ router, store }) {
 
   Vue.prototype.$axios = axios;
 
-  axios.defaults.baseURL = () => {
+  let getBaseUrl = () => {
     if (process.env.NODE_ENV === "production") {
       if (process.env.DOCKER_BUILD) {
-        return window._env_.PROD_URL
+        return window._env_.PROD_URL;
+      } else {
+        return process.env.PROD_API;
       }
-      return process.env.PROD_API
     } else {
       return process.env.DEV_API;
     }
-  }
+  };
 
   axios.interceptors.request.use(
     function (config) {
+      config.baseURL = getBaseUrl()
       const token = store.state.token;
       if (token != null) {
         config.headers.Authorization = `Token ${token}`;

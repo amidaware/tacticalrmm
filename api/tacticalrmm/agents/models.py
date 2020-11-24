@@ -500,9 +500,7 @@ class Agent(BaseAuditModel):
 
         try:
             resp = requests.post(
-                f"http://{settings.SALT_HOST}:8123/run",
-                json=[json],
-                timeout=timeout,
+                f"http://{settings.SALT_HOST}:8123/run", json=[json], timeout=timeout,
             )
         except Exception:
             return "timeout"
@@ -758,9 +756,7 @@ RECOVERY_CHOICES = [
 
 class RecoveryAction(models.Model):
     agent = models.ForeignKey(
-        Agent,
-        related_name="recoveryactions",
-        on_delete=models.CASCADE,
+        Agent, related_name="recoveryactions", on_delete=models.CASCADE,
     )
     mode = models.CharField(max_length=50, choices=RECOVERY_CHOICES, default="mesh")
     command = models.TextField(null=True, blank=True)
@@ -777,11 +773,7 @@ class RecoveryAction(models.Model):
 
 
 class Note(models.Model):
-    agent = models.ForeignKey(
-        Agent,
-        related_name="notes",
-        on_delete=models.CASCADE,
-    )
+    agent = models.ForeignKey(Agent, related_name="notes", on_delete=models.CASCADE,)
     user = models.ForeignKey(
         "accounts.User",
         related_name="user",

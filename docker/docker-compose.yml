@@ -85,7 +85,9 @@ services:
     volumes:
       - tactical_data:/opt/tactical
     networks:
-      - proxy
+      proxy:
+        aliases:
+          - ${API_HOST}
 
   # meshcentral container
   tactical-meshcentral:
@@ -106,7 +108,7 @@ services:
     depends_on:
       - tactical-mongodb
 
-  # mongodb container for meshCentral
+  # mongodb container for meshcentral
   tactical-mongodb:
     image: mongo
     restart: always
@@ -117,9 +119,9 @@ services:
     networks:
       - mesh-db
     volumes:
-      - mongo_data:/data
+      - mongo_data:/data/db
 
-  # container that hosts Vue frontend
+  # container that hosts vue frontend
   tactical-frontend:
     image: ${IMAGE_REPO}tactical-frontend:${VERSION}
     restart: always

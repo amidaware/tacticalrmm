@@ -1,3 +1,5 @@
+import asyncio
+
 from django.shortcuts import get_object_or_404
 
 from rest_framework.views import APIView
@@ -13,7 +15,6 @@ from scripts.models import Script
 
 from .serializers import CheckSerializer
 
-from .tasks import run_checks_task
 
 from automation.tasks import (
     generate_agent_checks_from_policies_task,
@@ -178,7 +179,10 @@ class GetUpdateDeleteCheck(APIView):
 @api_view()
 def run_checks(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    run_checks_task.delay(agent.pk)
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+
+    asyncio.run(agent.nats_cmd({"func": "runchecks"}, wait=False))
     return Response(agent.hostname)
 
 

@@ -56,10 +56,3 @@ def handle_check_sms_alert_task(pk):
                 check.save(update_fields=["text_sent"])
 
     return "ok"
-
-
-@app.task
-def run_checks_task(pk):
-    agent = Agent.objects.get(pk=pk)
-    agent.salt_api_async(func="win_agent.run_manual_checks")
-    return "ok"

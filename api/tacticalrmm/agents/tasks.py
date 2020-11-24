@@ -1,3 +1,4 @@
+import asyncio
 from loguru import logger
 from time import sleep
 import random
@@ -55,7 +56,7 @@ def send_agent_update_task(pks, version):
                 f"Updating {agent.salt_id} current version {agent.version} using {inno}"
             )
 
-            if pyver.parse(agent.version) >= pyver.parse("1.1.0"):
+            if agent.has_nats:
                 if agent.pendingactions.filter(
                     action_type="agentupdate", status="pending"
                 ).exists():
@@ -127,7 +128,7 @@ def auto_self_agent_update_task():
                 f"Updating {agent.salt_id} current version {agent.version} using {inno}"
             )
 
-            if pyver.parse(agent.version) >= pyver.parse("1.1.0"):
+            if agent.has_nats:
                 if agent.pendingactions.filter(
                     action_type="agentupdate", status="pending"
                 ).exists():
@@ -177,7 +178,11 @@ def update_salt_minion_task():
 @app.task
 def get_wmi_detail_task(pk):
     agent = Agent.objects.get(pk=pk)
-    r = agent.salt_api_async(timeout=30, func="win_agent.local_sys_info")
+    if agent.has_nats:
+        asyncio.run(agent.nats_cmd({"func": "sysinfo"}, wait=False))
+    else:
+        agent.salt_api_async(timeout=30, func="win_agent.local_sys_info")
+
     return "ok"
 
 
@@ -197,7 +202,7 @@ def sync_salt_modules_task(pk):
 def batch_sync_modules_task():
     # sync modules, split into chunks of 50 agents to not overload salt
     agents = Agent.objects.all()
-    online = [i.salt_id for i in agents if i.status == "online"]
+    online = [i.salt_id for i in agents]
     chunks = (online[i : i + 50] for i in range(0, len(online), 50))
     for chunk in chunks:
         Agent.salt_batch_async(minions=chunk, func="saltutil.sync_modules")
@@ -208,15 +213,19 @@ def batch_sync_modules_task():
 def batch_sysinfo_task():
     # update system info using WMI
     agents = Agent.objects.all()
-    online = [
-        i.salt_id
-        for i in agents
-        if not i.not_supported("0.11.0") and i.status == "online"
+
+    agents_nats = [agent for agent in agents if agent.has_nats]
+    minions = [
+        agent.salt_id
+        for agent in agents
+        if not agent.has_nats and pyver.parse(agent.version) >= pyver.parse("0.11.0")
     ]
-    chunks = (online[i : i + 30] for i in range(0, len(online), 30))
-    for chunk in chunks:
-        Agent.salt_batch_async(minions=chunk, func="win_agent.local_sys_info")
-        sleep(10)
+
+    if minions:
+        Agent.salt_batch_async(minions=minions, func="win_agent.local_sys_info")
+
+    for agent in agents_nats:
+        asyncio.run(agent.nats_cmd({"func": "sysinfo"}, wait=False))
 
 
 @app.task

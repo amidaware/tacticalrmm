@@ -60,15 +60,14 @@ def handle_bulk_script_task(scriptpk, agentpks, args, timeout):
             },
         )
 
-    if agents_nats:
-        nats_data = {
-            "func": "runscript",
-            "timeout": timeout,
-            "script_args": args,
-            "payload": {
-                "code": script.code,
-                "shell": script.shell,
-            },
-        }
-        for agent in agents_nats:
-            asyncio.run(agent.nats_cmd(nats_data, wait=False))
+    nats_data = {
+        "func": "runscript",
+        "timeout": timeout,
+        "script_args": args,
+        "payload": {
+            "code": script.code,
+            "shell": script.shell,
+        },
+    }
+    for agent in agents_nats:
+        asyncio.run(agent.nats_cmd(nats_data, wait=False))

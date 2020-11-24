@@ -630,10 +630,7 @@ class Agent(BaseAuditModel):
             return "failed"
 
     def not_supported(self, version_added):
-        if pyver.parse(self.version) < pyver.parse(version_added):
-            return True
-
-        return False
+        return pyver.parse(self.version) < pyver.parse(version_added)
 
     def delete_superseded_updates(self):
         try:

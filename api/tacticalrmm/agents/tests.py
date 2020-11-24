@@ -736,11 +736,17 @@ class TestAgentTasks(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
+    @patch("agents.models.Agent.nats_cmd")
     @patch("agents.models.Agent.salt_api_async", return_value=None)
-    def test_get_wmi_detail_task(self, salt_api_async):
-        self.agent = baker.make_recipe("agents.agent")
-        ret = get_wmi_detail_task.s(self.agent.pk).apply()
+    def test_get_wmi_detail_task(self, salt_api_async, nats_cmd):
+        self.agent_salt = baker.make_recipe("agents.agent", version="1.0.2")
+        ret = get_wmi_detail_task.s(self.agent_salt.pk).apply()
         salt_api_async.assert_called_with(timeout=30, func="win_agent.local_sys_info")
+        self.assertEqual(ret.status, "SUCCESS")
+
+        self.agent_nats = baker.make_recipe("agents.agent", version="1.1.0")
+        ret = get_wmi_detail_task.s(self.agent_nats.pk).apply()
+        nats_cmd.assert_called_with({"func": "sysinfo"}, wait=False)
         self.assertEqual(ret.status, "SUCCESS")
 
     @patch("agents.models.Agent.salt_api_cmd")
@@ -765,7 +771,7 @@ class TestAgentTasks(TacticalTestCase):
     @patch("agents.models.Agent.salt_batch_async", return_value=None)
     @patch("agents.tasks.sleep", return_value=None)
     def test_batch_sync_modules_task(self, mock_sleep, salt_batch_async):
-        # chunks of 50, 60 online should run only 2 times
+        # chunks of 50, should run 4 times
         baker.make_recipe(
             "agents.online_agent", last_seen=djangotime.now(), _quantity=60
         )
@@ -775,32 +781,41 @@ class TestAgentTasks(TacticalTestCase):
             _quantity=115,
         )
         ret = batch_sync_modules_task.s().apply()
-        self.assertEqual(salt_batch_async.call_count, 2)
+        self.assertEqual(salt_batch_async.call_count, 4)
         self.assertEqual(ret.status, "SUCCESS")
 
+    @patch("agents.models.Agent.nats_cmd")
     @patch("agents.models.Agent.salt_batch_async", return_value=None)
     @patch("agents.tasks.sleep", return_value=None)
-    def test_batch_sysinfo_task(self, mock_sleep, salt_batch_async):
-        # chunks of 30, 70 online should run only 3 times
-        self.online = baker.make_recipe(
-            "agents.online_agent", version=settings.LATEST_AGENT_VER, _quantity=70
+    def test_batch_sysinfo_task(self, mock_sleep, salt_batch_async, nats_cmd):
+
+        self.agents_nats = baker.make_recipe(
+            "agents.agent", version="1.1.0", _quantity=20
         )
-        self.overdue = baker.make_recipe(
-            "agents.overdue_agent", version=settings.LATEST_AGENT_VER, _quantity=115
-        )
+        # test nats
         ret = batch_sysinfo_task.s().apply()
-        self.assertEqual(salt_batch_async.call_count, 3)
+        self.assertEqual(nats_cmd.call_count, 20)
+        nats_cmd.assert_called_with({"func": "sysinfo"}, wait=False)
+        self.assertEqual(ret.status, "SUCCESS")
+
+        self.agents_salt = baker.make_recipe(
+            "agents.agent", version="1.0.2", _quantity=70
+        )
+
+        minions = [i.salt_id for i in self.agents_salt]
+
+        ret = batch_sysinfo_task.s().apply()
+        self.assertEqual(salt_batch_async.call_count, 1)
+        salt_batch_async.assert_called_with(
+            minions=minions, func="win_agent.local_sys_info"
+        )
         self.assertEqual(ret.status, "SUCCESS")
         salt_batch_async.reset_mock()
-        [i.delete() for i in self.online]
-        [i.delete() for i in self.overdue]
+        [i.delete() for i in self.agents_salt]
 
         # test old agents, should not run
-        self.online_old = baker.make_recipe(
-            "agents.online_agent", version="0.10.2", _quantity=70
-        )
-        self.overdue_old = baker.make_recipe(
-            "agents.overdue_agent", version="0.10.2", _quantity=115
+        self.agents_old = baker.make_recipe(
+            "agents.agent", version="0.10.2", _quantity=70
         )
         ret = batch_sysinfo_task.s().apply()
         salt_batch_async.assert_not_called()

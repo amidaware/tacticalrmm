@@ -8,15 +8,18 @@ RUN npm install
 COPY ./web .
 
 # copy env file to set DOCKER_BUILD to true
-RUN echo "DOCKER_BUILD = true" > .env
+RUN echo "DOCKER_BUILD=1" > .env
 
 # modify index.html template to allow injection of js variables at runtime
 RUN sed -i '/<\/head>/i <script src="\/env-config.js"><\/script>' src/index.template.html
 RUN npm run build
 
-FROM nginx:stable
+FROM nginx:stable-alpine
 
 ENV PUBLIC_DIR /usr/share/nginx/html
+
+RUN apk add --no-cache bash
+SHELL ["/bin/bash", "-c"]
 
 COPY --from=builder /home/node/app/dist/ ${PUBLIC_DIR}
 

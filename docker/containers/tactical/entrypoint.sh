@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 set -e
 
@@ -39,12 +39,12 @@ if [ "$1" = 'tactical-init' ]; then
   # copy container data to volume
   cp -af ${TACTICAL_TMP_DIR}/. ${TACTICAL_DIR}/
 
-  until (echo > /dev/tcp/"${MESH_CONTAINER}"/443) &> /dev/null; do
+  until (nc -z "${MESH_CONTAINER}" 443) &> /dev/null; do
     echo "waiting for meshcentral server to be ready..."
     sleep 5
   done
 
-  until (echo > /dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &> /dev/null; do
+  until (nc -z "${POSTGRES_HOST}" "${POSTGRES_PORT}") &> /dev/null; do
     echo "waiting for postgresql server to be ready..."
     sleep 5
   done

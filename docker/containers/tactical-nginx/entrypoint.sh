@@ -1,9 +1,6 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 set -e
-
-: "${CERT_PRIV_KEY:=''}"
-: "${CERT_PUB_KEY:=''}"
 
 CERT_PRIV_PATH=${TACTICAL_DIR}/certs/privkey.pem
 CERT_PUB_PATH=${TACTICAL_DIR}/certs/pubkey.pem
@@ -14,7 +11,7 @@ mkdir -p "${TACTICAL_DIR}/certs"
 rm -f /etc/nginx/conf.d/default.conf
 
 # check for certificates in env variable
-if [ "${CERT_PRIV_KEY}" != '' ] || [ "${CERT_PUB_KEY}" != '' ]; then
+if [ ! -z "$CERT_PRIV_KEY" ] && [ ! -z "$CERT_PUB_KEY" ]; then
   echo "${CERT_PRIV_KEY}" | base64 -d > ${CERT_PRIV_PATH}
   echo "${CERT_PUB_KEY}" | base64 -d > ${CERT_PUB_PATH}
 else

@@ -49,16 +49,10 @@ if [ "$1" = 'tactical-init' ]; then
     sleep 5
   done
 
-  # check mesh setup and wait for mesh token
-  until [ -f "${TACTICAL_DIR}/tmp/mesh_token" ]; do
-    echo "waiting for mesh token to be generated..."
-    sleep 10
-  done
-
   # configure django settings
   MESH_TOKEN=$(cat ${TACTICAL_DIR}/tmp/mesh_token)
-  DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
   ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
+  DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 
   # write salt pass to tmp dir
   if [ ! -f "${TACTICAL__DIR}/tmp/salt_pass" ]; then

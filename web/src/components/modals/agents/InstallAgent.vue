@@ -81,6 +81,7 @@
 import axios from "axios";
 import mixins from "@/mixins/mixins";
 import AgentDownload from "@/components/modals/agents/AgentDownload";
+import { getBaseUrl } from "@/boot/axios";
 
 export default {
   name: "InstallAgent",
@@ -119,7 +120,7 @@ export default {
         });
     },
     addAgent() {
-      const api = axios.defaults.baseURL;
+      const api = getBaseUrl();
       const clientStripped = this.client.label
         .replace(/\s/g, "")
         .toLowerCase()

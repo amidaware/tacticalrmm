@@ -62,6 +62,7 @@ import axios from "axios";
 import mixins from "@/mixins/mixins";
 import NewDeployment from "@/components/modals/clients/NewDeployment";
 import { copyToClipboard } from "quasar";
+import { getBaseUrl } from "@/boot/axios";
 
 export default {
   name: "Deployment",
@@ -118,7 +119,7 @@ export default {
         });
     },
     copyLink(props) {
-      const api = axios.defaults.baseURL;
+      const api = getBaseUrl;
       copyToClipboard(`${api}/clients/${props.row.uid}/deploy/`).then(() => {
         this.notifySuccess("Link copied to clipboard", 1500);
       });

@@ -27,15 +27,15 @@ app.conf.beat_schedule = {
     },
     "auto-approve-win-updates": {
         "task": "winupdate.tasks.auto_approve_updates_task",
-        "schedule": crontab(minute=0, hour="*/8"),
+        "schedule": crontab(minute=2, hour="*/8"),
     },
     "install-scheduled-win-updates": {
         "task": "winupdate.tasks.check_agent_update_schedule_task",
-        "schedule": crontab(minute=0, hour="*"),
+        "schedule": crontab(minute=5, hour="*"),
     },
     "sync-modules": {
         "task": "agents.tasks.batch_sync_modules_task",
-        "schedule": crontab(minute=40, hour="*/4"),
+        "schedule": crontab(minute=25, hour="*/4"),
     },
     "sys-info": {
         "task": "agents.tasks.batch_sysinfo_task",
@@ -43,11 +43,11 @@ app.conf.beat_schedule = {
     },
     "update-salt": {
         "task": "agents.tasks.update_salt_minion_task",
-        "schedule": crontab(minute=30, hour="*/6"),
+        "schedule": crontab(minute=20, hour="*/6"),
     },
     "agent-auto-update": {
         "task": "agents.tasks.auto_self_agent_update_task",
-        "schedule": crontab(minute=50, hour="*/3"),
+        "schedule": crontab(minute=35, hour="*"),
     },
 }
 

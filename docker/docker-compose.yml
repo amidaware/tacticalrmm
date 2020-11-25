@@ -23,7 +23,7 @@ volumes:
 services:
   # postgres database for api service
   tactical-postgres:
-    image: postgres:13
+    image: postgres:13-alpine
     restart: always
     environment:
       POSTGRES_DB: tacticalrmm
@@ -36,7 +36,7 @@ services:
 
   # redis container for celery tasks
   tactical-redis:
-    image: redis
+    image: redis:6.0-alpine
     restart: always
     networks:
       - redis
@@ -110,7 +110,7 @@ services:
 
   # mongodb container for meshcentral
   tactical-mongodb:
-    image: mongo
+    image: mongo:4.4
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="96"
+SCRIPT_VERSION="97"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -63,6 +63,8 @@ sudo systemctl stop ${i}
 done
 
 cd /rmm
+git config user.email "admin@example.com"
+git config user.name "Bob"
 git fetch
 git checkout master
 git reset --hard FETCH_HEAD

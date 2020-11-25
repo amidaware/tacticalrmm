@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="21"
+SCRIPT_VERSION="22"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
 
 GREEN='\033[0;32m'
@@ -284,6 +284,8 @@ sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
 git clone https://github.com/wh1te909/tacticalrmm.git /rmm/
 cd /rmm
+git config user.email "admin@example.com"
+git config user.name "Bob"
 git checkout master
 
 localvars="$(cat << EOF

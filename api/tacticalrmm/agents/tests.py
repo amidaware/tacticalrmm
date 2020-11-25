@@ -640,14 +640,17 @@ class TestAgentViews(TacticalTestCase):
         self.check_not_authenticated("post", url)
 
     @patch("agents.models.Agent.nats_cmd")
-    def test_recover_mesh(self, mock_ret):
+    def test_recover_mesh(self, nats_cmd):
         url = f"/agents/{self.agent.pk}/recovermesh/"
-        mock_ret.return_value = True
+        nats_cmd.return_value = "ok"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertIn(self.agent.hostname, r.data)
+        nats_cmd.assert_called_with(
+            {"func": "recover", "payload": {"mode": "mesh"}}, timeout=45
+        )
 
-        mock_ret.return_value = "timeout"
+        nats_cmd.return_value = "timeout"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
 

@@ -11,29 +11,31 @@
         <div class="q-gutter-sm">
           <q-radio dense v-model="mode" val="mesh" label="Mesh Agent" />
           <q-radio dense v-model="mode" val="rpc" label="Tactical RPC" />
+          <q-radio dense v-model="mode" val="tacagent" label="Tactical Agent" />
+          <q-radio dense v-model="mode" val="checkrunner" label="Tactical Checkrunner" />
           <q-radio dense v-model="mode" val="salt" label="Salt Minion" />
           <q-radio dense v-model="mode" val="command" label="Shell Command" />
         </div>
       </q-card-section>
       <q-card-section v-show="mode === 'mesh'">
-        <p>Fix issues with the Mesh Agent which handles take control, terminal and file browser.</p>
+        <p>Fix issues with the Mesh Agent which handles take control, live terminal and file browser.</p>
+      </q-card-section>
+      <q-card-section v-show="mode === 'tacagent'">
+        <p>Fix issues with the TacticalAgent windows service which handles agent check-in and os info.</p>
+      </q-card-section>
+      <q-card-section v-show="mode === 'checkrunner'">
+        <p>Fix issues with the Tactical Checkrunner windows service which handles running all checks.</p>
       </q-card-section>
       <q-card-section v-show="mode === 'salt'">
-        <p>
-          Fix issues with the salt-minion (do this if getting alot of errors about not being able to contact the agent
-          even if it's online).
-        </p>
+        <p>Fix issues with the salt-minion which handles windows updates, chocolatey and scheduled tasks.</p>
       </q-card-section>
       <q-card-section v-show="mode === 'rpc'">
-        <p>
-          Fix issues with the Tactical RPC service (do this if getting alot of errors about not being able to contact
-          the agent even if it's online).
-        </p>
+        <p>Fix issues with the Tactical RPC service which handles most of the agent's realtime functions.</p>
       </q-card-section>
       <q-card-section v-show="mode === 'command'">
         <p>Run a shell command on the agent.</p>
         <p>You should use the 'Send Command' feature from the agent's context menu for sending shell commands.</p>
-        <p>Only use this as a last resort if unable to recover the salt-minion.</p>
+        <p>Only use this as a last resort if unable to recover the Tactical RPC service.</p>
         <q-input
           ref="input"
           v-model="cmd"
@@ -82,6 +84,7 @@ export default {
   },
   methods: {
     recover() {
+      this.$q.loading.show();
       const data = {
         pk: this.pk,
         cmd: this.cmd,
@@ -90,10 +93,12 @@ export default {
       this.$axios
         .post("/agents/recover/", data)
         .then(r => {
+          this.$q.loading.hide();
           this.$emit("close");
           this.notifySuccess(r.data, 5000);
         })
         .catch(e => {
+          this.$q.loading.hide();
           this.notifyError(e.response.data, 5000);
         });
     },

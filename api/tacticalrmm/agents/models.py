@@ -753,6 +753,7 @@ RECOVERY_CHOICES = [
     ("mesh", "Mesh"),
     ("command", "Command"),
     ("rpc", "Nats RPC"),
+    ("checkrunner", "Checkrunner"),
 ]
 
 

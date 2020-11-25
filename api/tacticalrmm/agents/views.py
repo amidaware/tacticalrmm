@@ -636,25 +636,51 @@ def install_agent(request):
 @api_view(["POST"])
 def recover(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
+    mode = request.data["mode"]
 
     if pyver.parse(agent.version) <= pyver.parse("0.9.5"):
         return notify_error("Only available in agent version greater than 0.9.5")
+
+    if not agent.has_nats:
+        if mode == "tacagent" or mode == "checkrunner":
+            return notify_error("Requires agent version 1.1.0 or greater")
+
+    # attempt a realtime recovery if supported, otherwise fall back to old recovery method
+    if agent.has_nats:
+        if (
+            mode == "tacagent"
+            or mode == "checkrunner"
+            or mode == "salt"
+            or mode == "mesh"
+        ):
+            data = {"func": "recover", "payload": {"mode": mode}}
+            r = asyncio.run(agent.nats_cmd(data, timeout=10))
+            if r == "ok":
+                return Response("Successfully completed recovery")
 
     if agent.recoveryactions.filter(last_run=None).exists():
         return notify_error(
             "A recovery action is currently pending. Please wait for the next agent check-in."
         )
 
-    if request.data["mode"] == "command" and not request.data["cmd"]:
+    if mode == "command" and not request.data["cmd"]:
         return notify_error("Command is required")
 
+    # if we've made it this far and realtime recovery didn't work,
+    # tacagent service is the fallback recovery so we obv can't use that to recover itself if it's down
+    if mode == "tacagent":
+        return notify_error(
+            "Requires RPC service to be functional. Please recover that first"
+        )
+
+    # we should only get here if all other methods fail
     RecoveryAction(
         agent=agent,
-        mode=request.data["mode"],
-        command=request.data["cmd"] if request.data["mode"] == "command" else None,
+        mode=mode,
+        command=request.data["cmd"] if mode == "command" else None,
     ).save()
 
-    return Response(f"Recovery will be attempted on the agent's next check-in")
+    return Response("Recovery will be attempted on the agent's next check-in")
 
 
 @api_view(["POST"])
@@ -695,8 +721,10 @@ def recover_mesh(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     if not agent.has_nats:
         return notify_error("Requires agent version 1.1.0 or greater")
-    r = asyncio.run(agent.nats_cmd({"func": "recovermesh"}, timeout=45))
-    if r == "timeout":
+
+    data = {"func": "recover", "payload": {"mode": "mesh"}}
+    r = asyncio.run(agent.nats_cmd(data, timeout=45))
+    if r != "ok":
         return notify_error("Unable to contact the agent")
 
     return Response(f"Repaired mesh agent on {agent.hostname}")

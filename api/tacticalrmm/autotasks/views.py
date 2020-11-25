@@ -1,3 +1,4 @@
+import asyncio
 import pytz
 from django.shortcuts import get_object_or_404
 
@@ -17,7 +18,6 @@ from .serializers import TaskSerializer, AutoTaskSerializer
 from .tasks import (
     create_win_task_schedule,
     delete_win_task_schedule,
-    run_win_task,
     enable_or_disable_win_task,
 )
 from tacticalrmm.utils import notify_error
@@ -114,5 +114,8 @@ class AutoTask(APIView):
 @api_view()
 def run_task(request, pk):
     task = get_object_or_404(AutomatedTask, pk=pk)
-    run_win_task.delay(task.pk)
+    if not task.agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+
+    asyncio.run(task.agent.nats_cmd({"func": "runtask", "taskpk": task.pk}, wait=False))
     return Response(f"{task.name} will now be run on {task.agent.hostname}")

@@ -206,6 +206,7 @@ def delete_win_task_schedule(pk, pending_action=False):
 
 @app.task
 def run_win_task(pk):
+    # TODO deprecated, remove this function once salt gone
     task = AutomatedTask.objects.get(pk=pk)
     r = task.agent.salt_api_async(func="task.run", arg=[f"name={task.win_task_name}"])
     return "ok"

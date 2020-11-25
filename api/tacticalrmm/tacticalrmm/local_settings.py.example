@@ -37,7 +37,6 @@ if not DEBUG:
         )
     })
 
-
 SALT_USERNAME = "changeme"
 SALT_PASSWORD = "changeme"
 MESH_USERNAME = "changeme"

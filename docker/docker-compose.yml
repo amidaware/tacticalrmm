@@ -75,6 +75,19 @@ services:
       - salt_data:/etc/salt
     networks:
       - proxy
+  
+  # nats
+  tactical-nats:
+    image: ${IMAGE_REPO}tactical-nats:${VERSION}
+    restart: always
+    ports:
+      - "4222:4222"
+    volumes:
+      - tactical_data:/opt/tactical
+    networks:
+      proxy:
+        aliases:
+          - ${API_HOST}
 
   # meshcentral container
   tactical-meshcentral:
@@ -95,7 +108,7 @@ services:
     depends_on:
       - tactical-mongodb
 
-  # mongodb container for meshCentral
+  # mongodb container for meshcentral
   tactical-mongodb:
     image: mongo
     restart: always
@@ -106,9 +119,9 @@ services:
     networks:
       - mesh-db
     volumes:
-      - mongo_data:/data
+      - mongo_data:/data/db
 
-  # container that hosts Vue frontend
+  # container that hosts vue frontend
   tactical-frontend:
     image: ${IMAGE_REPO}tactical-frontend:${VERSION}
     restart: always

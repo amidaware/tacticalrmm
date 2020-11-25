@@ -2,11 +2,8 @@
 
 set -e
 
-: "${CERT_PRIV_KEY:=''}"
-: "${CERT_PUB_KEY:=''}"
-
 CERT_PRIV_PATH=${TACTICAL_DIR}/certs/privkey.pem
-CERT_PUB_PATH=${TACTICAL_DIR}/certs/pubkey.pem
+CERT_PUB_PATH=${TACTICAL_DIR}/certs/fullchain.pem
 
 mkdir -p "${TACTICAL_DIR}/certs"
 
@@ -14,13 +11,13 @@ mkdir -p "${TACTICAL_DIR}/certs"
 rm -f /etc/nginx/conf.d/default.conf
 
 # check for certificates in env variable
-if [ "${CERT_PRIV_KEY}" != '' ] || [ "${CERT_PUB_KEY}" != '' ]; then
-  echo "${CERT_PRIV_KEY}" | base64 --decode > ${CERT_PRIV_PATH}
-  echo "${CERT_PUB_KEY}" | base64 --decode > ${CERT_PUB_PATH}
+if [ ! -z "$CERT_PRIV_KEY" ] && [ ! -z "$CERT_PUB_KEY" ]; then
+  echo "${CERT_PRIV_KEY}" | base64 -d > ${CERT_PRIV_PATH}
+  echo "${CERT_PUB_KEY}" | base64 -d > ${CERT_PUB_PATH}
 else
   # generate a self signed cert
   if [ ! -f "${CERT_PRIV_PATH}" ] || [ ! -f "${CERT_PUB_PATH}" ]; then
-    rootdomain=$(echo ${API_HOST} | cut -d "." -f 2,3 )
+    rootdomain=$(echo ${API_HOST} | cut -d "." -f2- )
     openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out ${CERT_PUB_PATH} -keyout ${CERT_PRIV_PATH} -subj "/C=US/ST=Some-State/L=city/O=Internet Widgits Pty Ltd/CN=*.${rootdomain}"
   fi
 fi

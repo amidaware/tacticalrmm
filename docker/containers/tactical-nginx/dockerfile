@@ -1,6 +1,10 @@
-FROM nginx:stable
+FROM nginx:stable-alpine
 
 ENV TACTICAL_DIR /opt/tactical
+
+RUN apk add --no-cache openssl bash
+
+SHELL ["/bin/bash", "-c"]
 
 COPY docker/containers/tactical-nginx/entrypoint.sh /docker-entrypoint.d/
 RUN chmod +x /docker-entrypoint.d/entrypoint.sh

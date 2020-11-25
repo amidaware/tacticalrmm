@@ -40,20 +40,19 @@ if [ "$1" = 'tactical-init' ]; then
   cp -af ${TACTICAL_TMP_DIR}/. ${TACTICAL_DIR}/
 
   until (echo > /dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &> /dev/null; do
-    echo "waiting for postgresql server to be ready..."
+    echo "waiting for postgresql container to be ready..."
     sleep 5
   done
 
-  # check mesh setup and wait for mesh token
-  until [ -f "${TACTICAL_DIR}/tmp/mesh_token" ]; do
-    echo "waiting for mesh token to be generated..."
-    sleep 10
+  until (echo > /dev/tcp/"${MESH_CONTAINER}"/443) &> /dev/null; do
+    echo "waiting for meshcentral container to be ready..."
+    sleep 5
   done
 
   # configure django settings
   MESH_TOKEN=$(cat ${TACTICAL_DIR}/tmp/mesh_token)
-  DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
   ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
+  DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
 
   # write salt pass to tmp dir
   if [ ! -f "${TACTICAL__DIR}/tmp/salt_pass" ]; then
@@ -67,6 +66,8 @@ if [ "$1" = 'tactical-init' ]; then
 SECRET_KEY = '${DJANGO_SEKRET}'
 
 DEBUG = False
+
+DOCKER_BUILD = True
 
 SCRIPTS_DIR = '/opt/tactical/scripts'
 
@@ -127,6 +128,7 @@ EOF
   python manage.py initial_mesh_setup
   python manage.py load_chocos
   python manage.py load_community_scripts
+  python manage.py reload_nats
 
   # create super user 
   echo "from accounts.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else 0;" | python manage.py shell

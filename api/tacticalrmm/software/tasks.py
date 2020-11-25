@@ -94,7 +94,7 @@ def get_installed_software(pk):
         logger.error(f"{agent.salt_id} software list only available in agent >= 1.1.0")
         return
 
-    r = asyncio.run(agent.nats_cmd({"func": "softwarelist"}, timeout=15))
+    r = asyncio.run(agent.nats_cmd({"func": "softwarelist"}, timeout=20))
     if r == "timeout" or r == "natsdown":
         logger.error(f"{agent.salt_id} {r}")
         return

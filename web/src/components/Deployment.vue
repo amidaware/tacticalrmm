@@ -119,7 +119,7 @@ export default {
         });
     },
     copyLink(props) {
-      const api = getBaseUrl;
+      const api = getBaseUrl();
       copyToClipboard(`${api}/clients/${props.row.uid}/deploy/`).then(() => {
         this.notifySuccess("Link copied to clipboard", 1500);
       });

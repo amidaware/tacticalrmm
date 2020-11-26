@@ -31,7 +31,7 @@
       :pagination.sync="pagination"
       binary-state-sort
       hide-bottom
-      row-key="name"
+      row-key="id"
       :loading="loading"
     >
       <template v-slot:loading>

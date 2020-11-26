@@ -133,7 +133,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	time.Sleep(20 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	fmt.Println("Installation starting.")
 	cmd := exec.Command(tacrmm, cmdArgs...)

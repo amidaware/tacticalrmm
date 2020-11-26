@@ -229,42 +229,43 @@ def batch_sysinfo_task():
 
 
 @app.task
-def uninstall_agent_task(salt_id):
+def uninstall_agent_task(salt_id, has_nats):
     attempts = 0
     error = False
 
-    while 1:
-        try:
+    if not has_nats:
+        while 1:
+            try:
 
-            r = requests.post(
-                f"http://{settings.SALT_HOST}:8123/run",
-                json=[
-                    {
-                        "client": "local",
-                        "tgt": salt_id,
-                        "fun": "win_agent.uninstall_agent",
-                        "timeout": 8,
-                        "username": settings.SALT_USERNAME,
-                        "password": settings.SALT_PASSWORD,
-                        "eauth": "pam",
-                    }
-                ],
-                timeout=10,
-            )
-            ret = r.json()["return"][0][salt_id]
-        except Exception:
-            attempts += 1
-        else:
-            if ret != "ok":
+                r = requests.post(
+                    f"http://{settings.SALT_HOST}:8123/run",
+                    json=[
+                        {
+                            "client": "local",
+                            "tgt": salt_id,
+                            "fun": "win_agent.uninstall_agent",
+                            "timeout": 8,
+                            "username": settings.SALT_USERNAME,
+                            "password": settings.SALT_PASSWORD,
+                            "eauth": "pam",
+                        }
+                    ],
+                    timeout=10,
+                )
+                ret = r.json()["return"][0][salt_id]
+            except Exception:
                 attempts += 1
             else:
-                attempts = 0
+                if ret != "ok":
+                    attempts += 1
+                else:
+                    attempts = 0
 
-        if attempts >= 10:
-            error = True
-            break
-        elif attempts == 0:
-            break
+            if attempts >= 10:
+                error = True
+                break
+            elif attempts == 0:
+                break
 
     if error:
         logger.error(f"{salt_id} uninstall failed")

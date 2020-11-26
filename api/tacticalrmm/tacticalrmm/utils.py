@@ -24,7 +24,7 @@ def reload_nats():
         cert_path = f"/etc/letsencrypt/live/{domain}"
     else:
         cert_path = "/opt/tactical/certs"
-        
+
     config = {
         "tls": {
             "cert_file": f"{cert_path}/fullchain.pem",
@@ -39,4 +39,6 @@ def reload_nats():
         json.dump(config, f)
 
     if not settings.DOCKER_BUILD:
-        subprocess.run(["/usr/local/bin/nats-server", "-signal", "reload"])
+        subprocess.run(
+            ["/usr/local/bin/nats-server", "-signal", "reload"], capture_output=True
+        )

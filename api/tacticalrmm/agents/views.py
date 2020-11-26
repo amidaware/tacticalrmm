@@ -642,7 +642,7 @@ def recover(request):
         return notify_error("Only available in agent version greater than 0.9.5")
 
     if not agent.has_nats:
-        if mode == "tacagent" or mode == "checkrunner":
+        if mode == "tacagent" or mode == "checkrunner" or mode == "rpc":
             return notify_error("Requires agent version 1.1.0 or greater")
 
     # attempt a realtime recovery if supported, otherwise fall back to old recovery method

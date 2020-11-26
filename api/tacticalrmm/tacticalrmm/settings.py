@@ -15,25 +15,25 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.1.8"
+TRMM_VERSION = "0.2.0"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.90"
+APP_VER = "0.0.91"
 
 # https://github.com/wh1te909/salt
 LATEST_SALT_VER = "1.1.0"
 
 # https://github.com/wh1te909/rmmagent
-LATEST_AGENT_VER = "1.0.2"
+LATEST_AGENT_VER = "1.1.0"
 
 MESH_VER = "0.6.84"
 
 SALT_MASTER_VER = "3002.2"
 
 # for the update script, bump when need to recreate venv or npm install
-PIP_VER = "2"
-NPM_VER = "1"
+PIP_VER = "3"
+NPM_VER = "2"
 
 DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
 DL_32 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"

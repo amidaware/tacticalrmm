@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SCRIPT_VERSION="22"
-SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
+SCRIPT_VERSION="23"
+SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -140,35 +140,19 @@ sudo apt install -y software-properties-common
 sudo apt update
 sudo apt install -y certbot openssl
 
-until [[ $LETS_ENCRYPT =~ (y|n) ]]; do
-    echo -ne "${YELLOW}Do you want to generate a Let's Encrypt certificate?[y,n]${NC}: "
-    read LETS_ENCRYPT
+print_green 'Getting wildcard cert'
+
+sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
+while [[ $? -ne 0 ]]
+do
+sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
 done
 
-if [[ $LETS_ENCRYPT == "y" ]]; then
+CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
+CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
 
-    print_green 'Getting wildcard cert'
-
-    sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
-    while [[ $? -ne 0 ]]
-    do
-    sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
-    done
-
-    CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
-    CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
-
-else
-    echo -ne "\n${GREEN}We will generate a self-signed certificate for you.${NC}\n"
-    echo -ne "\n${GREEN}You can replace this certificate later by generating the certificates and editing the nginx configuration${NC}\n"
-    read -n 1 -s -r -p "Press any key to continue..."
-    sudo mkdir -p /certs/${rootdomain}
-    sudo openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /certs/${rootdomain}/pubkey.pem -keyout /certs/${rootdomain}/privkey.pem -subj "/C=US/ST=Some-State/L=city/O=Internet Widgits Pty Ltd/CN=*.${rootdomain}"
-
-    CERT_PRIV_KEY=/certs/${rootdomain}/privkey.pem
-    CERT_PUB_KEY=/certs/${rootdomain}/pubkey.pem
-
-fi
+sudo chown ${USER}:${USER} -R /etc/letsencrypt
+sudo chmod 775 -R /etc/letsencrypt
 
 print_green 'Creating saltapi user'
 
@@ -181,12 +165,24 @@ sudo apt install -y curl wget
 
 sudo mkdir -p /usr/local/rmmgo
 go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)
-wget https://golang.org/dl/go1.15.linux-amd64.tar.gz -P ${go_tmp}
+wget https://golang.org/dl/go1.15.5.linux-amd64.tar.gz -P ${go_tmp}
 
-tar -xzf ${go_tmp}/go1.15.linux-amd64.tar.gz -C ${go_tmp}
+tar -xzf ${go_tmp}/go1.15.5.linux-amd64.tar.gz -C ${go_tmp}
 
 sudo mv ${go_tmp}/go /usr/local/rmmgo/
 rm -rf ${go_tmp}
+
+print_green 'Downloading NATS'
+
+nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
+wget https://github.com/nats-io/nats-server/releases/download/v2.1.9/nats-server-v2.1.9-linux-amd64.tar.gz -P ${nats_tmp}
+
+tar -xzf ${nats_tmp}/nats-server-v2.1.9-linux-amd64.tar.gz -C ${nats_tmp}
+
+sudo mv ${nats_tmp}/nats-server-v2.1.9-linux-amd64/nats-server /usr/local/bin/
+sudo chmod +x /usr/local/bin/nats-server
+sudo chown ${USER}:${USER} /usr/local/bin/nats-server
+rm -rf ${nats_tmp}
 
 print_green 'Installing Nginx'
 
@@ -416,6 +412,28 @@ WantedBy=multi-user.target
 EOF
 )"
 echo "${rmmservice}" | sudo tee /etc/systemd/system/rmm.service > /dev/null
+
+natsservice="$(cat << EOF
+[Unit]
+Description=NATS Server
+After=network.target ntp.service
+
+[Service]
+PrivateTmp=true
+Type=simple
+ExecStart=/usr/local/bin/nats-server -c /rmm/api/tacticalrmm/nats-rmm.conf
+ExecReload=/usr/bin/kill -s HUP \$MAINPID
+ExecStop=/usr/bin/kill -s SIGINT \$MAINPID
+User=${USER}
+Group=www-data
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service > /dev/null
 
 
 nginxrmm="$(cat << EOF
@@ -829,10 +847,13 @@ node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginu
 sleep 5
 MESHEXE=$(node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} GenerateInviteLink --group TacticalRMM --hours 8)
 
+sudo systemctl enable nats.service
 cd /rmm/api/tacticalrmm
 source /rmm/api/env/bin/activate
 python manage.py initial_db_setup
+python manage.py reload_nats
 deactivate
+sudo systemctl start nats.service
 
 
 print_green 'Restarting services'

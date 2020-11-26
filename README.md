@@ -78,7 +78,7 @@ Create A record ```mesh.tacticalrmm.com``` for meshcentral
 Download the install script and run it
 
 ```
-wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh
+wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh
 chmod +x install.sh
 ./install.sh
 ```
@@ -92,17 +92,17 @@ chmod +x install.sh
 From the app's dashboard, choose Agents > Install Agent to generate an installer.
 
 ## Updating
-Download and run [update.sh](./update.sh) ([Raw](https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh))
+Download and run [update.sh](https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh)
 ```
-wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh
+wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh
 chmod +x update.sh
 ./update.sh
 ```
 
 ## Backup
-Download [backup.sh](./backup.sh) ([Raw](https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/backup.sh))
+Download [backup.sh](https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/backup.sh)
 ```
-wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/backup.sh
+wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/backup.sh
 ```
 Change the postgres username and password at the top of the file (you can find them in `/rmm/api/tacticalrmm/tacticalrmm/local_settings.py` under the DATABASES section)
 
@@ -121,22 +121,11 @@ Copy backup file to new server
 
 Download the restore script, and edit the postgres username/password at the top of the file. Same instructions as above in the backup steps.
 ```
-wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/restore.sh
+wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh
 ```
 
 Run the restore script, passing it the backup tar file as the first argument
 ```
 chmod +x restore.sh
 ./restore.sh rmm-backup-xxxxxxx.tar
-```
-
-## Using another ssl certificate
-During the install you can opt out of using the Let's Encrypt certificate. If you do this the script will create a self-signed certificate, so that https continues to work. You can replace the certificates in /certs/example.com/(privkey.pem | pubkey.pem) with your own. 
-
-If you are migrating from Let's Encrypt to another certificate provider, you can create the /certs directory and copy your certificates there. It is recommended to do this because this directory will be backed up with the backup script provided. Then modify the nginx configurations to use your new certificates
-
-The cert that is generated is a wildcard certificate and is used in the nginx configurations: rmm.conf, api.conf, and mesh.conf. If you can't generate wildcard certificates you can create a cert for each subdomain and configure each nginx configuration file to use its own certificate. Then restart nginx:
-
-```
-sudo systemctl restart nginx
 ```

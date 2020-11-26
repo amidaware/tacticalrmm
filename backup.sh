@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SCRIPT_VERSION="2"
-SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/backup.sh'
+SCRIPT_VERSION="3"
+SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/backup.sh'
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -31,9 +31,23 @@ POSTGRES_PW="hunter2"
 
 #####################################################
 
+if [[ "$POSTGRES_USER" == "changeme" || "$POSTGRES_PW" == "hunter2" ]]; then
+  printf >&2 "${RED}You must change the postgres username/password at the top of this file.${NC}\n"
+  printf >&2 "${RED}Check the github readme for where to find them.${NC}\n"
+  exit 1
+fi
+
 if [ ! -d /rmmbackups ]; then
     sudo mkdir /rmmbackups
     sudo chown ${USER}:${USER} /rmmbackups
+fi
+
+if [ -d /meshcentral/meshcentral-backup ]; then
+    rm -f /meshcentral/meshcentral-backup/*
+fi
+
+if [ -d /meshcentral/meshcentral-coredumps ]; then
+    rm -f /meshcentral/meshcentral-coredumps/*
 fi
 
 dt_now=$(date '+%Y_%m_%d__%H_%M_%S')

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SCRIPT_VERSION="97"
-SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/update.sh'
+SCRIPT_VERSION="98"
+SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
@@ -56,7 +56,76 @@ LATEST_SALT_VER=$(grep "^SALT_MASTER_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{prin
 CURRENT_PIP_VER=$(grep "^PIP_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 CURRENT_NPM_VER=$(grep "^NPM_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
-for i in nginx rmm celery celerybeat celery-winupdate
+NEEDS_NATS=false
+if [ ! -f /etc/systemd/system/nats.service ]; then
+  if [ ! -d /etc/letsencrypt ]; then
+      printf >&2 "${RED}ERROR: no letsencrypt cert detected. The RMM now requires a valid TLS certificate${NC}\n"
+      printf >&2 "${RED}Please send us a message in our discord for instructions on how to proceed, or open a github ticket.${NC}\n"
+      exit 1
+  fi
+  NEEDS_NATS=true
+fi
+
+if [ "$NEEDS_NATS" = true ]; then
+printf "\033c"
+printf >&2 "\n\n"
+printf >&2 "${YELLOW}WARNING: BREAKING CHANGES AHEAD${NC}\n\n"
+printf >&2 "${YELLOW}In order to continue with this update, please open up port 4222 TCP in ufw${NC}\n\n"
+printf >&2 "${YELLOW}If you are running behind NAT, make sure to also setup the necessary port forwards in your router${NC}\n\n"
+printf >&2 "${YELLOW}Run the following command to open the port in ufw firewall:\n\n${GREEN}sudo ufw allow proto tcp from any to any port 4222 && sudo ufw reload${NC}\n\n\n"
+printf >&2 "${YELLOW}Many of your agent functions will stop working until your agents are updated to at least version 1.1.0${NC}\n"
+printf >&2 "${YELLOW}This will happen shortly after this update completes, as long as you have auto agent updated enabled in Global Settings${NC}\n"
+printf >&2 "${YELLOW}A background job also runs every hour to auto update agents.\nIf you do not want to wait, you may manually trigger an agent update from the Agents > Update Agents menu in the web ui.${NC}\n\n\n"
+until [[ "$CONFIRM_NATS" == "yes" ]]; do
+    echo -ne "${RED}If you have not opened port 4222 yet, please Ctrl+C to cancel this script, open the port and then re-run${NC}"
+    printf >&2 "\n\n"
+    echo -ne "${YELLOW}Confirm you have port 4222 TCP open? [type 'yes' to confirm]${NC}: "
+    read CONFIRM_NATS
+done
+printf >&2 "\n"
+fi
+
+if [ "$NEEDS_NATS" = true ]; then
+printf >&2 "${Green}Downloading nats${NC}\n\n"
+nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
+wget https://github.com/nats-io/nats-server/releases/download/v2.1.9/nats-server-v2.1.9-linux-amd64.tar.gz -P ${nats_tmp}
+
+tar -xzf ${nats_tmp}/nats-server-v2.1.9-linux-amd64.tar.gz -C ${nats_tmp}
+
+sudo mv ${nats_tmp}/nats-server-v2.1.9-linux-amd64/nats-server /usr/local/bin/
+sudo chmod +x /usr/local/bin/nats-server
+sudo chown ${USER}:${USER} /usr/local/bin/nats-server
+rm -rf ${nats_tmp}
+
+natsservice="$(cat << EOF
+[Unit]
+Description=NATS Server
+After=network.target ntp.service
+
+[Service]
+PrivateTmp=true
+Type=simple
+ExecStart=/usr/local/bin/nats-server -c /rmm/api/tacticalrmm/nats-rmm.conf
+ExecReload=/usr/bin/kill -s HUP \$MAINPID
+ExecStop=/usr/bin/kill -s SIGINT \$MAINPID
+User=${USER}
+Group=www-data
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service > /dev/null
+
+sudo systemctl daemon-reload
+sudo systemctl enable nats.service
+
+fi
+
+
+for i in nginx rmm celery celerybeat celery-winupdate nats
 do
 printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}
@@ -98,6 +167,8 @@ sudo chown -R $USER:$GROUP /home/${USER}/.npm
 sudo chown -R $USER:$GROUP /home/${USER}/.config
 sudo chown -R $USER:$GROUP /home/${USER}/.cache
 sudo chmod 750 /srv/salt/scripts/userdefined
+sudo chown ${USER}:${USER} -R /etc/letsencrypt
+sudo chmod 775 -R /etc/letsencrypt
 
 cp /rmm/_modules/* /srv/salt/_modules/
 cp /rmm/scripts/* /srv/salt/scripts/
@@ -118,6 +189,7 @@ if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]]; then
 else
   source /rmm/api/env/bin/activate
   cd /rmm/api/tacticalrmm
+  pip install -r requirements.txt
 fi
 
 python manage.py pre_update_tasks
@@ -125,10 +197,12 @@ python manage.py migrate
 python manage.py delete_tokens
 python manage.py fix_salt_key
 python manage.py collectstatic --no-input
+python manage.py reload_nats
 python manage.py post_update_tasks
 deactivate
 
 rm -rf /rmm/web/dist
+rm -rf /rmm/web/.quasar
 cd /rmm/web
 if [[ "${CURRENT_NPM_VER}" != "${LATEST_NPM_VER}" ]]; then
   rm -rf /rmm/web/node_modules
@@ -140,7 +214,7 @@ sudo rm -rf /var/www/rmm/dist
 sudo cp -pr /rmm/web/dist /var/www/rmm/
 sudo chown www-data:www-data -R /var/www/rmm/dist
 
-for i in celery celerybeat celery-winupdate rmm nginx
+for i in celery celerybeat celery-winupdate rmm nginx nats
 do
 printf >&2 "${GREEN}Starting ${i} service${NC}\n"
 sudo systemctl start ${i}

@@ -15,6 +15,25 @@
       <template v-slot:top>
         <q-btn v-if="poll" dense flat push @click="stopPoll" icon="stop" label="Stop Live Refresh" />
         <q-btn v-else dense flat push @click="startPoll" icon="play_arrow" label="Resume Live Refresh" />
+
+        <q-space />
+
+        <div class="q-pa-md q-gutter-sm">
+          <q-btn dense push icon="add" color="primary" @click="intervalChanged('add')" />
+          <q-btn
+            :disable="pollInterval === 1"
+            dense
+            @click="intervalChanged('subtract')"
+            push
+            icon="remove"
+            color="negative"
+          />
+        </div>
+        <div class="text-overline">
+          <q-badge align="middle" class="text-h6" color="blue" :label="pollInterval" />
+          Refresh interval (seconds)
+        </div>
+
         <q-space />
         <q-input v-model="filter" outlined label="Search" dense clearable>
           <template v-slot:prepend>
@@ -58,6 +77,7 @@ export default {
   data() {
     return {
       polling: null,
+      pollInterval: 2,
       mem: null,
       poll: true,
       procs: [],
@@ -81,6 +101,7 @@ export default {
           field: "cpu_percent",
           align: "left",
           sortable: true,
+          sort: (a, b, rowA, rowB) => parseInt(b) < parseInt(a),
         },
         {
           name: "memory_percent",
@@ -134,7 +155,7 @@ export default {
           .get(`/agents/${this.pk}/getprocs/`)
           .then(r => (this.procs = r.data))
           .catch(() => console.log("Unable to contact the agent"));
-      }, 2 * 1000);
+      }, this.pollInterval * 1000);
     },
     killProc(pid, name) {
       this.$q.loading.show({ message: `Attempting to kill process ${name}` });
@@ -152,6 +173,20 @@ export default {
     stopPoll() {
       this.poll = false;
       clearInterval(this.polling);
+    },
+    intervalChanged(action) {
+      if (action === "subtract" && this.pollInterval <= 1) {
+        this.stopPoll();
+        this.startPoll();
+        return;
+      }
+      if (action === "add") {
+        this.pollInterval++;
+      } else {
+        this.pollInterval--;
+      }
+      this.stopPoll();
+      this.startPoll();
     },
     startPoll() {
       this.poll = true;

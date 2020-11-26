@@ -23,11 +23,16 @@
       <br />
       <hr />
       <q-checkbox v-model="selectAll" label="Select All" @input="selectAllAction" />
+      <q-btn v-show="group.length !== 0" label="Update" color="primary" @click="update" class="q-ml-xl" />
       <hr />
-      <q-option-group v-model="group" :options="agentOptions" color="green" type="checkbox" />
-    </q-card-section>
-    <q-card-section>
-      <q-btn v-show="group.length !== 0" label="Update" color="primary" @click="update" />
+      <q-option-group
+        v-model="group"
+        :options="agentOptions"
+        color="green"
+        type="checkbox"
+        style="max-height: 60vh; max-width: 40vw"
+        class="scroll"
+      />
     </q-card-section>
   </q-card>
 </template>

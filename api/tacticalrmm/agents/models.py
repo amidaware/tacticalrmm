@@ -7,6 +7,7 @@ from Crypto.Random import get_random_bytes
 from Crypto.Hash import SHA3_384
 from Crypto.Util.Padding import pad
 import validators
+import msgpack
 import random
 import re
 import string
@@ -14,6 +15,8 @@ from collections import Counter
 from loguru import logger
 from packaging import version as pyver
 from distutils.version import LooseVersion
+from nats.aio.client import Client as NATS
+from nats.aio.errors import ErrTimeout
 
 from django.db import models
 from django.conf import settings
@@ -83,6 +86,10 @@ class Agent(BaseAuditModel):
         return self.site.client
 
     @property
+    def has_nats(self):
+        return pyver.parse(self.version) >= pyver.parse("1.1.0")
+
+    @property
     def timezone(self):
         # return the default timezone unless the timezone is explicity set per agent
         if self.time_zone is not None:
@@ -142,11 +149,7 @@ class Agent(BaseAuditModel):
 
     @property
     def has_patches_pending(self):
-
-        if self.winupdates.filter(action="approve").filter(installed=False).exists():
-            return True
-        else:
-            return False
+        return self.winupdates.filter(action="approve").filter(installed=False).exists()
 
     @property
     def checks(self):
@@ -433,6 +436,37 @@ class Agent(BaseAuditModel):
         except Exception:
             return "err"
 
+    async def nats_cmd(self, data, timeout=30, wait=True):
+        nc = NATS()
+        options = {
+            "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
+            "user": "tacticalrmm",
+            "password": settings.SECRET_KEY,
+            "connect_timeout": 3,
+            "max_reconnect_attempts": 2,
+        }
+        try:
+            await nc.connect(**options)
+        except:
+            return "natsdown"
+
+        if wait:
+            try:
+                msg = await nc.request(
+                    self.agent_id, msgpack.dumps(data), timeout=timeout
+                )
+            except ErrTimeout:
+                ret = "timeout"
+            else:
+                ret = msgpack.loads(msg.data)
+
+            await nc.close()
+            return ret
+        else:
+            await nc.publish(self.agent_id, msgpack.dumps(data))
+            await nc.flush()
+            await nc.close()
+
     def salt_api_cmd(self, **kwargs):
 
         # salt should always timeout first before the requests' timeout
@@ -592,10 +626,7 @@ class Agent(BaseAuditModel):
             return "failed"
 
     def not_supported(self, version_added):
-        if pyver.parse(self.version) < pyver.parse(version_added):
-            return True
-
-        return False
+        return pyver.parse(self.version) < pyver.parse(version_added)
 
     def delete_superseded_updates(self):
         try:
@@ -721,6 +752,8 @@ RECOVERY_CHOICES = [
     ("salt", "Salt"),
     ("mesh", "Mesh"),
     ("command", "Command"),
+    ("rpc", "Nats RPC"),
+    ("checkrunner", "Checkrunner"),
 ]
 
 

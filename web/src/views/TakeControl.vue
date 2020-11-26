@@ -75,13 +75,19 @@ export default {
     restart() {
       this.visible = false;
       this.$q.loading.show({ message: "Restarting Mesh Agent" });
+      const data = {
+        pk: this.$route.params.pk,
+        sv_name: "mesh agent",
+        sv_action: "restart",
+      };
+
       this.$axios
-        .get(`/agents/${this.$route.params.pk}/restartmesh/`)
+        .post("/services/serviceaction/", data)
         .then(r => {
           setTimeout(() => {
             this.visible = true;
             this.$q.loading.hide();
-            this.notifySuccess(r.data);
+            this.notifySuccess("Mesh agent service was restarted");
           }, 500);
         })
         .catch(e => {

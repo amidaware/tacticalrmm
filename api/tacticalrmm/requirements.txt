@@ -1,5 +1,6 @@
 amqp==2.6.1
 asgiref==3.3.0
+asyncio-nats-client==0.11.4
 billiard==3.6.3.0
 celery==4.4.6
 certifi==2020.11.8
@@ -28,6 +29,7 @@ redis==3.5.3
 requests==2.24.0
 six==1.15.0
 sqlparse==0.4.1
+tldextract==3.0.2
 twilio==6.47.0
 urllib3==1.25.11
 uWSGI==2.0.19.1

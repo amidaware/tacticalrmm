@@ -1,0 +1,18 @@
+FROM node:12-alpine
+
+WORKDIR /home/node/app
+
+ENV TACTICAL_DIR /opt/tactical
+
+RUN apk add --no-cache bash
+
+SHELL ["/bin/bash", "-c"]
+
+RUN npm install meshcentral@0.6.62
+
+COPY docker/containers/tactical-meshcentral/entrypoint.sh /
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 80 443
+
+ENTRYPOINT [ "/entrypoint.sh" ] 

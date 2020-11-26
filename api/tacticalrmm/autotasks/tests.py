@@ -181,10 +181,10 @@ class TestAutotaskViews(TacticalTestCase):
 
         self.check_not_authenticated("delete", url)
 
-    @patch("autotasks.tasks.run_win_task.delay")
-    def test_run_autotask(self, run_win_task):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_run_autotask(self, nats_cmd):
         # setup data
-        agent = baker.make_recipe("agents.agent")
+        agent = baker.make_recipe("agents.agent", version="1.1.0")
         task = baker.make("autotasks.AutomatedTask", agent=agent)
 
         # test invalid url
@@ -195,7 +195,15 @@ class TestAutotaskViews(TacticalTestCase):
         url = f"/tasks/runwintask/{task.id}/"
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        run_win_task.assert_called_with(task.id)
+        nats_cmd.assert_called_with({"func": "runtask", "taskpk": task.id}, wait=False)
+        nats_cmd.reset_mock()
+
+        old_agent = baker.make_recipe("agents.agent", version="1.0.2")
+        task2 = baker.make("autotasks.AutomatedTask", agent=old_agent)
+        url = f"/tasks/runwintask/{task2.id}/"
+        resp = self.client.get(url, format="json")
+        self.assertEqual(resp.status_code, 400)
+        nats_cmd.assert_not_called()
 
         self.check_not_authenticated("get", url)
 

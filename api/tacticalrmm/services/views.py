@@ -1,3 +1,4 @@
+import asyncio
 from loguru import logger
 
 from rest_framework.response import Response
@@ -30,12 +31,12 @@ def default_services(request):
 @api_view()
 def get_refreshed_services(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(timeout=15, func="win_agent.get_services")
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+    r = asyncio.run(agent.nats_cmd(data={"func": "winservices"}, timeout=10))
 
     if r == "timeout":
         return notify_error("Unable to contact the agent")
-    elif r == "error" or not r:
-        return notify_error("Something went wrong")
 
     agent.services = r
     agent.save(update_fields=["services"])
@@ -44,64 +45,79 @@ def get_refreshed_services(request, pk):
 
 @api_view(["POST"])
 def service_action(request):
-    data = request.data
-    pk = data["pk"]
-    service_name = data["sv_name"]
-    service_action = data["sv_action"]
-    agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(
-        timeout=45,
-        func=f"service.{service_action}",
-        arg=service_name,
-    )
+    agent = get_object_or_404(Agent, pk=request.data["pk"])
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+    action = request.data["sv_action"]
+    data = {
+        "func": "winsvcaction",
+        "payload": {
+            "name": request.data["sv_name"],
+        },
+    }
+    # response struct from agent: {success: bool, errormsg: string}
+    if action == "restart":
+        data["payload"]["action"] = "stop"
+        r = asyncio.run(agent.nats_cmd(data, timeout=32))
+        if r == "timeout":
+            return notify_error("Unable to contact the agent")
+        elif not r["success"] and r["errormsg"]:
+            return notify_error(r["errormsg"])
+        elif r["success"]:
+            data["payload"]["action"] = "start"
+            r = asyncio.run(agent.nats_cmd(data, timeout=32))
+            if r == "timeout":
+                return notify_error("Unable to contact the agent")
+            elif not r["success"] and r["errormsg"]:
+                return notify_error(r["errormsg"])
+            elif r["success"]:
+                return Response("ok")
+    else:
+        data["payload"]["action"] = action
+        r = asyncio.run(agent.nats_cmd(data, timeout=32))
+        if r == "timeout":
+            return notify_error("Unable to contact the agent")
+        elif not r["success"] and r["errormsg"]:
+            return notify_error(r["errormsg"])
+        elif r["success"]:
+            return Response("ok")
 
-    if r == "timeout":
-        return notify_error("Unable to contact the agent")
-    elif r == "error" or not r:
-        return notify_error("Something went wrong")
-
-    return Response("ok")
+    return notify_error("Something went wrong")
 
 
 @api_view()
 def service_detail(request, pk, svcname):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(timeout=20, func="service.info", arg=svcname)
-
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+    data = {"func": "winsvcdetail", "payload": {"name": svcname}}
+    r = asyncio.run(agent.nats_cmd(data, timeout=10))
     if r == "timeout":
         return notify_error("Unable to contact the agent")
-    elif r == "error" or not r:
-        return notify_error("Something went wrong")
 
     return Response(r)
 
 
 @api_view(["POST"])
 def edit_service(request):
-    data = request.data
-    pk = data["pk"]
-    service_name = data["sv_name"]
-    edit_action = data["edit_action"]
+    agent = get_object_or_404(Agent, pk=request.data["pk"])
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+    data = {
+        "func": "editwinsvc",
+        "payload": {
+            "name": request.data["sv_name"],
+            "startType": request.data["edit_action"],
+        },
+    }
 
-    agent = get_object_or_404(Agent, pk=pk)
-
-    if edit_action == "autodelay":
-        kwargs = {"start_type": "auto", "start_delayed": True}
-    elif edit_action == "auto":
-        kwargs = {"start_type": "auto", "start_delayed": False}
-    else:
-        kwargs = {"start_type": edit_action}
-
-    r = agent.salt_api_cmd(
-        timeout=20,
-        func="service.modify",
-        arg=service_name,
-        kwargs=kwargs,
-    )
-
+    r = asyncio.run(agent.nats_cmd(data, timeout=10))
+    # response struct from agent: {success: bool, errormsg: string}
     if r == "timeout":
         return notify_error("Unable to contact the agent")
-    elif r == "error" or not r:
-        return notify_error("Something went wrong")
+    elif not r["success"] and r["errormsg"]:
+        return notify_error(r["errormsg"])
+    elif r["success"]:
+        return Response("ok")
 
-    return Response("ok")
+    return notify_error("Something went wrong")

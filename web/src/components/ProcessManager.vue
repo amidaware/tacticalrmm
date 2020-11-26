@@ -15,6 +15,25 @@
       <template v-slot:top>
         <q-btn v-if="poll" dense flat push @click="stopPoll" icon="stop" label="Stop Live Refresh" />
         <q-btn v-else dense flat push @click="startPoll" icon="play_arrow" label="Resume Live Refresh" />
+
+        <q-space />
+
+        <div class="q-pa-md q-gutter-sm">
+          <q-btn dense push icon="add" color="primary" @click="intervalChanged('add')" />
+          <q-btn
+            :disable="pollInterval === 1"
+            dense
+            @click="intervalChanged('subtract')"
+            push
+            icon="remove"
+            color="negative"
+          />
+        </div>
+        <div class="text-overline">
+          <q-badge align="middle" class="text-h6" color="blue" :label="pollInterval" />
+          Refresh interval (seconds)
+        </div>
+
         <q-space />
         <q-input v-model="filter" outlined label="Search" dense clearable>
           <template v-slot:prepend>
@@ -35,8 +54,10 @@
             </q-list>
           </q-menu>
           <q-td>{{ props.row.name }}</q-td>
-          <q-td>{{ Math.ceil(props.row.cpu_percent) }}%</q-td>
-          <q-td>{{ convert(props.row.memory_percent) }} MB</q-td>
+          <!-- <q-td>{{ Math.ceil(props.row.cpu_percent) }}%</q-td>
+          <q-td>{{ convert(props.row.memory_percent) }} MB</q-td> -->
+          <q-td>{{ props.row.cpu_percent }}%</q-td>
+          <q-td>{{ props.row.memory_percent }}</q-td>
           <q-td>{{ props.row.username }}</q-td>
           <q-td>{{ props.row.pid }}</q-td>
           <q-td>{{ props.row.status }}</q-td>
@@ -47,7 +68,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 
 export default {
@@ -57,6 +77,7 @@ export default {
   data() {
     return {
       polling: null,
+      pollInterval: 2,
       mem: null,
       poll: true,
       procs: [],
@@ -80,6 +101,7 @@ export default {
           field: "cpu_percent",
           align: "left",
           sortable: true,
+          sort: (a, b, rowA, rowB) => parseInt(b) < parseInt(a),
         },
         {
           name: "memory_percent",
@@ -116,7 +138,7 @@ export default {
     getProcesses() {
       this.procs = [];
       this.$q.loading.show({ message: "Loading Processes..." });
-      axios
+      this.$axios
         .get(`/agents/${this.pk}/getprocs/`)
         .then(r => {
           this.procs = r.data;
@@ -124,20 +146,20 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data);
+          this.notifyError(e.response.data, 4000);
         });
     },
     refreshProcs() {
       this.polling = setInterval(() => {
-        axios
+        this.$axios
           .get(`/agents/${this.pk}/getprocs/`)
           .then(r => (this.procs = r.data))
-          .catch(() => this.notifyError("Unable to contact the agent"));
-      }, 10000);
+          .catch(() => console.log("Unable to contact the agent"));
+      }, this.pollInterval * 1000);
     },
     killProc(pid, name) {
       this.$q.loading.show({ message: `Attempting to kill process ${name}` });
-      axios
+      this.$axios
         .get(`/agents/${this.pk}/${pid}/killproc/`)
         .then(r => {
           this.$q.loading.hide();
@@ -152,13 +174,27 @@ export default {
       this.poll = false;
       clearInterval(this.polling);
     },
+    intervalChanged(action) {
+      if (action === "subtract" && this.pollInterval <= 1) {
+        this.stopPoll();
+        this.startPoll();
+        return;
+      }
+      if (action === "add") {
+        this.pollInterval++;
+      } else {
+        this.pollInterval--;
+      }
+      this.stopPoll();
+      this.startPoll();
+    },
     startPoll() {
       this.poll = true;
-      axios.get(`/agents/${this.pk}/getprocs/`).then(r => (this.procs = r.data));
+      this.$axios.get(`/agents/${this.pk}/getprocs/`).then(r => (this.procs = r.data));
       this.refreshProcs();
     },
     getAgent() {
-      axios.get(`/agents/${this.pk}/agentdetail/`).then(r => (this.mem = r.data.total_ram));
+      this.$axios.get(`/agents/${this.pk}/agentdetail/`).then(r => (this.mem = r.data.total_ram));
     },
     convert(percent) {
       const mb = this.mem * 1024;

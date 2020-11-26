@@ -478,7 +478,7 @@ export default {
       axios
         .get(`/checks/runchecks/${pk}/`)
         .then(r => this.notifySuccess(`Checks will now be re-run on ${r.data}`))
-        .catch(e => this.notifyError("Something went wrong"));
+        .catch(e => this.notifyError(e.response.data));
     },
     removeAgent(pk, name) {
       this.$q
@@ -536,7 +536,7 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Something went wrong");
+          this.notifyError(e.response.data);
         });
     },
     rebootNow(pk, hostname) {

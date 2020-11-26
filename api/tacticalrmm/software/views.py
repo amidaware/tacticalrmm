@@ -1,3 +1,4 @@
+import asyncio
 import string
 
 from django.shortcuts import get_object_or_404
@@ -41,35 +42,34 @@ def get_installed(request, pk):
 @api_view()
 def refresh_installed(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(
-        timeout=20,
-        func="pkg.list_pkgs",
-        kwargs={"include_components": False, "include_updates": False},
-    )
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
 
-    if r == "timeout":
+    r = asyncio.run(agent.nats_cmd({"func": "softwarelist"}, timeout=15))
+    if r == "timeout" or r == "natsdown":
         return notify_error("Unable to contact the agent")
-    elif r == "error":
-        return notify_error("Something went wrong")
 
     printable = set(string.printable)
-
-    try:
-        software = [
+    sw = []
+    for s in r:
+        sw.append(
             {
-                "name": "".join(filter(lambda x: x in printable, k)),
-                "version": "".join(filter(lambda x: x in printable, v)),
+                "name": "".join(filter(lambda x: x in printable, s["name"])),
+                "version": "".join(filter(lambda x: x in printable, s["version"])),
+                "publisher": "".join(filter(lambda x: x in printable, s["publisher"])),
+                "install_date": s["install_date"],
+                "size": s["size"],
+                "source": s["source"],
+                "location": s["location"],
+                "uninstall": s["uninstall"],
             }
-            for k, v in r.items()
-        ]
-    except Exception:
-        return notify_error("Something went wrong")
+        )
 
     if not InstalledSoftware.objects.filter(agent=agent).exists():
-        InstalledSoftware(agent=agent, software=software).save()
+        InstalledSoftware(agent=agent, software=sw).save()
     else:
-        s = agent.installedsoftware_set.get()
-        s.software = software
+        s = agent.installedsoftware_set.first()
+        s.software = sw
         s.save(update_fields=["software"])
 
     return Response("ok")

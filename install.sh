@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SCRIPT_VERSION="18"
-SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/install.sh'
+SCRIPT_VERSION="23"
+SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -14,8 +14,9 @@ curl -s -L "${SCRIPT_URL}" > ${TMP_FILE}
 NEW_VER=$(grep "^SCRIPT_VERSION" "$TMP_FILE" | awk -F'[="]' '{print $3}')
 
 if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
-    printf >&2 "${YELLOW}A newer version of this installer script is available.${NC}\n"
-    printf >&2 "${YELLOW}Please download the latest version from ${GREEN}${SCRIPT_URL}${YELLOW} and re-run.${NC}\n"
+    printf >&2 "${YELLOW}Old install script detected, downloading and replacing with the latest version...${NC}\n"
+    wget -q "${SCRIPT_URL}" -O install.sh
+    printf >&2 "${YELLOW}Script updated! Please re-run ./install.sh${NC}\n"
     rm -f $TMP_FILE
     exit 1
 fi
@@ -139,35 +140,19 @@ sudo apt install -y software-properties-common
 sudo apt update
 sudo apt install -y certbot openssl
 
-until [[ $LETS_ENCRYPT =~ (y|n) ]]; do
-    echo -ne "${YELLOW}Do you want to generate a Let's Encrypt certificate?[y,n]${NC}: "
-    read LETS_ENCRYPT
+print_green 'Getting wildcard cert'
+
+sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
+while [[ $? -ne 0 ]]
+do
+sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
 done
 
-if [[ $LETS_ENCRYPT == "y" ]]; then
+CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
+CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
 
-    print_green 'Getting wildcard cert'
-
-    sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
-    while [[ $? -ne 0 ]]
-    do
-    sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
-    done
-
-    CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
-    CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
-
-else
-    echo -ne "\n${GREEN}We will generate a self-signed certificate for you.${NC}\n"
-    echo -ne "\n${GREEN}You can replace this certificate later by generating the certificates and editing the nginx configuration${NC}\n"
-    read -n 1 -s -r -p "Press any key to continue..."
-    sudo mkdir -p /certs/${rootdomain}
-    sudo openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /certs/${rootdomain}/pubkey.pem -keyout /certs/${rootdomain}/privkey.pem -subj "/C=US/ST=Some-State/L=city/O=Internet Widgits Pty Ltd/CN=*.${rootdomain}"
-
-    CERT_PRIV_KEY=/certs/${rootdomain}/privkey.pem
-    CERT_PUB_KEY=/certs/${rootdomain}/pubkey.pem
-
-fi
+sudo chown ${USER}:${USER} -R /etc/letsencrypt
+sudo chmod 775 -R /etc/letsencrypt
 
 print_green 'Creating saltapi user'
 
@@ -180,12 +165,24 @@ sudo apt install -y curl wget
 
 sudo mkdir -p /usr/local/rmmgo
 go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)
-wget https://golang.org/dl/go1.15.linux-amd64.tar.gz -P ${go_tmp}
+wget https://golang.org/dl/go1.15.5.linux-amd64.tar.gz -P ${go_tmp}
 
-tar -xzf ${go_tmp}/go1.15.linux-amd64.tar.gz -C ${go_tmp}
+tar -xzf ${go_tmp}/go1.15.5.linux-amd64.tar.gz -C ${go_tmp}
 
 sudo mv ${go_tmp}/go /usr/local/rmmgo/
 rm -rf ${go_tmp}
+
+print_green 'Downloading NATS'
+
+nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
+wget https://github.com/nats-io/nats-server/releases/download/v2.1.9/nats-server-v2.1.9-linux-amd64.tar.gz -P ${nats_tmp}
+
+tar -xzf ${nats_tmp}/nats-server-v2.1.9-linux-amd64.tar.gz -C ${nats_tmp}
+
+sudo mv ${nats_tmp}/nats-server-v2.1.9-linux-amd64/nats-server /usr/local/bin/
+sudo chmod +x /usr/local/bin/nats-server
+sudo chown ${USER}:${USER} /usr/local/bin/nats-server
+rm -rf ${nats_tmp}
 
 print_green 'Installing Nginx'
 
@@ -283,6 +280,8 @@ sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
 git clone https://github.com/wh1te909/tacticalrmm.git /rmm/
 cd /rmm
+git config user.email "admin@example.com"
+git config user.name "Bob"
 git checkout master
 
 localvars="$(cat << EOF
@@ -373,7 +372,7 @@ read -n 1 -s -r -p "Press any key to continue..."
 uwsgini="$(cat << EOF
 [uwsgi]
 
-logto = /rmm/api/tacticalrmm/tacticalrmm/private/log/uwsgi.log
+# logto = /rmm/api/tacticalrmm/tacticalrmm/private/log/uwsgi.log
 chdir = /rmm/api/tacticalrmm
 module = tacticalrmm.wsgi
 home = /rmm/api/env
@@ -414,12 +413,40 @@ EOF
 )"
 echo "${rmmservice}" | sudo tee /etc/systemd/system/rmm.service > /dev/null
 
+natsservice="$(cat << EOF
+[Unit]
+Description=NATS Server
+After=network.target ntp.service
+
+[Service]
+PrivateTmp=true
+Type=simple
+ExecStart=/usr/local/bin/nats-server -c /rmm/api/tacticalrmm/nats-rmm.conf
+ExecReload=/usr/bin/kill -s HUP \$MAINPID
+ExecStop=/usr/bin/kill -s SIGINT \$MAINPID
+User=${USER}
+Group=www-data
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service > /dev/null
+
 
 nginxrmm="$(cat << EOF
 server_tokens off;
 
 upstream tacticalrmm {
     server unix:////rmm/api/tacticalrmm/tacticalrmm.sock;
+}
+
+map \$http_user_agent \$ignore_ua {
+    "~python-requests.*" 0;
+    "~go-resty.*" 0;
+    default 1;
 }
 
 server {
@@ -820,10 +847,13 @@ node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginu
 sleep 5
 MESHEXE=$(node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} GenerateInviteLink --group TacticalRMM --hours 8)
 
+sudo systemctl enable nats.service
 cd /rmm/api/tacticalrmm
 source /rmm/api/env/bin/activate
 python manage.py initial_db_setup
+python manage.py reload_nats
 deactivate
+sudo systemctl start nats.service
 
 
 print_green 'Restarting services'
@@ -852,7 +882,7 @@ if [ "$BEHIND_NAT" = true ]; then
     echo -ne "${GREEN}If you will be accessing the web interface of the RMM from the same LAN as this server,${NC}\n"
     echo -ne "${GREEN}you'll need to make sure your 3 subdomains resolve to ${IPV4}${NC}\n"
     echo -ne "${GREEN}This also applies to any agents that will be on the same local network as the rmm.${NC}\n"
-    echo -ne "${GREEN}You'll also need to setup port forwarding in your router on ports 80, 443, 4505 and 4506 tcp.${NC}\n\n"
+    echo -ne "${GREEN}You'll also need to setup port forwarding in your router on ports 80, 443, 4505, 4506 and 4222 tcp.${NC}\n\n"
 fi
 
 printf >&2 "${YELLOW}Please refer to the github README for next steps${NC}\n\n"

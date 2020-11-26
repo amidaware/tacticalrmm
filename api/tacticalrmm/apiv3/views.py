@@ -1,3 +1,4 @@
+import asyncio
 import os
 import requests
 from loguru import logger
@@ -33,7 +34,7 @@ from agents.tasks import (
 from winupdate.tasks import check_for_updates_task
 from software.tasks import get_installed_software, install_chocolatey
 from checks.utils import bytes2human
-from tacticalrmm.utils import notify_error
+from tacticalrmm.utils import notify_error, reload_nats
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -97,6 +98,17 @@ class Hello(APIView):
             recovery.save(update_fields=["last_run"])
             return Response(recovery.send())
 
+        # handle agent update
+        if agent.pendingactions.filter(
+            action_type="agentupdate", status="pending"
+        ).exists():
+            update = agent.pendingactions.filter(
+                action_type="agentupdate", status="pending"
+            ).last()
+            update.status = "completed"
+            update.save(update_fields=["status"])
+            return Response(update.details)
+
         # get any pending actions
         if agent.pendingactions.filter(status="pending").exists():
             agent.handle_pending_actions()
@@ -133,8 +145,6 @@ class CheckRunner(APIView):
 
     def get(self, request, agentid):
         agent = get_object_or_404(Agent, agent_id=agentid)
-        agent.last_seen = djangotime.now()
-        agent.save(update_fields=["last_seen"])
         checks = Check.objects.filter(agent__pk=agent.pk, overriden_by_policy=False)
 
         ret = {
@@ -333,21 +343,16 @@ class WinUpdater(APIView):
                 agent.save(update_fields=["needs_reboot"])
 
         if reboot:
-            r = agent.salt_api_cmd(
-                timeout=15,
-                func="system.reboot",
-                arg=7,
-                kwargs={"in_seconds": True},
-            )
-
-            if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
-                check_for_updates_task.apply_async(
-                    queue="wupdate", kwargs={"pk": agent.pk, "wait": False}
-                )
+            if agent.has_nats:
+                asyncio.run(agent.nats_cmd({"func": "rebootnow"}, wait=False))
             else:
-                logger.info(
-                    f"{agent.hostname} is rebooting after updates were installed."
+                agent.salt_api_async(
+                    func="system.reboot",
+                    arg=7,
+                    kwargs={"in_seconds": True},
                 )
+
+            logger.info(f"{agent.hostname} is rebooting after updates were installed.")
         else:
             check_for_updates_task.apply_async(
                 queue="wupdate", kwargs={"pk": agent.pk, "wait": False}
@@ -447,6 +452,8 @@ class NewAgent(APIView):
             WinUpdatePolicy(agent=agent, run_time_days=[5, 6]).save()
         else:
             WinUpdatePolicy(agent=agent).save()
+
+        reload_nats()
 
         # Generate policies for new agent
         agent.generate_checks_from_policies()

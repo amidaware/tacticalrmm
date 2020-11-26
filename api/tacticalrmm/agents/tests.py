@@ -7,9 +7,7 @@ from itertools import cycle
 
 from django.conf import settings
 from django.utils import timezone as djangotime
-from rest_framework.authtoken.models import Token
 
-from accounts.models import User
 from tacticalrmm.test import TacticalTestCase
 from .serializers import AgentSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
@@ -34,7 +32,9 @@ class TestAgentViews(TacticalTestCase):
 
         client = baker.make("clients.Client", name="Google")
         site = baker.make("clients.Site", client=client, name="LA Office")
-        self.agent = baker.make_recipe("agents.online_agent", site=site)
+        self.agent = baker.make_recipe(
+            "agents.online_agent", site=site, version="1.1.0"
+        )
         baker.make_recipe("winupdate.winupdate_policy", agent=self.agent)
 
     def test_get_patch_policy(self):
@@ -81,29 +81,29 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_ping(self, mock_ret):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_ping(self, nats_cmd):
         url = f"/agents/{self.agent.pk}/ping/"
 
-        mock_ret.return_value = "timeout"
+        nats_cmd.return_value = "timeout"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         ret = {"name": self.agent.hostname, "status": "offline"}
         self.assertEqual(r.json(), ret)
 
-        mock_ret.return_value = "error"
+        nats_cmd.return_value = "natsdown"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         ret = {"name": self.agent.hostname, "status": "offline"}
         self.assertEqual(r.json(), ret)
 
-        mock_ret.return_value = True
+        nats_cmd.return_value = "pong"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         ret = {"name": self.agent.hostname, "status": "online"}
         self.assertEqual(r.json(), ret)
 
-        mock_ret.return_value = False
+        nats_cmd.return_value = "asdasjdaksdasd"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         ret = {"name": self.agent.hostname, "status": "offline"}
@@ -111,39 +111,23 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
+    @patch("agents.models.Agent.nats_cmd")
     @patch("agents.tasks.uninstall_agent_task.delay")
-    def test_uninstall(self, mock_task):
+    @patch("agents.views.reload_nats")
+    def test_uninstall(self, reload_nats, mock_task, nats_cmd):
         url = "/agents/uninstall/"
         data = {"pk": self.agent.pk}
 
         r = self.client.delete(url, data, format="json")
         self.assertEqual(r.status_code, 200)
 
+        nats_cmd.assert_called_with({"func": "uninstall"}, wait=False)
+        reload_nats.assert_called_once()
         mock_task.assert_called_with(self.agent.salt_id)
 
         self.check_not_authenticated("delete", url)
 
-    @patch("agents.tasks.uninstall_agent_task.delay")
-    def test_uninstall_catch_no_user(self, mock_task):
-        # setup data
-        agent_user = User.objects.create_user(
-            username=self.agent.agent_id, password=User.objects.make_random_password(60)
-        )
-        agent_token = Token.objects.create(user=agent_user)
-
-        url = "/agents/uninstall/"
-        data = {"pk": self.agent.pk}
-
-        agent_user.delete()
-
-        r = self.client.delete(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-
-        mock_task.assert_called_with(self.agent.salt_id)
-
-        self.check_not_authenticated("delete", url)
-
-    @patch("agents.models.Agent.salt_api_cmd")
+    @patch("agents.models.Agent.nats_cmd")
     def test_get_processes(self, mock_ret):
         url = f"/agents/{self.agent.pk}/getprocs/"
 
@@ -163,82 +147,61 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
 
-        mock_ret.return_value = "error"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
-
         self.check_not_authenticated("get", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_kill_proc(self, mock_ret):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_kill_proc(self, nats_cmd):
         url = f"/agents/{self.agent.pk}/8234/killproc/"
 
-        mock_ret.return_value = True
+        nats_cmd.return_value = "ok"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
 
-        mock_ret.return_value = False
+        nats_cmd.return_value = "timeout"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
 
-        mock_ret.return_value = "timeout"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = "error"
+        nats_cmd.return_value = "process doesn't exist"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
 
         self.check_not_authenticated("get", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
+    @patch("agents.models.Agent.nats_cmd")
     def test_get_event_log(self, mock_ret):
         url = f"/agents/{self.agent.pk}/geteventlog/Application/30/"
 
         with open(
-            os.path.join(settings.BASE_DIR, "tacticalrmm/test_data/eventlograw.json")
+            os.path.join(settings.BASE_DIR, "tacticalrmm/test_data/appeventlog.json")
         ) as f:
             mock_ret.return_value = json.load(f)
 
-        with open(
-            os.path.join(settings.BASE_DIR, "tacticalrmm/test_data/appeventlog.json")
-        ) as f:
-            decoded = json.load(f)
-
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(decoded, r.json())
 
         mock_ret.return_value = "timeout"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
 
-        mock_ret.return_value = "error"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
-
         self.check_not_authenticated("get", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_power_action(self, mock_ret):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_power_action(self, nats_cmd):
         url = f"/agents/poweraction/"
 
         data = {"pk": self.agent.pk, "action": "rebootnow"}
-        mock_ret.return_value = True
+        nats_cmd.return_value = "ok"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        nats_cmd.assert_called_with({"func": "rebootnow"}, timeout=10)
 
-        mock_ret.return_value = "error"
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = False
+        nats_cmd.return_value = "timeout"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
 
         self.check_not_authenticated("post", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
+    @patch("agents.models.Agent.nats_cmd")
     def test_send_raw_cmd(self, mock_ret):
         url = f"/agents/sendrawcmd/"
 
@@ -254,10 +217,6 @@ class TestAgentViews(TacticalTestCase):
         self.assertIsInstance(r.data, str)
 
         mock_ret.return_value = "timeout"
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = False
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
 
@@ -569,11 +528,13 @@ class TestAgentViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     @patch("winupdate.tasks.bulk_check_for_updates_task.delay")
+    @patch("scripts.tasks.handle_bulk_script_task.delay")
+    @patch("scripts.tasks.handle_bulk_command_task.delay")
     @patch("agents.models.Agent.salt_batch_async")
-    def test_bulk_cmd_script(self, mock_ret, mock_update):
+    def test_bulk_cmd_script(
+        self, salt_batch_async, bulk_command, bulk_script, mock_update
+    ):
         url = "/agents/bulk/"
-
-        mock_ret.return_value = "ok"
 
         payload = {
             "mode": "command",
@@ -589,6 +550,7 @@ class TestAgentViews(TacticalTestCase):
         }
 
         r = self.client.post(url, payload, format="json")
+        bulk_command.assert_called_with([self.agent.pk], "gpupdate /force", "cmd", 300)
         self.assertEqual(r.status_code, 200)
 
         payload = {
@@ -620,6 +582,7 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
+        bulk_command.assert_called_with([self.agent.pk], "gpupdate /force", "cmd", 300)
 
         payload = {
             "mode": "command",
@@ -636,12 +599,7 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
-
-        mock_ret.return_value = "timeout"
-        payload["client"] = self.agent.client.id
-        payload["site"] = self.agent.site.id
-        r = self.client.post(url, payload, format="json")
-        self.assertEqual(r.status_code, 400)
+        bulk_command.assert_called_with([self.agent.pk], "gpupdate /force", "cmd", 300)
 
         payload = {
             "mode": "scan",
@@ -652,9 +610,8 @@ class TestAgentViews(TacticalTestCase):
                 self.agent.pk,
             ],
         }
-        mock_ret.return_value = "ok"
         r = self.client.post(url, payload, format="json")
-        mock_update.assert_called_once()
+        mock_update.assert_called_with(minions=[self.agent.salt_id])
         self.assertEqual(r.status_code, 200)
 
         payload = {
@@ -666,6 +623,7 @@ class TestAgentViews(TacticalTestCase):
                 self.agent.pk,
             ],
         }
+        salt_batch_async.return_value = "ok"
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
 
@@ -681,41 +639,18 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_restart_mesh(self, mock_ret):
-        url = f"/agents/{self.agent.pk}/restartmesh/"
-
-        mock_ret.return_value = "timeout"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = "error"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = False
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = True
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 200)
-
-        self.check_not_authenticated("get", url)
-
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_recover_mesh(self, mock_ret):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_recover_mesh(self, nats_cmd):
         url = f"/agents/{self.agent.pk}/recovermesh/"
-        mock_ret.return_value = True
+        nats_cmd.return_value = "ok"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertIn(self.agent.hostname, r.data)
+        nats_cmd.assert_called_with(
+            {"func": "recover", "payload": {"mode": "mesh"}}, timeout=45
+        )
 
-        mock_ret.return_value = "timeout"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = "error"
+        nats_cmd.return_value = "timeout"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
 
@@ -804,11 +739,17 @@ class TestAgentTasks(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
+    @patch("agents.models.Agent.nats_cmd")
     @patch("agents.models.Agent.salt_api_async", return_value=None)
-    def test_get_wmi_detail_task(self, salt_api_async):
-        self.agent = baker.make_recipe("agents.agent")
-        ret = get_wmi_detail_task.s(self.agent.pk).apply()
+    def test_get_wmi_detail_task(self, salt_api_async, nats_cmd):
+        self.agent_salt = baker.make_recipe("agents.agent", version="1.0.2")
+        ret = get_wmi_detail_task.s(self.agent_salt.pk).apply()
         salt_api_async.assert_called_with(timeout=30, func="win_agent.local_sys_info")
+        self.assertEqual(ret.status, "SUCCESS")
+
+        self.agent_nats = baker.make_recipe("agents.agent", version="1.1.0")
+        ret = get_wmi_detail_task.s(self.agent_nats.pk).apply()
+        nats_cmd.assert_called_with({"func": "sysinfo"}, wait=False)
         self.assertEqual(ret.status, "SUCCESS")
 
     @patch("agents.models.Agent.salt_api_cmd")
@@ -833,7 +774,7 @@ class TestAgentTasks(TacticalTestCase):
     @patch("agents.models.Agent.salt_batch_async", return_value=None)
     @patch("agents.tasks.sleep", return_value=None)
     def test_batch_sync_modules_task(self, mock_sleep, salt_batch_async):
-        # chunks of 50, 60 online should run only 2 times
+        # chunks of 50, should run 4 times
         baker.make_recipe(
             "agents.online_agent", last_seen=djangotime.now(), _quantity=60
         )
@@ -843,32 +784,41 @@ class TestAgentTasks(TacticalTestCase):
             _quantity=115,
         )
         ret = batch_sync_modules_task.s().apply()
-        self.assertEqual(salt_batch_async.call_count, 2)
+        self.assertEqual(salt_batch_async.call_count, 4)
         self.assertEqual(ret.status, "SUCCESS")
 
+    @patch("agents.models.Agent.nats_cmd")
     @patch("agents.models.Agent.salt_batch_async", return_value=None)
     @patch("agents.tasks.sleep", return_value=None)
-    def test_batch_sysinfo_task(self, mock_sleep, salt_batch_async):
-        # chunks of 30, 70 online should run only 3 times
-        self.online = baker.make_recipe(
-            "agents.online_agent", version=settings.LATEST_AGENT_VER, _quantity=70
+    def test_batch_sysinfo_task(self, mock_sleep, salt_batch_async, nats_cmd):
+
+        self.agents_nats = baker.make_recipe(
+            "agents.agent", version="1.1.0", _quantity=20
         )
-        self.overdue = baker.make_recipe(
-            "agents.overdue_agent", version=settings.LATEST_AGENT_VER, _quantity=115
-        )
+        # test nats
         ret = batch_sysinfo_task.s().apply()
-        self.assertEqual(salt_batch_async.call_count, 3)
+        self.assertEqual(nats_cmd.call_count, 20)
+        nats_cmd.assert_called_with({"func": "sysinfo"}, wait=False)
+        self.assertEqual(ret.status, "SUCCESS")
+
+        self.agents_salt = baker.make_recipe(
+            "agents.agent", version="1.0.2", _quantity=70
+        )
+
+        minions = [i.salt_id for i in self.agents_salt]
+
+        ret = batch_sysinfo_task.s().apply()
+        self.assertEqual(salt_batch_async.call_count, 1)
+        salt_batch_async.assert_called_with(
+            minions=minions, func="win_agent.local_sys_info"
+        )
         self.assertEqual(ret.status, "SUCCESS")
         salt_batch_async.reset_mock()
-        [i.delete() for i in self.online]
-        [i.delete() for i in self.overdue]
+        [i.delete() for i in self.agents_salt]
 
         # test old agents, should not run
-        self.online_old = baker.make_recipe(
-            "agents.online_agent", version="0.10.2", _quantity=70
-        )
-        self.overdue_old = baker.make_recipe(
-            "agents.overdue_agent", version="0.10.2", _quantity=115
+        self.agents_old = baker.make_recipe(
+            "agents.agent", version="0.10.2", _quantity=70
         )
         ret = batch_sysinfo_task.s().apply()
         salt_batch_async.assert_not_called()

@@ -55,8 +55,7 @@ class Client(BaseAuditModel):
                 return True
 
             if agent.overdue_email_alert or agent.overdue_text_alert:
-                if agent.status == "overdue":
-                    return True
+                return agent.status == "overdue"
 
         return False
 
@@ -116,8 +115,7 @@ class Site(BaseAuditModel):
                 return True
 
             if agent.overdue_email_alert or agent.overdue_text_alert:
-                if agent.status == "overdue":
-                    return True
+                return agent.status == "overdue"
 
         return False
 

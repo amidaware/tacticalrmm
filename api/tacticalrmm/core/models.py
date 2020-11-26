@@ -72,16 +72,14 @@ class CoreSettings(BaseAuditModel):
         if not self.pk and CoreSettings.objects.exists():
             raise ValidationError("There can only be one CoreSettings instance")
 
-        # Only runs on first create
+        # for install script
         if not self.pk:
-            mesh_settings = self.get_initial_mesh_settings()
-
-            if "mesh_token" in mesh_settings:
-                self.mesh_token = mesh_settings["mesh_token"]
-            if "mesh_username" in mesh_settings:
-                self.mesh_username = mesh_settings["mesh_username"]
-            if "mesh_site" in mesh_settings:
-                self.mesh_site = mesh_settings["mesh_site"]
+            try:
+                self.mesh_site = settings.MESH_SITE
+                self.mesh_username = settings.MESH_USERNAME
+                self.mesh_token = settings.MESH_TOKEN_KEY
+            except:
+                pass
 
         return super(CoreSettings, self).save(*args, **kwargs)
 
@@ -121,8 +119,8 @@ class CoreSettings(BaseAuditModel):
             and self.smtp_port
         ):
             return True
-        else:
-            return False
+
+        return False
 
     def send_mail(self, subject, body, test=False):
 
@@ -167,57 +165,6 @@ class CoreSettings(BaseAuditModel):
                 tw_client.messages.create(body=body, to=num, from_=self.twilio_number)
             except Exception as e:
                 logger.error(f"SMS failed to send: {e}")
-
-    def get_initial_mesh_settings(self):
-
-        mesh_settings = {}
-
-        # Check for Mesh Username
-        try:
-            if settings.MESH_USERNAME:
-                mesh_settings["mesh_username"] = settings.MESH_USERNAME
-            else:
-                raise AttributeError("MESH_USERNAME doesn't exist")
-        except AttributeError:
-            pass
-
-        # Check for Mesh Site
-        try:
-            if settings.MESH_SITE:
-                mesh_settings["mesh_site"] = settings.MESH_SITE
-            else:
-                raise AttributeError("MESH_SITE doesn't exist")
-        except AttributeError:
-            pass
-
-        # Check for Mesh Token
-        try:
-            if settings.MESH_TOKEN_KEY:
-                mesh_settings["mesh_token"] = settings.MESH_TOKEN_KEY
-            else:
-                raise AttributeError("MESH_TOKEN_KEY doesn't exist")
-        except AttributeError:
-            filepath = "/token/token.key"
-            counter = 0
-            while counter < 12:
-                try:
-                    with open(filepath, "r") as read_file:
-                        key = read_file.readlines()
-
-                        # Remove key file contents for security reasons
-                        with open(filepath, "w") as write_file:
-                            write_file.write("")
-
-                        # readlines() returns an array. Get first item
-                        mesh_settings["mesh_token"] = key[0].rstrip()
-                        break
-                except (IOError, IndexError):
-                    pass
-
-                counter = counter + 1
-                time.sleep(10)
-
-        return mesh_settings
 
     @staticmethod
     def serialize(core):

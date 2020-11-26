@@ -1,9 +1,7 @@
+import asyncio
 from loguru import logger
 import os
 import subprocess
-import zlib
-import json
-import base64
 import pytz
 import datetime as dt
 from packaging import version as pyver
@@ -18,9 +16,6 @@ from rest_framework.response import Response
 from rest_framework import status, generics
 
 from .models import Agent, AgentOutage, RecoveryAction, Note
-from winupdate.models import WinUpdatePolicy
-from clients.models import Client, Site
-from accounts.models import User
 from core.models import CoreSettings
 from scripts.models import Script
 from logs.models import AuditLog
@@ -37,9 +32,9 @@ from winupdate.serializers import WinUpdatePolicySerializer
 
 from .tasks import uninstall_agent_task, send_agent_update_task
 from winupdate.tasks import bulk_check_for_updates_task
-from scripts.tasks import run_script_bg_task, run_bulk_script_task
+from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 
-from tacticalrmm.utils import notify_error
+from tacticalrmm.utils import notify_error, reload_nats
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -66,24 +61,30 @@ def update_agents(request):
 @api_view()
 def ping(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(timeout=5, func="test.ping")
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+    r = asyncio.run(agent.nats_cmd({"func": "ping"}, timeout=10))
 
-    if r == "timeout" or r == "error":
+    if r == "timeout" or r == "natsdown":
         return Response({"name": agent.hostname, "status": "offline"})
-
-    if isinstance(r, bool) and r:
+    elif r == "pong":
         return Response({"name": agent.hostname, "status": "online"})
-    else:
-        return Response({"name": agent.hostname, "status": "offline"})
+
+    return Response({"name": agent.hostname, "status": "offline"})
 
 
 @api_view(["DELETE"])
 def uninstall(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+
+    asyncio.run(agent.nats_cmd({"func": "uninstall"}, wait=False))
 
     salt_id = agent.salt_id
     name = agent.hostname
     agent.delete()
+    reload_nats()
 
     uninstall_agent_task.delay(salt_id)
     return Response(f"{name} will now be uninstalled.")
@@ -153,12 +154,11 @@ def agent_detail(request, pk):
 @api_view()
 def get_processes(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(timeout=20, func="win_agent.get_procs")
-
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+    r = asyncio.run(agent.nats_cmd(data={"func": "procs"}, timeout=5))
     if r == "timeout":
         return notify_error("Unable to contact the agent")
-    elif r == "error":
-        return notify_error("Something went wrong")
 
     return Response(r)
 
@@ -166,15 +166,17 @@ def get_processes(request, pk):
 @api_view()
 def kill_proc(request, pk, pid):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(timeout=25, func="ps.kill_pid", arg=int(pid))
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+
+    r = asyncio.run(
+        agent.nats_cmd({"func": "killproc", "procpid": int(pid)}, timeout=15)
+    )
 
     if r == "timeout":
         return notify_error("Unable to contact the agent")
-    elif r == "error":
-        return notify_error("Something went wrong")
-
-    if isinstance(r, bool) and not r:
-        return notify_error("Unable to kill the process")
+    elif r != "ok":
+        return notify_error(r)
 
     return Response("ok")
 
@@ -182,33 +184,32 @@ def kill_proc(request, pk, pid):
 @api_view()
 def get_event_log(request, pk, logtype, days):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(
-        timeout=30,
-        func="win_agent.get_eventlog",
-        arg=[logtype, int(days)],
-    )
-
-    if r == "timeout" or r == "error":
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+    data = {
+        "func": "eventlog",
+        "timeout": 30,
+        "payload": {
+            "logname": logtype,
+            "days": str(days),
+        },
+    }
+    r = asyncio.run(agent.nats_cmd(data, timeout=32))
+    if r == "timeout":
         return notify_error("Unable to contact the agent")
 
-    return Response(json.loads(zlib.decompress(base64.b64decode(r["wineventlog"]))))
+    return Response(r)
 
 
 @api_view(["POST"])
 def power_action(request):
-    pk = request.data["pk"]
-    action = request.data["action"]
-    agent = get_object_or_404(Agent, pk=pk)
-    if action == "rebootnow":
-        logger.info(f"{agent.hostname} was scheduled for immediate reboot")
-        r = agent.salt_api_cmd(
-            timeout=30,
-            func="system.reboot",
-            arg=3,
-            kwargs={"in_seconds": True},
-        )
-    if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
-        return notify_error("Unable to contact the agent")
+    agent = get_object_or_404(Agent, pk=request.data["pk"])
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+    if request.data["action"] == "rebootnow":
+        r = asyncio.run(agent.nats_cmd({"func": "rebootnow"}, timeout=10))
+        if r != "ok":
+            return notify_error("Unable to contact the agent")
 
     return Response("ok")
 
@@ -216,21 +217,21 @@ def power_action(request):
 @api_view(["POST"])
 def send_raw_cmd(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
-
-    r = agent.salt_api_cmd(
-        timeout=request.data["timeout"],
-        func="cmd.run",
-        kwargs={
-            "cmd": request.data["cmd"],
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+    timeout = int(request.data["timeout"])
+    data = {
+        "func": "rawcmd",
+        "timeout": timeout,
+        "payload": {
+            "command": request.data["cmd"],
             "shell": request.data["shell"],
-            "timeout": request.data["timeout"],
         },
-    )
+    }
+    r = asyncio.run(agent.nats_cmd(data, timeout=timeout + 2))
 
     if r == "timeout":
         return notify_error("Unable to contact the agent")
-    elif r == "error" or not r:
-        return notify_error("Something went wrong")
 
     AuditLog.audit_raw_command(
         username=request.user.username,
@@ -239,7 +240,6 @@ def send_raw_cmd(request):
         shell=request.data["shell"],
     )
 
-    logger.info(f"The command {request.data['cmd']} was sent on agent {agent.hostname}")
     return Response(r)
 
 
@@ -636,35 +636,60 @@ def install_agent(request):
 @api_view(["POST"])
 def recover(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
+    mode = request.data["mode"]
 
     if pyver.parse(agent.version) <= pyver.parse("0.9.5"):
         return notify_error("Only available in agent version greater than 0.9.5")
+
+    if not agent.has_nats:
+        if mode == "tacagent" or mode == "checkrunner" or mode == "rpc":
+            return notify_error("Requires agent version 1.1.0 or greater")
+
+    # attempt a realtime recovery if supported, otherwise fall back to old recovery method
+    if agent.has_nats:
+        if (
+            mode == "tacagent"
+            or mode == "checkrunner"
+            or mode == "salt"
+            or mode == "mesh"
+        ):
+            data = {"func": "recover", "payload": {"mode": mode}}
+            r = asyncio.run(agent.nats_cmd(data, timeout=10))
+            if r == "ok":
+                return Response("Successfully completed recovery")
 
     if agent.recoveryactions.filter(last_run=None).exists():
         return notify_error(
             "A recovery action is currently pending. Please wait for the next agent check-in."
         )
 
-    if request.data["mode"] == "command" and not request.data["cmd"]:
+    if mode == "command" and not request.data["cmd"]:
         return notify_error("Command is required")
 
+    # if we've made it this far and realtime recovery didn't work,
+    # tacagent service is the fallback recovery so we obv can't use that to recover itself if it's down
+    if mode == "tacagent":
+        return notify_error(
+            "Requires RPC service to be functional. Please recover that first"
+        )
+
+    # we should only get here if all other methods fail
     RecoveryAction(
         agent=agent,
-        mode=request.data["mode"],
-        command=request.data["cmd"] if request.data["mode"] == "command" else None,
+        mode=mode,
+        command=request.data["cmd"] if mode == "command" else None,
     ).save()
 
-    return Response(f"Recovery will be attempted on the agent's next check-in")
+    return Response("Recovery will be attempted on the agent's next check-in")
 
 
 @api_view(["POST"])
 def run_script(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
     script = get_object_or_404(Script, pk=request.data["scriptPK"])
-
     output = request.data["output"]
-    args = request.data["args"]
-
     req_timeout = int(request.data["timeout"]) + 3
 
     AuditLog.audit_script_run(
@@ -673,75 +698,33 @@ def run_script(request):
         script=script.name,
     )
 
+    data = {
+        "func": "runscript",
+        "timeout": request.data["timeout"],
+        "script_args": request.data["args"],
+        "payload": {
+            "code": script.code,
+            "shell": script.shell,
+        },
+    }
+
     if output == "wait":
-        r = agent.salt_api_cmd(
-            timeout=req_timeout,
-            func="win_agent.run_script",
-            kwargs={
-                "filepath": script.filepath,
-                "filename": script.filename,
-                "shell": script.shell,
-                "timeout": request.data["timeout"],
-                "args": args,
-            },
-        )
-
-        if isinstance(r, dict):
-            if r["stdout"]:
-                return Response(r["stdout"])
-            elif r["stderr"]:
-                return Response(r["stderr"])
-            else:
-                try:
-                    r["retcode"]
-                except KeyError:
-                    return notify_error("Something went wrong")
-
-                return Response(f"Return code: {r['retcode']}")
-
-        else:
-            if r == "timeout":
-                return notify_error("Unable to contact the agent")
-            elif r == "error":
-                return notify_error("Something went wrong")
-            else:
-                return notify_error(str(r))
-
+        r = asyncio.run(agent.nats_cmd(data, timeout=req_timeout))
+        return Response(r)
     else:
-        data = {
-            "agentpk": agent.pk,
-            "scriptpk": script.pk,
-            "timeout": request.data["timeout"],
-            "args": args,
-        }
-        run_script_bg_task.delay(data)
+        asyncio.run(agent.nats_cmd(data, wait=False))
         return Response(f"{script.name} will now be run on {agent.hostname}")
-
-
-@api_view()
-def restart_mesh(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(func="service.restart", arg="mesh agent", timeout=30)
-    if r == "timeout" or r == "error":
-        return notify_error("Unable to contact the agent")
-    elif isinstance(r, bool) and r:
-        return Response(f"Restarted Mesh Agent on {agent.hostname}")
-    else:
-        return notify_error(f"Failed to restart the Mesh Agent on {agent.hostname}")
 
 
 @api_view()
 def recover_mesh(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(
-        timeout=60,
-        func="cmd.run",
-        kwargs={
-            "cmd": r'"C:\\Program Files\\TacticalAgent\\tacticalrmm.exe" -m recovermesh',
-            "timeout": 55,
-        },
-    )
-    if r == "timeout" or r == "error":
+    if not agent.has_nats:
+        return notify_error("Requires agent version 1.1.0 or greater")
+
+    data = {"func": "recover", "payload": {"mode": "mesh"}}
+    r = asyncio.run(agent.nats_cmd(data, timeout=45))
+    if r != "ok":
         return notify_error("Unable to contact the agent")
 
     return Response(f"Repaired mesh agent on {agent.hostname}")
@@ -805,73 +788,44 @@ def bulk(request):
         return notify_error("Must select at least 1 agent")
 
     if request.data["target"] == "client":
-        agents = Agent.objects.filter(site__client_id=request.data["client"])
+        q = Agent.objects.filter(site__client_id=request.data["client"])
     elif request.data["target"] == "site":
-        agents = Agent.objects.filter(site_id=request.data["site"])
+        q = Agent.objects.filter(site_id=request.data["site"])
     elif request.data["target"] == "agents":
-        agents = Agent.objects.filter(pk__in=request.data["agentPKs"])
+        q = Agent.objects.filter(pk__in=request.data["agentPKs"])
     elif request.data["target"] == "all":
-        agents = Agent.objects.all()
+        q = Agent.objects.all()
     else:
         return notify_error("Something went wrong")
 
-    minions = [agent.salt_id for agent in agents]
+    minions = [agent.salt_id for agent in q]
+    agents = [agent.pk for agent in q]
 
     AuditLog.audit_bulk_action(request.user, request.data["mode"], request.data)
 
     if request.data["mode"] == "command":
-        r = Agent.salt_batch_async(
-            minions=minions,
-            func="cmd.run_bg",
-            kwargs={
-                "cmd": request.data["cmd"],
-                "shell": request.data["shell"],
-                "timeout": request.data["timeout"],
-            },
+        handle_bulk_command_task.delay(
+            agents, request.data["cmd"], request.data["shell"], request.data["timeout"]
         )
-        if r == "timeout":
-            return notify_error("Salt API not running")
-        return Response(f"Command will now be run on {len(minions)} agents")
+        return Response(f"Command will now be run on {len(agents)} agents")
 
     elif request.data["mode"] == "script":
         script = get_object_or_404(Script, pk=request.data["scriptPK"])
-
-        if script.shell == "python":
-            r = Agent.salt_batch_async(
-                minions=minions,
-                func="win_agent.run_script",
-                kwargs={
-                    "filepath": script.filepath,
-                    "filename": script.filename,
-                    "shell": script.shell,
-                    "timeout": request.data["timeout"],
-                    "args": request.data["args"],
-                    "bg": True,
-                },
-            )
-            if r == "timeout":
-                return notify_error("Salt API not running")
-        else:
-            data = {
-                "minions": minions,
-                "scriptpk": script.pk,
-                "timeout": request.data["timeout"],
-                "args": request.data["args"],
-            }
-            run_bulk_script_task.delay(data)
-
-        return Response(f"{script.name} will now be run on {len(minions)} agents")
+        handle_bulk_script_task.delay(
+            script.pk, agents, request.data["args"], request.data["timeout"]
+        )
+        return Response(f"{script.name} will now be run on {len(agents)} agents")
 
     elif request.data["mode"] == "install":
         r = Agent.salt_batch_async(minions=minions, func="win_agent.install_updates")
         if r == "timeout":
             return notify_error("Salt API not running")
         return Response(
-            f"Pending updates will now be installed on {len(minions)} agents"
+            f"Pending updates will now be installed on {len(agents)} agents"
         )
     elif request.data["mode"] == "scan":
         bulk_check_for_updates_task.delay(minions=minions)
-        return Response(f"Patch status scan will now run on {len(minions)} agents")
+        return Response(f"Patch status scan will now run on {len(agents)} agents")
 
     return notify_error("Something went wrong")
 

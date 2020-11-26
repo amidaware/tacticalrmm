@@ -61,6 +61,9 @@
             <q-td v-else-if="props.row.action_type === 'taskaction'">
               <q-icon name="fas fa-tasks" size="sm" />
             </q-td>
+            <q-td v-else-if="props.row.action_type === 'agentupdate'">
+              <q-icon name="update" size="sm" />
+            </q-td>
             <q-td>{{ props.row.due }}</q-td>
             <q-td>{{ props.row.description }}</q-td>
             <q-td v-show="!!!agentpk">{{ props.row.hostname }}</q-td>

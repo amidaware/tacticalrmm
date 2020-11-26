@@ -163,14 +163,14 @@ class TestSoftwareTasks(TacticalTestCase):
         nats_cmd.return_value = "timeout"
         ret = get_installed_software(agent.pk)
         self.assertFalse(ret)
-        nats_cmd.assert_called_with({"func": "softwarelist"}, timeout=15)
+        nats_cmd.assert_called_with({"func": "softwarelist"}, timeout=20)
         nats_cmd.reset_mock()
 
         # test successful attempt
         nats_cmd.return_value = nats_return
         ret = get_installed_software(agent.pk)
         self.assertTrue(ret)
-        nats_cmd.assert_called_with({"func": "softwarelist"}, timeout=15)
+        nats_cmd.assert_called_with({"func": "softwarelist"}, timeout=20)
 
     @patch("agents.models.Agent.salt_api_cmd")
     @patch("software.tasks.get_installed_software.delay")

@@ -123,7 +123,7 @@ class TestAgentViews(TacticalTestCase):
 
         nats_cmd.assert_called_with({"func": "uninstall"}, wait=False)
         reload_nats.assert_called_once()
-        mock_task.assert_called_with(self.agent.salt_id)
+        mock_task.assert_called_with(self.agent.salt_id, True)
 
         self.check_not_authenticated("delete", url)
 

@@ -61,32 +61,32 @@ def update_agents(request):
 @api_view()
 def ping(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    if not agent.has_nats:
-        return notify_error("Requires agent version 1.1.0 or greater")
-    r = asyncio.run(agent.nats_cmd({"func": "ping"}, timeout=10))
+    status = "offline"
+    if agent.has_nats:
+        r = asyncio.run(agent.nats_cmd({"func": "ping"}, timeout=5))
+        if r == "pong":
+            status = "online"
+    else:
+        r = agent.salt_api_cmd(timeout=5, func="test.ping")
+        if isinstance(r, bool) and r:
+            status = "online"
 
-    if r == "timeout" or r == "natsdown":
-        return Response({"name": agent.hostname, "status": "offline"})
-    elif r == "pong":
-        return Response({"name": agent.hostname, "status": "online"})
-
-    return Response({"name": agent.hostname, "status": "offline"})
+    return Response({"name": agent.hostname, "status": status})
 
 
 @api_view(["DELETE"])
 def uninstall(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
-    if not agent.has_nats:
-        return notify_error("Requires agent version 1.1.0 or greater")
-
-    asyncio.run(agent.nats_cmd({"func": "uninstall"}, wait=False))
+    if agent.has_nats:
+        asyncio.run(agent.nats_cmd({"func": "uninstall"}, wait=False))
 
     salt_id = agent.salt_id
     name = agent.hostname
+    has_nats = agent.has_nats
     agent.delete()
     reload_nats()
 
-    uninstall_agent_task.delay(salt_id)
+    uninstall_agent_task.delay(salt_id, has_nats)
     return Response(f"{name} will now be uninstalled.")
 
 
@@ -550,7 +550,7 @@ def install_agent(request):
             "&&",
             "timeout",
             "/t",
-            "20",
+            "10",
             "/nobreak",
             ">",
             "NUL",

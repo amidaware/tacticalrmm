@@ -1,6 +1,7 @@
 FROM ubuntu:20.04
 
 ENV TACTICAL_DIR /opt/tactical
+ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
 ENV SALT_USER saltapi
 
 RUN apt-get update && \

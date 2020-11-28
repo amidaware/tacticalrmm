@@ -62,5 +62,11 @@ if [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ]; then
     node node_modules/meshcentral --logintokenkey > ${TACTICAL_DIR}/tmp/mesh_token
 fi
 
+# wait for nginx container
+until (echo > /dev/tcp/"${NGINX_HOST_IP}"/443) &> /dev/null; do
+  echo "waiting for nginx to start..."
+  sleep 5
+done
+
 # start mesh
 node node_modules/meshcentral

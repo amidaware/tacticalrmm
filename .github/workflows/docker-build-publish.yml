@@ -17,13 +17,11 @@ jobs:
             VERSION=${GITHUB_REF#refs/tags/v}
             echo ::set-output name=version::${VERSION}
           fi
-        
-      - name: Env Variables
-        env:
-          INPUT_TAGS: ${{ steps.prep.outputs.tags }}, latest
-          
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
+        env:
+          INPUT_TAGS: ${{ steps.prep.outputs.tags }}, latest
         
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1

@@ -51,6 +51,7 @@ services:
       POSTGRES_PASS: ${POSTGRES_PASS}
       APP_HOST: ${APP_HOST}
       API_HOST: ${API_HOST}
+      MESH_USER: ${MESH_USER}
       MESH_HOST: ${MESH_HOST}
       TRMM_USER: ${TRMM_USER}
       TRMM_PASS: ${TRMM_PASS}

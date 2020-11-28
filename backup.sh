@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="3"
+SCRIPT_VERSION="4"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/backup.sh'
 
 GREEN='\033[0;32m'
@@ -72,18 +72,13 @@ mongodump --gzip --out=${tmp_dir}/meshcentral/mongo
 sudo tar -czvf ${tmp_dir}/salt/etc-salt.tar.gz -C /etc/salt .
 tar -czvf ${tmp_dir}/salt/srv-salt.tar.gz -C /srv/salt .
 
-if [ -d "/certs" ]; then
-  sudo tar -czvf ${tmp_dir}/certs/certs.tar.gz -C /certs .
-else
-  sudo tar -czvf ${tmp_dir}/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt .
-fi
-
+sudo tar -czvf ${tmp_dir}/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt .
 
 sudo tar -czvf ${tmp_dir}/nginx/etc-nginx.tar.gz -C /etc/nginx .
 
 sudo tar -czvf ${tmp_dir}/confd/etc-confd.tar.gz -C /etc/conf.d .
 
-sudo cp ${sysd}/rmm.service ${sysd}/celery.service ${sysd}/celerybeat.service ${sysd}/celery-winupdate.service ${sysd}/meshcentral.service ${tmp_dir}/systemd/
+sudo cp ${sysd}/rmm.service ${sysd}/celery.service ${sysd}/celerybeat.service ${sysd}/celery-winupdate.service ${sysd}/meshcentral.service ${sysd}/nats.service ${tmp_dir}/systemd/
 
 cat /rmm/api/tacticalrmm/tacticalrmm/private/log/debug.log | gzip -9 > ${tmp_dir}/rmm/debug.log.gz
 cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py /rmm/api/tacticalrmm/app.ini ${tmp_dir}/rmm/

@@ -7,7 +7,7 @@ pgpw="hunter2"
 
 #####################################################
 
-SCRIPT_VERSION="6"
+SCRIPT_VERSION="7"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 GREEN='\033[0;32m'
@@ -93,12 +93,24 @@ sudo apt update
 sudo apt install -y curl wget
 sudo mkdir -p /usr/local/rmmgo
 go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)
-wget https://golang.org/dl/go1.15.linux-amd64.tar.gz -P ${go_tmp}
+wget https://golang.org/dl/go1.15.5.linux-amd64.tar.gz -P ${go_tmp}
 
-tar -xzf ${go_tmp}/go1.15.linux-amd64.tar.gz -C ${go_tmp}
+tar -xzf ${go_tmp}/go1.15.5.linux-amd64.tar.gz -C ${go_tmp}
 
 sudo mv ${go_tmp}/go /usr/local/rmmgo/
 rm -rf ${go_tmp}
+
+print_green 'Downloading NATS'
+
+nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
+wget https://github.com/nats-io/nats-server/releases/download/v2.1.9/nats-server-v2.1.9-linux-amd64.tar.gz -P ${nats_tmp}
+
+tar -xzf ${nats_tmp}/nats-server-v2.1.9-linux-amd64.tar.gz -C ${nats_tmp}
+
+sudo mv ${nats_tmp}/nats-server-v2.1.9-linux-amd64/nats-server /usr/local/bin/
+sudo chmod +x /usr/local/bin/nats-server
+sudo chown ${USER}:${USER} /usr/local/bin/nats-server
+rm -rf ${nats_tmp}
 
 print_green 'Installing NodeJS'
 
@@ -133,15 +145,13 @@ print_green 'Restoring certbot'
 sudo apt install -y software-properties-common
 sudo apt install -y certbot openssl
 
-if [ -f "${tmp_dir}/certs/certs.tar.gz" ]; then
-  sudo mkdir /certs
-  sudo tar -xzf $tmp_dir/certs/certs.tar.gz -C /certs
-else
-  sudo rm -rf /etc/letsencrypt
-  sudo mkdir /etc/letsencrypt
-  sudo tar -xzf $tmp_dir/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt
-fi
+print_green 'Restoring certs'
 
+sudo rm -rf /etc/letsencrypt
+sudo mkdir /etc/letsencrypt
+sudo tar -xzf $tmp_dir/certs/etc-letsencrypt.tar.gz -C /etc/letsencrypt
+sudo chown ${USER}:${USER} -R /etc/letsencrypt
+sudo chmod 775 -R /etc/letsencrypt
 
 print_green 'Restoring celery configs'
 
@@ -169,7 +179,7 @@ print_green 'Installing postgresql'
 sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
-sudo apt install -y postgresql-12
+sudo apt install -y postgresql-13
 sleep 2
 
 print_green 'Restoring the database'
@@ -202,7 +212,7 @@ print_green 'Restoring MeshCentral'
 sudo tar -xzf $tmp_dir/meshcentral/mesh.tar.gz -C /
 sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
-npm install meshcentral@0.6.62
+npm install meshcentral@0.6.84
 
 
 print_green 'Restoring the backend'
@@ -213,6 +223,8 @@ sudo mkdir -p /var/log/celery
 sudo chown ${USER}:${USER} /var/log/celery
 git clone https://github.com/wh1te909/tacticalrmm.git /rmm/
 cd /rmm
+git config user.email "admin@example.com"
+git config user.name "Bob"
 git checkout master
 
 cp $tmp_dir/rmm/local_settings.py /rmm/api/tacticalrmm/tacticalrmm/
@@ -235,7 +247,11 @@ pip install --no-cache-dir --upgrade pip
 pip install --no-cache-dir setuptools==49.6.0 wheel==0.35.1
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py collectstatic --no-input
+python manage.py reload_nats
 deactivate
+
+sudo systemctl enable nats.service
+sudo systemctl start nats.service
 
 
 print_green 'Installing Salt Master'

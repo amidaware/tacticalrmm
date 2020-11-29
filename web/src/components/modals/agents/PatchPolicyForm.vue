@@ -93,7 +93,7 @@
       <div class="col-3">Day of month to run:</div>
       <div class="col-4"></div>
       <q-select
-        :disabled="winupdatepolicy.run_time_frequency === 'inherit'"
+        :disable="winupdatepolicy.run_time_frequency === 'inherit'"
         dense
         class="col-5"
         outlined
@@ -107,7 +107,7 @@
       <div class="col-3">Scheduled Time:</div>
       <div class="col-4"></div>
       <q-select
-        :disabled="winupdatepolicy.run_time_frequency === 'inherit'"
+        :disable="winupdatepolicy.run_time_frequency === 'inherit'"
         dense
         class="col-5"
         outlined
@@ -122,43 +122,43 @@
     >
       <div class="q-gutter-sm">
         <q-checkbox
-          :disabled="winupdatepolicy.run_time_frequency === 'inherit'"
+          :disable="winupdatepolicy.run_time_frequency === 'inherit'"
           v-model="winupdatepolicy.run_time_days"
           :val="1"
           label="Monday"
         />
         <q-checkbox
-          :disabled="winupdatepolicy.run_time_frequency === 'inherit'"
+          :disable="winupdatepolicy.run_time_frequency === 'inherit'"
           v-model="winupdatepolicy.run_time_days"
           :val="2"
           label="Tuesday"
         />
         <q-checkbox
-          :disabled="winupdatepolicy.run_time_frequency === 'inherit'"
+          :disable="winupdatepolicy.run_time_frequency === 'inherit'"
           v-model="winupdatepolicy.run_time_days"
           :val="3"
           label="Wednesday"
         />
         <q-checkbox
-          :disabled="winupdatepolicy.run_time_frequency === 'inherit'"
+          :disable="winupdatepolicy.run_time_frequency === 'inherit'"
           v-model="winupdatepolicy.run_time_days"
           :val="4"
           label="Thursday"
         />
         <q-checkbox
-          :disabled="winupdatepolicy.run_time_frequency === 'inherit'"
+          :disable="winupdatepolicy.run_time_frequency === 'inherit'"
           v-model="winupdatepolicy.run_time_days"
           :val="5"
           label="Friday"
         />
         <q-checkbox
-          :disabled="winupdatepolicy.run_time_frequency === 'inherit'"
+          :disable="winupdatepolicy.run_time_frequency === 'inherit'"
           v-model="winupdatepolicy.run_time_days"
           :val="6"
           label="Saturday"
         />
         <q-checkbox
-          :disabled="winupdatepolicy.run_time_frequency === 'inherit'"
+          :disable="winupdatepolicy.run_time_frequency === 'inherit'"
           v-model="winupdatepolicy.run_time_days"
           :val="0"
           label="Sunday"
@@ -186,16 +186,13 @@
     <hr />
     <q-card-section class="row" v-if="!policy">
       <div class="col-5">
-        <q-checkbox
-          v-model="winupdatepolicy.reprocess_failed_inherit"
-          label="Inherit failed patch settings"
-        />
+        <q-checkbox v-model="winupdatepolicy.reprocess_failed_inherit" label="Inherit failed patch settings" />
       </div>
     </q-card-section>
     <q-card-section class="row">
       <div class="col-5">
         <q-checkbox
-          :disabled="winupdatepolicy.reprocess_failed_inherit"
+          :disable="winupdatepolicy.reprocess_failed_inherit"
           v-model="winupdatepolicy.reprocess_failed"
           label="Reprocess failed patches"
         />
@@ -205,17 +202,17 @@
         <q-input
           dense
           v-model.number="winupdatepolicy.reprocess_failed_times"
-          :disabled="winupdatepolicy.reprocess_failed_inherit"
+          :disable="winupdatepolicy.reprocess_failed_inherit"
           type="number"
           filled
           label="Times"
-          :rules="[ val => val > 0 || 'Must be greater than 0']"
+          :rules="[val => val > 0 || 'Must be greater than 0']"
         />
       </div>
       <div class="col-3"></div>
       <q-checkbox
         v-model="winupdatepolicy.email_if_fail"
-        :disabled="winupdatepolicy.reprocess_failed_inherit"
+        :disable="winupdatepolicy.reprocess_failed_inherit"
         label="Send an email when patch installation fails"
       />
     </q-card-section>

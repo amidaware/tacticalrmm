@@ -5,7 +5,7 @@ ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
 
 RUN apk add --no-cache inotify-tools supervisor bash
 
-SHELL ["/bin/bash", "-c"]
+SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
 COPY docker/containers/tactical-nats/entrypoint.sh /
 RUN chmod +x /entrypoint.sh

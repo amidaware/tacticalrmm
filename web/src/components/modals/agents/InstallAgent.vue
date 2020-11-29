@@ -87,6 +87,9 @@ export default {
   name: "InstallAgent",
   mixins: [mixins],
   components: { AgentDownload },
+  props: {
+    sitepk: Number,
+  },
   data() {
     return {
       client_options: [],
@@ -110,8 +113,19 @@ export default {
         .get("/clients/clients/")
         .then(r => {
           this.client_options = this.formatClientOptions(r.data);
-          this.client = this.client_options[0];
-          this.site = this.sites[0];
+          if (this.sitepk !== undefined && this.sitepk !== null) {
+            this.client_options.forEach(client => {
+              let site = client.sites.find(site => site.id === this.sitepk);
+
+              if (site !== undefined) {
+                this.client = client;
+                this.site = { value: site.id, label: site.name };
+              }
+            });
+          } else {
+            this.client = this.client_options[0];
+            this.site = this.sites[0];
+          }
           this.$q.loading.hide();
         })
         .catch(() => {

@@ -136,6 +136,18 @@
                           <q-item-section>{{ menuMaintenanceText(props.node) }}</q-item-section>
                         </q-item>
 
+                        <q-item
+                          v-if="props.node.children === undefined"
+                          clickable
+                          v-close-popup
+                          @click="showInstallAgent(props.node)"
+                        >
+                          <q-item-section side>
+                            <q-icon name="cloud_download" />
+                          </q-item-section>
+                          <q-item-section>Install Agent</q-item-section>
+                        </q-item>
+
                         <q-item clickable v-close-popup @click="showPolicyAdd(props.node)">
                           <q-item-section side>
                             <q-icon name="policy" />
@@ -338,6 +350,10 @@
     <q-dialog v-model="showPolicyAddModal">
       <PolicyAdd @close="showPolicyAddModal = false" :type="policyAddType" :pk="parseInt(policyAddPk)" />
     </q-dialog>
+    <!-- add policy modal -->
+    <q-dialog v-model="showInstallAgentModal" @hide="closeInstallAgent">
+      <InstallAgent @close="closeInstallAgent" :sitepk="parseInt(sitePk)" />
+    </q-dialog>
   </q-layout>
 </template>
 
@@ -352,6 +368,7 @@ import AlertsIcon from "@/components/AlertsIcon";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
 import ClientsForm from "@/components/modals/clients/ClientsForm";
 import SitesForm from "@/components/modals/clients/SitesForm";
+import InstallAgent from "@/components/modals/agents/InstallAgent";
 
 export default {
   components: {
@@ -362,6 +379,7 @@ export default {
     PolicyAdd,
     ClientsForm,
     SitesForm,
+    InstallAgent,
   },
   data() {
     return {
@@ -370,6 +388,8 @@ export default {
       showSitesFormModal: false,
       showPolicyAddModal: false,
       deleteEditModalPk: null,
+      showInstallAgentModal: false,
+      sitePk: null,
       clientOp: null,
       policyAddType: null,
       policyAddPk: null,
@@ -618,6 +638,14 @@ export default {
       this.showSitesFormModal = false;
       this.deleteEditModalPk = null;
       this.clientOp = null;
+    },
+    showInstallAgent(node) {
+      this.sitePk = node.id;
+      this.showInstallAgentModal = true;
+    },
+    closeInstallAgent() {
+      this.showInstallAgentModal = false;
+      this.sitePk = null;
     },
     reload() {
       this.$store.dispatch("reload");

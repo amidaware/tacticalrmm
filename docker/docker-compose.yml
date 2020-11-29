@@ -104,7 +104,7 @@ services:
       proxy:
         aliases:
           - ${MESH_HOST}
-      - mesh-db
+      mesh-db:
     volumes:
       - tactical_data:/opt/tactical
       - mesh_data:/home/node/app/meshcentral-data

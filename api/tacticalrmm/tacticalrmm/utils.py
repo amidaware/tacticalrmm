@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+from typing import List
 from loguru import logger
 
 from django.conf import settings
@@ -12,6 +13,23 @@ from agents.models import Agent
 logger.configure(**settings.LOG_CONFIG)
 
 notify_error = lambda msg: Response(msg, status=status.HTTP_400_BAD_REQUEST)
+
+WEEK_DAYS = {
+    "Sunday": 0x1,
+    "Monday": 0x2,
+    "Tuesday": 0x4,
+    "Wednesday": 0x8,
+    "Thursday": 0x10,
+    "Friday": 0x20,
+    "Saturday": 0x40,
+}
+
+
+def get_bit_days(days: List[str]) -> int:
+    bit_days = 0
+    for day in days:
+        bit_days |= WEEK_DAYS.get(day)
+    return bit_days
 
 
 def reload_nats():

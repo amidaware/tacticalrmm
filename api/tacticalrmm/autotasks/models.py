@@ -69,6 +69,8 @@ class AutomatedTask(BaseAuditModel):
         on_delete=models.SET_NULL,
     )
     name = models.CharField(max_length=255)
+    run_time_bit_weekdays = models.IntegerField(null=True, blank=True)
+    # run_time_days is deprecated, use bit weekdays
     run_time_days = ArrayField(
         models.IntegerField(choices=RUN_TIME_DAY_CHOICES, null=True, blank=True),
         null=True,

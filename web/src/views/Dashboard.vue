@@ -219,6 +219,16 @@
 
                           <q-item>
                             <q-item-section side>
+                              <q-checkbox v-model="filterActionsPending" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Actions Pending</q-item-label>
+                            </q-item-section>
+                          </q-item>
+
+                          <q-item>
+                            <q-item-section side>
                               <q-checkbox v-model="filterRebootNeeded" />
                             </q-item-section>
 
@@ -379,6 +389,7 @@ export default {
       filterTextLength: 0,
       filterAvailability: "all",
       filterPatchesPending: false,
+      filterActionsPending: false,
       filterChecksFailing: false,
       filterRebootNeeded: false,
       currentTRMMVersion: null,
@@ -447,6 +458,12 @@ export default {
           sortable: true,
         },
         {
+          name: "pendingactions",
+          field: "pending_actions",
+          align: "left",
+          sortable: true,
+        },
+        {
           name: "agentstatus",
           field: "status",
           align: "left",
@@ -483,6 +500,7 @@ export default {
         "description",
         "user",
         "patchespending",
+        "pendingactions",
         "agentstatus",
         "needsreboot",
         "lastseen",
@@ -655,6 +673,7 @@ export default {
       this.filterPatchesPending = false;
       this.filterRebootNeeded = false;
       this.filterChecksFailing = false;
+      this.filterActionsPending = false;
       this.filterAvailability = "all";
       this.search = "";
     },
@@ -673,6 +692,10 @@ export default {
 
       if (this.filterPatchesPending) {
         filterText += "is:patchespending ";
+      }
+
+      if (this.filterActionsPending) {
+        filterText += "is:actionspending ";
       }
 
       if (this.filterChecksFailing) {
@@ -723,6 +746,7 @@ export default {
     isFilteringTable() {
       return (
         this.filterPatchesPending ||
+        this.filterActionsPending ||
         this.filterChecksFailing ||
         this.filterRebootNeeded ||
         this.filterAvailability !== "all"

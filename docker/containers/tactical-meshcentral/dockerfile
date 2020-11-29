@@ -8,7 +8,7 @@ RUN apk add --no-cache bash
 
 SHELL ["/bin/bash", "-c"]
 
-RUN npm install meshcentral@0.6.62
+RUN npm install meshcentral@0.6.84
 
 COPY docker/containers/tactical-meshcentral/entrypoint.sh /
 RUN chmod +x /entrypoint.sh

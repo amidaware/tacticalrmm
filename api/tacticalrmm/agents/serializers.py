@@ -36,11 +36,15 @@ class AgentSerializer(serializers.ModelSerializer):
 
 class AgentTableSerializer(serializers.ModelSerializer):
     patches_pending = serializers.ReadOnlyField(source="has_patches_pending")
+    pending_actions = serializers.SerializerMethodField()
     status = serializers.ReadOnlyField()
     checks = serializers.ReadOnlyField()
     last_seen = serializers.SerializerMethodField()
     client_name = serializers.ReadOnlyField(source="client.name")
     site_name = serializers.ReadOnlyField(source="site.name")
+
+    def get_pending_actions(self, obj):
+        return obj.pendingactions.filter(status="pending").count()
 
     def get_last_seen(self, obj):
         if obj.time_zone is not None:
@@ -62,6 +66,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "description",
             "needs_reboot",
             "patches_pending",
+            "pending_actions",
             "status",
             "overdue_text_alert",
             "overdue_email_alert",

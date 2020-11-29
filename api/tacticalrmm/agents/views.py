@@ -93,6 +93,8 @@ def uninstall(request):
 @api_view(["PATCH"])
 def edit_agent(request):
     agent = get_object_or_404(Agent, pk=request.data["id"])
+
+    old_site = agent.site.pk
     a_serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
     a_serializer.is_valid(raise_exception=True)
     a_serializer.save()
@@ -103,6 +105,11 @@ def edit_agent(request):
     )
     p_serializer.is_valid(raise_exception=True)
     p_serializer.save()
+
+    # check if site changed and initiate generating correct policies
+    if old_site != request.data["site"]:
+        agent.generate_checks_from_policies(clear=True)
+        agent.generate_tasks_from_policies(clear=True)
 
     return Response("ok")
 

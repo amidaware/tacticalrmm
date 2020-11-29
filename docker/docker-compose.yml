@@ -101,7 +101,9 @@ services:
       MONGODB_USER: ${MONGODB_USER}
       MONGODB_PASSWORD: ${MONGODB_PASSWORD}
     networks:
-      - proxy
+      proxy:
+        aliases:
+          - ${MESH_HOST}
       - mesh-db
     volumes:
       - tactical_data:/opt/tactical

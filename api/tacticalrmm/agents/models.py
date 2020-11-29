@@ -1,5 +1,4 @@
 import requests
-import datetime as dt
 import time
 import base64
 from Crypto.Cipher import AES
@@ -8,9 +7,7 @@ from Crypto.Hash import SHA3_384
 from Crypto.Util.Padding import pad
 import validators
 import msgpack
-import random
 import re
-import string
 from collections import Counter
 from loguru import logger
 from packaging import version as pyver
@@ -88,6 +85,10 @@ class Agent(BaseAuditModel):
     @property
     def has_nats(self):
         return pyver.parse(self.version) >= pyver.parse("1.1.0")
+
+    @property
+    def has_gotasks(self):
+        return pyver.parse(self.version) >= pyver.parse("1.1.1")
 
     @property
     def timezone(self):
@@ -572,58 +573,6 @@ class Agent(BaseAuditModel):
             return "timeout"
 
         return resp
-
-    def schedule_reboot(self, obj):
-
-        start_date = dt.datetime.strftime(obj, "%Y-%m-%d")
-        start_time = dt.datetime.strftime(obj, "%H:%M")
-
-        # let windows task scheduler automatically delete the task after it runs
-        end_obj = obj + dt.timedelta(minutes=15)
-        end_date = dt.datetime.strftime(end_obj, "%Y-%m-%d")
-        end_time = dt.datetime.strftime(end_obj, "%H:%M")
-
-        task_name = "TacticalRMM_SchedReboot_" + "".join(
-            random.choice(string.ascii_letters) for _ in range(10)
-        )
-
-        r = self.salt_api_cmd(
-            timeout=15,
-            func="task.create_task",
-            arg=[
-                f"name={task_name}",
-                "force=True",
-                "action_type=Execute",
-                'cmd="C:\\Windows\\System32\\shutdown.exe"',
-                'arguments="/r /t 5 /f"',
-                "trigger_type=Once",
-                f'start_date="{start_date}"',
-                f'start_time="{start_time}"',
-                f'end_date="{end_date}"',
-                f'end_time="{end_time}"',
-                "ac_only=False",
-                "stop_if_on_batteries=False",
-                "delete_after=Immediately",
-            ],
-        )
-
-        if r == "error" or (isinstance(r, bool) and not r):
-            return "failed"
-        elif r == "timeout":
-            return "timeout"
-        elif isinstance(r, bool) and r:
-            from logs.models import PendingAction
-
-            details = {
-                "taskname": task_name,
-                "time": str(obj),
-            }
-            PendingAction(agent=self, action_type="schedreboot", details=details).save()
-
-            nice_time = dt.datetime.strftime(obj, "%B %d, %Y at %I:%M %p")
-            return {"msg": {"time": nice_time, "agent": self.hostname}}
-        else:
-            return "failed"
 
     def not_supported(self, version_added):
         return pyver.parse(self.version) < pyver.parse(version_added)

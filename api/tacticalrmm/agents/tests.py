@@ -33,7 +33,7 @@ class TestAgentViews(TacticalTestCase):
         client = baker.make("clients.Client", name="Google")
         site = baker.make("clients.Site", client=client, name="LA Office")
         self.agent = baker.make_recipe(
-            "agents.online_agent", site=site, version="1.1.0"
+            "agents.online_agent", site=site, version="1.1.1"
         )
         baker.make_recipe("winupdate.winupdate_policy", agent=self.agent)
 
@@ -186,10 +186,10 @@ class TestAgentViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     @patch("agents.models.Agent.nats_cmd")
-    def test_power_action(self, nats_cmd):
-        url = f"/agents/poweraction/"
+    def test_reboot_now(self, nats_cmd):
+        url = f"/agents/reboot/"
 
-        data = {"pk": self.agent.pk, "action": "rebootnow"}
+        data = {"pk": self.agent.pk}
         nats_cmd.return_value = "ok"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
@@ -222,30 +222,37 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_reboot_later(self, mock_ret):
-        url = f"/agents/rebootlater/"
+    @patch("agents.models.Agent.nats_cmd")
+    def test_reboot_later(self, nats_cmd):
+        url = f"/agents/reboot/"
 
         data = {
             "pk": self.agent.pk,
             "datetime": "2025-08-29 18:41",
         }
 
-        mock_ret.return_value = True
-        r = self.client.post(url, data, format="json")
+        nats_cmd.return_value = "ok"
+        r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data["time"], "August 29, 2025 at 06:41 PM")
         self.assertEqual(r.data["agent"], self.agent.hostname)
 
-        mock_ret.return_value = "failed"
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 400)
+        nats_data = {
+            "func": "schedtask",
+            "schedtaskpayload": {
+                "type": "schedreboot",
+                "trigger": "once",
+                "name": r.data["task_name"],
+                "year": 2025,
+                "month": "August",
+                "day": 29,
+                "hour": 18,
+                "min": 41,
+            },
+        }
+        nats_cmd.assert_called_with(nats_data, timeout=10)
 
-        mock_ret.return_value = "timeout"
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = False
+        nats_cmd.return_value = "error creating task"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
 
@@ -253,12 +260,12 @@ class TestAgentViews(TacticalTestCase):
             "pk": self.agent.pk,
             "datetime": "rm -rf /",
         }
-        r = self.client.post(url, data_invalid, format="json")
+        r = self.client.patch(url, data_invalid, format="json")
 
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.data, "Invalid date")
 
-        self.check_not_authenticated("post", url)
+        self.check_not_authenticated("patch", url)
 
     @patch("os.path.exists")
     @patch("subprocess.run")

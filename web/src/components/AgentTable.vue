@@ -555,13 +555,17 @@ export default {
           persistent: true,
         })
         .onOk(() => {
-          const data = { pk: pk, action: "rebootnow" };
-          axios.post("/agents/poweraction/", data).then(r => {
-            this.$q.dialog({
-              title: `Restarting ${hostname}`,
-              message: `${hostname} will now be restarted`,
+          this.$q.loading.show();
+          this.$axios
+            .post("/agents/reboot/", { pk: pk })
+            .then(r => {
+              this.$q.loading.hide();
+              this.notifySuccess(`${hostname} will now be restarted`);
+            })
+            .catch(e => {
+              this.$q.loading.hide();
+              this.notifyError(e.response.data);
             });
-          });
         });
     },
     agentRowSelected(pk) {

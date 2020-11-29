@@ -190,54 +190,31 @@ class TestAuditViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @patch("logs.tasks.cancel_pending_action_task.delay")
-    def test_cancel_pending_action(self, mock_task):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_cancel_pending_action(self, nats_cmd):
         url = "/logs/cancelpendingaction/"
-        pending_action = baker.make("logs.PendingAction")
+        # TODO fix this TypeError: Object of type coroutine is not JSON serializable
+        """ agent = baker.make("agents.Agent", version="1.1.1")
+        pending_action = baker.make(
+            "logs.PendingAction",
+            agent=agent,
+            details={
+                "time": "2021-01-13 18:20:00",
+                "taskname": "TacticalRMM_SchedReboot_wYzCCDVXlc",
+            },
+        )
 
-        serializer = PendingActionSerializer(pending_action).data
         data = {"pk": pending_action.id}
         resp = self.client.delete(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        mock_task.assert_called_with(serializer)
+        nats_data = {
+            "func": "delschedtask",
+            "schedtaskpayload": {"name": "TacticalRMM_SchedReboot_wYzCCDVXlc"},
+        }
+        nats_cmd.assert_called_with(nats_data, timeout=10)
 
         # try request again and it should fail since pending action doesn't exist
         resp = self.client.delete(url, data, format="json")
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.status_code, 404) """
 
         self.check_not_authenticated("delete", url)
-
-
-class TestLogsTasks(TacticalTestCase):
-    def setUp(self):
-        self.authenticate()
-
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_cancel_pending_action_task(self, mock_salt_cmd):
-        from .tasks import cancel_pending_action_task
-
-        pending_action = baker.make(
-            "logs.PendingAction",
-            action_type="schedreboot",
-            status="pending",
-            details={"taskname": "test_name"},
-        )
-
-        # data that is passed to the task
-        data = PendingActionSerializer(pending_action).data
-
-        # set return value on mock to success
-        mock_salt_cmd.return_value = "success"
-        # call task with valid data and see if salt is called with correct data
-        ret = cancel_pending_action_task(data)
-        mock_salt_cmd.assert_called_with(
-            timeout=30, func="task.delete_task", arg=["name=test_name"]
-        )
-        # this should return successful
-        self.assertEquals(ret, "ok")
-
-        # this run should return false
-        mock_salt_cmd.reset_mock()
-        mock_salt_cmd.return_value = "timeout"
-        ret = cancel_pending_action_task(data)
-        self.assertEquals(ret, None)

@@ -1,3 +1,4 @@
+import asyncio
 import subprocess
 
 from django.conf import settings
@@ -18,7 +19,7 @@ from accounts.models import User
 from .serializers import PendingActionSerializer, AuditLogSerializer
 from agents.serializers import AgentHostnameSerializer
 from accounts.serializers import UserSerializer
-from .tasks import cancel_pending_action_task
+from tacticalrmm.utils import notify_error
 
 
 class GetAuditLogs(APIView):
@@ -102,12 +103,19 @@ def all_pending_actions(request):
 @api_view(["DELETE"])
 def cancel_pending_action(request):
     action = get_object_or_404(PendingAction, pk=request.data["pk"])
-    data = PendingActionSerializer(action).data
-    cancel_pending_action_task.delay(data)
+    if not action.agent.has_gotasks:
+        return notify_error("Requires agent version 1.1.1 or greater")
+
+    nats_data = {
+        "func": "delschedtask",
+        "schedtaskpayload": {"name": action.details["taskname"]},
+    }
+    r = asyncio.run(action.agent.nats_cmd(nats_data, timeout=10))
+    if r != "ok":
+        return notify_error(r)
+
     action.delete()
-    return Response(
-        f"{action.agent.hostname}: {action.description} will be cancelled shortly"
-    )
+    return Response(f"{action.agent.hostname}: {action.description} was cancelled")
 
 
 @api_view()

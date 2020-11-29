@@ -386,7 +386,15 @@ class MeshInfo(APIView):
 
     def patch(self, request, pk):
         agent = get_object_or_404(Agent, pk=pk)
-        agent.mesh_node_id = request.data["nodeidhex"]
+
+        if "nodeidhex" in request.data:
+            # agent <= 1.1.0
+            nodeid = request.data["nodeidhex"]
+        else:
+            # agent >= 1.1.1
+            nodeid = request.data["nodeid"]
+
+        agent.mesh_node_id = nodeid
         agent.save(update_fields=["mesh_node_id"])
         return Response("ok")
 

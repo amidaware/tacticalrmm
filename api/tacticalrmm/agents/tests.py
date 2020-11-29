@@ -428,7 +428,14 @@ class TestAgentViews(TacticalTestCase):
         self.assertIn("&viewmode=13", r.data["file"])
         self.assertIn("&viewmode=12", r.data["terminal"])
         self.assertIn("&viewmode=11", r.data["control"])
-        self.assertIn("mstsc.html?login=", r.data["webrdp"])
+
+        self.assertIn("&gotonode=", r.data["file"])
+        self.assertIn("&gotonode=", r.data["terminal"])
+        self.assertIn("&gotonode=", r.data["control"])
+
+        self.assertIn("?login=", r.data["file"])
+        self.assertIn("?login=", r.data["terminal"])
+        self.assertIn("?login=", r.data["control"])
 
         self.assertEqual(self.agent.hostname, r.data["hostname"])
         self.assertEqual(self.agent.client.name, r.data["client"])

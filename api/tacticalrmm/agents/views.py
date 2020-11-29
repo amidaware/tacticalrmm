@@ -126,16 +126,9 @@ def meshcentral(request, pk):
     if token == "err":
         return notify_error("Invalid mesh token")
 
-    control = (
-        f"{core.mesh_site}/?login={token}&node={agent.mesh_node_id}&viewmode=11&hide=31"
-    )
-    terminal = (
-        f"{core.mesh_site}/?login={token}&node={agent.mesh_node_id}&viewmode=12&hide=31"
-    )
-    file = (
-        f"{core.mesh_site}/?login={token}&node={agent.mesh_node_id}&viewmode=13&hide=31"
-    )
-    webrdp = f"{core.mesh_site}/mstsc.html?login={token}&node={agent.mesh_node_id}"
+    control = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=11&hide=31"
+    terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"
+    file = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=13&hide=31"
 
     AuditLog.audit_mesh_session(username=request.user.username, hostname=agent.hostname)
 
@@ -144,7 +137,6 @@ def meshcentral(request, pk):
         "control": control,
         "terminal": terminal,
         "file": file,
-        "webrdp": webrdp,
         "status": agent.status,
         "client": agent.client.name,
         "site": agent.site.name,

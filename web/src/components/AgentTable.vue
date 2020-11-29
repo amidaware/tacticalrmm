@@ -108,14 +108,6 @@
                 <q-item-section>Take Control</q-item-section>
               </q-item>
 
-              <!-- web rdp -->
-              <q-item clickable v-ripple v-close-popup @click.stop.prevent="webRDP(props.row.id)">
-                <q-item-section side>
-                  <q-icon size="xs" name="screen_share" />
-                </q-item-section>
-                <q-item-section>Remote Desktop</q-item-section>
-              </q-item>
-
               <q-item clickable v-ripple v-close-popup @click="showSendCommand = true">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-terminal" />
@@ -612,19 +604,6 @@ export default {
     showPolicyAdd(pk) {
       this.policyAddPk = pk;
       this.showPolicyAddModal = true;
-    },
-    webRDP(pk) {
-      this.$q.loading.show();
-      this.$axios
-        .get(`/agents/${pk}/meshcentral/`)
-        .then(r => {
-          this.$q.loading.hide();
-          openURL(r.data.webrdp);
-        })
-        .catch(e => {
-          this.$q.loading.hide();
-          this.notifyError(e.response.data);
-        });
     },
     toggleMaintenance(agent) {
       let data = {

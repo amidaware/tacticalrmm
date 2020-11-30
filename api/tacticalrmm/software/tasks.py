@@ -1,5 +1,4 @@
 import asyncio
-import string
 from time import sleep
 from loguru import logger
 from tacticalrmm.celery import app
@@ -8,6 +7,7 @@ from django.utils import timezone as djangotime
 
 from agents.models import Agent
 from .models import ChocoSoftware, ChocoLog, InstalledSoftware
+from tacticalrmm.utils import filter_software
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -99,21 +99,7 @@ def get_installed_software(pk):
         logger.error(f"{agent.salt_id} {r}")
         return
 
-    printable = set(string.printable)
-    sw = []
-    for s in r:
-        sw.append(
-            {
-                "name": "".join(filter(lambda x: x in printable, s["name"])),
-                "version": "".join(filter(lambda x: x in printable, s["version"])),
-                "publisher": "".join(filter(lambda x: x in printable, s["publisher"])),
-                "install_date": s["install_date"],
-                "size": s["size"],
-                "source": s["source"],
-                "location": s["location"],
-                "uninstall": s["uninstall"],
-            }
-        )
+    sw = filter_software(r)
 
     if not InstalledSoftware.objects.filter(agent=agent).exists():
         InstalledSoftware(agent=agent, software=sw).save()

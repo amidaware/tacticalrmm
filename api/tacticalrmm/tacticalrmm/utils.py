@@ -1,7 +1,8 @@
 import json
 import os
+import string
 import subprocess
-from typing import List
+from typing import List, Dict
 from loguru import logger
 
 from django.conf import settings
@@ -13,6 +14,8 @@ from agents.models import Agent
 logger.configure(**settings.LOG_CONFIG)
 
 notify_error = lambda msg: Response(msg, status=status.HTTP_400_BAD_REQUEST)
+
+SoftwareList = List[Dict[str, str]]
 
 WEEK_DAYS = {
     "Sunday": 0x1,
@@ -54,6 +57,24 @@ def bitdays_to_string(day: int) -> str:
 
     return ", ".join(ret)
 
+def filter_software(sw: SoftwareList) -> SoftwareList:
+    ret: SoftwareList = []
+    printable = set(string.printable)
+    for s in sw:
+        ret.append(
+            {
+                "name": "".join(filter(lambda x: x in printable, s["name"])),
+                "version": "".join(filter(lambda x: x in printable, s["version"])),
+                "publisher": "".join(filter(lambda x: x in printable, s["publisher"])),
+                "install_date": s["install_date"],
+                "size": s["size"],
+                "source": s["source"],
+                "location": s["location"],
+                "uninstall": s["uninstall"],
+            }
+        )
+    
+    return ret
 
 def reload_nats():
     users = [{"user": "tacticalrmm", "password": settings.SECRET_KEY}]

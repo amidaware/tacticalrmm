@@ -14,4 +14,5 @@ urlpatterns = [
     path("newagent/", views.NewAgent.as_view()),
     path("winupdater/", views.WinUpdater.as_view()),
     path("<str:agentid>/winupdater/", views.WinUpdater.as_view()),
+    path("software/", views.Software.as_view()),
 ]

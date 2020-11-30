@@ -200,6 +200,7 @@ def remove_orphaned_win_tasks(agentpk):
     exclude_tasks = (
         "TacticalRMM_fixmesh",
         "TacticalRMM_SchedReboot",
+        "TacticalRMM_sync",
     )
 
     for task in r:

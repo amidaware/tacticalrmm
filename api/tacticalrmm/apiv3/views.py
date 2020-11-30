@@ -7,7 +7,6 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from django.http import HttpResponse
-from rest_framework import serializers
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -20,6 +19,7 @@ from checks.models import Check
 from autotasks.models import AutomatedTask
 from accounts.models import User
 from winupdate.models import WinUpdatePolicy
+from software.models import InstalledSoftware
 from checks.serializers import CheckRunnerGetSerializerV3
 from agents.serializers import WinAgentSerializer
 from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
@@ -34,7 +34,7 @@ from agents.tasks import (
 from winupdate.tasks import check_for_updates_task
 from software.tasks import get_installed_software, install_chocolatey
 from checks.utils import bytes2human
-from tacticalrmm.utils import notify_error, reload_nats
+from tacticalrmm.utils import notify_error, reload_nats, filter_software, SoftwareList
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -484,3 +484,24 @@ class NewAgent(APIView):
                 "token": token.key,
             }
         )
+
+
+class Software(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        raw: SoftwareList = request.data["software"]
+        if not isinstance(raw, list):
+            return notify_error("err")
+
+        sw = filter_software(raw)
+        if not InstalledSoftware.objects.filter(agent=agent).exists():
+            InstalledSoftware(agent=agent, software=sw).save()
+        else:
+            s = agent.installedsoftware_set.first()
+            s.software = sw
+            s.save(update_fields=["software"])
+
+        return Response("ok")

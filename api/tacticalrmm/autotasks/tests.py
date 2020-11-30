@@ -1,3 +1,4 @@
+import datetime as dt
 from unittest.mock import patch, call
 from model_bakery import baker
 from django.utils import timezone as djangotime
@@ -25,7 +26,6 @@ class TestAutotaskViews(TacticalTestCase):
         # setup data
         script = baker.make_recipe("scripts.script")
         agent = baker.make_recipe("agents.agent")
-        agent_old = baker.make_recipe("agents.agent", version="0.9.0")
         policy = baker.make("automation.Policy")
         check = baker.make_recipe("checks.diskspace_check", agent=agent)
 
@@ -50,20 +50,11 @@ class TestAutotaskViews(TacticalTestCase):
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 404)
 
-        # test invalid agent version
-        data = {
-            "autotask": {"script": script.id, "script_args": ["args"]},
-            "agent": agent_old.id,
-        }
-
-        resp = self.client.post(url, data, format="json")
-        self.assertEqual(resp.status_code, 400)
-
         # test add task to agent
         data = {
             "autotask": {
                 "name": "Test Task Scheduled with Assigned Check",
-                "run_time_days": [0, 1, 2],
+                "run_time_days": ["Sunday", "Monday", "Friday"],
                 "run_time_minute": "10:00",
                 "timeout": 120,
                 "enabled": True,
@@ -84,6 +75,7 @@ class TestAutotaskViews(TacticalTestCase):
         data = {
             "autotask": {
                 "name": "Test Task Manual",
+                "run_time_days": [],
                 "timeout": 120,
                 "enabled": True,
                 "script": script.id,
@@ -213,28 +205,14 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_remove_orphaned_win_task(self, salt_api_cmd):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_remove_orphaned_win_task(self, nats_cmd):
         self.agent = baker.make_recipe("agents.agent")
         self.task1 = AutomatedTask.objects.create(
             agent=self.agent,
             name="test task 1",
             win_task_name=AutomatedTask.generate_task_name(),
         )
-
-        salt_api_cmd.return_value = "timeout"
-        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
-        self.assertEqual(ret.result, "errtimeout")
-
-        salt_api_cmd.return_value = "error"
-        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
-        self.assertEqual(ret.result, "errtimeout")
-
-        salt_api_cmd.return_value = "task not found in"
-        ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
-        self.assertEqual(ret.result, "notlist")
-
-        salt_api_cmd.reset_mock()
 
         # test removing an orphaned task
         win_tasks = [
@@ -250,50 +228,54 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         ]
 
         self.calls = [
-            call(timeout=15, func="task.list_tasks"),
+            call({"func": "listschedtasks"}, timeout=10),
             call(
-                timeout=20,
-                func="task.delete_task",
-                arg=["name=TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb"],
+                {
+                    "func": "delschedtask",
+                    "schedtaskpayload": {
+                        "name": "TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb"
+                    },
+                },
+                timeout=10,
             ),
         ]
 
-        salt_api_cmd.side_effect = [win_tasks, True]
+        nats_cmd.side_effect = [win_tasks, "ok"]
         ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
-        self.assertEqual(salt_api_cmd.call_count, 2)
-        salt_api_cmd.assert_has_calls(self.calls)
+        self.assertEqual(nats_cmd.call_count, 2)
+        nats_cmd.assert_has_calls(self.calls)
         self.assertEqual(ret.status, "SUCCESS")
 
-        # test salt delete_task fail
-        salt_api_cmd.reset_mock()
-        salt_api_cmd.side_effect = [win_tasks, False]
+        # test nats delete task fail
+        nats_cmd.reset_mock()
+        nats_cmd.side_effect = [win_tasks, "error deleting task"]
         ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
-        salt_api_cmd.assert_has_calls(self.calls)
-        self.assertEqual(salt_api_cmd.call_count, 2)
+        nats_cmd.assert_has_calls(self.calls)
+        self.assertEqual(nats_cmd.call_count, 2)
         self.assertEqual(ret.status, "SUCCESS")
 
         # no orphaned tasks
-        salt_api_cmd.reset_mock()
+        nats_cmd.reset_mock()
         win_tasks.remove("TacticalRMM_iggrLcOaldIZnUzLuJWPLNwikiOoJJHHznb")
-        salt_api_cmd.side_effect = [win_tasks, True]
+        nats_cmd.side_effect = [win_tasks, "ok"]
         ret = remove_orphaned_win_tasks.s(self.agent.pk).apply()
-        self.assertEqual(salt_api_cmd.call_count, 1)
+        self.assertEqual(nats_cmd.call_count, 1)
         self.assertEqual(ret.status, "SUCCESS")
 
-    @patch("agents.models.Agent.salt_api_async")
-    def test_run_win_task(self, salt_api_async):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_run_win_task(self, nats_cmd):
         self.agent = baker.make_recipe("agents.agent")
         self.task1 = AutomatedTask.objects.create(
             agent=self.agent,
             name="test task 1",
             win_task_name=AutomatedTask.generate_task_name(),
         )
-        salt_api_async.return_value = "Response 200"
+        nats_cmd.return_value = "ok"
         ret = run_win_task.s(self.task1.pk).apply()
         self.assertEqual(ret.status, "SUCCESS")
 
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_create_win_task_schedule(self, salt_api_cmd):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_create_win_task_schedule(self, nats_cmd):
         self.agent = baker.make_recipe("agents.agent")
 
         task_name = AutomatedTask.generate_task_name()
@@ -303,46 +285,32 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             name="test task 1",
             win_task_name=task_name,
             task_type="scheduled",
-            run_time_days=[0, 1, 6],
+            run_time_bit_weekdays=127,
             run_time_minute="21:55",
         )
         self.assertEqual(self.task1.sync_status, "notsynced")
-        salt_api_cmd.return_value = True
+        nats_cmd.return_value = "ok"
         ret = create_win_task_schedule.s(pk=self.task1.pk, pending_action=False).apply()
-        self.assertEqual(salt_api_cmd.call_count, 1)
-        salt_api_cmd.assert_called_with(
-            timeout=20,
-            func="task.create_task",
-            arg=[
-                f"name={task_name}",
-                "force=True",
-                "action_type=Execute",
-                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
-                f'arguments="-m taskrunner -p {self.task1.pk}"',
-                "start_in=C:\\Program Files\\TacticalAgent",
-                "trigger_type=Weekly",
-                'start_time="21:55"',
-                "ac_only=False",
-                "stop_if_on_batteries=False",
-            ],
-            kwargs={"days_of_week": ["Monday", "Tuesday", "Sunday"]},
+        self.assertEqual(nats_cmd.call_count, 1)
+        nats_cmd.assert_called_with(
+            {
+                "func": "schedtask",
+                "schedtaskpayload": {
+                    "type": "rmm",
+                    "trigger": "weekly",
+                    "weekdays": 127,
+                    "pk": self.task1.pk,
+                    "name": task_name,
+                    "hour": 21,
+                    "min": 55,
+                },
+            },
+            timeout=10,
         )
         self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
         self.assertEqual(self.task1.sync_status, "synced")
 
-        salt_api_cmd.return_value = "timeout"
-        ret = create_win_task_schedule.s(pk=self.task1.pk, pending_action=False).apply()
-        self.assertEqual(ret.status, "SUCCESS")
-        self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
-        self.assertEqual(self.task1.sync_status, "notsynced")
-
-        salt_api_cmd.return_value = "error"
-        ret = create_win_task_schedule.s(pk=self.task1.pk, pending_action=False).apply()
-        self.assertEqual(ret.status, "SUCCESS")
-        self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
-        self.assertEqual(self.task1.sync_status, "notsynced")
-
-        salt_api_cmd.return_value = False
+        nats_cmd.return_value = "timeout"
         ret = create_win_task_schedule.s(pk=self.task1.pk, pending_action=False).apply()
         self.assertEqual(ret.status, "SUCCESS")
         self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
@@ -353,7 +321,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             agent=self.agent, action_type="taskaction"
         )
         self.assertEqual(self.pending_action.status, "pending")
-        salt_api_cmd.return_value = True
+        nats_cmd.return_value = "ok"
         ret = create_win_task_schedule.s(
             pk=self.task1.pk, pending_action=self.pending_action.pk
         ).apply()
@@ -362,7 +330,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
         self.assertEqual(self.pending_action.status, "completed")
 
         # test runonce with future date
-        salt_api_cmd.reset_mock()
+        nats_cmd.reset_mock()
         task_name = AutomatedTask.generate_task_name()
         run_time_date = djangotime.now() + djangotime.timedelta(hours=22)
         self.task2 = AutomatedTask.objects.create(
@@ -372,30 +340,29 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             task_type="runonce",
             run_time_date=run_time_date,
         )
-        salt_api_cmd.return_value = True
+        nats_cmd.return_value = "ok"
         ret = create_win_task_schedule.s(pk=self.task2.pk, pending_action=False).apply()
-        salt_api_cmd.assert_called_with(
-            timeout=20,
-            func="task.create_task",
-            arg=[
-                f"name={task_name}",
-                "force=True",
-                "action_type=Execute",
-                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
-                f'arguments="-m taskrunner -p {self.task2.pk}"',
-                "start_in=C:\\Program Files\\TacticalAgent",
-                "trigger_type=Once",
-                f'start_date="{run_time_date.strftime("%Y-%m-%d")}"',
-                f'start_time="{run_time_date.strftime("%H:%M")}"',
-                "ac_only=False",
-                "stop_if_on_batteries=False",
-                "start_when_available=True",
-            ],
+        nats_cmd.assert_called_with(
+            {
+                "func": "schedtask",
+                "schedtaskpayload": {
+                    "type": "rmm",
+                    "trigger": "once",
+                    "pk": self.task2.pk,
+                    "name": task_name,
+                    "year": int(dt.datetime.strftime(self.task2.run_time_date, "%Y")),
+                    "month": dt.datetime.strftime(self.task2.run_time_date, "%B"),
+                    "day": int(dt.datetime.strftime(self.task2.run_time_date, "%d")),
+                    "hour": int(dt.datetime.strftime(self.task2.run_time_date, "%H")),
+                    "min": int(dt.datetime.strftime(self.task2.run_time_date, "%M")),
+                },
+            },
+            timeout=10,
         )
         self.assertEqual(ret.status, "SUCCESS")
 
         # test runonce with date in the past
-        salt_api_cmd.reset_mock()
+        nats_cmd.reset_mock()
         task_name = AutomatedTask.generate_task_name()
         run_time_date = djangotime.now() - djangotime.timedelta(days=13)
         self.task3 = AutomatedTask.objects.create(
@@ -405,31 +372,13 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             task_type="runonce",
             run_time_date=run_time_date,
         )
-        salt_api_cmd.return_value = True
+        nats_cmd.return_value = "ok"
         ret = create_win_task_schedule.s(pk=self.task3.pk, pending_action=False).apply()
         self.task3 = AutomatedTask.objects.get(pk=self.task3.pk)
-        salt_api_cmd.assert_called_with(
-            timeout=20,
-            func="task.create_task",
-            arg=[
-                f"name={task_name}",
-                "force=True",
-                "action_type=Execute",
-                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
-                f'arguments="-m taskrunner -p {self.task3.pk}"',
-                "start_in=C:\\Program Files\\TacticalAgent",
-                "trigger_type=Once",
-                f'start_date="{self.task3.run_time_date.strftime("%Y-%m-%d")}"',
-                f'start_time="{self.task3.run_time_date.strftime("%H:%M")}"',
-                "ac_only=False",
-                "stop_if_on_batteries=False",
-                "start_when_available=True",
-            ],
-        )
         self.assertEqual(ret.status, "SUCCESS")
 
         # test checkfailure
-        salt_api_cmd.reset_mock()
+        nats_cmd.reset_mock()
         self.check = baker.make_recipe("checks.diskspace_check", agent=self.agent)
         task_name = AutomatedTask.generate_task_name()
         self.task4 = AutomatedTask.objects.create(
@@ -439,29 +388,24 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             task_type="checkfailure",
             assigned_check=self.check,
         )
-        salt_api_cmd.return_value = True
+        nats_cmd.return_value = "ok"
         ret = create_win_task_schedule.s(pk=self.task4.pk, pending_action=False).apply()
-        salt_api_cmd.assert_called_with(
-            timeout=20,
-            func="task.create_task",
-            arg=[
-                f"name={task_name}",
-                "force=True",
-                "action_type=Execute",
-                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
-                f'arguments="-m taskrunner -p {self.task4.pk}"',
-                "start_in=C:\\Program Files\\TacticalAgent",
-                "trigger_type=Once",
-                'start_date="1975-01-01"',
-                'start_time="01:00"',
-                "ac_only=False",
-                "stop_if_on_batteries=False",
-            ],
+        nats_cmd.assert_called_with(
+            {
+                "func": "schedtask",
+                "schedtaskpayload": {
+                    "type": "rmm",
+                    "trigger": "manual",
+                    "pk": self.task4.pk,
+                    "name": task_name,
+                },
+            },
+            timeout=10,
         )
         self.assertEqual(ret.status, "SUCCESS")
 
         # test manual
-        salt_api_cmd.reset_mock()
+        nats_cmd.reset_mock()
         task_name = AutomatedTask.generate_task_name()
         self.task5 = AutomatedTask.objects.create(
             agent=self.agent,
@@ -469,23 +413,18 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             win_task_name=task_name,
             task_type="manual",
         )
-        salt_api_cmd.return_value = True
+        nats_cmd.return_value = "ok"
         ret = create_win_task_schedule.s(pk=self.task5.pk, pending_action=False).apply()
-        salt_api_cmd.assert_called_with(
-            timeout=20,
-            func="task.create_task",
-            arg=[
-                f"name={task_name}",
-                "force=True",
-                "action_type=Execute",
-                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
-                f'arguments="-m taskrunner -p {self.task5.pk}"',
-                "start_in=C:\\Program Files\\TacticalAgent",
-                "trigger_type=Once",
-                'start_date="1975-01-01"',
-                'start_time="01:00"',
-                "ac_only=False",
-                "stop_if_on_batteries=False",
-            ],
+        nats_cmd.assert_called_with(
+            {
+                "func": "schedtask",
+                "schedtaskpayload": {
+                    "type": "rmm",
+                    "trigger": "manual",
+                    "pk": self.task5.pk,
+                    "name": task_name,
+                },
+            },
+            timeout=10,
         )
         self.assertEqual(ret.status, "SUCCESS")

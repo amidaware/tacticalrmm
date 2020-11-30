@@ -32,6 +32,29 @@ def get_bit_days(days: List[str]) -> int:
     return bit_days
 
 
+def bitdays_to_string(day: int) -> str:
+    ret = []
+    if day == 127:
+        return "Every day"
+
+    if day & WEEK_DAYS["Sunday"]:
+        ret.append("Sunday")
+    if day & WEEK_DAYS["Monday"]:
+        ret.append("Monday")
+    if day & WEEK_DAYS["Tuesday"]:
+        ret.append("Tuesday")
+    if day & WEEK_DAYS["Wednesday"]:
+        ret.append("Wednesday")
+    if day & WEEK_DAYS["Thursday"]:
+        ret.append("Thursday")
+    if day & WEEK_DAYS["Friday"]:
+        ret.append("Friday")
+    if day & WEEK_DAYS["Saturday"]:
+        ret.append("Saturday")
+
+    return ", ".join(ret)
+
+
 def reload_nats():
     users = [{"user": "tacticalrmm", "password": settings.SECRET_KEY}]
     agents = Agent.objects.prefetch_related("user").only("pk", "agent_id")

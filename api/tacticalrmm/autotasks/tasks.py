@@ -1,3 +1,5 @@
+import asyncio
+import datetime as dt
 from loguru import logger
 from tacticalrmm.celery import app
 from django.conf import settings
@@ -9,44 +11,26 @@ from logs.models import PendingAction
 
 logger.configure(**settings.LOG_CONFIG)
 
-DAYS_OF_WEEK = {
-    0: "Monday",
-    1: "Tuesday",
-    2: "Wednesday",
-    3: "Thursday",
-    4: "Friday",
-    5: "Saturday",
-    6: "Sunday",
-}
-
 
 @app.task
 def create_win_task_schedule(pk, pending_action=False):
     task = AutomatedTask.objects.get(pk=pk)
 
     if task.task_type == "scheduled":
-        run_days = [DAYS_OF_WEEK.get(day) for day in task.run_time_days]
-
-        r = task.agent.salt_api_cmd(
-            timeout=20,
-            func="task.create_task",
-            arg=[
-                f"name={task.win_task_name}",
-                "force=True",
-                "action_type=Execute",
-                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
-                f'arguments="-m taskrunner -p {task.pk}"',
-                "start_in=C:\\Program Files\\TacticalAgent",
-                "trigger_type=Weekly",
-                f'start_time="{task.run_time_minute}"',
-                "ac_only=False",
-                "stop_if_on_batteries=False",
-            ],
-            kwargs={"days_of_week": run_days},
-        )
+        nats_data = {
+            "func": "schedtask",
+            "schedtaskpayload": {
+                "type": "rmm",
+                "trigger": "weekly",
+                "weekdays": task.run_time_bit_weekdays,
+                "pk": task.pk,
+                "name": task.win_task_name,
+                "hour": dt.datetime.strptime(task.run_time_minute, "%H:%M").hour,
+                "min": dt.datetime.strptime(task.run_time_minute, "%H:%M").minute,
+            },
+        }
 
     elif task.task_type == "runonce":
-
         # check if scheduled time is in the past
         agent_tz = pytz.timezone(task.agent.timezone)
         task_time_utc = task.run_time_date.replace(tzinfo=agent_tz).astimezone(pytz.utc)
@@ -57,45 +41,36 @@ def create_win_task_schedule(pk, pending_action=False):
             ) + djangotime.timedelta(minutes=5)
             task.save()
 
-        r = task.agent.salt_api_cmd(
-            timeout=20,
-            func="task.create_task",
-            arg=[
-                f"name={task.win_task_name}",
-                "force=True",
-                "action_type=Execute",
-                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
-                f'arguments="-m taskrunner -p {task.pk}"',
-                "start_in=C:\\Program Files\\TacticalAgent",
-                "trigger_type=Once",
-                f'start_date="{task.run_time_date.strftime("%Y-%m-%d")}"',
-                f'start_time="{task.run_time_date.strftime("%H:%M")}"',
-                "ac_only=False",
-                "stop_if_on_batteries=False",
-                "start_when_available=True",
-            ],
-        )
+        nats_data = {
+            "func": "schedtask",
+            "schedtaskpayload": {
+                "type": "rmm",
+                "trigger": "once",
+                "pk": task.pk,
+                "name": task.win_task_name,
+                "year": int(dt.datetime.strftime(task.run_time_date, "%Y")),
+                "month": dt.datetime.strftime(task.run_time_date, "%B"),
+                "day": int(dt.datetime.strftime(task.run_time_date, "%d")),
+                "hour": int(dt.datetime.strftime(task.run_time_date, "%H")),
+                "min": int(dt.datetime.strftime(task.run_time_date, "%M")),
+            },
+        }
 
     elif task.task_type == "checkfailure" or task.task_type == "manual":
-        r = task.agent.salt_api_cmd(
-            timeout=20,
-            func="task.create_task",
-            arg=[
-                f"name={task.win_task_name}",
-                "force=True",
-                "action_type=Execute",
-                'cmd="C:\\Program Files\\TacticalAgent\\tacticalrmm.exe"',
-                f'arguments="-m taskrunner -p {task.pk}"',
-                "start_in=C:\\Program Files\\TacticalAgent",
-                "trigger_type=Once",
-                'start_date="1975-01-01"',
-                'start_time="01:00"',
-                "ac_only=False",
-                "stop_if_on_batteries=False",
-            ],
-        )
+        nats_data = {
+            "func": "schedtask",
+            "schedtaskpayload": {
+                "type": "rmm",
+                "trigger": "manual",
+                "pk": task.pk,
+                "name": task.win_task_name,
+            },
+        }
+    else:
+        return "error"
 
-    if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
+    r = asyncio.run(task.agent.nats_cmd(nats_data, timeout=10))
+    if r != "ok":
         # don't create pending action if this task was initiated by a pending action
         if not pending_action:
             PendingAction(
@@ -129,13 +104,16 @@ def create_win_task_schedule(pk, pending_action=False):
 def enable_or_disable_win_task(pk, action, pending_action=False):
     task = AutomatedTask.objects.get(pk=pk)
 
-    r = task.agent.salt_api_cmd(
-        timeout=20,
-        func="task.edit_task",
-        arg=[f"name={task.win_task_name}", f"enabled={action}"],
-    )
+    nats_data = {
+        "func": "enableschedtask",
+        "schedtaskpayload": {
+            "name": task.win_task_name,
+            "enabled": action,
+        },
+    }
+    r = asyncio.run(task.agent.nats_cmd(nats_data))
 
-    if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
+    if r != "ok":
         # don't create pending action if this task was initiated by a pending action
         if not pending_action:
             PendingAction(
@@ -150,9 +128,6 @@ def enable_or_disable_win_task(pk, action, pending_action=False):
             task.sync_status = "notsynced"
             task.save(update_fields=["sync_status"])
 
-        logger.error(
-            f"Unable to update the scheduled task {task.win_task_name} on {task.agent.hostname}. It will be updated when the agent checks in."
-        )
         return
 
     # clear pending action since it was successful
@@ -163,7 +138,6 @@ def enable_or_disable_win_task(pk, action, pending_action=False):
 
     task.sync_status = "synced"
     task.save(update_fields=["sync_status"])
-    logger.info(f"{task.agent.hostname} task {task.name} was edited.")
     return "ok"
 
 
@@ -171,13 +145,13 @@ def enable_or_disable_win_task(pk, action, pending_action=False):
 def delete_win_task_schedule(pk, pending_action=False):
     task = AutomatedTask.objects.get(pk=pk)
 
-    r = task.agent.salt_api_cmd(
-        timeout=20,
-        func="task.delete_task",
-        arg=[f"name={task.win_task_name}"],
-    )
+    nats_data = {
+        "func": "delschedtask",
+        "schedtaskpayload": {"name": task.win_task_name},
+    }
+    r = asyncio.run(task.agent.nats_cmd(nats_data, timeout=10))
 
-    if r == "timeout" or r == "error" or (isinstance(r, bool) and not r):
+    if r != "ok":
         # don't create pending action if this task was initiated by a pending action
         if not pending_action:
             PendingAction(
@@ -188,9 +162,6 @@ def delete_win_task_schedule(pk, pending_action=False):
             task.sync_status = "pendingdeletion"
             task.save(update_fields=["sync_status"])
 
-        logger.error(
-            f"Unable to delete scheduled task {task.win_task_name} on {task.agent.hostname}. It was marked pending deletion and will be removed when the agent checks in."
-        )
         return
 
     # complete pending action since it was successful
@@ -200,15 +171,13 @@ def delete_win_task_schedule(pk, pending_action=False):
         pendingaction.save(update_fields=["status"])
 
     task.delete()
-    logger.info(f"{task.agent.hostname} task {task.name} was deleted.")
     return "ok"
 
 
 @app.task
 def run_win_task(pk):
-    # TODO deprecated, remove this function once salt gone
     task = AutomatedTask.objects.get(pk=pk)
-    r = task.agent.salt_api_async(func="task.run", arg=[f"name={task.win_task_name}"])
+    asyncio.run(task.agent.nats_cmd({"func": "runtask", "taskpk": task.pk}, wait=False))
     return "ok"
 
 
@@ -220,18 +189,9 @@ def remove_orphaned_win_tasks(agentpk):
 
     logger.info(f"Orphaned task cleanup initiated on {agent.hostname}.")
 
-    r = agent.salt_api_cmd(
-        timeout=15,
-        func="task.list_tasks",
-    )
+    r = asyncio.run(agent.nats_cmd({"func": "listschedtasks"}, timeout=10))
 
-    if r == "timeout" or r == "error":
-        logger.error(
-            f"Unable to clean up scheduled tasks on {agent.hostname}. Agent might be offline"
-        )
-        return "errtimeout"
-
-    if not isinstance(r, list):
+    if not isinstance(r, list) and not r:  # empty list
         logger.error(f"Unable to clean up scheduled tasks on {agent.hostname}: {r}")
         return "notlist"
 
@@ -240,7 +200,6 @@ def remove_orphaned_win_tasks(agentpk):
     exclude_tasks = (
         "TacticalRMM_fixmesh",
         "TacticalRMM_SchedReboot",
-        "TacticalRMM_saltwatchdog",  # will be implemented in future
     )
 
     for task in r:
@@ -250,16 +209,16 @@ def remove_orphaned_win_tasks(agentpk):
 
         if task.startswith("TacticalRMM_") and task not in agent_task_names:
             # delete task since it doesn't exist in UI
-            ret = agent.salt_api_cmd(
-                timeout=20,
-                func="task.delete_task",
-                arg=[f"name={task}"],
-            )
-            if isinstance(ret, bool) and ret is True:
-                logger.info(f"Removed orphaned task {task} from {agent.hostname}")
-            else:
+            nats_data = {
+                "func": "delschedtask",
+                "schedtaskpayload": {"name": task},
+            }
+            ret = asyncio.run(agent.nats_cmd(nats_data, timeout=10))
+            if ret != "ok":
                 logger.error(
                     f"Unable to clean up orphaned task {task} on {agent.hostname}: {ret}"
                 )
+            else:
+                logger.info(f"Removed orphaned task {task} from {agent.hostname}")
 
     logger.info(f"Orphaned task cleanup finished on {agent.hostname}")

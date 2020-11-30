@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="23"
+SCRIPT_VERSION="24"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 GREEN='\033[0;32m'
@@ -557,7 +557,6 @@ sleep 30
 
 saltvars="$(cat << EOF
 timeout: 20
-worker_threads: 15
 gather_job_timeout: 25
 max_event_size: 30485760
 external_auth:
@@ -572,8 +571,6 @@ rest_cherrypy:
   port: 8123
   disable_ssl: True
   max_request_body_size: 30485760
-  thread_pool: 300
-  socket_queue_size: 100
 
 EOF
 )"

@@ -119,6 +119,7 @@
     <q-separator />
     <q-card-section>
       <q-table
+        @request="onRequest"
         dense
         :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
         class="audit-mgr-tbl-sticky"
@@ -263,8 +264,10 @@ export default {
       ],
       pagination: {
         rowsPerPage: 25,
+        rowsNumber: null,
         sortBy: "entry_time",
         descending: true,
+        page: 1,
       },
     };
   },
@@ -355,10 +358,23 @@ export default {
         });
       }
     },
+    onRequest(props) {
+      // needed to update external pagination object
+      const { page, rowsPerPage, sortBy, descending } = props.pagination;
+
+      this.pagination.page = page;
+      this.pagination.rowsPerPage = rowsPerPage;
+      this.pagination.sortBy = sortBy;
+      this.pagination.descending = descending;
+
+      this.search();
+    },
     search() {
       this.$q.loading.show();
       this.searched = true;
-      let data = {};
+      let data = {
+        pagination: this.pagination,
+      };
 
       if (!!this.agentFilter && this.agentFilter.length > 0) data["agentFilter"] = this.agentFilter;
       else if (!!this.clientFilter && this.clientFilter.length > 0) data["clientFilter"] = this.clientFilter;
@@ -371,7 +387,8 @@ export default {
         .patch("/logs/auditlogs/", data)
         .then(r => {
           this.$q.loading.hide();
-          this.auditLogs = Object.freeze(r.data);
+          this.auditLogs = Object.freeze(r.data.audit_logs);
+          this.pagination.rowsNumber = r.data.total;
         })
         .catch(e => {
           this.$q.loading.hide();

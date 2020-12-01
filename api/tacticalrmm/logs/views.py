@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from django.utils import timezone as djangotime
 from django.db.models import Q
+from django.core.paginator import Paginator
 from datetime import datetime as dt
 
 from rest_framework.response import Response
@@ -26,6 +27,14 @@ class GetAuditLogs(APIView):
     def patch(self, request):
         from clients.models import Client
         from agents.models import Agent
+
+        pagination = request.data["pagination"]
+
+        order_by = (
+            f"-{pagination['sortBy']}"
+            if pagination["descending"]
+            else f"{pagination['sortBy']}"
+        )
 
         agentFilter = Q()
         clientFilter = Q()
@@ -68,9 +77,18 @@ class GetAuditLogs(APIView):
             .filter(actionFilter)
             .filter(objectFilter)
             .filter(timeFilter)
-        )
+        ).order_by(order_by)
 
-        return Response(AuditLogSerializer(audit_logs, many=True).data)
+        paginator = Paginator(audit_logs, pagination["rowsPerPage"])
+
+        return Response(
+            {
+                "audit_logs": AuditLogSerializer(
+                    paginator.get_page(pagination["page"]), many=True
+                ).data,
+                "total": paginator.count,
+            }
+        )
 
 
 class FilterOptionsAuditLog(APIView):

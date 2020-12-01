@@ -97,6 +97,19 @@ def server_maintenance(request):
         reload_nats()
         return Response("Reloading Nats Configuration.")
 
+    if request.data["action"] == "rm_orphaned_tasks":
+        from agents.models import Agent
+        from autotasks.tasks import remove_orphaned_win_tasks
+
+        agents = Agent.objects.all()
+        online = [i for i in agents if i.status == "online"]
+        for agent in online:
+            remove_orphaned_win_tasks.delay(agent.pk)
+
+        return Response(
+            "The task has been initiated. Check the Debug Log in the UI for progress."
+        )
+
     if request.data["action"] == "prune_db":
         from agents.models import AgentOutage
         from logs.models import AuditLog, PendingAction

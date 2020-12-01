@@ -62,6 +62,10 @@ export default {
           value: "reload_nats",
         },
         {
+          label: "Remove Orphaned Tasks",
+          value: "rm_orphaned_tasks",
+        },
+        {
           label: "Prune DB Tables",
           value: "prune_db",
         },

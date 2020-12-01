@@ -18,7 +18,6 @@ from .tasks import (
     get_wmi_detail_task,
     sync_salt_modules_task,
     batch_sync_modules_task,
-    batch_sysinfo_task,
     OLD_64_PY_AGENT,
     OLD_32_PY_AGENT,
 )
@@ -799,43 +798,6 @@ class TestAgentTasks(TacticalTestCase):
         )
         ret = batch_sync_modules_task.s().apply()
         self.assertEqual(salt_batch_async.call_count, 4)
-        self.assertEqual(ret.status, "SUCCESS")
-
-    @patch("agents.models.Agent.nats_cmd")
-    @patch("agents.models.Agent.salt_batch_async", return_value=None)
-    @patch("agents.tasks.sleep", return_value=None)
-    def test_batch_sysinfo_task(self, mock_sleep, salt_batch_async, nats_cmd):
-
-        self.agents_nats = baker.make_recipe(
-            "agents.agent", version="1.1.0", _quantity=20
-        )
-        # test nats
-        ret = batch_sysinfo_task.s().apply()
-        self.assertEqual(nats_cmd.call_count, 20)
-        nats_cmd.assert_called_with({"func": "sysinfo"}, wait=False)
-        self.assertEqual(ret.status, "SUCCESS")
-
-        self.agents_salt = baker.make_recipe(
-            "agents.agent", version="1.0.2", _quantity=70
-        )
-
-        minions = [i.salt_id for i in self.agents_salt]
-
-        ret = batch_sysinfo_task.s().apply()
-        self.assertEqual(salt_batch_async.call_count, 1)
-        salt_batch_async.assert_called_with(
-            minions=minions, func="win_agent.local_sys_info"
-        )
-        self.assertEqual(ret.status, "SUCCESS")
-        salt_batch_async.reset_mock()
-        [i.delete() for i in self.agents_salt]
-
-        # test old agents, should not run
-        self.agents_old = baker.make_recipe(
-            "agents.agent", version="0.10.2", _quantity=70
-        )
-        ret = batch_sysinfo_task.s().apply()
-        salt_batch_async.assert_not_called()
         self.assertEqual(ret.status, "SUCCESS")
 
     @patch("agents.models.Agent.salt_api_async", return_value=None)

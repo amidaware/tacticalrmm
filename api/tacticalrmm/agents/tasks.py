@@ -210,25 +210,6 @@ def batch_sync_modules_task():
 
 
 @app.task
-def batch_sysinfo_task():
-    # update system info using WMI
-    agents = Agent.objects.all()
-
-    agents_nats = [agent for agent in agents if agent.has_nats]
-    minions = [
-        agent.salt_id
-        for agent in agents
-        if not agent.has_nats and pyver.parse(agent.version) >= pyver.parse("0.11.0")
-    ]
-
-    if minions:
-        Agent.salt_batch_async(minions=minions, func="win_agent.local_sys_info")
-
-    for agent in agents_nats:
-        asyncio.run(agent.nats_cmd({"func": "sysinfo"}, wait=False))
-
-
-@app.task
 def uninstall_agent_task(salt_id, has_nats):
     attempts = 0
     error = False

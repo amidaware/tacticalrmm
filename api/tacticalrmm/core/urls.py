@@ -8,4 +8,5 @@ urlpatterns = [
     path("version/", views.version),
     path("emailtest/", views.email_test),
     path("dashinfo/", views.dashboard_info),
+    path("servermaintenance/", views.server_maintenance),
 ]

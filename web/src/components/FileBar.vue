@@ -130,6 +130,10 @@
               <q-item clickable v-close-popup @click="showBulkActionModal('scan')">
                 <q-item-section>Bulk Patch Management</q-item-section>
               </q-item>
+              <!-- server maintenance -->
+              <q-item clickable v-close-popup @click="showServerMaintenance = true">
+                <q-item-section>Server Maintenance</q-item-section>
+              </q-item>
             </q-list>
           </q-menu>
         </q-btn>
@@ -196,15 +200,17 @@
       <q-dialog v-model="showUploadMesh">
         <UploadMesh @close="showUploadMesh = false" />
       </q-dialog>
-
       <!-- Bulk action modal -->
       <q-dialog v-model="showBulkAction" @hide="closeBulkActionModal" position="top">
         <BulkAction :mode="bulkMode" @close="closeBulkActionModal" />
       </q-dialog>
-
       <!-- Agent Deployment -->
       <q-dialog v-model="showDeployment">
         <Deployment @close="showDeployment = false" />
+      </q-dialog>
+      <!-- Server Maintenance -->
+      <q-dialog v-model="showServerMaintenance">
+        <ServerMaintenance @close="showMaintenance = false" />
       </q-dialog>
     </q-bar>
   </div>
@@ -225,6 +231,7 @@ import UploadMesh from "@/components/modals/core/UploadMesh";
 import AuditManager from "@/components/AuditManager";
 import BulkAction from "@/components/modals/agents/BulkAction";
 import Deployment from "@/components/Deployment";
+import ServerMaintenance from "@/components/modals/core/ServerMaintenance";
 
 export default {
   name: "FileBar",
@@ -243,10 +250,12 @@ export default {
     AuditManager,
     BulkAction,
     Deployment,
+    ServerMaintenance,
   },
   props: ["clients"],
   data() {
     return {
+      showServerMaintenance: false,
       showClientFormModal: false,
       showSiteFormModal: false,
       clientOp: null,

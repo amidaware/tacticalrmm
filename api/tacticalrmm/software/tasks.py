@@ -88,30 +88,6 @@ def update_chocos():
 
 
 @app.task
-def get_installed_software(pk):
-    agent = Agent.objects.get(pk=pk)
-    if not agent.has_nats:
-        logger.error(f"{agent.salt_id} software list only available in agent >= 1.1.0")
-        return
-
-    r = asyncio.run(agent.nats_cmd({"func": "softwarelist"}, timeout=20))
-    if r == "timeout" or r == "natsdown":
-        logger.error(f"{agent.salt_id} {r}")
-        return
-
-    sw = filter_software(r)
-
-    if not InstalledSoftware.objects.filter(agent=agent).exists():
-        InstalledSoftware(agent=agent, software=sw).save()
-    else:
-        s = agent.installedsoftware_set.first()
-        s.software = sw
-        s.save(update_fields=["software"])
-
-    return "ok"
-
-
-@app.task
 def install_program(pk, name, version):
     agent = Agent.objects.get(pk=pk)
 
@@ -154,7 +130,5 @@ def install_program(pk, name, version):
     ChocoLog(
         agent=agent, name=name, version=version, message=output, installed=installed
     ).save()
-
-    get_installed_software.delay(agent.pk)
 
     return "ok"

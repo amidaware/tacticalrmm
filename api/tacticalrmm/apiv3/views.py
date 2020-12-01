@@ -28,11 +28,10 @@ from winupdate.serializers import ApprovedUpdateSerializer
 from agents.tasks import (
     agent_recovery_email_task,
     agent_recovery_sms_task,
-    get_wmi_detail_task,
     sync_salt_modules_task,
 )
 from winupdate.tasks import check_for_updates_task
-from software.tasks import get_installed_software, install_chocolatey
+from software.tasks import install_chocolatey
 from checks.utils import bytes2human
 from tacticalrmm.utils import notify_error, reload_nats, filter_software, SoftwareList
 
@@ -123,8 +122,6 @@ class Hello(APIView):
         serializer.save(last_seen=djangotime.now())
 
         sync_salt_modules_task.delay(agent.pk)
-        get_installed_software.delay(agent.pk)
-        get_wmi_detail_task.delay(agent.pk)
         check_for_updates_task.apply_async(
             queue="wupdate", kwargs={"pk": agent.pk, "wait": True}
         )

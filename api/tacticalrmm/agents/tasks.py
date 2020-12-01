@@ -176,17 +176,6 @@ def update_salt_minion_task():
 
 
 @app.task
-def get_wmi_detail_task(pk):
-    agent = Agent.objects.get(pk=pk)
-    if agent.has_nats:
-        asyncio.run(agent.nats_cmd({"func": "sysinfo"}, wait=False))
-    else:
-        agent.salt_api_async(timeout=30, func="win_agent.local_sys_info")
-
-    return "ok"
-
-
-@app.task
 def sync_salt_modules_task(pk):
     agent = Agent.objects.get(pk=pk)
     r = agent.salt_api_cmd(timeout=35, func="saltutil.sync_modules")

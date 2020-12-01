@@ -15,7 +15,6 @@ from .models import Agent
 from .tasks import (
     auto_self_agent_update_task,
     update_salt_minion_task,
-    get_wmi_detail_task,
     sync_salt_modules_task,
     batch_sync_modules_task,
     OLD_64_PY_AGENT,
@@ -751,19 +750,6 @@ class TestAgentTasks(TacticalTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
-
-    @patch("agents.models.Agent.nats_cmd")
-    @patch("agents.models.Agent.salt_api_async", return_value=None)
-    def test_get_wmi_detail_task(self, salt_api_async, nats_cmd):
-        self.agent_salt = baker.make_recipe("agents.agent", version="1.0.2")
-        ret = get_wmi_detail_task.s(self.agent_salt.pk).apply()
-        salt_api_async.assert_called_with(timeout=30, func="win_agent.local_sys_info")
-        self.assertEqual(ret.status, "SUCCESS")
-
-        self.agent_nats = baker.make_recipe("agents.agent", version="1.1.0")
-        ret = get_wmi_detail_task.s(self.agent_nats.pk).apply()
-        nats_cmd.assert_called_with({"func": "sysinfo"}, wait=False)
-        self.assertEqual(ret.status, "SUCCESS")
 
     @patch("agents.models.Agent.salt_api_cmd")
     def test_sync_salt_modules_task(self, salt_api_cmd):

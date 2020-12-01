@@ -1056,6 +1056,8 @@ class TestPolicyTasks(TacticalTestCase):
         from .tasks import update_policy_task_fields_task
         from autotasks.models import AutomatedTask
 
+        nats_cmd.return_value = "ok"
+
         # setup data
         policy = baker.make("automation.Policy", active=True)
         tasks = baker.make(

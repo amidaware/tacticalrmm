@@ -122,10 +122,25 @@ class TestAuditViews(TacticalTestCase):
             {"filter": {"clientFilter": [site.client.id]}, "count": 23},
         ]
 
+        pagination = {
+            "rowsPerPage": 25,
+            "page": 1,
+            "sortBy": "entry_time",
+            "descending": True,
+        }
+
         for req in data:
-            resp = self.client.patch(url, req["filter"], format="json")
+            resp = self.client.patch(
+                url, {**req["filter"], "pagination": pagination}, format="json"
+            )
             self.assertEqual(resp.status_code, 200)
-            self.assertEqual(len(resp.data), req["count"])
+            self.assertEqual(
+                len(resp.data["audit_logs"]),
+                pagination["rowsPerPage"]
+                if req["count"] > pagination["rowsPerPage"]
+                else req["count"],
+            )
+            self.assertEqual(resp.data["total"], req["count"])
 
         self.check_not_authenticated("patch", url)
 

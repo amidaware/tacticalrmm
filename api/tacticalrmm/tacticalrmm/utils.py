@@ -91,21 +91,17 @@ def reload_nats():
                 f"{agent.hostname} does not have a user account, NATS will not work"
             )
 
-    if not settings.DOCKER_BUILD:
-        domain = settings.ALLOWED_HOSTS[0].split(".", 1)[1]
-        if hasattr(settings, "CERT_FILE") and hasattr(settings, "KEY_FILE"):
-            if os.path.exists(settings.CERT_FILE) and os.path.exists(settings.KEY_FILE):
-                cert_file = settings.CERT_FILE
-                key_file = settings.KEY_FILE
-            else:
-                cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
-                key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
+    domain = settings.ALLOWED_HOSTS[0].split(".", 1)[1]
+    if hasattr(settings, "CERT_FILE") and hasattr(settings, "KEY_FILE"):
+        if os.path.exists(settings.CERT_FILE) and os.path.exists(settings.KEY_FILE):
+            cert_file = settings.CERT_FILE
+            key_file = settings.KEY_FILE
         else:
             cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
             key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
     else:
-        cert_file = f"/opt/tactical/certs/fullchain.pem"
-        key_file = f"/opt/tactical/certs/privkey.pem"
+        cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
+        key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
 
     config = {
         "tls": {

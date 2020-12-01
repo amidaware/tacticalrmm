@@ -132,6 +132,7 @@
         :rows-per-page-options="[25, 50, 100, 500, 1000]"
         :no-data-label="noDataText"
         @row-click="showDetails"
+        virtual-scroll
       >
         <template v-slot:top-right>
           <q-btn color="primary" icon-right="archive" label="Export to csv" no-caps @click="exportLog" />

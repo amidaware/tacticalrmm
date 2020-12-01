@@ -175,6 +175,7 @@ if "AZPIPELINE" in os.environ:
     }
 
     ALLOWED_HOSTS = ["api.example.com"]
+    DOCKER_BUILD = True
     DEBUG = True
     SECRET_KEY = "abcdefghijklmnoptravis123456789"
 

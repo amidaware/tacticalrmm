@@ -38,6 +38,9 @@ class AddAutoTask(APIView):
             parent = {"policy": policy}
         else:
             agent = get_object_or_404(Agent, pk=data["agent"])
+            if not agent.has_gotasks:
+                return notify_error("Requires agent version 1.1.1 or greater")
+
             parent = {"agent": agent}
 
         check = None

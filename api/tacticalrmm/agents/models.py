@@ -574,9 +574,6 @@ class Agent(BaseAuditModel):
 
         return resp
 
-    def not_supported(self, version_added):
-        return pyver.parse(self.version) < pyver.parse(version_added)
-
     def delete_superseded_updates(self):
         try:
             pks = []  # list of pks to delete

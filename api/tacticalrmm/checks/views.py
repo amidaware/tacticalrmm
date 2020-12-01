@@ -36,17 +36,6 @@ class AddCheck(APIView):
         else:
             agent = get_object_or_404(Agent, pk=request.data["pk"])
             parent = {"agent": agent}
-            added = "0.11.0"
-            if (
-                request.data["check"]["check_type"] == "script"
-                and request.data["check"]["script_args"]
-                and agent.not_supported(version_added=added)
-            ):
-                return notify_error(
-                    {
-                        "non_field_errors": f"Script arguments only available in agent {added} or greater"
-                    }
-                )
 
         script = None
         if "script" in request.data["check"]:
@@ -58,13 +47,6 @@ class AddCheck(APIView):
             request.data["check"]["check_type"] == "eventlog"
             and request.data["check"]["event_id_is_wildcard"]
         ):
-            if agent and agent.not_supported(version_added="0.10.2"):
-                return notify_error(
-                    {
-                        "non_field_errors": "Wildcard is only available in agent 0.10.2 or greater"
-                    }
-                )
-
             request.data["check"]["event_id"] = 0
 
         serializer = CheckSerializer(
@@ -116,30 +98,7 @@ class GetUpdateDeleteCheck(APIView):
                 pass
             else:
                 if request.data["event_id_is_wildcard"]:
-                    if check.agent.not_supported(version_added="0.10.2"):
-                        return notify_error(
-                            {
-                                "non_field_errors": "Wildcard is only available in agent 0.10.2 or greater"
-                            }
-                        )
-
                     request.data["event_id"] = 0
-
-        elif check.check_type == "script":
-            added = "0.11.0"
-            try:
-                request.data["script_args"]
-            except KeyError:
-                pass
-            else:
-                if request.data["script_args"] and check.agent.not_supported(
-                    version_added=added
-                ):
-                    return notify_error(
-                        {
-                            "non_field_errors": f"Script arguments only available in agent {added} or greater"
-                        }
-                    )
 
         serializer = CheckSerializer(instance=check, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)

@@ -331,19 +331,22 @@ def agent_recovery_sms_task(pk):
 
 @app.task
 def agent_outages_task():
-    agents = Agent.objects.only("pk")
+    agents = Agent.objects.only(
+        "pk", "last_seen", "overdue_time", "overdue_email_alert", "overdue_text_alert"
+    )
 
     for agent in agents:
-        if agent.status == "overdue":
-            outages = AgentOutage.objects.filter(agent=agent)
-            if outages and outages.last().is_active:
-                continue
+        if agent.overdue_email_alert or agent.overdue_text_alert:
+            if agent.status == "overdue":
+                outages = AgentOutage.objects.filter(agent=agent)
+                if outages and outages.last().is_active:
+                    continue
 
-            outage = AgentOutage(agent=agent)
-            outage.save()
+                outage = AgentOutage(agent=agent)
+                outage.save()
 
-            if agent.overdue_email_alert and not agent.maintenance_mode:
-                agent_outage_email_task.delay(pk=outage.pk)
+                if agent.overdue_email_alert and not agent.maintenance_mode:
+                    agent_outage_email_task.delay(pk=outage.pk)
 
-            if agent.overdue_text_alert and not agent.maintenance_mode:
-                agent_outage_sms_task.delay(pk=outage.pk)
+                if agent.overdue_text_alert and not agent.maintenance_mode:
+                    agent_outage_sms_task.delay(pk=outage.pk)

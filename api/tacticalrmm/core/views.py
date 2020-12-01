@@ -95,7 +95,7 @@ def server_maintenance(request):
 
     if request.data["action"] == "reload_nats":
         reload_nats()
-        return Response("Reloading Nats Configuration.")
+        return Response("Nats configuration was reloaded successfully.")
 
     if request.data["action"] == "rm_orphaned_tasks":
         from agents.models import Agent

@@ -1,5 +1,7 @@
 from tacticalrmm.test import TacticalTestCase
 from core.tasks import core_maintenance_tasks
+from unittest.mock import patch
+from model_bakery import baker, seq
 
 
 class TestCoreTasks(TacticalTestCase):
@@ -32,8 +34,11 @@ class TestCoreTasks(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    def test_ui_maintenance_actions(self):
+    @patch("autotasks.tasks.remove_orphaned_win_tasks.delay")
+    def test_ui_maintenance_actions(self, remove_orphaned_win_tasks):
         url = "/core/servermaintenance/"
+
+        agents = baker.make_recipe("agents.online_agent", _quantity=3)
 
         # test with empty data
         r = self.client.post(url, {})
@@ -62,5 +67,11 @@ class TestCoreTasks(TacticalTestCase):
         }
         r = self.client.post(url, data)
         self.assertEqual(r.status_code, 200)
+
+        # test remove orphaned tasks
+        data = {"action": "rm_orphaned_tasks"}
+        r = self.client.post(url, data)
+        self.assertEqual(r.status_code, 200)
+        remove_orphaned_win_tasks.assert_called()
 
         self.check_not_authenticated("post", url)

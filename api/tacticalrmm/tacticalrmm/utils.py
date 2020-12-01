@@ -57,6 +57,7 @@ def bitdays_to_string(day: int) -> str:
 
     return ", ".join(ret)
 
+
 def filter_software(sw: SoftwareList) -> SoftwareList:
     ret: SoftwareList = []
     printable = set(string.printable)
@@ -73,8 +74,9 @@ def filter_software(sw: SoftwareList) -> SoftwareList:
                 "uninstall": s["uninstall"],
             }
         )
-    
+
     return ret
+
 
 def reload_nats():
     users = [{"user": "tacticalrmm", "password": settings.SECRET_KEY}]
@@ -91,14 +93,24 @@ def reload_nats():
 
     if not settings.DOCKER_BUILD:
         domain = settings.ALLOWED_HOSTS[0].split(".", 1)[1]
-        cert_path = f"/etc/letsencrypt/live/{domain}"
+        if hasattr(settings, "CERT_FILE") and hasattr(settings, "KEY_FILE"):
+            if os.path.exists(settings.CERT_FILE) and os.path.exists(settings.KEY_FILE):
+                cert_file = settings.CERT_FILE
+                key_file = settings.KEY_FILE
+            else:
+                cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
+                key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
+        else:
+            cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
+            key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
     else:
-        cert_path = "/opt/tactical/certs"
+        cert_file = f"/opt/tactical/certs/fullchain.pem"
+        key_file = f"/opt/tactical/certs/privkey.pem"
 
     config = {
         "tls": {
-            "cert_file": f"{cert_path}/fullchain.pem",
-            "key_file": f"{cert_path}/privkey.pem",
+            "cert_file": cert_file,
+            "key_file": key_file,
         },
         "authorization": {"users": users},
         "max_payload": 2048576005,

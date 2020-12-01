@@ -74,7 +74,7 @@
                   <q-select outlined dense options-dense v-model="timezone" :options="allTimezones" class="col-8" />
                 </q-card-section>
                 <q-card-section class="row">
-                  <div class="col-10">Check interval:</div>
+                  <div class="col-10">Run checks every:</div>
                   <q-input
                     dense
                     type="number"
@@ -90,7 +90,7 @@
                   />
                 </q-card-section>
                 <q-card-section class="row">
-                  <div class="col-10">Send an overdue alert if the server has not reported in after:</div>
+                  <div class="col-10">Send an overdue alert if the agent has not reported in after:</div>
                   <q-input
                     dense
                     type="number"

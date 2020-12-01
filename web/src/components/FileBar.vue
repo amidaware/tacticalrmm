@@ -178,7 +178,7 @@
       <!-- Update Agents Modal -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showUpdateAgentsModal" maximized transition-show="slide-up" transition-hide="slide-down">
-          <UpdateAgents @close="showUpdateAgentsModal = false" />
+          <UpdateAgents @close="showUpdateAgentsModal = false" @edited="edited" />
         </q-dialog>
       </div>
       <!-- Script Manager -->

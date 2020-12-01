@@ -152,6 +152,7 @@ export default {
             .then(r => {
               this.$q.loading.hide();
               this.getPendingActions();
+              this.$emit("edited");
               this.notifySuccess(r.data, 3000);
             })
             .catch(e => {

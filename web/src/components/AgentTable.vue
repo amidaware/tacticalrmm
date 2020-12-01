@@ -274,7 +274,14 @@
             </q-icon>
           </q-td>
           <q-td :props="props" key="pendingactions">
-            <q-icon @click="showPendingActionsModal(props.row.id)" name="far fa-clock" size="1.4em" color="warning">
+            <q-icon
+              v-if="props.row.pending_actions !== 0"
+              @click="showPendingActionsModal(props.row.id)"
+              name="far fa-clock"
+              size="1.4em"
+              color="warning"
+              class="cursor-pointer"
+            >
               <q-tooltip>Pending Action Count: {{ props.row.pending_actions }}</q-tooltip>
             </q-icon>
           </q-td>
@@ -309,12 +316,12 @@
     </q-dialog>
     <!-- reboot later modal -->
     <q-dialog v-model="showRebootLaterModal">
-      <RebootLater @close="showRebootLaterModal = false" />
+      <RebootLater @close="showRebootLaterModal = false" @edited="agentEdited" />
     </q-dialog>
     <!-- pending actions modal -->
     <div class="q-pa-md q-gutter-sm">
       <q-dialog v-model="showPendingActions" @hide="closePendingActionsModal">
-        <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" />
+        <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" @edited="agentEdited" />
       </q-dialog>
     </div>
     <!-- add policy modal -->

@@ -54,6 +54,7 @@ export default {
         .then(r => {
           this.$q.loading.hide();
           this.$emit("close");
+          this.$emit("edited");
           this.confirmReboot(r.data);
         })
         .catch(e => {

@@ -2,6 +2,7 @@ import asyncio
 import os
 import requests
 from loguru import logger
+from packaging import version as pyver
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -500,5 +501,23 @@ class Software(APIView):
             s = agent.installedsoftware_set.first()
             s.software = sw
             s.save(update_fields=["software"])
+
+        return Response("ok")
+
+
+class Installer(APIView):
+    def get(self, request):
+        # used to check if token is valid. will return 401 if not
+        return Response("ok")
+
+    def post(self, request):
+        if "version" not in request.data:
+            return notify_error("Invalid data")
+
+        ver = request.data["version"]
+        if pyver.parse(ver) < pyver.parse(settings.LATEST_AGENT_VER):
+            return notify_error(
+                f"Old installer detected (version {ver} ). Latest version is {settings.LATEST_AGENT_VER} Please generate a new installer from the RMM"
+            )
 
         return Response("ok")

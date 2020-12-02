@@ -114,7 +114,7 @@ def agent_pending_actions(request, pk):
 
 @api_view()
 def all_pending_actions(request):
-    actions = PendingAction.objects.all()
+    actions = PendingAction.objects.all().select_related("agent")
     return Response(PendingActionSerializer(actions, many=True).data)
 
 

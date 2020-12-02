@@ -7,7 +7,7 @@ pgpw="hunter2"
 
 #####################################################
 
-SCRIPT_VERSION="8"
+SCRIPT_VERSION="9"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 GREEN='\033[0;32m'
@@ -207,15 +207,6 @@ sudo systemctl restart mongod
 sleep 5
 mongorestore --gzip $tmp_dir/meshcentral/mongo
 
-print_green 'Restoring MeshCentral'
-
-sudo tar -xzf $tmp_dir/meshcentral/mesh.tar.gz -C /
-sudo chown ${USER}:${USER} -R /meshcentral
-cd /meshcentral
-npm install meshcentral@0.7.9
-
-
-print_green 'Restoring the backend'
 
 sudo mkdir /rmm
 sudo chown ${USER}:${USER} /rmm
@@ -226,6 +217,17 @@ cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout master
+
+print_green 'Restoring MeshCentral'
+
+MESH_VER=$(grep "^MESH_VER" /rmm/api/tacticalrmm/tacticalrmm/settings.py | awk -F'[= "]' '{print $5}')
+sudo tar -xzf $tmp_dir/meshcentral/mesh.tar.gz -C /
+sudo chown ${USER}:${USER} -R /meshcentral
+cd /meshcentral
+npm install meshcentral@${MESH_VER}
+
+
+print_green 'Restoring the backend'
 
 cp $tmp_dir/rmm/local_settings.py /rmm/api/tacticalrmm/tacticalrmm/
 cp $tmp_dir/rmm/env /rmm/web/.env

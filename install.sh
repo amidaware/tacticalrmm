@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="25"
+SCRIPT_VERSION="26"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 GREEN='\033[0;32m'
@@ -205,12 +205,47 @@ sudo apt install -y mongodb-org
 sudo systemctl enable mongod
 sudo systemctl restart mongod
 
+
+
+print_green 'Installing python, redis and git'
+
+sudo apt update
+sudo apt install -y python3.8-venv python3.8-dev python3-pip python3-cherrypy3 python3-setuptools python3-wheel ca-certificates redis git
+
+print_green 'Installing postgresql'
+
+sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt update
+sudo apt install -y postgresql-13
+
+print_green 'Creating database for the rmm'
+
+sudo -u postgres psql -c "CREATE DATABASE tacticalrmm"
+sudo -u postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
+sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'"
+sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
+sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
+
+sudo mkdir /rmm
+sudo chown ${USER}:${USER} /rmm
+sudo mkdir -p /var/log/celery
+sudo chown ${USER}:${USER} /var/log/celery
+git clone https://github.com/wh1te909/tacticalrmm.git /rmm/
+cd /rmm
+git config user.email "admin@example.com"
+git config user.name "Bob"
+git checkout master
+
 print_green 'Installing MeshCentral'
+
+MESH_VER=$(grep "^MESH_VER" /rmm/api/tacticalrmm/tacticalrmm/settings.py | awk -F'[= "]' '{print $5}')
 
 sudo mkdir -p /meshcentral/meshcentral-data
 sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
-npm install meshcentral@0.7.9
+npm install meshcentral@${MESH_VER}
 sudo chown ${USER}:${USER} -R /meshcentral
 
 meshcfg="$(cat << EOF
@@ -252,37 +287,6 @@ meshcfg="$(cat << EOF
 EOF
 )"
 echo "${meshcfg}" > /meshcentral/meshcentral-data/config.json
-
-print_green 'Installing python, redis and git'
-
-sudo apt update
-sudo apt install -y python3.8-venv python3.8-dev python3-pip python3-cherrypy3 python3-setuptools python3-wheel ca-certificates redis git
-
-print_green 'Installing postgresql'
-
-sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-sudo apt update
-sudo apt install -y postgresql-13
-
-print_green 'Creating database for the rmm'
-
-sudo -u postgres psql -c "CREATE DATABASE tacticalrmm"
-sudo -u postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
-
-sudo mkdir /rmm
-sudo chown ${USER}:${USER} /rmm
-sudo mkdir -p /var/log/celery
-sudo chown ${USER}:${USER} /var/log/celery
-git clone https://github.com/wh1te909/tacticalrmm.git /rmm/
-cd /rmm
-git config user.email "admin@example.com"
-git config user.name "Bob"
-git checkout master
 
 localvars="$(cat << EOF
 SECRET_KEY = "${DJANGO_SEKRET}"
@@ -504,14 +508,7 @@ nginxmesh="$(cat << EOF
 server {
   listen 80;
   server_name ${meshdomain};
-  location / {
-     proxy_pass http://127.0.0.1:800;
-     proxy_http_version 1.1;
-     proxy_set_header X-Forwarded-Host \$host:\$server_port;
-     proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-     proxy_set_header X-Forwarded-Proto \$scheme;
-  }
-
+  return 301 https://\$server_name\$request_uri;
 }
 
 server {
@@ -530,6 +527,7 @@ server {
         proxy_pass http://127.0.0.1:4430/;
         proxy_http_version 1.1;
 
+        proxy_set_header Host \$host;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header X-Forwarded-Host \$host:\$server_port;

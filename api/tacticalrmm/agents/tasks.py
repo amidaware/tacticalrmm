@@ -1,13 +1,10 @@
-import asyncio
 from loguru import logger
 from time import sleep
 import random
 import requests
 from packaging import version as pyver
 
-
 from django.conf import settings
-
 
 from tacticalrmm.celery import app
 from agents.models import Agent, AgentOutage
@@ -52,9 +49,6 @@ def send_agent_update_task(pks, version):
             else:
                 url = agent.winagent_dl
                 inno = agent.win_inno_exe
-            logger.info(
-                f"Updating {agent.salt_id} current version {agent.version} using {inno}"
-            )
 
             if agent.has_nats:
                 if agent.pendingactions.filter(
@@ -81,7 +75,7 @@ def send_agent_update_task(pks, version):
                         "url": url,
                     },
                 )
-        sleep(10)
+        sleep(5)
 
 
 @app.task
@@ -97,7 +91,6 @@ def auto_self_agent_update_task():
         for i in q
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
     ]
-    logger.info(f"Updating {len(agents)}")
 
     chunks = (agents[i : i + 30] for i in range(0, len(agents), 30))
 
@@ -124,9 +117,6 @@ def auto_self_agent_update_task():
             else:
                 url = agent.winagent_dl
                 inno = agent.win_inno_exe
-            logger.info(
-                f"Updating {agent.salt_id} current version {agent.version} using {inno}"
-            )
 
             if agent.has_nats:
                 if agent.pendingactions.filter(
@@ -153,7 +143,7 @@ def auto_self_agent_update_task():
                         "url": url,
                     },
                 )
-        sleep(10)
+        sleep(5)
 
 
 @app.task

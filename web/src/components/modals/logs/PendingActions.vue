@@ -11,7 +11,7 @@
         <div class="col">
           <q-btn
             label="Cancel Action"
-            :disable="selectedRow === null || selectedStatus === 'completed' || actionType === 'taskaction'"
+            :disable="selectedRow === null || selectedStatus === 'completed' || actionType !== 'schedreboot'"
             color="red"
             icon="cancel"
             dense
@@ -98,26 +98,26 @@ export default {
       hostname: "",
       pagination: {
         rowsPerPage: 0,
-        sortBy: "due",
-        descending: true,
+        sortBy: "status",
+        descending: false,
       },
       all_columns: [
         { name: "id", field: "id" },
         { name: "status", field: "status" },
-        { name: "type", label: "Type", align: "left", sortable: true },
+        { name: "type", label: "Type", field: "action_type", align: "left", sortable: true },
         { name: "due", label: "Due", field: "due", align: "left", sortable: true },
-        { name: "desc", label: "Description", align: "left", sortable: true },
-        { name: "agent", label: "Agent", align: "left", sortable: true },
-        { name: "client", label: "Client", align: "left", sortable: true },
-        { name: "site", label: "Site", align: "left", sortable: true },
+        { name: "desc", label: "Description", field: "description", align: "left", sortable: true },
+        { name: "agent", label: "Agent", field: "hostname", align: "left", sortable: true },
+        { name: "client", label: "Client", field: "client", align: "left", sortable: true },
+        { name: "site", label: "Site", field: "site", align: "left", sortable: true },
       ],
       all_visibleColumns: ["type", "due", "desc", "agent", "client", "site"],
       agent_columns: [
         { name: "id", field: "id" },
         { name: "status", field: "status" },
-        { name: "type", label: "Type", align: "left", sortable: true },
+        { name: "type", label: "Type", field: "action_type", align: "left", sortable: true },
         { name: "due", label: "Due", field: "due", align: "left", sortable: true },
-        { name: "desc", label: "Description", align: "left", sortable: true },
+        { name: "desc", label: "Description", field: "description", align: "left", sortable: true },
       ],
       agent_visibleColumns: ["type", "due", "desc"],
     };

@@ -7,7 +7,7 @@ pgpw="hunter2"
 
 #####################################################
 
-SCRIPT_VERSION="7"
+SCRIPT_VERSION="8"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 GREEN='\033[0;32m'

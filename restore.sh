@@ -212,7 +212,7 @@ print_green 'Restoring MeshCentral'
 sudo tar -xzf $tmp_dir/meshcentral/mesh.tar.gz -C /
 sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
-npm install meshcentral@0.6.84
+npm install meshcentral@0.7.9
 
 
 print_green 'Restoring the backend'

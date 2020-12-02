@@ -210,7 +210,7 @@ print_green 'Installing MeshCentral'
 sudo mkdir -p /meshcentral/meshcentral-data
 sudo chown ${USER}:${USER} -R /meshcentral
 cd /meshcentral
-npm install meshcentral@0.6.84
+npm install meshcentral@0.7.9
 sudo chown ${USER}:${USER} -R /meshcentral
 
 meshcfg="$(cat << EOF

@@ -14,7 +14,6 @@ from winupdate.serializers import WinUpdatePolicySerializer
 from .models import Agent
 from .tasks import (
     auto_self_agent_update_task,
-    update_salt_minion_task,
     sync_salt_modules_task,
     batch_sync_modules_task,
     OLD_64_PY_AGENT,
@@ -785,46 +784,6 @@ class TestAgentTasks(TacticalTestCase):
         ret = batch_sync_modules_task.s().apply()
         self.assertEqual(salt_batch_async.call_count, 4)
         self.assertEqual(ret.status, "SUCCESS")
-
-    @patch("agents.models.Agent.salt_api_async", return_value=None)
-    @patch("agents.tasks.sleep", return_value=None)
-    def test_update_salt_minion_task(self, mock_sleep, salt_api_async):
-        # test agents that need salt update
-        self.agents = baker.make_recipe(
-            "agents.agent",
-            version=settings.LATEST_AGENT_VER,
-            salt_ver="1.0.3",
-            _quantity=53,
-        )
-        ret = update_salt_minion_task.s().apply()
-        self.assertEqual(salt_api_async.call_count, 53)
-        self.assertEqual(ret.status, "SUCCESS")
-        [i.delete() for i in self.agents]
-        salt_api_async.reset_mock()
-
-        # test agents that need salt update but agent version too low
-        self.agents = baker.make_recipe(
-            "agents.agent",
-            version="0.10.2",
-            salt_ver="1.0.3",
-            _quantity=53,
-        )
-        ret = update_salt_minion_task.s().apply()
-        self.assertEqual(ret.status, "SUCCESS")
-        salt_api_async.assert_not_called()
-        [i.delete() for i in self.agents]
-        salt_api_async.reset_mock()
-
-        # test agents already on latest salt ver
-        self.agents = baker.make_recipe(
-            "agents.agent",
-            version=settings.LATEST_AGENT_VER,
-            salt_ver=settings.LATEST_SALT_VER,
-            _quantity=53,
-        )
-        ret = update_salt_minion_task.s().apply()
-        self.assertEqual(ret.status, "SUCCESS")
-        salt_api_async.assert_not_called()
 
     @patch("agents.models.Agent.salt_api_async")
     @patch("agents.tasks.sleep", return_value=None)

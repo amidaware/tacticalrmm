@@ -56,8 +56,8 @@ func downloadAgent(filepath string) (err error) {
 func main() {
 
 	debugLog := flag.String("log", "", "Verbose output")
-	localSalt := flag.String("local-salt", "", "Use local salt minion")
 	localMesh := flag.String("local-mesh", "", "Use local mesh agent")
+	noSalt := flag.Bool("nosalt", false, "Does not install salt")
 	cert := flag.String("cert", "", "Path to ca.pem")
 	timeout := flag.String("timeout", "", "Timeout for subprocess calls")
 	flag.Parse()
@@ -81,8 +81,8 @@ func main() {
 		cmdArgs = append(cmdArgs, "--log", "DEBUG")
 	}
 
-	if len(strings.TrimSpace(*localSalt)) != 0 {
-		cmdArgs = append(cmdArgs, "--local-salt", *localSalt)
+	if *noSalt {
+		cmdArgs = append(cmdArgs, "-nosalt")
 	}
 
 	if len(strings.TrimSpace(*localMesh)) != 0 {

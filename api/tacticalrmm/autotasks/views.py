@@ -20,7 +20,7 @@ from .tasks import (
     delete_win_task_schedule,
     enable_or_disable_win_task,
 )
-from tacticalrmm.utils import notify_error
+from tacticalrmm.utils import notify_error, get_bit_days
 
 
 class AddAutoTask(APIView):
@@ -38,17 +38,20 @@ class AddAutoTask(APIView):
             parent = {"policy": policy}
         else:
             agent = get_object_or_404(Agent, pk=data["agent"])
+            if not agent.has_gotasks:
+                return notify_error("Requires agent version 1.1.1 or greater")
+
             parent = {"agent": agent}
-            added = "0.11.0"
-            if data["autotask"]["script_args"] and agent.not_supported(added):
-                return notify_error(
-                    f"Script arguments only available in agent {added} or greater"
-                )
 
         check = None
         if data["autotask"]["assigned_check"]:
             check = get_object_or_404(Check, pk=data["autotask"]["assigned_check"])
 
+        bit_weekdays = None
+        if data["autotask"]["run_time_days"]:
+            bit_weekdays = get_bit_days(data["autotask"]["run_time_days"])
+
+        del data["autotask"]["run_time_days"]
         serializer = TaskSerializer(data=data["autotask"], partial=True, context=parent)
         serializer.is_valid(raise_exception=True)
         obj = serializer.save(
@@ -56,6 +59,7 @@ class AddAutoTask(APIView):
             script=script,
             win_task_name=AutomatedTask.generate_task_name(),
             assigned_check=check,
+            run_time_bit_weekdays=bit_weekdays,
         )
 
         if not "policy" in data:

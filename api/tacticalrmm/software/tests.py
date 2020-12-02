@@ -120,61 +120,8 @@ class TestSoftwareTasks(TacticalTestCase):
         salt_api_cmd.assert_any_call(timeout=200, func="chocolatey.list")
         self.assertEquals(salt_api_cmd.call_count, 2)
 
-    @patch("agents.models.Agent.nats_cmd")
-    def test_get_installed_software(self, nats_cmd):
-        from .tasks import get_installed_software
-
-        agent = baker.make_recipe("agents.agent")
-
-        nats_return = [
-            {
-                "name": "Mozilla Maintenance Service",
-                "size": "336.9 kB",
-                "source": "",
-                "version": "73.0.1",
-                "location": "",
-                "publisher": "Mozilla",
-                "uninstall": '"C:\\Program Files (x86)\\Mozilla Maintenance Service\\uninstall.exe"',
-                "install_date": "0001-01-01 00:00:00 +0000 UTC",
-            },
-            {
-                "name": "OpenVPN 2.4.9-I601-Win10 ",
-                "size": "8.7 MB",
-                "source": "",
-                "version": "2.4.9-I601-Win10",
-                "location": "C:\\Program Files\\OpenVPN\\",
-                "publisher": "OpenVPN Technologies, Inc.",
-                "uninstall": "C:\\Program Files\\OpenVPN\\Uninstall.exe",
-                "install_date": "0001-01-01 00:00:00 +0000 UTC",
-            },
-            {
-                "name": "Microsoft Office Professional Plus 2019 - en-us",
-                "size": "0 B",
-                "source": "",
-                "version": "16.0.10368.20035",
-                "location": "C:\\Program Files\\Microsoft Office",
-                "publisher": "Microsoft Corporation",
-                "uninstall": '"C:\\Program Files\\Common Files\\Microsoft Shared\\ClickToRun\\OfficeClickToRun.exe" scenario=install scenariosubtype=ARP sourcetype=None productstoremove=ProPlus2019Volume.16_en-us_x-none culture=en-us version.16=16.0',
-                "install_date": "0001-01-01 00:00:00 +0000 UTC",
-            },
-        ]
-
-        # test failed attempt
-        nats_cmd.return_value = "timeout"
-        ret = get_installed_software(agent.pk)
-        self.assertFalse(ret)
-        nats_cmd.assert_called_with({"func": "softwarelist"}, timeout=20)
-        nats_cmd.reset_mock()
-
-        # test successful attempt
-        nats_cmd.return_value = nats_return
-        ret = get_installed_software(agent.pk)
-        self.assertTrue(ret)
-        nats_cmd.assert_called_with({"func": "softwarelist"}, timeout=20)
-
     @patch("agents.models.Agent.salt_api_cmd")
-    @patch("software.tasks.get_installed_software.delay")
-    def test_install_program(self, get_installed_software, salt_api_cmd):
+    def test_install_program(self, salt_api_cmd):
         from .tasks import install_program
 
         agent = baker.make_recipe("agents.agent")
@@ -195,6 +142,5 @@ class TestSoftwareTasks(TacticalTestCase):
         salt_api_cmd.assert_called_with(
             timeout=900, func="chocolatey.install", arg=["git", "version=2.3.4"]
         )
-        get_installed_software.assert_called_with(agent.pk)
 
         self.assertTrue(ChocoLog.objects.filter(agent=agent, name="git").exists())

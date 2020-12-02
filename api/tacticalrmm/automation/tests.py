@@ -1051,9 +1051,12 @@ class TestPolicyTasks(TacticalTestCase):
         for task in tasks:
             run_win_task.assert_any_call(task.id)
 
-    def test_update_policy_tasks(self):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_update_policy_tasks(self, nats_cmd):
         from .tasks import update_policy_task_fields_task
         from autotasks.models import AutomatedTask
+
+        nats_cmd.return_value = "ok"
 
         # setup data
         policy = baker.make("automation.Policy", active=True)

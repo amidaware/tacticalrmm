@@ -6,9 +6,12 @@ ENV TACTICAL_DIR /opt/tactical
 
 RUN apk add --no-cache bash
 
-SHELL ["/bin/bash", "-c"]
+SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
-RUN npm install meshcentral@0.6.62
+COPY api/tacticalrmm/tacticalrmm/settings.py /tmp/settings.py
+
+RUN grep -o 'MESH_VER.*' /tmp/settings.py | cut -d'"' -f 2 > /tmp/MESH_VER && \
+    npm install meshcentral@$(cat /tmp/MESH_VER)
 
 COPY docker/containers/tactical-meshcentral/entrypoint.sh /
 RUN chmod +x /entrypoint.sh

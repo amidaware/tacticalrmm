@@ -77,6 +77,7 @@ export default {
         .post("/agents/updateagents/", data)
         .then(r => {
           this.$emit("close");
+          this.$emit("edited");
           this.notifySuccess("Agents will now be updated");
         })
         .catch(() => this.notifyError("Something went wrong"));

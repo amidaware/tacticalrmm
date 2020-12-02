@@ -2,12 +2,12 @@ import asyncio
 import os
 import requests
 from loguru import logger
+from packaging import version as pyver
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from django.http import HttpResponse
-from rest_framework import serializers
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -20,6 +20,7 @@ from checks.models import Check
 from autotasks.models import AutomatedTask
 from accounts.models import User
 from winupdate.models import WinUpdatePolicy
+from software.models import InstalledSoftware
 from checks.serializers import CheckRunnerGetSerializerV3
 from agents.serializers import WinAgentSerializer
 from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
@@ -28,13 +29,12 @@ from winupdate.serializers import ApprovedUpdateSerializer
 from agents.tasks import (
     agent_recovery_email_task,
     agent_recovery_sms_task,
-    get_wmi_detail_task,
     sync_salt_modules_task,
 )
 from winupdate.tasks import check_for_updates_task
-from software.tasks import get_installed_software, install_chocolatey
+from software.tasks import install_chocolatey
 from checks.utils import bytes2human
-from tacticalrmm.utils import notify_error, reload_nats
+from tacticalrmm.utils import notify_error, reload_nats, filter_software, SoftwareList
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -123,8 +123,6 @@ class Hello(APIView):
         serializer.save(last_seen=djangotime.now())
 
         sync_salt_modules_task.delay(agent.pk)
-        get_installed_software.delay(agent.pk)
-        get_wmi_detail_task.delay(agent.pk)
         check_for_updates_task.apply_async(
             queue="wupdate", kwargs={"pk": agent.pk, "wait": True}
         )
@@ -386,7 +384,15 @@ class MeshInfo(APIView):
 
     def patch(self, request, pk):
         agent = get_object_or_404(Agent, pk=pk)
-        agent.mesh_node_id = request.data["nodeidhex"]
+
+        if "nodeidhex" in request.data:
+            # agent <= 1.1.0
+            nodeid = request.data["nodeidhex"]
+        else:
+            # agent >= 1.1.1
+            nodeid = request.data["nodeid"]
+
+        agent.mesh_node_id = nodeid
         agent.save(update_fields=["mesh_node_id"])
         return Response("ok")
 
@@ -476,3 +482,42 @@ class NewAgent(APIView):
                 "token": token.key,
             }
         )
+
+
+class Software(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        raw: SoftwareList = request.data["software"]
+        if not isinstance(raw, list):
+            return notify_error("err")
+
+        sw = filter_software(raw)
+        if not InstalledSoftware.objects.filter(agent=agent).exists():
+            InstalledSoftware(agent=agent, software=sw).save()
+        else:
+            s = agent.installedsoftware_set.first()
+            s.software = sw
+            s.save(update_fields=["software"])
+
+        return Response("ok")
+
+
+class Installer(APIView):
+    def get(self, request):
+        # used to check if token is valid. will return 401 if not
+        return Response("ok")
+
+    def post(self, request):
+        if "version" not in request.data:
+            return notify_error("Invalid data")
+
+        ver = request.data["version"]
+        if pyver.parse(ver) < pyver.parse(settings.LATEST_AGENT_VER):
+            return notify_error(
+                f"Old installer detected (version {ver} ). Latest version is {settings.LATEST_AGENT_VER} Please generate a new installer from the RMM"
+            )
+
+        return Response("ok")

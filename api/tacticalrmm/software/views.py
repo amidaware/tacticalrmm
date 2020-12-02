@@ -1,5 +1,5 @@
 import asyncio
-import string
+from typing import Any
 
 from django.shortcuts import get_object_or_404
 
@@ -10,7 +10,7 @@ from agents.models import Agent
 from .models import ChocoSoftware, InstalledSoftware
 from .serializers import InstalledSoftwareSerializer
 from .tasks import install_program
-from tacticalrmm.utils import notify_error
+from tacticalrmm.utils import notify_error, filter_software
 
 
 @api_view()
@@ -45,25 +45,11 @@ def refresh_installed(request, pk):
     if not agent.has_nats:
         return notify_error("Requires agent version 1.1.0 or greater")
 
-    r = asyncio.run(agent.nats_cmd({"func": "softwarelist"}, timeout=15))
+    r: Any = asyncio.run(agent.nats_cmd({"func": "softwarelist"}, timeout=15))
     if r == "timeout" or r == "natsdown":
         return notify_error("Unable to contact the agent")
 
-    printable = set(string.printable)
-    sw = []
-    for s in r:
-        sw.append(
-            {
-                "name": "".join(filter(lambda x: x in printable, s["name"])),
-                "version": "".join(filter(lambda x: x in printable, s["version"])),
-                "publisher": "".join(filter(lambda x: x in printable, s["publisher"])),
-                "install_date": s["install_date"],
-                "size": s["size"],
-                "source": s["source"],
-                "location": s["location"],
-                "uninstall": s["uninstall"],
-            }
-        )
+    sw = filter_software(r)
 
     if not InstalledSoftware.objects.filter(agent=agent).exists():
         InstalledSoftware(agent=agent, software=sw).save()

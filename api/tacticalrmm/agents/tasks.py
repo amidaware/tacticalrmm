@@ -1,13 +1,10 @@
-import asyncio
 from loguru import logger
 from time import sleep
 import random
 import requests
 from packaging import version as pyver
 
-
 from django.conf import settings
-
 
 from tacticalrmm.celery import app
 from agents.models import Agent, AgentOutage
@@ -52,9 +49,6 @@ def send_agent_update_task(pks, version):
             else:
                 url = agent.winagent_dl
                 inno = agent.win_inno_exe
-            logger.info(
-                f"Updating {agent.salt_id} current version {agent.version} using {inno}"
-            )
 
             if agent.has_nats:
                 if agent.pendingactions.filter(
@@ -81,7 +75,7 @@ def send_agent_update_task(pks, version):
                         "url": url,
                     },
                 )
-        sleep(10)
+        sleep(5)
 
 
 @app.task
@@ -97,7 +91,6 @@ def auto_self_agent_update_task():
         for i in q
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
     ]
-    logger.info(f"Updating {len(agents)}")
 
     chunks = (agents[i : i + 30] for i in range(0, len(agents), 30))
 
@@ -124,9 +117,6 @@ def auto_self_agent_update_task():
             else:
                 url = agent.winagent_dl
                 inno = agent.win_inno_exe
-            logger.info(
-                f"Updating {agent.salt_id} current version {agent.version} using {inno}"
-            )
 
             if agent.has_nats:
                 if agent.pendingactions.filter(
@@ -153,37 +143,7 @@ def auto_self_agent_update_task():
                         "url": url,
                     },
                 )
-        sleep(10)
-
-
-@app.task
-def update_salt_minion_task():
-    q = Agent.objects.all()
-    agents = [
-        i.pk
-        for i in q
-        if pyver.parse(i.version) >= pyver.parse("0.11.0")
-        and pyver.parse(i.salt_ver) < pyver.parse(settings.LATEST_SALT_VER)
-    ]
-
-    chunks = (agents[i : i + 50] for i in range(0, len(agents), 50))
-
-    for chunk in chunks:
-        for pk in chunk:
-            agent = Agent.objects.get(pk=pk)
-            r = agent.salt_api_async(func="win_agent.update_salt")
-        sleep(20)
-
-
-@app.task
-def get_wmi_detail_task(pk):
-    agent = Agent.objects.get(pk=pk)
-    if agent.has_nats:
-        asyncio.run(agent.nats_cmd({"func": "sysinfo"}, wait=False))
-    else:
-        agent.salt_api_async(timeout=30, func="win_agent.local_sys_info")
-
-    return "ok"
+        sleep(5)
 
 
 @app.task
@@ -207,25 +167,6 @@ def batch_sync_modules_task():
     for chunk in chunks:
         Agent.salt_batch_async(minions=chunk, func="saltutil.sync_modules")
         sleep(10)
-
-
-@app.task
-def batch_sysinfo_task():
-    # update system info using WMI
-    agents = Agent.objects.all()
-
-    agents_nats = [agent for agent in agents if agent.has_nats]
-    minions = [
-        agent.salt_id
-        for agent in agents
-        if not agent.has_nats and pyver.parse(agent.version) >= pyver.parse("0.11.0")
-    ]
-
-    if minions:
-        Agent.salt_batch_async(minions=minions, func="win_agent.local_sys_info")
-
-    for agent in agents_nats:
-        asyncio.run(agent.nats_cmd({"func": "sysinfo"}, wait=False))
 
 
 @app.task
@@ -331,19 +272,22 @@ def agent_recovery_sms_task(pk):
 
 @app.task
 def agent_outages_task():
-    agents = Agent.objects.only("pk")
+    agents = Agent.objects.only(
+        "pk", "last_seen", "overdue_time", "overdue_email_alert", "overdue_text_alert"
+    )
 
     for agent in agents:
-        if agent.status == "overdue":
-            outages = AgentOutage.objects.filter(agent=agent)
-            if outages and outages.last().is_active:
-                continue
+        if agent.overdue_email_alert or agent.overdue_text_alert:
+            if agent.status == "overdue":
+                outages = AgentOutage.objects.filter(agent=agent)
+                if outages and outages.last().is_active:
+                    continue
 
-            outage = AgentOutage(agent=agent)
-            outage.save()
+                outage = AgentOutage(agent=agent)
+                outage.save()
 
-            if agent.overdue_email_alert and not agent.maintenance_mode:
-                agent_outage_email_task.delay(pk=outage.pk)
+                if agent.overdue_email_alert and not agent.maintenance_mode:
+                    agent_outage_email_task.delay(pk=outage.pk)
 
-            if agent.overdue_text_alert and not agent.maintenance_mode:
-                agent_outage_sms_task.delay(pk=outage.pk)
+                if agent.overdue_text_alert and not agent.maintenance_mode:
+                    agent_outage_sms_task.delay(pk=outage.pk)

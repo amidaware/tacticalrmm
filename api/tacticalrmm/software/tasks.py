@@ -1,5 +1,4 @@
 import asyncio
-import string
 from time import sleep
 from loguru import logger
 from tacticalrmm.celery import app
@@ -8,6 +7,7 @@ from django.utils import timezone as djangotime
 
 from agents.models import Agent
 from .models import ChocoSoftware, ChocoLog, InstalledSoftware
+from tacticalrmm.utils import filter_software
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -88,44 +88,6 @@ def update_chocos():
 
 
 @app.task
-def get_installed_software(pk):
-    agent = Agent.objects.get(pk=pk)
-    if not agent.has_nats:
-        logger.error(f"{agent.salt_id} software list only available in agent >= 1.1.0")
-        return
-
-    r = asyncio.run(agent.nats_cmd({"func": "softwarelist"}, timeout=20))
-    if r == "timeout" or r == "natsdown":
-        logger.error(f"{agent.salt_id} {r}")
-        return
-
-    printable = set(string.printable)
-    sw = []
-    for s in r:
-        sw.append(
-            {
-                "name": "".join(filter(lambda x: x in printable, s["name"])),
-                "version": "".join(filter(lambda x: x in printable, s["version"])),
-                "publisher": "".join(filter(lambda x: x in printable, s["publisher"])),
-                "install_date": s["install_date"],
-                "size": s["size"],
-                "source": s["source"],
-                "location": s["location"],
-                "uninstall": s["uninstall"],
-            }
-        )
-
-    if not InstalledSoftware.objects.filter(agent=agent).exists():
-        InstalledSoftware(agent=agent, software=sw).save()
-    else:
-        s = agent.installedsoftware_set.first()
-        s.software = sw
-        s.save(update_fields=["software"])
-
-    return "ok"
-
-
-@app.task
 def install_program(pk, name, version):
     agent = Agent.objects.get(pk=pk)
 
@@ -168,7 +130,5 @@ def install_program(pk, name, version):
     ChocoLog(
         agent=agent, name=name, version=version, message=output, installed=installed
     ).save()
-
-    get_installed_software.delay(agent.pk)
 
     return "ok"

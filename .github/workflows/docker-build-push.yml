@@ -1,7 +1,8 @@
 name: Publish Tactical Docker Images
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "v*.*.*"
 jobs:
   docker:
     name: Build and Push Docker Images

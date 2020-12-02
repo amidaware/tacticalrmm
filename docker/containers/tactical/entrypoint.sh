@@ -69,6 +69,9 @@ DEBUG = False
 
 DOCKER_BUILD = True
 
+CERT_FILE = '/opt/tactical/certs/fullchain.pem'
+CERT_KEY = '/opt/tactical/certs/privkey.pem'
+
 SCRIPTS_DIR = '/opt/tactical/scripts'
 
 ALLOWED_HOSTS = ['${API_HOST}']

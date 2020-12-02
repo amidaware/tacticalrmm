@@ -32,13 +32,9 @@
         </div>
         <div class="q-pa-xs q-gutter-xs">
           <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
-            <code>--local-salt "C:\\&lt;some folder or path&gt;\\salt-minion-setup.exe"</code>
+            <code>--nosalt</code>
           </q-badge>
-          <span>
-            To skip downloading the salt-minion during the install. Download it
-            <a v-if="info.arch === '64'" :href="info.data.salt64">here</a>
-            <a v-else :href="info.data.salt32">here</a>
-          </span>
+          <span> Do not install salt during agent install. </span>
         </div>
         <div class="q-pa-xs q-gutter-xs">
           <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
@@ -56,12 +52,6 @@
             <code>--cert "C:\\&lt;some folder or path&gt;\\ca.pem"</code>
           </q-badge>
           <span> To use a domain CA </span>
-        </div>
-        <div class="q-pa-xs q-gutter-xs">
-          <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
-            <code>--timeout NUMBER_IN_SECONDS</code>
-          </q-badge>
-          <span> To increase the default timeout of 900 seconds for the installer. Use on slow computers.</span>
         </div>
       </q-expansion-item>
       <br />

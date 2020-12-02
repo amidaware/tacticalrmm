@@ -8,6 +8,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.db.models.fields import DateTimeField
 from automation.models import Policy
 from logs.models import BaseAuditModel
+from tacticalrmm.utils import bitdays_to_string
 
 RUN_TIME_DAY_CHOICES = [
     (0, "Monday"),
@@ -69,6 +70,8 @@ class AutomatedTask(BaseAuditModel):
         on_delete=models.SET_NULL,
     )
     name = models.CharField(max_length=255)
+    run_time_bit_weekdays = models.IntegerField(null=True, blank=True)
+    # run_time_days is deprecated, use bit weekdays
     run_time_days = ArrayField(
         models.IntegerField(choices=RUN_TIME_DAY_CHOICES, null=True, blank=True),
         null=True,
@@ -107,21 +110,12 @@ class AutomatedTask(BaseAuditModel):
         elif self.task_type == "runonce":
             return f'Run once on {self.run_time_date.strftime("%m/%d/%Y %I:%M%p")}'
         elif self.task_type == "scheduled":
-            ret = []
-            for i in self.run_time_days:
-                for j in RUN_TIME_DAY_CHOICES:
-                    if i in j:
-                        ret.append(j[1][0:3])
-
             run_time_nice = dt.datetime.strptime(
                 self.run_time_minute, "%H:%M"
             ).strftime("%I:%M %p")
 
-            if len(ret) == 7:
-                return f"Every day at {run_time_nice}"
-            else:
-                days = ",".join(ret)
-                return f"{days} at {run_time_nice}"
+            days = bitdays_to_string(self.run_time_bit_weekdays)
+            return f"{days} at {run_time_nice}"
 
     @property
     def last_run_as_timezone(self):
@@ -169,6 +163,7 @@ class AutomatedTask(BaseAuditModel):
             name=self.name,
             run_time_days=self.run_time_days,
             run_time_minute=self.run_time_minute,
+            run_time_bit_weekdays=self.run_time_bit_weekdays,
             run_time_date=self.run_time_date,
             task_type=self.task_type,
             win_task_name=self.win_task_name,

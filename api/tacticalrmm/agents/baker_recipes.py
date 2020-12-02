@@ -26,7 +26,7 @@ def get_wmi_data():
 agent = Recipe(
     Agent,
     hostname="DESKTOP-TEST123",
-    version="1.1.0",
+    version="1.1.1",
     monitoring_type=cycle(["workstation", "server"]),
     salt_id=generate_agent_id("DESKTOP-TEST123"),
     agent_id="71AHC-AA813-HH1BC-AAHH5-00013|DESKTOP-TEST123",

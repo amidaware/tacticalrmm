@@ -46,6 +46,13 @@
           </q-icon>
         </q-th>
       </template>
+      <template v-slot:header-cell-pendingactions="props">
+        <q-th auto-width :props="props">
+          <q-icon name="far fa-clock" size="1.5em">
+            <q-tooltip>Pending Actions</q-tooltip>
+          </q-icon>
+        </q-th>
+      </template>
       <!--
       <template v-slot:header-cell-antivirus="props">
         <q-th auto-width :props="props">
@@ -99,14 +106,6 @@
                 </q-item-section>
 
                 <q-item-section>Take Control</q-item-section>
-              </q-item>
-
-              <!-- web rdp -->
-              <q-item clickable v-ripple v-close-popup @click.stop.prevent="webRDP(props.row.id)">
-                <q-item-section side>
-                  <q-icon size="xs" name="screen_share" />
-                </q-item-section>
-                <q-item-section>Remote Desktop</q-item-section>
               </q-item>
 
               <q-item clickable v-ripple v-close-popup @click="showSendCommand = true">
@@ -274,6 +273,18 @@
               <q-tooltip>Patches Pending</q-tooltip>
             </q-icon>
           </q-td>
+          <q-td :props="props" key="pendingactions">
+            <q-icon
+              v-if="props.row.pending_actions !== 0"
+              @click="showPendingActionsModal(props.row.id)"
+              name="far fa-clock"
+              size="1.4em"
+              color="warning"
+              class="cursor-pointer"
+            >
+              <q-tooltip>Pending Action Count: {{ props.row.pending_actions }}</q-tooltip>
+            </q-icon>
+          </q-td>
           <q-td key="agentstatus">
             <q-icon v-if="props.row.status === 'overdue'" name="fas fa-signal" size="1.2em" color="negative">
               <q-tooltip>Agent overdue</q-tooltip>
@@ -305,12 +316,12 @@
     </q-dialog>
     <!-- reboot later modal -->
     <q-dialog v-model="showRebootLaterModal">
-      <RebootLater @close="showRebootLaterModal = false" />
+      <RebootLater @close="showRebootLaterModal = false" @edited="agentEdited" />
     </q-dialog>
     <!-- pending actions modal -->
     <div class="q-pa-md q-gutter-sm">
       <q-dialog v-model="showPendingActions" @hide="closePendingActionsModal">
-        <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" />
+        <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" @edited="agentEdited" />
       </q-dialog>
     </div>
     <!-- add policy modal -->
@@ -384,6 +395,7 @@ export default {
       let availability = null;
       let checks = false;
       let patches = false;
+      let actions = false;
       let reboot = false;
       let search = "";
 
@@ -394,6 +406,7 @@ export default {
           advancedFilter = true;
           let filter = param.split(":")[1];
           if (filter === "patchespending") patches = true;
+          if (filter === "actionspending") actions = true;
           else if (filter === "checksfailing") checks = true;
           else if (filter === "rebootneeded") reboot = true;
           else if (filter === "online" || filter === "offline" || filter === "expired") availability = filter;
@@ -406,6 +419,7 @@ export default {
         if (advancedFilter) {
           if (checks && !row.checks.has_failing_checks) return false;
           if (patches && !row.patches_pending) return false;
+          if (actions && row.pending_actions > 0) return false;
           if (reboot && !row.needs_reboot) return false;
           if (availability === "online" && row.status !== "online") return false;
           else if (availability === "offline" && row.status !== "overdue") return false;
@@ -548,13 +562,17 @@ export default {
           persistent: true,
         })
         .onOk(() => {
-          const data = { pk: pk, action: "rebootnow" };
-          axios.post("/agents/poweraction/", data).then(r => {
-            this.$q.dialog({
-              title: `Restarting ${hostname}`,
-              message: `${hostname} will now be restarted`,
+          this.$q.loading.show();
+          this.$axios
+            .post("/agents/reboot/", { pk: pk })
+            .then(r => {
+              this.$q.loading.hide();
+              this.notifySuccess(`${hostname} will now be restarted`);
+            })
+            .catch(e => {
+              this.$q.loading.hide();
+              this.notifyError(e.response.data);
             });
-          });
         });
     },
     agentRowSelected(pk) {
@@ -597,19 +615,6 @@ export default {
     showPolicyAdd(pk) {
       this.policyAddPk = pk;
       this.showPolicyAddModal = true;
-    },
-    webRDP(pk) {
-      this.$q.loading.show();
-      this.$axios
-        .get(`/agents/${pk}/meshcentral/`)
-        .then(r => {
-          this.$q.loading.hide();
-          openURL(r.data.webrdp);
-        })
-        .catch(e => {
-          this.$q.loading.hide();
-          this.notifyError(e.response.data);
-        });
     },
     toggleMaintenance(agent) {
       let data = {

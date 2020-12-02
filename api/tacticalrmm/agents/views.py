@@ -3,6 +3,8 @@ from loguru import logger
 import os
 import subprocess
 import pytz
+import random
+import string
 import datetime as dt
 from packaging import version as pyver
 
@@ -18,7 +20,7 @@ from rest_framework import status, generics
 from .models import Agent, AgentOutage, RecoveryAction, Note
 from core.models import CoreSettings
 from scripts.models import Script
-from logs.models import AuditLog
+from logs.models import AuditLog, PendingAction
 
 from .serializers import (
     AgentSerializer,
@@ -93,6 +95,8 @@ def uninstall(request):
 @api_view(["PATCH"])
 def edit_agent(request):
     agent = get_object_or_404(Agent, pk=request.data["id"])
+
+    old_site = agent.site.pk
     a_serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
     a_serializer.is_valid(raise_exception=True)
     a_serializer.save()
@@ -103,6 +107,11 @@ def edit_agent(request):
     )
     p_serializer.is_valid(raise_exception=True)
     p_serializer.save()
+
+    # check if site changed and initiate generating correct policies
+    if old_site != request.data["site"]:
+        agent.generate_checks_from_policies(clear=True)
+        agent.generate_tasks_from_policies(clear=True)
 
     return Response("ok")
 
@@ -119,16 +128,9 @@ def meshcentral(request, pk):
     if token == "err":
         return notify_error("Invalid mesh token")
 
-    control = (
-        f"{core.mesh_site}/?login={token}&node={agent.mesh_node_id}&viewmode=11&hide=31"
-    )
-    terminal = (
-        f"{core.mesh_site}/?login={token}&node={agent.mesh_node_id}&viewmode=12&hide=31"
-    )
-    file = (
-        f"{core.mesh_site}/?login={token}&node={agent.mesh_node_id}&viewmode=13&hide=31"
-    )
-    webrdp = f"{core.mesh_site}/mstsc.html?login={token}&node={agent.mesh_node_id}"
+    control = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=11&hide=31"
+    terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"
+    file = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=13&hide=31"
 
     AuditLog.audit_mesh_session(username=request.user.username, hostname=agent.hostname)
 
@@ -137,7 +139,6 @@ def meshcentral(request, pk):
         "control": control,
         "terminal": terminal,
         "file": file,
-        "webrdp": webrdp,
         "status": agent.status,
         "client": agent.client.name,
         "site": agent.site.name,
@@ -199,19 +200,6 @@ def get_event_log(request, pk, logtype, days):
         return notify_error("Unable to contact the agent")
 
     return Response(r)
-
-
-@api_view(["POST"])
-def power_action(request):
-    agent = get_object_or_404(Agent, pk=request.data["pk"])
-    if not agent.has_nats:
-        return notify_error("Requires agent version 1.1.0 or greater")
-    if request.data["action"] == "rebootnow":
-        r = asyncio.run(agent.nats_cmd({"func": "rebootnow"}, timeout=10))
-        if r != "ok":
-            return notify_error("Unable to contact the agent")
-
-    return Response("ok")
 
 
 @api_view(["POST"])
@@ -372,24 +360,60 @@ def overdue_action(request):
     return Response(agent.hostname)
 
 
-@api_view(["POST"])
-def reboot_later(request):
-    agent = get_object_or_404(Agent, pk=request.data["pk"])
-    date_time = request.data["datetime"]
+class Reboot(APIView):
+    # reboot now
+    def post(self, request):
+        agent = get_object_or_404(Agent, pk=request.data["pk"])
+        if not agent.has_nats:
+            return notify_error("Requires agent version 1.1.0 or greater")
 
-    try:
-        obj = dt.datetime.strptime(date_time, "%Y-%m-%d %H:%M")
-    except Exception:
-        return notify_error("Invalid date")
+        r = asyncio.run(agent.nats_cmd({"func": "rebootnow"}, timeout=10))
+        if r != "ok":
+            return notify_error("Unable to contact the agent")
 
-    r = agent.schedule_reboot(obj)
+        return Response("ok")
 
-    if r == "timeout":
-        return notify_error("Unable to contact the agent")
-    elif r == "failed":
-        return notify_error("Something went wrong")
+    # reboot later
+    def patch(self, request):
+        agent = get_object_or_404(Agent, pk=request.data["pk"])
+        if not agent.has_gotasks:
+            return notify_error("Requires agent version 1.1.1 or greater")
 
-    return Response(r["msg"])
+        try:
+            obj = dt.datetime.strptime(request.data["datetime"], "%Y-%m-%d %H:%M")
+        except Exception:
+            return notify_error("Invalid date")
+
+        task_name = "TacticalRMM_SchedReboot_" + "".join(
+            random.choice(string.ascii_letters) for _ in range(10)
+        )
+
+        nats_data = {
+            "func": "schedtask",
+            "schedtaskpayload": {
+                "type": "schedreboot",
+                "trigger": "once",
+                "name": task_name,
+                "year": int(dt.datetime.strftime(obj, "%Y")),
+                "month": dt.datetime.strftime(obj, "%B"),
+                "day": int(dt.datetime.strftime(obj, "%d")),
+                "hour": int(dt.datetime.strftime(obj, "%H")),
+                "min": int(dt.datetime.strftime(obj, "%M")),
+            },
+        }
+
+        r = asyncio.run(agent.nats_cmd(nats_data, timeout=10))
+        if r != "ok":
+            return notify_error(r)
+
+        details = {"taskname": task_name, "time": str(obj)}
+        PendingAction.objects.create(
+            agent=agent, action_type="schedreboot", details=details
+        )
+        nice_time = dt.datetime.strftime(obj, "%B %d, %Y at %I:%M %p")
+        return Response(
+            {"time": nice_time, "agent": agent.hostname, "task_name": task_name}
+        )
 
 
 @api_view(["POST"])

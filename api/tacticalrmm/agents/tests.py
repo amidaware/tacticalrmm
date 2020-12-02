@@ -14,11 +14,8 @@ from winupdate.serializers import WinUpdatePolicySerializer
 from .models import Agent
 from .tasks import (
     auto_self_agent_update_task,
-    update_salt_minion_task,
-    get_wmi_detail_task,
     sync_salt_modules_task,
     batch_sync_modules_task,
-    batch_sysinfo_task,
     OLD_64_PY_AGENT,
     OLD_32_PY_AGENT,
 )
@@ -33,7 +30,7 @@ class TestAgentViews(TacticalTestCase):
         client = baker.make("clients.Client", name="Google")
         site = baker.make("clients.Site", client=client, name="LA Office")
         self.agent = baker.make_recipe(
-            "agents.online_agent", site=site, version="1.1.0"
+            "agents.online_agent", site=site, version="1.1.1"
         )
         baker.make_recipe("winupdate.winupdate_policy", agent=self.agent)
 
@@ -186,10 +183,10 @@ class TestAgentViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     @patch("agents.models.Agent.nats_cmd")
-    def test_power_action(self, nats_cmd):
-        url = f"/agents/poweraction/"
+    def test_reboot_now(self, nats_cmd):
+        url = f"/agents/reboot/"
 
-        data = {"pk": self.agent.pk, "action": "rebootnow"}
+        data = {"pk": self.agent.pk}
         nats_cmd.return_value = "ok"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
@@ -222,30 +219,37 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_reboot_later(self, mock_ret):
-        url = f"/agents/rebootlater/"
+    @patch("agents.models.Agent.nats_cmd")
+    def test_reboot_later(self, nats_cmd):
+        url = f"/agents/reboot/"
 
         data = {
             "pk": self.agent.pk,
             "datetime": "2025-08-29 18:41",
         }
 
-        mock_ret.return_value = True
-        r = self.client.post(url, data, format="json")
+        nats_cmd.return_value = "ok"
+        r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data["time"], "August 29, 2025 at 06:41 PM")
         self.assertEqual(r.data["agent"], self.agent.hostname)
 
-        mock_ret.return_value = "failed"
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 400)
+        nats_data = {
+            "func": "schedtask",
+            "schedtaskpayload": {
+                "type": "schedreboot",
+                "trigger": "once",
+                "name": r.data["task_name"],
+                "year": 2025,
+                "month": "August",
+                "day": 29,
+                "hour": 18,
+                "min": 41,
+            },
+        }
+        nats_cmd.assert_called_with(nats_data, timeout=10)
 
-        mock_ret.return_value = "timeout"
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 400)
-
-        mock_ret.return_value = False
+        nats_cmd.return_value = "error creating task"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
 
@@ -253,12 +257,12 @@ class TestAgentViews(TacticalTestCase):
             "pk": self.agent.pk,
             "datetime": "rm -rf /",
         }
-        r = self.client.post(url, data_invalid, format="json")
+        r = self.client.patch(url, data_invalid, format="json")
 
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.data, "Invalid date")
 
-        self.check_not_authenticated("post", url)
+        self.check_not_authenticated("patch", url)
 
     @patch("os.path.exists")
     @patch("subprocess.run")
@@ -428,7 +432,14 @@ class TestAgentViews(TacticalTestCase):
         self.assertIn("&viewmode=13", r.data["file"])
         self.assertIn("&viewmode=12", r.data["terminal"])
         self.assertIn("&viewmode=11", r.data["control"])
-        self.assertIn("mstsc.html?login=", r.data["webrdp"])
+
+        self.assertIn("&gotonode=", r.data["file"])
+        self.assertIn("&gotonode=", r.data["terminal"])
+        self.assertIn("&gotonode=", r.data["control"])
+
+        self.assertIn("?login=", r.data["file"])
+        self.assertIn("?login=", r.data["terminal"])
+        self.assertIn("?login=", r.data["control"])
 
         self.assertEqual(self.agent.hostname, r.data["hostname"])
         self.assertEqual(self.agent.client.name, r.data["client"])
@@ -739,19 +750,6 @@ class TestAgentTasks(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
-    @patch("agents.models.Agent.nats_cmd")
-    @patch("agents.models.Agent.salt_api_async", return_value=None)
-    def test_get_wmi_detail_task(self, salt_api_async, nats_cmd):
-        self.agent_salt = baker.make_recipe("agents.agent", version="1.0.2")
-        ret = get_wmi_detail_task.s(self.agent_salt.pk).apply()
-        salt_api_async.assert_called_with(timeout=30, func="win_agent.local_sys_info")
-        self.assertEqual(ret.status, "SUCCESS")
-
-        self.agent_nats = baker.make_recipe("agents.agent", version="1.1.0")
-        ret = get_wmi_detail_task.s(self.agent_nats.pk).apply()
-        nats_cmd.assert_called_with({"func": "sysinfo"}, wait=False)
-        self.assertEqual(ret.status, "SUCCESS")
-
     @patch("agents.models.Agent.salt_api_cmd")
     def test_sync_salt_modules_task(self, salt_api_cmd):
         self.agent = baker.make_recipe("agents.agent")
@@ -786,83 +784,6 @@ class TestAgentTasks(TacticalTestCase):
         ret = batch_sync_modules_task.s().apply()
         self.assertEqual(salt_batch_async.call_count, 4)
         self.assertEqual(ret.status, "SUCCESS")
-
-    @patch("agents.models.Agent.nats_cmd")
-    @patch("agents.models.Agent.salt_batch_async", return_value=None)
-    @patch("agents.tasks.sleep", return_value=None)
-    def test_batch_sysinfo_task(self, mock_sleep, salt_batch_async, nats_cmd):
-
-        self.agents_nats = baker.make_recipe(
-            "agents.agent", version="1.1.0", _quantity=20
-        )
-        # test nats
-        ret = batch_sysinfo_task.s().apply()
-        self.assertEqual(nats_cmd.call_count, 20)
-        nats_cmd.assert_called_with({"func": "sysinfo"}, wait=False)
-        self.assertEqual(ret.status, "SUCCESS")
-
-        self.agents_salt = baker.make_recipe(
-            "agents.agent", version="1.0.2", _quantity=70
-        )
-
-        minions = [i.salt_id for i in self.agents_salt]
-
-        ret = batch_sysinfo_task.s().apply()
-        self.assertEqual(salt_batch_async.call_count, 1)
-        salt_batch_async.assert_called_with(
-            minions=minions, func="win_agent.local_sys_info"
-        )
-        self.assertEqual(ret.status, "SUCCESS")
-        salt_batch_async.reset_mock()
-        [i.delete() for i in self.agents_salt]
-
-        # test old agents, should not run
-        self.agents_old = baker.make_recipe(
-            "agents.agent", version="0.10.2", _quantity=70
-        )
-        ret = batch_sysinfo_task.s().apply()
-        salt_batch_async.assert_not_called()
-        self.assertEqual(ret.status, "SUCCESS")
-
-    @patch("agents.models.Agent.salt_api_async", return_value=None)
-    @patch("agents.tasks.sleep", return_value=None)
-    def test_update_salt_minion_task(self, mock_sleep, salt_api_async):
-        # test agents that need salt update
-        self.agents = baker.make_recipe(
-            "agents.agent",
-            version=settings.LATEST_AGENT_VER,
-            salt_ver="1.0.3",
-            _quantity=53,
-        )
-        ret = update_salt_minion_task.s().apply()
-        self.assertEqual(salt_api_async.call_count, 53)
-        self.assertEqual(ret.status, "SUCCESS")
-        [i.delete() for i in self.agents]
-        salt_api_async.reset_mock()
-
-        # test agents that need salt update but agent version too low
-        self.agents = baker.make_recipe(
-            "agents.agent",
-            version="0.10.2",
-            salt_ver="1.0.3",
-            _quantity=53,
-        )
-        ret = update_salt_minion_task.s().apply()
-        self.assertEqual(ret.status, "SUCCESS")
-        salt_api_async.assert_not_called()
-        [i.delete() for i in self.agents]
-        salt_api_async.reset_mock()
-
-        # test agents already on latest salt ver
-        self.agents = baker.make_recipe(
-            "agents.agent",
-            version=settings.LATEST_AGENT_VER,
-            salt_ver=settings.LATEST_SALT_VER,
-            _quantity=53,
-        )
-        ret = update_salt_minion_task.s().apply()
-        self.assertEqual(ret.status, "SUCCESS")
-        salt_api_async.assert_not_called()
 
     @patch("agents.models.Agent.salt_api_async")
     @patch("agents.tasks.sleep", return_value=None)

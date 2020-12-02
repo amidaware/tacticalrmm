@@ -129,7 +129,7 @@
                   dense
                   @input="checkAlert(props.row.id, 'Text', props.row.text_alert, props.row.managed_by_policy)"
                   v-model="props.row.text_alert"
-                  :disabled="props.row.managed_by_policy"
+                  :disable="props.row.managed_by_policy"
                 />
               </q-td>
               <!-- email alert -->
@@ -138,7 +138,7 @@
                   dense
                   @input="checkAlert(props.row.id, 'Email', props.row.email_alert, props.row.managed_by_policy)"
                   v-model="props.row.email_alert"
-                  :disabled="props.row.managed_by_policy"
+                  :disable="props.row.managed_by_policy"
                 />
               </q-td>
               <!-- policy check icon -->

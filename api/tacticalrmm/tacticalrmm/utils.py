@@ -1,6 +1,8 @@
 import json
 import os
+import string
 import subprocess
+from typing import List, Dict
 from loguru import logger
 
 from django.conf import settings
@@ -12,6 +14,68 @@ from agents.models import Agent
 logger.configure(**settings.LOG_CONFIG)
 
 notify_error = lambda msg: Response(msg, status=status.HTTP_400_BAD_REQUEST)
+
+SoftwareList = List[Dict[str, str]]
+
+WEEK_DAYS = {
+    "Sunday": 0x1,
+    "Monday": 0x2,
+    "Tuesday": 0x4,
+    "Wednesday": 0x8,
+    "Thursday": 0x10,
+    "Friday": 0x20,
+    "Saturday": 0x40,
+}
+
+
+def get_bit_days(days: List[str]) -> int:
+    bit_days = 0
+    for day in days:
+        bit_days |= WEEK_DAYS.get(day)
+    return bit_days
+
+
+def bitdays_to_string(day: int) -> str:
+    ret = []
+    if day == 127:
+        return "Every day"
+
+    if day & WEEK_DAYS["Sunday"]:
+        ret.append("Sunday")
+    if day & WEEK_DAYS["Monday"]:
+        ret.append("Monday")
+    if day & WEEK_DAYS["Tuesday"]:
+        ret.append("Tuesday")
+    if day & WEEK_DAYS["Wednesday"]:
+        ret.append("Wednesday")
+    if day & WEEK_DAYS["Thursday"]:
+        ret.append("Thursday")
+    if day & WEEK_DAYS["Friday"]:
+        ret.append("Friday")
+    if day & WEEK_DAYS["Saturday"]:
+        ret.append("Saturday")
+
+    return ", ".join(ret)
+
+
+def filter_software(sw: SoftwareList) -> SoftwareList:
+    ret: SoftwareList = []
+    printable = set(string.printable)
+    for s in sw:
+        ret.append(
+            {
+                "name": "".join(filter(lambda x: x in printable, s["name"])),
+                "version": "".join(filter(lambda x: x in printable, s["version"])),
+                "publisher": "".join(filter(lambda x: x in printable, s["publisher"])),
+                "install_date": s["install_date"],
+                "size": s["size"],
+                "source": s["source"],
+                "location": s["location"],
+                "uninstall": s["uninstall"],
+            }
+        )
+
+    return ret
 
 
 def reload_nats():
@@ -27,16 +91,22 @@ def reload_nats():
                 f"{agent.hostname} does not have a user account, NATS will not work"
             )
 
-    if not settings.DOCKER_BUILD:
-        domain = settings.ALLOWED_HOSTS[0].split(".", 1)[1]
-        cert_path = f"/etc/letsencrypt/live/{domain}"
+    domain = settings.ALLOWED_HOSTS[0].split(".", 1)[1]
+    if hasattr(settings, "CERT_FILE") and hasattr(settings, "KEY_FILE"):
+        if os.path.exists(settings.CERT_FILE) and os.path.exists(settings.KEY_FILE):
+            cert_file = settings.CERT_FILE
+            key_file = settings.KEY_FILE
+        else:
+            cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
+            key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
     else:
-        cert_path = "/opt/tactical/certs"
+        cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
+        key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
 
     config = {
         "tls": {
-            "cert_file": f"{cert_path}/fullchain.pem",
-            "key_file": f"{cert_path}/privkey.pem",
+            "cert_file": cert_file,
+            "key_file": key_file,
         },
         "authorization": {"users": users},
         "max_payload": 2048576005,

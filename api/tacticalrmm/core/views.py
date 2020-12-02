@@ -84,3 +84,56 @@ def email_test(request):
         return notify_error(r)
 
     return Response("Email Test OK!")
+
+
+@api_view(["POST"])
+def server_maintenance(request):
+    from tacticalrmm.utils import reload_nats
+
+    if "action" not in request.data:
+        return notify_error("The data is incorrect")
+
+    if request.data["action"] == "reload_nats":
+        reload_nats()
+        return Response("Nats configuration was reloaded successfully.")
+
+    if request.data["action"] == "rm_orphaned_tasks":
+        from agents.models import Agent
+        from autotasks.tasks import remove_orphaned_win_tasks
+
+        agents = Agent.objects.all()
+        online = [i for i in agents if i.status == "online"]
+        for agent in online:
+            remove_orphaned_win_tasks.delay(agent.pk)
+
+        return Response(
+            "The task has been initiated. Check the Debug Log in the UI for progress."
+        )
+
+    if request.data["action"] == "prune_db":
+        from agents.models import AgentOutage
+        from logs.models import AuditLog, PendingAction
+
+        if "prune_tables" not in request.data:
+            return notify_error("The data is incorrect.")
+
+        tables = request.data["prune_tables"]
+        records_count = 0
+        if "agent_outages" in tables:
+            agentoutages = AgentOutage.objects.exclude(recovery_time=None)
+            records_count += agentoutages.count()
+            agentoutages.delete()
+
+        if "audit_logs" in tables:
+            auditlogs = AuditLog.objects.filter(action="check_run")
+            records_count += auditlogs.count()
+            auditlogs.delete()
+
+        if "pending_actions" in tables:
+            pendingactions = PendingAction.objects.filter(status="completed")
+            records_count += pendingactions.count()
+            pendingactions.delete()
+
+        return Response(f"{records_count} records were pruned from the database")
+
+    return notify_error("The data is incorrect")

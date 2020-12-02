@@ -15,19 +15,19 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.2.3"
+TRMM_VERSION = "0.2.4"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.92"
+APP_VER = "0.0.94"
 
 # https://github.com/wh1te909/salt
 LATEST_SALT_VER = "1.1.0"
 
 # https://github.com/wh1te909/rmmagent
-LATEST_AGENT_VER = "1.1.0"
+LATEST_AGENT_VER = "1.1.1"
 
-MESH_VER = "0.6.84"
+MESH_VER = "0.7.9"
 
 SALT_MASTER_VER = "3002.2"
 
@@ -58,7 +58,6 @@ INSTALLED_APPS = [
     "knox",
     "corsheaders",
     "accounts",
-    "api",
     "apiv2",
     "apiv3",
     "clients",
@@ -156,39 +155,6 @@ LOG_CONFIG = {
     "handlers": [{"sink": os.path.join(LOG_DIR, "debug.log"), "serialize": False}]
 }
 
-if "TRAVIS" in os.environ:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": "travisci",
-            "USER": "travisci",
-            "PASSWORD": "travisSuperSekret6645",
-            "HOST": "127.0.0.1",
-            "PORT": "",
-        }
-    }
-
-    REST_FRAMEWORK = {
-        "DATETIME_FORMAT": "%b-%d-%Y - %H:%M",
-        "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-        "DEFAULT_AUTHENTICATION_CLASSES": ("knox.auth.TokenAuthentication",),
-        "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
-    }
-
-    DEBUG = True
-    SECRET_KEY = "abcdefghijklmnoptravis123456789"
-
-    ADMIN_URL = "abc123456/"
-
-    SCRIPTS_DIR = os.path.join(Path(BASE_DIR).parents[1], "scripts")
-    SALT_USERNAME = "travis"
-    SALT_PASSWORD = "travis"
-    MESH_USERNAME = "travis"
-    MESH_SITE = "https://example.com"
-    MESH_TOKEN_KEY = "bd65e957a1e70c622d32523f61508400d6cd0937001a7ac12042227eba0b9ed625233851a316d4f489f02994145f74537a331415d00047dbbf13d940f556806dffe7a8ce1de216dc49edbad0c1a7399c"
-    REDIS_HOST = "localhost"
-    SALT_HOST = "127.0.0.1"
-
 if "AZPIPELINE" in os.environ:
     DATABASES = {
         "default": {
@@ -208,6 +174,8 @@ if "AZPIPELINE" in os.environ:
         "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
     }
 
+    ALLOWED_HOSTS = ["api.example.com"]
+    DOCKER_BUILD = True
     DEBUG = True
     SECRET_KEY = "abcdefghijklmnoptravis123456789"
 

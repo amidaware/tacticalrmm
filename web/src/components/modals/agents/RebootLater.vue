@@ -33,7 +33,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import { date } from "quasar";
@@ -50,11 +49,12 @@ export default {
     scheduleReboot() {
       this.$q.loading.show({ message: "Contacting agent..." });
       const data = { pk: this.selectedAgentPk, datetime: this.datetime };
-      axios
-        .post("/agents/rebootlater/", data)
+      this.$axios
+        .patch("/agents/reboot/", data)
         .then(r => {
           this.$q.loading.hide();
           this.$emit("close");
+          this.$emit("edited");
           this.confirmReboot(r.data);
         })
         .catch(e => {

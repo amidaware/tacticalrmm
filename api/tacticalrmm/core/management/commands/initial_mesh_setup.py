@@ -12,12 +12,11 @@ class Command(BaseCommand):
 
     async def websocket_call(self, mesh_settings):
 
-        token = get_auth_token(
-            mesh_settings.mesh_username, mesh_settings.mesh_token
-        )
+        token = get_auth_token(mesh_settings.mesh_username, mesh_settings.mesh_token)
 
-        if settings.MESH_WS_URL:
-            uri = f"{settings.MESH_WS_URL}/control.ashx?auth={token}"
+        if settings.DOCKER_BUILD:
+            site = mesh_settings.mesh_site.replace("https", "ws")
+            uri = f"{site}:443/control.ashx?auth={token}"
         else:
             site = mesh_settings.mesh_site.replace("https", "wss")
             uri = f"{site}/control.ashx?auth={token}"
@@ -52,11 +51,17 @@ class Command(BaseCommand):
 
         try:
             # Check for Mesh Username
-            if not mesh_settings.mesh_username or settings.MESH_USERNAME != mesh_settings.mesh_username:
+            if (
+                not mesh_settings.mesh_username
+                or settings.MESH_USERNAME != mesh_settings.mesh_username
+            ):
                 mesh_settings.mesh_username = settings.MESH_USERNAME
 
             # Check for Mesh Site
-            if not mesh_settings.mesh_site or settings.MESH_SITE != mesh_settings.mesh_site:
+            if (
+                not mesh_settings.mesh_site
+                or settings.MESH_SITE != mesh_settings.mesh_site
+            ):
                 mesh_settings.mesh_site = settings.MESH_SITE
 
             # Check for Mesh Token
@@ -75,7 +80,9 @@ class Command(BaseCommand):
             return
 
         try:
-            asyncio.get_event_loop().run_until_complete(self.websocket_call(mesh_settings))
+            asyncio.get_event_loop().run_until_complete(
+                self.websocket_call(mesh_settings)
+            )
             self.stdout.write("Initial Mesh Central setup complete")
         except websockets.exceptions.ConnectionClosedError:
             self.stdout.write(

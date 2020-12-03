@@ -402,6 +402,9 @@ class Reboot(APIView):
             },
         }
 
+        if pyver.parse(agent.version) >= pyver.parse("1.1.2"):
+            nats_data["schedtaskpayload"]["deleteafter"] = True
+
         r = asyncio.run(agent.nats_cmd(nats_data, timeout=10))
         if r != "ok":
             return notify_error(r)

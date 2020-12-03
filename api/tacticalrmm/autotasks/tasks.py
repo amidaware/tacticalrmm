@@ -5,6 +5,7 @@ from tacticalrmm.celery import app
 from django.conf import settings
 import pytz
 from django.utils import timezone as djangotime
+from packaging import version as pyver
 
 from .models import AutomatedTask
 from logs.models import PendingAction
@@ -55,6 +56,11 @@ def create_win_task_schedule(pk, pending_action=False):
                 "min": int(dt.datetime.strftime(task.run_time_date, "%M")),
             },
         }
+
+        if task.remove_if_not_scheduled and pyver.parse(
+            task.agent.version
+        ) >= pyver.parse("1.1.2"):
+            nats_data["schedtaskpayload"]["deleteafter"] = True
 
     elif task.task_type == "checkfailure" or task.task_type == "manual":
         nats_data = {
@@ -201,6 +207,7 @@ def remove_orphaned_win_tasks(agentpk):
         "TacticalRMM_fixmesh",
         "TacticalRMM_SchedReboot",
         "TacticalRMM_sync",
+        "TacticalRMM_agentupdate",
     )
 
     for task in r:

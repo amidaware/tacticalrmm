@@ -35,7 +35,8 @@ jobs:
           cd /myagent/_work/1/s/api
           source env/bin/activate
           cd /myagent/_work/1/s/api/tacticalrmm
-          python manage.py test -v 2
+          coverage run manage.py test -v 2
+          coveralls
         displayName: "Run django tests"
 
       - script: |

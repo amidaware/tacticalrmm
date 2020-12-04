@@ -16,15 +16,14 @@ def get_debug_info():
 EXCLUDE_PATHS = (
     "/api/v3",
     "/api/v2",
-    "/api/v1",
     "/logs/auditlogs",
-    "/winupdate/winupdater",
-    "/winupdate/results",
     f"/{settings.ADMIN_URL}",
     "/logout",
     "/agents/installagent",
     "/logs/downloadlog",
 )
+
+ENDS_WITH = "/refreshedservices/"
 
 
 class AuditMiddleware:
@@ -37,7 +36,9 @@ class AuditMiddleware:
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        if not request.path.startswith(EXCLUDE_PATHS):
+        if not request.path.startswith(EXCLUDE_PATHS) and not request.path.endswith(
+            ENDS_WITH
+        ):
             # https://stackoverflow.com/questions/26240832/django-and-middleware-which-uses-request-user-is-always-anonymous
             try:
                 # DRF saves the class of the view function as the .cls property

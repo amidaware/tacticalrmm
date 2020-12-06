@@ -33,6 +33,11 @@ jobs:
 
       - script: |
           cd /myagent/_work/1/s/api
+          git config user.email "admin@example.com"
+          git config user.name "Bob"
+          git fetch
+          git checkout develop
+          git pull
           source env/bin/activate
           cd /myagent/_work/1/s/api/tacticalrmm
           coverage run manage.py test -v 2

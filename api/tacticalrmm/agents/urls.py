@@ -30,4 +30,5 @@ urlpatterns = [
     path("bulk/", views.bulk),
     path("agent_counts/", views.agent_counts),
     path("maintenance/", views.agent_maintenance),
+    path("<int:pk>/wmi/", views.WMI.as_view()),
 ]

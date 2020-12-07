@@ -58,20 +58,3 @@ def edit_policy(request):
     patch.action = request.data["policy"]
     patch.save(update_fields=["action"])
     return Response("ok")
-
-
-@api_view()
-@authentication_classes((TokenAuthentication,))
-@permission_classes((IsAuthenticated,))
-def win_updater(request):
-    agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-    agent.delete_superseded_updates()
-    patches = (
-        WinUpdate.objects.filter(agent=agent)
-        .exclude(installed=True)
-        .filter(action="approve")
-    )
-    if patches:
-        return Response(ApprovedUpdateSerializer(patches, many=True).data)
-
-    return Response("nopatches")

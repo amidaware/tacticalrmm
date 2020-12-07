@@ -546,6 +546,7 @@ class Agent(BaseAuditModel):
 
         ret = AgentEditSerializer(agent).data
         del ret["all_timezones"]
+        del ret["client"]
         return ret
 
     @staticmethod

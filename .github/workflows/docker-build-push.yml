@@ -35,7 +35,7 @@ jobs:
           pull: true
           file: ./docker/containers/tactical/dockerfile
           platforms: linux/amd64
-          tags: tacticalrmm/tactical:${{ steps.prep.outputs.version }},sadnub/tactical:latest
+          tags: tacticalrmm/tactical:${{ steps.prep.outputs.version }},tacticalrmm/tactical:latest
           
       - name: Build and Push Tactical MeshCentral Image
         uses: docker/build-push-action@v2
@@ -45,7 +45,7 @@ jobs:
           pull: true
           file: ./docker/containers/tactical-meshcentral/dockerfile
           platforms: linux/amd64
-          tags: tacticalrmm/tactical-meshcentral:${{ steps.prep.outputs.version }},sadnub/tactical-meshcentral:latest
+          tags: tacticalrmm/tactical-meshcentral:${{ steps.prep.outputs.version }},tacticalrmm/tactical-meshcentral:latest
           
       - name: Build and Push Tactical NATS Image
         uses: docker/build-push-action@v2
@@ -55,7 +55,7 @@ jobs:
           pull: true
           file: ./docker/containers/tactical-nats/dockerfile
           platforms: linux/amd64
-          tags: tacticalrmm/tactical-nats:${{ steps.prep.outputs.version }},sadnub/tactical-nats:latest
+          tags: tacticalrmm/tactical-nats:${{ steps.prep.outputs.version }},tacticalrmm/tactical-nats:latest
           
       - name: Build and Push Tactical Salt Image
         uses: docker/build-push-action@v2
@@ -65,7 +65,7 @@ jobs:
           pull: true
           file: ./docker/containers/tactical-salt/dockerfile
           platforms: linux/amd64
-          tags: tacticalrmm/tactical-salt:${{ steps.prep.outputs.version }},sadnub/tactical-salt:latest
+          tags: tacticalrmm/tactical-salt:${{ steps.prep.outputs.version }},tacticalrmm/tactical-salt:latest
           
       - name: Build and Push Tactical Frontend Image
         uses: docker/build-push-action@v2
@@ -75,7 +75,7 @@ jobs:
           pull: true
           file: ./docker/containers/tactical-frontend/dockerfile
           platforms: linux/amd64
-          tags: tacticalrmm/tactical-frontend:${{ steps.prep.outputs.version }},sadnub/tactical-frontend:latest
+          tags: tacticalrmm/tactical-frontend:${{ steps.prep.outputs.version }},tacticalrmm/tactical-frontend:latest
           
       - name: Build and Push Tactical Nginx Image
         uses: docker/build-push-action@v2
@@ -85,4 +85,4 @@ jobs:
           pull: true
           file: ./docker/containers/tactical-nginx/dockerfile
           platforms: linux/amd64
-          tags: tacticalrmm/tactical-nginx:${{ steps.prep.outputs.version }},sadnub/tactical-nginx:latest
+          tags: tacticalrmm/tactical-nginx:${{ steps.prep.outputs.version }},tacticalrmm/tactical-nginx:latest

@@ -1,6 +1,7 @@
 <template>
   <div v-if="Object.keys(summary).length === 0">No agent selected</div>
   <div v-else>
+    <q-btn class="q-mr-sm" dense flat push icon="refresh" @click="refreshSummary" />
     <span>
       <b>{{ summary.hostname }}</b>
       <span v-if="summary.maintenance_mode"> &bull; <q-badge color="warning"> Maintenance Mode </q-badge> </span>
@@ -87,8 +88,12 @@
 </template>
 
 <script>
+import { mapGetters } from "vuex";
+import mixins from "@/mixins/mixins";
+
 export default {
   name: "SummaryTab",
+  mixins: [mixins],
   data() {
     return {};
   },
@@ -96,8 +101,22 @@ export default {
     awaitingSync(total, passing, failing) {
       return total !== 0 && passing === 0 && failing === 0 ? true : false;
     },
+    refreshSummary() {
+      this.$q.loading.show();
+      this.$axios
+        .get(`/agents/${this.selectedAgentPk}/wmi/`)
+        .then(r => {
+          this.$store.dispatch("loadSummary", this.selectedAgentPk);
+          this.$q.loading.hide();
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError(e.response.data);
+        });
+    },
   },
   computed: {
+    ...mapGetters(["selectedAgentPk"]),
     summary() {
       return this.$store.state.agentSummary;
     },

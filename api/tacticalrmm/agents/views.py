@@ -898,3 +898,15 @@ def agent_maintenance(request):
         return notify_error("Invalid data")
 
     return Response("ok")
+
+
+class WMI(APIView):
+    def get(self, request, pk):
+        agent = get_object_or_404(Agent, pk=pk)
+        if pyver.parse(agent.version) < pyver.parse("1.1.2"):
+            return notify_error("Requires agent version 1.1.2 or greater")
+
+        r = asyncio.run(agent.nats_cmd({"func": "sysinfo"}, timeout=20))
+        if r != "ok":
+            return notify_error("Unable to contact the agent")
+        return Response("ok")

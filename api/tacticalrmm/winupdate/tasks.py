@@ -107,7 +107,7 @@ def check_agent_update_schedule_task():
 def check_for_updates_task(pk, wait=False, auto_approve=False):
 
     if wait:
-        sleep(70)
+        sleep(120)
 
     agent = Agent.objects.get(pk=pk)
     ret = agent.salt_api_cmd(

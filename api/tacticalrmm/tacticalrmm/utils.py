@@ -2,6 +2,7 @@ import json
 import os
 import string
 import subprocess
+import time
 from typing import List, Dict
 from loguru import logger
 
@@ -117,6 +118,7 @@ def reload_nats():
         json.dump(config, f)
 
     if not settings.DOCKER_BUILD:
+        time.sleep(0.5)
         subprocess.run(
             ["/usr/local/bin/nats-server", "-signal", "reload"], capture_output=True
         )

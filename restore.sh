@@ -7,7 +7,7 @@ pgpw="hunter2"
 
 #####################################################
 
-SCRIPT_VERSION="9"
+SCRIPT_VERSION="10"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 GREEN='\033[0;32m'
@@ -246,7 +246,7 @@ python3 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir setuptools==49.6.0 wheel==0.35.1
+pip install --no-cache-dir setuptools==50.3.2 wheel==0.36.1
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py collectstatic --no-input
 python manage.py reload_nats

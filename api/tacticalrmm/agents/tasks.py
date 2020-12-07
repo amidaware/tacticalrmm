@@ -54,7 +54,15 @@ def send_agent_update_task(pks, version):
                 if agent.pendingactions.filter(
                     action_type="agentupdate", status="pending"
                 ).exists():
-                    continue
+                    action = agent.pendingactions.filter(
+                        action_type="agentupdate", status="pending"
+                    ).last()
+                    if pyver.parse(action.details["version"]) < pyver.parse(
+                        settings.LATEST_AGENT_VER
+                    ):
+                        action.delete()
+                    else:
+                        continue
 
                 PendingAction.objects.create(
                     agent=agent,
@@ -122,7 +130,15 @@ def auto_self_agent_update_task():
                 if agent.pendingactions.filter(
                     action_type="agentupdate", status="pending"
                 ).exists():
-                    continue
+                    action = agent.pendingactions.filter(
+                        action_type="agentupdate", status="pending"
+                    ).last()
+                    if pyver.parse(action.details["version"]) < pyver.parse(
+                        settings.LATEST_AGENT_VER
+                    ):
+                        action.delete()
+                    else:
+                        continue
 
                 PendingAction.objects.create(
                     agent=agent,

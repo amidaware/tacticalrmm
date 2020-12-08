@@ -23,7 +23,7 @@ EXCLUDE_PATHS = (
     "/logs/downloadlog",
 )
 
-ENDS_WITH = "/refreshedservices/"
+ENDS_WITH = "/services/"
 
 
 class AuditMiddleware:

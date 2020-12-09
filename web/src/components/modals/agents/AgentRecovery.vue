@@ -27,10 +27,13 @@
         <p>Fix issues with the Tactical Checkrunner windows service which handles running all checks.</p>
       </q-card-section>
       <q-card-section v-show="mode === 'salt'">
-        <p>Fix issues with the salt-minion which handles windows updates, chocolatey and scheduled tasks.</p>
+        <p>Fix issues with the salt-minion which handles windows updates and chocolatey.</p>
       </q-card-section>
       <q-card-section v-show="mode === 'rpc'">
-        <p>Fix issues with the Tactical RPC service which handles most of the agent's realtime functions.</p>
+        <p>
+          Fix issues with the Tactical RPC service which handles most of the agent's realtime functions and scheduled
+          tasks.
+        </p>
       </q-card-section>
       <q-card-section v-show="mode === 'command'">
         <p>Run a shell command on the agent.</p>

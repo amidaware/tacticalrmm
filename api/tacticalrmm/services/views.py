@@ -20,17 +20,6 @@ logger.configure(**settings.LOG_CONFIG)
 @api_view()
 def get_services(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    return Response(ServicesSerializer(agent).data)
-
-
-@api_view()
-def default_services(request):
-    return Response(Check.load_default_services())
-
-
-@api_view()
-def get_refreshed_services(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
     if not agent.has_nats:
         return notify_error("Requires agent version 1.1.0 or greater")
     r = asyncio.run(agent.nats_cmd(data={"func": "winservices"}, timeout=10))
@@ -41,6 +30,11 @@ def get_refreshed_services(request, pk):
     agent.services = r
     agent.save(update_fields=["services"])
     return Response(ServicesSerializer(agent).data)
+
+
+@api_view()
+def default_services(request):
+    return Response(Check.load_default_services())
 
 
 @api_view(["POST"])

@@ -41,6 +41,10 @@ app.conf.beat_schedule = {
         "task": "agents.tasks.auto_self_agent_update_task",
         "schedule": crontab(minute=35, hour="*"),
     },
+    "agents-sync": {
+        "task": "agents.tasks.sync_sysinfo_task",
+        "schedule": crontab(minute=55, hour="*"),
+    },
 }
 
 

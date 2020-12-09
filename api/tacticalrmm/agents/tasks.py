@@ -1,3 +1,4 @@
+import asyncio
 from loguru import logger
 from time import sleep
 import random
@@ -160,6 +161,18 @@ def auto_self_agent_update_task():
                     },
                 )
         sleep(5)
+
+
+@app.task
+def sync_sysinfo_task():
+    agents = Agent.objects.all()
+    online = [
+        i
+        for i in agents
+        if pyver.parse(i.version) >= pyver.parse("1.1.3") and i.status == "online"
+    ]
+    for agent in online:
+        asyncio.run(agent.nats_cmd({"func": "sync"}, wait=False))
 
 
 @app.task

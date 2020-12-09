@@ -13,7 +13,7 @@
       hide-bottom
     >
       <template v-slot:top>
-        <q-btn dense flat push @click="refreshServices" icon="refresh" />
+        <q-btn dense flat push @click="getServices" icon="refresh" />
         <q-space />
         <q-input v-model="filter" outlined label="Search" dense clearable>
           <template v-slot:prepend>
@@ -242,7 +242,7 @@ export default {
         .then(r => {
           this.serviceDetailVisible = false;
           this.serviceDetailsModal = false;
-          this.refreshServices();
+          this.getServices();
           this.notifySuccess(`Service ${name} was edited!`);
         })
         .catch(e => {
@@ -303,7 +303,7 @@ export default {
       this.$axios
         .post("/services/serviceaction/", data)
         .then(r => {
-          this.refreshServices();
+          this.getServices();
           this.serviceDetailsModal = false;
           this.notifySuccess(`Service ${fullname} was ${status}!`);
         })
@@ -313,19 +313,9 @@ export default {
         });
     },
     getServices() {
+      this.$q.loading.show({ message: "Loading services..." });
       this.$axios
         .get(`/services/${this.pk}/services/`)
-        .then(r => {
-          this.servicesData = [r.data][0].services;
-        })
-        .catch(e => {
-          this.notifyError(e.response.data);
-        });
-    },
-    refreshServices() {
-      this.$q.loading.show({ message: "Reloading services..." });
-      this.$axios
-        .get(`/services/${this.pk}/refreshedservices/`)
         .then(r => {
           this.servicesData = [r.data][0].services;
           this.$q.loading.hide();

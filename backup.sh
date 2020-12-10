@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="4"
+SCRIPT_VERSION="5"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/backup.sh'
 
 GREEN='\033[0;32m'
@@ -49,6 +49,11 @@ fi
 if [ -d /meshcentral/meshcentral-coredumps ]; then
     rm -f /meshcentral/meshcentral-coredumps/*
 fi
+
+printf >&2 "${GREEN}Running postgres vacuum${NC}\n"
+sudo -u postgres psql -d tacticalrmm -c "vacuum full logs_auditlog"
+sudo -u postgres psql -d tacticalrmm -c "vacuum full logs_pendingaction"
+sudo -u postgres psql -d tacticalrmm -c "vacuum full agents_agentoutage"
 
 dt_now=$(date '+%Y_%m_%d__%H_%M_%S')
 tmp_dir=$(mktemp -d -t tacticalrmm-XXXXXXXXXXXXXXXXXXXXX)

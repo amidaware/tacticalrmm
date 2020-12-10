@@ -4,6 +4,7 @@ from time import sleep
 import random
 import requests
 from packaging import version as pyver
+from typing import List
 
 from django.conf import settings
 
@@ -14,153 +15,78 @@ from logs.models import PendingAction
 
 logger.configure(**settings.LOG_CONFIG)
 
-OLD_64_PY_AGENT = "https://github.com/wh1te909/winagent/releases/download/v0.11.2/winagent-v0.11.2.exe"
-OLD_32_PY_AGENT = "https://github.com/wh1te909/winagent/releases/download/v0.11.2/winagent-v0.11.2-x86.exe"
+
+def agent_update(pk: int) -> str:
+    agent = Agent.objects.get(pk=pk)
+    # skip if we can't determine the arch
+    if agent.arch is None:
+        logger.warning(f"Unable to determine arch on {agent.hostname}. Skipping.")
+        return "noarch"
+
+    if agent.has_nats:
+        if agent.pendingactions.filter(
+            action_type="agentupdate", status="pending"
+        ).exists():
+            action = agent.pendingactions.filter(
+                action_type="agentupdate", status="pending"
+            ).last()
+            if pyver.parse(action.details["version"]) < pyver.parse(
+                settings.LATEST_AGENT_VER
+            ):
+                action.delete()
+            else:
+                return "pending"
+
+        PendingAction.objects.create(
+            agent=agent,
+            action_type="agentupdate",
+            details={
+                "url": agent.winagent_dl,
+                "version": settings.LATEST_AGENT_VER,
+                "inno": agent.win_inno_exe,
+            },
+        )
+        return "created"
+    # TODO
+    # Salt is deprecated, remove this once salt is gone
+    else:
+        agent.salt_api_async(
+            func="win_agent.do_agent_update_v2",
+            kwargs={
+                "inno": agent.win_inno_exe,
+                "url": agent.winagent_dl,
+            },
+        )
+        return "salt"
 
 
 @app.task
-def send_agent_update_task(pks, version):
-    assert isinstance(pks, list)
-
+def send_agent_update_task(pks: List[int], version: str) -> None:
     q = Agent.objects.filter(pk__in=pks)
-    agents = [i.pk for i in q if pyver.parse(i.version) < pyver.parse(version)]
+    agents: List[int] = [
+        i.pk for i in q if pyver.parse(i.version) < pyver.parse(version)
+    ]
 
-    chunks = (agents[i : i + 30] for i in range(0, len(agents), 30))
-
-    for chunk in chunks:
-        for pk in chunk:
-            agent = Agent.objects.get(pk=pk)
-
-            # skip if we can't determine the arch
-            if agent.arch is None:
-                logger.warning(
-                    f"Unable to determine arch on {agent.salt_id}. Skipping."
-                )
-                continue
-
-            # golang agent only backwards compatible with py agent 0.11.2
-            # force an upgrade to the latest python agent if version < 0.11.2
-            if pyver.parse(agent.version) < pyver.parse("0.11.2"):
-                url = OLD_64_PY_AGENT if agent.arch == "64" else OLD_32_PY_AGENT
-                inno = (
-                    "winagent-v0.11.2.exe"
-                    if agent.arch == "64"
-                    else "winagent-v0.11.2-x86.exe"
-                )
-            else:
-                url = agent.winagent_dl
-                inno = agent.win_inno_exe
-
-            if agent.has_nats:
-                if agent.pendingactions.filter(
-                    action_type="agentupdate", status="pending"
-                ).exists():
-                    action = agent.pendingactions.filter(
-                        action_type="agentupdate", status="pending"
-                    ).last()
-                    if pyver.parse(action.details["version"]) < pyver.parse(
-                        settings.LATEST_AGENT_VER
-                    ):
-                        action.delete()
-                    else:
-                        continue
-
-                PendingAction.objects.create(
-                    agent=agent,
-                    action_type="agentupdate",
-                    details={
-                        "url": agent.winagent_dl,
-                        "version": settings.LATEST_AGENT_VER,
-                        "inno": agent.win_inno_exe,
-                    },
-                )
-            # TODO
-            # Salt is deprecated, remove this once salt is gone
-            else:
-                r = agent.salt_api_async(
-                    func="win_agent.do_agent_update_v2",
-                    kwargs={
-                        "inno": inno,
-                        "url": url,
-                    },
-                )
-        sleep(5)
+    for pk in agents:
+        agent_update(pk)
 
 
 @app.task
-def auto_self_agent_update_task():
+def auto_self_agent_update_task() -> None:
     core = CoreSettings.objects.first()
     if not core.agent_auto_update:
         logger.info("Agent auto update is disabled. Skipping.")
         return
 
     q = Agent.objects.only("pk", "version")
-    agents = [
+    pks: List[int] = [
         i.pk
         for i in q
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
     ]
 
-    chunks = (agents[i : i + 30] for i in range(0, len(agents), 30))
-
-    for chunk in chunks:
-        for pk in chunk:
-            agent = Agent.objects.get(pk=pk)
-
-            # skip if we can't determine the arch
-            if agent.arch is None:
-                logger.warning(
-                    f"Unable to determine arch on {agent.salt_id}. Skipping."
-                )
-                continue
-
-            # golang agent only backwards compatible with py agent 0.11.2
-            # force an upgrade to the latest python agent if version < 0.11.2
-            if pyver.parse(agent.version) < pyver.parse("0.11.2"):
-                url = OLD_64_PY_AGENT if agent.arch == "64" else OLD_32_PY_AGENT
-                inno = (
-                    "winagent-v0.11.2.exe"
-                    if agent.arch == "64"
-                    else "winagent-v0.11.2-x86.exe"
-                )
-            else:
-                url = agent.winagent_dl
-                inno = agent.win_inno_exe
-
-            if agent.has_nats:
-                if agent.pendingactions.filter(
-                    action_type="agentupdate", status="pending"
-                ).exists():
-                    action = agent.pendingactions.filter(
-                        action_type="agentupdate", status="pending"
-                    ).last()
-                    if pyver.parse(action.details["version"]) < pyver.parse(
-                        settings.LATEST_AGENT_VER
-                    ):
-                        action.delete()
-                    else:
-                        continue
-
-                PendingAction.objects.create(
-                    agent=agent,
-                    action_type="agentupdate",
-                    details={
-                        "url": agent.winagent_dl,
-                        "version": settings.LATEST_AGENT_VER,
-                        "inno": agent.win_inno_exe,
-                    },
-                )
-            # TODO
-            # Salt is deprecated, remove this once salt is gone
-            else:
-                r = agent.salt_api_async(
-                    func="win_agent.do_agent_update_v2",
-                    kwargs={
-                        "inno": inno,
-                        "url": url,
-                    },
-                )
-        sleep(5)
+    for pk in pks:
+        agent_update(pk)
 
 
 @app.task

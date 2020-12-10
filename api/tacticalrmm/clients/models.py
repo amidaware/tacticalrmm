@@ -38,7 +38,6 @@ class Client(BaseAuditModel):
 
     @property
     def has_failing_checks(self):
-
         agents = (
             Agent.objects.only(
                 "pk",
@@ -50,14 +49,17 @@ class Client(BaseAuditModel):
             .filter(site__client=self)
             .prefetch_related("agentchecks")
         )
+
+        failing = 0
         for agent in agents:
             if agent.checks["has_failing_checks"]:
-                return True
+                failing += 1
 
             if agent.overdue_email_alert or agent.overdue_text_alert:
-                return agent.status == "overdue"
+                if agent.status == "overdue":
+                    failing += 1
 
-        return False
+        return failing > 0
 
     @staticmethod
     def serialize(client):
@@ -98,7 +100,6 @@ class Site(BaseAuditModel):
 
     @property
     def has_failing_checks(self):
-
         agents = (
             Agent.objects.only(
                 "pk",
@@ -110,14 +111,17 @@ class Site(BaseAuditModel):
             .filter(site=self)
             .prefetch_related("agentchecks")
         )
+
+        failing = 0
         for agent in agents:
             if agent.checks["has_failing_checks"]:
-                return True
+                failing += 1
 
             if agent.overdue_email_alert or agent.overdue_text_alert:
-                return agent.status == "overdue"
+                if agent.status == "overdue":
+                    failing += 1
 
-        return False
+        return failing > 0
 
     @staticmethod
     def serialize(site):

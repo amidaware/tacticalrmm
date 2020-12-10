@@ -5,19 +5,20 @@ from unittest.mock import patch
 from model_bakery import baker
 from itertools import cycle
 
+from django.test import TestCase, override_settings
 from django.conf import settings
 from django.utils import timezone as djangotime
+from logs.models import PendingAction
 
 from tacticalrmm.test import TacticalTestCase
 from .serializers import AgentSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 from .models import Agent
 from .tasks import (
+    agent_recovery_sms_task,
     auto_self_agent_update_task,
     sync_salt_modules_task,
     batch_sync_modules_task,
-    OLD_64_PY_AGENT,
-    OLD_32_PY_AGENT,
 )
 from winupdate.models import WinUpdatePolicy
 
@@ -786,6 +787,70 @@ class TestAgentTasks(TacticalTestCase):
         self.assertEqual(ret.status, "SUCCESS")
 
     @patch("agents.models.Agent.salt_api_async")
+    def test_agent_update(self, salt_api_async):
+        from agents.tasks import agent_update
+
+        agent_noarch = baker.make_recipe(
+            "agents.agent",
+            operating_system="Error getting OS",
+            version="1.1.0",
+        )
+        r = agent_update(agent_noarch.pk)
+        self.assertEqual(r, "noarch")
+        self.assertEqual(
+            PendingAction.objects.filter(
+                agent=agent_noarch, action_type="agentupdate"
+            ).count(),
+            0,
+        )
+
+        agent64_nats = baker.make_recipe(
+            "agents.agent",
+            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
+            version="1.1.0",
+        )
+
+        r = agent_update(agent64_nats.pk)
+        self.assertEqual(r, "created")
+        action = PendingAction.objects.get(agent__pk=agent64_nats.pk)
+        self.assertEqual(action.action_type, "agentupdate")
+        self.assertEqual(action.status, "pending")
+        self.assertEqual(action.details["url"], settings.DL_64)
+        self.assertEqual(
+            action.details["inno"], f"winagent-v{settings.LATEST_AGENT_VER}.exe"
+        )
+        self.assertEqual(action.details["version"], settings.LATEST_AGENT_VER)
+
+        agent64_salt = baker.make_recipe(
+            "agents.agent",
+            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
+            version="1.0.0",
+        )
+        salt_api_async.return_value = True
+        r = agent_update(agent64_salt.pk)
+        self.assertEqual(r, "salt")
+        salt_api_async.assert_called_with(
+            func="win_agent.do_agent_update_v2",
+            kwargs={
+                "inno": f"winagent-v{settings.LATEST_AGENT_VER}.exe",
+                "url": settings.DL_64,
+            },
+        )
+        salt_api_async.reset_mock()
+
+        agent32_nats = baker.make_recipe(
+            "agents.agent",
+            operating_system="Windows 7 Professional, 32 bit (build 7601.23964)",
+            version="1.1.0",
+        )
+
+        agent32_salt = baker.make_recipe(
+            "agents.agent",
+            operating_system="Windows 7 Professional, 32 bit (build 7601.23964)",
+            version="1.0.0",
+        )
+
+    """ @patch("agents.models.Agent.salt_api_async")
     @patch("agents.tasks.sleep", return_value=None)
     def test_auto_self_agent_update_task(self, mock_sleep, salt_api_async):
         # test 64bit golang agent
@@ -888,4 +953,4 @@ class TestAgentTasks(TacticalTestCase):
                 "url": OLD_32_PY_AGENT,
             },
         )
-        self.assertEqual(ret.status, "SUCCESS")
+        self.assertEqual(ret.status, "SUCCESS") """

@@ -164,13 +164,11 @@ class Agent(BaseAuditModel):
                 elif i.status == "failing":
                     failing += 1
 
-        has_failing_checks = True if failing > 0 else False
-
         ret = {
             "total": total,
             "passing": passing,
             "failing": failing,
-            "has_failing_checks": has_failing_checks,
+            "has_failing_checks": failing > 0,
         }
         return ret
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="99"
+SCRIPT_VERSION="100"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -176,6 +176,11 @@ cp /rmm/scripts/* /srv/salt/scripts/
 sudo cp /rmm/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/
 sudo chown ${USER}:${USER} /usr/local/bin/goversioninfo
 sudo chmod +x /usr/local/bin/goversioninfo
+
+printf >&2 "${GREEN}Running postgres vacuum${NC}\n"
+sudo -u postgres psql -d tacticalrmm -c "vacuum full logs_auditlog"
+sudo -u postgres psql -d tacticalrmm -c "vacuum full logs_pendingaction"
+sudo -u postgres psql -d tacticalrmm -c "vacuum full agents_agentoutage"
 
 if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]]; then
   rm -rf /rmm/api/env

@@ -23,6 +23,22 @@ def agent_update(pk: int) -> str:
         logger.warning(f"Unable to determine arch on {agent.hostname}. Skipping.")
         return "noarch"
 
+    # force an update to 1.1.5 since 1.1.6 needs agent to be on 1.1.5 first
+    if pyver.parse(agent.version) < pyver.parse("1.1.5"):
+        version = "1.1.5"
+        if agent.arch == "64":
+            url = "https://github.com/wh1te909/rmmagent/releases/download/v1.1.5/winagent-v1.1.5.exe"
+            inno = "winagent-v1.1.5.exe"
+        elif agent.arch == "32":
+            url = "https://github.com/wh1te909/rmmagent/releases/download/v1.1.5/winagent-v1.1.5-x86.exe"
+            inno = "winagent-v1.1.5-x86.exe"
+        else:
+            return "nover"
+    else:
+        version = settings.LATEST_AGENT_VER
+        url = agent.winagent_dl
+        inno = agent.win_inno_exe
+
     if agent.has_nats:
         if agent.pendingactions.filter(
             action_type="agentupdate", status="pending"
@@ -30,9 +46,7 @@ def agent_update(pk: int) -> str:
             action = agent.pendingactions.filter(
                 action_type="agentupdate", status="pending"
             ).last()
-            if pyver.parse(action.details["version"]) < pyver.parse(
-                settings.LATEST_AGENT_VER
-            ):
+            if pyver.parse(action.details["version"]) < pyver.parse(version):
                 action.delete()
             else:
                 return "pending"
@@ -41,9 +55,9 @@ def agent_update(pk: int) -> str:
             agent=agent,
             action_type="agentupdate",
             details={
-                "url": agent.winagent_dl,
-                "version": settings.LATEST_AGENT_VER,
-                "inno": agent.win_inno_exe,
+                "url": url,
+                "version": version,
+                "inno": inno,
             },
         )
         return "created"
@@ -53,8 +67,8 @@ def agent_update(pk: int) -> str:
         agent.salt_api_async(
             func="win_agent.do_agent_update_v2",
             kwargs={
-                "inno": agent.win_inno_exe,
-                "url": agent.winagent_dl,
+                "inno": inno,
+                "url": url,
             },
         )
         return "salt"

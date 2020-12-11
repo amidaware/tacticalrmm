@@ -26,19 +26,25 @@
       >
         <div class="q-pa-xs q-gutter-xs">
           <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
-            <code>--log DEBUG</code>
+            <code>-log debug</code>
           </q-badge>
           <span>To enable verbose output during the install</span>
         </div>
         <div class="q-pa-xs q-gutter-xs">
           <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
-            <code>--nosalt</code>
+            <code>-silent</code>
+          </q-badge>
+          <span>Do not popup any message boxes during install</span>
+        </div>
+        <div class="q-pa-xs q-gutter-xs">
+          <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
+            <code>-nosalt</code>
           </q-badge>
           <span> Do not install salt during agent install. </span>
         </div>
         <div class="q-pa-xs q-gutter-xs">
           <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
-            <code>--local-mesh "C:\\&lt;some folder or path&gt;\\meshagent.exe"</code>
+            <code>-local-mesh "C:\\&lt;some folder or path&gt;\\meshagent.exe"</code>
           </q-badge>
           <span>
             To skip downloading the Mesh Agent during the install. Download it
@@ -49,7 +55,7 @@
         </div>
         <div class="q-pa-xs q-gutter-xs">
           <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
-            <code>--cert "C:\\&lt;some folder or path&gt;\\ca.pem"</code>
+            <code>-cert "C:\\&lt;some folder or path&gt;\\ca.pem"</code>
           </q-badge>
           <span> To use a domain CA </span>
         </div>

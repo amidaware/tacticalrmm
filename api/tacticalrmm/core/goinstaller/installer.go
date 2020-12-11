@@ -58,6 +58,7 @@ func main() {
 	debugLog := flag.String("log", "", "Verbose output")
 	localMesh := flag.String("local-mesh", "", "Use local mesh agent")
 	noSalt := flag.Bool("nosalt", false, "Does not install salt")
+	silent := flag.Bool("silent", false, "Do not popup any message boxes during installation")
 	cert := flag.String("cert", "", "Path to ca.pem")
 	timeout := flag.String("timeout", "", "Timeout for subprocess calls")
 	flag.Parse()
@@ -78,7 +79,11 @@ func main() {
 	}
 
 	if debug {
-		cmdArgs = append(cmdArgs, "--log", "DEBUG")
+		cmdArgs = append(cmdArgs, "-log", "debug")
+	}
+
+	if *silent {
+		cmdArgs = append(cmdArgs, "-silent")
 	}
 
 	if *noSalt {
@@ -86,27 +91,27 @@ func main() {
 	}
 
 	if len(strings.TrimSpace(*localMesh)) != 0 {
-		cmdArgs = append(cmdArgs, "--local-mesh", *localMesh)
+		cmdArgs = append(cmdArgs, "-local-mesh", *localMesh)
 	}
 
 	if len(strings.TrimSpace(*cert)) != 0 {
-		cmdArgs = append(cmdArgs, "--cert", *cert)
+		cmdArgs = append(cmdArgs, "-cert", *cert)
 	}
 
 	if len(strings.TrimSpace(*timeout)) != 0 {
-		cmdArgs = append(cmdArgs, "--timeout", *timeout)
+		cmdArgs = append(cmdArgs, "-timeout", *timeout)
 	}
 
 	if Rdp == "1" {
-		cmdArgs = append(cmdArgs, "--rdp")
+		cmdArgs = append(cmdArgs, "-rdp")
 	}
 
 	if Ping == "1" {
-		cmdArgs = append(cmdArgs, "--ping")
+		cmdArgs = append(cmdArgs, "-ping")
 	}
 
 	if Power == "1" {
-		cmdArgs = append(cmdArgs, "--power")
+		cmdArgs = append(cmdArgs, "-power")
 	}
 
 	if debug {

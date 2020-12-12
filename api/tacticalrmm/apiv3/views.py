@@ -39,7 +39,110 @@ from tacticalrmm.utils import notify_error, reload_nats, filter_software, Softwa
 logger.configure(**settings.LOG_CONFIG)
 
 
+class CheckIn(APIView):
+    """
+    The agent's checkin endpoint
+    patch: called every 45 to 110 seconds, handles agent updates and recovery
+    put: called every 5 to 10 minutes, handles basic system info
+    post: called once on windows service startup
+    """
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent.version = request.data["version"]
+        agent.last_seen = djangotime.now()
+        agent.save(update_fields=["version", "last_seen"])
+
+        if agent.agentoutages.exists() and agent.agentoutages.last().is_active:
+            last_outage = agent.agentoutages.last()
+            last_outage.recovery_time = djangotime.now()
+            last_outage.save(update_fields=["recovery_time"])
+
+            if agent.overdue_email_alert:
+                agent_recovery_email_task.delay(pk=last_outage.pk)
+            if agent.overdue_text_alert:
+                agent_recovery_sms_task.delay(pk=last_outage.pk)
+
+        recovery = agent.recoveryactions.filter(last_run=None).last()
+        if recovery is not None:
+            recovery.last_run = djangotime.now()
+            recovery.save(update_fields=["last_run"])
+            return Response(recovery.send())
+
+        # handle agent update
+        if agent.pendingactions.filter(
+            action_type="agentupdate", status="pending"
+        ).exists():
+            update = agent.pendingactions.filter(
+                action_type="agentupdate", status="pending"
+            ).last()
+            update.status = "completed"
+            update.save(update_fields=["status"])
+            return Response(update.details)
+
+        # get any pending actions
+        if agent.pendingactions.filter(status="pending").exists():
+            agent.handle_pending_actions()
+
+        return Response("ok")
+
+    def put(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        disks = request.data["disks"]
+        new = []
+        # python agent
+        if isinstance(disks, dict):
+            for k, v in disks.items():
+                new.append(v)
+        else:
+            # golang agent
+            for disk in disks:
+                tmp = {}
+                for k, v in disk.items():
+                    tmp["device"] = disk["device"]
+                    tmp["fstype"] = disk["fstype"]
+                    tmp["total"] = bytes2human(disk["total"])
+                    tmp["used"] = bytes2human(disk["used"])
+                    tmp["free"] = bytes2human(disk["free"])
+                    tmp["percent"] = int(disk["percent"])
+                new.append(tmp)
+
+        if request.data["logged_in_username"] == "None":
+            serializer.save(disks=new)
+        else:
+            serializer.save(
+                disks=new,
+                last_logged_in_user=request.data["logged_in_username"],
+            )
+
+        return Response("ok")
+
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+
+        serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(last_seen=djangotime.now())
+
+        sync_salt_modules_task.delay(agent.pk)
+        check_for_updates_task.apply_async(
+            queue="wupdate", kwargs={"pk": agent.pk, "wait": True}
+        )
+
+        if not agent.choco_installed:
+            install_chocolatey.delay(agent.pk, wait=True)
+
+        return Response("ok")
+
+
 class Hello(APIView):
+    #### DEPRECATED, for agents <= 1.1.9 ####
     """
     The agent's checkin endpoint
     patch: called every 30 to 120 seconds

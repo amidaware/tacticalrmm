@@ -94,33 +94,35 @@ class CheckIn(APIView):
         serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
-        disks = request.data["disks"]
-        new = []
-        # python agent
-        if isinstance(disks, dict):
-            for k, v in disks.items():
-                new.append(v)
-        else:
-            # golang agent
-            for disk in disks:
-                tmp = {}
-                for k, v in disk.items():
-                    tmp["device"] = disk["device"]
-                    tmp["fstype"] = disk["fstype"]
-                    tmp["total"] = bytes2human(disk["total"])
-                    tmp["used"] = bytes2human(disk["used"])
-                    tmp["free"] = bytes2human(disk["free"])
-                    tmp["percent"] = int(disk["percent"])
-                new.append(tmp)
+        if "disks" in request.data.keys():
+            disks = request.data["disks"]
+            new = []
+            # python agent
+            if isinstance(disks, dict):
+                for k, v in disks.items():
+                    new.append(v)
+            else:
+                # golang agent
+                for disk in disks:
+                    tmp = {}
+                    for k, v in disk.items():
+                        tmp["device"] = disk["device"]
+                        tmp["fstype"] = disk["fstype"]
+                        tmp["total"] = bytes2human(disk["total"])
+                        tmp["used"] = bytes2human(disk["used"])
+                        tmp["free"] = bytes2human(disk["free"])
+                        tmp["percent"] = int(disk["percent"])
+                    new.append(tmp)
 
-        if request.data["logged_in_username"] == "None":
             serializer.save(disks=new)
-        else:
-            serializer.save(
-                disks=new,
-                last_logged_in_user=request.data["logged_in_username"],
-            )
+            return Response("ok")
 
+        if "logged_in_username" in request.data.keys():
+            if request.data["logged_in_username"] != "None":
+                serializer.save(last_logged_in_user=request.data["logged_in_username"])
+                return Response("ok")
+
+        serializer.save()
         return Response("ok")
 
     def post(self, request):

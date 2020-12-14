@@ -419,7 +419,7 @@ export default {
         if (advancedFilter) {
           if (checks && !row.checks.has_failing_checks) return false;
           if (patches && !row.patches_pending) return false;
-          if (actions && row.pending_actions > 0) return false;
+          if (actions && row.pending_actions === 0) return false;
           if (reboot && !row.needs_reboot) return false;
           if (availability === "online" && row.status !== "online") return false;
           else if (availability === "offline" && row.status !== "overdue") return false;

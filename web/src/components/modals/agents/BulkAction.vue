@@ -154,6 +154,7 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
 import mixins from "@/mixins/mixins";
 
 export default {
@@ -182,16 +183,23 @@ export default {
     };
   },
   computed: {
+    ...mapState(["showCommunityScripts"]),
     sites() {
       return !!this.client ? this.formatSiteOptions(this.client.sites) : [];
     },
   },
   methods: {
     getScripts() {
+      let scripts;
       this.$axios.get("/scripts/scripts/").then(r => {
-        this.scriptOptions = r.data.map(
-          script => ({ label: script.name, value: script.id })).sort((a, b) => a.label.localeCompare(b.label)
-        );
+        if (this.showCommunityScripts) {
+          scripts = r.data;
+        } else {
+          scripts = r.data.filter(i => i.script_type !== "builtin");
+        }
+        this.scriptOptions = scripts
+          .map(script => ({ label: script.name, value: script.id }))
+          .sort((a, b) => a.label.localeCompare(b.label));
       });
     },
     send() {
@@ -255,7 +263,7 @@ export default {
     this.setTitles();
     this.getClients();
     this.getAgents();
-    this.getScripts()
+    this.getScripts();
 
     this.selected_mode = this.mode;
   },

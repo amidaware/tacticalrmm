@@ -115,11 +115,41 @@
                 <q-item-section>Send Command</q-item-section>
               </q-item>
 
-              <q-item clickable v-ripple v-close-popup @click="showRunScript = true">
+              <q-item clickable v-ripple>
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-terminal" />
                 </q-item-section>
                 <q-item-section>Run Script</q-item-section>
+                <q-item-section side>
+                  <q-icon name="keyboard_arrow_right" />
+                </q-item-section>
+                <q-menu anchor="top end" self="top start">
+                  <q-list dense style="min-width: 200px">
+                    <q-item clickable v-ripple v-close-popup @click="showRunScript = true">
+                      <q-item-section>Select Script</q-item-section>
+                    </q-item>
+                    <q-item clickable v-ripple @click="getFavoriteScripts">
+                      <q-item-section>Favorites</q-item-section>
+                      <q-item-section side>
+                        <q-icon name="keyboard_arrow_right" />
+                      </q-item-section>
+                      <q-menu auto-close anchor="top end" self="top start">
+                        <q-list>
+                          <q-item
+                            v-for="script in favoriteScripts"
+                            :key="script.value"
+                            dense
+                            clickable
+                            v-close-popup
+                            @click="runFavScript(script.value, props.row.id)"
+                          >
+                            {{ script.label }}
+                          </q-item>
+                        </q-list>
+                      </q-menu>
+                    </q-item>
+                  </q-list>
+                </q-menu>
               </q-item>
 
               <q-item clickable v-close-popup @click.stop.prevent="remoteBG(props.row.id)">
@@ -386,6 +416,7 @@ export default {
       policyAddPk: null,
       showPendingActions: false,
       pendingActionAgentPk: null,
+      favoriteScripts: [],
     };
   },
   methods: {
@@ -450,6 +481,31 @@ export default {
         this.$q.loading.hide();
         this.showEditAgentModal = true;
       }, 500);
+    },
+    runFavScript(scriptpk, agentpk) {
+      const data = {
+        pk: agentpk,
+        timeout: 900,
+        scriptPK: scriptpk,
+        output: "forget",
+        args: [],
+      };
+      this.$axios
+        .post("/agents/runscript/", data)
+        .then(r => this.notifySuccess(r.data))
+        .catch(e => this.notifyError(e.response.data));
+    },
+    getFavoriteScripts() {
+      this.$axios.get("/scripts/scripts/").then(r => {
+        if (r.data.filter(k => k.favorite === true).length === 0) {
+          this.notifyWarning("You don't have any scripts favorited!");
+          return;
+        }
+        this.favoriteScripts = r.data
+          .filter(k => k.favorite === true)
+          .map(script => ({ label: script.name, value: script.id }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+      });
     },
     runPatchStatusScan(pk, hostname) {
       axios.get(`/winupdate/${pk}/runupdatescan/`).then(r => {

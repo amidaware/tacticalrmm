@@ -103,6 +103,7 @@
               flat
               class="q-ml-sm"
               :label="showCommunityScripts ? 'Hide Community Scripts' : 'Show Community Scripts'"
+              :icon="showCommunityScripts ? 'visibility_off' : 'visibility'"
               @click="setShowCommunityScripts(!showCommunityScripts)"
             />
             <q-space />

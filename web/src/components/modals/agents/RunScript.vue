@@ -66,7 +66,7 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import { mapGetters } from "vuex";
+import { mapGetters, mapState } from "vuex";
 
 export default {
   name: "RunScript",
@@ -86,6 +86,7 @@ export default {
     };
   },
   computed: {
+    ...mapState(["showCommunityScripts"]),
     hostname() {
       return this.$store.state.agentSummary.hostname;
     },
@@ -95,10 +96,16 @@ export default {
   },
   methods: {
     getScripts() {
+      let scripts;
       this.$axios.get("/scripts/scripts/").then(r => {
-        this.scriptOptions = r.data.map(
-          script => ({ label: script.name, value: script.id })).sort((a, b) => a.label.localeCompare(b.label)
-        );
+        if (this.showCommunityScripts) {
+          scripts = r.data;
+        } else {
+          scripts = r.data.filter(i => i.script_type !== "builtin");
+        }
+        this.scriptOptions = scripts
+          .map(script => ({ label: script.name, value: script.id }))
+          .sort((a, b) => a.label.localeCompare(b.label));
       });
     },
     send() {
@@ -130,7 +137,7 @@ export default {
     },
   },
   created() {
-    this.getScripts()
-  }
+    this.getScripts();
+  },
 };
 </script>

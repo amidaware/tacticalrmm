@@ -673,6 +673,8 @@ export default {
         this.darkMode = r.data.dark_mode;
         this.$q.dark.set(this.darkMode);
         this.currentTRMMVersion = r.data.trmm_version;
+
+        this.$store.commit("setShowCommunityScripts", r.data.show_community_scripts);
       });
     },
     showToggleMaintenance(node) {

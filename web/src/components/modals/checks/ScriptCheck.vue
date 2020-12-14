@@ -1,5 +1,5 @@
 <template>
-  <q-card v-if="scripts.length === 0" style="min-width: 400px">
+  <q-card v-if="scriptOptions.length === 0" style="min-width: 400px">
     <q-card-section class="row items-center">
       <div class="text-h6">Add Script Check</div>
       <q-space />
@@ -80,9 +80,7 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
-import { mapGetters, mapState } from "vuex";
 export default {
   name: "ScriptCheck",
   props: {
@@ -101,22 +99,20 @@ export default {
         timeout: 120,
         fails_b4_alert: 1,
       },
+      scriptOptions: [],
       failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     };
   },
-  computed: {
-    ...mapGetters(["scripts"]),
-    scriptOptions() {
-      const ret = [];
-      this.scripts.forEach(i => {
-        ret.push({ label: i.name, value: i.id });
-      });
-      return ret.sort((a, b) => a.label.localeCompare(b.label));
-    },
-  },
   methods: {
+    getScripts() {
+      this.$axios.get("/scripts/scripts/").then(r => {
+        this.scriptOptions = r.data.map(
+          script => ({ label: script.name, value: script.id })).sort((a, b) => a.label.localeCompare(b.label)
+        );
+      });
+    },
     getCheck() {
-      axios.get(`/checks/${this.checkpk}/check/`).then(r => {
+      this.$axios.get(`/checks/${this.checkpk}/check/`).then(r => {
         this.scriptcheck = r.data;
         this.scriptcheck.script = r.data.script.id;
       });
@@ -127,7 +123,7 @@ export default {
         ...pk,
         check: this.scriptcheck,
       };
-      axios
+      this.$axios
         .post("/checks/checks/", data)
         .then(r => {
           this.$emit("close");
@@ -137,7 +133,7 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     editCheck() {
-      axios
+      this.$axios
         .patch(`/checks/${this.checkpk}/check/`, this.scriptcheck)
         .then(r => {
           this.$emit("close");
@@ -158,6 +154,8 @@ export default {
     if (this.mode === "edit") {
       this.getCheck();
     }
+
+    this.getScripts()
   },
 };
 </script>

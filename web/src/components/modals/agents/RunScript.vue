@@ -76,6 +76,7 @@ export default {
   },
   data() {
     return {
+      scriptOptions: [],
       loading: false,
       scriptPK: null,
       timeout: 30,
@@ -85,22 +86,21 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(["scripts"]),
     hostname() {
       return this.$store.state.agentSummary.hostname;
     },
     width() {
       return this.ret === null ? "40vw" : "70vw";
     },
-    scriptOptions() {
-      const ret = [];
-      this.scripts.forEach(i => {
-        ret.push({ label: i.name, value: i.id });
-      });
-      return ret.sort((a, b) => a.label.localeCompare(b.label));
-    },
   },
   methods: {
+    getScripts() {
+      this.$axios.get("/scripts/scripts/").then(r => {
+        this.scriptOptions = r.data.map(
+          script => ({ label: script.name, value: script.id })).sort((a, b) => a.label.localeCompare(b.label)
+        );
+      });
+    },
     send() {
       this.ret = null;
       this.loading = true;
@@ -129,5 +129,8 @@ export default {
         });
     },
   },
+  created() {
+    this.getScripts()
+  }
 };
 </script>

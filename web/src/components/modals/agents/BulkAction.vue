@@ -155,7 +155,6 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import { mapGetters } from "vuex";
 
 export default {
   name: "BulkAction",
@@ -167,6 +166,7 @@ export default {
     return {
       target: "client",
       selected_mode: null,
+      scriptOptions: [],
       scriptPK: null,
       timeout: 900,
       client: null,
@@ -182,16 +182,18 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(["scripts"]),
     sites() {
       return !!this.client ? this.formatSiteOptions(this.client.sites) : [];
     },
-    scriptOptions() {
-      const ret = this.scripts.map(script => ({ label: script.name, value: script.id }));
-      return ret.sort((a, b) => a.label.localeCompare(b.label));
-    },
   },
   methods: {
+    getScripts() {
+      this.$axios.get("/scripts/scripts/").then(r => {
+        this.scriptOptions = r.data.map(
+          script => ({ label: script.name, value: script.id })).sort((a, b) => a.label.localeCompare(b.label)
+        );
+      });
+    },
     send() {
       this.$q.loading.show();
       const data = {
@@ -253,6 +255,7 @@ export default {
     this.setTitles();
     this.getClients();
     this.getAgents();
+    this.getScripts()
 
     this.selected_mode = this.mode;
   },

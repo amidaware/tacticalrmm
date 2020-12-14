@@ -6,8 +6,5 @@ script = Recipe(
     name="Test Script",
     description="Test Desc",
     shell="cmd",
-    filename="test.bat",
     script_type="userdefined",
 )
-
-builtin_script = script.extend(script_type="builtin")

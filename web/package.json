@@ -9,20 +9,22 @@
     "test:unit": "quasar test --unit jest"
   },
   "dependencies": {
-    "@quasar/extras": "^1.9.10",
+    "@quasar/extras": "^1.9.11",
     "axios": "^0.21.0",
     "dotenv": "^8.2.0",
     "qrcode.vue": "^1.7.0",
-    "quasar": "^1.14.6"
+    "quasar": "^1.14.7"
   },
   "devDependencies": {
-    "@quasar/app": "^2.1.9",
+    "@quasar/app": "^2.1.11",
     "@quasar/cli": "^1.1.2",
-    "@quasar/quasar-app-extension-testing": "^1.0.0",
+    "@quasar/quasar-app-extension-testing": "^1.0.3",
     "@quasar/quasar-app-extension-testing-unit-jest": "^1.0.1",
-    "core-js": "^3.6.5",
+    "core-js": "^3.8.1",
     "flush-promises": "^1.0.2",
-    "fs-extra": "^9.0.1"
+    "fs-extra": "^9.0.1",
+    "prismjs": "^1.22.0",
+    "vue-prism-editor": "^1.2.2"
   },
   "browserslist": [
     "last 4 Chrome versions",

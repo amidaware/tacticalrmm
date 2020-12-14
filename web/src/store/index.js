@@ -29,12 +29,11 @@ export default function () {
       agentTableLoading: false,
       treeLoading: false,
       installedSoftware: [],
-      scripts: [],
       notes: [],
-      toggleScriptManager: false,
       needrefresh: false,
       tableHeight: "35vh",
       tabHeight: "35vh",
+      showCommunityScripts: false
     },
     getters: {
       loggedIn(state) {
@@ -68,9 +67,6 @@ export default function () {
       agentHostname(state) {
         return state.agentSummary.hostname;
       },
-      scripts(state) {
-        return state.scripts;
-      },
       needRefresh(state) {
         return state.needrefresh;
       },
@@ -82,9 +78,6 @@ export default function () {
       },
     },
     mutations: {
-      TOGGLE_SCRIPT_MANAGER(state, action) {
-        state.toggleScriptManager = action;
-      },
       AGENT_TABLE_LOADING(state, visible) {
         state.agentTableLoading = visible;
       },
@@ -128,9 +121,6 @@ export default function () {
         (state.installedSoftware = []);
         state.selectedRow = "";
       },
-      SET_SCRIPTS(state, scripts) {
-        state.scripts = scripts;
-      },
       SET_REFRESH_NEEDED(state, action) {
         state.needrefresh = action;
       },
@@ -142,9 +132,17 @@ export default function () {
       },
       SET_NOTES(state, notes) {
         state.notes = notes;
+      },
+      setShowCommunityScripts(state, show) {
+        state.showCommunityScripts = show
       }
     },
     actions: {
+      setShowCommunityScripts(context, data) {
+        axios.patch("/accounts/users/ui/", { show_community_scripts: data }).then(r => {
+          context.commit("setShowCommunityScripts", data)
+        })
+      },
       toggleMaintenanceMode(context, data) {
         return axios.post("/agents/maintenance/", data)
       },
@@ -158,11 +156,6 @@ export default function () {
         axios.get(`/tasks/${pk}/automatedtasks/`).then(r => {
           context.commit("SET_AUTOMATED_TASKS", r.data);
         })
-      },
-      getScripts(context) {
-        axios.get("/scripts/scripts/").then(r => {
-          context.commit("SET_SCRIPTS", r.data);
-        });
       },
       loadInstalledSoftware(context, pk) {
         axios.get(`/software/installed/${pk}`).then(r => {

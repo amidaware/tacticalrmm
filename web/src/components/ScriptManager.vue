@@ -1,150 +1,250 @@
 <template>
-  <div class="q-pa-md q-gutter-sm">
-    <q-dialog :value="toggleScriptManager" @hide="hideScriptManager" @show="getScripts">
-      <q-card style="min-width: 70vw">
-        <q-bar>
-          <q-btn @click="getScripts" class="q-mr-sm" dense flat push icon="refresh" />Script Manager
-          <q-space />
-          <q-btn dense flat icon="close" v-close-popup>
-            <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
-          </q-btn>
-        </q-bar>
-        <div class="q-pa-md">
-          <div class="q-gutter-sm row">
+  <div style="width: 60vw; max-width: 90vw">
+    <q-card>
+      <q-bar>
+        <q-btn @click="getScripts" class="q-mr-sm" dense flat push icon="refresh" />Script Manager
+        <q-space />
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+      <div class="q-pa-md">
+        <div class="q-gutter-sm row">
+          <q-btn-dropdown icon="add" label="New" no-caps dense flat>
+            <q-list dense>
+              <q-item clickable v-close-popup @click="newScript">
+                <q-item-section side>
+                  <q-icon size="xs" name="add" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>New Script</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="showScriptUploadModal = true">
+                <q-item-section side>
+                  <q-icon size="xs" name="cloud_upload" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>Upload Script</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+          <q-btn
+            label="Edit"
+            :disable="!isRowSelected || isBuiltInScript(selectedScript.id)"
+            dense
+            flat
+            push
+            unelevated
+            no-caps
+            icon="edit"
+            @click="editScript(selectedScript)"
+          />
+          <q-btn
+            label="Delete"
+            :disable="!isRowSelected || isBuiltInScript(selectedScript.id)"
+            dense
+            flat
+            push
+            unelevated
+            no-caps
+            icon="delete"
+            @click="deleteScript(selectedScript.id)"
+          />
+          <q-btn
+            label="View Code"
+            :disable="!isRowSelected"
+            dense
+            flat
+            push
+            unelevated
+            no-caps
+            icon="remove_red_eye"
+            @click="viewCode(selectedScript)"
+          />
+          <q-btn
+            label="Download Script"
+            :disable="!isRowSelected"
+            dense
+            flat
+            push
+            unelevated
+            no-caps
+            icon="cloud_download"
+            @click="downloadScript(selectedScript)"
+          />
+        </div>
+        <q-table
+          style="min-height: 30vw; max-height: 30vw"
+          dense
+          :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+          class="settings-tbl-sticky scroll"
+          :data="visibleScripts"
+          :columns="columns"
+          :visible-columns="visibleColumns"
+          :pagination.sync="pagination"
+          :filter="search"
+          row-key="id"
+          binary-state-sort
+          hide-bottom
+          virtual-scroll
+          flat
+          :rows-per-page-options="[0]"
+        >
+          <template v-slot:header-cell-favorite="props">
+            <q-th :props="props" auto-width>
+              <q-icon name="star" color="yellow-8" size="sm" />
+            </q-th>
+          </template>
+          <template v-slot:top>
             <q-btn
-              label="New"
               dense
               flat
-              push
-              unelevated
-              no-caps
-              icon="add"
-              @click="
-                showScript('add');
-                clearRow();
-              "
-            />
-            <q-btn
-              label="Edit"
-              :disable="scriptpk === null"
-              dense
-              flat
-              push
-              unelevated
-              no-caps
-              icon="edit"
-              @click="showScript('edit')"
-            />
-            <q-btn
-              label="Delete"
-              :disable="scriptpk === null || isBuiltInScript(scriptpk)"
-              dense
-              flat
-              push
-              unelevated
-              no-caps
-              icon="delete"
-              @click="deleteScript"
-            />
-            <q-btn
-              label="View Code"
-              :disable="scriptpk === null"
-              dense
-              flat
-              push
-              unelevated
-              no-caps
-              icon="remove_red_eye"
-              @click="viewCode"
-            />
-            <q-btn
-              label="Download Script"
-              :disable="scriptpk === null"
-              dense
-              flat
-              push
-              unelevated
-              no-caps
-              icon="cloud_download"
-              @click="downloadScript"
+              class="q-ml-sm"
+              :label="showCommunityScripts ? 'Hide Community Scripts' : 'Show Community Scripts'"
+              @click="setShowCommunityScripts(!showCommunityScripts)"
             />
             <q-space />
-            <q-toggle :value="showBuiltIn" label="Show Community Scripts" @input="showBuiltIn = !showBuiltIn" />
-          </div>
-          <q-table
-            dense
-            :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
-            class="settings-tbl-sticky"
-            :data="visibleScripts"
-            :columns="columns"
-            :visible-columns="visibleColumns"
-            :pagination.sync="pagination"
-            row-key="id"
-            binary-state-sort
-            hide-bottom
-            virtual-scroll
-            flat
-            :rows-per-page-options="[0]"
-          >
-            <template slot="body" slot-scope="props" :props="props">
-              <q-tr
-                :class="rowSelectedClass(props.row.id)"
-                @click="
-                  scriptpk = props.row.id;
-                  filename = props.row.filename;
-                  code = props.row.code;
-                "
-              >
-                <q-td>{{ props.row.name }}</q-td>
-                <q-td>
-                  {{ truncateText(props.row.description) }}
-                  <q-tooltip v-if="props.row.description.length >= 60" content-style="font-size: 12px">{{
-                    props.row.description
-                  }}</q-tooltip>
-                </q-td>
-                <q-td>{{ props.row.filename }}</q-td>
-                <q-td>{{ props.row.shell }}</q-td>
-                <q-td v-show="props.row.script_type === 'userdefined'">User Defined</q-td>
-                <q-td v-show="props.row.script_type === 'builtin'">Community Uploaded</q-td>
-              </q-tr>
-            </template>
-          </q-table>
-        </div>
-        <q-card-section></q-card-section>
-        <q-separator />
-        <q-card-section></q-card-section>
-      </q-card>
-    </q-dialog>
-    <q-dialog v-model="showScriptModal">
-      <ScriptModal :mode="mode" :scriptpk="scriptpk" @close="showScriptModal = false" @uploaded="getScripts" />
+            <q-input
+              v-model="search"
+              style="width: 300px"
+              label="Search"
+              dense
+              outlined
+              clearable
+              class="q-pr-md q-pb-xs"
+            >
+              <template v-slot:prepend>
+                <q-icon name="search" color="primary" />
+              </template>
+            </q-input>
+          </template>
+
+          <template slot="body" slot-scope="props" :props="props">
+            <q-tr
+              :class="`${rowSelectedClass(props.row.id)} cursor-pointer`"
+              @click="selectedScript = props.row"
+              @contextmenu="selectedScript = props.row"
+            >
+              <!-- Context Menu -->
+              <q-menu context-menu>
+                <q-list dense style="min-width: 200px">
+                  <q-item
+                    clickable
+                    v-close-popup
+                    @click="editScript(props.row)"
+                    id="context-edit"
+                    v-if="props.row.script_type !== 'builtin'"
+                  >
+                    <q-item-section side>
+                      <q-icon name="edit" />
+                    </q-item-section>
+                    <q-item-section>Edit</q-item-section>
+                  </q-item>
+
+                  <q-item
+                    clickable
+                    v-close-popup
+                    @click="deleteScript(props.row.id)"
+                    id="context-delete"
+                    v-if="props.row.script_type !== 'builtin'"
+                  >
+                    <q-item-section side>
+                      <q-icon name="delete" />
+                    </q-item-section>
+                    <q-item-section>Delete</q-item-section>
+                  </q-item>
+
+                  <q-item clickable v-close-popup @click="favoriteScript(props.row)">
+                    <q-item-section side>
+                      <q-icon name="star" />
+                    </q-item-section>
+                    <q-item-section>{{ favoriteText(props.row.favorite) }}</q-item-section>
+                  </q-item>
+
+                  <q-separator></q-separator>
+
+                  <q-item clickable v-close-popup @click="viewCode(props.row)" id="context-view">
+                    <q-item-section side>
+                      <q-icon name="remove_red_eye" />
+                    </q-item-section>
+                    <q-item-section>View Code</q-item-section>
+                  </q-item>
+
+                  <q-item clickable v-close-popup @click="downloadScript(props.row)" id="context-download">
+                    <q-item-section side>
+                      <q-icon name="cloud_download" />
+                    </q-item-section>
+                    <q-item-section>Download Script</q-item-section>
+                  </q-item>
+
+                  <q-separator></q-separator>
+
+                  <q-item clickable v-close-popup>
+                    <q-item-section>Close</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-menu>
+              <q-td>
+                <q-icon v-if="props.row.favorite" color="yellow-8" name="star" size="sm" />
+              </q-td>
+              <q-td>{{ props.row.name }}</q-td>
+              <q-td>{{ props.row.category }}</q-td>
+              <q-td>{{ props.row.shell }}</q-td>
+              <q-td>
+                {{ truncateText(props.row.description) }}
+                <q-tooltip v-if="props.row.description.length >= 60" content-style="font-size: 12px">{{
+                  props.row.description
+                }}</q-tooltip>
+              </q-td>
+            </q-tr>
+          </template>
+        </q-table>
+      </div>
+      <q-separator />
+      <q-card-section></q-card-section>
+    </q-card>
+    <q-dialog v-model="showScriptUploadModal">
+      <ScriptUploadModal
+        :script="selectedScript"
+        :categories="categories"
+        @close="showScriptUploadModal = false"
+        @added="getScripts"
+      />
     </q-dialog>
   </div>
 </template>
 
 <script>
-import axios from "axios";
-import mixins from "@/mixins/mixins";
 import { mapState } from "vuex";
-import ScriptModal from "@/components/modals/scripts/ScriptModal";
+import mixins from "@/mixins/mixins";
+import ScriptUploadModal from "@/components/modals/scripts/ScriptUploadModal";
+import ScriptFormModal from "@/components/modals/scripts/ScriptFormModal";
+
 export default {
   name: "ScriptManager",
-  components: { ScriptModal },
+  components: { ScriptUploadModal },
   mixins: [mixins],
   data() {
     return {
-      mode: "add",
-      scriptpk: null,
-      showScriptModal: false,
-      filename: null,
-      code: null,
-      showBuiltIn: true,
+      scripts: [],
+      selectedScript: {},
+      showScriptUploadModal: false,
+      search: "",
       pagination: {
         rowsPerPage: 0,
-        sortBy: "script_type",
+        sortBy: "favorite",
         descending: true,
       },
       columns: [
-        { name: "id", label: "ID", field: "id" },
+        {
+          name: "favorite",
+          label: "",
+          field: "favorite",
+          align: "left",
+          sortable: true,
+        },
         {
           name: "name",
           label: "Name",
@@ -153,16 +253,9 @@ export default {
           sortable: true,
         },
         {
-          name: "desc",
-          label: "Description",
-          field: "description",
-          align: "left",
-          sortable: false,
-        },
-        {
-          name: "file",
-          label: "File",
-          field: "filename",
+          name: "category",
+          label: "Category",
+          field: "category",
           align: "left",
           sortable: true,
         },
@@ -174,37 +267,57 @@ export default {
           sortable: true,
         },
         {
-          name: "script_type",
-          label: "Type",
-          field: "script_type",
+          name: "desc",
+          label: "Description",
+          field: "description",
           align: "left",
-          sortable: true,
+          sortable: false,
         },
       ],
-      visibleColumns: ["name", "desc", "file", "shell", "script_type"],
+      visibleColumns: ["favorite", "name", "category", "desc", "shell"],
     };
   },
   methods: {
     getScripts() {
       this.clearRow();
-      this.$store.dispatch("getScripts");
-    },
-    hideScriptManager() {
-      this.$store.commit("TOGGLE_SCRIPT_MANAGER", false);
-    },
-    clearRow() {
-      this.scriptpk = null;
-      this.filename = null;
-    },
-    viewCode() {
-      this.$q.dialog({
-        title: this.filename,
-        message: `<pre>${this.code}</pre>`,
-        html: true,
-        style: "width: 70vw; max-width: 80vw;",
+      this.$axios.get("/scripts/scripts/").then(r => {
+        this.scripts = r.data;
       });
     },
-    deleteScript() {
+    setShowCommunityScripts(show) {
+      this.$store.dispatch("setShowCommunityScripts", show);
+    },
+    clearRow() {
+      this.selectedScript = {};
+    },
+    viewCode(script) {
+      this.$q
+        .dialog({
+          component: ScriptFormModal,
+          parent: this,
+          script: script,
+          readonly: true,
+        })
+        .onDismiss(() => {
+          this.getScripts();
+        });
+    },
+    favoriteScript(script) {
+      this.$q.loading.show();
+      const notifyText = !script.favorite ? "Script was favorited!" : "Script was removed as a favorite!";
+      this.$axios
+        .put(`/scripts/${script.id}/script/`, { favorite: !script.favorite })
+        .then(() => {
+          this.getScripts();
+          this.$q.loading.hide();
+          this.notifySuccess(notifyText);
+        })
+        .catch(() => {
+          this.$q.loading.hide();
+          this.notifyError("Something went wrong");
+        });
+    },
+    deleteScript(scriptpk) {
       this.$q
         .dialog({
           title: "Delete script?",
@@ -212,8 +325,8 @@ export default {
           ok: { label: "Delete", color: "negative" },
         })
         .onOk(() => {
-          axios
-            .delete(`/scripts/${this.scriptpk}/script/`)
+          this.$axios
+            .delete(`/scripts/${scriptpk}/script/`)
             .then(r => {
               this.getScripts();
               this.notifySuccess(r.data);
@@ -221,28 +334,17 @@ export default {
             .catch(() => this.notifySuccess("Something went wrong"));
         });
     },
-    downloadScript() {
-      axios
-        .get(`/scripts/${this.scriptpk}/download/`, { responseType: "blob" })
+    downloadScript(script) {
+      this.$axios
+        .get(`/scripts/${script.id}/download/`)
         .then(({ data }) => {
-          const blob = new Blob([data], { type: "text/plain" });
+          const blob = new Blob([data.code], { type: "text/plain;charset=utf-8" });
           let link = document.createElement("a");
           link.href = window.URL.createObjectURL(blob);
-          link.download = this.filename;
+          link.download = data.filename;
           link.click();
         })
         .catch(() => this.notifyError("Something went wrong"));
-    },
-    showScript(mode) {
-      switch (mode) {
-        case "add":
-          this.mode = "add";
-          break;
-        case "edit":
-          this.mode = "edit";
-          break;
-      }
-      this.showScriptModal = true;
     },
     truncateText(txt) {
       return txt.length >= 60 ? txt.substring(0, 60) + "..." : txt;
@@ -255,16 +357,55 @@ export default {
       }
     },
     rowSelectedClass(id) {
-      if (this.scriptpk === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";
+      if (this.selectedScript.id === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";
+    },
+    favoriteText(isFavorite) {
+      return isFavorite ? "Remove as Favorite" : "Add as Favorite";
+    },
+    newScript() {
+      this.$q
+        .dialog({
+          component: ScriptFormModal,
+          parent: this,
+          categories: this.categories,
+          readonly: false,
+        })
+        .onDismiss(() => {
+          this.getScripts();
+        });
+    },
+    editScript(script) {
+      this.$q
+        .dialog({
+          component: ScriptFormModal,
+          parent: this,
+          script: script,
+          categories: this.categories,
+          readonly: false,
+        })
+        .onDismiss(() => {
+          this.getScripts();
+        });
     },
   },
   computed: {
-    ...mapState({
-      toggleScriptManager: state => state.toggleScriptManager,
-      scripts: state => state.scripts,
-    }),
+    ...mapState(["showCommunityScripts"]),
     visibleScripts() {
-      return this.showBuiltIn ? this.scripts : this.scripts.filter(i => i.script_type !== "builtin");
+      return this.showCommunityScripts ? this.scripts : this.scripts.filter(i => i.script_type !== "builtin");
+    },
+    categories() {
+      let list = [];
+      this.scripts.forEach(script => {
+        if (!!script.category && !list.includes(script.category)) {
+          if (script.category !== "Community") {
+            list.push(script.category);
+          }
+        }
+      });
+      return list;
+    },
+    isRowSelected() {
+      return this.selectedScript.id !== null && this.selectedScript.id !== undefined;
     },
   },
   mounted() {

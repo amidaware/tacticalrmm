@@ -161,6 +161,13 @@ class TOTPSetup(APIView):
 class UserUI(APIView):
     def patch(self, request):
         user = request.user
-        user.dark_mode = request.data["dark_mode"]
-        user.save(update_fields=["dark_mode"])
+
+        if "dark_mode" in request.data:
+            user.dark_mode = request.data["dark_mode"]
+            user.save(update_fields=["dark_mode"])
+
+        if "show_community_scripts" in request.data:
+            user.show_community_scripts = request.data["show_community_scripts"]
+            user.save(update_fields=["show_community_scripts"])
+
         return Response("ok")

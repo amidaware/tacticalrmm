@@ -1,3 +1,4 @@
+import base64
 from django.db import models
 from logs.models import BaseAuditModel
 from django.conf import settings
@@ -17,41 +18,27 @@ SCRIPT_TYPES = [
 class Script(BaseAuditModel):
     name = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
-    filename = models.CharField(max_length=255)
+    filename = models.CharField(max_length=255)  # deprecated
     shell = models.CharField(
         max_length=100, choices=SCRIPT_SHELLS, default="powershell"
     )
     script_type = models.CharField(
         max_length=100, choices=SCRIPT_TYPES, default="userdefined"
     )
+    favorite = models.BooleanField(default=False)
+    category = models.CharField(max_length=100, null=True, blank=True)
+    code_base64 = models.TextField(null=True, blank=True)
 
     def __str__(self):
-        return self.filename
-
-    @property
-    def filepath(self):
-        # for the windows agent when using 'salt-call'
-        if self.script_type == "userdefined":
-            return f"salt://scripts//userdefined//{self.filename}"
-        else:
-            return f"salt://scripts//{self.filename}"
-
-    @property
-    def file(self):
-        if self.script_type == "userdefined":
-            return f"{settings.SCRIPTS_DIR}/userdefined/{self.filename}"
-        else:
-            return f"{settings.SCRIPTS_DIR}/{self.filename}"
+        return self.name
 
     @property
     def code(self):
-        try:
-            with open(self.file, "r") as f:
-                text = f.read()
-        except:
-            text = "n/a"
-
-        return text
+        if self.code_base64:
+            base64_bytes = self.code_base64.encode("ascii", "ignore")
+            return base64.b64decode(base64_bytes).decode("ascii", "ignore")
+        else:
+            return ""
 
     @classmethod
     def load_community_scripts(cls):
@@ -79,22 +66,42 @@ class Script(BaseAuditModel):
         for script in info:
             if os.path.exists(os.path.join(scripts_dir, script["filename"])):
                 s = cls.objects.filter(script_type="builtin").filter(
-                    filename=script["filename"]
+                    name=script["name"]
                 )
                 if s.exists():
+                    print(f"Updating new community script: {script['name']}")
                     i = s.first()
                     i.name = script["name"]
                     i.description = script["description"]
-                    i.save(update_fields=["name", "description"])
+                    i.category = "Community"
+
+                    with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
+                        script_bytes = (
+                            f.read().decode("utf-8").encode("ascii", "ignore")
+                        )
+                        i.code_base64 = base64.b64encode(script_bytes).decode("ascii")
+
+                    i.save(
+                        update_fields=["name", "description", "category", "code_base64"]
+                    )
                 else:
                     print(f"Adding new community script: {script['name']}")
-                    cls(
-                        name=script["name"],
-                        description=script["description"],
-                        filename=script["filename"],
-                        shell=script["shell"],
-                        script_type="builtin",
-                    ).save()
+
+                    with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
+                        script_bytes = (
+                            f.read().decode("utf-8").encode("ascii", "ignore")
+                        )
+                        code_base64 = base64.b64encode(script_bytes).decode("ascii")
+
+                        cls(
+                            code_base64=code_base64,
+                            name=script["name"],
+                            description=script["description"],
+                            filename=script["filename"],
+                            shell=script["shell"],
+                            script_type="builtin",
+                            category="Community",
+                        ).save()
 
     @staticmethod
     def serialize(script):

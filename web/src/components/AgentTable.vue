@@ -115,38 +115,32 @@
                 <q-item-section>Send Command</q-item-section>
               </q-item>
 
-              <q-item clickable v-ripple>
+              <q-item clickable v-ripple v-close-popup @click="showRunScript = true">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-terminal" />
                 </q-item-section>
                 <q-item-section>Run Script</q-item-section>
+              </q-item>
+
+              <q-item clickable v-ripple @click="getFavoriteScripts">
+                <q-item-section side>
+                  <q-icon size="xs" name="star" />
+                </q-item-section>
+                <q-item-section>Run Favorited Script</q-item-section>
                 <q-item-section side>
                   <q-icon name="keyboard_arrow_right" />
                 </q-item-section>
-                <q-menu anchor="top end" self="top start">
-                  <q-list dense style="min-width: 200px">
-                    <q-item clickable v-ripple v-close-popup @click="showRunScript = true">
-                      <q-item-section>Select Script</q-item-section>
-                    </q-item>
-                    <q-item clickable v-ripple @click="getFavoriteScripts">
-                      <q-item-section>Favorites</q-item-section>
-                      <q-item-section side>
-                        <q-icon name="keyboard_arrow_right" />
-                      </q-item-section>
-                      <q-menu auto-close anchor="top end" self="top start">
-                        <q-list>
-                          <q-item
-                            v-for="script in favoriteScripts"
-                            :key="script.value"
-                            dense
-                            clickable
-                            v-close-popup
-                            @click="runFavScript(script.value, props.row.id)"
-                          >
-                            {{ script.label }}
-                          </q-item>
-                        </q-list>
-                      </q-menu>
+                <q-menu auto-close anchor="top end" self="top start">
+                  <q-list>
+                    <q-item
+                      v-for="script in favoriteScripts"
+                      :key="script.value"
+                      dense
+                      clickable
+                      v-close-popup
+                      @click="runFavScript(script.value, props.row.id)"
+                    >
+                      {{ script.label }}
                     </q-item>
                   </q-list>
                 </q-menu>
@@ -496,6 +490,7 @@ export default {
         .catch(e => this.notifyError(e.response.data));
     },
     getFavoriteScripts() {
+      this.favoriteScripts = [];
       this.$axios.get("/scripts/scripts/").then(r => {
         if (r.data.filter(k => k.favorite === true).length === 0) {
           this.notifyWarning("You don't have any scripts favorited!");

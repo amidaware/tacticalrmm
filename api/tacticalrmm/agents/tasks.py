@@ -3,6 +3,7 @@ from loguru import logger
 from time import sleep
 import random
 import requests
+from concurrent.futures import ThreadPoolExecutor
 from packaging import version as pyver
 from typing import List
 
@@ -14,6 +15,25 @@ from core.models import CoreSettings
 from logs.models import PendingAction
 
 logger.configure(**settings.LOG_CONFIG)
+
+
+def _check_agent_service(pk: int) -> None:
+    agent = Agent.objects.get(pk=pk)
+    r = asyncio.run(agent.nats_cmd({"func": "ping"}, timeout=2))
+    if r == "pong":
+        logger.info(
+            f"Detected crashed tacticalagent service on {agent.hostname}, attempting recovery"
+        )
+        data = {"func": "recover", "payload": {"mode": "tacagent"}}
+        asyncio.run(agent.nats_cmd(data, wait=False))
+
+
+@app.task
+def monitor_agents_task() -> None:
+    q = Agent.objects.all()
+    agents: List[int] = [i.pk for i in q if i.has_nats and i.status != "online"]
+    with ThreadPoolExecutor(max_workers=15) as executor:
+        executor.map(_check_agent_service, agents)
 
 
 def agent_update(pk: int) -> str:

@@ -1,5 +1,5 @@
 <template>
-  <q-card v-if="scripts.length === 0" class="q-pa-xs" style="min-width: 400px">
+  <q-card v-if="scriptOptions.length === 0" class="q-pa-xs" style="min-width: 400px">
     <q-card-section class="row items-center">
       <div class="text-h6">Add Automated Task</div>
       <q-space />
@@ -26,7 +26,7 @@
             outlined
             v-model="autotask.script"
             :options="scriptOptions"
-            label="Select task"
+            label="Select script"
             map-options
             emit-value
           />
@@ -147,8 +147,7 @@
 </template>
 
 <script>
-import axios from "axios";
-import { mapState, mapGetters } from "vuex";
+import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 
 export default {
@@ -160,6 +159,7 @@ export default {
   data() {
     return {
       step: 1,
+      scriptOptions: [],
       autotask: {
         script: null,
         script_args: [],
@@ -202,7 +202,7 @@ export default {
           autotask: this.autotask,
         };
 
-        axios
+        this.$axios
           .post("tasks/automatedtasks/", data)
           .then(r => {
             this.$emit("close");
@@ -220,11 +220,15 @@ export default {
       }
     },
     getScripts() {
-      this.$store.dispatch("getScripts");
-    },
+      this.$axios.get("/scripts/scripts/").then(r => {
+        this.scriptOptions = r.data.map(
+          script => ({ label: script.name, value: script.id })).sort((a, b) => a.label.localeCompare(b.label)
+        );
+      });
+    }
   },
   computed: {
-    ...mapGetters(["selectedAgentPk", "scripts"]),
+    ...mapGetters(["selectedAgentPk"]),
     checks() {
       return this.policypk
         ? this.$store.state.automation.checks
@@ -234,13 +238,6 @@ export default {
       const r = [];
       this.checks.forEach(i => {
         r.push({ label: i.readable_desc, value: i.id });
-      });
-      return r.sort((a, b) => a.label.localeCompare(b.label));
-    },
-    scriptOptions() {
-      const r = [];
-      this.scripts.forEach(i => {
-        r.push({ label: i.name, value: i.id });
       });
       return r.sort((a, b) => a.label.localeCompare(b.label));
     },
@@ -264,7 +261,7 @@ export default {
     },
   },
   created() {
-    this.getScripts();
-  },
+    this.getScripts()
+  }
 };
 </script>

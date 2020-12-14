@@ -154,8 +154,8 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
 import mixins from "@/mixins/mixins";
-import { mapGetters } from "vuex";
 
 export default {
   name: "BulkAction",
@@ -167,6 +167,7 @@ export default {
     return {
       target: "client",
       selected_mode: null,
+      scriptOptions: [],
       scriptPK: null,
       timeout: 900,
       client: null,
@@ -182,16 +183,25 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(["scripts"]),
+    ...mapState(["showCommunityScripts"]),
     sites() {
       return !!this.client ? this.formatSiteOptions(this.client.sites) : [];
     },
-    scriptOptions() {
-      const ret = this.scripts.map(script => ({ label: script.name, value: script.id }));
-      return ret.sort((a, b) => a.label.localeCompare(b.label));
-    },
   },
   methods: {
+    getScripts() {
+      let scripts;
+      this.$axios.get("/scripts/scripts/").then(r => {
+        if (this.showCommunityScripts) {
+          scripts = r.data;
+        } else {
+          scripts = r.data.filter(i => i.script_type !== "builtin");
+        }
+        this.scriptOptions = scripts
+          .map(script => ({ label: script.name, value: script.id }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+      });
+    },
     send() {
       this.$q.loading.show();
       const data = {
@@ -253,6 +263,7 @@ export default {
     this.setTitles();
     this.getClients();
     this.getAgents();
+    this.getScripts();
 
     this.selected_mode = this.mode;
   },

@@ -69,7 +69,6 @@ class Script(BaseAuditModel):
                     name=script["name"]
                 )
                 if s.exists():
-                    print(f"Updating new community script: {script['name']}")
                     i = s.first()
                     i.name = script["name"]
                     i.description = script["description"]

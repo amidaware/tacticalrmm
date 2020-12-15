@@ -35,12 +35,17 @@ class GetAddScripts(APIView):
             "script_type": "userdefined",  # force all uploads to be userdefined. built in scripts cannot be edited by user
         }
 
+        if "favorite" in request.data:
+            data["favorite"] = request.data["favorite"]
+
         if "filename" in request.data:
             message_bytes = request.data["filename"].read()
-            data["code_base64"] = base64.b64encode(message_bytes).decode("ascii")
+            data["code_base64"] = base64.b64encode(message_bytes).decode(
+                "ascii", "ignore"
+            )
 
         elif "code" in request.data:
-            message_bytes = request.data["code"].encode("ascii")
+            message_bytes = request.data["code"].encode("ascii", "ignore")
             data["code_base64"] = base64.b64encode(message_bytes).decode("ascii")
 
         serializer = ScriptSerializer(data=data, partial=True)

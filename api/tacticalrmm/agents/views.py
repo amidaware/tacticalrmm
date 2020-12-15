@@ -825,6 +825,11 @@ def bulk(request):
     else:
         return notify_error("Something went wrong")
 
+    if request.data["monType"] == "servers":
+        q = q.filter(monitoring_type="server")
+    elif request.data["monType"] == "workstations":
+        q = q.filter(monitoring_type="workstation")
+
     minions = [agent.salt_id for agent in q]
     agents = [agent.pk for agent in q]
 

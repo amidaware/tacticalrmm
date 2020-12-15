@@ -12,6 +12,16 @@
     <q-form @submit.prevent="send">
       <q-card-section>
         <div class="q-pa-none">
+          <p>Agent Type</p>
+          <div class="q-gutter-sm">
+            <q-radio dense v-model="monType" val="all" label="All" />
+            <q-radio dense v-model="monType" val="servers" label="Servers" />
+            <q-radio dense v-model="monType" val="workstations" label="Workstations" />
+          </div>
+        </div>
+      </q-card-section>
+      <q-card-section>
+        <div class="q-pa-none">
           <p>Choose Target</p>
           <div class="q-gutter-sm">
             <q-radio dense v-model="target" val="client" label="Client" @input="agentMultiple = []" />
@@ -166,6 +176,7 @@ export default {
   data() {
     return {
       target: "client",
+      monType: "all",
       selected_mode: null,
       scriptOptions: [],
       scriptPK: null,
@@ -206,6 +217,7 @@ export default {
       this.$q.loading.show();
       const data = {
         mode: this.selected_mode,
+        monType: this.monType,
         target: this.target,
         site: this.site.value,
         client: this.client.value,

@@ -26,7 +26,14 @@
             />
           </div>
           <div class="q-pa-sm col-2">
-            <q-input filled dense :readonly="readonly" v-model="localScript.name" label="Name" />
+            <q-input
+              filled
+              dense
+              :readonly="readonly"
+              v-model="localScript.name"
+              label="Name"
+              :rules="[val => !!val || '*Required']"
+            />
           </div>
           <div class="q-pa-sm col-2">
             <q-select

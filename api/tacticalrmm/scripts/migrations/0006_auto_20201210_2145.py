@@ -28,25 +28,6 @@ def move_scripts_to_db(apps, schema_editor):
                     f"Script file {script.name} was not found on the disk. You will need to edit the script in the UI"
                 )
 
-        elif not settings.DOCKER_BUILD and script.code_base64 is None:
-            scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[1], "scripts")
-            community_script = os.path.join(scripts_dir, script.filename)
-            if os.path.exists(community_script):
-                print(f"Found community script {script.name}. Importing code.")
-                with open(community_script, "rb") as f:
-                    script_bytes = f.read().decode("utf-8").encode("ascii", "ignore")
-                    script.code_base64 = base64.b64encode(script_bytes).decode("ascii")
-                    script.save(update_fields=["code_base64"])
-
-        elif settings.DOCKER_BUILD and script.code_base64 is None:
-            community_script = os.path.join(settings.SCRIPTS_DIR, script.filename)
-            if os.path.exists(community_script):
-                print(f"Found community script {script.name}. Importing code.")
-                with open(community_script, "rb") as f:
-                    script_bytes = f.read().decode("utf-8").encode("ascii", "ignore")
-                    script.code_base64 = base64.b64encode(script_bytes).decode("ascii")
-                    script.save(update_fields=["code_base64"])
-
 
 class Migration(migrations.Migration):
 

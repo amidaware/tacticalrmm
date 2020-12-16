@@ -41,6 +41,11 @@ jobs:
           source env/bin/activate
           cd /myagent/_work/1/s/api/tacticalrmm
           coverage run manage.py test -v 2
-          coveralls
+          if [ $? -ne 0 ]; then
+              coveralls
+              exit 1
+          else
+              coveralls
+              exit 0
+          fi
         displayName: "Run django tests"
-        failOnStderr: "true"

@@ -80,7 +80,7 @@ class Policy(BaseAuditModel):
             default_policy = CoreSettings.objects.first().server_policy
             client_policy = client.server_policy
             site_policy = site.server_policy
-        else:
+        elif agent.monitoring_type == "workstation":
             default_policy = CoreSettings.objects.first().workstation_policy
             client_policy = client.workstation_policy
             site_policy = site.workstation_policy
@@ -132,7 +132,7 @@ class Policy(BaseAuditModel):
             default_policy = CoreSettings.objects.first().server_policy
             client_policy = client.server_policy
             site_policy = site.server_policy
-        else:
+        elif agent.monitoring_type == "workstation":
             default_policy = CoreSettings.objects.first().workstation_policy
             client_policy = client.workstation_policy
             site_policy = site.workstation_policy

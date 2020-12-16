@@ -13,7 +13,11 @@ def move_scripts_to_db(apps, schema_editor):
     for script in Script.objects.all():
         if not script.script_type == "builtin":
 
-            filepath = f"{settings.SCRIPTS_DIR}/userdefined/{script.filename}"
+            if script.filename:
+                filepath = f"{settings.SCRIPTS_DIR}/userdefined/{script.filename}"
+            else:
+                print(f"No filename on script found. Skipping")
+                continue
 
             # test if file exists
             if os.path.exists(filepath):

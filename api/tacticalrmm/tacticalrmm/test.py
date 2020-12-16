@@ -13,6 +13,9 @@ class TacticalTestCase(TestCase):
         self.john = User(username="john")
         self.john.set_password("hunter2")
         self.john.save()
+        self.alice = User(username="alice")
+        self.alice.set_password("hunter2")
+        self.alice.save()
         self.client_setup()
         self.client.force_authenticate(user=self.john)
 

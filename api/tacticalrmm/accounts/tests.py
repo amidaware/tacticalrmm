@@ -155,6 +155,33 @@ class GetUpdateDeleteUser(TacticalTestCase):
 
         self.check_not_authenticated("put", url)
 
+    @override_settings(ROOT_USER="john")
+    def test_put_root_user(self):
+        url = f"/accounts/{self.john.pk}/users/"
+        data = {
+            "id": self.john.pk,
+            "username": "john",
+            "email": "johndoe@xlawgaming.com",
+            "first_name": "John",
+            "last_name": "Doe",
+        }
+        r = self.client.put(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+
+    @override_settings(ROOT_USER="john")
+    def test_put_not_root_user(self):
+        url = f"/accounts/{self.john.pk}/users/"
+        data = {
+            "id": self.john.pk,
+            "username": "john",
+            "email": "johndoe@xlawgaming.com",
+            "first_name": "John",
+            "last_name": "Doe",
+        }
+        self.client.force_authenticate(user=self.alice)
+        r = self.client.put(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+
     def test_delete(self):
         url = f"/accounts/{self.john.pk}/users/"
         r = self.client.delete(url)
@@ -165,6 +192,19 @@ class GetUpdateDeleteUser(TacticalTestCase):
         self.assertEqual(r.status_code, 404)
 
         self.check_not_authenticated("delete", url)
+
+    @override_settings(ROOT_USER="john")
+    def test_delete_root_user(self):
+        url = f"/accounts/{self.john.pk}/users/"
+        r = self.client.delete(url)
+        self.assertEqual(r.status_code, 200)
+
+    @override_settings(ROOT_USER="john")
+    def test_delete_non_root_user(self):
+        url = f"/accounts/{self.john.pk}/users/"
+        self.client.force_authenticate(user=self.alice)
+        r = self.client.delete(url)
+        self.assertEqual(r.status_code, 400)
 
 
 class TestUserAction(TacticalTestCase):
@@ -184,6 +224,21 @@ class TestUserAction(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
+    @override_settings(ROOT_USER="john")
+    def test_post_root_user(self):
+        url = "/accounts/users/reset/"
+        data = {"id": self.john.pk, "password": "3ASDjh2345kJA!@#)#@__123"}
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+
+    @override_settings(ROOT_USER="john")
+    def test_post_non_root_user(self):
+        url = "/accounts/users/reset/"
+        data = {"id": self.john.pk, "password": "3ASDjh2345kJA!@#)#@__123"}
+        self.client.force_authenticate(user=self.alice)
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+
     def test_put(self):
         url = "/accounts/users/reset/"
         data = {"id": self.john.pk}
@@ -195,9 +250,31 @@ class TestUserAction(TacticalTestCase):
 
         self.check_not_authenticated("put", url)
 
-    def test_darkmode(self):
+    @override_settings(ROOT_USER="john")
+    def test_put_root_user(self):
+        url = "/accounts/users/reset/"
+        data = {"id": self.john.pk}
+        r = self.client.put(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        user = User.objects.get(pk=self.john.pk)
+        self.assertEqual(user.totp_key, "")
+
+    @override_settings(ROOT_USER="john")
+    def test_put_non_root_user(self):
+        url = "/accounts/users/reset/"
+        data = {"id": self.john.pk}
+        self.client.force_authenticate(user=self.alice)
+        r = self.client.put(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+
+    def test_user_ui(self):
         url = "/accounts/users/ui/"
         data = {"dark_mode": False}
+        r = self.client.patch(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        data = {"show_community_scripts": True}
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)
 

@@ -43,3 +43,4 @@ jobs:
           coverage run manage.py test -v 2
           coveralls
         displayName: "Run django tests"
+        failOnStderr: "true"

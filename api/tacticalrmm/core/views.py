@@ -69,7 +69,11 @@ def version(request):
 @api_view()
 def dashboard_info(request):
     return Response(
-        {"trmm_version": settings.TRMM_VERSION, "dark_mode": request.user.dark_mode}
+        {
+            "trmm_version": settings.TRMM_VERSION,
+            "dark_mode": request.user.dark_mode,
+            "show_community_scripts": request.user.show_community_scripts,
+        }
     )
 
 

@@ -550,6 +550,7 @@ class TestAgentViews(TacticalTestCase):
 
         payload = {
             "mode": "command",
+            "monType": "all",
             "target": "agents",
             "client": None,
             "site": None,
@@ -567,6 +568,7 @@ class TestAgentViews(TacticalTestCase):
 
         payload = {
             "mode": "command",
+            "monType": "servers",
             "target": "agents",
             "client": None,
             "site": None,
@@ -581,6 +583,7 @@ class TestAgentViews(TacticalTestCase):
 
         payload = {
             "mode": "command",
+            "monType": "workstations",
             "target": "client",
             "client": self.agent.client.id,
             "site": None,
@@ -598,6 +601,7 @@ class TestAgentViews(TacticalTestCase):
 
         payload = {
             "mode": "command",
+            "monType": "all",
             "target": "client",
             "client": self.agent.client.id,
             "site": self.agent.site.id,
@@ -615,6 +619,7 @@ class TestAgentViews(TacticalTestCase):
 
         payload = {
             "mode": "scan",
+            "monType": "all",
             "target": "agents",
             "client": None,
             "site": None,
@@ -628,6 +633,7 @@ class TestAgentViews(TacticalTestCase):
 
         payload = {
             "mode": "install",
+            "monType": "all",
             "target": "client",
             "client": self.agent.client.id,
             "site": None,

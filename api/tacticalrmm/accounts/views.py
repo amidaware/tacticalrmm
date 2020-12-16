@@ -108,6 +108,13 @@ class GetUpdateDeleteUser(APIView):
     def put(self, request, pk):
         user = get_object_or_404(User, pk=pk)
 
+        if (
+            hasattr(settings, "ROOT_USER")
+            and request.user != user
+            and user.username == settings.ROOT_USER
+        ):
+            return notify_error("The root user cannot be modified from the UI")
+
         serializer = UserSerializer(instance=user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -115,7 +122,15 @@ class GetUpdateDeleteUser(APIView):
         return Response("ok")
 
     def delete(self, request, pk):
-        get_object_or_404(User, pk=pk).delete()
+        user = get_object_or_404(User, pk=pk)
+        if (
+            hasattr(settings, "ROOT_USER")
+            and request.user != user
+            and user.username == settings.ROOT_USER
+        ):
+            return notify_error("The root user cannot be deleted from the UI")
+
+        user.delete()
 
         return Response("ok")
 
@@ -124,8 +139,14 @@ class UserActions(APIView):
 
     # reset password
     def post(self, request):
-
         user = get_object_or_404(User, pk=request.data["id"])
+        if (
+            hasattr(settings, "ROOT_USER")
+            and request.user != user
+            and user.username == settings.ROOT_USER
+        ):
+            return notify_error("The root user cannot be modified from the UI")
+
         user.set_password(request.data["password"])
         user.save()
 
@@ -133,8 +154,14 @@ class UserActions(APIView):
 
     # reset two factor token
     def put(self, request):
-
         user = get_object_or_404(User, pk=request.data["id"])
+        if (
+            hasattr(settings, "ROOT_USER")
+            and request.user != user
+            and user.username == settings.ROOT_USER
+        ):
+            return notify_error("The root user cannot be modified from the UI")
+
         user.totp_key = ""
         user.save()
 
@@ -161,6 +188,13 @@ class TOTPSetup(APIView):
 class UserUI(APIView):
     def patch(self, request):
         user = request.user
-        user.dark_mode = request.data["dark_mode"]
-        user.save(update_fields=["dark_mode"])
+
+        if "dark_mode" in request.data:
+            user.dark_mode = request.data["dark_mode"]
+            user.save(update_fields=["dark_mode"])
+
+        if "show_community_scripts" in request.data:
+            user.show_community_scripts = request.data["show_community_scripts"]
+            user.save(update_fields=["show_community_scripts"])
+
         return Response("ok")

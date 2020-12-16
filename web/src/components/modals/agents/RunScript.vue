@@ -66,7 +66,7 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import { mapGetters } from "vuex";
+import { mapGetters, mapState } from "vuex";
 
 export default {
   name: "RunScript",
@@ -76,6 +76,7 @@ export default {
   },
   data() {
     return {
+      scriptOptions: [],
       loading: false,
       scriptPK: null,
       timeout: 30,
@@ -85,22 +86,28 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(["scripts"]),
+    ...mapState(["showCommunityScripts"]),
     hostname() {
       return this.$store.state.agentSummary.hostname;
     },
     width() {
       return this.ret === null ? "40vw" : "70vw";
     },
-    scriptOptions() {
-      const ret = [];
-      this.scripts.forEach(i => {
-        ret.push({ label: i.name, value: i.id });
-      });
-      return ret.sort((a, b) => a.label.localeCompare(b.label));
-    },
   },
   methods: {
+    getScripts() {
+      let scripts;
+      this.$axios.get("/scripts/scripts/").then(r => {
+        if (this.showCommunityScripts) {
+          scripts = r.data;
+        } else {
+          scripts = r.data.filter(i => i.script_type !== "builtin");
+        }
+        this.scriptOptions = scripts
+          .map(script => ({ label: script.name, value: script.id }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+      });
+    },
     send() {
       this.ret = null;
       this.loading = true;
@@ -128,6 +135,9 @@ export default {
           this.notifyError(e.response.data);
         });
     },
+  },
+  created() {
+    this.getScripts();
   },
 };
 </script>

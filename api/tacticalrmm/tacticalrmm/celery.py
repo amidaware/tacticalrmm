@@ -45,6 +45,10 @@ app.conf.beat_schedule = {
         "task": "agents.tasks.sync_sysinfo_task",
         "schedule": crontab(minute=55, hour="*"),
     },
+    "check-agentservice": {
+        "task": "agents.tasks.monitor_agents_task",
+        "schedule": crontab(minute="*/15"),
+    },
 }
 
 

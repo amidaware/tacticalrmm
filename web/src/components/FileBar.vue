@@ -96,7 +96,7 @@
           <q-menu auto-close>
             <q-list dense style="min-width: 100px">
               <!-- script manager -->
-              <q-item clickable v-close-popup @click="showScriptManager">
+              <q-item clickable v-close-popup @click="showScriptManager = true">
                 <q-item-section>Script Manager</q-item-section>
               </q-item>
               <!-- automation manager -->
@@ -182,8 +182,11 @@
         </q-dialog>
       </div>
       <!-- Script Manager -->
-      <ScriptManager />
-
+      <div class="q-pa-md q-gutter-sm">
+        <q-dialog v-model="showScriptManager">
+          <ScriptManager @close="showScriptManager = false" />
+        </q-dialog>
+      </div>
       <!-- Automation Manager -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showAutomationManager">
@@ -271,6 +274,7 @@ export default {
       bulkMode: null,
       showDeployment: false,
       showDebugLog: false,
+      showScriptManager: false,
     };
   },
   methods: {
@@ -295,9 +299,6 @@ export default {
     closeBulkActionModal() {
       this.bulkMode = null;
       this.showBulkAction = false;
-    },
-    showScriptManager() {
-      this.$store.commit("TOGGLE_SCRIPT_MANAGER", true);
     },
     edited() {
       this.$emit("edited");

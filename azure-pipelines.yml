@@ -43,14 +43,3 @@ jobs:
           coverage run manage.py test -v 2
           coveralls
         displayName: "Run django tests"
-
-      - script: |
-          rm -rf /myagent/_work/1/s/web/node_modules
-          cd /myagent/_work/1/s/web
-          npm install
-        displayName: "Install Frontend"
-
-      - script: |
-          cd /myagent/_work/1/s/web
-          npm run test:unit
-        displayName: "Run Vue Tests"

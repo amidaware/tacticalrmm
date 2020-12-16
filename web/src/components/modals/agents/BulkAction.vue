@@ -12,6 +12,16 @@
     <q-form @submit.prevent="send">
       <q-card-section>
         <div class="q-pa-none">
+          <p>Agent Type</p>
+          <div class="q-gutter-sm">
+            <q-radio dense v-model="monType" val="all" label="All" />
+            <q-radio dense v-model="monType" val="servers" label="Servers" />
+            <q-radio dense v-model="monType" val="workstations" label="Workstations" />
+          </div>
+        </div>
+      </q-card-section>
+      <q-card-section>
+        <div class="q-pa-none">
           <p>Choose Target</p>
           <div class="q-gutter-sm">
             <q-radio dense v-model="target" val="client" label="Client" @input="agentMultiple = []" />
@@ -154,8 +164,8 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
 import mixins from "@/mixins/mixins";
-import { mapGetters } from "vuex";
 
 export default {
   name: "BulkAction",
@@ -166,7 +176,9 @@ export default {
   data() {
     return {
       target: "client",
+      monType: "all",
       selected_mode: null,
+      scriptOptions: [],
       scriptPK: null,
       timeout: 900,
       client: null,
@@ -182,20 +194,30 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(["scripts"]),
+    ...mapState(["showCommunityScripts"]),
     sites() {
       return !!this.client ? this.formatSiteOptions(this.client.sites) : [];
     },
-    scriptOptions() {
-      const ret = this.scripts.map(script => ({ label: script.name, value: script.id }));
-      return ret.sort((a, b) => a.label.localeCompare(b.label));
-    },
   },
   methods: {
+    getScripts() {
+      let scripts;
+      this.$axios.get("/scripts/scripts/").then(r => {
+        if (this.showCommunityScripts) {
+          scripts = r.data;
+        } else {
+          scripts = r.data.filter(i => i.script_type !== "builtin");
+        }
+        this.scriptOptions = scripts
+          .map(script => ({ label: script.name, value: script.id }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+      });
+    },
     send() {
       this.$q.loading.show();
       const data = {
         mode: this.selected_mode,
+        monType: this.monType,
         target: this.target,
         site: this.site.value,
         client: this.client.value,
@@ -253,6 +275,7 @@ export default {
     this.setTitles();
     this.getClients();
     this.getAgents();
+    this.getScripts();
 
     this.selected_mode = this.mode;
   },

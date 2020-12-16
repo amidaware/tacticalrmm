@@ -37,10 +37,15 @@ jobs:
           cd /myagent/_work/1/s/api/tacticalrmm
           coverage run manage.py test -v 2
           if [ $? -ne 0 ]; then
-              coveralls
               exit 1
-          else
-              coveralls
-              exit 0
           fi
         displayName: "Run django tests"
+
+      - script: |
+          pip install coveralls
+          export CIRCLE_BRANCH=$BUILD_SOURCEBRANCH
+          coveralls
+        displayName: "coveralls"
+        env:
+          CIRCLECI: 1
+          CIRCLE_BUILD_NUM: $(Build.BuildNumber)

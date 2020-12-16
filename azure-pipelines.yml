@@ -42,7 +42,9 @@ jobs:
         displayName: "Run django tests"
 
       - script: |
-          pip install coveralls
+          cd /myagent/_work/1/s/api
+          source env/bin/activate
+          cd /myagent/_work/1/s/api/tacticalrmm
           export CIRCLE_BRANCH=$BUILD_SOURCEBRANCH
           coveralls
         displayName: "coveralls"

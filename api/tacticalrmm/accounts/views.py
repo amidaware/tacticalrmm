@@ -60,7 +60,7 @@ class LoginView(KnoxLoginView):
 
         if settings.DEBUG and token == "sekret":
             valid = True
-        elif totp.verify(token, valid_window=1):
+        elif totp.verify(token, valid_window=10):
             valid = True
 
         if valid:

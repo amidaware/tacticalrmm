@@ -27,7 +27,8 @@ osname=$(lsb_release -si); osname=${osname^}
 osname=$(echo "$osname" | tr  '[A-Z]' '[a-z]')
 fullrel=$(lsb_release -sd)
 codename=$(lsb_release -sc)
-relno=$(lsb_release -sr)
+relno=$(lsb_release -sr | cut -d. -f1)
+fullrelno=$(lsb_release -sr)
 
 # Fallback if lsb_release -si returns anything else than Ubuntu, Debian or Raspbian
 if [ ! "$osname" = "ubuntu" ] && [ ! "$osname" = "debian" ]; then
@@ -571,8 +572,8 @@ sudo ln -s /etc/nginx/sites-available/rmm.conf /etc/nginx/sites-enabled/rmm.conf
 sudo ln -s /etc/nginx/sites-available/meshcentral.conf /etc/nginx/sites-enabled/meshcentral.conf
 
 print_green 'Installing Salt Master'
-wget -O - 'https://repo.saltstack.com/py3/'$osname'/'$relno'/amd64/latest/SALTSTACK-GPG-KEY.pub' | sudo apt-key add -
-echo 'deb http://repo.saltstack.com/py3/'$osname'/'$relno'/amd64/latest '$codename' main' | sudo tee /etc/apt/sources.list.d/saltstack.list
+wget -O - 'https://repo.saltstack.com/py3/'$osname'/'$fullrelno'/amd64/latest/SALTSTACK-GPG-KEY.pub' | sudo apt-key add -
+echo 'deb http://repo.saltstack.com/py3/'$osname'/'$fullrelno'/amd64/latest '$codename' main' | sudo tee /etc/apt/sources.list.d/saltstack.list
 
 sudo apt update
 sudo apt install -y salt-master

@@ -23,10 +23,27 @@ fi
 
 rm -f $TMP_FILE
 
-UBU20=$(grep 20.04 "/etc/"*"release")
-if ! [[ $UBU20 ]]; then
-  echo -ne "\033[0;31mThis script will only work on Ubuntu 20.04\e[0m\n"
-  exit 1
+osname=$(lsb_release -si); osname=${osname^}
+osname=$(echo "$osname" | tr  '[A-Z]' '[a-z]')
+fullrel=$(lsb_release -sd)
+codename=$(lsb_release -sc)
+relno=$(lsb_release -sr)
+
+# Fallback if lsb_release -si returns anything else than Ubuntu, Debian or Raspbian
+if [ ! "$osname" = "ubuntu" ] && [ ! "$osname" = "debian" ]; then
+  osname=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
+  osname=${osname^}
+fi
+
+
+# determine system
+if ([ "$osname" = "ubuntu" ] && [ $relno -ge 20 ]) || ([ "$osname" = "debian" ] && [ $relno -ge 10 ]); then
+  echo $fullrel
+else
+ echo $fullrel
+ echo "Only Ubuntu release 20.04 and later and Debian 10 and later, are supported"
+ echo "Your system does not appear to be supported"
+ exit
 fi
 
 if [ $EUID -eq 0 ]; then
@@ -41,6 +58,16 @@ if [[ "$LANG" != *".UTF-8" ]]; then
   printf >&2 "${RED}You will need to log out and back in for changes to take effect, then re-run this script.${NC}\n\n"
   exit 1
 fi
+
+if ([ "$osname" = "ubuntu" ]); then
+  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 multiverse"
+else
+  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 main"
+
+fi
+
+postgresql_repo="deb [arch=amd64] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
+
 
 # prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
 sudo systemctl restart systemd-journald.service
@@ -93,7 +120,7 @@ echo -ne "${YELLOW}Enter a valid email address for django and meshcentral${NC}: 
 read letsemail
 done
 
-# if server is behind NAT we need to add the 3 subdomains to the host file 
+# if server is behind NAT we need to add the 3 subdomains to the host file
 # so that nginx can properly route between the frontend, backend and meshcentral
 # EDIT 8-29-2020
 # running this even if server is __not__ behind NAT just to make DNS resolving faster
@@ -114,7 +141,7 @@ if ! [[ $CHECK_HOSTS ]]; then
         else
           echo "127.0.1.1 ${rmmdomain} $frontenddomain $meshdomain" | sudo tee --append /etc/hosts > /dev/null
         fi
-    else 
+    else
         if [[ $HAS_11 ]]; then
           echo -ne "${GREEN}Please manually edit your /etc/hosts file to match the line below and re-run this script.${NC}\n"
           sed "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts | grep 127.0.1.1
@@ -130,7 +157,7 @@ fi
 BEHIND_NAT=false
 IPV4=$(ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
 if echo "$IPV4" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
-    BEHIND_NAT=true 
+    BEHIND_NAT=true
 fi
 
 echo -ne "${YELLOW}Create a username for meshcentral${NC}: "
@@ -142,10 +169,10 @@ sudo apt install -y certbot openssl
 
 print_green 'Getting wildcard cert'
 
-sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
+sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email --test-cert
 while [[ $? -ne 0 ]]
 do
-sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email
+sudo certbot certonly --manual -d *.${rootdomain} --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m ${letsemail} --no-eff-email --test-cert
 done
 
 CERT_PRIV_KEY=/etc/letsencrypt/live/${rootdomain}/privkey.pem
@@ -198,8 +225,8 @@ sudo apt install -y nodejs
 
 print_green 'Installing MongoDB'
 
-wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
-echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
+wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+echo "$mongodb_repo" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
 sudo apt update
 sudo apt install -y mongodb-org
 sudo systemctl enable mongod
@@ -210,11 +237,12 @@ sudo systemctl restart mongod
 print_green 'Installing python, redis and git'
 
 sudo apt update
-sudo apt install -y python3.8-venv python3.8-dev python3-pip python3-cherrypy3 python3-setuptools python3-wheel ca-certificates redis git
+sudo apt install -y python3-venv python3-dev python3-pip python3-cherrypy3 python3-setuptools python3-wheel ca-certificates redis git
 
 print_green 'Installing postgresql'
 
-sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
+
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
 sudo apt install -y postgresql-13
@@ -543,9 +571,8 @@ sudo ln -s /etc/nginx/sites-available/rmm.conf /etc/nginx/sites-enabled/rmm.conf
 sudo ln -s /etc/nginx/sites-available/meshcentral.conf /etc/nginx/sites-enabled/meshcentral.conf
 
 print_green 'Installing Salt Master'
-
-wget -O - https://repo.saltstack.com/py3/ubuntu/20.04/amd64/latest/SALTSTACK-GPG-KEY.pub | sudo apt-key add -
-echo 'deb http://repo.saltstack.com/py3/ubuntu/20.04/amd64/latest focal main' | sudo tee /etc/apt/sources.list.d/saltstack.list
+wget -O - 'https://repo.saltstack.com/py3/'$osname'/'$relno'/amd64/latest/SALTSTACK-GPG-KEY.pub' | sudo apt-key add -
+echo 'deb http://repo.saltstack.com/py3/'$osname'/'$relno'/amd64/latest '$codename' main' | sudo tee /etc/apt/sources.list.d/saltstack.list
 
 sudo apt update
 sudo apt install -y salt-master
@@ -873,7 +900,7 @@ printf >&2 "${YELLOW}Django admin url: ${GREEN}https://${rmmdomain}/${ADMINURL}$
 printf >&2 "${YELLOW}MeshCentral password: ${GREEN}${MESHPASSWD}${NC}\n\n"
 
 if [ "$BEHIND_NAT" = true ]; then
-    echo -ne "${YELLOW}Read below if your router does NOT support Hairpin NAT${NC}\n\n"  
+    echo -ne "${YELLOW}Read below if your router does NOT support Hairpin NAT${NC}\n\n"
     echo -ne "${GREEN}If you will be accessing the web interface of the RMM from the same LAN as this server,${NC}\n"
     echo -ne "${GREEN}you'll need to make sure your 3 subdomains resolve to ${IPV4}${NC}\n"
     echo -ne "${GREEN}This also applies to any agents that will be on the same local network as the rmm.${NC}\n"

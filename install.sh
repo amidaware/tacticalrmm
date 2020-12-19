@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="27"
+SCRIPT_VERSION="28"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 GREEN='\033[0;32m'
@@ -38,17 +38,17 @@ fi
 
 
 # determine system
-if ([ "$osname" = "ubuntu" ] && [ $relno -ge 20 ]) || ([ "$osname" = "debian" ] && [ $relno -ge 10 ]); then
+if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]) || ([ "$osname" = "debian" ] && [ $relno -ge 10 ]); then
   echo $fullrel
 else
  echo $fullrel
- echo "Only Ubuntu release 20.04 and later and Debian 10 and later, are supported"
- echo "Your system does not appear to be supported"
- exit
+ echo -ne "${RED}Only Ubuntu release 20.04 and Debian 10 and later, are supported\n"
+ echo -ne "Your system does not appear to be supported${NC}\n"
+ exit 1
 fi
 
 if [ $EUID -eq 0 ]; then
-  echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
+  echo -ne "${RED}Do NOT run this script as root. Exiting.${NC}\n"
   exit 1
 fi
 

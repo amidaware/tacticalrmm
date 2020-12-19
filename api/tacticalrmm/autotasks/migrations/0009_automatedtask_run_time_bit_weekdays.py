@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('autotasks', '0008_auto_20201030_1515'),
+        ("autotasks", "0008_auto_20201030_1515"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='automatedtask',
-            name='run_time_bit_weekdays',
+            model_name="automatedtask",
+            name="run_time_bit_weekdays",
             field=models.IntegerField(blank=True, null=True),
         ),
     ]

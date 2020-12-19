@@ -7,14 +7,20 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('clients', '0006_deployment'),
-        ('agents', '0020_auto_20201025_2129'),
+        ("clients", "0006_deployment"),
+        ("agents", "0020_auto_20201025_2129"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='agent',
-            name='site_link',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='agents', to='clients.site'),
+            model_name="agent",
+            name="site_link",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="agents",
+                to="clients.site",
+            ),
         ),
     ]

@@ -6,28 +6,28 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0009_coresettings_agent_auto_update'),
+        ("core", "0009_coresettings_agent_auto_update"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='coresettings',
-            name='created_by',
+            model_name="coresettings",
+            name="created_by",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AddField(
-            model_name='coresettings',
-            name='created_time',
+            model_name="coresettings",
+            name="created_time",
             field=models.DateTimeField(auto_now_add=True, null=True),
         ),
         migrations.AddField(
-            model_name='coresettings',
-            name='modified_by',
+            model_name="coresettings",
+            name="modified_by",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AddField(
-            model_name='coresettings',
-            name='modified_time',
+            model_name="coresettings",
+            name="modified_time",
             field=models.DateTimeField(auto_now=True, null=True),
         ),
     ]

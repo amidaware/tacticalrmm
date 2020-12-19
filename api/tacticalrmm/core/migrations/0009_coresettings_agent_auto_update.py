@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0008_auto_20200910_1434'),
+        ("core", "0008_auto_20200910_1434"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='coresettings',
-            name='agent_auto_update',
+            model_name="coresettings",
+            name="agent_auto_update",
             field=models.BooleanField(default=True),
         ),
     ]

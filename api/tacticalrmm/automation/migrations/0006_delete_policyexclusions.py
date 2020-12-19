@@ -6,11 +6,11 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('automation', '0005_auto_20200922_1344'),
+        ("automation", "0005_auto_20200922_1344"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='PolicyExclusions',
+            name="PolicyExclusions",
         ),
     ]

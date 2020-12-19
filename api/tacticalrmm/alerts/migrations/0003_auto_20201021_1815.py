@@ -7,19 +7,25 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('checks', '0010_auto_20200922_1344'),
-        ('alerts', '0002_auto_20200815_1618'),
+        ("checks", "0010_auto_20200922_1344"),
+        ("alerts", "0002_auto_20200815_1618"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='alert',
-            name='assigned_check',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='alert', to='checks.check'),
+            model_name="alert",
+            name="assigned_check",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="alert",
+                to="checks.check",
+            ),
         ),
         migrations.AlterField(
-            model_name='alert',
-            name='alert_time',
+            model_name="alert",
+            name="alert_time",
             field=models.DateTimeField(auto_now_add=True, null=True),
         ),
     ]

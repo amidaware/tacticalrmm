@@ -37,7 +37,7 @@ class Alert(models.Model):
     @classmethod
     def create_availability_alert(cls, agent):
         pass
-    
+
     @classmethod
     def create_check_alert(cls, check):
         pass

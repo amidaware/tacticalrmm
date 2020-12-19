@@ -6,13 +6,13 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0023_auto_20201101_2312'),
+        ("agents", "0023_auto_20201101_2312"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='agent',
-            old_name='site_link',
-            new_name='site',
+            model_name="agent",
+            old_name="site_link",
+            new_name="site",
         ),
     ]

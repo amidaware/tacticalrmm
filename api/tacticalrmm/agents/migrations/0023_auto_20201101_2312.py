@@ -6,16 +6,16 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0022_update_site_primary_key'),
+        ("agents", "0022_update_site_primary_key"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='agent',
-            name='client',
+            model_name="agent",
+            name="client",
         ),
         migrations.RemoveField(
-            model_name='agent',
-            name='site',
+            model_name="agent",
+            name="site",
         ),
     ]

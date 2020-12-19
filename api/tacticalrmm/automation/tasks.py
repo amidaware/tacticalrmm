@@ -19,7 +19,17 @@ def generate_agent_checks_from_policies_task(
 ):
 
     policy = Policy.objects.get(pk=policypk)
-    for agent in policy.related_agents():
+
+    if policy.is_default_server_policy and policy.is_default_workstation_policy:
+        agents = Agent.objects.all()
+    elif policy.is_default_server_policy:
+        agents = Agent.objects.filter(monitoring_type="server")
+    elif policy.is_default_workstation_policy:
+        agents = Agent.objects.filter(monitoring_type="workstation")
+    else:
+        agents = policy.related_agents()
+
+    for agent in agents:
         agent.generate_checks_from_policies(clear=clear)
         if create_tasks:
             agent.generate_tasks_from_policies(
@@ -86,7 +96,17 @@ def update_policy_check_fields_task(checkpk):
 def generate_agent_tasks_from_policies_task(policypk, clear=False):
 
     policy = Policy.objects.get(pk=policypk)
-    for agent in policy.related_agents():
+
+    if policy.is_default_server_policy and policy.is_default_workstation_policy:
+        agents = Agent.objects.all()
+    elif policy.is_default_server_policy:
+        agents = Agent.objects.filter(monitoring_type="server")
+    elif policy.is_default_workstation_policy:
+        agents = Agent.objects.filter(monitoring_type="workstation")
+    else:
+        agents = policy.related_agents()
+
+    for agent in agents:
         agent.generate_tasks_from_policies(clear=clear)
 
 

@@ -799,7 +799,7 @@ class TestAgentTasks(TacticalTestCase):
         agent_noarch = baker.make_recipe(
             "agents.agent",
             operating_system="Error getting OS",
-            version="1.1.0",
+            version="1.1.11",
         )
         r = agent_update(agent_noarch.pk)
         self.assertEqual(r, "noarch")
@@ -813,7 +813,7 @@ class TestAgentTasks(TacticalTestCase):
         agent64_nats = baker.make_recipe(
             "agents.agent",
             operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version="1.1.0",
+            version="1.1.11",
         )
 
         r = agent_update(agent64_nats.pk)
@@ -827,6 +827,24 @@ class TestAgentTasks(TacticalTestCase):
         )
         self.assertEqual(action.details["version"], settings.LATEST_AGENT_VER)
 
+        agent64_nats_before16 = baker.make_recipe(
+            "agents.agent",
+            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
+            version="1.1.4",
+        )
+
+        r = agent_update(agent64_nats_before16.pk)
+        self.assertEqual(r, "created")
+        action = PendingAction.objects.get(agent__pk=agent64_nats_before16.pk)
+        self.assertEqual(action.action_type, "agentupdate")
+        self.assertEqual(action.status, "pending")
+        self.assertEqual(
+            action.details["url"],
+            "https://github.com/wh1te909/rmmagent/releases/download/v1.1.5/winagent-v1.1.5.exe",
+        )
+        self.assertEqual(action.details["inno"], "winagent-v1.1.5.exe")
+        self.assertEqual(action.details["version"], "1.1.5")
+
         agent64_salt = baker.make_recipe(
             "agents.agent",
             operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
@@ -838,23 +856,11 @@ class TestAgentTasks(TacticalTestCase):
         salt_api_async.assert_called_with(
             func="win_agent.do_agent_update_v2",
             kwargs={
-                "inno": f"winagent-v{settings.LATEST_AGENT_VER}.exe",
-                "url": settings.DL_64,
+                "inno": "winagent-v1.1.5.exe",
+                "url": "https://github.com/wh1te909/rmmagent/releases/download/v1.1.5/winagent-v1.1.5.exe",
             },
         )
         salt_api_async.reset_mock()
-
-        agent32_nats = baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 7 Professional, 32 bit (build 7601.23964)",
-            version="1.1.0",
-        )
-
-        agent32_salt = baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 7 Professional, 32 bit (build 7601.23964)",
-            version="1.0.0",
-        )
 
     """ @patch("agents.models.Agent.salt_api_async")
     @patch("agents.tasks.sleep", return_value=None)

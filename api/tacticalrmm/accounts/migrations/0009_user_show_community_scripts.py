@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0008_user_dark_mode'),
+        ("accounts", "0008_user_dark_mode"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='show_community_scripts',
+            model_name="user",
+            name="show_community_scripts",
             field=models.BooleanField(default=True),
         ),
     ]

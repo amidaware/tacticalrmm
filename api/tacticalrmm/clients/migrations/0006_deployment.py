@@ -8,24 +8,67 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('knox', '0007_auto_20190111_0542'),
-        ('clients', '0005_auto_20200922_1344'),
+        ("knox", "0007_auto_20190111_0542"),
+        ("clients", "0005_auto_20200922_1344"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Deployment',
+            name="Deployment",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('uid', models.UUIDField(default=uuid.uuid4, editable=False)),
-                ('mon_type', models.CharField(choices=[('server', 'Server'), ('workstation', 'Workstation')], default='server', max_length=255)),
-                ('arch', models.CharField(choices=[('64', '64 bit'), ('32', '32 bit')], default='64', max_length=255)),
-                ('expiry', models.DateTimeField(blank=True, null=True)),
-                ('token_key', models.CharField(max_length=255)),
-                ('install_flags', models.JSONField(blank=True, null=True)),
-                ('auth_token', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='deploytokens', to='knox.authtoken')),
-                ('client', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='deployclients', to='clients.client')),
-                ('site', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='deploysites', to='clients.site')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("uid", models.UUIDField(default=uuid.uuid4, editable=False)),
+                (
+                    "mon_type",
+                    models.CharField(
+                        choices=[("server", "Server"), ("workstation", "Workstation")],
+                        default="server",
+                        max_length=255,
+                    ),
+                ),
+                (
+                    "arch",
+                    models.CharField(
+                        choices=[("64", "64 bit"), ("32", "32 bit")],
+                        default="64",
+                        max_length=255,
+                    ),
+                ),
+                ("expiry", models.DateTimeField(blank=True, null=True)),
+                ("token_key", models.CharField(max_length=255)),
+                ("install_flags", models.JSONField(blank=True, null=True)),
+                (
+                    "auth_token",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="deploytokens",
+                        to="knox.authtoken",
+                    ),
+                ),
+                (
+                    "client",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="deployclients",
+                        to="clients.client",
+                    ),
+                ),
+                (
+                    "site",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="deploysites",
+                        to="clients.site",
+                    ),
+                ),
             ],
         ),
     ]

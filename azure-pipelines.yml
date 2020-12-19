@@ -28,18 +28,35 @@ jobs:
           cd /myagent/_work/1/s/api/tacticalrmm
           pip install --no-cache-dir --upgrade pip
           pip install --no-cache-dir setuptools==50.3.2 wheel==0.36.1
-          pip install --no-cache-dir -r requirements.txt -r requirements-test.txt
+          pip install --no-cache-dir -r requirements.txt -r requirements-test.txt -r requirements-dev.txt
         displayName: "Install Python Dependencies"
 
       - script: |
           cd /myagent/_work/1/s/api
-          git config user.email "admin@example.com"
-          git config user.name "Bob"
-          git fetch
-          git checkout develop
-          git pull
           source env/bin/activate
           cd /myagent/_work/1/s/api/tacticalrmm
           coverage run manage.py test -v 2
-          coveralls
+          if [ $? -ne 0 ]; then
+              exit 1
+          fi
         displayName: "Run django tests"
+
+      - script: |
+          cd /myagent/_work/1/s/api
+          source env/bin/activate
+          black --check tacticalrmm
+          if [ $? -ne 0 ]; then
+              exit 1
+          fi
+        displayName: "Codestyle black"
+
+      - script: |
+          cd /myagent/_work/1/s/api
+          source env/bin/activate
+          cd /myagent/_work/1/s/api/tacticalrmm
+          export CIRCLE_BRANCH=$BUILD_SOURCEBRANCH
+          coveralls
+        displayName: "coveralls"
+        env:
+          CIRCLECI: 1
+          CIRCLE_BUILD_NUM: $(Build.BuildNumber)

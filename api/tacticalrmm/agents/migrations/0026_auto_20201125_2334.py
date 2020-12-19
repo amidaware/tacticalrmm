@@ -6,13 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0025_auto_20201122_0407'),
+        ("agents", "0025_auto_20201122_0407"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='recoveryaction',
-            name='mode',
-            field=models.CharField(choices=[('salt', 'Salt'), ('mesh', 'Mesh'), ('command', 'Command'), ('rpc', 'Nats RPC'), ('checkrunner', 'Checkrunner')], default='mesh', max_length=50),
+            model_name="recoveryaction",
+            name="mode",
+            field=models.CharField(
+                choices=[
+                    ("salt", "Salt"),
+                    ("mesh", "Mesh"),
+                    ("command", "Command"),
+                    ("rpc", "Nats RPC"),
+                    ("checkrunner", "Checkrunner"),
+                ],
+                default="mesh",
+                max_length=50,
+            ),
         ),
     ]

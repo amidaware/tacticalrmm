@@ -36,7 +36,7 @@ Demo database resets every hour. Alot of features are disabled for obvious reaso
 ## Installation
 
 ### Requirements
-- VPS with 4GB ram (an install script is provided for Ubuntu Server 20.04)
+- VPS with 4GB ram (an install script is provided for Ubuntu Server 20.04 / Debian 10)
 - A domain you own with at least 3 subdomains
 - Google Authenticator app (2 factor is NOT optional)
 

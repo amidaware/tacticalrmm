@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="100"
+SCRIPT_VERSION="101"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -211,9 +211,9 @@ rm -rf /rmm/web/.quasar
 cd /rmm/web
 if [[ "${CURRENT_NPM_VER}" != "${LATEST_NPM_VER}" ]]; then
   rm -rf /rmm/web/node_modules
-  npm install
 fi
 
+npm install
 npm run build
 sudo rm -rf /var/www/rmm/dist
 sudo cp -pr /rmm/web/dist /var/www/rmm/

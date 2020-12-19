@@ -65,6 +65,26 @@ class CheckSerializer(serializers.ModelSerializer):
                     "Please enter a valid IP address or domain name"
                 )
 
+        if check_type == "cpuload" and not self.instance:
+            if (
+                Check.objects.filter(**self.context, check_type="cpuload")
+                .exclude(managed_by_policy=True)
+                .exists()
+            ):
+                raise serializers.ValidationError(
+                    "A cpuload check for this agent already exists"
+                )
+
+        if check_type == "memory" and not self.instance:
+            if (
+                Check.objects.filter(**self.context, check_type="memory")
+                .exclude(managed_by_policy=True)
+                .exists()
+            ):
+                raise serializers.ValidationError(
+                    "A memory check for this agent already exists"
+                )
+
         return val
 
 

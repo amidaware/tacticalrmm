@@ -32,7 +32,7 @@ MESH_VER = "0.7.24"
 SALT_MASTER_VER = "3002.2"
 
 # for the update script, bump when need to recreate venv or npm install
-PIP_VER = "4"
+PIP_VER = "5"
 NPM_VER = "4"
 
 DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="28"
+SCRIPT_VERSION="29"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 GREEN='\033[0;32m'
@@ -492,7 +492,7 @@ server {
     listen 443 ssl;
     server_name ${rmmdomain};
     client_max_body_size 300M;
-    access_log /rmm/api/tacticalrmm/tacticalrmm/private/log/access.log;
+    access_log /rmm/api/tacticalrmm/tacticalrmm/private/log/access.log combined if=\$ignore_ua;
     error_log /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
@@ -649,7 +649,7 @@ CELERYD_OPTS="--time-limit=2900 --autoscale=50,5"
 
 CELERYD_PID_FILE="/rmm/api/tacticalrmm/%n.pid"
 CELERYD_LOG_FILE="/var/log/celery/%n%I.log"
-CELERYD_LOG_LEVEL="INFO"
+CELERYD_LOG_LEVEL="ERROR"
 
 CELERYBEAT_PID_FILE="/rmm/api/tacticalrmm/beat.pid"
 CELERYBEAT_LOG_FILE="/var/log/celery/beat.log"

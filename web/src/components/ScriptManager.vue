@@ -75,7 +75,133 @@
             @click="downloadScript(selectedScript)"
           />
         </div>
+        <div class="row">
+          <q-btn
+            dense
+            flat
+            class="q-ml-sm"
+            :label="tableView ? 'Folder View' : 'Table View'"
+            :icon="tableView ? 'folder' : 'list'"
+            @click="setTableView(!tableView)"
+          />
+          <q-btn
+            dense
+            flat
+            class="q-ml-sm"
+            :label="showCommunityScripts ? 'Hide Community Scripts' : 'Show Community Scripts'"
+            :icon="showCommunityScripts ? 'visibility_off' : 'visibility'"
+            @click="setShowCommunityScripts(!showCommunityScripts)"
+          />
+          <q-space />
+          <q-input
+            v-model="search"
+            style="width: 300px"
+            label="Search"
+            dense
+            outlined
+            clearable
+            class="q-pr-md q-pb-xs"
+          >
+            <template v-slot:prepend>
+              <q-icon name="search" color="primary" />
+            </template>
+          </q-input>
+        </div>
+        <!-- List View -->
+        <q-tree
+          ref="folderTree"
+          v-if="!tableView"
+          style="min-height: 30vw; max-height: 30vw"
+          :nodes="tree"
+          :filter="search"
+          no-connectors
+          node-key="id"
+          :expanded.sync="expanded"
+          @update:selected="nodeSelected"
+          :selected.sync="selected"
+        >
+          <template v-slot:header-script="props">
+            <div :class="props.node.id === props.tree.selected ? 'text-primary' : ''">
+              <q-icon v-if="props.node.favorite" color="yellow-8" name="star" size="sm" class="q-px-sm" />
+              <q-icon v-else color="yellow-8" name="star_outline" size="sm" class="q-px-sm" />
+
+              <q-icon v-if="props.node.shell === 'powershell'" name="mdi-powershell" color="primary">
+                <q-tooltip> Powershell </q-tooltip>
+              </q-icon>
+              <q-icon v-else-if="props.node.shell === 'python'" name="mdi-language-python" color="primary">
+                <q-tooltip> Python </q-tooltip>
+              </q-icon>
+              <q-icon v-else-if="props.node.shell === 'cmd'" name="mdi-script-text" color="primary">
+                <q-tooltip> Batch </q-tooltip>
+              </q-icon>
+
+              <span class="q-pl-xs text-weight-bold">{{ props.node.name }}</span>
+              <span class="q-pl-xs">{{ props.node.description }}</span>
+            </div>
+
+            <!-- Context Menu -->
+            <q-menu context-menu>
+              <q-list dense style="min-width: 200px">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="editScript(props.node)"
+                  id="context-edit"
+                  v-if="props.node.script_type !== 'builtin'"
+                >
+                  <q-item-section side>
+                    <q-icon name="edit" />
+                  </q-item-section>
+                  <q-item-section>Edit</q-item-section>
+                </q-item>
+
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="deleteScript(props.node.id)"
+                  id="context-delete"
+                  v-if="props.node.script_type !== 'builtin'"
+                >
+                  <q-item-section side>
+                    <q-icon name="delete" />
+                  </q-item-section>
+                  <q-item-section>Delete</q-item-section>
+                </q-item>
+
+                <q-item clickable v-close-popup @click="favoriteScript(props.node)">
+                  <q-item-section side>
+                    <q-icon name="star" />
+                  </q-item-section>
+                  <q-item-section>{{ favoriteText(props.node.favorite) }}</q-item-section>
+                </q-item>
+
+                <q-separator></q-separator>
+
+                <q-item clickable v-close-popup @click="viewCode(props.node)" id="context-view">
+                  <q-item-section side>
+                    <q-icon name="remove_red_eye" />
+                  </q-item-section>
+                  <q-item-section>View Code</q-item-section>
+                </q-item>
+
+                <q-item clickable v-close-popup @click="downloadScript(props.node)" id="context-download">
+                  <q-item-section side>
+                    <q-icon name="cloud_download" />
+                  </q-item-section>
+                  <q-item-section>Download Script</q-item-section>
+                </q-item>
+
+                <q-separator></q-separator>
+
+                <q-item clickable v-close-popup>
+                  <q-item-section>Close</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+          </template>
+        </q-tree>
         <q-table
+          v-if="tableView"
           style="min-height: 30vw; max-height: 30vw"
           dense
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
@@ -97,32 +223,13 @@
               <q-icon name="star" color="yellow-8" size="sm" />
             </q-th>
           </template>
-          <template v-slot:top>
-            <q-btn
-              dense
-              flat
-              class="q-ml-sm"
-              :label="showCommunityScripts ? 'Hide Community Scripts' : 'Show Community Scripts'"
-              :icon="showCommunityScripts ? 'visibility_off' : 'visibility'"
-              @click="setShowCommunityScripts(!showCommunityScripts)"
-            />
-            <q-space />
-            <q-input
-              v-model="search"
-              style="width: 300px"
-              label="Search"
-              dense
-              outlined
-              clearable
-              class="q-pr-md q-pb-xs"
-            >
-              <template v-slot:prepend>
-                <q-icon name="search" color="primary" />
-              </template>
-            </q-input>
+
+          <template v-slot:header-cell-shell="props">
+            <q-th :props="props" auto-width> Shell </q-th>
           </template>
 
           <template slot="body" slot-scope="props" :props="props">
+            <!-- Table View -->
             <q-tr
               :class="`${rowSelectedClass(props.row.id)} cursor-pointer`"
               @click="selectedScript = props.row"
@@ -190,9 +297,19 @@
               <q-td>
                 <q-icon v-if="props.row.favorite" color="yellow-8" name="star" size="sm" />
               </q-td>
+              <q-td>
+                <q-icon v-if="props.row.shell === 'powershell'" name="mdi-powershell" color="primary" size="sm">
+                  <q-tooltip> Powershell </q-tooltip>
+                </q-icon>
+                <q-icon v-else-if="props.row.shell === 'python'" name="mdi-language-python" color="primary" size="sm">
+                  <q-tooltip> Python </q-tooltip>
+                </q-icon>
+                <q-icon v-else-if="props.row.shell === 'cmd'" name="mdi-script-text" color="primary" size="sm">
+                  <q-tooltip> Batch </q-tooltip>
+                </q-icon>
+              </q-td>
               <q-td>{{ props.row.name }}</q-td>
               <q-td>{{ props.row.category }}</q-td>
-              <q-td>{{ props.row.shell }}</q-td>
               <q-td>
                 {{ truncateText(props.row.description) }}
                 <q-tooltip v-if="props.row.description.length >= 60" content-style="font-size: 12px">{{
@@ -233,6 +350,9 @@ export default {
       selectedScript: {},
       showScriptUploadModal: false,
       search: "",
+      tableView: true,
+      expanded: [],
+      selected: null,
       pagination: {
         rowsPerPage: 0,
         sortBy: "favorite",
@@ -247,6 +367,13 @@ export default {
           sortable: true,
         },
         {
+          name: "shell",
+          label: "Shell",
+          field: "shell",
+          align: "left",
+          sortable: true,
+        },
+        {
           name: "name",
           label: "Name",
           field: "name",
@@ -257,13 +384,6 @@ export default {
           name: "category",
           label: "Category",
           field: "category",
-          align: "left",
-          sortable: true,
-        },
-        {
-          name: "shell",
-          label: "Shell",
-          field: "shell",
           align: "left",
           sortable: true,
         },
@@ -388,6 +508,19 @@ export default {
           this.getScripts();
         });
     },
+    setTableView(view) {
+      this.tableView = view;
+      this.selectedScript = {};
+      this.selected = null;
+      this.expanded = [];
+    },
+    nodeSelected(nodeid) {
+      if (nodeid) {
+        this.selectedScript = this.$refs.folderTree.getNodeByKey(nodeid);
+      } else {
+        this.selectedScript = {};
+      }
+    },
   },
   computed: {
     ...mapState(["showCommunityScripts"]),
@@ -407,6 +540,67 @@ export default {
     },
     isRowSelected() {
       return this.selectedScript.id !== null && this.selectedScript.id !== undefined;
+    },
+    tree() {
+      if (this.tableView) {
+        return [];
+      } else {
+        let nodes = [];
+        let unassigned = [];
+        let community = [];
+
+        let scriptsTemp = Object.assign([], this.visibleScripts);
+
+        this.categories.forEach(category => {
+          let temp = {
+            icon: "folder",
+            iconColor: "yellow-9",
+            label: category,
+            selectable: false,
+            id: category,
+            children: [],
+          };
+          for (var i = scriptsTemp.length - 1; i >= 0; i--) {
+            if (scriptsTemp[i].category === category) {
+              temp.children.push({ label: scriptsTemp[i].name, header: "script", ...scriptsTemp[i] });
+              scriptsTemp.splice(i, 1);
+            } else if (scriptsTemp[i].category === "Community") {
+              community.push({ label: scriptsTemp[i].name, header: "script", ...scriptsTemp[i] });
+              scriptsTemp.splice(i, 1);
+            } else if (!scriptsTemp[i].category) {
+              unassigned.push({ label: scriptsTemp[i].name, header: "script", ...scriptsTemp[i] });
+              scriptsTemp.splice(i, 1);
+            }
+          }
+
+          nodes.push(temp);
+        });
+
+        if (unassigned.length > 0) {
+          let temp = {
+            icon: "folder",
+            iconColor: "yellow-9",
+            label: "Unassigned",
+            id: "Unassigned",
+            selectable: false,
+            children: unassigned,
+          };
+          nodes.push(temp);
+        }
+
+        if (community.length > 0) {
+          let temp = {
+            icon: "folder",
+            iconColor: "yellow-9",
+            label: "Community",
+            id: "Community",
+            selectable: false,
+            children: community,
+          };
+          nodes.push(temp);
+        }
+        return nodes;
+      }
     },
   },
   mounted() {

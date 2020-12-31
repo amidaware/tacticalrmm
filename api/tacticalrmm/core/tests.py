@@ -1,6 +1,7 @@
 from tacticalrmm.test import TacticalTestCase
 from core.tasks import core_maintenance_tasks
 from unittest.mock import patch
+from core.models import CoreSettings
 from model_bakery import baker, seq
 
 
@@ -33,6 +34,51 @@ class TestCoreTasks(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("get", url)
+
+    @patch("automation.tasks.generate_all_agent_checks_task.delay")
+    def test_edit_coresettings(self, generate_all_agent_checks_task):
+        url = "/core/editsettings/"
+
+        # setup
+        policies = baker.make("Policy", _quantity=2)
+        # test normal request
+        data = {
+            "smtp_from_email": "newexample@example.com",
+            "mesh_token": "New_Mesh_Token",
+        }
+        r = self.client.patch(url, data)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(CoreSettings.objects.first().smtp_from_email, data["smtp_from_email"])
+        self.assertEqual(CoreSettings.objects.first().mesh_token, data["mesh_token"])
+
+        generate_all_agent_checks_task.assert_not_called()
+
+        # test adding policy
+        data = {
+            "workstation_policy": policies[0].id,
+            "server_policy": policies[1].id,
+        }
+        r = self.client.patch(url, data)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(CoreSettings.objects.first().server_policy.id, policies[1].id)
+        self.assertEqual(CoreSettings.objects.first().workstation_policy.id, policies[0].id)
+
+        self.assertEqual(generate_all_agent_checks_task.call_count, 2)
+
+        generate_all_agent_checks_task.reset_mock()
+
+        # test remove policy
+        data = {
+            "workstation_policy": "",
+        }
+        r = self.client.patch(url, data)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(CoreSettings.objects.first().workstation_policy, None)
+
+        self.assertEqual(generate_all_agent_checks_task.call_count, 1)
+
+        self.check_not_authenticated("patch", url)
+
 
     @patch("autotasks.tasks.remove_orphaned_win_tasks.delay")
     def test_ui_maintenance_actions(self, remove_orphaned_win_tasks):

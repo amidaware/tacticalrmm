@@ -48,7 +48,9 @@ class TestCoreTasks(TacticalTestCase):
         }
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(CoreSettings.objects.first().smtp_from_email, data["smtp_from_email"])
+        self.assertEqual(
+            CoreSettings.objects.first().smtp_from_email, data["smtp_from_email"]
+        )
         self.assertEqual(CoreSettings.objects.first().mesh_token, data["mesh_token"])
 
         generate_all_agent_checks_task.assert_not_called()
@@ -61,7 +63,9 @@ class TestCoreTasks(TacticalTestCase):
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(CoreSettings.objects.first().server_policy.id, policies[1].id)
-        self.assertEqual(CoreSettings.objects.first().workstation_policy.id, policies[0].id)
+        self.assertEqual(
+            CoreSettings.objects.first().workstation_policy.id, policies[0].id
+        )
 
         self.assertEqual(generate_all_agent_checks_task.call_count, 2)
 
@@ -78,7 +82,6 @@ class TestCoreTasks(TacticalTestCase):
         self.assertEqual(generate_all_agent_checks_task.call_count, 1)
 
         self.check_not_authenticated("patch", url)
-
 
     @patch("autotasks.tasks.remove_orphaned_win_tasks.delay")
     def test_ui_maintenance_actions(self, remove_orphaned_win_tasks):

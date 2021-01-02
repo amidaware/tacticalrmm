@@ -2,6 +2,9 @@
 
 set -e
 
+: "${APP_PORT:=80}"
+: "${API_PORT:=80}"
+
 CERT_PRIV_PATH=${TACTICAL_DIR}/certs/privkey.pem
 CERT_PUB_PATH=${TACTICAL_DIR}/certs/fullchain.pem
 
@@ -31,7 +34,7 @@ server  {
 
     location / {
         #Using variable to disable start checks
-        set \$api http://tactical-backend;
+        set \$api http://tactical-backend:${API_PORT};
 
         proxy_pass \$api;
         proxy_http_version  1.1;
@@ -95,7 +98,7 @@ server  {
 
     location / {
         #Using variable to disable start checks
-        set \$app http://tactical-frontend;
+        set \$app http://tactical-frontend:${APP_PORT};
 
         proxy_pass \$app;
         proxy_http_version  1.1;

@@ -581,15 +581,13 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 400)
 
-        payload = {
+        """ payload = {
             "mode": "command",
             "monType": "workstations",
             "target": "client",
             "client": self.agent.client.id,
             "site": None,
-            "agentPKs": [
-                self.agent.pk,
-            ],
+            "agentPKs": [],
             "cmd": "gpupdate /force",
             "timeout": 300,
             "shell": "cmd",
@@ -597,7 +595,7 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
-        bulk_command.assert_called_with([self.agent.pk], "gpupdate /force", "cmd", 300)
+        bulk_command.assert_called_with([self.agent.pk], "gpupdate /force", "cmd", 300) """
 
         payload = {
             "mode": "command",
@@ -792,8 +790,8 @@ class TestAgentTasks(TacticalTestCase):
         self.assertEqual(salt_batch_async.call_count, 4)
         self.assertEqual(ret.status, "SUCCESS")
 
-    @patch("agents.models.Agent.salt_api_async")
-    def test_agent_update(self, salt_api_async):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_agent_update(self, nats_cmd):
         from agents.tasks import agent_update
 
         agent_noarch = baker.make_recipe(
@@ -810,15 +808,15 @@ class TestAgentTasks(TacticalTestCase):
             0,
         )
 
-        agent64_nats = baker.make_recipe(
+        agent64_111 = baker.make_recipe(
             "agents.agent",
             operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
             version="1.1.11",
         )
 
-        r = agent_update(agent64_nats.pk)
+        r = agent_update(agent64_111.pk)
         self.assertEqual(r, "created")
-        action = PendingAction.objects.get(agent__pk=agent64_nats.pk)
+        action = PendingAction.objects.get(agent__pk=agent64_111.pk)
         self.assertEqual(action.action_type, "agentupdate")
         self.assertEqual(action.status, "pending")
         self.assertEqual(action.details["url"], settings.DL_64)
@@ -827,40 +825,25 @@ class TestAgentTasks(TacticalTestCase):
         )
         self.assertEqual(action.details["version"], settings.LATEST_AGENT_VER)
 
-        agent64_nats_before16 = baker.make_recipe(
+        agent64 = baker.make_recipe(
             "agents.agent",
             operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version="1.1.4",
+            version="1.1.12",
         )
-
-        r = agent_update(agent64_nats_before16.pk)
+        nats_cmd.return_value = "ok"
+        r = agent_update(agent64.pk)
         self.assertEqual(r, "created")
-        action = PendingAction.objects.get(agent__pk=agent64_nats_before16.pk)
-        self.assertEqual(action.action_type, "agentupdate")
-        self.assertEqual(action.status, "pending")
-        self.assertEqual(
-            action.details["url"],
-            "https://github.com/wh1te909/rmmagent/releases/download/v1.1.5/winagent-v1.1.5.exe",
-        )
-        self.assertEqual(action.details["inno"], "winagent-v1.1.5.exe")
-        self.assertEqual(action.details["version"], "1.1.5")
-
-        agent64_salt = baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version="1.0.0",
-        )
-        salt_api_async.return_value = True
-        r = agent_update(agent64_salt.pk)
-        self.assertEqual(r, "salt")
-        salt_api_async.assert_called_with(
-            func="win_agent.do_agent_update_v2",
-            kwargs={
-                "inno": "winagent-v1.1.5.exe",
-                "url": "https://github.com/wh1te909/rmmagent/releases/download/v1.1.5/winagent-v1.1.5.exe",
+        nats_cmd.assert_called_with(
+            {
+                "func": "agentupdate",
+                "payload": {
+                    "url": settings.DL_64,
+                    "version": settings.LATEST_AGENT_VER,
+                    "inno": f"winagent-v{settings.LATEST_AGENT_VER}.exe",
+                },
             },
+            wait=False,
         )
-        salt_api_async.reset_mock()
 
     """ @patch("agents.models.Agent.salt_api_async")
     @patch("agents.tasks.sleep", return_value=None)

@@ -111,7 +111,8 @@
         <q-tree
           ref="folderTree"
           v-if="!tableView"
-          style="min-height: 30vw; max-height: 30vw"
+          style="min-height: 30vh; max-height: 65vh"
+          class="scroll"
           :nodes="tree"
           :filter="search"
           no-connectors

@@ -28,6 +28,21 @@ def _check_agent_service(pk: int) -> None:
         asyncio.run(agent.nats_cmd(data, wait=False))
 
 
+def _check_in_full(pk: int) -> None:
+    agent = Agent.objects.get(pk=pk)
+    asyncio.run(agent.nats_cmd({"func": "checkinfull"}, wait=False))
+
+
+@app.task
+def check_in_task() -> None:
+    q = Agent.objects.only("pk", "version")
+    agents: List[int] = [
+        i.pk for i in q if pyver.parse(i.version) >= pyver.parse("1.1.12")
+    ]
+    with ThreadPoolExecutor(max_workers=30) as executor:
+        executor.map(_check_in_full, agents)
+
+
 @app.task
 def monitor_agents_task() -> None:
     q = Agent.objects.all()
@@ -271,3 +286,10 @@ def agent_outages_task():
 
                 if agent.overdue_text_alert and not agent.maintenance_mode:
                     agent_outage_sms_task.delay(pk=outage.pk)
+
+
+@app.task
+def install_salt_task(pk: int) -> None:
+    sleep(20)
+    agent = Agent.objects.get(pk=pk)
+    asyncio.run(agent.nats_cmd({"func": "installsalt"}, wait=False))

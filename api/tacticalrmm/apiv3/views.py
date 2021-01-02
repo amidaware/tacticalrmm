@@ -30,6 +30,7 @@ from agents.tasks import (
     agent_recovery_email_task,
     agent_recovery_sms_task,
     sync_salt_modules_task,
+    install_salt_task,
 )
 from winupdate.tasks import check_for_updates_task
 from software.tasks import install_chocolatey
@@ -625,4 +626,14 @@ class Installer(APIView):
                 f"Old installer detected (version {ver} ). Latest version is {settings.LATEST_AGENT_VER} Please generate a new installer from the RMM"
             )
 
+        return Response("ok")
+
+
+class InstallSalt(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, agentid):
+        agent = get_object_or_404(Agent, agent_id=agentid)
+        install_salt_task.delay(agent.pk)
         return Response("ok")

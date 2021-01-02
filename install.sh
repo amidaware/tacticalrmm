@@ -1,7 +1,9 @@
 #!/bin/bash
 
-SCRIPT_VERSION="29"
+SCRIPT_VERSION="30"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
+
+sudo apt install -y curl wget
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -188,8 +190,6 @@ sudo adduser --no-create-home --disabled-password --gecos "" saltapi
 echo "saltapi:${SALTPW}" | sudo chpasswd
 
 print_green 'Installing golang'
-
-sudo apt install -y curl wget
 
 sudo mkdir -p /usr/local/rmmgo
 go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)

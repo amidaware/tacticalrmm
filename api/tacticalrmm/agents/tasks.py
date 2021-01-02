@@ -28,6 +28,21 @@ def _check_agent_service(pk: int) -> None:
         asyncio.run(agent.nats_cmd(data, wait=False))
 
 
+def _check_in_full(pk: int) -> None:
+    agent = Agent.objects.get(pk=pk)
+    asyncio.run(agent.nats_cmd({"func": "checkinfull"}, wait=False))
+
+
+@app.task
+def check_in_task() -> None:
+    q = Agent.objects.only("pk", "version")
+    agents: List[int] = [
+        i.pk for i in q if pyver.parse(i.version) >= pyver.parse("1.1.12")
+    ]
+    with ThreadPoolExecutor(max_workers=30) as executor:
+        executor.map(_check_in_full, agents)
+
+
 @app.task
 def monitor_agents_task() -> None:
     q = Agent.objects.all()
@@ -43,55 +58,46 @@ def agent_update(pk: int) -> str:
         logger.warning(f"Unable to determine arch on {agent.hostname}. Skipping.")
         return "noarch"
 
-    # force an update to 1.1.5 since 1.1.6 needs agent to be on 1.1.5 first
-    if pyver.parse(agent.version) < pyver.parse("1.1.5"):
-        version = "1.1.5"
-        if agent.arch == "64":
-            url = "https://github.com/wh1te909/rmmagent/releases/download/v1.1.5/winagent-v1.1.5.exe"
-            inno = "winagent-v1.1.5.exe"
-        elif agent.arch == "32":
-            url = "https://github.com/wh1te909/rmmagent/releases/download/v1.1.5/winagent-v1.1.5-x86.exe"
-            inno = "winagent-v1.1.5-x86.exe"
-        else:
-            return "nover"
-    else:
-        version = settings.LATEST_AGENT_VER
-        url = agent.winagent_dl
-        inno = agent.win_inno_exe
+    version = settings.LATEST_AGENT_VER
+    url = agent.winagent_dl
+    inno = agent.win_inno_exe
 
     if agent.has_nats:
-        if agent.pendingactions.filter(
-            action_type="agentupdate", status="pending"
-        ).exists():
-            action = agent.pendingactions.filter(
+        if pyver.parse(agent.version) <= pyver.parse("1.1.11"):
+            if agent.pendingactions.filter(
                 action_type="agentupdate", status="pending"
-            ).last()
-            if pyver.parse(action.details["version"]) < pyver.parse(version):
-                action.delete()
-            else:
-                return "pending"
+            ).exists():
+                action = agent.pendingactions.filter(
+                    action_type="agentupdate", status="pending"
+                ).last()
+                if pyver.parse(action.details["version"]) < pyver.parse(version):
+                    action.delete()
+                else:
+                    return "pending"
 
-        PendingAction.objects.create(
-            agent=agent,
-            action_type="agentupdate",
-            details={
-                "url": url,
-                "version": version,
-                "inno": inno,
-            },
-        )
+            PendingAction.objects.create(
+                agent=agent,
+                action_type="agentupdate",
+                details={
+                    "url": url,
+                    "version": version,
+                    "inno": inno,
+                },
+            )
+        else:
+            nats_data = {
+                "func": "agentupdate",
+                "payload": {
+                    "url": url,
+                    "version": version,
+                    "inno": inno,
+                },
+            }
+            asyncio.run(agent.nats_cmd(nats_data, wait=False))
+
         return "created"
-    # TODO
-    # Salt is deprecated, remove this once salt is gone
-    else:
-        agent.salt_api_async(
-            func="win_agent.do_agent_update_v2",
-            kwargs={
-                "inno": inno,
-                "url": url,
-            },
-        )
-        return "salt"
+
+    return "not supported"
 
 
 @app.task
@@ -280,3 +286,10 @@ def agent_outages_task():
 
                 if agent.overdue_text_alert and not agent.maintenance_mode:
                     agent_outage_sms_task.delay(pk=outage.pk)
+
+
+@app.task
+def install_salt_task(pk: int) -> None:
+    sleep(20)
+    agent = Agent.objects.get(pk=pk)
+    asyncio.run(agent.nats_cmd({"func": "installsalt"}, wait=False))

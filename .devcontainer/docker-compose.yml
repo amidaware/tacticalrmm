@@ -1,0 +1,232 @@
+version: '3.4'
+
+services:
+  api-dev:
+    image: api-dev
+    build:
+      context: .
+      dockerfile: ./api.dockerfile
+    command: ["tactical-api"]
+    ports:
+      - 8000:8000
+    volumes:
+      - tactical-data-dev:/opt/tactical
+      - ..:/workspace:cached
+    networks:
+      dev:
+        aliases: 
+          - tactical-backend
+
+  app-dev:
+    image: node:12-alpine
+    ports:
+      - 8080:8080
+    command: /bin/sh -c "npm install && npm run serve -- --host 0.0.0.0 --port 8080"
+    working_dir: /workspace/web
+    volumes:
+      - ..:/workspace:cached
+    networks:
+      dev:
+        aliases: 
+          - tactical-frontend
+
+  # salt master and api
+  salt-dev:
+    image: ${IMAGE_REPO}tactical-salt:${VERSION}
+    restart: always
+    volumes:
+      - tactical-data-dev:/opt/tactical
+      - salt-data-dev:/etc/salt
+    ports:
+      - "4505:4505"
+      - "4506:4506"
+    networks:
+      dev:
+        aliases:
+          - tactical-salt
+  
+  # nats
+  nats-dev:
+    image: ${IMAGE_REPO}tactical-nats:${VERSION}
+    restart: always
+    ports:
+      - "4222:4222"
+    volumes:
+      - tactical-data-dev:/opt/tactical
+    networks:
+      dev:
+        aliases:
+          - ${API_HOST}
+          - tactical-nats
+
+  # meshcentral container
+  meshcentral-dev:
+    image: ${IMAGE_REPO}tactical-meshcentral:${VERSION}
+    restart: always
+    environment: 
+      MESH_HOST: ${MESH_HOST}
+      MESH_USER: ${MESH_USER}
+      MESH_PASS: ${MESH_PASS}
+      MONGODB_USER: ${MONGODB_USER}
+      MONGODB_PASSWORD: ${MONGODB_PASSWORD}
+      NGINX_HOST_IP: 172.21.0.20
+    networks:
+      dev:
+        aliases:
+          - tactical-meshcentral
+          - ${MESH_HOST}
+    volumes:
+      - tactical-data-dev:/opt/tactical
+      - mesh-data-dev:/home/node/app/meshcentral-data
+    depends_on:
+      - mongodb-dev
+
+  # mongodb container for meshcentral
+  mongodb-dev:
+    image: mongo:4.4
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+      MONGO_INITDB_DATABASE: meshcentral
+    networks:
+      dev:
+        aliases:
+          - tactical-mongodb
+    volumes:
+      - mongo-dev-data:/data/db
+
+  # postgres database for api service
+  postgres-dev:
+    image: postgres:13-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: tacticalrmm
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASS}
+    volumes:
+      - postgres-data-dev:/var/lib/postgresql/data
+    networks:
+      dev:
+        aliases:
+          - tactical-postgres
+
+  # redis container for celery tasks
+  redis-dev:
+    restart: always
+    image: redis:6.0-alpine
+    networks:
+      dev:
+        aliases:
+          - tactical-redis
+
+  init-dev:
+    image: api-dev
+    build:
+      context: .
+      dockerfile: ./api.dockerfile
+    restart: on-failure
+    command: ["tactical-init-dev"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASS: ${POSTGRES_PASS}
+      APP_HOST: ${APP_HOST}
+      API_HOST: ${API_HOST}
+      MESH_HOST: ${MESH_HOST}
+      TRMM_USER: ${TRMM_USER}
+      TRMM_PASS: ${TRMM_PASS}
+    depends_on:
+      - postgres-dev
+      - meshcentral-dev
+    networks:
+      - dev
+    volumes:
+      - tactical-data-dev:/opt/tactical
+      - ..:/workspace:cached
+
+  # container for celery worker service
+  celery-dev:
+    image: api-dev
+    build:
+      context: .
+      dockerfile: ./api.dockerfile
+    command: ["tactical-celery-dev"]
+    restart: always
+    networks:
+      - dev
+    volumes:
+      - tactical-data-dev:/opt/tactical
+      - ..:/workspace:cached
+    depends_on:
+      - postgres-dev
+      - redis-dev
+
+  # container for celery beat service
+  celerybeat-dev:
+    image: api-dev
+    build:
+      context: .
+      dockerfile: ./api.dockerfile
+    command: ["tactical-celerybeat-dev"]
+    restart: always
+    networks:
+      - dev
+    volumes:
+      - tactical-data-dev:/opt/tactical
+      - ..:/workspace:cached
+    depends_on:
+      - postgres-dev
+      - redis-dev
+
+  # container for celery winupdate tasks
+  celerywinupdate-dev:
+    image: api-dev
+    build:
+      context: .
+      dockerfile: ./api.dockerfile
+    command: ["tactical-celerywinupdate-dev"]
+    restart: always
+    networks:
+      - dev
+    volumes:
+      - tactical-data-dev:/opt/tactical
+      - ..:/workspace:cached
+    depends_on:
+      - postgres-dev
+      - redis-dev
+
+  nginx-dev:
+  # container for tactical reverse proxy
+    image: ${IMAGE_REPO}tactical-nginx:${VERSION}
+    restart: always
+    environment:
+      APP_HOST: ${APP_HOST}
+      API_HOST: ${API_HOST}
+      MESH_HOST: ${MESH_HOST}
+      CERT_PUB_KEY: ${CERT_PUB_KEY}
+      CERT_PRIV_KEY: ${CERT_PRIV_KEY}
+      APP_PORT: 8080
+      API_PORT: 8000
+    networks:
+      dev:
+        ipv4_address: 172.21.0.20
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - tactical-data-dev:/opt/tactical
+
+volumes:
+  tactical-data-dev:
+  postgres-data-dev:
+  mongo-dev-data:
+  mesh-data-dev:
+  salt-data-dev:
+
+networks:
+  dev:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.21.0.0/24  

@@ -55,6 +55,52 @@ class TestCheckViews(TacticalTestCase):
         resp = self.client.post(url, invalid_payload, format="json")
         self.assertEqual(resp.status_code, 400)
 
+    def test_add_cpuload_check(self):
+        url = "/checks/checks/"
+        agent = baker.make_recipe("agents.agent")
+        payload = {
+            "pk": agent.pk,
+            "check": {
+                "check_type": "cpuload",
+                "threshold": 66,
+                "fails_b4_alert": 9,
+            },
+        }
+
+        resp = self.client.post(url, payload, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        payload["threshold"] = 87
+        resp = self.client.post(url, payload, format="json")
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(
+            resp.json()["non_field_errors"][0],
+            "A cpuload check for this agent already exists",
+        )
+
+    def test_add_memory_check(self):
+        url = "/checks/checks/"
+        agent = baker.make_recipe("agents.agent")
+        payload = {
+            "pk": agent.pk,
+            "check": {
+                "check_type": "memory",
+                "threshold": 78,
+                "fails_b4_alert": 1,
+            },
+        }
+
+        resp = self.client.post(url, payload, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        payload["threshold"] = 55
+        resp = self.client.post(url, payload, format="json")
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(
+            resp.json()["non_field_errors"][0],
+            "A memory check for this agent already exists",
+        )
+
     def test_get_policy_disk_check(self):
         # setup data
         policy = baker.make("automation.Policy")

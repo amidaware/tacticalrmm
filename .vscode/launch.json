@@ -14,6 +14,20 @@
                 "0.0.0.0:8000"
             ],
             "django": true
+        },
+        {
+            "name": "Django: Docker Remote Attach",
+            "type": "python",
+            "request": "attach",
+            "port": 5678,
+            "host": "localhost",
+            "preLaunchTask": "docker debug",
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/api/tacticalrmm",
+                    "remoteRoot": "/workspace/api/tacticalrmm"
+                }
+            ]
         }
     ]
 }

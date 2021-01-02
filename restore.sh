@@ -7,8 +7,10 @@ pgpw="hunter2"
 
 #####################################################
 
-SCRIPT_VERSION="10"
+SCRIPT_VERSION="11"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
+
+sudo apt install -y curl wget
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -90,7 +92,6 @@ sudo systemctl restart systemd-journald.service
 print_green 'Installing golang'
 
 sudo apt update
-sudo apt install -y curl wget
 sudo mkdir -p /usr/local/rmmgo
 go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)
 wget https://golang.org/dl/go1.15.5.linux-amd64.tar.gz -P ${go_tmp}

@@ -1,0 +1,19 @@
+version: '3.4'
+
+services:
+  api-dev:
+    image: api-dev
+    build:
+      context: .
+      dockerfile: ./api.dockerfile
+    command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 manage.py runserver 0.0.0.0:8000 --nothreading --noreload"]
+    ports:
+      - 8000:8000
+      - 5678:5678
+    volumes:
+      - tactical-data-dev:/opt/tactical
+      - ..:/workspace:cached
+    networks:
+      dev:
+        aliases: 
+          - tactical-backend

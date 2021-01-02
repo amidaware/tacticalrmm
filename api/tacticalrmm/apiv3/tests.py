@@ -61,7 +61,7 @@ class TestAPIv3(TacticalTestCase):
     def test_sysinfo(self):
         # TODO replace this with golang wmi sample data
 
-        url = f"/api/v3/sysinfo/"
+        url = "/api/v3/sysinfo/"
         with open(
             os.path.join(
                 settings.BASE_DIR, "tacticalrmm/test_data/wmi_python_agent.json"
@@ -77,7 +77,7 @@ class TestAPIv3(TacticalTestCase):
         self.check_not_authenticated("patch", url)
 
     def test_hello_patch(self):
-        url = f"/api/v3/hello/"
+        url = "/api/v3/hello/"
         payload = {
             "agent_id": self.agent.agent_id,
             "logged_in_username": "None",
@@ -92,3 +92,12 @@ class TestAPIv3(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("patch", url)
+
+    @patch("agents.tasks.install_salt_task.delay")
+    def test_install_salt(self, mock_task):
+        url = f"/api/v3/{self.agent.agent_id}/installsalt/"
+        r = self.client.get(url, format="json")
+        self.assertEqual(r.status_code, 200)
+        mock_task.assert_called_with(self.agent.pk)
+
+        self.check_not_authenticated("get", url)

@@ -39,7 +39,7 @@ def check_in_task() -> None:
     agents: List[int] = [
         i.pk for i in q if pyver.parse(i.version) >= pyver.parse("1.1.12")
     ]
-    with ThreadPoolExecutor(max_workers=30) as executor:
+    with ThreadPoolExecutor() as executor:
         executor.map(_check_in_full, agents)
 
 
@@ -47,7 +47,7 @@ def check_in_task() -> None:
 def monitor_agents_task() -> None:
     q = Agent.objects.all()
     agents: List[int] = [i.pk for i in q if i.has_nats and i.status != "online"]
-    with ThreadPoolExecutor(max_workers=15) as executor:
+    with ThreadPoolExecutor() as executor:
         executor.map(_check_agent_service, agents)
 
 

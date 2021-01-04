@@ -120,6 +120,7 @@
           :expanded.sync="expanded"
           @update:selected="nodeSelected"
           :selected.sync="selected"
+          no-results-label="No Scripts Found"
         >
           <template v-slot:header-script="props">
             <div :class="props.node.id === props.tree.selected ? 'text-primary' : ''">
@@ -203,7 +204,7 @@
         </q-tree>
         <q-table
           v-if="tableView"
-          style="min-height: 30vw; max-height: 30vw"
+          style="min-height: 30vh; max-height: 65vh"
           dense
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="settings-tbl-sticky scroll"
@@ -218,6 +219,7 @@
           virtual-scroll
           flat
           :rows-per-page-options="[0]"
+          no-data-label="No Scripts Found"
         >
           <template v-slot:header-cell-favorite="props">
             <q-th :props="props" auto-width>
@@ -551,8 +553,13 @@ export default {
         let community = [];
 
         let scriptsTemp = Object.assign([], this.visibleScripts);
+        let categoriesTemp = Object.assign([], this.categories);
 
-        this.categories.forEach(category => {
+        if (this.showCommunityScripts) categoriesTemp.push("Community");
+
+        const sorted = categoriesTemp.sort();
+
+        sorted.forEach(category => {
           let temp = {
             icon: "folder",
             iconColor: "yellow-9",
@@ -564,9 +571,6 @@ export default {
           for (var i = scriptsTemp.length - 1; i >= 0; i--) {
             if (scriptsTemp[i].category === category) {
               temp.children.push({ label: scriptsTemp[i].name, header: "script", ...scriptsTemp[i] });
-              scriptsTemp.splice(i, 1);
-            } else if (scriptsTemp[i].category === "Community") {
-              community.push({ label: scriptsTemp[i].name, header: "script", ...scriptsTemp[i] });
               scriptsTemp.splice(i, 1);
             } else if (!scriptsTemp[i].category) {
               unassigned.push({ label: scriptsTemp[i].name, header: "script", ...scriptsTemp[i] });
@@ -589,17 +593,6 @@ export default {
           nodes.push(temp);
         }
 
-        if (community.length > 0) {
-          let temp = {
-            icon: "folder",
-            iconColor: "yellow-9",
-            label: "Community",
-            id: "Community",
-            selectable: false,
-            children: community,
-          };
-          nodes.push(temp);
-        }
         return nodes;
       }
     },

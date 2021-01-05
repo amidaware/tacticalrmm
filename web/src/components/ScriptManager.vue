@@ -111,7 +111,7 @@
         <q-tree
           ref="folderTree"
           v-if="!tableView"
-          style="min-height: 30vh; max-height: 65vh"
+          style="min-height: 65vh; max-height: 65vh"
           class="scroll"
           :nodes="tree"
           :filter="search"
@@ -121,6 +121,7 @@
           @update:selected="nodeSelected"
           :selected.sync="selected"
           no-results-label="No Scripts Found"
+          no-nodes-label="No Scripts Found"
         >
           <template v-slot:header-script="props">
             <div :class="props.node.id === props.tree.selected ? 'text-primary' : ''">
@@ -204,7 +205,7 @@
         </q-tree>
         <q-table
           v-if="tableView"
-          style="min-height: 30vh; max-height: 65vh"
+          style="min-height: 65vh; max-height: 65vh"
           dense
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="settings-tbl-sticky scroll"
@@ -549,13 +550,14 @@ export default {
         return [];
       } else {
         let nodes = [];
-        let unassigned = [];
-        let community = [];
 
+        // copy scripts and categories to new array
         let scriptsTemp = Object.assign([], this.visibleScripts);
         let categoriesTemp = Object.assign([], this.categories);
 
+        // add Community and Unassigned values and categories array
         if (this.showCommunityScripts) categoriesTemp.push("Community");
+        categoriesTemp.push("Unassigned");
 
         const sorted = categoriesTemp.sort();
 
@@ -572,26 +574,14 @@ export default {
             if (scriptsTemp[i].category === category) {
               temp.children.push({ label: scriptsTemp[i].name, header: "script", ...scriptsTemp[i] });
               scriptsTemp.splice(i, 1);
-            } else if (!scriptsTemp[i].category) {
-              unassigned.push({ label: scriptsTemp[i].name, header: "script", ...scriptsTemp[i] });
+            } else if (category === "Unassigned" && !scriptsTemp[i].category) {
+              temp.children.push({ label: scriptsTemp[i].name, header: "script", ...scriptsTemp[i] });
               scriptsTemp.splice(i, 1);
             }
           }
 
           nodes.push(temp);
         });
-
-        if (unassigned.length > 0) {
-          let temp = {
-            icon: "folder",
-            iconColor: "yellow-9",
-            label: "Unassigned",
-            id: "Unassigned",
-            selectable: false,
-            children: unassigned,
-          };
-          nodes.push(temp);
-        }
 
         return nodes;
       }

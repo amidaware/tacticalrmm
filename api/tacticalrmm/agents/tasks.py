@@ -8,6 +8,7 @@ from packaging import version as pyver
 from typing import List
 
 from django.conf import settings
+from scripts.models import Script
 
 from tacticalrmm.celery import app
 from agents.models import Agent, AgentOutage
@@ -293,3 +294,52 @@ def install_salt_task(pk: int) -> None:
     sleep(20)
     agent = Agent.objects.get(pk=pk)
     asyncio.run(agent.nats_cmd({"func": "installsalt"}, wait=False))
+
+
+@app.task
+def run_script_email_results_task(
+    agentpk: int, scriptpk: int, nats_timeout: int, nats_data: dict, emails: List[str]
+):
+    agent = Agent.objects.get(pk=agentpk)
+    script = Script.objects.get(pk=scriptpk)
+    nats_data["func"] = "runscriptfull"
+    r = asyncio.run(agent.nats_cmd(nats_data, timeout=nats_timeout))
+    if r == "timeout":
+        logger.error(f"{agent.hostname} timed out running script.")
+        return
+
+    CORE = CoreSettings.objects.first()
+    subject = f"{agent.hostname} {script.name} Results"
+    exec_time = "{:.4f}".format(r["execution_time"])
+    body = (
+        subject
+        + f"\nReturn code: {r['retcode']}\nExecution time: {exec_time} seconds\nStdout: {r['stdout']}\nStderr: {r['stderr']}"
+    )
+
+    import smtplib
+    from email.message import EmailMessage
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = CORE.smtp_from_email
+
+    if emails:
+        msg["To"] = ", ".join(emails)
+    else:
+        msg["To"] = ", ".join(CORE.email_alert_recipients)
+
+    msg.set_content(body)
+
+    try:
+        with smtplib.SMTP(CORE.smtp_host, CORE.smtp_port, timeout=20) as server:
+            if CORE.smtp_requires_auth:
+                server.ehlo()
+                server.starttls()
+                server.login(CORE.smtp_host_user, CORE.smtp_host_password)
+                server.send_message(msg)
+                server.quit()
+            else:
+                server.send_message(msg)
+                server.quit()
+    except Exception as e:
+        logger.error(e)

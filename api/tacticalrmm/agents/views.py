@@ -32,7 +32,11 @@ from .serializers import (
 )
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .tasks import uninstall_agent_task, send_agent_update_task
+from .tasks import (
+    uninstall_agent_task,
+    send_agent_update_task,
+    run_script_email_results_task,
+)
 from winupdate.tasks import bulk_check_for_updates_task
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 
@@ -738,6 +742,21 @@ def run_script(request):
     if output == "wait":
         r = asyncio.run(agent.nats_cmd(data, timeout=req_timeout))
         return Response(r)
+    elif output == "email":
+        if not pyver.parse(agent.version) >= pyver.parse("1.1.12"):
+            return notify_error("Requires agent version 1.1.12 or greater")
+
+        emails = (
+            [] if request.data["emailmode"] == "default" else request.data["emails"]
+        )
+        run_script_email_results_task.delay(
+            agentpk=agent.pk,
+            scriptpk=script.pk,
+            nats_timeout=req_timeout,
+            nats_data=data,
+            emails=emails,
+        )
+        return Response(f"{script.name} will now be run on {agent.hostname}")
     else:
         asyncio.run(agent.nats_cmd(data, wait=False))
         return Response(f"{script.name} will now be run on {agent.hostname}")

@@ -34,9 +34,35 @@
       </q-card-section>
       <q-card-section>
         <div class="q-gutter-sm">
-          <q-radio dense v-model="output" val="wait" label="Wait for Output" />
-          <q-radio dense v-model="output" val="forget" label="Fire and Forget" />
+          <q-radio dense v-model="output" val="wait" label="Wait for Output" @input="emails = []" />
+          <q-radio dense v-model="output" val="forget" label="Fire and Forget" @input="emails = []" />
+          <q-radio dense v-model="output" val="email" label="Email results" />
         </div>
+      </q-card-section>
+      <q-card-section v-if="output === 'email'">
+        <div class="q-gutter-sm">
+          <q-radio
+            dense
+            v-model="emailmode"
+            val="default"
+            label="Use email addresses from global settings"
+            @input="emails = []"
+          />
+          <q-radio dense v-model="emailmode" val="custom" label="Custom emails" />
+        </div>
+      </q-card-section>
+      <q-card-section v-if="emailmode === 'custom' && output === 'email'">
+        <q-select
+          label="Email recipients (press Enter after typing each email)"
+          filled
+          v-model="emails"
+          use-input
+          use-chips
+          multiple
+          hide-dropdown-icon
+          input-debounce="0"
+          new-value-mode="add"
+        />
       </q-card-section>
       <q-card-section>
         <q-input
@@ -83,6 +109,8 @@ export default {
       ret: null,
       output: "wait",
       args: [],
+      emails: [],
+      emailmode: "default",
     };
   },
   computed: {
@@ -117,6 +145,8 @@ export default {
         scriptPK: this.scriptPK,
         output: this.output,
         args: this.args,
+        emails: this.emails,
+        emailmode: this.emailmode,
       };
       this.$axios
         .post("/agents/runscript/", data)

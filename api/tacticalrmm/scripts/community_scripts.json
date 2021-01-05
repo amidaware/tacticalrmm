@@ -96,5 +96,19 @@
         "name": "Check BIOS Information",
         "description": "Retreives and reports on BIOS make, version, and date   .",
         "shell": "powershell"
+    },
+    {
+        "filename": "ResetHighPerformancePowerProfiletoDefaults.ps1",
+        "submittedBy": "https://github.com/azulskyknight",
+        "name": "Reset High Perf Power Profile",
+        "description": "Resets monitor, disk, standby, and hibernate timers in the default High Performance power profile to their default values. It also re-indexes the AC and DC power profiles into their default order.",
+        "shell": "powershell"
+    },
+    {
+        "filename": "SetHighPerformancePowerProfile.ps1",
+        "submittedBy": "https://github.com/azulskyknight",
+        "name": "Set High Perf Power Profile",
+        "description": "Sets the High Performance Power profile to the active power profile. Use this to keep machines from falling asleep.",
+        "shell": "powershell"
     }
 ]

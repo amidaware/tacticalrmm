@@ -137,8 +137,8 @@ if [ "$1" = 'tactical-init-dev' ]; then
   test -f "${TACTICAL_READY_FILE}" && rm "${TACTICAL_READY_FILE}"
 
   # setup Python virtual env and install dependencies
-  python -m venv ${VIRTUAL_ENV}
-  env/bin/pip install --no-cache-dir -r /requirements.txt
+  python -m venv --copies ${VIRTUAL_ENV}
+  pip install --no-cache-dir -r /requirements.txt
 
   django_setup
 

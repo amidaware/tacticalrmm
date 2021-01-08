@@ -3,7 +3,6 @@ from loguru import logger
 from time import sleep
 import random
 import requests
-from concurrent.futures import ThreadPoolExecutor
 from packaging import version as pyver
 from typing import List
 
@@ -40,16 +39,16 @@ def check_in_task() -> None:
     agents: List[int] = [
         i.pk for i in q if pyver.parse(i.version) >= pyver.parse("1.1.12")
     ]
-    with ThreadPoolExecutor() as executor:
-        executor.map(_check_in_full, agents)
+    for agent in agents:
+        _check_in_full(agent)
 
 
 @app.task
 def monitor_agents_task() -> None:
     q = Agent.objects.all()
     agents: List[int] = [i.pk for i in q if i.has_nats and i.status != "online"]
-    with ThreadPoolExecutor() as executor:
-        executor.map(_check_agent_service, agents)
+    for agent in agents:
+        _check_agent_service(agent)
 
 
 def agent_update(pk: int) -> str:

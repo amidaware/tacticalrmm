@@ -110,5 +110,12 @@
         "name": "Set High Perf Power Profile",
         "description": "Sets the High Performance Power profile to the active power profile. Use this to keep machines from falling asleep.",
         "shell": "powershell"
+    },
+    {
+        "filename": "Windows10Upgrade.ps1",
+        "submittedBy": "https://github.com/RVL-Solutions and https://github.com/darimm",
+        "name": "Windows 10 Upgrade",
+        "description": "Forces an upgrade to the latest release of Windows 10.",
+        "shell": "powershell"
     }
 ]

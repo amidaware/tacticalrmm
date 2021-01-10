@@ -37,7 +37,7 @@ $TimeSpan = (Get-Date) - (New-TimeSpan -Day 1)
 if (Get-WinEvent -FilterHashtable @{LogName='Application';ID='202';StartTime=$TimeSpan}) 
 
 {
-Write-Host "Duplicati Backup Ended with Errors"
+Write-Output "Duplicati Backup Ended with Errors"
 Get-WinEvent -FilterHashtable @{LogName='Application';ID='205','201','202';StartTime=$TimeSpan}
 exit 1
 }
@@ -46,12 +46,10 @@ exit 1
 else 
 
 {
-Write-Host "Duplicati Backup Is Working Correctly"
+Write-Output "Duplicati Backup Is Working Correctly"
 Get-WinEvent -FilterHashtable @{LogName='Application';ID='205','200','201'}
 exit 0
 }
 
 
 Exit $LASTEXITCODE
-
-ProviderName='*Duplicati*';

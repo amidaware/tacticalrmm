@@ -146,11 +146,12 @@ class CheckHistory(APIView):
         timeFilter = Q()
 
         if "timeFilter" in request.data:
-            timeFilter = Q(
-                x__lte=djangotime.make_aware(dt.today()),
-                x__gt=djangotime.make_aware(dt.today())
-                - djangotime.timedelta(days=request.data["timeFilter"]),
-            )
+            if timeFilter != 0:
+                timeFilter = Q(
+                    x__lte=djangotime.make_aware(dt.today()),
+                    x__gt=djangotime.make_aware(dt.today())
+                    - djangotime.timedelta(days=request.data["timeFilter"]),
+                )
 
         check_history = check.check_history.filter(timeFilter).order_by("-x")
 

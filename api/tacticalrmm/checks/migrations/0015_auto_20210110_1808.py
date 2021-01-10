@@ -6,22 +6,22 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('checks', '0014_merge_20210110_1808'),
+        ("checks", "0014_merge_20210110_1808"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='check',
-            name='run_history',
+            model_name="check",
+            name="run_history",
         ),
         migrations.AlterField(
-            model_name='checkhistory',
-            name='x',
+            model_name="checkhistory",
+            name="x",
             field=models.DateTimeField(auto_now_add=True),
         ),
         migrations.AlterField(
-            model_name='checkhistory',
-            name='y',
+            model_name="checkhistory",
+            name="y",
             field=models.PositiveIntegerField(blank=True, default=None, null=True),
         ),
     ]

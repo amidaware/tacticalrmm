@@ -7,13 +7,24 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('checks', '0010_auto_20200922_1344'),
+        ("checks", "0010_auto_20200922_1344"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='check',
-            name='run_history',
-            field=django.contrib.postgres.fields.ArrayField(base_field=django.contrib.postgres.fields.ArrayField(base_field=models.PositiveIntegerField(), blank=True, null=True, size=None), blank=True, default=list, null=True, size=None),
+            model_name="check",
+            name="run_history",
+            field=django.contrib.postgres.fields.ArrayField(
+                base_field=django.contrib.postgres.fields.ArrayField(
+                    base_field=models.PositiveIntegerField(),
+                    blank=True,
+                    null=True,
+                    size=None,
+                ),
+                blank=True,
+                default=list,
+                null=True,
+                size=None,
+            ),
         ),
     ]

@@ -141,12 +141,12 @@ class GetUpdateDeleteCheck(APIView):
 
 class CheckHistory(APIView):
     def patch(self, request, checkpk):
-        check = Check.objects.get(pk=checkpk)
+        check = get_object_or_404(Check, pk=checkpk)
 
         timeFilter = Q()
 
         if "timeFilter" in request.data:
-            if timeFilter != 0:
+            if request.data["timeFilter"] != 0:
                 timeFilter = Q(
                     x__lte=djangotime.make_aware(dt.today()),
                     x__gt=djangotime.make_aware(dt.today())

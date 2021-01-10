@@ -133,4 +133,3 @@ Write-Host # `nSettings update complete#   -ForegroundColor Green
 
 Write-Host # `nOutput Windows Defender AV settings status#   -ForegroundColor Green
 Get-MpPreference
-

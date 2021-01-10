@@ -1,2 +1,2 @@
-REM Sync time with time server
+REM Syncs time with domain controller
 net time %logonserver% /set /y

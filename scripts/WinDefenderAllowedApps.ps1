@@ -40,9 +40,3 @@ Add-MpPreference -ControlledFolderAccessAllowedApplications  "C:\Program Files (
 Add-MpPreference -ControlledFolderAccessAllowedApplications  "C:\Program Files (x86)\Microsoft Office\root\Office16\OUTLOOK.EXE"
 Add-MpPreference -ControlledFolderAccessAllowedApplications  "C:\Program Files (x86)\Microsoft Office\root\Office16\PUBLISHER.EXE"
 Add-MpPreference -ControlledFolderAccessAllowedApplications  "C:\Program Files (x86)\Microsoft Office\root\Office16\ONENOTE.EXE"
-
-
-
-
-
-

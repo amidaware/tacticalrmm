@@ -11,9 +11,11 @@
   "dependencies": {
     "@quasar/extras": "^1.9.12",
     "axios": "^0.21.1",
+    "apexcharts": "^3.23.1",
     "dotenv": "^8.2.0",
     "qrcode.vue": "^1.7.0",
-    "quasar": "^1.15.0"
+    "quasar": "^1.15.0",
+    "vue-apexcharts": "^1.6.0"
   },
   "devDependencies": {
     "@quasar/app": "^2.1.14",

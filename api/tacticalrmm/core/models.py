@@ -49,6 +49,8 @@ class CoreSettings(BaseAuditModel):
     default_time_zone = models.CharField(
         max_length=255, choices=TZ_CHOICES, default="America/Los_Angeles"
     )
+    # removes check history older than days
+    check_history_prune_days = models.PositiveIntegerField(default=30)
     mesh_token = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_username = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_site = models.CharField(max_length=255, null=True, blank=True, default="")

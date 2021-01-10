@@ -266,16 +266,6 @@ class CheckRunner(APIView):
         check.save(update_fields=["last_run"])
         status = check.handle_checkv2(request.data)
 
-        # create audit entry
-        AuditLog.objects.create(
-            username=check.agent.hostname,
-            agent=check.agent.hostname,
-            object_type="agent",
-            action="check_run",
-            message=f"{check.readable_desc} was run on {check.agent.hostname}. Status: {status}",
-            after_value=Check.serialize(check),
-        )
-
         return Response(status)
 
 

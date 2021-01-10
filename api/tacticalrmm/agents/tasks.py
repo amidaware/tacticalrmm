@@ -281,6 +281,10 @@ def agent_outages_task():
                 outage = AgentOutage(agent=agent)
                 outage.save()
 
+                # add a null check history to allow gaps in graph
+                for check in agent.agentchecks.all():
+                    check.add_check_history(None)
+
                 if agent.overdue_email_alert and not agent.maintenance_mode:
                     agent_outage_email_task.delay(pk=outage.pk)
 

@@ -196,9 +196,14 @@
                   >output</span
                 >
               </q-td>
-              <q-td v-else-if="props.row.check_type === 'cpuload' || props.row.check_type === 'memory'">{{
-                props.row.history_info
-              }}</q-td>
+              <q-td v-else-if="props.row.check_type === 'cpuload' || props.row.check_type === 'memory'">
+                <span
+                  style="cursor: pointer; text-decoration: underline"
+                  class="text-primary"
+                  @click="showCheckGraphModal(props.row)"
+                  >Show Run History</span
+                >
+              </q-td>
               <q-td v-else>{{ props.row.more_info }}</q-td>
               <q-td>{{ props.row.last_run }}</q-td>
               <q-td v-if="props.row.assigned_task !== null && props.row.assigned_task.length > 1"
@@ -267,6 +272,7 @@ import EventLogCheck from "@/components/modals/checks/EventLogCheck";
 import ScriptCheck from "@/components/modals/checks/ScriptCheck";
 import ScriptOutput from "@/components/modals/checks/ScriptOutput";
 import EventLogCheckOutput from "@/components/modals/checks/EventLogCheckOutput";
+import CheckGraph from "@/components/graphs/CheckGraph";
 
 export default {
   name: "ChecksTab",
@@ -423,6 +429,13 @@ export default {
             })
             .catch(e => this.notifyError(e.response.data));
         });
+    },
+    showCheckGraphModal(check) {
+      this.$q.dialog({
+        component: CheckGraph,
+        parent: this,
+        check: check,
+      });
     },
   },
   computed: {

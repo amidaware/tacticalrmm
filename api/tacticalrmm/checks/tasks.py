@@ -56,3 +56,13 @@ def handle_check_sms_alert_task(pk):
                 check.save(update_fields=["text_sent"])
 
     return "ok"
+
+
+@app.task
+def prune_check_history(older_than_days):
+    from .models import CheckHistory
+
+    CheckHistory.objects.filter(
+        x__lt=djangotime.make_aware(dt.datetime.today())
+        - djangotime.timedelta(days=older_than_days)
+    ).delete()

@@ -1,4 +1,3 @@
-
 powercfg.exe /h off
 powercfg /x -hibernate-timeout-ac 0
 powercfg /x -hibernate-timeout-dc 0
@@ -12,4 +11,4 @@ reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server" /v
 netsh advfirewall firewall set rule group="remote desktop" new enable=Yes
 
 
-net localgroup "Remote Desktop Users" "%UserName%" /add
+REM net localgroup "Remote Desktop Users" "%UserName%" /add

@@ -109,6 +109,11 @@ export default {
           field: "memory_percent",
           align: "left",
           sortable: true,
+          sort: (a, b, rowA, rowB) => {
+            newA = parseFloat(a.replace(/[a-z]+/i, ""));
+            newB = parseFloat(b.replace(/[a-z]+/i, ""));
+            newB < newA;
+          },
         },
         {
           name: "username",

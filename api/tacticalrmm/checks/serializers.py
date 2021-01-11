@@ -1,8 +1,8 @@
 import validators as _v
-
+import pytz
 from rest_framework import serializers
 
-from .models import Check
+from .models import Check, CheckHistory
 from autotasks.models import AutomatedTask
 from scripts.serializers import ScriptSerializer, ScriptCheckSerializer
 
@@ -237,3 +237,15 @@ class CheckResultsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Check
         fields = "__all__"
+
+
+class CheckHistorySerializer(serializers.ModelSerializer):
+    x = serializers.SerializerMethodField()
+
+    def get_x(self, obj):
+        return obj.x.astimezone(pytz.timezone(self.context["timezone"])).isoformat()
+
+    # used for return large amounts of graph data
+    class Meta:
+        model = CheckHistory
+        fields = ("x", "y")

@@ -1,5 +1,7 @@
+from checks.models import CheckHistory
 from tacticalrmm.test import TacticalTestCase
 from .serializers import CheckSerializer
+from django.utils import timezone as djangotime
 
 from model_bakery import baker
 from itertools import cycle
@@ -8,6 +10,7 @@ from itertools import cycle
 class TestCheckViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()
+        self.setup_coresettings()
 
     def test_get_disk_check(self):
         # setup data
@@ -180,3 +183,69 @@ class TestCheckViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 200)
 
         self.check_not_authenticated("patch", url_a)
+
+    def test_get_check_history(self):
+        # setup data
+        agent = baker.make_recipe("agents.agent")
+        check = baker.make_recipe("checks.diskspace_check", agent=agent)
+        baker.make("checks.CheckHistory", check_history=check, _quantity=30)
+        check_history_data = baker.make(
+            "checks.CheckHistory",
+            check_history=check,
+            _quantity=30,
+        )
+
+        # need to manually set the date back 35 days
+        for check_history in check_history_data:
+            check_history.x = djangotime.now() - djangotime.timedelta(days=35)
+            check_history.save()
+
+        # test invalid check pk
+        resp = self.client.patch("/checks/history/500/", format="json")
+        self.assertEqual(resp.status_code, 404)
+
+        url = f"/checks/history/{check.id}/"
+
+        # test with timeFilter last 30 days
+        data = {"timeFilter": 30}
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data), 30)
+
+        # test with timeFilter equal to 0
+        data = {"timeFilter": 0}
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data), 60)
+
+        self.check_not_authenticated("patch", url)
+
+
+class TestCheckTasks(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+
+    def test_prune_check_history(self):
+        from .tasks import prune_check_history
+
+        # setup data
+        check = baker.make_recipe("checks.diskspace_check")
+        baker.make("checks.CheckHistory", check_history=check, _quantity=30)
+        check_history_data = baker.make(
+            "checks.CheckHistory",
+            check_history=check,
+            _quantity=30,
+        )
+
+        # need to manually set the date back 35 days
+        for check_history in check_history_data:
+            check_history.x = djangotime.now() - djangotime.timedelta(days=35)
+            check_history.save()
+
+        # prune data 30 days old
+        prune_check_history(30)
+        self.assertEqual(CheckHistory.objects.count(), 30)
+
+        # prune all Check history Data
+        prune_check_history(0)
+        self.assertEqual(CheckHistory.objects.count(), 0)

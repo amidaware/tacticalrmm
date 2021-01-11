@@ -4,8 +4,10 @@ from loguru import logger
 from django.conf import settings
 from django.utils import timezone as djangotime
 from tacticalrmm.celery import app
+from core.models import CoreSettings
 from autotasks.models import AutomatedTask
 from autotasks.tasks import delete_win_task_schedule
+from checks.tasks import prune_check_history
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -25,3 +27,7 @@ def core_maintenance_tasks():
 
         if now > task_time_utc:
             delete_win_task_schedule.delay(task.pk)
+
+    # remove old CheckHistory data
+    older_than = CoreSettings.objects.first().check_history_prune_days
+    prune_check_history.delay(older_than)

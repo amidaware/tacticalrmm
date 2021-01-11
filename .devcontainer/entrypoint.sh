@@ -68,7 +68,7 @@ KEY_FILE = '/opt/tactical/certs/privkey.pem'
 
 SCRIPTS_DIR = '${WORKSPACE_DIR}/scripts'
 
-ALLOWED_HOSTS = ['${API_HOST}']
+ALLOWED_HOSTS = ['${API_HOST}', 'localhost', '127.0.0.1']
 
 ADMIN_URL = 'admin/'
 
@@ -137,7 +137,7 @@ if [ "$1" = 'tactical-init-dev' ]; then
   test -f "${TACTICAL_READY_FILE}" && rm "${TACTICAL_READY_FILE}"
 
   # setup Python virtual env and install dependencies
-  python -m venv --copies ${VIRTUAL_ENV}
+  test -f ${VIRTUAL_ENV} && python -m venv --copies ${VIRTUAL_ENV}
   pip install --no-cache-dir -r /requirements.txt
 
   django_setup

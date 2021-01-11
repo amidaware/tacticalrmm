@@ -5,8 +5,6 @@ from time import sleep
 from tacticalrmm.celery import app
 from django.utils import timezone as djangotime
 
-from agents.models import Agent
-
 
 @app.task
 def handle_check_email_alert_task(pk):
@@ -54,5 +52,17 @@ def handle_check_sms_alert_task(pk):
                 check.send_sms()
                 check.text_sent = djangotime.now()
                 check.save(update_fields=["text_sent"])
+
+    return "ok"
+
+
+@app.task
+def prune_check_history(older_than_days: int) -> str:
+    from .models import CheckHistory
+
+    CheckHistory.objects.filter(
+        x__lt=djangotime.make_aware(dt.datetime.today())
+        - djangotime.timedelta(days=older_than_days)
+    ).delete()
 
     return "ok"

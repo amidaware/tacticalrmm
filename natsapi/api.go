@@ -18,7 +18,11 @@ import (
 
 var rClient = resty.New()
 
-func getAPI() (string, error) {
+func getAPI(apihost string) (string, error) {
+	if apihost != "" {
+		return apihost, nil
+	}
+
 	f, err := os.Open(`/etc/nginx/sites-available/rmm.conf`)
 	if err != nil {
 		return "", err
@@ -35,14 +39,21 @@ func getAPI() (string, error) {
 	return "", errors.New("unable to parse api from nginx conf")
 }
 
-func Listen() {
-	api, err := getAPI()
+func Listen(apihost string, debug bool) {
+	var baseURL string
+	api, err := getAPI(apihost)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	//rClient.SetHostURL(fmt.Sprintf("https://%s/natsapi", api))
-	rClient.SetHostURL(fmt.Sprintf("http://%s:8000/natsapi", api))
-	rClient.SetTimeout(5 * time.Second)
+
+	if debug {
+		baseURL = fmt.Sprintf("http://%s:8000/natsapi", api)
+	} else {
+		baseURL = fmt.Sprintf("https://%s/natsapi", api)
+	}
+
+	rClient.SetHostURL(baseURL)
+	rClient.SetTimeout(30 * time.Second)
 	natsinfo, err := rClient.R().SetResult(&NatsInfo{}).Get("/natsinfo/")
 	if err != nil {
 		log.Fatalln(err)

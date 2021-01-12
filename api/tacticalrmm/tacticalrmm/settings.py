@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     "logs",
     "scripts",
     "alerts",
+    "natsapi",
 ]
 
 if not "TRAVIS" in os.environ and not "AZPIPELINE" in os.environ:

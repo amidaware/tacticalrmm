@@ -14,6 +14,7 @@ def get_debug_info():
 
 
 EXCLUDE_PATHS = (
+    "/natsapi",
     "/api/v3",
     "/api/v2",
     "/logs/auditlogs",

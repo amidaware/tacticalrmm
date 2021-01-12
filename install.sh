@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="31"
+SCRIPT_VERSION="32"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget
@@ -515,6 +515,14 @@ server {
         alias /srv/salt/scripts/;
     }
 
+    location ~ ^/(natsapi) {
+        allow 127.0.0.1;
+        deny all;
+        uwsgi_pass tacticalrmm;
+        include     /etc/nginx/uwsgi_params;
+        uwsgi_read_timeout 9999s;
+        uwsgi_ignore_client_abort on;
+    }
 
     location / {
         uwsgi_pass  tacticalrmm;

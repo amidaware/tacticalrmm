@@ -27,7 +27,7 @@ LATEST_SALT_VER = "1.1.0"
 # https://github.com/wh1te909/rmmagent
 LATEST_AGENT_VER = "1.1.12"
 
-MESH_VER = "0.7.37"
+MESH_VER = "0.7.45"
 
 SALT_MASTER_VER = "3002.2"
 

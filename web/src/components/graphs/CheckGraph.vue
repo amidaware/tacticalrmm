@@ -152,7 +152,6 @@ export default {
             y: this.check.threshold,
             strokeDashArray: 0,
             borderColor: "#C10015",
-            width: 3,
             label: {
               borderColor: "#C10015",
               style: {

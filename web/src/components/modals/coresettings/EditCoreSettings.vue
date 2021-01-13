@@ -68,7 +68,7 @@
                   />
                 </q-card-section>
                 <q-card-section class="row">
-                  <div class="col-4">Remove Check History older than:</div>
+                  <div class="col-4">Remove Check History older than (days):</div>
                   <div class="col-2"></div>
                   <q-input outlined dense v-model="settings.check_history_prune_days" class="col-6" />
                 </q-card-section>

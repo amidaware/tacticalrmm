@@ -192,7 +192,7 @@ class GenerateAgent(APIView):
         if not os.path.exists(go_bin):
             return notify_error("Missing golang")
 
-        api = f"{request.scheme}://{request.get_host()}"
+        api = f"https://{request.get_host()}"
         inno = (
             f"winagent-v{settings.LATEST_AGENT_VER}.exe"
             if d.arch == "64"

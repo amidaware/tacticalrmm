@@ -39,8 +39,13 @@ def check_in_task() -> None:
     agents: List[int] = [
         i.pk for i in q if pyver.parse(i.version) >= pyver.parse("1.1.12")
     ]
-    for agent in agents:
-        _check_in_full(agent)
+    chunks = (agents[i : i + 50] for i in range(0, len(agents), 50))
+    for chunk in chunks:
+        for pk in chunk:
+            _check_in_full(pk)
+            sleep(0.1)
+        rand = random.randint(3, 7)
+        sleep(rand)
 
 
 @app.task
@@ -115,7 +120,6 @@ def send_agent_update_task(pks: List[int], version: str) -> None:
 def auto_self_agent_update_task() -> None:
     core = CoreSettings.objects.first()
     if not core.agent_auto_update:
-        logger.info("Agent auto update is disabled. Skipping.")
         return
 
     q = Agent.objects.only("pk", "version")
@@ -137,8 +141,14 @@ def sync_sysinfo_task():
         for i in agents
         if pyver.parse(i.version) >= pyver.parse("1.1.3") and i.status == "online"
     ]
-    for agent in online:
-        asyncio.run(agent.nats_cmd({"func": "sync"}, wait=False))
+
+    chunks = (online[i : i + 50] for i in range(0, len(online), 50))
+    for chunk in chunks:
+        for agent in chunk:
+            asyncio.run(agent.nats_cmd({"func": "sync"}, wait=False))
+            sleep(0.1)
+        rand = random.randint(3, 7)
+        sleep(rand)
 
 
 @app.task
@@ -280,6 +290,10 @@ def agent_outages_task():
 
                 outage = AgentOutage(agent=agent)
                 outage.save()
+
+                # add a null check history to allow gaps in graph
+                for check in agent.agentchecks.all():
+                    check.add_check_history(None)
 
                 if agent.overdue_email_alert and not agent.maintenance_mode:
                     agent_outage_email_task.delay(pk=outage.pk)

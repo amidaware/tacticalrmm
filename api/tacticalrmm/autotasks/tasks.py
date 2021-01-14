@@ -176,6 +176,12 @@ def delete_win_task_schedule(pk, pending_action=False):
         pendingaction.status = "completed"
         pendingaction.save(update_fields=["status"])
 
+    # complete any other pending actions on agent with same task_id
+    for action in task.agent.pendingactions.all():
+        if action.details["task_id"] == task.id:
+            action.status = "completed"
+            action.save()
+
     task.delete()
     return "ok"
 

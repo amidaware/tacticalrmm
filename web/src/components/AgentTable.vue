@@ -473,7 +473,17 @@ export default {
       // give time for store to change active row
       setTimeout(() => {
         this.$q.loading.hide();
-        this.showEditAgentModal = true;
+        switch (this.agentDblClickAction) {
+          case "editagent":
+            this.showEditAgentModal = true;
+            break;
+          case "takecontrol":
+            this.takeControl(pk);
+            break;
+          case "remotebg":
+            this.remoteBG(pk);
+            break;
+        }
       }, 500);
     },
     runFavScript(scriptpk, agentpk) {
@@ -694,6 +704,9 @@ export default {
   },
   computed: {
     ...mapGetters(["selectedAgentPk", "agentTableHeight"]),
+    agentDblClickAction() {
+      return this.$store.state.agentDblClickAction;
+    },
     selectedRow() {
       return this.$store.state.selectedRow;
     },

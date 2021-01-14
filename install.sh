@@ -304,12 +304,7 @@ meshcfg="$(cat << EOF
       "CertUrl": "https://${meshdomain}:443/",
       "GeoLocation": true,
       "CookieIpCheck": false,
-      "mstsc": true,
-      "httpheaders": {
-        "Strict-Transport-Security": "max-age=360000",
-        "_x-frame-options": "sameorigin",
-        "Content-Security-Policy": "default-src 'none'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-src 'self'; media-src 'self'"
-      }
+      "mstsc": true
     }
   }
 }

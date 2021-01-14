@@ -197,4 +197,8 @@ class UserUI(APIView):
             user.show_community_scripts = request.data["show_community_scripts"]
             user.save(update_fields=["show_community_scripts"])
 
+        if "agent_dblclick_action" in request.data:
+            user.agent_dblclick_action = request.data["agent_dblclick_action"]
+            user.save(update_fields=["agent_dblclick_action"])
+
         return Response("ok")

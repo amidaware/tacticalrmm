@@ -8,7 +8,7 @@ cffi==1.14.4
 chardet==4.0.0
 cryptography==3.3.1
 decorator==4.4.2
-Django==3.1.4
+Django==3.1.5
 django-cors-headers==3.6.0
 django-rest-knox==4.1.0
 djangorestframework==3.12.2
@@ -23,13 +23,13 @@ pycparser==2.20
 pycryptodome==3.9.9
 pyotp==2.4.1
 pyparsing==2.4.7
-pytz==2020.4
+pytz==2020.5
 qrcode==6.1
 redis==3.5.3
 requests==2.25.1
 six==1.15.0
 sqlparse==0.4.1
-twilio==6.50.1
+twilio==6.51.0
 urllib3==1.26.2
 uWSGI==2.0.19.1
 validators==0.18.2

@@ -3,12 +3,13 @@ import string
 import os
 import json
 import pytz
-from statistics import mean
+from statistics import mean, mode
 
 from django.db import models
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MinValueValidator, MaxValueValidator
+from rest_framework.fields import JSONField
 
 from core.models import CoreSettings
 from logs.models import BaseAuditModel
@@ -214,6 +215,10 @@ class Check(BaseAuditModel):
             "modified_time",
         ]
 
+    def add_check_history(self, value):
+        if self.check_type in ["memory", "cpuload", "diskspace"]:
+            CheckHistory.objects.create(check_history=self, y=value)
+
     def handle_checkv2(self, data):
         # cpuload or mem checks
         if self.check_type == "cpuload" or self.check_type == "memory":
@@ -232,6 +237,9 @@ class Check(BaseAuditModel):
             else:
                 self.status = "passing"
 
+            # add check history
+            self.add_check_history(data["percent"])
+
         # diskspace checks
         elif self.check_type == "diskspace":
             if data["exists"]:
@@ -245,6 +253,9 @@ class Check(BaseAuditModel):
                     self.status = "passing"
 
                 self.more_info = f"Total: {total}B, Free: {free}B"
+
+                # add check history
+                self.add_check_history(percent_used)
             else:
                 self.status = "failing"
                 self.more_info = f"Disk {self.disk} does not exist"
@@ -645,3 +656,17 @@ class Check(BaseAuditModel):
             body = subject
 
         CORE.send_sms(body)
+
+
+class CheckHistory(models.Model):
+    check_history = models.ForeignKey(
+        Check,
+        related_name="check_history",
+        on_delete=models.CASCADE,
+    )
+    x = models.DateTimeField(auto_now_add=True)
+    y = models.PositiveIntegerField(null=True, blank=True, default=None)
+    results = models.JSONField(null=True, blank=True)
+
+    def __str__(self):
+        return self.check_history.readable_desc

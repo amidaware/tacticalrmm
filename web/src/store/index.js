@@ -33,7 +33,8 @@ export default function () {
       needrefresh: false,
       tableHeight: "35vh",
       tabHeight: "35vh",
-      showCommunityScripts: false
+      showCommunityScripts: false,
+      agentDblClickAction: "",
     },
     getters: {
       loggedIn(state) {
@@ -135,6 +136,9 @@ export default function () {
       },
       setShowCommunityScripts(state, show) {
         state.showCommunityScripts = show
+      },
+      SET_AGENT_DBLCLICK_ACTION(state, action) {
+        state.agentDblClickAction = action
       }
     },
     actions: {

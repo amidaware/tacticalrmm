@@ -1,6 +1,10 @@
 import asyncio
 
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
+from django.utils import timezone as djangotime
+
+from datetime import datetime as dt
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -13,7 +17,7 @@ from automation.models import Policy
 from .models import Check
 from scripts.models import Script
 
-from .serializers import CheckSerializer
+from .serializers import CheckSerializer, CheckHistorySerializer
 
 
 from automation.tasks import (
@@ -133,6 +137,29 @@ class GetUpdateDeleteCheck(APIView):
             check.agent.generate_checks_from_policies()
 
         return Response(f"{check.readable_desc} was deleted!")
+
+
+class CheckHistory(APIView):
+    def patch(self, request, checkpk):
+        check = get_object_or_404(Check, pk=checkpk)
+
+        timeFilter = Q()
+
+        if "timeFilter" in request.data:
+            if request.data["timeFilter"] != 0:
+                timeFilter = Q(
+                    x__lte=djangotime.make_aware(dt.today()),
+                    x__gt=djangotime.make_aware(dt.today())
+                    - djangotime.timedelta(days=request.data["timeFilter"]),
+                )
+
+        check_history = check.check_history.filter(timeFilter).order_by("-x")
+
+        return Response(
+            CheckHistorySerializer(
+                check_history, context={"timezone": check.agent.timezone}, many=True
+            ).data
+        )
 
 
 @api_view()

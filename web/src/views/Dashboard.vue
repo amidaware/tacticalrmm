@@ -73,6 +73,11 @@
 
         <q-btn-dropdown flat no-caps stretch :label="user">
           <q-list>
+            <q-item clickable v-ripple @click="showUserPreferencesModal = true" v-close-popup>
+              <q-item-section>
+                <q-item-label>Preferences</q-item-label>
+              </q-item-section>
+            </q-item>
             <q-item to="/expired" exact>
               <q-item-section>
                 <q-item-label>Logout</q-item-label>
@@ -354,6 +359,10 @@
     <q-dialog v-model="showInstallAgentModal" @hide="closeInstallAgent">
       <InstallAgent @close="closeInstallAgent" :sitepk="parseInt(sitePk)" />
     </q-dialog>
+    <!-- user preferences modal -->
+    <q-dialog v-model="showUserPreferencesModal">
+      <UserPreferences @close="showUserPreferencesModal = false" @edited="getDashInfo" />
+    </q-dialog>
   </q-layout>
 </template>
 
@@ -369,6 +378,7 @@ import PolicyAdd from "@/components/automation/modals/PolicyAdd";
 import ClientsForm from "@/components/modals/clients/ClientsForm";
 import SitesForm from "@/components/modals/clients/SitesForm";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
+import UserPreferences from "@/components/modals/coresettings/UserPreferences";
 
 export default {
   components: {
@@ -380,6 +390,7 @@ export default {
     ClientsForm,
     SitesForm,
     InstallAgent,
+    UserPreferences,
   },
   data() {
     return {
@@ -413,6 +424,7 @@ export default {
       filterChecksFailing: false,
       filterRebootNeeded: false,
       currentTRMMVersion: null,
+      showUserPreferencesModal: false,
       columns: [
         {
           name: "smsalert",
@@ -673,7 +685,7 @@ export default {
         this.darkMode = r.data.dark_mode;
         this.$q.dark.set(this.darkMode);
         this.currentTRMMVersion = r.data.trmm_version;
-
+        this.$store.commit("SET_AGENT_DBLCLICK_ACTION", r.data.dbl_click_action);
         this.$store.commit("setShowCommunityScripts", r.data.show_community_scripts);
       });
     },

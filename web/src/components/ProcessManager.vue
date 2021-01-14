@@ -110,9 +110,9 @@ export default {
           align: "left",
           sortable: true,
           sort: (a, b, rowA, rowB) => {
-            newA = parseFloat(a.replace(/[a-z]+/i, ""));
-            newB = parseFloat(b.replace(/[a-z]+/i, ""));
-            newB < newA;
+            const newA = parseFloat(a.replace(/[a-z]+/i, ""));
+            const newB = parseFloat(b.replace(/[a-z]+/i, ""));
+            return newB < newA;
           },
         },
         {

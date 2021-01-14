@@ -117,5 +117,82 @@
         "name": "Windows 10 Upgrade",
         "description": "Forces an upgrade to the latest release of Windows 10.",
         "shell": "powershell"
+    },
+    {
+        "filename": "DiskStatus.ps1",
+        "submittedBy": "https://github.com/dinger1986",
+        "name": "Check Disks",
+        "description": "Checks local disks for errors reported in event viewer within the last 24 hours",
+        "shell": "powershell"
+    },
+    {
+        "filename": "DuplicatiStatus.ps1",
+        "submittedBy": "https://github.com/dinger1986",
+        "name": "Check Duplicati",
+        "description": "Checks Duplicati Backup is running properly over the last 24 hours",
+        "shell": "powershell"
+    },
+    {
+        "filename": "EnableDefender.ps1",
+        "submittedBy": "https://github.com/dinger1986",
+        "name": "Enable Windows Defender",
+        "description": "Enables Windows Defender and sets preferences",
+        "shell": "powershell"
+    },
+    {
+        "filename": "OpenSSHServerInstall.ps1",
+        "submittedBy": "https://github.com/dinger1986",
+        "name": "Install SSH",
+        "description": "Installs and enabled OpenSSH Server",
+        "shell": "powershell"
+    },
+    {
+        "filename": "RDP_enable.bat",
+        "submittedBy": "https://github.com/dinger1986",
+        "name": "Enable RDP",
+        "description": "Enables RDP",
+        "shell": "cmd"
+    },
+    {
+        "filename": "Speedtest.ps1",
+        "submittedBy": "https://github.com/dinger1986",
+        "name": "PS Speed Test",
+        "description": "Powershell speed test (win 10 or server2016+)",
+        "shell": "powershell"
+    },
+    {
+        "filename": "SyncTime.bat",
+        "submittedBy": "https://github.com/dinger1986",
+        "name": "Sync DC Time",
+        "description": "Syncs time with domain controller",
+        "shell": "cmd"
+    },
+    {
+        "filename": "WinDefenderClearLogs.ps1",
+        "submittedBy": "https://github.com/dinger1986",
+        "name": "Clear Defender Logs",
+        "description": "Clears Windows Defender Logs",
+        "shell": "powershell"
+    },
+    {
+        "filename": "WinDefenderStatus.ps1",
+        "submittedBy": "https://github.com/dinger1986",
+        "name": "Defender Status",
+        "description": "This will check for Malware, Antispyware, that Windows Defender is Healthy, last scan etc within the last 24 hours",
+        "shell": "powershell"
+    },
+    {
+        "filename": "disable_FastStartup.bat",
+        "submittedBy": "https://github.com/dinger1986",
+        "name": "Disable Fast Startup",
+        "description": "Disables Faststartup on Windows 10",
+        "shell": "cmd"
+    },
+    {
+        "filename": "updatetacticalexclusion.ps1",
+        "submittedBy": "https://github.com/dinger1986",
+        "name": "TRMM Defender Exclusions",
+        "description": "Windows Defender Exclusions for Tactical RMM",
+        "shell": "cmd"
     }
 ]

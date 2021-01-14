@@ -9,7 +9,7 @@
     "test:unit": "quasar test --unit jest"
   },
   "dependencies": {
-    "@quasar/extras": "^1.9.12",
+    "@quasar/extras": "^1.9.13",
     "axios": "^0.21.1",
     "apexcharts": "^3.23.1",
     "dotenv": "^8.2.0",

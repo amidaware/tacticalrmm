@@ -2,7 +2,7 @@
     {
         "name": "System",
         "cpu_percent": 0.0,
-        "memory_percent": 7.754021906781984e-05,
+        "membytes": 434655234324,
         "pid": 4,
         "ppid": 0,
         "status": "running",
@@ -12,7 +12,7 @@
     {
         "name": "Registry",
         "cpu_percent": 0.0,
-        "memory_percent": 0.009720362333912082,
+        "membytes": 0.009720362333912082,
         "pid": 280,
         "ppid": 4,
         "status": "running",
@@ -22,7 +22,7 @@
     {
         "name": "smss.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0006223099632878874,
+        "membytes": 0.0006223099632878874,
         "pid": 976,
         "ppid": 4,
         "status": "running",
@@ -32,7 +32,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.005682306310149464,
+        "membytes": 0.005682306310149464,
         "pid": 1160,
         "ppid": 1388,
         "status": "running",
@@ -42,7 +42,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.004793576106987529,
+        "membytes": 0.004793576106987529,
         "pid": 1172,
         "ppid": 1388,
         "status": "running",
@@ -52,7 +52,7 @@
     {
         "name": "csrss.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.002459416691971619,
+        "membytes": 0.002459416691971619,
         "pid": 1240,
         "ppid": 1220,
         "status": "running",
@@ -62,7 +62,7 @@
     {
         "name": "wininit.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0031970428784885716,
+        "membytes": 0.0031970428784885716,
         "pid": 1316,
         "ppid": 1220,
         "status": "running",
@@ -72,7 +72,7 @@
     {
         "name": "csrss.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0023719354191771556,
+        "membytes": 0.0023719354191771556,
         "pid": 1324,
         "ppid": 1308,
         "status": "running",
@@ -82,7 +82,7 @@
     {
         "name": "services.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.00596662044673147,
+        "membytes": 0.00596662044673147,
         "pid": 1388,
         "ppid": 1316,
         "status": "running",
@@ -92,7 +92,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.006052113508780605,
+        "membytes": 0.006052113508780605,
         "pid": 1396,
         "ppid": 1388,
         "status": "running",
@@ -102,7 +102,7 @@
     {
         "name": "LsaIso.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0016124389144615866,
+        "membytes": 0.0016124389144615866,
         "pid": 1408,
         "ppid": 1316,
         "status": "running",
@@ -112,7 +112,7 @@
     {
         "name": "lsass.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.012698702030414497,
+        "membytes": 0.012698702030414497,
         "pid": 1416,
         "ppid": 1316,
         "status": "running",
@@ -122,7 +122,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.007129723732748768,
+        "membytes": 0.007129723732748768,
         "pid": 1444,
         "ppid": 1388,
         "status": "running",
@@ -132,7 +132,7 @@
     {
         "name": "winlogon.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.005396003962822129,
+        "membytes": 0.005396003962822129,
         "pid": 1492,
         "ppid": 1308,
         "status": "running",
@@ -142,7 +142,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0027815068327148706,
+        "membytes": 0.0027815068327148706,
         "pid": 1568,
         "ppid": 1388,
         "status": "running",
@@ -152,7 +152,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.001936517265950167,
+        "membytes": 0.001936517265950167,
         "pid": 1604,
         "ppid": 1388,
         "status": "running",
@@ -162,7 +162,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.011187661863964672,
+        "membytes": 0.011187661863964672,
         "pid": 1628,
         "ppid": 1388,
         "status": "running",
@@ -172,7 +172,7 @@
     {
         "name": "fontdrvhost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.002765601146752241,
+        "membytes": 0.002765601146752241,
         "pid": 1652,
         "ppid": 1492,
         "status": "running",
@@ -182,7 +182,7 @@
     {
         "name": "fontdrvhost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0017794486170691988,
+        "membytes": 0.0017794486170691988,
         "pid": 1660,
         "ppid": 1316,
         "status": "running",
@@ -192,7 +192,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.006676411682813821,
+        "membytes": 0.006676411682813821,
         "pid": 1752,
         "ppid": 1388,
         "status": "running",
@@ -202,7 +202,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.004892986644253965,
+        "membytes": 0.004892986644253965,
         "pid": 1796,
         "ppid": 1388,
         "status": "running",
@@ -212,7 +212,7 @@
     {
         "name": "dwm.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.02493216274642207,
+        "membytes": 0.02493216274642207,
         "pid": 1868,
         "ppid": 1492,
         "status": "running",
@@ -222,7 +222,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.011945170157934911,
+        "membytes": 0.011945170157934911,
         "pid": 1972,
         "ppid": 1388,
         "status": "running",
@@ -232,7 +232,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.006616765360453959,
+        "membytes": 0.006616765360453959,
         "pid": 1980,
         "ppid": 1388,
         "status": "running",
@@ -242,7 +242,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0034435810109093323,
+        "membytes": 0.0034435810109093323,
         "pid": 2008,
         "ppid": 1388,
         "status": "running",
@@ -252,7 +252,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.004722000520155695,
+        "membytes": 0.004722000520155695,
         "pid": 2160,
         "ppid": 1388,
         "status": "running",
@@ -262,7 +262,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.004264712048730091,
+        "membytes": 0.004264712048730091,
         "pid": 2196,
         "ppid": 1388,
         "status": "running",
@@ -272,7 +272,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.005493426289343236,
+        "membytes": 0.005493426289343236,
         "pid": 2200,
         "ppid": 1388,
         "status": "running",
@@ -282,7 +282,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.002757648303770926,
+        "membytes": 0.002757648303770926,
         "pid": 2212,
         "ppid": 1388,
         "status": "running",
@@ -292,7 +292,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0038113999987951447,
+        "membytes": 0.0038113999987951447,
         "pid": 2224,
         "ppid": 1388,
         "status": "running",
@@ -302,7 +302,7 @@
     {
         "name": "mmc.exe",
         "cpu_percent": 0.084375,
-        "memory_percent": 0.027600341566653204,
+        "membytes": 0.027600341566653204,
         "pid": 2272,
         "ppid": 4664,
         "status": "running",
@@ -312,7 +312,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.004185183618916942,
+        "membytes": 0.004185183618916942,
         "pid": 2312,
         "ppid": 1388,
         "status": "running",
@@ -322,7 +322,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.003334229419916253,
+        "membytes": 0.003334229419916253,
         "pid": 2352,
         "ppid": 1388,
         "status": "running",
@@ -332,7 +332,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.003841223159975075,
+        "membytes": 0.003841223159975075,
         "pid": 2400,
         "ppid": 1388,
         "status": "running",
@@ -342,7 +342,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.00720527574107126,
+        "membytes": 0.00720527574107126,
         "pid": 2440,
         "ppid": 1388,
         "status": "running",
@@ -352,7 +352,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.008088041311997208,
+        "membytes": 0.008088041311997208,
         "pid": 2512,
         "ppid": 1388,
         "status": "running",
@@ -362,7 +362,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.005859257066483719,
+        "membytes": 0.005859257066483719,
         "pid": 2600,
         "ppid": 1388,
         "status": "running",
@@ -372,7 +372,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.004566920082020056,
+        "membytes": 0.004566920082020056,
         "pid": 2724,
         "ppid": 1388,
         "status": "running",
@@ -382,7 +382,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.004475462387734934,
+        "membytes": 0.004475462387734934,
         "pid": 2732,
         "ppid": 1388,
         "status": "running",
@@ -392,7 +392,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.004006244651837358,
+        "membytes": 0.004006244651837358,
         "pid": 2748,
         "ppid": 1388,
         "status": "running",
@@ -402,7 +402,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.003240783514885803,
+        "membytes": 0.003240783514885803,
         "pid": 2796,
         "ppid": 1388,
         "status": "running",
@@ -412,7 +412,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0036404138746968747,
+        "membytes": 0.0036404138746968747,
         "pid": 2852,
         "ppid": 1388,
         "status": "running",
@@ -422,7 +422,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.005932820864060882,
+        "membytes": 0.005932820864060882,
         "pid": 2936,
         "ppid": 1388,
         "status": "running",
@@ -432,7 +432,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.004240853519786147,
+        "membytes": 0.004240853519786147,
         "pid": 2944,
         "ppid": 1388,
         "status": "running",
@@ -442,7 +442,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.009068229209444265,
+        "membytes": 0.009068229209444265,
         "pid": 2952,
         "ppid": 1388,
         "status": "running",
@@ -452,7 +452,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.008205345745971602,
+        "membytes": 0.008205345745971602,
         "pid": 3036,
         "ppid": 1388,
         "status": "running",
@@ -462,7 +462,7 @@
     {
         "name": "spaceman.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0003360076159605526,
+        "membytes": 0.0003360076159605526,
         "pid": 3112,
         "ppid": 2440,
         "status": "running",
@@ -472,7 +472,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.00409571413537715,
+        "membytes": 0.00409571413537715,
         "pid": 3216,
         "ppid": 1388,
         "status": "running",
@@ -482,7 +482,7 @@
     {
         "name": "ShellExperienceHost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.030085604998314096,
+        "membytes": 0.030085604998314096,
         "pid": 3228,
         "ppid": 1628,
         "status": "running",
@@ -492,7 +492,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.004664342408541163,
+        "membytes": 0.004664342408541163,
         "pid": 3244,
         "ppid": 1388,
         "status": "running",
@@ -502,7 +502,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.004843281375620747,
+        "membytes": 0.004843281375620747,
         "pid": 3268,
         "ppid": 1388,
         "status": "running",
@@ -512,7 +512,7 @@
     {
         "name": "python.exe",
         "cpu_percent": 0.559375,
-        "memory_percent": 0.029455342192044896,
+        "membytes": 0.029455342192044896,
         "pid": 3288,
         "ppid": 4708,
         "status": "running",
@@ -522,7 +522,7 @@
     {
         "name": "RuntimeBroker.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.010283025974840107,
+        "membytes": 0.010283025974840107,
         "pid": 3296,
         "ppid": 1628,
         "status": "running",
@@ -532,7 +532,7 @@
     {
         "name": "RuntimeBroker.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.006596883253000673,
+        "membytes": 0.006596883253000673,
         "pid": 3308,
         "ppid": 1628,
         "status": "running",
@@ -542,7 +542,7 @@
     {
         "name": "spoolsv.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.008095994154978522,
+        "membytes": 0.008095994154978522,
         "pid": 3708,
         "ppid": 1388,
         "status": "running",
@@ -552,7 +552,7 @@
     {
         "name": "conhost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.011507763793962596,
+        "membytes": 0.011507763793962596,
         "pid": 3752,
         "ppid": 6620,
         "status": "running",
@@ -562,7 +562,7 @@
     {
         "name": "LogMeInSystray.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.010300919871548067,
+        "membytes": 0.010300919871548067,
         "pid": 3780,
         "ppid": 4664,
         "status": "running",
@@ -572,7 +572,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.005767799372198599,
+        "membytes": 0.005767799372198599,
         "pid": 3808,
         "ppid": 1388,
         "status": "running",
@@ -582,7 +582,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.007070077410388906,
+        "membytes": 0.007070077410388906,
         "pid": 3816,
         "ppid": 1388,
         "status": "running",
@@ -592,7 +592,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.014217695039845633,
+        "membytes": 0.014217695039845633,
         "pid": 3824,
         "ppid": 1388,
         "status": "running",
@@ -602,7 +602,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.022611920806623463,
+        "membytes": 0.022611920806623463,
         "pid": 3832,
         "ppid": 1388,
         "status": "running",
@@ -612,7 +612,7 @@
     {
         "name": "nssm.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.003163243295817984,
+        "membytes": 0.003163243295817984,
         "pid": 3840,
         "ppid": 1388,
         "status": "running",
@@ -622,7 +622,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0030717856015328626,
+        "membytes": 0.0030717856015328626,
         "pid": 3856,
         "ppid": 1388,
         "status": "running",
@@ -632,7 +632,7 @@
     {
         "name": "LMIGuardianSvc.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.004441662805064347,
+        "membytes": 0.004441662805064347,
         "pid": 3868,
         "ppid": 1388,
         "status": "running",
@@ -642,7 +642,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0026781198739577773,
+        "membytes": 0.0026781198739577773,
         "pid": 3876,
         "ppid": 1388,
         "status": "running",
@@ -652,7 +652,7 @@
     {
         "name": "ramaint.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0038471877922110613,
+        "membytes": 0.0038471877922110613,
         "pid": 3884,
         "ppid": 1388,
         "status": "running",
@@ -662,7 +662,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.005374133644623514,
+        "membytes": 0.005374133644623514,
         "pid": 3892,
         "ppid": 1388,
         "status": "running",
@@ -672,7 +672,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.006421920707411746,
+        "membytes": 0.006421920707411746,
         "pid": 3900,
         "ppid": 1388,
         "status": "running",
@@ -682,7 +682,7 @@
     {
         "name": "ssm.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0031612550850726546,
+        "membytes": 0.0031612550850726546,
         "pid": 3908,
         "ppid": 1388,
         "status": "running",
@@ -692,7 +692,7 @@
     {
         "name": "MeshAgent.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.01894963661372797,
+        "membytes": 0.01894963661372797,
         "pid": 3920,
         "ppid": 1388,
         "status": "running",
@@ -702,7 +702,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.006905055918526623,
+        "membytes": 0.006905055918526623,
         "pid": 4076,
         "ppid": 1388,
         "status": "running",
@@ -712,7 +712,7 @@
     {
         "name": "sihost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.012527715906316225,
+        "membytes": 0.012527715906316225,
         "pid": 4136,
         "ppid": 3268,
         "status": "running",
@@ -722,7 +722,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.004169277932954313,
+        "membytes": 0.004169277932954313,
         "pid": 4160,
         "ppid": 1388,
         "status": "running",
@@ -732,7 +732,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.006851374228402747,
+        "membytes": 0.006851374228402747,
         "pid": 4192,
         "ppid": 1388,
         "status": "running",
@@ -742,7 +742,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.006024278558346003,
+        "membytes": 0.006024278558346003,
         "pid": 4208,
         "ppid": 1388,
         "status": "running",
@@ -752,7 +752,7 @@
     {
         "name": "LogMeIn.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.017691099211934895,
+        "membytes": 0.017691099211934895,
         "pid": 4232,
         "ppid": 1388,
         "status": "running",
@@ -762,7 +762,7 @@
     {
         "name": "vmms.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.017331233067030397,
+        "membytes": 0.017331233067030397,
         "pid": 4292,
         "ppid": 1388,
         "status": "running",
@@ -772,7 +772,7 @@
     {
         "name": "TabTip32.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0023441004687425535,
+        "membytes": 0.0023441004687425535,
         "pid": 4304,
         "ppid": 5916,
         "status": "running",
@@ -782,7 +782,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.022273924979917578,
+        "membytes": 0.022273924979917578,
         "pid": 4436,
         "ppid": 1388,
         "status": "running",
@@ -792,7 +792,7 @@
     {
         "name": "explorer.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.040491900039364585,
+        "membytes": 0.040491900039364585,
         "pid": 4664,
         "ppid": 2804,
         "status": "running",
@@ -802,7 +802,7 @@
     {
         "name": "tacticalrmm.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.019854272502852533,
+        "membytes": 0.019854272502852533,
         "pid": 4696,
         "ppid": 3840,
         "status": "running",
@@ -812,7 +812,7 @@
     {
         "name": "python.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.03651547854870715,
+        "membytes": 0.03651547854870715,
         "pid": 4708,
         "ppid": 3908,
         "status": "running",
@@ -822,7 +822,7 @@
     {
         "name": "conhost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0060938659344325075,
+        "membytes": 0.0060938659344325075,
         "pid": 4728,
         "ppid": 4708,
         "status": "running",
@@ -832,7 +832,7 @@
     {
         "name": "conhost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.006127665517103096,
+        "membytes": 0.006127665517103096,
         "pid": 4736,
         "ppid": 4696,
         "status": "running",
@@ -842,7 +842,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0035111801762505086,
+        "membytes": 0.0035111801762505086,
         "pid": 4752,
         "ppid": 1388,
         "status": "running",
@@ -852,7 +852,7 @@
     {
         "name": "vmcompute.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.005598801458845658,
+        "membytes": 0.005598801458845658,
         "pid": 5020,
         "ppid": 1388,
         "status": "running",
@@ -862,7 +862,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.005260805632139777,
+        "membytes": 0.005260805632139777,
         "pid": 5088,
         "ppid": 1388,
         "status": "running",
@@ -872,7 +872,7 @@
     {
         "name": "vmwp.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.011384494727752215,
+        "membytes": 0.011384494727752215,
         "pid": 5276,
         "ppid": 5020,
         "status": "running",
@@ -882,7 +882,7 @@
     {
         "name": "python.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.020685344594399937,
+        "membytes": 0.020685344594399937,
         "pid": 5472,
         "ppid": 4708,
         "status": "running",
@@ -892,7 +892,7 @@
     {
         "name": "WmiPrvSE.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.010167709751611041,
+        "membytes": 0.010167709751611041,
         "pid": 5712,
         "ppid": 1628,
         "status": "running",
@@ -902,7 +902,7 @@
     {
         "name": "TabTip.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.008543341572677483,
+        "membytes": 0.008543341572677483,
         "pid": 5916,
         "ppid": 4752,
         "status": "running",
@@ -912,7 +912,7 @@
     {
         "name": "vmwp.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.011780148666072628,
+        "membytes": 0.011780148666072628,
         "pid": 5924,
         "ppid": 5020,
         "status": "running",
@@ -922,7 +922,7 @@
     {
         "name": "msdtc.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.004956609388104484,
+        "membytes": 0.004956609388104484,
         "pid": 6016,
         "ppid": 1388,
         "status": "running",
@@ -932,7 +932,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0025468979647660824,
+        "membytes": 0.0025468979647660824,
         "pid": 6056,
         "ppid": 1388,
         "status": "running",
@@ -942,7 +942,7 @@
     {
         "name": "vmwp.exe",
         "cpu_percent": 0.06875,
-        "memory_percent": 0.01141034146744149,
+        "membytes": 0.01141034146744149,
         "pid": 6092,
         "ppid": 5020,
         "status": "running",
@@ -952,7 +952,7 @@
     {
         "name": "vmwp.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.011595245066757059,
+        "membytes": 0.011595245066757059,
         "pid": 6296,
         "ppid": 5020,
         "status": "running",
@@ -962,7 +962,7 @@
     {
         "name": "cmd.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.00203990422470726,
+        "membytes": 0.00203990422470726,
         "pid": 6620,
         "ppid": 4664,
         "status": "running",
@@ -972,7 +972,7 @@
     {
         "name": "ctfmon.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.007632741051316932,
+        "membytes": 0.007632741051316932,
         "pid": 6648,
         "ppid": 4752,
         "status": "running",
@@ -982,7 +982,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.007199311108835272,
+        "membytes": 0.007199311108835272,
         "pid": 6716,
         "ppid": 1388,
         "status": "running",
@@ -992,7 +992,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.0038054353665591583,
+        "membytes": 0.0038054353665591583,
         "pid": 6760,
         "ppid": 1388,
         "status": "running",
@@ -1002,7 +1002,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.013456210324384736,
+        "membytes": 0.013456210324384736,
         "pid": 6868,
         "ppid": 1388,
         "status": "running",
@@ -1012,7 +1012,7 @@
     {
         "name": "SearchUI.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.04596743243199986,
+        "membytes": 0.04596743243199986,
         "pid": 6904,
         "ppid": 1628,
         "status": "stopped",
@@ -1022,7 +1022,7 @@
     {
         "name": "tacticalrmm.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.023025468641651836,
+        "membytes": 0.023025468641651836,
         "pid": 6908,
         "ppid": 7592,
         "status": "running",
@@ -1032,7 +1032,7 @@
     {
         "name": "taskhostw.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.006147547624556384,
+        "membytes": 0.006147547624556384,
         "pid": 6984,
         "ppid": 2440,
         "status": "running",
@@ -1042,7 +1042,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.017520113087836627,
+        "membytes": 0.017520113087836627,
         "pid": 7092,
         "ppid": 1388,
         "status": "running",
@@ -1052,7 +1052,7 @@
     {
         "name": "RuntimeBroker.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.011543551587378511,
+        "membytes": 0.011543551587378511,
         "pid": 7148,
         "ppid": 1628,
         "status": "running",
@@ -1062,7 +1062,7 @@
     {
         "name": "dllhost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.006175382574990985,
+        "membytes": 0.006175382574990985,
         "pid": 7232,
         "ppid": 1628,
         "status": "running",
@@ -1072,7 +1072,7 @@
     {
         "name": "conhost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.006191288260953614,
+        "membytes": 0.006191288260953614,
         "pid": 7288,
         "ppid": 6908,
         "status": "running",
@@ -1082,7 +1082,7 @@
     {
         "name": "nssm.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.003252712779357776,
+        "membytes": 0.003252712779357776,
         "pid": 7592,
         "ppid": 1388,
         "status": "running",
@@ -1092,7 +1092,7 @@
     {
         "name": "svchost.exe",
         "cpu_percent": 0.0,
-        "memory_percent": 0.005972585078967456,
+        "membytes": 0.005972585078967456,
         "pid": 8012,
         "ppid": 1388,
         "status": "running",

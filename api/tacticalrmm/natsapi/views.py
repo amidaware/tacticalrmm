@@ -15,6 +15,11 @@ from agents.models import Agent
 from software.models import InstalledSoftware
 from checks.utils import bytes2human
 from agents.serializers import WinAgentSerializer
+from agents.tasks import (
+    agent_recovery_email_task,
+    agent_recovery_sms_task,
+    handle_agent_recovery_task,
+)
 
 from tacticalrmm.utils import notify_error, filter_software, SoftwareList
 
@@ -36,6 +41,28 @@ class NatsCheckIn(APIView):
         agent.version = request.data["version"]
         agent.last_seen = djangotime.now()
         agent.save(update_fields=["version", "last_seen"])
+
+        if agent.agentoutages.exists() and agent.agentoutages.last().is_active:
+            last_outage = agent.agentoutages.last()
+            last_outage.recovery_time = djangotime.now()
+            last_outage.save(update_fields=["recovery_time"])
+
+            if agent.overdue_email_alert:
+                agent_recovery_email_task.delay(pk=last_outage.pk)
+            if agent.overdue_text_alert:
+                agent_recovery_sms_task.delay(pk=last_outage.pk)
+
+        recovery = agent.recoveryactions.filter(last_run=None).last()
+        if recovery is not None:
+            recovery.last_run = djangotime.now()
+            recovery.save(update_fields=["last_run"])
+            handle_agent_recovery_task.delay(pk=recovery.pk)
+            return Response("ok")
+
+        # get any pending actions
+        if agent.pendingactions.filter(status="pending").exists():
+            agent.handle_pending_actions()
+
         return Response("ok")
 
     def put(self, request):

@@ -37,7 +37,7 @@ def _check_in_full(pk: int) -> None:
 def check_in_task() -> None:
     q = Agent.objects.only("pk", "version")
     agents: List[int] = [
-        i.pk for i in q if pyver.parse(i.version) >= pyver.parse("1.1.12")
+        i.pk for i in q if pyver.parse(i.version) == pyver.parse("1.1.12")
     ]
     chunks = (agents[i : i + 50] for i in range(0, len(agents), 50))
     for chunk in chunks:
@@ -139,7 +139,9 @@ def sync_sysinfo_task():
     online = [
         i
         for i in agents
-        if pyver.parse(i.version) >= pyver.parse("1.1.3") and i.status == "online"
+        if pyver.parse(i.version) >= pyver.parse("1.1.3")
+        and pyver.parse(i.version) <= pyver.parse("1.1.12")
+        and i.status == "online"
     ]
 
     chunks = (online[i : i + 50] for i in range(0, len(online), 50))
@@ -307,6 +309,20 @@ def install_salt_task(pk: int) -> None:
     sleep(20)
     agent = Agent.objects.get(pk=pk)
     asyncio.run(agent.nats_cmd({"func": "installsalt"}, wait=False))
+
+
+@app.task
+def handle_agent_recovery_task(pk: int) -> None:
+    sleep(10)
+    from agents.models import RecoveryAction
+
+    action = RecoveryAction.objects.get(pk=pk)
+    if action.mode == "command":
+        data = {"func": "recoverycmd", "recoverycommand": action.command}
+    else:
+        data = {"func": "recover", "payload": {"mode": action.mode}}
+
+    asyncio.run(action.agent.nats_cmd(data, wait=False))
 
 
 @app.task

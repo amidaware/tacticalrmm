@@ -30,7 +30,7 @@
         type="line"
         height="70%"
         :options="chartOptions"
-        :series="[{ name: 'Percentage', data: history }]"
+        :series="[{ name: seriesName, data: history }]"
       />
     </q-card>
   </q-dialog>
@@ -49,6 +49,7 @@ export default {
   data() {
     return {
       history: [],
+      results: [],
       timeFilter: 1,
       timeFilterOptions: [
         { value: 1, label: "Last 24 Hours" },
@@ -91,10 +92,6 @@ export default {
             datetimeUTC: false,
           },
         },
-        yaxis: {
-          min: 0,
-          max: 100,
-        },
         noData: {
           text: "No Data",
         },
@@ -111,6 +108,15 @@ export default {
     showChart() {
       return !this.$q.loading.isActive && this.history.length > 0;
     },
+    seriesName() {
+      if (this.check.check_type === "cpuload") return "CPU Load (%)";
+      else if (this.check.check_type === "memory") return "Memory Usage (%)";
+      else if (this.check.check_type === "diskspace") return "Disk Space Remaining (%)";
+      else if (this.check.check_type === "script") return "Script Results";
+      else if (this.check.check_type === "eventlog") return "Status";
+      else if (this.check.check_type === "winsvc") return "Status";
+      else if (this.check.check_type === "ping") return "Status";
+    },
   },
   methods: {
     getChartData() {
@@ -120,6 +126,16 @@ export default {
         .patch(`/checks/history/${this.check.id}/`, { timeFilter: this.timeFilter })
         .then(r => {
           this.history = r.data;
+
+          // save copy of data to reference results in chart tooltip
+          if (
+            this.check.check_type !== "cpuload" ||
+            this.check.check_type !== "memory" ||
+            this.check.check_type !== "diskspace"
+          ) {
+            this.results = r.data;
+          }
+
           this.$q.loading.hide();
         })
         .catch(e => {
@@ -139,12 +155,12 @@ export default {
   created() {
     this.getChartData();
 
-    // add annotation depending on check type
     if (
       this.check.check_type === "cpuload" ||
       this.check.check_type === "memory" ||
       this.check.check_type === "diskspace"
     ) {
+      // add threshold line depending on check type
       this.chartOptions["annotations"] = {
         position: "front",
         yaxis: [
@@ -162,6 +178,55 @@ export default {
             },
           },
         ],
+      };
+
+      // Set yaxis options
+      this.chartOptions["yaxis"] = {
+        min: 0,
+        max: 100,
+        labels: {
+          formatter: (val, index) => {
+            return val + "%";
+          },
+        },
+      };
+    } else {
+      // Set the y-axis labels to Failing and Passing
+      this.chartOptions["yaxis"] = {
+        min: 0,
+        max: 1,
+        tickAmount: 4,
+        reversed: true,
+        forceNiceScale: true,
+        labels: {
+          formatter: (val, index) => {
+            if (val === 0) return "Passing";
+            else if (val === 1) return "Failing";
+            else return "";
+          },
+        },
+      };
+
+      // customize the yaxis tooltip to include more information
+      this.chartOptions["tooltip"]["y"] = {
+        title: {
+          formatter: val => {
+            return "";
+          },
+        },
+        formatter: (value, { series, seriesIndex, dataPointIndex, w }) => {
+          let formatted = "";
+          if (this.check.check_type === "script") {
+            formatted += "Return Code: " + this.results[dataPointIndex].results.retcode + "<br/>";
+            formatted += "Std Out: " + this.results[dataPointIndex].results.stdout + "<br/>";
+            formatted += "Err Out: " + this.results[dataPointIndex].results.errout + "<br/>";
+            formatted += "Execution Time: " + this.results[dataPointIndex].results.execution_time + "<br/>";
+          } else {
+            formatted += this.results[dataPointIndex].results;
+          }
+
+          return formatted;
+        },
       };
     }
   },

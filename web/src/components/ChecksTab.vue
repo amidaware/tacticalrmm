@@ -180,23 +180,7 @@
                   >output</span
                 >
               </q-td>
-              <q-td v-else-if="props.row.check_type === 'script'">
-                <span
-                  style="cursor: pointer; text-decoration: underline"
-                  class="text-primary"
-                  @click="scriptMoreInfo(props.row)"
-                  >output</span
-                >
-              </q-td>
-              <q-td v-else-if="props.row.check_type === 'eventlog'">
-                <span
-                  style="cursor: pointer; text-decoration: underline"
-                  class="text-primary"
-                  @click="eventLogMoreInfo(props.row)"
-                  >output</span
-                >
-              </q-td>
-              <q-td v-else-if="props.row.check_type === 'cpuload' || props.row.check_type === 'memory'">
+              <q-td>
                 <span
                   style="cursor: pointer; text-decoration: underline"
                   class="text-primary"
@@ -204,7 +188,6 @@
                   >Show Run History</span
                 >
               </q-td>
-              <q-td v-else>{{ props.row.more_info }}</q-td>
               <q-td>{{ props.row.last_run }}</q-td>
               <q-td v-if="props.row.assigned_task !== null && props.row.assigned_task.length > 1"
                 >{{ props.row.assigned_task.length }} Tasks</q-td

@@ -54,10 +54,8 @@
             </q-list>
           </q-menu>
           <q-td>{{ props.row.name }}</q-td>
-          <!-- <q-td>{{ Math.ceil(props.row.cpu_percent) }}%</q-td>
-          <q-td>{{ convert(props.row.memory_percent) }} MB</q-td> -->
           <q-td>{{ props.row.cpu_percent }}%</q-td>
-          <q-td>{{ props.row.memory_percent }}</q-td>
+          <q-td>{{ bytes2Human(props.row.membytes) }}</q-td>
           <q-td>{{ props.row.username }}</q-td>
           <q-td>{{ props.row.pid }}</q-td>
           <q-td>{{ props.row.status }}</q-td>
@@ -104,16 +102,11 @@ export default {
           sort: (a, b, rowA, rowB) => parseInt(b) < parseInt(a),
         },
         {
-          name: "memory_percent",
+          name: "membytes",
           label: "Memory",
-          field: "memory_percent",
+          field: "membytes",
           align: "left",
           sortable: true,
-          sort: (a, b, rowA, rowB) => {
-            const newA = parseFloat(a.replace(/[a-z]+/i, ""));
-            const newB = parseFloat(b.replace(/[a-z]+/i, ""));
-            return newB < newA;
-          },
         },
         {
           name: "username",
@@ -204,6 +197,13 @@ export default {
     convert(percent) {
       const mb = this.mem * 1024;
       return Math.ceil((percent * mb) / 100).toLocaleString();
+    },
+    bytes2Human(bytes) {
+      if (bytes == 0) return "0B";
+      const k = 1024;
+      const sizes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
     },
   },
   beforeDestroy() {

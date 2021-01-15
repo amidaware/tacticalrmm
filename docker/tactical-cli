@@ -99,7 +99,7 @@ function generate_env {
 
   echo "Generating env file in ${INSTALL_DIR}"
   local config_file="$(cat << EOF
-IMAGE_REPO=${REPO}
+IMAGE_REPO=${DOCKER_REPO}
 VERSION=${VERSION}
 TRMM_USER=${USERNAME}
 TRMM_PASS=${PASSWORD}
@@ -149,7 +149,8 @@ function initiate_letsencrypt {
 FIRST_ARG="$1"
 
 # defaults
-REPO="tacticalrmm/"
+DOCKER_REPO="tacticalrmm/"
+REPO="wh1te909"
 BRANCH="master"
 VERSION="latest"
 
@@ -245,8 +246,19 @@ key="$1"
     [[ -z "$MODE" ]] && echo >&2 "Missing install or update first argument. Exiting..."; exit 1; 
     [[ "$MODE" != "install" ]] || [[ "$MODE" != "update" ]] && \
       echo >&2 "--local option only valid for install and update. Exiting..."; exit 1;
-    REPO=""
+    DOCKER_REPO=""
     shift # past argument
+    ;;
+
+    # repo arg
+    --repo)
+    [[ -z "$MODE" ]] && echo >&2 "Missing install or update first argument. Exiting..."; exit 1; 
+    [[ "$MODE" != "install" ]] || [[ "$MODE" != "update" ]] && \
+      echo >&2 "--repo option only valid for install and update. Exiting..."; exit 1;
+
+    shift # past argument
+    REPO="$key"
+    shift # past value
     ;;
 
     # branch arg
@@ -358,8 +370,8 @@ if [[ "$MODE" == "install" ]]; then
   cd "$INSTALL_DIR"
 
   # pull docker-compose.yml file
-  echo "Downloading docker-compose.yml from branch ${branch}"
-  COMPOSE_FILE="https://raw.githubusercontent.com/wh1te909/tacticalrmm/${branch}/docker/docker-compose.yml"
+  echo "Downloading docker-compose.yml from branch ${BRANCH}"
+  COMPOSE_FILE="https://raw.githubusercontent.com/${REPO}/tacticalrmm/${BRANCH}/docker/docker-compose.yml"
   if ! curl -sS "${COMPOSE_FILE}"; then
     echo >&2 "Failed to download installation package ${COMPOSE_FILE}"
     exit 1

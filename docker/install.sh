@@ -8,14 +8,21 @@ temp="/tmp/tactical"
 args="$*"
 version="latest"
 branch="master"
+repo="wh1te909"
 
 branchRegex=" --branch ([^ ]+)"
 if [[ " ${args}" =~ ${branchRegex} ]]; then
   branch="${BASH_REMATCH[1]}"
 fi
 
+repoRegex=" --repo ([^ ]+)"
+if [[ " ${args}" =~ ${repoRegex} ]]; then
+  repo="${BASH_REMATCH[1]}"
+fi
+
+echo "repo=${repo}"
 echo "branch=${branch}"
-tactical_cli="https://raw.githubusercontent.com/wh1te909/tacticalrmm/${branch}/docker/tactical-cli"
+tactical_cli="https://raw.githubusercontent.com/${repo}/tacticalrmm/${branch}/docker/tactical-cli"
 
 versionRegex=" --version ([^ ]+)"
 if [[ " ${args}" =~ ${versionRegex} ]]; then
@@ -36,7 +43,7 @@ if ! curl -sS "${tactical_cli}"; then
 fi
 
 chmod +x tactical-cli
-./tactical-cli ${args} --version "${version}" 2>&1 | tee -a ~/install.log
+tactical-cli ${args} --version "${version}" 2>&1 | tee -a ~/install.log
 
 cd ~
 if ! rm -rf "${temp}"; then

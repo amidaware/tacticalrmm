@@ -39,7 +39,7 @@ stdout_logfile_maxbytes=0
 redirect_stderr=true
 
 [program:nats-api]
-command=/bin/bash -c "/usr/local/bin/nats-api -api-host http://${API_CONTAINER}:${API_PORT}/natsapi -nats-host tls://${API_HOST}:4222"
+command=/bin/bash -c "/usr/local/bin/nats-api -debug -api-host http://${API_CONTAINER}:${API_PORT}/natsapi -nats-host tls://${API_HOST}:4222"
 stdout_logfile=/dev/fd/1
 stdout_logfile_maxbytes=0
 redirect_stderr=true

@@ -74,7 +74,7 @@ KEY_FILE = '/opt/tactical/certs/privkey.pem'
 
 SCRIPTS_DIR = '/opt/tactical/scripts'
 
-ALLOWED_HOSTS = ['${API_HOST}']
+ALLOWED_HOSTS = ['${API_HOST}', 'tactical-backend']
 
 ADMIN_URL = '${ADMINURL}/'
 
@@ -168,16 +168,16 @@ fi
 
 if [ "$1" = 'tactical-celery' ]; then
   check_tactical_ready
-  celery -A tacticalrmm worker
+  celery -A tacticalrmm worker -l info
 fi
 
 if [ "$1" = 'tactical-celerybeat' ]; then
   check_tactical_ready
   test -f "${TACTICAL_DIR}/api/celerybeat.pid" && rm "${TACTICAL_DIR}/api/celerybeat.pid"
-  celery -A tacticalrmm beat
+  celery -A tacticalrmm beat -l info
 fi
 
 if [ "$1" = 'tactical-celerywinupdate' ]; then
   check_tactical_ready
-  celery -A tacticalrmm worker -Q wupdate
+  celery -A tacticalrmm worker -Q wupdate -l info
 fi

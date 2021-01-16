@@ -144,8 +144,8 @@ services:
       proxy:
         aliases:
           - tactical-backend
-      - api-db
-      - redis
+      api-db:
+      redis:
     volumes:
       - tactical_data:/opt/tactical
     depends_on:

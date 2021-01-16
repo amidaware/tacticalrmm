@@ -51,14 +51,10 @@ def edit_settings(request):
 
     # check if default policies changed
     if old_server_policy != new_settings.server_policy:
-        generate_all_agent_checks_task.delay(
-            mon_type="server", clear=True, create_tasks=True
-        )
+        generate_all_agent_checks_task.delay(mon_type="server", create_tasks=True)
 
     if old_workstation_policy != new_settings.workstation_policy:
-        generate_all_agent_checks_task.delay(
-            mon_type="workstation", clear=True, create_tasks=True
-        )
+        generate_all_agent_checks_task.delay(mon_type="workstation", create_tasks=True)
 
     return Response("ok")
 

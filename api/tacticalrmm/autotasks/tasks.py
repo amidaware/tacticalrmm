@@ -76,7 +76,7 @@ def create_win_task_schedule(pk, pending_action=False):
         return "error"
 
     r = asyncio.run(task.agent.nats_cmd(nats_data, timeout=10))
-    print(r)
+
     if r != "ok":
         # don't create pending action if this task was initiated by a pending action
         if not pending_action:
@@ -162,7 +162,7 @@ def delete_win_task_schedule(pk, pending_action=False):
         "schedtaskpayload": {"name": task.win_task_name},
     }
     r = asyncio.run(task.agent.nats_cmd(nats_data, timeout=10))
-    print(r)
+
     if r != "ok" and "The system cannot find the file specified" not in r:
         # don't create pending action if this task was initiated by a pending action
         if not pending_action:

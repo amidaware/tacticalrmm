@@ -1,5 +1,7 @@
 package main
 
+// env CGO_ENABLED=0 go build -v -a -tags netgo -installsuffix netgo -ldflags "-s -w" -o nats-api
+
 import (
 	"flag"
 	"fmt"
@@ -11,7 +13,8 @@ var version = "1.0.0"
 
 func main() {
 	ver := flag.Bool("version", false, "Prints version")
-	apiHost := flag.String("api-host", "", "django api base url")
+	apiHost := flag.String("api-host", "", "django full base url")
+	natsHost := flag.String("nats-host", "", "nats full connection string")
 	debug := flag.Bool("debug", false, "Debug")
 	flag.Parse()
 
@@ -20,5 +23,5 @@ func main() {
 		return
 	}
 
-	api.Listen(*apiHost, *debug)
+	api.Listen(*apiHost, *natsHost, *debug)
 }

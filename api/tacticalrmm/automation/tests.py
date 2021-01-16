@@ -121,9 +121,7 @@ class TestPolicyViews(TacticalTestCase):
 
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        mock_checks_task.assert_called_with(
-            policypk=policy.pk, create_tasks=True
-        )
+        mock_checks_task.assert_called_with(policypk=policy.pk, create_tasks=True)
 
         self.check_not_authenticated("put", url)
 
@@ -1001,7 +999,8 @@ class TestPolicyTasks(TacticalTestCase):
         self.assertEqual(Agent.objects.get(pk=agent2.id).autotasks.count(), 0)
 
         generate_agent_tasks_by_location_task(
-            {"site__client_id": clients[0].id}, "workstation")
+            {"site__client_id": clients[0].id}, "workstation"
+        )
 
         # all workstations in Default1 should have 3 tasks
         self.assertEqual(

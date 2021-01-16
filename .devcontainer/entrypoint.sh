@@ -18,6 +18,9 @@ set -e
 : "${API_HOST:=tactical-backend}"
 : "${APP_HOST:=tactical-frontend}"
 : "${REDIS_HOST:=tactical-redis}"
+: "${HTTP_PROTOCOL:=http}"
+: "${APP_PORT:=8080}"
+: "${API_PORT:=8000}"
 
 # Add python venv to path
 export PATH="${VIRTUAL_ENV}/bin:$PATH"
@@ -144,10 +147,9 @@ if [ "$1" = 'tactical-init-dev' ]; then
 
   # create .env file for frontend
   webenv="$(cat << EOF
-PROD_URL = "http://${API_HOST}:8000"
-DEV_URL = "http://${API_HOST}:8000"
-DEV_HOST = 0.0.0.0
-DEV_PORT = 8080
+PROD_URL = "${HTTP_PROTOCOL}://${API_HOST}"
+DEV_URL = "${HTTP_PROTOCOL}://${API_HOST}"
+APP_URL = https://${APP_HOST}
 EOF
 )"
   echo "${webenv}" | tee ${WORKSPACE_DIR}/web/.env > /dev/null
@@ -165,21 +167,21 @@ if [ "$1" = 'tactical-api' ]; then
   chmod +x /usr/local/bin/goversioninfo
   
   check_tactical_ready
-  python manage.py runserver 0.0.0.0:8000
+  python manage.py runserver 0.0.0.0:${API_PORT}
 fi
 
 if [ "$1" = 'tactical-celery-dev' ]; then
   check_tactical_ready
-  celery -A tacticalrmm worker -l debug
+  env/bin/celery -A tacticalrmm worker -l debug
 fi
 
 if [ "$1" = 'tactical-celerybeat-dev' ]; then
   check_tactical_ready
   test -f "${WORKSPACE_DIR}/api/tacticalrmm/celerybeat.pid" && rm "${WORKSPACE_DIR}/api/tacticalrmm/celerybeat.pid"
-  celery -A tacticalrmm beat -l debug
+  env/bin/celery -A tacticalrmm beat -l debug
 fi
 
 if [ "$1" = 'tactical-celerywinupdate-dev' ]; then
   check_tactical_ready
-  celery -A tacticalrmm worker -Q wupdate -l debug
+  env/bin/celery -A tacticalrmm worker -Q wupdate -l debug
 fi

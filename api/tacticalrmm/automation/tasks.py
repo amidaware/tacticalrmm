@@ -6,17 +6,7 @@ from tacticalrmm.celery import app
 
 
 @app.task
-def generate_agent_checks_from_policies_task(
-    ###
-    # copies the policy checks to all affected agents
-    #
-    # clear: clears all policy checks first
-    # create_tasks: also create tasks after checks are generated
-    ###
-    policypk,
-    clear=False,
-    create_tasks=False,
-):
+def generate_agent_checks_from_policies_task(policypk, create_tasks=False):
 
     policy = Policy.objects.get(pk=policypk)
 
@@ -30,32 +20,28 @@ def generate_agent_checks_from_policies_task(
         agents = policy.related_agents()
 
     for agent in agents:
-        agent.generate_checks_from_policies(clear=clear)
+        agent.generate_checks_from_policies()
         if create_tasks:
-            agent.generate_tasks_from_policies(
-                clear=clear,
-            )
+            agent.generate_tasks_from_policies()
 
 
 @app.task
-def generate_agent_checks_by_location_task(
-    location, mon_type, clear=False, create_tasks=False
-):
+def generate_agent_checks_by_location_task(location, mon_type, create_tasks=False):
 
     for agent in Agent.objects.filter(**location).filter(monitoring_type=mon_type):
-        agent.generate_checks_from_policies(clear=clear)
+        agent.generate_checks_from_policies()
 
         if create_tasks:
-            agent.generate_tasks_from_policies(clear=clear)
+            agent.generate_tasks_from_policies()
 
 
 @app.task
-def generate_all_agent_checks_task(mon_type, clear=False, create_tasks=False):
+def generate_all_agent_checks_task(mon_type, create_tasks=False):
     for agent in Agent.objects.filter(monitoring_type=mon_type):
-        agent.generate_checks_from_policies(clear=clear)
+        agent.generate_checks_from_policies()
 
         if create_tasks:
-            agent.generate_tasks_from_policies(clear=clear)
+            agent.generate_tasks_from_policies()
 
 
 @app.task
@@ -93,7 +79,7 @@ def update_policy_check_fields_task(checkpk):
 
 
 @app.task
-def generate_agent_tasks_from_policies_task(policypk, clear=False):
+def generate_agent_tasks_from_policies_task(policypk):
 
     policy = Policy.objects.get(pk=policypk)
 
@@ -107,14 +93,14 @@ def generate_agent_tasks_from_policies_task(policypk, clear=False):
         agents = policy.related_agents()
 
     for agent in agents:
-        agent.generate_tasks_from_policies(clear=clear)
+        agent.generate_tasks_from_policies()
 
 
 @app.task
-def generate_agent_tasks_by_location_task(location, mon_type, clear=False):
+def generate_agent_tasks_by_location_task(location, mon_type):
 
     for agent in Agent.objects.filter(**location).filter(monitoring_type=mon_type):
-        agent.generate_tasks_from_policies(clear=clear)
+        agent.generate_tasks_from_policies()
 
 
 @app.task

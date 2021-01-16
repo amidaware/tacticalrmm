@@ -83,7 +83,6 @@ class GetUpdateDeletePolicy(APIView):
         if saved_policy.active != old_active or saved_policy.enforced != old_enforced:
             generate_agent_checks_from_policies_task.delay(
                 policypk=policy.pk,
-                clear=(not saved_policy.active or not saved_policy.enforced),
                 create_tasks=(saved_policy.active != old_active),
             )
 
@@ -93,8 +92,8 @@ class GetUpdateDeletePolicy(APIView):
         policy = get_object_or_404(Policy, pk=pk)
 
         # delete all managed policy checks off of agents
-        generate_agent_checks_from_policies_task.delay(policypk=policy.pk, clear=True)
-        generate_agent_tasks_from_policies_task.delay(policypk=policy.pk, clear=True)
+        generate_agent_checks_from_policies_task.delay(policypk=policy.pk)
+        generate_agent_tasks_from_policies_task.delay(policypk=policy.pk)
         policy.delete()
 
         return Response("ok")
@@ -218,7 +217,6 @@ class GetRelated(APIView):
                     generate_agent_checks_by_location_task.delay(
                         location={"site__client_id": client.id},
                         mon_type="workstation",
-                        clear=True,
                         create_tasks=True,
                     )
 
@@ -236,7 +234,6 @@ class GetRelated(APIView):
                     generate_agent_checks_by_location_task.delay(
                         location={"site_id": site.id},
                         mon_type="workstation",
-                        clear=True,
                         create_tasks=True,
                     )
 
@@ -258,7 +255,6 @@ class GetRelated(APIView):
                     generate_agent_checks_by_location_task.delay(
                         location={"site__client_id": client.id},
                         mon_type="server",
-                        clear=True,
                         create_tasks=True,
                     )
 
@@ -276,7 +272,6 @@ class GetRelated(APIView):
                     generate_agent_checks_by_location_task.delay(
                         location={"site_id": site.id},
                         mon_type="server",
-                        clear=True,
                         create_tasks=True,
                     )
 
@@ -296,7 +291,6 @@ class GetRelated(APIView):
                     generate_agent_checks_by_location_task.delay(
                         location={"site__client_id": client.id},
                         mon_type="workstation",
-                        clear=True,
                         create_tasks=True,
                     )
 
@@ -311,7 +305,6 @@ class GetRelated(APIView):
                     generate_agent_checks_by_location_task.delay(
                         location={"site_id": site.id},
                         mon_type="workstation",
-                        clear=True,
                         create_tasks=True,
                     )
 
@@ -329,7 +322,6 @@ class GetRelated(APIView):
                     generate_agent_checks_by_location_task.delay(
                         location={"site__client_id": client.id},
                         mon_type="server",
-                        clear=True,
                         create_tasks=True,
                     )
 
@@ -343,7 +335,6 @@ class GetRelated(APIView):
                     generate_agent_checks_by_location_task.delay(
                         location={"site_id": site.pk},
                         mon_type="server",
-                        clear=True,
                         create_tasks=True,
                     )
 
@@ -358,14 +349,14 @@ class GetRelated(APIView):
                 if not agent.policy or agent.policy and agent.policy.pk != policy.pk:
                     agent.policy = policy
                     agent.save()
-                    agent.generate_checks_from_policies(clear=True)
-                    agent.generate_tasks_from_policies(clear=True)
+                    agent.generate_checks_from_policies()
+                    agent.generate_tasks_from_policies()
             else:
                 if agent.policy:
                     agent.policy = None
                     agent.save()
-                    agent.generate_checks_from_policies(clear=True)
-                    agent.generate_tasks_from_policies(clear=True)
+                    agent.generate_checks_from_policies()
+                    agent.generate_tasks_from_policies()
 
         return Response("ok")
 

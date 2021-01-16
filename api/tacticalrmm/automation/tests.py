@@ -122,7 +122,7 @@ class TestPolicyViews(TacticalTestCase):
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         mock_checks_task.assert_called_with(
-            policypk=policy.pk, clear=True, create_tasks=True
+            policypk=policy.pk, create_tasks=True
         )
 
         self.check_not_authenticated("put", url)
@@ -140,8 +140,8 @@ class TestPolicyViews(TacticalTestCase):
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        mock_checks_task.assert_called_with(policypk=policy.pk, clear=True)
-        mock_tasks_task.assert_called_with(policypk=policy.pk, clear=True)
+        mock_checks_task.assert_called_with(policypk=policy.pk)
+        mock_tasks_task.assert_called_with(policypk=policy.pk)
 
         self.check_not_authenticated("delete", url)
 
@@ -298,7 +298,6 @@ class TestPolicyViews(TacticalTestCase):
         mock_checks_location_task.assert_called_with(
             location={"site__client_id": client.id},
             mon_type="server",
-            clear=True,
             create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
@@ -311,7 +310,6 @@ class TestPolicyViews(TacticalTestCase):
         mock_checks_location_task.assert_called_with(
             location={"site__client_id": client.id},
             mon_type="workstation",
-            clear=True,
             create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
@@ -324,7 +322,6 @@ class TestPolicyViews(TacticalTestCase):
         mock_checks_location_task.assert_called_with(
             location={"site_id": site.id},
             mon_type="server",
-            clear=True,
             create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
@@ -337,7 +334,6 @@ class TestPolicyViews(TacticalTestCase):
         mock_checks_location_task.assert_called_with(
             location={"site_id": site.id},
             mon_type="workstation",
-            clear=True,
             create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
@@ -347,7 +343,7 @@ class TestPolicyViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 200)
 
         # called because the relation changed
-        mock_checks_task.assert_called_with(clear=True)
+        mock_checks_task.assert_called()
         mock_checks_task.reset_mock()
 
         # Adding the same relations shouldn't trigger mocks
@@ -396,7 +392,6 @@ class TestPolicyViews(TacticalTestCase):
         mock_checks_location_task.assert_called_with(
             location={"site__client_id": client.id},
             mon_type="server",
-            clear=True,
             create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
@@ -409,7 +404,6 @@ class TestPolicyViews(TacticalTestCase):
         mock_checks_location_task.assert_called_with(
             location={"site__client_id": client.id},
             mon_type="workstation",
-            clear=True,
             create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
@@ -422,7 +416,6 @@ class TestPolicyViews(TacticalTestCase):
         mock_checks_location_task.assert_called_with(
             location={"site_id": site.id},
             mon_type="server",
-            clear=True,
             create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
@@ -435,7 +428,6 @@ class TestPolicyViews(TacticalTestCase):
         mock_checks_location_task.assert_called_with(
             location={"site_id": site.id},
             mon_type="workstation",
-            clear=True,
             create_tasks=True,
         )
         mock_checks_location_task.reset_mock()
@@ -444,7 +436,7 @@ class TestPolicyViews(TacticalTestCase):
         resp = self.client.post(url, agent_payload, format="json")
         self.assertEqual(resp.status_code, 200)
         # called because the relation changed
-        mock_checks_task.assert_called_with(clear=True)
+        mock_checks_task.assert_called()
         mock_checks_task.reset_mock()
 
         # adding the same relations shouldn't trigger mocks
@@ -753,7 +745,7 @@ class TestPolicyTasks(TacticalTestCase):
         agent = baker.make_recipe("agents.agent", site=site, policy=policy)
 
         # test policy assigned to agent
-        generate_agent_checks_from_policies_task(policy.id, clear=True)
+        generate_agent_checks_from_policies_task(policy.id)
 
         # make sure all checks were created. should be 7
         agent_checks = Agent.objects.get(pk=agent.id).agentchecks.all()
@@ -832,7 +824,6 @@ class TestPolicyTasks(TacticalTestCase):
         generate_agent_checks_by_location_task(
             {"site_id": sites[0].id},
             "server",
-            clear=True,
             create_tasks=True,
         )
 
@@ -846,7 +837,6 @@ class TestPolicyTasks(TacticalTestCase):
         generate_agent_checks_by_location_task(
             {"site__client_id": clients[0].id},
             "workstation",
-            clear=True,
             create_tasks=True,
         )
         # workstation_agent should now have policy checks and the other agents should not
@@ -875,7 +865,7 @@ class TestPolicyTasks(TacticalTestCase):
         core.workstation_policy = policy
         core.save()
 
-        generate_all_agent_checks_task("server", clear=True, create_tasks=True)
+        generate_all_agent_checks_task("server", create_tasks=True)
 
         # all servers should have 7 checks
         for agent in server_agents:
@@ -884,7 +874,7 @@ class TestPolicyTasks(TacticalTestCase):
         for agent in workstation_agents:
             self.assertEqual(Agent.objects.get(pk=agent.id).agentchecks.count(), 0)
 
-        generate_all_agent_checks_task("workstation", clear=True, create_tasks=True)
+        generate_all_agent_checks_task("workstation", create_tasks=True)
 
         # all agents should have 7 checks now
         for agent in server_agents:
@@ -961,7 +951,7 @@ class TestPolicyTasks(TacticalTestCase):
         site = baker.make("clients.Site")
         agent = baker.make_recipe("agents.server_agent", site=site, policy=policy)
 
-        generate_agent_tasks_from_policies_task(policy.id, clear=True)
+        generate_agent_tasks_from_policies_task(policy.id)
 
         agent_tasks = Agent.objects.get(pk=agent.id).autotasks.all()
 
@@ -1000,9 +990,7 @@ class TestPolicyTasks(TacticalTestCase):
         agent1 = baker.make_recipe("agents.agent", site=sites[1])
         agent2 = baker.make_recipe("agents.agent", site=sites[3])
 
-        generate_agent_tasks_by_location_task(
-            {"site_id": sites[0].id}, "server", clear=True
-        )
+        generate_agent_tasks_by_location_task({"site_id": sites[0].id}, "server")
 
         # all servers in site1 and site2 should have 3 tasks
         self.assertEqual(
@@ -1013,8 +1001,7 @@ class TestPolicyTasks(TacticalTestCase):
         self.assertEqual(Agent.objects.get(pk=agent2.id).autotasks.count(), 0)
 
         generate_agent_tasks_by_location_task(
-            {"site__client_id": clients[0].id}, "workstation", clear=True
-        )
+            {"site__client_id": clients[0].id}, "workstation")
 
         # all workstations in Default1 should have 3 tasks
         self.assertEqual(

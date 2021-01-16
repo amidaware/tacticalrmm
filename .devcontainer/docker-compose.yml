@@ -7,8 +7,10 @@ services:
       context: .
       dockerfile: ./api.dockerfile
     command: ["tactical-api"]
+    environment:
+      API_PORT: ${API_PORT}
     ports:
-      - 8000:8000
+      - "8000:${API_PORT}"
     volumes:
       - tactical-data-dev:/opt/tactical
       - ..:/workspace:cached
@@ -19,12 +21,12 @@ services:
 
   app-dev:
     image: node:12-alpine
-    ports:
-      - 8080:8080
-    command: /bin/sh -c "npm install && npm run serve -- --host 0.0.0.0 --port 8080"
+    command: /bin/sh -c "npm install && npm run serve -- --host 0.0.0.0 --port ${APP_PORT}"
     working_dir: /workspace/web
     volumes:
       - ..:/workspace:cached
+    ports:
+      - "8080:${APP_PORT}"
     networks:
       dev:
         aliases: 
@@ -51,7 +53,7 @@ services:
     restart: always
     environment:
       API_HOST: ${API_HOST}
-      API_PORT: 8000
+      API_PORT: ${API_PORT}
       DEV: 1
     ports:
       - "4222:4222"
@@ -141,6 +143,8 @@ services:
       MESH_USER: ${MESH_USER}
       TRMM_USER: ${TRMM_USER}
       TRMM_PASS: ${TRMM_PASS}
+      HTTP_PROTOCOL: ${HTTP_PROTOCOL}
+      APP_PORT: ${APP_PORT}
     depends_on:
       - postgres-dev
       - meshcentral-dev
@@ -211,8 +215,8 @@ services:
       MESH_HOST: ${MESH_HOST}
       CERT_PUB_KEY: ${CERT_PUB_KEY}
       CERT_PRIV_KEY: ${CERT_PRIV_KEY}
-      APP_PORT: 8080
-      API_PORT: 8000
+      APP_PORT: ${APP_PORT}
+      API_PORT: ${API_PORT}
     networks:
       dev:
         ipv4_address: 172.21.0.20

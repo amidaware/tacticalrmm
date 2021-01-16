@@ -76,9 +76,14 @@ def create_win_task_schedule(pk, pending_action=False):
         return "error"
 
     r = asyncio.run(task.agent.nats_cmd(nats_data, timeout=10))
+    print(r)
     if r != "ok":
         # don't create pending action if this task was initiated by a pending action
         if not pending_action:
+
+            # complete any other pending actions on agent with same task_id
+            task.agent.remove_matching_pending_task_actions(task.id)
+
             PendingAction(
                 agent=task.agent,
                 action_type="taskaction",
@@ -144,6 +149,7 @@ def enable_or_disable_win_task(pk, action, pending_action=False):
 
     task.sync_status = "synced"
     task.save(update_fields=["sync_status"])
+
     return "ok"
 
 
@@ -156,10 +162,14 @@ def delete_win_task_schedule(pk, pending_action=False):
         "schedtaskpayload": {"name": task.win_task_name},
     }
     r = asyncio.run(task.agent.nats_cmd(nats_data, timeout=10))
-
-    if r != "ok":
+    print(r)
+    if r != "ok" and "The system cannot find the file specified" not in r:
         # don't create pending action if this task was initiated by a pending action
         if not pending_action:
+
+            # complete any other pending actions on agent with same task_id
+            task.agent.remove_matching_pending_task_actions(task.id)
+
             PendingAction(
                 agent=task.agent,
                 action_type="taskaction",
@@ -168,7 +178,7 @@ def delete_win_task_schedule(pk, pending_action=False):
             task.sync_status = "pendingdeletion"
             task.save(update_fields=["sync_status"])
 
-        return
+        return "timeout"
 
     # complete pending action since it was successful
     if pending_action:
@@ -177,10 +187,7 @@ def delete_win_task_schedule(pk, pending_action=False):
         pendingaction.save(update_fields=["status"])
 
     # complete any other pending actions on agent with same task_id
-    for action in task.agent.pendingactions.all():
-        if action.details["task_id"] == task.id:
-            action.status = "completed"
-            action.save()
+    task.agent.remove_matching_pending_task_actions(task.id)
 
     task.delete()
     return "ok"

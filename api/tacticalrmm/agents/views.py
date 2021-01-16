@@ -114,8 +114,8 @@ def edit_agent(request):
 
     # check if site changed and initiate generating correct policies
     if old_site != request.data["site"]:
-        agent.generate_checks_from_policies(clear=True)
-        agent.generate_tasks_from_policies(clear=True)
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
 
     return Response("ok")
 

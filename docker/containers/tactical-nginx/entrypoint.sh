@@ -2,6 +2,7 @@
 
 set -e
 
+: "${WORKER_CONNECTIONS:=2048}"
 : "${APP_PORT:=80}"
 : "${API_PORT:=80}"
 
@@ -24,6 +25,8 @@ else
     openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out ${CERT_PUB_PATH} -keyout ${CERT_PRIV_PATH} -subj "/C=US/ST=Some-State/L=city/O=Internet Widgits Pty Ltd/CN=*.${rootdomain}"
   fi
 fi
+
+/bin/bash -c "sed -i 's/worker_connections.*/worker_connections ${WORKER_CONNECTIONS};/g' /etc/nginx/nginx.conf"
 
 nginx_config="$(cat << EOF
 # backend config

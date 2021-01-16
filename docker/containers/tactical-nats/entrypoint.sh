@@ -4,6 +4,7 @@ set -e
 
 : "${DEV:=0}"
 : "${API_CONTAINER:=tactical-backend}"
+: "${API_PORT:=80}"
 
 if [ "${DEV}" = 1 ]; then
   NATS_CONFIG=/workspace/api/tacticalrmm/nats-rmm.conf
@@ -38,7 +39,7 @@ stdout_logfile_maxbytes=0
 redirect_stderr=true
 
 [program:nats-api]
-command=/bin/bash -c "/usr/local/bin/nats-api -api-host http://${API_CONTAINER}/natsapi"
+command=/bin/bash -c "/usr/local/bin/nats-api -api-host http://${API_CONTAINER}:${API_PORT}/natsapi -nats-host tls://${API_HOST}:4222"
 stdout_logfile=/dev/fd/1
 stdout_logfile_maxbytes=0
 redirect_stderr=true

@@ -49,7 +49,9 @@ services:
   nats-dev:
     image: ${IMAGE_REPO}tactical-nats:${VERSION}
     restart: always
-    environment: 
+    environment:
+      API_HOST: ${API_HOST}
+      API_PORT: 8000
       DEV: 1
     ports:
       - "4222:4222"

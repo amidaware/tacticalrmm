@@ -81,6 +81,8 @@ services:
   tactical-nats:
     image: ${IMAGE_REPO}tactical-nats:${VERSION}
     restart: always
+    environment:
+      API_HOST: ${API_HOST}
     ports:
       - "4222:4222"
     volumes:

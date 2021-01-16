@@ -11,7 +11,7 @@
       <q-space />
     </div>
 
-    <q-video v-show="visible" :ratio="16 / 9" :src="control"></q-video>
+    <q-video v-show="visible" :ratio="16 / 9" :src="control" style="padding-bottom: 51%"></q-video>
   </div>
 </template>
 

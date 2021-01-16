@@ -179,6 +179,28 @@
                   @click="showCheckGraphModal(props.row)"
                   >Show Run History</span
                 >
+                &nbsp;&nbsp;&nbsp;
+                <span
+                  v-if="props.row.check_type === 'ping'"
+                  style="cursor: pointer; text-decoration: underline"
+                  class="text-primary"
+                  @click="pingInfo(props.row.readable_desc, props.row.more_info)"
+                  >Last Output</span
+                >
+                <span
+                  v-else-if="props.row.check_type === 'script'"
+                  style="cursor: pointer; text-decoration: underline"
+                  class="text-primary"
+                  @click="scriptMoreInfo(props.row)"
+                  >Last Output</span
+                >
+                <span
+                  v-else-if="props.row.check_type === 'eventlog'"
+                  style="cursor: pointer; text-decoration: underline"
+                  class="text-primary"
+                  @click="eventLogMoreInfo(props.row)"
+                  >Last Output</span
+                >
               </q-td>
               <q-td>{{ props.row.last_run }}</q-td>
               <q-td v-if="props.row.assigned_task !== null && props.row.assigned_task.length > 1"

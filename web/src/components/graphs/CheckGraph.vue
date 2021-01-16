@@ -193,12 +193,13 @@ export default {
     } else {
       // Set the y-axis labels to Failing and Passing
       this.chartOptions["yaxis"] = {
-        min: 0,
-        max: 1,
-        tickAmount: 4,
+        min: -1,
+        max: 2,
+        tickAmount: 0,
         reversed: true,
         forceNiceScale: true,
         labels: {
+          minWidth: 50,
           formatter: (val, index) => {
             if (val === 0) return "Passing";
             else if (val === 1) return "Failing";

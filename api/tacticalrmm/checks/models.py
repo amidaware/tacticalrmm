@@ -289,11 +289,11 @@ class Check(BaseAuditModel):
 
             # add check history
             self.add_check_history(
-                self.retcode,
+                1 if self.status == "failing" else 0,
                 {
                     "retcode": data["retcode"],
-                    "stdout": data["stdout"],
-                    "stderr": data["stderr"],
+                    "stdout": data["stdout"][:60],
+                    "stderr": data["stderr"][:60],
                     "execution_time": self.execution_time,
                 },
             )
@@ -314,7 +314,9 @@ class Check(BaseAuditModel):
             self.more_info = output
             self.save(update_fields=["more_info"])
 
-            self.add_check_history(0 if self.status == "failing" else 1)
+            self.add_check_history(
+                1 if self.status == "failing" else 0, self.more_info[:60]
+            )
 
         # windows service checks
         elif self.check_type == "winsvc":
@@ -355,7 +357,9 @@ class Check(BaseAuditModel):
 
             self.save(update_fields=["more_info"])
 
-            self.add_check_history(0 if self.status == "failing" else 1, self.more_info)
+            self.add_check_history(
+                1 if self.status == "failing" else 0, self.more_info[:60]
+            )
 
         elif self.check_type == "eventlog":
             log = []
@@ -416,7 +420,10 @@ class Check(BaseAuditModel):
             self.extra_details = {"log": log}
             self.save(update_fields=["extra_details"])
 
-            self.add_check_history(0 if self.status == "failing" else 1)
+            self.add_check_history(
+                1 if self.status == "failing" else 0,
+                "Events Found:" + str(len(self.extra_details["log"])),
+            )
 
         # handle status
         if self.status == "failing":

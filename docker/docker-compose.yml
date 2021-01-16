@@ -139,7 +139,9 @@ services:
     command: ["tactical-backend"]
     restart: always
     networks:
-      - proxy
+      proxy:
+        aliases:
+          - tactical-backend
       - api-db
       - redis
     volumes:

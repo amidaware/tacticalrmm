@@ -172,14 +172,6 @@
                 <q-badge color="negative">Failing</q-badge>
               </q-td>
               <!-- more info -->
-              <q-td v-if="props.row.check_type === 'ping'">
-                <span
-                  style="cursor: pointer; text-decoration: underline"
-                  class="text-primary"
-                  @click="pingInfo(props.row.readable_desc, props.row.more_info)"
-                  >output</span
-                >
-              </q-td>
               <q-td>
                 <span
                   style="cursor: pointer; text-decoration: underline"

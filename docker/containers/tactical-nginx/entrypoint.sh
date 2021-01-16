@@ -72,6 +72,10 @@ server  {
         alias ${TACTICAL_DIR}/scripts/;
     }
 
+    location ~ ^/(natsapi) {
+        deny all;
+    }
+
     error_log  /var/log/nginx/api-error.log;
     access_log /var/log/nginx/api-access.log;
 

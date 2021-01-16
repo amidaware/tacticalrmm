@@ -49,10 +49,13 @@ services:
   nats-dev:
     image: ${IMAGE_REPO}tactical-nats:${VERSION}
     restart: always
+    environment: 
+      DEV: 1
     ports:
       - "4222:4222"
     volumes:
       - tactical-data-dev:/opt/tactical
+      - ..:/workspace:cached
     networks:
       dev:
         aliases:

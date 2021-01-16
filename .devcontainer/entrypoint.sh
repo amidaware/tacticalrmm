@@ -68,7 +68,7 @@ KEY_FILE = '/opt/tactical/certs/privkey.pem'
 
 SCRIPTS_DIR = '${WORKSPACE_DIR}/scripts'
 
-ALLOWED_HOSTS = ['${API_HOST}', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['${API_HOST}', '*']
 
 ADMIN_URL = 'admin/'
 
@@ -161,6 +161,9 @@ EOF
 fi
 
 if [ "$1" = 'tactical-api' ]; then
+  cp ${WORKSPACE_DIR}/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/goversioninfo
+  chmod +x /usr/local/bin/goversioninfo
+  
   check_tactical_ready
   python manage.py runserver 0.0.0.0:8000
 fi

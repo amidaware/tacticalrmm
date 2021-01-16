@@ -47,8 +47,8 @@ func Listen(apihost, natshost string, debug bool) {
 	}
 
 	if debug {
-		fmt.Println("Api base url: ", api)
-		fmt.Println("Nats connection url: ", natsurl)
+		log.Println("Api base url: ", api)
+		log.Println("Nats connection url: ", natsurl)
 	}
 
 	rClient.SetHostURL(api)
@@ -56,6 +56,9 @@ func Listen(apihost, natshost string, debug bool) {
 	natsinfo, err := rClient.R().SetResult(&NatsInfo{}).Get("/natsinfo/")
 	if err != nil {
 		log.Fatalln(err)
+	}
+	if natsinfo.IsError() {
+		log.Fatalln(natsinfo.String())
 	}
 
 	opts := []nats.Option{

@@ -259,8 +259,6 @@ class CheckRunner(APIView):
         return Response(ret)
 
     def patch(self, request):
-        from logs.models import AuditLog
-
         check = get_object_or_404(Check, pk=request.data["id"])
         check.last_run = djangotime.now()
         check.save(update_fields=["last_run"])

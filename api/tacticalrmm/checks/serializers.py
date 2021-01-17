@@ -248,4 +248,4 @@ class CheckHistorySerializer(serializers.ModelSerializer):
     # used for return large amounts of graph data
     class Meta:
         model = CheckHistory
-        fields = ("x", "y")
+        fields = ("x", "y", "results")

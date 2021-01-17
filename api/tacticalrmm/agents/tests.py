@@ -127,7 +127,13 @@ class TestAgentViews(TacticalTestCase):
 
     @patch("agents.models.Agent.nats_cmd")
     def test_get_processes(self, mock_ret):
-        url = f"/agents/{self.agent.pk}/getprocs/"
+        agent_old = baker.make_recipe("agents.online_agent", version="1.1.12")
+        url_old = f"/agents/{agent_old.pk}/getprocs/"
+        r = self.client.get(url_old)
+        self.assertEqual(r.status_code, 400)
+
+        agent = baker.make_recipe("agents.online_agent", version="1.2.0")
+        url = f"/agents/{agent.pk}/getprocs/"
 
         with open(
             os.path.join(settings.BASE_DIR, "tacticalrmm/test_data/procs.json")
@@ -137,9 +143,7 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         assert any(i["name"] == "Registry" for i in mock_ret.return_value)
-        assert any(
-            i["memory_percent"] == 0.004843281375620747 for i in mock_ret.return_value
-        )
+        assert any(i["membytes"] == 434655234324 for i in mock_ret.return_value)
 
         mock_ret.return_value = "timeout"
         r = self.client.get(url)

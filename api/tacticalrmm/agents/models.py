@@ -382,14 +382,8 @@ class Agent(BaseAuditModel):
 
         return patch_policy
 
-    # clear is used to delete managed policy checks from agent
-    # parent_checks specifies a list of checks to delete from agent with matching parent_check field
-    def generate_checks_from_policies(self, clear=False):
+    def generate_checks_from_policies(self):
         from automation.models import Policy
-
-        # Clear agent checks managed by policy
-        if clear:
-            self.agentchecks.filter(managed_by_policy=True).delete()
 
         # Clear agent checks that have overriden_by_policy set
         self.agentchecks.update(overriden_by_policy=False)
@@ -397,16 +391,8 @@ class Agent(BaseAuditModel):
         # Generate checks based on policies
         Policy.generate_policy_checks(self)
 
-    # clear is used to delete managed policy tasks from agent
-    # parent_tasks specifies a list of tasks to delete from agent with matching parent_task field
-    def generate_tasks_from_policies(self, clear=False):
-        from autotasks.tasks import delete_win_task_schedule
+    def generate_tasks_from_policies(self):
         from automation.models import Policy
-
-        # Clear agent tasks managed by policy
-        if clear:
-            for task in self.autotasks.filter(managed_by_policy=True):
-                delete_win_task_schedule.delay(task.pk)
 
         # Generate tasks based on policies
         Policy.generate_policy_tasks(self)
@@ -624,6 +610,13 @@ class Agent(BaseAuditModel):
                     )
                 elif action.details["action"] == "taskdelete":
                     delete_win_task_schedule.delay(task_id, pending_action=action.id)
+
+    # for clearing duplicate pending actions on agent
+    def remove_matching_pending_task_actions(self, task_id):
+        # remove any other pending actions on agent with same task_id
+        for action in self.pendingactions.exclude(status="completed"):
+            if action.details["task_id"] == task_id:
+                action.delete()
 
 
 class AgentOutage(models.Model):

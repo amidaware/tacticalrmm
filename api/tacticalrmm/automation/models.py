@@ -1,6 +1,5 @@
 from django.db import models
 from agents.models import Agent
-from clients.models import Site, Client
 from core.models import CoreSettings
 from logs.models import BaseAuditModel
 
@@ -58,6 +57,11 @@ class Policy(BaseAuditModel):
 
     @staticmethod
     def cascade_policy_tasks(agent):
+        from autotasks.tasks import delete_win_task_schedule
+
+        from autotasks.models import AutomatedTask
+        from logs.models import PendingAction
+
         # List of all tasks to be applied
         tasks = list()
         added_task_pks = list()
@@ -106,6 +110,33 @@ class Policy(BaseAuditModel):
                 if task.pk not in added_task_pks:
                     tasks.append(task)
                     added_task_pks.append(task.pk)
+
+        # remove policy tasks from agent not included in policy
+        for task in agent.autotasks.filter(
+            parent_task__in=[
+                taskpk
+                for taskpk in agent_tasks_parent_pks
+                if taskpk not in added_task_pks
+            ]
+        ):
+            delete_win_task_schedule.delay(task.pk)
+
+        # handle matching tasks that haven't synced to agent yet or pending deletion due to agent being offline
+        for action in agent.pendingactions.exclude(status="completed"):
+            task = AutomatedTask.objects.get(pk=action.details["task_id"])
+            if (
+                task.parent_task in agent_tasks_parent_pks
+                and task.parent_task in added_task_pks
+            ):
+                agent.remove_matching_pending_task_actions(task.id)
+
+                PendingAction(
+                    agent=agent,
+                    action_type="taskaction",
+                    details={"action": "taskcreate", "task_id": task.id},
+                ).save()
+                task.sync_status = "notsynced"
+                task.save(update_fields=["sync_status"])
 
         return [task for task in tasks if task.pk not in agent_tasks_parent_pks]
 
@@ -279,6 +310,15 @@ class Policy(BaseAuditModel):
             + script_checks
             + eventlog_checks
         )
+
+        # remove policy checks from agent that fell out of policy scope
+        agent.agentchecks.filter(
+            parent_check__in=[
+                checkpk
+                for checkpk in agent_checks_parent_pks
+                if checkpk not in [check.pk for check in final_list]
+            ]
+        ).delete()
 
         return [
             check for check in final_list if check.pk not in agent_checks_parent_pks

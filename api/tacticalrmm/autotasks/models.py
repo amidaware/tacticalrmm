@@ -6,7 +6,6 @@ import datetime as dt
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.db.models.fields import DateTimeField
-from automation.models import Policy
 from logs.models import BaseAuditModel
 from tacticalrmm.utils import bitdays_to_string
 
@@ -43,7 +42,7 @@ class AutomatedTask(BaseAuditModel):
         blank=True,
     )
     policy = models.ForeignKey(
-        Policy,
+        "automation.Policy",
         related_name="autotasks",
         null=True,
         blank=True,

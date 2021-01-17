@@ -18,14 +18,14 @@ import (
 
 var rClient = resty.New()
 
-func getAPI(apihost string) (string, error) {
-	if apihost != "" {
-		return apihost, nil
+func getAPI(apihost, natshost string) (string, string, error) {
+	if apihost != "" && natshost != "" {
+		return apihost, natshost, nil
 	}
 
 	f, err := os.Open(`/etc/nginx/sites-available/rmm.conf`)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer f.Close()
 
@@ -33,30 +33,32 @@ func getAPI(apihost string) (string, error) {
 	for scanner.Scan() {
 		if strings.Contains(scanner.Text(), "server_name") && !strings.Contains(scanner.Text(), "301") {
 			r := strings.NewReplacer("server_name", "", ";", "")
-			return strings.ReplaceAll(r.Replace(scanner.Text()), " ", ""), nil
+			s := strings.ReplaceAll(r.Replace(scanner.Text()), " ", "")
+			return fmt.Sprintf("https://%s/natsapi", s), fmt.Sprintf("tls://%s:4222", s), nil
 		}
 	}
-	return "", errors.New("unable to parse api from nginx conf")
+	return "", "", errors.New("unable to parse api from nginx conf")
 }
 
-func Listen(apihost string, debug bool) {
-	var baseURL string
-	api, err := getAPI(apihost)
+func Listen(apihost, natshost string, debug bool) {
+	api, natsurl, err := getAPI(apihost, natshost)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	if debug {
-		baseURL = fmt.Sprintf("http://%s:8000/natsapi", api)
-	} else {
-		baseURL = fmt.Sprintf("https://%s/natsapi", api)
+		log.Println("Api base url: ", api)
+		log.Println("Nats connection url: ", natsurl)
 	}
 
-	rClient.SetHostURL(baseURL)
+	rClient.SetHostURL(api)
 	rClient.SetTimeout(30 * time.Second)
 	natsinfo, err := rClient.R().SetResult(&NatsInfo{}).Get("/natsinfo/")
 	if err != nil {
 		log.Fatalln(err)
+	}
+	if natsinfo.IsError() {
+		log.Fatalln(natsinfo.String())
 	}
 
 	opts := []nats.Option{
@@ -69,8 +71,7 @@ func Listen(apihost string, debug bool) {
 		nats.ReconnectBufSize(-1),
 	}
 
-	server := fmt.Sprintf("tls://%s:4222", api)
-	nc, err := nats.Connect(server, opts...)
+	nc, err := nats.Connect(natsurl, opts...)
 	if err != nil {
 		log.Fatalln(err)
 	}

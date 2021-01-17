@@ -81,6 +81,8 @@ services:
   tactical-nats:
     image: ${IMAGE_REPO}tactical-nats:${VERSION}
     restart: always
+    environment:
+      API_HOST: ${API_HOST}
     ports:
       - "4222:4222"
     volumes:
@@ -139,9 +141,11 @@ services:
     command: ["tactical-backend"]
     restart: always
     networks:
-      - proxy
-      - api-db
-      - redis
+      proxy:
+        aliases:
+          - tactical-backend
+      api-db:
+      redis:
     volumes:
       - tactical_data:/opt/tactical
     depends_on:

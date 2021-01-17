@@ -114,8 +114,8 @@ def edit_agent(request):
 
     # check if site changed and initiate generating correct policies
     if old_site != request.data["site"]:
-        agent.generate_checks_from_policies(clear=True)
-        agent.generate_tasks_from_policies(clear=True)
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
 
     return Response("ok")
 
@@ -159,12 +159,12 @@ def agent_detail(request, pk):
 @api_view()
 def get_processes(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    if not agent.has_nats:
-        return notify_error("Requires agent version 1.1.0 or greater")
+    if pyver.parse(agent.version) < pyver.parse("1.2.0"):
+        return notify_error("Requires agent version 1.2.0 or greater")
+
     r = asyncio.run(agent.nats_cmd(data={"func": "procs"}, timeout=5))
     if r == "timeout":
         return notify_error("Unable to contact the agent")
-
     return Response(r)
 
 

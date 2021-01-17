@@ -28,6 +28,10 @@ mesh_config="$(cat << EOF
     "_AgentPing": 60,
     "AgentPong": 300,
     "AllowHighQualityDesktop": true,
+    "agentCoreDump": false,
+    "Compression": true,
+    "WsCompression": true,
+    "AgentWsCompression": true,
     "MaxInvalidLogin": {
       "time": 5,
       "count": 5,

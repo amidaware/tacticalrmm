@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="32"
+SCRIPT_VERSION="33"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget
@@ -193,9 +193,9 @@ print_green 'Installing golang'
 
 sudo mkdir -p /usr/local/rmmgo
 go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)
-wget https://golang.org/dl/go1.15.5.linux-amd64.tar.gz -P ${go_tmp}
+wget https://golang.org/dl/go1.15.6.linux-amd64.tar.gz -P ${go_tmp}
 
-tar -xzf ${go_tmp}/go1.15.5.linux-amd64.tar.gz -C ${go_tmp}
+tar -xzf ${go_tmp}/go1.15.6.linux-amd64.tar.gz -C ${go_tmp}
 
 sudo mv ${go_tmp}/go /usr/local/rmmgo/
 rm -rf ${go_tmp}
@@ -216,6 +216,7 @@ print_green 'Installing Nginx'
 
 sudo apt install -y nginx
 sudo systemctl stop nginx
+sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
 
 print_green 'Installing NodeJS'
 
@@ -294,6 +295,10 @@ meshcfg="$(cat << EOF
     "AgentPong": 300,
     "AllowHighQualityDesktop": true,
     "TlsOffload": "127.0.0.1",
+    "agentCoreDump": false,
+    "Compression": true,
+    "WsCompression": true,
+    "AgentWsCompression": true,
     "MaxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 }
   },
   "domains": {
@@ -369,6 +374,10 @@ sudo cp /rmm/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/
 sudo chown ${USER}:${USER} /usr/local/bin/goversioninfo
 sudo chmod +x /usr/local/bin/goversioninfo
 
+sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
+sudo chown ${USER}:${USER} /usr/local/bin/nats-api
+sudo chmod +x /usr/local/bin/nats-api
+
 print_green 'Installing the backend'
 
 cd /rmm/api
@@ -376,7 +385,7 @@ python3 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir setuptools==50.3.2 wheel==0.36.1
+pip install --no-cache-dir setuptools==51.1.2 wheel==0.36.2
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input
@@ -463,6 +472,25 @@ EOF
 )"
 echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service > /dev/null
 
+natsapi="$(cat << EOF
+[Unit]
+Description=Tactical NATS API
+After=network.target rmm.service nginx.service nats.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/nats-api
+User=${USER}
+Group=${USER}
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${natsapi}" | sudo tee /etc/systemd/system/natsapi.service > /dev/null
+
 
 nginxrmm="$(cat << EOF
 server_tokens off;
@@ -520,7 +548,7 @@ server {
         deny all;
         uwsgi_pass tacticalrmm;
         include     /etc/nginx/uwsgi_params;
-        uwsgi_read_timeout 9999s;
+        uwsgi_read_timeout 500s;
         uwsgi_ignore_client_abort on;
     }
 
@@ -581,8 +609,8 @@ echo 'deb http://repo.saltstack.com/py3/'$osname'/'$fullrelno'/amd64/latest '$co
 sudo apt update
 sudo apt install -y salt-master
 
-print_green 'Waiting 30 seconds for salt to start'
-sleep 30
+print_green 'Waiting 10 seconds for salt to start'
+sleep 10
 
 saltvars="$(cat << EOF
 timeout: 20
@@ -618,7 +646,7 @@ sudo mkdir /etc/conf.d
 
 celeryservice="$(cat << EOF
 [Unit]
-Description=Celery Service
+Description=Celery Service V2
 After=network.target redis-server.service postgresql.service
 
 [Service]
@@ -627,9 +655,9 @@ User=${USER}
 Group=${USER}
 EnvironmentFile=/etc/conf.d/celery.conf
 WorkingDirectory=/rmm/api/tacticalrmm
-ExecStart=/bin/sh -c '\${CELERY_BIN} multi start \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} \${CELERYD_OPTS}'
-ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \${CELERYD_NODES} --pidfile=\${CELERYD_PID_FILE}'
-ExecReload=/bin/sh -c '\${CELERY_BIN} multi restart \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} \${CELERYD_OPTS}'
+ExecStart=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi start \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
+ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --loglevel="\${CELERYD_LOG_LEVEL}"'
+ExecReload=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi restart \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
 Restart=always
 RestartSec=10s
 
@@ -662,7 +690,7 @@ echo "${celeryconf}" | sudo tee /etc/conf.d/celery.conf > /dev/null
 
 celerywinupdatesvc="$(cat << EOF
 [Unit]
-Description=Celery WinUpdate Service
+Description=Celery WinUpdate Service V2
 After=network.target redis-server.service postgresql.service
 
 [Service]
@@ -671,9 +699,9 @@ User=${USER}
 Group=${USER}
 EnvironmentFile=/etc/conf.d/celery-winupdate.conf
 WorkingDirectory=/rmm/api/tacticalrmm
-ExecStart=/bin/sh -c '\${CELERY_BIN} multi start \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
-ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \${CELERYD_NODES} --pidfile=\${CELERYD_PID_FILE}'
-ExecReload=/bin/sh -c '\${CELERY_BIN} multi restart \${CELERYD_NODES} -A \${CELERY_APP} --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL} -Q wupdate \${CELERYD_OPTS}'
+ExecStart=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi start \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" -Q wupdate \$CELERYD_OPTS'
+ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --loglevel="\${CELERYD_LOG_LEVEL}"'
+ExecReload=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi restart \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" -Q wupdate \$CELERYD_OPTS'
 Restart=always
 RestartSec=10s
 
@@ -701,7 +729,7 @@ echo "${celerywinupdate}" | sudo tee /etc/conf.d/celery-winupdate.conf > /dev/nu
 
 celerybeatservice="$(cat << EOF
 [Unit]
-Description=Celery Beat Service
+Description=Celery Beat Service V2
 After=network.target redis-server.service postgresql.service
 
 [Service]
@@ -710,7 +738,7 @@ User=${USER}
 Group=${USER}
 EnvironmentFile=/etc/conf.d/celery.conf
 WorkingDirectory=/rmm/api/tacticalrmm
-ExecStart=/bin/sh -c '\${CELERY_BIN} beat -A \${CELERY_APP} --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
+ExecStart=/bin/sh -c '\${CELERY_BIN} -A \${CELERY_APP} beat --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
 Restart=always
 RestartSec=10s
 
@@ -816,10 +844,11 @@ sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/fro
 
 print_green 'Enabling Services'
 
-for i in nginx celery.service celerybeat.service celery-winupdate.service rmm.service
+for i in rmm.service celery.service celerybeat.service celery-winupdate.service nginx
 do
   sudo systemctl enable ${i}
-  sudo systemctl restart ${i}
+  sudo systemctl stop ${i}
+  sudo systemctl start ${i}
 done
 sleep 5
 sudo systemctl enable meshcentral
@@ -883,14 +912,15 @@ sudo systemctl start nats.service
 
 
 print_green 'Restarting services'
-for i in celery.service celerybeat.service celery-winupdate.service rmm.service
+for i in rmm.service celery.service celerybeat.service celery-winupdate.service natsapi.service
 do
-  sudo systemctl restart ${i}
+  sudo systemctl stop ${i}
+  sudo systemctl start ${i}
 done
 
-print_green 'Restarting salt-master and waiting 30 seconds'
+print_green 'Restarting salt-master and waiting 10 seconds'
 sudo systemctl restart salt-master
-sleep 30
+sleep 10
 sudo systemctl restart salt-api
 
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}

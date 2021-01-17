@@ -111,9 +111,12 @@ def send_agent_update_task(pks: List[int], version: str) -> None:
     agents: List[int] = [
         i.pk for i in q if pyver.parse(i.version) < pyver.parse(version)
     ]
-
-    for pk in agents:
-        agent_update(pk)
+    chunks = (agents[i : i + 30] for i in range(0, len(agents), 30))
+    for chunk in chunks:
+        for pk in chunk:
+            agent_update(pk)
+            sleep(0.05)
+        sleep(4)
 
 
 @app.task
@@ -129,8 +132,12 @@ def auto_self_agent_update_task() -> None:
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
     ]
 
-    for pk in pks:
-        agent_update(pk)
+    chunks = (pks[i : i + 30] for i in range(0, len(pks), 30))
+    for chunk in chunks:
+        for pk in chunk:
+            agent_update(pk)
+            sleep(0.05)
+        sleep(4)
 
 
 @app.task

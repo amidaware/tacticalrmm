@@ -7,7 +7,7 @@ pgpw="hunter2"
 
 #####################################################
 
-SCRIPT_VERSION="11"
+SCRIPT_VERSION="12"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 sudo apt install -y curl wget
@@ -127,6 +127,7 @@ sudo systemctl stop nginx
 sudo rm -rf /etc/nginx
 sudo mkdir /etc/nginx
 sudo tar -xzf $tmp_dir/nginx/etc-nginx.tar.gz -C /etc/nginx
+sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
 rmmdomain=$(grep server_name /etc/nginx/sites-available/rmm.conf | grep -v 301 | head -1 | tr -d " \t" | sed 's/.*server_name//' | tr -d ';')
 frontenddomain=$(grep server_name /etc/nginx/sites-available/frontend.conf | grep -v 301 | head -1 | tr -d " \t" | sed 's/.*server_name//' | tr -d ';')
 meshdomain=$(grep server_name /etc/nginx/sites-available/meshcentral.conf | grep -v 301 | head -1 | tr -d " \t" | sed 's/.*server_name//' | tr -d ';')
@@ -242,12 +243,16 @@ sudo cp /rmm/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/
 sudo chown ${USER}:${USER} /usr/local/bin/goversioninfo
 sudo chmod +x /usr/local/bin/goversioninfo
 
+sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
+sudo chown ${USER}:${USER} /usr/local/bin/nats-api
+sudo chmod +x /usr/local/bin/nats-api
+
 cd /rmm/api
 python3 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir setuptools==50.3.2 wheel==0.36.1
+pip install --no-cache-dir setuptools==51.1.2 wheel==0.36.2
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py collectstatic --no-input
 python manage.py reload_nats
@@ -255,7 +260,6 @@ deactivate
 
 sudo systemctl enable nats.service
 sudo systemctl start nats.service
-
 
 print_green 'Installing Salt Master'
 
@@ -265,8 +269,8 @@ echo 'deb http://repo.saltstack.com/py3/ubuntu/20.04/amd64/latest focal main' | 
 sudo apt update
 sudo apt install -y salt-master
 
-print_green 'Waiting 30 seconds for salt to start'
-sleep 30
+print_green 'Waiting 10 seconds for salt to start'
+sleep 10
 
 print_green 'Installing Salt API'
 sudo apt install -y salt-api
@@ -320,7 +324,8 @@ sudo systemctl daemon-reload
 for i in celery.service celerybeat.service celery-winupdate.service rmm.service nginx
 do
   sudo systemctl enable ${i}
-  sudo systemctl restart ${i}
+  sudo systemctl stop ${i}
+  sudo systemctl start ${i}
 done
 sleep 5
 
@@ -328,9 +333,13 @@ print_green 'Starting meshcentral'
 sudo systemctl enable meshcentral
 sudo systemctl start meshcentral
 
-print_green 'Restarting salt and waiting 30 seconds'
+print_green 'Starting natsapi'
+sudo systemctl enable natsapi.service
+sudo systemctl start natsapi.service
+
+print_green 'Restarting salt and waiting 10 seconds'
 sudo systemctl restart salt-master
-sleep 30
+sleep 10
 sudo systemctl restart salt-api
 
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}

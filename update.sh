@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="101"
+SCRIPT_VERSION="102"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -35,6 +35,113 @@ if [ "$ORIGUSER" != "$USER" ]; then
   exit 1
 fi
 
+CHECK_030_MIGRATION=$(grep natsapi /etc/nginx/sites-available/rmm.conf)
+if ! [[ $CHECK_030_MIGRATION ]]; then
+  printf >&2 "${RED}Manual configuration changes required before continuing.${NC}\n"
+  printf >&2 "${RED}Please follow the steps here and then re-run this update script.${NC}\n"
+  printf >&2 "${GREEN}https://github.com/wh1te909/tacticalrmm/blob/develop/docs/migration-0.3.0.md${NC}\n"
+  exit 1
+fi
+
+CHECK_CELERY_V2=$(grep V2 /etc/systemd/system/celery.service)
+if ! [[ $CHECK_CELERY_V2 ]]; then
+printf >&2 "${GREEN}Updating celery.service${NC}\n"
+sudo systemctl stop celery.service
+sudo rm -f /etc/systemd/system/celery.service
+
+celeryservice="$(cat << EOF
+[Unit]
+Description=Celery Service V2
+After=network.target redis-server.service postgresql.service
+
+[Service]
+Type=forking
+User=${USER}
+Group=${USER}
+EnvironmentFile=/etc/conf.d/celery.conf
+WorkingDirectory=/rmm/api/tacticalrmm
+ExecStart=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi start \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
+ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --loglevel="\${CELERYD_LOG_LEVEL}"'
+ExecReload=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi restart \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${celeryservice}" | sudo tee /etc/systemd/system/celery.service > /dev/null
+sudo systemctl daemon-reload
+sudo systemctl enable celery.service
+fi
+
+CHECK_CELERYBEAT_V2=$(grep V2 /etc/systemd/system/celerybeat.service)
+if ! [[ $CHECK_CELERYBEAT_V2 ]]; then
+printf >&2 "${GREEN}Updating celerybeat.service${NC}\n"
+sudo systemctl stop celerybeat.service
+sudo rm -f /etc/systemd/system/celerybeat.service
+
+celerybeatservice="$(cat << EOF
+[Unit]
+Description=Celery Beat Service V2
+After=network.target redis-server.service postgresql.service
+
+[Service]
+Type=simple
+User=${USER}
+Group=${USER}
+EnvironmentFile=/etc/conf.d/celery.conf
+WorkingDirectory=/rmm/api/tacticalrmm
+ExecStart=/bin/sh -c '\${CELERY_BIN} -A \${CELERY_APP} beat --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service > /dev/null
+
+sudo systemctl daemon-reload
+sudo systemctl enable celerybeat.service
+
+fi
+
+CHECK_CELERYWINUPDATE_V2=$(grep V2 /etc/systemd/system/celery-winupdate.service)
+if ! [[ $CHECK_CELERYWINUPDATE_V2 ]]; then
+printf >&2 "${GREEN}Updating celery-winupdate.service${NC}\n"
+sudo systemctl stop celery-winupdate.service
+sudo rm -f /etc/systemd/system/celery-winupdate.service
+
+celerywinupdatesvc="$(cat << EOF
+[Unit]
+Description=Celery WinUpdate Service V2
+After=network.target redis-server.service postgresql.service
+
+[Service]
+Type=forking
+User=${USER}
+Group=${USER}
+EnvironmentFile=/etc/conf.d/celery-winupdate.conf
+WorkingDirectory=/rmm/api/tacticalrmm
+ExecStart=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi start \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" -Q wupdate \$CELERYD_OPTS'
+ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --loglevel="\${CELERYD_LOG_LEVEL}"'
+ExecReload=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi restart \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" -Q wupdate \$CELERYD_OPTS'
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${celerywinupdatesvc}" | sudo tee /etc/systemd/system/celery-winupdate.service > /dev/null
+
+sudo systemctl daemon-reload
+sudo systemctl enable celery-winupdate.service
+
+fi
+
+
 TMP_SETTINGS=$(mktemp -p "" "rmmsettings_XXXXXXXXXX")
 curl -s -L "${LATEST_SETTINGS_URL}" > ${TMP_SETTINGS}
 SETTINGS_FILE="/rmm/api/tacticalrmm/tacticalrmm/settings.py"
@@ -56,60 +163,18 @@ LATEST_SALT_VER=$(grep "^SALT_MASTER_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{prin
 CURRENT_PIP_VER=$(grep "^PIP_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 CURRENT_NPM_VER=$(grep "^NPM_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
-NEEDS_NATS=false
-if [ ! -f /etc/systemd/system/nats.service ]; then
-  if [ ! -d /etc/letsencrypt ]; then
-      printf >&2 "${RED}ERROR: no letsencrypt cert detected. The RMM now requires a valid TLS certificate${NC}\n"
-      printf >&2 "${RED}Please send us a message in our discord for instructions on how to proceed, or open a github ticket.${NC}\n"
-      exit 1
-  fi
-  NEEDS_NATS=true
-fi
 
-if [ "$NEEDS_NATS" = true ]; then
-printf "\033c"
-printf >&2 "\n\n"
-printf >&2 "${YELLOW}WARNING: BREAKING CHANGES AHEAD${NC}\n\n"
-printf >&2 "${YELLOW}In order to continue with this update, please open up port 4222 TCP in ufw${NC}\n\n"
-printf >&2 "${YELLOW}If you are running behind NAT, make sure to also setup the necessary port forwards in your router${NC}\n\n"
-printf >&2 "${YELLOW}Run the following command to open the port in ufw firewall:\n\n${GREEN}sudo ufw allow proto tcp from any to any port 4222 && sudo ufw reload${NC}\n\n\n"
-printf >&2 "${YELLOW}Many of your agent functions will stop working until your agents are updated to at least version 1.1.0${NC}\n"
-printf >&2 "${YELLOW}This will happen shortly after this update completes, as long as you have auto agent updated enabled in Global Settings${NC}\n"
-printf >&2 "${YELLOW}A background job also runs every hour to auto update agents.\nIf you do not want to wait, you may manually trigger an agent update from the Agents > Update Agents menu in the web ui.${NC}\n\n\n"
-until [[ "$CONFIRM_NATS" == "yes" ]]; do
-    echo -ne "${RED}If you have not opened port 4222 yet, please Ctrl+C to cancel this script, open the port and then re-run${NC}"
-    printf >&2 "\n\n"
-    echo -ne "${YELLOW}Confirm you have port 4222 TCP open? [type 'yes' to confirm]${NC}: "
-    read CONFIRM_NATS
-done
-printf >&2 "\n"
-fi
-
-if [ "$NEEDS_NATS" = true ]; then
-printf >&2 "${Green}Downloading nats${NC}\n\n"
-nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-wget https://github.com/nats-io/nats-server/releases/download/v2.1.9/nats-server-v2.1.9-linux-amd64.tar.gz -P ${nats_tmp}
-
-tar -xzf ${nats_tmp}/nats-server-v2.1.9-linux-amd64.tar.gz -C ${nats_tmp}
-
-sudo mv ${nats_tmp}/nats-server-v2.1.9-linux-amd64/nats-server /usr/local/bin/
-sudo chmod +x /usr/local/bin/nats-server
-sudo chown ${USER}:${USER} /usr/local/bin/nats-server
-rm -rf ${nats_tmp}
-
-natsservice="$(cat << EOF
+if [ ! -f /etc/systemd/system/natsapi.service ]; then
+natsapi="$(cat << EOF
 [Unit]
-Description=NATS Server
-After=network.target ntp.service
+Description=Tactical NATS API
+After=network.target rmm.service nginx.service nats.service
 
 [Service]
-PrivateTmp=true
 Type=simple
-ExecStart=/usr/local/bin/nats-server -c /rmm/api/tacticalrmm/nats-rmm.conf
-ExecReload=/usr/bin/kill -s HUP \$MAINPID
-ExecStop=/usr/bin/kill -s SIGINT \$MAINPID
+ExecStart=/usr/local/bin/nats-api
 User=${USER}
-Group=www-data
+Group=${USER}
 Restart=always
 RestartSec=5s
 
@@ -117,19 +182,22 @@ RestartSec=5s
 WantedBy=multi-user.target
 EOF
 )"
-echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service > /dev/null
-
+echo "${natsapi}" | sudo tee /etc/systemd/system/natsapi.service > /dev/null
 sudo systemctl daemon-reload
-sudo systemctl enable nats.service
-
+sudo systemctl enable natsapi.service
 fi
 
-
-for i in nginx rmm celery celerybeat celery-winupdate nats
+for i in salt-master salt-api nginx nats natsapi rmm celery celerybeat celery-winupdate
 do
 printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}
 done
+
+CHECK_NGINX_WORKER_CONN=$(grep "worker_connections 2048" /etc/nginx/nginx.conf)
+if ! [[ $CHECK_NGINX_WORKER_CONN ]]; then
+  printf >&2 "${GREEN}Changing nginx worker connections to 2048${NC}\n"
+  sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
+fi
 
 cd /rmm
 git config user.email "admin@example.com"
@@ -177,6 +245,10 @@ sudo cp /rmm/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/
 sudo chown ${USER}:${USER} /usr/local/bin/goversioninfo
 sudo chmod +x /usr/local/bin/goversioninfo
 
+sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
+sudo chown ${USER}:${USER} /usr/local/bin/nats-api
+sudo chmod +x /usr/local/bin/nats-api
+
 printf >&2 "${GREEN}Running postgres vacuum${NC}\n"
 sudo -u postgres psql -d tacticalrmm -c "vacuum full logs_auditlog"
 sudo -u postgres psql -d tacticalrmm -c "vacuum full logs_pendingaction"
@@ -189,7 +261,7 @@ if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]]; then
   source /rmm/api/env/bin/activate
   cd /rmm/api/tacticalrmm
   pip install --no-cache-dir --upgrade pip
-  pip install --no-cache-dir setuptools==50.3.2 wheel==0.36.1
+  pip install --no-cache-dir setuptools==51.1.2 wheel==0.36.2
   pip install --no-cache-dir -r requirements.txt
 else
   source /rmm/api/env/bin/activate
@@ -219,7 +291,13 @@ sudo rm -rf /var/www/rmm/dist
 sudo cp -pr /rmm/web/dist /var/www/rmm/
 sudo chown www-data:www-data -R /var/www/rmm/dist
 
-for i in celery celerybeat celery-winupdate rmm nginx nats
+printf >&2 "${GREEN}Starting salt-master service${NC}\n"
+sudo systemctl start salt-master
+sleep 7
+printf >&2 "${GREEN}Starting salt-api service${NC}\n"
+sudo systemctl start salt-api
+
+for i in rmm celery celerybeat celery-winupdate nginx nats natsapi
 do
 printf >&2 "${GREEN}Starting ${i} service${NC}\n"
 sudo systemctl start ${i}

@@ -94,9 +94,9 @@ print_green 'Installing golang'
 sudo apt update
 sudo mkdir -p /usr/local/rmmgo
 go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)
-wget https://golang.org/dl/go1.15.5.linux-amd64.tar.gz -P ${go_tmp}
+wget https://golang.org/dl/go1.15.6.linux-amd64.tar.gz -P ${go_tmp}
 
-tar -xzf ${go_tmp}/go1.15.5.linux-amd64.tar.gz -C ${go_tmp}
+tar -xzf ${go_tmp}/go1.15.6.linux-amd64.tar.gz -C ${go_tmp}
 
 sudo mv ${go_tmp}/go /usr/local/rmmgo/
 rm -rf ${go_tmp}

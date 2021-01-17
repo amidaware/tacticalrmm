@@ -118,7 +118,7 @@ server {
     listen 443 ssl;
     proxy_send_timeout 330s;
     proxy_read_timeout 330s;
-    server_name mesh.tacticaltechs.com;
+    server_name mesh.example.com;
     ssl_certificate /etc/letsencrypt/live/EXAMPLE.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/EXAMPLE.com/privkey.pem;
     ssl_session_cache shared:WEBSSL:10m;

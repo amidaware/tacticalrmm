@@ -103,6 +103,10 @@
               <q-item clickable v-close-popup @click="showAutomationManager = true">
                 <q-item-section>Automation Manager</q-item-section>
               </q-item>
+              <!-- alerts manager -->
+              <q-item clickable v-close-popup @click="showAlertsManager">
+                <q-item-section>Alerts Manager</q-item-section>
+              </q-item>
               <!-- admin manager -->
               <q-item clickable v-close-popup @click="showAdminManager = true">
                 <q-item-section>User Administration</q-item-section>
@@ -227,6 +231,7 @@ import SitesForm from "@/components/modals/clients/SitesForm";
 import UpdateAgents from "@/components/modals/agents/UpdateAgents";
 import ScriptManager from "@/components/ScriptManager";
 import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
+import AlertsManager from "@/components/AlertsManager";
 import AutomationManager from "@/components/automation/AutomationManager";
 import AdminManager from "@/components/AdminManager";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
@@ -299,6 +304,12 @@ export default {
     closeBulkActionModal() {
       this.bulkMode = null;
       this.showBulkAction = false;
+    },
+    showAlertsManager() {
+      this.$q.dialog({
+        component: AlertsManager,
+        parent: this,
+      });
     },
     edited() {
       this.$emit("edited");

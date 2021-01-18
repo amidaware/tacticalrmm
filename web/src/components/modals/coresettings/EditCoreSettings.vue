@@ -68,6 +68,21 @@
                   />
                 </q-card-section>
                 <q-card-section class="row">
+                  <div class="col-4">Default alert template:</div>
+                  <div class="col-2"></div>
+                  <q-select
+                    clearable
+                    map-options
+                    emit-value
+                    outlined
+                    dense
+                    options-dense
+                    v-model="settings.alert_template"
+                    :options="templates"
+                    class="col-6"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
                   <div class="col-4">Remove Check History older than (days):</div>
                   <div class="col-2"></div>
                   <q-input outlined dense v-model="settings.check_history_prune_days" class="col-6" />

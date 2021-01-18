@@ -15,6 +15,7 @@ from core.models import CoreSettings
 from logs.models import BaseAuditModel
 from .tasks import handle_check_email_alert_task, handle_check_sms_alert_task
 from .utils import bytes2human
+from alerts.models import SEVERITY_CHOICES
 
 CHECK_TYPE_CHOICES = [
     ("diskspace", "Disk Space Check"),
@@ -90,13 +91,19 @@ class Check(BaseAuditModel):
     text_sent = models.DateTimeField(null=True, blank=True)
     outage_history = models.JSONField(null=True, blank=True)  # store
     extra_details = models.JSONField(null=True, blank=True)
-
     # check specific fields
 
-    # threshold percent for diskspace, cpuload or memory check
-    threshold = models.PositiveIntegerField(
-        null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(99)]
+    # for eventlog, script, ip, and service alert severity
+    alert_severity = models.CharField(
+        max_length=15, choices=SEVERITY_CHOICES, default="warning"
     )
+
+    # threshold percent for diskspace, cpuload or memory check
+    error_threshold = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+    )
+    warning_threshold = models.PositiveIntegerField(null=True, blank=True, default=0)
     # diskcheck i.e C:, D: etc
     disk = models.CharField(max_length=2, null=True, blank=True)
     # ping checks
@@ -115,6 +122,8 @@ class Check(BaseAuditModel):
         blank=True,
         default=list,
     )
+    info_return_code = models.PositiveIntegerField(null=True, blank=True, default=0)
+    warning_return_code = models.PositiveIntegerField(null=True, blank=True, default=0)
     timeout = models.PositiveIntegerField(null=True, blank=True)
     stdout = models.TextField(null=True, blank=True)
     stderr = models.TextField(null=True, blank=True)
@@ -159,11 +168,25 @@ class Check(BaseAuditModel):
     @property
     def readable_desc(self):
         if self.check_type == "diskspace":
-            return f"{self.get_check_type_display()}: Drive {self.disk} < {self.threshold}%"
+
+            text = ""
+            if self.warning_threshold:
+                text += f" Warning Threshold: {self.warning_threshold}%"
+            if self.error_threshold:
+                text += f" Error Threshold: {self.error_threshold}%"
+
+            return f"{self.get_check_type_display()}: Drive {self.disk} < {text}"
         elif self.check_type == "ping":
             return f"{self.get_check_type_display()}: {self.name}"
         elif self.check_type == "cpuload" or self.check_type == "memory":
-            return f"{self.get_check_type_display()} > {self.threshold}%"
+
+            text = ""
+            if self.warning_threshold:
+                text += f" Warning Threshold: {self.warning_threshold}%"
+            if self.error_threshold:
+                text += f" Error Threshold: {self.error_threshold}%"
+
+            return f"{self.get_check_type_display()} > {text}"
         elif self.check_type == "winsvc":
             return f"{self.get_check_type_display()}: {self.svc_display_name}"
         elif self.check_type == "eventlog":
@@ -231,7 +254,12 @@ class Check(BaseAuditModel):
 
             avg = int(mean(self.history))
 
-            if avg > self.threshold:
+            if self.warning_threshold and avg > self.warning_threshold:
+                self.status = "failing"
+            else:
+                self.status = "passing"
+
+            if self.error_threshold and avg > self.error_threshold:
                 self.status = "failing"
             else:
                 self.status = "passing"
@@ -246,7 +274,15 @@ class Check(BaseAuditModel):
                 total = bytes2human(data["total"])
                 free = bytes2human(data["free"])
 
-                if (100 - percent_used) < self.threshold:
+                if (
+                    self.warning_threshold
+                    and (100 - percent_used) < self.warning_threshold
+                ):
+                    self.status = "failing"
+                else:
+                    self.status = "passing"
+
+                if self.error_threshold and (100 - percent_used) < self.error_threshold:
                     self.status = "failing"
                 else:
                     self.status = "passing"
@@ -483,7 +519,8 @@ class Check(BaseAuditModel):
             text_alert=self.text_alert,
             fails_b4_alert=self.fails_b4_alert,
             extra_details=self.extra_details,
-            threshold=self.threshold,
+            error_threshold=self.error_threshold,
+            warning_threshold=self.warning_threshold,
             disk=self.disk,
             ip=self.ip,
             script=self.script,
@@ -537,12 +574,18 @@ class Check(BaseAuditModel):
             subject = f"{self} Failed"
 
         if self.check_type == "diskspace":
+            text = ""
+            if self.warning_threshold:
+                text += f" Warning Threshold: {self.warning_threshold}%"
+            if self.error_threshold:
+                text += f" Error Threshold: {self.error_threshold}%"
+
             percent_used = [
                 d["percent"] for d in self.agent.disks if d["device"] == self.disk
             ][0]
             percent_free = 100 - percent_used
 
-            body = subject + f" - Free: {percent_free}%, Threshold: {self.threshold}%"
+            body = subject + f" - Free: {percent_free}%, {text}"
 
         elif self.check_type == "script":
 
@@ -556,20 +599,19 @@ class Check(BaseAuditModel):
             body = self.more_info
 
         elif self.check_type == "cpuload" or self.check_type == "memory":
+            text = ""
+            if self.warning_threshold:
+                text += f" Warning Threshold: {self.warning_threshold}%"
+            if self.error_threshold:
+                text += f" Error Threshold: {self.error_threshold}%"
 
             avg = int(mean(self.history))
 
             if self.check_type == "cpuload":
-                body = (
-                    subject
-                    + f" - Average CPU utilization: {avg}%, Threshold: {self.threshold}%"
-                )
+                body = subject + f" - Average CPU utilization: {avg}%, {text}"
 
             elif self.check_type == "memory":
-                body = (
-                    subject
-                    + f" - Average memory usage: {avg}%, Threshold: {self.threshold}%"
-                )
+                body = subject + f" - Average memory usage: {avg}%, {text}"
 
         elif self.check_type == "winsvc":
 
@@ -613,27 +655,33 @@ class Check(BaseAuditModel):
             subject = f"{self} Failed"
 
         if self.check_type == "diskspace":
+            text = ""
+            if self.warning_threshold:
+                text += f" Warning Threshold: {self.warning_threshold}%"
+            if self.error_threshold:
+                text += f" Error Threshold: {self.error_threshold}%"
+
             percent_used = [
                 d["percent"] for d in self.agent.disks if d["device"] == self.disk
             ][0]
             percent_free = 100 - percent_used
-            body = subject + f" - Free: {percent_free}%, Threshold: {self.threshold}%"
+            body = subject + f" - Free: {percent_free}%, {text}"
         elif self.check_type == "script":
             body = subject + f" - Return code: {self.retcode}"
         elif self.check_type == "ping":
             body = subject
         elif self.check_type == "cpuload" or self.check_type == "memory":
+            text = ""
+            if self.warning_threshold:
+                text += f" Warning Threshold: {self.warning_threshold}%"
+            if self.error_threshold:
+                text += f" Error Threshold: {self.error_threshold}%"
+
             avg = int(mean(self.history))
             if self.check_type == "cpuload":
-                body = (
-                    subject
-                    + f" - Average CPU utilization: {avg}%, Threshold: {self.threshold}%"
-                )
+                body = subject + f" - Average CPU utilization: {avg}%, {text}"
             elif self.check_type == "memory":
-                body = (
-                    subject
-                    + f" - Average memory usage: {avg}%, Threshold: {self.threshold}%"
-                )
+                body = subject + f" - Average memory usage: {avg}%, {text}"
         elif self.check_type == "winsvc":
             status = list(
                 filter(lambda x: x["name"] == self.svc_name, self.agent.services)

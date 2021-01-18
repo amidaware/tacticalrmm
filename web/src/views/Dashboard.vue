@@ -69,7 +69,7 @@
           </q-menu>
         </q-chip>
 
-        <!--<AlertsIcon />-->
+        <AlertsIcon />
 
         <q-btn-dropdown flat no-caps stretch :label="user">
           <q-list>

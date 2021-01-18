@@ -20,8 +20,20 @@
       <q-card-section>
         <q-input
           outlined
-          v-model.number="diskcheck.threshold"
-          label="Threshold (%)"
+          v-model.number="diskcheck.warning_threshold"
+          label="Warning Threshold (%)"
+          :rules="[
+            val => !!val || '*Required',
+            val => val >= 1 || 'Minimum threshold is 1',
+            val => val < 100 || 'Maximum threshold is 99',
+          ]"
+        />
+      </q-card-section>
+      <q-card-section>
+        <q-input
+          outlined
+          v-model.number="diskcheck.error_threshold"
+          label="Error Threshold (%)"
           :rules="[
             val => !!val || '*Required',
             val => val >= 1 || 'Minimum threshold is 1',
@@ -66,7 +78,8 @@ export default {
       diskcheck: {
         disk: null,
         check_type: "diskspace",
-        threshold: 25,
+        warning_threshold: 25,
+        error_threshold: 10,
         fails_b4_alert: 1,
       },
       diskOptions: [],
@@ -89,6 +102,11 @@ export default {
       axios.get(`/checks/${this.checkpk}/check/`).then(r => (this.diskcheck = r.data));
     },
     addCheck() {
+      if (!this.thresholdIsValid) {
+        this.notifyError("Warning Threshold needs to be greater than Error threshold");
+        return;
+      }
+
       const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
       const data = {
         ...pk,
@@ -104,6 +122,11 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     editCheck() {
+      if (!this.thresholdIsValid) {
+        this.notifyError("Warning Threshold needs to be greater than Error threshold");
+        return;
+      }
+
       axios
         .patch(`/checks/${this.checkpk}/check/`, this.diskcheck)
         .then(r => {
@@ -123,6 +146,13 @@ export default {
   },
   computed: {
     ...mapGetters(["agentDisks"]),
+    thresholdIsValid() {
+      return (
+        this.memcheck.warning_threshold === 0 ||
+        this.memcheck.error_threshold === 0 ||
+        this.memcheck.warning_threshold < this.memcheck.error_threshold
+      );
+    },
   },
   created() {
     if (this.mode === "add") {

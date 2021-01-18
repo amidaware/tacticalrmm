@@ -69,6 +69,13 @@ class CoreSettings(BaseAuditModel):
         blank=True,
         on_delete=models.SET_NULL,
     )
+    alert_template = models.ForeignKey(
+        "alerts.AlertTemplate",
+        related_name="default_alert_template",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
 
     def save(self, *args, **kwargs):
         if not self.pk and CoreSettings.objects.exists():

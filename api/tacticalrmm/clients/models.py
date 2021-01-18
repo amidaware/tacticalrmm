@@ -23,6 +23,13 @@ class Client(BaseAuditModel):
         blank=True,
         on_delete=models.SET_NULL,
     )
+    alert_template = models.ForeignKey(
+        "alerts.AlertTemplate",
+        related_name="clients",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         ordering = ("name",)
@@ -86,6 +93,13 @@ class Site(BaseAuditModel):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
+    )
+    alert_template = models.ForeignKey(
+        "alerts.AlertTemplate",
+        related_name="sites",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
     )
 
     class Meta:

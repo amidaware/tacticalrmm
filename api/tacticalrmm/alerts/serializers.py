@@ -4,7 +4,7 @@ from rest_framework.serializers import (
     DateTimeField,
 )
 
-from .models import Alert
+from .models import Alert, AlertTemplate
 
 
 class AlertSerializer(ModelSerializer):
@@ -16,4 +16,10 @@ class AlertSerializer(ModelSerializer):
 
     class Meta:
         model = Alert
+        fields = "__all__"
+
+
+class AlertTemplateSerializer(ModelSerializer):
+    class Meta:
+        model = AlertTemplate
         fields = "__all__"

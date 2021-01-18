@@ -65,6 +65,18 @@
           outlined
           dense
           options-dense
+          map-options
+          emit-value
+          v-model="scriptcheck.alert_severity"
+          :options="severityOptions"
+          label="Alert Severity"
+        />
+      </q-card-section>
+      <q-card-section>
+        <q-select
+          outlined
+          dense
+          options-dense
           v-model="scriptcheck.fails_b4_alert"
           :options="failOptions"
           label="Number of consecutive failures before alert"
@@ -98,7 +110,13 @@ export default {
         script_args: [],
         timeout: 120,
         fails_b4_alert: 1,
+        alert_severity: "warning",
       },
+      severityOptions: [
+        { label: "Informational", value: "info" },
+        { label: "Warning", value: "warning" },
+        { label: "Error", value: "error" },
+      ],
       scriptOptions: [],
       failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     };
@@ -106,9 +124,9 @@ export default {
   methods: {
     getScripts() {
       this.$axios.get("/scripts/scripts/").then(r => {
-        this.scriptOptions = r.data.map(
-          script => ({ label: script.name, value: script.id })).sort((a, b) => a.label.localeCompare(b.label)
-        );
+        this.scriptOptions = r.data
+          .map(script => ({ label: script.name, value: script.id }))
+          .sort((a, b) => a.label.localeCompare(b.label));
       });
     },
     getCheck() {
@@ -155,7 +173,7 @@ export default {
       this.getCheck();
     }
 
-    this.getScripts()
+    this.getScripts();
   },
 };
 </script>

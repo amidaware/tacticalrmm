@@ -472,16 +472,13 @@ export default {
         {
           name: "user",
           label: "User",
-          field: "logged_in_username",
+          field: "logged_username",
           sortable: true,
           align: "left",
         },
         {
-          name: "lastuser",
-          label: "Last User",
-          field: "last_logged_in_user",
-          sortable: true,
-          align: "left",
+          name: "italic",
+          field: "italic",
         },
         {
           name: "patchespending",

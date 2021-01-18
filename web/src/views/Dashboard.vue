@@ -764,9 +764,16 @@ export default {
       clientsTree: state => state.tree,
       treeReady: state => state.treeReady,
       clients: state => state.clients,
-      tab: state => state.defaultAgentTblTab,
     }),
     ...mapGetters(["selectedAgentPk", "needRefresh"]),
+    tab: {
+      get: function () {
+        return this.$store.state.defaultAgentTblTab;
+      },
+      set: function (newVal) {
+        this.$store.commit("SET_DEFAULT_AGENT_TBL_TABd", newVal);
+      },
+    },
     allClientsActive() {
       return this.selectedTree === "" ? true : false;
     },

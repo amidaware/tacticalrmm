@@ -410,7 +410,6 @@ export default {
       outsideModel: 11,
       selectedTree: "",
       innerModel: 50,
-      tab: "server",
       clientActive: "",
       siteActive: "",
       frame: [],
@@ -682,6 +681,7 @@ export default {
         this.$q.dark.set(this.darkMode);
         this.currentTRMMVersion = r.data.trmm_version;
         this.$store.commit("SET_AGENT_DBLCLICK_ACTION", r.data.dbl_click_action);
+        this.$store.commit("SET_DEFAULT_AGENT_TBL_TABd", r.data.default_agent_tbl_tab);
         this.$store.commit("setShowCommunityScripts", r.data.show_community_scripts);
       });
     },
@@ -764,6 +764,7 @@ export default {
       clientsTree: state => state.tree,
       treeReady: state => state.treeReady,
       clients: state => state.clients,
+      tab: state => state.defaultAgentTblTab,
     }),
     ...mapGetters(["selectedAgentPk", "needRefresh"]),
     allClientsActive() {

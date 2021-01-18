@@ -32,6 +32,20 @@
                   class="col-4"
                 />
               </q-card-section>
+              <q-card-section class="row">
+                <div class="col-6">Agent table default tab:</div>
+                <div class="col-2"></div>
+                <q-select
+                  map-options
+                  emit-value
+                  outlined
+                  dense
+                  options-dense
+                  v-model="defaultAgentTblTab"
+                  :options="defaultAgentTblTabOptions"
+                  class="col-4"
+                />
+              </q-card-section>
             </q-tab-panel>
           </q-tab-panels>
 
@@ -54,6 +68,7 @@ export default {
   data() {
     return {
       agentDblClickAction: "",
+      defaultAgentTblTab: "",
       tab: "ui",
       splitterModel: 20,
       agentDblClickOptions: [
@@ -70,16 +85,35 @@ export default {
           value: "remotebg",
         },
       ],
+      defaultAgentTblTabOptions: [
+        {
+          label: "Servers",
+          value: "server",
+        },
+        {
+          label: "Workstations",
+          value: "workstation",
+        },
+        {
+          label: "Mixed",
+          value: "mixed",
+        },
+      ],
     };
   },
   methods: {
     getUserPrefs() {
       this.$axios.get("/core/dashinfo/").then(r => {
         this.agentDblClickAction = r.data.dbl_click_action;
+        this.defaultAgentTblTab = r.data.default_agent_tbl_tab;
       });
     },
     editUserPrefs() {
-      const data = { agent_dblclick_action: this.agentDblClickAction };
+      const data = {
+        userui: true,
+        agent_dblclick_action: this.agentDblClickAction,
+        default_agent_tbl_tab: this.defaultAgentTblTab,
+      };
       this.$axios.patch("/accounts/users/ui/", data).then(r => {
         this.notifySuccess("Preferences were saved!");
         this.$emit("edited");

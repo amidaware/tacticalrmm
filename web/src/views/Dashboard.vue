@@ -195,7 +195,6 @@
                 </q-tabs>
                 <q-space />
                 <q-input
-                  autogrow
                   v-model="search"
                   style="width: 450px"
                   label="Search"
@@ -411,7 +410,6 @@ export default {
       outsideModel: 11,
       selectedTree: "",
       innerModel: 50,
-      tab: "server",
       clientActive: "",
       siteActive: "",
       frame: [],
@@ -472,16 +470,13 @@ export default {
         {
           name: "user",
           label: "User",
-          field: "logged_in_username",
+          field: "logged_username",
           sortable: true,
           align: "left",
         },
         {
-          name: "lastuser",
-          label: "Last User",
-          field: "last_logged_in_user",
-          sortable: true,
-          align: "left",
+          name: "italic",
+          field: "italic",
         },
         {
           name: "patchespending",
@@ -686,6 +681,7 @@ export default {
         this.$q.dark.set(this.darkMode);
         this.currentTRMMVersion = r.data.trmm_version;
         this.$store.commit("SET_AGENT_DBLCLICK_ACTION", r.data.dbl_click_action);
+        this.$store.commit("SET_DEFAULT_AGENT_TBL_TABd", r.data.default_agent_tbl_tab);
         this.$store.commit("setShowCommunityScripts", r.data.show_community_scripts);
       });
     },
@@ -768,6 +764,7 @@ export default {
       clientsTree: state => state.tree,
       treeReady: state => state.treeReady,
       clients: state => state.clients,
+      tab: state => state.defaultAgentTblTab,
     }),
     ...mapGetters(["selectedAgentPk", "needRefresh"]),
     allClientsActive() {

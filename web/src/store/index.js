@@ -35,6 +35,7 @@ export default function () {
       tabHeight: "35vh",
       showCommunityScripts: false,
       agentDblClickAction: "",
+      defaultAgentTblTab: "server",
     },
     getters: {
       loggedIn(state) {
@@ -139,6 +140,9 @@ export default function () {
       },
       SET_AGENT_DBLCLICK_ACTION(state, action) {
         state.agentDblClickAction = action
+      },
+      SET_DEFAULT_AGENT_TBL_TABd(state, tab) {
+        state.defaultAgentTblTab = tab
       }
     },
     actions: {

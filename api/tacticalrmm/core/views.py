@@ -72,6 +72,7 @@ def dashboard_info(request):
             "dark_mode": request.user.dark_mode,
             "show_community_scripts": request.user.show_community_scripts,
             "dbl_click_action": request.user.agent_dblclick_action,
+            "default_agent_tbl_tab": request.user.default_agent_tbl_tab,
         }
     )
 

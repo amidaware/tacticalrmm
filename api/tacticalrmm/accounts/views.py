@@ -189,16 +189,17 @@ class UserUI(APIView):
     def patch(self, request):
         user = request.user
 
-        if "dark_mode" in request.data:
+        if "dark_mode" in request.data.keys():
             user.dark_mode = request.data["dark_mode"]
             user.save(update_fields=["dark_mode"])
 
-        if "show_community_scripts" in request.data:
+        if "show_community_scripts" in request.data.keys():
             user.show_community_scripts = request.data["show_community_scripts"]
             user.save(update_fields=["show_community_scripts"])
 
-        if "agent_dblclick_action" in request.data:
+        if "userui" in request.data.keys():
             user.agent_dblclick_action = request.data["agent_dblclick_action"]
-            user.save(update_fields=["agent_dblclick_action"])
+            user.default_agent_tbl_tab = request.data["default_agent_tbl_tab"]
+            user.save(update_fields=["agent_dblclick_action", "default_agent_tbl_tab"])
 
         return Response("ok")

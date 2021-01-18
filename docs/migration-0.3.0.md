@@ -139,7 +139,7 @@ server {
 }
 ```
 
-4. Edit `/meshcentral/meshcentral-data/config.json` and change to match the example below. Replace `mesh.example.com` with your mesh domain.
+4. Edit `/meshcentral/meshcentral-data/config.json` and change to match the example below. Replace `mesh.example.com` with your mesh domain. After editing, use a json linter like `https://jsonlint.com/` to verify no syntax errors, otherwise meshcentral will fail to start.
 ```
 {
   "settings": {

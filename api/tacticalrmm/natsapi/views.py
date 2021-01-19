@@ -1,4 +1,6 @@
+import asyncio
 from django.utils import timezone as djangotime
+from loguru import logger
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -23,6 +25,8 @@ from agents.tasks import (
 )
 
 from tacticalrmm.utils import notify_error, filter_software, SoftwareList
+
+logger.configure(**settings.LOG_CONFIG)
 
 
 @api_view()
@@ -130,6 +134,50 @@ class SyncMeshNodeID(APIView):
 class NatsWinUpdates(APIView):
     authentication_classes = []
     permission_classes = []
+
+    def put(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        reboot_policy: str = agent.get_patch_policy().reboot_after_install
+        reboot = False
+
+        if reboot_policy == "always":
+            reboot = True
+
+        if request.data["needs_reboot"]:
+            if reboot_policy == "required":
+                reboot = True
+            elif reboot_policy == "never":
+                agent.needs_reboot = True
+                agent.save(update_fields=["needs_reboot"])
+
+        if reboot:
+            asyncio.run(agent.nats_cmd({"func": "rebootnow"}, wait=False))
+            logger.info(f"{agent.hostname} is rebooting after updates were installed.")
+
+        return Response("ok")
+
+    def patch(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        u = agent.winupdates.filter(guid=request.data["guid"]).last()
+        success: bool = request.data["success"]
+        if success:
+            u.result = "success"
+            u.downloaded = True
+            u.installed = True
+            u.date_installed = djangotime.now()
+            u.save(
+                update_fields=[
+                    "result",
+                    "downloaded",
+                    "installed",
+                    "date_installed",
+                ]
+            )
+        else:
+            u.result = "failed"
+            u.save(update_fields=["result"])
+
+        return Response("ok")
 
     def post(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])

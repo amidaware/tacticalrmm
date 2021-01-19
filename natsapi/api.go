@@ -145,6 +145,20 @@ func Listen(apihost, natshost string, debug bool) {
 					rClient.R().SetBody(p).Post("/winupdates/")
 				}
 			}()
+		case "winupdateresult":
+			go func() {
+				var p *rmm.WinUpdateInstallResult
+				if err := dec.Decode(&p); err == nil {
+					rClient.R().SetBody(p).Patch("/winupdates/")
+				}
+			}()
+		case "needsreboot":
+			go func() {
+				var p *rmm.AgentNeedsReboot
+				if err := dec.Decode(&p); err == nil {
+					rClient.R().SetBody(p).Put("/winupdates/")
+				}
+			}()
 		}
 	})
 

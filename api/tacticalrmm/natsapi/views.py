@@ -12,6 +12,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 
 from agents.models import Agent
+from winupdate.models import WinUpdate
 from software.models import InstalledSoftware
 from checks.utils import bytes2human
 from agents.serializers import WinAgentSerializer
@@ -122,5 +123,44 @@ class SyncMeshNodeID(APIView):
         if agent.mesh_node_id != request.data["nodeid"]:
             agent.mesh_node_id = request.data["nodeid"]
             agent.save(update_fields=["mesh_node_id"])
+
+        return Response("ok")
+
+
+class NatsWinUpdates(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        updates = request.data["wua_updates"]
+        for update in updates:
+            if agent.winupdates.filter(guid=update["guid"]).exists():
+                u = agent.winupdates.filter(guid=update["guid"]).last()
+                u.downloaded = update["downloaded"]
+                u.installed = update["installed"]
+                u.save(update_fields=["downloaded", "installed"])
+            else:
+                try:
+                    kb = "KB" + update["kb_article_ids"][0]
+                except:
+                    continue
+
+                WinUpdate(
+                    agent=agent,
+                    guid=update["guid"],
+                    kb=kb,
+                    title=update["title"],
+                    installed=update["installed"],
+                    downloaded=update["downloaded"],
+                    description=update["description"],
+                    severity=update["severity"],
+                    categories=update["categories"],
+                    category_ids=update["category_ids"],
+                    kb_article_ids=update["kb_article_ids"],
+                    more_info_urls=update["more_info_urls"],
+                    support_url=update["support_url"],
+                    revision_number=update["revision_number"],
+                ).save()
 
         return Response("ok")

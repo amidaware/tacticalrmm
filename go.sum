@@ -98,6 +98,8 @@ github.com/wh1te909/rmmagent v1.1.13-0.20210112033642-9b310c2c7f53 h1:Q47sibbW09
 github.com/wh1te909/rmmagent v1.1.13-0.20210112033642-9b310c2c7f53/go.mod h1:05MQOAiC/kGvJjDlCOjaTsMNpf6wZFqOTkHqK0ATfW0=
 github.com/wh1te909/rmmagent v1.2.0 h1:dM/juD7k6Oa0lEKsvbNPgjc1wVC6uQtNzQoIqVuuxSQ=
 github.com/wh1te909/rmmagent v1.2.0/go.mod h1:05MQOAiC/kGvJjDlCOjaTsMNpf6wZFqOTkHqK0ATfW0=
+github.com/wh1te909/rmmagent v1.2.2-0.20210118235958-bd6606570a6f h1:lhcD2yJauZ8TyYCxYvSv/CPnUhiTrxwydPTESfPkyuc=
+github.com/wh1te909/rmmagent v1.2.2-0.20210118235958-bd6606570a6f/go.mod h1:05MQOAiC/kGvJjDlCOjaTsMNpf6wZFqOTkHqK0ATfW0=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
 golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=

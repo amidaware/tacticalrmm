@@ -138,6 +138,13 @@ func Listen(apihost, natshost string, debug bool) {
 					rClient.R().SetBody(p).Post("/syncmesh/")
 				}
 			}()
+		case "getwinupdates":
+			go func() {
+				var p *rmm.WinUpdateResult
+				if err := dec.Decode(&p); err == nil {
+					rClient.R().SetBody(p).Post("/winupdates/")
+				}
+			}()
 		}
 	})
 

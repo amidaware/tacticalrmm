@@ -1,4 +1,5 @@
 import asyncio
+import time
 from django.utils import timezone as djangotime
 from loguru import logger
 
@@ -117,6 +118,16 @@ class NatsCheckIn(APIView):
         serializer.save()
         return Response("ok")
 
+    # called once during tacticalagent windows service startup
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        if not agent.choco_installed:
+            asyncio.run(agent.nats_cmd({"func": "installchoco"}, wait=False))
+
+        time.sleep(0.5)
+        asyncio.run(agent.nats_cmd({"func": "getwinupdates"}, wait=False))
+        return Response("ok")
+
 
 class SyncMeshNodeID(APIView):
     authentication_classes = []
@@ -128,6 +139,17 @@ class SyncMeshNodeID(APIView):
             agent.mesh_node_id = request.data["nodeid"]
             agent.save(update_fields=["mesh_node_id"])
 
+        return Response("ok")
+
+
+class NatsChoco(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent.choco_installed = request.data["installed"]
+        agent.save(update_fields=["choco_installed"])
         return Response("ok")
 
 

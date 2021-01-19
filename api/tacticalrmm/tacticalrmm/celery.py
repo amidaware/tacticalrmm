@@ -21,10 +21,6 @@ app.conf.task_track_started = True
 app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
-    "update-chocos": {
-        "task": "software.tasks.update_chocos",
-        "schedule": crontab(minute=0, hour=4),
-    },
     "auto-approve-win-updates": {
         "task": "winupdate.tasks.auto_approve_updates_task",
         "schedule": crontab(minute=2, hour="*/8"),

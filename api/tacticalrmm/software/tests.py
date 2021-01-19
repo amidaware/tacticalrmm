@@ -2,8 +2,7 @@ from tacticalrmm.test import TacticalTestCase
 from .serializers import InstalledSoftwareSerializer
 from model_bakery import baker
 from unittest.mock import patch
-from .models import InstalledSoftware, ChocoLog
-from agents.models import Agent
+from .models import ChocoLog
 
 
 class TestSoftwareViews(TacticalTestCase):
@@ -64,83 +63,20 @@ class TestSoftwareViews(TacticalTestCase):
 
 
 class TestSoftwareTasks(TacticalTestCase):
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_install_chocolatey(self, salt_api_cmd):
-        from .tasks import install_chocolatey
-
-        agent = baker.make_recipe("agents.agent")
-
-        # test failed attempt
-        salt_api_cmd.return_value = "timeout"
-        ret = install_chocolatey(agent.pk)
-
-        salt_api_cmd.assert_called_with(
-            timeout=120, func="chocolatey.bootstrap", arg="force=True"
-        )
-        self.assertFalse(ret)
-
-        # test successful
-        salt_api_cmd.return_value = "chocolatey is now ready"
-        ret = install_chocolatey(agent.pk)
-
-        salt_api_cmd.assert_called_with(
-            timeout=120, func="chocolatey.bootstrap", arg="force=True"
-        )
-        self.assertTrue(ret)
-        self.assertTrue(Agent.objects.get(pk=agent.pk).choco_installed)
-
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_update_chocos(self, salt_api_cmd):
-        from .tasks import update_chocos
-
-        # initialize data
-        online_agent = baker.make_recipe("agents.online_agent", choco_installed=True)
-        baker.make("software.ChocoSoftware", chocos={})
-
-        # return data
-        chocolately_list = {
-            "git": "2.3.4",
-            "docker": "1.0.2",
-        }
-
-        # test failed attempt
-        salt_api_cmd.return_value = "timeout"
-        ret = update_chocos()
-
-        salt_api_cmd.assert_called_with(timeout=10, func="test.ping")
-        self.assertTrue(ret)
-        self.assertEquals(salt_api_cmd.call_count, 1)
-        salt_api_cmd.reset_mock()
-
-        # test successful attempt
-        salt_api_cmd.side_effect = [True, chocolately_list]
-        ret = update_chocos()
-        self.assertTrue(ret)
-        salt_api_cmd.assert_any_call(timeout=10, func="test.ping")
-        salt_api_cmd.assert_any_call(timeout=200, func="chocolatey.list")
-        self.assertEquals(salt_api_cmd.call_count, 2)
-
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_install_program(self, salt_api_cmd):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_install_program(self, nats_cmd):
         from .tasks import install_program
 
         agent = baker.make_recipe("agents.agent")
-
-        # failed attempt
-        salt_api_cmd.return_value = "timeout"
-        ret = install_program(agent.pk, "git", "2.3.4")
-        self.assertFalse(ret)
-        salt_api_cmd.assert_called_with(
-            timeout=900, func="chocolatey.install", arg=["git", "version=2.3.4"]
-        )
-        salt_api_cmd.reset_mock()
-
-        # successfully attempt
-        salt_api_cmd.return_value = "install of git was successful"
-        ret = install_program(agent.pk, "git", "2.3.4")
-        self.assertTrue(ret)
-        salt_api_cmd.assert_called_with(
-            timeout=900, func="chocolatey.install", arg=["git", "version=2.3.4"]
+        nats_cmd.return_value = "install of git was successful"
+        _ = install_program(agent.pk, "git", "2.3.4")
+        nats_cmd.assert_called_with(
+            {
+                "func": "installwithchoco",
+                "choco_prog_name": "git",
+                "choco_prog_ver": "2.3.4",
+            },
+            timeout=915,
         )
 
         self.assertTrue(ChocoLog.objects.filter(agent=agent, name="git").exists())

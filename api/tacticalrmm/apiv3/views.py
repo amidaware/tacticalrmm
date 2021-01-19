@@ -33,7 +33,6 @@ from agents.tasks import (
     install_salt_task,
 )
 from winupdate.tasks import check_for_updates_task
-from software.tasks import install_chocolatey
 from checks.utils import bytes2human
 from tacticalrmm.utils import notify_error, reload_nats, filter_software, SoftwareList
 
@@ -138,9 +137,6 @@ class CheckIn(APIView):
             queue="wupdate", kwargs={"pk": agent.pk, "wait": True}
         )
 
-        if not agent.choco_installed:
-            install_chocolatey.delay(agent.pk, wait=True)
-
         return Response("ok")
 
 
@@ -232,9 +228,6 @@ class Hello(APIView):
         check_for_updates_task.apply_async(
             queue="wupdate", kwargs={"pk": agent.pk, "wait": True}
         )
-
-        if not agent.choco_installed:
-            install_chocolatey.delay(agent.pk, wait=True)
 
         return Response("ok")
 

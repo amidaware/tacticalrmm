@@ -141,7 +141,7 @@ export default function () {
       SET_AGENT_DBLCLICK_ACTION(state, action) {
         state.agentDblClickAction = action
       },
-      SET_DEFAULT_AGENT_TBL_TABd(state, tab) {
+      SET_DEFAULT_AGENT_TBL_TAB(state, tab) {
         state.defaultAgentTblTab = tab
       }
     },

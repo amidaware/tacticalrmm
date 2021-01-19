@@ -19,7 +19,7 @@ TRMM_VERSION = "0.3.3"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.106"
+APP_VER = "0.0.107"
 
 # https://github.com/wh1te909/salt
 LATEST_SALT_VER = "1.1.0"

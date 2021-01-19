@@ -681,7 +681,7 @@ export default {
         this.$q.dark.set(this.darkMode);
         this.currentTRMMVersion = r.data.trmm_version;
         this.$store.commit("SET_AGENT_DBLCLICK_ACTION", r.data.dbl_click_action);
-        this.$store.commit("SET_DEFAULT_AGENT_TBL_TABd", r.data.default_agent_tbl_tab);
+        this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", r.data.default_agent_tbl_tab);
         this.$store.commit("setShowCommunityScripts", r.data.show_community_scripts);
       });
     },
@@ -771,7 +771,7 @@ export default {
         return this.$store.state.defaultAgentTblTab;
       },
       set: function (newVal) {
-        this.$store.commit("SET_DEFAULT_AGENT_TBL_TABd", newVal);
+        this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", newVal);
       },
     },
     allClientsActive() {

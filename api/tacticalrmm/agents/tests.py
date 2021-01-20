@@ -104,9 +104,8 @@ class TestAgentViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     @patch("agents.models.Agent.nats_cmd")
-    @patch("agents.tasks.uninstall_agent_task.delay")
     @patch("agents.views.reload_nats")
-    def test_uninstall(self, reload_nats, mock_task, nats_cmd):
+    def test_uninstall(self, reload_nats, nats_cmd):
         url = "/agents/uninstall/"
         data = {"pk": self.agent.pk}
 
@@ -115,7 +114,6 @@ class TestAgentViews(TacticalTestCase):
 
         nats_cmd.assert_called_with({"func": "uninstall"}, wait=False)
         reload_nats.assert_called_once()
-        mock_task.assert_called_with(self.agent.salt_id, True)
 
         self.check_not_authenticated("delete", url)
 

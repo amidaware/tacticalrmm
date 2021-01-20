@@ -34,7 +34,6 @@ from .serializers import (
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .tasks import (
-    uninstall_agent_task,
     send_agent_update_task,
     run_script_email_results_task,
 )
@@ -83,13 +82,9 @@ def uninstall(request):
     if agent.has_nats:
         asyncio.run(agent.nats_cmd({"func": "uninstall"}, wait=False))
 
-    salt_id = agent.salt_id
     name = agent.hostname
-    has_nats = agent.has_nats
     agent.delete()
     reload_nats()
-
-    uninstall_agent_task.delay(salt_id, has_nats)
     return Response(f"{name} will now be uninstalled.")
 
 

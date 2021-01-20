@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="103"
+SCRIPT_VERSION="104"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -107,41 +107,6 @@ sudo systemctl enable celerybeat.service
 
 fi
 
-CHECK_CELERYWINUPDATE_V2=$(grep V2 /etc/systemd/system/celery-winupdate.service)
-if ! [[ $CHECK_CELERYWINUPDATE_V2 ]]; then
-printf >&2 "${GREEN}Updating celery-winupdate.service${NC}\n"
-sudo systemctl stop celery-winupdate.service
-sudo rm -f /etc/systemd/system/celery-winupdate.service
-
-celerywinupdatesvc="$(cat << EOF
-[Unit]
-Description=Celery WinUpdate Service V2
-After=network.target redis-server.service postgresql.service
-
-[Service]
-Type=forking
-User=${USER}
-Group=${USER}
-EnvironmentFile=/etc/conf.d/celery-winupdate.conf
-WorkingDirectory=/rmm/api/tacticalrmm
-ExecStart=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi start \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" -Q wupdate \$CELERYD_OPTS'
-ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --loglevel="\${CELERYD_LOG_LEVEL}"'
-ExecReload=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi restart \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" -Q wupdate \$CELERYD_OPTS'
-Restart=always
-RestartSec=10s
-
-[Install]
-WantedBy=multi-user.target
-EOF
-)"
-echo "${celerywinupdatesvc}" | sudo tee /etc/systemd/system/celery-winupdate.service > /dev/null
-
-sudo systemctl daemon-reload
-sudo systemctl enable celery-winupdate.service
-
-fi
-
-
 TMP_SETTINGS=$(mktemp -p "" "rmmsettings_XXXXXXXXXX")
 curl -s -L "${LATEST_SETTINGS_URL}" > ${TMP_SETTINGS}
 SETTINGS_FILE="/rmm/api/tacticalrmm/tacticalrmm/settings.py"
@@ -158,7 +123,6 @@ fi
 LATEST_MESH_VER=$(grep "^MESH_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 LATEST_PIP_VER=$(grep "^PIP_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 LATEST_NPM_VER=$(grep "^NPM_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
-LATEST_SALT_VER=$(grep "^SALT_MASTER_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 
 CURRENT_PIP_VER=$(grep "^PIP_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 CURRENT_NPM_VER=$(grep "^NPM_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
@@ -187,7 +151,15 @@ sudo systemctl daemon-reload
 sudo systemctl enable natsapi.service
 fi
 
-for i in salt-master salt-api nginx nats natsapi rmm celery celerybeat celery-winupdate
+if [ -f /etc/systemd/system/celery-winupdate.service ]; then
+  printf >&2 "${GREEN}Removing celery-winupdate.service${NC}\n"
+  sudo systemctl stop celery-winupdate.service
+  sudo systemctl disable celery-winupdate.service
+  sudo rm -f /etc/systemd/system/celery-winupdate.service
+  sudo systemctl daemon-reload
+fi
+
+for i in nginx nats natsapi rmm celery celerybeat
 do
 printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}
@@ -208,38 +180,16 @@ git reset --hard FETCH_HEAD
 git clean -df
 git pull
 
-CHECK_SALT=$(sudo salt --version | grep ${LATEST_SALT_VER})
-if ! [[ $CHECK_SALT ]]; then
-  printf >&2 "${GREEN}Updating salt${NC}\n"
-  sudo apt update
-  sudo apt install -y salt-master salt-api salt-common
-  printf >&2 "${GREEN}Waiting for salt...${NC}\n"
-  sleep 15
-  sudo systemctl stop salt-master
-  sudo systemctl stop salt-api
-  printf >&2 "${GREEN}Fixing msgpack${NC}\n"
-  sudo sed -i 's/msgpack_kwargs = {"raw": six.PY2}/msgpack_kwargs = {"raw": six.PY2, "max_buffer_size": 2147483647}/g' /usr/lib/python3/dist-packages/salt/transport/ipc.py
-  sudo systemctl start salt-master
-  printf >&2 "${GREEN}Waiting for salt...${NC}\n"
-  sleep 15
-  sudo systemctl start salt-api
-  printf >&2 "${GREEN}Salt update finished${NC}\n"
-fi
 
 sudo chown ${USER}:${USER} -R /rmm
 sudo chown ${USER}:${USER} /var/log/celery
-sudo chown ${USER}:${USER} -R /srv/salt/
 sudo chown ${USER}:${USER} -R /etc/conf.d/
-sudo chown ${USER}:www-data /srv/salt/scripts/userdefined
 sudo chown -R $USER:$GROUP /home/${USER}/.npm
 sudo chown -R $USER:$GROUP /home/${USER}/.config
 sudo chown -R $USER:$GROUP /home/${USER}/.cache
-sudo chmod 750 /srv/salt/scripts/userdefined
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
 sudo chmod 775 -R /etc/letsencrypt
 
-cp /rmm/_modules/* /srv/salt/_modules/
-cp /rmm/scripts/* /srv/salt/scripts/
 /usr/local/rmmgo/go/bin/go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
 sudo cp /rmm/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/
 sudo chown ${USER}:${USER} /usr/local/bin/goversioninfo
@@ -272,7 +222,6 @@ fi
 python manage.py pre_update_tasks
 python manage.py migrate
 python manage.py delete_tokens
-python manage.py fix_salt_key
 python manage.py collectstatic --no-input
 python manage.py reload_nats
 python manage.py load_chocos
@@ -292,13 +241,7 @@ sudo rm -rf /var/www/rmm/dist
 sudo cp -pr /rmm/web/dist /var/www/rmm/
 sudo chown www-data:www-data -R /var/www/rmm/dist
 
-printf >&2 "${GREEN}Starting salt-master service${NC}\n"
-sudo systemctl start salt-master
-sleep 7
-printf >&2 "${GREEN}Starting salt-api service${NC}\n"
-sudo systemctl start salt-api
-
-for i in rmm celery celerybeat celery-winupdate nginx nats natsapi
+for i in rmm celery celerybeat nginx nats natsapi
 do
 printf >&2 "${GREEN}Starting ${i} service${NC}\n"
 sudo systemctl start ${i}

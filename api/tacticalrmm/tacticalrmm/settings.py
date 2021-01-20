@@ -58,7 +58,6 @@ INSTALLED_APPS = [
     "knox",
     "corsheaders",
     "accounts",
-    "apiv2",
     "apiv3",
     "clients",
     "agents",

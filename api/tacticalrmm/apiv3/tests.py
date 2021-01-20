@@ -26,23 +26,6 @@ class TestAPIv3(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    def test_get_salt_minion(self):
-        url = f"/api/v3/{self.agent.agent_id}/saltminion/"
-        url2 = f"/api/v2/{self.agent.agent_id}/saltminion/"
-
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 200)
-        self.assertIn("latestVer", r.json().keys())
-        self.assertIn("currentVer", r.json().keys())
-        self.assertIn("salt_id", r.json().keys())
-        self.assertIn("downloadURL", r.json().keys())
-
-        r2 = self.client.get(url2)
-        self.assertEqual(r2.status_code, 200)
-
-        self.check_not_authenticated("get", url)
-        self.check_not_authenticated("get", url2)
-
     def test_get_mesh_info(self):
         url = f"/api/v3/{self.agent.pk}/meshinfo/"
 

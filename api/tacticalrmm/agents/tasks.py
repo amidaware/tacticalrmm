@@ -178,29 +178,6 @@ def sync_sysinfo_task():
 
 
 @app.task
-def sync_salt_modules_task(pk):
-    agent = Agent.objects.get(pk=pk)
-    r = agent.salt_api_cmd(timeout=35, func="saltutil.sync_modules")
-    # successful sync if new/charnged files: {'return': [{'MINION-15': ['modules.get_eventlog', 'modules.win_agent', 'etc...']}]}
-    # successful sync with no new/changed files: {'return': [{'MINION-15': []}]}
-    if r == "timeout" or r == "error":
-        return f"Unable to sync modules {agent.salt_id}"
-
-    return f"Successfully synced salt modules on {agent.hostname}"
-
-
-@app.task
-def batch_sync_modules_task():
-    # sync modules, split into chunks of 50 agents to not overload salt
-    agents = Agent.objects.all()
-    online = [i.salt_id for i in agents]
-    chunks = (online[i : i + 50] for i in range(0, len(online), 50))
-    for chunk in chunks:
-        Agent.salt_batch_async(minions=chunk, func="saltutil.sync_modules")
-        sleep(10)
-
-
-@app.task
 def uninstall_agent_task(salt_id, has_nats):
     attempts = 0
     error = False

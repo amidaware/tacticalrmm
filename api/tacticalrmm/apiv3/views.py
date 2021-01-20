@@ -29,10 +29,8 @@ from winupdate.serializers import ApprovedUpdateSerializer
 from agents.tasks import (
     agent_recovery_email_task,
     agent_recovery_sms_task,
-    sync_salt_modules_task,
     install_salt_task,
 )
-from winupdate.tasks import check_for_updates_task
 from checks.utils import bytes2human
 from tacticalrmm.utils import notify_error, reload_nats, filter_software, SoftwareList
 
@@ -131,12 +129,6 @@ class CheckIn(APIView):
         serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save(last_seen=djangotime.now())
-
-        sync_salt_modules_task.delay(agent.pk)
-        check_for_updates_task.apply_async(
-            queue="wupdate", kwargs={"pk": agent.pk, "wait": True}
-        )
-
         return Response("ok")
 
 
@@ -223,12 +215,6 @@ class Hello(APIView):
         serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save(last_seen=djangotime.now())
-
-        sync_salt_modules_task.delay(agent.pk)
-        check_for_updates_task.apply_async(
-            queue="wupdate", kwargs={"pk": agent.pk, "wait": True}
-        )
-
         return Response("ok")
 
 
@@ -298,77 +284,6 @@ class TaskRunner(APIView):
         return Response("ok")
 
 
-class SaltMinion(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, agentid):
-        agent = get_object_or_404(Agent, agent_id=agentid)
-        ret = {
-            "latestVer": settings.LATEST_SALT_VER,
-            "currentVer": agent.salt_ver,
-            "salt_id": agent.salt_id,
-            "downloadURL": agent.winsalt_dl,
-        }
-        return Response(ret)
-
-    def post(self, request):
-        # accept the salt key
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-        if agent.salt_id != request.data["saltid"]:
-            return notify_error("Salt keys do not match")
-
-        try:
-            resp = requests.post(
-                f"http://{settings.SALT_HOST}:8123/run",
-                json=[
-                    {
-                        "client": "wheel",
-                        "fun": "key.accept",
-                        "match": request.data["saltid"],
-                        "username": settings.SALT_USERNAME,
-                        "password": settings.SALT_PASSWORD,
-                        "eauth": "pam",
-                    }
-                ],
-                timeout=30,
-            )
-        except Exception:
-            return notify_error("No communication between agent and salt-api")
-
-        try:
-            data = resp.json()["return"][0]["data"]
-            minion = data["return"]["minions"][0]
-        except Exception:
-            return notify_error("Key error")
-
-        if data["success"] and minion == request.data["saltid"]:
-            return Response("Salt key was accepted")
-        else:
-            return notify_error("Not accepted")
-
-    def patch(self, request):
-        # sync modules
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-        r = agent.salt_api_cmd(timeout=45, func="saltutil.sync_modules")
-
-        if r == "timeout" or r == "error":
-            return notify_error("Failed to sync salt modules")
-
-        if isinstance(r, list) and any("modules" in i for i in r):
-            return Response("Successfully synced salt modules")
-        elif isinstance(r, list) and not r:
-            return Response("Modules are already in sync")
-        else:
-            return notify_error(f"Failed to sync salt modules: {str(r)}")
-
-    def put(self, request):
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-        agent.salt_ver = request.data["ver"]
-        agent.save(update_fields=["salt_ver"])
-        return Response("ok")
-
-
 class WinUpdater(APIView):
 
     authentication_classes = [TokenAuthentication]
@@ -430,18 +345,9 @@ class WinUpdater(APIView):
         if reboot:
             if agent.has_nats:
                 asyncio.run(agent.nats_cmd({"func": "rebootnow"}, wait=False))
-            else:
-                agent.salt_api_async(
-                    func="system.reboot",
-                    arg=7,
-                    kwargs={"in_seconds": True},
+                logger.info(
+                    f"{agent.hostname} is rebooting after updates were installed."
                 )
-
-            logger.info(f"{agent.hostname} is rebooting after updates were installed.")
-        else:
-            check_for_updates_task.apply_async(
-                queue="wupdate", kwargs={"pk": agent.pk, "wait": False}
-            )
 
         return Response("ok")
 

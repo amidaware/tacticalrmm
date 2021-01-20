@@ -14,12 +14,6 @@ from tacticalrmm.test import TacticalTestCase
 from .serializers import AgentSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 from .models import Agent
-from .tasks import (
-    agent_recovery_sms_task,
-    auto_self_agent_update_task,
-    sync_salt_modules_task,
-    batch_sync_modules_task,
-)
 from winupdate.models import WinUpdatePolicy
 
 
@@ -543,7 +537,7 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @patch("winupdate.tasks.bulk_check_for_updates_task.delay")
+    """ @patch("winupdate.tasks.bulk_check_for_updates_task.delay")
     @patch("scripts.tasks.handle_bulk_script_task.delay")
     @patch("scripts.tasks.handle_bulk_command_task.delay")
     @patch("agents.models.Agent.salt_batch_async")
@@ -585,7 +579,7 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 400)
 
-        """ payload = {
+        payload = {
             "mode": "command",
             "monType": "workstations",
             "target": "client",
@@ -599,7 +593,7 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
-        bulk_command.assert_called_with([self.agent.pk], "gpupdate /force", "cmd", 300) """
+        bulk_command.assert_called_with([self.agent.pk], "gpupdate /force", "cmd", 300)
 
         payload = {
             "mode": "command",
@@ -657,7 +651,7 @@ class TestAgentViews(TacticalTestCase):
 
         # TODO mock the script
 
-        self.check_not_authenticated("post", url)
+        self.check_not_authenticated("post", url) """
 
     @patch("agents.models.Agent.nats_cmd")
     def test_recover_mesh(self, nats_cmd):
@@ -758,41 +752,6 @@ class TestAgentTasks(TacticalTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
-
-    @patch("agents.models.Agent.salt_api_cmd")
-    def test_sync_salt_modules_task(self, salt_api_cmd):
-        self.agent = baker.make_recipe("agents.agent")
-        salt_api_cmd.return_value = {"return": [{f"{self.agent.salt_id}": []}]}
-        ret = sync_salt_modules_task.s(self.agent.pk).apply()
-        salt_api_cmd.assert_called_with(timeout=35, func="saltutil.sync_modules")
-        self.assertEqual(
-            ret.result, f"Successfully synced salt modules on {self.agent.hostname}"
-        )
-        self.assertEqual(ret.status, "SUCCESS")
-
-        salt_api_cmd.return_value = "timeout"
-        ret = sync_salt_modules_task.s(self.agent.pk).apply()
-        self.assertEqual(ret.result, f"Unable to sync modules {self.agent.salt_id}")
-
-        salt_api_cmd.return_value = "error"
-        ret = sync_salt_modules_task.s(self.agent.pk).apply()
-        self.assertEqual(ret.result, f"Unable to sync modules {self.agent.salt_id}")
-
-    @patch("agents.models.Agent.salt_batch_async", return_value=None)
-    @patch("agents.tasks.sleep", return_value=None)
-    def test_batch_sync_modules_task(self, mock_sleep, salt_batch_async):
-        # chunks of 50, should run 4 times
-        baker.make_recipe(
-            "agents.online_agent", last_seen=djangotime.now(), _quantity=60
-        )
-        baker.make_recipe(
-            "agents.overdue_agent",
-            last_seen=djangotime.now() - djangotime.timedelta(minutes=9),
-            _quantity=115,
-        )
-        ret = batch_sync_modules_task.s().apply()
-        self.assertEqual(salt_batch_async.call_count, 4)
-        self.assertEqual(ret.status, "SUCCESS")
 
     @patch("agents.models.Agent.nats_cmd")
     def test_agent_update(self, nats_cmd):

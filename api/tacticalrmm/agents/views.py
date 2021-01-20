@@ -7,6 +7,7 @@ import random
 import string
 import datetime as dt
 from packaging import version as pyver
+from typing import List
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -37,7 +38,7 @@ from .tasks import (
     send_agent_update_task,
     run_script_email_results_task,
 )
-from winupdate.tasks import bulk_check_for_updates_task
+from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 
 from tacticalrmm.utils import notify_error, reload_nats
@@ -71,10 +72,6 @@ def ping(request, pk):
     if agent.has_nats:
         r = asyncio.run(agent.nats_cmd({"func": "ping"}, timeout=5))
         if r == "pong":
-            status = "online"
-    else:
-        r = agent.salt_api_cmd(timeout=5, func="test.ping")
-        if isinstance(r, bool) and r:
             status = "online"
 
     return Response({"name": agent.hostname, "status": status})
@@ -849,8 +846,7 @@ def bulk(request):
     elif request.data["monType"] == "workstations":
         q = q.filter(monitoring_type="workstation")
 
-    minions = [agent.salt_id for agent in q]
-    agents = [agent.pk for agent in q]
+    agents: List[int] = [agent.pk for agent in q]
 
     AuditLog.audit_bulk_action(request.user, request.data["mode"], request.data)
 
@@ -868,14 +864,12 @@ def bulk(request):
         return Response(f"{script.name} will now be run on {len(agents)} agents")
 
     elif request.data["mode"] == "install":
-        r = Agent.salt_batch_async(minions=minions, func="win_agent.install_updates")
-        if r == "timeout":
-            return notify_error("Salt API not running")
+        bulk_install_updates_task.delay(agents)
         return Response(
             f"Pending updates will now be installed on {len(agents)} agents"
         )
     elif request.data["mode"] == "scan":
-        bulk_check_for_updates_task.delay(minions=minions)
+        bulk_check_for_updates_task.delay(agents)
         return Response(f"Patch status scan will now run on {len(agents)} agents")
 
     return notify_error("Something went wrong")

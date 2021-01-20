@@ -1,10 +1,8 @@
+import asyncio
+from packaging import version as pyver
 from django.shortcuts import get_object_or_404
 
-from rest_framework.decorators import (
-    api_view,
-    authentication_classes,
-    permission_classes,
-)
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
@@ -12,7 +10,6 @@ from rest_framework.permissions import IsAuthenticated
 from agents.models import Agent
 from .models import WinUpdate
 from .serializers import UpdateSerializer, ApprovedUpdateSerializer
-from .tasks import check_for_updates_task
 from tacticalrmm.utils import notify_error
 
 
@@ -25,30 +22,24 @@ def get_win_updates(request, pk):
 @api_view()
 def run_update_scan(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    check_for_updates_task.apply_async(
-        queue="wupdate", kwargs={"pk": agent.pk, "wait": False, "auto_approve": True}
-    )
+    if pyver.parse(agent.version) < pyver.parse("1.3.0"):
+        return notify_error("Requires agent version 1.3.0 or greater")
+
+    asyncio.run(agent.nats_cmd({"func": "getwinupdates"}, wait=False))
     return Response("ok")
 
 
 @api_view()
 def install_updates(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    r = agent.salt_api_cmd(timeout=15, func="win_agent.install_updates")
+    if pyver.parse(agent.version) < pyver.parse("1.3.0"):
+        return notify_error("Requires agent version 1.3.0 or greater")
 
-    if r == "timeout":
-        return notify_error("Unable to contact the agent")
-    elif r == "error":
-        return notify_error("Something went wrong")
-    elif r == "running":
-        return notify_error(f"Updates are already being installed on {agent.hostname}")
-
-    # successful response: {'return': [{'SALT-ID': {'pid': 3316}}]}
-    try:
-        r["pid"]
-    except (KeyError):
-        return notify_error(str(r))
-
+    nats_data = {
+        "func": "installwinupdates",
+        "guids": agent.get_approved_update_guids(),
+    }
+    asyncio.run(agent.nats_cmd(nats_data, wait=False))
     return Response(f"Patches will now be installed on {agent.hostname}")
 
 

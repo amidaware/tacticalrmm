@@ -12,7 +12,6 @@
           <q-radio dense v-model="mode" val="mesh" label="Mesh Agent" />
           <q-radio dense v-model="mode" val="rpc" label="Tactical RPC" />
           <q-radio dense v-model="mode" val="tacagent" label="Tactical Agent" />
-          <q-radio dense v-model="mode" val="checkrunner" label="Tactical Checkrunner" />
           <q-radio dense v-model="mode" val="command" label="Shell Command" />
         </div>
       </q-card-section>
@@ -20,10 +19,7 @@
         <p>Fix issues with the Mesh Agent which handles take control, live terminal and file browser.</p>
       </q-card-section>
       <q-card-section v-show="mode === 'tacagent'">
-        <p>Fix issues with the TacticalAgent windows service which handles agent check-in and os info.</p>
-      </q-card-section>
-      <q-card-section v-show="mode === 'checkrunner'">
-        <p>Fix issues with the Tactical Checkrunner windows service which handles running all checks.</p>
+        <p>Fix issues with the TacticalAgent windows service which handles agent check-in.</p>
       </q-card-section>
       <q-card-section v-show="mode === 'rpc'">
         <p>

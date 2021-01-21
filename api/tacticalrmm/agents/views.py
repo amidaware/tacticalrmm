@@ -663,12 +663,12 @@ def recover(request):
         return notify_error("Only available in agent version greater than 0.9.5")
 
     if not agent.has_nats:
-        if mode == "tacagent" or mode == "checkrunner" or mode == "rpc":
+        if mode == "tacagent" or mode == "rpc":
             return notify_error("Requires agent version 1.1.0 or greater")
 
     # attempt a realtime recovery if supported, otherwise fall back to old recovery method
     if agent.has_nats:
-        if mode == "tacagent" or mode == "checkrunner" or mode == "mesh":
+        if mode == "tacagent" or mode == "mesh":
             data = {"func": "recover", "payload": {"mode": mode}}
             r = asyncio.run(agent.nats_cmd(data, timeout=10))
             if r == "ok":

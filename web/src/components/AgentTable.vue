@@ -500,9 +500,12 @@ export default {
       });
     },
     runPatchStatusScan(pk, hostname) {
-      axios.get(`/winupdate/${pk}/runupdatescan/`).then(r => {
-        this.notifySuccess(`Scan will be run shortly on ${hostname}`);
-      });
+      this.$axios
+        .get(`/winupdate/${pk}/runupdatescan/`)
+        .then(r => {
+          this.notifySuccess(`Scan will be run shortly on ${hostname}`);
+        })
+        .catch(e => this.notifyError(e.response.data));
     },
     installPatches(pk) {
       this.$q.loading.show();

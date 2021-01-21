@@ -356,6 +356,7 @@ if not DEBUG:
 MESH_USERNAME = "${meshusername}"
 MESH_SITE = "https://${meshdomain}"
 REDIS_HOST    = "localhost"
+KEEP_SALT = False
 EOF
 )"
 echo "${localvars}" > /rmm/api/tacticalrmm/tacticalrmm/local_settings.py

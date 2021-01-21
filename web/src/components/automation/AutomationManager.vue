@@ -59,7 +59,7 @@
           row-key="id"
           binary-state-sort
           hide-pagination
-          :hide-bottom="!!selected"
+          no-data-label="No Policies"
         >
           <!-- header slots -->
           <template v-slot:header="props">
@@ -80,12 +80,6 @@
                 <q-th v-else :key="col.name" :props="props">{{ col.label }}</q-th>
               </template>
             </q-tr>
-          </template>
-          <!-- No data Slot -->
-          <template v-slot:no-data>
-            <div class="full-width row flex-center q-gutter-sm">
-              <span v-if="policies.length === 0">No Policies</span>
-            </div>
           </template>
           <!-- body slots -->
           <template v-slot:body="props">
@@ -130,6 +124,13 @@
                     <q-item-section>{{ patchPolicyText(props.row) }}</q-item-section>
                   </q-item>
 
+                  <q-item clickable v-close-popup @click="showAlertTemplateAdd(props.row)">
+                    <q-item-section side>
+                      <q-icon name="warning" />
+                    </q-item-section>
+                    <q-item-section>{{ alertTemplateText(props.row) }}</q-item-section>
+                  </q-item>
+
                   <q-separator></q-separator>
 
                   <q-item clickable v-close-popup>
@@ -169,6 +170,14 @@
                   class="text-primary"
                   @click="showEditPatchPolicyModal(props.row)"
                   >{{ patchPolicyText(props.row) }}</span
+                >
+              </q-td>
+              <q-td>
+                <span
+                  style="cursor: pointer; text-decoration: underline"
+                  class="text-primary"
+                  @click="showAlertTemplateAdd(props.row)"
+                  >{{ alertTemplateText(props.row) }}</span
                 >
               </q-td>
               <q-td>
@@ -268,6 +277,12 @@ export default {
           name: "winupdatepolicy",
           label: "Patch Policy",
           field: "winupdatepolicy",
+          align: "left",
+        },
+        {
+          name: "alert_template",
+          label: "Alert Template",
+          field: "alert_template",
           align: "left",
         },
         {
@@ -390,6 +405,9 @@ export default {
       if (this.policy !== null) {
         return this.policy.winupdatepolicy.length === 1 ? "Edit Patch Policy" : "Add Patch Policy";
       }
+    },
+    alertTemplateText(policy) {
+      return this.policy.alert_template ? "Modify Alert Template" : "Assign Alert Template";
     },
   },
   computed: {

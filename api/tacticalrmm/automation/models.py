@@ -9,6 +9,13 @@ class Policy(BaseAuditModel):
     desc = models.CharField(max_length=255, null=True, blank=True)
     active = models.BooleanField(default=False)
     enforced = models.BooleanField(default=False)
+    alert_template = models.ForeignKey(
+        "alerts.AlertTemplate",
+        related_name="alert_template",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
 
     @property
     def is_default_server_policy(self):

@@ -51,8 +51,8 @@
         <q-input
           outlined
           dense
-          v-model.number="scriptcheck.timeout"
-          label="Timeout (seconds)"
+          v-model.number="scriptcheck.info_return_codes"
+          label="Informational alert return codes"
           :rules="[
             val => !!val || '*Required',
             val => val >= 10 || 'Minimum is 10 seconds',
@@ -61,16 +61,10 @@
         />
       </q-card-section>
       <q-card-section>
-        <q-select
-          outlined
-          dense
-          options-dense
-          map-options
-          emit-value
-          v-model="scriptcheck.alert_severity"
-          :options="severityOptions"
-          label="Alert Severity"
-        />
+        <q-input outlined dense v-model.number="scriptcheck.warning_return_codes" label="Warning alert return codes" />
+      </q-card-section>
+      <q-card-section>
+        <q-input outlined dense v-model.number="scriptcheck.timeout" label="Timeout (seconds)" />
       </q-card-section>
       <q-card-section>
         <q-select
@@ -110,13 +104,9 @@ export default {
         script_args: [],
         timeout: 120,
         fails_b4_alert: 1,
-        alert_severity: "warning",
+        info_return_codes: "",
+        warning_return_codes: "",
       },
-      severityOptions: [
-        { label: "Informational", value: "info" },
-        { label: "Warning", value: "warning" },
-        { label: "Error", value: "error" },
-      ],
       scriptOptions: [],
       failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     };

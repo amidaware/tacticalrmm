@@ -61,7 +61,7 @@ class GetAddClients(APIView):
 class GetUpdateDeleteClient(APIView):
     def put(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
-        serializer = ClientSerializer(data=request.data, instance=client)
+        serializer = ClientSerializer(data=request.data, instance=client, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
@@ -106,7 +106,7 @@ class GetUpdateDeleteSite(APIView):
     def put(self, request, pk):
 
         site = get_object_or_404(Site, pk=pk)
-        serializer = SiteSerializer(instance=site, data=request.data)
+        serializer = SiteSerializer(instance=site, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 

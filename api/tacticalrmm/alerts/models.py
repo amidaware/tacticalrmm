@@ -64,8 +64,7 @@ class AlertTemplate(models.Model):
     name = models.CharField(max_length=100)
     is_active = models.BooleanField(default=True)
     actions = models.ManyToManyField(
-        "scripts.Script",
-        related_name="alert_templates",
+        "scripts.Script", related_name="alert_templates", blank=True
     )
 
     # ignores setting on agent
@@ -91,13 +90,17 @@ class AlertTemplate(models.Model):
 
     # will only email/text on a specific severity
     email_alert_severity = ArrayField(
-        models.CharField(max_length=25, blank=True, choices=SEVERITY_CHOICES),
+        models.CharField(
+            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
+        ),
         null=True,
         blank=True,
         default=list,
     )
     text_alert_severity = ArrayField(
-        models.CharField(max_length=25, blank=True, choices=SEVERITY_CHOICES),
+        models.CharField(
+            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
+        ),
         null=True,
         blank=True,
         default=list,
@@ -105,6 +108,9 @@ class AlertTemplate(models.Model):
 
     email_on_resolved = BooleanField(default=False)
     text_on_resolved = BooleanField(default=False)
+
+    def __str__(self):
+        return self.name
 
 
 class AlertExclusion(models.Model):
@@ -126,3 +132,6 @@ class AlertExclusion(models.Model):
         "clients.Client",
         related_name="alert_exclusions",
     )
+
+    def __str__(self):
+        return f"Alert Exclusions for {self.alert_template.name}"

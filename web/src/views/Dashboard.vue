@@ -157,7 +157,14 @@
                           <q-item-section side>
                             <q-icon name="policy" />
                           </q-item-section>
-                          <q-item-section>Edit Policies</q-item-section>
+                          <q-item-section>Assign Automation Policy</q-item-section>
+                        </q-item>
+
+                        <q-item clickable v-close-popup @click="showAlertTemplateAdd(props.node)">
+                          <q-item-section side>
+                            <q-icon name="error" />
+                          </q-item-section>
+                          <q-item-section>Assign Alert Template</q-item-section>
                         </q-item>
 
                         <q-separator></q-separator>
@@ -378,6 +385,7 @@ import ClientsForm from "@/components/modals/clients/ClientsForm";
 import SitesForm from "@/components/modals/clients/SitesForm";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import UserPreferences from "@/components/modals/coresettings/UserPreferences";
+import AlertTemplateAdd from "@/components/modals/alerts/AlertTemplateAdd";
 
 export default {
   components: {
@@ -653,6 +661,18 @@ export default {
     closeInstallAgent() {
       this.showInstallAgentModal = false;
       this.sitePk = null;
+    },
+    showAlertTemplateAdd(node) {
+      this.$q
+        .dialog({
+          component: AlertTemplateAdd,
+          parent: this,
+          type: node.children ? "client" : "site",
+          object: node,
+        })
+        .onOk(() => {
+          this.getTree();
+        });
     },
     reload() {
       this.$store.dispatch("reload");

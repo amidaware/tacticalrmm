@@ -6,7 +6,7 @@ from rest_framework import status
 
 from .models import Alert, AlertTemplate
 
-from .serializers import AlertSerializer
+from .serializers import AlertSerializer, AlertTemplateSerializer
 
 
 class GetAddAlerts(APIView):
@@ -48,12 +48,12 @@ class GetUpdateDeleteAlert(APIView):
 
 class GetAddAlertTemplates(APIView):
     def get(self, request):
-        alerts = Alert.objects.all()
+        alert_templates = AlertTemplate.objects.all()
 
-        return Response(AlertSerializer(alerts, many=True).data)
+        return Response(AlertTemplateSerializer(alert_templates, many=True).data)
 
     def post(self, request):
-        serializer = AlertSerializer(data=request.data, partial=True)
+        serializer = AlertTemplateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
@@ -67,15 +67,17 @@ class GetUpdateDeleteAlertTemplate(APIView):
         return Response(AlertSerializer(alert).data)
 
     def put(self, request, pk):
-        alert = get_object_or_404(Alert, pk=pk)
+        alert_template = get_object_or_404(AlertTemplate, pk=pk)
 
-        serializer = AlertSerializer(instance=alert, data=request.data, partial=True)
+        serializer = AlertTemplateSerializer(
+            instance=alert_template, data=request.data, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
         return Response("ok")
 
     def delete(self, request, pk):
-        AlertTemplate.objects.get(pk=pk).delete()
+        get_object_or_404(AlertTemplate, pk=pk).delete()
 
         return Response("ok")

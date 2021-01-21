@@ -122,8 +122,18 @@ class Check(BaseAuditModel):
         blank=True,
         default=list,
     )
-    info_return_code = models.PositiveIntegerField(null=True, blank=True, default=0)
-    warning_return_code = models.PositiveIntegerField(null=True, blank=True, default=0)
+    info_return_codes = ArrayField(
+        models.PositiveIntegerField(),
+        null=True,
+        blank=True,
+        default=list,
+    )
+    warning_return_codes = ArrayField(
+        models.PositiveIntegerField(),
+        null=True,
+        blank=True,
+        default=list,
+    )
     timeout = models.PositiveIntegerField(null=True, blank=True)
     stdout = models.TextField(null=True, blank=True)
     stderr = models.TextField(null=True, blank=True)

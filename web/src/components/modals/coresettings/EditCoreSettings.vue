@@ -78,7 +78,7 @@
                     dense
                     options-dense
                     v-model="settings.alert_template"
-                    :options="templates"
+                    :options="alertTemplateOptions"
                     class="col-6"
                   />
                 </q-card-section>
@@ -339,6 +339,7 @@ export default {
         width: "5px",
         opacity: 0.75,
       },
+      alertTemplateOptions: [],
     };
   },
   methods: {
@@ -352,6 +353,11 @@ export default {
     getPolicies() {
       this.$store.dispatch("automation/loadPolicies").catch(e => {
         this.notifyError(e.response.data);
+      });
+    },
+    getAlertTemplates() {
+      this.$axios.get("alerts/alerttemplates").then(r => {
+        this.alertTemplateOptions = r.data.map(template => ({ label: template.name, value: template.id }));
       });
     },
     toggleAddEmail() {
@@ -441,6 +447,7 @@ export default {
   created() {
     this.getCoreSettings();
     this.getPolicies();
+    this.getAlertTemplates();
   },
 };
 </script>

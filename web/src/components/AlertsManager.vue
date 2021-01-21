@@ -1,6 +1,6 @@
 <template>
   <q-dialog ref="dialog" @hide="onHide">
-    <div style="width: 900px; max-width: 90vw">
+    <div class="q-dialog-plugin" style="width: 900px; max-width: 90vw">
       <q-card>
         <q-bar>
           <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />Alerts Manager
@@ -9,7 +9,7 @@
             <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
           </q-btn>
         </q-bar>
-        <div class="q-pa-md">
+        <div class="q-pa-md" style="min-height: 65vh; max-height: 65vh">
           <div class="q-gutter-sm">
             <q-btn ref="new" label="New" dense flat push unelevated no-caps icon="add" @click="showAddTemplateModal" />
             <q-btn
@@ -47,27 +47,29 @@
             row-key="id"
             binary-state-sort
             hide-pagination
-            :hide-bottom="!!selected"
+            no-data-label="No Alert Templates"
           >
             <!-- header slots -->
             <template v-slot:header="props">
               <q-tr :props="props">
                 <template v-for="col in props.cols">
-                  <q-th v-if="col.name === 'active'" auto-width :key="col.name">
+                  <q-th v-if="col.name === 'is_active'" auto-width :key="col.name">
                     <q-icon name="power_settings_new" size="1.5em">
                       <q-tooltip>Enable Template</q-tooltip>
                     </q-icon>
                   </q-th>
 
+                  <q-th
+                    v-else-if="col.name === 'email_severity' || col.name === 'text_severity'"
+                    auto-width
+                    :key="col.name"
+                  >
+                    {{ col.label }}
+                  </q-th>
+
                   <q-th v-else :key="col.name" :props="props">{{ col.label }}</q-th>
                 </template>
               </q-tr>
-            </template>
-            <!-- No data Slot -->
-            <template v-slot:no-data>
-              <div class="full-width row flex-center q-gutter-sm">
-                <span v-if="templates.length === 0">No Templates</span>
-              </div>
             </template>
             <!-- body slots -->
             <template v-slot:body="props">
@@ -76,11 +78,11 @@
                 class="cursor-pointer"
                 :class="rowSelectedClass(props.row.id, selected)"
                 @click="
-                  editTemplateId = props.row.id;
+                  editTemplate = props.row;
                   props.selected = true;
                 "
                 @contextmenu="
-                  editTemplateId = props.row.id;
+                  editTemplate = props.row;
                   props.selected = true;
                 "
               >
@@ -102,22 +104,6 @@
 
                     <q-separator></q-separator>
 
-                    <q-item clickable v-close-popup @click="ResetPassword(props.row)" id="context-reset">
-                      <q-item-section side>
-                        <q-icon name="autorenew" />
-                      </q-item-section>
-                      <q-item-section>Reset Password</q-item-section>
-                    </q-item>
-
-                    <q-item clickable v-close-popup @click="reset2FA(props.row)" id="context-reset">
-                      <q-item-section side>
-                        <q-icon name="autorenew" />
-                      </q-item-section>
-                      <q-item-section>Reset Two-Factor Auth</q-item-section>
-                    </q-item>
-
-                    <q-separator></q-separator>
-
                     <q-item clickable v-close-popup>
                       <q-item-section>Close</q-item-section>
                     </q-item>
@@ -127,7 +113,56 @@
                 <q-td>
                   <q-checkbox dense @input="toggleEnabled(props.row)" v-model="props.row.is_active" />
                 </q-td>
+                <!-- name -->
                 <q-td>{{ props.row.name }}</q-td>
+                <!-- email severity -->
+                <q-td>
+                  <q-icon v-if="props.row.email_alert_severity.includes('info')" color="primary" name="info" size="sm">
+                    <q-tooltip>Sends email alert on informational severity</q-tooltip>
+                  </q-icon>
+                  <q-icon
+                    v-if="props.row.email_alert_severity.includes('warning')"
+                    color="warning"
+                    name="warning"
+                    size="sm"
+                  >
+                    <q-tooltip>Sends email alert on warning severity</q-tooltip>
+                  </q-icon>
+                  <q-icon
+                    v-if="props.row.email_alert_severity.includes('error')"
+                    color="negative"
+                    name="error"
+                    size="sm"
+                  >
+                    <q-tooltip>Sends email alert on error severity</q-tooltip>
+                  </q-icon>
+                </q-td>
+                <!-- text severity -->
+                <q-td>
+                  <q-icon v-if="props.row.email_alert_severity.includes('info')" color="primary" name="info" size="sm">
+                    <q-tooltip>Sends text alert on informational severity</q-tooltip>
+                  </q-icon>
+                  <q-icon
+                    v-if="props.row.text_alert_severity.includes('warning')"
+                    color="warning"
+                    name="warning"
+                    size="sm"
+                  >
+                    <q-tooltip>Sends text alert on warning severity</q-tooltip>
+                  </q-icon>
+                  <q-icon
+                    v-if="props.row.text_alert_severity.includes('error')"
+                    color="negative"
+                    name="error"
+                    size="sm"
+                  >
+                    <q-tooltip>Sends text alert on error severity</q-tooltip>
+                  </q-icon>
+                </q-td>
+                <!-- applied to -->
+                <q-td>Applied To Placeholder</q-td>
+                <!-- actions -->
+                <q-td>{{ props.row.actions.length }} actions</q-td>
               </q-tr>
             </template>
           </q-table>
@@ -138,7 +173,7 @@
 </template>
 
 <script>
-import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
+import mixins from "@/mixins/mixins";
 import AlertTemplateForm from "@/components/modals/alerts/AlertTemplateForm";
 
 export default {
@@ -155,18 +190,24 @@ export default {
           name: "email_severity",
           label: "Email Severity",
           field: "email_severity",
-          align: "left",
+          align: "center",
         },
         {
           name: "text_severity",
           label: "Text Severity",
           field: "text_severity",
+          align: "center",
+        },
+        {
+          name: "applied_to",
+          label: "Applied To",
+          field: "applied_to",
           align: "left",
         },
         {
-          name: "last_login",
-          label: "Last Login",
-          field: "last_login",
+          name: "actions",
+          label: "Actions",
+          field: "actions",
           align: "left",
         },
       ],
@@ -196,37 +237,49 @@ export default {
       this.getTemplates();
       this.clearRow();
     },
-    deleteTemplate(data) {
+    deleteTemplate(template) {
       this.$q
         .dialog({
-          title: `Delete template ${data.name}?`,
+          title: `Delete alert template ${template.name}?`,
           cancel: true,
           ok: { label: "Delete", color: "negative" },
         })
         .onOk(() => {
-          this.$store
-            .dispatch("admin/deleteTemplate", data.id)
-            .then(response => {
-              this.$q.notify(notifySuccessConfig(`Template ${data.name} was deleted!`));
+          this.$q.loading.show();
+          this.$axios
+            .delete(`alerts/alerttemplates/${template.id}/`)
+            .then(r => {
+              this.getTemplates();
+              this.$q.loading.hide();
+              this.notifySuccess(`Alert template ${template.name} was deleted!`);
             })
             .catch(error => {
-              this.$q.notify(notifyErrorConfig(`An Error occured while deleting template ${data.name}`));
+              this.$q.loading.hide();
+              this.notifyError(`An Error occured while deleting alert template: ${template.name}`);
             });
         });
     },
-    showEditTemplateModal(data) {
-      this.$q.dialog({
-        component: AlertTemplateForm,
-        parent: this,
-        alertTemplate: data,
-      });
+    showEditTemplateModal(template) {
+      this.$q
+        .dialog({
+          component: AlertTemplateForm,
+          parent: this,
+          alertTemplate: template,
+        })
+        .onOk(() => {
+          this.refresh();
+        });
     },
     showAddTemplateModal() {
       this.clearRow();
-      this.$q.dialog({
-        component: AlertTemplateForm,
-        parent: this,
-      });
+      this.$q
+        .dialog({
+          component: AlertTemplateForm,
+          parent: this,
+        })
+        .onOk(() => {
+          this.refresh();
+        });
     },
     toggleEnabled(template) {
       let text = template.is_active ? "Template enabled successfully" : "Template disabled successfully";
@@ -237,12 +290,12 @@ export default {
       };
 
       this.$axios
-        .put("alerts/alerttemplates", data)
+        .put(`alerts/alerttemplates/${template.id}/`, data)
         .then(r => {
-          this.$q.notifySuccess(text);
+          this.notifySuccess(text);
         })
         .catch(error => {
-          this.$q.notifyError("An Error occured while editing the template");
+          this.notifyError("An Error occured while editing the template");
         });
     },
     rowSelectedClass(id, selected) {
@@ -259,7 +312,7 @@ export default {
     },
   },
   mounted() {
-    this.refresh();
+    this.getTemplates();
   },
 };
 </script>

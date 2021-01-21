@@ -229,6 +229,8 @@ export default function () {
             this.$router.push({ name: "InitialSetup" });
           }
 
+          console.log(r.data)
+
           let output = [];
           for (let client of r.data) {
 
@@ -241,6 +243,9 @@ export default function () {
                 raw: `Site|${site.id}`,
                 header: "generic",
                 icon: "apartment",
+                serverPolicy: site.server_policy,
+                workstationPolicy: site.workstation_policy,
+                alertTemplate: site.alert_template
               }
 
               if (site.maintenance_mode) { siteNode["color"] = "warning" }
@@ -255,6 +260,9 @@ export default function () {
               raw: `Client|${client.id}`,
               header: "root",
               icon: "business",
+              serverPolicy: client.server_policy,
+              workstationPolicy: client.workstation_policy,
+              alertTemplate: client.alert_template,
               children: childSites
             }
 

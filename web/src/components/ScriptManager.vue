@@ -416,16 +416,12 @@ export default {
       this.selectedScript = {};
     },
     viewCode(script) {
-      this.$q
-        .dialog({
-          component: ScriptFormModal,
-          parent: this,
-          script: script,
-          readonly: true,
-        })
-        .onDismiss(() => {
-          this.getScripts();
-        });
+      this.$q.dialog({
+        component: ScriptFormModal,
+        parent: this,
+        script: script,
+        readonly: true,
+      });
     },
     favoriteScript(script) {
       this.$q.loading.show();
@@ -495,7 +491,7 @@ export default {
           categories: this.categories,
           readonly: false,
         })
-        .onDismiss(() => {
+        .onOk(() => {
           this.getScripts();
         });
     },
@@ -508,7 +504,7 @@ export default {
           categories: this.categories,
           readonly: false,
         })
-        .onDismiss(() => {
+        .onOk(() => {
           this.getScripts();
         });
     },

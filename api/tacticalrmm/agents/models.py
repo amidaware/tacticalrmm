@@ -1,4 +1,3 @@
-import requests
 import time
 import base64
 from Crypto.Cipher import AES
@@ -116,14 +115,6 @@ class Agent(BaseAuditModel):
             return settings.DL_64
         elif self.arch == "32":
             return settings.DL_32
-        return None
-
-    @property
-    def winsalt_dl(self):
-        if self.arch == "64":
-            return settings.SALT_64
-        elif self.arch == "32":
-            return settings.SALT_32
         return None
 
     @property

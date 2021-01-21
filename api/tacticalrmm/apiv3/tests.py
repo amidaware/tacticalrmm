@@ -75,12 +75,3 @@ class TestAPIv3(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("patch", url)
-
-    @patch("agents.tasks.install_salt_task.delay")
-    def test_install_salt(self, mock_task):
-        url = f"/api/v3/{self.agent.agent_id}/installsalt/"
-        r = self.client.get(url, format="json")
-        self.assertEqual(r.status_code, 200)
-        mock_task.assert_called_with(self.agent.pk)
-
-        self.check_not_authenticated("get", url)

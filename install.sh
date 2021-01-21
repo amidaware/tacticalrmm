@@ -76,7 +76,6 @@ postgresql_repo="deb [arch=amd64] https://apt.postgresql.org/pub/repos/apt/ $cod
 sudo systemctl restart systemd-journald.service
 
 DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
-SALTPW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
 MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
 pgusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
@@ -521,18 +520,6 @@ server {
         internal;
         add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
         alias /rmm/api/tacticalrmm/tacticalrmm/private/;
-    }
-
-    location /saltscripts/ {
-        internal;
-        add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /srv/salt/scripts/userdefined/;
-    }
-
-    location /builtin/ {
-        internal;
-        add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /srv/salt/scripts/;
     }
 
     location ~ ^/(natsapi) {

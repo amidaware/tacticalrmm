@@ -241,13 +241,6 @@ def agent_outages_task():
 
 
 @app.task
-def install_salt_task(pk: int) -> None:
-    sleep(20)
-    agent = Agent.objects.get(pk=pk)
-    asyncio.run(agent.nats_cmd({"func": "installsalt"}, wait=False))
-
-
-@app.task
 def handle_agent_recovery_task(pk: int) -> None:
     sleep(10)
     from agents.models import RecoveryAction

@@ -327,7 +327,7 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
 
-        data["mode"] = "salt"
+        data["mode"] = "mesh"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
         self.assertIn("pending", r.json())
@@ -347,7 +347,7 @@ class TestAgentViews(TacticalTestCase):
 
         self.agent.version = "0.9.4"
         self.agent.save(update_fields=["version"])
-        data["mode"] = "salt"
+        data["mode"] = "mesh"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
         self.assertIn("0.9.5", r.json())

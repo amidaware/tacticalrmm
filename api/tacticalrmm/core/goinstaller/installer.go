@@ -57,7 +57,6 @@ func main() {
 
 	debugLog := flag.String("log", "", "Verbose output")
 	localMesh := flag.String("local-mesh", "", "Use local mesh agent")
-	noSalt := flag.Bool("nosalt", false, "Does not install salt")
 	silent := flag.Bool("silent", false, "Do not popup any message boxes during installation")
 	cert := flag.String("cert", "", "Path to ca.pem")
 	timeout := flag.String("timeout", "", "Timeout for subprocess calls")
@@ -84,10 +83,6 @@ func main() {
 
 	if *silent {
 		cmdArgs = append(cmdArgs, "-silent")
-	}
-
-	if *noSalt {
-		cmdArgs = append(cmdArgs, "-nosalt")
 	}
 
 	if len(strings.TrimSpace(*localMesh)) != 0 {

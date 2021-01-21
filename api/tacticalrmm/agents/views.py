@@ -603,8 +603,6 @@ def install_agent(request):
         resp = {
             "cmd": " ".join(str(i) for i in cmd),
             "url": download_url,
-            "salt64": settings.SALT_64,
-            "salt32": settings.SALT_32,
         }
 
         return Response(resp)
@@ -670,12 +668,7 @@ def recover(request):
 
     # attempt a realtime recovery if supported, otherwise fall back to old recovery method
     if agent.has_nats:
-        if (
-            mode == "tacagent"
-            or mode == "checkrunner"
-            or mode == "salt"
-            or mode == "mesh"
-        ):
+        if mode == "tacagent" or mode == "checkrunner" or mode == "mesh":
             data = {"func": "recover", "payload": {"mode": mode}}
             r = asyncio.run(agent.nats_cmd(data, timeout=10))
             if r == "ok":

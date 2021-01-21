@@ -29,7 +29,6 @@ from winupdate.serializers import ApprovedUpdateSerializer
 from agents.tasks import (
     agent_recovery_email_task,
     agent_recovery_sms_task,
-    install_salt_task,
 )
 from checks.utils import bytes2human
 from tacticalrmm.utils import notify_error, reload_nats, filter_software, SoftwareList
@@ -513,14 +512,4 @@ class Installer(APIView):
                 f"Old installer detected (version {ver} ). Latest version is {settings.LATEST_AGENT_VER} Please generate a new installer from the RMM"
             )
 
-        return Response("ok")
-
-
-class InstallSalt(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, agentid):
-        agent = get_object_or_404(Agent, agent_id=agentid)
-        install_salt_task.delay(agent.pk)
         return Response("ok")

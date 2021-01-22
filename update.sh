@@ -214,7 +214,7 @@ EOF
   if [[ $rmsalt == "y" ]]; then
     printf >&2 "${Green}Removing salt-master and salt-api${NC}\n"
     for i in salt-api salt-master; do sudo systemctl stop $i; sudo systemctl disable $i; done
-    sudo apt remove -y salt-master salt-api
+    sudo apt remove -y --purge salt-master salt-api salt-common
   else
     sudo systemctl stop salt-api
     sudo systemctl disable salt-api

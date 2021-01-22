@@ -548,7 +548,7 @@ export default {
     },
     refreshEntireSite() {
       this.$store.dispatch("loadTree");
-      this.getDashInfo();
+      this.getDashInfo(false);
       this.getAgentCounts();
 
       if (this.allClientsActive) {
@@ -675,13 +675,13 @@ export default {
         this.workstationOfflineCount = r.data.total_workstation_offline_count;
       });
     },
-    getDashInfo() {
+    getDashInfo(setDefaultTab = true) {
       this.$store.dispatch("getDashInfo").then(r => {
         this.darkMode = r.data.dark_mode;
         this.$q.dark.set(this.darkMode);
         this.currentTRMMVersion = r.data.trmm_version;
         this.$store.commit("SET_AGENT_DBLCLICK_ACTION", r.data.dbl_click_action);
-        this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", r.data.default_agent_tbl_tab);
+        if (setDefaultTab) this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", r.data.default_agent_tbl_tab);
         this.$store.commit("setShowCommunityScripts", r.data.show_community_scripts);
       });
     },

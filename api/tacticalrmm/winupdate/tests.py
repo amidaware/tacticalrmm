@@ -113,8 +113,9 @@ class WinupdateTasks(TacticalTestCase):
         )
         self.offline_agent = baker.make_recipe("agents.agent", site=site)
 
-    @patch("winupdate.tasks.check_for_updates_task.apply_async")
-    def test_auto_approve_task(self, check_updates_task):
+    @patch("agents.models.Agent.nats_cmd")
+    @patch("time.sleep")
+    def test_auto_approve_task(self, mock_sleep, nats_cmd):
         from .tasks import auto_approve_updates_task
 
         # Setup data
@@ -137,7 +138,7 @@ class WinupdateTasks(TacticalTestCase):
         auto_approve_updates_task()
 
         # make sure the check_for_updates_task was run once for each online agent
-        self.assertEqual(check_updates_task.call_count, 2)
+        self.assertEqual(nats_cmd.call_count, 2)
 
         # check if all of the created updates were approved
         winupdates = WinUpdate.objects.all()

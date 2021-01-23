@@ -167,8 +167,3 @@ if [ "$1" = 'tactical-celerybeat-dev' ]; then
   test -f "${WORKSPACE_DIR}/api/tacticalrmm/celerybeat.pid" && rm "${WORKSPACE_DIR}/api/tacticalrmm/celerybeat.pid"
   env/bin/celery -A tacticalrmm beat -l debug
 fi
-
-if [ "$1" = 'tactical-celerywinupdate-dev' ]; then
-  check_tactical_ready
-  env/bin/celery -A tacticalrmm worker -Q wupdate -l debug
-fi

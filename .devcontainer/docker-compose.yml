@@ -173,23 +173,6 @@ services:
       - postgres-dev
       - redis-dev
 
-  # container for celery winupdate tasks
-  celerywinupdate-dev:
-    image: api-dev
-    build:
-      context: .
-      dockerfile: ./api.dockerfile
-    command: ["tactical-celerywinupdate-dev"]
-    restart: always
-    networks:
-      - dev
-    volumes:
-      - tactical-data-dev:/opt/tactical
-      - ..:/workspace:cached
-    depends_on:
-      - postgres-dev
-      - redis-dev
-
   nginx-dev:
   # container for tactical reverse proxy
     image: ${IMAGE_REPO}tactical-nginx:${VERSION}

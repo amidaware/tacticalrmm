@@ -57,16 +57,6 @@ jobs:
           platforms: linux/amd64
           tags: tacticalrmm/tactical-nats:${{ steps.prep.outputs.version }},tacticalrmm/tactical-nats:latest
           
-      - name: Build and Push Tactical Salt Image
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          push: true
-          pull: true
-          file: ./docker/containers/tactical-salt/dockerfile
-          platforms: linux/amd64
-          tags: tacticalrmm/tactical-salt:${{ steps.prep.outputs.version }},tacticalrmm/tactical-salt:latest
-          
       - name: Build and Push Tactical Frontend Image
         uses: docker/build-push-action@v2
         with:

@@ -38,7 +38,6 @@ ENV PATH "${VIRTUAL_ENV}/bin:${TACTICAL_GO_DIR}/go/bin:$PATH"
 # copy files from repo
 COPY api/tacticalrmm ${TACTICAL_TMP_DIR}/api
 COPY scripts ${TACTICAL_TMP_DIR}/scripts
-COPY _modules ${TACTICAL_TMP_DIR}/_modules
 
 # copy go install from build stage
 COPY --from=golang:1.15 /usr/local/go ${TACTICAL_GO_DIR}/go

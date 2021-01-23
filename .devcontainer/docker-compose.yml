@@ -32,21 +32,6 @@ services:
         aliases: 
           - tactical-frontend
 
-  # salt master and api
-  salt-dev:
-    image: ${IMAGE_REPO}tactical-salt:${VERSION}
-    restart: always
-    volumes:
-      - tactical-data-dev:/opt/tactical
-      - salt-data-dev:/etc/salt
-    ports:
-      - "4505:4505"
-      - "4506:4506"
-    networks:
-      dev:
-        aliases:
-          - tactical-salt
-  
   # nats
   nats-dev:
     image: ${IMAGE_REPO}tactical-nats:${VERSION}
@@ -188,23 +173,6 @@ services:
       - postgres-dev
       - redis-dev
 
-  # container for celery winupdate tasks
-  celerywinupdate-dev:
-    image: api-dev
-    build:
-      context: .
-      dockerfile: ./api.dockerfile
-    command: ["tactical-celerywinupdate-dev"]
-    restart: always
-    networks:
-      - dev
-    volumes:
-      - tactical-data-dev:/opt/tactical
-      - ..:/workspace:cached
-    depends_on:
-      - postgres-dev
-      - redis-dev
-
   nginx-dev:
   # container for tactical reverse proxy
     image: ${IMAGE_REPO}tactical-nginx:${VERSION}
@@ -231,7 +199,6 @@ volumes:
   postgres-data-dev:
   mongo-dev-data:
   mesh-data-dev:
-  salt-data-dev:
 
 networks:
   dev:

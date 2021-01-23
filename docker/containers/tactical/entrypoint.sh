@@ -9,8 +9,6 @@ set -e
 : "${POSTGRES_USER:=tactical}"
 : "${POSTGRES_PASS:=tactical}"
 : "${POSTGRES_DB:=tacticalrmm}"
-: "${SALT_HOST:=tactical-salt}"
-: "${SALT_USER:=saltapi}"
 : "${MESH_CONTAINER:=tactical-meshcentral}"
 : "${MESH_USER:=meshcentral}"
 : "${MESH_PASS:=meshcentralpass}"
@@ -53,14 +51,6 @@ if [ "$1" = 'tactical-init' ]; then
   MESH_TOKEN=$(cat ${TACTICAL_DIR}/tmp/mesh_token)
   ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
   DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
-
-  # write salt pass to tmp dir
-  if [ ! -f "${TACTICAL__DIR}/tmp/salt_pass" ]; then
-    SALT_PASS=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1) 
-    echo "${SALT_PASS}" > ${TACTICAL_DIR}/tmp/salt_pass
-  else
-    SALT_PASS=$(cat ${TACTICAL_DIR}/tmp/salt_pass)
-  fi
   
   localvars="$(cat << EOF
 SECRET_KEY = '${DJANGO_SEKRET}'
@@ -111,9 +101,6 @@ if not DEBUG:
         )
     })
 
-SALT_USERNAME = '${SALT_USER}'
-SALT_PASSWORD = '${SALT_PASS}'
-SALT_HOST     = '${SALT_HOST}'
 MESH_USERNAME = '${MESH_USER}'
 MESH_SITE = 'https://${MESH_HOST}'
 MESH_TOKEN_KEY = '${MESH_TOKEN}'
@@ -175,9 +162,4 @@ if [ "$1" = 'tactical-celerybeat' ]; then
   check_tactical_ready
   test -f "${TACTICAL_DIR}/api/celerybeat.pid" && rm "${TACTICAL_DIR}/api/celerybeat.pid"
   celery -A tacticalrmm beat -l info
-fi
-
-if [ "$1" = 'tactical-celerywinupdate' ]; then
-  check_tactical_ready
-  celery -A tacticalrmm worker -Q wupdate -l info
 fi

@@ -13,5 +13,8 @@ class Command(BaseCommand):
         with open(os.path.join(settings.BASE_DIR, "software/chocos.json")) as f:
             chocos = json.load(f)
 
+        if ChocoSoftware.objects.exists():
+            ChocoSoftware.objects.all().delete()
+
         ChocoSoftware(chocos=chocos).save()
         self.stdout.write("Chocos saved to db")

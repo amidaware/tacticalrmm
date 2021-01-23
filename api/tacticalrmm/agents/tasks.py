@@ -2,7 +2,6 @@ import asyncio
 from loguru import logger
 from time import sleep
 import random
-import requests
 from packaging import version as pyver
 from typing import List
 
@@ -178,94 +177,6 @@ def sync_sysinfo_task():
 
 
 @app.task
-def sync_salt_modules_task(pk):
-    agent = Agent.objects.get(pk=pk)
-    r = agent.salt_api_cmd(timeout=35, func="saltutil.sync_modules")
-    # successful sync if new/charnged files: {'return': [{'MINION-15': ['modules.get_eventlog', 'modules.win_agent', 'etc...']}]}
-    # successful sync with no new/changed files: {'return': [{'MINION-15': []}]}
-    if r == "timeout" or r == "error":
-        return f"Unable to sync modules {agent.salt_id}"
-
-    return f"Successfully synced salt modules on {agent.hostname}"
-
-
-@app.task
-def batch_sync_modules_task():
-    # sync modules, split into chunks of 50 agents to not overload salt
-    agents = Agent.objects.all()
-    online = [i.salt_id for i in agents]
-    chunks = (online[i : i + 50] for i in range(0, len(online), 50))
-    for chunk in chunks:
-        Agent.salt_batch_async(minions=chunk, func="saltutil.sync_modules")
-        sleep(10)
-
-
-@app.task
-def uninstall_agent_task(salt_id, has_nats):
-    attempts = 0
-    error = False
-
-    if not has_nats:
-        while 1:
-            try:
-
-                r = requests.post(
-                    f"http://{settings.SALT_HOST}:8123/run",
-                    json=[
-                        {
-                            "client": "local",
-                            "tgt": salt_id,
-                            "fun": "win_agent.uninstall_agent",
-                            "timeout": 8,
-                            "username": settings.SALT_USERNAME,
-                            "password": settings.SALT_PASSWORD,
-                            "eauth": "pam",
-                        }
-                    ],
-                    timeout=10,
-                )
-                ret = r.json()["return"][0][salt_id]
-            except Exception:
-                attempts += 1
-            else:
-                if ret != "ok":
-                    attempts += 1
-                else:
-                    attempts = 0
-
-            if attempts >= 10:
-                error = True
-                break
-            elif attempts == 0:
-                break
-
-    if error:
-        logger.error(f"{salt_id} uninstall failed")
-    else:
-        logger.info(f"{salt_id} was successfully uninstalled")
-
-    try:
-        r = requests.post(
-            f"http://{settings.SALT_HOST}:8123/run",
-            json=[
-                {
-                    "client": "wheel",
-                    "fun": "key.delete",
-                    "match": salt_id,
-                    "username": settings.SALT_USERNAME,
-                    "password": settings.SALT_PASSWORD,
-                    "eauth": "pam",
-                }
-            ],
-            timeout=30,
-        )
-    except Exception:
-        logger.error(f"{salt_id} unable to remove salt-key")
-
-    return "ok"
-
-
-@app.task
 def agent_outage_email_task(pk):
     sleep(random.randint(1, 15))
     outage = AgentOutage.objects.get(pk=pk)
@@ -329,13 +240,6 @@ def agent_outages_task():
 
 
 @app.task
-def install_salt_task(pk: int) -> None:
-    sleep(20)
-    agent = Agent.objects.get(pk=pk)
-    asyncio.run(agent.nats_cmd({"func": "installsalt"}, wait=False))
-
-
-@app.task
 def handle_agent_recovery_task(pk: int) -> None:
     sleep(10)
     from agents.models import RecoveryAction
@@ -396,3 +300,18 @@ def run_script_email_results_task(
                 server.quit()
     except Exception as e:
         logger.error(e)
+
+
+@app.task
+def remove_salt_task() -> None:
+    if hasattr(settings, "KEEP_SALT") and settings.KEEP_SALT:
+        return
+
+    q = Agent.objects.all()
+    agents = [i for i in q if pyver.parse(i.version) >= pyver.parse("1.3.0")]
+    chunks = (agents[i : i + 50] for i in range(0, len(agents), 50))
+    for chunk in chunks:
+        for agent in chunk:
+            asyncio.run(agent.nats_cmd({"func": "removesalt"}, wait=False))
+            sleep(0.1)
+        sleep(4)

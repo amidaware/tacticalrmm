@@ -15,7 +15,6 @@ networks:
 # docker managed persistent volumes
 volumes:
   tactical_data:
-  salt_data:
   postgres_data:
   mongo_data:
   mesh_data:
@@ -63,19 +62,6 @@ services:
       - proxy
     volumes:
       - tactical_data:/opt/tactical
-
-  # salt master and api
-  tactical-salt:
-    image: ${IMAGE_REPO}tactical-salt:${VERSION}
-    restart: always
-    ports:
-      - "4505:4505"
-      - "4506:4506"
-    volumes:
-      - tactical_data:/opt/tactical
-      - salt_data:/etc/salt
-    networks:
-      - proxy
   
   # nats
   tactical-nats:
@@ -141,11 +127,9 @@ services:
     command: ["tactical-backend"]
     restart: always
     networks:
-      proxy:
-        aliases:
-          - tactical-backend
-      api-db:
-      redis:
+      - proxy
+      - api-db
+      - redis
     volumes:
       - tactical_data:/opt/tactical
     depends_on:
@@ -193,21 +177,6 @@ services:
     networks:
       - proxy
       - redis
-      - api-db
-    volumes:
-      - tactical_data:/opt/tactical
-    depends_on:
-      - tactical-postgres
-      - tactical-redis
-
-  # container for celery winupdate tasks
-  tactical-celerywinupdate:
-    image: ${IMAGE_REPO}tactical:${VERSION}
-    command: ["tactical-celerywinupdate"]
-    restart: always
-    networks:
-      - redis
-      - proxy
       - api-db
     volumes:
       - tactical_data:/opt/tactical

@@ -38,12 +38,6 @@
         </div>
         <div class="q-pa-xs q-gutter-xs">
           <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
-            <code>-nosalt</code>
-          </q-badge>
-          <span> Do not install salt during agent install. </span>
-        </div>
-        <div class="q-pa-xs q-gutter-xs">
-          <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
             <code>-local-mesh "C:\\&lt;some folder or path&gt;\\meshagent.exe"</code>
           </q-badge>
           <span>

@@ -15,31 +15,23 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.3.3"
+TRMM_VERSION = "0.4.0"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.106"
-
-# https://github.com/wh1te909/salt
-LATEST_SALT_VER = "1.1.0"
+APP_VER = "0.0.107"
 
 # https://github.com/wh1te909/rmmagent
-LATEST_AGENT_VER = "1.2.1"
+LATEST_AGENT_VER = "1.3.0"
 
-MESH_VER = "0.7.45"
-
-SALT_MASTER_VER = "3002.2"
+MESH_VER = "0.7.49"
 
 # for the update script, bump when need to recreate venv or npm install
 PIP_VER = "7"
-NPM_VER = "6"
+NPM_VER = "7"
 
 DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
 DL_32 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
-
-SALT_64 = f"https://github.com/wh1te909/salt/releases/download/{LATEST_SALT_VER}/salt-minion-setup.exe"
-SALT_32 = f"https://github.com/wh1te909/salt/releases/download/{LATEST_SALT_VER}/salt-minion-setup-x86.exe"
 
 try:
     from .local_settings import *
@@ -58,7 +50,6 @@ INSTALLED_APPS = [
     "knox",
     "corsheaders",
     "accounts",
-    "apiv2",
     "apiv3",
     "clients",
     "agents",
@@ -176,17 +167,14 @@ if "AZPIPELINE" in os.environ:
     }
 
     ALLOWED_HOSTS = ["api.example.com"]
-    DOCKER_BUILD = True
     DEBUG = True
     SECRET_KEY = "abcdefghijklmnoptravis123456789"
 
     ADMIN_URL = "abc123456/"
 
     SCRIPTS_DIR = os.path.join(Path(BASE_DIR).parents[1], "scripts")
-    SALT_USERNAME = "pipeline"
-    SALT_PASSWORD = "pipeline"
     MESH_USERNAME = "pipeline"
     MESH_SITE = "https://example.com"
     MESH_TOKEN_KEY = "bd65e957a1e70c622d32523f61508400d6cd0937001a7ac12042227eba0b9ed625233851a316d4f489f02994145f74537a331415d00047dbbf13d940f556806dffe7a8ce1de216dc49edbad0c1a7399c"
     REDIS_HOST = "localhost"
-    SALT_HOST = "127.0.0.1"
+    KEEP_SALT = False

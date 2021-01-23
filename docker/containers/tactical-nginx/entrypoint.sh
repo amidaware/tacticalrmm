@@ -63,18 +63,6 @@ server  {
         alias ${TACTICAL_DIR}/api/tacticalrmm/private/;
     }
 
-    location /saltscripts/ {
-        internal;
-        add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
-        alias ${TACTICAL_DIR}/scripts/userdefined/;
-    }
-
-    location /builtin/ {
-        internal;
-        add_header "Access-Control-Allow-Origin" "https://${APP_HOST}";
-        alias ${TACTICAL_DIR}/scripts/;
-    }
-
     location ~ ^/(natsapi) {
         deny all;
     }

@@ -7,7 +7,7 @@ pgpw="hunter2"
 
 #####################################################
 
-SCRIPT_VERSION="12"
+SCRIPT_VERSION="13"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 sudo apt install -y curl wget
@@ -166,15 +166,9 @@ print_green 'Restoring systemd services'
 sudo cp $tmp_dir/systemd/* /etc/systemd/system/
 sudo systemctl daemon-reload
 
-print_green 'Restoring saltapi user'
-
-SALTPW=$(grep SALT_PASSWORD $tmp_dir/rmm/local_settings.py | tr -d " \t" | sed 's/.*=//' | tr -d '"')
-sudo adduser --no-create-home --disabled-password --gecos "" saltapi
-echo "saltapi:${SALTPW}" | sudo chpasswd
-
 print_green 'Installing python, redis and git'
 
-sudo apt install -y python3.8-venv python3.8-dev python3-pip python3-cherrypy3 python3-setuptools python3-wheel ca-certificates redis git
+sudo apt install -y python3-venv python3-dev python3-pip python3-setuptools python3-wheel ca-certificates redis git
 
 print_green 'Installing postgresql'
 
@@ -261,40 +255,6 @@ deactivate
 sudo systemctl enable nats.service
 sudo systemctl start nats.service
 
-print_green 'Installing Salt Master'
-
-wget -O - https://repo.saltstack.com/py3/ubuntu/20.04/amd64/latest/SALTSTACK-GPG-KEY.pub | sudo apt-key add -
-echo 'deb http://repo.saltstack.com/py3/ubuntu/20.04/amd64/latest focal main' | sudo tee /etc/apt/sources.list.d/saltstack.list
-
-sudo apt update
-sudo apt install -y salt-master
-
-print_green 'Waiting 10 seconds for salt to start'
-sleep 10
-
-print_green 'Installing Salt API'
-sudo apt install -y salt-api
-
-sudo sed -i 's/msgpack_kwargs = {"raw": six.PY2}/msgpack_kwargs = {"raw": six.PY2, "max_buffer_size": 2147483647}/g' /usr/lib/python3/dist-packages/salt/transport/ipc.py
-
-sudo systemctl enable salt-master
-sudo systemctl enable salt-api
-sudo systemctl restart salt-api
-sleep 3
-
-print_green 'Restoring salt keys'
-
-sudo systemctl stop salt-master
-sudo systemctl stop salt-api
-sudo rm -rf /etc/salt
-sudo mkdir /etc/salt
-sudo tar -xzf $tmp_dir/salt/etc-salt.tar.gz -C /etc/salt
-sudo mkdir -p /srv/salt
-sudo tar -xzf $tmp_dir/salt/srv-salt.tar.gz -C /srv/salt
-sudo chown ${USER}:${USER} -R /srv/salt/
-sudo chown ${USER}:www-data /srv/salt/scripts/userdefined
-sudo chmod 750 /srv/salt/scripts/userdefined
-
 print_green 'Restoring the frontend'
 
 sudo chown -R $USER:$GROUP /home/${USER}/.npm
@@ -310,18 +270,15 @@ sudo chown www-data:www-data -R /var/www/rmm/dist
 # reset perms
 sudo chown ${USER}:${USER} -R /rmm
 sudo chown ${USER}:${USER} /var/log/celery
-sudo chown ${USER}:${USER} -R /srv/salt/
 sudo chown ${USER}:${USER} -R /etc/conf.d/
-sudo chown ${USER}:www-data /srv/salt/scripts/userdefined
 sudo chown -R $USER:$GROUP /home/${USER}/.npm
 sudo chown -R $USER:$GROUP /home/${USER}/.config
 sudo chown -R $USER:$GROUP /home/${USER}/.cache
-sudo chmod 750 /srv/salt/scripts/userdefined
 
 print_green 'Enabling Services'
 sudo systemctl daemon-reload
 
-for i in celery.service celerybeat.service celery-winupdate.service rmm.service nginx
+for i in celery.service celerybeat.service rmm.service nginx
 do
   sudo systemctl enable ${i}
   sudo systemctl stop ${i}
@@ -336,11 +293,6 @@ sudo systemctl start meshcentral
 print_green 'Starting natsapi'
 sudo systemctl enable natsapi.service
 sudo systemctl start natsapi.service
-
-print_green 'Restarting salt and waiting 10 seconds'
-sudo systemctl restart salt-master
-sleep 10
-sudo systemctl restart salt-api
 
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"

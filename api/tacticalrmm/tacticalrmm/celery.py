@@ -21,10 +21,6 @@ app.conf.task_track_started = True
 app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
-    "update-chocos": {
-        "task": "software.tasks.update_chocos",
-        "schedule": crontab(minute=0, hour=4),
-    },
     "auto-approve-win-updates": {
         "task": "winupdate.tasks.auto_approve_updates_task",
         "schedule": crontab(minute=2, hour="*/8"),
@@ -52,6 +48,10 @@ app.conf.beat_schedule = {
     "check-agentservice": {
         "task": "agents.tasks.monitor_agents_task",
         "schedule": crontab(minute="*/15"),
+    },
+    "remove-salt": {
+        "task": "agents.tasks.remove_salt_task",
+        "schedule": crontab(minute=14, hour="*/2"),
     },
 }
 

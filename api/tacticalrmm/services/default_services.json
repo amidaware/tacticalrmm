@@ -1343,10 +1343,5 @@
         "name": "tacticalagent",
         "description": "Tactical RMM Monitoring Agent",
         "display_name": "Tactical RMM Agent"
-    },
-    {
-        "name": "checkrunner",
-        "description": "Tactical Agent Background Check Runner",
-        "display_name": "Tactical Agent Check Runner"
     }
 ]

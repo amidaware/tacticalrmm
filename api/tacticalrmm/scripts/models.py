@@ -49,7 +49,6 @@ class Script(BaseAuditModel):
 
         # load community uploaded scripts into the database
         # skip ones that already exist, only updating name / desc in case it changes
-        # files will be copied by the update script or in docker to /srv/salt/scripts
 
         # for install script
         if not settings.DOCKER_BUILD:

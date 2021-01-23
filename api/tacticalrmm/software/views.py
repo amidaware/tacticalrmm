@@ -8,14 +8,15 @@ from rest_framework.response import Response
 
 from agents.models import Agent
 from .models import ChocoSoftware, InstalledSoftware
-from .serializers import InstalledSoftwareSerializer
+from .serializers import InstalledSoftwareSerializer, ChocoSoftwareSerializer
 from .tasks import install_program
 from tacticalrmm.utils import notify_error, filter_software
 
 
 @api_view()
 def chocos(request):
-    return Response(ChocoSoftware.combine_all())
+    chocos = ChocoSoftware.objects.last()
+    return Response(ChocoSoftwareSerializer(chocos).data["chocos"])
 
 
 @api_view(["POST"])

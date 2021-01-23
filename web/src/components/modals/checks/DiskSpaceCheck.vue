@@ -137,9 +137,7 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     reloadChecks() {
-      if (this.policypk) {
-        this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
-      } else {
+      if (this.agentpk) {
         this.$store.dispatch("loadChecks", this.agentpk);
       }
     },
@@ -148,9 +146,9 @@ export default {
     ...mapGetters(["agentDisks"]),
     thresholdIsValid() {
       return (
-        this.memcheck.warning_threshold === 0 ||
-        this.memcheck.error_threshold === 0 ||
-        this.memcheck.warning_threshold < this.memcheck.error_threshold
+        !!this.diskcheck.warning_threshold ||
+        !!this.diskcheck.error_threshold ||
+        this.diskcheck.warning_threshold > this.diskcheck.error_threshold
       );
     },
   },

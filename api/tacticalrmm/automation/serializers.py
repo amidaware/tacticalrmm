@@ -1,7 +1,6 @@
 from rest_framework.serializers import (
     ModelSerializer,
     SerializerMethodField,
-    StringRelatedField,
     ReadOnlyField,
 )
 
@@ -24,15 +23,11 @@ class PolicySerializer(ModelSerializer):
 
 class PolicyTableSerializer(ModelSerializer):
 
-    server_clients = ClientSerializer(many=True, read_only=True)
-    server_sites = SiteSerializer(many=True, read_only=True)
-    workstation_clients = ClientSerializer(many=True, read_only=True)
-    workstation_sites = SiteSerializer(many=True, read_only=True)
-    agents = AgentHostnameSerializer(many=True, read_only=True)
     default_server_policy = ReadOnlyField(source="is_default_server_policy")
     default_workstation_policy = ReadOnlyField(source="is_default_workstation_policy")
     agents_count = SerializerMethodField(read_only=True)
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
+    alert_template = ReadOnlyField(source="alert_template.id")
 
     class Meta:
         model = Policy
@@ -89,20 +84,6 @@ class AutoTasksFieldSerializer(ModelSerializer):
         model = AutomatedTask
         fields = ("id", "enabled", "name", "schedule", "assigned_check")
         depth = 1
-
-
-class AutoTaskPolicySerializer(ModelSerializer):
-
-    autotasks = AutoTasksFieldSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Policy
-        fields = (
-            "id",
-            "name",
-            "autotasks",
-        )
-        depth = 2
 
 
 class RelatedClientPolicySerializer(ModelSerializer):

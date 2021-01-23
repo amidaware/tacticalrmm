@@ -1,6 +1,6 @@
 <template>
   <q-dialog ref="dialog" @hide="onHide">
-    <q-card style="min-width: 70vw">
+    <q-card style="width: 70vw; max-width: 70vw">
       <q-bar>
         {{ title }}
         <q-space />

@@ -73,7 +73,7 @@ export default {
       let url = "";
       if (this.type === "client") url = `/clients/${this.object.id}/client/`;
       else if (this.type === "site") url = `/clients/${this.object.id}/site/`;
-      else if (this.type === "policy") url = `/automation/${this.object.id}/policy/`;
+      else if (this.type === "policy") url = `/automation/policies/${this.object.id}/`;
 
       const text = this.selectedTemplate ? "assigned" : "removed";
       this.$axios
@@ -120,7 +120,7 @@ export default {
   },
   mounted() {
     this.getAlertTemplates();
-    this.selectedTemplate = this.object.alertTemplate;
+    this.selectedTemplate = this.object.alert_template;
   },
 };
 </script>

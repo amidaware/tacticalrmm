@@ -15,26 +15,26 @@
             <q-btn
               ref="edit"
               label="Edit"
-              :disable="selected.length === 0"
+              :disable="!selectedTemplate"
               dense
               flat
               push
               unelevated
               no-caps
               icon="edit"
-              @click="showEditTemplateModal(selected[0])"
+              @click="showEditTemplateModal(selectedTemplate)"
             />
             <q-btn
               ref="delete"
               label="Delete"
-              :disable="selected.length === 0"
+              :disable="!selectedTemplate"
               dense
               flat
               push
               unelevated
               no-caps
               icon="delete"
-              @click="deleteTemplate(selected[0])"
+              @click="deleteTemplate(selectedTemplate)"
             />
           </div>
           <q-table
@@ -60,13 +60,13 @@
 
             <template v-slot:header-cell-email_severity="props">
               <q-th :props="props" auto-width>
-                {{ props.name }}
+                {{ props.col.label }}
               </q-th>
             </template>
 
             <template v-slot:header-cell-text_severity="props">
               <q-th :props="props" auto-width>
-                {{ props.name }}
+                {{ props.col.label }}
               </q-th>
             </template>
             <!-- body slots -->
@@ -74,9 +74,9 @@
               <q-tr
                 :props="props"
                 class="cursor-pointer"
-                :class="rowSelectedClass(props.row.id, selected)"
-                @click="selected = props.row"
-                @contextmenu="selected = props.row"
+                :class="rowSelectedClass(props.row.id, selectedTemplate)"
+                @click="selectedTemplate = props.row"
+                @contextmenu="selectedTemplate = props.row"
               >
                 <!-- context menu -->
                 <q-menu context-menu>
@@ -173,7 +173,7 @@ export default {
   mixins: [mixins],
   data() {
     return {
-      selected: [],
+      selectedTemplate: null,
       templates: [],
       columns: [
         { name: "is_active", label: "Active", field: "is_active", align: "left" },
@@ -225,7 +225,7 @@ export default {
         });
     },
     clearRow() {
-      this.selected = [];
+      this.selectedTemplate = null;
     },
     refresh() {
       this.getTemplates();
@@ -292,8 +292,8 @@ export default {
           this.notifyError("An Error occured while editing the template");
         });
     },
-    rowSelectedClass(id, selected) {
-      if (selected.length !== 0 && selected[0].id === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";
+    rowSelectedClass(id, selectedTemplate) {
+      if (selectedTemplate && selectedTemplate.id === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";
     },
     show() {
       this.$refs.dialog.show();

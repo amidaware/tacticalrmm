@@ -1,22 +1,26 @@
 <template>
   <q-dialog ref="dialog" @hide="onHide">
     <q-card class="q-dialog-plugin" style="width: 90vw">
-      <q-card-section class="row items-center">
-        <div class="text-h6">{{ this.title }}</div>
+      <q-bar>
+        {{ title.slice(0, 27) }}
         <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
-      </q-card-section>
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
       <q-card-section>
         <q-table
-          dense
+          style="max-height: 35vh"
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="tabs-tbl-sticky"
-          style="max-height: 35vh"
-          :data="tableData"
+          :data="data"
           :columns="columns"
+          :pagination.sync="pagination"
+          :rows-per-page-options="[0]"
           row-key="id"
           binary-state-sort
-          :pagination.sync="pagination"
+          dense
+          virtual-scroll
           hide-pagination
           no-data-label="There are no agents in this policy"
         >
@@ -130,7 +134,7 @@ export default {
       showEventLogOutput: false,
       evtLogData: {},
       scriptInfo: {},
-      tableData: [],
+      data: [],
       columns: [
         { name: "agent", label: "Hostname", field: "agent", align: "left", sortable: true },
         { name: "statusicon", align: "left" },
@@ -151,7 +155,7 @@ export default {
         },
       ],
       pagination: {
-        rowsPerPage: 9999,
+        rowsPerPage: 0,
         sortBy: "status",
         descending: false,
       },
@@ -159,34 +163,34 @@ export default {
   },
   computed: {
     title() {
-      return this.item.readable_desc ? this.item.readable_desc + " Status" : this.item.name + " Status";
+      return !!this.item.readable_desc ? this.item.readable_desc + " Status" : this.item.name + " Status";
     },
   },
   methods: {
     getCheckData() {
       this.$q.loading.show();
-      this.$store
-        .dispatch("automation/loadCheckStatus", { checkpk: this.item.id })
+      this.$axios
+        .patch(`/automation/policycheckstatus/${this.item.id}/check/`)
         .then(r => {
           this.$q.loading.hide();
-          this.tableData = r.data;
+          this.data = r.data;
         })
         .catch(e => {
           this.$q.loading.hide();
-          // TODO: Return Error message from api and display
+          this.notifyError("Unable to load check status");
         });
     },
     getTaskData() {
       this.$q.loading.show();
-      this.$store
-        .dispatch("automation/loadAutomatedTaskStatus", { taskpk: this.item.id })
+      this.$axios
+        .patch(`/automation/policyautomatedtaskstatus/${this.item.id}/task/`)
         .then(r => {
           this.$q.loading.hide();
-          this.tableData = r.data;
+          this.data = r.data;
         })
         .catch(e => {
           this.$q.loading.hide();
-          // TODO: Return Error message from api and display
+          this.notifyError("Unable to load task status");
         });
     },
     closeEventLogOutput() {

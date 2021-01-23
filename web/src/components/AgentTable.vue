@@ -217,7 +217,7 @@
                 </q-menu>
               </q-item>
 
-              <q-item clickable v-close-popup @click.stop.prevent="showPolicyAdd(props.row.id)">
+              <q-item clickable v-close-popup @click.stop.prevent="showPolicyAdd(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="policy" />
                 </q-item-section>
@@ -339,10 +339,6 @@
         <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" @edited="agentEdited" />
       </q-dialog>
     </div>
-    <!-- add policy modal -->
-    <q-dialog v-model="showPolicyAddModal">
-      <PolicyAdd @close="showPolicyAddModal = false" type="agent" :pk="policyAddPk" />
-    </q-dialog>
     <!-- send command modal -->
     <q-dialog v-model="showSendCommand">
       <SendCommand @close="showSendCommand = false" :pk="selectedAgentPk" />
@@ -379,7 +375,6 @@ export default {
     EditAgent,
     RebootLater,
     PendingActions,
-    PolicyAdd,
     SendCommand,
     AgentRecovery,
     RunScript,
@@ -395,10 +390,8 @@ export default {
       showSendCommand: false,
       showEditAgentModal: false,
       showRebootLaterModal: false,
-      showPolicyAddModal: false,
       showAgentRecovery: false,
       showRunScript: false,
-      policyAddPk: null,
       showPendingActions: false,
       pendingActionAgentPk: null,
       favoriteScripts: [],
@@ -671,9 +664,13 @@ export default {
         return "agent-normal";
       }
     },
-    showPolicyAdd(pk) {
-      this.policyAddPk = pk;
-      this.showPolicyAddModal = true;
+    showPolicyAdd(agent) {
+      this.$q.dialog({
+        component: PolicyAdd,
+        parent: this,
+        type: "agent",
+        object: agent,
+      });
     },
     toggleMaintenance(agent) {
       let data = {

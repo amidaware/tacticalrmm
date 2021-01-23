@@ -210,9 +210,6 @@ export default {
             if (!this.policypk) {
               this.$store.dispatch("loadAutomatedTasks", this.selectedAgentPk);
               this.$store.dispatch("loadChecks", this.selectedAgentPk);
-            } else {
-              this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.policypk);
-              this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
             }
             this.notifySuccess(r.data);
           })
@@ -221,11 +218,11 @@ export default {
     },
     getScripts() {
       this.$axios.get("/scripts/scripts/").then(r => {
-        this.scriptOptions = r.data.map(
-          script => ({ label: script.name, value: script.id })).sort((a, b) => a.label.localeCompare(b.label)
-        );
+        this.scriptOptions = r.data
+          .map(script => ({ label: script.name, value: script.id }))
+          .sort((a, b) => a.label.localeCompare(b.label));
       });
-    }
+    },
   },
   computed: {
     ...mapGetters(["selectedAgentPk"]),
@@ -261,7 +258,7 @@ export default {
     },
   },
   created() {
-    this.getScripts()
-  }
+    this.getScripts();
+  },
 };
 </script>

@@ -77,9 +77,9 @@ export default {
   computed: {
     thresholdIsValid() {
       return (
-        this.memcheck.warning_threshold === 0 ||
-        this.memcheck.error_threshold === 0 ||
-        this.memcheck.warning_threshold < this.memcheck.error_threshold
+        this.cpuloadcheck.warning_threshold === 0 ||
+        this.cpuloadcheck.error_threshold === 0 ||
+        this.cpuloadcheck.warning_threshold < this.cpuloadcheck.error_threshold
       );
     },
   },
@@ -123,9 +123,7 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     reloadChecks() {
-      if (this.policypk) {
-        this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
-      } else {
+      if (this.agentpk) {
         this.$store.dispatch("loadChecks", this.agentpk);
       }
     },

@@ -53,11 +53,6 @@
           dense
           v-model.number="scriptcheck.info_return_codes"
           label="Informational alert return codes"
-          :rules="[
-            val => !!val || '*Required',
-            val => val >= 10 || 'Minimum is 10 seconds',
-            val => val <= 86400 || 'Maximum is 86400 seconds',
-          ]"
         />
       </q-card-section>
       <q-card-section>
@@ -151,9 +146,7 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     reloadChecks() {
-      if (this.policypk) {
-        this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
-      } else {
+      if (this.agentpk) {
         this.$store.dispatch("loadChecks", this.agentpk);
       }
     },

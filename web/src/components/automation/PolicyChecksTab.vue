@@ -1,15 +1,7 @@
 <template>
   <div class="row">
     <div class="col-12">
-      <q-btn
-        v-if="selectedPolicy !== null"
-        size="sm"
-        color="grey-5"
-        icon="fas fa-plus"
-        label="Add Check"
-        text-color="black"
-        ref="add"
-      >
+      <q-btn v-if="!!selectedPolicy" size="sm" color="grey-5" icon="fas fa-plus" label="Add Check" text-color="black">
         <q-menu>
           <q-list dense style="min-width: 200px">
             <q-item clickable v-close-popup @click="showAddDialog('DiskSpaceCheck')">
@@ -57,28 +49,29 @@
           </q-list>
         </q-menu>
       </q-btn>
-      <q-btn
-        v-if="selectedPolicy !== null"
-        dense
-        flat
-        push
-        @click="onRefresh(selectedPolicy)"
-        icon="refresh"
-        ref="refresh"
-      />
+      <q-btn v-if="!!selectedPolicy" dense flat push @click="getChecks" icon="refresh" />
       <template>
         <q-table
-          dense
+          style="max-height: 35vh"
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="tabs-tbl-sticky"
-          style="max-height: 35vh"
           :data="checks"
           :columns="columns"
+          :pagination.sync="pagination"
+          :rows-per-page-options="[0]"
           row-key="id"
           binary-state-sort
-          :pagination.sync="pagination"
+          dense
           hide-pagination
+          virtual-scroll
         >
+          <!-- No data Slot -->
+          <template v-slot:no-data>
+            <div class="full-width row flex-center q-gutter-sm">
+              <span v-if="!selectedPolicy">Click on a policy to see the checks</span>
+              <span v-else>There are no checks added to this policy</span>
+            </div>
+          </template>
           <!-- header slots -->
           <template v-slot:header-cell-smsalert="props">
             <q-th auto-width :props="props">
@@ -96,13 +89,6 @@
           </template>
           <template v-slot:header-cell-statusicon="props">
             <q-th auto-width :props="props"></q-th>
-          </template>
-          <!-- No data Slot -->
-          <template v-slot:no-data>
-            <div class="full-width row flex-center q-gutter-sm">
-              <span v-if="selectedPolicy === null">Click on a policy to see the checks</span>
-              <span v-else>There are no checks added to this policy</span>
-            </div>
           </template>
           <!-- body slots -->
           <template v-slot:body="props">
@@ -125,7 +111,7 @@
 
                   <q-separator></q-separator>
 
-                  <q-item clickable v-close-popup @click="showPolicyCheckStatusModal(props.row)" id="context-status">
+                  <q-item clickable v-close-popup @click="showPolicyStatus(props.row)" id="context-status">
                     <q-item-section side>
                       <q-icon name="sync" />
                     </q-item-section>
@@ -158,7 +144,7 @@
               <q-td>
                 <span
                   style="cursor: pointer; text-decoration: underline"
-                  @click="showPolicyCheckStatusModal(props.row)"
+                  @click="showPolicyStatus(props.row)"
                   class="status-cell text-primary"
                   >See Status</span
                 >
@@ -173,11 +159,6 @@
         </q-table>
       </template>
     </div>
-
-    <!-- policy status -->
-    <q-dialog v-model="showPolicyCheckStatus">
-      <PolicyStatus type="check" :item="statusCheck" />
-    </q-dialog>
 
     <!-- add/edit modals -->
     <q-dialog v-model="showDialog" @hide="hideDialog">
@@ -207,7 +188,6 @@ import EventLogCheck from "@/components/modals/checks/EventLogCheck";
 export default {
   name: "PolicyChecksTab",
   components: {
-    PolicyStatus,
     DiskSpaceCheck,
     PingCheck,
     CpuLoadCheck,
@@ -225,9 +205,7 @@ export default {
       checks: [],
       dialogComponent: null,
       showDialog: false,
-      showPolicyCheckStatus: false,
       editCheckPK: null,
-      statusCheck: {},
       columns: [
         { name: "smsalert", field: "text_alert", align: "left" },
         { name: "emailalert", field: "email_alert", align: "left" },
@@ -242,8 +220,27 @@ export default {
       },
     };
   },
+  watch: {
+    selectedPolicy: function (newValue, oldValue) {
+      if (newValue !== oldValue) this.getChecks();
+    },
+  },
   methods: {
+    getChecks() {
+      this.$q.loading.show();
+      this.$axios
+        .get(`/automation/${this.selectedPolicy}/policychecks/`)
+        .then(r => {
+          this.checks = r.data;
+          this.$q.loading.hide();
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError("Unable to get checks");
+        });
+    },
     checkAlert(id, alert_type, action) {
+      this.$q.loading.show();
       const data = {};
 
       if (alert_type === "Email") {
@@ -254,16 +251,20 @@ export default {
       data.check_alert = true;
       const act = action ? "enabled" : "disabled";
       const color = action ? "positive" : "warning";
-      this.$store.dispatch("editCheckAlert", { pk: id, data }).then(r => {
-        this.$q.notify({
-          color: color,
-          icon: "fas fa-check-circle",
-          message: `${alert_type} alerts ${act}`,
+      this.$axios
+        .patch(`/checks/${id}/check/`, data)
+        .then(r => {
+          this.$q.loading.hide();
+          this.$q.notify({
+            color: color,
+            icon: "fas fa-check-circle",
+            message: `${alert_type} alerts ${act}`,
+          });
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError("Unable to edit check alert");
         });
-      });
-    },
-    onRefresh(id) {
-      this.$store.dispatch("automation/loadPolicyChecks", id);
     },
     showAddDialog(component) {
       this.dialogComponent = component;
@@ -311,22 +312,31 @@ export default {
           cancel: true,
         })
         .onOk(() => {
-          this.$store
-            .dispatch("deleteCheck", check.id)
+          this.$q.loading.show();
+          this.axios
+            .delete(`/checks/${check.id}/check/`)
             .then(r => {
-              this.$store.dispatch("automation/loadPolicyChecks", check.id);
+              this.getChecks();
+              this.$q.loading.hide();
               this.notifySuccess("Check Deleted!");
             })
-            .catch(e => this.notifyError("An Error Occurred while deleting"));
+            .catch(e => {
+              this.$q.loading.hide();
+              this.notifyError("An Error Occurred while deleting");
+            });
         });
     },
     showPolicyStatus(check) {
       this.$q.dialog({
         component: PolicyStatus,
         parent: this,
-        check: check,
+        type: "check",
+        item: check,
       });
     },
+  },
+  mounted() {
+    this.getChecks();
   },
 };
 </script>

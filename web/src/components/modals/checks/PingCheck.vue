@@ -104,9 +104,7 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     reloadChecks() {
-      if (this.policypk) {
-        this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
-      } else {
+      if (this.agentpk) {
         this.$store.dispatch("loadChecks", this.agentpk);
       }
     },

@@ -69,7 +69,7 @@
           </q-menu>
         </q-chip>
 
-        <AlertsIcon />
+        <!--<AlertsIcon />-->
 
         <q-btn-dropdown flat no-caps stretch :label="user">
           <q-list>
@@ -357,11 +357,7 @@
         @edited="refreshEntireSite"
       />
     </q-dialog>
-    <!-- add policy modal -->
-    <q-dialog v-model="showPolicyAddModal">
-      <PolicyAdd @close="showPolicyAddModal = false" :type="policyAddType" :pk="parseInt(policyAddPk)" />
-    </q-dialog>
-    <!-- add policy modal -->
+    <!-- install agent modal -->
     <q-dialog v-model="showInstallAgentModal" @hide="closeInstallAgent">
       <InstallAgent @close="closeInstallAgent" :sitepk="parseInt(sitePk)" />
     </q-dialog>
@@ -393,7 +389,6 @@ export default {
     AgentTable,
     SubTableTabs,
     AlertsIcon,
-    PolicyAdd,
     ClientsForm,
     SitesForm,
     InstallAgent,
@@ -404,13 +399,10 @@ export default {
       darkMode: true,
       showClientsFormModal: false,
       showSitesFormModal: false,
-      showPolicyAddModal: false,
       deleteEditModalPk: null,
       showInstallAgentModal: false,
       sitePk: null,
       clientOp: null,
-      policyAddType: null,
-      policyAddPk: null,
       serverCount: 0,
       serverOfflineCount: 0,
       workstationCount: 0,
@@ -621,13 +613,27 @@ export default {
     },
     showPolicyAdd(node) {
       if (node.children) {
-        this.policyAddType = "client";
-        this.policyAddPk = node.id;
-        this.showPolicyAddModal = true;
+        this.$q
+          .dialog({
+            component: PolicyAdd,
+            parent: this,
+            type: "client",
+            object: node,
+          })
+          .onOk(() => {
+            this.getTree();
+          });
       } else {
-        this.policyAddType = "site";
-        this.policyAddPk = node.id;
-        this.showPolicyAddModal = true;
+        this.$q
+          .dialog({
+            component: PolicyAdd,
+            parent: this,
+            type: "site",
+            object: node,
+          })
+          .onOk(() => {
+            this.getTree();
+          });
       }
     },
     showEditModal(node, op) {

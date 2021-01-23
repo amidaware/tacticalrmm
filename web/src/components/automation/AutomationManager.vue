@@ -1,6 +1,6 @@
 <template>
   <q-dialog ref="dialog" @hide="onHide">
-    <div class="q-dialog-plugin" style="min-width: 90vw; max-width: 90vw">
+    <div class="q-dialog-plugin" style="width: 90vw; max-width: 90vw">
       <q-card>
         <q-bar>
           <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />Automation Manager
@@ -11,9 +11,8 @@
         </q-bar>
         <div class="q-pa-md">
           <div class="q-gutter-sm">
-            <q-btn ref="new" label="New" dense flat push unelevated no-caps icon="add" @click="showAddPolicyForm" />
+            <q-btn label="New" dense flat push unelevated no-caps icon="add" @click="showAddPolicyForm" />
             <q-btn
-              ref="edit"
               label="Edit"
               :disable="!selectedPolicy"
               dense
@@ -25,7 +24,6 @@
               @click="showEditPolicyForm(selectedPolicy)"
             />
             <q-btn
-              ref="delete"
               label="Delete"
               :disable="!selectedPolicy"
               dense
@@ -37,7 +35,6 @@
               @click="deletePolicy(selectedPolicy)"
             />
             <q-btn
-              ref="overview"
               label="Policy Overview"
               dense
               flat
@@ -49,17 +46,18 @@
             />
           </div>
           <q-table
+            style="max-height: 35vh"
             :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+            class="tabs-tbl-sticky"
             :data="policies"
             :columns="columns"
             :pagination.sync="pagination"
+            :rows-per-page-options="[0]"
+            dense
             row-key="id"
             binary-state-sort
             hide-pagination
             virtual-scroll
-            dense
-            flat
-            :rows-per-page-options="[0]"
             no-data-label="No Policies"
           >
             <!-- header slots -->
@@ -84,6 +82,7 @@
               <q-tr
                 :props="props"
                 class="cursor-pointer"
+                :class="rowSelectedClass(props.row.id, selectedPolicy)"
                 @click="selectedPolicy = props.row"
                 @contextmenu="selectedPolicy = props.row"
               >
@@ -97,7 +96,7 @@
                       <q-item-section>Edit</q-item-section>
                     </q-item>
 
-                    <q-item clickable v-close-popup @click="showAddPolicyForm(props.row)">
+                    <q-item clickable v-close-popup @click="showCopyPolicyForm(props.row)">
                       <q-item-section side>
                         <q-icon name="content_copy" />
                       </q-item-section>
@@ -184,7 +183,7 @@
                   >
                 </q-td>
                 <q-td>
-                  <q-icon name="content_copy" size="1.5em" @click="showAddPolicyForm(props.row)">
+                  <q-icon name="content_copy" size="1.5em" @click="showCopyPolicyForm(props.row)">
                     <q-tooltip>Create a copy of this policy</q-tooltip>
                   </q-icon>
                 </q-td>
@@ -211,10 +210,10 @@
           <q-separator />
           <q-tab-panels v-model="subtab" :animated="false">
             <q-tab-panel name="checks">
-              <PolicyChecksTab :selectedPolicy="selectedPolicy" />
+              <PolicyChecksTab v-if="!!selectedPolicy" :selectedPolicy="selectedPolicy.id" />
             </q-tab-panel>
             <q-tab-panel name="tasks">
-              <PolicyAutomatedTasksTab :selectedPolicy="selectedPolicy" />
+              <PolicyAutomatedTasksTab v-if="!!selectedPolicy" :selectedPolicy="selectedPolicy.id" />
             </q-tab-panel>
           </q-tab-panels>
         </q-card-section>
@@ -293,10 +292,17 @@ export default {
   },
   methods: {
     getPolicies() {
-      this.$axios.get("/automation/policies/").then(r => {
-        console.log(r.data);
-        this.policies = r.data;
-      });
+      this.$q.loading.show();
+      this.$axios
+        .get("/automation/policies/")
+        .then(r => {
+          this.policies = r.data;
+          this.$q.loading.hide();
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError("Unable to get policies");
+        });
     },
     clearRow() {
       this.selectedPolicy = null;
@@ -336,7 +342,17 @@ export default {
         parent: this,
       });
     },
-    showAddPolicyForm(policy) {
+    showAddPolicyForm(policy = undefined) {
+      this.$q
+        .dialog({
+          component: PolicyForm,
+          parent: this,
+        })
+        .onOk(() => {
+          this.refresh();
+        });
+    },
+    showCopyPolicyForm(policy = undefined) {
       this.$q
         .dialog({
           component: PolicyForm,
@@ -386,6 +402,7 @@ export default {
         });
     },
     toggleCheckbox(policy, type) {
+      this.$q.loading.show();
       let text = "";
 
       if (type === "Active") {
@@ -405,17 +422,22 @@ export default {
       this.$axios
         .put(`/automation/policies/${data.id}/`, data)
         .then(r => {
+          this.$q.loading.hide();
           this.notifySuccess(text);
         })
         .catch(error => {
+          this.$q.loading.hide();
           this.notifyError("An Error occured while editing policy");
         });
     },
     patchPolicyText(policy) {
-      return policy.winupdatepolicy.length > 0 ? "Show Patch Policy" : "Create Patch Policy";
+      return policy.winupdatepolicy.length > 0 ? "Modify Patch Policy" : "Create Patch Policy";
     },
     alertTemplateText(policy) {
       return policy.alert_template ? "Modify Alert Template" : "Assign Alert Template";
+    },
+    rowSelectedClass(id, selectedPolicy) {
+      if (selectedPolicy && selectedPolicy.id === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";
     },
     show() {
       this.$refs.dialog.show();

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="33"
+SCRIPT_VERSION="34"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget
@@ -76,11 +76,11 @@ postgresql_repo="deb [arch=amd64] https://apt.postgresql.org/pub/repos/apt/ $cod
 sudo systemctl restart systemd-journald.service
 
 DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
-SALTPW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
 ADMINURL=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 70 | head -n 1)
 MESHPASSWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 25 | head -n 1)
 pgusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
 pgpw=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
+meshusername=$(cat /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
 
 cls() {
   printf "\033c"
@@ -163,9 +163,6 @@ if echo "$IPV4" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192
     BEHIND_NAT=true
 fi
 
-echo -ne "${YELLOW}Create a username for meshcentral${NC}: "
-read meshusername
-
 sudo apt install -y software-properties-common
 sudo apt update
 sudo apt install -y certbot openssl
@@ -183,11 +180,6 @@ CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
 
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
 sudo chmod 775 -R /etc/letsencrypt
-
-print_green 'Creating saltapi user'
-
-sudo adduser --no-create-home --disabled-password --gecos "" saltapi
-echo "saltapi:${SALTPW}" | sudo chpasswd
 
 print_green 'Installing golang'
 
@@ -239,7 +231,7 @@ sudo systemctl restart mongod
 print_green 'Installing python, redis and git'
 
 sudo apt update
-sudo apt install -y python3-venv python3-dev python3-pip python3-cherrypy3 python3-setuptools python3-wheel ca-certificates redis git
+sudo apt install -y python3-venv python3-dev python3-pip python3-setuptools python3-wheel ca-certificates redis git
 
 print_green 'Installing postgresql'
 
@@ -359,12 +351,10 @@ if not DEBUG:
         )
     })
 
-SALT_USERNAME = "saltapi"
-SALT_PASSWORD = "${SALTPW}"
-SALT_HOST     = "127.0.0.1"
 MESH_USERNAME = "${meshusername}"
 MESH_SITE = "https://${meshdomain}"
 REDIS_HOST    = "localhost"
+KEEP_SALT = False
 EOF
 )"
 echo "${localvars}" > /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
@@ -531,18 +521,6 @@ server {
         alias /rmm/api/tacticalrmm/tacticalrmm/private/;
     }
 
-    location /saltscripts/ {
-        internal;
-        add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /srv/salt/scripts/userdefined/;
-    }
-
-    location /builtin/ {
-        internal;
-        add_header "Access-Control-Allow-Origin" "https://${frontenddomain}";
-        alias /srv/salt/scripts/;
-    }
-
     location ~ ^/(natsapi) {
         allow 127.0.0.1;
         deny all;
@@ -602,46 +580,6 @@ echo "${nginxmesh}" | sudo tee /etc/nginx/sites-available/meshcentral.conf > /de
 sudo ln -s /etc/nginx/sites-available/rmm.conf /etc/nginx/sites-enabled/rmm.conf
 sudo ln -s /etc/nginx/sites-available/meshcentral.conf /etc/nginx/sites-enabled/meshcentral.conf
 
-print_green 'Installing Salt Master'
-wget -O - 'https://repo.saltstack.com/py3/'$osname'/'$fullrelno'/amd64/latest/SALTSTACK-GPG-KEY.pub' | sudo apt-key add -
-echo 'deb http://repo.saltstack.com/py3/'$osname'/'$fullrelno'/amd64/latest '$codename' main' | sudo tee /etc/apt/sources.list.d/saltstack.list
-
-sudo apt update
-sudo apt install -y salt-master
-
-print_green 'Waiting 10 seconds for salt to start'
-sleep 10
-
-saltvars="$(cat << EOF
-timeout: 20
-gather_job_timeout: 25
-max_event_size: 30485760
-external_auth:
-  pam:
-    saltapi:
-      - .*
-      - '@runner'
-      - '@wheel'
-      - '@jobs'
-
-rest_cherrypy:
-  port: 8123
-  disable_ssl: True
-  max_request_body_size: 30485760
-
-EOF
-)"
-echo "${saltvars}" | sudo tee /etc/salt/master.d/rmm-salt.conf > /dev/null
-
-# fix the stupid 1 MB limit present in msgpack 0.6.2, which btw was later changed to 100 MB in msgpack 1.0.0
-# but 0.6.2 is the default on ubuntu 20
-sudo sed -i 's/msgpack_kwargs = {"raw": six.PY2}/msgpack_kwargs = {"raw": six.PY2, "max_buffer_size": 2147483647}/g' /usr/lib/python3/dist-packages/salt/transport/ipc.py
-
-
-
-print_green 'Installing Salt API'
-sudo apt install -y salt-api
-
 sudo mkdir /etc/conf.d
 
 celeryservice="$(cat << EOF
@@ -676,7 +614,7 @@ CELERY_APP="tacticalrmm"
 
 CELERYD_MULTI="multi"
 
-CELERYD_OPTS="--time-limit=2900 --autoscale=50,5"
+CELERYD_OPTS="--time-limit=9999 --autoscale=100,5"
 
 CELERYD_PID_FILE="/rmm/api/tacticalrmm/%n.pid"
 CELERYD_LOG_FILE="/var/log/celery/%n%I.log"
@@ -688,44 +626,6 @@ EOF
 )"
 echo "${celeryconf}" | sudo tee /etc/conf.d/celery.conf > /dev/null
 
-celerywinupdatesvc="$(cat << EOF
-[Unit]
-Description=Celery WinUpdate Service V2
-After=network.target redis-server.service postgresql.service
-
-[Service]
-Type=forking
-User=${USER}
-Group=${USER}
-EnvironmentFile=/etc/conf.d/celery-winupdate.conf
-WorkingDirectory=/rmm/api/tacticalrmm
-ExecStart=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi start \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" -Q wupdate \$CELERYD_OPTS'
-ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --loglevel="\${CELERYD_LOG_LEVEL}"'
-ExecReload=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi restart \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" -Q wupdate \$CELERYD_OPTS'
-Restart=always
-RestartSec=10s
-
-[Install]
-WantedBy=multi-user.target
-EOF
-)"
-echo "${celerywinupdatesvc}" | sudo tee /etc/systemd/system/celery-winupdate.service > /dev/null
-
-celerywinupdate="$(cat << EOF
-CELERYD_NODES="w2"
-
-CELERY_BIN="/rmm/api/env/bin/celery"
-CELERY_APP="tacticalrmm"
-CELERYD_MULTI="multi"
-
-CELERYD_OPTS="--time-limit=4000 --autoscale=40,1"
-
-CELERYD_PID_FILE="/rmm/api/tacticalrmm/%n.pid"
-CELERYD_LOG_FILE="/var/log/celery/%n%I.log"
-CELERYD_LOG_LEVEL="ERROR"
-EOF
-)"
-echo "${celerywinupdate}" | sudo tee /etc/conf.d/celery-winupdate.conf > /dev/null
 
 celerybeatservice="$(cat << EOF
 [Unit]
@@ -748,21 +648,12 @@ EOF
 )"
 echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service > /dev/null
 
-sudo mkdir -p /srv/salt
-sudo cp -r /rmm/_modules /srv/salt/
-sudo cp -r /rmm/scripts /srv/salt/
-sudo mkdir /srv/salt/scripts/userdefined
-sudo chown ${USER}:${USER} -R /srv/salt/
-sudo chown ${USER}:www-data /srv/salt/scripts/userdefined
-sudo chmod 750 /srv/salt/scripts/userdefined
 sudo chown ${USER}:${USER} -R /etc/conf.d/
 
 meshservice="$(cat << EOF
 [Unit]
 Description=MeshCentral Server
-After=network.target
-After=mongod.service
-After=nginx.service
+After=network.target mongod.service nginx.service
 [Service]
 Type=simple
 LimitNOFILE=1000000
@@ -781,12 +672,6 @@ EOF
 echo "${meshservice}" | sudo tee /etc/systemd/system/meshcentral.service > /dev/null
 
 sudo systemctl daemon-reload
-
-
-sudo systemctl enable salt-master
-sudo systemctl enable salt-api
-
-sudo systemctl restart salt-api
 
 sudo chown -R $USER:$GROUP /home/${USER}/.npm
 sudo chown -R $USER:$GROUP /home/${USER}/.config
@@ -844,7 +729,7 @@ sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/fro
 
 print_green 'Enabling Services'
 
-for i in rmm.service celery.service celerybeat.service celery-winupdate.service nginx
+for i in rmm.service celery.service celerybeat.service nginx
 do
   sudo systemctl enable ${i}
   sudo systemctl stop ${i}
@@ -912,16 +797,11 @@ sudo systemctl start nats.service
 
 
 print_green 'Restarting services'
-for i in rmm.service celery.service celerybeat.service celery-winupdate.service natsapi.service
+for i in rmm.service celery.service celerybeat.service natsapi.service
 do
   sudo systemctl stop ${i}
   sudo systemctl start ${i}
 done
-
-print_green 'Restarting salt-master and waiting 10 seconds'
-sudo systemctl restart salt-master
-sleep 10
-sudo systemctl restart salt-api
 
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"
@@ -931,6 +811,7 @@ echo ${MESHEXE} | sed 's/{.*}//'
 printf >&2 "${NC}\n\n"
 printf >&2 "${YELLOW}Access your rmm at: ${GREEN}https://${frontenddomain}${NC}\n\n"
 printf >&2 "${YELLOW}Django admin url: ${GREEN}https://${rmmdomain}/${ADMINURL}${NC}\n\n"
+printf >&2 "${YELLOW}MeshCentral username: ${GREEN}${meshusername}${NC}\n"
 printf >&2 "${YELLOW}MeshCentral password: ${GREEN}${MESHPASSWD}${NC}\n\n"
 
 if [ "$BEHIND_NAT" = true ]; then
@@ -938,7 +819,7 @@ if [ "$BEHIND_NAT" = true ]; then
     echo -ne "${GREEN}If you will be accessing the web interface of the RMM from the same LAN as this server,${NC}\n"
     echo -ne "${GREEN}you'll need to make sure your 3 subdomains resolve to ${IPV4}${NC}\n"
     echo -ne "${GREEN}This also applies to any agents that will be on the same local network as the rmm.${NC}\n"
-    echo -ne "${GREEN}You'll also need to setup port forwarding in your router on ports 80, 443, 4505, 4506 and 4222 tcp.${NC}\n\n"
+    echo -ne "${GREEN}You'll also need to setup port forwarding in your router on ports 80, 443 and 4222 tcp.${NC}\n\n"
 fi
 
 printf >&2 "${YELLOW}Please refer to the github README for next steps${NC}\n\n"

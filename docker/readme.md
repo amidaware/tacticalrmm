@@ -18,7 +18,7 @@ sudo certbot certonly --manual -d *.example.com --agree-tos --no-bootstrap --man
 
 ## Configure DNS and firewall
 
-You will need to add DNS entries so that the three subdomains resolve to the IP of the docker host. There is a reverse proxy running that will route the hostnames to the correct container. On the host, you will need to ensure the firewall is open on tcp ports 80, 443, 4222, 4505, 4506.
+You will need to add DNS entries so that the three subdomains resolve to the IP of the docker host. There is a reverse proxy running that will route the hostnames to the correct container. On the host, you will need to ensure the firewall is open on tcp ports 80, 443 and 4222.
 
 ## Setting up the environment
 

@@ -83,8 +83,9 @@ class TestCoreTasks(TacticalTestCase):
 
         self.check_not_authenticated("patch", url)
 
+    @patch("tacticalrmm.utils.reload_nats")
     @patch("autotasks.tasks.remove_orphaned_win_tasks.delay")
-    def test_ui_maintenance_actions(self, remove_orphaned_win_tasks):
+    def test_ui_maintenance_actions(self, remove_orphaned_win_tasks, reload_nats):
         url = "/core/servermaintenance/"
 
         agents = baker.make_recipe("agents.online_agent", _quantity=3)
@@ -103,6 +104,7 @@ class TestCoreTasks(TacticalTestCase):
         data = {"action": "reload_nats"}
         r = self.client.post(url, data)
         self.assertEqual(r.status_code, 200)
+        reload_nats.assert_called_once()
 
         # test prune db with no tables
         data = {"action": "prune_db"}

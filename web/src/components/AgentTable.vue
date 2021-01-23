@@ -53,12 +53,6 @@
           </q-icon>
         </q-th>
       </template>
-      <!--
-      <template v-slot:header-cell-antivirus="props">
-        <q-th auto-width :props="props">
-          <q-icon name="fas fa-shield-alt" size="1.2em" color="primary"><q-tooltip>Anti Virus</q-tooltip></q-icon>
-        </q-th>
-      </template>-->
       <template v-slot:header-cell-agentstatus="props">
         <q-th auto-width :props="props">
           <q-icon name="fas fa-signal" size="1.2em">
@@ -286,11 +280,8 @@
           <q-td key="hostname" :props="props">{{ props.row.hostname }}</q-td>
           <q-td key="description" :props="props">{{ props.row.description }}</q-td>
           <q-td key="user" :props="props">
-            <span class="text-italic" v-if="props.row.logged_in_username === 'None' && props.row.status === 'online'">{{
-              props.row.last_logged_in_user
-            }}</span>
-            <span v-else-if="props.row.logged_in_username !== 'None'">{{ props.row.logged_in_username }}</span>
-            <span v-else>-</span>
+            <span class="text-italic" v-if="props.row.italic">{{ props.row.logged_username }}</span>
+            <span v-else>{{ props.row.logged_username }}</span>
           </q-td>
           <q-td :props="props" key="patchespending">
             <q-icon v-if="props.row.patches_pending" name="far fa-clock" color="primary">
@@ -455,10 +446,6 @@ export default {
           }
         }
 
-        // fix for last_logged_in_user not filtering
-        if (row.logged_in_username === "None" && row.status === "online" && !!row.last_logged_in_user)
-          return row.last_logged_in_user.toLowerCase().indexOf(search) !== -1;
-
         // Normal text filter
         return cols.some(col => {
           const val = cellValue(col, row) + "";
@@ -513,9 +500,12 @@ export default {
       });
     },
     runPatchStatusScan(pk, hostname) {
-      axios.get(`/winupdate/${pk}/runupdatescan/`).then(r => {
-        this.notifySuccess(`Scan will be run shortly on ${hostname}`);
-      });
+      this.$axios
+        .get(`/winupdate/${pk}/runupdatescan/`)
+        .then(r => {
+          this.notifySuccess(`Scan will be run shortly on ${hostname}`);
+        })
+        .catch(e => this.notifyError(e.response.data));
     },
     installPatches(pk) {
       this.$q.loading.show();

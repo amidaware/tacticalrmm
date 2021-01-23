@@ -1,9 +1,12 @@
-from time import sleep
+import asyncio
+import time
 from django.utils import timezone as djangotime
 from django.conf import settings
 import datetime as dt
 import pytz
 from loguru import logger
+from packaging import version as pyver
+from typing import List
 
 from agents.models import Agent
 from .models import WinUpdate
@@ -23,22 +26,31 @@ def auto_approve_updates_task():
         except:
             continue
 
-    online = [i for i in agents if i.status == "online"]
+    online = [
+        i
+        for i in agents
+        if i.status == "online" and pyver.parse(i.version) >= pyver.parse("1.3.0")
+    ]
 
-    for agent in online:
-
-        # check for updates on agent
-        check_for_updates_task.apply_async(
-            queue="wupdate",
-            kwargs={"pk": agent.pk, "wait": False, "auto_approve": True},
-        )
+    chunks = (online[i : i + 40] for i in range(0, len(online), 40))
+    for chunk in chunks:
+        for agent in chunk:
+            asyncio.run(agent.nats_cmd({"func": "getwinupdates"}, wait=False))
+            time.sleep(0.05)
+        time.sleep(15)
 
 
 @app.task
 def check_agent_update_schedule_task():
     # scheduled task that installs updates on agents if enabled
     agents = Agent.objects.all()
-    online = [i for i in agents if i.has_patches_pending and i.status == "online"]
+    online = [
+        i
+        for i in agents
+        if pyver.parse(i.version) >= pyver.parse("1.3.0")
+        and i.has_patches_pending
+        and i.status == "online"
+    ]
 
     for agent in online:
         install = False
@@ -98,117 +110,38 @@ def check_agent_update_schedule_task():
             if install:
                 # initiate update on agent asynchronously and don't worry about ret code
                 logger.info(f"Installing windows updates on {agent.salt_id}")
-                agent.salt_api_async(func="win_agent.install_updates")
+                nats_data = {
+                    "func": "installwinupdates",
+                    "guids": agent.get_approved_update_guids(),
+                }
+                asyncio.run(agent.nats_cmd(nats_data, wait=False))
                 agent.patches_last_installed = djangotime.now()
                 agent.save(update_fields=["patches_last_installed"])
 
 
 @app.task
-def check_for_updates_task(pk, wait=False, auto_approve=False):
-
-    if wait:
-        sleep(120)
-
-    agent = Agent.objects.get(pk=pk)
-    ret = agent.salt_api_cmd(
-        timeout=310,
-        func="win_wua.list",
-        arg="skip_installed=False",
-    )
-
-    if ret == "timeout" or ret == "error":
-        return
-
-    if isinstance(ret, str):
-        err = ["unknown failure", "2147352567", "2145107934"]
-        if any(x in ret.lower() for x in err):
-            logger.warning(f"{agent.salt_id}: {ret}")
-            return "failed"
-
-    guids = []
-    try:
-        for k in ret.keys():
-            guids.append(k)
-    except Exception as e:
-        logger.error(f"{agent.salt_id}: {str(e)}")
-        return
-
-    for i in guids:
-        # check if existing update install / download status has changed
-        if WinUpdate.objects.filter(agent=agent).filter(guid=i).exists():
-
-            update = WinUpdate.objects.filter(agent=agent).get(guid=i)
-
-            # salt will report an update as not installed even if it has been installed if a reboot is pending
-            # ignore salt's return if the result field is 'success' as that means the agent has successfully installed the update
-            if update.result != "success":
-                if ret[i]["Installed"] != update.installed:
-                    update.installed = not update.installed
-                    update.save(update_fields=["installed"])
-
-                if ret[i]["Downloaded"] != update.downloaded:
-                    update.downloaded = not update.downloaded
-                    update.save(update_fields=["downloaded"])
-
-        # otherwise it's a new update
-        else:
-            WinUpdate(
-                agent=agent,
-                guid=i,
-                kb=ret[i]["KBs"][0],
-                mandatory=ret[i]["Mandatory"],
-                title=ret[i]["Title"],
-                needs_reboot=ret[i]["NeedsReboot"],
-                installed=ret[i]["Installed"],
-                downloaded=ret[i]["Downloaded"],
-                description=ret[i]["Description"],
-                severity=ret[i]["Severity"],
-            ).save()
-
-    agent.delete_superseded_updates()
-
-    # win_wua.list doesn't always return everything
-    # use win_wua.installed to check for any updates that it missed
-    # and then change update status to match
-    installed = agent.salt_api_cmd(
-        timeout=60, func="win_wua.installed", arg="kbs_only=True"
-    )
-
-    if installed == "timeout" or installed == "error":
-        pass
-    elif isinstance(installed, list):
-        agent.winupdates.filter(kb__in=installed).filter(installed=False).update(
-            installed=True, downloaded=True
-        )
-
-    # check if reboot needed. returns bool
-    needs_reboot = agent.salt_api_cmd(timeout=30, func="win_wua.get_needs_reboot")
-
-    if needs_reboot == "timeout" or needs_reboot == "error":
-        pass
-    elif isinstance(needs_reboot, bool) and needs_reboot:
-        agent.needs_reboot = True
-        agent.save(update_fields=["needs_reboot"])
-    else:
-        agent.needs_reboot = False
-        agent.save(update_fields=["needs_reboot"])
-
-    # approve updates if specified
-    if auto_approve:
-        agent.approve_updates()
-
-    return "ok"
+def bulk_install_updates_task(pks: List[int]) -> None:
+    q = Agent.objects.filter(pk__in=pks)
+    agents = [i for i in q if pyver.parse(i.version) >= pyver.parse("1.3.0")]
+    chunks = (agents[i : i + 40] for i in range(0, len(agents), 40))
+    for chunk in chunks:
+        for agent in chunk:
+            nats_data = {
+                "func": "installwinupdates",
+                "guids": agent.get_approved_update_guids(),
+            }
+            asyncio.run(agent.nats_cmd(nats_data, wait=False))
+            time.sleep(0.05)
+        time.sleep(15)
 
 
 @app.task
-def bulk_check_for_updates_task(minions):
-    # don't flood the celery queue
-    chunks = (minions[i : i + 30] for i in range(0, len(minions), 30))
+def bulk_check_for_updates_task(pks: List[int]) -> None:
+    q = Agent.objects.filter(pk__in=pks)
+    agents = [i for i in q if pyver.parse(i.version) >= pyver.parse("1.3.0")]
+    chunks = (agents[i : i + 40] for i in range(0, len(agents), 40))
     for chunk in chunks:
-        for i in chunk:
-            agent = Agent.objects.get(salt_id=i)
-            check_for_updates_task.apply_async(
-                queue="wupdate",
-                kwargs={"pk": agent.pk, "wait": False, "auto_approve": True},
-            )
-        sleep(30)
+        for agent in chunk:
+            asyncio.run(agent.nats_cmd({"func": "getwinupdates"}, wait=False))
+            time.sleep(0.05)
+        time.sleep(15)

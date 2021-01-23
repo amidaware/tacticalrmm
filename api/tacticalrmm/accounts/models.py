@@ -9,6 +9,12 @@ AGENT_DBLCLICK_CHOICES = [
     ("remotebg", "Remote Background"),
 ]
 
+AGENT_TBL_TAB_CHOICES = [
+    ("server", "Servers"),
+    ("workstation", "Workstations"),
+    ("mixed", "Mixed"),
+]
+
 
 class User(AbstractUser, BaseAuditModel):
     is_active = models.BooleanField(default=True)
@@ -17,6 +23,9 @@ class User(AbstractUser, BaseAuditModel):
     show_community_scripts = models.BooleanField(default=True)
     agent_dblclick_action = models.CharField(
         max_length=50, choices=AGENT_DBLCLICK_CHOICES, default="editagent"
+    )
+    default_agent_tbl_tab = models.CharField(
+        max_length=50, choices=AGENT_TBL_TAB_CHOICES, default="server"
     )
 
     agent = models.OneToOneField(

@@ -238,12 +238,18 @@ sudo rm -f /var/log/celery/*
 sudo nginx -t
 ```
 
-10. Start services
+10. Edit `/etc/hosts` and make sure the line starting with 127.0.1.1 or 127.0.0.1 has your 3 subdomains in it like this:
+```bash
+127.0.0.1 localhost
+127.0.1.1 yourservername api.example.com rmm.example.com mesh.example.com
+```
+
+11. Start services
 ```bash
 for i in rmm celery celerybeat celery-winupdate salt-master salt-api nginx meshcentral; do sudo systemctl start $i; done
 ```
 
-11. Delete whatever `update.sh` script you currently have and download the latest one and run it
+12. Delete whatever `update.sh` script you currently have and download the latest one and run it
 ```bash
 wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh
 chmod +x update.sh

@@ -1,4 +1,3 @@
-import requests
 import time
 import base64
 from Crypto.Cipher import AES
@@ -9,6 +8,7 @@ import validators
 import msgpack
 import re
 from collections import Counter
+from typing import List
 from loguru import logger
 from packaging import version as pyver
 from distutils.version import LooseVersion
@@ -115,14 +115,6 @@ class Agent(BaseAuditModel):
             return settings.DL_64
         elif self.arch == "32":
             return settings.DL_32
-        return None
-
-    @property
-    def winsalt_dl(self):
-        if self.arch == "64":
-            return settings.SALT_64
-        elif self.arch == "32":
-            return settings.SALT_32
         return None
 
     @property
@@ -382,6 +374,13 @@ class Agent(BaseAuditModel):
 
         return patch_policy
 
+    def get_approved_update_guids(self) -> List[str]:
+        return list(
+            self.winupdates.filter(action="approve", installed=False).values_list(
+                "guid", flat=True
+            )
+        )
+
     def generate_checks_from_policies(self):
         from automation.models import Policy
 
@@ -452,77 +451,6 @@ class Agent(BaseAuditModel):
             await nc.flush()
             await nc.close()
 
-    def salt_api_cmd(self, **kwargs):
-
-        # salt should always timeout first before the requests' timeout
-        try:
-            timeout = kwargs["timeout"]
-        except KeyError:
-            # default timeout
-            timeout = 15
-            salt_timeout = 12
-        else:
-            if timeout < 8:
-                timeout = 8
-                salt_timeout = 5
-            else:
-                salt_timeout = timeout - 3
-
-        json = {
-            "client": "local",
-            "tgt": self.salt_id,
-            "fun": kwargs["func"],
-            "timeout": salt_timeout,
-            "username": settings.SALT_USERNAME,
-            "password": settings.SALT_PASSWORD,
-            "eauth": "pam",
-        }
-
-        if "arg" in kwargs:
-            json.update({"arg": kwargs["arg"]})
-        if "kwargs" in kwargs:
-            json.update({"kwarg": kwargs["kwargs"]})
-
-        try:
-            resp = requests.post(
-                f"http://{settings.SALT_HOST}:8123/run",
-                json=[json],
-                timeout=timeout,
-            )
-        except Exception:
-            return "timeout"
-
-        try:
-            ret = resp.json()["return"][0][self.salt_id]
-        except Exception as e:
-            logger.error(f"{self.salt_id}: {e}")
-            return "error"
-        else:
-            return ret
-
-    def salt_api_async(self, **kwargs):
-
-        json = {
-            "client": "local_async",
-            "tgt": self.salt_id,
-            "fun": kwargs["func"],
-            "username": settings.SALT_USERNAME,
-            "password": settings.SALT_PASSWORD,
-            "eauth": "pam",
-        }
-
-        if "arg" in kwargs:
-            json.update({"arg": kwargs["arg"]})
-        if "kwargs" in kwargs:
-            json.update({"kwarg": kwargs["kwargs"]})
-
-        try:
-            resp = requests.post(f"http://{settings.SALT_HOST}:8123/run", json=[json])
-        except Exception:
-            return "timeout"
-
-        return resp
-
     @staticmethod
     def serialize(agent):
         # serializes the agent and returns json
@@ -532,32 +460,6 @@ class Agent(BaseAuditModel):
         del ret["all_timezones"]
         del ret["client"]
         return ret
-
-    @staticmethod
-    def salt_batch_async(**kwargs):
-        assert isinstance(kwargs["minions"], list)
-
-        json = {
-            "client": "local_async",
-            "tgt_type": "list",
-            "tgt": kwargs["minions"],
-            "fun": kwargs["func"],
-            "username": settings.SALT_USERNAME,
-            "password": settings.SALT_PASSWORD,
-            "eauth": "pam",
-        }
-
-        if "arg" in kwargs:
-            json.update({"arg": kwargs["arg"]})
-        if "kwargs" in kwargs:
-            json.update({"kwarg": kwargs["kwargs"]})
-
-        try:
-            resp = requests.post(f"http://{settings.SALT_HOST}:8123/run", json=[json])
-        except Exception:
-            return "timeout"
-
-        return resp
 
     def delete_superseded_updates(self):
         try:

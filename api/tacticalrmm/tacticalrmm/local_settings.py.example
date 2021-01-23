@@ -37,10 +37,7 @@ if not DEBUG:
         )
     })
 
-SALT_USERNAME = "changeme"
-SALT_PASSWORD = "changeme"
 MESH_USERNAME = "changeme"
 MESH_SITE = "https://mesh.example.com"
 MESH_TOKEN_KEY = "changeme"
 REDIS_HOST = "localhost"
-SALT_HOST = "127.0.0.1"

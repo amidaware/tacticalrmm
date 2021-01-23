@@ -195,7 +195,6 @@
                 </q-tabs>
                 <q-space />
                 <q-input
-                  autogrow
                   v-model="search"
                   style="width: 450px"
                   label="Search"
@@ -411,7 +410,6 @@ export default {
       outsideModel: 11,
       selectedTree: "",
       innerModel: 50,
-      tab: "server",
       clientActive: "",
       siteActive: "",
       frame: [],
@@ -472,16 +470,13 @@ export default {
         {
           name: "user",
           label: "User",
-          field: "logged_in_username",
+          field: "logged_username",
           sortable: true,
           align: "left",
         },
         {
-          name: "lastuser",
-          label: "Last User",
-          field: "last_logged_in_user",
-          sortable: true,
-          align: "left",
+          name: "italic",
+          field: "italic",
         },
         {
           name: "patchespending",
@@ -553,7 +548,7 @@ export default {
     },
     refreshEntireSite() {
       this.$store.dispatch("loadTree");
-      this.getDashInfo();
+      this.getDashInfo(false);
       this.getAgentCounts();
 
       if (this.allClientsActive) {
@@ -680,12 +675,13 @@ export default {
         this.workstationOfflineCount = r.data.total_workstation_offline_count;
       });
     },
-    getDashInfo() {
+    getDashInfo(setDefaultTab = true) {
       this.$store.dispatch("getDashInfo").then(r => {
         this.darkMode = r.data.dark_mode;
         this.$q.dark.set(this.darkMode);
         this.currentTRMMVersion = r.data.trmm_version;
         this.$store.commit("SET_AGENT_DBLCLICK_ACTION", r.data.dbl_click_action);
+        if (setDefaultTab) this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", r.data.default_agent_tbl_tab);
         this.$store.commit("setShowCommunityScripts", r.data.show_community_scripts);
       });
     },
@@ -770,6 +766,14 @@ export default {
       clients: state => state.clients,
     }),
     ...mapGetters(["selectedAgentPk", "needRefresh"]),
+    tab: {
+      get: function () {
+        return this.$store.state.defaultAgentTblTab;
+      },
+      set: function (newVal) {
+        this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", newVal);
+      },
+    },
     allClientsActive() {
       return this.selectedTree === "" ? true : false;
     },

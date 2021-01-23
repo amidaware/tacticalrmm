@@ -42,17 +42,30 @@ class AgentTableSerializer(serializers.ModelSerializer):
     last_seen = serializers.SerializerMethodField()
     client_name = serializers.ReadOnlyField(source="client.name")
     site_name = serializers.ReadOnlyField(source="site.name")
+    logged_username = serializers.SerializerMethodField()
+    italic = serializers.SerializerMethodField()
 
     def get_pending_actions(self, obj):
         return obj.pendingactions.filter(status="pending").count()
 
-    def get_last_seen(self, obj):
+    def get_last_seen(self, obj) -> str:
         if obj.time_zone is not None:
             agent_tz = pytz.timezone(obj.time_zone)
         else:
             agent_tz = self.context["default_tz"]
 
         return obj.last_seen.astimezone(agent_tz).strftime("%m %d %Y %H:%M:%S")
+
+    def get_logged_username(self, obj) -> str:
+        if obj.logged_in_username == "None" and obj.status == "online":
+            return obj.last_logged_in_user
+        elif obj.logged_in_username != "None":
+            return obj.logged_in_username
+        else:
+            return "-"
+
+    def get_italic(self, obj) -> bool:
+        return obj.logged_in_username == "None" and obj.status == "online"
 
     class Meta:
         model = Agent
@@ -73,9 +86,9 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "last_seen",
             "boot_time",
             "checks",
-            "logged_in_username",
-            "last_logged_in_user",
             "maintenance_mode",
+            "logged_username",
+            "italic",
         ]
         depth = 2
 

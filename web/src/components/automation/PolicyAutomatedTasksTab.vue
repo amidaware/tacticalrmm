@@ -144,6 +144,9 @@ export default {
     PolicyStatus,
   },
   mixins: [mixins],
+  props: {
+    selectedPolicy: !Number
+  },
   data() {
     return {
       showAddAutomatedTask: false,

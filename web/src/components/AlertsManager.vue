@@ -1,6 +1,6 @@
 <template>
   <q-dialog ref="dialog" @hide="onHide">
-    <div class="q-dialog-plugin" style="width: 900px; max-width: 90vw">
+    <div class="q-dialog-plugin" style="width: 90vw; max-width: 90vw">
       <q-card>
         <q-bar>
           <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />Alerts Manager
@@ -42,34 +42,32 @@
             :data="templates"
             :columns="columns"
             :pagination.sync="pagination"
-            :selected.sync="selected"
-            selection="single"
             row-key="id"
             binary-state-sort
             hide-pagination
+            virtual-scroll
+            :rows-per-page-options="[0]"
             no-data-label="No Alert Templates"
           >
             <!-- header slots -->
-            <template v-slot:header="props">
-              <q-tr :props="props">
-                <template v-for="col in props.cols">
-                  <q-th v-if="col.name === 'is_active'" auto-width :key="col.name">
-                    <q-icon name="power_settings_new" size="1.5em">
-                      <q-tooltip>Enable Template</q-tooltip>
-                    </q-icon>
-                  </q-th>
+            <template v-slot:header-cell-is_active="props">
+              <q-th :props="props" auto-width>
+                <q-icon name="power_settings_new" size="1.5em">
+                  <q-tooltip>Enable Template</q-tooltip>
+                </q-icon>
+              </q-th>
+            </template>
 
-                  <q-th
-                    v-else-if="col.name === 'email_severity' || col.name === 'text_severity'"
-                    auto-width
-                    :key="col.name"
-                  >
-                    {{ col.label }}
-                  </q-th>
+            <template v-slot:header-cell-email_severity="props">
+              <q-th :props="props" auto-width>
+                {{ props.name }}
+              </q-th>
+            </template>
 
-                  <q-th v-else :key="col.name" :props="props">{{ col.label }}</q-th>
-                </template>
-              </q-tr>
+            <template v-slot:header-cell-text_severity="props">
+              <q-th :props="props" auto-width>
+                {{ props.name }}
+              </q-th>
             </template>
             <!-- body slots -->
             <template v-slot:body="props">
@@ -77,14 +75,8 @@
                 :props="props"
                 class="cursor-pointer"
                 :class="rowSelectedClass(props.row.id, selected)"
-                @click="
-                  editTemplate = props.row;
-                  props.selected = true;
-                "
-                @contextmenu="
-                  editTemplate = props.row;
-                  props.selected = true;
-                "
+                @click="selected = props.row"
+                @contextmenu="selected = props.row"
               >
                 <!-- context menu -->
                 <q-menu context-menu>
@@ -212,7 +204,9 @@ export default {
         },
       ],
       pagination: {
-        rowsPerPage: 9999,
+        rowsPerPage: 0,
+        sortBy: "name",
+        descending: true,
       },
     };
   },

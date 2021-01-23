@@ -129,8 +129,8 @@ export default {
   mounted() {
     this.$q.loading.show();
 
-    this.$store
-      .dispatch("automation/getRelated", this.policy.id)
+    this.$axios
+      .patch(`/automation/related/`, data)
       .then(r => {
         this.$q.loading.hide();
         this.related = r.data;

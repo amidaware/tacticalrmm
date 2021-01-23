@@ -194,8 +194,7 @@
 </template>
 
 <script>
-import { mapState, mapGetters } from "vuex";
-import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
+import mixins from "@/mixins/mixins";
 import PolicyStatus from "@/components/automation/modals/PolicyStatus";
 import DiskSpaceCheck from "@/components/modals/checks/DiskSpaceCheck";
 import PingCheck from "@/components/modals/checks/PingCheck";
@@ -218,8 +217,12 @@ export default {
     EventLogCheck,
   },
   mixins: [mixins],
+  props: {
+    selectedPolicy: !Number,
+  },
   data() {
     return {
+      checks: [],
       dialogComponent: null,
       showDialog: false,
       showPolicyCheckStatus: false,
@@ -233,7 +236,9 @@ export default {
         { name: "assigned_task", label: "Assigned Tasks", field: "assigned_task", align: "left", sortable: true },
       ],
       pagination: {
-        rowsPerPage: 9999,
+        rowsPerPage: 0,
+        sortBy: "status",
+        descending: true,
       },
     };
   },
@@ -310,25 +315,18 @@ export default {
             .dispatch("deleteCheck", check.id)
             .then(r => {
               this.$store.dispatch("automation/loadPolicyChecks", check.id);
-              this.$q.notify(notifySuccessConfig("Check Deleted!"));
+              this.notifySuccess("Check Deleted!");
             })
-            .catch(e => this.$q.notify(notifyErrorConfig("An Error Occurred while deleting")));
+            .catch(e => this.notifyError("An Error Occurred while deleting"));
         });
     },
-    showPolicyCheckStatusModal(check) {
-      this.statusCheck = check;
-      this.showPolicyCheckStatus = true;
+    showPolicyStatus(check) {
+      this.$q.dialog({
+        component: PolicyStatus,
+        parent: this,
+        check: check,
+      });
     },
-    closePolicyCheckStatusModal() {
-      this.showPolicyCheckStatus = false;
-      this.statusCheck = {};
-    },
-  },
-  computed: {
-    ...mapGetters({
-      checks: "automation/checks",
-      selectedPolicy: "automation/selectedPolicyPk",
-    }),
   },
 };
 </script>

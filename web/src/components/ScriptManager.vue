@@ -216,7 +216,7 @@
           :filter="search"
           row-key="id"
           binary-state-sort
-          hide-bottom
+          hide-pagination
           virtual-scroll
           flat
           :rows-per-page-options="[0]"

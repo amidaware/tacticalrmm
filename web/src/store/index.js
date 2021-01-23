@@ -229,8 +229,6 @@ export default function () {
             this.$router.push({ name: "InitialSetup" });
           }
 
-          console.log(r.data)
-
           let output = [];
           for (let client of r.data) {
 

@@ -1,57 +1,58 @@
 <template>
-  <q-card style="width: 900px; max-width: 90vw">
-    <q-bar>
-      <q-btn @click="getPolicyTree" class="q-mr-sm" dense flat push icon="refresh" />Policy Overview
-      <q-space />
-      <q-btn dense flat icon="close" v-close-popup>
-        <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
-      </q-btn>
-    </q-bar>
-    <q-splitter v-model="splitterModel" style="height: 600px">
-      <template v-slot:before>
-        <div class="q-pa-md">
-          <q-tree
-            ref="tree"
-            :nodes="clientSiteTree"
-            node-key="id"
-            :selected.sync="selected"
-            selected-color="primary"
-            @update:selected="loadPolicyDetails"
-            default-expand-all
-          ></q-tree>
-        </div>
-      </template>
+  <q-dialog ref="dialog" @hide="onHide">
+    <q-card class="q-dialog-plugin" style="width: 900px; max-width: 90vw">
+      <q-bar>
+        <q-btn @click="getPolicyTree" class="q-mr-sm" dense flat push icon="refresh" />Policy Overview
+        <q-space />
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+      <q-splitter v-model="splitterModel" style="height: 600px">
+        <template v-slot:before>
+          <div class="q-pa-md">
+            <q-tree
+              ref="tree"
+              :nodes="clientSiteTree"
+              node-key="id"
+              selected-color="primary"
+              @update:selected="setSelectedPolicyId(key)"
+              default-expand-all
+            ></q-tree>
+          </div>
+        </template>
 
-      <template v-slot:after>
-        <q-tabs
-          v-model="selectedTab"
-          dense
-          inline-label
-          class="text-grey"
-          active-color="primary"
-          indicator-color="primary"
-          align="left"
-          narrow-indicator
-          no-caps
-        >
-          <q-tab name="checks" icon="fas fa-check-double" label="Checks" />
-          <q-tab name="tasks" icon="fas fa-tasks" label="Tasks" />
-        </q-tabs>
-        <q-tab-panels v-model="selectedTab" animated transition-prev="jump-up" transition-next="jump-up">
-          <q-tab-panel name="checks">
-            <PolicyChecksTab />
-          </q-tab-panel>
-          <q-tab-panel name="tasks">
-            <PolicyAutomatedTasksTab />
-          </q-tab-panel>
-        </q-tab-panels>
-      </template>
-    </q-splitter>
-  </q-card>
+        <template v-slot:after>
+          <q-tabs
+            v-model="selectedTab"
+            dense
+            inline-label
+            class="text-grey"
+            active-color="primary"
+            indicator-color="primary"
+            align="left"
+            narrow-indicator
+            no-caps
+          >
+            <q-tab name="checks" icon="fas fa-check-double" label="Checks" />
+            <q-tab name="tasks" icon="fas fa-tasks" label="Tasks" />
+          </q-tabs>
+          <q-tab-panels v-model="selectedTab" animated transition-prev="jump-up" transition-next="jump-up">
+            <q-tab-panel name="checks">
+              <PolicyChecksTab :selectedPolicy="selectedPolicyId" />
+            </q-tab-panel>
+            <q-tab-panel name="tasks">
+              <PolicyAutomatedTasksTab :selectedPolicy="selectedPolicyId" />
+            </q-tab-panel>
+          </q-tab-panels>
+        </template>
+      </q-splitter>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
-import mixins, { notifyErrorConfig } from "@/mixins/mixins";
+import mixins from "@/mixins/mixins";
 import PolicyChecksTab from "@/components/automation/PolicyChecksTab";
 import PolicyAutomatedTasksTab from "@/components/automation/PolicyAutomatedTasksTab";
 
@@ -65,8 +66,7 @@ export default {
   data() {
     return {
       splitterModel: 25,
-      selected: "",
-      selectedPolicy: {},
+      selectedPolicyId: null,
       selectedTab: "checks",
       clientSiteTree: [],
     };
@@ -74,27 +74,22 @@ export default {
   methods: {
     getPolicyTree() {
       this.$q.loading.show();
-      this.$store
-        .dispatch("automation/loadPolicyTreeData")
+      this.$axios
+        .get("/automation/policies/overview/")
         .then(r => {
           this.processTreeDataFromApi(r.data);
           this.$q.loading.hide();
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.$q.notify(notifyErrorConfig(e.response.data));
+          this.notifyError("Error getting policy tree data");
         });
     },
-    loadPolicyDetails(key) {
-      if (key === undefined || key === null) {
+    setSelectedPolicyId(key) {
+      if (!key) {
         return;
       }
-
-      this.selectedPolicy = this.$refs.tree.getNodeByKey(key);
-
-      this.$store.dispatch("automation/loadPolicyChecks", this.selectedPolicy.id);
-      this.$store.commit("automation/setSelectedPolicy", this.selectedPolicy.id);
-      this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.selectedPolicy.id);
+      this.selectedPolicyId = this.$refs.tree.getNodeByKey(key);
     },
     processTreeDataFromApi(data) {
       /* Structure
@@ -215,6 +210,15 @@ export default {
       }
 
       this.clientSiteTree = result;
+    },
+    show() {
+      this.$refs.dialog.show();
+    },
+    hide() {
+      this.$refs.dialog.hide();
+    },
+    onHide() {
+      this.$emit("hide");
     },
   },
   mounted() {

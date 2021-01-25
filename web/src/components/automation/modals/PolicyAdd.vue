@@ -11,7 +11,7 @@
       <q-form @submit="submit">
         <q-card-section v-if="options.length > 0">
           <q-select
-            v-if="type !== 'agent'"
+            v-if="type === 'client' || type === 'site'"
             class="q-mb-md"
             v-model="selectedServerPolicy"
             :options="options"
@@ -25,7 +25,7 @@
           >
           </q-select>
           <q-select
-            v-if="type !== 'agent'"
+            v-if="type === 'client' || type === 'site'"
             v-model="selectedWorkstationPolicy"
             :options="options"
             outlined
@@ -91,7 +91,7 @@ export default {
   methods: {
     submit() {
       // check if data was changed
-      if (this.type !== "agent") {
+      if (this.type === "client" || this.type === "site") {
         if (
           this.object.workstation_policy === this.selectedWorkstationPolicy &&
           this.object.server_policy === this.selectedServerPolicy
@@ -99,11 +99,13 @@ export default {
           this.hide();
           return;
         }
-      } else {
+      } else if (this.type === "agent") {
         if (this.object.policy === this.selectedAgentPolicy) {
           this.hide();
           return;
         }
+      } else {
+        return;
       }
       this.$q.loading.show();
 
@@ -112,14 +114,13 @@ export default {
         type: this.type,
       };
 
-      if (this.type !== "agent") {
+      if (this.type === "client" || this.type === "site") {
         data.server_policy = this.selectedServerPolicy;
         data.workstation_policy = this.selectedWorkstationPolicy;
-      } else {
+      } else if (this.type === "agent") {
         data.policy = this.selectedAgentPolicy;
       }
 
-      console.log(data);
       this.$axios
         .post(`/automation/related/`, data)
         .then(r => {

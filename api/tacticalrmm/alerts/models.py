@@ -8,6 +8,13 @@ SEVERITY_CHOICES = [
     ("error", "Error"),
 ]
 
+ALERT_TYPE_CHOICES = [
+    ("availability", "Availability"),
+    ("check", "Check"),
+    ("task", "Task"),
+    ("custom", "Custom"),
+]
+
 
 class Alert(models.Model):
     agent = models.ForeignKey(
@@ -31,8 +38,12 @@ class Alert(models.Model):
         null=True,
         blank=True,
     )
+    alert_type = models.CharField(
+        max_length=20, choices=ALERT_TYPE_CHOICES, default="availability"
+    )
     message = models.TextField(null=True, blank=True)
     alert_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    snoozed = models.BooleanField(default=False)
     snooze_until = models.DateTimeField(null=True, blank=True)
     resolved = models.BooleanField(default=False)
     resolved_time = models.DateTimeField(null=True, blank=True)

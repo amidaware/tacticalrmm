@@ -1,5 +1,5 @@
 <template>
-  <div style="width: 60vw; max-width: 90vw">
+  <div style="width: 90vw; max-width: 90vw">
     <q-card>
       <q-bar>
         <q-btn @click="getScripts" class="q-mr-sm" dense flat push icon="refresh" />Script Manager

@@ -311,7 +311,7 @@ export default {
       this.getPolicies();
       this.clearRow();
     },
-    deletePolicy(id) {
+    deletePolicy(policy) {
       this.$q
         .dialog({
           title: "Delete policy?",
@@ -319,12 +319,16 @@ export default {
           ok: { label: "Delete", color: "negative" },
         })
         .onOk(() => {
+          this.$q.loading.show();
           this.$axios
-            .delete(`/automation/policies/${pk}/`)
+            .delete(`/automation/policies/${policy.id}/`)
             .then(r => {
+              this.refresh();
+              this.$q.loading.hide();
               this.notifySuccess("Policy was deleted!");
             })
             .catch(error => {
+              this.$q.loading.hide();
               this.notifyError("An Error occured while deleting policy");
             });
         });
@@ -422,6 +426,7 @@ export default {
       this.$axios
         .put(`/automation/policies/${data.id}/`, data)
         .then(r => {
+          this.refresh();
           this.$q.loading.hide();
           this.notifySuccess(text);
         })

@@ -10,8 +10,8 @@ from .models import Alert, AlertTemplate
 class AlertSerializer(ModelSerializer):
 
     hostname = ReadOnlyField(source="agent.hostname")
-    client = ReadOnlyField(source="agent.client")
-    site = ReadOnlyField(source="agent.site")
+    client = ReadOnlyField(source="agent.client.name")
+    site = ReadOnlyField(source="agent.site.name")
     alert_time = DateTimeField(format="iso-8601")
 
     class Meta:

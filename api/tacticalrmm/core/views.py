@@ -42,6 +42,7 @@ def get_core_settings(request):
 
 @api_view(["PATCH"])
 def edit_settings(request):
+    del request.data["all_timezones"]
     coresettings = CoreSettings.objects.first()
     old_server_policy = coresettings.server_policy
     old_workstation_policy = coresettings.workstation_policy

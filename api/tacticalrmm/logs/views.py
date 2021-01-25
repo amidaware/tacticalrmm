@@ -140,7 +140,7 @@ def cancel_pending_action(request):
 def debug_log(request, mode, hostname, order):
     log_file = settings.LOG_CONFIG["handlers"][0]["sink"]
 
-    agents = Agent.objects.all()
+    agents = Agent.objects.prefetch_related("site").only("pk", "hostname")
     agent_hostnames = AgentHostnameSerializer(agents, many=True)
 
     switch_mode = {

@@ -825,7 +825,7 @@ def bulk(request):
     elif request.data["target"] == "agents":
         q = Agent.objects.filter(pk__in=request.data["agentPKs"])
     elif request.data["target"] == "all":
-        q = Agent.objects.all()
+        q = Agent.objects.only("pk", "monitoring_type")
     else:
         return notify_error("Something went wrong")
 

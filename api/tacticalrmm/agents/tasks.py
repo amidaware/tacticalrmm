@@ -49,7 +49,7 @@ def check_in_task() -> None:
 
 @app.task
 def monitor_agents_task() -> None:
-    q = Agent.objects.all()
+    q = Agent.objects.only("pk", "version", "last_seen", "overdue_time")
     agents: List[int] = [i.pk for i in q if i.has_nats and i.status != "online"]
     for agent in agents:
         _check_agent_service(agent)
@@ -141,7 +141,7 @@ def auto_self_agent_update_task() -> None:
 
 @app.task
 def get_wmi_task():
-    agents = Agent.objects.all()
+    agents = Agent.objects.only("pk", "version", "last_seen", "overdue_time")
     online = [
         i
         for i in agents
@@ -158,7 +158,7 @@ def get_wmi_task():
 
 @app.task
 def sync_sysinfo_task():
-    agents = Agent.objects.all()
+    agents = Agent.objects.only("pk", "version", "last_seen", "overdue_time")
     online = [
         i
         for i in agents
@@ -307,7 +307,7 @@ def remove_salt_task() -> None:
     if hasattr(settings, "KEEP_SALT") and settings.KEEP_SALT:
         return
 
-    q = Agent.objects.all()
+    q = Agent.objects.only("pk", "version")
     agents = [i for i in q if pyver.parse(i.version) >= pyver.parse("1.3.0")]
     chunks = (agents[i : i + 50] for i in range(0, len(agents), 50))
     for chunk in chunks:

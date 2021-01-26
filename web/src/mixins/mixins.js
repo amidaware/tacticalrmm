@@ -1,4 +1,4 @@
-import { Notify } from "quasar";
+import { Notify, date } from "quasar";
 
 export function notifySuccessConfig(msg, timeout = 2000) {
   return {
@@ -94,6 +94,10 @@ export default {
       let formatted = months[dt.getMonth()] + "-" + appendLeadingZeroes(dt.getDate()) + "-" + appendLeadingZeroes(dt.getFullYear()) + " - " + appendLeadingZeroes(dt.getHours()) + ":" + appendLeadingZeroes(dt.getMinutes())
 
       return includeSeconds ? formatted + ":" + appendLeadingZeroes(dt.getSeconds()) : formatted
+    },
+    unixToString(timestamp) {
+      let t = new Date(timestamp * 1000)
+      return date.formatDate(t, 'MMM-D-YYYY - HH:mm')
     },
     formatClientOptions(clients) {
       return clients.map(client => ({ label: client.name, value: client.id, sites: client.sites }))

@@ -317,7 +317,7 @@
               <q-tooltip>Reboot required</q-tooltip>
             </q-icon>
           </q-td>
-          <q-td key="lastseen" :props="props">{{ formatDate(props.row.last_seen) }}</q-td>
+          <q-td key="lastseen" :props="props">{{ unixToString(props.row.last_seen) }}</q-td>
           <q-td key="boottime" :props="props">{{ bootTime(props.row.boot_time) }}</q-td>
         </q-tr>
       </template>
@@ -363,7 +363,7 @@ import axios from "axios";
 import { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import mixins from "@/mixins/mixins";
 import { mapGetters } from "vuex";
-import { openURL } from "quasar";
+import { date } from "quasar";
 import EditAgent from "@/components/modals/agents/EditAgent";
 import RebootLater from "@/components/modals/agents/RebootLater";
 import PendingActions from "@/components/modals/logs/PendingActions";
@@ -440,9 +440,10 @@ export default {
           if (availability === "online" && row.status !== "online") return false;
           else if (availability === "offline" && row.status !== "overdue") return false;
           else if (availability === "expired") {
-            const nowPlus30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-            const unixtime = Date.parse(row.last_seen);
-            if (unixtime > nowPlus30Days) return false;
+            let now = new Date();
+            let lastSeen = new Date(row.last_seen * 1000);
+            let diff = date.getDateDiff(now, lastSeen, "days");
+            if (diff < 30) return false;
           }
         }
 

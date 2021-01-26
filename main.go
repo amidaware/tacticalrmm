@@ -9,7 +9,7 @@ import (
 	"github.com/wh1te909/tacticalrmm/natsapi"
 )
 
-var version = "1.0.1"
+var version = "1.0.2"
 
 func main() {
 	ver := flag.Bool("version", false, "Prints version")
@@ -23,5 +23,5 @@ func main() {
 		return
 	}
 
-	api.Listen(*apiHost, *natsHost, *debug)
+	api.Listen(*apiHost, *natsHost, version, *debug)
 }

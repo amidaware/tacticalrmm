@@ -229,8 +229,8 @@ export default {
             .then(response => {
               this.$q.notify(notifySuccessConfig(`User ${data.username} was deleted!`));
             })
-            .catch(error => {
-              this.$q.notify(notifyErrorConfig(`An Error occured while deleting user ${data.username}`));
+            .catch(e => {
+              this.$q.notify(notifyErrorConfig(e.response.data));
             });
         });
     },
@@ -295,8 +295,8 @@ export default {
             .then(response => {
               this.$q.notify(notifySuccessConfig(response.data, 4000));
             })
-            .catch(error => {
-              this.$q.notify(notifyErrorConfig("An Error occured while resetting key"));
+            .catch(e => {
+              this.$q.notify(notifyErrorConfig(e.response.data));
             });
         });
     },

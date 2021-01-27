@@ -245,6 +245,15 @@ class CheckRunner(APIView):
         return Response(status)
 
 
+class CheckRunnerInterval(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, agentid):
+        agent = get_object_or_404(Agent, agent_id=agentid)
+        return Response({"agent": agent.pk, "check_interval": agent.check_interval})
+
+
 class TaskRunner(APIView):
     """
     For the windows golang agent

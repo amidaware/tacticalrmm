@@ -11,11 +11,15 @@ def generate_agent_checks_from_policies_task(policypk, create_tasks=False):
     policy = Policy.objects.get(pk=policypk)
 
     if policy.is_default_server_policy and policy.is_default_workstation_policy:
-        agents = Agent.objects.all()
+        agents = Agent.objects.prefetch_related("policy").only("pk", "monitoring_type")
     elif policy.is_default_server_policy:
-        agents = Agent.objects.filter(monitoring_type="server")
+        agents = Agent.objects.filter(monitoring_type="server").only(
+            "pk", "monitoring_type"
+        )
     elif policy.is_default_workstation_policy:
-        agents = Agent.objects.filter(monitoring_type="workstation")
+        agents = Agent.objects.filter(monitoring_type="workstation").only(
+            "pk", "monitoring_type"
+        )
     else:
         agents = policy.related_agents()
 
@@ -84,11 +88,15 @@ def generate_agent_tasks_from_policies_task(policypk):
     policy = Policy.objects.get(pk=policypk)
 
     if policy.is_default_server_policy and policy.is_default_workstation_policy:
-        agents = Agent.objects.all()
+        agents = Agent.objects.prefetch_related("policy").only("pk", "monitoring_type")
     elif policy.is_default_server_policy:
-        agents = Agent.objects.filter(monitoring_type="server")
+        agents = Agent.objects.filter(monitoring_type="server").only(
+            "pk", "monitoring_type"
+        )
     elif policy.is_default_workstation_policy:
-        agents = Agent.objects.filter(monitoring_type="workstation")
+        agents = Agent.objects.filter(monitoring_type="workstation").only(
+            "pk", "monitoring_type"
+        )
     else:
         agents = policy.related_agents()
 

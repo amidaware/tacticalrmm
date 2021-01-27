@@ -661,7 +661,7 @@ export default {
       this.poll = setInterval(() => {
         this.$store.dispatch("checkVer");
         this.getAgentCounts();
-        this.getDashInfo();
+        this.getDashInfo(false);
       }, 60 * 5 * 1000);
     },
     setSplitter(val) {

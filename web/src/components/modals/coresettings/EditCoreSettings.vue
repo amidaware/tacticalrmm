@@ -298,7 +298,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 import { mapState } from "vuex";
 import ResetPatchPolicy from "@/components/modals/coresettings/ResetPatchPolicy";
@@ -329,7 +328,7 @@ export default {
   },
   methods: {
     getCoreSettings() {
-      axios.get("/core/getcoresettings/").then(r => {
+      this.$axios.get("/core/getcoresettings/").then(r => {
         this.settings = r.data;
         this.allTimezones = Object.freeze(r.data.all_timezones);
         this.ready = true;
@@ -388,7 +387,8 @@ export default {
     },
     editSettings() {
       this.$q.loading.show();
-      axios
+      delete this.settings.all_timezones;
+      this.$axios
         .patch("/core/editsettings/", this.settings)
         .then(r => {
           this.$q.loading.hide();

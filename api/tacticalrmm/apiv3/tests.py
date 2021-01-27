@@ -75,3 +75,12 @@ class TestAPIv3(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("patch", url)
+
+    def test_checkrunner_interval(self):
+        url = f"/api/v3/{self.agent.agent_id}/checkinterval/"
+        r = self.client.get(url, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(
+            r.json(),
+            {"agent": self.agent.pk, "check_interval": self.agent.check_interval},
+        )

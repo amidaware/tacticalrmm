@@ -16,7 +16,7 @@ class Command(BaseCommand):
         # 10-16-2020 changed the type of the agent's 'disks' model field
         # from a dict of dicts, to a list of disks in the golang agent
         # the following will convert dicts to lists for agent's still on the python agent
-        agents = Agent.objects.all()
+        agents = Agent.objects.only("pk", "disks")
         for agent in agents:
             if agent.disks is not None and isinstance(agent.disks, dict):
                 new = []

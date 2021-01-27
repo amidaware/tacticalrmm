@@ -19,7 +19,7 @@ logger.configure(**settings.LOG_CONFIG)
 def auto_approve_updates_task():
     # scheduled task that checks and approves updates daily
 
-    agents = Agent.objects.all()
+    agents = Agent.objects.only("pk", "version", "last_seen", "overdue_time")
     for agent in agents:
         try:
             agent.approve_updates()
@@ -43,7 +43,7 @@ def auto_approve_updates_task():
 @app.task
 def check_agent_update_schedule_task():
     # scheduled task that installs updates on agents if enabled
-    agents = Agent.objects.all()
+    agents = Agent.objects.only("pk", "version", "last_seen", "overdue_time")
     online = [
         i
         for i in agents

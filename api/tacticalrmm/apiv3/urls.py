@@ -6,6 +6,7 @@ urlpatterns = [
     path("hello/", views.Hello.as_view()),
     path("checkrunner/", views.CheckRunner.as_view()),
     path("<str:agentid>/checkrunner/", views.CheckRunner.as_view()),
+    path("<str:agentid>/checkinterval/", views.CheckRunnerInterval.as_view()),
     path("<int:pk>/<str:agentid>/taskrunner/", views.TaskRunner.as_view()),
     path("<int:pk>/meshinfo/", views.MeshInfo.as_view()),
     path("meshexe/", views.MeshExe.as_view()),

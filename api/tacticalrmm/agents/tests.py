@@ -780,19 +780,20 @@ class TestAgentTasks(TacticalTestCase):
         action = PendingAction.objects.get(agent__pk=agent64_111.pk)
         self.assertEqual(action.action_type, "agentupdate")
         self.assertEqual(action.status, "pending")
-        self.assertEqual(action.details["url"], settings.DL_64)
         self.assertEqual(
-            action.details["inno"], f"winagent-v{settings.LATEST_AGENT_VER}.exe"
+            action.details["url"],
+            "https://github.com/wh1te909/rmmagent/releases/download/v1.3.0/winagent-v1.3.0.exe",
         )
-        self.assertEqual(action.details["version"], settings.LATEST_AGENT_VER)
+        self.assertEqual(action.details["inno"], "winagent-v1.3.0.exe")
+        self.assertEqual(action.details["version"], "1.3.0")
 
-        agent64 = baker.make_recipe(
+        agent_64_130 = baker.make_recipe(
             "agents.agent",
             operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version="1.1.12",
+            version="1.3.0",
         )
         nats_cmd.return_value = "ok"
-        r = agent_update(agent64.pk)
+        r = agent_update(agent_64_130.pk)
         self.assertEqual(r, "created")
         nats_cmd.assert_called_with(
             {
@@ -801,6 +802,26 @@ class TestAgentTasks(TacticalTestCase):
                     "url": settings.DL_64,
                     "version": settings.LATEST_AGENT_VER,
                     "inno": f"winagent-v{settings.LATEST_AGENT_VER}.exe",
+                },
+            },
+            wait=False,
+        )
+
+        agent64_old = baker.make_recipe(
+            "agents.agent",
+            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
+            version="1.2.1",
+        )
+        nats_cmd.return_value = "ok"
+        r = agent_update(agent64_old.pk)
+        self.assertEqual(r, "created")
+        nats_cmd.assert_called_with(
+            {
+                "func": "agentupdate",
+                "payload": {
+                    "url": "https://github.com/wh1te909/rmmagent/releases/download/v1.3.0/winagent-v1.3.0.exe",
+                    "version": "1.3.0",
+                    "inno": "winagent-v1.3.0.exe",
                 },
             },
             wait=False,

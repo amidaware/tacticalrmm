@@ -40,16 +40,15 @@ func getAPI(apihost, natshost string) (string, string, error) {
 	return "", "", errors.New("unable to parse api from nginx conf")
 }
 
-func Listen(apihost, natshost string, debug bool) {
+func Listen(apihost, natshost, version string, debug bool) {
 	api, natsurl, err := getAPI(apihost, natshost)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	if debug {
-		log.Println("Api base url: ", api)
-		log.Println("Nats connection url: ", natsurl)
-	}
+	log.Printf("Tactical Nats API Version %s\n", version)
+	log.Println("Api base url: ", api)
+	log.Println("Nats connection url: ", natsurl)
 
 	rClient.SetHostURL(api)
 	rClient.SetTimeout(30 * time.Second)

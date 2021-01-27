@@ -413,11 +413,15 @@ class UpdatePatchPolicy(APIView):
 
         agents = None
         if "client" in request.data:
-            agents = Agent.objects.filter(site__client_id=request.data["client"])
+            agents = Agent.objects.prefetch_related("winupdatepolicy").filter(
+                site__client_id=request.data["client"]
+            )
         elif "site" in request.data:
-            agents = Agent.objects.filter(site_id=request.data["site"])
+            agents = Agent.objects.prefetch_related("winupdatepolicy").filter(
+                site_id=request.data["site"]
+            )
         else:
-            agents = Agent.objects.all()
+            agents = Agent.objects.prefetch_related("winupdatepolicy").only("pk")
 
         for agent in agents:
             winupdatepolicy = agent.winupdatepolicy.get()

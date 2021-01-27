@@ -62,9 +62,18 @@ def agent_update(pk: int) -> str:
         logger.warning(f"Unable to determine arch on {agent.hostname}. Skipping.")
         return "noarch"
 
-    version = settings.LATEST_AGENT_VER
-    url = agent.winagent_dl
-    inno = agent.win_inno_exe
+    # removed sqlite in 1.4.0 to get rid of cgo dependency
+    # 1.3.0 has migration func to move from sqlite to win registry, so force an upgrade to 1.3.0 if old agent
+    if pyver.parse(agent.version) >= pyver.parse("1.3.0"):
+        version = settings.LATEST_AGENT_VER
+        url = agent.winagent_dl
+        inno = agent.win_inno_exe
+    else:
+        version = "1.3.0"
+        inno = (
+            "winagent-v1.3.0.exe" if agent.arch == "64" else "winagent-v1.3.0-x86.exe"
+        )
+        url = f"https://github.com/wh1te909/rmmagent/releases/download/v1.3.0/{inno}"
 
     if agent.has_nats:
         if pyver.parse(agent.version) <= pyver.parse("1.1.11"):

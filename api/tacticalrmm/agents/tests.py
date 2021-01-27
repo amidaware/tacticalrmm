@@ -780,11 +780,12 @@ class TestAgentTasks(TacticalTestCase):
         action = PendingAction.objects.get(agent__pk=agent64_111.pk)
         self.assertEqual(action.action_type, "agentupdate")
         self.assertEqual(action.status, "pending")
-        self.assertEqual(action.details["url"], settings.DL_64)
         self.assertEqual(
-            action.details["inno"], f"winagent-v{settings.LATEST_AGENT_VER}.exe"
+            action.details["url"],
+            "https://github.com/wh1te909/rmmagent/releases/download/v1.3.0/winagent-v1.3.0.exe",
         )
-        self.assertEqual(action.details["version"], settings.LATEST_AGENT_VER)
+        self.assertEqual(action.details["inno"], "winagent-v1.3.0.exe")
+        self.assertEqual(action.details["version"], "1.3.0")
 
         agent_64_130 = baker.make_recipe(
             "agents.agent",

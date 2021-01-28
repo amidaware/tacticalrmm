@@ -252,6 +252,10 @@ class Check(BaseAuditModel):
         CheckHistory.objects.create(check_history=self, y=value, results=more_info)
 
     def handle_checkv2(self, data):
+
+        # alert severity placeholder
+        alert_severity = None
+
         # cpuload or mem checks
         if self.check_type == "cpuload" or self.check_type == "memory":
 
@@ -266,11 +270,13 @@ class Check(BaseAuditModel):
 
             if self.warning_threshold and avg > self.warning_threshold:
                 self.status = "failing"
+                alert_severity = "warning"
             else:
                 self.status = "passing"
 
             if self.error_threshold and avg > self.error_threshold:
                 self.status = "failing"
+                alert_severity = "error"
             else:
                 self.status = "passing"
 
@@ -289,11 +295,13 @@ class Check(BaseAuditModel):
                     and (100 - percent_used) < self.warning_threshold
                 ):
                     self.status = "failing"
+                    alert_severity = "warning"
                 else:
                     self.status = "passing"
 
                 if self.error_threshold and (100 - percent_used) < self.error_threshold:
                     self.status = "failing"
+                    alert_severity = "error"
                 else:
                     self.status = "passing"
 
@@ -319,8 +327,17 @@ class Check(BaseAuditModel):
                 # golang agent
                 self.execution_time = "{:.4f}".format(data["runtime"])
 
-            if data["retcode"] != 0:
+            # check for informational ret codes
+            if data["retcode"] in self.info_return_codes:
+                self.status = "passing"
+                alert_severity = "info"
+
+            elif data["retcode"] in self.warning_return_codes:
                 self.status = "failing"
+                alert_severity = "warning"
+            elif data["retcode"] != 0:
+                self.status = "failing"
+                alert_severity = "error"
             else:
                 self.status = "passing"
 
@@ -364,6 +381,8 @@ class Check(BaseAuditModel):
                 1 if self.status == "failing" else 0, self.more_info[:60]
             )
 
+            alert_severity = self.alert_severity
+
         # windows service checks
         elif self.check_type == "winsvc":
             svc_stat = data["status"]
@@ -406,6 +425,8 @@ class Check(BaseAuditModel):
             self.add_check_history(
                 1 if self.status == "failing" else 0, self.more_info[:60]
             )
+
+            alert_severity = self.alert_severity
 
         elif self.check_type == "eventlog":
             log = []
@@ -471,19 +492,35 @@ class Check(BaseAuditModel):
                 "Events Found:" + str(len(self.extra_details["log"])),
             )
 
+            alert_severity = self.alert_severity
+
         # handle status
         if self.status == "failing":
             self.fail_count += 1
             self.save(update_fields=["status", "fail_count"])
 
         elif self.status == "passing":
+            from alerts.models import Alert
+
             if self.fail_count != 0:
                 self.fail_count = 0
                 self.save(update_fields=["status", "fail_count"])
             else:
                 self.save(update_fields=["status"])
 
+            # resolve alert if it exists
+            if Alert.objects.filter(check=self, resolved=False).exists():
+                alert = Alert.objects.get(check=self, resolved=False)
+                alert.resolve()
+
+                # TODO: send email on resolved if enabled
+
         if self.fail_count >= self.fails_b4_alert:
+            from alerts.models import Alert
+
+            # create alert in dashboard
+            Alert.create_check_alert(self, alert_severity)
+
             if self.email_alert:
                 handle_check_email_alert_task.delay(self.pk)
             if self.text_alert:
@@ -536,6 +573,8 @@ class Check(BaseAuditModel):
             script=self.script,
             script_args=self.script_args,
             timeout=self.timeout,
+            info_return_codes=self.info_return_codes,
+            warning_return_codes=self.warning_return_codes,
             svc_name=self.svc_name,
             svc_display_name=self.svc_display_name,
             pass_if_start_pending=self.pass_if_start_pending,

@@ -55,6 +55,15 @@
           />
         </q-card-section>
         <q-card-section>
+          <q-select
+            dense
+            label="Alert Severity"
+            outlined
+            v-model="autotask.alert_severity"
+            :options="severityOptions"
+          />
+        </q-card-section>
+        <q-card-section>
           <q-input
             :rules="[val => !!val || '*Required']"
             outlined
@@ -171,6 +180,13 @@ export default {
         remove_if_not_scheduled: false,
         task_type: "scheduled",
         timeout: 120,
+        alert_severity: null,
+        severityOptions: [
+          { label: "", value: null },
+          { label: "Informational", value: "info" },
+          { label: "Warning", value: "warning" },
+          { label: "Error", value: "error" },
+        ],
       },
       dayOptions: [
         { label: "Monday", value: "Monday" },

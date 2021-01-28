@@ -48,15 +48,34 @@
         />
       </q-card-section>
       <q-card-section>
-        <q-input
-          outlined
+        <q-select
           dense
-          v-model.number="scriptcheck.info_return_codes"
-          label="Informational alert return codes"
+          label="Informational return codes (press Enter after typing each argument)"
+          filled
+          v-model="scriptcheck.info_return_codes"
+          use-input
+          use-chips
+          multiple
+          hide-dropdown-icon
+          input-debounce="0"
+          new-value-mode="add-unique"
+          @new-value="validateRetcode"
         />
       </q-card-section>
       <q-card-section>
-        <q-input outlined dense v-model.number="scriptcheck.warning_return_codes" label="Warning alert return codes" />
+        <q-select
+          dense
+          label="Warning return codes (press Enter after typing each argument)"
+          filled
+          v-model="scriptcheck.warning_return_codes"
+          use-input
+          use-chips
+          multiple
+          hide-dropdown-icon
+          input-debounce="0"
+          new-value-mode="add-unique"
+          @new-value="validateRetcode"
+        />
       </q-card-section>
       <q-card-section>
         <q-input outlined dense v-model.number="scriptcheck.timeout" label="Timeout (seconds)" />
@@ -99,8 +118,8 @@ export default {
         script_args: [],
         timeout: 120,
         fails_b4_alert: 1,
-        info_return_codes: "",
-        warning_return_codes: "",
+        info_return_codes: [],
+        warning_return_codes: [],
       },
       scriptOptions: [],
       failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
@@ -149,6 +168,9 @@ export default {
       if (this.agentpk) {
         this.$store.dispatch("loadChecks", this.agentpk);
       }
+    },
+    validateRetcode(val, done) {
+      /^\d+$/.test(val) ? done(val) : done();
     },
   },
   created() {

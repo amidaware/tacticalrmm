@@ -89,6 +89,7 @@ export default {
       return email.test(val);
     },
     formatDate(date, includeSeconds = false) {
+      if (!date) return
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       let dt = new Date(date)
       let formatted = months[dt.getMonth()] + "-" + appendLeadingZeroes(dt.getDate()) + "-" + appendLeadingZeroes(dt.getFullYear()) + " - " + appendLeadingZeroes(dt.getHours()) + ":" + appendLeadingZeroes(dt.getMinutes())

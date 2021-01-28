@@ -1,6 +1,6 @@
 <template>
   <q-btn dense flat icon="notifications">
-    <q-badge v-if="alertsCount > 0" color="red" floating transparent>{{ alertsCountText() }}</q-badge>
+    <q-badge v-if="alertsCount > 0" :color="badgeColor" floating transparent>{{ alertsCountText() }}</q-badge>
     <q-menu>
       <q-list separator>
         <q-item v-if="alertsCount === 0">No New Alerts</q-item>
@@ -16,16 +16,16 @@
           <q-item-section side top>
             <q-item-label caption>{{ alertTime(alert.alert_time) }}</q-item-label>
             <q-item-label>
-              <q-icon name="snooze" size="xs" class="cursor-pointer">
-                <q-tooltip>Snooze the alert for 24 hours</q-tooltip>
+              <q-icon name="snooze" size="xs" class="cursor-pointer" @click="snoozeAlert(alert)" v-close-popup>
+                <q-tooltip>Snooze alert</q-tooltip>
               </q-icon>
-              <q-icon name="alarm_off" size="xs" class="cursor-pointer">
-                <q-tooltip>Dismiss alert</q-tooltip>
+              <q-icon name="flag" size="xs" class="cursor-pointer" @click="resolveAlert(alert)" v-close-popup>
+                <q-tooltip>Resolve alert</q-tooltip>
               </q-icon>
             </q-item-label>
           </q-item-section>
         </q-item>
-        <q-item clickable @click="showOverview">View All Alerts ({{ alertsCount }})</q-item>
+        <q-item clickable v-close-popup @click="showOverview">View All Alerts ({{ alertsCount }})</q-item>
       </q-list>
     </q-menu>
   </q-btn>
@@ -42,7 +42,19 @@ export default {
     return {
       alertsCount: 0,
       topAlerts: [],
+      errorColor: "red",
+      warningColor: "orange",
+      infoColor: "blue",
     };
+  },
+  computed: {
+    badgeColor() {
+      const severities = this.topAlerts.map(alert => alert.severity);
+
+      if (severities.includes("error")) return this.errorColor;
+      else if (severities.includes("warning")) return this.warningColor;
+      else return this.infoColor;
+    },
   },
   methods: {
     getAlerts() {
@@ -54,35 +66,94 @@ export default {
           this.topAlerts = r.data.alerts;
           this.$q.loading.hide();
         })
-        .catch(error => {
+        .catch(e => {
           this.$q.loading.hide();
           this.notifyError("Unable to get alerts");
         });
     },
     showOverview() {
-      this.$q.dialog({
-        component: AlertsOverview,
-        parent: this,
-      });
+      this.$q
+        .dialog({
+          component: AlertsOverview,
+          parent: this,
+        })
+        .onDismiss(() => {
+          this.getAlerts();
+        });
     },
-    alertIconColor(type) {
-      if (type === "error") {
-        return "red";
-      }
-      if (type === "warning") {
-        return "orange";
-      }
+    snoozeAlert(alert) {
+      this.$q
+        .dialog({
+          title: "Snooze Alert",
+          message: "How many days to snooze alert?",
+          prompt: {
+            model: "",
+            type: "number",
+            isValid: val => !!val && val > 0 && val < 9999,
+          },
+          cancel: true,
+        })
+        .onOk(days => {
+          this.$q.loading.show();
+
+          const data = {
+            id: alert.id,
+            type: "snooze",
+            snooze_days: days,
+          };
+
+          this.$axios
+            .put(`alerts/alerts/${alert.id}/`, data)
+            .then(r => {
+              this.getAlerts();
+              this.$q.loading.hide();
+              this.notifySuccess(`The alert has been snoozed for ${days} days`);
+            })
+            .catch(e => {
+              this.$q.loading.hide();
+              this.notifyError("There was an issue snoozing alert");
+            });
+        });
+    },
+    resolveAlert(alert) {
+      this.$q.loading.show();
+
+      const data = {
+        id: alert.id,
+        type: "resolve",
+      };
+
+      this.$axios
+        .put(`alerts/alerts/${alert.id}/`, data)
+        .then(r => {
+          this.getAlerts();
+          this.$q.loading.hide();
+          this.notifySuccess("The alert has been resolved");
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          console.log({ e });
+          this.notifyError("There was an issue resolving alert");
+        });
+    },
+    alertIconColor(severity) {
+      if (severity === "error") return this.errorColor;
+      else if (severity === "warning") return this.warningColor;
+      else return this.infoColor;
     },
     alertsCountText() {
-      if (this.alertsCount > 99) {
-        return "99+";
-      } else {
-        return this.alertsCount;
-      }
+      if (this.alertsCount > 99) return "99+";
+      else return this.alertsCount;
+    },
+    pollAlerts() {
+      setInterval(() => {
+        this.getAlerts();
+      }, 60 * 1 * 1000);
     },
   },
   mounted() {
     this.getAlerts();
+    this.pollAlerts();
   },
 };
 </script>

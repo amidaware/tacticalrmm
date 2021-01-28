@@ -150,12 +150,17 @@ def agent_outages_task():
     for agent in agents:
         if agent.overdue_email_alert or agent.overdue_text_alert:
             if agent.status == "overdue":
+                from alerts.models import Alert
+
                 outages = AgentOutage.objects.filter(agent=agent)
                 if outages and outages.last().is_active:
                     continue
 
                 outage = AgentOutage(agent=agent)
                 outage.save()
+
+                # create dashboard alert
+                Alert.create_availability_alert(agent)
 
                 # add a null check history to allow gaps in graph
                 for check in agent.agentchecks.all():

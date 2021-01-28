@@ -46,7 +46,7 @@
           <q-checkbox outlined dense v-model="includeSnoozed" label="Include snoozed" />
           <q-checkbox outlined dense v-model="includeResolved" label="Include resolved" />
         </div>
-        <div class="q-pa-sm col-1">
+        <div class="q-pa-sm col-2">
           <q-btn color="primary" label="Search" @click="search" />
         </div>
       </div>
@@ -70,19 +70,19 @@
           dense
           virtual-scroll
         >
-          <template v-slot:top="props">
-            <div class="col-2 q-table__title">Treats</div>
+          <template v-slot:top>
+            <div class="col-2 q-table__title">Alerts</div>
 
-            <q-btn-dropdown label="Bulk Actions" v-if="props.selected > 0">
+            <q-btn-dropdown label="Bulk Actions" :disable="selectedAlerts.length === 0">
               <q-list dense>
-                <q-item clickable v-close-popup @click="snoozeAlert(props.selected)">
+                <q-item clickable v-close-popup @click="snoozeAlertBulk(selectedAlerts)">
                   <q-item-section>
                     <q-item-label>Snooze alerts</q-item-label>
                   </q-item-section>
                 </q-item>
-                <q-item clickable v-close-popup @click="resolveAlert(props.selected)">
+                <q-item clickable v-close-popup @click="resolveAlertBulk(selectedAlerts)">
                   <q-item-section>
-                    <q-item-label>Resolve alert</q-item-label>
+                    <q-item-label>Resolve alerts</q-item-label>
                   </q-item-section>
                 </q-item>
               </q-list>
@@ -91,12 +91,23 @@
 
           <template v-slot:body-cell-actions="props">
             <q-td :props="props">
-              <q-icon name="snooze" size="sm" class="cursor-pointer" @click="snoozeAlert(props.row)">
-                <q-tooltip>Snooze alert</q-tooltip>
-              </q-icon>
-              <q-icon name="alarm_off" size="sm" class="cursor-pointer" @click="resolveAlert(props.row)">
-                <q-tooltip>Dismiss alert</q-tooltip>
-              </q-icon>
+              <div v-if="!props.row.resolved">
+                <q-icon
+                  v-if="!props.row.snoozed"
+                  name="snooze"
+                  size="sm"
+                  class="cursor-pointer"
+                  @click="snoozeAlert(props.row)"
+                >
+                  <q-tooltip>Snooze alert</q-tooltip>
+                </q-icon>
+                <q-icon v-else name="alarm_off" size="sm" class="cursor-pointer" @click="unsnoozeAlert(props.row)">
+                  <q-tooltip>Unsnooze alert</q-tooltip>
+                </q-icon>
+                <q-icon name="flag" size="sm" class="cursor-pointer" @click="resolveAlert(props.row)">
+                  <q-tooltip>Resolve alert</q-tooltip>
+                </q-icon>
+              </div>
             </q-td>
           </template>
 
@@ -143,7 +154,14 @@ export default {
         { value: 0, label: "Everything" },
       ],
       columns: [
-        { name: "alert_time", label: "Time", field: "alert_time", align: "left", sortable: true },
+        {
+          name: "alert_time",
+          label: "Time",
+          field: "alert_time",
+          align: "left",
+          sortable: true,
+          format: a => this.formatDate(a),
+        },
         { name: "hostname", label: "Agent", field: "hostname", align: "left", sortable: true },
         {
           name: "alert_type",
@@ -151,12 +169,26 @@ export default {
           field: "alert_type",
           align: "left",
           sortable: true,
-          format: a => this.capitalize(a),
+          format: a => this.capitalize(a, true),
         },
         { name: "severity", label: "Severity", field: "severity", align: "left", sortable: true },
         { name: "message", label: "Message", field: "message", align: "left", sortable: true },
-        { name: "resolved_on", label: "Resolved On", field: "resolved_on", align: "left", sortable: true },
-        { name: "snooze_until", label: "Snoozed Until", field: "snoozed_until", align: "left", sortable: true },
+        {
+          name: "resolved_on",
+          label: "Resolved On",
+          field: "resolved_on",
+          align: "left",
+          sortable: true,
+          format: a => this.formatDate(a, true),
+        },
+        {
+          name: "snooze_until",
+          label: "Snoozed Until",
+          field: "snooze_until",
+          align: "left",
+          sortable: true,
+          format: a => this.formatDate(a, true),
+        },
         { name: "actions", label: "Actions", align: "left" },
       ],
       pagination: {
@@ -183,20 +215,6 @@ export default {
     },
   },
   methods: {
-    getAlerts() {
-      this.$q.loading.show();
-
-      this.$axios
-        .get("alerts/alerts/")
-        .then(r => {
-          this.alerts = r.data;
-          this.$q.loading.hide();
-        })
-        .catch(error => {
-          this.$q.loading.hide();
-          this.notifyError("There was an issue getting alerts");
-        });
-    },
     getClients() {
       this.$axios.get("/clients/clients/").then(r => {
         this.clientsOptions = Object.freeze(r.data.map(client => ({ label: client.name, value: client.id })));
@@ -220,6 +238,7 @@ export default {
         .patch("/alerts/alerts/", data)
         .then(r => {
           this.$q.loading.hide();
+          console.log(r.data);
           this.alerts = Object.freeze(r.data);
         })
         .catch(e => {
@@ -228,11 +247,45 @@ export default {
         });
     },
     snoozeAlert(alert) {
+      this.$q
+        .dialog({
+          title: "Snooze Alert",
+          message: "How many days to snooze alert?",
+          prompt: {
+            model: "",
+            type: "number",
+            isValid: val => !!val && val > 0 && val < 9999,
+          },
+          cancel: true,
+        })
+        .onOk(days => {
+          this.$q.loading.show();
+
+          const data = {
+            id: alert.id,
+            type: "snooze",
+            snooze_days: days,
+          };
+
+          this.$axios
+            .put(`alerts/alerts/${alert.id}/`, data)
+            .then(r => {
+              this.search();
+              this.$q.loading.hide();
+              this.notifySuccess(`The alert has been snoozed for ${days} days`);
+            })
+            .catch(e => {
+              this.$q.loading.hide();
+              this.notifyError("There was an issue snoozing alert");
+            });
+        });
+    },
+    unsnoozeAlert(alert) {
       this.$q.loading.show();
 
       const data = {
         id: alert.id,
-        snoozed: true,
+        type: "unsnooze",
       };
 
       this.$axios
@@ -240,11 +293,11 @@ export default {
         .then(r => {
           this.search();
           this.$q.loading.hide();
-          this.notifySuccess("The alert has been snoozed for 48 hours");
+          this.notifySuccess(`The alert has been unsnoozed`);
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("There was an issue snoozing alert");
+          this.notifyError("There was an issue unsnoozing the alert");
         });
     },
     resolveAlert(alert) {
@@ -252,7 +305,7 @@ export default {
 
       const data = {
         id: alert.id,
-        resolved: true,
+        type: "resolve",
       };
 
       this.$axios
@@ -260,22 +313,24 @@ export default {
         .then(r => {
           this.search();
           this.$q.loading.hide();
-          this.notifySuccess("The alert has been snoozed for 48 hours");
+          this.notifySuccess("The alert has been resolved");
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("There was an issue snoozing alert");
+          this.notifyError("There was an issue resolving alert");
         });
     },
+    resolveAlertBulk(alerts) {},
+    snoozeAlertBulk(alerts) {},
     alertColor(severity) {
       if (severity === "error") {
-        return "red";
+        return "negative";
       }
       if (severity === "warning") {
-        return "orange";
+        return "warning";
       }
       if (severity === "info") {
-        return "blue";
+        return "info";
       }
     },
     show() {

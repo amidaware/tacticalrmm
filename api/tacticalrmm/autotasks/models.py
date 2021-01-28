@@ -9,6 +9,8 @@ from django.db.models.fields import DateTimeField
 from logs.models import BaseAuditModel
 from tacticalrmm.utils import bitdays_to_string
 
+from alerts.models import SEVERITY_CHOICES
+
 RUN_TIME_DAY_CHOICES = [
     (0, "Monday"),
     (1, "Tuesday"),
@@ -96,6 +98,13 @@ class AutomatedTask(BaseAuditModel):
     sync_status = models.CharField(
         max_length=100, choices=SYNC_STATUS_CHOICES, default="notsynced"
     )
+    alert_severity = models.CharField(
+        max_length=30, choices=SEVERITY_CHOICES, default="None", null=True, blank=True
+    )
+    email_alert = models.BooleanField(default=False)
+    text_alert = models.BooleanField(default=False)
+    email_sent = models.DateTimeField(null=True, blank=True)
+    text_sent = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.name

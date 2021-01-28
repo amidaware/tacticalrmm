@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
-from django.db.models.fields import BooleanField
+from django.db.models.fields import BooleanField, PositiveIntegerField
+from django.utils import timezone as djangotime
 
 SEVERITY_CHOICES = [
     ("info", "Informational"),
@@ -46,25 +47,52 @@ class Alert(models.Model):
     snoozed = models.BooleanField(default=False)
     snooze_until = models.DateTimeField(null=True, blank=True)
     resolved = models.BooleanField(default=False)
-    resolved_time = models.DateTimeField(null=True, blank=True)
-    severity = models.CharField(
-        max_length=100, choices=SEVERITY_CHOICES, default="info"
-    )
+    resolved_on = models.DateTimeField(null=True, blank=True)
+    severity = models.CharField(max_length=30, choices=SEVERITY_CHOICES, default="info")
 
     def __str__(self):
         return self.message
 
-    @classmethod
-    def create_availability_alert(cls, agent):
-        pass
+    def resolve(self):
+        self.resolved = True
+        self.resolved_on = djangotime.now()
+        self.snoozed = False
+        self.snoozed_until = None
+        self.save()
 
     @classmethod
-    def create_check_alert(cls, check):
-        pass
+    def create_availability_alert(cls, agent, severity="error") -> None:
+        if not cls.objects.filter(agent=agent, resolved=False).exists():
+            cls.objects.create(
+                agent=agent,
+                alert_type="availability",
+                severity=severity,
+                message=f"{agent.hostname} in {agent.client.name}\{agent.site.name} is Offline.",
+            )
 
     @classmethod
-    def create_task_alert(cls, task):
-        pass
+    def create_check_alert(cls, check, severity="error") -> None:
+
+        if not cls.objects.filter(assigned_check=check, resolved=False).exists():
+            cls.objects.create(
+                assigned_check=check,
+                agent=check.agent,
+                alert_type="check",
+                severity=severity,
+                message=f"{check.agent.hostname} has {check.check_type} check that failed.",
+            )
+
+    @classmethod
+    def create_task_alert(cls, task, severity="error") -> None:
+
+        if not cls.objects.filter(assigned_task=task, resolved=False).exists():
+            cls.objects.create(
+                assigned_task=task,
+                agent=task.agent,
+                alert_type="task",
+                severity=severity,
+                message=f"{task.agent.hostname} has task that failed.",
+            )
 
     @classmethod
     def create_custom_alert(cls, custom):
@@ -74,13 +102,6 @@ class Alert(models.Model):
 class AlertTemplate(models.Model):
     name = models.CharField(max_length=100)
     is_active = models.BooleanField(default=True)
-    actions = models.ManyToManyField(
-        "scripts.Script", related_name="alert_templates", blank=True
-    )
-
-    # ignores setting on agent
-    always_email = models.BooleanField(default=False)
-    always_text = models.BooleanField(default=False)
 
     # overrides the global recipients
     email_recipients = ArrayField(
@@ -99,26 +120,61 @@ class AlertTemplate(models.Model):
     # overrides the from address
     email_from = models.EmailField(blank=True, null=True)
 
-    # will only email/text on a specific severity
-    email_alert_severity = ArrayField(
-        models.CharField(
-            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
-        ),
-        null=True,
-        blank=True,
-        default=list,
-    )
-    text_alert_severity = ArrayField(
-        models.CharField(
-            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
-        ),
-        null=True,
-        blank=True,
-        default=list,
-    )
+    # agent alert settings
+    agent_email_on_resolved = BooleanField(null=True, blank=True, default=False)
+    agent_text_on_resolved = BooleanField(null=True, blank=True, default=False)
+    agent_include_desktops = BooleanField(null=True, blank=True, default=False)
+    agent_always_email = BooleanField(null=True, blank=True, default=False)
+    agent_always_text = BooleanField(null=True, blank=True, default=False)
+    agent_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
 
-    email_on_resolved = BooleanField(default=False)
-    text_on_resolved = BooleanField(default=False)
+    # check alert settings
+    check_email_alert_severity = ArrayField(
+        models.CharField(
+            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
+        ),
+        null=True,
+        blank=True,
+        default=list,
+    )
+    check_text_alert_severity = ArrayField(
+        models.CharField(
+            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
+        ),
+        null=True,
+        blank=True,
+        default=list,
+    )
+    check_email_on_resolved = BooleanField(null=True, blank=True, default=False)
+    check_text_on_resolved = BooleanField(null=True, blank=True, default=False)
+    check_include_desktops = BooleanField(null=True, blank=True, default=False)
+    check_always_email = BooleanField(null=True, blank=True, default=False)
+    check_always_text = BooleanField(null=True, blank=True, default=False)
+    check_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
+
+    # task alert settings
+    task_email_alert_severity = ArrayField(
+        models.CharField(
+            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
+        ),
+        null=True,
+        blank=True,
+        default=list,
+    )
+    task_text_alert_severity = ArrayField(
+        models.CharField(
+            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
+        ),
+        null=True,
+        blank=True,
+        default=list,
+    )
+    task_email_on_resolved = BooleanField(null=True, blank=True, default=False)
+    task_text_on_resolved = BooleanField(null=True, blank=True, default=False)
+    task_include_desktops = BooleanField(null=True, blank=True, default=False)
+    task_always_email = BooleanField(null=True, blank=True, default=False)
+    task_always_text = BooleanField(null=True, blank=True, default=False)
+    task_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
 
     def __str__(self):
         return self.name
@@ -131,9 +187,6 @@ class AlertExclusion(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-    )
-    policies = models.ManyToManyField(
-        "automation.Policy", related_name="alert_exclusions"
     )
     sites = models.ManyToManyField(
         "clients.Site",

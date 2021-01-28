@@ -3,6 +3,7 @@ from django.db.models import Q
 from datetime import datetime as dt
 from django.utils import timezone as djangotime
 
+from tacticalrmm.utils import notify_error
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
@@ -16,10 +17,10 @@ class GetAddAlerts(APIView):
 
         # top 10 alerts for dashboard icon
         if "top" in request.data.keys():
-            alerts = Alert.objects.filter(resolved=False, snooze_until=None).order_by(
+            alerts = Alert.objects.filter(resolved=False, snoozed=False).order_by(
                 "alert_time"
             )[: int(request.data["top"])]
-            count = Alert.objects.filter(resolved=False).count()
+            count = Alert.objects.filter(resolved=False, snoozed=False).count()
             return Response(
                 {
                     "alerts_count": count,
@@ -109,7 +110,40 @@ class GetUpdateDeleteAlert(APIView):
     def put(self, request, pk):
         alert = get_object_or_404(Alert, pk=pk)
 
-        serializer = AlertSerializer(instance=alert, data=request.data, partial=True)
+        data = request.data
+
+        if "type" in request.data.keys():
+            if data["type"] == "resolve":
+                data = {
+                    "resolved": True,
+                    "resolved_on": djangotime.now(),
+                    "snoozed": False,
+                }
+
+                # unable to set snooze_until to none in serialzier
+                alert.snooze_until = None
+                alert.save()
+            elif data["type"] == "snooze":
+                if "snooze_days" in data.keys():
+                    data = {
+                        "snoozed": True,
+                        "snooze_until": (
+                            djangotime.now()
+                            + djangotime.timedelta(days=int(data["snooze_days"]))
+                        ),
+                    }
+                else:
+                    notify_error("Missing 'snoozed_days' when trying to snooze alert")
+            elif data["type"] == "unsnooze":
+                data = {"snoozed": False}
+
+                # unable to set snooze_until to none in serialzier
+                alert.snooze_until = None
+                alert.save()
+            else:
+                notify_error("There was an error in the request data")
+
+        serializer = AlertSerializer(instance=alert, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 

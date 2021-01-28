@@ -19,6 +19,8 @@
           outlined
           dense
           options-dense
+          emit-value
+          map-options
           v-model="pingcheck.alert_severity"
           :options="severityOptions"
           label="Alert Severity"

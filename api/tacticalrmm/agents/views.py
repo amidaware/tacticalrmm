@@ -473,7 +473,7 @@ def install_agent(request):
             f"GOARCH={goarch}",
             go_bin,
             "build",
-            f"-ldflags=\"-X 'main.Inno={inno}'",
+            f"-ldflags=\"-s -w -X 'main.Inno={inno}'",
             f"-X 'main.Api={api}'",
             f"-X 'main.Client={client_id}'",
             f"-X 'main.Site={site_id}'",

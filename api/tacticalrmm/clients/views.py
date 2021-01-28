@@ -223,7 +223,7 @@ class GenerateAgent(APIView):
             f"GOARCH={goarch}",
             go_bin,
             "build",
-            f"-ldflags=\"-X 'main.Inno={inno}'",
+            f"-ldflags=\"-s -w -X 'main.Inno={inno}'",
             f"-X 'main.Api={api}'",
             f"-X 'main.Client={d.client.pk}'",
             f"-X 'main.Site={d.site.pk}'",

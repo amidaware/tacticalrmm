@@ -445,42 +445,6 @@ class Check(BaseAuditModel):
 
         return self.status
 
-    def handle_check(self, data):
-        if self.check_type != "cpuload" and self.check_type != "memory":
-
-            if data["status"] == "passing" and self.fail_count != 0:
-                self.fail_count = 0
-                self.save(update_fields=["fail_count"])
-
-            elif data["status"] == "failing":
-                self.fail_count += 1
-                self.save(update_fields=["fail_count"])
-
-        else:
-            self.history.append(data["percent"])
-
-            if len(self.history) > 15:
-                self.history = self.history[-15:]
-
-            self.save(update_fields=["history"])
-
-            avg = int(mean(self.history))
-
-            if avg > self.threshold:
-                self.status = "failing"
-                self.fail_count += 1
-                self.save(update_fields=["status", "fail_count"])
-            else:
-                self.status = "passing"
-                if self.fail_count != 0:
-                    self.fail_count = 0
-                    self.save(update_fields=["status", "fail_count"])
-                else:
-                    self.save(update_fields=["status"])
-
-        if self.email_alert and self.fail_count >= self.fails_b4_alert:
-            handle_check_email_alert_task.delay(self.pk)
-
     @staticmethod
     def serialize(check):
         # serializes the check and returns json

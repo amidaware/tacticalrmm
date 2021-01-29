@@ -21,7 +21,7 @@ from autotasks.models import AutomatedTask
 from accounts.models import User
 from winupdate.models import WinUpdatePolicy
 from software.models import InstalledSoftware
-from checks.serializers import CheckRunnerGetSerializerV3
+from checks.serializers import CheckRunnerGetSerializer
 from agents.serializers import WinAgentSerializer
 from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
 from winupdate.serializers import ApprovedUpdateSerializer
@@ -232,7 +232,7 @@ class CheckRunner(APIView):
         ret = {
             "agent": agent.pk,
             "check_interval": agent.check_interval,
-            "checks": CheckRunnerGetSerializerV3(checks, many=True).data,
+            "checks": CheckRunnerGetSerializer(checks, many=True).data,
         }
         return Response(ret)
 

@@ -224,6 +224,8 @@ class TestCheckViews(TacticalTestCase):
         nats_cmd.assert_called_with({"func": "runchecks"}, timeout=15)
         self.assertEqual(r.json(), "Unable to contact the agent")
 
+        self.check_not_authenticated("get", url)
+
     def test_get_check_history(self):
         # setup data
         agent = baker.make_recipe("agents.agent")

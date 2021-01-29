@@ -644,14 +644,14 @@ export default {
       this.$store.dispatch("loadNotes", pk);
     },
     overdueAlert(category, pk, alert_action) {
+      const db_field = category === "email" ? "overdue_email_alert" : "overdue_text_alert";
       const action = alert_action ? "enabled" : "disabled";
       const data = {
         pk: pk,
-        alertType: category,
-        action: action,
+        [db_field]: alert_action,
       };
       const alertColor = alert_action ? "positive" : "warning";
-      axios
+      this.$axios
         .post("/agents/overdueaction/", data)
         .then(r => {
           this.$q.notify({
@@ -660,7 +660,7 @@ export default {
             message: `Overdue ${category} alerts ${action} on ${r.data}`,
           });
         })
-        .catch(e => this.notifyError(e.response.data.error));
+        .catch(() => this.notifyError("Something went wrong"));
     },
     agentClass(status) {
       if (status === "offline") {

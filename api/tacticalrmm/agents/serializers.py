@@ -34,6 +34,12 @@ class AgentSerializer(serializers.ModelSerializer):
         ]
 
 
+class AgentOverdueActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Agent
+        fields = ["pk", "overdue_email_alert", "overdue_text_alert"]
+
+
 class AgentTableSerializer(serializers.ModelSerializer):
     patches_pending = serializers.ReadOnlyField(source="has_patches_pending")
     pending_actions = serializers.SerializerMethodField()

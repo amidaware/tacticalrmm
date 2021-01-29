@@ -176,6 +176,7 @@ class NatsWinUpdates(APIView):
             asyncio.run(agent.nats_cmd({"func": "rebootnow"}, wait=False))
             logger.info(f"{agent.hostname} is rebooting after updates were installed.")
 
+        agent.delete_superseded_updates()
         return Response("ok")
 
     def patch(self, request):
@@ -199,6 +200,7 @@ class NatsWinUpdates(APIView):
             u.result = "failed"
             u.save(update_fields=["result"])
 
+        agent.delete_superseded_updates()
         return Response("ok")
 
     def post(self, request):
@@ -233,4 +235,5 @@ class NatsWinUpdates(APIView):
                     revision_number=update["revision_number"],
                 ).save()
 
+        agent.delete_superseded_updates()
         return Response("ok")

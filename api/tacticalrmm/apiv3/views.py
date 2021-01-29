@@ -332,6 +332,7 @@ class WinUpdater(APIView):
             update.installed = True
             update.save(update_fields=["result", "downloaded", "installed"])
 
+        agent.delete_superseded_updates()
         return Response("ok")
 
     # agent calls this after it's finished installing all patches
@@ -357,6 +358,7 @@ class WinUpdater(APIView):
                     f"{agent.hostname} is rebooting after updates were installed."
                 )
 
+        agent.delete_superseded_updates()
         return Response("ok")
 
 

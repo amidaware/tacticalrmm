@@ -195,14 +195,20 @@ class TestScriptViews(TacticalTestCase):
             info = json.load(f)
 
         for script in info:
-            self.assertTrue(
-                os.path.exists(os.path.join(scripts_dir, script["filename"]))
-            )
+            fn: str = script["filename"]
+            self.assertTrue(os.path.exists(os.path.join(scripts_dir, fn)))
             self.assertTrue(script["filename"])
             self.assertTrue(script["name"])
             self.assertTrue(script["description"])
             self.assertTrue(script["shell"])
             self.assertIn(script["shell"], valid_shells)
+
+            if fn.endswith(".ps1"):
+                self.assertEqual(script["shell"], "powershell")
+            elif fn.endswith(".bat"):
+                self.assertEqual(script["shell"], "cmd")
+            elif fn.endswith(".py"):
+                self.assertEqual(script["shell"], "python")
 
     def test_load_community_scripts(self):
         with open(

@@ -162,18 +162,44 @@ class TestAgentViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     @patch("agents.models.Agent.nats_cmd")
-    def test_get_event_log(self, mock_ret):
-        url = f"/agents/{self.agent.pk}/geteventlog/Application/30/"
+    def test_get_event_log(self, nats_cmd):
+        url = f"/agents/{self.agent.pk}/geteventlog/Application/22/"
 
         with open(
             os.path.join(settings.BASE_DIR, "tacticalrmm/test_data/appeventlog.json")
         ) as f:
-            mock_ret.return_value = json.load(f)
+            nats_cmd.return_value = json.load(f)
 
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
+        nats_cmd.assert_called_with(
+            {
+                "func": "eventlog",
+                "timeout": 30,
+                "payload": {
+                    "logname": "Application",
+                    "days": str(22),
+                },
+            },
+            timeout=32,
+        )
 
-        mock_ret.return_value = "timeout"
+        url = f"/agents/{self.agent.pk}/geteventlog/Security/6/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        nats_cmd.assert_called_with(
+            {
+                "func": "eventlog",
+                "timeout": 180,
+                "payload": {
+                    "logname": "Security",
+                    "days": str(6),
+                },
+            },
+            timeout=182,
+        )
+
+        nats_cmd.return_value = "timeout"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
 

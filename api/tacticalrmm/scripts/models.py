@@ -72,6 +72,7 @@ class Script(BaseAuditModel):
                     i.name = script["name"]
                     i.description = script["description"]
                     i.category = "Community"
+                    i.shell = script["shell"]
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
                         script_bytes = (
@@ -80,7 +81,13 @@ class Script(BaseAuditModel):
                         i.code_base64 = base64.b64encode(script_bytes).decode("ascii")
 
                     i.save(
-                        update_fields=["name", "description", "category", "code_base64"]
+                        update_fields=[
+                            "name",
+                            "description",
+                            "category",
+                            "code_base64",
+                            "shell",
+                        ]
                     )
                 else:
                     print(f"Adding new community script: {script['name']}")

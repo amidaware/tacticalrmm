@@ -29,26 +29,6 @@ def _check_agent_service(pk: int) -> None:
         asyncio.run(agent.nats_cmd(data, wait=False))
 
 
-def _check_in_full(pk: int) -> None:
-    agent = Agent.objects.get(pk=pk)
-    asyncio.run(agent.nats_cmd({"func": "checkinfull"}, wait=False))
-
-
-@app.task
-def check_in_task() -> None:
-    q = Agent.objects.only("pk", "version")
-    agents: List[int] = [
-        i.pk for i in q if pyver.parse(i.version) == pyver.parse("1.1.12")
-    ]
-    chunks = (agents[i : i + 50] for i in range(0, len(agents), 50))
-    for chunk in chunks:
-        for pk in chunk:
-            _check_in_full(pk)
-            sleep(0.1)
-        rand = random.randint(3, 7)
-        sleep(rand)
-
-
 @app.task
 def monitor_agents_task() -> None:
     q = Agent.objects.only("pk", "version", "last_seen", "overdue_time")

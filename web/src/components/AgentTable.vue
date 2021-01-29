@@ -541,10 +541,17 @@ export default {
       window.open(url, "", "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1280,height=826");
     },
     runChecks(pk) {
-      axios
+      this.$q.loading.show();
+      this.$axios
         .get(`/checks/runchecks/${pk}/`)
-        .then(r => this.notifySuccess(`Checks will now be re-run on ${r.data}`))
-        .catch(e => this.notifyError(e.response.data));
+        .then(r => {
+          this.$q.loading.hide();
+          this.notifySuccess(r.data);
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError(e.response.data);
+        });
     },
     removeAgent(pk, name) {
       this.$q

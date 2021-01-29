@@ -2,9 +2,9 @@ from checks.models import CheckHistory
 from tacticalrmm.test import TacticalTestCase
 from .serializers import CheckSerializer
 from django.utils import timezone as djangotime
+from unittest.mock import patch
 
 from model_bakery import baker
-from itertools import cycle
 
 
 class TestCheckViews(TacticalTestCase):
@@ -183,6 +183,46 @@ class TestCheckViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 200)
 
         self.check_not_authenticated("patch", url_a)
+
+    @patch("agents.models.Agent.nats_cmd")
+    def test_run_checks(self, nats_cmd):
+        agent = baker.make_recipe("agents.agent", version="1.4.1")
+        agent_old = baker.make_recipe("agents.agent", version="1.0.2")
+        agent_b4_141 = baker.make_recipe("agents.agent", version="1.4.0")
+
+        url = f"/checks/runchecks/{agent_old.pk}/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json(), "Requires agent version 1.1.0 or greater")
+
+        url = f"/checks/runchecks/{agent_b4_141.pk}/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        nats_cmd.assert_called_with({"func": "runchecks"}, wait=False)
+
+        nats_cmd.reset_mock()
+        nats_cmd.return_value = "busy"
+        url = f"/checks/runchecks/{agent.pk}/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
+        nats_cmd.assert_called_with({"func": "runchecks"}, timeout=15)
+        self.assertEqual(r.json(), f"Checks are already running on {agent.hostname}")
+
+        nats_cmd.reset_mock()
+        nats_cmd.return_value = "ok"
+        url = f"/checks/runchecks/{agent.pk}/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        nats_cmd.assert_called_with({"func": "runchecks"}, timeout=15)
+        self.assertEqual(r.json(), f"Checks will now be re-run on {agent.hostname}")
+
+        nats_cmd.reset_mock()
+        nats_cmd.return_value = "timeout"
+        url = f"/checks/runchecks/{agent.pk}/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)
+        nats_cmd.assert_called_with({"func": "runchecks"}, timeout=15)
+        self.assertEqual(r.json(), "Unable to contact the agent")
 
     def test_get_check_history(self):
         # setup data

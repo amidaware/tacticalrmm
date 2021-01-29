@@ -75,6 +75,8 @@ func Listen(apihost, natshost, version string, debug bool) {
 		log.Fatalln(err)
 	}
 
+	go getWMI(rClient, nc)
+
 	nc.Subscribe("*", func(msg *nats.Msg) {
 		var mh codec.MsgpackHandle
 		mh.RawToString = true

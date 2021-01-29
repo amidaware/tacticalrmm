@@ -155,43 +155,6 @@ def auto_self_agent_update_task() -> None:
 
 
 @app.task
-def get_wmi_task():
-    agents = Agent.objects.only("pk", "version", "last_seen", "overdue_time")
-    online = [
-        i
-        for i in agents
-        if pyver.parse(i.version) >= pyver.parse("1.2.0") and i.status == "online"
-    ]
-    chunks = (online[i : i + 50] for i in range(0, len(online), 50))
-    for chunk in chunks:
-        for agent in chunk:
-            asyncio.run(agent.nats_cmd({"func": "wmi"}, wait=False))
-            sleep(0.1)
-        rand = random.randint(3, 7)
-        sleep(rand)
-
-
-@app.task
-def sync_sysinfo_task():
-    agents = Agent.objects.only("pk", "version", "last_seen", "overdue_time")
-    online = [
-        i
-        for i in agents
-        if pyver.parse(i.version) >= pyver.parse("1.1.3")
-        and pyver.parse(i.version) <= pyver.parse("1.1.12")
-        and i.status == "online"
-    ]
-
-    chunks = (online[i : i + 50] for i in range(0, len(online), 50))
-    for chunk in chunks:
-        for agent in chunk:
-            asyncio.run(agent.nats_cmd({"func": "sync"}, wait=False))
-            sleep(0.1)
-        rand = random.randint(3, 7)
-        sleep(rand)
-
-
-@app.task
 def agent_outage_email_task(pk):
     sleep(random.randint(1, 15))
     outage = AgentOutage.objects.get(pk=pk)

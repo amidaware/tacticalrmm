@@ -19,9 +19,11 @@ logger.configure(**settings.LOG_CONFIG)
 def _check_agent_service(pk: int) -> None:
     agent = Agent.objects.get(pk=pk)
     r = asyncio.run(agent.nats_cmd({"func": "ping"}, timeout=2))
+    # if the agent is respoding to pong from the rpc service but is not showing as online (handled by tacticalagent service)
+    # then tacticalagent service is hung. forcefully restart it
     if r == "pong":
         logger.info(
-            f"Detected crashed tacticalagent service on {agent.hostname}, attempting recovery"
+            f"Detected crashed tacticalagent service on {agent.hostname} v{agent.version}, attempting recovery"
         )
         data = {"func": "recover", "payload": {"mode": "tacagent"}}
         asyncio.run(agent.nats_cmd(data, wait=False))
@@ -109,6 +111,10 @@ def agent_update(pk: int) -> str:
             asyncio.run(agent.nats_cmd(nats_data, wait=False))
 
         return "created"
+    else:
+        logger.warning(
+            f"{agent.hostname} v{agent.version} is running an unsupported version. Refusing to update."
+        )
 
     return "not supported"
 

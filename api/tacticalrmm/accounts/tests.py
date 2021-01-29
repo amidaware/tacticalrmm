@@ -278,15 +278,11 @@ class TestUserAction(TacticalTestCase):
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)
 
-        data = {"agent_dblclick_action": "editagent"}
-        r = self.client.patch(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-
-        data = {"agent_dblclick_action": "remotebg"}
-        r = self.client.patch(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-
-        data = {"agent_dblclick_action": "takecontrol"}
+        data = {
+            "userui": True,
+            "agent_dblclick_action": "editagent",
+            "default_agent_tbl_tab": "mixed",
+        }
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)
 

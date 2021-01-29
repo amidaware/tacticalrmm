@@ -193,6 +193,6 @@
         "submittedBy": "https://github.com/dinger1986",
         "name": "TRMM Defender Exclusions",
         "description": "Windows Defender Exclusions for Tactical RMM",
-        "shell": "cmd"
+        "shell": "powershell"
     }
 ]

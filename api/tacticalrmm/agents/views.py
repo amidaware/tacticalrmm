@@ -30,6 +30,7 @@ from .serializers import (
     AgentEditSerializer,
     NoteSerializer,
     NotesSerializer,
+    AgentOverdueActionSerializer,
 )
 from winupdate.serializers import WinUpdatePolicySerializer
 
@@ -333,26 +334,12 @@ def by_site(request, sitepk):
 
 @api_view(["POST"])
 def overdue_action(request):
-    pk = request.data["pk"]
-    alert_type = request.data["alertType"]
-    action = request.data["action"]
-    agent = get_object_or_404(Agent, pk=pk)
-    if alert_type == "email" and action == "enabled":
-        agent.overdue_email_alert = True
-        agent.save(update_fields=["overdue_email_alert"])
-    elif alert_type == "email" and action == "disabled":
-        agent.overdue_email_alert = False
-        agent.save(update_fields=["overdue_email_alert"])
-    elif alert_type == "text" and action == "enabled":
-        agent.overdue_text_alert = True
-        agent.save(update_fields=["overdue_text_alert"])
-    elif alert_type == "text" and action == "disabled":
-        agent.overdue_text_alert = False
-        agent.save(update_fields=["overdue_text_alert"])
-    else:
-        return Response(
-            {"error": "Something went wrong"}, status=status.HTTP_400_BAD_REQUEST
-        )
+    agent = get_object_or_404(Agent, pk=request.data["pk"])
+    serializer = AgentOverdueActionSerializer(
+        instance=agent, data=request.data, partial=True
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
     return Response(agent.hostname)
 
 
@@ -473,7 +460,7 @@ def install_agent(request):
             f"GOARCH={goarch}",
             go_bin,
             "build",
-            f"-ldflags=\"-X 'main.Inno={inno}'",
+            f"-ldflags=\"-s -w -X 'main.Inno={inno}'",
             f"-X 'main.Api={api}'",
             f"-X 'main.Client={client_id}'",
             f"-X 'main.Site={site_id}'",

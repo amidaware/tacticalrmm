@@ -1,4 +1,5 @@
 import asyncio
+from packaging import version as pyver
 
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
@@ -168,8 +169,17 @@ def run_checks(request, pk):
     if not agent.has_nats:
         return notify_error("Requires agent version 1.1.0 or greater")
 
-    asyncio.run(agent.nats_cmd({"func": "runchecks"}, wait=False))
-    return Response(agent.hostname)
+    if pyver.parse(agent.version) >= pyver.parse("1.4.1"):
+        r = asyncio.run(agent.nats_cmd({"func": "runchecks"}, timeout=15))
+        if r == "busy":
+            return notify_error(f"Checks are already running on {agent.hostname}")
+        elif r == "ok":
+            return Response(f"Checks will now be re-run on {agent.hostname}")
+        else:
+            return notify_error("Unable to contact the agent")
+    else:
+        asyncio.run(agent.nats_cmd({"func": "runchecks"}, wait=False))
+        return Response(f"Checks will now be re-run on {agent.hostname}")
 
 
 @api_view()

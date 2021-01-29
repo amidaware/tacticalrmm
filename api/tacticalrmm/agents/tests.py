@@ -479,41 +479,19 @@ class TestAgentViews(TacticalTestCase):
     def test_overdue_action(self):
         url = "/agents/overdueaction/"
 
-        payload = {"pk": self.agent.pk, "alertType": "email", "action": "enabled"}
+        payload = {"pk": self.agent.pk, "overdue_email_alert": True}
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
         agent = Agent.objects.get(pk=self.agent.pk)
         self.assertTrue(agent.overdue_email_alert)
         self.assertEqual(self.agent.hostname, r.data)
 
-        payload.update({"alertType": "email", "action": "disabled"})
-        r = self.client.post(url, payload, format="json")
-        self.assertEqual(r.status_code, 200)
-        agent = Agent.objects.get(pk=self.agent.pk)
-        self.assertFalse(agent.overdue_email_alert)
-        self.assertEqual(self.agent.hostname, r.data)
-
-        payload.update({"alertType": "text", "action": "enabled"})
-        r = self.client.post(url, payload, format="json")
-        self.assertEqual(r.status_code, 200)
-        agent = Agent.objects.get(pk=self.agent.pk)
-        self.assertTrue(agent.overdue_text_alert)
-        self.assertEqual(self.agent.hostname, r.data)
-
-        payload.update({"alertType": "text", "action": "disabled"})
+        payload = {"pk": self.agent.pk, "overdue_text_alert": False}
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
         agent = Agent.objects.get(pk=self.agent.pk)
         self.assertFalse(agent.overdue_text_alert)
         self.assertEqual(self.agent.hostname, r.data)
-
-        payload.update({"alertType": "email", "action": "523423"})
-        r = self.client.post(url, payload, format="json")
-        self.assertEqual(r.status_code, 400)
-
-        payload.update({"alertType": "text", "action": "asdasd3434asdasd"})
-        r = self.client.post(url, payload, format="json")
-        self.assertEqual(r.status_code, 400)
 
         self.check_not_authenticated("post", url)
 

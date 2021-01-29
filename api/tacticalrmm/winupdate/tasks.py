@@ -21,6 +21,7 @@ def auto_approve_updates_task():
 
     agents = Agent.objects.only("pk", "version", "last_seen", "overdue_time")
     for agent in agents:
+        agent.delete_superseded_updates()
         try:
             agent.approve_updates()
         except:
@@ -53,6 +54,7 @@ def check_agent_update_schedule_task():
     ]
 
     for agent in online:
+        agent.delete_superseded_updates()
         install = False
         patch_policy = agent.get_patch_policy()
 
@@ -126,6 +128,7 @@ def bulk_install_updates_task(pks: List[int]) -> None:
     chunks = (agents[i : i + 40] for i in range(0, len(agents), 40))
     for chunk in chunks:
         for agent in chunk:
+            agent.delete_superseded_updates()
             nats_data = {
                 "func": "installwinupdates",
                 "guids": agent.get_approved_update_guids(),
@@ -142,6 +145,7 @@ def bulk_check_for_updates_task(pks: List[int]) -> None:
     chunks = (agents[i : i + 40] for i in range(0, len(agents), 40))
     for chunk in chunks:
         for agent in chunk:
+            agent.delete_superseded_updates()
             asyncio.run(agent.nats_cmd({"func": "getwinupdates"}, wait=False))
             time.sleep(0.05)
         time.sleep(15)

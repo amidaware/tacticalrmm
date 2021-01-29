@@ -22,6 +22,7 @@ def get_win_updates(request, pk):
 @api_view()
 def run_update_scan(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
+    agent.delete_superseded_updates()
     if pyver.parse(agent.version) < pyver.parse("1.3.0"):
         return notify_error("Requires agent version 1.3.0 or greater")
 
@@ -32,6 +33,7 @@ def run_update_scan(request, pk):
 @api_view()
 def install_updates(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
+    agent.delete_superseded_updates()
     if pyver.parse(agent.version) < pyver.parse("1.3.0"):
         return notify_error("Requires agent version 1.3.0 or greater")
 

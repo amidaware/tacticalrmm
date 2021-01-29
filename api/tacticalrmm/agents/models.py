@@ -9,6 +9,7 @@ import msgpack
 import re
 from collections import Counter
 from typing import List
+from typing import Union
 from loguru import logger
 from packaging import version as pyver
 from distutils.version import LooseVersion
@@ -18,6 +19,7 @@ from nats.aio.errors import ErrTimeout
 from django.db import models
 from django.conf import settings
 from django.utils import timezone as djangotime
+from alerts.models import AlertTemplate
 
 from core.models import CoreSettings, TZ_CHOICES
 from logs.models import BaseAuditModel
@@ -74,6 +76,24 @@ class Agent(BaseAuditModel):
         blank=True,
         on_delete=models.SET_NULL,
     )
+
+    def save(self, *args, **kwargs):
+
+        # get old agent if exists
+        old_agent = type(self).objects.get(pk=self.pk) if self.pk else None
+        super(Agent, self).save(*args, **kwargs)
+
+        # check if new agent has been create
+        # or check if policy have changed on agent
+        # or if site has changed on agent and if so generate-policies
+        if (
+            not old_agent
+            or old_agent
+            and old_agent.policy != self.policy
+            or old_agent.site != self.site
+        ):
+            self.generate_checks_from_policies()
+            self.generate_tasks_from_policies()
 
     def __str__(self):
         return self.hostname
@@ -380,6 +400,50 @@ class Agent(BaseAuditModel):
                 "guid", flat=True
             )
         )
+
+    # returns alert template assigned in the following order: policy, site, client, global
+    # will return None if nothing is found
+    def get_alert_template(self) -> Union[AlertTemplate, None]:
+
+        site = self.site
+        client = self.client
+        core = CoreSettings.objects.first()
+        # check if alert template is on a policy assigned to agent and return
+        if self.policy and self.policy.alert_template:
+            return self.policy.alert_template
+
+        # if agent is a server, check if policy with alert template is assigned to the site, client, or core
+        elif self.monitoring_type == "server":
+            if site.server_policy and site.server_policy.alert_template:
+                return site.server_policy.alert_template
+            elif client.server_policy and client.server_policy.alert_template:
+                return client.server_policy.alert_template
+            elif core.server_policy and core.server_policy.alert_template:
+                return core.server_policy.alert_template
+
+        # if agent is a workstation, check if policy with alert template is assigned to the site, client, or core
+        elif self.monitoring_type == "workstation":
+            if site.workstation_policy and site.workstation_policy.alert_template:
+                return site.workstation_policy.alert_template
+            elif client.workstation_policy and client.workstation_policy.alert_template:
+                return client.workstation_policy.alert_template
+            elif core.workstation_policy and core.workstation_policy.alert_template:
+                return core.workstation_policy.alert_template
+
+        # check if alert template is on site and return
+        elif site.alert_template:
+            return site.alert_template
+
+        # check if alert template is on client and return
+        elif client.alert_template:
+            return client.alert_template
+
+        # check if alert template is applied globally and return
+        elif core.alert_template:
+            return core.alert_template
+
+        # nothing found returning None
+        return None
 
     def generate_checks_from_policies(self):
         from automation.models import Policy

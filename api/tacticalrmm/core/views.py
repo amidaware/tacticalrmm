@@ -43,18 +43,9 @@ def get_core_settings(request):
 @api_view(["PATCH"])
 def edit_settings(request):
     coresettings = CoreSettings.objects.first()
-    old_server_policy = coresettings.server_policy
-    old_workstation_policy = coresettings.workstation_policy
     serializer = CoreSettingsSerializer(instance=coresettings, data=request.data)
     serializer.is_valid(raise_exception=True)
-    new_settings = serializer.save()
-
-    # check if default policies changed
-    if old_server_policy != new_settings.server_policy:
-        generate_all_agent_checks_task.delay(mon_type="server", create_tasks=True)
-
-    if old_workstation_policy != new_settings.workstation_policy:
-        generate_all_agent_checks_task.delay(mon_type="workstation", create_tasks=True)
+    serializer.save()
 
     return Response("ok")
 

@@ -208,10 +208,6 @@ class NewAgent(APIView):
 
         reload_nats()
 
-        # Generate policies for new agent
-        agent.generate_checks_from_policies()
-        agent.generate_tasks_from_policies()
-
         # create agent install audit record
         AuditLog.objects.create(
             username=request.user,

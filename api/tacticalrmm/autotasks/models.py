@@ -99,7 +99,7 @@ class AutomatedTask(BaseAuditModel):
         max_length=100, choices=SYNC_STATUS_CHOICES, default="notsynced"
     )
     alert_severity = models.CharField(
-        max_length=30, choices=SEVERITY_CHOICES, default="None", null=True, blank=True
+        max_length=30, choices=SEVERITY_CHOICES, default="info"
     )
     email_alert = models.BooleanField(default=False)
     text_alert = models.BooleanField(default=False)

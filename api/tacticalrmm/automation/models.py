@@ -17,6 +17,32 @@ class Policy(BaseAuditModel):
         blank=True,
     )
 
+    def save(self, *args, **kwargs):
+        from automation.tasks import generate_agent_checks_from_policies_task
+
+        # get old policy if exists
+        old_policy = type(self).objects.get(pk=self.pk) if self.pk else None
+        super(Policy, self).save(*args, **kwargs)
+
+        # generate agent checks only if active and enforced were changed
+        if (
+            old_policy
+            and old_policy.active != self.active
+            or old_policy.enforced != self.enforced
+        ):
+            generate_agent_checks_from_policies_task.delay(
+                policypk=self.pk,
+                create_tasks=True,
+            )
+
+    def delete(self, *args, **kwargs):
+        from automation.tasks import generate_agent_checks_task
+
+        agents = self.related_agents().values_list("pk", flat=True)
+        super(BaseAuditModel, self).delete(*args, **kwargs)
+
+        generate_agent_checks_task.delay(agents, create_tasks=True)
+
     @property
     def is_default_server_policy(self):
         return self.default_server_policy.exists()

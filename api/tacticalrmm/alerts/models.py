@@ -179,14 +179,53 @@ class AlertTemplate(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def has_agent_settings(self) -> bool:
+        return (
+            self.agent_email_on_resolved
+            or self.agent_text_on_resolved
+            or self.agent_include_desktops
+            or self.agent_always_email
+            or self.agent_always_text
+            or bool(self.agent_periodic_alert_days)
+        )
+
+    @property
+    def has_check_settings(self) -> bool:
+        return (
+            bool(self.check_email_alert_severity)
+            or bool(self.check_text_alert_severity)
+            or self.check_email_on_resolved
+            or self.check_text_on_resolved
+            or self.check_include_desktops
+            or self.check_always_email
+            or self.check_always_text
+            or bool(self.check_periodic_alert_days)
+        )
+
+    @property
+    def has_task_settings(self) -> bool:
+        return (
+            bool(self.task_email_alert_severity)
+            or bool(self.task_text_alert_severity)
+            or self.task_email_on_resolved
+            or self.task_text_on_resolved
+            or self.task_include_desktops
+            or self.task_always_email
+            or self.task_always_text
+            or bool(self.task_periodic_alert_days)
+        )
+
+    @property
+    def is_default_template(self) -> bool:
+        return self.default_alert_template.exists()
+
 
 class AlertExclusion(models.Model):
     alert_template = models.ForeignKey(
         "AlertTemplate",
-        related_name="alert",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        related_name="template",
+        on_delete=models.CASCADE,
     )
     sites = models.ManyToManyField(
         "clients.Site",
@@ -194,6 +233,10 @@ class AlertExclusion(models.Model):
     )
     clients = models.ManyToManyField(
         "clients.Client",
+        related_name="alert_exclusions",
+    )
+    agents = models.ManyToManyField(
+        "agents.Agent",
         related_name="alert_exclusions",
     )
 

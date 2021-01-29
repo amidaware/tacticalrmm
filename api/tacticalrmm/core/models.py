@@ -78,6 +78,8 @@ class CoreSettings(BaseAuditModel):
     )
 
     def save(self, *args, **kwargs):
+        from automation.tasks import generate_all_agent_checks_task
+
         if not self.pk and CoreSettings.objects.exists():
             raise ValidationError("There can only be one CoreSettings instance")
 
@@ -90,7 +92,16 @@ class CoreSettings(BaseAuditModel):
             except:
                 pass
 
-        return super(CoreSettings, self).save(*args, **kwargs)
+        old_settings = type(self).objects.get(pk=self.pk) if self.pk else None
+        super(CoreSettings, self).save(*args, **kwargs)
+
+        # check if server polcies have changed and initiate task to reapply policies if so
+        if old_settings and old_settings.server_policy != self.server_policy:
+            generate_all_agent_checks_task.delay(mon_type="server", create_tasks=True)
+
+        # check if workstation polcies have changed and initiate task to reapply policies if so
+        if old_settings and old_settings.workstation_policy != self.workstation_policy:
+            generate_all_agent_checks_task.delay(mon_type="server", create_tasks=True)
 
     def __str__(self):
         return "Global Site Settings"

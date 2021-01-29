@@ -30,6 +30,15 @@ def generate_agent_checks_from_policies_task(policypk, create_tasks=False):
 
 
 @app.task
+def generate_agent_checks_task(agentpks, create_tasks=False):
+    for agent in Agent.objects.filter(pk__in=agentpks):
+        agent.generate_checks_from_policies()
+
+        if create_tasks:
+            agent.generate_tasks_from_policies()
+
+
+@app.task
 def generate_agent_checks_by_location_task(location, mon_type, create_tasks=False):
 
     for agent in Agent.objects.filter(**location).filter(monitoring_type=mon_type):

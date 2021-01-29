@@ -665,12 +665,16 @@ export default {
       }
     },
     showPolicyAdd(agent) {
-      this.$q.dialog({
-        component: PolicyAdd,
-        parent: this,
-        type: "agent",
-        object: agent,
-      });
+      this.$q
+        .dialog({
+          component: PolicyAdd,
+          parent: this,
+          type: "agent",
+          object: agent,
+        })
+        .onOk(() => {
+          this.$emit("refreshEdit");
+        });
     },
     toggleMaintenance(agent) {
       let data = {

@@ -33,6 +33,21 @@
               <small>Enabled</small>
             </q-th>
           </template>
+
+          <template v-slot:header-cell-smsalert="props">
+            <q-th auto-width :props="props">
+              <q-icon name="phone_android" size="1.5em">
+                <q-tooltip>SMS Alert</q-tooltip>
+              </q-icon>
+            </q-th>
+          </template>
+          <template v-slot:header-cell-emailalert="props">
+            <q-th auto-width :props="props">
+              <q-icon name="email" size="1.5em">
+                <q-tooltip>Email Alert</q-tooltip>
+              </q-icon>
+            </q-th>
+          </template>
           <template v-slot:header-cell-policystatus="props">
             <q-th auto-width :props="props"></q-th>
           </template>
@@ -48,13 +63,7 @@
                     </q-item-section>
                     <q-item-section>Run task now</q-item-section>
                   </q-item>
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="showEditAutomatedTask = true"
-                    v-if="!props.row.managed_by_policy"
-                    v-show="false"
-                  >
+                  <q-item clickable v-close-popup @click="showEditTask(props.row)" v-if="!props.row.managed_by_policy">
                     <q-item-section side>
                       <q-icon name="edit" />
                     </q-item-section>
@@ -83,6 +92,24 @@
                   dense
                   @input="taskEnableorDisable(props.row.id, props.row.enabled, props.row.managed_by_policy)"
                   v-model="props.row.enabled"
+                  :disable="props.row.managed_by_policy"
+                />
+              </q-td>
+              <!-- text alert -->
+              <q-td>
+                <q-checkbox
+                  dense
+                  @input="taskAlert(props.row.id, 'Text', props.row.text_alert, props.row.managed_by_policy)"
+                  v-model="props.row.text_alert"
+                  :disable="props.row.managed_by_policy"
+                />
+              </q-td>
+              <!-- email alert -->
+              <q-td>
+                <q-checkbox
+                  dense
+                  @input="taskAlert(props.row.id, 'Email', props.row.email_alert, props.row.managed_by_policy)"
+                  v-model="props.row.email_alert"
                   :disable="props.row.managed_by_policy"
                 />
               </q-td>
@@ -139,6 +166,7 @@ import { mapState } from "vuex";
 import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import AddAutomatedTask from "@/components/modals/tasks/AddAutomatedTask";
+import EditAutomatedTask from "@/components/modals/tasks/EditAutomatedTask";
 import ScriptOutput from "@/components/modals/checks/ScriptOutput";
 
 export default {
@@ -155,6 +183,8 @@ export default {
       scriptInfo: {},
       columns: [
         { name: "enabled", align: "left", field: "enabled" },
+        { name: "smsalert", field: "text_alert", align: "left" },
+        { name: "emailalert", field: "email_alert", align: "left" },
         { name: "policystatus", align: "left" },
         { name: "name", label: "Name", field: "name", align: "left" },
         { name: "sync_status", label: "Sync Status", field: "sync_status", align: "left" },
@@ -202,12 +232,51 @@ export default {
         })
         .catch(e => this.notifyError("Something went wrong"));
     },
+    taskAlert(pk, alert_type, action, managed_by_policy) {
+      if (managed_by_policy) {
+        return;
+      }
+      this.$q.loading.show();
+
+      const data = {
+        id: pk,
+      };
+
+      if (alert_type === "Email") {
+        data.email_alert = action;
+      } else {
+        data.text_alert = action;
+      }
+
+      const act = action ? "enabled" : "disabled";
+      axios
+        .put(`/tasks/${pk}/automatedtasks/`, data)
+        .then(r => {
+          this.$q.loading.hide();
+          this.notifySuccess(`${alert_type} alerts ${act}`);
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError("There was an issue editing task");
+        });
+    },
     refreshTasks(id) {
       this.$store.dispatch("loadAutomatedTasks", id);
     },
     scriptMoreInfo(props) {
       this.scriptInfo = props;
       this.showScriptOutput = true;
+    },
+    showEditTask(task) {
+      this.$q
+        .dialog({
+          component: EditAutomatedTask,
+          parent: this,
+          task: task,
+        })
+        .onOk(() => {
+          this.refreshTasks(this.automatedTasks.pk);
+        });
     },
     runTask(pk, enabled) {
       if (!enabled) {

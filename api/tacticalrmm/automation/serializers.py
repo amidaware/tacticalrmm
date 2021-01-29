@@ -4,14 +4,10 @@ from rest_framework.serializers import (
     ReadOnlyField,
 )
 
-from clients.serializers import ClientSerializer, SiteSerializer
-from agents.serializers import AgentHostnameSerializer
-
 from .models import Policy
-from agents.models import Agent
 from autotasks.models import AutomatedTask
 from checks.models import Check
-from clients.models import Client, Site
+from clients.models import Client
 from winupdate.serializers import WinUpdatePolicySerializer
 
 
@@ -79,29 +75,9 @@ class PolicyCheckSerializer(ModelSerializer):
 
 class AutoTasksFieldSerializer(ModelSerializer):
     assigned_check = PolicyCheckSerializer(read_only=True)
+    script = ReadOnlyField(source="script.id")
 
     class Meta:
         model = AutomatedTask
-        fields = ("id", "enabled", "name", "schedule", "assigned_check")
-        depth = 1
-
-
-class RelatedClientPolicySerializer(ModelSerializer):
-    class Meta:
-        model = Client
-        fields = ("workstation_policy", "server_policy")
-        depth = 1
-
-
-class RelatedSitePolicySerializer(ModelSerializer):
-    class Meta:
-        model = Site
-        fields = ("workstation_policy", "server_policy")
-        depth = 1
-
-
-class RelatedAgentPolicySerializer(ModelSerializer):
-    class Meta:
-        model = Agent
-        fields = ("policy",)
+        fields = "__all__"
         depth = 1

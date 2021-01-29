@@ -39,6 +39,22 @@
               <small>Enabled</small>
             </q-th>
           </template>
+
+          <template v-slot:header-cell-smsalert="props">
+            <q-th auto-width :props="props">
+              <q-icon name="phone_android" size="1.5em">
+                <q-tooltip>SMS Alert</q-tooltip>
+              </q-icon>
+            </q-th>
+          </template>
+
+          <template v-slot:header-cell-emailalert="props">
+            <q-th auto-width :props="props">
+              <q-icon name="email" size="1.5em">
+                <q-tooltip>Email Alert</q-tooltip>
+              </q-icon>
+            </q-th>
+          </template>
           <!-- body slots -->
           <template v-slot:body="props" :props="props">
             <q-tr @contextmenu="editTaskPk = props.row.id">
@@ -50,6 +66,12 @@
                       <q-icon name="play_arrow" />
                     </q-item-section>
                     <q-item-section>Run task now</q-item-section>
+                  </q-item>
+                  <q-item clickable v-close-popup @click="showEditTask(props.row)" v-if="!props.row.managed_by_policy">
+                    <q-item-section side>
+                      <q-icon name="edit" />
+                    </q-item-section>
+                    <q-item-section>Edit</q-item-section>
                   </q-item>
                   <q-item clickable v-close-popup @click="deleteTask(props.row.name, props.row.id)">
                     <q-item-section side>
@@ -76,6 +98,22 @@
                   dense
                   @input="taskEnableorDisable(props.row.id, props.row.enabled)"
                   v-model="props.row.enabled"
+                />
+              </q-td>
+
+              <q-td>
+                <q-checkbox
+                  dense
+                  @input="taskAlert(props.row.id, 'Text', props.row.text_alert, props.row.managed_by_policy)"
+                  v-model="props.row.text_alert"
+                />
+              </q-td>
+              <!-- email alert -->
+              <q-td>
+                <q-checkbox
+                  dense
+                  @input="taskAlert(props.row.id, 'Email', props.row.email_alert, props.row.managed_by_policy)"
+                  v-model="props.row.email_alert"
                 />
               </q-td>
               <q-td>{{ props.row.name }}</q-td>
@@ -110,8 +148,8 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import DialogWrapper from "@/components/ui/DialogWrapper";
 import AddAutomatedTask from "@/components/modals/tasks/AddAutomatedTask";
+import EditAutomatedTask from "@/components/modals/tasks/EditAutomatedTask";
 import PolicyStatus from "@/components/automation/modals/PolicyStatus";
 
 export default {
@@ -127,6 +165,8 @@ export default {
       showAddTask: false,
       columns: [
         { name: "enabled", align: "left", field: "enabled" },
+        { name: "smsalert", field: "text_alert", align: "left" },
+        { name: "emailalert", field: "email_alert", align: "left" },
         { name: "name", label: "Name", field: "name", align: "left" },
         {
           name: "schedule",
@@ -186,6 +226,42 @@ export default {
         .catch(e => {
           this.$q.loading.hide();
           this.notifyError("There was an issue editing the task");
+        });
+    },
+    taskAlert(pk, alert_type, action, managed_by_policy) {
+      this.$q.loading.show();
+
+      const data = {
+        id: pk,
+      };
+
+      if (alert_type === "Email") {
+        data.email_alert = action;
+      } else {
+        data.text_alert = action;
+      }
+
+      const act = action ? "enabled" : "disabled";
+      this.$axios
+        .put(`/tasks/${pk}/automatedtasks/`, data)
+        .then(r => {
+          this.$q.loading.hide();
+          this.notifySuccess(`${alert_type} alerts ${act}`);
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError("There was an issue editing task");
+        });
+    },
+    showEditTask(task) {
+      this.$q
+        .dialog({
+          component: EditAutomatedTask,
+          parent: this,
+          task: task,
+        })
+        .onOk(() => {
+          this.getTasks();
         });
     },
     showStatus(task) {

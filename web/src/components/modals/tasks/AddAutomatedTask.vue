@@ -56,11 +56,14 @@
         </q-card-section>
         <q-card-section>
           <q-select
+            v-model="autotask.alert_severity"
+            :options="severityOptions"
             dense
             label="Alert Severity"
             outlined
-            v-model="autotask.alert_severity"
-            :options="severityOptions"
+            map-options
+            emit-value
+            options-dense
           />
         </q-card-section>
         <q-card-section>
@@ -180,14 +183,13 @@ export default {
         remove_if_not_scheduled: false,
         task_type: "scheduled",
         timeout: 120,
-        alert_severity: null,
-        severityOptions: [
-          { label: "", value: null },
-          { label: "Informational", value: "info" },
-          { label: "Warning", value: "warning" },
-          { label: "Error", value: "error" },
-        ],
+        alert_severity: info,
       },
+      severityOptions: [
+        { label: "Informational", value: "info" },
+        { label: "Warning", value: "warning" },
+        { label: "Error", value: "error" },
+      ],
       dayOptions: [
         { label: "Monday", value: "Monday" },
         { label: "Tuesday", value: "Tuesday" },

@@ -109,29 +109,47 @@ export default {
       }
       this.$q.loading.show();
 
-      let data = {
-        pk: this.object.id,
-        type: this.type,
-      };
-
+      let data = {};
+      let url = "";
       if (this.type === "client" || this.type === "site") {
-        data.server_policy = this.selectedServerPolicy;
-        data.workstation_policy = this.selectedWorkstationPolicy;
-      } else if (this.type === "agent") {
-        data.policy = this.selectedAgentPolicy;
-      }
+        data = {
+          pk: this.object.id,
+          server_policy: this.selectedServerPolicy,
+          workstation_policy: this.selectedWorkstationPolicy,
+        };
 
-      this.$axios
-        .post(`/automation/related/`, data)
-        .then(r => {
-          this.$q.loading.hide();
-          this.onOk();
-          this.notifySuccess("Policies Updated Successfully!");
-        })
-        .catch(e => {
-          this.$q.loading.hide();
-          this.notifyError("There was an error updating policies");
-        });
+        if (this.type === "client") url = `/clients/${this.object.id}/client/`;
+        else if (this.type === "site") url = `/clients/${this.object.id}/site/`;
+
+        this.$axios
+          .put(url, data)
+          .then(r => {
+            this.$q.loading.hide();
+            this.onOk();
+            this.notifySuccess("Policies Updated Successfully!");
+          })
+          .catch(e => {
+            this.$q.loading.hide();
+            this.notifyError("There was an error updating policies");
+          });
+      } else if (this.type === "agent") {
+        data = {
+          id: this.object.id,
+          policy: this.selectedAgentPolicy,
+        };
+
+        this.$axios
+          .patch("/agents/editagent/", data)
+          .then(r => {
+            this.$q.loading.hide();
+            this.onOk();
+            this.notifySuccess("Policies Updated Successfully!");
+          })
+          .catch(e => {
+            this.$q.loading.hide();
+            this.notifyError("There was an error updating policies");
+          });
+      }
     },
     getPolicies() {
       this.$q.loading.show();

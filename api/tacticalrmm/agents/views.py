@@ -97,22 +97,17 @@ def uninstall(request):
 def edit_agent(request):
     agent = get_object_or_404(Agent, pk=request.data["id"])
 
-    old_site = agent.site.pk
     a_serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
     a_serializer.is_valid(raise_exception=True)
     a_serializer.save()
 
-    policy = agent.winupdatepolicy.get()
-    p_serializer = WinUpdatePolicySerializer(
-        instance=policy, data=request.data["winupdatepolicy"][0]
-    )
-    p_serializer.is_valid(raise_exception=True)
-    p_serializer.save()
-
-    # check if site changed and initiate generating correct policies
-    if old_site != request.data["site"]:
-        agent.generate_checks_from_policies()
-        agent.generate_tasks_from_policies()
+    if "winupdatepolicy" in request.data.keys():
+        policy = agent.winupdatepolicy.get()
+        p_serializer = WinUpdatePolicySerializer(
+            instance=policy, data=request.data["winupdatepolicy"][0]
+        )
+        p_serializer.is_valid(raise_exception=True)
+        p_serializer.save()
 
     return Response("ok")
 

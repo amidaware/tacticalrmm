@@ -169,6 +169,12 @@ class Check(BaseAuditModel):
     )
     search_last_days = models.PositiveIntegerField(null=True, blank=True)
 
+    def save(self, *args, **kwargs):
+        return super(Check, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        return super(Check, self).delete(*args, **kwargs)
+
     def __str__(self):
         if self.agent:
             return f"{self.agent.hostname} - {self.readable_desc}"
@@ -509,8 +515,8 @@ class Check(BaseAuditModel):
                 self.save(update_fields=["status"])
 
             # resolve alert if it exists
-            if Alert.objects.filter(check=self, resolved=False).exists():
-                alert = Alert.objects.get(check=self, resolved=False)
+            if Alert.objects.filter(assigned_check=self, resolved=False).exists():
+                alert = Alert.objects.get(assigned_check=self, resolved=False)
                 alert.resolve()
 
                 # TODO: send email on resolved if enabled

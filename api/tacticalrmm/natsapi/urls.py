@@ -8,4 +8,6 @@ urlpatterns = [
     path("winupdates/", views.NatsWinUpdates.as_view()),
     path("choco/", views.NatsChoco.as_view()),
     path("wmi/", views.NatsWMI.as_view()),
+    path("offline/", views.OfflineAgents.as_view()),
+    path("logcrash/", views.LogCrash.as_view()),
 ]

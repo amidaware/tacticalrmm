@@ -8,3 +8,8 @@ type NatsInfo struct {
 type AgentIDS struct {
 	IDs []string `json:"agent_ids"`
 }
+
+type Recovery struct {
+	Func string            `json:"func"`
+	Data map[string]string `json:"payload"`
+}

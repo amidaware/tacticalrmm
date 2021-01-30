@@ -256,3 +256,31 @@ class NatsWMI(APIView):
             if pyver.parse(i.version) >= pyver.parse("1.2.0") and i.status == "online"
         ]
         return Response({"agent_ids": online})
+
+
+class OfflineAgents(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        agents = Agent.objects.only(
+            "pk", "agent_id", "version", "last_seen", "overdue_time"
+        )
+        offline: List[str] = [
+            i.agent_id for i in agents if i.has_nats and i.status != "online"
+        ]
+        return Response({"agent_ids": offline})
+
+
+class LogCrash(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agentid"])
+        logger.info(
+            f"Detected crashed tacticalagent service on {agent.hostname} v{agent.version}, attempting recovery"
+        )
+        agent.last_seen = djangotime.now()
+        agent.save(update_fields=["last_seen"])
+        return Response("ok")

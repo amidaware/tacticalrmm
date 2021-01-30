@@ -76,6 +76,7 @@ func Listen(apihost, natshost, version string, debug bool) {
 	}
 
 	go getWMI(rClient, nc)
+	go monitorAgents(rClient, nc)
 
 	nc.Subscribe("*", func(msg *nats.Msg) {
 		var mh codec.MsgpackHandle

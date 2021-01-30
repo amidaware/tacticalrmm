@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="104"
+SCRIPT_VERSION="105"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -242,7 +242,7 @@ if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]]; then
   source /rmm/api/env/bin/activate
   cd /rmm/api/tacticalrmm
   pip install --no-cache-dir --upgrade pip
-  pip install --no-cache-dir setuptools==51.1.2 wheel==0.36.2
+  pip install --no-cache-dir setuptools==52.0.0 wheel==0.36.2
   pip install --no-cache-dir -r requirements.txt
 else
   source /rmm/api/env/bin/activate

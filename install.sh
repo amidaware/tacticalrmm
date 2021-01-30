@@ -1,9 +1,9 @@
 #!/bin/bash
 
-SCRIPT_VERSION="35"
+SCRIPT_VERSION="36"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
-sudo apt install -y curl wget
+sudo apt install -y curl wget dirmngr gnupg lsb-release
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'

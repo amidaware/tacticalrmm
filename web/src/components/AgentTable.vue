@@ -651,7 +651,11 @@ export default {
       this.$store.dispatch("loadNotes", pk);
     },
     overdueAlert(category, pk, alert_action) {
-      const db_field = category === "email" ? "overdue_email_alert" : "overdue_text_alert";
+      let db_field = "";
+      if (category === "email") db_field = "overdue_email_alert";
+      else if (category === "text") db_field = "overdue_text_alert";
+      else if (category === "dashboard") db_field = "overdue_dashboard_alert";
+
       const action = alert_action ? "enabled" : "disabled";
       const data = {
         pk: pk,

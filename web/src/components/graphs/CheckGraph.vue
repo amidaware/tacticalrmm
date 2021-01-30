@@ -109,9 +109,9 @@ export default {
       return !this.$q.loading.isActive && this.history.length > 0;
     },
     seriesName() {
-      if (this.check.check_type === "cpuload") return "CPU Load (%)";
-      else if (this.check.check_type === "memory") return "Memory Usage (%)";
-      else if (this.check.check_type === "diskspace") return "Disk Space Remaining (%)";
+      if (this.check.check_type === "cpuload") return "CPU Load";
+      else if (this.check.check_type === "memory") return "Memory Usage";
+      else if (this.check.check_type === "diskspace") return "Disk Space Remaining";
       else if (this.check.check_type === "script") return "Script Results";
       else if (this.check.check_type === "eventlog") return "Status";
       else if (this.check.check_type === "winsvc") return "Status";
@@ -153,32 +153,50 @@ export default {
     },
   },
   created() {
-    this.getChartData();
-
+    // create warning and error annotation on chart for certain check types
     if (
       this.check.check_type === "cpuload" ||
       this.check.check_type === "memory" ||
       this.check.check_type === "diskspace"
     ) {
-      // add threshold line depending on check type
       this.chartOptions["annotations"] = {
         position: "front",
-        yaxis: [
-          {
-            y: this.check.threshold,
-            strokeDashArray: 0,
-            borderColor: "#C10015",
-            label: {
-              borderColor: "#C10015",
-              style: {
-                color: "#FFF",
-                background: "#C10015",
-              },
-              text: "Threshold",
-            },
-          },
-        ],
+        yaxis: [],
       };
+
+      // add error threshold line if exists
+      if (this.check.error_threshold) {
+        this.chartOptions["annotations"]["yaxis"].push({
+          y: this.check.error_threshold,
+          strokeDashArray: 0,
+          borderColor: "#C10015",
+          label: {
+            borderColor: "#C10015",
+            style: {
+              color: "#FFF",
+              background: "#C10015",
+            },
+            text: "Error Threshold",
+          },
+        });
+      }
+
+      // add warning threshold line depending on check type
+      if (this.check.warning_threshold) {
+        this.chartOptions["annotations"]["yaxis"].push({
+          y: this.check.warning_threshold,
+          strokeDashArray: 0,
+          borderColor: "#ff9800",
+          label: {
+            borderColor: "#ff9800",
+            style: {
+              color: "#FFF",
+              background: "#ff9800",
+            },
+            text: "Warning Threshold",
+          },
+        });
+      }
 
       // Set yaxis options
       this.chartOptions["yaxis"] = {
@@ -230,6 +248,8 @@ export default {
         },
       };
     }
+
+    this.getChartData();
   },
 };
 </script>

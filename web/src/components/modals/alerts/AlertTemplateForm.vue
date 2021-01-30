@@ -253,7 +253,7 @@
             </div>
 
             <div class="col-4">
-              <q-toggle v-model="template.check_email_on_resolved" color="green" left-label>
+              <q-toggle v-model="template.check_text_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Text on resolved <q-tooltip>Sends an SMS message when check alert has resolved</q-tooltip></span
                 >

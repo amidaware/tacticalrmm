@@ -57,7 +57,7 @@ class Alert(models.Model):
         self.resolved = True
         self.resolved_on = djangotime.now()
         self.snoozed = False
-        self.snoozed_until = None
+        self.snooze_until = None
         self.save()
 
     @classmethod
@@ -135,26 +135,17 @@ class AlertTemplate(models.Model):
 
     # check alert settings
     check_email_alert_severity = ArrayField(
-        models.CharField(
-            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
-        ),
-        null=True,
+        models.CharField(max_length=25, blank=True, choices=SEVERITY_CHOICES),
         blank=True,
         default=list,
     )
     check_text_alert_severity = ArrayField(
-        models.CharField(
-            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
-        ),
-        null=True,
+        models.CharField(max_length=25, blank=True, choices=SEVERITY_CHOICES),
         blank=True,
         default=list,
     )
     check_dashboard_alert_severity = ArrayField(
-        models.CharField(
-            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
-        ),
-        null=True,
+        models.CharField(max_length=25, blank=True, choices=SEVERITY_CHOICES),
         blank=True,
         default=list,
     )
@@ -168,26 +159,17 @@ class AlertTemplate(models.Model):
 
     # task alert settings
     task_email_alert_severity = ArrayField(
-        models.CharField(
-            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
-        ),
-        null=True,
+        models.CharField(max_length=25, blank=True, choices=SEVERITY_CHOICES),
         blank=True,
         default=list,
     )
     task_text_alert_severity = ArrayField(
-        models.CharField(
-            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
-        ),
-        null=True,
+        models.CharField(max_length=25, blank=True, choices=SEVERITY_CHOICES),
         blank=True,
         default=list,
     )
     task_dashboard_alert_severity = ArrayField(
-        models.CharField(
-            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
-        ),
-        null=True,
+        models.CharField(max_length=25, blank=True, choices=SEVERITY_CHOICES),
         blank=True,
         default=list,
     )
@@ -207,9 +189,11 @@ class AlertTemplate(models.Model):
         return (
             self.agent_email_on_resolved
             or self.agent_text_on_resolved
+            or self.agent_alert_on_resolved
             or self.agent_include_desktops
             or self.agent_always_email
             or self.agent_always_text
+            or self.agent_always_alert
             or bool(self.agent_periodic_alert_days)
         )
 
@@ -218,11 +202,13 @@ class AlertTemplate(models.Model):
         return (
             bool(self.check_email_alert_severity)
             or bool(self.check_text_alert_severity)
+            or bool(self.check_dashboard_alert_severity)
             or self.check_email_on_resolved
             or self.check_text_on_resolved
-            or self.check_include_desktops
+            or self.check_alert_on_resolved
             or self.check_always_email
             or self.check_always_text
+            or self.check_always_alert
             or bool(self.check_periodic_alert_days)
         )
 
@@ -231,11 +217,13 @@ class AlertTemplate(models.Model):
         return (
             bool(self.task_email_alert_severity)
             or bool(self.task_text_alert_severity)
+            or bool(self.task_dashboard_alert_severity)
             or self.task_email_on_resolved
             or self.task_text_on_resolved
-            or self.task_include_desktops
+            or self.task_alert_on_resolved
             or self.task_always_email
             or self.task_always_text
+            or self.task_always_alert
             or bool(self.task_periodic_alert_days)
         )
 

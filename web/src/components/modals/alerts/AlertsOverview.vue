@@ -71,16 +71,22 @@
           virtual-scroll
         >
           <template v-slot:top>
-            <div class="col-2 q-table__title">Alerts</div>
+            <div class="col-1 q-table__title">Alerts</div>
 
-            <q-btn-dropdown label="Bulk Actions" :disable="selectedAlerts.length === 0">
+            <q-btn-dropdown flat label="Bulk Actions" :disable="selectedAlerts.length === 0 || includeResolved">
               <q-list dense>
                 <q-item clickable v-close-popup @click="snoozeAlertBulk(selectedAlerts)">
+                  <q-item-section avatar>
+                    <q-icon name="alarm_off" />
+                  </q-item-section>
                   <q-item-section>
                     <q-item-label>Snooze alerts</q-item-label>
                   </q-item-section>
                 </q-item>
                 <q-item clickable v-close-popup @click="resolveAlertBulk(selectedAlerts)">
+                  <q-item-section avatar>
+                    <q-icon name="flag" />
+                  </q-item-section>
                   <q-item-section>
                     <q-item-label>Resolve alerts</q-item-label>
                   </q-item-section>
@@ -223,6 +229,7 @@ export default {
     search() {
       this.$q.loading.show();
 
+      this.selectedAlerts = [];
       this.searched = true;
 
       let data = {
@@ -238,7 +245,6 @@ export default {
         .patch("/alerts/alerts/", data)
         .then(r => {
           this.$q.loading.hide();
-          console.log(r.data);
           this.alerts = Object.freeze(r.data);
         })
         .catch(e => {
@@ -320,8 +326,60 @@ export default {
           this.notifyError("There was an issue resolving alert");
         });
     },
-    resolveAlertBulk(alerts) {},
-    snoozeAlertBulk(alerts) {},
+    resolveAlertBulk(alerts) {
+      this.$q.loading.show();
+
+      const data = {
+        alerts: alerts.map(alert => alert.id),
+        bulk_action: "resolve",
+      };
+
+      this.$axios
+        .post("alerts/bulk/", data)
+        .then(r => {
+          this.search();
+          this.$q.loading.hide();
+          this.notifySuccess("Alerts were resolved");
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError("There was an error resolving alerts");
+        });
+    },
+    snoozeAlertBulk(alerts) {
+      this.$q
+        .dialog({
+          title: "Snooze Alert",
+          message: "How many days to snooze alert?",
+          prompt: {
+            model: "",
+            type: "number",
+            isValid: val => !!val && val > 0 && val < 9999,
+          },
+          cancel: true,
+        })
+        .onOk(days => {
+          this.$q.loading.show();
+
+          const data = {
+            alerts: alerts.map(alert => alert.id),
+            bulk_action: "snooze",
+            snooze_days: days,
+          };
+
+          this.$axios
+            .post("alerts/bulk/", data)
+            .then(r => {
+              this.search();
+              this.$q.loading.hide();
+              this.notifySuccess(`Alerts were snoozed for ${days} days`);
+            })
+            .catch(e => {
+              this.$q.loading.hide();
+              this.notifyError("There was an error resolving alerts");
+            });
+        });
+    },
     alertColor(severity) {
       if (severity === "error") {
         return "negative";

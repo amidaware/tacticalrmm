@@ -57,16 +57,25 @@
                 </q-icon>
               </q-th>
             </template>
-
-            <template v-slot:header-cell-email_severity="props">
+            <template v-slot:header-cell-agent_settings="props">
               <q-th :props="props" auto-width>
-                {{ props.col.label }}
+                <q-icon name="devices" size="1.5em">
+                  <q-tooltip>Has agent alert settings</q-tooltip>
+                </q-icon>
               </q-th>
             </template>
-
-            <template v-slot:header-cell-text_severity="props">
+            <template v-slot:header-cell-check_settings="props">
               <q-th :props="props" auto-width>
-                {{ props.col.label }}
+                <q-icon name="fas fa-check-double" size="1.5em">
+                  <q-tooltip>Has check alert settings</q-tooltip>
+                </q-icon>
+              </q-th>
+            </template>
+            <template v-slot:header-cell-task_settings="props">
+              <q-th :props="props" auto-width>
+                <q-icon name="fas fa-tasks" size="1.5em">
+                  <q-tooltip>Has task alert settings</q-tooltip>
+                </q-icon>
               </q-th>
             </template>
             <!-- body slots -->
@@ -105,54 +114,30 @@
                 <q-td>
                   <q-checkbox dense @input="toggleEnabled(props.row)" v-model="props.row.is_active" />
                 </q-td>
+                <!-- agent settings -->
+                <q-td>
+                  <q-icon v-if="props.row.agent_settings" color="primary" name="done" size="sm">
+                    <q-tooltip>Alert template has agent alert settings</q-tooltip>
+                  </q-icon>
+                </q-td>
+                <!-- text settings -->
+                <q-td>
+                  <q-icon v-if="props.row.check_settings" color="primary" name="done" size="sm">
+                    <q-tooltip>Alert template has check alert settings</q-tooltip>
+                  </q-icon>
+                </q-td>
+                <!-- dashboard settings -->
+                <q-td>
+                  <q-icon v-if="props.row.task_settings" color="primary" name="done" size="sm">
+                    <q-tooltip>Alert template has task alert settings</q-tooltip>
+                  </q-icon>
+                </q-td>
                 <!-- name -->
                 <q-td>{{ props.row.name }}</q-td>
-                <!-- email severity -->
-                <q-td>
-                  <q-icon v-if="props.row.email_alert_severity.includes('info')" color="primary" name="info" size="sm">
-                    <q-tooltip>Sends email alert on informational severity</q-tooltip>
-                  </q-icon>
-                  <q-icon
-                    v-if="props.row.email_alert_severity.includes('warning')"
-                    color="warning"
-                    name="warning"
-                    size="sm"
-                  >
-                    <q-tooltip>Sends email alert on warning severity</q-tooltip>
-                  </q-icon>
-                  <q-icon
-                    v-if="props.row.email_alert_severity.includes('error')"
-                    color="negative"
-                    name="error"
-                    size="sm"
-                  >
-                    <q-tooltip>Sends email alert on error severity</q-tooltip>
-                  </q-icon>
-                </q-td>
-                <!-- text severity -->
-                <q-td>
-                  <q-icon v-if="props.row.email_alert_severity.includes('info')" color="primary" name="info" size="sm">
-                    <q-tooltip>Sends text alert on informational severity</q-tooltip>
-                  </q-icon>
-                  <q-icon
-                    v-if="props.row.text_alert_severity.includes('warning')"
-                    color="warning"
-                    name="warning"
-                    size="sm"
-                  >
-                    <q-tooltip>Sends text alert on warning severity</q-tooltip>
-                  </q-icon>
-                  <q-icon
-                    v-if="props.row.text_alert_severity.includes('error')"
-                    color="negative"
-                    name="error"
-                    size="sm"
-                  >
-                    <q-tooltip>Sends text alert on error severity</q-tooltip>
-                  </q-icon>
-                </q-td>
                 <!-- applied to -->
                 <q-td>Applied To Placeholder</q-td>
+                <!-- alert exclusions -->
+                <q-td> Alert Exclusions </q-td>
                 <!-- actions -->
                 <q-td>{{ props.row.actions.length }} actions</q-td>
               </q-tr>
@@ -177,23 +162,20 @@ export default {
       templates: [],
       columns: [
         { name: "is_active", label: "Active", field: "is_active", align: "left" },
+        { name: "agent_settings", label: "Agent Settings", field: "agent_settings" },
+        { name: "check_settings", label: "Check Settings", field: "check_settings" },
+        { name: "task_settings", label: "Task Settings", field: "task_settings" },
         { name: "name", label: "Name", field: "name", align: "left" },
-        {
-          name: "email_severity",
-          label: "Email Severity",
-          field: "email_severity",
-          align: "center",
-        },
-        {
-          name: "text_severity",
-          label: "Text Severity",
-          field: "text_severity",
-          align: "center",
-        },
         {
           name: "applied_to",
           label: "Applied To",
           field: "applied_to",
+          align: "left",
+        },
+        {
+          name: "alert_exclusions",
+          label: "Alert Exclusions",
+          field: "alert_exclusions",
           align: "left",
         },
         {

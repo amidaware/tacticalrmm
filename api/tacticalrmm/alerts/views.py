@@ -155,6 +155,27 @@ class GetUpdateDeleteAlert(APIView):
         return Response("ok")
 
 
+class BulkAlerts(APIView):
+    def post(self, request):
+        if request.data["bulk_action"] == "resolve":
+            Alert.objects.filter(id__in=request.data["alerts"]).update(
+                resolved=True,
+                resolved_on=djangotime.now(),
+                snoozed=False,
+                snooze_until=None,
+            )
+            return Response("ok")
+        elif request.data["bulk_action"] == "snooze":
+            Alert.objects.filter(id__in=request.data["alerts"]).update(
+                snoozed=True,
+                snooze_until=djangotime.now()
+                + djangotime.timedelta(days=int(request.data["snooze_days"])),
+            )
+            return Response("ok")
+
+        return notify_error("The request was invalid")
+
+
 class GetAddAlertTemplates(APIView):
     def get(self, request):
         alert_templates = AlertTemplate.objects.all()

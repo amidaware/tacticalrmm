@@ -37,7 +37,12 @@ class AgentSerializer(serializers.ModelSerializer):
 class AgentOverdueActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent
-        fields = ["pk", "overdue_email_alert", "overdue_text_alert"]
+        fields = [
+            "pk",
+            "overdue_email_alert",
+            "overdue_text_alert",
+            "overdue_dashboard_alert",
+        ]
 
 
 class AgentTableSerializer(serializers.ModelSerializer):

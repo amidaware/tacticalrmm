@@ -25,15 +25,12 @@ class Policy(BaseAuditModel):
         super(Policy, self).save(*args, **kwargs)
 
         # generate agent checks only if active and enforced were changed
-        if (
-            old_policy
-            and old_policy.active != self.active
-            or old_policy.enforced != self.enforced
-        ):
-            generate_agent_checks_from_policies_task.delay(
-                policypk=self.pk,
-                create_tasks=True,
-            )
+        if old_policy:
+            if old_policy.active != self.active or old_policy.enforced != self.enforced:
+                generate_agent_checks_from_policies_task.delay(
+                    policypk=self.pk,
+                    create_tasks=True,
+                )
 
     def delete(self, *args, **kwargs):
         from automation.tasks import generate_agent_checks_task
@@ -41,7 +38,7 @@ class Policy(BaseAuditModel):
         agents = self.related_agents().values_list("pk", flat=True)
         super(BaseAuditModel, self).delete(*args, **kwargs)
 
-        generate_agent_checks_task.delay(agents, create_tasks=True)
+        generate_agent_checks_task.delay(list(agents), create_tasks=True)
 
     @property
     def is_default_server_policy(self):

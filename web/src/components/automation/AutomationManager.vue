@@ -103,7 +103,7 @@
                       <q-item-section>Copy</q-item-section>
                     </q-item>
 
-                    <q-item clickable v-close-popup @click="deletePolicy(props.row.id)">
+                    <q-item clickable v-close-popup @click="deletePolicy(props.row)">
                       <q-item-section side>
                         <q-icon name="delete" />
                       </q-item-section>
@@ -326,6 +326,7 @@ export default {
               this.refresh();
               this.$q.loading.hide();
               this.notifySuccess("Policy was deleted!");
+              this.$store.dispatch("loadTree");
             })
             .catch(error => {
               this.$q.loading.hide();

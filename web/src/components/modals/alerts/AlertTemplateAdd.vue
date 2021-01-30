@@ -58,7 +58,7 @@ export default {
   methods: {
     submit() {
       // close because nothing was edited
-      if (this.object.alertTemplate === this.selectedTemplate) {
+      if (this.object.alert_template === this.selectedTemplate) {
         this.hide();
         return;
       }

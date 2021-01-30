@@ -29,25 +29,9 @@ app.conf.beat_schedule = {
         "task": "winupdate.tasks.check_agent_update_schedule_task",
         "schedule": crontab(minute=5, hour="*"),
     },
-    "agents-checkinfull": {
-        "task": "agents.tasks.check_in_task",
-        "schedule": crontab(minute="*/24"),
-    },
     "agent-auto-update": {
         "task": "agents.tasks.auto_self_agent_update_task",
         "schedule": crontab(minute=35, hour="*"),
-    },
-    "agents-sync": {
-        "task": "agents.tasks.sync_sysinfo_task",
-        "schedule": crontab(minute=55, hour="*"),
-    },
-    "get-wmi": {
-        "task": "agents.tasks.get_wmi_task",
-        "schedule": crontab(minute="*/18"),
-    },
-    "check-agentservice": {
-        "task": "agents.tasks.monitor_agents_task",
-        "schedule": crontab(minute="*/15"),
     },
     "remove-salt": {
         "task": "agents.tasks.remove_salt_task",

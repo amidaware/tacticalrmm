@@ -1,4 +1,4 @@
-amqp==5.0.2
+amqp==5.0.5
 asgiref==3.3.1
 asyncio-nats-client==0.11.4
 billiard==3.6.3.0
@@ -9,7 +9,7 @@ chardet==4.0.0
 cryptography==3.3.1
 decorator==4.4.2
 Django==3.1.5
-django-cors-headers==3.6.0
+django-cors-headers==3.7.0
 django-rest-knox==4.1.0
 djangorestframework==3.12.2
 future==0.18.2
@@ -21,7 +21,7 @@ packaging==20.8
 psycopg2-binary==2.8.6
 pycparser==2.20
 pycryptodome==3.9.9
-pyotp==2.4.1
+pyotp==2.5.0
 pyparsing==2.4.7
 pytz==2020.5
 qrcode==6.1
@@ -29,8 +29,8 @@ redis==3.5.3
 requests==2.25.1
 six==1.15.0
 sqlparse==0.4.1
-twilio==6.51.0
-urllib3==1.26.2
+twilio==6.51.1
+urllib3==1.26.3
 uWSGI==2.0.19.1
 validators==0.18.2
 vine==5.0.0

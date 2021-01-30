@@ -16,47 +16,6 @@ from logs.models import PendingAction
 logger.configure(**settings.LOG_CONFIG)
 
 
-def _check_agent_service(pk: int) -> None:
-    agent = Agent.objects.get(pk=pk)
-    r = asyncio.run(agent.nats_cmd({"func": "ping"}, timeout=2))
-    # if the agent is respoding to pong from the rpc service but is not showing as online (handled by tacticalagent service)
-    # then tacticalagent service is hung. forcefully restart it
-    if r == "pong":
-        logger.info(
-            f"Detected crashed tacticalagent service on {agent.hostname} v{agent.version}, attempting recovery"
-        )
-        data = {"func": "recover", "payload": {"mode": "tacagent"}}
-        asyncio.run(agent.nats_cmd(data, wait=False))
-
-
-def _check_in_full(pk: int) -> None:
-    agent = Agent.objects.get(pk=pk)
-    asyncio.run(agent.nats_cmd({"func": "checkinfull"}, wait=False))
-
-
-@app.task
-def check_in_task() -> None:
-    q = Agent.objects.only("pk", "version")
-    agents: List[int] = [
-        i.pk for i in q if pyver.parse(i.version) == pyver.parse("1.1.12")
-    ]
-    chunks = (agents[i : i + 50] for i in range(0, len(agents), 50))
-    for chunk in chunks:
-        for pk in chunk:
-            _check_in_full(pk)
-            sleep(0.1)
-        rand = random.randint(3, 7)
-        sleep(rand)
-
-
-@app.task
-def monitor_agents_task() -> None:
-    q = Agent.objects.only("pk", "version", "last_seen", "overdue_time")
-    agents: List[int] = [i.pk for i in q if i.has_nats and i.status != "online"]
-    for agent in agents:
-        _check_agent_service(agent)
-
-
 def agent_update(pk: int) -> str:
     agent = Agent.objects.get(pk=pk)
     # skip if we can't determine the arch
@@ -152,43 +111,6 @@ def auto_self_agent_update_task() -> None:
             agent_update(pk)
             sleep(0.05)
         sleep(4)
-
-
-@app.task
-def get_wmi_task():
-    agents = Agent.objects.only("pk", "version", "last_seen", "overdue_time")
-    online = [
-        i
-        for i in agents
-        if pyver.parse(i.version) >= pyver.parse("1.2.0") and i.status == "online"
-    ]
-    chunks = (online[i : i + 50] for i in range(0, len(online), 50))
-    for chunk in chunks:
-        for agent in chunk:
-            asyncio.run(agent.nats_cmd({"func": "wmi"}, wait=False))
-            sleep(0.1)
-        rand = random.randint(3, 7)
-        sleep(rand)
-
-
-@app.task
-def sync_sysinfo_task():
-    agents = Agent.objects.only("pk", "version", "last_seen", "overdue_time")
-    online = [
-        i
-        for i in agents
-        if pyver.parse(i.version) >= pyver.parse("1.1.3")
-        and pyver.parse(i.version) <= pyver.parse("1.1.12")
-        and i.status == "online"
-    ]
-
-    chunks = (online[i : i + 50] for i in range(0, len(online), 50))
-    for chunk in chunks:
-        for agent in chunk:
-            asyncio.run(agent.nats_cmd({"func": "sync"}, wait=False))
-            sleep(0.1)
-        rand = random.randint(3, 7)
-        sleep(rand)
 
 
 @app.task

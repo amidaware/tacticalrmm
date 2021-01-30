@@ -184,15 +184,16 @@ def get_event_log(request, pk, logtype, days):
     agent = get_object_or_404(Agent, pk=pk)
     if not agent.has_nats:
         return notify_error("Requires agent version 1.1.0 or greater")
+    timeout = 180 if logtype == "Security" else 30
     data = {
         "func": "eventlog",
-        "timeout": 30,
+        "timeout": timeout,
         "payload": {
             "logname": logtype,
             "days": str(days),
         },
     }
-    r = asyncio.run(agent.nats_cmd(data, timeout=32))
+    r = asyncio.run(agent.nats_cmd(data, timeout=timeout + 2))
     if r == "timeout":
         return notify_error("Unable to contact the agent")
 

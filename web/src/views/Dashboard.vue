@@ -433,6 +433,10 @@ export default {
           align: "left",
         },
         {
+          name: "dashboardalert",
+          align: "left",
+        },
+        {
           name: "checks-status",
           align: "left",
           field: "checks",
@@ -520,6 +524,7 @@ export default {
       visibleColumns: [
         "smsalert",
         "emailalert",
+        "dashboardalert",
         "checks-status",
         "client_name",
         "site_name",

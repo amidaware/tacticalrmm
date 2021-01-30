@@ -103,6 +103,7 @@ class AutomatedTask(BaseAuditModel):
     )
     email_alert = models.BooleanField(default=False)
     text_alert = models.BooleanField(default=False)
+    dashboard_alert = models.BooleanField(default=False)
     email_sent = models.DateTimeField(null=True, blank=True)
     text_sent = models.DateTimeField(null=True, blank=True)
 
@@ -165,6 +166,10 @@ class AutomatedTask(BaseAuditModel):
             policy=policy,
             managed_by_policy=bool(agent),
             parent_task=(self.pk if agent else None),
+            alert_severity=self.alert_severity,
+            email_alert=self.email_alert,
+            text_alert=self.text_alert,
+            dashboard_alert=self.dashboard_alert,
             script=self.script,
             script_args=self.script_args,
             assigned_check=assigned_check,

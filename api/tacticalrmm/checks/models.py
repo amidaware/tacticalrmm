@@ -85,6 +85,7 @@ class Check(BaseAuditModel):
     last_run = models.DateTimeField(null=True, blank=True)
     email_alert = models.BooleanField(default=False)
     text_alert = models.BooleanField(default=False)
+    dashboard_alert = models.BooleanField(default=False)
     fails_b4_alert = models.PositiveIntegerField(default=1)
     fail_count = models.PositiveIntegerField(default=0)
     email_sent = models.DateTimeField(null=True, blank=True)
@@ -168,12 +169,6 @@ class Check(BaseAuditModel):
         max_length=255, choices=EVT_LOG_FAIL_WHEN_CHOICES, null=True, blank=True
     )
     search_last_days = models.PositiveIntegerField(null=True, blank=True)
-
-    def save(self, *args, **kwargs):
-        return super(Check, self).save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        return super(Check, self).delete(*args, **kwargs)
 
     def __str__(self):
         if self.agent:
@@ -567,8 +562,10 @@ class Check(BaseAuditModel):
             managed_by_policy=bool(agent),
             parent_check=(self.pk if agent else None),
             name=self.name,
+            alert_severity=self.alert_severity,
             check_type=self.check_type,
             email_alert=self.email_alert,
+            dashboard_alert=self.dashboard_alert,
             text_alert=self.text_alert,
             fails_b4_alert=self.fails_b4_alert,
             extra_details=self.extra_details,

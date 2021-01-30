@@ -69,6 +69,7 @@ class PolicyCheckSerializer(ModelSerializer):
             "assignedtask",
             "text_alert",
             "email_alert",
+            "dashboard_alert",
         )
         depth = 1
 

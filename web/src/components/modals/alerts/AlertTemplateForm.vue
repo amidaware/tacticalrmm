@@ -15,8 +15,28 @@
             <div class="col-10">
               <q-input outlined dense v-model="template.name" :rules="[val => !!val || '*Required']" />
             </div>
-            <div class="col-10">
+            <div class="col-12">
               <q-toggle v-model="template.is_active" color="green" label="Enabled" left-label />
+            </div>
+
+            <div class="col-2">
+              <span style="text-decoration: underline; cursor: help"
+                >Actions
+                <q-tooltip> Optionally run a set of scripts on an agent when it triggers an alert </q-tooltip>
+              </span>
+            </div>
+            <div class="col-10">
+              <q-select
+                dense
+                options-dense
+                outlined
+                multiple
+                v-model="template.actions"
+                :options="scriptOptions"
+                use-chips
+                map-options
+                emit-value
+              />
             </div>
           </q-card-section>
 
@@ -92,34 +112,52 @@
           <q-separator class="q-mb-sm" />
 
           <q-card-section class="row">
-            <div class="col-6">
+            <div class="col-4">
               <q-toggle v-model="template.agent_email_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
-                  >Email on resolved <q-tooltip>Sends an email when agent is back online</q-tooltip></span
+                  >Email on resolved<q-tooltip>Sends an email when agent is back online</q-tooltip></span
                 >
               </q-toggle>
             </div>
 
-            <div class="col-6">
+            <div class="col-4">
               <q-toggle v-model="template.agent_text_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
-                  >Text on resolved <q-tooltip>Sends an SMS message when agent is back online</q-tooltip></span
+                  >Text on resolved<q-tooltip>Sends an SMS message when agent is back online</q-tooltip></span
                 >
               </q-toggle>
             </div>
 
-            <div class="col-6">
+            <div class="col-4">
+              <q-toggle v-model="template.agent_alert_on_resolved" color="green" left-label>
+                <span style="text-decoration: underline; cursor: help"
+                  >Dashboard alert on resolved<q-tooltip
+                    >Adds an alert in the dashboard when agent is back online</q-tooltip
+                  ></span
+                >
+              </q-toggle>
+            </div>
+
+            <div class="col-4">
               <q-toggle v-model="template.agent_always_email" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
-                  >Always email <q-tooltip>Overrides the email alert option on the agent</q-tooltip></span
+                  >Always email<q-tooltip>Overrides the email alert option on the agent</q-tooltip></span
                 >
               </q-toggle>
             </div>
 
-            <div class="col-6">
+            <div class="col-4">
               <q-toggle v-model="template.agent_always_text" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
-                  >Always sms <q-tooltip>Overrides the sms alert option on the agent</q-tooltip></span
+                  >Always sms<q-tooltip>Overrides the sms alert option on the agent</q-tooltip></span
+                >
+              </q-toggle>
+            </div>
+
+            <div class="col-4">
+              <q-toggle v-model="template.agent_always_alert" color="green" left-label>
+                <span style="text-decoration: underline; cursor: help"
+                  >Always dashboard alert<q-tooltip>Overrides the dashboard alert option on the agents</q-tooltip></span
                 >
               </q-toggle>
             </div>
@@ -127,7 +165,7 @@
             <div class="col-12">
               <q-toggle v-model="template.agent_include_desktops" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
-                  >Include desktops <q-tooltip>Includes desktop agent's offline alerts</q-tooltip></span
+                  >Include desktops<q-tooltip>Includes desktop agent's offline alerts</q-tooltip></span
                 >
               </q-toggle>
             </div>
@@ -150,7 +188,7 @@
           <q-card-section class="row">
             <div class="col-2 q-my-sm">
               <span style="text-decoration: underline; cursor: help"
-                >Email on severity <q-tooltip>Sends a email only on selected severities</q-tooltip></span
+                >Email on severity<q-tooltip>Sends a email only on selected severities</q-tooltip></span
               >
             </div>
             <div class="col-10 q-mb-sm">
@@ -158,6 +196,7 @@
                 v-model="template.check_email_alert_severity"
                 outlined
                 dense
+                options-dense
                 multiple
                 use-chips
                 emit-value
@@ -176,6 +215,7 @@
                 v-model="template.check_text_alert_severity"
                 outlined
                 dense
+                options-dense
                 multiple
                 use-chips
                 emit-value
@@ -184,7 +224,27 @@
               />
             </div>
 
-            <div class="col-6">
+            <div class="col-2 q-mt-sm">
+              <span style="text-decoration: underline; cursor: help"
+                >Dashboard alert on severity
+                <q-tooltip>Adds an alert in the dashboard only on selected severities</q-tooltip></span
+              >
+            </div>
+            <div class="col-10 q-mt-sm">
+              <q-select
+                v-model="template.check_dashboard_alert_severity"
+                outlined
+                dense
+                options-dense
+                multiple
+                use-chips
+                emit-value
+                map-options
+                :options="severityOptions"
+              />
+            </div>
+
+            <div class="col-4">
               <q-toggle v-model="template.check_email_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Email on resolved <q-tooltip>Sends an email when check alert has resolved</q-tooltip></span
@@ -192,7 +252,7 @@
               </q-toggle>
             </div>
 
-            <div class="col-6">
+            <div class="col-4">
               <q-toggle v-model="template.check_email_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Text on resolved <q-tooltip>Sends an SMS message when check alert has resolved</q-tooltip></span
@@ -200,7 +260,16 @@
               </q-toggle>
             </div>
 
-            <div class="col-6">
+            <div class="col-4">
+              <q-toggle v-model="template.check_alert_on_resolved" color="green" left-label>
+                <span style="text-decoration: underline; cursor: help"
+                  >Dashboard alert on resolved
+                  <q-tooltip>Adds an alert in the dashboard when check alert has resolved</q-tooltip></span
+                >
+              </q-toggle>
+            </div>
+
+            <div class="col-4">
               <q-toggle v-model="template.check_always_email" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Always email <q-tooltip>Overrides the email alert setting on checks</q-tooltip></span
@@ -208,7 +277,7 @@
               </q-toggle>
             </div>
 
-            <div class="col-6">
+            <div class="col-4">
               <q-toggle v-model="template.check_always_text" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Always sms <q-tooltip>Overrides the SMS alert setting on checks</q-tooltip></span
@@ -216,10 +285,11 @@
               </q-toggle>
             </div>
 
-            <div class="col-12">
-              <q-toggle v-model="template.check_include_desktops" color="green" left-label>
+            <div class="col-4">
+              <q-toggle v-model="template.check_always_alert" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
-                  >Include desktops <q-tooltip>Includes desktop agent's check alerts</q-tooltip></span
+                  >Always dashboard alert
+                  <q-tooltip>Overrides the dashboard alert option on the agents</q-tooltip></span
                 >
               </q-toggle>
             </div>
@@ -251,6 +321,7 @@
                 v-model="template.task_email_alert_severity"
                 outlined
                 dense
+                options-dense
                 multiple
                 use-chips
                 emit-value
@@ -268,6 +339,7 @@
                 v-model="template.task_text_alert_severity"
                 outlined
                 dense
+                options-dense
                 multiple
                 use-chips
                 emit-value
@@ -276,7 +348,27 @@
               />
             </div>
 
-            <div class="col-6">
+            <div class="col-2 q-mt-sm">
+              <span style="text-decoration: underline; cursor: help"
+                >Dashboard alert on severity
+                <q-tooltip>Adds an alert in the dashboard only on selected severities</q-tooltip></span
+              >:
+            </div>
+            <div class="col-10 q-mt-sm">
+              <q-select
+                v-model="template.task_dashboard_alert_severity"
+                outlined
+                dense
+                options-dense
+                multiple
+                use-chips
+                emit-value
+                map-options
+                :options="severityOptions"
+              />
+            </div>
+
+            <div class="col-4">
               <q-toggle v-model="template.task_email_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Email on resolved <q-tooltip>Sends an email when task alert has resolved</q-tooltip></span
@@ -284,7 +376,7 @@
               </q-toggle>
             </div>
 
-            <div class="col-6">
+            <div class="col-4">
               <q-toggle v-model="template.task_text_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Text on resolved <q-tooltip>Sends an SMS message when task alert has resolved</q-tooltip></span
@@ -292,7 +384,16 @@
               </q-toggle>
             </div>
 
-            <div class="col-6">
+            <div class="col-4">
+              <q-toggle v-model="template.task_alert_on_resolved" color="green" left-label>
+                <span style="text-decoration: underline; cursor: help"
+                  >Dashboard alert on resolved
+                  <q-tooltip>Adds an alert in the dashboard when task alert has resolved</q-tooltip></span
+                >
+              </q-toggle>
+            </div>
+
+            <div class="col-4">
               <q-toggle v-model="template.task_always_email" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Always email <q-tooltip>Overrides the email alert option on the task</q-tooltip></span
@@ -300,7 +401,7 @@
               </q-toggle>
             </div>
 
-            <div class="col-6">
+            <div class="col-4">
               <q-toggle v-model="template.task_always_text" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Always sms <q-tooltip>Overrides the SMS alert option on the task</q-tooltip></span
@@ -308,10 +409,10 @@
               </q-toggle>
             </div>
 
-            <div class="col-12">
-              <q-toggle v-model="template.task_include_desktops" color="green" left-label>
+            <div class="col-4">
+              <q-toggle v-model="template.task_always_alert" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
-                  >Include desktops <q-tooltip>Includes desktop agent's task alerts</q-tooltip></span
+                  >Always dashboard alert <q-tooltip>Overrides the dashboard alert option on the task</q-tooltip></span
                 >
               </q-toggle>
             </div>
@@ -350,32 +451,40 @@ export default {
       template: {
         name: "",
         is_active: true,
+        actions: [],
         email_recipients: [],
         email_from: "",
         text_recipients: [],
         agent_include_desktops: false,
         agent_email_on_resolved: false,
         agent_text_on_resolved: false,
+        agent_alert_on_resolved: false,
         agent_always_email: false,
         agent_always_text: false,
+        agent_always_alert: false,
         agent_periodic_alert_days: 0,
         check_email_alert_severity: [],
         check_text_alert_severity: [],
-        check_include_desktops: false,
+        check_dashboard_alert_severity: [],
         check_email_on_resolved: false,
         check_text_on_resolved: false,
+        check_alert_on_resolved: false,
         check_always_email: false,
         check_always_text: false,
+        check_always_alert: false,
         check_periodic_alert_days: 0,
         task_email_alert_severity: [],
         task_text_alert_severity: [],
-        task_include_desktops: false,
+        task_dashboard_alert_severity: [],
         task_email_on_resolved: false,
         task_text_on_resolved: false,
+        task_alert_on_resolved: false,
         task_always_email: false,
         task_always_text: false,
+        task_always_alert: false,
         task_periodic_alert_days: 0,
       },
+      scriptOptions: [],
       severityOptions: [
         { label: "Error", value: "error" },
         { label: "Warning", value: "warning" },
@@ -471,6 +580,13 @@ export default {
           });
       }
     },
+    getScripts() {
+      this.$axios.get("/scripts/scripts/").then(r => {
+        this.scriptOptions = r.data
+          .map(script => ({ label: script.name, value: script.id }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+      });
+    },
     show() {
       this.$refs.dialog.show();
     },
@@ -486,6 +602,7 @@ export default {
     },
   },
   mounted() {
+    this.getScripts();
     // Copy alertTemplate prop locally
     if (this.editing) Object.assign(this.template, this.alertTemplate);
   },

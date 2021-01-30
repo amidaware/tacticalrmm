@@ -48,6 +48,13 @@
               </q-icon>
             </q-th>
           </template>
+          <template v-slot:header-cell-dashboardalert="props">
+            <q-th auto-width :props="props">
+              <q-icon name="notifications" size="1.5em">
+                <q-tooltip>Dashboard Alert</q-tooltip>
+              </q-icon>
+            </q-th>
+          </template>
           <template v-slot:header-cell-policystatus="props">
             <q-th auto-width :props="props"></q-th>
           </template>
@@ -110,6 +117,15 @@
                   dense
                   @input="taskAlert(props.row.id, 'Email', props.row.email_alert, props.row.managed_by_policy)"
                   v-model="props.row.email_alert"
+                  :disable="props.row.managed_by_policy"
+                />
+              </q-td>
+              <!-- dashboard alert -->
+              <q-td>
+                <q-checkbox
+                  dense
+                  @input="taskAlert(props.row.id, 'Dashboard', props.row.dashboard_alert, props.row.managed_by_policy)"
+                  v-model="props.row.dashboard_alert"
                   :disable="props.row.managed_by_policy"
                 />
               </q-td>
@@ -185,6 +201,7 @@ export default {
         { name: "enabled", align: "left", field: "enabled" },
         { name: "smsalert", field: "text_alert", align: "left" },
         { name: "emailalert", field: "email_alert", align: "left" },
+        { name: "dashboardalert", field: "dashboard_alert", align: "left" },
         { name: "policystatus", align: "left" },
         { name: "name", label: "Name", field: "name", align: "left" },
         { name: "sync_status", label: "Sync Status", field: "sync_status", align: "left" },
@@ -244,8 +261,10 @@ export default {
 
       if (alert_type === "Email") {
         data.email_alert = action;
-      } else {
+      } else if (alert_type === "Text") {
         data.text_alert = action;
+      } else {
+        data.dashboard_alert = action;
       }
 
       const act = action ? "enabled" : "disabled";

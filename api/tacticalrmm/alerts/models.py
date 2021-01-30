@@ -103,6 +103,9 @@ class AlertTemplate(models.Model):
     name = models.CharField(max_length=100)
     is_active = models.BooleanField(default=True)
 
+    actions = models.ManyToManyField(
+        "scripts.Script", related_name="alert_templates", blank=True
+    )
     # overrides the global recipients
     email_recipients = ArrayField(
         models.CharField(max_length=100, blank=True),
@@ -123,9 +126,11 @@ class AlertTemplate(models.Model):
     # agent alert settings
     agent_email_on_resolved = BooleanField(null=True, blank=True, default=False)
     agent_text_on_resolved = BooleanField(null=True, blank=True, default=False)
+    agent_alert_on_resolved = BooleanField(null=True, blank=True, default=False)
     agent_include_desktops = BooleanField(null=True, blank=True, default=False)
     agent_always_email = BooleanField(null=True, blank=True, default=False)
     agent_always_text = BooleanField(null=True, blank=True, default=False)
+    agent_always_alert = BooleanField(null=True, blank=True, default=False)
     agent_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
 
     # check alert settings
@@ -145,11 +150,20 @@ class AlertTemplate(models.Model):
         blank=True,
         default=list,
     )
+    check_dashboard_alert_severity = ArrayField(
+        models.CharField(
+            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
+        ),
+        null=True,
+        blank=True,
+        default=list,
+    )
     check_email_on_resolved = BooleanField(null=True, blank=True, default=False)
     check_text_on_resolved = BooleanField(null=True, blank=True, default=False)
-    check_include_desktops = BooleanField(null=True, blank=True, default=False)
+    check_alert_on_resolved = BooleanField(null=True, blank=True, default=False)
     check_always_email = BooleanField(null=True, blank=True, default=False)
     check_always_text = BooleanField(null=True, blank=True, default=False)
+    check_always_alert = BooleanField(null=True, blank=True, default=False)
     check_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
 
     # task alert settings
@@ -169,11 +183,20 @@ class AlertTemplate(models.Model):
         blank=True,
         default=list,
     )
+    task_dashboard_alert_severity = ArrayField(
+        models.CharField(
+            max_length=25, blank=True, null=True, choices=SEVERITY_CHOICES
+        ),
+        null=True,
+        blank=True,
+        default=list,
+    )
     task_email_on_resolved = BooleanField(null=True, blank=True, default=False)
     task_text_on_resolved = BooleanField(null=True, blank=True, default=False)
-    task_include_desktops = BooleanField(null=True, blank=True, default=False)
+    task_alert_on_resolved = BooleanField(null=True, blank=True, default=False)
     task_always_email = BooleanField(null=True, blank=True, default=False)
     task_always_text = BooleanField(null=True, blank=True, default=False)
+    task_always_alert = BooleanField(null=True, blank=True, default=False)
     task_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
 
     def __str__(self):

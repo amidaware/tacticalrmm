@@ -1,4 +1,5 @@
 from automation.models import Policy
+from autotasks.models import AutomatedTask
 from checks.models import Check
 from agents.models import Agent
 
@@ -69,11 +70,17 @@ def update_policy_check_fields_task(checkpk):
     check = Check.objects.get(pk=checkpk)
 
     Check.objects.filter(parent_check=checkpk).update(
-        threshold=check.threshold,
+        warning_threshold=check.warning_threshold,
+        error_threshold=check.error_threshold,
+        alert_severity=check.alert_severity,
         name=check.name,
+        disk=check.disk,
         fails_b4_alert=check.fails_b4_alert,
         ip=check.ip,
+        script=check.script,
         script_args=check.script_args,
+        info_return_codes=check.info_return_codes,
+        warning_return_codes=check.warning_return_codes,
         timeout=check.timeout,
         pass_if_start_pending=check.pass_if_start_pending,
         pass_if_svc_not_exist=check.pass_if_svc_not_exist,
@@ -88,6 +95,7 @@ def update_policy_check_fields_task(checkpk):
         search_last_days=check.search_last_days,
         email_alert=check.email_alert,
         text_alert=check.text_alert,
+        dashboard_alert=check.dashboard_alert,
     )
 
 
@@ -138,13 +146,18 @@ def run_win_policy_autotask_task(task_pks):
 
 
 @app.task
-def update_policy_task_fields_task(taskpk, enabled):
-    from autotasks.models import AutomatedTask
-    from autotasks.tasks import enable_or_disable_win_task
+def update_policy_task_fields_task(taskpk):
 
-    tasks = AutomatedTask.objects.filter(parent_task=taskpk)
+    task = AutomatedTask.objects.get(pk=taskpk)
 
-    tasks.update(enabled=enabled)
-
-    for autotask in tasks:
-        enable_or_disable_win_task(autotask.pk, enabled)
+    AutomatedTask.objects.filter(parent_task=taskpk).update(
+        alert_severity=task.alert_severity,
+        email_alert=task.email_alert,
+        text_alert=task.text_alert,
+        dashboard_alert=task.dashboard_alert,
+        script=task.script,
+        script_args=task.script_args,
+        name=task.name,
+        timeout=task.timeout,
+        enabled=task.enabled,
+    )

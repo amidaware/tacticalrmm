@@ -90,6 +90,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "status",
             "overdue_text_alert",
             "overdue_email_alert",
+            "overdue_dashboard_alert",
             "last_seen",
             "boot_time",
             "checks",

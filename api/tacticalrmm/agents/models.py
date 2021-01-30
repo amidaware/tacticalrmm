@@ -52,6 +52,7 @@ class Agent(BaseAuditModel):
     mesh_node_id = models.CharField(null=True, blank=True, max_length=255)
     overdue_email_alert = models.BooleanField(default=False)
     overdue_text_alert = models.BooleanField(default=False)
+    overdue_dashboard_alert = models.BooleanField(default=False)
     overdue_time = models.PositiveIntegerField(default=30)
     check_interval = models.PositiveIntegerField(default=120)
     needs_reboot = models.BooleanField(default=False)

@@ -183,7 +183,7 @@ export default {
         remove_if_not_scheduled: false,
         task_type: "scheduled",
         timeout: 120,
-        alert_severity: info,
+        alert_severity: "info",
       },
       severityOptions: [
         { label: "Informational", value: "info" },

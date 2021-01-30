@@ -32,6 +32,13 @@
           </q-icon>
         </q-th>
       </template>
+      <template v-slot:header-cell-dashboardalert="props">
+        <q-th auto-width :props="props">
+          <q-icon name="notifications" size="1.5em">
+            <q-tooltip>Dashboard Alert</q-tooltip>
+          </q-icon>
+        </q-th>
+      </template>
       <template v-slot:header-cell-checks-status="props">
         <q-th :props="props">
           <q-icon name="fas fa-check-double" size="1.2em">
@@ -256,6 +263,13 @@
               dense
               @input="overdueAlert('email', props.row.id, props.row.overdue_email_alert)"
               v-model="props.row.overdue_email_alert"
+            />
+          </q-td>
+          <q-td>
+            <q-checkbox
+              dense
+              @input="overdueAlert('dashboard', props.row.id, props.row.overdue_dashboard_alert)"
+              v-model="props.row.overdue_dashboard_alert"
             />
           </q-td>
           <q-td key="checks-status" :props="props">

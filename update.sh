@@ -165,6 +165,9 @@ printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}
 done
 
+# forgot to add this in install script. catch any installs that don't have it enabled and enable it
+sudo systemctl enable natsapi.service
+
 CHECK_NGINX_WORKER_CONN=$(grep "worker_connections 2048" /etc/nginx/nginx.conf)
 if ! [[ $CHECK_NGINX_WORKER_CONN ]]; then
   printf >&2 "${GREEN}Changing nginx worker connections to 2048${NC}\n"

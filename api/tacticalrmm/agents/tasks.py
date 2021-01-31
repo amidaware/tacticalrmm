@@ -18,9 +18,18 @@ logger.configure(**settings.LOG_CONFIG)
 
 def agent_update(pk: int) -> str:
     agent = Agent.objects.get(pk=pk)
+
+    if pyver.parse(agent.version) <= pyver.parse("1.1.11"):
+        logger.warning(
+            f"{agent.hostname} v{agent.version} is running an unsupported version. Refusing to auto update."
+        )
+        return "not supported"
+
     # skip if we can't determine the arch
     if agent.arch is None:
-        logger.warning(f"Unable to determine arch on {agent.hostname}. Skipping.")
+        logger.warning(
+            f"Unable to determine arch on {agent.hostname}. Skipping agent update."
+        )
         return "noarch"
 
     # removed sqlite in 1.4.0 to get rid of cgo dependency
@@ -36,54 +45,42 @@ def agent_update(pk: int) -> str:
         )
         url = f"https://github.com/wh1te909/rmmagent/releases/download/v1.3.0/{inno}"
 
-    if agent.has_nats:
-        if pyver.parse(agent.version) <= pyver.parse("1.1.11"):
-            if agent.pendingactions.filter(
-                action_type="agentupdate", status="pending"
-            ).exists():
-                action = agent.pendingactions.filter(
-                    action_type="agentupdate", status="pending"
-                ).last()
-                if pyver.parse(action.details["version"]) < pyver.parse(version):
-                    action.delete()
-                else:
-                    return "pending"
+    if agent.pendingactions.filter(
+        action_type="agentupdate", status="pending"
+    ).exists():
+        agent.pendingactions.filter(
+            action_type="agentupdate", status="pending"
+        ).delete()
 
-            PendingAction.objects.create(
-                agent=agent,
-                action_type="agentupdate",
-                details={
-                    "url": url,
-                    "version": version,
-                    "inno": inno,
-                },
-            )
-        else:
-            nats_data = {
-                "func": "agentupdate",
-                "payload": {
-                    "url": url,
-                    "version": version,
-                    "inno": inno,
-                },
-            }
-            asyncio.run(agent.nats_cmd(nats_data, wait=False))
+    PendingAction.objects.create(
+        agent=agent,
+        action_type="agentupdate",
+        details={
+            "url": url,
+            "version": version,
+            "inno": inno,
+        },
+    )
 
-        return "created"
-    else:
-        logger.warning(
-            f"{agent.hostname} v{agent.version} is running an unsupported version. Refusing to update."
-        )
-
-    return "not supported"
+    nats_data = {
+        "func": "agentupdate",
+        "payload": {
+            "url": url,
+            "version": version,
+            "inno": inno,
+        },
+    }
+    asyncio.run(agent.nats_cmd(nats_data, wait=False))
+    return "created"
 
 
 @app.task
 def send_agent_update_task(pks: List[int], version: str) -> None:
     q = Agent.objects.filter(pk__in=pks)
-    agents: List[int] = [
+    agents = [i.pk for i in q]
+    """ agents: List[int] = [
         i.pk for i in q if pyver.parse(i.version) < pyver.parse(version)
-    ]
+    ] """
     chunks = (agents[i : i + 30] for i in range(0, len(agents), 30))
     for chunk in chunks:
         for pk in chunk:

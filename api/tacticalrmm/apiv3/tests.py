@@ -26,21 +26,6 @@ class TestAPIv3(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    def test_get_mesh_info(self):
-        url = f"/api/v3/{self.agent.pk}/meshinfo/"
-
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 200)
-
-        self.check_not_authenticated("get", url)
-
-    def test_get_winupdater(self):
-        url = f"/api/v3/{self.agent.agent_id}/winupdater/"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 200)
-
-        self.check_not_authenticated("get", url)
-
     def test_sysinfo(self):
         # TODO replace this with golang wmi sample data
 
@@ -54,23 +39,6 @@ class TestAPIv3(TacticalTestCase):
 
         payload = {"agent_id": self.agent.agent_id, "sysinfo": wmi_py}
 
-        r = self.client.patch(url, payload, format="json")
-        self.assertEqual(r.status_code, 200)
-
-        self.check_not_authenticated("patch", url)
-
-    def test_hello_patch(self):
-        url = "/api/v3/hello/"
-        payload = {
-            "agent_id": self.agent.agent_id,
-            "logged_in_username": "None",
-            "disks": [],
-        }
-
-        r = self.client.patch(url, payload, format="json")
-        self.assertEqual(r.status_code, 200)
-
-        payload["logged_in_username"] = "Bob"
         r = self.client.patch(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
 

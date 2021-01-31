@@ -7,8 +7,8 @@ jobs:
     displayName: "Setup"
     strategy:
       matrix:
-        Ubuntu20:
-          AGENT_NAME: "rmm-ubu20"
+        Debian10:
+          AGENT_NAME: "azpipelines-deb10"
 
     pool:
       name: linux-vms
@@ -23,7 +23,7 @@ jobs:
 
           rm -rf /myagent/_work/1/s/api/env
           cd /myagent/_work/1/s/api
-          python3 -m venv env
+          python3.8 -m venv env
           source env/bin/activate
           cd /myagent/_work/1/s/api/tacticalrmm
           pip install --no-cache-dir --upgrade pip

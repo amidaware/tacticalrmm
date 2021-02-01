@@ -59,9 +59,13 @@ def get_agent_versions(request):
 
 @api_view(["POST"])
 def update_agents(request):
-    pks = request.data["pks"]
-    version = request.data["version"]
-    send_agent_update_task.delay(pks=pks, version=version)
+    q = Agent.objects.filter(pk__in=request.data["pks"]).only("pk", "version")
+    pks: List[int] = [
+        i.pk
+        for i in q
+        if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
+    ]
+    send_agent_update_task.delay(pks=pks)
     return Response("ok")
 
 

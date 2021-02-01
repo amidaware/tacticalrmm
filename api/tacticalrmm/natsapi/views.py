@@ -45,10 +45,24 @@ class NatsCheckIn(APIView):
     permission_classes = []
 
     def patch(self, request):
+        updated = False
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        if pyver.parse(request.data["version"]) > pyver.parse(agent.version):
+            updated = True
         agent.version = request.data["version"]
         agent.last_seen = djangotime.now()
         agent.save(update_fields=["version", "last_seen"])
+
+        # change agent update pending status to completed if agent has just updated
+        if (
+            updated
+            and agent.pendingactions.filter(
+                action_type="agentupdate", status="pending"
+            ).exists()
+        ):
+            agent.pendingactions.filter(
+                action_type="agentupdate", status="pending"
+            ).update(status="completed")
 
         if agent.agentoutages.exists() and agent.agentoutages.last().is_active:
             last_outage = agent.agentoutages.last()

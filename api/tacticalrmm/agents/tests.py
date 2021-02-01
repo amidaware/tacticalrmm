@@ -762,26 +762,28 @@ class TestAgentTasks(TacticalTestCase):
         agent_noarch = baker.make_recipe(
             "agents.agent",
             operating_system="Error getting OS",
-            version="1.1.11",
+            version=settings.LATEST_AGENT_VER,
         )
         r = agent_update(agent_noarch.pk)
         self.assertEqual(r, "noarch")
-        self.assertEqual(
-            PendingAction.objects.filter(
-                agent=agent_noarch, action_type="agentupdate"
-            ).count(),
-            0,
-        )
 
-        agent64_111 = baker.make_recipe(
+        agent_1111 = baker.make_recipe(
             "agents.agent",
             operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
             version="1.1.11",
         )
+        r = agent_update(agent_1111.pk)
+        self.assertEqual(r, "not supported")
 
-        r = agent_update(agent64_111.pk)
+        agent64_1112 = baker.make_recipe(
+            "agents.agent",
+            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
+            version="1.1.12",
+        )
+
+        r = agent_update(agent64_1112.pk)
         self.assertEqual(r, "created")
-        action = PendingAction.objects.get(agent__pk=agent64_111.pk)
+        action = PendingAction.objects.get(agent__pk=agent64_1112.pk)
         self.assertEqual(action.action_type, "agentupdate")
         self.assertEqual(action.status, "pending")
         self.assertEqual(
@@ -790,6 +792,17 @@ class TestAgentTasks(TacticalTestCase):
         )
         self.assertEqual(action.details["inno"], "winagent-v1.3.0.exe")
         self.assertEqual(action.details["version"], "1.3.0")
+        nats_cmd.assert_called_with(
+            {
+                "func": "agentupdate",
+                "payload": {
+                    "url": "https://github.com/wh1te909/rmmagent/releases/download/v1.3.0/winagent-v1.3.0.exe",
+                    "version": "1.3.0",
+                    "inno": "winagent-v1.3.0.exe",
+                },
+            },
+            wait=False,
+        )
 
         agent_64_130 = baker.make_recipe(
             "agents.agent",
@@ -810,26 +823,9 @@ class TestAgentTasks(TacticalTestCase):
             },
             wait=False,
         )
-
-        agent64_old = baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version="1.2.1",
-        )
-        nats_cmd.return_value = "ok"
-        r = agent_update(agent64_old.pk)
-        self.assertEqual(r, "created")
-        nats_cmd.assert_called_with(
-            {
-                "func": "agentupdate",
-                "payload": {
-                    "url": "https://github.com/wh1te909/rmmagent/releases/download/v1.3.0/winagent-v1.3.0.exe",
-                    "version": "1.3.0",
-                    "inno": "winagent-v1.3.0.exe",
-                },
-            },
-            wait=False,
-        )
+        action = PendingAction.objects.get(agent__pk=agent_64_130.pk)
+        self.assertEqual(action.action_type, "agentupdate")
+        self.assertEqual(action.status, "pending")
 
     """ @patch("agents.models.Agent.salt_api_async")
     @patch("agents.tasks.sleep", return_value=None)

@@ -47,7 +47,11 @@ class NatsCheckIn(APIView):
     def patch(self, request):
         updated = False
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-        if pyver.parse(request.data["version"]) > pyver.parse(agent.version):
+        if pyver.parse(request.data["version"]) > pyver.parse(
+            agent.version
+        ) or pyver.parse(request.data["version"]) == pyver.parse(
+            settings.LATEST_AGENT_VER
+        ):
             updated = True
         agent.version = request.data["version"]
         agent.last_seen = djangotime.now()

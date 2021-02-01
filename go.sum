@@ -87,8 +87,8 @@ github.com/ugorji/go v1.2.3/go.mod h1:5l8GZ8hZvmL4uMdy+mhCO1LjswGRYco9Q3HfuisB21
 github.com/ugorji/go/codec v1.2.3 h1:/mVYEV+Jo3IZKeA5gBngN0AvNnQltEDkR+eQikkWQu0=
 github.com/ugorji/go/codec v1.2.3/go.mod h1:5FxzDJIgeiWJZslYHPj+LS1dq1ZBQVelZFnjsFGI/Uc=
 github.com/wh1te909/go-win64api v0.0.0-20201021040544-8fba2a0fc3d0/go.mod h1:cfD5/vNQFm5PD5Q32YYYBJ6VIs9etzp8CJ9dinUcpUA=
-github.com/wh1te909/rmmagent v1.4.2-0.20210130060922-47b25c29362f h1:f6SUSCzwBSNVby+rwheWbcgbJoK4CC+w+WyVuVFyCks=
-github.com/wh1te909/rmmagent v1.4.2-0.20210130060922-47b25c29362f/go.mod h1:mcI27szhAGjAQzhX8eCsluE5670kUAyi3tJVJa6LNTo=
+github.com/wh1te909/rmmagent v1.4.2 h1:noG/ELSue3d6UF7o0gp1ty0DpGbfrVz0VG6NEQm9kGM=
+github.com/wh1te909/rmmagent v1.4.2/go.mod h1:mcI27szhAGjAQzhX8eCsluE5670kUAyi3tJVJa6LNTo=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
 golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=

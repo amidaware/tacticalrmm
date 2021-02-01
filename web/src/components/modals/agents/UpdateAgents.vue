@@ -38,7 +38,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 export default {
   name: "UpdateAgents",
@@ -58,7 +57,7 @@ export default {
     },
     getVersions() {
       this.$q.loading.show();
-      axios
+      this.$axios
         .get("/agents/getagentversions/")
         .then(r => {
           this.versions = r.data.versions;
@@ -72,8 +71,8 @@ export default {
         });
     },
     update() {
-      const data = { version: this.version, pks: this.group };
-      axios
+      const data = { pks: this.group };
+      this.$axios
         .post("/agents/updateagents/", data)
         .then(r => {
           this.$emit("close");

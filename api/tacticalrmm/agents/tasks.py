@@ -75,13 +75,8 @@ def agent_update(pk: int) -> str:
 
 
 @app.task
-def send_agent_update_task(pks: List[int], version: str) -> None:
-    q = Agent.objects.filter(pk__in=pks)
-    agents = [i.pk for i in q]
-    """ agents: List[int] = [
-        i.pk for i in q if pyver.parse(i.version) < pyver.parse(version)
-    ] """
-    chunks = (agents[i : i + 30] for i in range(0, len(agents), 30))
+def send_agent_update_task(pks: List[int]) -> None:
+    chunks = (pks[i : i + 30] for i in range(0, len(pks), 30))
     for chunk in chunks:
         for pk in chunk:
             agent_update(pk)

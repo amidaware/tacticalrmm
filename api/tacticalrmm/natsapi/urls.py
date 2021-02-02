@@ -10,4 +10,5 @@ urlpatterns = [
     path("wmi/", views.NatsWMI.as_view()),
     path("offline/", views.OfflineAgents.as_view()),
     path("logcrash/", views.LogCrash.as_view()),
+    path("superseded/", views.SupersededWinUpdate.as_view()),
 ]

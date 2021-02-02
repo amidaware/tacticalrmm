@@ -258,9 +258,23 @@ class NatsWinUpdates(APIView):
         agent.delete_superseded_updates()
 
         # more superseded updates cleanup
-        for u in agent.winupdates.filter(
-            date_installed__isnull=True, result="failed"
-        ).exclude(installed=True):
+        if pyver.parse(agent.version) <= pyver.parse("1.4.2"):
+            for u in agent.winupdates.filter(
+                date_installed__isnull=True, result="failed"
+            ).exclude(installed=True):
+                u.delete()
+
+        return Response("ok")
+
+
+class SupersededWinUpdate(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        updates = agent.winupdates.filter(guid=request.data["guid"])
+        for u in updates:
             u.delete()
 
         return Response("ok")

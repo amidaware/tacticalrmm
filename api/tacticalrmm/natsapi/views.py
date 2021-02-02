@@ -256,6 +256,13 @@ class NatsWinUpdates(APIView):
                 ).save()
 
         agent.delete_superseded_updates()
+
+        # more superseded updates cleanup
+        for u in agent.winupdates.filter(
+            date_installed__isnull=True, result="failed"
+        ).exclude(installed=True):
+            u.delete()
+
         return Response("ok")
 
 

@@ -68,7 +68,11 @@
           </q-td>
           <q-td>{{ props.row.severity }}</q-td>
           <q-td>{{ formatMessage(props.row.title) }}</q-td>
-          <q-td @click.native="showFullMsg(props.row.title, props.row.description)">
+          <q-td
+            @click.native="
+              showFullMsg(props.row.title, props.row.description, props.row.more_info_urls, props.row.categories)
+            "
+          >
             <span style="cursor: pointer; text-decoration: underline" class="text-primary">{{
               formatMessage(props.row.description)
             }}</span>
@@ -125,7 +129,7 @@ export default {
         },
         {
           name: "description",
-          label: "Description",
+          label: "More Info",
           field: "description",
           align: "left",
           sortable: true,
@@ -136,6 +140,14 @@ export default {
           field: "date_installed",
           align: "left",
           sortable: true,
+        },
+        {
+          name: "more_info_urls",
+          field: "more_info_urls",
+        },
+        {
+          name: "categories",
+          field: "categories",
         },
       ],
       visibleColumns: ["action", "installed", "severity", "title", "description", "date_installed"],
@@ -155,10 +167,19 @@ export default {
     formatMessage(msg) {
       return msg.substring(0, 80) + "...";
     },
-    showFullMsg(title, msg) {
+    showFullMsg(title, msg, urls, categories) {
+      let support_urls = "";
+      urls.forEach(u => {
+        support_urls += `<a href='${u}' target='_blank'>${u}</a><br/>`;
+      });
+      let cats = categories.join(", ");
       this.$q.dialog({
         title: title,
-        message: msg.split(". ").join(".<br />"),
+        message:
+          `<b>Categories:</b> ${cats}<br/><br/>` +
+          "<b>Description</b><br/>" +
+          msg.split(". ").join(".<br />") +
+          `<br/><br/><b>Support Urls</b><br/>${support_urls}`,
         html: true,
         fullWidth: true,
       });

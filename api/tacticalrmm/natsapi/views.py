@@ -47,7 +47,11 @@ class NatsCheckIn(APIView):
     def patch(self, request):
         updated = False
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-        if pyver.parse(request.data["version"]) > pyver.parse(agent.version):
+        if pyver.parse(request.data["version"]) > pyver.parse(
+            agent.version
+        ) or pyver.parse(request.data["version"]) == pyver.parse(
+            settings.LATEST_AGENT_VER
+        ):
             updated = True
         agent.version = request.data["version"]
         agent.last_seen = djangotime.now()
@@ -252,6 +256,27 @@ class NatsWinUpdates(APIView):
                 ).save()
 
         agent.delete_superseded_updates()
+
+        # more superseded updates cleanup
+        if pyver.parse(agent.version) <= pyver.parse("1.4.2"):
+            for u in agent.winupdates.filter(
+                date_installed__isnull=True, result="failed"
+            ).exclude(installed=True):
+                u.delete()
+
+        return Response("ok")
+
+
+class SupersededWinUpdate(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        updates = agent.winupdates.filter(guid=request.data["guid"])
+        for u in updates:
+            u.delete()
+
         return Response("ok")
 
 

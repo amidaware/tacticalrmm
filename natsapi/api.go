@@ -161,6 +161,13 @@ func Listen(apihost, natshost, version string, debug bool) {
 					rClient.R().SetBody(p).Patch("/winupdates/")
 				}
 			}()
+		case "superseded":
+			go func() {
+				var p *rmm.SupersededUpdate
+				if err := dec.Decode(&p); err == nil {
+					rClient.R().SetBody(p).Post("/superseded/")
+				}
+			}()
 		case "needsreboot":
 			go func() {
 				var p *rmm.AgentNeedsReboot

@@ -86,21 +86,31 @@
                 :class="rowSelectedClass(props.row.id, selectedTemplate)"
                 @click="selectedTemplate = props.row"
                 @contextmenu="selectedTemplate = props.row"
+                @dblclick="showEditTemplateModal(props.row)"
               >
                 <!-- context menu -->
                 <q-menu context-menu>
                   <q-list dense style="min-width: 200px">
-                    <q-item clickable v-close-popup @click="showEditTemplateModal(props.row)" id="context-edit">
+                    <q-item clickable v-close-popup @click="showEditTemplateModal(props.row)">
                       <q-item-section side>
                         <q-icon name="edit" />
                       </q-item-section>
                       <q-item-section>Edit</q-item-section>
                     </q-item>
-                    <q-item clickable v-close-popup @click="deleteTemplate(props.row)" id="context-delete">
+                    <q-item clickable v-close-popup @click="deleteTemplate(props.row)">
                       <q-item-section side>
                         <q-icon name="delete" />
                       </q-item-section>
                       <q-item-section>Delete</q-item-section>
+                    </q-item>
+
+                    <q-separator></q-separator>
+
+                    <q-item clickable v-close-popup @click="showAlertExclusions(props.row)">
+                      <q-item-section side>
+                        <q-icon name="rule" />
+                      </q-item-section>
+                      <q-item-section>Alert Exclusions</q-item-section>
                     </q-item>
 
                     <q-separator></q-separator>
@@ -137,7 +147,18 @@
                 <!-- applied to -->
                 <q-td>Applied To Placeholder</q-td>
                 <!-- alert exclusions -->
-                <q-td> Alert Exclusions </q-td>
+                <q-td>
+                  <span
+                    style="cursor: pointer; text-decoration: underline"
+                    class="text-primary"
+                    @click="showAlertExclusions(props.row)"
+                    >Alert Exclusions ({{
+                      props.row.excluded_agents.length +
+                      props.row.excluded_clients.length +
+                      props.row.excluded_sites.length
+                    }})</span
+                  ></q-td
+                >
                 <!-- actions -->
                 <q-td>{{ props.row.actions.length }} actions</q-td>
               </q-tr>
@@ -152,6 +173,7 @@
 <script>
 import mixins from "@/mixins/mixins";
 import AlertTemplateForm from "@/components/modals/alerts/AlertTemplateForm";
+import AlertExclusions from "@/components/modals/alerts/AlertExclusions";
 
 export default {
   name: "AlertsManager",
@@ -252,6 +274,17 @@ export default {
         .dialog({
           component: AlertTemplateForm,
           parent: this,
+        })
+        .onOk(() => {
+          this.refresh();
+        });
+    },
+    showAlertExclusions(template) {
+      this.$q
+        .dialog({
+          component: AlertExclusions,
+          parent: this,
+          template: template,
         })
         .onOk(() => {
           this.refresh();

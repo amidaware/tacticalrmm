@@ -99,17 +99,17 @@
           </template>
           <!-- body slots -->
           <template v-slot:body="props">
-            <q-tr :props="props">
+            <q-tr :props="props" @dblclick="showEditDialog(props.row)">
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item clickable v-close-popup @click="showEditDialog(props.row)" id="context-edit">
+                  <q-item clickable v-close-popup @click="showEditDialog(props.row)">
                     <q-item-section side>
                       <q-icon name="edit" />
                     </q-item-section>
                     <q-item-section>Edit</q-item-section>
                   </q-item>
-                  <q-item clickable v-close-popup @click="deleteCheck(props.row)" id="context-delete">
+                  <q-item clickable v-close-popup @click="deleteCheck(props.row)">
                     <q-item-section side>
                       <q-icon name="delete" />
                     </q-item-section>
@@ -118,7 +118,7 @@
 
                   <q-separator></q-separator>
 
-                  <q-item clickable v-close-popup @click="showPolicyStatus(props.row)" id="context-status">
+                  <q-item clickable v-close-popup @click="showPolicyStatus(props.row)">
                     <q-item-section side>
                       <q-icon name="sync" />
                     </q-item-section>

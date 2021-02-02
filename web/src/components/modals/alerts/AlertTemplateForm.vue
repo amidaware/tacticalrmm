@@ -559,7 +559,7 @@ export default {
           .put(`alerts/alerttemplates/${this.template.id}/`, this.template)
           .then(r => {
             this.$q.loading.hide();
-            this.onOK();
+            this.onOk();
             this.notifySuccess("Alert Template edited!");
           })
           .catch(e => {
@@ -571,7 +571,7 @@ export default {
           .post("alerts/alerttemplates/", this.template)
           .then(r => {
             this.$q.loading.hide();
-            this.onOK();
+            this.onOk();
             this.notifySuccess(`Alert Template was added!`);
           })
           .catch(e => {
@@ -596,7 +596,7 @@ export default {
     onHide() {
       this.$emit("hide");
     },
-    onOK() {
+    onOk() {
       this.$emit("ok");
       this.hide();
     },

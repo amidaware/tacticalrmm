@@ -64,7 +64,7 @@
           </template>
           <!-- body slots -->
           <template v-slot:body="props" :props="props">
-            <q-tr @contextmenu="editTaskPk = props.row.id">
+            <q-tr @dblclick="showEditTask(props.row)">
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
@@ -74,7 +74,7 @@
                     </q-item-section>
                     <q-item-section>Run task now</q-item-section>
                   </q-item>
-                  <q-item clickable v-close-popup @click="showEditTask(props.row)" v-if="!props.row.managed_by_policy">
+                  <q-item clickable v-close-popup @click="showEditTask(props.row)">
                     <q-item-section side>
                       <q-icon name="edit" />
                     </q-item-section>

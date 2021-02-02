@@ -413,27 +413,37 @@ class Agent(BaseAuditModel):
         if self.policy and self.policy.alert_template:
             return self.policy.alert_template
 
-        # if agent is a server, check if policy with alert template is assigned to the site, client, or core
-        elif self.monitoring_type == "server":
-            if site.server_policy and site.server_policy.alert_template:
-                return site.server_policy.alert_template
-            elif client.server_policy and client.server_policy.alert_template:
-                return client.server_policy.alert_template
-            elif core.server_policy and core.server_policy.alert_template:
-                return core.server_policy.alert_template
+        # check if policy with alert template is assigned to the site and return
+        elif (
+            self.monitoring_type == "server"
+            and site.server_policy
+            and site.server_policy.alert_template
+        ):
+            return site.server_policy.alert_template
+        elif (
+            self.monitoring_type == "workstation"
+            and site.workstation_policy
+            and site.workstation_policy.alert_template
+        ):
+            return site.workstation_policy.alert_template
 
-        # if agent is a workstation, check if policy with alert template is assigned to the site, client, or core
-        elif self.monitoring_type == "workstation":
-            if site.workstation_policy and site.workstation_policy.alert_template:
-                return site.workstation_policy.alert_template
-            elif client.workstation_policy and client.workstation_policy.alert_template:
-                return client.workstation_policy.alert_template
-            elif core.workstation_policy and core.workstation_policy.alert_template:
-                return core.workstation_policy.alert_template
-
-        # check if alert template is on site and return
+        # check if alert template is assigned to site and return
         elif site.alert_template:
             return site.alert_template
+
+        # check if policy with alert template is assigned to the client and return
+        elif (
+            self.monitoring_type == "server"
+            and client.server_policy
+            and client.server_policy.alert_template
+        ):
+            return client.server_policy.alert_template
+        elif (
+            self.monitoring_type == "workstation"
+            and client.workstation_policy
+            and client.workstation_policy.alert_template
+        ):
+            return client.workstation_policy.alert_template
 
         # check if alert template is on client and return
         elif client.alert_template:
@@ -442,6 +452,20 @@ class Agent(BaseAuditModel):
         # check if alert template is applied globally and return
         elif core.alert_template:
             return core.alert_template
+
+        # if agent is a workstation, check if policy with alert template is assigned to the site, client, or core
+        elif (
+            self.monitoring_type == "server"
+            and core.server_policy
+            and core.server_policy.alert_template
+        ):
+            return core.server_policy.alert_template
+        elif (
+            self.monitoring_type == "workstation"
+            and core.workstation_policy
+            and core.workstation_policy.alert_template
+        ):
+            return core.workstation_policy.alert_template
 
         # nothing found returning None
         return None

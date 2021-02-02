@@ -181,6 +181,16 @@ class AlertTemplate(models.Model):
     task_always_alert = BooleanField(null=True, blank=True, default=False)
     task_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
 
+    excluded_sites = models.ManyToManyField(
+        "clients.Site", related_name="alert_exclusions", blank=True
+    )
+    excluded_clients = models.ManyToManyField(
+        "clients.Client", related_name="alert_exclusions", blank=True
+    )
+    excluded_agents = models.ManyToManyField(
+        "agents.Agent", related_name="alert_exclusions", blank=True
+    )
+
     def __str__(self):
         return self.name
 
@@ -230,26 +240,3 @@ class AlertTemplate(models.Model):
     @property
     def is_default_template(self) -> bool:
         return self.default_alert_template.exists()
-
-
-class AlertExclusion(models.Model):
-    alert_template = models.ForeignKey(
-        "AlertTemplate",
-        related_name="template",
-        on_delete=models.CASCADE,
-    )
-    sites = models.ManyToManyField(
-        "clients.Site",
-        related_name="alert_exclusions",
-    )
-    clients = models.ManyToManyField(
-        "clients.Client",
-        related_name="alert_exclusions",
-    )
-    agents = models.ManyToManyField(
-        "agents.Agent",
-        related_name="alert_exclusions",
-    )
-
-    def __str__(self):
-        return f"Alert Exclusions for {self.alert_template.name}"

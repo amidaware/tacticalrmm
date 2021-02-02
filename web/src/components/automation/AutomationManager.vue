@@ -85,6 +85,7 @@
                 :class="rowSelectedClass(props.row.id, selectedPolicy)"
                 @click="selectedPolicy = props.row"
                 @contextmenu="selectedPolicy = props.row"
+                @dblclick="showEditPolicyForm(props.row)"
               >
                 <!-- context menu -->
                 <q-menu context-menu>

@@ -9,7 +9,11 @@ from rest_framework.response import Response
 
 from .models import Alert, AlertTemplate
 
-from .serializers import AlertSerializer, AlertTemplateSerializer
+from .serializers import (
+    AlertSerializer,
+    AlertTemplateSerializer,
+    AlertTemplateRelationSerializer,
+)
 
 
 class GetAddAlerts(APIView):
@@ -192,9 +196,9 @@ class GetAddAlertTemplates(APIView):
 
 class GetUpdateDeleteAlertTemplate(APIView):
     def get(self, request, pk):
-        alert = get_object_or_404(AlertTemplate, pk=pk)
+        alert_template = get_object_or_404(AlertTemplate, pk=pk)
 
-        return Response(AlertSerializer(alert).data)
+        return Response(AlertTemplateSerializer(alert_template).data)
 
     def put(self, request, pk):
         alert_template = get_object_or_404(AlertTemplate, pk=pk)
@@ -211,3 +215,9 @@ class GetUpdateDeleteAlertTemplate(APIView):
         get_object_or_404(AlertTemplate, pk=pk).delete()
 
         return Response("ok")
+
+
+class RelatedAlertTemplate(APIView):
+    def get(self, request, pk):
+        alert_template = get_object_or_404(AlertTemplate, pk=pk)
+        return Response(AlertTemplateRelationSerializer(alert_template).data)

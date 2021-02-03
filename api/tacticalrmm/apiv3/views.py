@@ -110,8 +110,8 @@ class TaskRunner(APIView):
         elif task.alert_severity and request.data["retcode"] == 0:
             from alerts.models import Alert
 
-            if Alert.objects.filter(task=task, resolved=False).exists():
-                alert = Alert.objects.get(task=task, resolved=False)
+            if Alert.objects.filter(assigned_task=task, resolved=False).exists():
+                alert = Alert.objects.get(assigned_task=task, resolved=False)
                 alert.resolve()
 
                 # TODO: send resolved email/text alert if configured

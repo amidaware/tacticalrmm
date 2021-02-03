@@ -1,11 +1,13 @@
 <template>
   <q-dialog ref="dialog" @hide="onHide">
     <q-card style="width: 60vw">
-      <q-card-section class="row items-center">
-        <div class="text-h6">{{ policy.name }} Relations</div>
+      <q-bar>
+        {{ policy.name }} Relations
         <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
-      </q-card-section>
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
       <q-card-section
         class="row items-center"
         v-if="related.default_server_policy || related.default_workstation_policy"

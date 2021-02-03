@@ -317,7 +317,8 @@ export default {
       this.editCheckPK = check.id;
       this.showDialog = true;
     },
-    hideDialog(component) {
+    hideDialog() {
+      this.getChecks();
       this.showDialog = false;
       this.dialogComponent = null;
       this.editCheckPK = null;
@@ -331,7 +332,7 @@ export default {
         })
         .onOk(() => {
           this.$q.loading.show();
-          this.axios
+          this.$axios
             .delete(`/checks/${check.id}/check/`)
             .then(r => {
               this.getChecks();

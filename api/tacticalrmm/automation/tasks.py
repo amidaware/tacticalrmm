@@ -22,7 +22,7 @@ def generate_agent_checks_from_policies_task(policypk, create_tasks=False):
             "pk", "monitoring_type"
         )
     else:
-        agents = policy.related_agents()
+        agents = policy.related_agents().only("pk")
 
     for agent in agents:
         agent.generate_checks_from_policies()

@@ -228,7 +228,7 @@
                 <q-item-section side>
                   <q-icon size="xs" name="policy" />
                 </q-item-section>
-                <q-item-section>Edit Policies</q-item-section>
+                <q-item-section>Assign Automation Policy</q-item-section>
               </q-item>
 
               <q-item clickable v-close-popup @click.stop.prevent="showAgentRecovery = true">

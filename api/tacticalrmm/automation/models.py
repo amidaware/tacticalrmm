@@ -11,7 +11,7 @@ class Policy(BaseAuditModel):
     enforced = models.BooleanField(default=False)
     alert_template = models.ForeignKey(
         "alerts.AlertTemplate",
-        related_name="alert_template",
+        related_name="policies",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -152,7 +152,9 @@ class Policy(BaseAuditModel):
             delete_win_task_schedule.delay(task.pk)
 
         # handle matching tasks that haven't synced to agent yet or pending deletion due to agent being offline
-        for action in agent.pendingactions.exclude(status="completed"):
+        for action in agent.pendingactions.filter(action_type="taskaction").exclude(
+            status="completed"
+        ):
             task = AutomatedTask.objects.get(pk=action.details["task_id"])
             if (
                 task.parent_task in agent_tasks_parent_pks

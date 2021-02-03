@@ -10,214 +10,215 @@
           </q-btn>
         </q-bar>
         <div class="q-pa-md">
-          <div class="q-gutter-sm">
-            <q-btn label="New" dense flat push unelevated no-caps icon="add" @click="showAddPolicyForm" />
-            <q-btn
-              label="Edit"
-              :disable="!selectedPolicy"
+          <q-card-section style="min-height: 35vh; max-height: 35vh">
+            <div class="q-gutter-sm">
+              <q-btn label="New" dense flat push unelevated no-caps icon="add" @click="showAddPolicyForm" />
+              <q-btn
+                label="Edit"
+                :disable="!selectedPolicy"
+                dense
+                flat
+                push
+                unelevated
+                no-caps
+                icon="edit"
+                @click="showEditPolicyForm(selectedPolicy)"
+              />
+              <q-btn
+                label="Delete"
+                :disable="!selectedPolicy"
+                dense
+                flat
+                push
+                unelevated
+                no-caps
+                icon="delete"
+                @click="deletePolicy(selectedPolicy)"
+              />
+              <q-btn
+                label="Policy Overview"
+                dense
+                flat
+                push
+                unelevated
+                no-caps
+                icon="remove_red_eye"
+                @click="showPolicyOverview"
+              />
+            </div>
+            <q-table
+              :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+              class="tabs-tbl-sticky"
+              :data="policies"
+              :columns="columns"
+              :pagination.sync="pagination"
+              :rows-per-page-options="[0]"
               dense
-              flat
-              push
-              unelevated
-              no-caps
-              icon="edit"
-              @click="showEditPolicyForm(selectedPolicy)"
-            />
-            <q-btn
-              label="Delete"
-              :disable="!selectedPolicy"
-              dense
-              flat
-              push
-              unelevated
-              no-caps
-              icon="delete"
-              @click="deletePolicy(selectedPolicy)"
-            />
-            <q-btn
-              label="Policy Overview"
-              dense
-              flat
-              push
-              unelevated
-              no-caps
-              icon="remove_red_eye"
-              @click="showPolicyOverview"
-            />
-          </div>
-          <q-table
-            style="max-height: 35vh"
-            :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
-            class="tabs-tbl-sticky"
-            :data="policies"
-            :columns="columns"
-            :pagination.sync="pagination"
-            :rows-per-page-options="[0]"
-            dense
-            row-key="id"
-            binary-state-sort
-            hide-pagination
-            virtual-scroll
-            no-data-label="No Policies"
-          >
-            <!-- header slots -->
-            <template v-slot:header-cell-active="props">
-              <q-th :props="props" auto-width>
-                <q-icon name="power_settings_new" size="1.5em">
-                  <q-tooltip>Enable Policy</q-tooltip>
-                </q-icon>
-              </q-th>
-            </template>
-
-            <template v-slot:header-cell-enforced="props">
-              <q-th :props="props" auto-width>
-                <q-icon name="security" size="1.5em">
-                  <q-tooltip>Enforce Policy (Will override Agent tasks/checks)</q-tooltip>
-                </q-icon>
-              </q-th>
-            </template>
-
-            <!-- body slots -->
-            <template v-slot:body="props">
-              <q-tr
-                :props="props"
-                class="cursor-pointer"
-                :class="rowSelectedClass(props.row.id, selectedPolicy)"
-                @click="selectedPolicy = props.row"
-                @contextmenu="selectedPolicy = props.row"
-                @dblclick="showEditPolicyForm(props.row)"
-              >
-                <!-- context menu -->
-                <q-menu context-menu>
-                  <q-list dense style="min-width: 200px">
-                    <q-item clickable v-close-popup @click="showEditPolicyForm(props.row)">
-                      <q-item-section side>
-                        <q-icon name="edit" />
-                      </q-item-section>
-                      <q-item-section>Edit</q-item-section>
-                    </q-item>
-
-                    <q-item clickable v-close-popup @click="showCopyPolicyForm(props.row)">
-                      <q-item-section side>
-                        <q-icon name="content_copy" />
-                      </q-item-section>
-                      <q-item-section>Copy</q-item-section>
-                    </q-item>
-
-                    <q-item clickable v-close-popup @click="deletePolicy(props.row)">
-                      <q-item-section side>
-                        <q-icon name="delete" />
-                      </q-item-section>
-                      <q-item-section>Delete</q-item-section>
-                    </q-item>
-
-                    <q-separator></q-separator>
-
-                    <q-item clickable v-close-popup @click="showRelations(props.row)">
-                      <q-item-section side>
-                        <q-icon name="account_tree" />
-                      </q-item-section>
-                      <q-item-section>Show Relations</q-item-section>
-                    </q-item>
-
-                    <q-item clickable v-close-popup @click="showPatchPolicyForm(props.row)">
-                      <q-item-section side>
-                        <q-icon name="system_update" />
-                      </q-item-section>
-                      <q-item-section>{{ patchPolicyText(props.row) }}</q-item-section>
-                    </q-item>
-
-                    <q-item clickable v-close-popup @click="showAlertTemplateAdd(props.row)">
-                      <q-item-section side>
-                        <q-icon name="warning" />
-                      </q-item-section>
-                      <q-item-section>{{ alertTemplateText(props.row) }}</q-item-section>
-                    </q-item>
-
-                    <q-separator></q-separator>
-
-                    <q-item clickable v-close-popup>
-                      <q-item-section>Close</q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-menu>
-                <!-- enabled checkbox -->
-                <q-td>
-                  <q-checkbox dense @input="toggleCheckbox(props.row, 'Active')" v-model="props.row.active" />
-                </q-td>
-                <!-- enforced checkbox -->
-                <q-td>
-                  <q-checkbox dense @input="toggleCheckbox(props.row, 'Enforced')" v-model="props.row.enforced" />
-                </q-td>
-                <q-td>
-                  {{ props.row.name }}
-                  <q-chip v-if="props.row.default_server_policy" color="primary" text-color="white" size="sm"
-                    >Default Server</q-chip
-                  >
-                  <q-chip v-if="props.row.default_workstation_policy" color="primary" text-color="white" size="sm"
-                    >Default Workstation</q-chip
-                  >
-                </q-td>
-                <q-td>{{ props.row.desc }}</q-td>
-                <q-td>
-                  <span
-                    style="cursor: pointer; text-decoration: underline"
-                    class="text-primary"
-                    @click="showRelations(props.row)"
-                    >{{ `Show Relations (${props.row.agents_count}+)` }}</span
-                  >
-                </q-td>
-                <q-td>
-                  <span
-                    style="cursor: pointer; text-decoration: underline"
-                    class="text-primary"
-                    @click="showPatchPolicyForm(props.row)"
-                    >{{ patchPolicyText(props.row) }}</span
-                  >
-                </q-td>
-                <q-td>
-                  <span
-                    style="cursor: pointer; text-decoration: underline"
-                    class="text-primary"
-                    @click="showAlertTemplateAdd(props.row)"
-                    >{{ alertTemplateText(props.row) }}</span
-                  >
-                </q-td>
-                <q-td>
-                  <q-icon name="content_copy" size="1.5em" @click="showCopyPolicyForm(props.row)">
-                    <q-tooltip>Create a copy of this policy</q-tooltip>
+              row-key="id"
+              binary-state-sort
+              hide-pagination
+              virtual-scroll
+              no-data-label="No Policies"
+            >
+              <!-- header slots -->
+              <template v-slot:header-cell-active="props">
+                <q-th :props="props" auto-width>
+                  <q-icon name="power_settings_new" size="1.5em">
+                    <q-tooltip>Enable Policy</q-tooltip>
                   </q-icon>
-                </q-td>
-              </q-tr>
-            </template>
-          </q-table>
-        </div>
+                </q-th>
+              </template>
 
-        <q-card-section>
-          <q-tabs
-            v-model="subtab"
-            dense
-            inline-label
-            class="text-grey"
-            active-color="primary"
-            indicator-color="primary"
-            align="left"
-            narrow-indicator
-            no-caps
-          >
-            <q-tab name="checks" icon="fas fa-check-double" label="Checks" />
-            <q-tab name="tasks" icon="fas fa-tasks" label="Tasks" />
-          </q-tabs>
-          <q-separator />
-          <q-tab-panels v-model="subtab" :animated="false">
-            <q-tab-panel name="checks">
-              <PolicyChecksTab v-if="!!selectedPolicy" :selectedPolicy="selectedPolicy.id" />
-            </q-tab-panel>
-            <q-tab-panel name="tasks">
-              <PolicyAutomatedTasksTab v-if="!!selectedPolicy" :selectedPolicy="selectedPolicy.id" />
-            </q-tab-panel>
-          </q-tab-panels>
-        </q-card-section>
+              <template v-slot:header-cell-enforced="props">
+                <q-th :props="props" auto-width>
+                  <q-icon name="security" size="1.5em">
+                    <q-tooltip>Enforce Policy (Will override Agent tasks/checks)</q-tooltip>
+                  </q-icon>
+                </q-th>
+              </template>
+
+              <!-- body slots -->
+              <template v-slot:body="props">
+                <q-tr
+                  :props="props"
+                  class="cursor-pointer"
+                  :class="rowSelectedClass(props.row.id, selectedPolicy)"
+                  @click="selectedPolicy = props.row"
+                  @contextmenu="selectedPolicy = props.row"
+                  @dblclick="showEditPolicyForm(props.row)"
+                >
+                  <!-- context menu -->
+                  <q-menu context-menu>
+                    <q-list dense style="min-width: 200px">
+                      <q-item clickable v-close-popup @click="showEditPolicyForm(props.row)">
+                        <q-item-section side>
+                          <q-icon name="edit" />
+                        </q-item-section>
+                        <q-item-section>Edit</q-item-section>
+                      </q-item>
+
+                      <q-item clickable v-close-popup @click="showCopyPolicyForm(props.row)">
+                        <q-item-section side>
+                          <q-icon name="content_copy" />
+                        </q-item-section>
+                        <q-item-section>Copy</q-item-section>
+                      </q-item>
+
+                      <q-item clickable v-close-popup @click="deletePolicy(props.row)">
+                        <q-item-section side>
+                          <q-icon name="delete" />
+                        </q-item-section>
+                        <q-item-section>Delete</q-item-section>
+                      </q-item>
+
+                      <q-separator></q-separator>
+
+                      <q-item clickable v-close-popup @click="showRelations(props.row)">
+                        <q-item-section side>
+                          <q-icon name="account_tree" />
+                        </q-item-section>
+                        <q-item-section>Show Relations</q-item-section>
+                      </q-item>
+
+                      <q-item clickable v-close-popup @click="showPatchPolicyForm(props.row)">
+                        <q-item-section side>
+                          <q-icon name="system_update" />
+                        </q-item-section>
+                        <q-item-section>{{ patchPolicyText(props.row) }}</q-item-section>
+                      </q-item>
+
+                      <q-item clickable v-close-popup @click="showAlertTemplateAdd(props.row)">
+                        <q-item-section side>
+                          <q-icon name="warning" />
+                        </q-item-section>
+                        <q-item-section>{{ alertTemplateText(props.row) }}</q-item-section>
+                      </q-item>
+
+                      <q-separator></q-separator>
+
+                      <q-item clickable v-close-popup>
+                        <q-item-section>Close</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-menu>
+                  <!-- enabled checkbox -->
+                  <q-td>
+                    <q-checkbox dense @input="toggleCheckbox(props.row, 'Active')" v-model="props.row.active" />
+                  </q-td>
+                  <!-- enforced checkbox -->
+                  <q-td>
+                    <q-checkbox dense @input="toggleCheckbox(props.row, 'Enforced')" v-model="props.row.enforced" />
+                  </q-td>
+                  <q-td>
+                    {{ props.row.name }}
+                    <q-chip v-if="props.row.default_server_policy" color="primary" text-color="white" size="sm"
+                      >Default Server</q-chip
+                    >
+                    <q-chip v-if="props.row.default_workstation_policy" color="primary" text-color="white" size="sm"
+                      >Default Workstation</q-chip
+                    >
+                  </q-td>
+                  <q-td>{{ props.row.desc }}</q-td>
+                  <q-td>
+                    <span
+                      style="cursor: pointer; text-decoration: underline"
+                      class="text-primary"
+                      @click="showRelations(props.row)"
+                      >{{ `Show Relations (${props.row.agents_count})` }}</span
+                    >
+                  </q-td>
+                  <q-td>
+                    <span
+                      style="cursor: pointer; text-decoration: underline"
+                      class="text-primary"
+                      @click="showPatchPolicyForm(props.row)"
+                      >{{ patchPolicyText(props.row) }}</span
+                    >
+                  </q-td>
+                  <q-td>
+                    <span
+                      style="cursor: pointer; text-decoration: underline"
+                      class="text-primary"
+                      @click="showAlertTemplateAdd(props.row)"
+                      >{{ alertTemplateText(props.row) }}</span
+                    >
+                  </q-td>
+                  <q-td>
+                    <q-icon name="content_copy" size="1.5em" @click="showCopyPolicyForm(props.row)">
+                      <q-tooltip>Create a copy of this policy</q-tooltip>
+                    </q-icon>
+                  </q-td>
+                </q-tr>
+              </template>
+            </q-table>
+          </q-card-section>
+
+          <q-card-section style="min-height: 35vh; max-height: 35vh">
+            <q-tabs
+              v-model="subtab"
+              dense
+              inline-label
+              class="text-grey"
+              active-color="primary"
+              indicator-color="primary"
+              align="left"
+              narrow-indicator
+              no-caps
+            >
+              <q-tab name="checks" icon="fas fa-check-double" label="Checks" />
+              <q-tab name="tasks" icon="fas fa-tasks" label="Tasks" />
+            </q-tabs>
+            <q-separator />
+            <q-tab-panels v-model="subtab" :animated="false">
+              <q-tab-panel name="checks">
+                <PolicyChecksTab v-if="!!selectedPolicy" :selectedPolicy="selectedPolicy.id" />
+              </q-tab-panel>
+              <q-tab-panel name="tasks">
+                <PolicyAutomatedTasksTab v-if="!!selectedPolicy" :selectedPolicy="selectedPolicy.id" />
+              </q-tab-panel>
+            </q-tab-panels>
+          </q-card-section>
+        </div>
       </q-card>
     </div>
   </q-dialog>

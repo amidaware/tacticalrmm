@@ -143,9 +143,21 @@
                   </q-icon>
                 </q-td>
                 <!-- name -->
-                <q-td>{{ props.row.name }}</q-td>
+                <q-td
+                  >{{ props.row.name }}
+                  <q-chip v-if="props.row.default_template" color="primary" text-color="white" size="sm"
+                    >Default</q-chip
+                  >
+                </q-td>
                 <!-- applied to -->
-                <q-td>Applied To Placeholder</q-td>
+                <q-td>
+                  <span
+                    style="cursor: pointer; text-decoration: underline"
+                    class="text-primary"
+                    @click="showTemplateApplied(props.row)"
+                    >Show where template is applied ({{ props.row.applied_count }})</span
+                  ></q-td
+                >
                 <!-- alert exclusions -->
                 <q-td>
                   <span
@@ -174,6 +186,7 @@
 import mixins from "@/mixins/mixins";
 import AlertTemplateForm from "@/components/modals/alerts/AlertTemplateForm";
 import AlertExclusions from "@/components/modals/alerts/AlertExclusions";
+import AlertTemplateRelated from "@/components/modals/alerts/AlertTemplateRelated";
 
 export default {
   name: "AlertsManager",
@@ -289,6 +302,13 @@ export default {
         .onOk(() => {
           this.refresh();
         });
+    },
+    showTemplateApplied(template) {
+      this.$q.dialog({
+        component: AlertTemplateRelated,
+        parent: this,
+        template: template,
+      });
     },
     toggleEnabled(template) {
       let text = template.is_active ? "Template enabled successfully" : "Template disabled successfully";

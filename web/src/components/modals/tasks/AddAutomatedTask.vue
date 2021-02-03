@@ -185,6 +185,7 @@ export default {
         timeout: 120,
         alert_severity: "info",
       },
+      policyChecks: [],
       severityOptions: [
         { label: "Informational", value: "info" },
         { label: "Warning", value: "warning" },
@@ -241,12 +242,24 @@ export default {
           .sort((a, b) => a.label.localeCompare(b.label));
       });
     },
+    getPolicyChecks() {
+      this.$axios
+        .get(`/automation/${this.policypk}/policychecks/`)
+        .then(r => {
+          this.policyChecks = r.data;
+          this.$q.loading.hide();
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError("Unable to get policy checks");
+        });
+    },
   },
   computed: {
     ...mapGetters(["selectedAgentPk"]),
     checks() {
       return this.policypk
-        ? this.$store.state.automation.checks
+        ? this.policyChecks
         : this.$store.state.agentChecks.filter(check => check.managed_by_policy === false);
     },
     checksOptions() {
@@ -277,6 +290,10 @@ export default {
   },
   created() {
     this.getScripts();
+
+    if (this.policypk) {
+      this.getPolicyChecks();
+    }
   },
 };
 </script>

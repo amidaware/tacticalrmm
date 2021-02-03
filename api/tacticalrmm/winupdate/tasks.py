@@ -129,6 +129,10 @@ def bulk_install_updates_task(pks: List[int]) -> None:
     for chunk in chunks:
         for agent in chunk:
             agent.delete_superseded_updates()
+            try:
+                agent.approve_updates()
+            except:
+                pass
             nats_data = {
                 "func": "installwinupdates",
                 "guids": agent.get_approved_update_guids(),

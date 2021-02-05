@@ -64,7 +64,7 @@
           </template>
           <!-- body slots -->
           <template v-slot:body="props" :props="props">
-            <q-tr @dblclick="showEditTask(props.row)">
+            <q-tr class="cursor-pointer" @dblclick="showEditTask(props.row)">
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
@@ -332,7 +332,7 @@ export default {
         });
     },
   },
-  mounted() {
+  created() {
     this.getTasks();
   },
 };

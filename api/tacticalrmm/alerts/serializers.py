@@ -36,6 +36,7 @@ class AlertTemplateSerializer(ModelSerializer):
     agent_settings = ReadOnlyField(source="has_agent_settings")
     check_settings = ReadOnlyField(source="has_check_settings")
     task_settings = ReadOnlyField(source="has_task_settings")
+    core_settings = ReadOnlyField(source="has_core_settings")
     default_template = ReadOnlyField(source="is_default_template")
     applied_count = SerializerMethodField()
 

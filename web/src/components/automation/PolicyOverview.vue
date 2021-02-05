@@ -14,7 +14,7 @@
             <q-tree
               ref="tree"
               :nodes="clientSiteTree"
-              node-key="id"
+              node-key="key"
               selected-color="primary"
               :selected.sync="selectedPolicyId"
             ></q-tree>
@@ -38,10 +38,16 @@
           </q-tabs>
           <q-tab-panels v-model="selectedTab" animated transition-prev="jump-up" transition-next="jump-up">
             <q-tab-panel name="checks">
-              <PolicyChecksTab v-if="!!selectedPolicyId" :selectedPolicy="selectedPolicyId" />
+              <PolicyChecksTab
+                v-if="!!selectedPolicyId"
+                :selectedPolicy="$refs.tree.getNodeByKey(selectedPolicyId).id"
+              />
             </q-tab-panel>
             <q-tab-panel name="tasks">
-              <PolicyAutomatedTasksTab v-if="!!selectedPolicyId" :selectedPolicy="selectedPolicyId" />
+              <PolicyAutomatedTasksTab
+                v-if="!!selectedPolicyId"
+                :selectedPolicy="$refs.tree.getNodeByKey(selectedPolicyId).id"
+              />
             </q-tab-panel>
           </q-tab-panels>
         </template>
@@ -115,6 +121,7 @@ export default {
         client_temp["icon"] = "business";
         client_temp["selectable"] = false;
         client_temp["children"] = [];
+        client_temp["key"] = `${unique_id}${client.name}`;
 
         unique_id--;
 
@@ -127,10 +134,12 @@ export default {
             disabled = " (disabled)";
           }
 
+          const label = client.server_policy.name + " (Servers)" + disabled;
           client_temp["children"].push({
-            label: client.server_policy.name + " (Servers)" + disabled,
+            label: label,
             icon: "policy",
             id: client.server_policy.id,
+            key: `${client.server_policy.id}${label}`,
           });
         }
 
@@ -143,10 +152,12 @@ export default {
             disabled = " (disabled)";
           }
 
+          const label = client.workstation_policy.name + " (Workstations)" + disabled;
           client_temp["children"].push({
-            label: client.workstation_policy.name + " (Workstations)" + disabled,
+            label: label,
             icon: "policy",
             id: client.workstation_policy.id,
+            key: `${client.workstation_policy.id}${label}`,
           });
         }
 
@@ -157,6 +168,7 @@ export default {
           site_temp["id"] = unique_id;
           site_temp["icon"] = "apartment";
           site_temp["selectable"] = false;
+          site_temp["key"] = `${unique_id}${site.name}`;
 
           unique_id--;
 
@@ -170,10 +182,12 @@ export default {
               disabled = " (disabled)";
             }
 
+            const label = site.server_policy.name + " (Servers)" + disabled;
             site_temp["children"].push({
-              label: site.server_policy.name + " (Servers)" + disabled,
+              label: label,
               icon: "policy",
               id: site.server_policy.id,
+              key: `${site.server_policy.id}${label}`,
             });
           }
 
@@ -187,10 +201,12 @@ export default {
               disabled = " (disabled)";
             }
 
+            const label = site.workstation_policy.name + " (Workstations)" + disabled;
             site_temp["children"].push({
-              label: site.workstation_policy.name + " (Workstations)" + disabled,
+              label: label,
               icon: "policy",
               id: site.workstation_policy.id,
+              key: `${site.workstation_policy.id}${label}`,
             });
           }
 

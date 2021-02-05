@@ -58,6 +58,10 @@
           <template v-slot:header-cell-policystatus="props">
             <q-th auto-width :props="props"></q-th>
           </template>
+
+          <template v-slot:header-cell-status="props">
+            <q-th auto-width :props="props"></q-th>
+          </template>
           <!-- body slots -->
           <template slot="body" slot-scope="props" :props="props">
             <q-tr @contextmenu="editTaskPk = props.row.id">
@@ -130,13 +134,37 @@
                 />
               </q-td>
               <!-- policy check icon -->
-              <q-td v-if="props.row.managed_by_policy">
-                <q-icon style="font-size: 1.3rem" name="policy">
+              <q-td>
+                <q-icon v-if="props.row.managed_by_policy" style="font-size: 1.3rem" name="policy">
                   <q-tooltip>This task is managed by a policy</q-tooltip>
                 </q-icon>
               </q-td>
+              <!-- status icon -->
+              <q-td v-if="props.row.status === 'passing'">
+                <q-icon style="font-size: 1.3rem" color="positive" name="check_circle">
+                  <q-tooltip>Passing</q-tooltip>
+                </q-icon>
+              </q-td>
+              <q-td v-else-if="props.row.status === 'failing'">
+                <q-icon v-if="props.row.alert_severity === 'info'" style="font-size: 1.3rem" color="info" name="info">
+                  <q-tooltip>Informational</q-tooltip>
+                </q-icon>
+                <q-icon
+                  v-else-if="props.row.alert_severity === 'warning'"
+                  style="font-size: 1.3rem"
+                  color="warning"
+                  name="warning"
+                >
+                  <q-tooltip>Warning</q-tooltip>
+                </q-icon>
+                <q-icon v-else style="font-size: 1.3rem" color="negative" name="error">
+                  <q-tooltip>Error</q-tooltip>
+                </q-icon>
+              </q-td>
               <q-td v-else></q-td>
+              <!-- name -->
               <q-td>{{ props.row.name }}</q-td>
+              <!-- sync status -->
               <q-td v-if="props.row.sync_status === 'notsynced'">Will sync on next agent checkin</q-td>
               <q-td v-else-if="props.row.sync_status === 'synced'">Synced with agent</q-td>
               <q-td v-else-if="props.row.sync_status === 'pendingdeletion'">Pending deletion on agent</q-td>
@@ -178,8 +206,7 @@
 
 <script>
 import axios from "axios";
-import { mapState } from "vuex";
-import { mapGetters } from "vuex";
+import { mapState, mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import AddAutomatedTask from "@/components/modals/tasks/AddAutomatedTask";
 import EditAutomatedTask from "@/components/modals/tasks/EditAutomatedTask";
@@ -203,6 +230,7 @@ export default {
         { name: "emailalert", field: "email_alert", align: "left" },
         { name: "dashboardalert", field: "dashboard_alert", align: "left" },
         { name: "policystatus", align: "left" },
+        { name: "status", align: "left" },
         { name: "name", label: "Name", field: "name", align: "left" },
         { name: "sync_status", label: "Sync Status", field: "sync_status", align: "left" },
         {

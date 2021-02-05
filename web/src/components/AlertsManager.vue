@@ -9,7 +9,7 @@
             <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
           </q-btn>
         </q-bar>
-        <div class="q-pa-md" style="min-height: 65vh; max-height: 65vh">
+        <div class="q-pa-sm" style="min-height: 65vh; max-height: 65vh">
           <div class="q-gutter-sm">
             <q-btn ref="new" label="New" dense flat push unelevated no-caps icon="add" @click="showAddTemplateModal" />
             <q-btn

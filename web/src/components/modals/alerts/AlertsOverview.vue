@@ -382,10 +382,10 @@ export default {
     },
     alertColor(severity) {
       if (severity === "error") {
-        return "negative";
+        return "red";
       }
       if (severity === "warning") {
-        return "warning";
+        return "orange";
       }
       if (severity === "info") {
         return "info";

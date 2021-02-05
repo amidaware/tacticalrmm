@@ -57,6 +57,40 @@ def handle_check_sms_alert_task(pk):
 
 
 @app.task
+def handle_resolved_check_sms_alert_task(pk):
+    from .models import Check
+
+    check = Check.objects.get(pk=pk)
+
+    if not check.agent.maintenance_mode:
+        # first time sending text
+        if not check.resolved_text_sent:
+            sleep(random.randint(1, 3))
+            check.send_resolved_sms()
+            check.resolved_text_sent = djangotime.now()
+            check.save(update_fields=["resolved_text_sent"])
+
+    return "ok"
+
+
+@app.task
+def handle_resolved_check_email_alert_task(pk):
+    from .models import Check
+
+    check = Check.objects.get(pk=pk)
+
+    if not check.agent.maintenance_mode:
+        # first time sending email
+        if not check.resolved_email_sent:
+            sleep(random.randint(1, 10))
+            check.send_resolved_email()
+            check.resolved_email_sent = djangotime.now()
+            check.save(update_fields=["resolved_email_sent"])
+
+    return "ok"
+
+
+@app.task
 def prune_check_history(older_than_days: int) -> str:
     from .models import CheckHistory
 

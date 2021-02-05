@@ -170,23 +170,30 @@
               </q-td>
               <q-td v-else></q-td>
               <!-- status icon -->
-              <q-td v-if="props.row.status === 'pending'"></q-td>
-              <q-td v-else-if="props.row.status === 'passing'">
-                <q-icon style="font-size: 1.3rem" color="positive" name="check_circle" />
+              <q-td v-if="props.row.status === 'passing'">
+                <q-icon style="font-size: 1.3rem" color="positive" name="check_circle">
+                  <q-tooltip>Passing</q-tooltip>
+                </q-icon>
               </q-td>
               <q-td v-else-if="props.row.status === 'failing'">
-                <q-icon style="font-size: 1.3rem" color="negative" name="error" />
+                <q-icon v-if="props.row.alert_severity === 'info'" style="font-size: 1.3rem" color="info" name="info">
+                  <q-tooltip>Informational</q-tooltip>
+                </q-icon>
+                <q-icon
+                  v-else-if="props.row.alert_severity === 'warning'"
+                  style="font-size: 1.3rem"
+                  color="warning"
+                  name="warning"
+                >
+                  <q-tooltip>Warning</q-tooltip>
+                </q-icon>
+                <q-icon v-else style="font-size: 1.3rem" color="negative" name="error">
+                  <q-tooltip>Error</q-tooltip>
+                </q-icon>
               </q-td>
+              <q-td v-else></q-td>
               <!-- check description -->
               <q-td>{{ props.row.readable_desc }}</q-td>
-              <!-- status text -->
-              <q-td v-if="props.row.status === 'pending'">Awaiting First Synchronization</q-td>
-              <q-td v-else-if="props.row.status === 'passing'">
-                <q-badge color="positive">Passing</q-badge>
-              </q-td>
-              <q-td v-else-if="props.row.status === 'failing'">
-                <q-badge color="negative">Failing</q-badge>
-              </q-td>
               <!-- more info -->
               <q-td>
                 <span
@@ -274,7 +281,7 @@
 
 <script>
 import axios from "axios";
-import { mapState, mapGetters } from "vuex";
+import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import DiskSpaceCheck from "@/components/modals/checks/DiskSpaceCheck";
 import MemCheck from "@/components/modals/checks/MemCheck";
@@ -323,7 +330,6 @@ export default {
         { name: "policystatus", align: "left" },
         { name: "statusicon", align: "left" },
         { name: "desc", field: "readable_desc", label: "Description", align: "left", sortable: true },
-        { name: "status", label: "Status", field: "status", align: "left", sortable: true },
         {
           name: "moreinfo",
           label: "More Info",

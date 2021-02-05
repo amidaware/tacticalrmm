@@ -45,6 +45,7 @@ export default {
       errorColor: "red",
       warningColor: "orange",
       infoColor: "blue",
+      poll: null,
     };
   },
   computed: {
@@ -154,6 +155,9 @@ export default {
   mounted() {
     this.getAlerts();
     this.pollAlerts();
+  },
+  beforeDestroy() {
+    clearInterval(this.poll);
   },
 };
 </script>

@@ -8,6 +8,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.db.models.fields import DateTimeField
 from logs.models import BaseAuditModel
 from tacticalrmm.utils import bitdays_to_string
+from typing import Union
 
 from alerts.models import SEVERITY_CHOICES
 
@@ -32,6 +33,12 @@ SYNC_STATUS_CHOICES = [
     ("synced", "Synced With Agent"),
     ("notsynced", "Waiting On Agent Checkin"),
     ("pendingdeletion", "Pending Deletion on Agent"),
+]
+
+TASK_STATUS_CHOICES = [
+    ("passing", "Passing"),
+    ("failing", "Failing"),
+    ("pending", "Pending"),
 ]
 
 
@@ -95,6 +102,9 @@ class AutomatedTask(BaseAuditModel):
     execution_time = models.CharField(max_length=100, default="0.0000")
     last_run = models.DateTimeField(null=True, blank=True)
     enabled = models.BooleanField(default=True)
+    status = models.CharField(
+        max_length=30, choices=TASK_STATUS_CHOICES, default="pending"
+    )
     sync_status = models.CharField(
         max_length=100, choices=SYNC_STATUS_CHOICES, default="notsynced"
     )
@@ -106,6 +116,8 @@ class AutomatedTask(BaseAuditModel):
     dashboard_alert = models.BooleanField(default=False)
     email_sent = models.DateTimeField(null=True, blank=True)
     text_sent = models.DateTimeField(null=True, blank=True)
+    resolved_email_sent = models.DateTimeField(null=True, blank=True)
+    resolved_text_sent = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -150,16 +162,40 @@ class AutomatedTask(BaseAuditModel):
     def create_policy_task(self, agent=None, policy=None):
         from .tasks import create_win_task_schedule
 
+        # if policy is present, then this task is being copied to another policy
+        # if agent is present, then this task is being created on an agent from a policy
+
         # exit if neither are set or if both are set
         if not agent and not policy or agent and policy:
             return
 
         assigned_check = None
 
+        # get correct assigned check to task if set
         if agent and self.assigned_check:
-            assigned_check = agent.agentchecks.get(parent_check=self.assigned_check.pk)
+            # check if there is a matching check on the agent
+            if agent.agentchecks.filter(parent_check=self.assigned_check.pk).exists():
+                assigned_check = agent.agentchecks.filter(
+                    parent_check=self.assigned_check.pk
+                )
+            # check was overriden by agent and we need to use that agents check
+            else:
+                if agent.agentchecks.filter(
+                    check_type=self.assigned_check.check_type, overriden_by_policy=True
+                ).exists():
+                    assigned_check = agent.agentchecks.filter(
+                        check_type=self.assigned_check.check_type,
+                        overriden_by_policy=True,
+                    ).first()
         elif policy and self.assigned_check:
-            assigned_check = policy.policychecks.get(name=self.assigned_check.name)
+            if policy.policychecks.filter(name=self.assigned_check.name).exists():
+                assigned_check = policy.policychecks.filter(
+                    name=self.assigned_check.name
+                )
+            else:
+                assigned_check = policy.policychecks.filter(
+                    check_type=self.assigned_check.check_type
+                )
 
         task = AutomatedTask.objects.create(
             agent=agent,
@@ -186,3 +222,51 @@ class AutomatedTask(BaseAuditModel):
         )
 
         create_win_task_schedule.delay(task.pk)
+
+    def handle_alert(self) -> None:
+        from alerts.models import Alert, AlertTemplate
+
+        self.status = "failing" if self.retcode != 0 else "passing"
+
+        # return if agent is in maintenance mode
+        if self.agent.maintenance_mode:
+            return
+
+        # see if agent has an alert template and use that
+        alert_template: Union[AlertTemplate, None] = self.agent.get_alert_template()
+
+        # resolve alert if it exists
+        if self.status == "passing":
+            if Alert.objects.filter(assigned_task=self, resolved=False).exists():
+                alert = Alert.objects.get(assigned_task=self, resolved=False)
+                alert.resolve()
+
+            # check if a resolved notification should be send
+            if alert_template:
+                if (
+                    not self.resolved_email_sent
+                    and alert_template.task_email_on_resolved
+                ):
+                    # TODO: send email on resolved
+                    pass
+                if not self.resolved_text_sent and alert_template.task_text_on_resolved:
+                    # TODO: send text on resolved
+                    pass
+        else:
+            # create alert in dashboard if enabled
+            if (
+                self.dashboard_alert
+                or alert_template
+                and alert_template.task_always_alert
+            ):
+                Alert.create_task_alert(self)
+
+            # send email if enabled
+            if self.email_alert or alert_template and alert_template.check_always_email:
+                handle_task_email_alert_task.delay(self.pk)
+
+            # send text if enabled
+            if self.text_alert or alert_template and alert_template.check_always_text:
+                handle_task_sms_alert_task.delay(self.pk)
+
+        self.save()

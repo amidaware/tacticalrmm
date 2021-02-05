@@ -106,7 +106,7 @@ def auto_self_agent_update_task() -> None:
 
 
 @app.task
-def agent_outage_email_task(pk):
+def agent_outage_email_task(pk) -> None:
     sleep(random.randint(1, 15))
     outage = AgentOutage.objects.get(pk=pk)
     outage.send_outage_email()
@@ -115,7 +115,7 @@ def agent_outage_email_task(pk):
 
 
 @app.task
-def agent_recovery_email_task(pk):
+def agent_recovery_email_task(pk) -> None:
     sleep(random.randint(1, 15))
     outage = AgentOutage.objects.get(pk=pk)
     outage.send_recovery_email()
@@ -124,7 +124,7 @@ def agent_recovery_email_task(pk):
 
 
 @app.task
-def agent_outage_sms_task(pk):
+def agent_outage_sms_task(pk) -> None:
     sleep(random.randint(1, 3))
     outage = AgentOutage.objects.get(pk=pk)
     outage.send_outage_sms()
@@ -133,7 +133,7 @@ def agent_outage_sms_task(pk):
 
 
 @app.task
-def agent_recovery_sms_task(pk):
+def agent_recovery_sms_task(pk) -> None:
     sleep(random.randint(1, 3))
     outage = AgentOutage.objects.get(pk=pk)
     outage.send_recovery_sms()
@@ -142,35 +142,19 @@ def agent_recovery_sms_task(pk):
 
 
 @app.task
-def agent_outages_task():
+def agent_outages_task() -> None:
     agents = Agent.objects.only(
-        "pk", "last_seen", "overdue_time", "overdue_email_alert", "overdue_text_alert"
+        "pk",
+        "last_seen",
+        "overdue_time",
+        "overdue_email_alert",
+        "overdue_text_alert",
+        "overdue_dashboard_alert",
     )
 
     for agent in agents:
-        if agent.overdue_email_alert or agent.overdue_text_alert:
-            if agent.status == "overdue":
-                from alerts.models import Alert
-
-                outages = AgentOutage.objects.filter(agent=agent)
-                if outages and outages.last().is_active:
-                    continue
-
-                outage = AgentOutage(agent=agent)
-                outage.save()
-
-                # create dashboard alert
-                Alert.create_availability_alert(agent)
-
-                # add a null check history to allow gaps in graph
-                for check in agent.agentchecks.all():
-                    check.add_check_history(None)
-
-                if agent.overdue_email_alert and not agent.maintenance_mode:
-                    agent_outage_email_task.delay(pk=outage.pk)
-
-                if agent.overdue_text_alert and not agent.maintenance_mode:
-                    agent_outage_sms_task.delay(pk=outage.pk)
+        if agent.status == "overdue":
+            agent.handle_alert()
 
 
 @app.task

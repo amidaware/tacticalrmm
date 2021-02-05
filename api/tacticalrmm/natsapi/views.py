@@ -68,22 +68,8 @@ class NatsCheckIn(APIView):
                 action_type="agentupdate", status="pending"
             ).update(status="completed")
 
-        if agent.agentoutages.exists() and agent.agentoutages.last().is_active:
-            from alerts.models import Alert
-
-            last_outage = agent.agentoutages.last()
-            last_outage.recovery_time = djangotime.now()
-            last_outage.save(update_fields=["recovery_time"])
-
-            # resolve alert if exists
-            if Alert.objects.filter(agent=agent, resolved=False).exists():
-                alert = Alert.objects.get(agent=agent, resolved=False)
-                alert.resolve()
-
-            if agent.overdue_email_alert:
-                agent_recovery_email_task.delay(pk=last_outage.pk)
-            if agent.overdue_text_alert:
-                agent_recovery_sms_task.delay(pk=last_outage.pk)
+        # handles any alerting actions
+        agent.handle_alert(checkin=True)
 
         recovery = agent.recoveryactions.filter(last_run=None).last()
         if recovery is not None:

@@ -42,7 +42,9 @@
                   <q-item-label v-html="scope.opt.label"></q-item-label>
                 </q-item-section>
               </q-item>
-              <q-item-label v-if="scope.opt.category" header>{{ scope.opt.category }}</q-item-label>
+              <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
+                scope.opt.category
+              }}</q-item-label>
             </template>
           </q-select>
         </q-card-section>

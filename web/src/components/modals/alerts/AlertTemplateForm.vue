@@ -112,7 +112,7 @@
           <q-separator class="q-mb-sm" />
 
           <q-card-section class="row">
-            <div class="col-4">
+            <div class="col-6">
               <q-toggle v-model="template.agent_email_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Email on resolved<q-tooltip>Sends an email when agent is back online</q-tooltip></span
@@ -120,20 +120,10 @@
               </q-toggle>
             </div>
 
-            <div class="col-4">
+            <div class="col-6">
               <q-toggle v-model="template.agent_text_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Text on resolved<q-tooltip>Sends an SMS message when agent is back online</q-tooltip></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-4">
-              <q-toggle v-model="template.agent_alert_on_resolved" color="green" left-label>
-                <span style="text-decoration: underline; cursor: help"
-                  >Dashboard alert on resolved<q-tooltip
-                    >Adds an alert in the dashboard when agent is back online</q-tooltip
-                  ></span
                 >
               </q-toggle>
             </div>
@@ -244,7 +234,7 @@
               />
             </div>
 
-            <div class="col-4">
+            <div class="col-6">
               <q-toggle v-model="template.check_email_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Email on resolved <q-tooltip>Sends an email when check alert has resolved</q-tooltip></span
@@ -252,19 +242,10 @@
               </q-toggle>
             </div>
 
-            <div class="col-4">
+            <div class="col-6">
               <q-toggle v-model="template.check_text_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Text on resolved <q-tooltip>Sends an SMS message when check alert has resolved</q-tooltip></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-4">
-              <q-toggle v-model="template.check_alert_on_resolved" color="green" left-label>
-                <span style="text-decoration: underline; cursor: help"
-                  >Dashboard alert on resolved
-                  <q-tooltip>Adds an alert in the dashboard when check alert has resolved</q-tooltip></span
                 >
               </q-toggle>
             </div>
@@ -368,7 +349,7 @@
               />
             </div>
 
-            <div class="col-4">
+            <div class="col-6">
               <q-toggle v-model="template.task_email_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Email on resolved <q-tooltip>Sends an email when task alert has resolved</q-tooltip></span
@@ -376,19 +357,10 @@
               </q-toggle>
             </div>
 
-            <div class="col-4">
+            <div class="col-6">
               <q-toggle v-model="template.task_text_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Text on resolved <q-tooltip>Sends an SMS message when task alert has resolved</q-tooltip></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-4">
-              <q-toggle v-model="template.task_alert_on_resolved" color="green" left-label>
-                <span style="text-decoration: underline; cursor: help"
-                  >Dashboard alert on resolved
-                  <q-tooltip>Adds an alert in the dashboard when task alert has resolved</q-tooltip></span
                 >
               </q-toggle>
             </div>
@@ -458,7 +430,6 @@ export default {
         agent_include_desktops: false,
         agent_email_on_resolved: false,
         agent_text_on_resolved: false,
-        agent_alert_on_resolved: false,
         agent_always_email: false,
         agent_always_text: false,
         agent_always_alert: false,
@@ -468,7 +439,6 @@ export default {
         check_dashboard_alert_severity: [],
         check_email_on_resolved: false,
         check_text_on_resolved: false,
-        check_alert_on_resolved: false,
         check_always_email: false,
         check_always_text: false,
         check_always_alert: false,
@@ -478,7 +448,6 @@ export default {
         task_dashboard_alert_severity: [],
         task_email_on_resolved: false,
         task_text_on_resolved: false,
-        task_alert_on_resolved: false,
         task_always_email: false,
         task_always_text: false,
         task_always_alert: false,

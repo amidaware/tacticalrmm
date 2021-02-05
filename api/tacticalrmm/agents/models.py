@@ -409,65 +409,88 @@ class Agent(BaseAuditModel):
         site = self.site
         client = self.client
         core = CoreSettings.objects.first()
-        # check if alert template is on a policy assigned to agent and return
-        if self.policy and self.policy.alert_template:
-            return self.policy.alert_template
 
-        # check if policy with alert template is assigned to the site and return
+        templates = list()
+        # check if alert template is on a policy assigned to agent
+        if (
+            self.policy
+            and self.policy.alert_template
+            and self.policy.alert_template.is_active
+        ):
+            templates.append(self.policy.alert_template)
+
+        # check if policy with alert template is assigned to the site
         elif (
             self.monitoring_type == "server"
             and site.server_policy
             and site.server_policy.alert_template
+            and site.server_policy.alert_template.is_active
         ):
-            return site.server_policy.alert_template
+            templates.append(site.server_policy.alert_template)
         elif (
             self.monitoring_type == "workstation"
             and site.workstation_policy
             and site.workstation_policy.alert_template
+            and site.workstation_policy.alert_template.is_active
         ):
-            return site.workstation_policy.alert_template
+            templates.append(site.workstation_policy.alert_template)
 
-        # check if alert template is assigned to site and return
-        elif site.alert_template:
-            return site.alert_template
+        # check if alert template is assigned to site
+        elif site.alert_template and site.alert_template.is_active:
+            templates.append(site.alert_template)
 
-        # check if policy with alert template is assigned to the client and return
+        # check if policy with alert template is assigned to the client
         elif (
             self.monitoring_type == "server"
             and client.server_policy
             and client.server_policy.alert_template
+            and client.server_policy.alert_template.is_active
         ):
-            return client.server_policy.alert_template
+            templates.append(client.server_policy.alert_template)
         elif (
             self.monitoring_type == "workstation"
             and client.workstation_policy
             and client.workstation_policy.alert_template
+            and client.workstation_policy.alert_template.is_active
         ):
-            return client.workstation_policy.alert_template
+            templates.append(client.workstation_policy.alert_template)
 
         # check if alert template is on client and return
-        elif client.alert_template:
-            return client.alert_template
+        elif client.alert_template and client.alert_template.is_active:
+            templates.append(client.alert_template)
 
         # check if alert template is applied globally and return
-        elif core.alert_template:
-            return core.alert_template
+        elif core.alert_template and core.alert_template.is_active:
+            templates.append(core.alert_template)
 
         # if agent is a workstation, check if policy with alert template is assigned to the site, client, or core
         elif (
             self.monitoring_type == "server"
             and core.server_policy
             and core.server_policy.alert_template
+            and core.server_policy.alert_template.is_active
         ):
-            return core.server_policy.alert_template
+            templates.append(core.server_policy.alert_template)
         elif (
             self.monitoring_type == "workstation"
             and core.workstation_policy
             and core.workstation_policy.alert_template
+            and core.workstation_policy.alert_template.is_active
         ):
-            return core.workstation_policy.alert_template
+            templates.append(core.workstation_policy.alert_template)
 
-        # nothing found returning None
+        # check if client, site, or agent has been excluded from templates in order and return if not
+        for template in templates:
+            if (
+                client.pk in template.excluded_clients.all()
+                or site.pk in template.excluded_sites.all()
+                or self.pk in template.excluded_agents.all()
+            ):
+                continue
+            else:
+                return template
+
+        # no alert templates found or agent has been excluded
         return None
 
     def generate_checks_from_policies(self):
@@ -608,6 +631,88 @@ class Agent(BaseAuditModel):
         for action in self.pendingactions.exclude(status="completed"):
             if action.details["task_id"] == task_id:
                 action.delete()
+
+    def handle_alert(self, checkin: bool = False) -> None:
+        from alerts.models import Alert
+        from agents.models import AgentOutage
+        from agents.tasks import (
+            agent_recovery_email_task,
+            agent_recovery_sms_task,
+            agent_outage_email_task,
+            agent_outage_sms_task,
+        )
+
+        # return if agent is in maintenace mode
+        if self.maintenance_mode:
+            return
+
+        alert_template = self.get_alert_template()
+
+        # called when agent is back online
+        if checkin:
+            if self.agentoutages.exists() and self.agentoutages.last().is_active:
+
+                # resolve any open outages
+                self.agentoutages.filter(recovery_time=None).update(
+                    recovery_time=djangotime.now()
+                )
+                last_outage = agent.agentoutages.last()
+                # resolve alert if exists
+                if Alert.objects.filter(agent=self, resolved=False).exists():
+                    alert = Alert.objects.get(agent=self, resolved=False)
+                    alert.resolve()
+
+                # check if a resolved notification should be emailed
+                if (
+                    alert_template
+                    and alert_template.agent_email_on_resolved
+                    or self.overdue_email_alert
+                ):
+                    agent_recovery_email_task.delay(pk=last_outage.pk)
+
+                # check if a resolved notification should be texted
+                if (
+                    alert_template
+                    and alert_template.agent_text_on_resolved
+                    or self.overdue_text_alert
+                ):
+                    agent_recovery_sms_task.delay(pk=last_outage.pk)
+
+        # called when agent is offline
+        else:
+            # return if outage has already been created
+            if self.agentoutages.exists() and self.agentoutages.last().is_active:
+                return
+
+            outage = AgentOutage(agent=self)
+            outage.save()
+
+            # add a null check history to allow gaps in graph
+            for check in self.agentchecks.all():
+                check.add_check_history(None)
+
+            # create dashboard alert if enabled
+            if (
+                alert_template
+                and alert_template.agent_always_alert
+                or self.overdue_dashboard_alert
+            ):
+                Alert.create_availability_alert(self)
+
+            # send email alert if enabled
+            if (
+                alert_template
+                and alert_template.agent_always_email
+                or self.overdue_email_alert
+            ):
+                agent_outage_email_task.delay(pk=outage.pk)
+
+            if (
+                alert_template
+                and alert_template.agent_always_text
+                or self.overdue_text_alert
+            ):
+                agent_outage_sms_task.delay(pk=outage.pk)
 
 
 class AgentOutage(models.Model):

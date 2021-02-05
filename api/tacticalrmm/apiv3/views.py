@@ -1,6 +1,4 @@
-import asyncio
 import os
-import requests
 from loguru import logger
 from packaging import version as pyver
 
@@ -22,15 +20,8 @@ from accounts.models import User
 from winupdate.models import WinUpdatePolicy
 from software.models import InstalledSoftware
 from checks.serializers import CheckRunnerGetSerializer
-from agents.serializers import WinAgentSerializer
 from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
-from winupdate.serializers import ApprovedUpdateSerializer
 
-from agents.tasks import (
-    agent_recovery_email_task,
-    agent_recovery_sms_task,
-)
-from checks.utils import bytes2human
 from tacticalrmm.utils import notify_error, reload_nats, filter_software, SoftwareList
 
 logger.configure(**settings.LOG_CONFIG)
@@ -98,25 +89,9 @@ class TaskRunner(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save(last_run=djangotime.now())
 
-        # create alert in dashboard if retcode is not 0
-        if task.alert_severity and request.data["retcode"] > 0:
-            from alerts.models import Alert
-
-            Alert.create_task_alert(task, task.alert_severity)
-
-            # TODO: send email/text alert if configured
-
-        # resolve alert if passing
-        elif task.alert_severity and request.data["retcode"] == 0:
-            from alerts.models import Alert
-
-            if Alert.objects.filter(assigned_task=task, resolved=False).exists():
-                alert = Alert.objects.get(assigned_task=task, resolved=False)
-                alert.resolve()
-
-                # TODO: send resolved email/text alert if configured
-
         new_task = AutomatedTask.objects.get(pk=task.pk)
+        new_task.handle_alert()
+
         AuditLog.objects.create(
             username=agent.hostname,
             agent=agent.hostname,

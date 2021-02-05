@@ -61,37 +61,37 @@ class Alert(models.Model):
         self.save()
 
     @classmethod
-    def create_availability_alert(cls, agent, severity="error") -> None:
+    def create_availability_alert(cls, agent) -> None:
         if not cls.objects.filter(agent=agent, resolved=False).exists():
             cls.objects.create(
                 agent=agent,
                 alert_type="availability",
-                severity=severity,
-                message=f"{agent.hostname} in {agent.client.name}\{agent.site.name} is Offline.",
+                severity="error",
+                message=f"{agent.hostname} in {agent.client.name}\\{agent.site.name} is Offline.",
             )
 
     @classmethod
-    def create_check_alert(cls, check, severity="error") -> None:
+    def create_check_alert(cls, check) -> None:
 
         if not cls.objects.filter(assigned_check=check, resolved=False).exists():
             cls.objects.create(
                 assigned_check=check,
                 agent=check.agent,
                 alert_type="check",
-                severity=severity,
-                message=f"{check.agent.hostname} has {check.check_type} check that failed.",
+                severity=check.alert_severity,
+                message=f"{check.agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
             )
 
     @classmethod
-    def create_task_alert(cls, task, severity="error") -> None:
+    def create_task_alert(cls, task) -> None:
 
         if not cls.objects.filter(assigned_task=task, resolved=False).exists():
             cls.objects.create(
                 assigned_task=task,
                 agent=task.agent,
                 alert_type="task",
-                severity=severity,
-                message=f"{task.agent.hostname} has task that failed.",
+                severity=task.alert_severity,
+                message=f"{task.agent.hostname} has task: {task.name} that failed.",
             )
 
     @classmethod
@@ -126,7 +126,6 @@ class AlertTemplate(models.Model):
     # agent alert settings
     agent_email_on_resolved = BooleanField(null=True, blank=True, default=False)
     agent_text_on_resolved = BooleanField(null=True, blank=True, default=False)
-    agent_alert_on_resolved = BooleanField(null=True, blank=True, default=False)
     agent_include_desktops = BooleanField(null=True, blank=True, default=False)
     agent_always_email = BooleanField(null=True, blank=True, default=False)
     agent_always_text = BooleanField(null=True, blank=True, default=False)
@@ -151,7 +150,6 @@ class AlertTemplate(models.Model):
     )
     check_email_on_resolved = BooleanField(null=True, blank=True, default=False)
     check_text_on_resolved = BooleanField(null=True, blank=True, default=False)
-    check_alert_on_resolved = BooleanField(null=True, blank=True, default=False)
     check_always_email = BooleanField(null=True, blank=True, default=False)
     check_always_text = BooleanField(null=True, blank=True, default=False)
     check_always_alert = BooleanField(null=True, blank=True, default=False)
@@ -175,7 +173,6 @@ class AlertTemplate(models.Model):
     )
     task_email_on_resolved = BooleanField(null=True, blank=True, default=False)
     task_text_on_resolved = BooleanField(null=True, blank=True, default=False)
-    task_alert_on_resolved = BooleanField(null=True, blank=True, default=False)
     task_always_email = BooleanField(null=True, blank=True, default=False)
     task_always_text = BooleanField(null=True, blank=True, default=False)
     task_always_alert = BooleanField(null=True, blank=True, default=False)
@@ -199,7 +196,6 @@ class AlertTemplate(models.Model):
         return (
             self.agent_email_on_resolved
             or self.agent_text_on_resolved
-            or self.agent_alert_on_resolved
             or self.agent_include_desktops
             or self.agent_always_email
             or self.agent_always_text
@@ -215,7 +211,6 @@ class AlertTemplate(models.Model):
             or bool(self.check_dashboard_alert_severity)
             or self.check_email_on_resolved
             or self.check_text_on_resolved
-            or self.check_alert_on_resolved
             or self.check_always_email
             or self.check_always_text
             or self.check_always_alert
@@ -230,12 +225,15 @@ class AlertTemplate(models.Model):
             or bool(self.task_dashboard_alert_severity)
             or self.task_email_on_resolved
             or self.task_text_on_resolved
-            or self.task_alert_on_resolved
             or self.task_always_email
             or self.task_always_text
             or self.task_always_alert
             or bool(self.task_periodic_alert_days)
         )
+
+    @property
+    def has_core_settings(self) -> bool:
+        return bool(self.email_from) or self.email_recipients or self.text_recipients
 
     @property
     def is_default_template(self) -> bool:

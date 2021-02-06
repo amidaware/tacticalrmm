@@ -11,6 +11,7 @@ from collections import Counter
 from typing import List
 from typing import Union
 from loguru import logger
+import datetime as dt
 from packaging import version as pyver
 from distutils.version import LooseVersion
 from nats.aio.client import Client as NATS
@@ -680,16 +681,20 @@ class Agent(BaseAuditModel):
 
         # called when agent is offline
         else:
-            # return if outage has already been created
-            if self.agentoutages.exists() and self.agentoutages.last().is_active:
-                return
+            # outage hasn't been created yet so create it
+            if (
+                not self.agentoutages.exists()
+                and not self.agentoutages.last().is_active
+            ):
 
-            outage = AgentOutage(agent=self)
-            outage.save()
+                outage = AgentOutage(agent=self)
+                outage.save()
 
-            # add a null check history to allow gaps in graph
-            for check in self.agentchecks.all():
-                check.add_check_history(None)
+                # add a null check history to allow gaps in graph
+                for check in self.agentchecks.all():
+                    check.add_check_history(None)
+            else:
+                outage = self.agentoutages.last()
 
             # create dashboard alert if enabled
             if (
@@ -705,14 +710,20 @@ class Agent(BaseAuditModel):
                 and alert_template.agent_always_email
                 or self.overdue_email_alert
             ):
-                agent_outage_email_task.delay(pk=outage.pk)
+                agent_outage_email_task.delay(
+                    pk=outage.pk,
+                    alert_interval=alert_template.agent_periodic_alert_days,
+                )
 
             if (
                 alert_template
                 and alert_template.agent_always_text
                 or self.overdue_text_alert
             ):
-                agent_outage_sms_task.delay(pk=outage.pk)
+                agent_outage_sms_task.delay(
+                    pk=outage.pk,
+                    alert_interval=alert_template.agent_periodic_alert_days,
+                )
 
 
 class AgentOutage(models.Model):
@@ -727,6 +738,8 @@ class AgentOutage(models.Model):
     recovery_time = models.DateTimeField(null=True, blank=True)
     outage_email_sent = models.BooleanField(default=False)
     outage_sms_sent = models.BooleanField(default=False)
+    outage_email_sent_time = models.DateTimeField(null=True, blank=True)
+    outage_sms_sent_time = models.DateTimeField(null=True, blank=True)
     recovery_email_sent = models.BooleanField(default=False)
     recovery_sms_sent = models.BooleanField(default=False)
 

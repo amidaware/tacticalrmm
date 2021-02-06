@@ -307,7 +307,9 @@ class Check(BaseAuditModel):
                     and self.email_alert
                     or alert_template.check_always_email
                 ):
-                    handle_check_email_alert_task.delay(self.pk)
+                    handle_check_email_alert_task.delay(
+                        self.pk, alert_template.check_periodic_alert_days
+                    )
 
                 # send text if enabled
                 if (
@@ -315,7 +317,9 @@ class Check(BaseAuditModel):
                     and self.text_alert
                     or alert_template.check_always_text
                 ):
-                    handle_check_sms_alert_task.delay(self.pk)
+                    handle_check_sms_alert_task.delay(
+                        self.pk, alert_template.check_periodic_alert_days
+                    )
 
                 if alert_template.actions:
                     # TODO: run scripts on agent
@@ -803,10 +807,16 @@ class Check(BaseAuditModel):
         CORE.send_sms(body)
 
     def send_resolved_email(self):
-        pass
+        CORE = CoreSettings.objects.first()
+        subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
+        body = f"{self} is now back to normal"
+
+        CORE.send_mail(subject, body)
 
     def send_resolved_text(self):
-        pass
+        CORE = CoreSettings.objects.first()
+        subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
+        CORE.send_sms(subject)
 
 
 class CheckHistory(models.Model):

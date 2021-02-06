@@ -225,6 +225,12 @@ class AutomatedTask(BaseAuditModel):
 
     def handle_alert(self) -> None:
         from alerts.models import Alert, AlertTemplate
+        from autotasks.tasks import (
+            handle_task_email_alert,
+            handle_task_sms_alert,
+            handle_resolved_task_sms_alert,
+            handle_resolved_task_email_alert,
+        )
 
         self.status = "failing" if self.retcode != 0 else "passing"
 
@@ -247,11 +253,9 @@ class AutomatedTask(BaseAuditModel):
                     not self.resolved_email_sent
                     and alert_template.task_email_on_resolved
                 ):
-                    # TODO: send email on resolved
-                    pass
+                    handle_resolved_task_email_alert.delay(self.pk)
                 if not self.resolved_text_sent and alert_template.task_text_on_resolved:
-                    # TODO: send text on resolved
-                    pass
+                    handle_resolved_task_sms_alert.delay(self.pk)
         else:
             # create alert in dashboard if enabled
             if (
@@ -263,10 +267,72 @@ class AutomatedTask(BaseAuditModel):
 
             # send email if enabled
             if self.email_alert or alert_template and alert_template.check_always_email:
-                handle_task_email_alert_task.delay(self.pk)
+                handle_task_email_alert.delay(
+                    self.pk, alert_template.task_periodic_alert_days
+                )
 
             # send text if enabled
             if self.text_alert or alert_template and alert_template.check_always_text:
-                handle_task_sms_alert_task.delay(self.pk)
+                handle_task_sms_alert.delay(
+                    self.pk, alert_template.task_periodic_alert_days
+                )
 
         self.save()
+
+    def send_email(self):
+        from core.models import CoreSettings
+
+        CORE = CoreSettings.objects.first()
+
+        if self.agent:
+            subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Failed"
+        else:
+            subject = f"{self} Failed"
+
+        body = (
+            subject
+            + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
+        )
+
+        CORE.send_mail(subject, body)
+
+    def send_sms(self):
+
+        from core.models import CoreSettings
+
+        CORE = CoreSettings.objects.first()
+
+        if self.agent:
+            subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Failed"
+        else:
+            subject = f"{self} Failed"
+
+        body = (
+            subject
+            + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
+        )
+
+        CORE.send_sms(body)
+
+    def send_resolved_email(self):
+        from core.models import CoreSettings
+
+        CORE = CoreSettings.objects.first()
+        subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
+        body = (
+            subject
+            + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
+        )
+
+        CORE.send_mail(subject, body)
+
+    def send_resolved_text(self):
+        from core.models import CoreSettings
+
+        CORE = CoreSettings.objects.first()
+        subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
+        body = (
+            subject
+            + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
+        )
+        CORE.send_sms(body)

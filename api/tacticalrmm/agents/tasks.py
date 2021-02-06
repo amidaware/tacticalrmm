@@ -3,8 +3,10 @@ from loguru import logger
 from time import sleep
 import random
 from packaging import version as pyver
-from typing import List
+from typing import List, Union
+import datetime as dt
 
+from django.utils import timezone as djangotime
 from django.conf import settings
 from scripts.models import Script
 
@@ -106,39 +108,73 @@ def auto_self_agent_update_task() -> None:
 
 
 @app.task
-def agent_outage_email_task(pk) -> None:
-    sleep(random.randint(1, 15))
+def agent_outage_email_task(pk: int, alert_interval: Union[float, None]) -> str:
+
     outage = AgentOutage.objects.get(pk=pk)
-    outage.send_outage_email()
-    outage.outage_email_sent = True
-    outage.save(update_fields=["outage_email_sent"])
+
+    if not outage.outage_email_sent:
+        sleep(random.randint(1, 15))
+        outage.send_outage_email()
+        outage.outage_email_sent = True
+        outage.outage_email_sent_time = djangotime.now()
+        outage.save(update_fields=["outage_email_sent"])
+    else:
+        if alert_interval:
+            # send an email only if the last email sent is older than alert interval
+            delta = djangotime.now() - dt.timedelta(days=alert_interval)
+            if outage.outage_email_sent_time < delta:
+                sleep(random.randint(1, 10))
+                outage.send_outage_email()
+                outage.outage_email_sent_time = djangotime.now()
+                outage.save(update_fields=["outage_email_sent_time"])
+
+    return "ok"
 
 
 @app.task
-def agent_recovery_email_task(pk) -> None:
+def agent_recovery_email_task(pk: int) -> str:
     sleep(random.randint(1, 15))
     outage = AgentOutage.objects.get(pk=pk)
     outage.send_recovery_email()
     outage.recovery_email_sent = True
-    outage.save(update_fields=["recovery_email_sent"])
+    outage.outage_email_sent_time = djangotime.now()
+    outage.save(update_fields=["recovery_email_sent", "outage_email_sent_time"])
+
+    return "ok"
 
 
 @app.task
-def agent_outage_sms_task(pk) -> None:
-    sleep(random.randint(1, 3))
+def agent_outage_sms_task(pk: int, alert_interval: Union[float, None]) -> str:
     outage = AgentOutage.objects.get(pk=pk)
-    outage.send_outage_sms()
-    outage.outage_sms_sent = True
-    outage.save(update_fields=["outage_sms_sent"])
+
+    if not outage.outage_sms_sent:
+        sleep(random.randint(1, 15))
+        outage.send_outage_sms()
+        outage.outage_sms_sent = True
+        outage.outage_sms_sent_time = djangotime.now()
+        outage.save(update_fields=["outage_sms_sent", "outage_sms_sent_time"])
+    else:
+        if alert_interval:
+            # send an sms only if the last sms sent is older than alert interval
+            delta = djangotime.now() - dt.timedelta(days=alert_interval)
+            if outage.outage_sms_sent_time < delta:
+                sleep(random.randint(1, 10))
+                outage.send_outage_sms()
+                outage.outage_sms_sent_time = djangotime.now()
+                outage.save(update_fields=["outage_sms_sent_time"])
+
+    return "ok"
 
 
 @app.task
-def agent_recovery_sms_task(pk) -> None:
+def agent_recovery_sms_task(pk: int) -> str:
     sleep(random.randint(1, 3))
     outage = AgentOutage.objects.get(pk=pk)
     outage.send_recovery_sms()
     outage.recovery_sms_sent = True
     outage.save(update_fields=["recovery_sms_sent"])
+
+    return "ok"
 
 
 @app.task

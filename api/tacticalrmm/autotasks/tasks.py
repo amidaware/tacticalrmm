@@ -6,6 +6,9 @@ from django.conf import settings
 import pytz
 from django.utils import timezone as djangotime
 from packaging import version as pyver
+from typing import Union
+import random
+from time import sleep
 
 from .models import AutomatedTask
 from logs.models import PendingAction
@@ -243,3 +246,89 @@ def remove_orphaned_win_tasks(agentpk):
                 logger.info(f"Removed orphaned task {task} from {agent.hostname}")
 
     logger.info(f"Orphaned task cleanup finished on {agent.hostname}")
+
+
+@app.task
+def handle_task_email_alert(pk: int, alert_interval: Union[float, None]) -> str:
+    from .models import AutomatedTask
+
+    check = AutomatedTask.objects.get(pk=pk)
+
+    if not check.agent.maintenance_mode:
+        # first time sending email
+        if not check.email_sent:
+            sleep(random.randint(1, 10))
+            check.send_email()
+            check.email_sent = djangotime.now()
+            check.save(update_fields=["email_sent"])
+        else:
+            if alert_interval:
+                # send an email only if the last email sent is older than alert interval
+                delta = djangotime.now() - dt.timedelta(days=alert_interval)
+                if check.email_sent < delta:
+                    sleep(random.randint(1, 10))
+                    check.send_email()
+                    check.email_sent = djangotime.now()
+                    check.save(update_fields=["email_sent"])
+
+    return "ok"
+
+
+@app.task
+def handle_task_sms_alert(pk: int, alert_interval: Union[float, None]) -> str:
+    from .models import AutomatedTask
+
+    task = AutomatedTask.objects.get(pk=pk)
+
+    if not task.agent.maintenance_mode:
+        # first time sending text
+        if not task.text_sent:
+            sleep(random.randint(1, 3))
+            task.send_sms()
+            task.text_sent = djangotime.now()
+            task.save(update_fields=["text_sent"])
+        else:
+            if alert_interval:
+                # send a text only if the last text sent is older than alert interval
+                delta = djangotime.now() - dt.timedelta(days=alert_interval)
+                if task.text_sent < delta:
+                    sleep(random.randint(1, 3))
+                    task.send_sms()
+                    task.text_sent = djangotime.now()
+                    task.save(update_fields=["text_sent"])
+
+    return "ok"
+
+
+@app.task
+def handle_resolved_task_sms_alert(pk: int) -> str:
+    from .models import AutomatedTask
+
+    task = AutomatedTask.objects.get(pk=pk)
+
+    if not task.agent.maintenance_mode:
+        # first time sending text
+        if not task.resolved_text_sent:
+            sleep(random.randint(1, 3))
+            task.send_resolved_sms()
+            task.resolved_text_sent = djangotime.now()
+            task.save(update_fields=["resolved_text_sent"])
+
+    return "ok"
+
+
+@app.task
+def handle_resolved_task_email_alert(pk: int) -> str:
+    from .models import AutomatedTask
+
+    task = AutomatedTask.objects.get(pk=pk)
+
+    if not task.agent.maintenance_mode:
+        # first time sending email
+        if not task.resolved_email_sent:
+            sleep(random.randint(1, 10))
+            task.send_resolved_email()
+            task.resolved_email_sent = djangotime.now()
+            task.save(update_fields=["resolved_email_sent"])
+
+    return "ok"

@@ -1,13 +1,14 @@
 import datetime as dt
 import random
 from time import sleep
+from typing import Union
 
 from tacticalrmm.celery import app
 from django.utils import timezone as djangotime
 
 
 @app.task
-def handle_check_email_alert_task(pk):
+def handle_check_email_alert_task(pk, alert_interval: Union[float, None]) -> str:
     from .models import Check
 
     check = Check.objects.get(pk=pk)
@@ -20,19 +21,20 @@ def handle_check_email_alert_task(pk):
             check.email_sent = djangotime.now()
             check.save(update_fields=["email_sent"])
         else:
-            # send an email only if the last email sent is older than 24 hours
-            delta = djangotime.now() - dt.timedelta(hours=24)
-            if check.email_sent < delta:
-                sleep(random.randint(1, 10))
-                check.send_email()
-                check.email_sent = djangotime.now()
-                check.save(update_fields=["email_sent"])
+            if alert_interval:
+                # send an email only if the last email sent is older than alert interval
+                delta = djangotime.now() - dt.timedelta(days=alert_interval)
+                if check.email_sent < delta:
+                    sleep(random.randint(1, 10))
+                    check.send_email()
+                    check.email_sent = djangotime.now()
+                    check.save(update_fields=["email_sent"])
 
     return "ok"
 
 
 @app.task
-def handle_check_sms_alert_task(pk):
+def handle_check_sms_alert_task(pk, alert_interval: Union[float, None]) -> str:
     from .models import Check
 
     check = Check.objects.get(pk=pk)
@@ -45,19 +47,20 @@ def handle_check_sms_alert_task(pk):
             check.text_sent = djangotime.now()
             check.save(update_fields=["text_sent"])
         else:
-            # send a text only if the last text sent is older than 24 hours
-            delta = djangotime.now() - dt.timedelta(hours=24)
-            if check.text_sent < delta:
-                sleep(random.randint(1, 3))
-                check.send_sms()
-                check.text_sent = djangotime.now()
-                check.save(update_fields=["text_sent"])
+            if alert_interval:
+                # send a text only if the last text sent is older than 24 hours
+                delta = djangotime.now() - dt.timedelta(days=alert_interval)
+                if check.text_sent < delta:
+                    sleep(random.randint(1, 3))
+                    check.send_sms()
+                    check.text_sent = djangotime.now()
+                    check.save(update_fields=["text_sent"])
 
     return "ok"
 
 
 @app.task
-def handle_resolved_check_sms_alert_task(pk):
+def handle_resolved_check_sms_alert_task(pk: int) -> str:
     from .models import Check
 
     check = Check.objects.get(pk=pk)
@@ -74,7 +77,7 @@ def handle_resolved_check_sms_alert_task(pk):
 
 
 @app.task
-def handle_resolved_check_email_alert_task(pk):
+def handle_resolved_check_email_alert_task(pk: int) -> str:
     from .models import Check
 
     check = Check.objects.get(pk=pk)

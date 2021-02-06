@@ -1,6 +1,13 @@
 #!/bin/bash
 
-SCRIPT_VERSION="7"
+#####################################################
+
+POSTGRES_USER="changeme"
+POSTGRES_PW="hunter2"
+
+#####################################################
+
+SCRIPT_VERSION="8"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/backup.sh'
 
 GREEN='\033[0;32m'
@@ -24,13 +31,6 @@ if [ $EUID -eq 0 ]; then
   exit 1
 fi
 
-#####################################################
-
-POSTGRES_USER="changeme"
-POSTGRES_PW="hunter2"
-
-#####################################################
-
 if [[ "$POSTGRES_USER" == "changeme" || "$POSTGRES_PW" == "hunter2" ]]; then
   printf >&2 "${RED}You must change the postgres username/password at the top of this file.${NC}\n"
   printf >&2 "${RED}Check the github readme for where to find them.${NC}\n"
@@ -43,7 +43,7 @@ if [ ! -d /rmmbackups ]; then
 fi
 
 if [ -d /meshcentral/meshcentral-backup ]; then
-    rm -f /meshcentral/meshcentral-backup/*
+    rm -rf /meshcentral/meshcentral-backup/*
 fi
 
 if [ -d /meshcentral/meshcentral-coredumps ]; then

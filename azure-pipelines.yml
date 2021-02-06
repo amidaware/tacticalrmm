@@ -44,7 +44,7 @@ jobs:
       - script: |
           cd /myagent/_work/1/s/api
           source env/bin/activate
-          black --check tacticalrmm
+          black --exclude migrations/ --check tacticalrmm
           if [ $? -ne 0 ]; then
               exit 1
           fi

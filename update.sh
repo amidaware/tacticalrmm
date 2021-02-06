@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="105"
+SCRIPT_VERSION="106"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -192,6 +192,15 @@ sudo chown -R $USER:$GROUP /home/${USER}/.config
 sudo chown -R $USER:$GROUP /home/${USER}/.cache
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
 sudo chmod 775 -R /etc/letsencrypt
+
+CHECK_BUFF_SIZE=$(grep buffer-size /rmm/api/tacticalrmm/app.ini)
+if ! [[ $CHECK_BUFF_SIZE ]]; then
+setbuff="$(cat << EOF
+buffer-size = 65535
+EOF
+)"
+echo "${setbuff}" | tee --append /rmm/api/tacticalrmm/app.ini > /dev/null
+fi
 
 CHECK_REMOVE_SALT=$(grep KEEP_SALT /rmm/api/tacticalrmm/tacticalrmm/local_settings.py)
 if ! [[ $CHECK_REMOVE_SALT ]]; then

@@ -7,10 +7,10 @@ pgpw="hunter2"
 
 #####################################################
 
-SCRIPT_VERSION="14"
+SCRIPT_VERSION="15"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
-sudo apt install -y curl wget
+sudo apt install -y curl wget dirmngr gnupg lsb-release
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -37,11 +37,37 @@ if [[ "$pgusername" == "changeme" || "$pgpw" == "hunter2" ]]; then
   exit 1
 fi
 
-UBU20=$(grep 20.04 "/etc/"*"release")
-if ! [[ $UBU20 ]]; then
-  echo -ne "\033[0;31mThis restore script will only work on Ubuntu 20.04\e[0m\n"
-  exit 1
+osname=$(lsb_release -si); osname=${osname^}
+osname=$(echo "$osname" | tr  '[A-Z]' '[a-z]')
+fullrel=$(lsb_release -sd)
+codename=$(lsb_release -sc)
+relno=$(lsb_release -sr | cut -d. -f1)
+fullrelno=$(lsb_release -sr)
+
+# Fallback if lsb_release -si returns anything else than Ubuntu, Debian or Raspbian
+if [ ! "$osname" = "ubuntu" ] && [ ! "$osname" = "debian" ]; then
+  osname=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
+  osname=${osname^}
 fi
+
+# determine system
+if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]) || ([ "$osname" = "debian" ] && [ $relno -ge 10 ]); then
+  echo $fullrel
+else
+ echo $fullrel
+ echo -ne "${RED}Only Ubuntu release 20.04 and Debian 10 and later, are supported\n"
+ echo -ne "Your system does not appear to be supported${NC}\n"
+ exit 1
+fi
+
+if ([ "$osname" = "ubuntu" ]); then
+  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 multiverse"
+else
+  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 main"
+
+fi
+
+postgresql_repo="deb [arch=amd64] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
 
 if [ $EUID -eq 0 ]; then
   echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
@@ -172,7 +198,7 @@ sudo apt install -y python3-venv python3-dev python3-pip python3-setuptools pyth
 
 print_green 'Installing postgresql'
 
-sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
 sudo apt install -y postgresql-13
@@ -194,8 +220,8 @@ PGPASSWORD=${pgpw} psql -h localhost -U ${pgusername} -d tacticalrmm -f $tmp_dir
 
 print_green 'Restoring MongoDB'
 
-wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
-echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
+wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+echo "$mongodb_repo" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
 sudo apt update
 sudo apt install -y mongodb-org
 sudo systemctl enable mongod

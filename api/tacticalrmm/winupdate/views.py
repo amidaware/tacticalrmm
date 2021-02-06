@@ -37,6 +37,7 @@ def install_updates(request, pk):
     if pyver.parse(agent.version) < pyver.parse("1.3.0"):
         return notify_error("Requires agent version 1.3.0 or greater")
 
+    agent.approve_updates()
     nats_data = {
         "func": "installwinupdates",
         "guids": agent.get_approved_update_guids(),

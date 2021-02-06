@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="36"
+SCRIPT_VERSION="37"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -398,19 +398,17 @@ read -n 1 -s -r -p "Press any key to continue..."
 
 uwsgini="$(cat << EOF
 [uwsgi]
-
-# logto = /rmm/api/tacticalrmm/tacticalrmm/private/log/uwsgi.log
 chdir = /rmm/api/tacticalrmm
 module = tacticalrmm.wsgi
 home = /rmm/api/env
 master = true
 processes = 6
 threads = 6
-enable-threads = True
+enable-threads = true
 socket = /rmm/api/tacticalrmm/tacticalrmm.sock
 harakiri = 300
 chmod-socket = 660
-# clear environment on exit
+buffer-size = 65535
 vacuum = true
 die-on-term = true
 max-requests = 500

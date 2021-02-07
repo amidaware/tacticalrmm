@@ -166,7 +166,7 @@ export default {
           field: "alert_time",
           align: "left",
           sortable: true,
-          format: a => this.formatDate(a),
+          format: a => this.unixToString(a),
         },
         { name: "hostname", label: "Agent", field: "hostname", align: "left", sortable: true },
         {
@@ -185,7 +185,7 @@ export default {
           field: "resolved_on",
           align: "left",
           sortable: true,
-          format: a => this.formatDate(a, true),
+          format: a => this.unixToString(a),
         },
         {
           name: "snooze_until",
@@ -193,7 +193,7 @@ export default {
           field: "snooze_until",
           align: "left",
           sortable: true,
-          format: a => this.formatDate(a, true),
+          format: a => this.unixToString(a),
         },
         { name: "actions", label: "Actions", align: "left" },
       ],

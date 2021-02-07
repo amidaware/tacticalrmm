@@ -68,8 +68,8 @@ export default {
     bootTime(unixtime) {
       return getTimeLapse(unixtime);
     },
-    alertTime(datetime) {
-      return getTimeLapse(Date.parse(datetime) / 1000);
+    alertTime(unixtime) {
+      return getTimeLapse(unixtime);
 
     },
     notifySuccess(msg, timeout = 2000) {

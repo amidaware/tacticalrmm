@@ -17,21 +17,26 @@ class AlertSerializer(ModelSerializer):
     hostname = ReadOnlyField(source="agent.hostname")
     client = ReadOnlyField(source="agent.client.name")
     site = ReadOnlyField(source="agent.site.name")
-    alert_time = DateTimeField(
-        read_only=True,
-        format="iso-8601",
-        default_timezone=(lambda: get_default_timezone())(),
-    )
-    resolved_on = DateTimeField(
-        read_only=True,
-        format="iso-8601",
-        default_timezone=(lambda: get_default_timezone())(),
-    )
-    snooze_until = DateTimeField(
-        read_only=True,
-        format="iso-8601",
-        default_timezone=(lambda: get_default_timezone())(),
-    )
+    alert_time = SerializerMethodField(read_only=True)
+    resolved_on = SerializerMethodField(read_only=True)
+    snooze_until = SerializerMethodField(read_only=True)
+
+    def get_alert_time(self, instance):
+        if instance.alert_time:
+            return instance.alert_time.astimezone(get_default_timezone()).timestamp()
+        else:
+            return None
+
+    def get_resolved_on(self, instance):
+        if instance.resolved_on:
+            return instance.resolved_on.astimezone(get_default_timezone()).timestamp()
+        else:
+            return None
+
+    def get_snooze_until(self, instance):
+        if instance.snooze_until:
+            return instance.snooze_until.astimezone(get_default_timezone()).timestamp()
+        return None
 
     class Meta:
         model = Alert

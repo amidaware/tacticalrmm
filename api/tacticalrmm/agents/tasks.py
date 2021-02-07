@@ -108,7 +108,7 @@ def auto_self_agent_update_task() -> None:
 
 
 @app.task
-def agent_outage_email_task(pk: int, alert_interval: Union[float, None]) -> str:
+def agent_outage_email_task(pk: int, alert_interval: Union[float, None] = None) -> str:
 
     outage = AgentOutage.objects.get(pk=pk)
 
@@ -144,7 +144,7 @@ def agent_recovery_email_task(pk: int) -> str:
 
 
 @app.task
-def agent_outage_sms_task(pk: int, alert_interval: Union[float, None]) -> str:
+def agent_outage_sms_task(pk: int, alert_interval: Union[float, None] = None) -> str:
     outage = AgentOutage.objects.get(pk=pk)
 
     if not outage.outage_sms_sent:

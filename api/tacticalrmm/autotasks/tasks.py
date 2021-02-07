@@ -249,7 +249,7 @@ def remove_orphaned_win_tasks(agentpk):
 
 
 @app.task
-def handle_task_email_alert(pk: int, alert_interval: Union[float, None]) -> str:
+def handle_task_email_alert(pk: int, alert_interval: Union[float, None] = None) -> str:
     from .models import AutomatedTask
 
     check = AutomatedTask.objects.get(pk=pk)
@@ -275,7 +275,7 @@ def handle_task_email_alert(pk: int, alert_interval: Union[float, None]) -> str:
 
 
 @app.task
-def handle_task_sms_alert(pk: int, alert_interval: Union[float, None]) -> str:
+def handle_task_sms_alert(pk: int, alert_interval: Union[float, None] = None) -> str:
     from .models import AutomatedTask
 
     task = AutomatedTask.objects.get(pk=pk)

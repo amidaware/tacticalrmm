@@ -173,6 +173,8 @@
                 >
                 <!-- actions -->
                 <q-td>{{ props.row.actions.length }} actions</q-td>
+                <!-- resolve actions -->
+                <q-td>{{ props.row.resolved_actions.length }} actions</q-td>
               </q-tr>
             </template>
           </q-table>
@@ -217,6 +219,12 @@ export default {
           name: "actions",
           label: "Actions",
           field: "actions",
+          align: "left",
+        },
+        {
+          name: "resolved_actions",
+          label: "Resolve Actions",
+          field: "resolved_actions",
           align: "left",
         },
       ],

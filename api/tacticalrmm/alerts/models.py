@@ -106,6 +106,11 @@ class AlertTemplate(models.Model):
     actions = models.ManyToManyField(
         "scripts.Script", related_name="alert_templates", blank=True
     )
+
+    resolved_actions = models.ManyToManyField(
+        "scripts.Script", related_name="alert_templates_resolved", blank=True
+    )
+
     # overrides the global recipients
     email_recipients = ArrayField(
         models.CharField(max_length=100, blank=True),

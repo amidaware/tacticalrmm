@@ -8,7 +8,7 @@ from django.utils import timezone as djangotime
 
 
 @app.task
-def handle_check_email_alert_task(pk, alert_interval: Union[float, None]) -> str:
+def handle_check_email_alert_task(pk, alert_interval: Union[float, None] = None) -> str:
     from .models import Check
 
     check = Check.objects.get(pk=pk)
@@ -34,7 +34,7 @@ def handle_check_email_alert_task(pk, alert_interval: Union[float, None]) -> str
 
 
 @app.task
-def handle_check_sms_alert_task(pk, alert_interval: Union[float, None]) -> str:
+def handle_check_sms_alert_task(pk, alert_interval: Union[float, None] = None) -> str:
     from .models import Check
 
     check = Check.objects.get(pk=pk)

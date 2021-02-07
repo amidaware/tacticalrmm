@@ -17,6 +17,7 @@
           :columns="columns"
           :pagination.sync="pagination"
           :rows-per-page-options="[0]"
+          :visibleColumns="visibleColumns"
           row-key="id"
           binary-state-sort
           dense
@@ -34,22 +35,30 @@
               <!-- tds -->
               <q-td>{{ props.row.hostname }}</q-td>
               <!-- status icon -->
-              <q-td v-if="props.row.status === 'pending'"></q-td>
-              <q-td v-else-if="props.row.status === 'passing'">
-                <q-icon style="font-size: 1.3rem" color="positive" name="check_circle" />
+              <q-td v-if="props.row.status === 'passing'">
+                <q-icon style="font-size: 1.3rem" color="positive" name="check_circle">
+                  <q-tooltip>Passing</q-tooltip>
+                </q-icon>
               </q-td>
               <q-td v-else-if="props.row.status === 'failing'">
-                <q-icon style="font-size: 1.3rem" color="negative" name="error" />
+                <q-icon v-if="props.row.alert_severity === 'info'" style="font-size: 1.3rem" color="info" name="info">
+                  <q-tooltip>Informational</q-tooltip>
+                </q-icon>
+                <q-icon
+                  v-else-if="props.row.alert_severity === 'warning'"
+                  style="font-size: 1.3rem"
+                  color="warning"
+                  name="warning"
+                >
+                  <q-tooltip>Warning</q-tooltip>
+                </q-icon>
+                <q-icon v-else style="font-size: 1.3rem" color="negative" name="error">
+                  <q-tooltip>Error</q-tooltip>
+                </q-icon>
               </q-td>
               <q-td v-else></q-td>
               <!-- status text -->
               <q-td v-if="props.row.status === 'pending'">Awaiting First Synchronization</q-td>
-              <q-td v-else-if="props.row.status === 'passing'">
-                <q-badge color="positive">No Issues</q-badge>
-              </q-td>
-              <q-td v-else-if="props.row.status === 'failing'">
-                <q-badge color="negative">Failing</q-badge>
-              </q-td>
               <q-td v-else-if="props.row.sync_status === 'notsynced'">Will sync on next agent checkin</q-td>
               <q-td v-else-if="props.row.sync_status === 'synced'">Synced with agent</q-td>
               <q-td v-else-if="props.row.sync_status === 'pendingdeletion'">Pending deletion on agent</q-td>
@@ -164,6 +173,13 @@ export default {
   computed: {
     title() {
       return !!this.item.readable_desc ? this.item.readable_desc + " Status" : this.item.name + " Status";
+    },
+    visibleColumns() {
+      if (this.type === "check") {
+        return ["agent", "statusicon", "moreinfo", "datetime"];
+      } else {
+        return ["agent", "statusicon", "status", "moreinfo", "datetime"];
+      }
     },
   },
   methods: {

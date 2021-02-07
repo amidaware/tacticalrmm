@@ -38,6 +38,26 @@
                 emit-value
               />
             </div>
+
+            <div class="col-2">
+              <span style="text-decoration: underline; cursor: help"
+                >Resolved Actions
+                <q-tooltip> Optionally run a set of scripts on an agent when alert is resolved </q-tooltip>
+              </span>
+            </div>
+            <div class="col-10">
+              <q-select
+                dense
+                options-dense
+                outlined
+                multiple
+                v-model="template.resolved_actions"
+                :options="scriptOptions"
+                use-chips
+                map-options
+                emit-value
+              />
+            </div>
           </q-card-section>
 
           <div class="q-pl-md text-subtitle1">Email Settings (Overrides global email settings)</div>
@@ -424,6 +444,7 @@ export default {
         name: "",
         is_active: true,
         actions: [],
+        resolved_actions: [],
         email_recipients: [],
         email_from: "",
         text_recipients: [],

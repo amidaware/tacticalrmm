@@ -18,13 +18,13 @@ class AlertSerializer(ModelSerializer):
     client = ReadOnlyField(source="agent.client.name")
     site = ReadOnlyField(source="agent.site.name")
     alert_time = DateTimeField(
-        format="iso-8601", default_timezone=get_default_timezone()
+        format="iso-8601", default_timezone=lambda: get_default_timezone()
     )
     resolved_on = DateTimeField(
-        format="iso-8601", default_timezone=get_default_timezone()
+        format="iso-8601", default_timezone=lambda: get_default_timezone()
     )
     snooze_until = DateTimeField(
-        format="iso-8601", default_timezone=get_default_timezone()
+        format="iso-8601", default_timezone=lambda: get_default_timezone()
     )
 
     class Meta:

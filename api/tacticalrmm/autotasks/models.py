@@ -177,7 +177,7 @@ class AutomatedTask(BaseAuditModel):
             if agent.agentchecks.filter(parent_check=self.assigned_check.pk).exists():
                 assigned_check = agent.agentchecks.filter(
                     parent_check=self.assigned_check.pk
-                )
+                ).first()
             # check was overriden by agent and we need to use that agents check
             else:
                 if agent.agentchecks.filter(
@@ -191,11 +191,11 @@ class AutomatedTask(BaseAuditModel):
             if policy.policychecks.filter(name=self.assigned_check.name).exists():
                 assigned_check = policy.policychecks.filter(
                     name=self.assigned_check.name
-                )
+                ).first()
             else:
                 assigned_check = policy.policychecks.filter(
                     check_type=self.assigned_check.check_type
-                )
+                ).first()
 
         task = AutomatedTask.objects.create(
             agent=agent,

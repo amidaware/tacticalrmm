@@ -83,7 +83,7 @@ class Agent(BaseAuditModel):
 
         # get old agent if exists
         old_agent = type(self).objects.get(pk=self.pk) if self.pk else None
-        super(Agent, self).save(*args, **kwargs)
+        super(BaseAuditModel, self).save(*args, **kwargs)
 
         # check if new agent has been create
         # or check if policy have changed on agent

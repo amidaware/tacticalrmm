@@ -36,7 +36,7 @@ class TestCheckViews(TacticalTestCase):
             "check": {
                 "check_type": "diskspace",
                 "disk": "C:",
-                "threshold": 55,
+                "error_threshold": 55,
                 "fails_b4_alert": 3,
             },
         }
@@ -50,7 +50,7 @@ class TestCheckViews(TacticalTestCase):
             "check": {
                 "check_type": "diskspace",
                 "disk": "C:",
-                "threshold": 55,
+                "error_threshold": 55,
                 "fails_b4_alert": 3,
             },
         }
@@ -65,7 +65,7 @@ class TestCheckViews(TacticalTestCase):
             "pk": agent.pk,
             "check": {
                 "check_type": "cpuload",
-                "threshold": 66,
+                "error_threshold": 66,
                 "fails_b4_alert": 9,
             },
         }
@@ -73,7 +73,7 @@ class TestCheckViews(TacticalTestCase):
         resp = self.client.post(url, payload, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        payload["threshold"] = 87
+        payload["error_threshold"] = 87
         resp = self.client.post(url, payload, format="json")
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(
@@ -88,7 +88,7 @@ class TestCheckViews(TacticalTestCase):
             "pk": agent.pk,
             "check": {
                 "check_type": "memory",
-                "threshold": 78,
+                "error_threshold": 78,
                 "fails_b4_alert": 1,
             },
         }
@@ -96,7 +96,7 @@ class TestCheckViews(TacticalTestCase):
         resp = self.client.post(url, payload, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        payload["threshold"] = 55
+        payload["error_threshold"] = 55
         resp = self.client.post(url, payload, format="json")
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(
@@ -129,7 +129,7 @@ class TestCheckViews(TacticalTestCase):
             "check": {
                 "check_type": "diskspace",
                 "disk": "M:",
-                "threshold": 86,
+                "error_threshold": 86,
                 "fails_b4_alert": 2,
             },
         }
@@ -143,7 +143,7 @@ class TestCheckViews(TacticalTestCase):
             "check": {
                 "check_type": "diskspace",
                 "disk": "M:",
-                "threshold": 34,
+                "error_threshold": 34,
                 "fails_b4_alert": 9,
             },
         }

@@ -36,12 +36,12 @@ class Client(BaseAuditModel):
 
         # get old client if exists
         old_client = type(self).objects.get(pk=self.pk) if self.pk else None
-        super(Client, self).save(*args, **kw)
+        super(BaseAuditModel, self).save(*args, **kw)
 
         # check if server polcies have changed and initiate task to reapply policies if so
         if old_client and old_client.server_policy != self.server_policy:
             generate_agent_checks_by_location_task.delay(
-                location={"client_id": self.pk},
+                location={"site__client_id": self.pk},
                 mon_type="server",
                 create_tasks=True,
             )
@@ -49,7 +49,7 @@ class Client(BaseAuditModel):
         # check if workstation polcies have changed and initiate task to reapply policies if so
         if old_client and old_client.workstation_policy != self.workstation_policy:
             generate_agent_checks_by_location_task.delay(
-                location={"client_id": self.pk},
+                location={"site__client_id": self.pk},
                 mon_type="workstation",
                 create_tasks=True,
             )

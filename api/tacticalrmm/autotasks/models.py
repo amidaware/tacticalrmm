@@ -250,11 +250,11 @@ class AutomatedTask(BaseAuditModel):
             # check if a resolved notification should be send
             if alert_template:
                 if (
-                    not self.resolved_email_sent
-                    and alert_template.task_email_on_resolved
+                    alert_template.task_email_on_resolved
+                    and not self.resolved_email_sent
                 ):
                     handle_resolved_task_email_alert.delay(self.pk)
-                if not self.resolved_text_sent and alert_template.task_text_on_resolved:
+                if alert_template.task_text_on_resolved and not self.resolved_text_sent:
                     handle_resolved_task_sms_alert.delay(self.pk)
         else:
             # create alert in dashboard if enabled
@@ -283,6 +283,7 @@ class AutomatedTask(BaseAuditModel):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
+        alert_template = self.agent.get_alert_template()
 
         if self.agent:
             subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Failed"
@@ -294,13 +295,14 @@ class AutomatedTask(BaseAuditModel):
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
 
-        CORE.send_mail(subject, body)
+        CORE.send_mail(subject, body, alert_template)
 
     def send_sms(self):
 
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
+        alert_template = self.agent.get_alert_template()
 
         if self.agent:
             subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Failed"
@@ -312,11 +314,13 @@ class AutomatedTask(BaseAuditModel):
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
 
-        CORE.send_sms(body)
+        CORE.send_sms(body, alert_template=alert_template)
 
     def send_resolved_email(self):
         from core.models import CoreSettings
 
+        alert_template = self.agent.get_alert_template()
+
         CORE = CoreSettings.objects.first()
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
         body = (
@@ -324,15 +328,16 @@ class AutomatedTask(BaseAuditModel):
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
 
-        CORE.send_mail(subject, body)
+        CORE.send_mail(subject, body, alert_template=alert_template)
 
     def send_resolved_text(self):
         from core.models import CoreSettings
 
+        alert_template = self.agent.get_alert_template()
         CORE = CoreSettings.objects.first()
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
         body = (
             subject
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
-        CORE.send_sms(body)
+        CORE.send_sms(body, alert_template=alert_template)

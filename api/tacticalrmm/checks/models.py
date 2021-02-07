@@ -281,13 +281,13 @@ class Check(BaseAuditModel):
             # check if a resolved notification should be send
             if alert_template:
                 if (
-                    not self.resolved_email_sent
-                    and alert_template.check_email_on_resolved
+                    alert_template.check_email_on_resolved
+                    and not self.resolved_email_sent
                 ):
                     handle_resolved_check_sms_alert_task.delay(self.pk)
                 if (
-                    not self.resolved_text_sent
-                    and alert_template.check_text_on_resolved
+                    alert_template.check_text_on_resolved
+                    and not self.resolved_text_sent
                 ):
                     handle_resolved_check_sms_alert_task.delay(self.pk)
 
@@ -679,6 +679,7 @@ class Check(BaseAuditModel):
     def send_email(self):
 
         CORE = CoreSettings.objects.first()
+        alert_template = self.agent.get_alert_template()
 
         body: str = ""
         if self.agent:
@@ -756,11 +757,12 @@ class Check(BaseAuditModel):
                 except:
                     continue
 
-        CORE.send_mail(subject, body)
+        CORE.send_mail(subject, body, alert_template=alert_template)
 
     def send_sms(self):
 
         CORE = CoreSettings.objects.first()
+        alert_template = self.agent.get_alert_template()
         body: str = ""
 
         if self.agent:
@@ -804,19 +806,21 @@ class Check(BaseAuditModel):
         elif self.check_type == "eventlog":
             body = subject
 
-        CORE.send_sms(body)
+        CORE.send_sms(body, alert_template=alert_template)
 
     def send_resolved_email(self):
         CORE = CoreSettings.objects.first()
+        alert_template = self.agent.get_alert_template()
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
         body = f"{self} is now back to normal"
 
-        CORE.send_mail(subject, body)
+        CORE.send_mail(subject, body, alert_template=alert_template)
 
     def send_resolved_text(self):
         CORE = CoreSettings.objects.first()
+        alert_template = self.agent.get_alert_template()
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
-        CORE.send_sms(subject)
+        CORE.send_sms(subject, alert_template=alert_template)
 
 
 class CheckHistory(models.Model):

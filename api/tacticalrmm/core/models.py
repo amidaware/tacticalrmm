@@ -142,18 +142,30 @@ class CoreSettings(BaseAuditModel):
 
         return False
 
-    def send_mail(self, subject, body, test=False):
+    def send_mail(self, subject, body, alert_template=None, test=False):
 
-        if not self.email_is_configured:
+        if not alert_template and not self.email_is_configured:
             if test:
                 return "Missing required fields (need at least 1 recipient)"
             return False
 
+        # override email from if alert_template is passed and is set
+        if alert_template and alert_template.email_from:
+            from_address = alert_template.email_from
+        else:
+            from_address = self.smtp_from_email
+
+        # override email recipients if alert_template is passed and is set
+        if alert_template and alert_template.email_recipients:
+            email_recipients = ", ".join(alert_template.email_recipients)
+        else:
+            email_recipients = ", ".join(self.email_alert_recipients)
+
         try:
             msg = EmailMessage()
             msg["Subject"] = subject
-            msg["From"] = self.smtp_from_email
-            msg["To"] = ", ".join(self.email_alert_recipients)
+            msg["From"] = from_address
+            msg["To"] = email_recipients
             msg.set_content(body)
 
             with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=20) as server:
@@ -175,12 +187,18 @@ class CoreSettings(BaseAuditModel):
         else:
             return True
 
-    def send_sms(self, body):
-        if not self.sms_is_configured:
+    def send_sms(self, body, alert_template=None):
+        if not alert_template and not self.sms_is_configured:
             return
 
+        # override email recipients if alert_template is passed and is set
+        if alert_template and alert_template.text_recipients:
+            text_recipients = alert_template.email_recipients
+        else:
+            text_recipients = self.sms_alert_recipients
+
         tw_client = TwClient(self.twilio_account_sid, self.twilio_auth_token)
-        for num in self.sms_alert_recipients:
+        for num in text_recipients:
             try:
                 tw_client.messages.create(body=body, to=num, from_=self.twilio_number)
             except Exception as e:

@@ -751,6 +751,7 @@ class AgentOutage(models.Model):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
+        alert_template = self.agent.get_alert_template()
         CORE.send_mail(
             f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data overdue",
             (
@@ -759,12 +760,14 @@ class AgentOutage(models.Model):
                 f"agent {self.agent.hostname} "
                 "within the expected time."
             ),
+            alert_template=alert_template,
         )
 
     def send_recovery_email(self):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
+        alert_template = self.agent.get_alert_template()
         CORE.send_mail(
             f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data received",
             (
@@ -773,22 +776,27 @@ class AgentOutage(models.Model):
                 f"agent {self.agent.hostname} "
                 "after an interruption in data transmission."
             ),
+            alert_template=alert_template,
         )
 
     def send_outage_sms(self):
         from core.models import CoreSettings
 
+        alert_template = self.agent.get_alert_template()
         CORE = CoreSettings.objects.first()
         CORE.send_sms(
-            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data overdue"
+            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data overdue",
+            alert_template=alert_template,
         )
 
     def send_recovery_sms(self):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
+        alert_template = self.agent.get_alert_template()
         CORE.send_sms(
-            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data received"
+            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data received",
+            alert_template=alert_template,
         )
 
     def __str__(self):

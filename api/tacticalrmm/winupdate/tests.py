@@ -88,7 +88,8 @@ class TestWinUpdateViews(TacticalTestCase):
 
     def test_edit_policy(self):
         url = "/winupdate/editpolicy/"
-        winupdate = baker.make("winupdate.WinUpdate")
+        agent = baker.make_recipe("agents.agent")
+        winupdate = baker.make("winupdate.WinUpdate", agent=agent)
 
         invalid_data = {"pk": 500, "policy": "inherit"}
         # test a call where winupdate doesn't exist

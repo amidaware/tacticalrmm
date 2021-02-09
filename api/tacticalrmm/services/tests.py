@@ -8,6 +8,7 @@ from agents.models import Agent
 class TestServiceViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()
+        self.setup_coresettings()
 
     def test_default_services(self):
         url = "/services/defaultservices/"

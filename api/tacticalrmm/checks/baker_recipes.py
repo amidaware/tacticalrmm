@@ -1,7 +1,6 @@
-from .models import Check
-from model_bakery.recipe import Recipe, seq
+from model_bakery.recipe import Recipe
 
-check = Recipe(Check)
+check = Recipe("checks.Check")
 
 diskspace_check = check.extend(
     check_type="diskspace", disk="C:", warning_threshold=30, error_threshold=75

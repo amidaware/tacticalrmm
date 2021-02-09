@@ -146,7 +146,8 @@ def run_win_policy_autotask_task(task_pks):
 
 
 @app.task
-def update_policy_task_fields_task(taskpk):
+def update_policy_task_fields_task(taskpk, update_agent=False):
+    from autotasks.tasks import enable_or_disable_win_task
 
     task = AutomatedTask.objects.get(pk=taskpk)
 
@@ -161,3 +162,7 @@ def update_policy_task_fields_task(taskpk):
         timeout=task.timeout,
         enabled=task.enabled,
     )
+
+    if update_agent:
+        for task in AutomatedTask.objects.filter(parent_task=taskpk):
+            enable_or_disable_win_task.delay(task.pk, task.enabled)

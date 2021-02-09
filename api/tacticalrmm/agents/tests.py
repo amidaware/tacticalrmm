@@ -705,6 +705,7 @@ class TestAgentViews(TacticalTestCase):
 class TestAgentViewsNew(TacticalTestCase):
     def setUp(self):
         self.authenticate()
+        self.setup_coresettings()
 
     def test_agent_counts(self):
         url = "/agents/agent_counts/"

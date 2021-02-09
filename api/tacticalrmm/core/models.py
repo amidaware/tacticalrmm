@@ -93,7 +93,7 @@ class CoreSettings(BaseAuditModel):
                 pass
 
         old_settings = type(self).objects.get(pk=self.pk) if self.pk else None
-        super(CoreSettings, self).save(*args, **kwargs)
+        super(BaseAuditModel, self).save(*args, **kwargs)
 
         # check if server polcies have changed and initiate task to reapply policies if so
         if old_settings and old_settings.server_policy != self.server_policy:
@@ -101,7 +101,9 @@ class CoreSettings(BaseAuditModel):
 
         # check if workstation polcies have changed and initiate task to reapply policies if so
         if old_settings and old_settings.workstation_policy != self.workstation_policy:
-            generate_all_agent_checks_task.delay(mon_type="server", create_tasks=True)
+            generate_all_agent_checks_task.delay(
+                mon_type="workstation", create_tasks=True
+            )
 
     def __str__(self):
         return "Global Site Settings"

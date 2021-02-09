@@ -69,7 +69,7 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Unable to get alerts");
+          //this.notifyError("Unable to get alerts");
         });
     },
     showOverview() {

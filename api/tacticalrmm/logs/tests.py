@@ -147,8 +147,8 @@ class TestAuditViews(TacticalTestCase):
     def test_options_filter(self):
         url = "/logs/auditlogs/optionsfilter/"
 
-        baker.make("agents.Agent", hostname=seq("AgentHostname"), _quantity=5)
-        baker.make("agents.Agent", hostname=seq("Server"), _quantity=3)
+        baker.make_recipe("agents.agent", hostname=seq("AgentHostname"), _quantity=5)
+        baker.make_recipe("agents.agent", hostname=seq("Server"), _quantity=3)
         baker.make("accounts.User", username=seq("Username"), _quantity=7)
         baker.make("accounts.User", username=seq("soemthing"), _quantity=3)
 
@@ -194,7 +194,8 @@ class TestAuditViews(TacticalTestCase):
 
     def test_all_pending_actions(self):
         url = "/logs/allpendingactions/"
-        pending_actions = baker.make("logs.PendingAction", _quantity=6)
+        agent = baker.make_recipe("agents.agent")
+        pending_actions = baker.make("logs.PendingAction", agent=agent, _quantity=6)
 
         resp = self.client.get(url, format="json")
         serializer = PendingActionSerializer(pending_actions, many=True)

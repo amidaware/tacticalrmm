@@ -1,3 +1,4 @@
+from django.db.models.base import Model
 from rest_framework.serializers import (
     ModelSerializer,
     SerializerMethodField,

@@ -2,7 +2,6 @@ from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import (
     ModelSerializer,
     ReadOnlyField,
-    DateTimeField,
 )
 
 from clients.serializers import ClientSerializer, SiteSerializer
@@ -18,8 +17,8 @@ class AlertSerializer(ModelSerializer):
     client = ReadOnlyField(source="agent.client.name")
     site = ReadOnlyField(source="agent.site.name")
     alert_time = SerializerMethodField(read_only=True)
-    resolved_on = SerializerMethodField(read_only=True)
-    snooze_until = SerializerMethodField(read_only=True)
+    resolve_on = SerializerMethodField()
+    snoozed_until = SerializerMethodField(read_only=True)
 
     def get_alert_time(self, instance):
         if instance.alert_time:
@@ -27,13 +26,13 @@ class AlertSerializer(ModelSerializer):
         else:
             return None
 
-    def get_resolved_on(self, instance):
+    def get_resolve_on(self, instance):
         if instance.resolved_on:
             return instance.resolved_on.astimezone(get_default_timezone()).timestamp()
         else:
             return None
 
-    def get_snooze_until(self, instance):
+    def get_snoozed_until(self, instance):
         if instance.snooze_until:
             return instance.snooze_until.astimezone(get_default_timezone()).timestamp()
         return None

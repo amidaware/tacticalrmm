@@ -116,7 +116,7 @@ class GetUpdateDeleteAlert(APIView):
 
         data = request.data
 
-        if "type" in request.data.keys():
+        if "type" in data.keys():
             if data["type"] == "resolve":
                 data = {
                     "resolved": True,
@@ -131,13 +131,13 @@ class GetUpdateDeleteAlert(APIView):
                 if "snooze_days" in data.keys():
                     data = {
                         "snoozed": True,
-                        "snooze_until": (
-                            djangotime.now()
-                            + djangotime.timedelta(days=int(data["snooze_days"]))
-                        ),
+                        "snooze_until": djangotime.now()
+                        + djangotime.timedelta(days=int(data["snooze_days"])),
                     }
                 else:
-                    notify_error("Missing 'snoozed_days' when trying to snooze alert")
+                    return notify_error(
+                        "Missing 'snoozed_days' when trying to snooze alert"
+                    )
             elif data["type"] == "unsnooze":
                 data = {"snoozed": False}
 
@@ -145,7 +145,7 @@ class GetUpdateDeleteAlert(APIView):
                 alert.snooze_until = None
                 alert.save()
             else:
-                notify_error("There was an error in the request data")
+                return notify_error("There was an error in the request data")
 
         serializer = AlertSerializer(instance=alert, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -170,12 +170,13 @@ class BulkAlerts(APIView):
             )
             return Response("ok")
         elif request.data["bulk_action"] == "snooze":
-            Alert.objects.filter(id__in=request.data["alerts"]).update(
-                snoozed=True,
-                snooze_until=djangotime.now()
-                + djangotime.timedelta(days=int(request.data["snooze_days"])),
-            )
-            return Response("ok")
+            if "snooze_days" in request.data.keys():
+                Alert.objects.filter(id__in=request.data["alerts"]).update(
+                    snoozed=True,
+                    snooze_until=djangotime.now()
+                    + djangotime.timedelta(days=int(request.data["snooze_days"])),
+                )
+                return Response("ok")
 
         return notify_error("The request was invalid")
 

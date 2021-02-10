@@ -180,17 +180,17 @@ export default {
         { name: "severity", label: "Severity", field: "severity", align: "left", sortable: true },
         { name: "message", label: "Message", field: "message", align: "left", sortable: true },
         {
-          name: "resolved_on",
+          name: "resolve_on",
           label: "Resolved On",
-          field: "resolved_on",
+          field: "resolve_on",
           align: "left",
           sortable: true,
           format: a => this.unixToString(a),
         },
         {
-          name: "snooze_until",
+          name: "snoozed_until",
           label: "Snoozed Until",
-          field: "snooze_until",
+          field: "snoozed_until",
           align: "left",
           sortable: true,
           format: a => this.unixToString(a),
@@ -210,9 +210,9 @@ export default {
     },
     visibleColumns() {
       return this.columns.map(column => {
-        if (column.name === "snooze_until") {
+        if (column.name === "snoozed_until") {
           if (this.includeSnoozed) return column.name;
-        } else if (column.name === "resolved_on") {
+        } else if (column.name === "resolve_on") {
           if (this.includeResolved) return column.name;
         } else {
           return column.name;

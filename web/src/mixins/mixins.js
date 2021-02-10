@@ -97,6 +97,8 @@ export default {
       return includeSeconds ? formatted + ":" + appendLeadingZeroes(dt.getSeconds()) : formatted
     },
     unixToString(timestamp) {
+      if (!timestamp) return ""
+
       let t = new Date(timestamp * 1000)
       return date.formatDate(t, 'MMM-D-YYYY - HH:mm')
     },

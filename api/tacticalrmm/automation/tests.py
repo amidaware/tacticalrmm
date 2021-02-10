@@ -982,7 +982,7 @@ class TestPolicyTasks(TacticalTestCase):
 
         # should trigger task in save method on core
         generate_agent_checks_by_location_task.assert_called_with(
-            location={"site__client_id": server_agent.site.pk},
+            location={"site__client_id": server_agent.client.pk},
             mon_type="server",
             create_tasks=True,
         )
@@ -1004,7 +1004,7 @@ class TestPolicyTasks(TacticalTestCase):
 
         # should trigger task in save method on core
         generate_agent_checks_by_location_task.assert_called_with(
-            location={"site__client_id": server_agent.site.pk},
+            location={"site__client_id": server_agent.client.pk},
             mon_type="server",
             create_tasks=True,
         )

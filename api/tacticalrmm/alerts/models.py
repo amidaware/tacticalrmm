@@ -3,6 +3,8 @@ from django.contrib.postgres.fields import ArrayField
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
 
+from typing import Union, Type
+
 SEVERITY_CHOICES = [
     ("info", "Informational"),
     ("warning", "Warning"),
@@ -49,6 +51,25 @@ class Alert(models.Model):
     resolved = models.BooleanField(default=False)
     resolved_on = models.DateTimeField(null=True, blank=True)
     severity = models.CharField(max_length=30, choices=SEVERITY_CHOICES, default="info")
+    email_sent = models.DateTimeField(null=True, blank=True)
+    resolved_email_sent = models.DateTimeField(null=True, blank=True)
+    sms_sent = models.DateTimeField(null=True, blank=True)
+    resolved_sms_sent = models.DateTimeField(null=True, blank=True)
+    hidden = models.BooleanField(default=False)
+    action_run = models.BooleanField(default=False)
+    action_timeout = models.PositiveIntegerField(null=True, blank=True)
+    action_stdout = models.TextField(null=True, blank=True)
+    action_stderr = models.TextField(null=True, blank=True)
+    action_retcode = models.IntegerField(null=True, blank=True)
+    action_execution_time = models.CharField(max_length=100, null=True, blank=True)
+    resolved_action_run = models.BooleanField(default=False)
+    resolved_action_timeout = models.PositiveIntegerField(null=True, blank=True)
+    resolved_action_stdout = models.TextField(null=True, blank=True)
+    resolved_action_stderr = models.TextField(null=True, blank=True)
+    resolved_action_retcode = models.IntegerField(null=True, blank=True)
+    resolved_action_execution_time = models.CharField(
+        max_length=100, null=True, blank=True
+    )
 
     def __str__(self):
         return self.message
@@ -61,37 +82,38 @@ class Alert(models.Model):
         self.save()
 
     @classmethod
-    def create_availability_alert(cls, agent) -> None:
+    def create_availability_alert(cls, agent):
         if not cls.objects.filter(agent=agent, resolved=False).exists():
-            cls.objects.create(
+            return cls.objects.create(
                 agent=agent,
                 alert_type="availability",
                 severity="error",
                 message=f"{agent.hostname} in {agent.client.name}\\{agent.site.name} is Offline.",
+                hidden=True,
             )
 
     @classmethod
-    def create_check_alert(cls, check) -> None:
+    def create_check_alert(cls, check):
 
         if not cls.objects.filter(assigned_check=check, resolved=False).exists():
-            cls.objects.create(
+            return cls.objects.create(
                 assigned_check=check,
-                agent=check.agent,
                 alert_type="check",
                 severity=check.alert_severity,
                 message=f"{check.agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
+                hidden=True,
             )
 
     @classmethod
-    def create_task_alert(cls, task) -> None:
+    def create_task_alert(cls, task):
 
         if not cls.objects.filter(assigned_task=task, resolved=False).exists():
-            cls.objects.create(
+            return cls.objects.create(
                 assigned_task=task,
-                agent=task.agent,
                 alert_type="task",
                 severity=task.alert_severity,
                 message=f"{task.agent.hostname} has task: {task.name} that failed.",
+                hidden=True,
             )
 
     @classmethod
@@ -103,12 +125,31 @@ class AlertTemplate(models.Model):
     name = models.CharField(max_length=100)
     is_active = models.BooleanField(default=True)
 
-    actions = models.ManyToManyField(
-        "scripts.Script", related_name="alert_templates", blank=True
+    action = models.ForeignKey(
+        "scripts.Script",
+        related_name="alert_template",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
     )
-
-    resolved_actions = models.ManyToManyField(
-        "scripts.Script", related_name="alert_templates_resolved", blank=True
+    action_args = ArrayField(
+        models.CharField(max_length=255, null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
+    resolved_action = models.ForeignKey(
+        "scripts.Script",
+        related_name="resolved_alert_template",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    resolved_action_args = ArrayField(
+        models.CharField(max_length=255, null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
     )
 
     # overrides the global recipients

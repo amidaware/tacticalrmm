@@ -19,43 +19,77 @@
               <q-toggle v-model="template.is_active" color="green" label="Enabled" left-label />
             </div>
 
-            <div class="col-2">
+            <div class="col-2 q-my-sm">
               <span style="text-decoration: underline; cursor: help"
-                >Actions
-                <q-tooltip> Optionally run a set of scripts on an agent when it triggers an alert </q-tooltip>
+                >Failure action
+                <q-tooltip>
+                  Optionally run a script on an agent when it triggers an alert. This will be run once per alert, and
+                  may run on any online agent.</q-tooltip
+                >
               </span>
             </div>
-            <div class="col-10">
+            <div class="col-10 q-mb-sm">
               <q-select
                 dense
                 options-dense
                 outlined
-                multiple
-                v-model="template.actions"
+                v-model="template.action"
                 :options="scriptOptions"
-                use-chips
                 map-options
                 emit-value
               />
             </div>
 
-            <div class="col-2">
+            <div class="col-2 q-my-sm">Failure action args</div>
+            <div class="col-10 q-mb-sm">
+              <q-select
+                dense
+                label="Failure action arguments (press Enter after typing each argument)"
+                filled
+                v-model="template.action_args"
+                use-input
+                use-chips
+                multiple
+                hide-dropdown-icon
+                input-debounce="0"
+                new-value-mode="add"
+              />
+            </div>
+
+            <div class="col-2 q-my-sm">
               <span style="text-decoration: underline; cursor: help"
-                >Resolved Actions
-                <q-tooltip> Optionally run a set of scripts on an agent when alert is resolved </q-tooltip>
+                >Resolved action
+                <q-tooltip>
+                  Optionally run a script on an agent when the alert is resolved. This will be run once per alert, and
+                  may run on any online agent.</q-tooltip
+                >
               </span>
             </div>
-            <div class="col-10">
+            <div class="col-10 q-mb-sm">
               <q-select
                 dense
                 options-dense
                 outlined
-                multiple
-                v-model="template.resolved_actions"
+                v-model="template.resolved_action"
                 :options="scriptOptions"
-                use-chips
                 map-options
                 emit-value
+              />
+            </div>
+
+            <div class="col-2 q-my-sm">Resolved action args</div>
+            <div class="col-10 q-mb-sm">
+              <q-select
+                dense
+                label="Resolved action arguments (press Enter after typing each argument)"
+                filled
+                v-model="template.resolved_action_args"
+                use-input
+                use-chips
+                multiple
+                hide-dropdown-icon
+                input-debounce="0"
+                new-value-mode="add"
               />
             </div>
           </q-card-section>
@@ -132,7 +166,7 @@
           <q-separator class="q-mb-sm" />
 
           <q-card-section class="row">
-            <div class="col-6">
+            <div class="col-4">
               <q-toggle v-model="template.agent_email_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Email on resolved<q-tooltip>Sends an email when agent is back online</q-tooltip></span
@@ -140,13 +174,14 @@
               </q-toggle>
             </div>
 
-            <div class="col-6">
+            <div class="col-4">
               <q-toggle v-model="template.agent_text_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Text on resolved<q-tooltip>Sends an SMS message when agent is back online</q-tooltip></span
                 >
               </q-toggle>
             </div>
+            <div class="col-4"></div>
 
             <div class="col-4">
               <q-toggle v-model="template.agent_always_email" color="green" left-label>
@@ -254,7 +289,7 @@
               />
             </div>
 
-            <div class="col-6">
+            <div class="col-4">
               <q-toggle v-model="template.check_email_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Email on resolved <q-tooltip>Sends an email when check alert has resolved</q-tooltip></span
@@ -262,13 +297,14 @@
               </q-toggle>
             </div>
 
-            <div class="col-6">
+            <div class="col-4">
               <q-toggle v-model="template.check_text_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Text on resolved <q-tooltip>Sends an SMS message when check alert has resolved</q-tooltip></span
                 >
               </q-toggle>
             </div>
+            <div class="col-4"></div>
 
             <div class="col-4">
               <q-toggle v-model="template.check_always_email" color="green" left-label>
@@ -369,7 +405,7 @@
               />
             </div>
 
-            <div class="col-6">
+            <div class="col-4">
               <q-toggle v-model="template.task_email_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Email on resolved <q-tooltip>Sends an email when task alert has resolved</q-tooltip></span
@@ -377,13 +413,14 @@
               </q-toggle>
             </div>
 
-            <div class="col-6">
+            <div class="col-4">
               <q-toggle v-model="template.task_text_on_resolved" color="green" left-label>
                 <span style="text-decoration: underline; cursor: help"
                   >Text on resolved <q-tooltip>Sends an SMS message when task alert has resolved</q-tooltip></span
                 >
               </q-toggle>
             </div>
+            <div class="col-4"></div>
 
             <div class="col-4">
               <q-toggle v-model="template.task_always_email" color="green" left-label>
@@ -443,8 +480,10 @@ export default {
       template: {
         name: "",
         is_active: true,
-        actions: [],
-        resolved_actions: [],
+        action: null,
+        action_args: [],
+        resolved_action: null,
+        resolved_action_args: [],
         email_recipients: [],
         email_from: "",
         text_recipients: [],

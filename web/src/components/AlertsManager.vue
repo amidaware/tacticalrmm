@@ -171,10 +171,10 @@
                     }})</span
                   ></q-td
                 >
-                <!-- actions -->
-                <q-td>{{ props.row.actions.length }} actions</q-td>
-                <!-- resolve actions -->
-                <q-td>{{ props.row.resolved_actions.length }} actions</q-td>
+                <!-- failure action -->
+                <q-td>{{ props.row.action_name }}</q-td>
+                <!-- resolve action -->
+                <q-td>{{ props.row.resolved_action_name }}</q-td>
               </q-tr>
             </template>
           </q-table>
@@ -216,15 +216,15 @@ export default {
           align: "left",
         },
         {
-          name: "actions",
-          label: "Actions",
-          field: "actions",
+          name: "action_name",
+          label: "Failure Action",
+          field: "action_name",
           align: "left",
         },
         {
-          name: "resolved_actions",
-          label: "Resolve Actions",
-          field: "resolved_actions",
+          name: "resolved_action_name",
+          label: "Resolve Action",
+          field: "resolved_action_name",
           align: "left",
         },
       ],

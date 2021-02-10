@@ -13,12 +13,62 @@ from .models import Alert, AlertTemplate
 
 class AlertSerializer(ModelSerializer):
 
-    hostname = ReadOnlyField(source="agent.hostname")
-    client = ReadOnlyField(source="agent.client.name")
-    site = ReadOnlyField(source="agent.site.name")
+    hostname = SerializerMethodField(read_only=True)
+    client = SerializerMethodField(read_only=True)
+    site = SerializerMethodField(read_only=True)
     alert_time = SerializerMethodField(read_only=True)
-    resolve_on = SerializerMethodField()
+    resolve_on = SerializerMethodField(read_only=True)
     snoozed_until = SerializerMethodField(read_only=True)
+
+    def get_hostname(self, instance):
+        if instance.alert_type == "availability":
+            return instance.agent.hostname if instance.agent else ""
+        elif instance.alert_type == "check":
+            return (
+                instance.assigned_check.agent.hostname
+                if instance.assigned_check
+                else ""
+            )
+        elif instance.alert_type == "task":
+            return (
+                instance.assigned_task.agent.hostname if instance.assigned_task else ""
+            )
+        else:
+            return ""
+
+    def get_client(self, instance):
+        if instance.alert_type == "availability":
+            return instance.agent.client.name if instance.agent else ""
+        elif instance.alert_type == "check":
+            return (
+                instance.assigned_check.agent.client.name
+                if instance.assigned_check
+                else ""
+            )
+        elif instance.alert_type == "task":
+            return (
+                instance.assigned_task.agent.client.name
+                if instance.assigned_task
+                else ""
+            )
+        else:
+            return ""
+
+    def get_site(self, instance):
+        if instance.alert_type == "availability":
+            return instance.agent.site.name if instance.agent else ""
+        elif instance.alert_type == "check":
+            return (
+                instance.assigned_check.agent.site.name
+                if instance.assigned_check
+                else ""
+            )
+        elif instance.alert_type == "task":
+            return (
+                instance.assigned_task.agent.site.name if instance.assigned_task else ""
+            )
+        else:
+            return ""
 
     def get_alert_time(self, instance):
         if instance.alert_time:
@@ -48,6 +98,8 @@ class AlertTemplateSerializer(ModelSerializer):
     task_settings = ReadOnlyField(source="has_task_settings")
     core_settings = ReadOnlyField(source="has_core_settings")
     default_template = ReadOnlyField(source="is_default_template")
+    action_name = ReadOnlyField(source="action.name")
+    resolved_action_name = ReadOnlyField(source="resolved_action.name")
     applied_count = SerializerMethodField()
 
     class Meta:

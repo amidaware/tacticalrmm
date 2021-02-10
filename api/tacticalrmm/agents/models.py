@@ -11,7 +11,8 @@ from collections import Counter
 from typing import List
 from typing import Union
 from loguru import logger
-import datetime as dt
+import asyncio
+
 from packaging import version as pyver
 from distutils.version import LooseVersion
 from nats.aio.client import Client as NATS
@@ -24,6 +25,7 @@ from alerts.models import AlertTemplate
 
 from core.models import CoreSettings, TZ_CHOICES
 from logs.models import BaseAuditModel
+from scripts.models import Script
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -269,6 +271,51 @@ class Agent(BaseAuditModel):
             return ret
         except:
             return ["unknown disk"]
+
+    def run_script(
+        self,
+        script: Script,
+        args: List[str] = [],
+        timeout: int = 120,
+        wait: bool = False,
+        run_on_any=False,
+    ):
+        data = {
+            "func": "runscript",
+            "timeout": timeout,
+            "script_args": args,
+            "payload": {
+                "code": script.code,
+                "shell": script.shell,
+            },
+        }
+        running_agent = self
+        if run_on_any:
+            nats_ping = {"func": "ping", "timeout": 2}
+
+            # try on self first
+            r = asyncio.run(self.nats_cmd(nats_ping))
+
+            if r == "pong":
+                running_agent = self
+            else:
+                online = [
+                    agent
+                    for agent in Agent.objects.all().only(
+                        "pk", "last_seen", "overdue_time"
+                    )
+                    if agent.status == "online"
+                ]
+                for agent in online:
+                    r = asyncio.run(agent.nats_cmd(nats_ping))
+                    if r == "pong":
+                        running_agent = agent
+                        break
+
+        if wait:
+            return asyncio.run(running_agent.nats_cmd(data, timeout=timeout))
+        else:
+            asyncio.run(running_agent.nats_cmd(data, wait=False))
 
     # auto approves updates
     def approve_updates(self):
@@ -635,7 +682,6 @@ class Agent(BaseAuditModel):
 
     def handle_alert(self, checkin: bool = False) -> None:
         from alerts.models import Alert
-        from agents.models import AgentOutage
         from agents.tasks import (
             agent_recovery_email_task,
             agent_recovery_sms_task,
@@ -651,50 +697,64 @@ class Agent(BaseAuditModel):
 
         # called when agent is back online
         if checkin:
-            if self.agentoutages.exists() and self.agentoutages.last().is_active:
+            if Alert.objects.filter(agent=self, resolved=False).exists():
 
-                # resolve any open outages
-                self.agentoutages.filter(recovery_time=None).update(
-                    recovery_time=djangotime.now()
-                )
-                last_outage = agent.agentoutages.last()
                 # resolve alert if exists
-                if Alert.objects.filter(agent=self, resolved=False).exists():
-                    alert = Alert.objects.get(agent=self, resolved=False)
-                    alert.resolve()
+                alert = Alert.objects.get(agent=self, resolved=False)
+                alert.resolve()
 
                 # check if a resolved notification should be emailed
                 if (
-                    alert_template
+                    not alert.resolved_email_sent
+                    and alert_template
                     and alert_template.agent_email_on_resolved
                     or self.overdue_email_alert
                 ):
-                    agent_recovery_email_task.delay(pk=last_outage.pk)
+                    agent_recovery_email_task.delay(pk=alert.pk)
 
                 # check if a resolved notification should be texted
                 if (
-                    alert_template
+                    not alert.resolved_sms_sent
+                    and alert_template
                     and alert_template.agent_text_on_resolved
                     or self.overdue_text_alert
                 ):
-                    agent_recovery_sms_task.delay(pk=last_outage.pk)
+                    agent_recovery_sms_task.delay(pk=alert.pk)
+
+                # check if any scripts should be run
+                if (
+                    not alert.resolved_action_run
+                    and alert_template
+                    and alert_template.resolved_action
+                ):
+                    r = self.run_script(
+                        alert_template.resolved_action,
+                        alert_template.resolved_action_args,
+                        timeout=15,
+                        wait=True,
+                        run_on_any=True,
+                    )
+
+                    alert.resolved_action_retcode = r["retcode"]
+                    alert.resolved_action_stdout = r["stderr"]
+                    alert.resolved_action_stderr = r["stderr"]
+                    alert.resolved_action_execution_time = "{:.4f}".format(
+                        r["execution_time"]
+                    )
+                    alert.save()
 
         # called when agent is offline
         else:
-            # outage hasn't been created yet so create it
-            if (
-                not self.agentoutages.exists()
-                and not self.agentoutages.last().is_active
-            ):
+            # check if alert hasn't been created yet so create it
+            if not Alert.objects.filter(agent=self, resolved=False).exists():
 
-                outage = AgentOutage(agent=self)
-                outage.save()
+                alert = Alert.create_availability_alert(self)
 
                 # add a null check history to allow gaps in graph
                 for check in self.agentchecks.all():
                     check.add_check_history(None)
             else:
-                outage = self.agentoutages.last()
+                alert = Alert.objects.get(agent=self, resolved=False)
 
             # create dashboard alert if enabled
             if (
@@ -702,62 +762,65 @@ class Agent(BaseAuditModel):
                 and alert_template.agent_always_alert
                 or self.overdue_dashboard_alert
             ):
-                Alert.create_availability_alert(self)
+                alert.hidden = False
+                alert.save()
 
             # send email alert if enabled
             if (
-                alert_template
+                not alert.email_sent
+                and alert_template
                 and alert_template.agent_always_email
                 or self.overdue_email_alert
             ):
                 agent_outage_email_task.delay(
-                    pk=outage.pk,
-                    alert_interval=alert_template.agent_periodic_alert_days,
+                    pk=alert.pk,
+                    alert_interval=alert_template.check_periodic_alert_days
+                    if alert_template
+                    else None,
                 )
 
+            # send text message if enabled
             if (
-                alert_template
+                not alert.sms_sent
+                and alert_template
                 and alert_template.agent_always_text
                 or self.overdue_text_alert
             ):
                 agent_outage_sms_task.delay(
-                    pk=outage.pk,
-                    alert_interval=alert_template.agent_periodic_alert_days,
+                    pk=alert.pk,
+                    alert_interval=alert_template.check_periodic_alert_days
+                    if alert_template
+                    else None,
                 )
 
+            # check if any scripts should be run
+            if not alert.action_run and alert_template and alert_template.action:
+                # attempt to run on agent, but probably won't work since it is offline
+                r = self.run_script(
+                    alert_template.action,
+                    alert_template.action_args,
+                    timeout=15,
+                    wait=True,
+                    run_on_any=True,
+                )
 
-class AgentOutage(models.Model):
-    agent = models.ForeignKey(
-        Agent,
-        related_name="agentoutages",
-        null=True,
-        blank=True,
-        on_delete=models.CASCADE,
-    )
-    outage_time = models.DateTimeField(auto_now_add=True)
-    recovery_time = models.DateTimeField(null=True, blank=True)
-    outage_email_sent = models.BooleanField(default=False)
-    outage_sms_sent = models.BooleanField(default=False)
-    outage_email_sent_time = models.DateTimeField(null=True, blank=True)
-    outage_sms_sent_time = models.DateTimeField(null=True, blank=True)
-    recovery_email_sent = models.BooleanField(default=False)
-    recovery_sms_sent = models.BooleanField(default=False)
-
-    @property
-    def is_active(self):
-        return False if self.recovery_time else True
+                alert.action_retcode = r["retcode"]
+                alert.action_stdout = r["stderr"]
+                alert.action_stderr = r["stderr"]
+                alert.action_execution_time = "{:.4f}".format(r["execution_time"])
+                alert.save()
 
     def send_outage_email(self):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
-        alert_template = self.agent.get_alert_template()
+        alert_template = self.get_alert_template()
         CORE.send_mail(
-            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data overdue",
+            f"{self.client.name}, {self.site.name}, {self.hostname} - data overdue",
             (
-                f"Data has not been received from client {self.agent.client.name}, "
-                f"site {self.agent.site.name}, "
-                f"agent {self.agent.hostname} "
+                f"Data has not been received from client {self.client.name}, "
+                f"site {self.site.name}, "
+                f"agent {self.hostname} "
                 "within the expected time."
             ),
             alert_template=alert_template,
@@ -767,13 +830,13 @@ class AgentOutage(models.Model):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
-        alert_template = self.agent.get_alert_template()
+        alert_template = self.get_alert_template()
         CORE.send_mail(
-            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data received",
+            f"{self.client.name}, {self.site.name}, {self.hostname} - data received",
             (
-                f"Data has been received from client {self.agent.client.name}, "
-                f"site {self.agent.site.name}, "
-                f"agent {self.agent.hostname} "
+                f"Data has been received from client {self.client.name}, "
+                f"site {self.site.name}, "
+                f"agent {self.hostname} "
                 "after an interruption in data transmission."
             ),
             alert_template=alert_template,
@@ -782,10 +845,10 @@ class AgentOutage(models.Model):
     def send_outage_sms(self):
         from core.models import CoreSettings
 
-        alert_template = self.agent.get_alert_template()
+        alert_template = self.get_alert_template()
         CORE = CoreSettings.objects.first()
         CORE.send_sms(
-            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data overdue",
+            f"{self.client.name}, {self.site.name}, {self.hostname} - data overdue",
             alert_template=alert_template,
         )
 
@@ -793,14 +856,11 @@ class AgentOutage(models.Model):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
-        alert_template = self.agent.get_alert_template()
+        alert_template = self.get_alert_template()
         CORE.send_sms(
-            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data received",
+            f"{self.client.name}, {self.site.name}, {self.hostname} - data received",
             alert_template=alert_template,
         )
-
-    def __str__(self):
-        return self.agent.hostname
 
 
 RECOVERY_CHOICES = [

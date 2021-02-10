@@ -18,7 +18,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 
-from .models import Agent, AgentOutage, RecoveryAction, Note
+from .models import Agent, RecoveryAction, Note
 from core.models import CoreSettings
 from scripts.models import Script
 from logs.models import AuditLog, PendingAction
@@ -701,18 +701,8 @@ def run_script(request):
         script=script.name,
     )
 
-    data = {
-        "func": "runscript",
-        "timeout": request.data["timeout"],
-        "script_args": request.data["args"],
-        "payload": {
-            "code": script.code,
-            "shell": script.shell,
-        },
-    }
-
     if output == "wait":
-        r = asyncio.run(agent.nats_cmd(data, timeout=req_timeout))
+        r = agent.run_script(script, timeout=req_timeout, wait=True)
         return Response(r)
     elif output == "email":
         if not pyver.parse(agent.version) >= pyver.parse("1.1.12"):
@@ -730,7 +720,7 @@ def run_script(request):
         )
         return Response(f"{script.name} will now be run on {agent.hostname}")
     else:
-        asyncio.run(agent.nats_cmd(data, wait=False))
+        agent.run_script(script, timeout=req_timeout)
         return Response(f"{script.name} will now be run on {agent.hostname}")
 
 
@@ -852,20 +842,37 @@ def bulk(request):
 
 @api_view(["POST"])
 def agent_counts(request):
+
+    server_offline_count = len(
+        [
+            agent
+            for agent in Agent.objects.filter(monitoring_type="server").only(
+                "pk", "last_seen", "overdue_time"
+            )
+            if not agent.status == "online"
+        ]
+    )
+
+    workstation_offline_count = len(
+        [
+            agent
+            for agent in Agent.objects.filter(monitoring_type="workstation").only(
+                "pk", "last_seen", "overdue_time"
+            )
+            if not agent.status == "online"
+        ]
+    )
+
     return Response(
         {
             "total_server_count": Agent.objects.filter(
                 monitoring_type="server"
             ).count(),
-            "total_server_offline_count": AgentOutage.objects.filter(
-                recovery_time=None, agent__monitoring_type="server"
-            ).count(),
+            "total_server_offline_count": server_offline_count,
             "total_workstation_count": Agent.objects.filter(
                 monitoring_type="workstation"
             ).count(),
-            "total_workstation_offline_count": AgentOutage.objects.filter(
-                recovery_time=None, agent__monitoring_type="workstation"
-            ).count(),
+            "total_workstation_offline_count": workstation_offline_count,
         }
     )
 

@@ -9,86 +9,82 @@ from django.utils import timezone as djangotime
 
 @app.task
 def handle_check_email_alert_task(pk, alert_interval: Union[float, None] = None) -> str:
-    from .models import Check
+    from alerts.models import Alert
 
-    check = Check.objects.get(pk=pk)
+    alert = Alert.objects.get(pk=pk)
 
-    if not check.agent.maintenance_mode:
-        # first time sending email
-        if not check.email_sent:
-            sleep(random.randint(1, 10))
-            check.send_email()
-            check.email_sent = djangotime.now()
-            check.save(update_fields=["email_sent"])
-        else:
-            if alert_interval:
-                # send an email only if the last email sent is older than alert interval
-                delta = djangotime.now() - dt.timedelta(days=alert_interval)
-                if check.email_sent < delta:
-                    sleep(random.randint(1, 10))
-                    check.send_email()
-                    check.email_sent = djangotime.now()
-                    check.save(update_fields=["email_sent"])
+    # first time sending email
+    if not alert.email_sent:
+        sleep(random.randint(1, 10))
+        alert.assigned_check.send_email()
+        alert.email_sent = djangotime.now()
+        alert.save(update_fields=["email_sent"])
+    else:
+        if alert_interval:
+            # send an email only if the last email sent is older than alert interval
+            delta = djangotime.now() - dt.timedelta(days=alert_interval)
+            if alert.email_sent < delta:
+                sleep(random.randint(1, 10))
+                alert.assigned_check.send_email()
+                alert.email_sent = djangotime.now()
+                alert.save(update_fields=["email_sent"])
 
     return "ok"
 
 
 @app.task
 def handle_check_sms_alert_task(pk, alert_interval: Union[float, None] = None) -> str:
-    from .models import Check
+    from alerts.models import Alert
 
-    check = Check.objects.get(pk=pk)
+    alert = Alert.objects.get(pk=pk)
 
-    if not check.agent.maintenance_mode:
-        # first time sending text
-        if not check.text_sent:
-            sleep(random.randint(1, 3))
-            check.send_sms()
-            check.text_sent = djangotime.now()
-            check.save(update_fields=["text_sent"])
-        else:
-            if alert_interval:
-                # send a text only if the last text sent is older than 24 hours
-                delta = djangotime.now() - dt.timedelta(days=alert_interval)
-                if check.text_sent < delta:
-                    sleep(random.randint(1, 3))
-                    check.send_sms()
-                    check.text_sent = djangotime.now()
-                    check.save(update_fields=["text_sent"])
+    # first time sending text
+    if not alert.sms_sent:
+        sleep(random.randint(1, 3))
+        alert.assigned_check.send_sms()
+        alert.sms_sent = djangotime.now()
+        alert.save(update_fields=["sms_sent"])
+    else:
+        if alert_interval:
+            # send a text only if the last text sent is older than 24 hours
+            delta = djangotime.now() - dt.timedelta(days=alert_interval)
+            if alert.sms_sent < delta:
+                sleep(random.randint(1, 3))
+                alert.assigned_check.send_sms()
+                alert.sms_sent = djangotime.now()
+                alert.save(update_fields=["sms_sent"])
 
     return "ok"
 
 
 @app.task
 def handle_resolved_check_sms_alert_task(pk: int) -> str:
-    from .models import Check
+    from alerts.models import Alert
 
-    check = Check.objects.get(pk=pk)
+    alert = Alert.objects.get(pk=pk)
 
-    if not check.agent.maintenance_mode:
-        # first time sending text
-        if not check.resolved_text_sent:
-            sleep(random.randint(1, 3))
-            check.send_resolved_sms()
-            check.resolved_text_sent = djangotime.now()
-            check.save(update_fields=["resolved_text_sent"])
+    # first time sending text
+    if not alert.resolved_sms_sent:
+        sleep(random.randint(1, 3))
+        alert.assigned_check.send_resolved_sms()
+        alert.resolved_sms_sent = djangotime.now()
+        alert.save(update_fields=["resolved_sms_sent"])
 
     return "ok"
 
 
 @app.task
 def handle_resolved_check_email_alert_task(pk: int) -> str:
-    from .models import Check
+    from alerts.models import Alert
 
-    check = Check.objects.get(pk=pk)
+    alert = Alert.objects.get(pk=pk)
 
-    if not check.agent.maintenance_mode:
-        # first time sending email
-        if not check.resolved_email_sent:
-            sleep(random.randint(1, 10))
-            check.send_resolved_email()
-            check.resolved_email_sent = djangotime.now()
-            check.save(update_fields=["resolved_email_sent"])
+    # first time sending email
+    if not alert.resolved_email_sent:
+        sleep(random.randint(1, 10))
+        alert.assigned_check.send_resolved_email()
+        alert.resolved_email_sent = djangotime.now()
+        alert.save(update_fields=["resolved_email_sent"])
 
     return "ok"
 

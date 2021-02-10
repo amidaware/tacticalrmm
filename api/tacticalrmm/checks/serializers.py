@@ -118,8 +118,6 @@ class CheckRunnerGetSerializer(serializers.ModelSerializer):
             "text_alert",
             "fails_b4_alert",
             "fail_count",
-            "email_sent",
-            "text_sent",
             "outage_history",
             "extra_details",
             "stdout",

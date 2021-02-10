@@ -106,7 +106,6 @@ def server_maintenance(request):
         )
 
     if request.data["action"] == "prune_db":
-        from agents.models import AgentOutage
         from logs.models import AuditLog, PendingAction
 
         if "prune_tables" not in request.data:
@@ -114,11 +113,6 @@ def server_maintenance(request):
 
         tables = request.data["prune_tables"]
         records_count = 0
-        if "agent_outages" in tables:
-            agentoutages = AgentOutage.objects.exclude(recovery_time=None)
-            records_count += agentoutages.count()
-            agentoutages.delete()
-
         if "audit_logs" in tables:
             auditlogs = AuditLog.objects.filter(action="check_run")
             records_count += auditlogs.count()

@@ -95,10 +95,6 @@ class Check(BaseAuditModel):
     dashboard_alert = models.BooleanField(default=False)
     fails_b4_alert = models.PositiveIntegerField(default=1)
     fail_count = models.PositiveIntegerField(default=0)
-    email_sent = models.DateTimeField(null=True, blank=True)
-    text_sent = models.DateTimeField(null=True, blank=True)
-    resolved_email_sent = models.DateTimeField(null=True, blank=True)
-    resolved_text_sent = models.DateTimeField(null=True, blank=True)
     outage_history = models.JSONField(null=True, blank=True)  # store
     extra_details = models.JSONField(null=True, blank=True)
     # check specific fields
@@ -242,8 +238,6 @@ class Check(BaseAuditModel):
             "more_info",
             "last_run",
             "fail_count",
-            "email_sent",
-            "text_sent",
             "outage_history",
             "extra_details",
             "stdout",
@@ -264,6 +258,7 @@ class Check(BaseAuditModel):
 
     def handle_alert(self) -> None:
         from alerts.models import Alert, AlertTemplate
+        from scripts.models import Script
 
         # return if agent is in maintenance mode
         if self.agent.maintenance_mode:
@@ -278,63 +273,105 @@ class Check(BaseAuditModel):
                 alert = Alert.objects.get(assigned_check=self, resolved=False)
                 alert.resolve()
 
-            # check if a resolved notification should be send
-            if alert_template:
+                # check if a resolved email notification should be send
                 if (
-                    alert_template.check_email_on_resolved
-                    and not self.resolved_email_sent
+                    alert_template
+                    and alert_template.check_email_on_resolved
+                    and not alert.resolved_email_sent
                 ):
-                    handle_resolved_check_sms_alert_task.delay(self.pk)
+                    handle_resolved_check_sms_alert_task.delay(pk=alert.pk)
+
+                # check if resolved text should be sent
                 if (
-                    alert_template.check_text_on_resolved
-                    and not self.resolved_text_sent
+                    alert_template
+                    and alert_template.check_text_on_resolved
+                    and not alert.resolved_sms_sent
                 ):
-                    handle_resolved_check_sms_alert_task.delay(self.pk)
+                    handle_resolved_check_sms_alert_task.delay(pk=alert.pk)
+
+                # check if resolved script should be run
+                if (
+                    alert_template
+                    and alert_template.resolved_action
+                    and not alert.resolved_action_run
+                ):
+                    r = self.agent.run_script(
+                        alert_template.resolved_action,
+                        alert_template.resolved_action_args,
+                        timeout=15,
+                        wait=True,
+                        run_on_any=True,
+                    )
+
+                    alert.resolved_action_retcode = r["retcode"]
+                    alert.resolved_action_stdout = r["stderr"]
+                    alert.resolved_action_stderr = r["stderr"]
+                    alert.resolved_action_execution_time = "{:.4f}".format(
+                        r["execution_time"]
+                    )
+                    alert.save()
 
         elif self.fail_count >= self.fails_b4_alert:
-            if alert_template:
-                # create alert in dashboard if enabled
-                if (
-                    self.alert_severity in alert_template.check_dashboard_alert_severity
-                    and self.dashboard_alert
-                    or alert_template.check_always_alert
-                ):
-                    Alert.create_check_alert(self)
-
-                # send email if enabled
-                if (
-                    self.alert_severity in alert_template.check_email_alert_severity
-                    and self.email_alert
-                    or alert_template.check_always_email
-                ):
-                    handle_check_email_alert_task.delay(
-                        self.pk, alert_template.check_periodic_alert_days
-                    )
-
-                # send text if enabled
-                if (
-                    self.alert_severity in alert_template.check_text_alert_severity
-                    and self.text_alert
-                    or alert_template.check_always_text
-                ):
-                    handle_check_sms_alert_task.delay(
-                        self.pk, alert_template.check_periodic_alert_days
-                    )
-
-                if alert_template.actions:
-                    # TODO: run scripts on agent
-                    pass
-
-            # if alert templates aren't in use
+            if not Alert.objects.filter(assigned_check=self, resolved=False).exists():
+                alert = Alert.create_check_alert(self)
             else:
-                if self.email_alert:
-                    handle_check_email_alert_task.delay(self.pk)
+                alert = Alert.objects.get(assigned_check=self, resolved=False)
 
-                if self.text_alert:
-                    handle_check_sms_alert_task.delay(self.pk)
+            # create alert in dashboard if enabled
+            if (
+                self.dashboard_alert
+                or alert_template
+                and self.alert_severity in alert_template.check_dashboard_alert_severity
+                and alert_template.check_always_alert
+            ):
+                alert.hidden = False
+                alert.save()
 
-                if self.dashboard_alert:
-                    Alert.create_check_alert(self)
+            # send email if enabled
+            if (
+                not alert.email_sent
+                and self.email_alert
+                or alert_template
+                and self.alert_severity in alert_template.check_email_alert_severity
+                and alert_template.check_always_email
+            ):
+                handle_check_email_alert_task.delay(
+                    pk=alert.pk,
+                    alert_interval=alert_template.check_periodic_alert_days
+                    if alert_template
+                    else None,
+                )
+
+            # send text if enabled
+            if (
+                not alert.sms_sent
+                and self.text_alert
+                or alert_template
+                and self.alert_severity in alert_template.check_text_alert_severity
+                and alert_template.check_always_text
+            ):
+                handle_check_sms_alert_task.delay(
+                    pk=alert.pk,
+                    alert_interval=alert_template.check_periodic_alert_days
+                    if alert_template
+                    else None,
+                )
+
+            # check if any scripts should be run
+            if alert_template and alert_template.action and not alert.action_run:
+                r = self.agent.run_script(
+                    alert_template.action,
+                    alert_template.action_args,
+                    timeout=15,
+                    wait=True,
+                    run_on_any=True,
+                )
+
+                alert.action_retcode = r["retcode"]
+                alert.action_stdout = r["stderr"]
+                alert.action_stderr = r["stderr"]
+                alert.action_execution_time = "{:.4f}".format(r["execution_time"])
+                alert.save()
 
     def add_check_history(self, value: int, more_info: Any = None) -> None:
         CheckHistory.objects.create(check_history=self, y=value, results=more_info)

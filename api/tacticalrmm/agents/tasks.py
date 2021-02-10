@@ -11,7 +11,7 @@ from django.conf import settings
 from scripts.models import Script
 
 from tacticalrmm.celery import app
-from agents.models import Agent, AgentOutage
+from agents.models import Agent
 from core.models import CoreSettings
 from logs.models import PendingAction
 
@@ -109,70 +109,74 @@ def auto_self_agent_update_task() -> None:
 
 @app.task
 def agent_outage_email_task(pk: int, alert_interval: Union[float, None] = None) -> str:
+    from alerts.models import Alert
 
-    outage = AgentOutage.objects.get(pk=pk)
+    alert = Alert.objects.get(pk=pk)
 
-    if not outage.outage_email_sent:
+    if not alert.email_sent:
         sleep(random.randint(1, 15))
-        outage.send_outage_email()
-        outage.outage_email_sent = True
-        outage.outage_email_sent_time = djangotime.now()
-        outage.save(update_fields=["outage_email_sent"])
+        alert.agent.send_outage_email()
+        alert.email_sent = djangotime.now()
+        alert.save(update_fields=["email_sent"])
     else:
         if alert_interval:
             # send an email only if the last email sent is older than alert interval
             delta = djangotime.now() - dt.timedelta(days=alert_interval)
-            if outage.outage_email_sent_time < delta:
+            if alert.email_sent < delta:
                 sleep(random.randint(1, 10))
-                outage.send_outage_email()
-                outage.outage_email_sent_time = djangotime.now()
-                outage.save(update_fields=["outage_email_sent_time"])
+                alert.agent.send_outage_email()
+                alert.email_sent = djangotime.now()
+                alert.save(update_fields=["email_sent"])
 
     return "ok"
 
 
 @app.task
 def agent_recovery_email_task(pk: int) -> str:
+    from alerts.models import Alert
+
     sleep(random.randint(1, 15))
-    outage = AgentOutage.objects.get(pk=pk)
-    outage.send_recovery_email()
-    outage.recovery_email_sent = True
-    outage.outage_email_sent_time = djangotime.now()
-    outage.save(update_fields=["recovery_email_sent", "outage_email_sent_time"])
+    alert = Alert.objects.get(pk=pk)
+    alert.agent.send_recovery_email()
+    alert.resolved_email_sent = djangotime.now()
+    alert.save(update_fields=["resolved_email_sent"])
 
     return "ok"
 
 
 @app.task
 def agent_outage_sms_task(pk: int, alert_interval: Union[float, None] = None) -> str:
-    outage = AgentOutage.objects.get(pk=pk)
+    from alerts.models import Alert
 
-    if not outage.outage_sms_sent:
+    alert = Alert.objects.get(pk=pk)
+
+    if not alert.sms_sent:
         sleep(random.randint(1, 15))
-        outage.send_outage_sms()
-        outage.outage_sms_sent = True
-        outage.outage_sms_sent_time = djangotime.now()
-        outage.save(update_fields=["outage_sms_sent", "outage_sms_sent_time"])
+        alert.agent.send_outage_sms()
+        alert.sms_sent = djangotime.now()
+        alert.save(update_fields=["sms_sent"])
     else:
         if alert_interval:
             # send an sms only if the last sms sent is older than alert interval
             delta = djangotime.now() - dt.timedelta(days=alert_interval)
-            if outage.outage_sms_sent_time < delta:
+            if alert.sms_sent < delta:
                 sleep(random.randint(1, 10))
-                outage.send_outage_sms()
-                outage.outage_sms_sent_time = djangotime.now()
-                outage.save(update_fields=["outage_sms_sent_time"])
+                alert.agent.send_outage_sms()
+                alert.sms_sent = djangotime.now()
+                alert.save(update_fields=["sms_sent"])
 
     return "ok"
 
 
 @app.task
 def agent_recovery_sms_task(pk: int) -> str:
+    from alerts.models import Alert
+
     sleep(random.randint(1, 3))
-    outage = AgentOutage.objects.get(pk=pk)
-    outage.send_recovery_sms()
-    outage.recovery_sms_sent = True
-    outage.save(update_fields=["recovery_sms_sent"])
+    alert = Alert.objects.get(pk=pk)
+    alert.agent.send_recovery_sms()
+    alert.resolved_sms_sent = djangotime.now()
+    alert.save(update_fields=["resolved_sms_sent"])
 
     return "ok"
 

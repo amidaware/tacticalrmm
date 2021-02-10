@@ -716,14 +716,11 @@ class TestAgentViewsNew(TacticalTestCase):
             monitoring_type=cycle(["server", "workstation"]),
             _quantity=6,
         )
-        agents = baker.make_recipe(
+        baker.make_recipe(
             "agents.overdue_agent",
             monitoring_type=cycle(["server", "workstation"]),
             _quantity=6,
         )
-
-        # make an AgentOutage for every overdue agent
-        baker.make("agents.AgentOutage", agent=cycle(agents), _quantity=6)
 
         # returned data should be this
         data = {

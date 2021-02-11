@@ -3,15 +3,16 @@ import string
 import os
 import json
 import pytz
-from statistics import mean, mode
+from statistics import mean
 
 from django.db import models
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
-from django.core.validators import MinValueValidator, MaxValueValidator
 from rest_framework.fields import JSONField
 from typing import List, Any
 from typing import Union
+
+from loguru import logger
 
 from core.models import CoreSettings
 from logs.models import BaseAuditModel
@@ -23,6 +24,8 @@ from .tasks import (
 )
 from .utils import bytes2human
 from alerts.models import SEVERITY_CHOICES
+
+logger.configure(**settings.LOG_CONFIG)
 
 CHECK_TYPE_CHOICES = [
     ("diskspace", "Disk Space Check"),
@@ -258,7 +261,6 @@ class Check(BaseAuditModel):
 
     def handle_alert(self) -> None:
         from alerts.models import Alert, AlertTemplate
-        from scripts.models import Script
 
         # return if agent is in maintenance mode
         if self.agent.maintenance_mode:
@@ -279,7 +281,7 @@ class Check(BaseAuditModel):
                     and alert_template.check_email_on_resolved
                     and not alert.resolved_email_sent
                 ):
-                    handle_resolved_check_sms_alert_task.delay(pk=alert.pk)
+                    handle_resolved_check_email_alert_task.delay(pk=alert.pk)
 
                 # check if resolved text should be sent
                 if (
@@ -300,16 +302,24 @@ class Check(BaseAuditModel):
                         alert_template.resolved_action_args,
                         timeout=15,
                         wait=True,
+                        full=True,
                         run_on_any=True,
                     )
 
-                    alert.resolved_action_retcode = r["retcode"]
-                    alert.resolved_action_stdout = r["stderr"]
-                    alert.resolved_action_stderr = r["stderr"]
-                    alert.resolved_action_execution_time = "{:.4f}".format(
-                        r["execution_time"]
-                    )
-                    alert.save()
+                    # command was successful
+                    if type(r) == dict:
+                        alert.resolved_action_retcode = r["retcode"]
+                        alert.resolved_action_stdout = r["stdout"]
+                        alert.resolved_action_stderr = r["stderr"]
+                        alert.resolved_action_execution_time = "{:.4f}".format(
+                            r["execution_time"]
+                        )
+                        alert.resolved_action_run = True
+                        alert.save()
+                    else:
+                        logger.error(
+                            f"Resolved action: {alert_template.action.name} failed to run on any agent for {self.agent.hostname} resolved alert for {self.check_type} check"
+                        )
 
         elif self.fail_count >= self.fails_b4_alert:
             if not Alert.objects.filter(assigned_check=self, resolved=False).exists():
@@ -362,16 +372,24 @@ class Check(BaseAuditModel):
                 r = self.agent.run_script(
                     alert_template.action,
                     alert_template.action_args,
-                    timeout=15,
+                    timeout=30,
                     wait=True,
+                    full=True,
                     run_on_any=True,
                 )
 
-                alert.action_retcode = r["retcode"]
-                alert.action_stdout = r["stderr"]
-                alert.action_stderr = r["stderr"]
-                alert.action_execution_time = "{:.4f}".format(r["execution_time"])
-                alert.save()
+                # command was successful
+                if type(r) == dict:
+                    alert.action_retcode = r["retcode"]
+                    alert.action_stdout = r["stdout"]
+                    alert.action_stderr = r["stderr"]
+                    alert.action_execution_time = "{:.4f}".format(r["execution_time"])
+                    alert.action_run = True
+                    alert.save()
+                else:
+                    logger.error(
+                        f"Failure action: {alert_template.action.name} failed to run on any agent for {self.agent.hostname} failure alert for {self.check_type} check{r}"
+                    )
 
     def add_check_history(self, value: int, more_info: Any = None) -> None:
         CheckHistory.objects.create(check_history=self, y=value, results=more_info)
@@ -853,7 +871,7 @@ class Check(BaseAuditModel):
 
         CORE.send_mail(subject, body, alert_template=alert_template)
 
-    def send_resolved_text(self):
+    def send_resolved_sms(self):
         CORE = CoreSettings.objects.first()
         alert_template = self.agent.get_alert_template()
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"

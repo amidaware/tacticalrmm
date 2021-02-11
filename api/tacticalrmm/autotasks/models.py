@@ -3,14 +3,18 @@ import random
 import string
 import datetime as dt
 
+from django.conf import settings
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.db.models.fields import DateTimeField
 from logs.models import BaseAuditModel
 from tacticalrmm.utils import bitdays_to_string
-from typing import Union
+
+from loguru import logger
 
 from alerts.models import SEVERITY_CHOICES
+
+logger.configure(**settings.LOG_CONFIG)
 
 RUN_TIME_DAY_CHOICES = [
     (0, "Monday"),
@@ -273,16 +277,24 @@ class AutomatedTask(BaseAuditModel):
                         alert_template.resolved_action_args,
                         timeout=15,
                         wait=True,
+                        full=True,
                         run_on_any=True,
                     )
 
-                    alert.resolved_action_retcode = r["retcode"]
-                    alert.resolved_action_stdout = r["stderr"]
-                    alert.resolved_action_stderr = r["stderr"]
-                    alert.resolved_action_execution_time = "{:.4f}".format(
-                        r["execution_time"]
-                    )
-                    alert.save()
+                    # command was successful
+                    if type(r) == dict:
+                        alert.resolved_action_retcode = r["retcode"]
+                        alert.resolved_action_stdout = r["stdout"]
+                        alert.resolved_action_stderr = r["stderr"]
+                        alert.resolved_action_execution_time = "{:.4f}".format(
+                            r["execution_time"]
+                        )
+                        alert.resolved_action_run = True
+                        alert.save()
+                    else:
+                        logger.error(
+                            f"Resolved action: {alert_template.action.name} failed to run on any agent for {self.agent.hostname} resolved alert for task: {self.name}"
+                        )
 
         # create alert if task is failing
         else:
@@ -329,6 +341,30 @@ class AutomatedTask(BaseAuditModel):
                     if alert_template
                     else None,
                 )
+
+            # check if any scripts should be run
+            if alert_template and alert_template.action and not alert.action_run:
+                r = self.agent.run_script(
+                    alert_template.action,
+                    alert_template.action_args,
+                    timeout=15,
+                    wait=True,
+                    full=True,
+                    run_on_any=True,
+                )
+
+                # command was successful
+                if type(r) == dict:
+                    alert.action_retcode = r["retcode"]
+                    alert.action_stdout = r["stdout"]
+                    alert.action_stderr = r["stderr"]
+                    alert.action_execution_time = "{:.4f}".format(r["execution_time"])
+                    alert.action_run = True
+                    alert.save()
+                else:
+                    logger.error(
+                        f"Failure action: {alert_template.action.name} failed to run on any agent for {self.agent.hostname} failure alert for task: {self.name}"
+                    )
 
     def send_email(self):
         from core.models import CoreSettings
@@ -381,7 +417,7 @@ class AutomatedTask(BaseAuditModel):
 
         CORE.send_mail(subject, body, alert_template=alert_template)
 
-    def send_resolved_text(self):
+    def send_resolved_sms(self):
         from core.models import CoreSettings
 
         alert_template = self.agent.get_alert_template()

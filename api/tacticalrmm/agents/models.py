@@ -8,8 +8,7 @@ import validators
 import msgpack
 import re
 from collections import Counter
-from typing import List
-from typing import Union
+from typing import List, Union, Any
 from loguru import logger
 import asyncio
 
@@ -277,11 +276,12 @@ class Agent(BaseAuditModel):
         script: Script,
         args: List[str] = [],
         timeout: int = 120,
+        full: bool = False,
         wait: bool = False,
         run_on_any=False,
-    ):
+    ) -> Any:
         data = {
-            "func": "runscript",
+            "func": "runscriptfull" if full else "runscript",
             "timeout": timeout,
             "script_args": args,
             "payload": {
@@ -289,9 +289,10 @@ class Agent(BaseAuditModel):
                 "shell": script.shell,
             },
         }
+
         running_agent = self
         if run_on_any:
-            nats_ping = {"func": "ping", "timeout": 2}
+            nats_ping = {"func": "ping", "timeout": 1}
 
             # try on self first
             r = asyncio.run(self.nats_cmd(nats_ping))
@@ -306,16 +307,22 @@ class Agent(BaseAuditModel):
                     )
                     if agent.status == "online"
                 ]
+
                 for agent in online:
                     r = asyncio.run(agent.nats_cmd(nats_ping))
                     if r == "pong":
                         running_agent = agent
                         break
 
+                if running_agent.pk == self.pk:
+                    return "Unable to find an online agent"
+
         if wait:
-            return asyncio.run(running_agent.nats_cmd(data, timeout=timeout))
+            return asyncio.run(running_agent.nats_cmd(data, timeout=timeout, wait=True))
         else:
             asyncio.run(running_agent.nats_cmd(data, wait=False))
+
+        return "ok"
 
     # auto approves updates
     def approve_updates(self):
@@ -732,16 +739,24 @@ class Agent(BaseAuditModel):
                         alert_template.resolved_action_args,
                         timeout=15,
                         wait=True,
+                        full=True,
                         run_on_any=True,
                     )
 
-                    alert.resolved_action_retcode = r["retcode"]
-                    alert.resolved_action_stdout = r["stderr"]
-                    alert.resolved_action_stderr = r["stderr"]
-                    alert.resolved_action_execution_time = "{:.4f}".format(
-                        r["execution_time"]
-                    )
-                    alert.save()
+                    # command was successful
+                    if type(r) == dict:
+                        alert.resolved_action_retcode = r["retcode"]
+                        alert.resolved_action_stdout = r["stdout"]
+                        alert.resolved_action_stderr = r["stderr"]
+                        alert.resolved_action_execution_time = "{:.4f}".format(
+                            r["execution_time"]
+                        )
+                        alert.resolved_action_run = True
+                        alert.save()
+                    else:
+                        logger.error(
+                            f"Resolved action: {alert_template.resolved_action} failed to run on any agent for {self.hostname} resolved outage"
+                        )
 
         # called when agent is offline
         else:
@@ -795,20 +810,27 @@ class Agent(BaseAuditModel):
 
             # check if any scripts should be run
             if not alert.action_run and alert_template and alert_template.action:
-                # attempt to run on agent, but probably won't work since it is offline
                 r = self.run_script(
                     alert_template.action,
                     alert_template.action_args,
                     timeout=15,
                     wait=True,
+                    full=True,
                     run_on_any=True,
                 )
 
-                alert.action_retcode = r["retcode"]
-                alert.action_stdout = r["stderr"]
-                alert.action_stderr = r["stderr"]
-                alert.action_execution_time = "{:.4f}".format(r["execution_time"])
-                alert.save()
+                # command was successful
+                if type(r) == dict:
+                    alert.action_retcode = r["retcode"]
+                    alert.action_stdout = r["stdout"]
+                    alert.action_stderr = r["stderr"]
+                    alert.action_execution_time = "{:.4f}".format(r["execution_time"])
+                    alert.action_run = True
+                    alert.save()
+                else:
+                    logger.error(
+                        f"Failure action: {alert_template.action.name} failed to run on any agent for {self.hostname} outage"
+                    )
 
     def send_outage_email(self):
         from core.models import CoreSettings

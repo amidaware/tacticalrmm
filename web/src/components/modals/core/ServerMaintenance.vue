@@ -26,9 +26,6 @@
         </q-card-section>
 
         <q-card-section v-if="action === 'prune_db'">
-          <q-checkbox v-model="prune_tables" val="agent_outages" label="Agent outage">
-            <q-tooltip>Removes resolved agent outage records</q-tooltip>
-          </q-checkbox>
           <q-checkbox v-model="prune_tables" val="audit_logs" label="Audit Log">
             <q-tooltip>Removes agent check results</q-tooltip>
           </q-checkbox>
@@ -46,7 +43,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 
 export default {

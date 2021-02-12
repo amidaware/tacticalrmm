@@ -1,92 +1,75 @@
 <template>
-  <q-card style="width: 60vw">
-    <q-card-section class="row items-center">
-      <div class="text-h6">Edit policies assigned to {{ type }}</div>
-      <q-space />
-      <q-btn icon="close" flat round dense v-close-popup />
-    </q-card-section>
-    <q-form @submit="submit" ref="form">
-      <q-card-section v-if="type !== 'agent'">
-        <q-select
-          v-model="selectedServerPolicy"
-          :options="options"
-          filled
-          options-selected-class="text-green"
-          dense
-          clearable
-          label="Server Policy"
-        >
-          <template v-slot:option="props">
-            <q-item v-bind="props.itemProps" v-on="props.itemEvents">
-              <q-item-section avatar>
-                <q-icon v-if="props.selected" name="check" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label v-html="props.opt.label" />
-              </q-item-section>
-            </q-item>
-          </template>
-        </q-select>
-      </q-card-section>
-      <q-card-section v-if="type !== 'agent'">
-        <q-select
-          v-model="selectedWorkstationPolicy"
-          :options="options"
-          filled
-          options-selected-class="text-green"
-          dense
-          clearable
-          label="Workstation Policy"
-        >
-          <template v-slot:option="props">
-            <q-item v-bind="props.itemProps" v-on="props.itemEvents">
-              <q-item-section avatar>
-                <q-icon v-if="props.selected" name="check" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label v-html="props.opt.label" />
-              </q-item-section>
-            </q-item>
-          </template>
-        </q-select>
-      </q-card-section>
-      <q-card-section v-if="type === 'agent'">
-        <q-select
-          v-model="selectedAgentPolicy"
-          :options="options"
-          filled
-          options-selected-class="text-green"
-          dense
-          clearable
-          label="Policy"
-        >
-          <template v-slot:option="props">
-            <q-item v-bind="props.itemProps" v-on="props.itemEvents">
-              <q-item-section avatar>
-                <q-icon v-if="props.selected" name="check" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label v-html="props.opt.label" />
-              </q-item-section>
-            </q-item>
-          </template>
-        </q-select>
-      </q-card-section>
-      <q-card-section class="row items-center">
-        <q-btn label="Edit Policies" color="primary" type="submit" />
-      </q-card-section>
-    </q-form>
-  </q-card>
+  <q-dialog ref="dialog" @hide="onHide">
+    <q-card class="q-dialog-plugin" style="width: 60vw">
+      <q-bar>
+        Edit policies assigned to {{ type }}
+        <q-space />
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+      <q-form @submit="submit">
+        <q-card-section v-if="options.length > 0">
+          <q-select
+            v-if="type === 'client' || type === 'site'"
+            class="q-mb-md"
+            v-model="selectedServerPolicy"
+            :options="options"
+            outlined
+            dense
+            options-dense
+            clearable
+            map-options
+            emit-value
+            label="Server Policy"
+          >
+          </q-select>
+          <q-select
+            v-if="type === 'client' || type === 'site'"
+            v-model="selectedWorkstationPolicy"
+            :options="options"
+            outlined
+            options-dense
+            dense
+            clearable
+            map-options
+            emit-value
+            label="Workstation Policy"
+          >
+          </q-select>
+          <q-select
+            v-if="type === 'agent'"
+            v-model="selectedAgentPolicy"
+            :options="options"
+            outlined
+            options-dense
+            dense
+            clearable
+            map-options
+            emit-value
+            label="Policy"
+          >
+          </q-select>
+        </q-card-section>
+        <q-card-section v-else>
+          No Automation Policies have been setup. Go to Settings > Automation Manager
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn dense flat label="Cancel" v-close-popup />
+          <q-btn v-if="options.length > 0" flat label="Submit" color="primary" type="submit" />
+        </q-card-actions>
+      </q-form>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
+import mixins from "@/mixins/mixins";
 
 export default {
   name: "PolicyAdd",
   props: {
-    pk: Number,
+    object: !Object,
     type: {
       required: true,
       type: String,
@@ -96,6 +79,7 @@ export default {
       },
     },
   },
+  mixins: [mixins],
   data() {
     return {
       selectedWorkstationPolicy: null,
@@ -104,95 +88,109 @@ export default {
       options: [],
     };
   },
-  computed: {
-    ...mapGetters({
-      policies: "automation/policies",
-    }),
-  },
   methods: {
     submit() {
+      // check if data was changed
+      if (this.type === "client" || this.type === "site") {
+        if (
+          this.object.workstation_policy === this.selectedWorkstationPolicy &&
+          this.object.server_policy === this.selectedServerPolicy
+        ) {
+          this.hide();
+          return;
+        }
+      } else if (this.type === "agent") {
+        if (this.object.policy === this.selectedAgentPolicy) {
+          this.hide();
+          return;
+        }
+      } else {
+        return;
+      }
       this.$q.loading.show();
 
       let data = {};
-      data.pk = this.pk;
-      data.type = this.type;
+      let url = "";
+      if (this.type === "client" || this.type === "site") {
+        data = {
+          pk: this.object.id,
+          server_policy: this.selectedServerPolicy,
+          workstation_policy: this.selectedWorkstationPolicy,
+        };
 
-      if (this.type !== "agent") {
-        data.server_policy = this.selectedServerPolicy === null ? 0 : this.selectedServerPolicy.value;
-        data.workstation_policy = this.selectedWorkstationPolicy === null ? 0 : this.selectedWorkstationPolicy.value;
-      } else {
-        data.policy = this.selectedAgentPolicy === null ? 0 : this.selectedAgentPolicy.value;
+        if (this.type === "client") url = `/clients/${this.object.id}/client/`;
+        else if (this.type === "site") url = `/clients/${this.object.id}/site/`;
+
+        this.$axios
+          .put(url, data)
+          .then(r => {
+            this.$q.loading.hide();
+            this.onOk();
+            this.notifySuccess("Policies Updated Successfully!");
+          })
+          .catch(e => {
+            this.$q.loading.hide();
+            this.notifyError("There was an error updating policies");
+          });
+      } else if (this.type === "agent") {
+        data = {
+          id: this.object.id,
+          policy: this.selectedAgentPolicy,
+        };
+
+        this.$axios
+          .patch("/agents/editagent/", data)
+          .then(r => {
+            this.$q.loading.hide();
+            this.onOk();
+            this.notifySuccess("Policies Updated Successfully!");
+          })
+          .catch(e => {
+            this.$q.loading.hide();
+            this.notifyError("There was an error updating policies");
+          });
       }
-
-      this.$store
-        .dispatch("automation/updateRelatedPolicies", data)
-        .then(r => {
-          this.$q.loading.hide();
-          this.$emit("close");
-          this.$q.notify(notifySuccessConfig("Policies Updated Successfully!"));
-        })
-        .catch(e => {
-          this.$q.loading.hide();
-          this.$q.notify(notifyErrorConfig("Something went wrong!"));
-        });
     },
     getPolicies() {
-      this.$store
-        .dispatch("automation/loadPolicies")
-        .then(() => {
-          this.options = this.policies.map(policy => ({
+      this.$q.loading.show();
+      this.$axios
+        .get("/automation/policies/")
+        .then(r => {
+          this.options = r.data.map(policy => ({
             label: policy.name,
             value: policy.id,
           }));
+
+          this.$q.loading.hide();
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.$q.notify(notifyErrorConfig("Add error occured while loading"));
+          this.notifyError("Add error occured while loading policies");
         });
     },
-    getRelation(pk, type) {
-      this.$store
-        .dispatch("automation/getRelatedPolicies", { pk, type })
-        .then(r => {
-          if (type === "agent") {
-            if (r.data.policy !== null) {
-              if (r.data.policy.id !== null) {
-                this.selectedAgentPolicy = {
-                  label: r.data.policy.name,
-                  value: r.data.policy.id,
-                };
-              }
-            }
-          }
-
-          if (type !== "agent") {
-            if (r.data.server_policy !== null) {
-              if (r.data.server_policy.id !== undefined) {
-                this.selectedServerPolicy = {
-                  label: r.data.server_policy.name,
-                  value: r.data.server_policy.id,
-                };
-              }
-            }
-
-            if (r.data.workstation_policy !== null) {
-              if (r.data.workstation_policy.id !== undefined) {
-                this.selectedWorkstationPolicy = {
-                  label: r.data.workstation_policy.name,
-                  value: r.data.workstation_policy.id,
-                };
-              }
-            }
-          }
-        })
-        .catch(e => {
-          this.$q.notify(notifyErrorConfig("Add error occured while loading"));
-        });
+    show() {
+      this.$refs.dialog.show();
+    },
+    hide() {
+      this.$refs.dialog.hide();
+    },
+    onHide() {
+      this.$emit("hide");
+    },
+    onOk() {
+      this.$emit("ok");
+      this.hide();
     },
   },
   mounted() {
     this.getPolicies();
-    this.getRelation(this.pk, this.type);
+
+    if (this.type !== "agent") {
+      this.selectedServerPolicy = this.object.server_policy;
+      this.selectedWorkstationPolicy = this.object.workstation_policy;
+    } else {
+      this.selectedAgentPolicy = this.object.policy;
+    }
   },
 };
 </script>

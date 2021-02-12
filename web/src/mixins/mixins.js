@@ -68,8 +68,8 @@ export default {
     bootTime(unixtime) {
       return getTimeLapse(unixtime);
     },
-    alertTime(datetime) {
-      return getTimeLapse(Date.parse(datetime) / 1000);
+    alertTime(unixtime) {
+      return getTimeLapse(unixtime);
 
     },
     notifySuccess(msg, timeout = 2000) {
@@ -84,11 +84,31 @@ export default {
     notifyInfo(msg, timeout = 2000) {
       Notify.create(notifyInfoConfig(msg, timeout));
     },
+
+    isValidThreshold(warning, error, diskcheck = false) {
+      if (warning === 0 && error === 0) {
+        Notify.create(notifyErrorConfig("Warning Threshold or Error Threshold need to be set", 2000));
+        return false
+      }
+
+      if (!diskcheck && warning > error && warning > 0 && error > 0) {
+        Notify.create(notifyErrorConfig("Warning Threshold must be less than Error Threshold", 2000));
+        return false
+      }
+
+      if (diskcheck && warning < error && warning > 0 && error > 0) {
+        Notify.create(notifyErrorConfig("Warning Threshold must be more than Error Threshold", 2000));
+        return false
+      }
+
+      return true;
+    },
     isValidEmail(val) {
       const email = /^(?=[a-zA-Z0-9@._%+-]{6,254}$)[a-zA-Z0-9._%+-]{1,64}@(?:[a-zA-Z0-9-]{1,63}\.){1,8}[a-zA-Z]{2,63}$/;
       return email.test(val);
     },
     formatDate(date, includeSeconds = false) {
+      if (!date) return
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       let dt = new Date(date)
       let formatted = months[dt.getMonth()] + "-" + appendLeadingZeroes(dt.getDate()) + "-" + appendLeadingZeroes(dt.getFullYear()) + " - " + appendLeadingZeroes(dt.getHours()) + ":" + appendLeadingZeroes(dt.getMinutes())
@@ -96,6 +116,8 @@ export default {
       return includeSeconds ? formatted + ":" + appendLeadingZeroes(dt.getSeconds()) : formatted
     },
     unixToString(timestamp) {
+      if (!timestamp) return ""
+
       let t = new Date(timestamp * 1000)
       return date.formatDate(t, 'MMM-D-YYYY - HH:mm')
     },

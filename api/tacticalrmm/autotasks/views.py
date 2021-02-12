@@ -81,6 +81,20 @@ class AutoTask(APIView):
         }
         return Response(AutoTaskSerializer(agent, context=ctx).data)
 
+    def put(self, request, pk):
+        from automation.tasks import update_policy_task_fields_task
+
+        task = get_object_or_404(AutomatedTask, pk=pk)
+
+        serializer = TaskSerializer(instance=task, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        if task.policy:
+            update_policy_task_fields_task.delay(task.pk)
+
+        return Response("ok")
+
     def patch(self, request, pk):
         from automation.tasks import update_policy_task_fields_task
 
@@ -93,7 +107,7 @@ class AutoTask(APIView):
                 enable_or_disable_win_task.delay(pk=task.pk, action=action)
 
             else:
-                update_policy_task_fields_task.delay(task.pk, action)
+                update_policy_task_fields_task.delay(task.pk, update_agent=True)
 
             task.enabled = action
             task.save(update_fields=["enabled"])

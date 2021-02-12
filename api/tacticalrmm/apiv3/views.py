@@ -1,6 +1,4 @@
-import asyncio
 import os
-import requests
 from loguru import logger
 from packaging import version as pyver
 
@@ -22,15 +20,8 @@ from accounts.models import User
 from winupdate.models import WinUpdatePolicy
 from software.models import InstalledSoftware
 from checks.serializers import CheckRunnerGetSerializer
-from agents.serializers import WinAgentSerializer
 from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
-from winupdate.serializers import ApprovedUpdateSerializer
 
-from agents.tasks import (
-    agent_recovery_email_task,
-    agent_recovery_sms_task,
-)
-from checks.utils import bytes2human
 from tacticalrmm.utils import notify_error, reload_nats, filter_software, SoftwareList
 
 logger.configure(**settings.LOG_CONFIG)
@@ -99,6 +90,8 @@ class TaskRunner(APIView):
         serializer.save(last_run=djangotime.now())
 
         new_task = AutomatedTask.objects.get(pk=task.pk)
+        new_task.handle_alert()
+
         AuditLog.objects.create(
             username=agent.hostname,
             agent=agent.hostname,
@@ -189,10 +182,6 @@ class NewAgent(APIView):
             WinUpdatePolicy(agent=agent).save()
 
         reload_nats()
-
-        # Generate policies for new agent
-        agent.generate_checks_from_policies()
-        agent.generate_tasks_from_policies()
 
         # create agent install audit record
         AuditLog.objects.create(

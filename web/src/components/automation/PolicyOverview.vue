@@ -1,57 +1,63 @@
 <template>
-  <q-card style="width: 900px; max-width: 90vw">
-    <q-bar>
-      <q-btn @click="getPolicyTree" class="q-mr-sm" dense flat push icon="refresh" />Policy Overview
-      <q-space />
-      <q-btn dense flat icon="close" v-close-popup>
-        <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
-      </q-btn>
-    </q-bar>
-    <q-splitter v-model="splitterModel" style="height: 600px">
-      <template v-slot:before>
-        <div class="q-pa-md">
-          <q-tree
-            ref="tree"
-            :nodes="clientSiteTree"
-            node-key="id"
-            :selected.sync="selected"
-            selected-color="primary"
-            @update:selected="loadPolicyDetails"
-            default-expand-all
-          ></q-tree>
-        </div>
-      </template>
+  <q-dialog ref="dialog" @hide="onHide">
+    <q-card class="q-dialog-plugin" style="width: 90vw; max-width: 90vw">
+      <q-bar>
+        <q-btn @click="getPolicyTree" class="q-mr-sm" dense flat push icon="refresh" />Policy Overview
+        <q-space />
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+      <q-splitter v-model="splitterModel" style="height: 600px">
+        <template v-slot:before>
+          <div class="q-pa-md">
+            <q-tree
+              ref="tree"
+              :nodes="clientSiteTree"
+              node-key="key"
+              selected-color="primary"
+              :selected.sync="selectedPolicyId"
+            ></q-tree>
+          </div>
+        </template>
 
-      <template v-slot:after>
-        <q-tabs
-          v-model="selectedTab"
-          dense
-          inline-label
-          class="text-grey"
-          active-color="primary"
-          indicator-color="primary"
-          align="left"
-          narrow-indicator
-          no-caps
-        >
-          <q-tab name="checks" icon="fas fa-check-double" label="Checks" />
-          <q-tab name="tasks" icon="fas fa-tasks" label="Tasks" />
-        </q-tabs>
-        <q-tab-panels v-model="selectedTab" animated transition-prev="jump-up" transition-next="jump-up">
-          <q-tab-panel name="checks">
-            <PolicyChecksTab />
-          </q-tab-panel>
-          <q-tab-panel name="tasks">
-            <PolicyAutomatedTasksTab />
-          </q-tab-panel>
-        </q-tab-panels>
-      </template>
-    </q-splitter>
-  </q-card>
+        <template v-slot:after>
+          <q-tabs
+            v-model="selectedTab"
+            dense
+            inline-label
+            class="text-grey"
+            active-color="primary"
+            indicator-color="primary"
+            align="left"
+            narrow-indicator
+            no-caps
+          >
+            <q-tab name="checks" icon="fas fa-check-double" label="Checks" />
+            <q-tab name="tasks" icon="fas fa-tasks" label="Tasks" />
+          </q-tabs>
+          <q-tab-panels v-model="selectedTab" animated transition-prev="jump-up" transition-next="jump-up">
+            <q-tab-panel name="checks">
+              <PolicyChecksTab
+                v-if="!!selectedPolicyId"
+                :selectedPolicy="$refs.tree.getNodeByKey(selectedPolicyId).id"
+              />
+            </q-tab-panel>
+            <q-tab-panel name="tasks">
+              <PolicyAutomatedTasksTab
+                v-if="!!selectedPolicyId"
+                :selectedPolicy="$refs.tree.getNodeByKey(selectedPolicyId).id"
+              />
+            </q-tab-panel>
+          </q-tab-panels>
+        </template>
+      </q-splitter>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
-import mixins, { notifyErrorConfig } from "@/mixins/mixins";
+import mixins from "@/mixins/mixins";
 import PolicyChecksTab from "@/components/automation/PolicyChecksTab";
 import PolicyAutomatedTasksTab from "@/components/automation/PolicyAutomatedTasksTab";
 
@@ -65,8 +71,7 @@ export default {
   data() {
     return {
       splitterModel: 25,
-      selected: "",
-      selectedPolicy: {},
+      selectedPolicyId: null,
       selectedTab: "checks",
       clientSiteTree: [],
     };
@@ -74,27 +79,16 @@ export default {
   methods: {
     getPolicyTree() {
       this.$q.loading.show();
-      this.$store
-        .dispatch("automation/loadPolicyTreeData")
+      this.$axios
+        .get("/automation/policies/overview/")
         .then(r => {
           this.processTreeDataFromApi(r.data);
           this.$q.loading.hide();
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.$q.notify(notifyErrorConfig(e.response.data));
+          this.notifyError("Error getting policy tree data");
         });
-    },
-    loadPolicyDetails(key) {
-      if (key === undefined || key === null) {
-        return;
-      }
-
-      this.selectedPolicy = this.$refs.tree.getNodeByKey(key);
-
-      this.$store.dispatch("automation/loadPolicyChecks", this.selectedPolicy.id);
-      this.$store.commit("automation/setSelectedPolicy", this.selectedPolicy.id);
-      this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.selectedPolicy.id);
     },
     processTreeDataFromApi(data) {
       /* Structure
@@ -119,90 +113,100 @@ export default {
       // Used by tree for unique identification
       let unique_id = 0;
 
-      for (let client in data) {
+      for (let client of data) {
         var client_temp = {};
 
-        client_temp["label"] = data[client].name;
+        client_temp["label"] = client.name;
         client_temp["id"] = unique_id;
         client_temp["icon"] = "business";
         client_temp["selectable"] = false;
         client_temp["children"] = [];
+        client_temp["key"] = `${unique_id}${client.name}`;
 
         unique_id--;
 
         // Add any server policies assigned to client
-        if (data[client].server_policy !== null) {
+        if (!!client.server_policy) {
           let disabled = "";
 
           // Indicate if the policy is active or not
-          if (!data[client].server_policy.active) {
+          if (!client.server_policy.active) {
             disabled = " (disabled)";
           }
 
+          const label = client.server_policy.name + " (Servers)" + disabled;
           client_temp["children"].push({
-            label: data[client].server_policy.name + " (Servers)" + disabled,
+            label: label,
             icon: "policy",
-            id: data[client].server_policy.id,
+            id: client.server_policy.id,
+            key: `${client.server_policy.id}${label}`,
           });
         }
 
         // Add any workstation policies assigned to client
-        if (data[client].workstation_policy !== null) {
+        if (!!client.workstation_policy) {
           let disabled = "";
 
           // Indicate if the policy is active or not
-          if (!data[client].workstation_policy.active) {
+          if (!client.workstation_policy.active) {
             disabled = " (disabled)";
           }
 
+          const label = client.workstation_policy.name + " (Workstations)" + disabled;
           client_temp["children"].push({
-            label: data[client].workstation_policy.name + " (Workstations)" + disabled,
+            label: label,
             icon: "policy",
-            id: data[client].workstation_policy.id,
+            id: client.workstation_policy.id,
+            key: `${client.workstation_policy.id}${label}`,
           });
         }
 
         // Iterate through Sites
-        for (let site in data[client].sites) {
+        for (let site of client.sites) {
           var site_temp = {};
-          site_temp["label"] = data[client].sites[site].name;
+          site_temp["label"] = site.name;
           site_temp["id"] = unique_id;
           site_temp["icon"] = "apartment";
           site_temp["selectable"] = false;
+          site_temp["key"] = `${unique_id}${site.name}`;
 
           unique_id--;
 
           // Add any server policies assigned to site
-          if (data[client].sites[site].server_policy !== null) {
+          if (!!site.server_policy) {
             site_temp["children"] = [];
 
             // Indicate if the policy is active or not
             let disabled = "";
-            if (!data[client].sites[site].server_policy.active) {
+            if (!site.server_policy.active) {
               disabled = " (disabled)";
             }
 
+            const label = site.server_policy.name + " (Servers)" + disabled;
             site_temp["children"].push({
-              label: data[client].sites[site].server_policy.name + " (Servers)" + disabled,
+              label: label,
               icon: "policy",
-              id: data[client].sites[site].server_policy.id,
+              id: site.server_policy.id,
+              key: `${site.server_policy.id}${label}`,
             });
           }
 
           // Add any server policies assigned to site
-          if (data[client].sites[site].workstation_policy !== null) {
+          if (!!site.workstation_policy) {
             site_temp["children"] = [];
 
             // Indicate if the policy is active or not
             let disabled = "";
-            if (!data[client].sites[site].workstation_policy.active) {
+            if (!site.workstation_policy.active) {
               disabled = " (disabled)";
             }
 
+            const label = site.workstation_policy.name + " (Workstations)" + disabled;
             site_temp["children"].push({
-              label: data[client].sites[site].workstation_policy.name + " (Workstations)" + disabled,
+              label: label,
               icon: "policy",
-              id: data[client].sites[site].workstation_policy.id,
+              id: site.workstation_policy.id,
+              key: `${site.workstation_policy.id}${label}`,
             });
           }
 
@@ -215,6 +219,15 @@ export default {
       }
 
       this.clientSiteTree = result;
+    },
+    show() {
+      this.$refs.dialog.show();
+    },
+    hide() {
+      this.$refs.dialog.hide();
+    },
+    onHide() {
+      this.$emit("hide");
     },
   },
   mounted() {

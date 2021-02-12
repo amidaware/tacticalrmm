@@ -1,247 +1,247 @@
 <template>
-  <div style="width: 60vw; max-width: 90vw">
-    <q-card>
-      <q-bar>
-        <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />Automation Manager
-        <q-space />
-        <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
-        </q-btn>
-      </q-bar>
-      <div class="q-pa-md">
-        <div class="q-gutter-sm">
-          <q-btn ref="new" label="New" dense flat push unelevated no-caps icon="add" @click="showAddPolicyModal" />
-          <q-btn
-            ref="edit"
-            label="Edit"
-            :disable="selectedRow === null"
-            dense
-            flat
-            push
-            unelevated
-            no-caps
-            icon="edit"
-            @click="showEditPolicyModal(selectedRow)"
-          />
-          <q-btn
-            ref="delete"
-            label="Delete"
-            :disable="selectedRow === null"
-            dense
-            flat
-            push
-            unelevated
-            no-caps
-            icon="delete"
-            @click="deletePolicy(selectedRow)"
-          />
-          <q-btn
-            ref="overview"
-            label="Policy Overview"
-            dense
-            flat
-            push
-            unelevated
-            no-caps
-            icon="remove_red_eye"
-            @click="showPolicyOverview"
-          />
-        </div>
-        <q-table
-          :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
-          dense
-          :data="policies"
-          :columns="columns"
-          :pagination.sync="pagination"
-          :selected.sync="selected"
-          selection="single"
-          @selection="policyRowSelected"
-          row-key="id"
-          binary-state-sort
-          hide-pagination
-          :hide-bottom="!!selected"
-        >
-          <!-- header slots -->
-          <template v-slot:header="props">
-            <q-tr :props="props">
-              <template v-for="col in props.cols">
-                <q-th v-if="col.name === 'active'" auto-width :key="col.name">
-                  <q-icon name="power_settings_new" size="1.5em">
-                    <q-tooltip>Enable Policy</q-tooltip>
-                  </q-icon>
-                </q-th>
-
-                <q-th v-else-if="col.name === 'enforced'" auto-width :key="col.name">
-                  <q-icon name="security" size="1.5em">
-                    <q-tooltip>Enforce Policy (Will override Agent tasks/checks)</q-tooltip>
-                  </q-icon>
-                </q-th>
-
-                <q-th v-else :key="col.name" :props="props">{{ col.label }}</q-th>
-              </template>
-            </q-tr>
-          </template>
-          <!-- No data Slot -->
-          <template v-slot:no-data>
-            <div class="full-width row flex-center q-gutter-sm">
-              <span v-if="policies.length === 0">No Policies</span>
-            </div>
-          </template>
-          <!-- body slots -->
-          <template v-slot:body="props">
-            <q-tr :props="props" class="cursor-pointer" @click="props.selected = true">
-              <!-- context menu -->
-              <q-menu context-menu>
-                <q-list dense style="min-width: 200px">
-                  <q-item clickable v-close-popup @click="showEditPolicyModal(props.row.id)" id="context-edit">
-                    <q-item-section side>
-                      <q-icon name="edit" />
-                    </q-item-section>
-                    <q-item-section>Edit</q-item-section>
-                  </q-item>
-
-                  <q-item clickable v-close-popup @click="showCopyPolicyModal(props.row)" id="context-copy">
-                    <q-item-section side>
-                      <q-icon name="content_copy" />
-                    </q-item-section>
-                    <q-item-section>Copy</q-item-section>
-                  </q-item>
-
-                  <q-item clickable v-close-popup @click="deletePolicy(props.row.id)" id="context-delete">
-                    <q-item-section side>
-                      <q-icon name="delete" />
-                    </q-item-section>
-                    <q-item-section>Delete</q-item-section>
-                  </q-item>
-
-                  <q-separator></q-separator>
-
-                  <q-item clickable v-close-popup @click="showRelationsModal(props.row)" id="context-relation">
-                    <q-item-section side>
-                      <q-icon name="account_tree" />
-                    </q-item-section>
-                    <q-item-section>Show Relations</q-item-section>
-                  </q-item>
-
-                  <q-item clickable v-close-popup @click="showEditPatchPolicyModal(props.row)" id="context-winupdate">
-                    <q-item-section side>
-                      <q-icon name="system_update" />
-                    </q-item-section>
-                    <q-item-section>{{ patchPolicyText(props.row) }}</q-item-section>
-                  </q-item>
-
-                  <q-separator></q-separator>
-
-                  <q-item clickable v-close-popup>
-                    <q-item-section>Close</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-menu>
-              <!-- enabled checkbox -->
-              <q-td>
-                <q-checkbox dense @input="toggleCheckbox(props.row, 'Active')" v-model="props.row.active" />
-              </q-td>
-              <!-- enforced checkbox -->
-              <q-td>
-                <q-checkbox dense @input="toggleCheckbox(props.row, 'Enforced')" v-model="props.row.enforced" />
-              </q-td>
-              <q-td>
-                {{ props.row.name }}
-                <q-chip v-if="props.row.default_server_policy" color="primary" text-color="white" size="sm"
-                  >Default Server</q-chip
-                >
-                <q-chip v-if="props.row.default_workstation_policy" color="primary" text-color="white" size="sm"
-                  >Default Workstation</q-chip
-                >
-              </q-td>
-              <q-td>{{ props.row.desc }}</q-td>
-              <q-td>
-                <span
-                  style="cursor: pointer; text-decoration: underline"
-                  class="text-primary"
-                  @click="showRelationsModal(props.row)"
-                  >{{ `Show Relations (${props.row.agents_count}+)` }}</span
-                >
-              </q-td>
-              <q-td>
-                <span
-                  style="cursor: pointer; text-decoration: underline"
-                  class="text-primary"
-                  @click="showEditPatchPolicyModal(props.row)"
-                  >{{ patchPolicyText(props.row) }}</span
-                >
-              </q-td>
-              <q-td>
-                <q-icon name="content_copy" size="1.5em" @click="showCopyPolicyModal(props.row)">
-                  <q-tooltip>Create a copy of this policy</q-tooltip>
-                </q-icon>
-              </q-td>
-            </q-tr>
-          </template>
-        </q-table>
-      </div>
-
-      <q-card-section>
-        <PolicySubTableTabs />
-      </q-card-section>
-    </q-card>
-
-    <!-- policy form modal -->
-    <q-dialog v-model="showPolicyFormModal" @hide="closePolicyFormModal">
-      <PolicyForm :pk="editPolicyId" :copyPolicy="copyPolicy" @close="closePolicyFormModal" />
-    </q-dialog>
-
-    <!-- policy overview modal -->
-    <q-dialog v-model="showPolicyOverviewModal" @hide="clearRow">
-      <PolicyOverview />
-    </q-dialog>
-
-    <!-- policy relations modal -->
-    <q-dialog v-model="showRelationsViewModal" @hide="closeRelationsModal">
-      <RelationsView :policy="policy" />
-    </q-dialog>
-
-    <!-- patch policy modal -->
-    <q-dialog v-model="showPatchPolicyModal" @hide="closePatchPolicyModal">
-      <q-card style="width: 900px; max-width: 90vw">
+  <q-dialog ref="dialog" @hide="onHide">
+    <div class="q-dialog-plugin" style="width: 90vw; max-width: 90vw">
+      <q-card>
         <q-bar>
-          {{ patchPolicyModalText() }}
+          <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />Automation Manager
           <q-space />
           <q-btn dense flat icon="close" v-close-popup>
             <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
           </q-btn>
         </q-bar>
-        <div class="scroll" style="height: 70vh">
-          <PatchPolicyForm :policy="policy" @close="closePatchPolicyModal" />
-        </div>
+        <q-card-section style="min-height: 35vh; max-height: 35vh">
+          <div class="q-gutter-sm">
+            <q-btn label="New" dense flat push unelevated no-caps icon="add" @click="showAddPolicyForm" />
+            <q-btn
+              label="Edit"
+              :disable="!selectedPolicy"
+              dense
+              flat
+              push
+              unelevated
+              no-caps
+              icon="edit"
+              @click="showEditPolicyForm(selectedPolicy)"
+            />
+            <q-btn
+              label="Delete"
+              :disable="!selectedPolicy"
+              dense
+              flat
+              push
+              unelevated
+              no-caps
+              icon="delete"
+              @click="deletePolicy(selectedPolicy)"
+            />
+            <q-btn
+              label="Policy Overview"
+              dense
+              flat
+              push
+              unelevated
+              no-caps
+              icon="remove_red_eye"
+              @click="showPolicyOverview"
+            />
+          </div>
+          <q-table
+            :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+            class="tabs-tbl-sticky"
+            :data="policies"
+            :columns="columns"
+            :pagination.sync="pagination"
+            :rows-per-page-options="[0]"
+            dense
+            row-key="id"
+            binary-state-sort
+            hide-pagination
+            virtual-scroll
+            no-data-label="No Policies"
+          >
+            <!-- header slots -->
+            <template v-slot:header-cell-active="props">
+              <q-th :props="props" auto-width>
+                <q-icon name="power_settings_new" size="1.5em">
+                  <q-tooltip>Enable Policy</q-tooltip>
+                </q-icon>
+              </q-th>
+            </template>
+
+            <template v-slot:header-cell-enforced="props">
+              <q-th :props="props" auto-width>
+                <q-icon name="security" size="1.5em">
+                  <q-tooltip>Enforce Policy (Will override Agent tasks/checks)</q-tooltip>
+                </q-icon>
+              </q-th>
+            </template>
+
+            <!-- body slots -->
+            <template v-slot:body="props">
+              <q-tr
+                :props="props"
+                class="cursor-pointer"
+                :class="rowSelectedClass(props.row.id, selectedPolicy)"
+                @click="selectedPolicy = props.row"
+                @contextmenu="selectedPolicy = props.row"
+                @dblclick="showEditPolicyForm(props.row)"
+              >
+                <!-- context menu -->
+                <q-menu context-menu>
+                  <q-list dense style="min-width: 200px">
+                    <q-item clickable v-close-popup @click="showEditPolicyForm(props.row)">
+                      <q-item-section side>
+                        <q-icon name="edit" />
+                      </q-item-section>
+                      <q-item-section>Edit</q-item-section>
+                    </q-item>
+
+                    <q-item clickable v-close-popup @click="showCopyPolicyForm(props.row)">
+                      <q-item-section side>
+                        <q-icon name="content_copy" />
+                      </q-item-section>
+                      <q-item-section>Copy</q-item-section>
+                    </q-item>
+
+                    <q-item clickable v-close-popup @click="deletePolicy(props.row)">
+                      <q-item-section side>
+                        <q-icon name="delete" />
+                      </q-item-section>
+                      <q-item-section>Delete</q-item-section>
+                    </q-item>
+
+                    <q-separator></q-separator>
+
+                    <q-item clickable v-close-popup @click="showRelations(props.row)">
+                      <q-item-section side>
+                        <q-icon name="account_tree" />
+                      </q-item-section>
+                      <q-item-section>Show Relations</q-item-section>
+                    </q-item>
+
+                    <q-item clickable v-close-popup @click="showPatchPolicyForm(props.row)">
+                      <q-item-section side>
+                        <q-icon name="system_update" />
+                      </q-item-section>
+                      <q-item-section>{{ patchPolicyText(props.row) }}</q-item-section>
+                    </q-item>
+
+                    <q-item clickable v-close-popup @click="showAlertTemplateAdd(props.row)">
+                      <q-item-section side>
+                        <q-icon name="warning" />
+                      </q-item-section>
+                      <q-item-section>{{ alertTemplateText(props.row) }}</q-item-section>
+                    </q-item>
+
+                    <q-separator></q-separator>
+
+                    <q-item clickable v-close-popup>
+                      <q-item-section>Close</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-menu>
+                <!-- enabled checkbox -->
+                <q-td>
+                  <q-checkbox dense @input="toggleCheckbox(props.row, 'Active')" v-model="props.row.active" />
+                </q-td>
+                <!-- enforced checkbox -->
+                <q-td>
+                  <q-checkbox dense @input="toggleCheckbox(props.row, 'Enforced')" v-model="props.row.enforced" />
+                </q-td>
+                <q-td>
+                  {{ props.row.name }}
+                  <q-chip v-if="props.row.default_server_policy" color="primary" text-color="white" size="sm"
+                    >Default Server</q-chip
+                  >
+                  <q-chip v-if="props.row.default_workstation_policy" color="primary" text-color="white" size="sm"
+                    >Default Workstation</q-chip
+                  >
+                </q-td>
+                <q-td>{{ props.row.desc }}</q-td>
+                <q-td>
+                  <span
+                    style="cursor: pointer; text-decoration: underline"
+                    class="text-primary"
+                    @click="showRelations(props.row)"
+                    >{{ `Show Relations (${props.row.agents_count})` }}</span
+                  >
+                </q-td>
+                <q-td>
+                  <span
+                    style="cursor: pointer; text-decoration: underline"
+                    class="text-primary"
+                    @click="showPatchPolicyForm(props.row)"
+                    >{{ patchPolicyText(props.row) }}</span
+                  >
+                </q-td>
+                <q-td>
+                  <span
+                    style="cursor: pointer; text-decoration: underline"
+                    class="text-primary"
+                    @click="showAlertTemplateAdd(props.row)"
+                    >{{ alertTemplateText(props.row) }}</span
+                  >
+                </q-td>
+                <q-td>
+                  <q-icon name="content_copy" size="1.5em" @click="showCopyPolicyForm(props.row)">
+                    <q-tooltip>Create a copy of this policy</q-tooltip>
+                  </q-icon>
+                </q-td>
+              </q-tr>
+            </template>
+          </q-table>
+        </q-card-section>
+
+        <q-card-section style="min-height: 35vh; max-height: 35vh">
+          <q-tabs
+            v-model="subtab"
+            dense
+            inline-label
+            class="text-grey"
+            active-color="primary"
+            indicator-color="primary"
+            align="left"
+            narrow-indicator
+            no-caps
+          >
+            <q-tab name="checks" icon="fas fa-check-double" label="Checks" />
+            <q-tab name="tasks" icon="fas fa-tasks" label="Tasks" />
+          </q-tabs>
+          <q-separator />
+          <q-tab-panels v-model="subtab" :animated="false">
+            <q-tab-panel name="checks">
+              <PolicyChecksTab v-if="!!selectedPolicy" :selectedPolicy="selectedPolicy.id" />
+            </q-tab-panel>
+            <q-tab-panel name="tasks">
+              <PolicyAutomatedTasksTab v-if="!!selectedPolicy" :selectedPolicy="selectedPolicy.id" />
+            </q-tab-panel>
+          </q-tab-panels>
+        </q-card-section>
       </q-card>
-    </q-dialog>
-  </div>
+    </div>
+  </q-dialog>
 </template>
 
 <script>
-import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
-import { mapState } from "vuex";
+import mixins from "@/mixins/mixins";
+import DialogWrapper from "@/components/ui/DialogWrapper";
 import PolicyForm from "@/components/automation/modals/PolicyForm";
 import PolicyOverview from "@/components/automation/PolicyOverview";
-import PolicySubTableTabs from "@/components/automation/PolicySubTableTabs";
 import RelationsView from "@/components/automation/modals/RelationsView";
 import PatchPolicyForm from "@/components/modals/agents/PatchPolicyForm";
+import AlertTemplateAdd from "@/components/modals/alerts/AlertTemplateAdd";
+import PolicyChecksTab from "@/components/automation/PolicyChecksTab";
+import PolicyAutomatedTasksTab from "@/components/automation/PolicyAutomatedTasksTab";
 
 export default {
   name: "AutomationManager",
-  components: { PolicyForm, PolicyOverview, PolicySubTableTabs, RelationsView, PatchPolicyForm },
+  components: { PolicyChecksTab, PolicyAutomatedTasksTab },
   mixins: [mixins],
   data() {
     return {
-      showPolicyFormModal: false,
-      showPolicyOverviewModal: false,
-      showRelationsViewModal: false,
-      showPatchPolicyModal: false,
-      policy: null,
-      editPolicyId: null,
-      copyPolicy: null,
-      selected: [],
+      subtab: "checks",
+      policies: [],
+      selectedPolicy: null,
       columns: [
         { name: "active", label: "Active", field: "active", align: "left" },
         { name: "enforced", label: "Enforced", field: "enforced", align: "left" },
@@ -271,6 +271,12 @@ export default {
           align: "left",
         },
         {
+          name: "alert_template",
+          label: "Alert Template",
+          field: "alert_template",
+          align: "left",
+        },
+        {
           name: "actions",
           label: "Actions",
           field: "actions",
@@ -278,30 +284,34 @@ export default {
         },
       ],
       pagination: {
-        rowsPerPage: 9999,
+        rowsPerPage: 0,
+        sortBy: "name",
+        descending: true,
       },
     };
   },
   methods: {
     getPolicies() {
-      this.$store.dispatch("automation/loadPolicies");
-    },
-    policyRowSelected({ added, keys, rows }) {
-      // First item of the keys array is the selected policy pk
-      this.$store.commit("automation/setSelectedPolicy", keys[0]);
-      this.$store.dispatch("automation/loadPolicyChecks", keys[0]);
-      this.$store.dispatch("automation/loadPolicyAutomatedTasks", keys[0]);
+      this.$q.loading.show();
+      this.$axios
+        .get("/automation/policies/")
+        .then(r => {
+          this.policies = r.data;
+          this.$q.loading.hide();
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError("Unable to get policies");
+        });
     },
     clearRow() {
-      this.$store.commit("automation/setSelectedPolicy", null);
-      this.$store.commit("automation/setPolicyChecks", []);
-      this.$store.commit("automation/setPolicyAutomatedTasks", {});
+      this.selectedPolicy = null;
     },
     refresh() {
       this.getPolicies();
       this.clearRow();
     },
-    deletePolicy(id) {
+    deletePolicy(policy) {
       this.$q
         .dialog({
           title: "Delete policy?",
@@ -309,46 +319,95 @@ export default {
           ok: { label: "Delete", color: "negative" },
         })
         .onOk(() => {
-          this.$store
-            .dispatch("automation/deletePolicy", id)
-            .then(response => {
-              this.$q.notify(notifySuccessConfig("Policy was deleted!"));
+          this.$q.loading.show();
+          this.$axios
+            .delete(`/automation/policies/${policy.id}/`)
+            .then(r => {
+              this.refresh();
+              this.$q.loading.hide();
+              this.notifySuccess("Policy was deleted!");
+              this.$store.dispatch("loadTree");
             })
             .catch(error => {
-              this.$q.notify(notifyErrorConfig("An Error occured while deleting policy"));
+              this.$q.loading.hide();
+              this.notifyError("An Error occured while deleting policy");
             });
         });
     },
-    showRelationsModal(policy) {
-      this.policy = policy;
-      this.showRelationsViewModal = true;
-    },
-    closeRelationsModal() {
-      this.policy = null;
-      this.showRelationsViewModal = false;
-    },
-    showEditPolicyModal(id) {
-      this.editPolicyId = id;
-      this.showPolicyFormModal = true;
-    },
-    showCopyPolicyModal(policy) {
-      this.copyPolicy = policy;
-      this.showPolicyFormModal = true;
-    },
-    closePolicyFormModal() {
-      this.showPolicyFormModal = false;
-      this.editPolicyId = null;
-      this.copyPolicyId = null;
-      this.refresh();
-    },
-    showAddPolicyModal() {
-      this.showPolicyFormModal = true;
+    showRelations(policy) {
+      this.$q.dialog({
+        component: RelationsView,
+        parent: this,
+        policy: policy,
+      });
     },
     showPolicyOverview() {
-      this.showPolicyOverviewModal = true;
-      this.clearRow();
+      this.$q.dialog({
+        component: PolicyOverview,
+        parent: this,
+      });
+    },
+    showAddPolicyForm(policy = undefined) {
+      this.$q
+        .dialog({
+          component: PolicyForm,
+          parent: this,
+        })
+        .onOk(() => {
+          this.refresh();
+        });
+    },
+    showCopyPolicyForm(policy = undefined) {
+      this.$q
+        .dialog({
+          component: PolicyForm,
+          parent: this,
+          copyPolicy: policy,
+        })
+        .onOk(() => {
+          this.refresh();
+        });
+    },
+    showEditPolicyForm(policy) {
+      this.$q
+        .dialog({
+          component: PolicyForm,
+          parent: this,
+          policy: policy,
+        })
+        .onOk(() => {
+          this.refresh();
+        });
+    },
+    showAlertTemplateAdd(policy) {
+      this.$q
+        .dialog({
+          component: AlertTemplateAdd,
+          parent: this,
+          type: "policy",
+          object: policy,
+        })
+        .onOk(() => {
+          this.refresh();
+        });
+    },
+    showPatchPolicyForm(policy) {
+      this.$q
+        .dialog({
+          component: DialogWrapper,
+          parent: this,
+          title: policy.winupdatepolicy.length > 0 ? "Edit Patch Policy" : "Add Patch Policy",
+          vuecomponent: PatchPolicyForm,
+          componentProps: {
+            policy: policy,
+          },
+        })
+        .onOk(() => {
+          this.refresh();
+        });
     },
     toggleCheckbox(policy, type) {
+      this.$q.loading.show();
       let text = "";
 
       if (type === "Active") {
@@ -365,41 +424,39 @@ export default {
         enforced: policy.enforced,
       };
 
-      this.$store
-        .dispatch("automation/editPolicy", data)
-        .then(response => {
-          this.$q.notify(notifySuccessConfig(text));
+      this.$axios
+        .put(`/automation/policies/${data.id}/`, data)
+        .then(r => {
+          this.refresh();
+          this.$q.loading.hide();
+          this.notifySuccess(text);
         })
         .catch(error => {
-          this.$q.notify(notifyErrorConfig("An Error occured while editing policy"));
+          this.$q.loading.hide();
+          this.notifyError("An Error occured while editing policy");
         });
     },
-    showEditPatchPolicyModal(policy) {
-      this.policy = policy;
-      this.showPatchPolicyModal = true;
-    },
-    closePatchPolicyModal(policy) {
-      this.policy = null;
-      this.showPatchPolicyModal = false;
-      this.refresh();
-    },
     patchPolicyText(policy) {
-      return policy.winupdatepolicy.length === 1 ? "Show Patch Policy" : "Create Patch Policy";
+      return policy.winupdatepolicy.length > 0 ? "Modify Patch Policy" : "Create Patch Policy";
     },
-    patchPolicyModalText() {
-      if (this.policy !== null) {
-        return this.policy.winupdatepolicy.length === 1 ? "Edit Patch Policy" : "Add Patch Policy";
-      }
+    alertTemplateText(policy) {
+      return policy.alert_template ? "Modify Alert Template" : "Assign Alert Template";
     },
-  },
-  computed: {
-    ...mapState({
-      policies: state => state.automation.policies,
-      selectedRow: state => state.automation.selectedPolicy,
-    }),
+    rowSelectedClass(id, selectedPolicy) {
+      if (selectedPolicy && selectedPolicy.id === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";
+    },
+    show() {
+      this.$refs.dialog.show();
+    },
+    hide() {
+      this.$refs.dialog.hide();
+    },
+    onHide() {
+      this.$emit("hide");
+    },
   },
   mounted() {
-    this.refresh();
+    this.getPolicies();
   },
 };
 </script>

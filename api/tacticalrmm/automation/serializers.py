@@ -1,18 +1,14 @@
+from django.db.models.base import Model
 from rest_framework.serializers import (
     ModelSerializer,
     SerializerMethodField,
-    StringRelatedField,
     ReadOnlyField,
 )
 
-from clients.serializers import ClientSerializer, SiteSerializer
-from agents.serializers import AgentHostnameSerializer
-
 from .models import Policy
-from agents.models import Agent
 from autotasks.models import AutomatedTask
 from checks.models import Check
-from clients.models import Client, Site
+from clients.models import Client
 from winupdate.serializers import WinUpdatePolicySerializer
 
 
@@ -24,15 +20,11 @@ class PolicySerializer(ModelSerializer):
 
 class PolicyTableSerializer(ModelSerializer):
 
-    server_clients = ClientSerializer(many=True, read_only=True)
-    server_sites = SiteSerializer(many=True, read_only=True)
-    workstation_clients = ClientSerializer(many=True, read_only=True)
-    workstation_sites = SiteSerializer(many=True, read_only=True)
-    agents = AgentHostnameSerializer(many=True, read_only=True)
     default_server_policy = ReadOnlyField(source="is_default_server_policy")
     default_workstation_policy = ReadOnlyField(source="is_default_workstation_policy")
     agents_count = SerializerMethodField(read_only=True)
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
+    alert_template = ReadOnlyField(source="alert_template.id")
 
     class Meta:
         model = Policy
@@ -78,49 +70,16 @@ class PolicyCheckSerializer(ModelSerializer):
             "assignedtask",
             "text_alert",
             "email_alert",
+            "dashboard_alert",
         )
         depth = 1
 
 
 class AutoTasksFieldSerializer(ModelSerializer):
     assigned_check = PolicyCheckSerializer(read_only=True)
+    script = ReadOnlyField(source="script.id")
 
     class Meta:
         model = AutomatedTask
-        fields = ("id", "enabled", "name", "schedule", "assigned_check")
-        depth = 1
-
-
-class AutoTaskPolicySerializer(ModelSerializer):
-
-    autotasks = AutoTasksFieldSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Policy
-        fields = (
-            "id",
-            "name",
-            "autotasks",
-        )
-        depth = 2
-
-
-class RelatedClientPolicySerializer(ModelSerializer):
-    class Meta:
-        model = Client
-        fields = ("workstation_policy", "server_policy")
-        depth = 1
-
-
-class RelatedSitePolicySerializer(ModelSerializer):
-    class Meta:
-        model = Site
-        fields = ("workstation_policy", "server_policy")
-        depth = 1
-
-
-class RelatedAgentPolicySerializer(ModelSerializer):
-    class Meta:
-        model = Agent
-        fields = ("policy",)
+        fields = "__all__"
         depth = 1

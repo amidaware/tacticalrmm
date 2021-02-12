@@ -32,6 +32,13 @@
           </q-icon>
         </q-th>
       </template>
+      <template v-slot:header-cell-dashboardalert="props">
+        <q-th auto-width :props="props">
+          <q-icon name="notifications" size="1.5em">
+            <q-tooltip>Dashboard Alert</q-tooltip>
+          </q-icon>
+        </q-th>
+      </template>
       <template v-slot:header-cell-checks-status="props">
         <q-th :props="props">
           <q-icon name="fas fa-check-double" size="1.2em">
@@ -217,11 +224,11 @@
                 </q-menu>
               </q-item>
 
-              <q-item clickable v-close-popup @click.stop.prevent="showPolicyAdd(props.row.id)">
+              <q-item clickable v-close-popup @click.stop.prevent="showPolicyAdd(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="policy" />
                 </q-item-section>
-                <q-item-section>Edit Policies</q-item-section>
+                <q-item-section>Assign Automation Policy</q-item-section>
               </q-item>
 
               <q-item clickable v-close-popup @click.stop.prevent="showAgentRecovery = true">
@@ -256,6 +263,13 @@
               dense
               @input="overdueAlert('email', props.row.id, props.row.overdue_email_alert)"
               v-model="props.row.overdue_email_alert"
+            />
+          </q-td>
+          <q-td>
+            <q-checkbox
+              dense
+              @input="overdueAlert('dashboard', props.row.id, props.row.overdue_dashboard_alert)"
+              v-model="props.row.overdue_dashboard_alert"
             />
           </q-td>
           <q-td key="checks-status" :props="props">
@@ -339,10 +353,6 @@
         <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" @edited="agentEdited" />
       </q-dialog>
     </div>
-    <!-- add policy modal -->
-    <q-dialog v-model="showPolicyAddModal">
-      <PolicyAdd @close="showPolicyAddModal = false" type="agent" :pk="policyAddPk" />
-    </q-dialog>
     <!-- send command modal -->
     <q-dialog v-model="showSendCommand">
       <SendCommand @close="showSendCommand = false" :pk="selectedAgentPk" />
@@ -379,7 +389,6 @@ export default {
     EditAgent,
     RebootLater,
     PendingActions,
-    PolicyAdd,
     SendCommand,
     AgentRecovery,
     RunScript,
@@ -395,10 +404,8 @@ export default {
       showSendCommand: false,
       showEditAgentModal: false,
       showRebootLaterModal: false,
-      showPolicyAddModal: false,
       showAgentRecovery: false,
       showRunScript: false,
-      policyAddPk: null,
       showPendingActions: false,
       pendingActionAgentPk: null,
       favoriteScripts: [],
@@ -644,7 +651,11 @@ export default {
       this.$store.dispatch("loadNotes", pk);
     },
     overdueAlert(category, pk, alert_action) {
-      const db_field = category === "email" ? "overdue_email_alert" : "overdue_text_alert";
+      let db_field = "";
+      if (category === "email") db_field = "overdue_email_alert";
+      else if (category === "text") db_field = "overdue_text_alert";
+      else if (category === "dashboard") db_field = "overdue_dashboard_alert";
+
       const action = alert_action ? "enabled" : "disabled";
       const data = {
         pk: pk,
@@ -671,9 +682,17 @@ export default {
         return "agent-normal";
       }
     },
-    showPolicyAdd(pk) {
-      this.policyAddPk = pk;
-      this.showPolicyAddModal = true;
+    showPolicyAdd(agent) {
+      this.$q
+        .dialog({
+          component: PolicyAdd,
+          parent: this,
+          type: "agent",
+          object: agent,
+        })
+        .onOk(() => {
+          this.$emit("refreshEdit");
+        });
     },
     toggleMaintenance(agent) {
       let data = {

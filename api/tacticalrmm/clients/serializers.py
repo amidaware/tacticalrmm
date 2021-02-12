@@ -10,7 +10,7 @@ class SiteSerializer(ModelSerializer):
         fields = "__all__"
 
     def validate(self, val):
-        if "|" in val["name"]:
+        if "name" in val.keys() and "|" in val["name"]:
             raise ValidationError("Site name cannot contain the | character")
 
         if self.context:
@@ -36,7 +36,7 @@ class ClientSerializer(ModelSerializer):
             if len(self.context["site"]) > 255:
                 raise ValidationError("Site name too long")
 
-        if "|" in val["name"]:
+        if "name" in val.keys() and "|" in val["name"]:
             raise ValidationError("Client name cannot contain the | character")
 
         return val

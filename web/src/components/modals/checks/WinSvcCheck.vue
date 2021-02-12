@@ -95,6 +95,18 @@
           outlined
           dense
           options-dense
+          map-options
+          emit-value
+          v-model="winsvccheck.alert_severity"
+          :options="severityOptions"
+          label="Alert Severity"
+        />
+      </q-card-section>
+      <q-card-section>
+        <q-select
+          outlined
+          dense
+          options-dense
           v-model="winsvccheck.fails_b4_alert"
           :options="failOptions"
           label="Number of consecutive failures before alert"
@@ -133,7 +145,13 @@ export default {
         pass_if_svc_not_exist: false,
         restart_if_stopped: false,
         fails_b4_alert: 1,
+        alert_severity: "warning",
       },
+      severityOptions: [
+        { label: "Informational", value: "info" },
+        { label: "Warning", value: "warning" },
+        { label: "Error", value: "error" },
+      ],
       svcData: [],
       failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     };
@@ -197,9 +215,7 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     reloadChecks() {
-      if (this.policypk) {
-        this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
-      } else {
+      if (this.agentpk) {
         this.$store.dispatch("loadChecks", this.agentpk);
       }
     },

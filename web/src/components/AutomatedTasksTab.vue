@@ -33,7 +33,33 @@
               <small>Enabled</small>
             </q-th>
           </template>
+
+          <template v-slot:header-cell-smsalert="props">
+            <q-th auto-width :props="props">
+              <q-icon name="phone_android" size="1.5em">
+                <q-tooltip>SMS Alert</q-tooltip>
+              </q-icon>
+            </q-th>
+          </template>
+          <template v-slot:header-cell-emailalert="props">
+            <q-th auto-width :props="props">
+              <q-icon name="email" size="1.5em">
+                <q-tooltip>Email Alert</q-tooltip>
+              </q-icon>
+            </q-th>
+          </template>
+          <template v-slot:header-cell-dashboardalert="props">
+            <q-th auto-width :props="props">
+              <q-icon name="notifications" size="1.5em">
+                <q-tooltip>Dashboard Alert</q-tooltip>
+              </q-icon>
+            </q-th>
+          </template>
           <template v-slot:header-cell-policystatus="props">
+            <q-th auto-width :props="props"></q-th>
+          </template>
+
+          <template v-slot:header-cell-status="props">
             <q-th auto-width :props="props"></q-th>
           </template>
           <!-- body slots -->
@@ -48,13 +74,7 @@
                     </q-item-section>
                     <q-item-section>Run task now</q-item-section>
                   </q-item>
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="showEditAutomatedTask = true"
-                    v-if="!props.row.managed_by_policy"
-                    v-show="false"
-                  >
+                  <q-item clickable v-close-popup @click="showEditTask(props.row)" v-if="!props.row.managed_by_policy">
                     <q-item-section side>
                       <q-icon name="edit" />
                     </q-item-section>
@@ -86,14 +106,65 @@
                   :disable="props.row.managed_by_policy"
                 />
               </q-td>
+              <!-- text alert -->
+              <q-td>
+                <q-checkbox
+                  dense
+                  @input="taskAlert(props.row.id, 'Text', props.row.text_alert, props.row.managed_by_policy)"
+                  v-model="props.row.text_alert"
+                  :disable="props.row.managed_by_policy"
+                />
+              </q-td>
+              <!-- email alert -->
+              <q-td>
+                <q-checkbox
+                  dense
+                  @input="taskAlert(props.row.id, 'Email', props.row.email_alert, props.row.managed_by_policy)"
+                  v-model="props.row.email_alert"
+                  :disable="props.row.managed_by_policy"
+                />
+              </q-td>
+              <!-- dashboard alert -->
+              <q-td>
+                <q-checkbox
+                  dense
+                  @input="taskAlert(props.row.id, 'Dashboard', props.row.dashboard_alert, props.row.managed_by_policy)"
+                  v-model="props.row.dashboard_alert"
+                  :disable="props.row.managed_by_policy"
+                />
+              </q-td>
               <!-- policy check icon -->
-              <q-td v-if="props.row.managed_by_policy">
-                <q-icon style="font-size: 1.3rem" name="policy">
+              <q-td>
+                <q-icon v-if="props.row.managed_by_policy" style="font-size: 1.3rem" name="policy">
                   <q-tooltip>This task is managed by a policy</q-tooltip>
                 </q-icon>
               </q-td>
+              <!-- status icon -->
+              <q-td v-if="props.row.status === 'passing'">
+                <q-icon style="font-size: 1.3rem" color="positive" name="check_circle">
+                  <q-tooltip>Passing</q-tooltip>
+                </q-icon>
+              </q-td>
+              <q-td v-else-if="props.row.status === 'failing'">
+                <q-icon v-if="props.row.alert_severity === 'info'" style="font-size: 1.3rem" color="info" name="info">
+                  <q-tooltip>Informational</q-tooltip>
+                </q-icon>
+                <q-icon
+                  v-else-if="props.row.alert_severity === 'warning'"
+                  style="font-size: 1.3rem"
+                  color="warning"
+                  name="warning"
+                >
+                  <q-tooltip>Warning</q-tooltip>
+                </q-icon>
+                <q-icon v-else style="font-size: 1.3rem" color="negative" name="error">
+                  <q-tooltip>Error</q-tooltip>
+                </q-icon>
+              </q-td>
               <q-td v-else></q-td>
+              <!-- name -->
               <q-td>{{ props.row.name }}</q-td>
+              <!-- sync status -->
               <q-td v-if="props.row.sync_status === 'notsynced'">Will sync on next agent checkin</q-td>
               <q-td v-else-if="props.row.sync_status === 'synced'">Synced with agent</q-td>
               <q-td v-else-if="props.row.sync_status === 'pendingdeletion'">Pending deletion on agent</q-td>
@@ -101,7 +172,7 @@
                 <span
                   style="cursor: pointer; text-decoration: underline"
                   class="text-primary"
-                  @click="scriptMoreInfo(props.row)"
+                  @click="showScriptOutput(props.row)"
                   >output</span
                 >
               </q-td>
@@ -120,42 +191,34 @@
     <q-dialog v-model="showAddAutomatedTask" position="top">
       <AddAutomatedTask @close="showAddAutomatedTask = false" />
     </q-dialog>
-
-    <q-dialog v-model="showScriptOutput">
-      <ScriptOutput
-        @close="
-          showScriptOutput = false;
-          scriptInfo = {};
-        "
-        :scriptInfo="scriptInfo"
-      />
-    </q-dialog>
   </div>
 </template>
 
 <script>
 import axios from "axios";
-import { mapState } from "vuex";
-import { mapGetters } from "vuex";
+import { mapState, mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import AddAutomatedTask from "@/components/modals/tasks/AddAutomatedTask";
+import EditAutomatedTask from "@/components/modals/tasks/EditAutomatedTask";
 import ScriptOutput from "@/components/modals/checks/ScriptOutput";
 
 export default {
   name: "AutomatedTasksTab",
-  components: { AddAutomatedTask, ScriptOutput },
+  components: { AddAutomatedTask },
   mixins: [mixins],
   data() {
     return {
       showAddAutomatedTask: false,
       showEditAutomatedTask: false,
-      showScriptOutput: false,
       editTaskPk: null,
-      showScriptOutput: false,
       scriptInfo: {},
       columns: [
         { name: "enabled", align: "left", field: "enabled" },
+        { name: "smsalert", field: "text_alert", align: "left" },
+        { name: "emailalert", field: "email_alert", align: "left" },
+        { name: "dashboardalert", field: "dashboard_alert", align: "left" },
         { name: "policystatus", align: "left" },
+        { name: "status", align: "left" },
         { name: "name", label: "Name", field: "name", align: "left" },
         { name: "sync_status", label: "Sync Status", field: "sync_status", align: "left" },
         {
@@ -202,12 +265,56 @@ export default {
         })
         .catch(e => this.notifyError("Something went wrong"));
     },
+    taskAlert(pk, alert_type, action, managed_by_policy) {
+      if (managed_by_policy) {
+        return;
+      }
+      this.$q.loading.show();
+
+      const data = {
+        id: pk,
+      };
+
+      if (alert_type === "Email") {
+        data.email_alert = action;
+      } else if (alert_type === "Text") {
+        data.text_alert = action;
+      } else {
+        data.dashboard_alert = action;
+      }
+
+      const act = action ? "enabled" : "disabled";
+      axios
+        .put(`/tasks/${pk}/automatedtasks/`, data)
+        .then(r => {
+          this.$q.loading.hide();
+          this.notifySuccess(`${alert_type} alerts ${act}`);
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError("There was an issue editing task");
+        });
+    },
     refreshTasks(id) {
       this.$store.dispatch("loadAutomatedTasks", id);
     },
-    scriptMoreInfo(props) {
-      this.scriptInfo = props;
-      this.showScriptOutput = true;
+    showScriptOutput(script) {
+      this.$q.dialog({
+        component: ScriptOutput,
+        parent: this,
+        scriptInfo: script,
+      });
+    },
+    showEditTask(task) {
+      this.$q
+        .dialog({
+          component: EditAutomatedTask,
+          parent: this,
+          task: task,
+        })
+        .onOk(() => {
+          this.refreshTasks(this.automatedTasks.pk);
+        });
     },
     runTask(pk, enabled) {
       if (!enabled) {

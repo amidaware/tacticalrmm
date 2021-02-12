@@ -3,18 +3,31 @@ import string
 import os
 import json
 import pytz
-from statistics import mean, mode
+from statistics import mean
 
+from django.utils import timezone as djangotime
 from django.db import models
 from django.conf import settings
-from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.postgres.fields import ArrayField
 from rest_framework.fields import JSONField
+from typing import List, Any
+from typing import Union
+
+from loguru import logger
 
 from core.models import CoreSettings
 from logs.models import BaseAuditModel
-from .tasks import handle_check_email_alert_task, handle_check_sms_alert_task
+from .tasks import (
+    handle_check_email_alert_task,
+    handle_check_sms_alert_task,
+    handle_resolved_check_email_alert_task,
+    handle_resolved_check_sms_alert_task,
+)
 from .utils import bytes2human
+from alerts.models import SEVERITY_CHOICES
+
+logger.configure(**settings.LOG_CONFIG)
 
 CHECK_TYPE_CHOICES = [
     ("diskspace", "Disk Space Check"),
@@ -84,18 +97,34 @@ class Check(BaseAuditModel):
     last_run = models.DateTimeField(null=True, blank=True)
     email_alert = models.BooleanField(default=False)
     text_alert = models.BooleanField(default=False)
+    dashboard_alert = models.BooleanField(default=False)
     fails_b4_alert = models.PositiveIntegerField(default=1)
     fail_count = models.PositiveIntegerField(default=0)
-    email_sent = models.DateTimeField(null=True, blank=True)
-    text_sent = models.DateTimeField(null=True, blank=True)
     outage_history = models.JSONField(null=True, blank=True)  # store
     extra_details = models.JSONField(null=True, blank=True)
-
     # check specific fields
 
+    # for eventlog, script, ip, and service alert severity
+    alert_severity = models.CharField(
+        max_length=15,
+        choices=SEVERITY_CHOICES,
+        default="warning",
+        null=True,
+        blank=True,
+    )
+
     # threshold percent for diskspace, cpuload or memory check
-    threshold = models.PositiveIntegerField(
-        null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(99)]
+    error_threshold = models.PositiveIntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(99)],
+        null=True,
+        blank=True,
+        default=0,
+    )
+    warning_threshold = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(99)],
+        default=0,
     )
     # diskcheck i.e C:, D: etc
     disk = models.CharField(max_length=2, null=True, blank=True)
@@ -111,6 +140,18 @@ class Check(BaseAuditModel):
     )
     script_args = ArrayField(
         models.CharField(max_length=255, null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
+    info_return_codes = ArrayField(
+        models.PositiveIntegerField(),
+        null=True,
+        blank=True,
+        default=list,
+    )
+    warning_return_codes = ArrayField(
+        models.PositiveIntegerField(),
         null=True,
         blank=True,
         default=list,
@@ -159,11 +200,25 @@ class Check(BaseAuditModel):
     @property
     def readable_desc(self):
         if self.check_type == "diskspace":
-            return f"{self.get_check_type_display()}: Drive {self.disk} < {self.threshold}%"
+
+            text = ""
+            if self.warning_threshold:
+                text += f" Warning Threshold: {self.warning_threshold}%"
+            if self.error_threshold:
+                text += f" Error Threshold: {self.error_threshold}%"
+
+            return f"{self.get_check_type_display()}: Drive {self.disk} < {text}"
         elif self.check_type == "ping":
             return f"{self.get_check_type_display()}: {self.name}"
         elif self.check_type == "cpuload" or self.check_type == "memory":
-            return f"{self.get_check_type_display()} > {self.threshold}%"
+
+            text = ""
+            if self.warning_threshold:
+                text += f" Warning Threshold: {self.warning_threshold}%"
+            if self.error_threshold:
+                text += f" Error Threshold: {self.error_threshold}%"
+
+            return f"{self.get_check_type_display()} > {text}"
         elif self.check_type == "winsvc":
             return f"{self.get_check_type_display()}: {self.svc_display_name}"
         elif self.check_type == "eventlog":
@@ -188,15 +243,13 @@ class Check(BaseAuditModel):
         return self.last_run
 
     @property
-    def non_editable_fields(self):
+    def non_editable_fields(self) -> List[str]:
         return [
             "check_type",
             "status",
             "more_info",
             "last_run",
             "fail_count",
-            "email_sent",
-            "text_sent",
             "outage_history",
             "extra_details",
             "stdout",
@@ -215,10 +268,148 @@ class Check(BaseAuditModel):
             "modified_time",
         ]
 
-    def add_check_history(self, value, more_info=None):
+    def handle_alert(self) -> None:
+        from alerts.models import Alert, AlertTemplate
+
+        # return if agent is in maintenance mode
+        if self.agent.maintenance_mode:
+            return
+
+        # see if agent has an alert template and use that
+        alert_template: Union[AlertTemplate, None] = self.agent.get_alert_template()
+
+        # resolve alert if it exists
+        if self.status == "passing":
+            if Alert.objects.filter(assigned_check=self, resolved=False).exists():
+                alert = Alert.objects.get(assigned_check=self, resolved=False)
+                alert.resolve()
+
+                # check if a resolved email notification should be send
+                if (
+                    alert_template
+                    and alert_template.check_email_on_resolved
+                    and not alert.resolved_email_sent
+                ):
+                    handle_resolved_check_email_alert_task.delay(pk=alert.pk)
+
+                # check if resolved text should be sent
+                if (
+                    alert_template
+                    and alert_template.check_text_on_resolved
+                    and not alert.resolved_sms_sent
+                ):
+                    handle_resolved_check_sms_alert_task.delay(pk=alert.pk)
+
+                # check if resolved script should be run
+                if (
+                    alert_template
+                    and alert_template.resolved_action
+                    and not alert.resolved_action_run
+                ):
+                    r = self.agent.run_script(
+                        alert_template.resolved_action,
+                        alert_template.resolved_action_args,
+                        timeout=alert_template.resolved_action_timeout,
+                        wait=True,
+                        full=True,
+                        run_on_any=True,
+                    )
+
+                    # command was successful
+                    if type(r) == dict:
+                        alert.resolved_action_retcode = r["retcode"]
+                        alert.resolved_action_stdout = r["stdout"]
+                        alert.resolved_action_stderr = r["stderr"]
+                        alert.resolved_action_execution_time = "{:.4f}".format(
+                            r["execution_time"]
+                        )
+                        alert.resolved_action_run = djangotime.now()
+                        alert.save()
+                    else:
+                        logger.error(
+                            f"Resolved action: {alert_template.action.name} failed to run on any agent for {self.agent.hostname} resolved alert for {self.check_type} check"
+                        )
+
+        elif self.fail_count >= self.fails_b4_alert:
+            if not Alert.objects.filter(assigned_check=self, resolved=False).exists():
+                alert = Alert.create_check_alert(self)
+            else:
+                alert = Alert.objects.get(assigned_check=self, resolved=False)
+
+                # check if alert severity changed on check and update the alert
+                if self.alert_severity != alert.severity:
+                    alert.severity = self.alert_severity
+                    alert.save(update_fields=["severity"])
+
+            # create alert in dashboard if enabled
+            if (
+                self.dashboard_alert
+                or alert_template
+                and self.alert_severity in alert_template.check_dashboard_alert_severity
+                and alert_template.check_always_alert
+            ):
+                alert.hidden = False
+                alert.save()
+
+            # send email if enabled
+            if (
+                not alert.email_sent
+                and self.email_alert
+                or alert_template
+                and self.alert_severity in alert_template.check_email_alert_severity
+                and alert_template.check_always_email
+            ):
+                handle_check_email_alert_task.delay(
+                    pk=alert.pk,
+                    alert_interval=alert_template.check_periodic_alert_days
+                    if alert_template
+                    else None,
+                )
+
+            # send text if enabled
+            if (
+                not alert.sms_sent
+                and self.text_alert
+                or alert_template
+                and self.alert_severity in alert_template.check_text_alert_severity
+                and alert_template.check_always_text
+            ):
+                handle_check_sms_alert_task.delay(
+                    pk=alert.pk,
+                    alert_interval=alert_template.check_periodic_alert_days
+                    if alert_template
+                    else None,
+                )
+
+            # check if any scripts should be run
+            if alert_template and alert_template.action and not alert.action_run:
+                r = self.agent.run_script(
+                    alert_template.action,
+                    alert_template.action_args,
+                    timeout=alert_template.action_timeout,
+                    wait=True,
+                    full=True,
+                    run_on_any=True,
+                )
+
+                # command was successful
+                if type(r) == dict:
+                    alert.action_retcode = r["retcode"]
+                    alert.action_stdout = r["stdout"]
+                    alert.action_stderr = r["stderr"]
+                    alert.action_execution_time = "{:.4f}".format(r["execution_time"])
+                    alert.action_run = djangotime.now()
+                    alert.save()
+                else:
+                    logger.error(
+                        f"Failure action: {alert_template.action.name} failed to run on any agent for {self.agent.hostname} failure alert for {self.check_type} check{r}"
+                    )
+
+    def add_check_history(self, value: int, more_info: Any = None) -> None:
         CheckHistory.objects.create(check_history=self, y=value, results=more_info)
 
     def handle_checkv2(self, data):
+
         # cpuload or mem checks
         if self.check_type == "cpuload" or self.check_type == "memory":
 
@@ -231,8 +422,12 @@ class Check(BaseAuditModel):
 
             avg = int(mean(self.history))
 
-            if avg > self.threshold:
+            if self.error_threshold and avg > self.error_threshold:
                 self.status = "failing"
+                self.alert_severity = "error"
+            elif self.warning_threshold and avg > self.warning_threshold:
+                self.status = "failing"
+                self.alert_severity = "warning"
             else:
                 self.status = "passing"
 
@@ -246,17 +441,26 @@ class Check(BaseAuditModel):
                 total = bytes2human(data["total"])
                 free = bytes2human(data["free"])
 
-                if (100 - percent_used) < self.threshold:
+                if self.error_threshold and (100 - percent_used) < self.error_threshold:
                     self.status = "failing"
+                    self.alert_severity = "error"
+                elif (
+                    self.warning_threshold
+                    and (100 - percent_used) < self.warning_threshold
+                ):
+                    self.status = "failing"
+                    self.alert_severity = "warning"
+
                 else:
                     self.status = "passing"
 
                 self.more_info = f"Total: {total}B, Free: {free}B"
 
                 # add check history
-                self.add_check_history(percent_used)
+                self.add_check_history(100 - percent_used)
             else:
                 self.status = "failing"
+                self.alert_severity = "error"
                 self.more_info = f"Disk {self.disk} does not exist"
 
             self.save(update_fields=["more_info"])
@@ -273,8 +477,15 @@ class Check(BaseAuditModel):
                 # golang agent
                 self.execution_time = "{:.4f}".format(data["runtime"])
 
-            if data["retcode"] != 0:
+            if data["retcode"] in self.info_return_codes:
+                self.alert_severity = "info"
                 self.status = "failing"
+            elif data["retcode"] in self.warning_return_codes:
+                self.alert_severity = "warning"
+                self.status = "failing"
+            elif data["retcode"] != 0:
+                self.status = "failing"
+                self.alert_severity = "error"
             else:
                 self.status = "passing"
 
@@ -428,20 +639,13 @@ class Check(BaseAuditModel):
         # handle status
         if self.status == "failing":
             self.fail_count += 1
-            self.save(update_fields=["status", "fail_count"])
+            self.save(update_fields=["status", "fail_count", "alert_severity"])
 
         elif self.status == "passing":
-            if self.fail_count != 0:
-                self.fail_count = 0
-                self.save(update_fields=["status", "fail_count"])
-            else:
-                self.save(update_fields=["status"])
+            self.fail_count = 0
+            self.save(update_fields=["status", "fail_count", "alert_severity"])
 
-        if self.fail_count >= self.fails_b4_alert:
-            if self.email_alert:
-                handle_check_email_alert_task.delay(self.pk)
-            if self.text_alert:
-                handle_check_sms_alert_task.delay(self.pk)
+        self.handle_alert()
 
         return self.status
 
@@ -478,17 +682,22 @@ class Check(BaseAuditModel):
             managed_by_policy=bool(agent),
             parent_check=(self.pk if agent else None),
             name=self.name,
+            alert_severity=self.alert_severity,
             check_type=self.check_type,
             email_alert=self.email_alert,
+            dashboard_alert=self.dashboard_alert,
             text_alert=self.text_alert,
             fails_b4_alert=self.fails_b4_alert,
             extra_details=self.extra_details,
-            threshold=self.threshold,
+            error_threshold=self.error_threshold,
+            warning_threshold=self.warning_threshold,
             disk=self.disk,
             ip=self.ip,
             script=self.script,
             script_args=self.script_args,
             timeout=self.timeout,
+            info_return_codes=self.info_return_codes,
+            warning_return_codes=self.warning_return_codes,
             svc_name=self.svc_name,
             svc_display_name=self.svc_display_name,
             pass_if_start_pending=self.pass_if_start_pending,
@@ -530,19 +739,27 @@ class Check(BaseAuditModel):
     def send_email(self):
 
         CORE = CoreSettings.objects.first()
+        alert_template = self.agent.get_alert_template()
 
+        body: str = ""
         if self.agent:
             subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Failed"
         else:
             subject = f"{self} Failed"
 
         if self.check_type == "diskspace":
+            text = ""
+            if self.warning_threshold:
+                text += f" Warning Threshold: {self.warning_threshold}%"
+            if self.error_threshold:
+                text += f" Error Threshold: {self.error_threshold}%"
+
             percent_used = [
                 d["percent"] for d in self.agent.disks if d["device"] == self.disk
             ][0]
             percent_free = 100 - percent_used
 
-            body = subject + f" - Free: {percent_free}%, Threshold: {self.threshold}%"
+            body = subject + f" - Free: {percent_free}%, {text}"
 
         elif self.check_type == "script":
 
@@ -556,20 +773,19 @@ class Check(BaseAuditModel):
             body = self.more_info
 
         elif self.check_type == "cpuload" or self.check_type == "memory":
+            text = ""
+            if self.warning_threshold:
+                text += f" Warning Threshold: {self.warning_threshold}%"
+            if self.error_threshold:
+                text += f" Error Threshold: {self.error_threshold}%"
 
             avg = int(mean(self.history))
 
             if self.check_type == "cpuload":
-                body = (
-                    subject
-                    + f" - Average CPU utilization: {avg}%, Threshold: {self.threshold}%"
-                )
+                body = subject + f" - Average CPU utilization: {avg}%, {text}"
 
             elif self.check_type == "memory":
-                body = (
-                    subject
-                    + f" - Average memory usage: {avg}%, Threshold: {self.threshold}%"
-                )
+                body = subject + f" - Average memory usage: {avg}%, {text}"
 
         elif self.check_type == "winsvc":
 
@@ -601,11 +817,13 @@ class Check(BaseAuditModel):
                 except:
                     continue
 
-        CORE.send_mail(subject, body)
+        CORE.send_mail(subject, body, alert_template=alert_template)
 
     def send_sms(self):
 
         CORE = CoreSettings.objects.first()
+        alert_template = self.agent.get_alert_template()
+        body: str = ""
 
         if self.agent:
             subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Failed"
@@ -613,27 +831,33 @@ class Check(BaseAuditModel):
             subject = f"{self} Failed"
 
         if self.check_type == "diskspace":
+            text = ""
+            if self.warning_threshold:
+                text += f" Warning Threshold: {self.warning_threshold}%"
+            if self.error_threshold:
+                text += f" Error Threshold: {self.error_threshold}%"
+
             percent_used = [
                 d["percent"] for d in self.agent.disks if d["device"] == self.disk
             ][0]
             percent_free = 100 - percent_used
-            body = subject + f" - Free: {percent_free}%, Threshold: {self.threshold}%"
+            body = subject + f" - Free: {percent_free}%, {text}"
         elif self.check_type == "script":
             body = subject + f" - Return code: {self.retcode}"
         elif self.check_type == "ping":
             body = subject
         elif self.check_type == "cpuload" or self.check_type == "memory":
+            text = ""
+            if self.warning_threshold:
+                text += f" Warning Threshold: {self.warning_threshold}%"
+            if self.error_threshold:
+                text += f" Error Threshold: {self.error_threshold}%"
+
             avg = int(mean(self.history))
             if self.check_type == "cpuload":
-                body = (
-                    subject
-                    + f" - Average CPU utilization: {avg}%, Threshold: {self.threshold}%"
-                )
+                body = subject + f" - Average CPU utilization: {avg}%, {text}"
             elif self.check_type == "memory":
-                body = (
-                    subject
-                    + f" - Average memory usage: {avg}%, Threshold: {self.threshold}%"
-                )
+                body = subject + f" - Average memory usage: {avg}%, {text}"
         elif self.check_type == "winsvc":
             status = list(
                 filter(lambda x: x["name"] == self.svc_name, self.agent.services)
@@ -642,7 +866,21 @@ class Check(BaseAuditModel):
         elif self.check_type == "eventlog":
             body = subject
 
-        CORE.send_sms(body)
+        CORE.send_sms(body, alert_template=alert_template)
+
+    def send_resolved_email(self):
+        CORE = CoreSettings.objects.first()
+        alert_template = self.agent.get_alert_template()
+        subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
+        body = f"{self} is now back to normal"
+
+        CORE.send_mail(subject, body, alert_template=alert_template)
+
+    def send_resolved_sms(self):
+        CORE = CoreSettings.objects.first()
+        alert_template = self.agent.get_alert_template()
+        subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
+        CORE.send_sms(subject, alert_template=alert_template)
 
 
 class CheckHistory(models.Model):

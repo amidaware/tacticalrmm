@@ -55,6 +55,18 @@
           />
         </q-card-section>
         <q-card-section>
+          <q-select
+            v-model="autotask.alert_severity"
+            :options="severityOptions"
+            dense
+            label="Alert Severity"
+            outlined
+            map-options
+            emit-value
+            options-dense
+          />
+        </q-card-section>
+        <q-card-section>
           <q-input
             :rules="[val => !!val || '*Required']"
             outlined
@@ -171,7 +183,14 @@ export default {
         remove_if_not_scheduled: false,
         task_type: "scheduled",
         timeout: 120,
+        alert_severity: "info",
       },
+      policyChecks: [],
+      severityOptions: [
+        { label: "Informational", value: "info" },
+        { label: "Warning", value: "warning" },
+        { label: "Error", value: "error" },
+      ],
       dayOptions: [
         { label: "Monday", value: "Monday" },
         { label: "Tuesday", value: "Tuesday" },
@@ -210,9 +229,6 @@ export default {
             if (!this.policypk) {
               this.$store.dispatch("loadAutomatedTasks", this.selectedAgentPk);
               this.$store.dispatch("loadChecks", this.selectedAgentPk);
-            } else {
-              this.$store.dispatch("automation/loadPolicyAutomatedTasks", this.policypk);
-              this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
             }
             this.notifySuccess(r.data);
           })
@@ -221,17 +237,29 @@ export default {
     },
     getScripts() {
       this.$axios.get("/scripts/scripts/").then(r => {
-        this.scriptOptions = r.data.map(
-          script => ({ label: script.name, value: script.id })).sort((a, b) => a.label.localeCompare(b.label)
-        );
+        this.scriptOptions = r.data
+          .map(script => ({ label: script.name, value: script.id }))
+          .sort((a, b) => a.label.localeCompare(b.label));
       });
-    }
+    },
+    getPolicyChecks() {
+      this.$axios
+        .get(`/automation/${this.policypk}/policychecks/`)
+        .then(r => {
+          this.policyChecks = r.data;
+          this.$q.loading.hide();
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError("Unable to get policy checks");
+        });
+    },
   },
   computed: {
     ...mapGetters(["selectedAgentPk"]),
     checks() {
       return this.policypk
-        ? this.$store.state.automation.checks
+        ? this.policyChecks
         : this.$store.state.agentChecks.filter(check => check.managed_by_policy === false);
     },
     checksOptions() {
@@ -261,7 +289,11 @@ export default {
     },
   },
   created() {
-    this.getScripts()
-  }
+    this.getScripts();
+
+    if (this.policypk) {
+      this.getPolicyChecks();
+    }
+  },
 };
 </script>

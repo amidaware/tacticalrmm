@@ -14,7 +14,7 @@
           outlined
           v-model="eventlogcheck.name"
           label="Descriptive Name"
-          :rules="[ val => !!val || '*Required' ]"
+          :rules="[val => !!val || '*Required']"
         />
       </q-card-section>
       <q-card-section>
@@ -49,11 +49,7 @@
         />
       </q-card-section>
       <q-card-section>
-        <q-checkbox
-          v-model="eventSource"
-          label="Event source"
-          @input="eventlogcheck.event_source = null"
-        />
+        <q-checkbox v-model="eventSource" label="Event source" @input="eventlogcheck.event_source = null" />
         <q-input dense outlined v-model="eventlogcheck.event_source" :disable="!eventSource" />
       </q-card-section>
       <q-card-section>
@@ -70,11 +66,11 @@
           outlined
           v-model.number="eventlogcheck.search_last_days"
           label="How many previous days to search (Enter 0 for the entire log)"
-          :rules="[ 
-                    val => !!val.toString() || '*Required',
-                    val => val >= 0 || 'Min 0',
-                    val => val <= 9999 || 'Max 9999'
-                ]"
+          :rules="[
+            val => !!val.toString() || '*Required',
+            val => val >= 0 || 'Min 0',
+            val => val <= 9999 || 'Max 9999',
+          ]"
         />
       </q-card-section>
       <q-card-section>
@@ -83,19 +79,21 @@
           <q-radio dense v-model="eventlogcheck.event_type" val="INFO" label="Information" />
           <q-radio dense v-model="eventlogcheck.event_type" val="WARNING" label="Warning" />
           <q-radio dense v-model="eventlogcheck.event_type" val="ERROR" label="Error" />
-          <q-radio
-            dense
-            v-model="eventlogcheck.event_type"
-            val="AUDIT_SUCCESS"
-            label="Success Audit"
-          />
-          <q-radio
-            dense
-            v-model="eventlogcheck.event_type"
-            val="AUDIT_FAILURE"
-            label="Failure Audit"
-          />
+          <q-radio dense v-model="eventlogcheck.event_type" val="AUDIT_SUCCESS" label="Success Audit" />
+          <q-radio dense v-model="eventlogcheck.event_type" val="AUDIT_FAILURE" label="Failure Audit" />
         </div>
+      </q-card-section>
+      <q-card-section>
+        <q-select
+          outlined
+          dense
+          options-dense
+          map-options
+          emit-value
+          v-model="eventlogcheck.alert_severity"
+          :options="severityOptions"
+          label="Alert Severity"
+        />
       </q-card-section>
       <q-card-section>
         <q-select
@@ -140,6 +138,7 @@ export default {
         search_last_days: 1,
         fails_b4_alert: 1,
         event_id_is_wildcard: false,
+        alert_severity: "warning",
       },
       eventMessage: false,
       eventSource: false,
@@ -147,6 +146,11 @@ export default {
       failWhenOptions: [
         { label: "Log contains", value: "contains" },
         { label: "Log does not contain", value: "not_contains" },
+      ],
+      severityOptions: [
+        { label: "Informational", value: "info" },
+        { label: "Warning", value: "warning" },
+        { label: "Error", value: "error" },
       ],
       failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     };
@@ -215,9 +219,7 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     reloadChecks() {
-      if (this.policypk) {
-        this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
-      } else {
+      if (this.agentpk) {
         this.$store.dispatch("loadChecks", this.agentpk);
       }
     },

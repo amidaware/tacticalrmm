@@ -8,8 +8,10 @@ import validators
 import msgpack
 import re
 from collections import Counter
-from typing import List
+from typing import List, Union, Any
 from loguru import logger
+import asyncio
+
 from packaging import version as pyver
 from distutils.version import LooseVersion
 from nats.aio.client import Client as NATS
@@ -18,9 +20,11 @@ from nats.aio.errors import ErrTimeout
 from django.db import models
 from django.conf import settings
 from django.utils import timezone as djangotime
+from alerts.models import AlertTemplate
 
 from core.models import CoreSettings, TZ_CHOICES
 from logs.models import BaseAuditModel
+from scripts.models import Script
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -50,6 +54,7 @@ class Agent(BaseAuditModel):
     mesh_node_id = models.CharField(null=True, blank=True, max_length=255)
     overdue_email_alert = models.BooleanField(default=False)
     overdue_text_alert = models.BooleanField(default=False)
+    overdue_dashboard_alert = models.BooleanField(default=False)
     overdue_time = models.PositiveIntegerField(default=30)
     check_interval = models.PositiveIntegerField(default=120)
     needs_reboot = models.BooleanField(default=False)
@@ -74,6 +79,24 @@ class Agent(BaseAuditModel):
         blank=True,
         on_delete=models.SET_NULL,
     )
+
+    def save(self, *args, **kwargs):
+
+        # get old agent if exists
+        old_agent = type(self).objects.get(pk=self.pk) if self.pk else None
+        super(BaseAuditModel, self).save(*args, **kwargs)
+
+        # check if new agent has been create
+        # or check if policy have changed on agent
+        # or if site has changed on agent and if so generate-policies
+        if (
+            not old_agent
+            or old_agent
+            and old_agent.policy != self.policy
+            or old_agent.site != self.site
+        ):
+            self.generate_checks_from_policies()
+            self.generate_tasks_from_policies()
 
     def __str__(self):
         return self.hostname
@@ -248,6 +271,59 @@ class Agent(BaseAuditModel):
         except:
             return ["unknown disk"]
 
+    def run_script(
+        self,
+        script: Script,
+        args: List[str] = [],
+        timeout: int = 120,
+        full: bool = False,
+        wait: bool = False,
+        run_on_any=False,
+    ) -> Any:
+        data = {
+            "func": "runscriptfull" if full else "runscript",
+            "timeout": timeout,
+            "script_args": args,
+            "payload": {
+                "code": script.code,
+                "shell": script.shell,
+            },
+        }
+
+        running_agent = self
+        if run_on_any:
+            nats_ping = {"func": "ping", "timeout": 1}
+
+            # try on self first
+            r = asyncio.run(self.nats_cmd(nats_ping))
+
+            if r == "pong":
+                running_agent = self
+            else:
+                online = [
+                    agent
+                    for agent in Agent.objects.all().only(
+                        "pk", "last_seen", "overdue_time"
+                    )
+                    if agent.status == "online"
+                ]
+
+                for agent in online:
+                    r = asyncio.run(agent.nats_cmd(nats_ping))
+                    if r == "pong":
+                        running_agent = agent
+                        break
+
+                if running_agent.pk == self.pk:
+                    return "Unable to find an online agent"
+
+        if wait:
+            return asyncio.run(running_agent.nats_cmd(data, timeout=timeout, wait=True))
+        else:
+            asyncio.run(running_agent.nats_cmd(data, wait=False))
+
+        return "ok"
+
     # auto approves updates
     def approve_updates(self):
         patch_policy = self.get_patch_policy()
@@ -380,6 +456,105 @@ class Agent(BaseAuditModel):
                 "guid", flat=True
             )
         )
+
+    # returns alert template assigned in the following order: policy, site, client, global
+    # will return None if nothing is found
+    def get_alert_template(self) -> Union[AlertTemplate, None]:
+
+        site = self.site
+        client = self.client
+        core = CoreSettings.objects.first()
+
+        templates = list()
+        # check if alert template is on a policy assigned to agent
+        if (
+            self.policy
+            and self.policy.alert_template
+            and self.policy.alert_template.is_active
+        ):
+            templates.append(self.policy.alert_template)
+
+        # check if policy with alert template is assigned to the site
+        elif (
+            self.monitoring_type == "server"
+            and site.server_policy
+            and site.server_policy.alert_template
+            and site.server_policy.alert_template.is_active
+        ):
+            templates.append(site.server_policy.alert_template)
+        elif (
+            self.monitoring_type == "workstation"
+            and site.workstation_policy
+            and site.workstation_policy.alert_template
+            and site.workstation_policy.alert_template.is_active
+        ):
+            templates.append(site.workstation_policy.alert_template)
+
+        # check if alert template is assigned to site
+        elif site.alert_template and site.alert_template.is_active:
+            templates.append(site.alert_template)
+
+        # check if policy with alert template is assigned to the client
+        elif (
+            self.monitoring_type == "server"
+            and client.server_policy
+            and client.server_policy.alert_template
+            and client.server_policy.alert_template.is_active
+        ):
+            templates.append(client.server_policy.alert_template)
+        elif (
+            self.monitoring_type == "workstation"
+            and client.workstation_policy
+            and client.workstation_policy.alert_template
+            and client.workstation_policy.alert_template.is_active
+        ):
+            templates.append(client.workstation_policy.alert_template)
+
+        # check if alert template is on client and return
+        elif client.alert_template and client.alert_template.is_active:
+            templates.append(client.alert_template)
+
+        # check if alert template is applied globally and return
+        elif core.alert_template and core.alert_template.is_active:
+            templates.append(core.alert_template)
+
+        # if agent is a workstation, check if policy with alert template is assigned to the site, client, or core
+        elif (
+            self.monitoring_type == "server"
+            and core.server_policy
+            and core.server_policy.alert_template
+            and core.server_policy.alert_template.is_active
+        ):
+            templates.append(core.server_policy.alert_template)
+        elif (
+            self.monitoring_type == "workstation"
+            and core.workstation_policy
+            and core.workstation_policy.alert_template
+            and core.workstation_policy.alert_template.is_active
+        ):
+            templates.append(core.workstation_policy.alert_template)
+
+        # go through the templates and return the first one that isn't excluded
+        for template in templates:
+            # check if client, site, or agent has been excluded from template
+            if (
+                client.pk in template.excluded_clients.all()
+                or site.pk in template.excluded_sites.all()
+                or self.pk in template.excluded_agents.all()
+            ):
+                continue
+
+            # see if template is excluding desktops
+            if (
+                self.monitoring_type == "workstation"
+                and not template.agent_include_desktops
+            ):
+                continue
+            else:
+                return template
+
+        # no alert templates found or agent has been excluded
+        return None
 
     def generate_checks_from_policies(self):
         from automation.models import Policy
@@ -520,72 +695,202 @@ class Agent(BaseAuditModel):
             if action.details["task_id"] == task_id:
                 action.delete()
 
+    def handle_alert(self, checkin: bool = False) -> None:
+        from alerts.models import Alert
+        from agents.tasks import (
+            agent_recovery_email_task,
+            agent_recovery_sms_task,
+            agent_outage_email_task,
+            agent_outage_sms_task,
+        )
 
-class AgentOutage(models.Model):
-    agent = models.ForeignKey(
-        Agent,
-        related_name="agentoutages",
-        null=True,
-        blank=True,
-        on_delete=models.CASCADE,
-    )
-    outage_time = models.DateTimeField(auto_now_add=True)
-    recovery_time = models.DateTimeField(null=True, blank=True)
-    outage_email_sent = models.BooleanField(default=False)
-    outage_sms_sent = models.BooleanField(default=False)
-    recovery_email_sent = models.BooleanField(default=False)
-    recovery_sms_sent = models.BooleanField(default=False)
+        # return if agent is in maintenace mode
+        if self.maintenance_mode:
+            return
 
-    @property
-    def is_active(self):
-        return False if self.recovery_time else True
+        alert_template = self.get_alert_template()
+
+        # called when agent is back online
+        if checkin:
+            if Alert.objects.filter(agent=self, resolved=False).exists():
+
+                # resolve alert if exists
+                alert = Alert.objects.get(agent=self, resolved=False)
+                alert.resolve()
+
+                # check if a resolved notification should be emailed
+                if (
+                    not alert.resolved_email_sent
+                    and alert_template
+                    and alert_template.agent_email_on_resolved
+                    or self.overdue_email_alert
+                ):
+                    agent_recovery_email_task.delay(pk=alert.pk)
+
+                # check if a resolved notification should be texted
+                if (
+                    not alert.resolved_sms_sent
+                    and alert_template
+                    and alert_template.agent_text_on_resolved
+                    or self.overdue_text_alert
+                ):
+                    agent_recovery_sms_task.delay(pk=alert.pk)
+
+                # check if any scripts should be run
+                if (
+                    not alert.resolved_action_run
+                    and alert_template
+                    and alert_template.resolved_action
+                ):
+                    r = self.run_script(
+                        alert_template.resolved_action,
+                        alert_template.resolved_action_args,
+                        timeout=alert_template.resolved_action_timeout,
+                        wait=True,
+                        full=True,
+                        run_on_any=True,
+                    )
+
+                    # command was successful
+                    if type(r) == dict:
+                        alert.resolved_action_retcode = r["retcode"]
+                        alert.resolved_action_stdout = r["stdout"]
+                        alert.resolved_action_stderr = r["stderr"]
+                        alert.resolved_action_execution_time = "{:.4f}".format(
+                            r["execution_time"]
+                        )
+                        alert.resolved_action_run = djangotime.now()
+                        alert.save()
+                    else:
+                        logger.error(
+                            f"Resolved action: {alert_template.resolved_action} failed to run on any agent for {self.hostname} resolved outage"
+                        )
+
+        # called when agent is offline
+        else:
+            # check if alert hasn't been created yet so create it
+            if not Alert.objects.filter(agent=self, resolved=False).exists():
+
+                alert = Alert.create_availability_alert(self)
+
+                # add a null check history to allow gaps in graph
+                for check in self.agentchecks.all():
+                    check.add_check_history(None)
+            else:
+                alert = Alert.objects.get(agent=self, resolved=False)
+
+            # create dashboard alert if enabled
+            if (
+                alert_template
+                and alert_template.agent_always_alert
+                or self.overdue_dashboard_alert
+            ):
+                alert.hidden = False
+                alert.save()
+
+            # send email alert if enabled
+            if (
+                not alert.email_sent
+                and alert_template
+                and alert_template.agent_always_email
+                or self.overdue_email_alert
+            ):
+                agent_outage_email_task.delay(
+                    pk=alert.pk,
+                    alert_interval=alert_template.check_periodic_alert_days
+                    if alert_template
+                    else None,
+                )
+
+            # send text message if enabled
+            if (
+                not alert.sms_sent
+                and alert_template
+                and alert_template.agent_always_text
+                or self.overdue_text_alert
+            ):
+                agent_outage_sms_task.delay(
+                    pk=alert.pk,
+                    alert_interval=alert_template.check_periodic_alert_days
+                    if alert_template
+                    else None,
+                )
+
+            # check if any scripts should be run
+            if not alert.action_run and alert_template and alert_template.action:
+                r = self.run_script(
+                    alert_template.action,
+                    alert_template.action_args,
+                    timeout=alert_template.action_timeout,
+                    wait=True,
+                    full=True,
+                    run_on_any=True,
+                )
+
+                # command was successful
+                if type(r) == dict:
+                    alert.action_retcode = r["retcode"]
+                    alert.action_stdout = r["stdout"]
+                    alert.action_stderr = r["stderr"]
+                    alert.action_execution_time = "{:.4f}".format(r["execution_time"])
+                    alert.action_run = djangotime.now()
+                    alert.save()
+                else:
+                    logger.error(
+                        f"Failure action: {alert_template.action.name} failed to run on any agent for {self.hostname} outage"
+                    )
 
     def send_outage_email(self):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
+        alert_template = self.get_alert_template()
         CORE.send_mail(
-            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data overdue",
+            f"{self.client.name}, {self.site.name}, {self.hostname} - data overdue",
             (
-                f"Data has not been received from client {self.agent.client.name}, "
-                f"site {self.agent.site.name}, "
-                f"agent {self.agent.hostname} "
+                f"Data has not been received from client {self.client.name}, "
+                f"site {self.site.name}, "
+                f"agent {self.hostname} "
                 "within the expected time."
             ),
+            alert_template=alert_template,
         )
 
     def send_recovery_email(self):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
+        alert_template = self.get_alert_template()
         CORE.send_mail(
-            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data received",
+            f"{self.client.name}, {self.site.name}, {self.hostname} - data received",
             (
-                f"Data has been received from client {self.agent.client.name}, "
-                f"site {self.agent.site.name}, "
-                f"agent {self.agent.hostname} "
+                f"Data has been received from client {self.client.name}, "
+                f"site {self.site.name}, "
+                f"agent {self.hostname} "
                 "after an interruption in data transmission."
             ),
+            alert_template=alert_template,
         )
 
     def send_outage_sms(self):
         from core.models import CoreSettings
 
+        alert_template = self.get_alert_template()
         CORE = CoreSettings.objects.first()
         CORE.send_sms(
-            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data overdue"
+            f"{self.client.name}, {self.site.name}, {self.hostname} - data overdue",
+            alert_template=alert_template,
         )
 
     def send_recovery_sms(self):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
+        alert_template = self.get_alert_template()
         CORE.send_sms(
-            f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - data received"
+            f"{self.client.name}, {self.site.name}, {self.hostname} - data received",
+            alert_template=alert_template,
         )
-
-    def __str__(self):
-        return self.agent.hostname
 
 
 RECOVERY_CHOICES = [

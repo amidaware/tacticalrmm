@@ -3,6 +3,7 @@ import os
 import string
 import subprocess
 import time
+import pytz
 from typing import List, Dict
 from loguru import logger
 
@@ -27,6 +28,12 @@ WEEK_DAYS = {
     "Friday": 0x20,
     "Saturday": 0x40,
 }
+
+
+def get_default_timezone():
+    from core.models import CoreSettings
+
+    return pytz.timezone(CoreSettings.objects.first().default_time_zone)
 
 
 def get_bit_days(days: List[str]) -> int:

@@ -11,13 +11,19 @@
       <q-card-section>
         <q-input
           outlined
-          v-model.number="memcheck.threshold"
-          label="Threshold (%)"
-          :rules="[ 
-                    val => !!val || '*Required',
-                    val => val >= 1 || 'Minimum threshold is 1',
-                    val => val < 100 || 'Maximum threshold is 99'
-                ]"
+          type="number"
+          v-model.number="memcheck.warning_threshold"
+          label="Warning Threshold (%)"
+          :rules="[val => val >= 0 || 'Minimum threshold is 0', val => val < 100 || 'Maximum threshold is 99']"
+        />
+      </q-card-section>
+      <q-card-section>
+        <q-input
+          outlined
+          type="number"
+          v-model.number="memcheck.error_threshold"
+          label="Error Threshold (%)"
+          :rules="[val => val >= 0 || 'Minimum threshold is 0', val => val < 100 || 'Maximum threshold is 99']"
         />
       </q-card-section>
       <q-card-section>
@@ -55,7 +61,8 @@ export default {
     return {
       memcheck: {
         check_type: "memory",
-        threshold: 85,
+        warning_threshold: 70,
+        error_threshold: 85,
         fails_b4_alert: 1,
       },
       failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
@@ -66,6 +73,10 @@ export default {
       axios.get(`/checks/${this.checkpk}/check/`).then(r => (this.memcheck = r.data));
     },
     addCheck() {
+      if (!this.isValidThreshold(this.memcheck.warning_threshold, this.memcheck.error_threshold)) {
+        return;
+      }
+
       const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
       const data = {
         ...pk,
@@ -81,6 +92,10 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     editCheck() {
+      if (!this.isValidThreshold(this.memcheck.warning_threshold, this.memcheck.error_threshold)) {
+        return;
+      }
+
       axios
         .patch(`/checks/${this.checkpk}/check/`, this.memcheck)
         .then(r => {
@@ -91,9 +106,7 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     reloadChecks() {
-      if (this.policypk) {
-        this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
-      } else {
+      if (this.agentpk) {
         this.$store.dispatch("loadChecks", this.agentpk);
       }
     },

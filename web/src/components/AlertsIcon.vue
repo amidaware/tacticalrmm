@@ -1,18 +1,14 @@
 <template>
   <q-btn dense flat icon="notifications">
-    <q-badge v-if="alerts.length !== 0" color="red" floating transparent>{{ alertsLengthText() }}</q-badge>
-    <q-menu>
+    <q-badge v-if="alertsCount > 0" :color="badgeColor" floating transparent>{{ alertsCountText() }}</q-badge>
+    <q-menu style="max-height: 30vh">
       <q-list separator>
-        <q-item v-if="alerts.length === 0">No New Alerts</q-item>
-        <q-item v-for="alert in alerts" :key="alert.id">
+        <q-item v-if="alertsCount === 0">No New Alerts</q-item>
+        <q-item v-for="alert in topAlerts" :key="alert.id">
           <q-item-section>
             <q-item-label overline>{{ alert.client }} - {{ alert.site }} - {{ alert.hostname }}</q-item-label>
-            <q-item-label>
-              <q-icon
-                size="xs"
-                :class="`text-${alertColor(alert.severity)}`"
-                :name="alert.severity"
-              ></q-icon>
+            <q-item-label lines="1">
+              <q-icon size="xs" :class="`text-${alertIconColor(alert.severity)}`" :name="alert.severity"></q-icon>
               {{ alert.message }}
             </q-item-label>
           </q-item-section>
@@ -20,74 +16,148 @@
           <q-item-section side top>
             <q-item-label caption>{{ alertTime(alert.alert_time) }}</q-item-label>
             <q-item-label>
-              <q-icon name="snooze" size="xs">
-                <q-tooltip>Snooze the alert for 24 hours</q-tooltip>
+              <q-icon name="snooze" size="xs" class="cursor-pointer" @click="snoozeAlert(alert)" v-close-popup>
+                <q-tooltip>Snooze alert</q-tooltip>
               </q-icon>
-              <q-icon name="alarm_off" size="xs">
-                <q-tooltip>Dismiss alert</q-tooltip>
+              <q-icon name="flag" size="xs" class="cursor-pointer" @click="resolveAlert(alert)" v-close-popup>
+                <q-tooltip>Resolve alert</q-tooltip>
               </q-icon>
             </q-item-label>
           </q-item-section>
         </q-item>
-        <q-item clickable @click="showAlertsModal = true">View All Alerts ({{ alerts.length }})</q-item>
+        <q-item clickable v-close-popup @click="showOverview">View All Alerts ({{ alertsCount }})</q-item>
       </q-list>
     </q-menu>
-
-    <q-dialog
-      v-model="showAlertsModal"
-      maximized
-      transition-show="slide-up"
-      transition-hide="slide-down"
-    >
-      <AlertsOverview @close="showAlertsModal = false" />
-    </q-dialog>
   </q-btn>
 </template>
 
 <script>
-import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import AlertsOverview from "@/components/modals/alerts/AlertsOverview";
 
 export default {
   name: "AlertsIcon",
-  components: { AlertsOverview },
   mixins: [mixins],
   data() {
     return {
-      showAlertsModal: false,
+      alertsCount: 0,
+      topAlerts: [],
+      errorColor: "red",
+      warningColor: "orange",
+      infoColor: "blue",
+      poll: null,
     };
+  },
+  computed: {
+    badgeColor() {
+      const severities = this.topAlerts.map(alert => alert.severity);
+
+      if (severities.includes("error")) return this.errorColor;
+      else if (severities.includes("warning")) return this.warningColor;
+      else return this.infoColor;
+    },
   },
   methods: {
     getAlerts() {
-      this.$store.dispatch("alerts/getAlerts").catch(error => {
-        console.error(error);
-      });
+      this.$q.loading.show();
+      this.$axios
+        .patch("alerts/alerts/", { top: 10 })
+        .then(r => {
+          this.alertsCount = r.data.alerts_count;
+          this.topAlerts = r.data.alerts;
+          this.$q.loading.hide();
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          //this.notifyError("Unable to get alerts");
+        });
     },
-    alertColor(type) {
-      if (type === "error") {
-        return "red";
-      }
-      if (type === "warning") {
-        return "orange";
-      }
+    showOverview() {
+      this.$q
+        .dialog({
+          component: AlertsOverview,
+          parent: this,
+        })
+        .onDismiss(() => {
+          this.getAlerts();
+        });
     },
-    alertsLengthText() {
-      if (this.alerts.length > 9) {
-        return "9+";
-      } else {
-        return this.alerts.length;
-      }
+    snoozeAlert(alert) {
+      this.$q
+        .dialog({
+          title: "Snooze Alert",
+          message: "How many days to snooze alert?",
+          prompt: {
+            model: "",
+            type: "number",
+            isValid: val => !!val && val > 0 && val < 9999,
+          },
+          cancel: true,
+        })
+        .onOk(days => {
+          this.$q.loading.show();
+
+          const data = {
+            id: alert.id,
+            type: "snooze",
+            snooze_days: days,
+          };
+
+          this.$axios
+            .put(`alerts/alerts/${alert.id}/`, data)
+            .then(r => {
+              this.getAlerts();
+              this.$q.loading.hide();
+              this.notifySuccess(`The alert has been snoozed for ${days} days`);
+            })
+            .catch(e => {
+              this.$q.loading.hide();
+              this.notifyError("There was an issue snoozing alert");
+            });
+        });
     },
-  },
-  computed: {
-    ...mapGetters({
-      newAlerts: "alerts/getNewAlerts",
-      alerts: "alerts/getAlerts",
-    }),
+    resolveAlert(alert) {
+      this.$q.loading.show();
+
+      const data = {
+        id: alert.id,
+        type: "resolve",
+      };
+
+      this.$axios
+        .put(`alerts/alerts/${alert.id}/`, data)
+        .then(r => {
+          this.getAlerts();
+          this.$q.loading.hide();
+          this.notifySuccess("The alert has been resolved");
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          console.log({ e });
+          this.notifyError("There was an issue resolving alert");
+        });
+    },
+    alertIconColor(severity) {
+      if (severity === "error") return this.errorColor;
+      else if (severity === "warning") return this.warningColor;
+      else return this.infoColor;
+    },
+    alertsCountText() {
+      if (this.alertsCount > 99) return "99+";
+      else return this.alertsCount;
+    },
+    pollAlerts() {
+      setInterval(() => {
+        this.getAlerts();
+      }, 60 * 1 * 1000);
+    },
   },
   mounted() {
     this.getAlerts();
+    this.pollAlerts();
+  },
+  beforeDestroy() {
+    clearInterval(this.poll);
   },
 };
 </script>

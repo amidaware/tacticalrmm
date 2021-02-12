@@ -3,6 +3,7 @@ version: '3.4'
 services:
   api-dev:
     image: api-dev
+    restart: always
     build:
       context: .
       dockerfile: ./api.dockerfile
@@ -21,6 +22,7 @@ services:
 
   app-dev:
     image: node:12-alpine
+    restart: always
     command: /bin/sh -c "npm install && npm run serve -- --host 0.0.0.0 --port ${APP_PORT}"
     working_dir: /workspace/web
     volumes:

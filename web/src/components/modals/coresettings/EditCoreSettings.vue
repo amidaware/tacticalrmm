@@ -68,6 +68,21 @@
                   />
                 </q-card-section>
                 <q-card-section class="row">
+                  <div class="col-4">Default alert template:</div>
+                  <div class="col-2"></div>
+                  <q-select
+                    clearable
+                    map-options
+                    emit-value
+                    outlined
+                    dense
+                    options-dense
+                    v-model="settings.alert_template"
+                    :options="alertTemplateOptions"
+                    class="col-6"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
                   <div class="col-4">Remove Check History older than (days):</div>
                   <div class="col-2"></div>
                   <q-input outlined dense v-model="settings.check_history_prune_days" class="col-6" />
@@ -75,7 +90,7 @@
                 <q-card-section class="row">
                   <div class="col-4">Reset Patch Policy on Agents:</div>
                   <div class="col-2"></div>
-                  <q-btn color="negative" label="Reset" @click="resetPatchPolicyModal" />
+                  <q-btn color="negative" label="Reset" @click="showResetPatchPolicy" />
                 </q-card-section>
               </q-tab-panel>
               <!-- email alerts -->
@@ -290,26 +305,20 @@
         </q-form>
       </template>
     </q-splitter>
-
-    <q-dialog v-model="showResetPatchPolicyModal">
-      <ResetPatchPolicy @close="showResetPatchPolicyModal = false" />
-    </q-dialog>
   </q-card>
 </template>
 
 <script>
 import mixins from "@/mixins/mixins";
-import { mapState } from "vuex";
 import ResetPatchPolicy from "@/components/modals/coresettings/ResetPatchPolicy";
 
 export default {
   name: "EditCoreSettings",
-  components: { ResetPatchPolicy },
   mixins: [mixins],
   data() {
     return {
-      showResetPatchPolicyModal: false,
       ready: false,
+      policies: [],
       settings: {},
       email: null,
       tab: "general",
@@ -324,6 +333,7 @@ export default {
         width: "5px",
         opacity: 0.75,
       },
+      alertTemplateOptions: [],
     };
   },
   methods: {
@@ -335,8 +345,27 @@ export default {
       });
     },
     getPolicies() {
-      this.$store.dispatch("automation/loadPolicies").catch(e => {
-        this.notifyError(e.response.data);
+      this.$q.loading.show();
+      this.$axios
+        .get("/automation/policies/")
+        .then(r => {
+          this.policies = r.data.map(policy => ({ label: policy.name, value: policy.id }));
+          this.$q.loading.hide();
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError("Unable to get policies");
+        });
+    },
+    getAlertTemplates() {
+      this.$axios.get("alerts/alerttemplates").then(r => {
+        this.alertTemplateOptions = r.data.map(template => ({ label: template.name, value: template.id }));
+      });
+    },
+    showResetPatchPolicy() {
+      this.$q.dialog({
+        component: ResetPatchPolicy,
+        parent: this,
       });
     },
     toggleAddEmail() {
@@ -382,9 +411,6 @@ export default {
       const removed = this.settings.sms_alert_recipients.filter(k => k !== num);
       this.settings.sms_alert_recipients = removed;
     },
-    resetPatchPolicyModal() {
-      this.showResetPatchPolicyModal = true;
-    },
     editSettings() {
       this.$q.loading.show();
       delete this.settings.all_timezones;
@@ -418,14 +444,10 @@ export default {
         });
     },
   },
-  computed: {
-    ...mapState({
-      policies: state => state.automation.policies.map(policy => ({ label: policy.name, value: policy.id })),
-    }),
-  },
   created() {
     this.getCoreSettings();
     this.getPolicies();
+    this.getAlertTemplates();
   },
 };
 </script>

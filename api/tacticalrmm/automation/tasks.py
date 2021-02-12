@@ -115,7 +115,7 @@ def generate_agent_tasks_from_policies_task(policypk):
             "pk", "monitoring_type"
         )
     else:
-        agents = policy.related_agents()
+        agents = policy.related_agents().only("pk")
 
     for agent in agents:
         agent.generate_tasks_from_policies()

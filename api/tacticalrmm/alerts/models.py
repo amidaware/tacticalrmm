@@ -3,8 +3,6 @@ from django.contrib.postgres.fields import ArrayField
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
 
-from typing import Union, Type
-
 SEVERITY_CHOICES = [
     ("info", "Informational"),
     ("warning", "Warning"),
@@ -56,13 +54,13 @@ class Alert(models.Model):
     sms_sent = models.DateTimeField(null=True, blank=True)
     resolved_sms_sent = models.DateTimeField(null=True, blank=True)
     hidden = models.BooleanField(default=False)
-    action_run = models.BooleanField(default=False)
+    action_run = models.DateTimeField(null=True, blank=True)
     action_timeout = models.PositiveIntegerField(null=True, blank=True)
     action_stdout = models.TextField(null=True, blank=True)
     action_stderr = models.TextField(null=True, blank=True)
     action_retcode = models.IntegerField(null=True, blank=True)
     action_execution_time = models.CharField(max_length=100, null=True, blank=True)
-    resolved_action_run = models.BooleanField(default=False)
+    resolved_action_run = models.DateTimeField(null=True, blank=True)
     resolved_action_timeout = models.PositiveIntegerField(null=True, blank=True)
     resolved_action_stdout = models.TextField(null=True, blank=True)
     resolved_action_stderr = models.TextField(null=True, blank=True)

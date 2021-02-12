@@ -11,25 +11,19 @@
       <q-card-section>
         <q-input
           outlined
+          type="number"
           v-model.number="cpuloadcheck.warning_threshold"
           label="Warning Threshold (%)"
-          :rules="[
-            val => !!val || '*Required',
-            val => val >= 1 || 'Minimum threshold is 1',
-            val => val < 100 || 'Maximum threshold is 99',
-          ]"
+          :rules="[val => val >= 0 || 'Minimum threshold is 0', val => val < 100 || 'Maximum threshold is 99']"
         />
       </q-card-section>
       <q-card-section>
         <q-input
           outlined
+          type="number"
           v-model.number="cpuloadcheck.error_threshold"
           label="Error Threshold (%)"
-          :rules="[
-            val => !!val || '*Required',
-            val => val >= 1 || 'Minimum threshold is 1',
-            val => val < 100 || 'Maximum threshold is 99',
-          ]"
+          :rules="[val => val >= 0 || 'Minimum threshold is 0', val => val < 100 || 'Maximum threshold is 99']"
         />
       </q-card-section>
       <q-card-section>
@@ -74,22 +68,12 @@ export default {
       failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     };
   },
-  computed: {
-    thresholdIsValid() {
-      return (
-        this.cpuloadcheck.warning_threshold === 0 ||
-        this.cpuloadcheck.error_threshold === 0 ||
-        this.cpuloadcheck.warning_threshold < this.cpuloadcheck.error_threshold
-      );
-    },
-  },
   methods: {
     getCheck() {
       axios.get(`/checks/${this.checkpk}/check/`).then(r => (this.cpuloadcheck = r.data));
     },
     addCheck() {
-      if (!this.thresholdIsValid) {
-        this.notifyError("Warning Threshold needs to be less than Error threshold");
+      if (!this.isValidThreshold(this.cpuloadcheck.warning_threshold, this.cpuloadcheck.error_threshold)) {
         return;
       }
 
@@ -108,8 +92,7 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     editCheck() {
-      if (!this.thresholdIsValid) {
-        this.notifyError("Warning Threshold needs to be less than Error threshold");
+      if (!this.isValidThreshold(this.cpuloadcheck.warning_threshold, this.cpuloadcheck.error_threshold)) {
         return;
       }
 

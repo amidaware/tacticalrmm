@@ -208,6 +208,10 @@ export default {
           },
         },
       };
+
+      if (this.check.check_type === "diskspace") {
+        this.chartOptions["yaxis"]["reversed"] = true;
+      }
     } else {
       // Set the y-axis labels to Failing and Passing
       this.chartOptions["yaxis"] = {

@@ -20,25 +20,19 @@
       <q-card-section>
         <q-input
           outlined
+          type="number"
           v-model.number="diskcheck.warning_threshold"
-          label="Warning Threshold (%)"
-          :rules="[
-            val => !!val || '*Required',
-            val => val >= 1 || 'Minimum threshold is 1',
-            val => val < 100 || 'Maximum threshold is 99',
-          ]"
+          label="Warning Threshold Remaining (%)"
+          :rules="[val => val >= 0 || 'Minimum threshold is 0', val => val < 100 || 'Maximum threshold is 99']"
         />
       </q-card-section>
       <q-card-section>
         <q-input
           outlined
+          type="number"
           v-model.number="diskcheck.error_threshold"
-          label="Error Threshold (%)"
-          :rules="[
-            val => !!val || '*Required',
-            val => val >= 1 || 'Minimum threshold is 1',
-            val => val < 100 || 'Maximum threshold is 99',
-          ]"
+          label="Error Threshold Remaining (%)"
+          :rules="[val => val >= 0 || 'Minimum threshold is 0', val => val < 100 || 'Maximum threshold is 99']"
         />
       </q-card-section>
       <q-card-section>
@@ -62,7 +56,7 @@
 
 <script>
 import axios from "axios";
-import { mapState, mapGetters } from "vuex";
+import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 export default {
   name: "DiskSpaceCheck",
@@ -102,8 +96,7 @@ export default {
       axios.get(`/checks/${this.checkpk}/check/`).then(r => (this.diskcheck = r.data));
     },
     addCheck() {
-      if (!this.thresholdIsValid) {
-        this.notifyError("Warning Threshold needs to be greater than Error threshold");
+      if (!this.isValidThreshold(this.diskcheck.warning_threshold, this.diskcheck.error_threshold, true)) {
         return;
       }
 
@@ -122,8 +115,7 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     editCheck() {
-      if (!this.thresholdIsValid) {
-        this.notifyError("Warning Threshold needs to be greater than Error threshold");
+      if (!this.isValidThreshold(this.diskcheck.warning_threshold, this.diskcheck.error_threshold, true)) {
         return;
       }
 
@@ -144,13 +136,6 @@ export default {
   },
   computed: {
     ...mapGetters(["agentDisks"]),
-    thresholdIsValid() {
-      return (
-        !!this.diskcheck.warning_threshold ||
-        !!this.diskcheck.error_threshold ||
-        this.diskcheck.warning_threshold > this.diskcheck.error_threshold
-      );
-    },
   },
   created() {
     if (this.mode === "add") {

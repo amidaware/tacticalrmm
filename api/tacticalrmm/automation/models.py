@@ -35,7 +35,7 @@ class Policy(BaseAuditModel):
     def delete(self, *args, **kwargs):
         from automation.tasks import generate_agent_checks_task
 
-        agents = list(self.related_agents().values_list("pk", flat=True))
+        agents = list(self.related_agents().only("pk").values_list("pk", flat=True))
         super(BaseAuditModel, self).delete(*args, **kwargs)
 
         generate_agent_checks_task.delay(agents, create_tasks=True)

@@ -56,6 +56,21 @@
               />
             </div>
 
+            <div class="col-2 q-my-sm">Failure action timeout</div>
+            <div class="col-10 q-mb-sm">
+              <q-input
+                outlined
+                type="number"
+                v-model.number="template.action_timeout"
+                dense
+                :rules="[
+                  val => !!val || 'Failure action timeout is required',
+                  val => val > 0 || 'Timeout must be greater than 0',
+                  val => val > 60 || 'Timeout must be 60 or less',
+                ]"
+              />
+            </div>
+
             <div class="col-2 q-my-sm">
               <span style="text-decoration: underline; cursor: help"
                 >Resolved action
@@ -90,6 +105,21 @@
                 hide-dropdown-icon
                 input-debounce="0"
                 new-value-mode="add"
+              />
+            </div>
+
+            <div class="col-2 q-my-sm">Resolved action timeout</div>
+            <div class="col-10 q-mb-sm">
+              <q-input
+                outlined
+                type="number"
+                v-model.number="template.resolved_action_timeout"
+                dense
+                :rules="[
+                  val => !!val || 'Resolved action timeout is required',
+                  val => val > 0 || 'Timeout must be greater than 0',
+                  val => val > 60 || 'Timeout must be 60 or less',
+                ]"
               />
             </div>
           </q-card-section>
@@ -222,7 +252,7 @@
                 type="number"
                 v-model.number="template.agent_periodic_alert_days"
                 dense
-                :rules="[val => val >= 0]"
+                :rules="[val => val >= 0 || 'Periodic days must be 0 or greater']"
               />
             </div>
           </q-card-section>
@@ -338,7 +368,7 @@
                 type="number"
                 v-model.number="template.check_periodic_alert_days"
                 dense
-                :rules="[val => val >= 0]"
+                :rules="[val => val >= 0 || 'Periodic days must be 0 or greater']"
               />
             </div>
           </q-card-section>
@@ -482,8 +512,10 @@ export default {
         is_active: true,
         action: null,
         action_args: [],
+        action_timeout: 15,
         resolved_action: null,
         resolved_action_args: [],
+        resolved_action_timeout: 15,
         email_recipients: [],
         email_from: "",
         text_recipients: [],

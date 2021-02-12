@@ -214,7 +214,7 @@
                   v-else-if="props.row.check_type === 'script'"
                   style="cursor: pointer; text-decoration: underline"
                   class="text-primary"
-                  @click="scriptMoreInfo(props.row)"
+                  @click="showScriptOutput(props.row)"
                   >Last Output</span
                 >
                 <span
@@ -225,7 +225,7 @@
                   >Last Output</span
                 >
               </q-td>
-              <q-td>{{ props.row.last_run }}</q-td>
+              <q-td>{{ props.row.last_run || "Never" }}</q-td>
               <q-td v-if="props.row.assigned_task !== null && props.row.assigned_task.length > 1"
                 >{{ props.row.assigned_task.length }} Tasks</q-td
               >
@@ -257,15 +257,6 @@
     </q-dialog>
     <q-dialog v-model="showScriptCheck">
       <ScriptCheck @close="showScriptCheck = false" :agentpk="selectedAgentPk" :mode="mode" :checkpk="checkpk" />
-    </q-dialog>
-    <q-dialog v-model="showScriptOutput">
-      <ScriptOutput
-        @close="
-          showScriptOutput = false;
-          scriptInfo = {};
-        "
-        :scriptInfo="scriptInfo"
-      />
     </q-dialog>
     <q-dialog v-model="showEventLogOutput">
       <EventLogCheckOutput
@@ -304,7 +295,6 @@ export default {
     WinSvcCheck,
     EventLogCheck,
     ScriptCheck,
-    ScriptOutput,
     EventLogCheckOutput,
   },
   mixins: [mixins],
@@ -319,9 +309,7 @@ export default {
       showWinSvcCheck: false,
       showEventLogCheck: false,
       showScriptCheck: false,
-      showScriptOutput: false,
       showEventLogOutput: false,
-      scriptInfo: {},
       evtlogdata: {},
       columns: [
         { name: "smsalert", field: "text_alert", align: "left" },
@@ -425,10 +413,6 @@ export default {
         html: true,
       });
     },
-    scriptMoreInfo(props) {
-      this.scriptInfo = props;
-      this.showScriptOutput = true;
-    },
     eventLogMoreInfo(props) {
       this.evtlogdata = props;
       this.showEventLogOutput = true;
@@ -458,6 +442,13 @@ export default {
         component: CheckGraph,
         parent: this,
         check: check,
+      });
+    },
+    showScriptOutput(script) {
+      this.$q.dialog({
+        component: ScriptOutput,
+        parent: this,
+        scriptInfo: script,
       });
     },
   },

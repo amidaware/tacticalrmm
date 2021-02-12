@@ -534,12 +534,20 @@ class Agent(BaseAuditModel):
         ):
             templates.append(core.workstation_policy.alert_template)
 
-        # check if client, site, or agent has been excluded from templates in order and return if not
+        # go through the templates and return the first one that isn't excluded
         for template in templates:
+            # check if client, site, or agent has been excluded from template
             if (
                 client.pk in template.excluded_clients.all()
                 or site.pk in template.excluded_sites.all()
                 or self.pk in template.excluded_agents.all()
+            ):
+                continue
+
+            # see if template is excluding desktops
+            if (
+                self.monitoring_type == "workstation"
+                and not template.agent_include_desktops
             ):
                 continue
             else:
@@ -751,7 +759,7 @@ class Agent(BaseAuditModel):
                         alert.resolved_action_execution_time = "{:.4f}".format(
                             r["execution_time"]
                         )
-                        alert.resolved_action_run = True
+                        alert.resolved_action_run = djangotime.now()
                         alert.save()
                     else:
                         logger.error(
@@ -825,7 +833,7 @@ class Agent(BaseAuditModel):
                     alert.action_stdout = r["stdout"]
                     alert.action_stderr = r["stderr"]
                     alert.action_execution_time = "{:.4f}".format(r["execution_time"])
-                    alert.action_run = True
+                    alert.action_run = djangotime.now()
                     alert.save()
                 else:
                     logger.error(

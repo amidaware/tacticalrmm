@@ -78,7 +78,7 @@
               >
                 <span
                   style="cursor: pointer; text-decoration: underline"
-                  @click="scriptMoreInfo(props.row)"
+                  @click="showScriptOutput(props.row)"
                   class="script-cell text-primary"
                   >output</span
                 >
@@ -103,9 +103,6 @@
         </q-table>
       </q-card-section>
 
-      <q-dialog v-model="showScriptOutput" @hide="closeScriptOutput">
-        <ScriptOutput @close="closeScriptOutput" :scriptInfo="scriptInfo" />
-      </q-dialog>
       <q-dialog v-model="showEventLogOutput" @hide="closeEventLogOutput">
         <EventLogCheckOutput @close="closeEventLogOutput" :evtlogdata="evtLogData" />
       </q-dialog>
@@ -120,7 +117,6 @@ import EventLogCheckOutput from "@/components/modals/checks/EventLogCheckOutput"
 export default {
   name: "PolicyStatus",
   components: {
-    ScriptOutput,
     EventLogCheckOutput,
   },
   props: {
@@ -139,10 +135,8 @@ export default {
   },
   data() {
     return {
-      showScriptOutput: false,
       showEventLogOutput: false,
       evtLogData: {},
-      scriptInfo: {},
       data: [],
       columns: [
         { name: "agent", label: "Hostname", field: "agent", align: "left", sortable: true },
@@ -225,13 +219,16 @@ export default {
         html: true,
       });
     },
-    scriptMoreInfo(check) {
-      this.scriptInfo = check;
-      this.showScriptOutput = true;
-    },
     eventLogMoreInfo(check) {
       this.evtLogData = check;
       this.showEventLogOutput = true;
+    },
+    showScriptOutput(script) {
+      this.$q.dialog({
+        component: ScriptOutput,
+        parent: this,
+        scriptInfo: script,
+      });
     },
     show() {
       this.$refs.dialog.show();

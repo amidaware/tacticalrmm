@@ -5,8 +5,10 @@ import json
 import pytz
 from statistics import mean
 
+from django.utils import timezone as djangotime
 from django.db import models
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.postgres.fields import ArrayField
 from rest_framework.fields import JSONField
 from typing import List, Any
@@ -113,10 +115,17 @@ class Check(BaseAuditModel):
 
     # threshold percent for diskspace, cpuload or memory check
     error_threshold = models.PositiveIntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(99)],
         null=True,
         blank=True,
+        default=0,
     )
-    warning_threshold = models.PositiveIntegerField(null=True, blank=True, default=0)
+    warning_threshold = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(99)],
+        default=0,
+    )
     # diskcheck i.e C:, D: etc
     disk = models.CharField(max_length=2, null=True, blank=True)
     # ping checks
@@ -314,7 +323,7 @@ class Check(BaseAuditModel):
                         alert.resolved_action_execution_time = "{:.4f}".format(
                             r["execution_time"]
                         )
-                        alert.resolved_action_run = True
+                        alert.resolved_action_run = djangotime.now()
                         alert.save()
                     else:
                         logger.error(
@@ -326,6 +335,11 @@ class Check(BaseAuditModel):
                 alert = Alert.create_check_alert(self)
             else:
                 alert = Alert.objects.get(assigned_check=self, resolved=False)
+
+                # check if alert severity changed on check and update the alert
+                if self.alert_severity != alert.severity:
+                    alert.severity = self.alert_severity
+                    alert.save(update_fields=["severity"])
 
             # create alert in dashboard if enabled
             if (
@@ -384,7 +398,7 @@ class Check(BaseAuditModel):
                     alert.action_stdout = r["stdout"]
                     alert.action_stderr = r["stderr"]
                     alert.action_execution_time = "{:.4f}".format(r["execution_time"])
-                    alert.action_run = True
+                    alert.action_run = djangotime.now()
                     alert.save()
                 else:
                     logger.error(
@@ -408,15 +422,12 @@ class Check(BaseAuditModel):
 
             avg = int(mean(self.history))
 
-            if self.warning_threshold and avg > self.warning_threshold:
-                self.status = "failing"
-                self.alert_severity = "warning"
-            else:
-                self.status = "passing"
-
             if self.error_threshold and avg > self.error_threshold:
                 self.status = "failing"
                 self.alert_severity = "error"
+            elif self.warning_threshold and avg > self.warning_threshold:
+                self.status = "failing"
+                self.alert_severity = "warning"
             else:
                 self.status = "passing"
 
@@ -430,25 +441,23 @@ class Check(BaseAuditModel):
                 total = bytes2human(data["total"])
                 free = bytes2human(data["free"])
 
-                if (
+                if self.error_threshold and (100 - percent_used) < self.error_threshold:
+                    self.status = "failing"
+                    self.alert_severity = "error"
+                elif (
                     self.warning_threshold
                     and (100 - percent_used) < self.warning_threshold
                 ):
                     self.status = "failing"
                     self.alert_severity = "warning"
-                else:
-                    self.status = "passing"
 
-                if self.error_threshold and (100 - percent_used) < self.error_threshold:
-                    self.status = "failing"
-                    self.alert_severity = "error"
                 else:
                     self.status = "passing"
 
                 self.more_info = f"Total: {total}B, Free: {free}B"
 
                 # add check history
-                self.add_check_history(percent_used)
+                self.add_check_history(100 - percent_used)
             else:
                 self.status = "failing"
                 self.alert_severity = "error"
@@ -630,15 +639,11 @@ class Check(BaseAuditModel):
         # handle status
         if self.status == "failing":
             self.fail_count += 1
-            self.save(update_fields=["status", "fail_count"])
+            self.save(update_fields=["status", "fail_count", "alert_severity"])
 
         elif self.status == "passing":
-
-            if self.fail_count != 0:
-                self.fail_count = 0
-                self.save(update_fields=["status", "fail_count"])
-            else:
-                self.save(update_fields=["status"])
+            self.fail_count = 0
+            self.save(update_fields=["status", "fail_count", "alert_severity"])
 
         self.handle_alert()
 

@@ -40,19 +40,30 @@ class CheckSerializer(serializers.ModelSerializer):
             check_type = val["check_type"]
         except KeyError:
             return val
+
         # disk checks
         # make sure no duplicate diskchecks exist for an agent/policy
-        if check_type == "diskspace" and not self.instance:  # only on create
-            checks = (
-                Check.objects.filter(**self.context)
-                .filter(check_type="diskspace")
-                .exclude(managed_by_policy=True)
-            )
-            for check in checks:
-                if val["disk"] in check.disk:
-                    raise serializers.ValidationError(
-                        f"A disk check for Drive {val['disk']} already exists!"
-                    )
+        if check_type == "diskspace":
+            if not self.instance:  # only on create
+                checks = (
+                    Check.objects.filter(**self.context)
+                    .filter(check_type="diskspace")
+                    .exclude(managed_by_policy=True)
+                )
+                for check in checks:
+                    if val["disk"] in check.disk:
+                        raise serializers.ValidationError(
+                            f"A disk check for Drive {val['disk']} already exists!"
+                        )
+
+            if (
+                val["warning_threshold"] < val["error_threshold"]
+                and val["warning_threshold"] > 0
+                and val["error_threshold"] > 0
+            ):
+                raise serializers.ValidationError(
+                    f"Warning threshold must be greater than Error Threshold"
+                )
 
         # ping checks
         if check_type == "ping":
@@ -74,6 +85,14 @@ class CheckSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     "A cpuload check for this agent already exists"
                 )
+            if (
+                val["warning_threshold"] > val["error_threshold"]
+                and val["warning_threshold"] > 0
+                and val["error_threshold"] > 0
+            ):
+                raise serializers.ValidationError(
+                    f"Warning threshold must be less than Error Threshold"
+                )
 
         if check_type == "memory" and not self.instance:
             if (
@@ -83,6 +102,15 @@ class CheckSerializer(serializers.ModelSerializer):
             ):
                 raise serializers.ValidationError(
                     "A memory check for this agent already exists"
+                )
+
+            if (
+                val["warning_threshold"] > val["error_threshold"]
+                and val["warning_threshold"] > 0
+                and val["error_threshold"] > 0
+            ):
+                raise serializers.ValidationError(
+                    f"Warning threshold must be less than Error Threshold"
                 )
 
         return val

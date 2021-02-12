@@ -113,6 +113,24 @@
                 <q-icon name="flag" size="sm" class="cursor-pointer" @click="resolveAlert(props.row)">
                   <q-tooltip>Resolve alert</q-tooltip>
                 </q-icon>
+                <q-icon
+                  v-if="props.row.action_run"
+                  name="mdi-archive-alert"
+                  size="sm"
+                  class="cursor-pointer"
+                  @click="showScriptOutput(props.row, true)"
+                >
+                  <q-tooltip>Show failure action run results</q-tooltip>
+                </q-icon>
+                <q-icon
+                  v-if="props.row.resolved_action_run"
+                  name="mdi-archive-check"
+                  size="sm"
+                  class="cursor-pointer"
+                  @click="showScriptOutput(props.row, false)"
+                >
+                  <q-tooltip>Show resolved action run results</q-tooltip>
+                </q-icon>
               </div>
             </q-td>
           </template>
@@ -130,6 +148,7 @@
 
 <script>
 import mixins from "@/mixins/mixins";
+import ScriptOutput from "@/components/modals/checks/ScriptOutput";
 
 export default {
   name: "AlertsOverview",
@@ -379,6 +398,30 @@ export default {
               this.notifyError("There was an error resolving alerts");
             });
         });
+    },
+    showScriptOutput(alert, failure = false) {
+      let results = {};
+      if (failure) {
+        results.readable_desc = `${alert.alert_type} failure action results`;
+        results.execution_time = alert.action_execution_time;
+        results.retcode = alert.action_retcode;
+        results.stdout = alert.action_stdout;
+        results.errout = alert.action_errout;
+        results.last_run = alert.action_run;
+      } else {
+        results.readable_desc = `${alert.alert_type} resolved action results`;
+        results.execution_time = alert.resolved_action_execution_time;
+        results.retcode = alert.resolved_action_retcode;
+        results.stdout = alert.resolved_action_stdout;
+        results.errout = alert.resolved_action_errout;
+        results.last_run = alert.resolved_action_run;
+      }
+
+      this.$q.dialog({
+        component: ScriptOutput,
+        parent: this,
+        scriptInfo: results,
+      });
     },
     alertColor(severity) {
       if (severity === "error") {

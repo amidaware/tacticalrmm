@@ -3,6 +3,7 @@ import random
 import string
 import datetime as dt
 
+from django.utils import timezone as djangotime
 from django.conf import settings
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
@@ -289,7 +290,7 @@ class AutomatedTask(BaseAuditModel):
                         alert.resolved_action_execution_time = "{:.4f}".format(
                             r["execution_time"]
                         )
-                        alert.resolved_action_run = True
+                        alert.resolved_action_run = djangotime.now()
                         alert.save()
                     else:
                         logger.error(
@@ -302,6 +303,11 @@ class AutomatedTask(BaseAuditModel):
                 alert = Alert.create_task_alert(self)
             else:
                 alert = Alert.objects.get(assigned_task=self, resolved=False)
+
+                # check if alert severity changed on task and update the alert
+                if self.alert_severity != alert.severity:
+                    alert.severity = self.alert_severity
+                    alert.save(update_fields=["severity"])
 
             # create alert in dashboard if enabled
             if (
@@ -359,7 +365,7 @@ class AutomatedTask(BaseAuditModel):
                     alert.action_stdout = r["stdout"]
                     alert.action_stderr = r["stderr"]
                     alert.action_execution_time = "{:.4f}".format(r["execution_time"])
-                    alert.action_run = True
+                    alert.action_run = djangotime.now()
                     alert.save()
                 else:
                     logger.error(

@@ -172,7 +172,7 @@
                 <span
                   style="cursor: pointer; text-decoration: underline"
                   class="text-primary"
-                  @click="scriptMoreInfo(props.row)"
+                  @click="showScriptOutput(props.row)"
                   >output</span
                 >
               </q-td>
@@ -191,16 +191,6 @@
     <q-dialog v-model="showAddAutomatedTask" position="top">
       <AddAutomatedTask @close="showAddAutomatedTask = false" />
     </q-dialog>
-
-    <q-dialog v-model="showScriptOutput">
-      <ScriptOutput
-        @close="
-          showScriptOutput = false;
-          scriptInfo = {};
-        "
-        :scriptInfo="scriptInfo"
-      />
-    </q-dialog>
   </div>
 </template>
 
@@ -214,15 +204,13 @@ import ScriptOutput from "@/components/modals/checks/ScriptOutput";
 
 export default {
   name: "AutomatedTasksTab",
-  components: { AddAutomatedTask, ScriptOutput },
+  components: { AddAutomatedTask },
   mixins: [mixins],
   data() {
     return {
       showAddAutomatedTask: false,
       showEditAutomatedTask: false,
-      showScriptOutput: false,
       editTaskPk: null,
-      showScriptOutput: false,
       scriptInfo: {},
       columns: [
         { name: "enabled", align: "left", field: "enabled" },
@@ -310,9 +298,12 @@ export default {
     refreshTasks(id) {
       this.$store.dispatch("loadAutomatedTasks", id);
     },
-    scriptMoreInfo(props) {
-      this.scriptInfo = props;
-      this.showScriptOutput = true;
+    showScriptOutput(script) {
+      this.$q.dialog({
+        component: ScriptOutput,
+        parent: this,
+        scriptInfo: script,
+      });
     },
     showEditTask(task) {
       this.$q

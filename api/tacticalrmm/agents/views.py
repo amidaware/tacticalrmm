@@ -715,7 +715,6 @@ def run_script(request):
             agentpk=agent.pk,
             scriptpk=script.pk,
             nats_timeout=req_timeout,
-            nats_data=data,
             emails=emails,
         )
         return Response(f"{script.name} will now be run on {agent.hostname}")

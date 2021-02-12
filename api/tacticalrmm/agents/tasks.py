@@ -213,12 +213,11 @@ def handle_agent_recovery_task(pk: int) -> None:
 
 @app.task
 def run_script_email_results_task(
-    agentpk: int, scriptpk: int, nats_timeout: int, nats_data: dict, emails: List[str]
+    agentpk: int, scriptpk: int, nats_timeout: int, emails: List[str]
 ):
     agent = Agent.objects.get(pk=agentpk)
     script = Script.objects.get(pk=scriptpk)
-    nats_data["func"] = "runscriptfull"
-    r = asyncio.run(agent.nats_cmd(nats_data, timeout=nats_timeout))
+    r = agent.run_script(script, full=True, timeout=nats_timeout, wait=True)
     if r == "timeout":
         logger.error(f"{agent.hostname} timed out running script.")
         return

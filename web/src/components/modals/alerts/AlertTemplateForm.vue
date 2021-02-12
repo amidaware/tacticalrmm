@@ -56,8 +56,8 @@
               />
             </div>
 
-            <div class="col-2 q-my-sm">Failure action timeout</div>
-            <div class="col-10 q-mb-sm">
+            <div class="col-2">Failure action timeout (s)</div>
+            <div class="col-10">
               <q-input
                 outlined
                 type="number"
@@ -66,7 +66,7 @@
                 :rules="[
                   val => !!val || 'Failure action timeout is required',
                   val => val > 0 || 'Timeout must be greater than 0',
-                  val => val > 60 || 'Timeout must be 60 or less',
+                  val => val <= 60 || 'Timeout must be 60 or less',
                 ]"
               />
             </div>
@@ -108,8 +108,8 @@
               />
             </div>
 
-            <div class="col-2 q-my-sm">Resolved action timeout</div>
-            <div class="col-10 q-mb-sm">
+            <div class="col-2">Resolved action timeout (s)</div>
+            <div class="col-10">
               <q-input
                 outlined
                 type="number"
@@ -118,7 +118,7 @@
                 :rules="[
                   val => !!val || 'Resolved action timeout is required',
                   val => val > 0 || 'Timeout must be greater than 0',
-                  val => val > 60 || 'Timeout must be 60 or less',
+                  val => val <= 60 || 'Timeout must be 60 or less',
                 ]"
               />
             </div>

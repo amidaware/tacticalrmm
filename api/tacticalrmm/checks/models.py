@@ -309,7 +309,7 @@ class Check(BaseAuditModel):
                     r = self.agent.run_script(
                         alert_template.resolved_action,
                         alert_template.resolved_action_args,
-                        timeout=15,
+                        timeout=alert_template.resolved_action_timeout,
                         wait=True,
                         full=True,
                         run_on_any=True,
@@ -386,7 +386,7 @@ class Check(BaseAuditModel):
                 r = self.agent.run_script(
                     alert_template.action,
                     alert_template.action_args,
-                    timeout=30,
+                    timeout=alert_template.action_timeout,
                     wait=True,
                     full=True,
                     run_on_any=True,

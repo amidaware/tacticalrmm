@@ -55,13 +55,11 @@ class Alert(models.Model):
     resolved_sms_sent = models.DateTimeField(null=True, blank=True)
     hidden = models.BooleanField(default=False)
     action_run = models.DateTimeField(null=True, blank=True)
-    action_timeout = models.PositiveIntegerField(null=True, blank=True)
     action_stdout = models.TextField(null=True, blank=True)
     action_stderr = models.TextField(null=True, blank=True)
     action_retcode = models.IntegerField(null=True, blank=True)
     action_execution_time = models.CharField(max_length=100, null=True, blank=True)
     resolved_action_run = models.DateTimeField(null=True, blank=True)
-    resolved_action_timeout = models.PositiveIntegerField(null=True, blank=True)
     resolved_action_stdout = models.TextField(null=True, blank=True)
     resolved_action_stderr = models.TextField(null=True, blank=True)
     resolved_action_retcode = models.IntegerField(null=True, blank=True)
@@ -136,6 +134,7 @@ class AlertTemplate(models.Model):
         blank=True,
         default=list,
     )
+    action_timeout = models.PositiveIntegerField(default=15)
     resolved_action = models.ForeignKey(
         "scripts.Script",
         related_name="resolved_alert_template",
@@ -149,6 +148,7 @@ class AlertTemplate(models.Model):
         blank=True,
         default=list,
     )
+    resolved_action_timeout = models.PositiveIntegerField(default=15)
 
     # overrides the global recipients
     email_recipients = ArrayField(

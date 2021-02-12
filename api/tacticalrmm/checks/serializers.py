@@ -56,6 +56,11 @@ class CheckSerializer(serializers.ModelSerializer):
                             f"A disk check for Drive {val['disk']} already exists!"
                         )
 
+            if not val["warning_threshold"] and not val["error_threshold"]:
+                raise serializers.ValidationError(
+                    f"Warning threshold or Error Threshold must be set"
+                )
+
             if (
                 val["warning_threshold"] < val["error_threshold"]
                 and val["warning_threshold"] > 0
@@ -85,6 +90,12 @@ class CheckSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     "A cpuload check for this agent already exists"
                 )
+
+            if not val["warning_threshold"] and not val["error_threshold"]:
+                raise serializers.ValidationError(
+                    f"Warning threshold or Error Threshold must be set"
+                )
+
             if (
                 val["warning_threshold"] > val["error_threshold"]
                 and val["warning_threshold"] > 0
@@ -102,6 +113,11 @@ class CheckSerializer(serializers.ModelSerializer):
             ):
                 raise serializers.ValidationError(
                     "A memory check for this agent already exists"
+                )
+
+            if not val["warning_threshold"] and not val["error_threshold"]:
+                raise serializers.ValidationError(
+                    f"Warning threshold or Error Threshold must be set"
                 )
 
             if (

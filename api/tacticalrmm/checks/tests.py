@@ -23,7 +23,7 @@ class TestCheckViews(TacticalTestCase):
 
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data, serializer.data)
-        self.check_not_authenticated("post", url)
+        self.check_not_authenticated("get", url)
 
     def test_add_disk_check(self):
         # setup data
@@ -37,6 +37,7 @@ class TestCheckViews(TacticalTestCase):
                 "check_type": "diskspace",
                 "disk": "C:",
                 "error_threshold": 55,
+                "warning_threshold": 0,
                 "fails_b4_alert": 3,
             },
         }
@@ -51,12 +52,45 @@ class TestCheckViews(TacticalTestCase):
                 "check_type": "diskspace",
                 "disk": "C:",
                 "error_threshold": 55,
+                "warning_threshold": 0,
                 "fails_b4_alert": 3,
             },
         }
 
         resp = self.client.post(url, invalid_payload, format="json")
         self.assertEqual(resp.status_code, 400)
+
+        # this should fail because both error and warning threshold are 0
+        invalid_payload = {
+            "pk": agent.pk,
+            "check": {
+                "check_type": "diskspace",
+                "disk": "C:",
+                "error_threshold": 0,
+                "warning_threshold": 0,
+                "fails_b4_alert": 3,
+            },
+        }
+
+        resp = self.client.post(url, invalid_payload, format="json")
+        self.assertEqual(resp.status_code, 400)
+
+        # this should fail because both error is greater than warning threshold
+        invalid_payload = {
+            "pk": agent.pk,
+            "check": {
+                "check_type": "diskspace",
+                "disk": "C:",
+                "error_threshold": 50,
+                "warning_threshold": 30,
+                "fails_b4_alert": 3,
+            },
+        }
+
+        resp = self.client.post(url, invalid_payload, format="json")
+        self.assertEqual(resp.status_code, 400)
+
+        self.check_not_authenticated("post", url)
 
     def test_add_cpuload_check(self):
         url = "/checks/checks/"
@@ -66,6 +100,7 @@ class TestCheckViews(TacticalTestCase):
             "check": {
                 "check_type": "cpuload",
                 "error_threshold": 66,
+                "warning_threshold": 0,
                 "fails_b4_alert": 9,
             },
         }
@@ -81,6 +116,36 @@ class TestCheckViews(TacticalTestCase):
             "A cpuload check for this agent already exists",
         )
 
+        # should fail because both error and warning thresholds are 0
+        invalid_payload = {
+            "pk": agent.pk,
+            "check": {
+                "check_type": "cpuload",
+                "error_threshold": 0,
+                "warning_threshold": 0,
+                "fails_b4_alert": 9,
+            },
+        }
+
+        resp = self.client.post(url, invalid_payload, format="json")
+        self.assertEqual(resp.status_code, 400)
+
+        # should fail because error is less than warning
+        invalid_payload = {
+            "pk": agent.pk,
+            "check": {
+                "check_type": "cpuload",
+                "error_threshold": 10,
+                "warning_threshold": 50,
+                "fails_b4_alert": 9,
+            },
+        }
+
+        resp = self.client.post(url, invalid_payload, format="json")
+        self.assertEqual(resp.status_code, 400)
+
+        self.check_not_authenticated("post", url)
+
     def test_add_memory_check(self):
         url = "/checks/checks/"
         agent = baker.make_recipe("agents.agent")
@@ -89,6 +154,7 @@ class TestCheckViews(TacticalTestCase):
             "check": {
                 "check_type": "memory",
                 "error_threshold": 78,
+                "warning_threshold": 0,
                 "fails_b4_alert": 1,
             },
         }
@@ -103,6 +169,34 @@ class TestCheckViews(TacticalTestCase):
             resp.json()["non_field_errors"][0],
             "A memory check for this agent already exists",
         )
+
+        # should fail because both error and warning thresholds are 0
+        invalid_payload = {
+            "pk": agent.pk,
+            "check": {
+                "check_type": "memory",
+                "error_threshold": 0,
+                "warning_threshold": 0,
+                "fails_b4_alert": 9,
+            },
+        }
+
+        resp = self.client.post(url, invalid_payload, format="json")
+        self.assertEqual(resp.status_code, 400)
+
+        # should fail because error is less than warning
+        invalid_payload = {
+            "pk": agent.pk,
+            "check": {
+                "check_type": "memory",
+                "error_threshold": 10,
+                "warning_threshold": 50,
+                "fails_b4_alert": 9,
+            },
+        }
+
+        resp = self.client.post(url, invalid_payload, format="json")
+        self.assertEqual(resp.status_code, 400)
 
     def test_get_policy_disk_check(self):
         # setup data
@@ -130,7 +224,33 @@ class TestCheckViews(TacticalTestCase):
                 "check_type": "diskspace",
                 "disk": "M:",
                 "error_threshold": 86,
+                "warning_threshold": 0,
                 "fails_b4_alert": 2,
+            },
+        }
+
+        # should fail because both error and warning thresholds are 0
+        invalid_payload = {
+            "policy": policy.pk,
+            "check": {
+                "check_type": "diskspace",
+                "error_threshold": 0,
+                "warning_threshold": 0,
+                "fails_b4_alert": 9,
+            },
+        }
+
+        resp = self.client.post(url, invalid_payload, format="json")
+        self.assertEqual(resp.status_code, 400)
+
+        # should fail because warning is less than error
+        invalid_payload = {
+            "policy": policy.pk,
+            "check": {
+                "check_type": "diskspace",
+                "error_threshold": 80,
+                "warning_threshold": 50,
+                "fails_b4_alert": 9,
             },
         }
 
@@ -144,6 +264,7 @@ class TestCheckViews(TacticalTestCase):
                 "check_type": "diskspace",
                 "disk": "M:",
                 "error_threshold": 34,
+                "warning_threshold": 0,
                 "fails_b4_alert": 9,
             },
         }

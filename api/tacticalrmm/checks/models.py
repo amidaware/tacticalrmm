@@ -789,9 +789,13 @@ class Check(BaseAuditModel):
 
         elif self.check_type == "winsvc":
 
-            status = list(
-                filter(lambda x: x["name"] == self.svc_name, self.agent.services)
-            )[0]["status"]
+            try:
+                status = list(
+                    filter(lambda x: x["name"] == self.svc_name, self.agent.services)
+                )[0]["status"]
+            # catch services that don't exist if policy check
+            except:
+                status = "Unknown"
 
             body = subject + f" - Status: {status.upper()}"
 

@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from core.models import CoreSettings
 
+from django.utils import timezone as djangotime
 from tacticalrmm.test import TacticalTestCase
 from model_bakery import baker, seq
 
@@ -10,7 +11,6 @@ from .serializers import (
     AlertTemplateSerializer,
     AlertTemplateRelationSerializer,
 )
-from typing import List, Any
 
 
 class TestAlertsViews(TacticalTestCase):
@@ -21,28 +21,38 @@ class TestAlertsViews(TacticalTestCase):
     def test_get_alerts(self):
         url = "/alerts/alerts/"
 
+        # create check, task, and agent to test each serializer function
+        check = baker.make_recipe("checks.diskspace_check")
+        task = baker.make("autotasks.AutomatedTask")
+        agent = baker.make_recipe("agents.agent")
         # setup data
         alerts = baker.make(
             "alerts.Alert",
+            agent=agent,
             alert_time=seq(datetime.now(), timedelta(days=15)),
             severity="warning",
             _quantity=3,
         )
         baker.make(
             "alerts.Alert",
+            assigned_check=check,
             alert_time=seq(datetime.now(), timedelta(days=15)),
             severity="error",
             _quantity=7,
         )
         baker.make(
             "alerts.Alert",
+            assigned_task=task,
             snoozed=True,
+            snooze_until=djangotime.now(),
             alert_time=seq(datetime.now(), timedelta(days=15)),
             _quantity=2,
         )
         baker.make(
             "alerts.Alert",
+            agent=agent,
             resolved=True,
+            resolved_on=djangotime.now(),
             alert_time=seq(datetime.now(), timedelta(days=15)),
             _quantity=9,
         )
@@ -330,4 +340,38 @@ class TestAlertsViews(TacticalTestCase):
         self.assertEqual(len(resp.data["sites"]), 3)
         self.assertTrue(
             AlertTemplate.objects.get(pk=alert_template.pk).is_default_template
+        )
+
+
+class TestAlertTasks(TacticalTestCase):
+    def test_unsnooze_alert_task(self):
+        from alerts.tasks import unsnooze_alerts
+
+        # these will be unsnoozed whent eh function is run
+        not_snoozed = baker.make(
+            "alerts.Alert",
+            snoozed=True,
+            snooze_until=seq(datetime.now(), timedelta(days=15)),
+            _quantity=5,
+        )
+
+        # these will still be snoozed after the function is run
+        snoozed = baker.make(
+            "alerts.Alert",
+            snoozed=True,
+            snooze_until=seq(datetime.now(), timedelta(days=-15)),
+            _quantity=5,
+        )
+
+        unsnooze_alerts()
+
+        self.assertFalse(
+            Alert.objects.filter(
+                pk__in=[alert.pk for alert in not_snoozed], snoozed=False
+            ).exists()
+        )
+        self.assertTrue(
+            Alert.objects.filter(
+                pk__in=[alert.pk for alert in snoozed], snoozed=False
+            ).exists()
         )

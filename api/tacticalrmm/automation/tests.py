@@ -907,206 +907,6 @@ class TestPolicyTasks(TacticalTestCase):
                 self.assertEqual(task.parent_task, tasks[2].id)
                 self.assertEqual(task.name, tasks[2].name)
 
-    @patch("automation.tasks.generate_agent_checks_by_location_task.delay")
-    def test_generate_agent_tasks_by_location(
-        self, generate_agent_checks_by_location_task
-    ):
-        from automation.tasks import (
-            generate_agent_tasks_by_location_task as generate_agent_tasks,
-        )
-
-        # setup data
-        policy = baker.make("automation.Policy", active=True)
-        baker.make(
-            "autotasks.AutomatedTask", policy=policy, name=seq("Task"), _quantity=3
-        )
-
-        server_agent = baker.make_recipe("agents.server_agent")
-        workstation_agent = baker.make_recipe("agents.workstation_agent")
-
-        # nothing should have tasks yet
-        self.assertEqual(
-            Agent.objects.get(pk=workstation_agent.id).autotasks.count(), 0
-        )
-        self.assertEqual(Agent.objects.get(pk=server_agent.id).autotasks.count(), 0)
-
-        # set workstation policy on client and policy tasks should be there
-        workstation_agent.client.workstation_policy = policy
-        workstation_agent.client.save()
-
-        # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site__client_id": workstation_agent.client.pk},
-            mon_type="workstation",
-            create_tasks=True,
-        )
-        generate_agent_checks_by_location_task.reset_mock()
-
-        generate_agent_tasks(
-            location={"site__client_id": workstation_agent.client.pk},
-            mon_type="workstation",
-        )
-
-        # make sure the tasks were added
-        self.assertEqual(
-            Agent.objects.get(pk=workstation_agent.id).autotasks.count(), 3
-        )
-        self.assertEqual(Agent.objects.get(pk=server_agent.id).autotasks.count(), 0)
-
-        # remove workstation policy from client
-        workstation_agent.client.workstation_policy = None
-        workstation_agent.client.save()
-
-        # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site__client_id": workstation_agent.client.pk},
-            mon_type="workstation",
-            create_tasks=True,
-        )
-        generate_agent_checks_by_location_task.reset_mock()
-
-        generate_agent_tasks(
-            location={"site__client_id": workstation_agent.client.pk},
-            mon_type="workstation",
-        )
-
-        # make sure the tasks were removed
-        self.assertEqual(
-            Agent.objects.get(pk=workstation_agent.id).autotasks.count(), 3
-        )
-        self.assertEqual(Agent.objects.get(pk=server_agent.id).autotasks.count(), 0)
-
-        # set server policy on client and policy tasks should be there
-        server_agent.client.server_policy = policy
-        server_agent.client.save()
-
-        # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site__client_id": server_agent.client.pk},
-            mon_type="server",
-            create_tasks=True,
-        )
-        generate_agent_checks_by_location_task.reset_mock()
-
-        generate_agent_tasks(
-            location={"site__client_id": server_agent.client.pk}, mon_type="server"
-        )
-
-        # make sure the tasks were added (Will be there but pending deletion)
-        self.assertEqual(Agent.objects.get(pk=server_agent.id).autotasks.count(), 3)
-        self.assertEqual(
-            Agent.objects.get(pk=workstation_agent.id).autotasks.count(), 3
-        )
-
-        # remove server policy from client
-        server_agent.client.server_policy = None
-        server_agent.client.save()
-
-        # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site__client_id": server_agent.client.pk},
-            mon_type="server",
-            create_tasks=True,
-        )
-        generate_agent_checks_by_location_task.reset_mock()
-
-        generate_agent_tasks(
-            location={"site__client_id": server_agent.client.pk}, mon_type="server"
-        )
-
-        # make sure the tasks were removed
-        self.assertEqual(Agent.objects.get(pk=server_agent.id).autotasks.count(), 3)
-        self.assertEqual(
-            Agent.objects.get(pk=workstation_agent.id).autotasks.count(), 3
-        )
-
-        # set workstation policy on site and policy checks should be there
-        workstation_agent.site.workstation_policy = policy
-        workstation_agent.site.save()
-
-        # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site_id": workstation_agent.site.pk},
-            mon_type="workstation",
-            create_tasks=True,
-        )
-        generate_agent_checks_by_location_task.reset_mock()
-
-        generate_agent_tasks(
-            location={"site_id": workstation_agent.client.pk}, mon_type="workstation"
-        )
-
-        # make sure the tasks were added
-        self.assertEqual(
-            Agent.objects.get(pk=workstation_agent.id).autotasks.count(), 3
-        )
-        self.assertEqual(Agent.objects.get(pk=server_agent.id).autotasks.count(), 3)
-
-        # remove workstation policy from site
-        workstation_agent.site.workstation_policy = None
-        workstation_agent.site.save()
-
-        # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site_id": workstation_agent.site.pk},
-            mon_type="workstation",
-            create_tasks=True,
-        )
-        generate_agent_checks_by_location_task.reset_mock()
-
-        generate_agent_tasks(
-            location={"site_id": workstation_agent.client.pk}, mon_type="workstation"
-        )
-
-        # make sure tasks were removed
-        self.assertEqual(
-            Agent.objects.get(pk=workstation_agent.id).autotasks.count(), 3
-        )
-        self.assertEqual(Agent.objects.get(pk=server_agent.id).autotasks.count(), 3)
-
-        # set server policy on site and policy checks should be there
-        server_agent.site.server_policy = policy
-        server_agent.site.save()
-
-        # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site_id": server_agent.site.pk},
-            mon_type="server",
-            create_tasks=True,
-        )
-        generate_agent_checks_by_location_task.reset_mock()
-
-        generate_agent_tasks(
-            location={"site_id": server_agent.client.pk}, mon_type="server"
-        )
-
-        # make sure tasks were added
-        self.assertEqual(Agent.objects.get(pk=server_agent.id).autotasks.count(), 3)
-        self.assertEqual(
-            Agent.objects.get(pk=workstation_agent.id).autotasks.count(), 3
-        )
-
-        # remove server policy from site
-        server_agent.site.server_policy = None
-        server_agent.site.save()
-
-        # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site_id": server_agent.site.pk},
-            mon_type="server",
-            create_tasks=True,
-        )
-        generate_agent_checks_by_location_task.reset_mock()
-
-        generate_agent_tasks(
-            location={"site_id": server_agent.client.pk}, mon_type="server"
-        )
-
-        self.assertEqual(Agent.objects.get(pk=server_agent.id).autotasks.count(), 3)
-        self.assertEqual(
-            Agent.objects.get(pk=workstation_agent.id).autotasks.count(), 3
-        )
-
     @patch("autotasks.tasks.delete_win_task_schedule.delay")
     def test_delete_policy_tasks(self, delete_win_task_schedule):
         from .tasks import delete_policy_autotask_task
@@ -1157,3 +957,23 @@ class TestPolicyTasks(TacticalTestCase):
         enable_or_disable_win_task.assert_called_with(
             agent.autotasks.get(parent_task=tasks[0].id).id, False
         )
+
+    @patch("agents.models.Agent.generate_tasks_from_policies")
+    @patch("agents.models.Agent.generate_checks_from_policies")
+    def test_generate_agent_checks_with_agentpks(self, generate_checks, generate_tasks):
+        from automation.tasks import generate_agent_checks_task
+
+        agents = baker.make_recipe("agents.agent", _quantity=5)
+
+        # reset because creating agents triggers it
+        generate_checks.reset_mock()
+        generate_tasks.reset_mock()
+
+        generate_agent_checks_task([agent.pk for agent in agents])
+        self.assertEquals(generate_checks.call_count, 5)
+        generate_tasks.assert_not_called()
+        generate_checks.reset_mock()
+
+        generate_agent_checks_task([agent.pk for agent in agents], create_tasks=True)
+        self.assertEquals(generate_checks.call_count, 5)
+        self.assertEquals(generate_checks.call_count, 5)

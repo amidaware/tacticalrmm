@@ -217,7 +217,7 @@ def run_script_email_results_task(
 ):
     agent = Agent.objects.get(pk=agentpk)
     script = Script.objects.get(pk=scriptpk)
-    r = agent.run_script(script, full=True, timeout=nats_timeout, wait=True)
+    r = agent.run_script(scriptpk=script.pk, full=True, timeout=nats_timeout, wait=True)
     if r == "timeout":
         logger.error(f"{agent.hostname} timed out running script.")
         return

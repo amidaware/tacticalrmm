@@ -702,8 +702,9 @@ def run_script(request):
     )
 
     if output == "wait":
-        r = agent.run_script(script, timeout=req_timeout, wait=True)
+        r = agent.run_script(scriptpk=script.pk, timeout=req_timeout, wait=True)
         return Response(r)
+
     elif output == "email":
         if not pyver.parse(agent.version) >= pyver.parse("1.1.12"):
             return notify_error("Requires agent version 1.1.12 or greater")
@@ -717,10 +718,10 @@ def run_script(request):
             nats_timeout=req_timeout,
             emails=emails,
         )
-        return Response(f"{script.name} will now be run on {agent.hostname}")
     else:
-        agent.run_script(script, timeout=req_timeout)
-        return Response(f"{script.name} will now be run on {agent.hostname}")
+        agent.run_script(scriptpk=script.pk, timeout=req_timeout)
+
+    return Response(f"{script.name} will now be run on {agent.hostname}")
 
 
 @api_view()

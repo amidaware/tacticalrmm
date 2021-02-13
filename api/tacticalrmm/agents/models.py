@@ -24,7 +24,6 @@ from alerts.models import AlertTemplate
 
 from core.models import CoreSettings, TZ_CHOICES
 from logs.models import BaseAuditModel
-from scripts.models import Script
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -273,13 +272,17 @@ class Agent(BaseAuditModel):
 
     def run_script(
         self,
-        script: Script,
+        scriptpk: int,
         args: List[str] = [],
         timeout: int = 120,
         full: bool = False,
         wait: bool = False,
-        run_on_any=False,
+        run_on_any: bool = False,
     ) -> Any:
+
+        from scripts.models import Script
+
+        script = Script.objects.get(pk=scriptpk)
         data = {
             "func": "runscriptfull" if full else "runscript",
             "timeout": timeout,
@@ -743,8 +746,8 @@ class Agent(BaseAuditModel):
                     and alert_template.resolved_action
                 ):
                     r = self.run_script(
-                        alert_template.resolved_action,
-                        alert_template.resolved_action_args,
+                        scriptpk=alert_template.resolved_action.pk,
+                        args=alert_template.resolved_action_args,
                         timeout=alert_template.resolved_action_timeout,
                         wait=True,
                         full=True,
@@ -819,8 +822,8 @@ class Agent(BaseAuditModel):
             # check if any scripts should be run
             if not alert.action_run and alert_template and alert_template.action:
                 r = self.run_script(
-                    alert_template.action,
-                    alert_template.action_args,
+                    scriptpk=alert_template.action.pk,
+                    args=alert_template.action_args,
                     timeout=alert_template.action_timeout,
                     wait=True,
                     full=True,

@@ -307,8 +307,8 @@ class Check(BaseAuditModel):
                     and not alert.resolved_action_run
                 ):
                     r = self.agent.run_script(
-                        alert_template.resolved_action,
-                        alert_template.resolved_action_args,
+                        scriptpk=alert_template.resolved_action.pk,
+                        args=alert_template.resolved_action_args,
                         timeout=alert_template.resolved_action_timeout,
                         wait=True,
                         full=True,
@@ -384,8 +384,8 @@ class Check(BaseAuditModel):
             # check if any scripts should be run
             if alert_template and alert_template.action and not alert.action_run:
                 r = self.agent.run_script(
-                    alert_template.action,
-                    alert_template.action_args,
+                    scriptpk=alert_template.action.pk,
+                    args=alert_template.action_args,
                     timeout=alert_template.action_timeout,
                     wait=True,
                     full=True,

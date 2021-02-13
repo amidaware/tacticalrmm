@@ -556,6 +556,10 @@ class TestPolicyTasks(TacticalTestCase):
         policy = baker.make("automation.Policy", active=True)
         self.create_checks(policy=policy)
 
+        baker.make(
+            "autotasks.AutomatedTask", policy=policy, name=seq("Task"), _quantity=3
+        )
+
         server_agent = baker.make_recipe("agents.server_agent")
         workstation_agent = baker.make_recipe("agents.workstation_agent")
 

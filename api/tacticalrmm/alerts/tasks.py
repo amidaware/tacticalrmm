@@ -13,8 +13,3 @@ def unsnooze_alerts() -> str:
     )
 
     return "ok"
-
-
-@app.task
-def periodic_alert_notifications() -> str:
-    return "not implemented"

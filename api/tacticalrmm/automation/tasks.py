@@ -7,6 +7,7 @@ from tacticalrmm.celery import app
 
 
 @app.task
+# generates policy checks on agents affected by a policy and optionally generate automated tasks
 def generate_agent_checks_from_policies_task(policypk, create_tasks=False):
 
     policy = Policy.objects.get(pk=policypk)
@@ -31,6 +32,7 @@ def generate_agent_checks_from_policies_task(policypk, create_tasks=False):
 
 
 @app.task
+# generates policy checks on a list of agents and optionally generate automated tasks
 def generate_agent_checks_task(agentpks, create_tasks=False):
     for agent in Agent.objects.filter(pk__in=agentpks):
         agent.generate_checks_from_policies()
@@ -40,6 +42,7 @@ def generate_agent_checks_task(agentpks, create_tasks=False):
 
 
 @app.task
+# generates policy checks on agent servers or workstations within a certain client or site and optionally generate automated tasks
 def generate_agent_checks_by_location_task(location, mon_type, create_tasks=False):
 
     for agent in Agent.objects.filter(**location).filter(monitoring_type=mon_type):
@@ -50,6 +53,7 @@ def generate_agent_checks_by_location_task(location, mon_type, create_tasks=Fals
 
 
 @app.task
+# generates policy checks on all agent servers or workstations and optionally generate automated tasks
 def generate_all_agent_checks_task(mon_type, create_tasks=False):
     for agent in Agent.objects.filter(monitoring_type=mon_type):
         agent.generate_checks_from_policies()
@@ -59,12 +63,14 @@ def generate_all_agent_checks_task(mon_type, create_tasks=False):
 
 
 @app.task
+# deletes a policy managed check from all agents
 def delete_policy_check_task(checkpk):
 
     Check.objects.filter(parent_check=checkpk).delete()
 
 
 @app.task
+# updates policy managed check fields on agents
 def update_policy_check_fields_task(checkpk):
 
     check = Check.objects.get(pk=checkpk)
@@ -100,6 +106,7 @@ def update_policy_check_fields_task(checkpk):
 
 
 @app.task
+# generates policy tasks on agents affected by a policy
 def generate_agent_tasks_from_policies_task(policypk):
 
     policy = Policy.objects.get(pk=policypk)
@@ -118,13 +125,6 @@ def generate_agent_tasks_from_policies_task(policypk):
         agents = policy.related_agents().only("pk")
 
     for agent in agents:
-        agent.generate_tasks_from_policies()
-
-
-@app.task
-def generate_agent_tasks_by_location_task(location, mon_type):
-
-    for agent in Agent.objects.filter(**location).filter(monitoring_type=mon_type):
         agent.generate_tasks_from_policies()
 
 

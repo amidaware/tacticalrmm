@@ -92,7 +92,7 @@
                 <q-card-section class="row">
                   <div class="col-10">
                     <q-icon class="q-pr-sm" name="fas fa-signal" size="1.2em" color="warning" /> Mark an agent as
-                    <span class="text-weight-bold">offline</span> if it has not checked in in after:
+                    <span class="text-weight-bold">offline</span> if it has not checked in after:
                   </div>
                   <q-input
                     dense
@@ -111,7 +111,7 @@
                 <q-card-section class="row">
                   <div class="col-10">
                     <q-icon class="q-pr-sm" name="fas fa-signal" size="1.2em" color="negative" /> Mark an agent as
-                    <span class="text-weight-bold">overdue</span> if it has not checked in in after:
+                    <span class="text-weight-bold">overdue</span> if it has not checked in after:
                   </div>
                   <q-input
                     dense

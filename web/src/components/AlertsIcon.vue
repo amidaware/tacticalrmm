@@ -58,8 +58,8 @@ export default {
     },
   },
   methods: {
-    getAlerts() {
-      this.$q.loading.show();
+    getAlerts(showLoading = true) {
+      if (showLoading) this.$q.loading.show();
       this.$axios
         .patch("alerts/alerts/", { top: 10 })
         .then(r => {
@@ -148,12 +148,12 @@ export default {
     },
     pollAlerts() {
       setInterval(() => {
-        this.getAlerts();
+        this.getAlerts(false);
       }, 60 * 1 * 1000);
     },
   },
   mounted() {
-    this.getAlerts();
+    this.getAlerts(false);
     this.pollAlerts();
   },
   beforeDestroy() {

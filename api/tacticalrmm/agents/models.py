@@ -54,6 +54,7 @@ class Agent(BaseAuditModel):
     overdue_email_alert = models.BooleanField(default=False)
     overdue_text_alert = models.BooleanField(default=False)
     overdue_dashboard_alert = models.BooleanField(default=False)
+    offline_time = models.PositiveIntegerField(default=4)
     overdue_time = models.PositiveIntegerField(default=30)
     check_interval = models.PositiveIntegerField(default=120)
     needs_reboot = models.BooleanField(default=False)
@@ -149,7 +150,7 @@ class Agent(BaseAuditModel):
 
     @property
     def status(self):
-        offline = djangotime.now() - djangotime.timedelta(minutes=6)
+        offline = djangotime.now() - djangotime.timedelta(minutes=self.offline_time)
         overdue = djangotime.now() - djangotime.timedelta(minutes=self.overdue_time)
 
         if self.last_seen is not None:
@@ -305,7 +306,9 @@ class Agent(BaseAuditModel):
             else:
                 online = [
                     agent
-                    for agent in Agent.objects.only("pk", "last_seen", "overdue_time")
+                    for agent in Agent.objects.only(
+                        "pk", "last_seen", "overdue_time", "offline_time"
+                    )
                     if agent.status == "online"
                 ]
 

@@ -432,6 +432,7 @@ class TestAgentViews(TacticalTestCase):
             "site": site.id,
             "monitoring_type": "workstation",
             "description": "asjdk234andasd",
+            "offline_time": 4,
             "overdue_time": 300,
             "check_interval": 60,
             "overdue_email_alert": True,

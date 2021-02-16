@@ -243,6 +243,7 @@ class AgentsTableList(generics.ListAPIView):
             "overdue_text_alert",
             "overdue_email_alert",
             "overdue_time",
+            "offline_time",
             "last_seen",
             "boot_time",
             "logged_in_username",
@@ -291,6 +292,7 @@ def by_client(request, clientpk):
             "overdue_text_alert",
             "overdue_email_alert",
             "overdue_time",
+            "offline_time",
             "last_seen",
             "boot_time",
             "logged_in_username",
@@ -320,6 +322,7 @@ def by_site(request, sitepk):
             "overdue_text_alert",
             "overdue_email_alert",
             "overdue_time",
+            "offline_time",
             "last_seen",
             "boot_time",
             "logged_in_username",
@@ -847,7 +850,10 @@ def agent_counts(request):
         [
             agent
             for agent in Agent.objects.filter(monitoring_type="server").only(
-                "pk", "last_seen", "overdue_time"
+                "pk",
+                "last_seen",
+                "overdue_time",
+                "offline_time",
             )
             if not agent.status == "online"
         ]
@@ -857,7 +863,10 @@ def agent_counts(request):
         [
             agent
             for agent in Agent.objects.filter(monitoring_type="workstation").only(
-                "pk", "last_seen", "overdue_time"
+                "pk",
+                "last_seen",
+                "overdue_time",
+                "offline_time",
             )
             if not agent.status == "online"
         ]

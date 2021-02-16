@@ -128,6 +128,7 @@ class AgentEditSerializer(serializers.ModelSerializer):
             "timezone",
             "check_interval",
             "overdue_time",
+            "offline_time",
             "overdue_text_alert",
             "overdue_email_alert",
             "all_timezones",

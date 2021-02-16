@@ -90,7 +90,29 @@
                   />
                 </q-card-section>
                 <q-card-section class="row">
-                  <div class="col-10">Send an overdue alert if the agent has not reported in after:</div>
+                  <div class="col-10">
+                    <q-icon class="q-pr-sm" name="fas fa-signal" size="1.2em" color="warning" /> Mark an agent as
+                    <span class="text-weight-bold">offline</span> if it has not checked in in after:
+                  </div>
+                  <q-input
+                    dense
+                    type="number"
+                    filled
+                    label="Minutes"
+                    v-model.number="agent.offline_time"
+                    class="col-2"
+                    :rules="[
+                      val => !!val || '*Required',
+                      val => val >= 2 || 'Minimum is 2 minutes',
+                      val => val < 9999999 || 'Maximum is 9999999 minutes',
+                    ]"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-10">
+                    <q-icon class="q-pr-sm" name="fas fa-signal" size="1.2em" color="negative" /> Mark an agent as
+                    <span class="text-weight-bold">overdue</span> if it has not checked in in after:
+                  </div>
                   <q-input
                     dense
                     type="number"
@@ -100,7 +122,7 @@
                     class="col-2"
                     :rules="[
                       val => !!val || '*Required',
-                      val => val >= 5 || 'Minimum is 5 minutes',
+                      val => val >= 3 || 'Minimum is 3 minutes',
                       val => val < 9999999 || 'Maximum is 9999999 minutes',
                     ]"
                   />

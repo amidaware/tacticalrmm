@@ -75,6 +75,7 @@ class Client(BaseAuditModel):
                 "overdue_text_alert",
                 "last_seen",
                 "overdue_time",
+                "offline_time",
             )
             .filter(site__client=self)
             .prefetch_related("agentchecks")
@@ -167,6 +168,7 @@ class Site(BaseAuditModel):
                 "overdue_text_alert",
                 "last_seen",
                 "overdue_time",
+                "offline_time",
             )
             .filter(site=self)
             .prefetch_related("agentchecks")

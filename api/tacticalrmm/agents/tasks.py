@@ -186,6 +186,7 @@ def agent_outages_task() -> None:
     agents = Agent.objects.only(
         "pk",
         "last_seen",
+        "offline_time",
         "overdue_time",
         "overdue_email_alert",
         "overdue_text_alert",
@@ -257,4 +258,3 @@ def run_script_email_results_task(
                 server.quit()
     except Exception as e:
         logger.error(e)
-

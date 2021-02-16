@@ -280,7 +280,7 @@ class NatsWMI(APIView):
 
     def get(self, request):
         agents = Agent.objects.only(
-            "pk", "agent_id", "version", "last_seen", "overdue_time"
+            "pk", "agent_id", "version", "last_seen", "overdue_time", "offline_time"
         )
         online: List[str] = [
             i.agent_id
@@ -296,7 +296,7 @@ class OfflineAgents(APIView):
 
     def get(self, request):
         agents = Agent.objects.only(
-            "pk", "agent_id", "version", "last_seen", "overdue_time"
+            "pk", "agent_id", "version", "last_seen", "overdue_time", "offline_time"
         )
         offline: List[str] = [
             i.agent_id for i in agents if i.has_nats and i.status != "online"

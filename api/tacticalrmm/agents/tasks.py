@@ -258,17 +258,3 @@ def run_script_email_results_task(
     except Exception as e:
         logger.error(e)
 
-
-@app.task
-def remove_salt_task() -> None:
-    if hasattr(settings, "KEEP_SALT") and settings.KEEP_SALT:
-        return
-
-    q = Agent.objects.only("pk", "version")
-    agents = [i for i in q if pyver.parse(i.version) >= pyver.parse("1.3.0")]
-    chunks = (agents[i : i + 50] for i in range(0, len(agents), 50))
-    for chunk in chunks:
-        for agent in chunk:
-            asyncio.run(agent.nats_cmd({"func": "removesalt"}, wait=False))
-            sleep(0.1)
-        sleep(4)

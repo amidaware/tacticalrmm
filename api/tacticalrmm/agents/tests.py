@@ -359,7 +359,6 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertIn("rdp", r.json()["cmd"])
         self.assertNotIn("power", r.json()["cmd"])
-        self.assertNotIn("ping", r.json()["cmd"])
 
         data.update({"ping": 1, "power": 1})
         r = self.client.post(url, data, format="json")

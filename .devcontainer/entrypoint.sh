@@ -45,7 +45,7 @@ function django_setup {
   echo "setting up django environment"
 
   # configure django settings
-  MESH_TOKEN=$(cat ${TACTICAL_DIR}/tmp/mesh_token)
+  MESH_TOKEN="$(cat ${TACTICAL_DIR}/tmp/mesh_token)"
 
   DJANGO_SEKRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 80 | head -n 1)
   
@@ -106,29 +106,28 @@ EOF
   echo "${localvars}" > ${WORKSPACE_DIR}/api/tacticalrmm/tacticalrmm/local_settings.py
 
   # run migrations and init scripts
-  python manage.py migrate --no-input
-  python manage.py collectstatic --no-input
-  python manage.py initial_db_setup
-  python manage.py initial_mesh_setup
-  python manage.py load_chocos
-  python manage.py load_community_scripts
-  python manage.py reload_nats
+  "${VIRTUAL_ENV}"/bin/python manage.py migrate --no-input
+  "${VIRTUAL_ENV}"/bin/python manage.py collectstatic --no-input
+  "${VIRTUAL_ENV}"/bin/python manage.py initial_db_setup
+  "${VIRTUAL_ENV}"/bin/python manage.py initial_mesh_setup
+  "${VIRTUAL_ENV}"/bin/python manage.py load_chocos
+  "${VIRTUAL_ENV}"/bin/python manage.py load_community_scripts
+  "${VIRTUAL_ENV}"/bin/python manage.py reload_nats
 
   # create super user 
   echo "from accounts.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else 0;" | python manage.py shell
-
 }
 
 if [ "$1" = 'tactical-init-dev' ]; then
 
   # make directories if they don't exist
-  mkdir -p ${TACTICAL_DIR}/tmp
+  mkdir -p "${TACTICAL_DIR}/tmp"
 
   test -f "${TACTICAL_READY_FILE}" && rm "${TACTICAL_READY_FILE}"
 
   # setup Python virtual env and install dependencies
-  test -f ${VIRTUAL_ENV} && python -m venv --copies ${VIRTUAL_ENV}
-  pip install --no-cache-dir -r /requirements.txt
+  ! test -e "${VIRTUAL_ENV}" && python -m venv --copies ${VIRTUAL_ENV}
+  "${VIRTUAL_ENV}"/bin/pip install --no-cache-dir -r /requirements.txt
 
   django_setup
 
@@ -150,20 +149,20 @@ EOF
 fi
 
 if [ "$1" = 'tactical-api' ]; then
-  cp ${WORKSPACE_DIR}/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/goversioninfo
+  cp "${WORKSPACE_DIR}"/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/goversioninfo
   chmod +x /usr/local/bin/goversioninfo
   
   check_tactical_ready
-  python manage.py runserver 0.0.0.0:${API_PORT}
+  "${VIRTUAL_ENV}"/bin/python manage.py runserver 0.0.0.0:"${API_PORT}"
 fi
 
 if [ "$1" = 'tactical-celery-dev' ]; then
   check_tactical_ready
-  env/bin/celery -A tacticalrmm worker -l debug
+  "${VIRTUAL_ENV}"/bin/celery -A tacticalrmm worker -l debug
 fi
 
 if [ "$1" = 'tactical-celerybeat-dev' ]; then
   check_tactical_ready
   test -f "${WORKSPACE_DIR}/api/tacticalrmm/celerybeat.pid" && rm "${WORKSPACE_DIR}/api/tacticalrmm/celerybeat.pid"
-  env/bin/celery -A tacticalrmm beat -l debug
+  "${VIRTUAL_ENV}"/bin/celery -A tacticalrmm beat -l debug
 fi

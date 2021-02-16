@@ -69,7 +69,7 @@
           </q-menu>
         </q-chip>
 
-        <!--<AlertsIcon />-->
+        <AlertsIcon />
 
         <q-btn-dropdown flat no-caps stretch :label="user">
           <q-list>
@@ -157,7 +157,14 @@
                           <q-item-section side>
                             <q-icon name="policy" />
                           </q-item-section>
-                          <q-item-section>Edit Policies</q-item-section>
+                          <q-item-section>Assign Automation Policy</q-item-section>
+                        </q-item>
+
+                        <q-item clickable v-close-popup @click="showAlertTemplateAdd(props.node)">
+                          <q-item-section side>
+                            <q-icon name="error" />
+                          </q-item-section>
+                          <q-item-section>Assign Alert Template</q-item-section>
                         </q-item>
 
                         <q-separator></q-separator>
@@ -350,11 +357,7 @@
         @edited="refreshEntireSite"
       />
     </q-dialog>
-    <!-- add policy modal -->
-    <q-dialog v-model="showPolicyAddModal">
-      <PolicyAdd @close="showPolicyAddModal = false" :type="policyAddType" :pk="parseInt(policyAddPk)" />
-    </q-dialog>
-    <!-- add policy modal -->
+    <!-- install agent modal -->
     <q-dialog v-model="showInstallAgentModal" @hide="closeInstallAgent">
       <InstallAgent @close="closeInstallAgent" :sitepk="parseInt(sitePk)" />
     </q-dialog>
@@ -378,6 +381,7 @@ import ClientsForm from "@/components/modals/clients/ClientsForm";
 import SitesForm from "@/components/modals/clients/SitesForm";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import UserPreferences from "@/components/modals/coresettings/UserPreferences";
+import AlertTemplateAdd from "@/components/modals/alerts/AlertTemplateAdd";
 
 export default {
   components: {
@@ -385,7 +389,6 @@ export default {
     AgentTable,
     SubTableTabs,
     AlertsIcon,
-    PolicyAdd,
     ClientsForm,
     SitesForm,
     InstallAgent,
@@ -396,13 +399,10 @@ export default {
       darkMode: true,
       showClientsFormModal: false,
       showSitesFormModal: false,
-      showPolicyAddModal: false,
       deleteEditModalPk: null,
       showInstallAgentModal: false,
       sitePk: null,
       clientOp: null,
-      policyAddType: null,
-      policyAddPk: null,
       serverCount: 0,
       serverOfflineCount: 0,
       workstationCount: 0,
@@ -430,6 +430,10 @@ export default {
         },
         {
           name: "emailalert",
+          align: "left",
+        },
+        {
+          name: "dashboardalert",
           align: "left",
         },
         {
@@ -520,6 +524,7 @@ export default {
       visibleColumns: [
         "smsalert",
         "emailalert",
+        "dashboardalert",
         "checks-status",
         "client_name",
         "site_name",
@@ -613,13 +618,27 @@ export default {
     },
     showPolicyAdd(node) {
       if (node.children) {
-        this.policyAddType = "client";
-        this.policyAddPk = node.id;
-        this.showPolicyAddModal = true;
+        this.$q
+          .dialog({
+            component: PolicyAdd,
+            parent: this,
+            type: "client",
+            object: node,
+          })
+          .onOk(() => {
+            this.getTree();
+          });
       } else {
-        this.policyAddType = "site";
-        this.policyAddPk = node.id;
-        this.showPolicyAddModal = true;
+        this.$q
+          .dialog({
+            component: PolicyAdd,
+            parent: this,
+            type: "site",
+            object: node,
+          })
+          .onOk(() => {
+            this.getTree();
+          });
       }
     },
     showEditModal(node, op) {
@@ -653,6 +672,18 @@ export default {
     closeInstallAgent() {
       this.showInstallAgentModal = false;
       this.sitePk = null;
+    },
+    showAlertTemplateAdd(node) {
+      this.$q
+        .dialog({
+          component: AlertTemplateAdd,
+          parent: this,
+          type: node.children ? "client" : "site",
+          object: node,
+        })
+        .onOk(() => {
+          this.getTree();
+        });
     },
     reload() {
       this.$store.dispatch("reload");

@@ -1,4 +1,5 @@
 from automation.models import Policy
+from autotasks.models import AutomatedTask
 from checks.models import Check
 from agents.models import Agent
 
@@ -6,6 +7,7 @@ from tacticalrmm.celery import app
 
 
 @app.task
+# generates policy checks on agents affected by a policy and optionally generate automated tasks
 def generate_agent_checks_from_policies_task(policypk, create_tasks=False):
 
     policy = Policy.objects.get(pk=policypk)
@@ -21,7 +23,7 @@ def generate_agent_checks_from_policies_task(policypk, create_tasks=False):
             "pk", "monitoring_type"
         )
     else:
-        agents = policy.related_agents()
+        agents = policy.related_agents().only("pk")
 
     for agent in agents:
         agent.generate_checks_from_policies()
@@ -30,6 +32,17 @@ def generate_agent_checks_from_policies_task(policypk, create_tasks=False):
 
 
 @app.task
+# generates policy checks on a list of agents and optionally generate automated tasks
+def generate_agent_checks_task(agentpks, create_tasks=False):
+    for agent in Agent.objects.filter(pk__in=agentpks):
+        agent.generate_checks_from_policies()
+
+        if create_tasks:
+            agent.generate_tasks_from_policies()
+
+
+@app.task
+# generates policy checks on agent servers or workstations within a certain client or site and optionally generate automated tasks
 def generate_agent_checks_by_location_task(location, mon_type, create_tasks=False):
 
     for agent in Agent.objects.filter(**location).filter(monitoring_type=mon_type):
@@ -40,6 +53,7 @@ def generate_agent_checks_by_location_task(location, mon_type, create_tasks=Fals
 
 
 @app.task
+# generates policy checks on all agent servers or workstations and optionally generate automated tasks
 def generate_all_agent_checks_task(mon_type, create_tasks=False):
     for agent in Agent.objects.filter(monitoring_type=mon_type):
         agent.generate_checks_from_policies()
@@ -49,22 +63,30 @@ def generate_all_agent_checks_task(mon_type, create_tasks=False):
 
 
 @app.task
+# deletes a policy managed check from all agents
 def delete_policy_check_task(checkpk):
 
     Check.objects.filter(parent_check=checkpk).delete()
 
 
 @app.task
+# updates policy managed check fields on agents
 def update_policy_check_fields_task(checkpk):
 
     check = Check.objects.get(pk=checkpk)
 
     Check.objects.filter(parent_check=checkpk).update(
-        threshold=check.threshold,
+        warning_threshold=check.warning_threshold,
+        error_threshold=check.error_threshold,
+        alert_severity=check.alert_severity,
         name=check.name,
+        disk=check.disk,
         fails_b4_alert=check.fails_b4_alert,
         ip=check.ip,
+        script=check.script,
         script_args=check.script_args,
+        info_return_codes=check.info_return_codes,
+        warning_return_codes=check.warning_return_codes,
         timeout=check.timeout,
         pass_if_start_pending=check.pass_if_start_pending,
         pass_if_svc_not_exist=check.pass_if_svc_not_exist,
@@ -79,10 +101,12 @@ def update_policy_check_fields_task(checkpk):
         search_last_days=check.search_last_days,
         email_alert=check.email_alert,
         text_alert=check.text_alert,
+        dashboard_alert=check.dashboard_alert,
     )
 
 
 @app.task
+# generates policy tasks on agents affected by a policy
 def generate_agent_tasks_from_policies_task(policypk):
 
     policy = Policy.objects.get(pk=policypk)
@@ -98,16 +122,9 @@ def generate_agent_tasks_from_policies_task(policypk):
             "pk", "monitoring_type"
         )
     else:
-        agents = policy.related_agents()
+        agents = policy.related_agents().only("pk")
 
     for agent in agents:
-        agent.generate_tasks_from_policies()
-
-
-@app.task
-def generate_agent_tasks_by_location_task(location, mon_type):
-
-    for agent in Agent.objects.filter(**location).filter(monitoring_type=mon_type):
         agent.generate_tasks_from_policies()
 
 
@@ -129,13 +146,23 @@ def run_win_policy_autotask_task(task_pks):
 
 
 @app.task
-def update_policy_task_fields_task(taskpk, enabled):
-    from autotasks.models import AutomatedTask
+def update_policy_task_fields_task(taskpk, update_agent=False):
     from autotasks.tasks import enable_or_disable_win_task
 
-    tasks = AutomatedTask.objects.filter(parent_task=taskpk)
+    task = AutomatedTask.objects.get(pk=taskpk)
 
-    tasks.update(enabled=enabled)
+    AutomatedTask.objects.filter(parent_task=taskpk).update(
+        alert_severity=task.alert_severity,
+        email_alert=task.email_alert,
+        text_alert=task.text_alert,
+        dashboard_alert=task.dashboard_alert,
+        script=task.script,
+        script_args=task.script_args,
+        name=task.name,
+        timeout=task.timeout,
+        enabled=task.enabled,
+    )
 
-    for autotask in tasks:
-        enable_or_disable_win_task(autotask.pk, enabled)
+    if update_agent:
+        for task in AutomatedTask.objects.filter(parent_task=taskpk):
+            enable_or_disable_win_task.delay(task.pk, task.enabled)

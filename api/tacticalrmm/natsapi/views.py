@@ -68,15 +68,8 @@ class NatsCheckIn(APIView):
                 action_type="agentupdate", status="pending"
             ).update(status="completed")
 
-        if agent.agentoutages.exists() and agent.agentoutages.last().is_active:
-            last_outage = agent.agentoutages.last()
-            last_outage.recovery_time = djangotime.now()
-            last_outage.save(update_fields=["recovery_time"])
-
-            if agent.overdue_email_alert:
-                agent_recovery_email_task.delay(pk=last_outage.pk)
-            if agent.overdue_text_alert:
-                agent_recovery_sms_task.delay(pk=last_outage.pk)
+        # handles any alerting actions
+        agent.handle_alert(checkin=True)
 
         recovery = agent.recoveryactions.filter(last_run=None).last()
         if recovery is not None:
@@ -287,7 +280,7 @@ class NatsWMI(APIView):
 
     def get(self, request):
         agents = Agent.objects.only(
-            "pk", "agent_id", "version", "last_seen", "overdue_time"
+            "pk", "agent_id", "version", "last_seen", "overdue_time", "offline_time"
         )
         online: List[str] = [
             i.agent_id
@@ -303,7 +296,7 @@ class OfflineAgents(APIView):
 
     def get(self, request):
         agents = Agent.objects.only(
-            "pk", "agent_id", "version", "last_seen", "overdue_time"
+            "pk", "agent_id", "version", "last_seen", "overdue_time", "offline_time"
         )
         offline: List[str] = [
             i.agent_id for i in agents if i.has_nats and i.status != "online"
@@ -317,9 +310,6 @@ class LogCrash(APIView):
 
     def post(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agentid"])
-        logger.info(
-            f"Detected crashed tacticalagent service on {agent.hostname} v{agent.version}, attempting recovery"
-        )
         agent.last_seen = djangotime.now()
         agent.save(update_fields=["last_seen"])
         return Response("ok")

@@ -100,8 +100,12 @@
                 <q-item-section>Script Manager</q-item-section>
               </q-item>
               <!-- automation manager -->
-              <q-item clickable v-close-popup @click="showAutomationManager = true">
+              <q-item clickable v-close-popup @click="showAutomationManager">
                 <q-item-section>Automation Manager</q-item-section>
+              </q-item>
+              <!-- alerts manager -->
+              <q-item clickable v-close-popup @click="showAlertsManager">
+                <q-item-section>Alerts Manager</q-item-section>
               </q-item>
               <!-- admin manager -->
               <q-item clickable v-close-popup @click="showAdminManager = true">
@@ -187,12 +191,6 @@
           <ScriptManager @close="showScriptManager = false" />
         </q-dialog>
       </div>
-      <!-- Automation Manager -->
-      <div class="q-pa-md q-gutter-sm">
-        <q-dialog v-model="showAutomationManager">
-          <AutomationManager @close="showAutomationManager = false" />
-        </q-dialog>
-      </div>
       <!-- Admin Manager -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showAdminManager">
@@ -227,6 +225,7 @@ import SitesForm from "@/components/modals/clients/SitesForm";
 import UpdateAgents from "@/components/modals/agents/UpdateAgents";
 import ScriptManager from "@/components/ScriptManager";
 import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
+import AlertsManager from "@/components/AlertsManager";
 import AutomationManager from "@/components/automation/AutomationManager";
 import AdminManager from "@/components/AdminManager";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
@@ -246,7 +245,6 @@ export default {
     UpdateAgents,
     ScriptManager,
     EditCoreSettings,
-    AutomationManager,
     InstallAgent,
     UploadMesh,
     AdminManager,
@@ -264,7 +262,6 @@ export default {
       clientOp: null,
       showUpdateAgentsModal: false,
       showEditCoreSettingsModal: false,
-      showAutomationManager: false,
       showAdminManager: false,
       showInstallAgent: false,
       showUploadMesh: false,
@@ -299,6 +296,18 @@ export default {
     closeBulkActionModal() {
       this.bulkMode = null;
       this.showBulkAction = false;
+    },
+    showAutomationManager() {
+      this.$q.dialog({
+        component: AutomationManager,
+        parent: this,
+      });
+    },
+    showAlertsManager() {
+      this.$q.dialog({
+        component: AlertsManager,
+        parent: this,
+      });
     },
     edited() {
       this.$emit("edited");

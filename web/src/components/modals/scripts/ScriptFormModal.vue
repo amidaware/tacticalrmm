@@ -77,8 +77,7 @@
           :style="heightVar"
           lineNumbers
         ></prism-editor>
-        <q-card-actions v-if="!readonly">
-          <q-space />
+        <q-card-actions v-if="!readonly" align="right">
           <q-btn dense flat label="Cancel" v-close-popup />
           <q-btn dense flat label="Save" color="primary" type="submit" />
         </q-card-actions>
@@ -138,7 +137,7 @@ export default {
           .put(`/scripts/${this.script.id}/script/`, this.localScript)
           .then(r => {
             this.$q.loading.hide();
-            this.$emit("hide");
+            this.onOk();
             this.notifySuccess(r.data);
           })
           .catch(e => {
@@ -150,7 +149,7 @@ export default {
           .post(`/scripts/scripts/`, this.localScript)
           .then(r => {
             this.$q.loading.hide();
-            this.$emit("hide");
+            this.onOk();
             this.notifySuccess(r.data);
           })
           .catch(e => {
@@ -184,6 +183,13 @@ export default {
     },
     onHide() {
       this.$emit("hide");
+    },
+    onOk() {
+      this.$emit("ok");
+      this.hide();
+    },
+    onCancel() {
+      this.hide();
     },
     filterFn(val, update) {
       update(() => {

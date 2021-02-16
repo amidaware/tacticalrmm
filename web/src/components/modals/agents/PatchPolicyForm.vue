@@ -217,16 +217,17 @@
       />
     </q-card-section>
     <q-card-actions align="left" v-if="policy">
-      <q-btn label="Apply" color="primary" @click="submit" />
+      <q-btn label="Submit" color="primary" @click="submit" />
+      <q-btn label="Cancel" @click="$emit('hide')" />
       <q-space />
-      <q-btn v-if="editing" label="Remove Policy" color="negative" @click="deletePolicy" />
+      <q-btn v-if="editing" label="Remove Policy" color="negative" @click="deletePolicy(winupdatepolicy)" />
     </q-card-actions>
   </div>
 </template>
 
 <script>
 import { scheduledTimes, monthDays } from "@/mixins/data";
-import { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
+import mixins from "@/mixins/mixins";
 
 export default {
   name: "PatchPolicyForm",
@@ -234,6 +235,7 @@ export default {
     policy: Object,
     agent: Object,
   },
+  mixins: [mixins],
   data() {
     return {
       editing: true,
@@ -279,34 +281,34 @@ export default {
       if (this.policy) {
         // editing patch policy
         if (this.editing) {
-          this.$store
-            .dispatch("automation/editPatchPolicy", this.winupdatepolicy)
+          this.$axios
+            .put(`/automation/winupdatepolicy/${this.winupdatepolicy.id}/`, this.winupdatepolicy)
             .then(response => {
               this.$q.loading.hide();
               this.$emit("close");
-              this.$q.notify(notifySuccessConfig("Patch policy was edited successfully!"));
+              this.notifySuccess("Patch policy was edited successfully!");
             })
             .catch(error => {
               this.$q.loading.hide();
-              this.$q.notify(notifyErrorConfig("An Error occured while editing patch policy"));
+              this.notifyError("An Error occured while editing patch policy");
             });
         } else {
           // adding patch policy
-          this.$store
-            .dispatch("automation/addPatchPolicy", this.winupdatepolicy)
+          this.$axios
+            .post("/automation/winupdatepolicy/", this.winupdatepolicy)
             .then(response => {
               this.$q.loading.hide();
               this.$emit("close");
-              this.$q.notify(notifySuccessConfig("Patch policy was created successfully!"));
+              this.notifySuccess("Patch policy was created successfully!");
             })
             .catch(error => {
               this.$q.loading.hide();
-              this.$q.notify(notifyErrorConfig("An Error occured while adding patch policy"));
+              this.notifyError("An Error occured while adding patch policy");
             });
         }
       }
     },
-    deletePolicy() {
+    deletePolicy(policy) {
       this.$q
         .dialog({
           title: "Delete patch policy?",
@@ -315,30 +317,28 @@ export default {
         })
         .onOk(() => {
           this.$q.loading.show();
-          this.$store
-            .dispatch("automation/deletePatchPolicy", this.winupdatepolicy.id)
-            .then(response => {
+          this.$axios
+            .delete(`/automation/winupdatepolicy/${policy.id}/`)
+            .then(r => {
               this.$q.loading.hide();
               this.$emit("close");
-              this.$q.notify(notifySuccessConfig("Patch policy was cleared successfully!"));
+              this.notifySuccess("Patch policy was deleted successfully!");
             })
             .catch(error => {
               this.$q.loading.hide();
-              this.$q.notify(notifyErrorConfig("An Error occured while clearing the patch policy"));
+              this.notifyError("An Error occured while clearing the patch policy");
             });
         });
     },
   },
   mounted() {
-    if (this.policy) {
-      if (this.policy.winupdatepolicy.length === 1) {
-        this.winupdatepolicy = this.policy.winupdatepolicy[0];
-        this.editing = true;
-      } else {
-        this.winupdatepolicy = this.defaultWinUpdatePolicy;
-        this.winupdatepolicy.policy = this.policy.id;
-        this.editing = false;
-      }
+    if (this.policy && this.policy.winupdatepolicy[0]) {
+      this.winupdatepolicy = this.policy.winupdatepolicy[0];
+      this.editing = true;
+    } else if (this.policy) {
+      this.winupdatepolicy = this.defaultWinUpdatePolicy;
+      this.winupdatepolicy.policy = this.policy.id;
+      this.editing = false;
     } else if (this.agent) {
       this.winupdatepolicy = this.agent.winupdatepolicy[0];
 

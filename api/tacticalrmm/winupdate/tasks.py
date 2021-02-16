@@ -19,7 +19,9 @@ logger.configure(**settings.LOG_CONFIG)
 def auto_approve_updates_task():
     # scheduled task that checks and approves updates daily
 
-    agents = Agent.objects.only("pk", "version", "last_seen", "overdue_time")
+    agents = Agent.objects.only(
+        "pk", "version", "last_seen", "overdue_time", "offline_time"
+    )
     for agent in agents:
         agent.delete_superseded_updates()
         try:
@@ -44,7 +46,9 @@ def auto_approve_updates_task():
 @app.task
 def check_agent_update_schedule_task():
     # scheduled task that installs updates on agents if enabled
-    agents = Agent.objects.only("pk", "version", "last_seen", "overdue_time")
+    agents = Agent.objects.only(
+        "pk", "version", "last_seen", "overdue_time", "offline_time"
+    )
     online = [
         i
         for i in agents

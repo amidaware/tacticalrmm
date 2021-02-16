@@ -359,7 +359,6 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertIn("rdp", r.json()["cmd"])
         self.assertNotIn("power", r.json()["cmd"])
-        self.assertNotIn("ping", r.json()["cmd"])
 
         data.update({"ping": 1, "power": 1})
         r = self.client.post(url, data, format="json")
@@ -432,6 +431,7 @@ class TestAgentViews(TacticalTestCase):
             "site": site.id,
             "monitoring_type": "workstation",
             "description": "asjdk234andasd",
+            "offline_time": 4,
             "overdue_time": 300,
             "check_interval": 60,
             "overdue_email_alert": True,
@@ -705,6 +705,7 @@ class TestAgentViews(TacticalTestCase):
 class TestAgentViewsNew(TacticalTestCase):
     def setUp(self):
         self.authenticate()
+        self.setup_coresettings()
 
     def test_agent_counts(self):
         url = "/agents/agent_counts/"
@@ -715,14 +716,11 @@ class TestAgentViewsNew(TacticalTestCase):
             monitoring_type=cycle(["server", "workstation"]),
             _quantity=6,
         )
-        agents = baker.make_recipe(
+        baker.make_recipe(
             "agents.overdue_agent",
             monitoring_type=cycle(["server", "workstation"]),
             _quantity=6,
         )
-
-        # make an AgentOutage for every overdue agent
-        baker.make("agents.AgentOutage", agent=cycle(agents), _quantity=6)
 
         # returned data should be this
         data = {

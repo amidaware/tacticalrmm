@@ -1,56 +1,54 @@
 <template>
-  <q-card style="min-width: 400px">
-    <q-card-section class="row">
-      <q-card-actions align="left">
-        <div class="text-h6">Reset Agent Patch Policy</div>
-      </q-card-actions>
-      <q-space />
-      <q-card-actions align="right">
-        <q-btn v-close-popup flat round dense icon="close" />
-      </q-card-actions>
-    </q-card-section>
-    <q-card-section>
-      <div class="text-subtitle3">
-        Reset the patch policies for agents in a specific client or site. You can also leave the client and site blank
-        to reset the patch policy for all agents. (This might take a while)
-      </div>
-      <q-form @submit.prevent="submit">
-        <q-card-section>
-          <q-select
-            label="Clients"
-            @clear="clearClient"
-            clearable
-            options-dense
-            outlined
-            v-model="client"
-            :options="client_options"
-            @input="client !== null ? (site = site_options[0]) : () => {}"
-          />
-        </q-card-section>
-        <q-card-section>
-          <q-select
-            :disabled="client === null"
-            @clear="clearSite"
-            label="Sites"
-            clearable
-            options-dense
-            outlined
-            v-model="site"
-            :options="site_options"
-          />
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn :label="buttonText" color="primary" type="submit" />
-          <q-btn label="Cancel" v-close-popup />
-        </q-card-actions>
-      </q-form>
-    </q-card-section>
-  </q-card>
+  <q-dialog ref="dialog" @hide="onHide">
+    <q-card class="q-dialog-plugin" style="min-width: 400px">
+      <q-bar>
+        Reset Agent Patch Policy
+        <q-space />
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+      <q-card-section>
+        <div class="text-subtitle3">
+          Reset the patch policies for agents in a specific client or site. You can also leave the client and site blank
+          to reset the patch policy for all agents. (This might take a while)
+        </div>
+        <q-form @submit.prevent="submit">
+          <q-card-section>
+            <q-select
+              label="Clients"
+              @clear="clearClient"
+              clearable
+              options-dense
+              outlined
+              v-model="client"
+              :options="client_options"
+            />
+          </q-card-section>
+          <q-card-section>
+            <q-select
+              :disabled="client === null"
+              @clear="clearSite"
+              label="Sites"
+              clearable
+              options-dense
+              outlined
+              v-model="site"
+              :options="site_options"
+            />
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn :label="buttonText" color="primary" type="submit" />
+            <q-btn label="Cancel" v-close-popup />
+          </q-card-actions>
+        </q-form>
+      </q-card-section>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
 import mixins from "@/mixins/mixins";
-import { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 
 export default {
   name: "ResetPatchPolicy",
@@ -76,16 +74,16 @@ export default {
         data.site = this.site.value;
       }
 
-      this.$store
-        .dispatch("automation/resetPatchPolicies", data)
+      this.$axios
+        .patch("automation/winupdatepolicy/reset/", data)
         .then(r => {
           this.$q.loading.hide();
-          this.$q.notify(notifySuccessConfig("The agent policies were reset successfully!"));
-          this.$emit("close");
+          this.notifySuccess("The agent policies were reset successfully!");
+          this.onOk();
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.$q.notify(notifyErrorConfig("There was an error reseting policies"));
+          this.notifyError("There was an error reseting policies");
         });
     },
     getClients() {
@@ -95,7 +93,7 @@ export default {
           this.client_options = this.formatClientOptions(r.data);
         })
         .catch(e => {
-          this.$q.notify(notifyErrorConfig("There was an error loading the clients!"));
+          this.notifyError("There was an error loading the clients!");
         });
     },
     clearClient() {
@@ -104,6 +102,19 @@ export default {
     },
     clearSite() {
       this.site = null;
+    },
+    show() {
+      this.$refs.dialog.show();
+    },
+    hide() {
+      this.$refs.dialog.hide();
+    },
+    onHide() {
+      this.$emit("hide");
+    },
+    onOk() {
+      this.$emit("ok");
+      this.hide();
     },
   },
   computed: {

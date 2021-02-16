@@ -1,15 +1,20 @@
-from .models import Check
-from model_bakery.recipe import Recipe, seq
+from model_bakery.recipe import Recipe
 
-check = Recipe(Check)
+check = Recipe("checks.Check")
 
-diskspace_check = check.extend(check_type="diskspace", disk="C:", threshold=75)
+diskspace_check = check.extend(
+    check_type="diskspace", disk="C:", warning_threshold=30, error_threshold=75
+)
 
-cpuload_check = check.extend(check_type="cpuload", threshold=75)
+cpuload_check = check.extend(
+    check_type="cpuload", warning_threshold=30, error_threshold=75
+)
 
 ping_check = check.extend(check_type="ping", ip="10.10.10.10")
 
-memory_check = check.extend(check_type="memory", threshold=75)
+memory_check = check.extend(
+    check_type="memory", warning_threshold=30, error_threshold=75
+)
 
 winsvc_check = check.extend(
     check_type="winsvc",

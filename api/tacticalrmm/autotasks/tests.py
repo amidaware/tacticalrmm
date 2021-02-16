@@ -150,7 +150,9 @@ class TestAutotaskViews(TacticalTestCase):
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        update_policy_task_fields_task.assert_called_with(policy_task.id, True)
+        update_policy_task_fields_task.assert_called_with(
+            policy_task.id, update_agent=True
+        )
 
         self.check_not_authenticated("patch", url)
 

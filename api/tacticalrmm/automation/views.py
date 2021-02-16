@@ -2,11 +2,10 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
 
 from .models import Policy
 from agents.models import Agent
-from clients.models import Client, Site
+from clients.models import Client
 from checks.models import Check
 from autotasks.models import AutomatedTask
 from winupdate.models import WinUpdatePolicy
@@ -22,16 +21,10 @@ from .serializers import (
     PolicyCheckStatusSerializer,
     PolicyCheckSerializer,
     PolicyTaskStatusSerializer,
-    AutoTaskPolicySerializer,
-    RelatedClientPolicySerializer,
-    RelatedSitePolicySerializer,
-    RelatedAgentPolicySerializer,
+    AutoTasksFieldSerializer,
 )
 
 from .tasks import (
-    generate_agent_checks_from_policies_task,
-    generate_agent_checks_by_location_task,
-    generate_agent_tasks_from_policies_task,
     run_win_policy_autotask_task,
 )
 
@@ -72,29 +65,14 @@ class GetUpdateDeletePolicy(APIView):
     def put(self, request, pk):
         policy = get_object_or_404(Policy, pk=pk)
 
-        old_active = policy.active
-        old_enforced = policy.enforced
-
         serializer = PolicySerializer(instance=policy, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        saved_policy = serializer.save()
-
-        # Generate agent checks only if active and enforced were changed
-        if saved_policy.active != old_active or saved_policy.enforced != old_enforced:
-            generate_agent_checks_from_policies_task.delay(
-                policypk=policy.pk,
-                create_tasks=(saved_policy.active != old_active),
-            )
+        serializer.save()
 
         return Response("ok")
 
     def delete(self, request, pk):
-        policy = get_object_or_404(Policy, pk=pk)
-
-        # delete all managed policy checks off of agents
-        generate_agent_checks_from_policies_task.delay(policypk=policy.pk)
-        generate_agent_tasks_from_policies_task.delay(policypk=policy.pk)
-        policy.delete()
+        get_object_or_404(Policy, pk=pk).delete()
 
         return Response("ok")
 
@@ -103,8 +81,8 @@ class PolicyAutoTask(APIView):
 
     # tasks associated with policy
     def get(self, request, pk):
-        policy = get_object_or_404(Policy, pk=pk)
-        return Response(AutoTaskPolicySerializer(policy).data)
+        tasks = AutomatedTask.objects.filter(policy=pk)
+        return Response(AutoTasksFieldSerializer(tasks, many=True).data)
 
     # get status of all tasks
     def patch(self, request, task):
@@ -183,204 +161,11 @@ class GetRelated(APIView):
         ).data
 
         response["agents"] = AgentHostnameSerializer(
-            policy.related_agents(),
+            policy.related_agents().only("pk", "hostname"),
             many=True,
         ).data
 
         return Response(response)
-
-    # update agents, clients, sites to policy
-    def post(self, request):
-
-        related_type = request.data["type"]
-        pk = request.data["pk"]
-
-        # workstation policy is set
-        if (
-            "workstation_policy" in request.data
-            and request.data["workstation_policy"] != 0
-        ):
-            policy = get_object_or_404(Policy, pk=request.data["workstation_policy"])
-
-            if related_type == "client":
-                client = get_object_or_404(Client, pk=pk)
-
-                # Check and see if workstation policy changed and regenerate policies
-                if (
-                    not client.workstation_policy
-                    or client.workstation_policy
-                    and client.workstation_policy.pk != policy.pk
-                ):
-                    client.workstation_policy = policy
-                    client.save()
-
-                    generate_agent_checks_by_location_task.delay(
-                        location={"site__client_id": client.id},
-                        mon_type="workstation",
-                        create_tasks=True,
-                    )
-
-            if related_type == "site":
-                site = get_object_or_404(Site, pk=pk)
-
-                # Check and see if workstation policy changed and regenerate policies
-                if (
-                    not site.workstation_policy
-                    or site.workstation_policy
-                    and site.workstation_policy.pk != policy.pk
-                ):
-                    site.workstation_policy = policy
-                    site.save()
-                    generate_agent_checks_by_location_task.delay(
-                        location={"site_id": site.id},
-                        mon_type="workstation",
-                        create_tasks=True,
-                    )
-
-        # server policy is set
-        if "server_policy" in request.data and request.data["server_policy"] != 0:
-            policy = get_object_or_404(Policy, pk=request.data["server_policy"])
-
-            if related_type == "client":
-                client = get_object_or_404(Client, pk=pk)
-
-                # Check and see if server policy changed and regenerate policies
-                if (
-                    not client.server_policy
-                    or client.server_policy
-                    and client.server_policy.pk != policy.pk
-                ):
-                    client.server_policy = policy
-                    client.save()
-                    generate_agent_checks_by_location_task.delay(
-                        location={"site__client_id": client.id},
-                        mon_type="server",
-                        create_tasks=True,
-                    )
-
-            if related_type == "site":
-                site = get_object_or_404(Site, pk=pk)
-
-                # Check and see if server policy changed and regenerate policies
-                if (
-                    not site.server_policy
-                    or site.server_policy
-                    and site.server_policy.pk != policy.pk
-                ):
-                    site.server_policy = policy
-                    site.save()
-                    generate_agent_checks_by_location_task.delay(
-                        location={"site_id": site.id},
-                        mon_type="server",
-                        create_tasks=True,
-                    )
-
-        # If workstation policy was cleared
-        if (
-            "workstation_policy" in request.data
-            and request.data["workstation_policy"] == 0
-        ):
-            if related_type == "client":
-                client = get_object_or_404(Client, pk=pk)
-
-                # Check if workstation policy is set and update it to None
-                if client.workstation_policy:
-
-                    client.workstation_policy = None
-                    client.save()
-                    generate_agent_checks_by_location_task.delay(
-                        location={"site__client_id": client.id},
-                        mon_type="workstation",
-                        create_tasks=True,
-                    )
-
-            if related_type == "site":
-                site = get_object_or_404(Site, pk=pk)
-
-                # Check if workstation policy is set and update it to None
-                if site.workstation_policy:
-
-                    site.workstation_policy = None
-                    site.save()
-                    generate_agent_checks_by_location_task.delay(
-                        location={"site_id": site.id},
-                        mon_type="workstation",
-                        create_tasks=True,
-                    )
-
-        # server policy cleared
-        if "server_policy" in request.data and request.data["server_policy"] == 0:
-
-            if related_type == "client":
-                client = get_object_or_404(Client, pk=pk)
-
-                # Check if server policy is set and update it to None
-                if client.server_policy:
-
-                    client.server_policy = None
-                    client.save()
-                    generate_agent_checks_by_location_task.delay(
-                        location={"site__client_id": client.id},
-                        mon_type="server",
-                        create_tasks=True,
-                    )
-
-            if related_type == "site":
-                site = get_object_or_404(Site, pk=pk)
-                # Check if server policy is set and update it to None
-                if site.server_policy:
-
-                    site.server_policy = None
-                    site.save()
-                    generate_agent_checks_by_location_task.delay(
-                        location={"site_id": site.pk},
-                        mon_type="server",
-                        create_tasks=True,
-                    )
-
-        # agent policies
-        if related_type == "agent":
-            agent = get_object_or_404(Agent, pk=pk)
-
-            if "policy" in request.data and request.data["policy"] != 0:
-                policy = Policy.objects.get(pk=request.data["policy"])
-
-                # Check and see if policy changed and regenerate policies
-                if not agent.policy or agent.policy and agent.policy.pk != policy.pk:
-                    agent.policy = policy
-                    agent.save()
-                    agent.generate_checks_from_policies()
-                    agent.generate_tasks_from_policies()
-            else:
-                if agent.policy:
-                    agent.policy = None
-                    agent.save()
-                    agent.generate_checks_from_policies()
-                    agent.generate_tasks_from_policies()
-
-        return Response("ok")
-
-    # view to get policies set on client, site, and workstation
-    def patch(self, request):
-        related_type = request.data["type"]
-
-        # client, site, or agent pk
-        pk = request.data["pk"]
-
-        if related_type == "agent":
-            agent = Agent.objects.get(pk=pk)
-            return Response(RelatedAgentPolicySerializer(agent).data)
-
-        if related_type == "site":
-            site = Site.objects.get(pk=pk)
-            return Response(RelatedSitePolicySerializer(site).data)
-
-        if related_type == "client":
-            client = Client.objects.get(pk=pk)
-            return Response(RelatedClientPolicySerializer(client).data)
-
-        content = {"error": "Data was submitted incorrectly"}
-        return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UpdatePatchPolicy(APIView):

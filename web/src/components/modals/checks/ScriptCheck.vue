@@ -48,17 +48,37 @@
         />
       </q-card-section>
       <q-card-section>
-        <q-input
-          outlined
+        <q-select
           dense
-          v-model.number="scriptcheck.timeout"
-          label="Timeout (seconds)"
-          :rules="[
-            val => !!val || '*Required',
-            val => val >= 10 || 'Minimum is 10 seconds',
-            val => val <= 86400 || 'Maximum is 86400 seconds',
-          ]"
+          label="Informational return codes (press Enter after typing each argument)"
+          filled
+          v-model="scriptcheck.info_return_codes"
+          use-input
+          use-chips
+          multiple
+          hide-dropdown-icon
+          input-debounce="0"
+          new-value-mode="add-unique"
+          @new-value="validateRetcode"
         />
+      </q-card-section>
+      <q-card-section>
+        <q-select
+          dense
+          label="Warning return codes (press Enter after typing each argument)"
+          filled
+          v-model="scriptcheck.warning_return_codes"
+          use-input
+          use-chips
+          multiple
+          hide-dropdown-icon
+          input-debounce="0"
+          new-value-mode="add-unique"
+          @new-value="validateRetcode"
+        />
+      </q-card-section>
+      <q-card-section>
+        <q-input outlined dense v-model.number="scriptcheck.timeout" label="Timeout (seconds)" />
       </q-card-section>
       <q-card-section>
         <q-select
@@ -98,6 +118,8 @@ export default {
         script_args: [],
         timeout: 120,
         fails_b4_alert: 1,
+        info_return_codes: [],
+        warning_return_codes: [],
       },
       scriptOptions: [],
       failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
@@ -106,9 +128,9 @@ export default {
   methods: {
     getScripts() {
       this.$axios.get("/scripts/scripts/").then(r => {
-        this.scriptOptions = r.data.map(
-          script => ({ label: script.name, value: script.id })).sort((a, b) => a.label.localeCompare(b.label)
-        );
+        this.scriptOptions = r.data
+          .map(script => ({ label: script.name, value: script.id }))
+          .sort((a, b) => a.label.localeCompare(b.label));
       });
     },
     getCheck() {
@@ -143,11 +165,12 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     reloadChecks() {
-      if (this.policypk) {
-        this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
-      } else {
+      if (this.agentpk) {
         this.$store.dispatch("loadChecks", this.agentpk);
       }
+    },
+    validateRetcode(val, done) {
+      /^\d+$/.test(val) ? done(val) : done();
     },
   },
   created() {
@@ -155,7 +178,7 @@ export default {
       this.getCheck();
     }
 
-    this.getScripts()
+    this.getScripts();
   },
 };
 </script>

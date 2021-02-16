@@ -1,6 +1,6 @@
 import asyncio
 import os
-import requests
+import time
 from loguru import logger
 from packaging import version as pyver
 
@@ -17,23 +17,252 @@ from rest_framework.authtoken.models import Token
 
 from agents.models import Agent
 from checks.models import Check
+from checks.utils import bytes2human
 from autotasks.models import AutomatedTask
 from accounts.models import User
-from winupdate.models import WinUpdatePolicy
+from winupdate.models import WinUpdate, WinUpdatePolicy
 from software.models import InstalledSoftware
 from checks.serializers import CheckRunnerGetSerializer
-from agents.serializers import WinAgentSerializer
 from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
-from winupdate.serializers import ApprovedUpdateSerializer
+from agents.serializers import WinAgentSerializer
 
-from agents.tasks import (
-    agent_recovery_email_task,
-    agent_recovery_sms_task,
-)
-from checks.utils import bytes2human
 from tacticalrmm.utils import notify_error, reload_nats, filter_software, SoftwareList
 
 logger.configure(**settings.LOG_CONFIG)
+
+
+class CheckIn(APIView):
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        updated = False
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        if pyver.parse(request.data["version"]) > pyver.parse(
+            agent.version
+        ) or pyver.parse(request.data["version"]) == pyver.parse(
+            settings.LATEST_AGENT_VER
+        ):
+            updated = True
+        agent.version = request.data["version"]
+        agent.last_seen = djangotime.now()
+        agent.save(update_fields=["version", "last_seen"])
+
+        # change agent update pending status to completed if agent has just updated
+        if (
+            updated
+            and agent.pendingactions.filter(
+                action_type="agentupdate", status="pending"
+            ).exists()
+        ):
+            agent.pendingactions.filter(
+                action_type="agentupdate", status="pending"
+            ).update(status="completed")
+
+        # handles any alerting actions
+        agent.handle_alert(checkin=True)
+
+        recovery = agent.recoveryactions.filter(last_run=None).last()
+        if recovery is not None:
+            recovery.last_run = djangotime.now()
+            recovery.save(update_fields=["last_run"])
+            handle_agent_recovery_task.delay(pk=recovery.pk)
+            return Response("ok")
+
+        # get any pending actions
+        if agent.pendingactions.filter(status="pending").exists():
+            agent.handle_pending_actions()
+
+        return Response("ok")
+
+    def put(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
+
+        if request.data["func"] == "disks":
+            disks = request.data["disks"]
+            new = []
+            for disk in disks:
+                tmp = {}
+                for _, _ in disk.items():
+                    tmp["device"] = disk["device"]
+                    tmp["fstype"] = disk["fstype"]
+                    tmp["total"] = bytes2human(disk["total"])
+                    tmp["used"] = bytes2human(disk["used"])
+                    tmp["free"] = bytes2human(disk["free"])
+                    tmp["percent"] = int(disk["percent"])
+                new.append(tmp)
+
+            serializer.is_valid(raise_exception=True)
+            serializer.save(disks=new)
+            return Response("ok")
+
+        if request.data["func"] == "loggedonuser":
+            if request.data["logged_in_username"] != "None":
+                serializer.is_valid(raise_exception=True)
+                serializer.save(last_logged_in_user=request.data["logged_in_username"])
+                return Response("ok")
+
+        if request.data["func"] == "software":
+            raw: SoftwareList = request.data["software"]
+            if not isinstance(raw, list):
+                return notify_error("err")
+
+            sw = filter_software(raw)
+            if not InstalledSoftware.objects.filter(agent=agent).exists():
+                InstalledSoftware(agent=agent, software=sw).save()
+            else:
+                s = agent.installedsoftware_set.first()
+                s.software = sw
+                s.save(update_fields=["software"])
+
+            return Response("ok")
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response("ok")
+
+    # called once during tacticalagent windows service startup
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        if not agent.choco_installed:
+            asyncio.run(agent.nats_cmd({"func": "installchoco"}, wait=False))
+
+        time.sleep(0.5)
+        asyncio.run(agent.nats_cmd({"func": "getwinupdates"}, wait=False))
+        return Response("ok")
+
+
+class SyncMeshNodeID(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        if agent.mesh_node_id != request.data["nodeid"]:
+            agent.mesh_node_id = request.data["nodeid"]
+            agent.save(update_fields=["mesh_node_id"])
+
+        return Response("ok")
+
+
+class Choco(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        agent.choco_installed = request.data["installed"]
+        agent.save(update_fields=["choco_installed"])
+        return Response("ok")
+
+
+class WinUpdates(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        reboot_policy: str = agent.get_patch_policy().reboot_after_install
+        reboot = False
+
+        if reboot_policy == "always":
+            reboot = True
+
+        if request.data["needs_reboot"]:
+            if reboot_policy == "required":
+                reboot = True
+            elif reboot_policy == "never":
+                agent.needs_reboot = True
+                agent.save(update_fields=["needs_reboot"])
+
+        if reboot:
+            asyncio.run(agent.nats_cmd({"func": "rebootnow"}, wait=False))
+            logger.info(f"{agent.hostname} is rebooting after updates were installed.")
+
+        agent.delete_superseded_updates()
+        return Response("ok")
+
+    def patch(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        u = agent.winupdates.filter(guid=request.data["guid"]).last()
+        success: bool = request.data["success"]
+        if success:
+            u.result = "success"
+            u.downloaded = True
+            u.installed = True
+            u.date_installed = djangotime.now()
+            u.save(
+                update_fields=[
+                    "result",
+                    "downloaded",
+                    "installed",
+                    "date_installed",
+                ]
+            )
+        else:
+            u.result = "failed"
+            u.save(update_fields=["result"])
+
+        agent.delete_superseded_updates()
+        return Response("ok")
+
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        updates = request.data["wua_updates"]
+        for update in updates:
+            if agent.winupdates.filter(guid=update["guid"]).exists():
+                u = agent.winupdates.filter(guid=update["guid"]).last()
+                u.downloaded = update["downloaded"]
+                u.installed = update["installed"]
+                u.save(update_fields=["downloaded", "installed"])
+            else:
+                try:
+                    kb = "KB" + update["kb_article_ids"][0]
+                except:
+                    continue
+
+                WinUpdate(
+                    agent=agent,
+                    guid=update["guid"],
+                    kb=kb,
+                    title=update["title"],
+                    installed=update["installed"],
+                    downloaded=update["downloaded"],
+                    description=update["description"],
+                    severity=update["severity"],
+                    categories=update["categories"],
+                    category_ids=update["category_ids"],
+                    kb_article_ids=update["kb_article_ids"],
+                    more_info_urls=update["more_info_urls"],
+                    support_url=update["support_url"],
+                    revision_number=update["revision_number"],
+                ).save()
+
+        agent.delete_superseded_updates()
+
+        # more superseded updates cleanup
+        if pyver.parse(agent.version) <= pyver.parse("1.4.2"):
+            for u in agent.winupdates.filter(
+                date_installed__isnull=True, result="failed"
+            ).exclude(installed=True):
+                u.delete()
+
+        return Response("ok")
+
+
+class SupersededWinUpdate(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        updates = agent.winupdates.filter(guid=request.data["guid"])
+        for u in updates:
+            u.delete()
+
+        return Response("ok")
 
 
 class CheckRunner(APIView):
@@ -99,6 +328,8 @@ class TaskRunner(APIView):
         serializer.save(last_run=djangotime.now())
 
         new_task = AutomatedTask.objects.get(pk=task.pk)
+        new_task.handle_alert()
+
         AuditLog.objects.create(
             username=agent.hostname,
             agent=agent.hostname,
@@ -189,10 +420,6 @@ class NewAgent(APIView):
             WinUpdatePolicy(agent=agent).save()
 
         reload_nats()
-
-        # Generate policies for new agent
-        agent.generate_checks_from_policies()
-        agent.generate_tasks_from_policies()
 
         # create agent install audit record
         AuditLog.objects.create(

@@ -82,6 +82,13 @@
               </q-icon>
             </q-th>
           </template>
+          <template v-slot:header-cell-dashboardalert="props">
+            <q-th auto-width :props="props">
+              <q-icon name="notifications" size="1.5em">
+                <q-tooltip>Dashboard Alert</q-tooltip>
+              </q-icon>
+            </q-th>
+          </template>
           <template v-slot:header-cell-statusicon="props">
             <q-th auto-width :props="props"></q-th>
           </template>
@@ -141,6 +148,15 @@
                   :disable="props.row.managed_by_policy"
                 />
               </q-td>
+              <!-- dashboard alert -->
+              <q-td>
+                <q-checkbox
+                  dense
+                  @input="checkAlert(props.row.id, 'Dashboard', props.row.dashboard_alert, props.row.managed_by_policy)"
+                  v-model="props.row.dashboard_alert"
+                  :disable="props.row.managed_by_policy"
+                />
+              </q-td>
               <!-- policy check icon -->
               <q-td v-if="props.row.managed_by_policy">
                 <q-icon style="font-size: 1.3rem" name="policy">
@@ -154,23 +170,30 @@
               </q-td>
               <q-td v-else></q-td>
               <!-- status icon -->
-              <q-td v-if="props.row.status === 'pending'"></q-td>
-              <q-td v-else-if="props.row.status === 'passing'">
-                <q-icon style="font-size: 1.3rem" color="positive" name="check_circle" />
+              <q-td v-if="props.row.status === 'passing'">
+                <q-icon style="font-size: 1.3rem" color="positive" name="check_circle">
+                  <q-tooltip>Passing</q-tooltip>
+                </q-icon>
               </q-td>
               <q-td v-else-if="props.row.status === 'failing'">
-                <q-icon style="font-size: 1.3rem" color="negative" name="error" />
+                <q-icon v-if="props.row.alert_severity === 'info'" style="font-size: 1.3rem" color="info" name="info">
+                  <q-tooltip>Informational</q-tooltip>
+                </q-icon>
+                <q-icon
+                  v-else-if="props.row.alert_severity === 'warning'"
+                  style="font-size: 1.3rem"
+                  color="warning"
+                  name="warning"
+                >
+                  <q-tooltip>Warning</q-tooltip>
+                </q-icon>
+                <q-icon v-else style="font-size: 1.3rem" color="negative" name="error">
+                  <q-tooltip>Error</q-tooltip>
+                </q-icon>
               </q-td>
+              <q-td v-else></q-td>
               <!-- check description -->
               <q-td>{{ props.row.readable_desc }}</q-td>
-              <!-- status text -->
-              <q-td v-if="props.row.status === 'pending'">Awaiting First Synchronization</q-td>
-              <q-td v-else-if="props.row.status === 'passing'">
-                <q-badge color="positive">Passing</q-badge>
-              </q-td>
-              <q-td v-else-if="props.row.status === 'failing'">
-                <q-badge color="negative">Failing</q-badge>
-              </q-td>
               <!-- more info -->
               <q-td>
                 <span
@@ -191,7 +214,7 @@
                   v-else-if="props.row.check_type === 'script'"
                   style="cursor: pointer; text-decoration: underline"
                   class="text-primary"
-                  @click="scriptMoreInfo(props.row)"
+                  @click="showScriptOutput(props.row)"
                   >Last Output</span
                 >
                 <span
@@ -202,7 +225,7 @@
                   >Last Output</span
                 >
               </q-td>
-              <q-td>{{ props.row.last_run }}</q-td>
+              <q-td>{{ props.row.last_run || "Never" }}</q-td>
               <q-td v-if="props.row.assigned_task !== null && props.row.assigned_task.length > 1"
                 >{{ props.row.assigned_task.length }} Tasks</q-td
               >
@@ -235,15 +258,6 @@
     <q-dialog v-model="showScriptCheck">
       <ScriptCheck @close="showScriptCheck = false" :agentpk="selectedAgentPk" :mode="mode" :checkpk="checkpk" />
     </q-dialog>
-    <q-dialog v-model="showScriptOutput">
-      <ScriptOutput
-        @close="
-          showScriptOutput = false;
-          scriptInfo = {};
-        "
-        :scriptInfo="scriptInfo"
-      />
-    </q-dialog>
     <q-dialog v-model="showEventLogOutput">
       <EventLogCheckOutput
         @close="
@@ -258,7 +272,7 @@
 
 <script>
 import axios from "axios";
-import { mapState, mapGetters } from "vuex";
+import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import DiskSpaceCheck from "@/components/modals/checks/DiskSpaceCheck";
 import MemCheck from "@/components/modals/checks/MemCheck";
@@ -281,7 +295,6 @@ export default {
     WinSvcCheck,
     EventLogCheck,
     ScriptCheck,
-    ScriptOutput,
     EventLogCheckOutput,
   },
   mixins: [mixins],
@@ -296,17 +309,15 @@ export default {
       showWinSvcCheck: false,
       showEventLogCheck: false,
       showScriptCheck: false,
-      showScriptOutput: false,
       showEventLogOutput: false,
-      scriptInfo: {},
       evtlogdata: {},
       columns: [
         { name: "smsalert", field: "text_alert", align: "left" },
         { name: "emailalert", field: "email_alert", align: "left" },
+        { name: "dashboardalert", field: "dashboard_alert", align: "left" },
         { name: "policystatus", align: "left" },
         { name: "statusicon", align: "left" },
         { name: "desc", field: "readable_desc", label: "Description", align: "left", sortable: true },
-        { name: "status", label: "Status", field: "status", align: "left", sortable: true },
         {
           name: "moreinfo",
           label: "More Info",
@@ -373,9 +384,12 @@ export default {
       const data = {};
       if (alert_type === "Email") {
         data.email_alert = action;
-      } else {
+      } else if (alert_type === "Text") {
         data.text_alert = action;
+      } else {
+        data.dashboard_alert = action;
       }
+
       data.check_alert = true;
       const act = action ? "enabled" : "disabled";
       const color = action ? "positive" : "warning";
@@ -398,10 +412,6 @@ export default {
         message: `<pre>${output}</pre>`,
         html: true,
       });
-    },
-    scriptMoreInfo(props) {
-      this.scriptInfo = props;
-      this.showScriptOutput = true;
     },
     eventLogMoreInfo(props) {
       this.evtlogdata = props;
@@ -432,6 +442,13 @@ export default {
         component: CheckGraph,
         parent: this,
         check: check,
+      });
+    },
+    showScriptOutput(script) {
+      this.$q.dialog({
+        component: ScriptOutput,
+        parent: this,
+        scriptInfo: script,
       });
     },
   },

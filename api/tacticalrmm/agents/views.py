@@ -18,7 +18,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 
-from .models import Agent, AgentOutage, RecoveryAction, Note
+from .models import Agent, RecoveryAction, Note
 from core.models import CoreSettings
 from scripts.models import Script
 from logs.models import AuditLog, PendingAction
@@ -97,22 +97,17 @@ def uninstall(request):
 def edit_agent(request):
     agent = get_object_or_404(Agent, pk=request.data["id"])
 
-    old_site = agent.site.pk
     a_serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
     a_serializer.is_valid(raise_exception=True)
     a_serializer.save()
 
-    policy = agent.winupdatepolicy.get()
-    p_serializer = WinUpdatePolicySerializer(
-        instance=policy, data=request.data["winupdatepolicy"][0]
-    )
-    p_serializer.is_valid(raise_exception=True)
-    p_serializer.save()
-
-    # check if site changed and initiate generating correct policies
-    if old_site != request.data["site"]:
-        agent.generate_checks_from_policies()
-        agent.generate_tasks_from_policies()
+    if "winupdatepolicy" in request.data.keys():
+        policy = agent.winupdatepolicy.get()
+        p_serializer = WinUpdatePolicySerializer(
+            instance=policy, data=request.data["winupdatepolicy"][0]
+        )
+        p_serializer.is_valid(raise_exception=True)
+        p_serializer.save()
 
     return Response("ok")
 
@@ -248,6 +243,7 @@ class AgentsTableList(generics.ListAPIView):
             "overdue_text_alert",
             "overdue_email_alert",
             "overdue_time",
+            "offline_time",
             "last_seen",
             "boot_time",
             "logged_in_username",
@@ -296,6 +292,7 @@ def by_client(request, clientpk):
             "overdue_text_alert",
             "overdue_email_alert",
             "overdue_time",
+            "offline_time",
             "last_seen",
             "boot_time",
             "logged_in_username",
@@ -325,6 +322,7 @@ def by_site(request, sitepk):
             "overdue_text_alert",
             "overdue_email_alert",
             "overdue_time",
+            "offline_time",
             "last_seen",
             "boot_time",
             "logged_in_username",
@@ -563,12 +561,10 @@ def install_agent(request):
             "/VERYSILENT",
             "/SUPPRESSMSGBOXES",
             "&&",
-            "timeout",
-            "/t",
-            "10",
-            "/nobreak",
-            ">",
-            "NUL",
+            "ping",
+            "127.0.0.1",
+            "-n",
+            "5",
             "&&",
             r'"C:\Program Files\TacticalAgent\tacticalrmm.exe"',
             "-m",
@@ -706,19 +702,10 @@ def run_script(request):
         script=script.name,
     )
 
-    data = {
-        "func": "runscript",
-        "timeout": request.data["timeout"],
-        "script_args": request.data["args"],
-        "payload": {
-            "code": script.code,
-            "shell": script.shell,
-        },
-    }
-
     if output == "wait":
-        r = asyncio.run(agent.nats_cmd(data, timeout=req_timeout))
+        r = agent.run_script(scriptpk=script.pk, timeout=req_timeout, wait=True)
         return Response(r)
+
     elif output == "email":
         if not pyver.parse(agent.version) >= pyver.parse("1.1.12"):
             return notify_error("Requires agent version 1.1.12 or greater")
@@ -730,13 +717,12 @@ def run_script(request):
             agentpk=agent.pk,
             scriptpk=script.pk,
             nats_timeout=req_timeout,
-            nats_data=data,
             emails=emails,
         )
-        return Response(f"{script.name} will now be run on {agent.hostname}")
     else:
-        asyncio.run(agent.nats_cmd(data, wait=False))
-        return Response(f"{script.name} will now be run on {agent.hostname}")
+        agent.run_script(scriptpk=script.pk, timeout=req_timeout)
+
+    return Response(f"{script.name} will now be run on {agent.hostname}")
 
 
 @api_view()
@@ -857,20 +843,43 @@ def bulk(request):
 
 @api_view(["POST"])
 def agent_counts(request):
+
+    server_offline_count = len(
+        [
+            agent
+            for agent in Agent.objects.filter(monitoring_type="server").only(
+                "pk",
+                "last_seen",
+                "overdue_time",
+                "offline_time",
+            )
+            if not agent.status == "online"
+        ]
+    )
+
+    workstation_offline_count = len(
+        [
+            agent
+            for agent in Agent.objects.filter(monitoring_type="workstation").only(
+                "pk",
+                "last_seen",
+                "overdue_time",
+                "offline_time",
+            )
+            if not agent.status == "online"
+        ]
+    )
+
     return Response(
         {
             "total_server_count": Agent.objects.filter(
                 monitoring_type="server"
             ).count(),
-            "total_server_offline_count": AgentOutage.objects.filter(
-                recovery_time=None, agent__monitoring_type="server"
-            ).count(),
+            "total_server_offline_count": server_offline_count,
             "total_workstation_count": Agent.objects.filter(
                 monitoring_type="workstation"
             ).count(),
-            "total_workstation_offline_count": AgentOutage.objects.filter(
-                recovery_time=None, agent__monitoring_type="workstation"
-            ).count(),
+            "total_workstation_offline_count": workstation_offline_count,
         }
     )
 

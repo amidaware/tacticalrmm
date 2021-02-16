@@ -2,8 +2,6 @@ import Vue from "vue";
 import Vuex from "vuex";
 import axios from "axios";
 import { Notify } from "quasar";
-import alertsModule from "./alerts";
-import automationModule from "./automation";
 import adminModule from "./admin.js"
 
 Vue.use(Vuex);
@@ -11,8 +9,6 @@ Vue.use(Vuex);
 export default function () {
   const Store = new Vuex.Store({
     modules: {
-      automation: automationModule,
-      alerts: alertsModule,
       admin: adminModule
     },
     state: {
@@ -241,6 +237,9 @@ export default function () {
                 raw: `Site|${site.id}`,
                 header: "generic",
                 icon: "apartment",
+                server_policy: site.server_policy,
+                workstation_policy: site.workstation_policy,
+                alert_template: site.alert_template
               }
 
               if (site.maintenance_mode) { siteNode["color"] = "warning" }
@@ -255,6 +254,9 @@ export default function () {
               raw: `Client|${client.id}`,
               header: "root",
               icon: "business",
+              server_policy: client.server_policy,
+              workstation_policy: client.workstation_policy,
+              alert_template: client.alert_template,
               children: childSites
             }
 

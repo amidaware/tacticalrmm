@@ -37,7 +37,12 @@ class AgentSerializer(serializers.ModelSerializer):
 class AgentOverdueActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent
-        fields = ["pk", "overdue_email_alert", "overdue_text_alert"]
+        fields = [
+            "pk",
+            "overdue_email_alert",
+            "overdue_text_alert",
+            "overdue_dashboard_alert",
+        ]
 
 
 class AgentTableSerializer(serializers.ModelSerializer):
@@ -50,6 +55,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
     site_name = serializers.ReadOnlyField(source="site.name")
     logged_username = serializers.SerializerMethodField()
     italic = serializers.SerializerMethodField()
+    policy = serializers.ReadOnlyField(source="policy.id")
 
     def get_pending_actions(self, obj):
         return obj.pendingactions.filter(status="pending").count()
@@ -89,12 +95,14 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "status",
             "overdue_text_alert",
             "overdue_email_alert",
+            "overdue_dashboard_alert",
             "last_seen",
             "boot_time",
             "checks",
             "maintenance_mode",
             "logged_username",
             "italic",
+            "policy",
         ]
         depth = 2
 
@@ -120,10 +128,12 @@ class AgentEditSerializer(serializers.ModelSerializer):
             "timezone",
             "check_interval",
             "overdue_time",
+            "offline_time",
             "overdue_text_alert",
             "overdue_email_alert",
             "all_timezones",
             "winupdatepolicy",
+            "policy",
         ]
 
 

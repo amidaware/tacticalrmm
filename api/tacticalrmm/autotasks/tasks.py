@@ -6,6 +6,9 @@ from django.conf import settings
 import pytz
 from django.utils import timezone as djangotime
 from packaging import version as pyver
+from typing import Union
+import random
+from time import sleep
 
 from .models import AutomatedTask
 from logs.models import PendingAction
@@ -243,3 +246,85 @@ def remove_orphaned_win_tasks(agentpk):
                 logger.info(f"Removed orphaned task {task} from {agent.hostname}")
 
     logger.info(f"Orphaned task cleanup finished on {agent.hostname}")
+
+
+@app.task
+def handle_task_email_alert(pk: int, alert_interval: Union[float, None] = None) -> str:
+    from alerts.models import Alert
+
+    alert = Alert.objects.get(pk=pk)
+
+    # first time sending email
+    if not alert.email_sent:
+        sleep(random.randint(1, 10))
+        alert.assigned_task.send_email()
+        alert.email_sent = djangotime.now()
+        alert.save(update_fields=["email_sent"])
+    else:
+        if alert_interval:
+            # send an email only if the last email sent is older than alert interval
+            delta = djangotime.now() - dt.timedelta(days=alert_interval)
+            if alert.email_sent < delta:
+                sleep(random.randint(1, 10))
+                alert.assigned_task.send_email()
+                alert.email_sent = djangotime.now()
+                alert.save(update_fields=["email_sent"])
+
+    return "ok"
+
+
+@app.task
+def handle_task_sms_alert(pk: int, alert_interval: Union[float, None] = None) -> str:
+    from alerts.models import Alert
+
+    alert = Alert.objects.get(pk=pk)
+
+    # first time sending text
+    if not alert.sms_sent:
+        sleep(random.randint(1, 3))
+        alert.assigned_task.send_sms()
+        alert.sms_sent = djangotime.now()
+        alert.save(update_fields=["sms_sent"])
+    else:
+        if alert_interval:
+            # send a text only if the last text sent is older than alert interval
+            delta = djangotime.now() - dt.timedelta(days=alert_interval)
+            if alert.sms_sent < delta:
+                sleep(random.randint(1, 3))
+                alert.assigned_task.send_sms()
+                alert.sms_sent = djangotime.now()
+                alert.save(update_fields=["sms_sent"])
+
+    return "ok"
+
+
+@app.task
+def handle_resolved_task_sms_alert(pk: int) -> str:
+    from alerts.models import Alert
+
+    alert = Alert.objects.get(pk=pk)
+
+    # first time sending text
+    if not alert.resolved_sms_sent:
+        sleep(random.randint(1, 3))
+        alert.assigned_task.send_resolved_sms()
+        alert.resolved_sms_sent = djangotime.now()
+        alert.save(update_fields=["resolved_sms_sent"])
+
+    return "ok"
+
+
+@app.task
+def handle_resolved_task_email_alert(pk: int) -> str:
+    from alerts.models import Alert
+
+    alert = Alert.objects.get(pk=pk)
+
+    # first time sending email
+    if not alert.resolved_email_sent:
+        sleep(random.randint(1, 10))
+        alert.assigned_task.send_resolved_email()
+        alert.resolved_email_sent = djangotime.now()
+        alert.save(update_fields=["resolved_email_sent"])
+
+    return "ok"

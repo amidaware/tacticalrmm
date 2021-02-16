@@ -1,132 +1,134 @@
 <template>
-  <q-card style="width: 60vw">
-    <q-form ref="form" @submit="submit">
-      <q-card-section class="row items-center">
-        <div class="text-h6">{{ title }}</div>
+  <q-dialog ref="dialog" @hide="onHide">
+    <q-card class="q-dialog-plugin" style="width: 60vw">
+      <q-bar>
+        {{ title }}
         <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
-      </q-card-section>
-      <q-card-section v-if="copyPolicy">
-        <div class="text-subtitle1">
-          You are copying checks and tasks from Policy:
-          <b>{{ copyPolicy.name }}</b> into a new policy.
-        </div>
-      </q-card-section>
-      <q-card-section class="row">
-        <div class="col-2">Name:</div>
-        <div class="col-10">
-          <q-input outlined dense v-model="name" :rules="[ val => !!val || '*Required']" />
-        </div>
-      </q-card-section>
-      <q-card-section class="row">
-        <div class="col-2">Description:</div>
-        <div class="col-10">
-          <q-input outlined dense v-model="desc" />
-        </div>
-      </q-card-section>
-      <q-card-section class="row">
-        <div class="col-2">Active:</div>
-        <div class="col-10">
-          <q-toggle v-model="active" color="green" />
-        </div>
-      </q-card-section>
-      <q-card-section class="row">
-        <div class="col-2">Enforced:</div>
-        <div class="col-10">
-          <q-toggle v-model="enforced" color="green" />
-        </div>
-      </q-card-section>
-      <q-card-section class="row items-center">
-        <q-btn :label="title" color="primary" type="submit" />
-      </q-card-section>
-    </q-form>
-  </q-card>
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+      <q-form @submit="submit">
+        <q-card-section v-if="copyPolicy">
+          <div class="text-subtitle1">
+            You are copying checks and tasks from Policy:
+            <b>{{ copyPolicy.name }}</b> into a new policy.
+          </div>
+        </q-card-section>
+        <q-card-section class="row">
+          <div class="col-2">Name:</div>
+          <div class="col-10">
+            <q-input outlined dense v-model="localPolicy.name" :rules="[val => !!val || '*Required']" />
+          </div>
+        </q-card-section>
+        <q-card-section class="row">
+          <div class="col-2">Description:</div>
+          <div class="col-10">
+            <q-input outlined dense v-model="localPolicy.desc" />
+          </div>
+        </q-card-section>
+        <q-card-section class="row">
+          <div class="col-2">Active:</div>
+          <div class="col-10">
+            <q-toggle v-model="localPolicy.active" color="green" />
+          </div>
+        </q-card-section>
+        <q-card-section class="row">
+          <div class="col-2">Enforced:</div>
+          <div class="col-10">
+            <q-toggle v-model="localPolicy.enforced" color="green" />
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn dense flat label="Cancel" v-close-popup />
+          <q-btn flat label="Submit" color="primary" type="submit" />
+        </q-card-actions>
+      </q-form>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
-import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
+import mixins from "@/mixins/mixins";
 
 export default {
   name: "PolicyForm",
   mixins: [mixins],
-  props: { pk: Number, copyPolicy: Object },
+  props: { policy: Object, copyPolicy: Object },
   data() {
     return {
-      name: "",
-      desc: "",
-      enforced: false,
-      active: false,
+      localPolicy: {
+        name: "",
+        desc: "",
+        enforced: false,
+        active: false,
+      },
     };
   },
   computed: {
     title() {
-      return this.pk ? "Edit Policy" : "Add Policy";
+      return this.editing ? "Edit Policy" : "Add Policy";
+    },
+    editing() {
+      return !!this.policy;
     },
   },
   methods: {
-    getPolicy() {
-      this.$q.loading.show();
-
-      this.$store.dispatch("automation/loadPolicy", this.pk).then(r => {
-        this.$q.loading.hide();
-
-        this.name = r.data.name;
-        this.desc = r.data.desc;
-        this.active = r.data.active;
-        this.enforced = r.data.enforced;
-      });
-    },
     submit() {
-      if (!this.name) {
-        this.$q.notify(notifySuccessConfig("Name is required!"));
-        return false;
-      }
-
       this.$q.loading.show();
 
-      let formData = {
-        id: this.pk,
-        name: this.name,
-        desc: this.desc,
-        active: this.active,
-        enforced: this.enforced,
+      let data = {
+        ...this.localPolicy,
       };
 
-      if (this.pk) {
-        this.$store
-          .dispatch("automation/editPolicy", formData)
+      if (this.editing) {
+        this.$axios
+          .put(`/automation/policies/${data.id}/`, data)
           .then(r => {
             this.$q.loading.hide();
-            this.$emit("close");
-            this.$q.notify(notifySuccessConfig("Policy edited!"));
+            this.onOk();
+            this.notifySuccess("Policy edited!");
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.$q.notify(notifyErrorConfig(e.response.data));
+            this.notifyError("There was an error editing the policy");
           });
       } else {
         if (this.copyPolicy) {
-          formData.copyId = this.copyPolicy.id;
+          data.copyId = this.copyPolicy.id;
         }
 
-        this.$store
-          .dispatch("automation/addPolicy", formData)
+        this.$axios
+          .post("/automation/policies/", data)
           .then(r => {
             this.$q.loading.hide();
-            this.$emit("close");
-            this.$q.notify(notifySuccessConfig("Policy added! Now you can add Tasks and Checks!"));
+            this.onOk();
+            this.notifySuccess("Policy added. Now you can add Tasks and Checks!");
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.$q.notify(notifyErrorConfig(e.response.data));
+            this.notifyError("There was an error adding the policy");
           });
       }
+    },
+    show() {
+      this.$refs.dialog.show();
+    },
+    hide() {
+      this.$refs.dialog.hide();
+    },
+    onHide() {
+      this.$emit("hide");
+    },
+    onOk() {
+      this.$emit("ok");
+      this.hide();
     },
   },
   mounted() {
     // If pk prop is set that means we are editting
-    if (this.pk) {
-      this.getPolicy();
+    if (this.policy) {
+      Object.assign(this.localPolicy, this.policy);
     }
   },
 };

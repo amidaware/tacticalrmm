@@ -20,13 +20,19 @@
       <q-card-section>
         <q-input
           outlined
-          v-model.number="diskcheck.threshold"
-          label="Threshold (%)"
-          :rules="[
-            val => !!val || '*Required',
-            val => val >= 1 || 'Minimum threshold is 1',
-            val => val < 100 || 'Maximum threshold is 99',
-          ]"
+          type="number"
+          v-model.number="diskcheck.warning_threshold"
+          label="Warning Threshold Remaining (%)"
+          :rules="[val => val >= 0 || 'Minimum threshold is 0', val => val < 100 || 'Maximum threshold is 99']"
+        />
+      </q-card-section>
+      <q-card-section>
+        <q-input
+          outlined
+          type="number"
+          v-model.number="diskcheck.error_threshold"
+          label="Error Threshold Remaining (%)"
+          :rules="[val => val >= 0 || 'Minimum threshold is 0', val => val < 100 || 'Maximum threshold is 99']"
         />
       </q-card-section>
       <q-card-section>
@@ -50,7 +56,7 @@
 
 <script>
 import axios from "axios";
-import { mapState, mapGetters } from "vuex";
+import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 export default {
   name: "DiskSpaceCheck",
@@ -66,7 +72,8 @@ export default {
       diskcheck: {
         disk: null,
         check_type: "diskspace",
-        threshold: 25,
+        warning_threshold: 25,
+        error_threshold: 10,
         fails_b4_alert: 1,
       },
       diskOptions: [],
@@ -89,6 +96,10 @@ export default {
       axios.get(`/checks/${this.checkpk}/check/`).then(r => (this.diskcheck = r.data));
     },
     addCheck() {
+      if (!this.isValidThreshold(this.diskcheck.warning_threshold, this.diskcheck.error_threshold, true)) {
+        return;
+      }
+
       const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
       const data = {
         ...pk,
@@ -104,6 +115,10 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     editCheck() {
+      if (!this.isValidThreshold(this.diskcheck.warning_threshold, this.diskcheck.error_threshold, true)) {
+        return;
+      }
+
       axios
         .patch(`/checks/${this.checkpk}/check/`, this.diskcheck)
         .then(r => {
@@ -114,9 +129,7 @@ export default {
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
     reloadChecks() {
-      if (this.policypk) {
-        this.$store.dispatch("automation/loadPolicyChecks", this.policypk);
-      } else {
+      if (this.agentpk) {
         this.$store.dispatch("loadChecks", this.agentpk);
       }
     },

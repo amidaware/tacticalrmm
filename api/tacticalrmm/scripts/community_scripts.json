@@ -194,5 +194,12 @@
         "name": "TRMM Defender Exclusions",
         "description": "Windows Defender Exclusions for Tactical RMM",
         "shell": "powershell"
+    },
+    {
+        "filename": "Display_Message_To_User.ps1",
+        "submittedBy": "https://github.com/bradhawkins85",
+        "name": "Display Message To User",
+        "description": "Displays a popup message to the currently logged on user",
+        "shell": "powershell"
     }
 ]

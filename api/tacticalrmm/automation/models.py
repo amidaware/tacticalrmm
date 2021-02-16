@@ -9,6 +9,36 @@ class Policy(BaseAuditModel):
     desc = models.CharField(max_length=255, null=True, blank=True)
     active = models.BooleanField(default=False)
     enforced = models.BooleanField(default=False)
+    alert_template = models.ForeignKey(
+        "alerts.AlertTemplate",
+        related_name="policies",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+
+    def save(self, *args, **kwargs):
+        from automation.tasks import generate_agent_checks_from_policies_task
+
+        # get old policy if exists
+        old_policy = type(self).objects.get(pk=self.pk) if self.pk else None
+        super(BaseAuditModel, self).save(*args, **kwargs)
+
+        # generate agent checks only if active and enforced were changed
+        if old_policy:
+            if old_policy.active != self.active or old_policy.enforced != self.enforced:
+                generate_agent_checks_from_policies_task.delay(
+                    policypk=self.pk,
+                    create_tasks=True,
+                )
+
+    def delete(self, *args, **kwargs):
+        from automation.tasks import generate_agent_checks_task
+
+        agents = list(self.related_agents().only("pk").values_list("pk", flat=True))
+        super(BaseAuditModel, self).delete(*args, **kwargs)
+
+        generate_agent_checks_task.delay(agents, create_tasks=True)
 
     @property
     def is_default_server_policy(self):
@@ -122,7 +152,9 @@ class Policy(BaseAuditModel):
             delete_win_task_schedule.delay(task.pk)
 
         # handle matching tasks that haven't synced to agent yet or pending deletion due to agent being offline
-        for action in agent.pendingactions.exclude(status="completed"):
+        for action in agent.pendingactions.filter(action_type="taskaction").exclude(
+            status="completed"
+        ):
             task = AutomatedTask.objects.get(pk=action.details["task_id"])
             if (
                 task.parent_task in agent_tasks_parent_pks

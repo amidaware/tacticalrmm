@@ -3,17 +3,18 @@ import string
 import os
 import json
 
-from model_bakery.recipe import Recipe, seq
+from model_bakery.recipe import Recipe, foreign_key
 from itertools import cycle
 from django.utils import timezone as djangotime
 from django.conf import settings
-
-from .models import Agent
 
 
 def generate_agent_id(hostname):
     rand = "".join(random.choice(string.ascii_letters) for _ in range(35))
     return f"{rand}-{hostname}"
+
+
+site = Recipe("clients.Site")
 
 
 def get_wmi_data():
@@ -24,7 +25,8 @@ def get_wmi_data():
 
 
 agent = Recipe(
-    Agent,
+    "agents.Agent",
+    site=foreign_key(site),
     hostname="DESKTOP-TEST123",
     version="1.3.0",
     monitoring_type=cycle(["workstation", "server"]),

@@ -43,18 +43,9 @@ def get_core_settings(request):
 @api_view(["PATCH"])
 def edit_settings(request):
     coresettings = CoreSettings.objects.first()
-    old_server_policy = coresettings.server_policy
-    old_workstation_policy = coresettings.workstation_policy
     serializer = CoreSettingsSerializer(instance=coresettings, data=request.data)
     serializer.is_valid(raise_exception=True)
-    new_settings = serializer.save()
-
-    # check if default policies changed
-    if old_server_policy != new_settings.server_policy:
-        generate_all_agent_checks_task.delay(mon_type="server", create_tasks=True)
-
-    if old_workstation_policy != new_settings.workstation_policy:
-        generate_all_agent_checks_task.delay(mon_type="workstation", create_tasks=True)
+    serializer.save()
 
     return Response("ok")
 
@@ -105,7 +96,7 @@ def server_maintenance(request):
         from agents.models import Agent
         from autotasks.tasks import remove_orphaned_win_tasks
 
-        agents = Agent.objects.only("pk", "last_seen", "overdue_time")
+        agents = Agent.objects.only("pk", "last_seen", "overdue_time", "offline_time")
         online = [i for i in agents if i.status == "online"]
         for agent in online:
             remove_orphaned_win_tasks.delay(agent.pk)
@@ -115,7 +106,6 @@ def server_maintenance(request):
         )
 
     if request.data["action"] == "prune_db":
-        from agents.models import AgentOutage
         from logs.models import AuditLog, PendingAction
 
         if "prune_tables" not in request.data:
@@ -123,11 +113,6 @@ def server_maintenance(request):
 
         tables = request.data["prune_tables"]
         records_count = 0
-        if "agent_outages" in tables:
-            agentoutages = AgentOutage.objects.exclude(recovery_time=None)
-            records_count += agentoutages.count()
-            agentoutages.delete()
-
         if "audit_logs" in tables:
             auditlogs = AuditLog.objects.filter(action="check_run")
             records_count += auditlogs.count()

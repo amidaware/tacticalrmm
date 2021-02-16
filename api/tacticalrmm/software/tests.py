@@ -8,6 +8,7 @@ from .models import ChocoLog
 class TestSoftwareViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()
+        self.setup_coresettings()
 
     def test_chocos_get(self):
         url = "/software/chocos/"
@@ -63,6 +64,9 @@ class TestSoftwareViews(TacticalTestCase):
 
 
 class TestSoftwareTasks(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+
     @patch("agents.models.Agent.nats_cmd")
     def test_install_program(self, nats_cmd):
         from .tasks import install_program

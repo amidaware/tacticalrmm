@@ -305,9 +305,7 @@ class Agent(BaseAuditModel):
             else:
                 online = [
                     agent
-                    for agent in Agent.objects.all().only(
-                        "pk", "last_seen", "overdue_time"
-                    )
+                    for agent in Agent.objects.only("pk", "last_seen", "overdue_time")
                     if agent.status == "online"
                 ]
 

@@ -310,9 +310,6 @@ class LogCrash(APIView):
 
     def post(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agentid"])
-        logger.info(
-            f"Detected crashed tacticalagent service on {agent.hostname} v{agent.version}, attempting recovery"
-        )
         agent.last_seen = djangotime.now()
         agent.save(update_fields=["last_seen"])
         return Response("ok")

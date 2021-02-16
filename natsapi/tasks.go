@@ -1,6 +1,7 @@
 package api
 
 import (
+	"sync"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -23,24 +24,30 @@ func monitorAgents(c *resty.Client, nc *nats.Conn) {
 
 	tick := time.NewTicker(10 * time.Minute)
 	for range tick.C {
+		var wg sync.WaitGroup
 		agentids, _ := c.R().SetResult(&AgentIDS{}).Get("/offline/")
 		ids := agentids.Result().(*AgentIDS).IDs
+		wg.Add(len(ids))
 		var resp string
+
 		for _, id := range ids {
-			out, err := nc.Request(id, payload, 2*time.Second)
-			if err != nil {
-				continue
-			}
-			dec := codec.NewDecoderBytes(out.Data, &mh)
-			if err := dec.Decode(&resp); err == nil {
-				// if the agent is respoding to pong from the rpc service but is not showing as online (handled by tacticalagent service)
-				// then tacticalagent service is hung. forcefully restart it
-				if resp == "pong" {
-					nc.Publish(id, recPayload)
-					p := map[string]string{"agentid": id}
-					c.R().SetBody(p).Post("/logcrash/")
+			go func(id string, nc *nats.Conn, wg *sync.WaitGroup, c *resty.Client) {
+				defer wg.Done()
+				out, err := nc.Request(id, payload, 1*time.Second)
+				if err != nil {
+					return
 				}
-			}
+				dec := codec.NewDecoderBytes(out.Data, &mh)
+				if err := dec.Decode(&resp); err == nil {
+					// if the agent is respoding to pong from the rpc service but is not showing as online (handled by tacticalagent service)
+					// then tacticalagent service is hung. forcefully restart it
+					if resp == "pong" {
+						nc.Publish(id, recPayload)
+						p := map[string]string{"agentid": id}
+						c.R().SetBody(p).Post("/logcrash/")
+					}
+				}
+			}(id, nc, &wg, c)
 		}
 	}
 }

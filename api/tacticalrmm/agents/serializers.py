@@ -56,6 +56,20 @@ class AgentTableSerializer(serializers.ModelSerializer):
     logged_username = serializers.SerializerMethodField()
     italic = serializers.SerializerMethodField()
     policy = serializers.ReadOnlyField(source="policy.id")
+    alert_template = serializers.SerializerMethodField()
+
+    def get_alert_template(self, obj):
+        alert_template = obj.get_alert_template()
+
+        if not alert_template:
+            return None
+        else:
+            return {
+                "name": alert_template.name,
+                "always_email": alert_template.agent_always_email,
+                "always_text": alert_template.agent_always_text,
+                "always_alert": alert_template.agent_always_alert,
+            }
 
     def get_pending_actions(self, obj):
         return obj.pendingactions.filter(status="pending").count()
@@ -83,6 +97,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
         model = Agent
         fields = [
             "id",
+            "alert_template",
             "hostname",
             "agent_id",
             "site_name",

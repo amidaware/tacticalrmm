@@ -13,7 +13,6 @@
       <q-btn v-if="!!selectedPolicy" dense flat push @click="getTasks" icon="refresh" />
       <template>
         <q-table
-          style="max-height: 35vh"
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="tabs-tbl-sticky"
           :data="tasks"

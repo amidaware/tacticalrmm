@@ -170,10 +170,9 @@ class AlertTemplate(models.Model):
     # agent alert settings
     agent_email_on_resolved = BooleanField(null=True, blank=True, default=False)
     agent_text_on_resolved = BooleanField(null=True, blank=True, default=False)
-    agent_include_desktops = BooleanField(null=True, blank=True, default=False)
-    agent_always_email = BooleanField(null=True, blank=True, default=False)
-    agent_always_text = BooleanField(null=True, blank=True, default=False)
-    agent_always_alert = BooleanField(null=True, blank=True, default=False)
+    agent_always_email = BooleanField(null=True, blank=True, default=None)
+    agent_always_text = BooleanField(null=True, blank=True, default=None)
+    agent_always_alert = BooleanField(null=True, blank=True, default=None)
     agent_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
 
     # check alert settings
@@ -194,9 +193,9 @@ class AlertTemplate(models.Model):
     )
     check_email_on_resolved = BooleanField(null=True, blank=True, default=False)
     check_text_on_resolved = BooleanField(null=True, blank=True, default=False)
-    check_always_email = BooleanField(null=True, blank=True, default=False)
-    check_always_text = BooleanField(null=True, blank=True, default=False)
-    check_always_alert = BooleanField(null=True, blank=True, default=False)
+    check_always_email = BooleanField(null=True, blank=True, default=None)
+    check_always_text = BooleanField(null=True, blank=True, default=None)
+    check_always_alert = BooleanField(null=True, blank=True, default=None)
     check_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
 
     # task alert settings
@@ -217,10 +216,14 @@ class AlertTemplate(models.Model):
     )
     task_email_on_resolved = BooleanField(null=True, blank=True, default=False)
     task_text_on_resolved = BooleanField(null=True, blank=True, default=False)
-    task_always_email = BooleanField(null=True, blank=True, default=False)
-    task_always_text = BooleanField(null=True, blank=True, default=False)
-    task_always_alert = BooleanField(null=True, blank=True, default=False)
+    task_always_email = BooleanField(null=True, blank=True, default=None)
+    task_always_text = BooleanField(null=True, blank=True, default=None)
+    task_always_alert = BooleanField(null=True, blank=True, default=None)
     task_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
+
+    # exclusion settings
+    exclude_workstations = BooleanField(null=True, blank=True, default=False)
+    exclude_servers = BooleanField(null=True, blank=True, default=False)
 
     excluded_sites = models.ManyToManyField(
         "clients.Site", related_name="alert_exclusions", blank=True

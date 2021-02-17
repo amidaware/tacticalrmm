@@ -542,17 +542,22 @@ class Agent(BaseAuditModel):
         for template in templates:
             # check if client, site, or agent has been excluded from template
             if (
-                client.pk in template.excluded_clients.all()
-                or site.pk in template.excluded_sites.all()
-                or self.pk in template.excluded_agents.all()
+                client.pk
+                in template.excluded_clients.all().values_list("pk", flat=True)
+                or site.pk in template.excluded_sites.all().values_list("pk", flat=True)
+                or self.pk
+                in template.excluded_agents.all()
+                .only("pk")
+                .values_list("pk", flat=True)
             ):
                 continue
 
-            # see if template is excluding desktops
-            if (
-                self.monitoring_type == "workstation"
-                and not template.agent_include_desktops
-            ):
+            # check if template is excluding desktops
+            if self.monitoring_type == "workstation" and template.exclude_desktops:
+                continue
+
+            # check if template is excluding servers
+            elif self.monitoring_type == "server" and template.exclude_servers:
                 continue
             else:
                 return template

@@ -63,6 +63,11 @@
           />
         </q-card-section>
 
+        <q-card-section>
+          <q-checkbox v-model="localTemplate.exclude_workstations" label="Exclude Workstations" />
+          <q-checkbox v-model="localTemplate.exclude_servers" label="Exclude Servers" />
+        </q-card-section>
+
         <q-card-actions align="right">
           <q-btn dense flat label="Cancel" v-close-popup />
           <q-btn dense flat label="Save" color="primary" type="submit" />
@@ -84,6 +89,8 @@ export default {
         excluded_clients: [],
         excluded_sites: [],
         excluded_agents: [],
+        exclude_servers: false,
+        exclude_workstations: false,
       },
       clientOptions: [],
       siteOptions: [],

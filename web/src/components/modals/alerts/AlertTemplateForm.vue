@@ -214,33 +214,32 @@
             <div class="col-4"></div>
 
             <div class="col-4">
-              <q-toggle v-model="template.agent_always_email" color="green" left-label>
+              <q-toggle v-model="template.agent_always_email" color="green" left-label toggle-indeterminate>
                 <span style="text-decoration: underline; cursor: help"
-                  >Always email<q-tooltip>Overrides the email alert option on the agent</q-tooltip></span
+                  >Always email<q-tooltip
+                    >Overrides the email alert option on the agent if configured. Default: Not Configured</q-tooltip
+                  ></span
                 >
               </q-toggle>
             </div>
 
             <div class="col-4">
-              <q-toggle v-model="template.agent_always_text" color="green" left-label>
+              <q-toggle v-model="template.agent_always_text" color="green" left-label toggle-indeterminate>
                 <span style="text-decoration: underline; cursor: help"
-                  >Always sms<q-tooltip>Overrides the sms alert option on the agent</q-tooltip></span
+                  >Always sms<q-tooltip
+                    >Overrides the sms alert option on the agent if configured. Default: Not Configured</q-tooltip
+                  ></span
                 >
               </q-toggle>
             </div>
 
             <div class="col-4">
-              <q-toggle v-model="template.agent_always_alert" color="green" left-label>
+              <q-toggle v-model="template.agent_always_alert" color="green" left-label toggle-indeterminate>
                 <span style="text-decoration: underline; cursor: help"
-                  >Always dashboard alert<q-tooltip>Overrides the dashboard alert option on the agents</q-tooltip></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-12">
-              <q-toggle v-model="template.agent_include_desktops" color="green" left-label>
-                <span style="text-decoration: underline; cursor: help"
-                  >Include desktops<q-tooltip>Includes desktop agent's offline alerts</q-tooltip></span
+                  >Always dashboard alert<q-tooltip
+                    >Overrides the dashboard alert option on the agents if configured. Default: Not
+                    Configured</q-tooltip
+                  ></span
                 >
               </q-toggle>
             </div>
@@ -337,26 +336,35 @@
             <div class="col-4"></div>
 
             <div class="col-4">
-              <q-toggle v-model="template.check_always_email" color="green" left-label>
+              <q-toggle v-model="template.check_always_email" color="green" left-label toggle-indeterminate>
                 <span style="text-decoration: underline; cursor: help"
-                  >Always email <q-tooltip>Overrides the email alert setting on checks</q-tooltip></span
+                  >Always email
+                  <q-tooltip
+                    >Overrides the email alert setting on checks if configured. Default: Not Configured</q-tooltip
+                  ></span
                 >
               </q-toggle>
             </div>
 
             <div class="col-4">
-              <q-toggle v-model="template.check_always_text" color="green" left-label>
+              <q-toggle v-model="template.check_always_text" color="green" left-label toggle-indeterminate>
                 <span style="text-decoration: underline; cursor: help"
-                  >Always sms <q-tooltip>Overrides the SMS alert setting on checks</q-tooltip></span
+                  >Always sms
+                  <q-tooltip
+                    >Overrides the SMS alert setting on checks if configured. Default: Not Configured</q-tooltip
+                  ></span
                 >
               </q-toggle>
             </div>
 
             <div class="col-4">
-              <q-toggle v-model="template.check_always_alert" color="green" left-label>
+              <q-toggle v-model="template.check_always_alert" color="green" left-label toggle-indeterminate>
                 <span style="text-decoration: underline; cursor: help"
                   >Always dashboard alert
-                  <q-tooltip>Overrides the dashboard alert option on the agents</q-tooltip></span
+                  <q-tooltip
+                    >Overrides the dashboard alert option on the agents if configured. Default: Not
+                    Configured</q-tooltip
+                  ></span
                 >
               </q-toggle>
             </div>
@@ -453,25 +461,34 @@
             <div class="col-4"></div>
 
             <div class="col-4">
-              <q-toggle v-model="template.task_always_email" color="green" left-label>
+              <q-toggle v-model="template.task_always_email" color="green" left-label toggle-indeterminate>
                 <span style="text-decoration: underline; cursor: help"
-                  >Always email <q-tooltip>Overrides the email alert option on the task</q-tooltip></span
+                  >Always email
+                  <q-tooltip
+                    >Overrides the email alert option on the task if configured. Default: Not Configured</q-tooltip
+                  ></span
                 >
               </q-toggle>
             </div>
 
             <div class="col-4">
-              <q-toggle v-model="template.task_always_text" color="green" left-label>
+              <q-toggle v-model="template.task_always_text" color="green" left-label toggle-indeterminate>
                 <span style="text-decoration: underline; cursor: help"
-                  >Always sms <q-tooltip>Overrides the SMS alert option on the task</q-tooltip></span
+                  >Always sms
+                  <q-tooltip
+                    >Overrides the SMS alert option on the task if configured. Default: Not Configured</q-tooltip
+                  ></span
                 >
               </q-toggle>
             </div>
 
             <div class="col-4">
-              <q-toggle v-model="template.task_always_alert" color="green" left-label>
+              <q-toggle v-model="template.task_always_alert" color="green" left-label toggle-indeterminate>
                 <span style="text-decoration: underline; cursor: help"
-                  >Always dashboard alert <q-tooltip>Overrides the dashboard alert option on the task</q-tooltip></span
+                  >Always dashboard alert
+                  <q-tooltip
+                    >Overrides the dashboard alert option on the task if configured. Default: Not Configured</q-tooltip
+                  ></span
                 >
               </q-toggle>
             </div>
@@ -519,30 +536,29 @@ export default {
         email_recipients: [],
         email_from: "",
         text_recipients: [],
-        agent_include_desktops: false,
         agent_email_on_resolved: false,
         agent_text_on_resolved: false,
-        agent_always_email: false,
-        agent_always_text: false,
-        agent_always_alert: false,
+        agent_always_email: null,
+        agent_always_text: null,
+        agent_always_alert: null,
         agent_periodic_alert_days: 0,
         check_email_alert_severity: [],
         check_text_alert_severity: [],
         check_dashboard_alert_severity: [],
         check_email_on_resolved: false,
         check_text_on_resolved: false,
-        check_always_email: false,
-        check_always_text: false,
-        check_always_alert: false,
+        check_always_email: null,
+        check_always_text: null,
+        check_always_alert: null,
         check_periodic_alert_days: 0,
         task_email_alert_severity: [],
         task_text_alert_severity: [],
         task_dashboard_alert_severity: [],
         task_email_on_resolved: false,
         task_text_on_resolved: false,
-        task_always_email: false,
-        task_always_text: false,
-        task_always_alert: false,
+        task_always_email: null,
+        task_always_text: null,
+        task_always_alert: null,
         task_periodic_alert_days: 0,
       },
       scriptOptions: [],

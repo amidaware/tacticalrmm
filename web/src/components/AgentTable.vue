@@ -253,6 +253,16 @@
           </q-menu>
           <q-td>
             <q-checkbox
+              v-if="props.row.alert_template && props.row.alert_template.always_text !== null"
+              :value="props.row.alert_template.always_text"
+              disable
+              dense
+            >
+              <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+            </q-checkbox>
+
+            <q-checkbox
+              v-else
               dense
               @input="overdueAlert('text', props.row.id, props.row.overdue_text_alert)"
               v-model="props.row.overdue_text_alert"
@@ -260,6 +270,16 @@
           </q-td>
           <q-td>
             <q-checkbox
+              v-if="props.row.alert_template && props.row.alert_template.always_email !== null"
+              :value="props.row.alert_template.always_email"
+              disable
+              dense
+            >
+              <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+            </q-checkbox>
+
+            <q-checkbox
+              v-else
               dense
               @input="overdueAlert('email', props.row.id, props.row.overdue_email_alert)"
               v-model="props.row.overdue_email_alert"
@@ -267,6 +287,16 @@
           </q-td>
           <q-td>
             <q-checkbox
+              v-if="props.row.alert_template && props.row.alert_template.always_alert !== null"
+              :value="props.row.alert_template.always_alert"
+              disable
+              dense
+            >
+              <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+            </q-checkbox>
+
+            <q-checkbox
+              v-else
               dense
               @input="overdueAlert('dashboard', props.row.id, props.row.overdue_dashboard_alert)"
               v-model="props.row.overdue_dashboard_alert"
@@ -369,7 +399,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import mixins from "@/mixins/mixins";
 import { mapGetters } from "vuex";

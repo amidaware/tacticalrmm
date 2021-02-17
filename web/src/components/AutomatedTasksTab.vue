@@ -109,6 +109,16 @@
               <!-- text alert -->
               <q-td>
                 <q-checkbox
+                  v-if="props.row.alert_template && props.row.alert_template.always_text !== null"
+                  :value="props.row.alert_template.always_text"
+                  disable
+                  dense
+                >
+                  <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+                </q-checkbox>
+
+                <q-checkbox
+                  v-else
                   dense
                   @input="taskAlert(props.row.id, 'Text', props.row.text_alert, props.row.managed_by_policy)"
                   v-model="props.row.text_alert"
@@ -118,6 +128,16 @@
               <!-- email alert -->
               <q-td>
                 <q-checkbox
+                  v-if="props.row.alert_template && props.row.alert_template.always_email !== null"
+                  :value="props.row.alert_template.always_email"
+                  disable
+                  dense
+                >
+                  <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+                </q-checkbox>
+
+                <q-checkbox
+                  v-else
                   dense
                   @input="taskAlert(props.row.id, 'Email', props.row.email_alert, props.row.managed_by_policy)"
                   v-model="props.row.email_alert"
@@ -127,6 +147,16 @@
               <!-- dashboard alert -->
               <q-td>
                 <q-checkbox
+                  v-if="props.row.alert_template && props.row.alert_template.always_alert !== null"
+                  :value="props.row.alert_template.always_alert"
+                  disable
+                  dense
+                >
+                  <q-tooltip> Setting is overidden by alert template: {{ props.row.alert_template.name }} </q-tooltip>
+                </q-checkbox>
+
+                <q-checkbox
+                  v-else
                   dense
                   @input="taskAlert(props.row.id, 'Dashboard', props.row.dashboard_alert, props.row.managed_by_policy)"
                   v-model="props.row.dashboard_alert"

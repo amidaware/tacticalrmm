@@ -97,9 +97,26 @@
 
           <template v-slot:body-cell-actions="props">
             <q-td :props="props">
-              <div v-if="!props.row.resolved">
+              <q-icon
+                v-if="props.row.action_run"
+                name="mdi-archive-alert"
+                size="sm"
+                class="cursor-pointer"
+                @click="showScriptOutput(props.row, true)"
+              >
+                <q-tooltip>Show failure action run results</q-tooltip>
+              </q-icon>
+              <q-icon
+                v-if="props.row.resolved_action_run"
+                name="mdi-archive-check"
+                size="sm"
+                class="cursor-pointer"
+                @click="showScriptOutput(props.row, false)"
+              >
+                <q-tooltip>Show resolved action run results</q-tooltip>
+              </q-icon>
                 <q-icon
-                  v-if="!props.row.snoozed"
+                  v-if="!props.row.resolved && !props.row.snoozed"
                   name="snooze"
                   size="sm"
                   class="cursor-pointer"
@@ -107,29 +124,11 @@
                 >
                   <q-tooltip>Snooze alert</q-tooltip>
                 </q-icon>
-                <q-icon v-else name="alarm_off" size="sm" class="cursor-pointer" @click="unsnoozeAlert(props.row)">
+                <q-icon v-else-if="!props.row.resolved && props.row.snoozed" name="alarm_off" size="sm" class="cursor-pointer" @click="unsnoozeAlert(props.row)">
                   <q-tooltip>Unsnooze alert</q-tooltip>
                 </q-icon>
-                <q-icon name="flag" size="sm" class="cursor-pointer" @click="resolveAlert(props.row)">
+                <q-icon v-if="!props.row.resolved" name="flag" size="sm" class="cursor-pointer" @click="resolveAlert(props.row)">
                   <q-tooltip>Resolve alert</q-tooltip>
-                </q-icon>
-                <q-icon
-                  v-if="props.row.action_run"
-                  name="mdi-archive-alert"
-                  size="sm"
-                  class="cursor-pointer"
-                  @click="showScriptOutput(props.row, true)"
-                >
-                  <q-tooltip>Show failure action run results</q-tooltip>
-                </q-icon>
-                <q-icon
-                  v-if="props.row.resolved_action_run"
-                  name="mdi-archive-check"
-                  size="sm"
-                  class="cursor-pointer"
-                  @click="showScriptOutput(props.row, false)"
-                >
-                  <q-tooltip>Show resolved action run results</q-tooltip>
                 </q-icon>
               </div>
             </q-td>

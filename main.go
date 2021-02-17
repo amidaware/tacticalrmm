@@ -1,6 +1,6 @@
 package main
 
-// env CGO_ENABLED=0 go build -v -a -tags netgo -installsuffix netgo -ldflags "-s -w" -o nats-api
+// env CGO_ENABLED=0 go build -v -a -ldflags "-s -w" -o nats-api
 
 import (
 	"flag"
@@ -9,7 +9,7 @@ import (
 	"github.com/wh1te909/tacticalrmm/natsapi"
 )
 
-var version = "1.0.7"
+var version = "1.0.8"
 
 func main() {
 	ver := flag.Bool("version", false, "Prints version")

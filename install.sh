@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="38"
+SCRIPT_VERSION="39"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -185,9 +185,9 @@ print_green 'Installing golang'
 
 sudo mkdir -p /usr/local/rmmgo
 go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)
-wget https://golang.org/dl/go1.15.8.linux-amd64.tar.gz -P ${go_tmp}
+wget https://golang.org/dl/go1.16.linux-amd64.tar.gz -P ${go_tmp}
 
-tar -xzf ${go_tmp}/go1.15.8.linux-amd64.tar.gz -C ${go_tmp}
+tar -xzf ${go_tmp}/go1.16.linux-amd64.tar.gz -C ${go_tmp}
 
 sudo mv ${go_tmp}/go /usr/local/rmmgo/
 rm -rf ${go_tmp}

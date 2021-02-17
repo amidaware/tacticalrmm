@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="106"
+SCRIPT_VERSION="107"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -174,6 +174,20 @@ if ! [[ $CHECK_NGINX_WORKER_CONN ]]; then
   sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
 fi
 
+CHECK_HAS_GO116=$(/usr/local/rmmgo/go/bin/go version | grep go1.16)
+if ! [[ $CHECK_HAS_GO116 ]]; then
+  printf >&2 "${GREEN}Updating golang to version 1.16${NC}\n"
+  sudo rm -rf /home/${USER}/go/
+  sudo rm -rf /usr/local/rmmgo/
+  sudo mkdir -p /usr/local/rmmgo
+  go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)
+  wget https://golang.org/dl/go1.16.linux-amd64.tar.gz -P ${go_tmp}
+  tar -xzf ${go_tmp}/go1.16.linux-amd64.tar.gz -C ${go_tmp}
+  sudo mv ${go_tmp}/go /usr/local/rmmgo/
+  rm -rf ${go_tmp}
+  sudo chown -R $USER:$GROUP /home/${USER}/.cache
+fi
+
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
@@ -224,7 +238,7 @@ EOF
   echo "${keepsalt}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py > /dev/null
 
   if [[ $rmsalt == "y" ]]; then
-    printf >&2 "${Green}Removing salt-master and salt-api${NC}\n"
+    printf >&2 "${GREEN}Removing salt-master and salt-api${NC}\n"
     for i in salt-api salt-master; do sudo systemctl stop $i; sudo systemctl disable $i; done
     sudo apt remove -y --purge salt-master salt-api salt-common
   else
@@ -241,11 +255,6 @@ sudo chmod +x /usr/local/bin/goversioninfo
 sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
 sudo chown ${USER}:${USER} /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
-
-printf >&2 "${GREEN}Running postgres vacuum${NC}\n"
-sudo -u postgres psql -d tacticalrmm -c "vacuum full logs_auditlog"
-sudo -u postgres psql -d tacticalrmm -c "vacuum full logs_pendingaction"
-sudo -u postgres psql -d tacticalrmm -c "vacuum full agents_agentoutage"
 
 if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]]; then
   rm -rf /rmm/api/env

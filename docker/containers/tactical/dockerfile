@@ -40,7 +40,7 @@ COPY api/tacticalrmm ${TACTICAL_TMP_DIR}/api
 COPY scripts ${TACTICAL_TMP_DIR}/scripts
 
 # copy go install from build stage
-COPY --from=golang:1.15 /usr/local/go ${TACTICAL_GO_DIR}/go
+COPY --from=golang:1.16 /usr/local/go ${TACTICAL_GO_DIR}/go
 COPY --from=CREATE_VENV_STAGE ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
 # install deps

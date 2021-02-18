@@ -553,7 +553,7 @@ class Agent(BaseAuditModel):
                 continue
 
             # check if template is excluding desktops
-            if self.monitoring_type == "workstation" and template.exclude_desktops:
+            if self.monitoring_type == "workstation" and template.exclude_workstations:
                 continue
 
             # check if template is excluding servers

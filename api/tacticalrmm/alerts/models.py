@@ -243,7 +243,6 @@ class AlertTemplate(models.Model):
         return (
             self.agent_email_on_resolved
             or self.agent_text_on_resolved
-            or self.agent_include_desktops
             or self.agent_always_email
             or self.agent_always_text
             or self.agent_always_alert

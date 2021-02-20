@@ -56,10 +56,10 @@
       <q-card-section>
         <q-table
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
-          class="tabs-tbl-sticky"
+          class="audit-mgr-tbl-sticky"
           :data="alerts"
           :columns="columns"
-          :rows-per-page-options="[0]"
+          :rows-per-page-options="[25, 50, 100, 500, 1000]"
           :pagination.sync="pagination"
           :no-data-label="noDataText"
           :visible-columns="visibleColumns"
@@ -115,22 +115,33 @@
               >
                 <q-tooltip>Show resolved action run results</q-tooltip>
               </q-icon>
-                <q-icon
-                  v-if="!props.row.resolved && !props.row.snoozed"
-                  name="snooze"
-                  size="sm"
-                  class="cursor-pointer"
-                  @click="snoozeAlert(props.row)"
-                >
-                  <q-tooltip>Snooze alert</q-tooltip>
-                </q-icon>
-                <q-icon v-else-if="!props.row.resolved && props.row.snoozed" name="alarm_off" size="sm" class="cursor-pointer" @click="unsnoozeAlert(props.row)">
-                  <q-tooltip>Unsnooze alert</q-tooltip>
-                </q-icon>
-                <q-icon v-if="!props.row.resolved" name="flag" size="sm" class="cursor-pointer" @click="resolveAlert(props.row)">
-                  <q-tooltip>Resolve alert</q-tooltip>
-                </q-icon>
-              </div>
+              <q-icon
+                v-if="!props.row.resolved && !props.row.snoozed"
+                name="snooze"
+                size="sm"
+                class="cursor-pointer"
+                @click="snoozeAlert(props.row)"
+              >
+                <q-tooltip>Snooze alert</q-tooltip>
+              </q-icon>
+              <q-icon
+                v-else-if="!props.row.resolved && props.row.snoozed"
+                name="alarm_off"
+                size="sm"
+                class="cursor-pointer"
+                @click="unsnoozeAlert(props.row)"
+              >
+                <q-tooltip>Unsnooze alert</q-tooltip>
+              </q-icon>
+              <q-icon
+                v-if="!props.row.resolved"
+                name="flag"
+                size="sm"
+                class="cursor-pointer"
+                @click="resolveAlert(props.row)"
+              >
+                <q-tooltip>Resolve alert</q-tooltip>
+              </q-icon>
             </q-td>
           </template>
 
@@ -216,7 +227,7 @@ export default {
         { name: "actions", label: "Actions", align: "left" },
       ],
       pagination: {
-        rowsPerPage: 0,
+        rowsPerPage: 50,
         sortBy: "alert_time",
         descending: true,
       },

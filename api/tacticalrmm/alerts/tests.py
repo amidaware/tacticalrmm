@@ -344,6 +344,9 @@ class TestAlertsViews(TacticalTestCase):
 
 
 class TestAlertTasks(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+
     def test_unsnooze_alert_task(self):
         from alerts.tasks import unsnooze_alerts
 
@@ -375,3 +378,107 @@ class TestAlertTasks(TacticalTestCase):
                 pk__in=[alert.pk for alert in snoozed], snoozed=False
             ).exists()
         )
+
+    def test_agent_gets_correct_alert_template(self):
+
+        core = CoreSettings.objects.first()
+        # setup data
+        workstation = baker.make_recipe("agents.agent", monitoring_type="workstation")
+        server = baker.make_recipe("agents.agent", monitoring_type="server")
+
+        policy = baker.make("automation.Policy", active=True)
+
+        alert_templates = baker.make("alerts.AlertTemplate", _quantity=6)
+
+        # should be None
+        self.assertFalse(workstation.get_alert_template())
+        self.assertFalse(server.get_alert_template())
+
+        # assign first Alert Template as to a policy and apply it as default
+        policy.alert_template = alert_templates[0]
+        policy.save()
+        core.workstation_policy = policy
+        core.server_policy = policy
+        core.save()
+
+        self.assertEquals(server.get_alert_template().pk, alert_templates[0].pk)
+        self.assertEquals(workstation.get_alert_template().pk, alert_templates[0].pk)
+
+        # assign second Alert Template to as default alert template
+        core.alert_template = alert_templates[1]
+        core.save()
+
+        self.assertEquals(workstation.get_alert_template().pk, alert_templates[1].pk)
+        self.assertEquals(server.get_alert_template().pk, alert_templates[1].pk)
+
+        # assign third Alert Template to client
+        workstation.client.alert_template = alert_templates[2]
+        server.client.alert_template = alert_templates[2]
+        workstation.client.save()
+        server.client.save()
+
+        self.assertEquals(workstation.get_alert_template().pk, alert_templates[2].pk)
+        self.assertEquals(server.get_alert_template().pk, alert_templates[2].pk)
+
+        # apply policy to client and should override
+        workstation.client.workstation_policy = policy
+        server.client.server_policy = policy
+        workstation.client.save()
+        server.client.save()
+
+        self.assertEquals(workstation.get_alert_template().pk, alert_templates[0].pk)
+        self.assertEquals(server.get_alert_template().pk, alert_templates[0].pk)
+
+        # assign fouth Alert Template to site
+        workstation.site.alert_template = alert_templates[3]
+        server.site.alert_template = alert_templates[3]
+        workstation.site.save()
+        server.site.save()
+
+        self.assertEquals(workstation.get_alert_template().pk, alert_templates[3].pk)
+        self.assertEquals(server.get_alert_template().pk, alert_templates[3].pk)
+
+        # apply policy to site
+        workstation.site.workstation_policy = policy
+        server.site.server_policy = policy
+        workstation.site.save()
+        server.site.save()
+
+        self.assertEquals(workstation.get_alert_template().pk, alert_templates[0].pk)
+        self.assertEquals(server.get_alert_template().pk, alert_templates[0].pk)
+
+        # apply policy to agents
+        workstation.policy = policy
+        server.policy = policy
+        workstation.save()
+        server.save()
+
+        self.assertEquals(workstation.get_alert_template().pk, alert_templates[0].pk)
+        self.assertEquals(server.get_alert_template().pk, alert_templates[0].pk)
+
+        # test disabling alert template
+        alert_templates[0].is_active = False
+        alert_templates[0].save()
+
+        self.assertEquals(workstation.get_alert_template().pk, alert_templates[3].pk)
+        self.assertEquals(server.get_alert_template().pk, alert_templates[3].pk)
+
+        # test policy exclusions
+        alert_templates[3].excluded_agents.set([workstation.pk])
+
+        self.assertEquals(workstation.get_alert_template().pk, alert_templates[2].pk)
+        self.assertEquals(server.get_alert_template().pk, alert_templates[3].pk)
+
+        # test workstation exclusions
+        alert_templates[2].exclude_workstations = True
+        alert_templates[2].save()
+
+        self.assertEquals(workstation.get_alert_template().pk, alert_templates[1].pk)
+        self.assertEquals(server.get_alert_template().pk, alert_templates[3].pk)
+
+        # test server exclusions
+        alert_templates[3].exclude_servers = True
+        alert_templates[3].save()
+
+        self.assertEquals(workstation.get_alert_template().pk, alert_templates[1].pk)
+        self.assertEquals(server.get_alert_template().pk, alert_templates[2].pk)

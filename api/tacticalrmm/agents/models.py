@@ -479,14 +479,14 @@ class Agent(BaseAuditModel):
             templates.append(self.policy.alert_template)
 
         # check if policy with alert template is assigned to the site
-        elif (
+        if (
             self.monitoring_type == "server"
             and site.server_policy
             and site.server_policy.alert_template
             and site.server_policy.alert_template.is_active
         ):
             templates.append(site.server_policy.alert_template)
-        elif (
+        if (
             self.monitoring_type == "workstation"
             and site.workstation_policy
             and site.workstation_policy.alert_template
@@ -495,18 +495,18 @@ class Agent(BaseAuditModel):
             templates.append(site.workstation_policy.alert_template)
 
         # check if alert template is assigned to site
-        elif site.alert_template and site.alert_template.is_active:
+        if site.alert_template and site.alert_template.is_active:
             templates.append(site.alert_template)
 
         # check if policy with alert template is assigned to the client
-        elif (
+        if (
             self.monitoring_type == "server"
             and client.server_policy
             and client.server_policy.alert_template
             and client.server_policy.alert_template.is_active
         ):
             templates.append(client.server_policy.alert_template)
-        elif (
+        if (
             self.monitoring_type == "workstation"
             and client.workstation_policy
             and client.workstation_policy.alert_template
@@ -515,22 +515,22 @@ class Agent(BaseAuditModel):
             templates.append(client.workstation_policy.alert_template)
 
         # check if alert template is on client and return
-        elif client.alert_template and client.alert_template.is_active:
+        if client.alert_template and client.alert_template.is_active:
             templates.append(client.alert_template)
 
         # check if alert template is applied globally and return
-        elif core.alert_template and core.alert_template.is_active:
+        if core.alert_template and core.alert_template.is_active:
             templates.append(core.alert_template)
 
         # if agent is a workstation, check if policy with alert template is assigned to the site, client, or core
-        elif (
+        if (
             self.monitoring_type == "server"
             and core.server_policy
             and core.server_policy.alert_template
             and core.server_policy.alert_template.is_active
         ):
             templates.append(core.server_policy.alert_template)
-        elif (
+        if (
             self.monitoring_type == "workstation"
             and core.workstation_policy
             and core.workstation_policy.alert_template
@@ -553,12 +553,15 @@ class Agent(BaseAuditModel):
                 continue
 
             # check if template is excluding desktops
-            if self.monitoring_type == "workstation" and template.exclude_workstations:
+            elif (
+                self.monitoring_type == "workstation" and template.exclude_workstations
+            ):
                 continue
 
             # check if template is excluding servers
             elif self.monitoring_type == "server" and template.exclude_servers:
                 continue
+
             else:
                 return template
 

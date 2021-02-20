@@ -84,7 +84,7 @@ class Alert(models.Model):
                 agent=agent,
                 alert_type="availability",
                 severity="error",
-                message=f"{agent.hostname} in {agent.client.name}\\{agent.site.name} is Offline.",
+                message=f"{agent.hostname} in {agent.client.name}\\{agent.site.name} is overdue.",
                 hidden=True,
             )
 

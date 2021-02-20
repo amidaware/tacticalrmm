@@ -225,7 +225,7 @@ class AutomatedTask(BaseAuditModel):
         create_win_task_schedule.delay(task.pk)
 
     def handle_alert(self) -> None:
-        from alerts.models import Alert, AlertTemplate
+        from alerts.models import Alert
         from autotasks.tasks import (
             handle_task_email_alert,
             handle_task_sms_alert,

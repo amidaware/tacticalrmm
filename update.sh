@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="108"
+SCRIPT_VERSION="109"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -114,10 +114,12 @@ SETTINGS_FILE="/rmm/api/tacticalrmm/tacticalrmm/settings.py"
 LATEST_TRMM_VER=$(grep "^TRMM_VERSION" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 CURRENT_TRMM_VER=$(grep "^TRMM_VERSION" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
-if [[ "${CURRENT_TRMM_VER}" == "${LATEST_TRMM_VER}" ]]; then
-  printf >&2 "${GREEN}Already on latest version. Current version: ${CURRENT_TRMM_VER} Latest version: ${LATEST_TRMM_VER}${NC}\n"
-  rm -f $TMP_SETTINGS
-  exit 0
+if [[ $* != *--force* ]]; then
+  if [[ "${CURRENT_TRMM_VER}" == "${LATEST_TRMM_VER}" ]]; then
+    printf >&2 "${GREEN}Already on latest version. Current version: ${CURRENT_TRMM_VER} Latest version: ${LATEST_TRMM_VER}${NC}\n"
+    rm -f $TMP_SETTINGS
+    exit 0
+  fi
 fi
 
 LATEST_MESH_VER=$(grep "^MESH_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')

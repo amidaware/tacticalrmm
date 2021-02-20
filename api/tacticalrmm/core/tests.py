@@ -116,7 +116,7 @@ class TestCoreTasks(TacticalTestCase):
         # test prune db with tables
         data = {
             "action": "prune_db",
-            "prune_tables": ["audit_logs", "agent_outages", "pending_actions"],
+            "prune_tables": ["audit_logs", "alerts", "pending_actions"],
         }
         r = self.client.post(url, data)
         self.assertEqual(r.status_code, 200)

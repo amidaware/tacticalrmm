@@ -32,6 +32,9 @@
           <q-checkbox v-model="prune_tables" val="pending_actions" label="Pending Actions">
             <q-tooltip>Removes completed pending actions</q-tooltip>
           </q-checkbox>
+          <q-checkbox v-model="prune_tables" val="alerts" label="Alerts">
+            <q-tooltip>Removes all alerts</q-tooltip>
+          </q-checkbox>
         </q-card-section>
 
         <q-card-actions align="left">

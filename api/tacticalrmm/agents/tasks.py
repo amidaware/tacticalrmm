@@ -214,11 +214,17 @@ def handle_agent_recovery_task(pk: int) -> None:
 
 @app.task
 def run_script_email_results_task(
-    agentpk: int, scriptpk: int, nats_timeout: int, emails: List[str]
+    agentpk: int,
+    scriptpk: int,
+    nats_timeout: int,
+    emails: List[str],
+    args: List[str] = [],
 ):
     agent = Agent.objects.get(pk=agentpk)
     script = Script.objects.get(pk=scriptpk)
-    r = agent.run_script(scriptpk=script.pk, full=True, timeout=nats_timeout, wait=True)
+    r = agent.run_script(
+        scriptpk=script.pk, args=args, full=True, timeout=nats_timeout, wait=True
+    )
     if r == "timeout":
         logger.error(f"{agent.hostname} timed out running script.")
         return

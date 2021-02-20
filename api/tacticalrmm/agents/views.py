@@ -685,6 +685,7 @@ def run_script(request):
         return notify_error("Requires agent version 1.1.0 or greater")
     script = get_object_or_404(Script, pk=request.data["scriptPK"])
     output = request.data["output"]
+    args = request.data["args"]
     req_timeout = int(request.data["timeout"]) + 3
 
     AuditLog.audit_script_run(
@@ -694,7 +695,9 @@ def run_script(request):
     )
 
     if output == "wait":
-        r = agent.run_script(scriptpk=script.pk, timeout=req_timeout, wait=True)
+        r = agent.run_script(
+            scriptpk=script.pk, args=args, timeout=req_timeout, wait=True
+        )
         return Response(r)
 
     elif output == "email":
@@ -709,9 +712,10 @@ def run_script(request):
             scriptpk=script.pk,
             nats_timeout=req_timeout,
             emails=emails,
+            args=args,
         )
     else:
-        agent.run_script(scriptpk=script.pk, timeout=req_timeout)
+        agent.run_script(scriptpk=script.pk, args=args, timeout=req_timeout)
 
     return Response(f"{script.name} will now be run on {agent.hostname}")
 

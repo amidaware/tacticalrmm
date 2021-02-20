@@ -9,7 +9,6 @@ from packaging import version as pyver
 from typing import List
 
 from agents.models import Agent
-from .models import WinUpdate
 from tacticalrmm.celery import app
 
 logger.configure(**settings.LOG_CONFIG)

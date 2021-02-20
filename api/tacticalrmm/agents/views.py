@@ -2,7 +2,6 @@ import asyncio
 from loguru import logger
 import os
 import subprocess
-import pytz
 import random
 import string
 import datetime as dt

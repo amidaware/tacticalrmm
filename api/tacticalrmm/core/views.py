@@ -12,7 +12,6 @@ from rest_framework.views import APIView
 from .models import CoreSettings
 from .serializers import CoreSettingsSerializer
 from tacticalrmm.utils import notify_error
-from automation.tasks import generate_all_agent_checks_task
 
 
 class UploadMeshAgent(APIView):

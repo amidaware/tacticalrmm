@@ -1,6 +1,5 @@
 from loguru import logger
 import pytz
-import time
 import smtplib
 from email.message import EmailMessage
 from twilio.rest import Client as TwClient

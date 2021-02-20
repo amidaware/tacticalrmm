@@ -1,7 +1,6 @@
 import base64
 from django.db import models
 from logs.models import BaseAuditModel
-from django.conf import settings
 
 SCRIPT_SHELLS = [
     ("powershell", "Powershell"),

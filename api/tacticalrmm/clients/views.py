@@ -6,18 +6,13 @@ import subprocess
 import datetime as dt
 
 from django.utils import timezone as djangotime
-from django.db import DataError
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.http import HttpResponse
 
 from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
-
-
-from rest_framework.decorators import api_view
 
 from .serializers import (
     ClientSerializer,

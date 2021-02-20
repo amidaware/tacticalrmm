@@ -122,6 +122,13 @@ def server_maintenance(request):
             records_count += pendingactions.count()
             pendingactions.delete()
 
+        if "alerts" in tables:
+            from alerts.models import Alert
+
+            alerts = Alert.objects.all()
+            records_count += alerts.count()
+            alerts.delete()
+
         return Response(f"{records_count} records were pruned from the database")
 
     return notify_error("The data is incorrect")

@@ -370,6 +370,7 @@
 
 <script>
 import axios from "axios";
+import mixins from "@/mixins/mixins";
 import { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import { mapState, mapGetters } from "vuex";
 import FileBar from "@/components/FileBar";
@@ -394,6 +395,7 @@ export default {
     InstallAgent,
     UserPreferences,
   },
+  mixins: [mixins],
   data() {
     return {
       darkMode: true,
@@ -512,6 +514,7 @@ export default {
           field: "last_seen",
           sortable: true,
           align: "left",
+          sort: (a, b) => this.dateStringToUnix(a) - this.dateStringToUnix(b),
         },
         {
           name: "boottime",

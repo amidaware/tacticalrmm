@@ -1,11 +1,10 @@
 from django.test import TestCase, override_settings
 from model_bakery import baker
-
+from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
 from accounts.models import User
 from core.models import CoreSettings
-from rest_framework.authtoken.models import Token
 
 
 class TacticalTestCase(TestCase):

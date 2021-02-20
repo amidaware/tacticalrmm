@@ -1,19 +1,19 @@
 import asyncio
-from loguru import logger
-from time import sleep
-import random
-from packaging import version as pyver
-from typing import List, Union
 import datetime as dt
+import random
+from time import sleep
+from typing import List, Union
 
-from django.utils import timezone as djangotime
 from django.conf import settings
-from scripts.models import Script
+from django.utils import timezone as djangotime
+from loguru import logger
+from packaging import version as pyver
 
-from tacticalrmm.celery import app
 from agents.models import Agent
 from core.models import CoreSettings
 from logs.models import PendingAction
+from scripts.models import Script
+from tacticalrmm.celery import app
 
 logger.configure(**settings.LOG_CONFIG)
 

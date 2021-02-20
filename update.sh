@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="107"
+SCRIPT_VERSION="108"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -299,7 +299,7 @@ printf >&2 "${GREEN}Starting ${i} service${NC}\n"
 sudo systemctl start ${i}
 done
 
-CURRENT_MESH_VER=$(cd /meshcentral && npm list meshcentral | grep 'meshcentral@' | awk -F'[@]' '{print $2}' | tr -d " \t")
+CURRENT_MESH_VER=$(cd /meshcentral/node_modules/meshcentral && node -p -e "require('./package.json').version")
 if [[ "${CURRENT_MESH_VER}" != "${LATEST_MESH_VER}" ]]; then
   printf >&2 "${GREEN}Updating meshcentral from ${CURRENT_MESH_VER} to ${LATEST_MESH_VER}${NC}\n"
   sudo systemctl stop meshcentral

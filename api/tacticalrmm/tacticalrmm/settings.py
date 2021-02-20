@@ -1,6 +1,6 @@
 import os
-from pathlib import Path
 from datetime import timedelta
+from pathlib import Path
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -15,16 +15,16 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.4.12"
+TRMM_VERSION = "0.4.13"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.113"
+APP_VER = "0.0.114"
 
 # https://github.com/wh1te909/rmmagent
 LATEST_AGENT_VER = "1.4.6"
 
-MESH_VER = "0.7.68"
+MESH_VER = "0.7.72"
 
 # for the update script, bump when need to recreate venv or npm install
 PIP_VER = "9"

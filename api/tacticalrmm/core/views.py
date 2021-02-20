@@ -1,18 +1,17 @@
 import os
 
 from django.conf import settings
-
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.decorators import api_view
 from rest_framework.exceptions import ParseError
 from rest_framework.parsers import FileUploadParser
+from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from tacticalrmm.utils import notify_error
 
 from .models import CoreSettings
 from .serializers import CoreSettingsSerializer
-from tacticalrmm.utils import notify_error
-from automation.tasks import generate_all_agent_checks_task
 
 
 class UploadMeshAgent(APIView):

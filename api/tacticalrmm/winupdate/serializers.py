@@ -1,7 +1,9 @@
+import pytz
 from rest_framework import serializers
 
-from .models import WinUpdate, WinUpdatePolicy
 from agents.models import Agent
+
+from .models import WinUpdate, WinUpdatePolicy
 
 
 class WinUpdateSerializer(serializers.ModelSerializer):
@@ -10,8 +12,26 @@ class WinUpdateSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class WinUpdateSerializerTZAware(serializers.ModelSerializer):
+    date_installed = serializers.SerializerMethodField()
+
+    def get_date_installed(self, obj):
+        if obj.date_installed is not None:
+            if obj.agent.time_zone is not None:
+                agent_tz = pytz.timezone(obj.agent.time_zone)
+            else:
+                agent_tz = self.context["default_tz"]
+
+            return obj.date_installed.astimezone(agent_tz).strftime("%m %d %Y %H:%M")
+        return None
+
+    class Meta:
+        model = WinUpdate
+        fields = "__all__"
+
+
 class UpdateSerializer(serializers.ModelSerializer):
-    winupdates = WinUpdateSerializer(many=True, read_only=True)
+    winupdates = WinUpdateSerializerTZAware(many=True, read_only=True)
 
     class Meta:
         model = Agent

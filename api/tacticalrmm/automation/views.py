@@ -1,32 +1,27 @@
 from django.shortcuts import get_object_or_404
-
-from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import Policy
 from agents.models import Agent
-from clients.models import Client
-from checks.models import Check
-from autotasks.models import AutomatedTask
-from winupdate.models import WinUpdatePolicy
-
-from clients.serializers import ClientSerializer, SiteSerializer
 from agents.serializers import AgentHostnameSerializer
+from autotasks.models import AutomatedTask
+from checks.models import Check
+from clients.models import Client
+from clients.serializers import ClientSerializer, SiteSerializer
+from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
 
+from .models import Policy
 from .serializers import (
+    AutoTasksFieldSerializer,
+    PolicyCheckSerializer,
+    PolicyCheckStatusSerializer,
+    PolicyOverviewSerializer,
     PolicySerializer,
     PolicyTableSerializer,
-    PolicyOverviewSerializer,
-    PolicyCheckStatusSerializer,
-    PolicyCheckSerializer,
     PolicyTaskStatusSerializer,
-    AutoTasksFieldSerializer,
 )
-
-from .tasks import (
-    run_win_policy_autotask_task,
-)
+from .tasks import run_win_policy_autotask_task
 
 
 class GetAddPolicies(APIView):

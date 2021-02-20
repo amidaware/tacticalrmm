@@ -1,7 +1,7 @@
 import datetime as dt
 
-from django.db import models
 from django.contrib.postgres.fields import ArrayField
+from django.db import models
 
 from agents.models import Agent
 from logs.models import BaseAuditModel

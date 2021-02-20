@@ -1,14 +1,15 @@
 import datetime as dt
-from unittest.mock import patch, call
-from model_bakery import baker
-from django.utils import timezone as djangotime
+from unittest.mock import call, patch
 
+from django.utils import timezone as djangotime
+from model_bakery import baker
+
+from logs.models import PendingAction
 from tacticalrmm.test import TacticalTestCase
 
 from .models import AutomatedTask
-from logs.models import PendingAction
 from .serializers import AutoTaskSerializer
-from .tasks import remove_orphaned_win_tasks, run_win_task, create_win_task_schedule
+from .tasks import create_win_task_schedule, remove_orphaned_win_tasks, run_win_task
 
 
 class TestAutotaskViews(TacticalTestCase):

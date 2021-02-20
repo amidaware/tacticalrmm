@@ -1,5 +1,5 @@
-from django.db import models
 from django.contrib.postgres.fields import ArrayField
+from django.db import models
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
 
@@ -84,7 +84,7 @@ class Alert(models.Model):
                 agent=agent,
                 alert_type="availability",
                 severity="error",
-                message=f"{agent.hostname} in {agent.client.name}\\{agent.site.name} is Offline.",
+                message=f"{agent.hostname} in {agent.client.name}\\{agent.site.name} is overdue.",
                 hidden=True,
             )
 
@@ -243,7 +243,6 @@ class AlertTemplate(models.Model):
         return (
             self.agent_email_on_resolved
             or self.agent_text_on_resolved
-            or self.agent_include_desktops
             or self.agent_always_email
             or self.agent_always_text
             or self.agent_always_alert

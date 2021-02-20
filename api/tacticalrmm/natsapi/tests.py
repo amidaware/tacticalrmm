@@ -1,6 +1,7 @@
-from model_bakery import baker
-from tacticalrmm.test import TacticalTestCase
 from django.conf import settings
+from model_bakery import baker
+
+from tacticalrmm.test import TacticalTestCase
 
 
 class TestNatsAPIViews(TacticalTestCase):

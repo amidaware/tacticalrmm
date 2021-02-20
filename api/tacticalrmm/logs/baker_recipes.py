@@ -1,5 +1,6 @@
-from model_bakery.recipe import Recipe
 from itertools import cycle
+
+from model_bakery.recipe import Recipe
 
 object_types = [
     "user",

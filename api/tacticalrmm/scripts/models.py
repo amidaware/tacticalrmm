@@ -1,7 +1,8 @@
 import base64
+
 from django.db import models
+
 from logs.models import BaseAuditModel
-from django.conf import settings
 
 SCRIPT_SHELLS = [
     ("powershell", "Powershell"),
@@ -45,11 +46,11 @@ class Script(BaseAuditModel):
         import json
         import os
         from pathlib import Path
+
         from django.conf import settings
 
         # load community uploaded scripts into the database
         # skip ones that already exist, only updating name / desc in case it changes
-
         # for install script
         if not settings.DOCKER_BUILD:
             scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[1], "scripts")

@@ -1,12 +1,10 @@
 import pytz
-
 from rest_framework import serializers
-from rest_framework.fields import ReadOnlyField
+
+from clients.serializers import ClientSerializer
+from winupdate.serializers import WinUpdatePolicySerializer
 
 from .models import Agent, Note
-
-from winupdate.serializers import WinUpdatePolicySerializer
-from clients.serializers import ClientSerializer
 
 
 class AgentSerializer(serializers.ModelSerializer):
@@ -80,7 +78,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
         else:
             agent_tz = self.context["default_tz"]
 
-        return obj.last_seen.astimezone(agent_tz).timestamp()
+        return obj.last_seen.astimezone(agent_tz).strftime("%m %d %Y %H:%M")
 
     def get_logged_username(self, obj) -> str:
         if obj.logged_in_username == "None" and obj.status == "online":

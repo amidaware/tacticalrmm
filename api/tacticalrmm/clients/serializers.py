@@ -1,5 +1,6 @@
 from rest_framework.serializers import ModelSerializer, ReadOnlyField, ValidationError
-from .models import Client, Site, Deployment
+
+from .models import Client, Deployment, Site
 
 
 class SiteSerializer(ModelSerializer):

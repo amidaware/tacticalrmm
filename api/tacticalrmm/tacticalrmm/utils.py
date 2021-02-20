@@ -3,11 +3,11 @@ import os
 import string
 import subprocess
 import time
-import pytz
-from typing import List, Dict
-from loguru import logger
+from typing import Dict, List
 
+import pytz
 from django.conf import settings
+from loguru import logger
 from rest_framework import status
 from rest_framework.response import Response
 

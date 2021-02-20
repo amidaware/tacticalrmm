@@ -1,8 +1,9 @@
-from django.contrib import admin
-from django.urls import path, include
 from django.conf import settings
+from django.contrib import admin
+from django.urls import include, path
 from knox import views as knox_views
-from accounts.views import LoginView, CheckCreds
+
+from accounts.views import CheckCreds, LoginView
 
 urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),

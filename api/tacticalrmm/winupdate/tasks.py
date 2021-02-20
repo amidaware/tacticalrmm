@@ -1,15 +1,15 @@
 import asyncio
-import time
-from django.utils import timezone as djangotime
-from django.conf import settings
 import datetime as dt
-import pytz
-from loguru import logger
-from packaging import version as pyver
+import time
 from typing import List
 
+import pytz
+from django.conf import settings
+from django.utils import timezone as djangotime
+from loguru import logger
+from packaging import version as pyver
+
 from agents.models import Agent
-from .models import WinUpdate
 from tacticalrmm.celery import app
 
 logger.configure(**settings.LOG_CONFIG)

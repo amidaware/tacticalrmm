@@ -1,9 +1,11 @@
 import asyncio
-from loguru import logger
-from tacticalrmm.celery import app
+
 from django.conf import settings
+from loguru import logger
 
 from agents.models import Agent
+from tacticalrmm.celery import app
+
 from .models import ChocoLog
 
 logger.configure(**settings.LOG_CONFIG)

@@ -1,18 +1,18 @@
-from django.shortcuts import get_object_or_404
-from django.db.models import Q
 from datetime import datetime as dt
+
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from tacticalrmm.utils import notify_error
-from rest_framework.views import APIView
-from rest_framework.response import Response
 
 from .models import Alert, AlertTemplate
-
 from .serializers import (
     AlertSerializer,
-    AlertTemplateSerializer,
     AlertTemplateRelationSerializer,
+    AlertTemplateSerializer,
 )
 
 

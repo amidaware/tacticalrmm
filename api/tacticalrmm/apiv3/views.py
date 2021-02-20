@@ -1,32 +1,30 @@
 import asyncio
 import os
 import time
-from loguru import logger
-from packaging import version as pyver
 
 from django.conf import settings
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
-from django.http import HttpResponse
-
+from loguru import logger
+from packaging import version as pyver
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.authtoken.models import Token
 
-from agents.models import Agent
-from checks.models import Check
-from checks.utils import bytes2human
-from autotasks.models import AutomatedTask
 from accounts.models import User
-from winupdate.models import WinUpdate, WinUpdatePolicy
-from software.models import InstalledSoftware
-from checks.serializers import CheckRunnerGetSerializer
-from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
+from agents.models import Agent
 from agents.serializers import WinAgentSerializer
-
-from tacticalrmm.utils import notify_error, reload_nats, filter_software, SoftwareList
+from autotasks.models import AutomatedTask
+from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
+from checks.models import Check
+from checks.serializers import CheckRunnerGetSerializer
+from checks.utils import bytes2human
+from software.models import InstalledSoftware
+from tacticalrmm.utils import SoftwareList, filter_software, notify_error, reload_nats
+from winupdate.models import WinUpdate, WinUpdatePolicy
 
 logger.configure(**settings.LOG_CONFIG)
 

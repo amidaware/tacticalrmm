@@ -1,34 +1,29 @@
-import pytz
-import re
-import os
-import uuid
-import subprocess
 import datetime as dt
+import os
+import re
+import subprocess
+import uuid
 
-from django.utils import timezone as djangotime
-from django.db import DataError
-from django.shortcuts import get_object_or_404
+import pytz
 from django.conf import settings
 from django.http import HttpResponse
-
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
+from django.utils import timezone as djangotime
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-
-from rest_framework.decorators import api_view
-
-from .serializers import (
-    ClientSerializer,
-    SiteSerializer,
-    ClientTreeSerializer,
-    DeploymentSerializer,
-)
-from .models import Client, Site, Deployment
 from agents.models import Agent
 from core.models import CoreSettings
 from tacticalrmm.utils import notify_error
+
+from .models import Client, Deployment, Site
+from .serializers import (
+    ClientSerializer,
+    ClientTreeSerializer,
+    DeploymentSerializer,
+    SiteSerializer,
+)
 
 
 class GetAddClients(APIView):

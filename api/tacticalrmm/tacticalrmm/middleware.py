@@ -1,6 +1,7 @@
+import threading
+
 from django.conf import settings
 from rest_framework.exceptions import AuthenticationFailed
-import threading
 
 request_local = threading.local()
 

@@ -1,23 +1,21 @@
 import json
 import os
-from unittest.mock import patch
-
-from model_bakery import baker
 from itertools import cycle
 from typing import List
-from packaging import version as pyver
-
+from unittest.mock import patch
 
 from django.conf import settings
+from model_bakery import baker
+from packaging import version as pyver
 
 from logs.models import PendingAction
-
 from tacticalrmm.test import TacticalTestCase
-from .serializers import AgentSerializer
-from winupdate.serializers import WinUpdatePolicySerializer
-from .models import Agent
-from .tasks import auto_self_agent_update_task
 from winupdate.models import WinUpdatePolicy
+from winupdate.serializers import WinUpdatePolicySerializer
+
+from .models import Agent
+from .serializers import AgentSerializer
+from .tasks import auto_self_agent_update_task
 
 
 class TestAgentViews(TacticalTestCase):

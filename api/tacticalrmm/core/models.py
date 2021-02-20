@@ -1,14 +1,14 @@
-from loguru import logger
-import pytz
-import time
 import smtplib
 from email.message import EmailMessage
+
+import pytz
+from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
+from django.core.exceptions import ValidationError
+from django.db import models
+from loguru import logger
 from twilio.rest import Client as TwClient
 
-from django.db import models
-from django.core.exceptions import ValidationError
-from django.contrib.postgres.fields import ArrayField
-from django.conf import settings
 from logs.models import BaseAuditModel
 
 logger.configure(**settings.LOG_CONFIG)

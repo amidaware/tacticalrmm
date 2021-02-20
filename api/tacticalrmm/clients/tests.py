@@ -1,14 +1,16 @@
 import uuid
-from tacticalrmm.test import TacticalTestCase
+
 from model_bakery import baker
-from .models import Client, Site, Deployment
 from rest_framework.serializers import ValidationError
 
+from tacticalrmm.test import TacticalTestCase
+
+from .models import Client, Deployment, Site
 from .serializers import (
     ClientSerializer,
-    SiteSerializer,
     ClientTreeSerializer,
     DeploymentSerializer,
+    SiteSerializer,
 )
 
 

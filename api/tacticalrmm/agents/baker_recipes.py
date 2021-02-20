@@ -1,12 +1,12 @@
+import json
+import os
 import random
 import string
-import os
-import json
-
-from model_bakery.recipe import Recipe, foreign_key
 from itertools import cycle
-from django.utils import timezone as djangotime
+
 from django.conf import settings
+from django.utils import timezone as djangotime
+from model_bakery.recipe import Recipe, foreign_key
 
 
 def generate_agent_id(hostname):

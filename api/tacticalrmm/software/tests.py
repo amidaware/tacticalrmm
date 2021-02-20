@@ -1,8 +1,11 @@
-from tacticalrmm.test import TacticalTestCase
-from .serializers import InstalledSoftwareSerializer
-from model_bakery import baker
 from unittest.mock import patch
+
+from model_bakery import baker
+
+from tacticalrmm.test import TacticalTestCase
+
 from .models import ChocoLog
+from .serializers import InstalledSoftwareSerializer
 
 
 class TestSoftwareViews(TacticalTestCase):

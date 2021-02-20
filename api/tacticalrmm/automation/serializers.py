@@ -1,15 +1,15 @@
-from django.db.models.base import Model
 from rest_framework.serializers import (
     ModelSerializer,
-    SerializerMethodField,
     ReadOnlyField,
+    SerializerMethodField,
 )
 
-from .models import Policy
 from autotasks.models import AutomatedTask
 from checks.models import Check
 from clients.models import Client
 from winupdate.serializers import WinUpdatePolicySerializer
+
+from .models import Policy
 
 
 class PolicySerializer(ModelSerializer):

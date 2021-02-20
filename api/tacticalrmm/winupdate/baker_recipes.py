@@ -1,7 +1,9 @@
-from itertools import cycle
 from datetime import datetime as dt
+from itertools import cycle
+
 import pytz
 from model_bakery.recipe import Recipe, seq
+
 from .models import WinUpdate, WinUpdatePolicy
 
 timezone = pytz.timezone("America/Los_Angeles")

@@ -1,28 +1,27 @@
-import time
-import base64
-from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
-from Crypto.Hash import SHA3_384
-from Crypto.Util.Padding import pad
-import validators
-import msgpack
-import re
-from collections import Counter
-from typing import List, Union, Any
-from loguru import logger
 import asyncio
-
-from packaging import version as pyver
+import base64
+import re
+import time
+from collections import Counter
 from distutils.version import LooseVersion
+from typing import Any, List, Union
+
+import msgpack
+import validators
+from Crypto.Cipher import AES
+from Crypto.Hash import SHA3_384
+from Crypto.Random import get_random_bytes
+from Crypto.Util.Padding import pad
+from django.conf import settings
+from django.db import models
+from django.utils import timezone as djangotime
+from loguru import logger
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrTimeout
+from packaging import version as pyver
 
-from django.db import models
-from django.conf import settings
-from django.utils import timezone as djangotime
 from alerts.models import AlertTemplate
-
-from core.models import CoreSettings, TZ_CHOICES
+from core.models import TZ_CHOICES, CoreSettings
 from logs.models import BaseAuditModel
 
 logger.configure(**settings.LOG_CONFIG)
@@ -479,14 +478,14 @@ class Agent(BaseAuditModel):
             templates.append(self.policy.alert_template)
 
         # check if policy with alert template is assigned to the site
-        elif (
+        if (
             self.monitoring_type == "server"
             and site.server_policy
             and site.server_policy.alert_template
             and site.server_policy.alert_template.is_active
         ):
             templates.append(site.server_policy.alert_template)
-        elif (
+        if (
             self.monitoring_type == "workstation"
             and site.workstation_policy
             and site.workstation_policy.alert_template
@@ -495,18 +494,18 @@ class Agent(BaseAuditModel):
             templates.append(site.workstation_policy.alert_template)
 
         # check if alert template is assigned to site
-        elif site.alert_template and site.alert_template.is_active:
+        if site.alert_template and site.alert_template.is_active:
             templates.append(site.alert_template)
 
         # check if policy with alert template is assigned to the client
-        elif (
+        if (
             self.monitoring_type == "server"
             and client.server_policy
             and client.server_policy.alert_template
             and client.server_policy.alert_template.is_active
         ):
             templates.append(client.server_policy.alert_template)
-        elif (
+        if (
             self.monitoring_type == "workstation"
             and client.workstation_policy
             and client.workstation_policy.alert_template
@@ -515,22 +514,22 @@ class Agent(BaseAuditModel):
             templates.append(client.workstation_policy.alert_template)
 
         # check if alert template is on client and return
-        elif client.alert_template and client.alert_template.is_active:
+        if client.alert_template and client.alert_template.is_active:
             templates.append(client.alert_template)
 
         # check if alert template is applied globally and return
-        elif core.alert_template and core.alert_template.is_active:
+        if core.alert_template and core.alert_template.is_active:
             templates.append(core.alert_template)
 
         # if agent is a workstation, check if policy with alert template is assigned to the site, client, or core
-        elif (
+        if (
             self.monitoring_type == "server"
             and core.server_policy
             and core.server_policy.alert_template
             and core.server_policy.alert_template.is_active
         ):
             templates.append(core.server_policy.alert_template)
-        elif (
+        if (
             self.monitoring_type == "workstation"
             and core.workstation_policy
             and core.workstation_policy.alert_template
@@ -553,12 +552,15 @@ class Agent(BaseAuditModel):
                 continue
 
             # check if template is excluding desktops
-            if self.monitoring_type == "workstation" and template.exclude_workstations:
+            elif (
+                self.monitoring_type == "workstation" and template.exclude_workstations
+            ):
                 continue
 
             # check if template is excluding servers
             elif self.monitoring_type == "server" and template.exclude_servers:
                 continue
+
             else:
                 return template
 
@@ -682,8 +684,8 @@ class Agent(BaseAuditModel):
             if action.action_type == "taskaction":
                 from autotasks.tasks import (
                     create_win_task_schedule,
-                    enable_or_disable_win_task,
                     delete_win_task_schedule,
+                    enable_or_disable_win_task,
                 )
 
                 task_id = action.details["task_id"]
@@ -705,13 +707,13 @@ class Agent(BaseAuditModel):
                 action.delete()
 
     def handle_alert(self, checkin: bool = False) -> None:
-        from alerts.models import Alert
         from agents.tasks import (
-            agent_recovery_email_task,
-            agent_recovery_sms_task,
             agent_outage_email_task,
             agent_outage_sms_task,
+            agent_recovery_email_task,
+            agent_recovery_sms_task,
         )
+        from alerts.models import Alert
 
         # return if agent is in maintenace mode
         if self.maintenance_mode:
@@ -837,7 +839,7 @@ class Agent(BaseAuditModel):
                 )
 
                 # command was successful
-                if type(r) == dict:
+                if isinstance(r, dict):
                     alert.action_retcode = r["retcode"]
                     alert.action_stdout = r["stdout"]
                     alert.action_stderr = r["stderr"]

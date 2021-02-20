@@ -1,6 +1,5 @@
-from django.utils import timezone as djangotime
-
 from django.core.management.base import BaseCommand
+from django.utils import timezone as djangotime
 from knox.models import AuthToken
 
 

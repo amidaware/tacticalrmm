@@ -1,8 +1,9 @@
-from tacticalrmm.test import TacticalTestCase
-from model_bakery import baker
 from unittest.mock import patch
-from .serializers import ServicesSerializer
+
+from model_bakery import baker
+
 from agents.models import Agent
+from tacticalrmm.test import TacticalTestCase
 
 
 class TestServiceViews(TacticalTestCase):

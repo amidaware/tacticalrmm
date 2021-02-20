@@ -1,8 +1,8 @@
 from rest_framework import serializers
-from .models import PendingAction, AuditLog
-from core.models import CoreSettings
 
-import pytz
+from tacticalrmm.utils import get_default_timezone
+
+from .models import AuditLog, PendingAction
 
 
 class AuditLogSerializer(serializers.ModelSerializer):
@@ -14,7 +14,7 @@ class AuditLogSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_entry_time(self, log):
-        timezone = pytz.timezone(CoreSettings.objects.first().default_time_zone)
+        timezone = get_default_timezone()
         return log.entry_time.astimezone(timezone).strftime("%m %d %Y %H:%M:%S")
 
 

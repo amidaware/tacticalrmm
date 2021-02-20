@@ -361,7 +361,7 @@
               <q-tooltip>Reboot required</q-tooltip>
             </q-icon>
           </q-td>
-          <q-td key="lastseen" :props="props">{{ unixToString(props.row.last_seen) }}</q-td>
+          <q-td key="lastseen" :props="props">{{ formatDjangoDate(props.row.last_seen) }}</q-td>
           <q-td key="boottime" :props="props">{{ bootTime(props.row.boot_time) }}</q-td>
         </q-tr>
       </template>
@@ -477,7 +477,7 @@ export default {
           else if (availability === "offline" && row.status !== "overdue") return false;
           else if (availability === "expired") {
             let now = new Date();
-            let lastSeen = new Date(row.last_seen * 1000);
+            let lastSeen = date.extractDate(row.last_seen, "MM DD YYYY HH:mm");
             let diff = date.getDateDiff(now, lastSeen, "days");
             if (diff < 30) return false;
           }

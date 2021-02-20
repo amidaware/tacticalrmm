@@ -1,8 +1,11 @@
 from datetime import datetime, timedelta
-from model_bakery import baker, seq
-from tacticalrmm.test import TacticalTestCase
-from .serializers import PendingActionSerializer
 from unittest.mock import patch
+
+from model_bakery import baker, seq
+
+from tacticalrmm.test import TacticalTestCase
+
+from .serializers import PendingActionSerializer
 
 
 class TestAuditViews(TacticalTestCase):

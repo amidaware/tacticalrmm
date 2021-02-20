@@ -77,7 +77,7 @@
               formatMessage(props.row.description)
             }}</span>
           </q-td>
-          <q-td>{{ props.row.date_installed }}</q-td>
+          <q-td>{{ formatDjangoDate(props.row.date_installed) }}</q-td>
         </q-tr>
       </template>
     </q-table>
@@ -140,6 +140,7 @@ export default {
           field: "date_installed",
           align: "left",
           sortable: true,
+          sort: (a, b) => this.dateStringToUnix(a) - this.dateStringToUnix(b),
         },
         {
           name: "more_info_urls",

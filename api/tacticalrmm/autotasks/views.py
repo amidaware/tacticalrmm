@@ -11,7 +11,7 @@ from agents.models import Agent
 from checks.models import Check
 
 from scripts.models import Script
-from core.models import CoreSettings
+from tacticalrmm.utils import get_default_timezone
 
 from .serializers import TaskSerializer, AutoTaskSerializer
 
@@ -76,7 +76,7 @@ class AutoTask(APIView):
 
         agent = get_object_or_404(Agent, pk=pk)
         ctx = {
-            "default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone),
+            "default_tz": get_default_timezone(),
             "agent_tz": agent.time_zone,
         }
         return Response(AutoTaskSerializer(agent, context=ctx).data)

@@ -121,6 +121,16 @@ export default {
       let t = new Date(timestamp * 1000)
       return date.formatDate(t, 'MMM-D-YYYY - HH:mm')
     },
+    dateStringToUnix(drfString) {
+      if (!drfString) return 0;
+      const d = date.extractDate(drfString, "MM DD YYYY HH:mm");
+      return parseInt(date.formatDate(d, "X"));
+    },
+    formatDjangoDate(drfString) {
+      if (!drfString) return "";
+      const d = date.extractDate(drfString, "MM DD YYYY HH:mm");
+      return date.formatDate(d, "MMM-DD-YYYY - HH:mm");
+    },
     formatClientOptions(clients) {
       return clients.map(client => ({ label: client.name, value: client.id, sites: client.sites }))
     },

@@ -4,19 +4,19 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
 
 from agents.models import Agent
 from .models import WinUpdate
-from .serializers import UpdateSerializer, ApprovedUpdateSerializer
-from tacticalrmm.utils import notify_error
+from .serializers import UpdateSerializer
+from tacticalrmm.utils import notify_error, get_default_timezone
 
 
 @api_view()
 def get_win_updates(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    return Response(UpdateSerializer(agent).data)
+    ctx = {"default_tz": get_default_timezone()}
+    serializer = UpdateSerializer(agent, context=ctx)
+    return Response(serializer.data)
 
 
 @api_view()

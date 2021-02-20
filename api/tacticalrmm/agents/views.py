@@ -22,6 +22,7 @@ from .models import Agent, RecoveryAction, Note
 from core.models import CoreSettings
 from scripts.models import Script
 from logs.models import AuditLog, PendingAction
+from tacticalrmm.utils import get_default_timezone
 
 from .serializers import (
     AgentSerializer,
@@ -256,9 +257,7 @@ class AgentsTableList(generics.ListAPIView):
 
     def list(self, request):
         queryset = self.get_queryset()
-        ctx = {
-            "default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone)
-        }
+        ctx = {"default_tz": get_default_timezone()}
         serializer = AgentTableSerializer(queryset, many=True, context=ctx)
         return Response(serializer.data)
 
@@ -301,7 +300,7 @@ def by_client(request, clientpk):
             "maintenance_mode",
         )
     )
-    ctx = {"default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone)}
+    ctx = {"default_tz": get_default_timezone()}
     return Response(AgentTableSerializer(agents, many=True, context=ctx).data)
 
 
@@ -331,7 +330,7 @@ def by_site(request, sitepk):
             "maintenance_mode",
         )
     )
-    ctx = {"default_tz": pytz.timezone(CoreSettings.objects.first().default_time_zone)}
+    ctx = {"default_tz": get_default_timezone()}
     return Response(AgentTableSerializer(agents, many=True, context=ctx).data)
 
 

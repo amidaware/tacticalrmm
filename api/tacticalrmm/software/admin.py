@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import ChocoSoftware, ChocoLog, InstalledSoftware
+
+from .models import ChocoLog, ChocoSoftware, InstalledSoftware
 
 
 class ChocoAdmin(admin.ModelAdmin):

@@ -3,8 +3,9 @@ import random
 from time import sleep
 from typing import Union
 
-from tacticalrmm.celery import app
 from django.utils import timezone as djangotime
+
+from tacticalrmm.celery import app
 
 
 @app.task

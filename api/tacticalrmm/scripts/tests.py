@@ -1,12 +1,15 @@
 import json
 import os
-from django.core.files.uploadedfile import SimpleUploadedFile
 from pathlib import Path
+
 from django.conf import settings
-from tacticalrmm.test import TacticalTestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
 from model_bakery import baker
-from .serializers import ScriptSerializer, ScriptTableSerializer
+
+from tacticalrmm.test import TacticalTestCase
+
 from .models import Script
+from .serializers import ScriptSerializer, ScriptTableSerializer
 
 
 class TestScriptViews(TacticalTestCase):

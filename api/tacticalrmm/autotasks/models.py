@@ -1,19 +1,18 @@
-import pytz
+import datetime as dt
 import random
 import string
-import datetime as dt
 
-from django.utils import timezone as djangotime
+import pytz
 from django.conf import settings
-from django.db import models
 from django.contrib.postgres.fields import ArrayField
+from django.db import models
 from django.db.models.fields import DateTimeField
-from logs.models import BaseAuditModel
-from tacticalrmm.utils import bitdays_to_string
-
+from django.utils import timezone as djangotime
 from loguru import logger
 
 from alerts.models import SEVERITY_CHOICES
+from logs.models import BaseAuditModel
+from tacticalrmm.utils import bitdays_to_string
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -165,7 +164,6 @@ class AutomatedTask(BaseAuditModel):
 
         # if policy is present, then this task is being copied to another policy
         # if agent is present, then this task is being created on an agent from a policy
-
         # exit if neither are set or if both are set
         if not agent and not policy or agent and policy:
             return
@@ -227,10 +225,10 @@ class AutomatedTask(BaseAuditModel):
     def handle_alert(self) -> None:
         from alerts.models import Alert
         from autotasks.tasks import (
+            handle_resolved_task_email_alert,
+            handle_resolved_task_sms_alert,
             handle_task_email_alert,
             handle_task_sms_alert,
-            handle_resolved_task_sms_alert,
-            handle_resolved_task_email_alert,
         )
 
         self.status = "failing" if self.retcode != 0 else "passing"

@@ -1,11 +1,10 @@
 import pytz
-
 from rest_framework import serializers
 
-from .models import Agent, Note
-
-from winupdate.serializers import WinUpdatePolicySerializer
 from clients.serializers import ClientSerializer
+from winupdate.serializers import WinUpdatePolicySerializer
+
+from .models import Agent, Note
 
 
 class AgentSerializer(serializers.ModelSerializer):

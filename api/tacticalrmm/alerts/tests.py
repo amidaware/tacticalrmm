@@ -1,15 +1,16 @@
 from datetime import datetime, timedelta
-from core.models import CoreSettings
 
 from django.utils import timezone as djangotime
-from tacticalrmm.test import TacticalTestCase
 from model_bakery import baker, seq
+
+from core.models import CoreSettings
+from tacticalrmm.test import TacticalTestCase
 
 from .models import Alert, AlertTemplate
 from .serializers import (
     AlertSerializer,
-    AlertTemplateSerializer,
     AlertTemplateRelationSerializer,
+    AlertTemplateSerializer,
 )
 
 

@@ -1,31 +1,26 @@
 import asyncio
-from packaging import version as pyver
-
-from django.shortcuts import get_object_or_404
-from django.db.models import Q
-from django.utils import timezone as djangotime
-
 from datetime import datetime as dt
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
+from django.utils import timezone as djangotime
+from packaging import version as pyver
 from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from tacticalrmm.utils import notify_error
 from agents.models import Agent
 from automation.models import Policy
-
-from .models import Check
-from scripts.models import Script
-
-from .serializers import CheckSerializer, CheckHistorySerializer
-
-
 from automation.tasks import (
-    generate_agent_checks_from_policies_task,
     delete_policy_check_task,
+    generate_agent_checks_from_policies_task,
     update_policy_check_fields_task,
 )
+from scripts.models import Script
+from tacticalrmm.utils import notify_error
+
+from .models import Check
+from .serializers import CheckHistorySerializer, CheckSerializer
 
 
 class AddCheck(APIView):

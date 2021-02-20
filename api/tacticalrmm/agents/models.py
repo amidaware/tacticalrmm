@@ -1,28 +1,27 @@
-import time
-import base64
-from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
-from Crypto.Hash import SHA3_384
-from Crypto.Util.Padding import pad
-import validators
-import msgpack
-import re
-from collections import Counter
-from typing import List, Union, Any
-from loguru import logger
 import asyncio
-
-from packaging import version as pyver
+import base64
+import re
+import time
+from collections import Counter
 from distutils.version import LooseVersion
+from typing import Any, List, Union
+
+import msgpack
+import validators
+from Crypto.Cipher import AES
+from Crypto.Hash import SHA3_384
+from Crypto.Random import get_random_bytes
+from Crypto.Util.Padding import pad
+from django.conf import settings
+from django.db import models
+from django.utils import timezone as djangotime
+from loguru import logger
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrTimeout
+from packaging import version as pyver
 
-from django.db import models
-from django.conf import settings
-from django.utils import timezone as djangotime
 from alerts.models import AlertTemplate
-
-from core.models import CoreSettings, TZ_CHOICES
+from core.models import TZ_CHOICES, CoreSettings
 from logs.models import BaseAuditModel
 
 logger.configure(**settings.LOG_CONFIG)
@@ -685,8 +684,8 @@ class Agent(BaseAuditModel):
             if action.action_type == "taskaction":
                 from autotasks.tasks import (
                     create_win_task_schedule,
-                    enable_or_disable_win_task,
                     delete_win_task_schedule,
+                    enable_or_disable_win_task,
                 )
 
                 task_id = action.details["task_id"]
@@ -708,13 +707,13 @@ class Agent(BaseAuditModel):
                 action.delete()
 
     def handle_alert(self, checkin: bool = False) -> None:
-        from alerts.models import Alert
         from agents.tasks import (
-            agent_recovery_email_task,
-            agent_recovery_sms_task,
             agent_outage_email_task,
             agent_outage_sms_task,
+            agent_recovery_email_task,
+            agent_recovery_sms_task,
         )
+        from alerts.models import Alert
 
         # return if agent is in maintenace mode
         if self.maintenance_mode:

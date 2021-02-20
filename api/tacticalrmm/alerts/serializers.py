@@ -1,13 +1,10 @@
 from rest_framework.fields import SerializerMethodField
-from rest_framework.serializers import (
-    ModelSerializer,
-    ReadOnlyField,
-)
+from rest_framework.serializers import ModelSerializer, ReadOnlyField
 
-from clients.serializers import ClientSerializer, SiteSerializer
 from automation.serializers import PolicySerializer
-
+from clients.serializers import ClientSerializer, SiteSerializer
 from tacticalrmm.utils import get_default_timezone
+
 from .models import Alert, AlertTemplate
 
 

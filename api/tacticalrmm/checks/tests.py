@@ -1,10 +1,12 @@
-from checks.models import CheckHistory
-from tacticalrmm.test import TacticalTestCase
-from .serializers import CheckSerializer
-from django.utils import timezone as djangotime
 from unittest.mock import patch
 
+from django.utils import timezone as djangotime
 from model_bakery import baker
+
+from checks.models import CheckHistory
+from tacticalrmm.test import TacticalTestCase
+
+from .serializers import CheckSerializer
 
 
 class TestCheckViews(TacticalTestCase):

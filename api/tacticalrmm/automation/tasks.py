@@ -1,8 +1,7 @@
+from agents.models import Agent
 from automation.models import Policy
 from autotasks.models import AutomatedTask
 from checks.models import Check
-from agents.models import Agent
-
 from tacticalrmm.celery import app
 
 
@@ -130,8 +129,8 @@ def generate_agent_tasks_from_policies_task(policypk):
 
 @app.task
 def delete_policy_autotask_task(taskpk):
-    from autotasks.tasks import delete_win_task_schedule
     from autotasks.models import AutomatedTask
+    from autotasks.tasks import delete_win_task_schedule
 
     for task in AutomatedTask.objects.filter(parent_task=taskpk):
         delete_win_task_schedule.delay(task.pk)

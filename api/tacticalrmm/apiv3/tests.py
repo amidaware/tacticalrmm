@@ -1,11 +1,12 @@
-import os
 import json
+import os
+from itertools import cycle
+from unittest.mock import patch
 
 from django.conf import settings
-from tacticalrmm.test import TacticalTestCase
-from unittest.mock import patch
 from model_bakery import baker
-from itertools import cycle
+
+from tacticalrmm.test import TacticalTestCase
 
 
 class TestAPIv3(TacticalTestCase):

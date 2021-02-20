@@ -1,31 +1,28 @@
 import asyncio
+
 from django.shortcuts import get_object_or_404
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import AutomatedTask
 from agents.models import Agent
 from checks.models import Check
-
 from scripts.models import Script
-from tacticalrmm.utils import get_default_timezone
+from tacticalrmm.utils import get_bit_days, get_default_timezone, notify_error
 
-from .serializers import TaskSerializer, AutoTaskSerializer
-
+from .models import AutomatedTask
+from .serializers import AutoTaskSerializer, TaskSerializer
 from .tasks import (
     create_win_task_schedule,
     delete_win_task_schedule,
     enable_or_disable_win_task,
 )
-from tacticalrmm.utils import notify_error, get_bit_days
 
 
 class AddAutoTask(APIView):
     def post(self, request):
-        from automation.tasks import generate_agent_tasks_from_policies_task
         from automation.models import Policy
+        from automation.tasks import generate_agent_tasks_from_policies_task
 
         data = request.data
         script = get_object_or_404(Script, pk=data["autotask"]["script"])

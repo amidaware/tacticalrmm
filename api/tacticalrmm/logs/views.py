@@ -1,32 +1,32 @@
 import asyncio
 import subprocess
-
-from django.conf import settings
-from django.shortcuts import get_object_or_404
-from django.http import HttpResponse
-from django.utils import timezone as djangotime
-from django.db.models import Q
-from django.core.paginator import Paginator
 from datetime import datetime as dt
 
-from rest_framework.response import Response
+from django.conf import settings
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.utils import timezone as djangotime
 from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import PendingAction, AuditLog
-from agents.models import Agent
 from accounts.models import User
-from .serializers import PendingActionSerializer, AuditLogSerializer
-from agents.serializers import AgentHostnameSerializer
 from accounts.serializers import UserSerializer
+from agents.models import Agent
+from agents.serializers import AgentHostnameSerializer
 from tacticalrmm.utils import notify_error
+
+from .models import AuditLog, PendingAction
+from .serializers import AuditLogSerializer, PendingActionSerializer
 
 
 class GetAuditLogs(APIView):
     def patch(self, request):
-        from clients.models import Client
         from agents.models import Agent
+        from clients.models import Client
 
         pagination = request.data["pagination"]
 

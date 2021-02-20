@@ -1,4 +1,5 @@
 from django.db import models
+
 from agents.models import Agent
 from core.models import CoreSettings
 from logs.models import BaseAuditModel
@@ -87,9 +88,8 @@ class Policy(BaseAuditModel):
 
     @staticmethod
     def cascade_policy_tasks(agent):
-        from autotasks.tasks import delete_win_task_schedule
-
         from autotasks.models import AutomatedTask
+        from autotasks.tasks import delete_win_task_schedule
         from logs.models import PendingAction
 
         # List of all tasks to be applied

@@ -1,8 +1,10 @@
-from tacticalrmm.test import TacticalTestCase
-from core.tasks import core_maintenance_tasks
 from unittest.mock import patch
-from core.models import CoreSettings
+
 from model_bakery import baker, seq
+
+from core.models import CoreSettings
+from core.tasks import core_maintenance_tasks
+from tacticalrmm.test import TacticalTestCase
 
 
 class TestCoreTasks(TacticalTestCase):

@@ -1,18 +1,16 @@
 import asyncio
-from loguru import logger
-
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from loguru import logger
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 from agents.models import Agent
 from checks.models import Check
+from tacticalrmm.utils import notify_error
 
 from .serializers import ServicesSerializer
-
-from tacticalrmm.utils import notify_error
 
 logger.configure(**settings.LOG_CONFIG)
 

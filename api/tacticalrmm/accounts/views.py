@@ -1,23 +1,21 @@
 import pyotp
-
-from django.contrib.auth import login
 from django.conf import settings
-from django.shortcuts import get_object_or_404
+from django.contrib.auth import login
 from django.db import IntegrityError
-
-from rest_framework.views import APIView
-from rest_framework.authtoken.serializers import AuthTokenSerializer
+from django.shortcuts import get_object_or_404
 from knox.views import LoginView as KnoxLoginView
+from rest_framework import status
+from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.views import APIView
 
-from .models import User
 from agents.models import Agent
 from logs.models import AuditLog
 from tacticalrmm.utils import notify_error
 
-from .serializers import UserSerializer, TOTPSetupSerializer
+from .models import User
+from .serializers import TOTPSetupSerializer, UserSerializer
 
 
 class CheckCreds(KnoxLoginView):

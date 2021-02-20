@@ -1,9 +1,12 @@
-from tacticalrmm.test import TacticalTestCase
-from .serializers import UpdateSerializer
-from model_bakery import baker
 from itertools import cycle
 from unittest.mock import patch
+
+from model_bakery import baker
+
+from tacticalrmm.test import TacticalTestCase
+
 from .models import WinUpdate
+from .serializers import UpdateSerializer
 
 
 class TestWinUpdateViews(TacticalTestCase):

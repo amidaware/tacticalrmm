@@ -1,18 +1,20 @@
-from unittest.mock import patch
-from tacticalrmm.test import TacticalTestCase
-from model_bakery import baker, seq
 from itertools import cycle
+from unittest.mock import patch
+
+from model_bakery import baker, seq
+
 from agents.models import Agent
+from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
 
 from .serializers import (
-    PolicyTableSerializer,
-    PolicySerializer,
-    PolicyTaskStatusSerializer,
-    PolicyOverviewSerializer,
-    PolicyCheckStatusSerializer,
-    PolicyCheckSerializer,
     AutoTasksFieldSerializer,
+    PolicyCheckSerializer,
+    PolicyCheckStatusSerializer,
+    PolicyOverviewSerializer,
+    PolicySerializer,
+    PolicyTableSerializer,
+    PolicyTaskStatusSerializer,
 )
 
 
@@ -765,8 +767,9 @@ class TestPolicyTasks(TacticalTestCase):
     def test_generating_policy_checks_for_all_agents(
         self, generate_all_agent_checks_task
     ):
-        from .tasks import generate_all_agent_checks_task as generate_all_checks
         from core.models import CoreSettings
+
+        from .tasks import generate_all_agent_checks_task as generate_all_checks
 
         # setup data
         policy = baker.make("automation.Policy", active=True)
@@ -829,8 +832,8 @@ class TestPolicyTasks(TacticalTestCase):
             self.assertEqual(Agent.objects.get(pk=agent.id).agentchecks.count(), 0)
 
     def test_delete_policy_check(self):
-        from .tasks import delete_policy_check_task
         from .models import Policy
+        from .tasks import delete_policy_check_task
 
         policy = baker.make("automation.Policy", active=True)
         self.create_checks(policy=policy)
@@ -853,8 +856,8 @@ class TestPolicyTasks(TacticalTestCase):
         )
 
     def update_policy_check_fields(self):
-        from .tasks import update_policy_check_fields_task
         from .models import Policy
+        from .tasks import update_policy_check_fields_task
 
         policy = baker.make("automation.Policy", active=True)
         self.create_checks(policy=policy)

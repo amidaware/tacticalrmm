@@ -1,33 +1,31 @@
 import asyncio
 import time
-from django.utils import timezone as djangotime
-from loguru import logger
-from packaging import version as pyver
 from typing import List
-
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.decorators import (
-    api_view,
-    permission_classes,
-    authentication_classes,
-)
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from django.utils import timezone as djangotime
+from loguru import logger
+from packaging import version as pyver
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from agents.models import Agent
-from winupdate.models import WinUpdate
-from software.models import InstalledSoftware
-from checks.utils import bytes2human
 from agents.serializers import WinAgentSerializer
 from agents.tasks import (
     agent_recovery_email_task,
     agent_recovery_sms_task,
     handle_agent_recovery_task,
 )
-
-from tacticalrmm.utils import notify_error, filter_software, SoftwareList
+from checks.utils import bytes2human
+from software.models import InstalledSoftware
+from tacticalrmm.utils import SoftwareList, filter_software, notify_error
+from winupdate.models import WinUpdate
 
 logger.configure(**settings.LOG_CONFIG)
 

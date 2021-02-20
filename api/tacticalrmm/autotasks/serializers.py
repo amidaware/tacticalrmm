@@ -1,11 +1,11 @@
 from rest_framework import serializers
 
-from .models import AutomatedTask
 from agents.models import Agent
-from scripts.models import Script
-
-from scripts.serializers import ScriptCheckSerializer
 from checks.serializers import CheckSerializer
+from scripts.models import Script
+from scripts.serializers import ScriptCheckSerializer
+
+from .models import AutomatedTask
 
 
 class TaskSerializer(serializers.ModelSerializer):

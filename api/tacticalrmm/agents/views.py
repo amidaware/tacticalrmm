@@ -1,47 +1,40 @@
 import asyncio
-from loguru import logger
+import datetime as dt
 import os
-import subprocess
 import random
 import string
-import datetime as dt
-from packaging import version as pyver
+import subprocess
 from typing import List
 
 from django.conf import settings
-from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
-
+from django.shortcuts import get_object_or_404
+from loguru import logger
+from packaging import version as pyver
+from rest_framework import generics, status
 from rest_framework.decorators import api_view
-from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, generics
+from rest_framework.views import APIView
 
-from .models import Agent, RecoveryAction, Note
 from core.models import CoreSettings
-from scripts.models import Script
 from logs.models import AuditLog, PendingAction
-from tacticalrmm.utils import get_default_timezone
+from scripts.models import Script
+from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
+from tacticalrmm.utils import get_default_timezone, notify_error, reload_nats
+from winupdate.serializers import WinUpdatePolicySerializer
+from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
+from .models import Agent, Note, RecoveryAction
 from .serializers import (
-    AgentSerializer,
-    AgentHostnameSerializer,
-    AgentTableSerializer,
     AgentEditSerializer,
+    AgentHostnameSerializer,
+    AgentOverdueActionSerializer,
+    AgentSerializer,
+    AgentTableSerializer,
     NoteSerializer,
     NotesSerializer,
-    AgentOverdueActionSerializer,
 )
-from winupdate.serializers import WinUpdatePolicySerializer
-
-from .tasks import (
-    send_agent_update_task,
-    run_script_email_results_task,
-)
-from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
-from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
-
-from tacticalrmm.utils import notify_error, reload_nats
+from .tasks import run_script_email_results_task, send_agent_update_task
 
 logger.configure(**settings.LOG_CONFIG)
 

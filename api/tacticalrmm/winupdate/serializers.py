@@ -1,8 +1,9 @@
 import pytz
 from rest_framework import serializers
 
-from .models import WinUpdate, WinUpdatePolicy
 from agents.models import Agent
+
+from .models import WinUpdate, WinUpdatePolicy
 
 
 class WinUpdateSerializer(serializers.ModelSerializer):

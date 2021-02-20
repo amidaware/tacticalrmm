@@ -1,14 +1,15 @@
 import asyncio
-from packaging import version as pyver
-from django.shortcuts import get_object_or_404
 
+from django.shortcuts import get_object_or_404
+from packaging import version as pyver
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from agents.models import Agent
+from tacticalrmm.utils import get_default_timezone, notify_error
+
 from .models import WinUpdate
 from .serializers import UpdateSerializer
-from tacticalrmm.utils import notify_error, get_default_timezone
 
 
 @api_view()

@@ -1,6 +1,8 @@
 from rest_framework import serializers
-from .models import PendingAction, AuditLog
+
 from tacticalrmm.utils import get_default_timezone
+
+from .models import AuditLog, PendingAction
 
 
 class AuditLogSerializer(serializers.ModelSerializer):

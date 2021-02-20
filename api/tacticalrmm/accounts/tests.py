@@ -1,8 +1,9 @@
 from unittest.mock import patch
+
 from django.test import override_settings
 
-from tacticalrmm.test import TacticalTestCase
 from accounts.models import User
+from tacticalrmm.test import TacticalTestCase
 
 
 class TestAccounts(TacticalTestCase):

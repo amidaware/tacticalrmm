@@ -1,23 +1,23 @@
 import asyncio
-import string
-import os
 import json
-import pytz
+import os
+import string
 from statistics import mean
+from typing import Any, List, Union
 
-from django.utils import timezone as djangotime
-from django.db import models
+import pytz
 from django.conf import settings
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.postgres.fields import ArrayField
-from rest_framework.fields import JSONField
-from typing import List, Any
-from typing import Union
-
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+from django.utils import timezone as djangotime
 from loguru import logger
+from rest_framework.fields import JSONField
 
+from alerts.models import SEVERITY_CHOICES
 from core.models import CoreSettings
 from logs.models import BaseAuditModel
+
 from .tasks import (
     handle_check_email_alert_task,
     handle_check_sms_alert_task,
@@ -25,7 +25,6 @@ from .tasks import (
     handle_resolved_check_sms_alert_task,
 )
 from .utils import bytes2human
-from alerts.models import SEVERITY_CHOICES
 
 logger.configure(**settings.LOG_CONFIG)
 

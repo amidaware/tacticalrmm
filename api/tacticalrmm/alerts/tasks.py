@@ -1,8 +1,7 @@
 from django.utils import timezone as djangotime
 
-from tacticalrmm.celery import app
-
 from alerts.models import Alert
+from tacticalrmm.celery import app
 
 
 @app.task

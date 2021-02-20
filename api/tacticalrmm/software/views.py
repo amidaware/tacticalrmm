@@ -2,15 +2,15 @@ import asyncio
 from typing import Any
 
 from django.shortcuts import get_object_or_404
-
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from agents.models import Agent
+from tacticalrmm.utils import filter_software, notify_error
+
 from .models import ChocoSoftware, InstalledSoftware
-from .serializers import InstalledSoftwareSerializer, ChocoSoftwareSerializer
+from .serializers import ChocoSoftwareSerializer, InstalledSoftwareSerializer
 from .tasks import install_program
-from tacticalrmm.utils import notify_error, filter_software
 
 
 @api_view()

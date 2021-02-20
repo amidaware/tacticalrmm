@@ -1,10 +1,13 @@
-from django.core.management.base import BaseCommand
-from django.conf import settings
-from core.models import CoreSettings
-from .helpers import get_auth_token
 import asyncio
-import websockets
 import json
+
+import websockets
+from django.conf import settings
+from django.core.management.base import BaseCommand
+
+from core.models import CoreSettings
+
+from .helpers import get_auth_token
 
 
 class Command(BaseCommand):

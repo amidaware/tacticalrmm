@@ -1,7 +1,9 @@
 import datetime as dt
 from abc import abstractmethod
+
 from django.db import models
-from tacticalrmm.middleware import get_username, get_debug_info
+
+from tacticalrmm.middleware import get_debug_info, get_username
 
 ACTION_TYPE_CHOICES = [
     ("schedreboot", "Scheduled Reboot"),
@@ -178,8 +180,8 @@ class AuditLog(models.Model):
 
     @staticmethod
     def audit_bulk_action(username, action, affected, debug_info={}):
-        from clients.models import Client, Site
         from agents.models import Agent
+        from clients.models import Client, Site
         from scripts.models import Script
 
         target = ""

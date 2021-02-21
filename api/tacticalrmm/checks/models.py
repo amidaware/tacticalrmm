@@ -339,9 +339,11 @@ class Check(BaseAuditModel):
                     or self.text_alert
                     or (
                         alert_template
-                        and alert_template.check_always_alert
-                        or alert_template.check_always_email
-                        or alert_template.check_always_text
+                        and (
+                            alert_template.check_always_alert
+                            or alert_template.check_always_email
+                            or alert_template.check_always_text
+                        )
                     )
                 ):
                     alert = Alert.create_check_alert(self)

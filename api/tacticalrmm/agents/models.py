@@ -790,9 +790,11 @@ class Agent(BaseAuditModel):
                     or self.overdue_text_alert
                     or (
                         alert_template
-                        and alert_template.agent_always_alert
-                        or alert_template.agent_always_email
-                        or alert_template.agent_always_text
+                        and (
+                            alert_template.agent_always_alert
+                            or alert_template.agent_always_email
+                            or alert_template.agent_always_text
+                        )
                     )
                 ):
                     alert = Alert.create_availability_alert(self)

@@ -307,9 +307,11 @@ class AutomatedTask(BaseAuditModel):
                     or self.text_alert
                     or (
                         alert_template
-                        and alert_template.task_always_alert
-                        or alert_template.task_always_email
-                        or alert_template.task_always_text
+                        and (
+                            alert_template.task_always_alert
+                            or alert_template.task_always_email
+                            or alert_template.task_always_text
+                        )
                     )
                 ):
                     alert = Alert.create_task_alert(self)

@@ -501,7 +501,14 @@ class TestAlertTasks(TacticalTestCase):
     @patch("agents.tasks.agent_recovery_email_task.delay")
     @patch("agents.tasks.agent_recovery_sms_task.delay")
     def test_handle_agent_offline_alerts(
-        self, recovery_sms, recovery_email, outage_email, outage_sms, TwClient, SMTP, sleep
+        self,
+        recovery_sms,
+        recovery_email,
+        outage_email,
+        outage_sms,
+        TwClient,
+        SMTP,
+        sleep,
     ):
         from agents.tasks import (
             agent_outages_task,
@@ -532,10 +539,16 @@ class TestAlertTasks(TacticalTestCase):
             "alerts.AlertTemplate", is_active=True, agent_always_alert=True
         )
         alert_template_always_text = baker.make(
-            "alerts.AlertTemplate", is_active=True, agent_always_text=True, agent_periodic_alert_days=5
+            "alerts.AlertTemplate",
+            is_active=True,
+            agent_always_text=True,
+            agent_periodic_alert_days=5,
         )
         alert_template_always_email = baker.make(
-            "alerts.AlertTemplate", is_active=True, agent_always_email=True, agent_periodic_alert_days=5
+            "alerts.AlertTemplate",
+            is_active=True,
+            agent_always_email=True,
+            agent_periodic_alert_days=5,
         )
 
         alert_template_blank = baker.make("alerts.AlertTemplate", is_active=True)
@@ -677,7 +690,7 @@ class TestAlertTasks(TacticalTestCase):
 
         data = {
             "agent_id": agent_template_text.agent_id,
-            "version": settings.LATEST_AGENT_VER
+            "version": settings.LATEST_AGENT_VER,
         }
 
         resp = self.client.patch(url, data, format="json")
@@ -685,7 +698,7 @@ class TestAlertTasks(TacticalTestCase):
 
         data = {
             "agent_id": agent_template_email.agent_id,
-            "version": settings.LATEST_AGENT_VER
+            "version": settings.LATEST_AGENT_VER,
         }
 
         resp = self.client.patch(url, data, format="json")
@@ -702,7 +715,9 @@ class TestAlertTasks(TacticalTestCase):
         agent_recovery_email_task(pk=Alert.objects.get(agent=agent_template_email).pk)
 
         self.assertTrue(Alert.objects.get(agent=agent_template_text).resolved_sms_sent)
-        self.assertTrue(Alert.objects.get(agent=agent_template_email).resolved_email_sent)
+        self.assertTrue(
+            Alert.objects.get(agent=agent_template_email).resolved_email_sent
+        )
 
     def test_handle_check_alerts(self):
         pass

@@ -358,11 +358,10 @@ class Check(BaseAuditModel):
                     alert.save(update_fields=["severity"])
 
             # create alert in dashboard if enabled
-            if (
-                self.dashboard_alert
-                or (alert_template
+            if self.dashboard_alert or (
+                alert_template
                 and self.alert_severity in alert_template.check_dashboard_alert_severity
-                and alert_template.check_always_alert)
+                and alert_template.check_always_alert
             ):
                 alert.hidden = False
                 alert.save()
@@ -383,11 +382,10 @@ class Check(BaseAuditModel):
                 )
 
             # send text if enabled
-            if (
-                self.text_alert
-                or (alert_template
+            if self.text_alert or (
+                alert_template
                 and self.alert_severity in alert_template.check_text_alert_severity
-                and alert_template.check_always_text)
+                and alert_template.check_always_text
             ):
                 handle_check_sms_alert_task.delay(
                     pk=alert.pk,

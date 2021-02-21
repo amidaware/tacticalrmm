@@ -712,3 +712,12 @@ class TestAlertTasks(TacticalTestCase):
 
     def test_override_email_settings(self):
         pass
+
+    def test_agent_alert_actions(self):
+        pass
+
+    def test_check_alert_actions(self):
+        pass
+
+    def test_task_alert_actions(self):
+        pass

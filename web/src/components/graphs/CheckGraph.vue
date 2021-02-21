@@ -171,6 +171,8 @@ export default {
           strokeDashArray: 0,
           borderColor: "#C10015",
           label: {
+            position: "left",
+            offsetX: 100,
             borderColor: "#C10015",
             style: {
               color: "#FFF",
@@ -188,6 +190,8 @@ export default {
           strokeDashArray: 0,
           borderColor: "#ff9800",
           label: {
+            position: "left",
+            offsetX: 100,
             borderColor: "#ff9800",
             style: {
               color: "#FFF",

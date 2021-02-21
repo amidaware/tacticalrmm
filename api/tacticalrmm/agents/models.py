@@ -724,34 +724,32 @@ class Agent(BaseAuditModel):
         # called when agent is back online
         if checkin:
             if Alert.objects.filter(agent=self, resolved=False).exists():
-
+                
                 # resolve alert if exists
                 alert = Alert.objects.get(agent=self, resolved=False)
                 alert.resolve()
 
                 # check if a resolved notification should be emailed
                 if (
-                    not alert.resolved_email_sent
-                    and alert_template
+                    alert_template
                     and alert_template.agent_email_on_resolved
-                    or self.overdue_email_alert
+                    and not alert.resolved_email_sent
                 ):
                     agent_recovery_email_task.delay(pk=alert.pk)
 
                 # check if a resolved notification should be texted
                 if (
-                    not alert.resolved_sms_sent
-                    and alert_template
+                    alert_template
                     and alert_template.agent_text_on_resolved
-                    or self.overdue_text_alert
+                    and not alert.resolved_sms_sent
                 ):
                     agent_recovery_sms_task.delay(pk=alert.pk)
 
                 # check if any scripts should be run
                 if (
                     not alert.resolved_action_run
-                    and alert_template
-                    and alert_template.resolved_action
+                    and (alert_template
+                    and alert_template.resolved_action)
                 ):
                     r = self.run_script(
                         scriptpk=alert_template.resolved_action.pk,
@@ -809,37 +807,35 @@ class Agent(BaseAuditModel):
 
             # create dashboard alert if enabled
             if (
-                alert_template
-                and alert_template.agent_always_alert
-                or self.overdue_dashboard_alert
+                self.overdue_dashboard_alert
+                or (alert_template
+                and alert_template.agent_always_alert)
             ):
                 alert.hidden = False
                 alert.save()
 
             # send email alert if enabled
             if (
-                not alert.email_sent
-                and alert_template
-                and alert_template.agent_always_email
-                or self.overdue_email_alert
+                self.overdue_email_alert
+                or (alert_template
+                and alert_template.agent_always_email)
             ):
                 agent_outage_email_task.delay(
                     pk=alert.pk,
-                    alert_interval=alert_template.check_periodic_alert_days
+                    alert_interval=alert_template.agent_periodic_alert_days
                     if alert_template
                     else None,
                 )
 
             # send text message if enabled
             if (
-                not alert.sms_sent
-                and alert_template
-                and alert_template.agent_always_text
-                or self.overdue_text_alert
+                self.overdue_text_alert
+                or (alert_template
+                and alert_template.agent_always_text)
             ):
                 agent_outage_sms_task.delay(
                     pk=alert.pk,
-                    alert_interval=alert_template.check_periodic_alert_days
+                    alert_interval=alert_template.agent_periodic_alert_days
                     if alert_template
                     else None,
                 )

@@ -249,27 +249,25 @@ class AutomatedTask(BaseAuditModel):
 
                 # check if resolved email should be send
                 if (
-                    not alert.resolved_email_sent
-                    and self.email_alert
-                    or alert_template
-                    and alert_template.task_email_on_resolved
+                    (alert_template
+                    and alert_template.task_email_on_resolved)
+                    and not alert.resolved_email_sent
                 ):
                     handle_resolved_task_email_alert.delay(pk=alert.pk)
 
                 # check if resolved text should be sent
                 if (
-                    not alert.resolved_sms_sent
-                    and self.text_alert
-                    or alert_template
-                    and alert_template.task_text_on_resolved
+                    (alert_template
+                    and alert_template.task_text_on_resolved)
+                    and not alert.resolved_sms_sent
                 ):
                     handle_resolved_task_sms_alert.delay(pk=alert.pk)
 
                 # check if resolved script should be run
                 if (
-                    alert_template
-                    and alert_template.resolved_action
-                    and not alert.resolved_action_run
+                    not alert.resolved_action_run
+                    and (alert_template
+                    and alert_template.resolved_action)
                 ):
 
                     r = self.agent.run_script(
@@ -328,38 +326,37 @@ class AutomatedTask(BaseAuditModel):
             # create alert in dashboard if enabled
             if (
                 self.dashboard_alert
-                or alert_template
-                and alert_template.task_always_alert
+                or (alert_template
+                and self.alert_severity in alert_template.task_dashboard_alert_severity
+                and alert_template.task_always_alert)
             ):
                 alert.hidden = False
                 alert.save()
 
             # send email if enabled
             if (
-                not alert.email_sent
-                and self.email_alert
-                or alert_template
+                self.email_alert
+                or (alert_template
                 and self.alert_severity in alert_template.task_email_alert_severity
-                and alert_template.check_always_email
+                and alert_template.task_always_email)
             ):
                 handle_task_email_alert.delay(
                     pk=alert.pk,
-                    alert_template=alert_template.check_periodic_alert_days
+                    alert_template=alert_template.task_periodic_alert_days
                     if alert_template
                     else None,
                 )
 
             # send text if enabled
             if (
-                not alert.sms_sent
-                and self.text_alert
-                or alert_template
+                self.text_alert
+                or (alert_template
                 and self.alert_severity in alert_template.task_text_alert_severity
-                and alert_template.check_always_text
+                and alert_template.task_always_text)
             ):
                 handle_task_sms_alert.delay(
                     pk=alert.pk,
-                    alert_template=alert_template.check_periodic_alert_days
+                    alert_template=alert_template.task_periodic_alert_days
                     if alert_template
                     else None,
                 )

@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
-
+from unittest.mock import patch
 from django.utils import timezone as djangotime
 from model_bakery import baker, seq
+from django.conf import settings
 
 from core.models import CoreSettings
 from tacticalrmm.test import TacticalTestCase
@@ -346,7 +347,15 @@ class TestAlertsViews(TacticalTestCase):
 
 class TestAlertTasks(TacticalTestCase):
     def setUp(self):
+        self.authenticate()
         self.setup_coresettings()
+        core = CoreSettings.objects.first()
+        core.twilio_account_sid = "test"
+        core.twilio_auth_token = "test"
+        core.text_recipients = ["+12314567890"]
+        core.email_recipients = ["test@example.com"]
+        core.twilio_number = "+12314567890"
+        core.save()
 
     def test_unsnooze_alert_task(self):
         from alerts.tasks import unsnooze_alerts
@@ -484,27 +493,222 @@ class TestAlertTasks(TacticalTestCase):
         self.assertEquals(workstation.get_alert_template().pk, alert_templates[1].pk)
         self.assertEquals(server.get_alert_template().pk, alert_templates[2].pk)
 
-    def test_handle_agent_offline_alerts(self):
-        from agents.tasks import agent_outages_task
+    @patch("agents.tasks.sleep")
+    @patch("smtplib.SMTP")
+    @patch("core.models.TwClient")
+    @patch("agents.tasks.agent_outage_sms_task.delay")
+    @patch("agents.tasks.agent_outage_email_task.delay")
+    @patch("agents.tasks.agent_recovery_email_task.delay")
+    @patch("agents.tasks.agent_recovery_sms_task.delay")
+    def test_handle_agent_offline_alerts(
+        self, recovery_sms, recovery_email, outage_email, outage_sms, TwClient, SMTP, sleep
+    ):
+        from agents.tasks import (
+            agent_outages_task,
+            agent_outage_sms_task,
+            agent_outage_email_task,
+            agent_recovery_sms_task,
+            agent_recovery_email_task,
+        )
         from alerts.models import Alert
 
-        agent = baker.make_recipe("agents.overdue_agent")
+        # setup sms and email mock objects
+        TwClient.messages.create.return_value.sid = "SomeRandomText"
+        SMTP.return_value = True
+
+        agent_dashboard_alert = baker.make_recipe("agents.overdue_agent")
 
         # call outages task and no alert should be created
         agent_outages_task()
 
-        self.assertFalse(Alert.objects.filter(agent=agent).exists())
+        self.assertEquals(Alert.objects.count(), 0)
 
         # set overdue_dashboard_alert and alert should be created
-        agent.overdue_dashboard_alert = True
-        agent.save()
+        agent_dashboard_alert.overdue_dashboard_alert = True
+        agent_dashboard_alert.save()
+
+        # create other agents with various alert settings
+        alert_template_always_alert = baker.make(
+            "alerts.AlertTemplate", is_active=True, agent_always_alert=True
+        )
+        alert_template_always_text = baker.make(
+            "alerts.AlertTemplate", is_active=True, agent_always_text=True, agent_periodic_alert_days=5
+        )
+        alert_template_always_email = baker.make(
+            "alerts.AlertTemplate", is_active=True, agent_always_email=True, agent_periodic_alert_days=5
+        )
+
+        alert_template_blank = baker.make("alerts.AlertTemplate", is_active=True)
+
+        agent_template_email = baker.make_recipe("agents.overdue_agent")
+        agent_template_dashboard = baker.make_recipe("agents.overdue_agent")
+        agent_template_text = baker.make_recipe("agents.overdue_agent")
+        agent_template_blank = baker.make_recipe("agents.overdue_agent")
+
+        # assign alert templates to agent's clients
+        agent_template_email.client.alert_template = alert_template_always_email
+        agent_template_email.client.save()
+        agent_template_dashboard.client.alert_template = alert_template_always_alert
+        agent_template_dashboard.client.save()
+        agent_template_text.client.alert_template = alert_template_always_text
+        agent_template_text.client.save()
+        agent_template_blank.client.alert_template = alert_template_blank
+        agent_template_blank.client.save()
+
+        agent_text_alert = baker.make_recipe(
+            "agents.overdue_agent", overdue_text_alert=True
+        )
+        agent_email_alert = baker.make_recipe(
+            "agents.overdue_agent", overdue_email_alert=True
+        )
+        agent_outages_task()
+
+        # should have created 6 alerts
+        self.assertEquals(Alert.objects.count(), 6)
+
+        # other specific agents should have created alerts
+        self.assertEquals(Alert.objects.filter(agent=agent_dashboard_alert).count(), 1)
+        self.assertEquals(Alert.objects.filter(agent=agent_text_alert).count(), 1)
+        self.assertEquals(Alert.objects.filter(agent=agent_email_alert).count(), 1)
+        self.assertEquals(Alert.objects.filter(agent=agent_template_email).count(), 1)
+        self.assertEquals(
+            Alert.objects.filter(agent=agent_template_dashboard).count(), 1
+        )
+        self.assertEquals(Alert.objects.filter(agent=agent_template_text).count(), 1)
+        self.assertEquals(Alert.objects.filter(agent=agent_template_blank).count(), 0)
+
+        # check if email and text tasks were called
+        self.assertEquals(outage_email.call_count, 2)
+        self.assertEquals(outage_sms.call_count, 2)
+
+        outage_sms.assert_any_call(
+            pk=Alert.objects.get(agent=agent_text_alert).pk, alert_interval=None
+        )
+        outage_sms.assert_any_call(
+            pk=Alert.objects.get(agent=agent_template_text).pk, alert_interval=5
+        )
+        outage_email.assert_any_call(
+            pk=Alert.objects.get(agent=agent_email_alert).pk, alert_interval=None
+        )
+        outage_email.assert_any_call(
+            pk=Alert.objects.get(agent=agent_template_email).pk, alert_interval=5
+        )
+
+        # call the email/sms outage tasks synchronously
+        agent_outage_sms_task(
+            pk=Alert.objects.get(agent=agent_text_alert).pk, alert_interval=None
+        )
+        agent_outage_email_task(
+            pk=Alert.objects.get(agent=agent_email_alert).pk, alert_interval=None
+        )
+        agent_outage_sms_task(
+            pk=Alert.objects.get(agent=agent_template_text).pk, alert_interval=5
+        )
+        agent_outage_email_task(
+            pk=Alert.objects.get(agent=agent_template_email).pk, alert_interval=5
+        )
+
+        # check if email/text sent was set
+        self.assertTrue(Alert.objects.get(agent=agent_text_alert).sms_sent)
+        self.assertFalse(Alert.objects.get(agent=agent_text_alert).email_sent)
+        self.assertTrue(Alert.objects.get(agent=agent_email_alert).email_sent)
+        self.assertFalse(Alert.objects.get(agent=agent_email_alert).sms_sent)
+        self.assertTrue(Alert.objects.get(agent=agent_template_text).sms_sent)
+        self.assertTrue(Alert.objects.get(agent=agent_template_email).email_sent)
+        self.assertFalse(Alert.objects.get(agent=agent_dashboard_alert).email_sent)
+        self.assertFalse(Alert.objects.get(agent=agent_dashboard_alert).sms_sent)
+
+        SMTP.reset_mock()
+        TwClient.reset_mock()
+
+        # calling agent outage task again shouldn't create duplicate alerts and won't send alerts
+        agent_outages_task()
+        self.assertEquals(Alert.objects.count(), 6)
+
+        SMTP.assert_not_called()
+        TwClient.assert_not_called()
+
+        # test periodic notification
+
+        # change email/text sent to sometime in the past
+        alert_text = Alert.objects.get(agent=agent_template_text)
+        alert_text.sms_sent = djangotime.now() - djangotime.timedelta(days=20)
+        alert_text.save()
+        alert_email = Alert.objects.get(agent=agent_template_email)
+        alert_email.email_sent = djangotime.now() - djangotime.timedelta(days=20)
+        alert_email.save()
 
         agent_outages_task()
 
-        self.assertTrue(Alert.objects.filter(agent=agent).exists())
+        print(outage_sms.call_count)
+        print(outage_email.call_count)
+
+        outage_sms.assert_any_call(
+            pk=Alert.objects.get(agent=agent_template_text).pk, alert_interval=5
+        )
+        outage_email.assert_any_call(
+            pk=Alert.objects.get(agent=agent_template_email).pk, alert_interval=5
+        )
+
+        agent_outage_sms_task(
+            pk=Alert.objects.get(agent=agent_template_text).pk, alert_interval=5
+        )
+        agent_outage_email_task(
+            pk=Alert.objects.get(agent=agent_template_email).pk, alert_interval=5
+        )
+
+        self.assertEquals(SMTP.call_count, 1)
+        self.assertEquals(TwClient.call_count, 1)
+
+        # test resolved alerts
+        # alter the alert template to email and test on resolved
+        alert_template_always_email.agent_email_on_resolved = True
+        alert_template_always_email.save()
+        alert_template_always_text.agent_text_on_resolved = True
+        alert_template_always_text.save()
+
+        # have the two agents checkin
+        url = "/api/v3/checkin/"
+
+        agent_template_text.version = settings.LATEST_AGENT_VER
+        agent_template_text.save()
+        agent_template_email.version = settings.LATEST_AGENT_VER
+        agent_template_email.save()
+
+        data = {
+            "agent_id": agent_template_text.agent_id,
+            "version": settings.LATEST_AGENT_VER
+        }
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        data = {
+            "agent_id": agent_template_email.agent_id,
+            "version": settings.LATEST_AGENT_VER
+        }
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        recovery_sms.assert_called_with(
+            pk=Alert.objects.get(agent=agent_template_text).pk
+        )
+        recovery_email.assert_any_call(
+            pk=Alert.objects.get(agent=agent_template_email).pk
+        )
+
+        agent_recovery_sms_task(pk=Alert.objects.get(agent=agent_template_text).pk)
+        agent_recovery_email_task(pk=Alert.objects.get(agent=agent_template_email).pk)
+
+        self.assertTrue(Alert.objects.get(agent=agent_template_text).resolved_sms_sent)
+        self.assertTrue(Alert.objects.get(agent=agent_template_email).resolved_email_sent)
 
     def test_handle_check_alerts(self):
         pass
 
     def test_handle_task_alerts(self):
+        pass
+
+    def test_override_email_settings(self):
         pass

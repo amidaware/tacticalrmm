@@ -6,9 +6,9 @@ celery==5.0.5
 certifi==2020.12.5
 cffi==1.14.5
 chardet==4.0.0
-cryptography==3.4.4
+cryptography==3.4.6
 decorator==4.4.2
-Django==3.1.6
+Django==3.1.7
 django-cors-headers==3.7.0
 django-rest-knox==4.1.0
 djangorestframework==3.12.2

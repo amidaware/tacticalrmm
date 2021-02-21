@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="109"
+SCRIPT_VERSION="110"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -190,6 +190,22 @@ if ! [[ $CHECK_HAS_GO116 ]]; then
   sudo chown -R $USER:$GROUP /home/${USER}/.cache
 fi
 
+HAS_PY39=$(which python3.9)
+if ! [[ $HAS_PY39 ]]; then
+  printf >&2 "${GREEN}Updating to Python 3.9${NC}\n"
+  sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
+  numprocs=$(nproc)
+  cd ~
+  wget https://www.python.org/ftp/python/3.9.2/Python-3.9.2.tgz
+  tar -xf Python-3.9.2.tgz
+  cd Python-3.9.2
+  ./configure --enable-optimizations
+  make -j $numprocs
+  sudo make altinstall
+  cd ~
+  sudo rm -rf Python-3.9.2 Python-3.9.2.tgz
+fi
+
 cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
@@ -261,11 +277,11 @@ sudo chmod +x /usr/local/bin/nats-api
 if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]]; then
   rm -rf /rmm/api/env
   cd /rmm/api
-  python3 -m venv env
+  python3.9 -m venv env
   source /rmm/api/env/bin/activate
   cd /rmm/api/tacticalrmm
   pip install --no-cache-dir --upgrade pip
-  pip install --no-cache-dir setuptools==52.0.0 wheel==0.36.2
+  pip install --no-cache-dir setuptools==53.0.0 wheel==0.36.2
   pip install --no-cache-dir -r requirements.txt
 else
   source /rmm/api/env/bin/activate

@@ -1,5 +1,5 @@
 # creates python virtual env
-FROM python:3.8-slim AS CREATE_VENV_STAGE
+FROM python:3.9.2-slim AS CREATE_VENV_STAGE
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -24,7 +24,7 @@ RUN apt-get update && \
 
 
 # runtime image
-FROM python:3.8-slim
+FROM python:3.9.2-slim
 
 # set env variables
 ENV VIRTUAL_ENV /opt/venv

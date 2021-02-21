@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="39"
+SCRIPT_VERSION="40"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -226,12 +226,23 @@ sudo apt install -y mongodb-org
 sudo systemctl enable mongod
 sudo systemctl restart mongod
 
+print_green 'Installing Python 3.9'
+
+sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
+numprocs=$(nproc)
+cd ~
+wget https://www.python.org/ftp/python/3.9.2/Python-3.9.2.tgz
+tar -xf Python-3.9.2.tgz
+cd Python-3.9.2
+./configure --enable-optimizations
+make -j $numprocs
+sudo make altinstall
+cd ~
+sudo rm -rf Python-3.9.2 Python-3.9.2.tgz
 
 
-print_green 'Installing python, redis and git'
-
-sudo apt update
-sudo apt install -y python3-venv python3-dev python3-pip python3-setuptools python3-wheel ca-certificates redis git
+print_green 'Installing redis and git'
+sudo apt install -y ca-certificates redis git
 
 print_green 'Installing postgresql'
 
@@ -371,11 +382,11 @@ sudo chmod +x /usr/local/bin/nats-api
 print_green 'Installing the backend'
 
 cd /rmm/api
-python3 -m venv env
+python3.9 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir setuptools==52.0.0 wheel==0.36.2
+pip install --no-cache-dir setuptools==53.0.0 wheel==0.36.2
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input

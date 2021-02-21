@@ -450,6 +450,7 @@ def install_agent(request):
         goarch = "amd64" if arch == "64" else "386"
         cmd = [
             "env",
+            "CGO_ENABLED=0",
             "GOOS=windows",
             f"GOARCH={goarch}",
             go_bin,
@@ -474,6 +475,7 @@ def install_agent(request):
         gen = [
             "env",
             "GOOS=windows",
+            "CGO_ENABLED=0",
             f"GOARCH={goarch}",
             go_bin,
             "generate",

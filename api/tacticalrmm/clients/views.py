@@ -216,6 +216,7 @@ class GenerateAgent(APIView):
         cmd = [
             "env",
             "GOOS=windows",
+            "CGO_ENABLED=0",
             f"GOARCH={goarch}",
             go_bin,
             "build",
@@ -236,6 +237,7 @@ class GenerateAgent(APIView):
         gen = [
             "env",
             "GOOS=windows",
+            "CGO_ENABLED=0",
             f"GOARCH={goarch}",
             go_bin,
             "generate",

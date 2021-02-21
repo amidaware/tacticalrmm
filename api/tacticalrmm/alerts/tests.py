@@ -483,3 +483,28 @@ class TestAlertTasks(TacticalTestCase):
 
         self.assertEquals(workstation.get_alert_template().pk, alert_templates[1].pk)
         self.assertEquals(server.get_alert_template().pk, alert_templates[2].pk)
+
+    def test_handle_agent_offline_alerts(self):
+        from agents.tasks import agent_outages_task
+        from alerts.models import Alert
+
+        agent = baker.make_recipe("agents.overdue_agent")
+
+        # call outages task and no alert should be created
+        agent_outages_task()
+
+        self.assertFalse(Alert.objects.filter(agent=agent).exists())
+
+        # set overdue_dashboard_alert and alert should be created
+        agent.overdue_dashboard_alert = True
+        agent.save()
+
+        agent_outages_task()
+
+        self.assertTrue(Alert.objects.filter(agent=agent).exists())
+
+    def test_handle_check_alerts(self):
+        pass
+
+    def test_handle_task_alerts(self):
+        pass

@@ -779,10 +779,27 @@ class Agent(BaseAuditModel):
 
         # called when agent is offline
         else:
+
             # check if alert hasn't been created yet so create it
             if not Alert.objects.filter(agent=self, resolved=False).exists():
 
-                alert = Alert.create_availability_alert(self)
+                # check if alert should be created and if not return
+                if (
+                    self.overdue_dashboard_alert
+                    or self.overdue_email_alert
+                    or self.overdue_text_alert
+                    or (
+                        alert_template
+                        and (
+                            alert_template.agent_always_alert
+                            or alert_template.agent_always_email
+                            or alert_template.agent_always_text
+                        )
+                    )
+                ):
+                    alert = Alert.create_availability_alert(self)
+                else:
+                    return
 
                 # add a null check history to allow gaps in graph
                 for check in self.agentchecks.all():

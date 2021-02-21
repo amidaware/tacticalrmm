@@ -331,7 +331,24 @@ class Check(BaseAuditModel):
 
         elif self.fail_count >= self.fails_b4_alert:
             if not Alert.objects.filter(assigned_check=self, resolved=False).exists():
-                alert = Alert.create_check_alert(self)
+
+                # check if alert should be created and if not return
+                if (
+                    self.dashboard_alert
+                    or self.email_alert
+                    or self.text_alert
+                    or (
+                        alert_template
+                        and (
+                            alert_template.check_always_alert
+                            or alert_template.check_always_email
+                            or alert_template.check_always_text
+                        )
+                    )
+                ):
+                    alert = Alert.create_check_alert(self)
+                else:
+                    return
             else:
                 alert = Alert.objects.get(assigned_check=self, resolved=False)
 

@@ -1,4 +1,4 @@
-FROM python:3.8-slim
+FROM python:3.9.2-slim
 
 ENV TACTICAL_DIR /opt/tactical
 ENV TACTICAL_GO_DIR /usr/local/rmmgo

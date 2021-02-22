@@ -125,7 +125,7 @@ export default {
       this.$axios
         .patch(`/checks/history/${this.check.id}/`, { timeFilter: this.timeFilter })
         .then(r => {
-          this.history = r.data;
+          this.history = Object.freeze(r.data);
 
           // save copy of data to reference results in chart tooltip
           if (
@@ -133,7 +133,7 @@ export default {
             this.check.check_type !== "memory" ||
             this.check.check_type !== "diskspace"
           ) {
-            this.results = r.data;
+            this.results = Object.freeze(r.data);
           }
 
           this.$q.loading.hide();

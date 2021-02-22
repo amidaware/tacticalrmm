@@ -581,8 +581,6 @@ def recover(request):
 @api_view(["POST"])
 def run_script(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
-    if not agent.has_nats:
-        return notify_error("Requires agent version 1.1.0 or greater")
     script = get_object_or_404(Script, pk=request.data["scriptPK"])
     output = request.data["output"]
     args = request.data["args"]
@@ -601,9 +599,6 @@ def run_script(request):
         return Response(r)
 
     elif output == "email":
-        if not pyver.parse(agent.version) >= pyver.parse("1.1.12"):
-            return notify_error("Requires agent version 1.1.12 or greater")
-
         emails = (
             [] if request.data["emailmode"] == "default" else request.data["emails"]
         )

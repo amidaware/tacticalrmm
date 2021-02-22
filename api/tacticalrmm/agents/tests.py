@@ -698,6 +698,77 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
+    @patch("agents.tasks.run_script_email_results_task.delay")
+    @patch("agents.models.Agent.run_script")
+    def test_run_script(self, run_script, email_task):
+        run_script.return_value = "ok"
+        url = "/agents/runscript/"
+        script = baker.make_recipe("scripts.script")
+
+        # test wait
+        data = {
+            "pk": self.agent.pk,
+            "scriptPK": script.pk,
+            "output": "wait",
+            "args": [],
+            "timeout": 15,
+        }
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        run_script.assert_called_with(
+            scriptpk=script.pk, args=[], timeout=18, wait=True
+        )
+        run_script.reset_mock()
+
+        # test email default
+        data = {
+            "pk": self.agent.pk,
+            "scriptPK": script.pk,
+            "output": "email",
+            "args": ["abc", "123"],
+            "timeout": 15,
+            "emailmode": "default",
+            "emails": ["admin@example.com", "bob@example.com"],
+        }
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        email_task.assert_called_with(
+            agentpk=self.agent.pk,
+            scriptpk=script.pk,
+            nats_timeout=18,
+            emails=[],
+            args=["abc", "123"],
+        )
+        email_task.reset_mock()
+
+        # test email overrides
+        data["emailmode"] = "custom"
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        email_task.assert_called_with(
+            agentpk=self.agent.pk,
+            scriptpk=script.pk,
+            nats_timeout=18,
+            emails=["admin@example.com", "bob@example.com"],
+            args=["abc", "123"],
+        )
+
+        # test fire and forget
+        data = {
+            "pk": self.agent.pk,
+            "scriptPK": script.pk,
+            "output": "forget",
+            "args": ["hello", "world"],
+            "timeout": 22,
+        }
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        run_script.assert_called_with(
+            scriptpk=script.pk, args=["hello", "world"], timeout=25
+        )
+
 
 class TestAgentViewsNew(TacticalTestCase):
     def setUp(self):

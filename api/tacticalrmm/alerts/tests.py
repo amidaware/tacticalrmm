@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 from unittest.mock import patch
+
+from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker, seq
-from django.conf import settings
 
 from core.models import CoreSettings
 from tacticalrmm.test import TacticalTestCase
@@ -511,11 +512,11 @@ class TestAlertTasks(TacticalTestCase):
         sleep,
     ):
         from agents.tasks import (
-            agent_outages_task,
-            agent_outage_sms_task,
             agent_outage_email_task,
-            agent_recovery_sms_task,
+            agent_outage_sms_task,
+            agent_outages_task,
             agent_recovery_email_task,
+            agent_recovery_sms_task,
         )
         from alerts.models import Alert
 

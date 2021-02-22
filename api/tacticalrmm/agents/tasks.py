@@ -2,7 +2,7 @@ import asyncio
 import datetime as dt
 import random
 from time import sleep
-from typing import List, Union
+from typing import Union
 
 from django.conf import settings
 from django.utils import timezone as djangotime
@@ -77,7 +77,7 @@ def agent_update(pk: int) -> str:
 
 
 @app.task
-def send_agent_update_task(pks: List[int]) -> None:
+def send_agent_update_task(pks: list[int]) -> None:
     chunks = (pks[i : i + 30] for i in range(0, len(pks), 30))
     for chunk in chunks:
         for pk in chunk:
@@ -93,7 +93,7 @@ def auto_self_agent_update_task() -> None:
         return
 
     q = Agent.objects.only("pk", "version")
-    pks: List[int] = [
+    pks: list[int] = [
         i.pk
         for i in q
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
@@ -217,8 +217,8 @@ def run_script_email_results_task(
     agentpk: int,
     scriptpk: int,
     nats_timeout: int,
-    emails: List[str],
-    args: List[str] = [],
+    emails: list[str],
+    args: list[str] = [],
 ):
     agent = Agent.objects.get(pk=agentpk)
     script = Script.objects.get(pk=scriptpk)

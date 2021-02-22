@@ -4,7 +4,6 @@ import os
 import random
 import string
 import subprocess
-from typing import List
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -53,7 +52,7 @@ def get_agent_versions(request):
 @api_view(["POST"])
 def update_agents(request):
     q = Agent.objects.filter(pk__in=request.data["pks"]).only("pk", "version")
-    pks: List[int] = [
+    pks: list[int] = [
         i.pk
         for i in q
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
@@ -809,7 +808,7 @@ def bulk(request):
     elif request.data["monType"] == "workstations":
         q = q.filter(monitoring_type="workstation")
 
-    agents: List[int] = [agent.pk for agent in q]
+    agents: list[int] = [agent.pk for agent in q]
 
     AuditLog.audit_bulk_action(request.user, request.data["mode"], request.data)
 

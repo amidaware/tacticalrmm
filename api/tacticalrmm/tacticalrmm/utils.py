@@ -3,7 +3,6 @@ import os
 import string
 import subprocess
 import time
-from typing import Dict, List
 
 import pytz
 from django.conf import settings
@@ -17,7 +16,7 @@ logger.configure(**settings.LOG_CONFIG)
 
 notify_error = lambda msg: Response(msg, status=status.HTTP_400_BAD_REQUEST)
 
-SoftwareList = List[Dict[str, str]]
+SoftwareList = list[dict[str, str]]
 
 WEEK_DAYS = {
     "Sunday": 0x1,
@@ -36,7 +35,7 @@ def get_default_timezone():
     return pytz.timezone(CoreSettings.objects.first().default_time_zone)
 
 
-def get_bit_days(days: List[str]) -> int:
+def get_bit_days(days: list[str]) -> int:
     bit_days = 0
     for day in days:
         bit_days |= WEEK_DAYS.get(day)

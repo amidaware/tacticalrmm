@@ -1,7 +1,6 @@
 import asyncio
 import datetime as dt
 import time
-from typing import List
 
 import pytz
 from django.conf import settings
@@ -126,7 +125,7 @@ def check_agent_update_schedule_task():
 
 
 @app.task
-def bulk_install_updates_task(pks: List[int]) -> None:
+def bulk_install_updates_task(pks: list[int]) -> None:
     q = Agent.objects.filter(pk__in=pks)
     agents = [i for i in q if pyver.parse(i.version) >= pyver.parse("1.3.0")]
     chunks = (agents[i : i + 40] for i in range(0, len(agents), 40))
@@ -147,7 +146,7 @@ def bulk_install_updates_task(pks: List[int]) -> None:
 
 
 @app.task
-def bulk_check_for_updates_task(pks: List[int]) -> None:
+def bulk_check_for_updates_task(pks: list[int]) -> None:
     q = Agent.objects.filter(pk__in=pks)
     agents = [i for i in q if pyver.parse(i.version) >= pyver.parse("1.3.0")]
     chunks = (agents[i : i + 40] for i in range(0, len(agents), 40))

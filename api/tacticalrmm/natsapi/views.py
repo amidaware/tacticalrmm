@@ -1,6 +1,5 @@
 import asyncio
 import time
-from typing import List
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -280,7 +279,7 @@ class NatsWMI(APIView):
         agents = Agent.objects.only(
             "pk", "agent_id", "version", "last_seen", "overdue_time", "offline_time"
         )
-        online: List[str] = [
+        online: list[str] = [
             i.agent_id
             for i in agents
             if pyver.parse(i.version) >= pyver.parse("1.2.0") and i.status == "online"
@@ -296,7 +295,7 @@ class OfflineAgents(APIView):
         agents = Agent.objects.only(
             "pk", "agent_id", "version", "last_seen", "overdue_time", "offline_time"
         )
-        offline: List[str] = [
+        offline: list[str] = [
             i.agent_id for i in agents if i.has_nats and i.status != "online"
         ]
         return Response({"agent_ids": offline})

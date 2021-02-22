@@ -3,7 +3,7 @@ import json
 import os
 import string
 from statistics import mean
-from typing import Any, List, Union
+from typing import Any, Union
 
 import pytz
 from django.conf import settings
@@ -12,7 +12,6 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone as djangotime
 from loguru import logger
-from rest_framework.fields import JSONField
 
 from alerts.models import SEVERITY_CHOICES
 from core.models import CoreSettings
@@ -242,7 +241,7 @@ class Check(BaseAuditModel):
         return self.last_run
 
     @property
-    def non_editable_fields(self) -> List[str]:
+    def non_editable_fields(self) -> list[str]:
         return [
             "check_type",
             "status",

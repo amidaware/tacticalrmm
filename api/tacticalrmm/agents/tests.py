@@ -1,7 +1,6 @@
 import json
 import os
 from itertools import cycle
-from typing import List
 from unittest.mock import patch
 
 from django.conf import settings
@@ -78,12 +77,12 @@ class TestAgentViews(TacticalTestCase):
             _quantity=15,
         )
 
-        pks: List[int] = list(
+        pks: list[int] = list(
             Agent.objects.only("pk", "version").values_list("pk", flat=True)
         )
 
         data = {"pks": pks}
-        expected: List[int] = [
+        expected: list[int] = [
             i.pk
             for i in Agent.objects.only("pk", "version")
             if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)

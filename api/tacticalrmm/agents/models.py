@@ -4,7 +4,7 @@ import re
 import time
 from collections import Counter
 from distutils.version import LooseVersion
-from typing import Any, List, Union
+from typing import Any, Union
 
 import msgpack
 import validators
@@ -273,7 +273,7 @@ class Agent(BaseAuditModel):
     def run_script(
         self,
         scriptpk: int,
-        args: List[str] = [],
+        args: list[str] = [],
         timeout: int = 120,
         full: bool = False,
         wait: bool = False,
@@ -453,7 +453,7 @@ class Agent(BaseAuditModel):
 
         return patch_policy
 
-    def get_approved_update_guids(self) -> List[str]:
+    def get_approved_update_guids(self) -> list[str]:
         return list(
             self.winupdates.filter(action="approve", installed=False).values_list(
                 "guid", flat=True

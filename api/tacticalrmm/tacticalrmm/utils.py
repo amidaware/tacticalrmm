@@ -3,9 +3,11 @@ import os
 import string
 import subprocess
 import time
+from typing import Union
 
 import pytz
 from django.conf import settings
+from django.http import HttpResponse
 from loguru import logger
 from rest_framework import status
 from rest_framework.response import Response
@@ -27,6 +29,130 @@ WEEK_DAYS = {
     "Friday": 0x20,
     "Saturday": 0x40,
 }
+
+
+def generate_installer_exe(
+    file_name: str,
+    goarch: str,
+    inno: str,
+    api: str,
+    client_id: int,
+    site_id: int,
+    atype: str,
+    rdp: int,
+    ping: int,
+    power: int,
+    download_url: str,
+    token: str,
+) -> Union[Response, HttpResponse]:
+
+    go_bin = "/usr/local/rmmgo/go/bin/go"
+    if not os.path.exists(go_bin):
+        return Response("nogolang", status=status.HTTP_409_CONFLICT)
+
+    exe = os.path.join(settings.EXE_DIR, file_name)
+    if os.path.exists(exe):
+        try:
+            os.remove(exe)
+        except Exception as e:
+            logger.error(str(e))
+
+    cmd = [
+        "env",
+        "CGO_ENABLED=0",
+        "GOOS=windows",
+        f"GOARCH={goarch}",
+        go_bin,
+        "build",
+        f"-ldflags=\"-s -w -X 'main.Inno={inno}'",
+        f"-X 'main.Api={api}'",
+        f"-X 'main.Client={client_id}'",
+        f"-X 'main.Site={site_id}'",
+        f"-X 'main.Atype={atype}'",
+        f"-X 'main.Rdp={rdp}'",
+        f"-X 'main.Ping={ping}'",
+        f"-X 'main.Power={power}'",
+        f"-X 'main.DownloadUrl={download_url}'",
+        f"-X 'main.Token={token}'\"",
+        "-o",
+        exe,
+    ]
+
+    build_error = False
+    gen_error = False
+
+    gen = [
+        "env",
+        "GOOS=windows",
+        "CGO_ENABLED=0",
+        f"GOARCH={goarch}",
+        go_bin,
+        "generate",
+    ]
+
+    try:
+        r1 = subprocess.run(
+            " ".join(gen),
+            capture_output=True,
+            shell=True,
+            cwd=os.path.join(settings.BASE_DIR, "core/goinstaller"),
+        )
+    except Exception as e:
+        gen_error = True
+        logger.error(str(e))
+        return Response("genfailed", status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+
+    if r1.returncode != 0:
+        gen_error = True
+        if r1.stdout:
+            logger.error(r1.stdout.decode("utf-8", errors="ignore"))
+
+        if r1.stderr:
+            logger.error(r1.stderr.decode("utf-8", errors="ignore"))
+
+        logger.error(f"Go build failed with return code {r1.returncode}")
+
+    if gen_error:
+        return Response("genfailed", status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+
+    try:
+        r = subprocess.run(
+            " ".join(cmd),
+            capture_output=True,
+            shell=True,
+            cwd=os.path.join(settings.BASE_DIR, "core/goinstaller"),
+        )
+    except Exception as e:
+        build_error = True
+        logger.error(str(e))
+        return Response("buildfailed", status=status.HTTP_412_PRECONDITION_FAILED)
+
+    if r.returncode != 0:
+        build_error = True
+        if r.stdout:
+            logger.error(r.stdout.decode("utf-8", errors="ignore"))
+
+        if r.stderr:
+            logger.error(r.stderr.decode("utf-8", errors="ignore"))
+
+        logger.error(f"Go build failed with return code {r.returncode}")
+
+    if build_error:
+        return Response("buildfailed", status=status.HTTP_412_PRECONDITION_FAILED)
+
+    if settings.DEBUG:
+        with open(exe, "rb") as f:
+            response = HttpResponse(
+                f.read(),
+                content_type="application/vnd.microsoft.portable-executable",
+            )
+            response["Content-Disposition"] = f"inline; filename={file_name}"
+            return response
+    else:
+        response = HttpResponse()
+        response["Content-Disposition"] = f"attachment; filename={file_name}"
+        response["X-Accel-Redirect"] = f"/private/exe/{file_name}"
+        return response
 
 
 def get_default_timezone():

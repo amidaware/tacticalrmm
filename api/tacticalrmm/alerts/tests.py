@@ -654,9 +654,6 @@ class TestAlertTasks(TacticalTestCase):
 
         agent_outages_task()
 
-        print(outage_sms.call_count)
-        print(outage_email.call_count)
-
         outage_sms.assert_any_call(
             pk=Alert.objects.get(agent=agent_template_text).pk, alert_interval=5
         )

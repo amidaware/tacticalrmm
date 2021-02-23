@@ -26,9 +26,7 @@ class Command(BaseCommand):
         url = pyotp.totp.TOTP(code).provisioning_uri(username, issuer_name=domain)
         subprocess.run(f'qr "{url}"', shell=True)
         self.stdout.write(
-            self.style.SUCCESS(
-                "Scan the barcode above with your authenticator app"
-            )
+            self.style.SUCCESS("Scan the barcode above with your authenticator app")
         )
         self.stdout.write(
             self.style.SUCCESS(

@@ -16,11 +16,7 @@ from rest_framework.views import APIView
 
 from agents.models import Agent
 from agents.serializers import WinAgentSerializer
-from agents.tasks import (
-    agent_recovery_email_task,
-    agent_recovery_sms_task,
-    handle_agent_recovery_task,
-)
+from agents.tasks import handle_agent_recovery_task
 from checks.utils import bytes2human
 from software.models import InstalledSoftware
 from tacticalrmm.utils import SoftwareList, filter_software, notify_error
@@ -38,8 +34,8 @@ def nats_info(request):
 
 class NatsCheckIn(APIView):
 
-    authentication_classes = []
-    permission_classes = []
+    authentication_classes = []  # type: ignore
+    permission_classes = []  # type: ignore
 
     def patch(self, request):
         updated = False
@@ -57,18 +53,18 @@ class NatsCheckIn(APIView):
         # change agent update pending status to completed if agent has just updated
         if (
             updated
-            and agent.pendingactions.filter(
+            and agent.pendingactions.filter(  # type: ignore
                 action_type="agentupdate", status="pending"
             ).exists()
         ):
-            agent.pendingactions.filter(
+            agent.pendingactions.filter(  # type: ignore
                 action_type="agentupdate", status="pending"
             ).update(status="completed")
 
         # handles any alerting actions
         agent.handle_alert(checkin=True)
 
-        recovery = agent.recoveryactions.filter(last_run=None).last()
+        recovery = agent.recoveryactions.filter(last_run=None).last()  # type: ignore
         if recovery is not None:
             recovery.last_run = djangotime.now()
             recovery.save(update_fields=["last_run"])
@@ -76,7 +72,7 @@ class NatsCheckIn(APIView):
             return Response("ok")
 
         # get any pending actions
-        if agent.pendingactions.filter(status="pending").exists():
+        if agent.pendingactions.filter(status="pending").exists():  # type: ignore
             agent.handle_pending_actions()
 
         return Response("ok")
@@ -118,7 +114,7 @@ class NatsCheckIn(APIView):
             if not InstalledSoftware.objects.filter(agent=agent).exists():
                 InstalledSoftware(agent=agent, software=sw).save()
             else:
-                s = agent.installedsoftware_set.first()
+                s = agent.installedsoftware_set.first()  # type: ignore
                 s.software = sw
                 s.save(update_fields=["software"])
 
@@ -140,8 +136,8 @@ class NatsCheckIn(APIView):
 
 
 class SyncMeshNodeID(APIView):
-    authentication_classes = []
-    permission_classes = []
+    authentication_classes = []  # type: ignore
+    permission_classes = []  # type: ignore
 
     def post(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
@@ -153,8 +149,8 @@ class SyncMeshNodeID(APIView):
 
 
 class NatsChoco(APIView):
-    authentication_classes = []
-    permission_classes = []
+    authentication_classes = []  # type: ignore
+    permission_classes = []  # type: ignore
 
     def post(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
@@ -164,8 +160,8 @@ class NatsChoco(APIView):
 
 
 class NatsWinUpdates(APIView):
-    authentication_classes = []
-    permission_classes = []
+    authentication_classes = []  # type: ignore
+    permission_classes = []  # type: ignore
 
     def put(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
@@ -191,7 +187,7 @@ class NatsWinUpdates(APIView):
 
     def patch(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-        u = agent.winupdates.filter(guid=request.data["guid"]).last()
+        u = agent.winupdates.filter(guid=request.data["guid"]).last()  # type: ignore
         success: bool = request.data["success"]
         if success:
             u.result = "success"
@@ -217,8 +213,8 @@ class NatsWinUpdates(APIView):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
         updates = request.data["wua_updates"]
         for update in updates:
-            if agent.winupdates.filter(guid=update["guid"]).exists():
-                u = agent.winupdates.filter(guid=update["guid"]).last()
+            if agent.winupdates.filter(guid=update["guid"]).exists():  # type: ignore
+                u = agent.winupdates.filter(guid=update["guid"]).last()  # type: ignore
                 u.downloaded = update["downloaded"]
                 u.installed = update["installed"]
                 u.save(update_fields=["downloaded", "installed"])
@@ -249,7 +245,7 @@ class NatsWinUpdates(APIView):
 
         # more superseded updates cleanup
         if pyver.parse(agent.version) <= pyver.parse("1.4.2"):
-            for u in agent.winupdates.filter(
+            for u in agent.winupdates.filter(  # type: ignore
                 date_installed__isnull=True, result="failed"
             ).exclude(installed=True):
                 u.delete()
@@ -258,12 +254,12 @@ class NatsWinUpdates(APIView):
 
 
 class SupersededWinUpdate(APIView):
-    authentication_classes = []
-    permission_classes = []
+    authentication_classes = []  # type: ignore
+    permission_classes = []  # type: ignore
 
     def post(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-        updates = agent.winupdates.filter(guid=request.data["guid"])
+        updates = agent.winupdates.filter(guid=request.data["guid"])  # type: ignore
         for u in updates:
             u.delete()
 
@@ -272,8 +268,8 @@ class SupersededWinUpdate(APIView):
 
 class NatsWMI(APIView):
 
-    authentication_classes = []
-    permission_classes = []
+    authentication_classes = []  # type: ignore
+    permission_classes = []  # type: ignore
 
     def get(self, request):
         agents = Agent.objects.only(
@@ -288,8 +284,8 @@ class NatsWMI(APIView):
 
 
 class OfflineAgents(APIView):
-    authentication_classes = []
-    permission_classes = []
+    authentication_classes = []  # type: ignore
+    permission_classes = []  # type: ignore
 
     def get(self, request):
         agents = Agent.objects.only(
@@ -302,8 +298,8 @@ class OfflineAgents(APIView):
 
 
 class LogCrash(APIView):
-    authentication_classes = []
-    permission_classes = []
+    authentication_classes = []  # type: ignore
+    permission_classes = []  # type: ignore
 
     def post(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agentid"])

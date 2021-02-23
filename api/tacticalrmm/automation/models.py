@@ -43,11 +43,11 @@ class Policy(BaseAuditModel):
 
     @property
     def is_default_server_policy(self):
-        return self.default_server_policy.exists()
+        return self.default_server_policy.exists()  # type: ignore
 
     @property
     def is_default_workstation_policy(self):
-        return self.default_workstation_policy.exists()
+        return self.default_workstation_policy.exists()  # type: ignore
 
     def __str__(self):
         return self.name
@@ -56,7 +56,7 @@ class Policy(BaseAuditModel):
         return self.get_related("server") | self.get_related("workstation")
 
     def get_related(self, mon_type):
-        explicit_agents = self.agents.filter(monitoring_type=mon_type)
+        explicit_agents = self.agents.filter(monitoring_type=mon_type)  # type: ignore
         explicit_clients = getattr(self, f"{mon_type}_clients").all()
         explicit_sites = getattr(self, f"{mon_type}_sites").all()
 

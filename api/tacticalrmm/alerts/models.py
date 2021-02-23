@@ -283,4 +283,4 @@ class AlertTemplate(models.Model):
 
     @property
     def is_default_template(self) -> bool:
-        return self.default_alert_template.exists()
+        return self.default_alert_template.exists()  # type: ignore

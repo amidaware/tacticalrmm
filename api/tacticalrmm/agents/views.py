@@ -3,7 +3,6 @@ import datetime as dt
 import os
 import random
 import string
-import subprocess
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -99,7 +98,7 @@ def edit_agent(request):
     a_serializer.save()
 
     if "winupdatepolicy" in request.data.keys():
-        policy = agent.winupdatepolicy.get()
+        policy = agent.winupdatepolicy.get()  # type: ignore
         p_serializer = WinUpdatePolicySerializer(
             instance=policy, data=request.data["winupdatepolicy"][0]
         )
@@ -553,7 +552,7 @@ def recover(request):
             if r == "ok":
                 return Response("Successfully completed recovery")
 
-    if agent.recoveryactions.filter(last_run=None).exists():
+    if agent.recoveryactions.filter(last_run=None).exists():  # type: ignore
         return notify_error(
             "A recovery action is currently pending. Please wait for the next agent check-in."
         )

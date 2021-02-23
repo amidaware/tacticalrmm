@@ -55,7 +55,7 @@ def refresh_installed(request, pk):
     if not InstalledSoftware.objects.filter(agent=agent).exists():
         InstalledSoftware(agent=agent, software=sw).save()
     else:
-        s = agent.installedsoftware_set.first()
+        s = agent.installedsoftware_set.first()  # type: ignore
         s.software = sw
         s.save(update_fields=["software"])
 

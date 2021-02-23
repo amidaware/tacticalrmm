@@ -3,7 +3,14 @@
     "python.languageServer": "Pylance",
     "python.analysis.extraPaths": [
         "api/tacticalrmm",
+        "api/env",
     ],
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportUnusedImport": "error",
+        "reportDuplicateImport": "error",
+    },
+    "python.analysis.memory.keepLibraryAst": true,
+    "python.linting.mypyEnabled": true,
     "python.analysis.typeCheckingMode": "basic",
     "python.formatting.provider": "black",
     "editor.formatOnSave": true,

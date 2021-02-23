@@ -22,12 +22,14 @@ apt install -y wget curl sudo
 apt -y upgrade
 ```
 If a new kernel is installed, then reboot the server with the `reboot` command<br/><br/>
-Create a user to run the rmm and add it to the sudoers group. For this example we'll be using a user named `tactical` but feel free to create whatever name you want.
+Create a linux user to run the rmm and add it to the sudoers group.<br/>For this example we'll be using a user named `tactical` but feel free to create whatever name you want.
 ```bash
 adduser tactical
 usermod -a -G sudo tactical
 ```
-- *Optional: [enable passwordless sudo to make your life easier](https://linuxconfig.org/configure-sudo-without-password-on-ubuntu-20-04-focal-fossa-linux)*<br/><br/>
+
+!!!tip
+    [Enable passwordless sudo to make your life easier](https://linuxconfig.org/configure-sudo-without-password-on-ubuntu-20-04-focal-fossa-linux)
 
 #### Setup the firewall (optional but highly recommended)
 

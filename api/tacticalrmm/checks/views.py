@@ -59,7 +59,7 @@ class AddCheck(APIView):
         if policy:
             generate_agent_checks_from_policies_task.delay(policypk=policy.pk)
         elif agent:
-            checks = agent.agentchecks.filter(
+            checks = agent.agentchecks.filter(  # type: ignore
                 check_type=obj.check_type, managed_by_policy=True
             )
 
@@ -149,7 +149,7 @@ class CheckHistory(APIView):
                     - djangotime.timedelta(days=request.data["timeFilter"]),
                 )
 
-        check_history = check.check_history.filter(timeFilter).order_by("-x")
+        check_history = check.check_history.filter(timeFilter).order_by("-x")  # type: ignore
 
         return Response(
             CheckHistorySerializer(

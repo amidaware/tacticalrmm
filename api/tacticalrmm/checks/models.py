@@ -3,7 +3,7 @@ import json
 import os
 import string
 from statistics import mean
-from typing import Any, List, Union
+from typing import Any, Union
 
 import pytz
 from django.conf import settings
@@ -12,7 +12,6 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone as djangotime
 from loguru import logger
-from rest_framework.fields import JSONField
 
 from alerts.models import SEVERITY_CHOICES
 from core.models import CoreSettings
@@ -206,9 +205,9 @@ class Check(BaseAuditModel):
             if self.error_threshold:
                 text += f" Error Threshold: {self.error_threshold}%"
 
-            return f"{self.get_check_type_display()}: Drive {self.disk} < {text}"
+            return f"{self.get_check_type_display()}: Drive {self.disk} < {text}"  # type: ignore
         elif self.check_type == "ping":
-            return f"{self.get_check_type_display()}: {self.name}"
+            return f"{self.get_check_type_display()}: {self.name}"  # type: ignore
         elif self.check_type == "cpuload" or self.check_type == "memory":
 
             text = ""
@@ -217,13 +216,13 @@ class Check(BaseAuditModel):
             if self.error_threshold:
                 text += f" Error Threshold: {self.error_threshold}%"
 
-            return f"{self.get_check_type_display()} > {text}"
+            return f"{self.get_check_type_display()} > {text}"  # type: ignore
         elif self.check_type == "winsvc":
-            return f"{self.get_check_type_display()}: {self.svc_display_name}"
+            return f"{self.get_check_type_display()}: {self.svc_display_name}"  # type: ignore
         elif self.check_type == "eventlog":
-            return f"{self.get_check_type_display()}: {self.name}"
+            return f"{self.get_check_type_display()}: {self.name}"  # type: ignore
         elif self.check_type == "script":
-            return f"{self.get_check_type_display()}: {self.script.name}"
+            return f"{self.get_check_type_display()}: {self.script.name}"  # type: ignore
         else:
             return "n/a"
 
@@ -242,7 +241,7 @@ class Check(BaseAuditModel):
         return self.last_run
 
     @property
-    def non_editable_fields(self) -> List[str]:
+    def non_editable_fields(self) -> list[str]:
         return [
             "check_type",
             "status",
@@ -358,9 +357,8 @@ class Check(BaseAuditModel):
                     alert.save(update_fields=["severity"])
 
             # create alert in dashboard if enabled
-            if (
-                self.dashboard_alert
-                or alert_template
+            if self.dashboard_alert or (
+                alert_template
                 and self.alert_severity in alert_template.check_dashboard_alert_severity
                 and alert_template.check_always_alert
             ):
@@ -383,10 +381,8 @@ class Check(BaseAuditModel):
                 )
 
             # send text if enabled
-            if (
-                not alert.sms_sent
-                and self.text_alert
-                or alert_template
+            if self.text_alert or (
+                alert_template
                 and self.alert_severity in alert_template.check_text_alert_severity
                 and alert_template.check_always_text
             ):

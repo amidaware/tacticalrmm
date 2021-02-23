@@ -4,7 +4,7 @@ import re
 import time
 from collections import Counter
 from distutils.version import LooseVersion
-from typing import Any, List, Union
+from typing import Any, Union
 
 import msgpack
 import validators
@@ -164,14 +164,14 @@ class Agent(BaseAuditModel):
 
     @property
     def has_patches_pending(self):
-        return self.winupdates.filter(action="approve").filter(installed=False).exists()
+        return self.winupdates.filter(action="approve").filter(installed=False).exists()  # type: ignore
 
     @property
     def checks(self):
         total, passing, failing = 0, 0, 0
 
-        if self.agentchecks.exists():
-            for i in self.agentchecks.all():
+        if self.agentchecks.exists():  # type: ignore
+            for i in self.agentchecks.all():  # type: ignore
                 total += 1
                 if i.status == "passing":
                     passing += 1
@@ -273,7 +273,7 @@ class Agent(BaseAuditModel):
     def run_script(
         self,
         scriptpk: int,
-        args: List[str] = [],
+        args: list[str] = [],
         timeout: int = 120,
         full: bool = False,
         wait: bool = False,
@@ -333,27 +333,27 @@ class Agent(BaseAuditModel):
 
         updates = list()
         if patch_policy.critical == "approve":
-            updates += self.winupdates.filter(
+            updates += self.winupdates.filter(  # type: ignore
                 severity="Critical", installed=False
             ).exclude(action="approve")
 
         if patch_policy.important == "approve":
-            updates += self.winupdates.filter(
+            updates += self.winupdates.filter(  # type: ignore
                 severity="Important", installed=False
             ).exclude(action="approve")
 
         if patch_policy.moderate == "approve":
-            updates += self.winupdates.filter(
+            updates += self.winupdates.filter(  # type: ignore
                 severity="Moderate", installed=False
             ).exclude(action="approve")
 
         if patch_policy.low == "approve":
-            updates += self.winupdates.filter(severity="Low", installed=False).exclude(
+            updates += self.winupdates.filter(severity="Low", installed=False).exclude(  # type: ignore
                 action="approve"
             )
 
         if patch_policy.other == "approve":
-            updates += self.winupdates.filter(severity="", installed=False).exclude(
+            updates += self.winupdates.filter(severity="", installed=False).exclude(  # type: ignore
                 action="approve"
             )
 
@@ -368,7 +368,7 @@ class Agent(BaseAuditModel):
         site = self.site
         core_settings = CoreSettings.objects.first()
         patch_policy = None
-        agent_policy = self.winupdatepolicy.get()
+        agent_policy = self.winupdatepolicy.get()  # type: ignore
 
         if self.monitoring_type == "server":
             # check agent policy first which should override client or site policy
@@ -453,9 +453,9 @@ class Agent(BaseAuditModel):
 
         return patch_policy
 
-    def get_approved_update_guids(self) -> List[str]:
+    def get_approved_update_guids(self) -> list[str]:
         return list(
-            self.winupdates.filter(action="approve", installed=False).values_list(
+            self.winupdates.filter(action="approve", installed=False).values_list(  # type: ignore
                 "guid", flat=True
             )
         )
@@ -571,7 +571,7 @@ class Agent(BaseAuditModel):
         from automation.models import Policy
 
         # Clear agent checks that have overriden_by_policy set
-        self.agentchecks.update(overriden_by_policy=False)
+        self.agentchecks.update(overriden_by_policy=False)  # type: ignore
 
         # Generate checks based on policies
         Policy.generate_policy_checks(self)
@@ -606,7 +606,7 @@ class Agent(BaseAuditModel):
         except Exception:
             return "err"
 
-    async def nats_cmd(self, data, timeout=30, wait=True):
+    async def nats_cmd(self, data: dict, timeout: int = 30, wait: bool = True):
         nc = NATS()
         options = {
             "servers": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
@@ -628,7 +628,7 @@ class Agent(BaseAuditModel):
             except ErrTimeout:
                 ret = "timeout"
             else:
-                ret = msgpack.loads(msg.data)
+                ret = msgpack.loads(msg.data)  # type: ignore
 
             await nc.close()
             return ret
@@ -650,12 +650,12 @@ class Agent(BaseAuditModel):
     def delete_superseded_updates(self):
         try:
             pks = []  # list of pks to delete
-            kbs = list(self.winupdates.values_list("kb", flat=True))
+            kbs = list(self.winupdates.values_list("kb", flat=True))  # type: ignore
             d = Counter(kbs)
             dupes = [k for k, v in d.items() if v > 1]
 
             for dupe in dupes:
-                titles = self.winupdates.filter(kb=dupe).values_list("title", flat=True)
+                titles = self.winupdates.filter(kb=dupe).values_list("title", flat=True)  # type: ignore
                 # extract the version from the title and sort from oldest to newest
                 # skip if no version info is available therefore nothing to parse
                 try:
@@ -668,17 +668,17 @@ class Agent(BaseAuditModel):
                     continue
                 # append all but the latest version to our list of pks to delete
                 for ver in sorted_vers[:-1]:
-                    q = self.winupdates.filter(kb=dupe).filter(title__contains=ver)
+                    q = self.winupdates.filter(kb=dupe).filter(title__contains=ver)  # type: ignore
                     pks.append(q.first().pk)
 
             pks = list(set(pks))
-            self.winupdates.filter(pk__in=pks).delete()
+            self.winupdates.filter(pk__in=pks).delete()  # type: ignore
         except:
             pass
 
     # define how the agent should handle pending actions
     def handle_pending_actions(self):
-        pending_actions = self.pendingactions.filter(status="pending")
+        pending_actions = self.pendingactions.filter(status="pending")  # type: ignore
 
         for action in pending_actions:
             if action.action_type == "taskaction":
@@ -702,7 +702,7 @@ class Agent(BaseAuditModel):
     # for clearing duplicate pending actions on agent
     def remove_matching_pending_task_actions(self, task_id):
         # remove any other pending actions on agent with same task_id
-        for action in self.pendingactions.exclude(status="completed"):
+        for action in self.pendingactions.exclude(status="completed"):  # type: ignore
             if action.details["task_id"] == task_id:
                 action.delete()
 
@@ -731,27 +731,23 @@ class Agent(BaseAuditModel):
 
                 # check if a resolved notification should be emailed
                 if (
-                    not alert.resolved_email_sent
-                    and alert_template
+                    alert_template
                     and alert_template.agent_email_on_resolved
-                    or self.overdue_email_alert
+                    and not alert.resolved_email_sent
                 ):
                     agent_recovery_email_task.delay(pk=alert.pk)
 
                 # check if a resolved notification should be texted
                 if (
-                    not alert.resolved_sms_sent
-                    and alert_template
+                    alert_template
                     and alert_template.agent_text_on_resolved
-                    or self.overdue_text_alert
+                    and not alert.resolved_sms_sent
                 ):
                     agent_recovery_sms_task.delay(pk=alert.pk)
 
                 # check if any scripts should be run
-                if (
-                    not alert.resolved_action_run
-                    and alert_template
-                    and alert_template.resolved_action
+                if not alert.resolved_action_run and (
+                    alert_template and alert_template.resolved_action
                 ):
                     r = self.run_script(
                         scriptpk=alert_template.resolved_action.pk,
@@ -802,44 +798,36 @@ class Agent(BaseAuditModel):
                     return
 
                 # add a null check history to allow gaps in graph
-                for check in self.agentchecks.all():
+                for check in self.agentchecks.all():  # type: ignore
                     check.add_check_history(None)
             else:
                 alert = Alert.objects.get(agent=self, resolved=False)
 
             # create dashboard alert if enabled
-            if (
-                alert_template
-                and alert_template.agent_always_alert
-                or self.overdue_dashboard_alert
+            if self.overdue_dashboard_alert or (
+                alert_template and alert_template.agent_always_alert
             ):
                 alert.hidden = False
                 alert.save()
 
             # send email alert if enabled
-            if (
-                not alert.email_sent
-                and alert_template
-                and alert_template.agent_always_email
-                or self.overdue_email_alert
+            if self.overdue_email_alert or (
+                alert_template and alert_template.agent_always_email
             ):
                 agent_outage_email_task.delay(
                     pk=alert.pk,
-                    alert_interval=alert_template.check_periodic_alert_days
+                    alert_interval=alert_template.agent_periodic_alert_days
                     if alert_template
                     else None,
                 )
 
             # send text message if enabled
-            if (
-                not alert.sms_sent
-                and alert_template
-                and alert_template.agent_always_text
-                or self.overdue_text_alert
+            if self.overdue_text_alert or (
+                alert_template and alert_template.agent_always_text
             ):
                 agent_outage_sms_task.delay(
                     pk=alert.pk,
-                    alert_interval=alert_template.check_periodic_alert_days
+                    alert_interval=alert_template.agent_periodic_alert_days
                     if alert_template
                     else None,
                 )

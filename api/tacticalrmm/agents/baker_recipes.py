@@ -6,7 +6,7 @@ from itertools import cycle
 
 from django.conf import settings
 from django.utils import timezone as djangotime
-from model_bakery.recipe import Recipe, foreign_key
+from model_bakery.recipe import Recipe, foreign_key, seq
 
 
 def generate_agent_id(hostname):
@@ -30,8 +30,7 @@ agent = Recipe(
     hostname="DESKTOP-TEST123",
     version="1.3.0",
     monitoring_type=cycle(["workstation", "server"]),
-    salt_id=generate_agent_id("DESKTOP-TEST123"),
-    agent_id="71AHC-AA813-HH1BC-AAHH5-00013|DESKTOP-TEST123",
+    agent_id=seq("asdkj3h4234-1234hg3h4g34-234jjh34|DESKTOP-TEST123"),
 )
 
 server_agent = agent.extend(

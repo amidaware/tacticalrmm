@@ -44,3 +44,4 @@ model_bakery
 mkdocs
 mkdocs-material
 pymdown-extensions
+mypy

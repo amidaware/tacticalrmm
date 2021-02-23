@@ -50,26 +50,26 @@ class CheckIn(APIView):
         # change agent update pending status to completed if agent has just updated
         if (
             updated
-            and agent.pendingactions.filter(
+            and agent.pendingactions.filter(  # type: ignore
                 action_type="agentupdate", status="pending"
             ).exists()
         ):
-            agent.pendingactions.filter(
+            agent.pendingactions.filter(  # type: ignore
                 action_type="agentupdate", status="pending"
             ).update(status="completed")
 
         # handles any alerting actions
         agent.handle_alert(checkin=True)
 
-        recovery = agent.recoveryactions.filter(last_run=None).last()
+        recovery = agent.recoveryactions.filter(last_run=None).last()  # type: ignore
         if recovery is not None:
             recovery.last_run = djangotime.now()
             recovery.save(update_fields=["last_run"])
-            handle_agent_recovery_task.delay(pk=recovery.pk)
+            handle_agent_recovery_task.delay(pk=recovery.pk)  # type: ignore
             return Response("ok")
 
         # get any pending actions
-        if agent.pendingactions.filter(status="pending").exists():
+        if agent.pendingactions.filter(status="pending").exists():  # type: ignore
             agent.handle_pending_actions()
 
         return Response("ok")
@@ -111,7 +111,7 @@ class CheckIn(APIView):
             if not InstalledSoftware.objects.filter(agent=agent).exists():
                 InstalledSoftware(agent=agent, software=sw).save()
             else:
-                s = agent.installedsoftware_set.first()
+                s = agent.installedsoftware_set.first()  # type: ignore
                 s.software = sw
                 s.save(update_fields=["software"])
 
@@ -184,7 +184,7 @@ class WinUpdates(APIView):
 
     def patch(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-        u = agent.winupdates.filter(guid=request.data["guid"]).last()
+        u = agent.winupdates.filter(guid=request.data["guid"]).last()  # type: ignore
         success: bool = request.data["success"]
         if success:
             u.result = "success"
@@ -210,8 +210,8 @@ class WinUpdates(APIView):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
         updates = request.data["wua_updates"]
         for update in updates:
-            if agent.winupdates.filter(guid=update["guid"]).exists():
-                u = agent.winupdates.filter(guid=update["guid"]).last()
+            if agent.winupdates.filter(guid=update["guid"]).exists():  # type: ignore
+                u = agent.winupdates.filter(guid=update["guid"]).last()  # type: ignore
                 u.downloaded = update["downloaded"]
                 u.installed = update["installed"]
                 u.save(update_fields=["downloaded", "installed"])
@@ -242,7 +242,7 @@ class WinUpdates(APIView):
 
         # more superseded updates cleanup
         if pyver.parse(agent.version) <= pyver.parse("1.4.2"):
-            for u in agent.winupdates.filter(
+            for u in agent.winupdates.filter(  # type: ignore
                 date_installed__isnull=True, result="failed"
             ).exclude(installed=True):
                 u.delete()
@@ -256,7 +256,7 @@ class SupersededWinUpdate(APIView):
 
     def post(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-        updates = agent.winupdates.filter(guid=request.data["guid"])
+        updates = agent.winupdates.filter(guid=request.data["guid"])  # type: ignore
         for u in updates:
             u.delete()
 
@@ -404,10 +404,10 @@ class NewAgent(APIView):
         agent.salt_id = f"{agent.hostname}-{agent.pk}"
         agent.save(update_fields=["salt_id"])
 
-        user = User.objects.create_user(
+        user = User.objects.create_user(  # type: ignore
             username=request.data["agent_id"],
             agent=agent,
-            password=User.objects.make_random_password(60),
+            password=User.objects.make_random_password(60),  # type: ignore
         )
 
         token = Token.objects.create(user=user)
@@ -452,7 +452,7 @@ class Software(APIView):
         if not InstalledSoftware.objects.filter(agent=agent).exists():
             InstalledSoftware(agent=agent, software=sw).save()
         else:
-            s = agent.installedsoftware_set.first()
+            s = agent.installedsoftware_set.first()  # type: ignore
             s.software = sw
             s.save(update_fields=["software"])
 

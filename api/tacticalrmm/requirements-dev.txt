@@ -4,3 +4,5 @@ django-extensions
 mkdocs
 mkdocs-material
 pymdown-extensions
+isort
+mypy

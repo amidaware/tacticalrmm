@@ -3,8 +3,6 @@ import datetime as dt
 import os
 import random
 import string
-import subprocess
-from typing import List
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -20,7 +18,12 @@ from core.models import CoreSettings
 from logs.models import AuditLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
-from tacticalrmm.utils import get_default_timezone, notify_error, reload_nats
+from tacticalrmm.utils import (
+    generate_installer_exe,
+    get_default_timezone,
+    notify_error,
+    reload_nats,
+)
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
@@ -53,7 +56,7 @@ def get_agent_versions(request):
 @api_view(["POST"])
 def update_agents(request):
     q = Agent.objects.filter(pk__in=request.data["pks"]).only("pk", "version")
-    pks: List[int] = [
+    pks: list[int] = [
         i.pk
         for i in q
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
@@ -95,7 +98,7 @@ def edit_agent(request):
     a_serializer.save()
 
     if "winupdatepolicy" in request.data.keys():
-        policy = agent.winupdatepolicy.get()
+        policy = agent.winupdatepolicy.get()  # type: ignore
         p_serializer = WinUpdatePolicySerializer(
             instance=policy, data=request.data["winupdatepolicy"][0]
         )
@@ -427,124 +430,20 @@ def install_agent(request):
     )
 
     if request.data["installMethod"] == "exe":
-        go_bin = "/usr/local/rmmgo/go/bin/go"
-
-        if not os.path.exists(go_bin):
-            return Response("nogolang", status=status.HTTP_409_CONFLICT)
-
-        api = request.data["api"]
-        atype = request.data["agenttype"]
-        rdp = request.data["rdp"]
-        ping = request.data["ping"]
-        power = request.data["power"]
-
-        file_name = "rmm-installer.exe"
-        exe = os.path.join(settings.EXE_DIR, file_name)
-
-        if os.path.exists(exe):
-            try:
-                os.remove(exe)
-            except Exception as e:
-                logger.error(str(e))
-
-        goarch = "amd64" if arch == "64" else "386"
-        cmd = [
-            "env",
-            "GOOS=windows",
-            f"GOARCH={goarch}",
-            go_bin,
-            "build",
-            f"-ldflags=\"-s -w -X 'main.Inno={inno}'",
-            f"-X 'main.Api={api}'",
-            f"-X 'main.Client={client_id}'",
-            f"-X 'main.Site={site_id}'",
-            f"-X 'main.Atype={atype}'",
-            f"-X 'main.Rdp={rdp}'",
-            f"-X 'main.Ping={ping}'",
-            f"-X 'main.Power={power}'",
-            f"-X 'main.DownloadUrl={download_url}'",
-            f"-X 'main.Token={token}'\"",
-            "-o",
-            exe,
-        ]
-
-        build_error = False
-        gen_error = False
-
-        gen = [
-            "env",
-            "GOOS=windows",
-            f"GOARCH={goarch}",
-            go_bin,
-            "generate",
-        ]
-        try:
-            r1 = subprocess.run(
-                " ".join(gen),
-                capture_output=True,
-                shell=True,
-                cwd=os.path.join(settings.BASE_DIR, "core/goinstaller"),
-            )
-        except Exception as e:
-            gen_error = True
-            logger.error(str(e))
-            return Response(
-                "genfailed", status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
-            )
-
-        if r1.returncode != 0:
-            gen_error = True
-            if r1.stdout:
-                logger.error(r1.stdout.decode("utf-8", errors="ignore"))
-
-            if r1.stderr:
-                logger.error(r1.stderr.decode("utf-8", errors="ignore"))
-
-            logger.error(f"Go build failed with return code {r1.returncode}")
-
-        if gen_error:
-            return Response(
-                "genfailed", status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
-            )
-
-        try:
-            r = subprocess.run(
-                " ".join(cmd),
-                capture_output=True,
-                shell=True,
-                cwd=os.path.join(settings.BASE_DIR, "core/goinstaller"),
-            )
-        except Exception as e:
-            build_error = True
-            logger.error(str(e))
-            return Response("buildfailed", status=status.HTTP_412_PRECONDITION_FAILED)
-
-        if r.returncode != 0:
-            build_error = True
-            if r.stdout:
-                logger.error(r.stdout.decode("utf-8", errors="ignore"))
-
-            if r.stderr:
-                logger.error(r.stderr.decode("utf-8", errors="ignore"))
-
-            logger.error(f"Go build failed with return code {r.returncode}")
-
-        if build_error:
-            return Response("buildfailed", status=status.HTTP_412_PRECONDITION_FAILED)
-
-        if settings.DEBUG:
-            with open(exe, "rb") as f:
-                response = HttpResponse(
-                    f.read(),
-                    content_type="application/vnd.microsoft.portable-executable",
-                )
-                response["Content-Disposition"] = f"inline; filename={file_name}"
-                return response
-        else:
-            response = HttpResponse()
-            response["Content-Disposition"] = f"attachment; filename={file_name}"
-            response["X-Accel-Redirect"] = f"/private/exe/{file_name}"
-            return response
+        return generate_installer_exe(
+            file_name="rmm-installer.exe",
+            goarch="amd64" if arch == "64" else "386",
+            inno=inno,
+            api=request.data["api"],
+            client_id=client_id,
+            site_id=site_id,
+            atype=request.data["agenttype"],
+            rdp=request.data["rdp"],
+            ping=request.data["ping"],
+            power=request.data["power"],
+            download_url=download_url,
+            token=token,
+        )
 
     elif request.data["installMethod"] == "manual":
         cmd = [
@@ -653,7 +552,7 @@ def recover(request):
             if r == "ok":
                 return Response("Successfully completed recovery")
 
-    if agent.recoveryactions.filter(last_run=None).exists():
+    if agent.recoveryactions.filter(last_run=None).exists():  # type: ignore
         return notify_error(
             "A recovery action is currently pending. Please wait for the next agent check-in."
         )
@@ -681,8 +580,6 @@ def recover(request):
 @api_view(["POST"])
 def run_script(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
-    if not agent.has_nats:
-        return notify_error("Requires agent version 1.1.0 or greater")
     script = get_object_or_404(Script, pk=request.data["scriptPK"])
     output = request.data["output"]
     args = request.data["args"]
@@ -701,9 +598,6 @@ def run_script(request):
         return Response(r)
 
     elif output == "email":
-        if not pyver.parse(agent.version) >= pyver.parse("1.1.12"):
-            return notify_error("Requires agent version 1.1.12 or greater")
-
         emails = (
             [] if request.data["emailmode"] == "default" else request.data["emails"]
         )
@@ -807,7 +701,7 @@ def bulk(request):
     elif request.data["monType"] == "workstations":
         q = q.filter(monitoring_type="workstation")
 
-    agents: List[int] = [agent.pk for agent in q]
+    agents: list[int] = [agent.pk for agent in q]
 
     AuditLog.audit_bulk_action(request.user, request.data["mode"], request.data)
 

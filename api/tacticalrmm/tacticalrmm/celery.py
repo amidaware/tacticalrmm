@@ -14,11 +14,11 @@ app = Celery(
     broker="redis://" + settings.REDIS_HOST,
 )
 # app.config_from_object('django.conf:settings', namespace='CELERY')
-app.broker_url = "redis://" + settings.REDIS_HOST + ":6379"
-app.result_backend = "redis://" + settings.REDIS_HOST + ":6379"
-app.accept_content = ["application/json"]
-app.result_serializer = "json"
-app.task_serializer = "json"
+app.broker_url = "redis://" + settings.REDIS_HOST + ":6379"  # type: ignore
+app.result_backend = "redis://" + settings.REDIS_HOST + ":6379"  # type: ignore
+app.accept_content = ["application/json"]  # type: ignore
+app.result_serializer = "json"  # type: ignore
+app.task_serializer = "json"  # type: ignore
 app.conf.task_track_started = True
 app.autodiscover_tasks()
 

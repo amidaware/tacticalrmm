@@ -1,12 +1,9 @@
 import datetime as dt
-import os
 import re
-import subprocess
 import uuid
 
 import pytz
 from django.conf import settings
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from rest_framework.permissions import AllowAny
@@ -15,7 +12,7 @@ from rest_framework.views import APIView
 
 from agents.models import Agent
 from core.models import CoreSettings
-from tacticalrmm.utils import notify_error
+from tacticalrmm.utils import generate_installer_exe, notify_error
 
 from .models import Client, Deployment, Site
 from .serializers import (
@@ -183,99 +180,28 @@ class GenerateAgent(APIView):
 
         d = get_object_or_404(Deployment, uid=uid)
 
-        go_bin = "/usr/local/rmmgo/go/bin/go"
-
-        if not os.path.exists(go_bin):
-            return notify_error("Missing golang")
-
-        api = f"https://{request.get_host()}"
         inno = (
             f"winagent-v{settings.LATEST_AGENT_VER}.exe"
             if d.arch == "64"
             else f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
         )
-        download_url = settings.DL_64 if d.arch == "64" else settings.DL_32
-
         client = d.client.name.replace(" ", "").lower()
         site = d.site.name.replace(" ", "").lower()
         client = re.sub(r"([^a-zA-Z0-9]+)", "", client)
         site = re.sub(r"([^a-zA-Z0-9]+)", "", site)
-
         ext = ".exe" if d.arch == "64" else "-x86.exe"
 
-        file_name = f"rmm-{client}-{site}-{d.mon_type}{ext}"
-        exe = os.path.join(settings.EXE_DIR, file_name)
-
-        if os.path.exists(exe):
-            try:
-                os.remove(exe)
-            except:
-                pass
-
-        goarch = "amd64" if d.arch == "64" else "386"
-        cmd = [
-            "env",
-            "GOOS=windows",
-            f"GOARCH={goarch}",
-            go_bin,
-            "build",
-            f"-ldflags=\"-s -w -X 'main.Inno={inno}'",
-            f"-X 'main.Api={api}'",
-            f"-X 'main.Client={d.client.pk}'",
-            f"-X 'main.Site={d.site.pk}'",
-            f"-X 'main.Atype={d.mon_type}'",
-            f"-X 'main.Rdp={d.install_flags['rdp']}'",
-            f"-X 'main.Ping={d.install_flags['ping']}'",
-            f"-X 'main.Power={d.install_flags['power']}'",
-            f"-X 'main.DownloadUrl={download_url}'",
-            f"-X 'main.Token={d.token_key}'\"",
-            "-o",
-            exe,
-        ]
-
-        gen = [
-            "env",
-            "GOOS=windows",
-            f"GOARCH={goarch}",
-            go_bin,
-            "generate",
-        ]
-        try:
-            r1 = subprocess.run(
-                " ".join(gen),
-                capture_output=True,
-                shell=True,
-                cwd=os.path.join(settings.BASE_DIR, "core/goinstaller"),
-            )
-        except:
-            return notify_error("genfailed")
-
-        if r1.returncode != 0:
-            return notify_error("genfailed")
-
-        try:
-            r = subprocess.run(
-                " ".join(cmd),
-                capture_output=True,
-                shell=True,
-                cwd=os.path.join(settings.BASE_DIR, "core/goinstaller"),
-            )
-        except:
-            return notify_error("buildfailed")
-
-        if r.returncode != 0:
-            return notify_error("buildfailed")
-
-        if settings.DEBUG:
-            with open(exe, "rb") as f:
-                response = HttpResponse(
-                    f.read(),
-                    content_type="application/vnd.microsoft.portable-executable",
-                )
-                response["Content-Disposition"] = f"inline; filename={file_name}"
-                return response
-        else:
-            response = HttpResponse()
-            response["Content-Disposition"] = f"attachment; filename={file_name}"
-            response["X-Accel-Redirect"] = f"/private/exe/{file_name}"
-            return response
+        return generate_installer_exe(
+            file_name=f"rmm-{client}-{site}-{d.mon_type}{ext}",
+            goarch="amd64" if d.arch == "64" else "386",
+            inno=inno,
+            api=f"https://{request.get_host()}",
+            client_id=d.client.pk,
+            site_id=d.site.pk,
+            atype=d.mon_type,
+            rdp=d.install_flags["rdp"],
+            ping=d.install_flags["ping"],
+            power=d.install_flags["power"],
+            download_url=settings.DL_64 if d.arch == "64" else settings.DL_32,
+            token=d.token_key,
+        )

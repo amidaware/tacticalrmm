@@ -15,16 +15,16 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.4.16"
+TRMM_VERSION = "0.4.17"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.114"
+APP_VER = "0.0.115"
 
 # https://github.com/wh1te909/rmmagent
 LATEST_AGENT_VER = "1.4.6"
 
-MESH_VER = "0.7.72"
+MESH_VER = "0.7.73"
 
 # for the update script, bump when need to recreate venv or npm install
 PIP_VER = "10"

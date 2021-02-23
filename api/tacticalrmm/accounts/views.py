@@ -78,7 +78,7 @@ class GetAddUsers(APIView):
     def post(self, request):
         # add new user
         try:
-            user = User.objects.create_user(
+            user = User.objects.create_user(  # type: ignore
                 request.data["username"],
                 request.data["email"],
                 request.data["password"],

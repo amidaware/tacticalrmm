@@ -1,8 +1,15 @@
 site_name: "Tactical RMM"
 nav:
   - Home: index.md
+  - Installation:
+      - "Traditional Install": install_server.md
+      - "Docker Install": install_docker.md
+  - Troubleshooting: troubleshooting.md
+  - FAQ: faq.md
 site_description: "A remote monitoring and management tool for Windows computers"
 site_author: "wh1te909"
+
+dev_addr: "0.0.0.0:8005"
 
 # Repository
 repo_name: "wh1te909/tacticalrmm"

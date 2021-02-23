@@ -7,7 +7,7 @@ from accounts.models import User
 
 
 class Command(BaseCommand):
-    help = "Generates barcode for Google Authenticator and creates totp for user"
+    help = "Generates barcode for Authenticator and creates totp for user"
 
     def add_arguments(self, parser):
         parser.add_argument("code", type=str)
@@ -27,11 +27,11 @@ class Command(BaseCommand):
         subprocess.run(f'qr "{url}"', shell=True)
         self.stdout.write(
             self.style.SUCCESS(
-                "Scan the barcode above with your google authenticator app"
+                "Scan the barcode above with your authenticator app"
             )
         )
         self.stdout.write(
             self.style.SUCCESS(
-                f"If that doesn't work you may manually enter the key: {code}"
+                f"If that doesn't work you may manually enter the setup key: {code}"
             )
         )

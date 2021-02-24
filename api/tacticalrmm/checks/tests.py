@@ -1,3 +1,4 @@
+from logging import warning
 from unittest.mock import patch
 
 from django.utils import timezone as djangotime
@@ -24,7 +25,7 @@ class TestCheckViews(TacticalTestCase):
         serializer = CheckSerializer(disk_check)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)
+        self.assertEqual(resp.data, serializer.data)  # type: ignore
         self.check_not_authenticated("get", url)
 
     def test_add_disk_check(self):
@@ -211,7 +212,7 @@ class TestCheckViews(TacticalTestCase):
         serializer = CheckSerializer(disk_check)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)
+        self.assertEqual(resp.data, serializer.data)  # type: ignore
         self.check_not_authenticated("post", url)
 
     def test_add_policy_disk_check(self):
@@ -221,7 +222,7 @@ class TestCheckViews(TacticalTestCase):
         url = "/checks/checks/"
 
         valid_payload = {
-            "policy": policy.pk,
+            "policy": policy.pk,  # type: ignore
             "check": {
                 "check_type": "diskspace",
                 "disk": "M:",
@@ -233,7 +234,7 @@ class TestCheckViews(TacticalTestCase):
 
         # should fail because both error and warning thresholds are 0
         invalid_payload = {
-            "policy": policy.pk,
+            "policy": policy.pk,  # type: ignore
             "check": {
                 "check_type": "diskspace",
                 "error_threshold": 0,
@@ -247,7 +248,7 @@ class TestCheckViews(TacticalTestCase):
 
         # should fail because warning is less than error
         invalid_payload = {
-            "policy": policy.pk,
+            "policy": policy.pk,  # type: ignore
             "check": {
                 "check_type": "diskspace",
                 "error_threshold": 80,
@@ -261,7 +262,7 @@ class TestCheckViews(TacticalTestCase):
 
         # this should fail because we already have a check for drive M: in setup
         invalid_payload = {
-            "policy": policy.pk,
+            "policy": policy.pk,  # type: ignore
             "check": {
                 "check_type": "diskspace",
                 "disk": "M:",
@@ -277,8 +278,8 @@ class TestCheckViews(TacticalTestCase):
     def test_get_disks_for_policies(self):
         url = "/checks/getalldisks/"
         r = self.client.get(url)
-        self.assertIsInstance(r.data, list)
-        self.assertEqual(26, len(r.data))
+        self.assertIsInstance(r.data, list)  # type: ignore
+        self.assertEqual(26, len(r.data))  # type: ignore
 
     def test_edit_check_alert(self):
         # setup data
@@ -361,8 +362,8 @@ class TestCheckViews(TacticalTestCase):
         )
 
         # need to manually set the date back 35 days
-        for check_history in check_history_data:
-            check_history.x = djangotime.now() - djangotime.timedelta(days=35)
+        for check_history in check_history_data:  # type: ignore
+            check_history.x = djangotime.now() - djangotime.timedelta(days=35)  # type: ignore
             check_history.save()
 
         # test invalid check pk
@@ -375,20 +376,22 @@ class TestCheckViews(TacticalTestCase):
         data = {"timeFilter": 30}
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 30)
+        self.assertEqual(len(resp.data), 30)  # type: ignore
 
         # test with timeFilter equal to 0
         data = {"timeFilter": 0}
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 60)
+        self.assertEqual(len(resp.data), 60)  # type: ignore
 
         self.check_not_authenticated("patch", url)
 
 
 class TestCheckTasks(TacticalTestCase):
     def setUp(self):
+        self.authenticate()
         self.setup_coresettings()
+        self.agent = baker.make_recipe("agents.agent")
 
     def test_prune_check_history(self):
         from .tasks import prune_check_history
@@ -403,8 +406,8 @@ class TestCheckTasks(TacticalTestCase):
         )
 
         # need to manually set the date back 35 days
-        for check_history in check_history_data:
-            check_history.x = djangotime.now() - djangotime.timedelta(days=35)
+        for check_history in check_history_data:  # type: ignore
+            check_history.x = djangotime.now() - djangotime.timedelta(days=35)  # type: ignore
             check_history.save()
 
         # prune data 30 days old
@@ -414,3 +417,577 @@ class TestCheckTasks(TacticalTestCase):
         # prune all Check history Data
         prune_check_history(0)
         self.assertEqual(CheckHistory.objects.count(), 0)
+
+    def test_handle_script_check(self):
+        from checks.models import Check
+
+        url = "/api/v3/checkrunner/"
+
+        script = baker.make_recipe("checks.script_check", agent=self.agent)
+
+        # test failing
+        data = {
+            "id": script.id,
+            "retcode": 500,
+            "stderr": "error",
+            "stdout": "message",
+            "runtime": 5.000,
+        }
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=script.id)
+
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "error")
+
+        # test passing
+        data = {
+            "id": script.id,
+            "retcode": 0,
+            "stderr": "error",
+            "stdout": "message",
+            "runtime": 5.000,
+        }
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=script.id)
+
+        self.assertEqual(new_check.status, "passing")
+
+        # test failing info
+        script.info_return_codes = [20, 30, 50]
+        script.save()
+
+        data = {
+            "id": script.id,
+            "retcode": 30,
+            "stderr": "error",
+            "stdout": "message",
+            "runtime": 5.000,
+        }
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=script.id)
+
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "info")
+
+        # test failing warning
+        script.warning_return_codes = [80, 100, 1040]
+        script.save()
+
+        data = {
+            "id": script.id,
+            "retcode": 1040,
+            "stderr": "error",
+            "stdout": "message",
+            "runtime": 5.000,
+        }
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=script.id)
+
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "warning")
+
+    def test_handle_diskspace_check(self):
+        from checks.models import Check
+
+        url = "/api/v3/checkrunner/"
+
+        diskspace = baker.make_recipe(
+            "checks.diskspace_check",
+            warning_threshold=20,
+            error_threshold=10,
+            agent=self.agent,
+        )
+
+        # test warning threshold failure
+        data = {
+            "id": diskspace.id,
+            "exists": True,
+            "percent_used": 85,
+            "total": 500,
+            "free": 400,
+        }
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=diskspace.id)
+
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "warning")
+
+        # test error failure
+        data = {
+            "id": diskspace.id,
+            "exists": True,
+            "percent_used": 95,
+            "total": 500,
+            "free": 400,
+        }
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=diskspace.id)
+
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "error")
+
+        # test disk not exist
+        data = {"id": diskspace.id, "exists": False}
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=diskspace.id)
+
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "error")
+
+        # test warning threshold 0
+        diskspace.warning_threshold = 0
+        diskspace.save()
+        data = {
+            "id": diskspace.id,
+            "exists": True,
+            "percent_used": 95,
+            "total": 500,
+            "free": 400,
+        }
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=diskspace.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "error")
+
+        # test error threshold 0
+        diskspace.warning_threshold = 50
+        diskspace.error_threshold = 0
+        diskspace.save()
+        data = {
+            "id": diskspace.id,
+            "exists": True,
+            "percent_used": 95,
+            "total": 500,
+            "free": 400,
+        }
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=diskspace.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "warning")
+
+        # test passing
+        data = {
+            "id": diskspace.id,
+            "exists": True,
+            "percent_used": 50,
+            "total": 500,
+            "free": 400,
+        }
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=diskspace.id)
+
+        self.assertEqual(new_check.status, "passing")
+
+    def test_handle_cpuload_check(self):
+        from checks.models import Check
+
+        url = "/api/v3/checkrunner/"
+
+        cpuload = baker.make_recipe(
+            "checks.cpuload_check",
+            warning_threshold=70,
+            error_threshold=90,
+            agent=self.agent,
+        )
+
+        # test failing warning
+        data = {"id": cpuload.id, "percent": 80}
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=cpuload.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "warning")
+
+        # test failing error
+        data = {"id": cpuload.id, "percent": 95}
+
+        # reset check history
+        cpuload.history = []
+        cpuload.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=cpuload.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "error")
+
+        # test passing
+        data = {"id": cpuload.id, "percent": 50}
+
+        # reset check history
+        cpuload.history = []
+        cpuload.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=cpuload.id)
+        self.assertEqual(new_check.status, "passing")
+
+        # test warning threshold 0
+        cpuload.warning_threshold = 0
+        cpuload.save()
+        data = {"id": cpuload.id, "percent": 95}
+
+        # reset check history
+        cpuload.history = []
+        cpuload.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=cpuload.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "error")
+
+        # test error threshold 0
+        cpuload.warning_threshold = 50
+        cpuload.error_threshold = 0
+        cpuload.save()
+        data = {"id": cpuload.id, "percent": 95}
+
+        # reset check history
+        cpuload.history = []
+        cpuload.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=cpuload.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "warning")
+
+    def test_handle_memory_check(self):
+        from checks.models import Check
+
+        url = "/api/v3/checkrunner/"
+
+        memory = baker.make_recipe(
+            "checks.memory_check",
+            warning_threshold=70,
+            error_threshold=90,
+            agent=self.agent,
+        )
+
+        # test failing warning
+        data = {"id": memory.id, "percent": 80}
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=memory.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "warning")
+
+        # test failing error
+        data = {"id": memory.id, "percent": 95}
+
+        # reset check history
+        memory.history = []
+        memory.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=memory.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "error")
+
+        # test passing
+        data = {"id": memory.id, "percent": 50}
+
+        # reset check history
+        memory.history = []
+        memory.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=memory.id)
+        self.assertEqual(new_check.status, "passing")
+
+        # test warning threshold 0
+        memory.warning_threshold = 0
+        memory.save()
+        data = {"id": memory.id, "percent": 95}
+
+        # reset check history
+        memory.history = []
+        memory.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=memory.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "error")
+
+        # test error threshold 0
+        memory.warning_threshold = 50
+        memory.error_threshold = 0
+        memory.save()
+        data = {"id": memory.id, "percent": 95}
+
+        # reset check history
+        memory.history = []
+        memory.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=memory.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "warning")
+
+    def test_handle_ping_check(self):
+        from checks.models import Check
+
+        url = "/api/v3/checkrunner/"
+
+        ping = baker.make_recipe(
+            "checks.ping_check", agent=self.agent, alert_severity="info"
+        )
+
+        # test failing info
+        data = {
+            "id": ping.id,
+            "output": "Reply from 192.168.1.27: Destination host unreachable",
+            "has_stdout": True,
+            "has_stderr": False,
+        }
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=ping.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "info")
+
+        # test failing warning
+        data = {
+            "id": ping.id,
+            "output": "Reply from 192.168.1.27: Destination host unreachable",
+            "has_stdout": True,
+            "has_stderr": False,
+        }
+
+        ping.alert_severity = "warning"
+        ping.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=ping.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "warning")
+
+        # test failing error
+        data = {
+            "id": ping.id,
+            "output": "Reply from 192.168.1.27: Destination host unreachable",
+            "has_stdout": True,
+            "has_stderr": False,
+        }
+
+        ping.alert_severity = "error"
+        ping.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=ping.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "error")
+
+        # test failing error
+        data = {
+            "id": ping.id,
+            "output": "some output",
+            "has_stdout": False,
+            "has_stderr": True,
+        }
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=ping.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "error")
+
+        # test passing
+        data = {
+            "id": ping.id,
+            "output": "Reply from 192.168.1.1: bytes=32 time<1ms TTL=64",
+            "has_stdout": True,
+            "has_stderr": False,
+        }
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=ping.id)
+        self.assertEqual(new_check.status, "passing")
+
+    @patch("agents.models.Agent.nats_cmd")
+    def test_handle_winsvc_check(self, nats_cmd):
+        from checks.models import Check
+
+        url = "/api/v3/checkrunner/"
+
+        winsvc = baker.make_recipe(
+            "checks.winsvc_check", agent=self.agent, alert_severity="info"
+        )
+
+        # test passing running
+        data = {"id": winsvc.id, "exists": True, "status": "running"}
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=winsvc.id)
+        self.assertEqual(new_check.status, "passing")
+
+        # test passing start pending
+        winsvc.pass_if_start_pending = True
+        winsvc.save()
+
+        data = {"id": winsvc.id, "exists": True, "status": "start_pending"}
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=winsvc.id)
+        self.assertEqual(new_check.status, "passing")
+
+        # test failing no start
+        data = {"id": winsvc.id, "exists": True, "status": "not running"}
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=winsvc.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "info")
+
+        # test failing and attempt start
+        winsvc.restart_if_stopped = True
+        winsvc.alert_severity = "warning"
+        winsvc.save()
+
+        nats_cmd.return_value = "timeout"
+
+        data = {"id": winsvc.id, "exists": True, "status": "not running"}
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=winsvc.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "warning")
+        nats_cmd.assert_called()
+        nats_cmd.reset_mock()
+
+        # test failing and attempt start
+        winsvc.alert_severity = "error"
+        winsvc.save()
+        nats_cmd.return_value = {"success": False, "errormsg": "Some Error"}
+
+        data = {"id": winsvc.id, "exists": True, "status": "not running"}
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=winsvc.id)
+        self.assertEqual(new_check.status, "failing")
+        self.assertEqual(new_check.alert_severity, "error")
+        nats_cmd.assert_called()
+        nats_cmd.reset_mock()
+
+        # test success and attempt start
+        nats_cmd.return_value = {"success": True}
+
+        data = {"id": winsvc.id, "exists": True, "status": "not running"}
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=winsvc.id)
+        self.assertEqual(new_check.status, "passing")
+        nats_cmd.assert_called()
+        nats_cmd.reset_mock()
+
+        # test failing and service not exist
+        data = {"id": winsvc.id, "exists": False, "status": ""}
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=winsvc.id)
+        self.assertEqual(new_check.status, "failing")
+
+        # test success and service not exist
+        winsvc.pass_if_svc_not_exist = True
+        winsvc.save()
+        data = {"id": winsvc.id, "exists": False, "status": ""}
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=winsvc.id)
+        self.assertEqual(new_check.status, "passing")
+
+    def test_handle_eventlog_check(self):
+        url = "/api/v3/checkrunner/"
+
+        eventlog = baker.make_recipe("checks.eventlog_check", agent=self.agent)
+
+        # test failing warning
+        data = {}
+
+        # resp = self.client.patch(url, data, format="json")
+        # self.assertEqual(resp.status_code, 200)
+
+        # test failing error
+        data = {}
+
+        # resp = self.client.patch(url, data, format="json")
+        # self.assertEqual(resp.status_code, 200)
+
+        # test passing
+        data = {}
+
+        # resp = self.client.patch(url, data, format="json")
+        # self.assertEqual(resp.status_code, 200)

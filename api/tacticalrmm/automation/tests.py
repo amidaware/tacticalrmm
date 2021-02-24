@@ -505,12 +505,12 @@ class TestPolicyTasks(TacticalTestCase):
                 self.assertEqual(check.ip, checks[1].ip)
             elif check.check_type == "cpuload":
                 self.assertEqual(check.parent_check, checks[2].id)
-                self.assertEqual(check.error_threshold, checks[0].error_threshold)
-                self.assertEqual(check.warning_threshold, checks[0].warning_threshold)
+                self.assertEqual(check.error_threshold, checks[2].error_threshold)
+                self.assertEqual(check.warning_threshold, checks[2].warning_threshold)
             elif check.check_type == "memory":
                 self.assertEqual(check.parent_check, checks[3].id)
-                self.assertEqual(check.error_threshold, checks[0].error_threshold)
-                self.assertEqual(check.warning_threshold, checks[0].warning_threshold)
+                self.assertEqual(check.error_threshold, checks[3].error_threshold)
+                self.assertEqual(check.warning_threshold, checks[3].warning_threshold)
             elif check.check_type == "winsvc":
                 self.assertEqual(check.parent_check, checks[4].id)
                 self.assertEqual(check.svc_name, checks[4].svc_name)

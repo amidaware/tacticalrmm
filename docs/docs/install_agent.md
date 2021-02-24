@@ -49,3 +49,18 @@ To create a deployment, from the web UI click **Agents > Manage Deployments**.<b
     You can then move the agent into the correct client/site from the web UI after it's been installed.
 
 Copy/paste the download link from the deployment into your browser. It will take a few seconds to dynamically generate the executable and then your browser will automatically download the exe.
+
+
+#### Optional installer args
+
+The following optional arguments can be passed to any of the installation method executables:
+
+```
+-log debug
+```
+Will print very verbose logging during agent install. Usefull for troubleshooting agent install.
+
+```
+-silent
+```
+This will not popup any message boxes during install, either any error messages or the "Installation was successfull" message box that pops up at the end of a successfull install.

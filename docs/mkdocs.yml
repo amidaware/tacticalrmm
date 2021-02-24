@@ -10,7 +10,11 @@ nav:
       - "Updating Agents": update_agents.md
   - Backup: backup.md
   - Restore: restore.md
+  - Troubleshooting: troubleshooting.md
   - FAQ: faq.md
+  - Functionality:
+      - "Alerting": alerting.md
+  - MeshCentral Integration: mesh_integration.md
   - License: license.md
 site_description: "A remote monitoring and management tool"
 site_author: "wh1te909"

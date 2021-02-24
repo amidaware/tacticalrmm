@@ -1,5 +1,7 @@
 # Updating the RMM
 
+#### Updating to the latest RMM version
+
 !!!danger
     Do __not__ attempt to manually edit the update script or any configuration files unless specifically told to by one of the developers.<br/><br/>
     Since this software is completely self hosted and we have no access to your server, we have to assume you have not made any config changes to any of the files or services on your server, and the update script will assume this.<br/><br/>
@@ -25,3 +27,24 @@ tactical@tacrmm:~$ ./update.sh --force
 ```
 This is usefull for a botched update that might have not completed fully.<br/><br/>
 The update script will also fix any permissions that might have gotten messed up during a botched update, or if you accidentally ran the update script as the `root` user.
+
+<br/>
+
+#### Keeping your Let's Encrypt certificate up to date
+
+!!!info
+    Currently, the update script does not automatically renew your Let's Encrypt wildcard certificate, which expires every 3 months, since this non-trivial to automate using the DNS TXT record method.
+
+To renew your Let's Encrypt wildcard cert, run the following command, replacing `example.com` with your domain and `admin@example.com` with your email:
+
+```bash
+sudo certbot certonly --manual -d *.example.com --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m admin@example.com --no-eff-email
+```
+
+Same instructions as during install for [verifying the TXT record](install_server.md#deploy-the-txt-record-in-your-dns-manager) has propogated before hitting Enter.
+
+After this you have renewed the cert, simply run the `update.sh` script, passing it the `--force` flag.
+
+```bash
+./update.sh --force
+```

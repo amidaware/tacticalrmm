@@ -7,7 +7,7 @@
     The provided install script assumes a fresh server with no software installed on it. Attempting to run it on an existing server with other services **will** break things and the install will fail.<br/><br/>
     The install script has been tested on the following public cloud providers: DigitalOcean, Linode, Vultr, BuyVM (highly recommended), Hetzner, AWS, Google Cloud and Azure, as well as behind NAT on Hyper-V, Proxmox and ESXi.
 
-- A real domain is needed to generate a Let's Encrypt cert. <br/>If you cannot afford to purchase a domain ($12 a year) then you can get one for free at [freenom.com](https://www.freenom.com/)<br/><br/>
+- A real domain is needed to generate a Let's Encrypt wildcard cert. <br/>If you cannot afford to purchase a domain ($12 a year) then you can get one for free at [freenom.com](https://www.freenom.com/)<br/><br/>
 
 - A TOTP based authenticator app. Some popular ones are Google Authenticator, Authy and Microsoft Authenticator.<br/><br/>
 
@@ -58,7 +58,7 @@ ufw allow from X.X.X.X to any port 22
 
 Enable and activate the firewall
 ```
-ufw enable && sudo ufw reload
+ufw enable && ufw reload
 ```
 
 #### Create the A records
@@ -95,7 +95,7 @@ Answer the initial questions when prompted. Replace `example.com` with your doma
 ![questions](images/install_questions.png)
 
 
-Deploy the TXT record in your DNS manager:
+#### Deploy the TXT record in your DNS manager:
 
 !!!warning
     TXT records can take anywhere from 1 minute to a few hours to propogate depending on your DNS provider.<br/>

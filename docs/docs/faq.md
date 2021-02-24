@@ -6,6 +6,8 @@ Alot of features in the web UI are hidden behind right-click menus; almost every
 #### Where are the Linux / Mac agents?
 Linux / Mac agents are currently under development.
 
+#### Can I run Tactical RMM locally behind NAT without exposing anything to the internet?
+Yes, you will just need to setup local DNS for the 3 subdomains, either by editing host files on all your agents or through a local DNS server.
 #### I am locked out of the web UI. How do I reset my password?
 
 SSH into your server and run these commands:

@@ -1,0 +1,52 @@
+# Troubleshooting
+
+#### "Bad credentials" error when trying to login to the Web UI
+
+If you are sure you are using the correct credentials and still getting a "bad credentials" error, open your browser's dev tools (ctrl + shift + j on chrome) and check the Console tab to see the real error.
+
+It will most probably be a CORS error which means you need to check your DNS settings and make sure whatever computer you're trying to access the UI from resolves your 3 subdomains to the correct IP of the server running the RMM (public IP if running in the cloud, or private IP if running behind NAT).
+
+If you see an error about SSL or certificate expired, then your Let's Encrypt cert has probably expired and you'll need to renew it.
+
+Refer to the Let's Encrypt cert renewal instructions [here](update_server.md#keeping-your-lets-encrypt-certificate-up-to-date)
+
+<br/>
+
+#### Agents not updating
+
+The most common problem we've seen of agents not updating is due to Antivirus blocking the updater executable.
+
+Windows Defender will 100% of the time block the updater from running unless an exclusion is set.
+
+Refer to the [Agent Installation](install_agent.md) instructions for AV exceptions to set and manually doing an agent update with logging to trouleshoot further.
+
+Agents will also not automatically update if they are too old.
+
+Since Tactical RMM is still in alpha and the developers makes breaking changes pretty frequently, there is no promise of backwards compatibility.
+
+If you have agents that are relatively old, you will need to uninstall them manually and reinstall using the latest version.
+
+<br/>
+
+#### Agents not checking in or showing up / General agent issues
+
+Open CMD as admin on the problem computer and stop the agent services:
+
+```cmd
+net stop tacticalagent
+net stop tacticalrpc
+```
+
+Run the tacticalagent service manually with debug logging:
+```cmd
+"C:\Program Files\TacticalAgent\tacticalrmm.exe" -m winagentsvc -log debug -logto stdout
+```
+
+Run the tacticalrpc service manually with debug logging:
+```cmd
+"C:\Program Files\TacticalAgent\tacticalrmm.exe" -m rpc -log debug -logto stdout
+```
+
+This will print out a ton of info. You should be able to see the error from the debug log output.
+
+Please then copy/paste the logs and post them either in our [Discord support chat](https://discord.gg/upGTkWp), or create a [github issue](https://github.com/wh1te909/tacticalrmm/issues).

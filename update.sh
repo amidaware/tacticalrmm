@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="111"
+SCRIPT_VERSION="112"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -21,6 +21,11 @@ if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
 fi
 
 rm -f $TMP_FILE
+
+force=false
+if [[ $* == *--force* ]]; then
+    force=true
+fi
 
 sudo apt update
 
@@ -116,12 +121,10 @@ SETTINGS_FILE="/rmm/api/tacticalrmm/tacticalrmm/settings.py"
 LATEST_TRMM_VER=$(grep "^TRMM_VERSION" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 CURRENT_TRMM_VER=$(grep "^TRMM_VERSION" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
-if [[ $* != *--force* ]]; then
-  if [[ "${CURRENT_TRMM_VER}" == "${LATEST_TRMM_VER}" ]]; then
-    printf >&2 "${GREEN}Already on latest version. Current version: ${CURRENT_TRMM_VER} Latest version: ${LATEST_TRMM_VER}${NC}\n"
-    rm -f $TMP_SETTINGS
-    exit 0
-  fi
+if [[ "${CURRENT_TRMM_VER}" == "${LATEST_TRMM_VER}" ]] && ! [[ "$force" = true ]]; then
+  printf >&2 "${GREEN}Already on latest version. Current version: ${CURRENT_TRMM_VER} Latest version: ${LATEST_TRMM_VER}${NC}\n"
+  rm -f $TMP_SETTINGS
+  exit 0
 fi
 
 LATEST_MESH_VER=$(grep "^MESH_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
@@ -276,7 +279,7 @@ sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
 sudo chown ${USER}:${USER} /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
 
-if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]]; then
+if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]] || [[ "$force" = true ]]; then
   rm -rf /rmm/api/env
   cd /rmm/api
   python3.9 -m venv env
@@ -303,7 +306,7 @@ deactivate
 rm -rf /rmm/web/dist
 rm -rf /rmm/web/.quasar
 cd /rmm/web
-if [[ "${CURRENT_NPM_VER}" != "${LATEST_NPM_VER}" ]]; then
+if [[ "${CURRENT_NPM_VER}" != "${LATEST_NPM_VER}" ]] || [[ "$force" = true ]]; then
   rm -rf /rmm/web/node_modules
 fi
 
@@ -320,7 +323,7 @@ sudo systemctl start ${i}
 done
 
 CURRENT_MESH_VER=$(cd /meshcentral/node_modules/meshcentral && node -p -e "require('./package.json').version")
-if [[ "${CURRENT_MESH_VER}" != "${LATEST_MESH_VER}" ]]; then
+if [[ "${CURRENT_MESH_VER}" != "${LATEST_MESH_VER}" ]] || [[ "$force" = true ]]; then
   printf >&2 "${GREEN}Updating meshcentral from ${CURRENT_MESH_VER} to ${LATEST_MESH_VER}${NC}\n"
   sudo systemctl stop meshcentral
   sudo chown ${USER}:${USER} -R /meshcentral
@@ -328,7 +331,6 @@ if [[ "${CURRENT_MESH_VER}" != "${LATEST_MESH_VER}" ]]; then
   rm -rf node_modules/
   npm install meshcentral@${LATEST_MESH_VER}
   sudo systemctl start meshcentral
-  sleep 10
 fi
 
 rm -f $TMP_SETTINGS

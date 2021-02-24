@@ -3,7 +3,7 @@
 
 #### How do I do X feature in the web UI?
 Alot of features in the web UI are hidden behind right-click menus; almost everything has a right click menu so if you don't see something, try right clicking on it.
-#### Where are the linux / mac agents?
+#### Where are the Linux / Mac agents?
 Linux / Mac agents are currently under development.
 
 #### I am locked out of the web UI. How do I reset my password?
@@ -13,9 +13,9 @@ SSH into your server and run these commands:
 !!!note
     The code below will reset the password for the account that was created during install.
     To reset a password for a different user, you should use the web UI (see the next question below), but can also do so through the command line by replacing<br/>
-    `user = User.objects.first()`<br/>
+    `#!python user = User.objects.first()`<br/>
     with<br/>
-    `user = User.objects.get(username='someuser')`
+    `#!python user = User.objects.get(username='someuser')`
     <br/>
     in the code snippet below.
 

@@ -5,6 +5,11 @@ nav:
       - "Traditional Install": install_server.md
       - "Docker Install": install_docker.md
   - Agent Installation: install_agent.md
+  - Updating:
+      - "Updating the RMM": update_server.md
+      - "Updating Agents": update_agents.md
+  - Backup: backup.md
+  - Restore: restore.md
   - FAQ: faq.md
   - License: license.md
 site_description: "A remote monitoring and management tool"

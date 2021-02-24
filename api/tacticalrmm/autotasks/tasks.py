@@ -45,7 +45,7 @@ def create_win_task_schedule(pk, pending_action=False):
             task.run_time_date = now.astimezone(agent_tz).replace(
                 tzinfo=pytz.utc
             ) + djangotime.timedelta(minutes=5)
-            task.save()
+            task.save(update_fields=["run_time_date"])
 
         nats_data = {
             "func": "schedtask",

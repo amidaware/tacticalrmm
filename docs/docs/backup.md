@@ -7,28 +7,6 @@ Download the backup script:
 wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/backup.sh
 ```
 
-Edit `backup.sh` with your text editor of choice.
-
-Change the postgres username/password at the top of the file.
-You can find this info in the following file:
-```
-/rmm/api/tacticalrmm/tacticalrmm/local_settings.py
-```
-
-Look for this section and grab the USER / PASSWORD:
-```python
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'tacticalrmm',
-        'USER': 'someusername',
-        'PASSWORD': 'somepassword',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
-```
-
 From the Web UI, click **Tools > Server Maintenance**
 
 Choose **Prune DB Tables** from the dropdown and check the `Audit Log` and `Pending Actions` checkboxes, and then click **Submit**

@@ -718,14 +718,15 @@ class TestAlertTasks(TacticalTestCase):
             Alert.objects.get(agent=agent_template_email).resolved_email_sent
         )
 
-
     @patch("checks.tasks.sleep")
     @patch("checks.tasks.handle_check_sms_alert_task.delay")
     @patch("checks.tasks.handle_check_email_alert_task.delay")
     @patch("checks.tasks.handle_resolved_check_email_alert_task.delay")
     @patch("checks.tasks.handle_resolved_check_sms_alert_task.delay")
-    def test_handle_check_alerts(self, resolved_sms, resolved_email, outage_email, outage_sms, sleep):
-        
+    def test_handle_check_alerts(
+        self, resolved_sms, resolved_email, outage_email, outage_sms, sleep
+    ):
+
         # create test data
         agent = baker.make_recipe("agents.agent")
         agent_no_settings = baker.make_recipe("agents.agent")
@@ -734,13 +735,27 @@ class TestAlertTasks(TacticalTestCase):
         agent_template_blank = baker.make_recipe("agents.agent")
 
         # create agent with template to always email on warning severity
-        alert_template_email = baker.make("alerts.AlertTemplate", is_active=True, check_always_email=True, check_email_alert_severity=["warning"])
+        alert_template_email = baker.make(
+            "alerts.AlertTemplate",
+            is_active=True,
+            check_always_email=True,
+            check_email_alert_severity=["warning"],
+        )
         agent_template_email.client.alert_template = alert_template_email
         agent_template_email.client.save()
 
         # create agent with template to always dashboard and text on various alert severities
-        alert_template_dashboard_text = baker.make("alerts.AlertTemplate", is_active=True, check_always_alert=True, check_always_text=True, check_dashboard_alert_severity=["info", "warning", "error"], check_text_alert_severity=["error"])
-        agent_template_dashboard_text.client.alert_template = alert_template_dashboard_text
+        alert_template_dashboard_text = baker.make(
+            "alerts.AlertTemplate",
+            is_active=True,
+            check_always_alert=True,
+            check_always_text=True,
+            check_dashboard_alert_severity=["info", "warning", "error"],
+            check_text_alert_severity=["error"],
+        )
+        agent_template_dashboard_text.client.alert_template = (
+            alert_template_dashboard_text
+        )
         agent_template_dashboard_text.client.save()
 
         # create agent with blank template
@@ -749,16 +764,31 @@ class TestAlertTasks(TacticalTestCase):
         agent_template_dashboard_text.client.save()
 
         # create some checks per agent above
-        agents = [agent, agent_template_email, agent_template_dashboard_text, agent_template_blank, agent_no_settings]
-        diskspaces = baker.make_recipe("checks.diskspace_check", agent=cycle(agents), _quantity=5)
-        cpuloads = baker.make_recipe("checks.cpuload_check", agent=cycle(agents), _quantity=5)
-        memories = baker.make_recipe("checks.memory_check", agent=cycle(agents), _quantity=5)
+        agents = [
+            agent,
+            agent_template_email,
+            agent_template_dashboard_text,
+            agent_template_blank,
+            agent_no_settings,
+        ]
+        diskspaces = baker.make_recipe(
+            "checks.diskspace_check", agent=cycle(agents), _quantity=5
+        )
+        cpuloads = baker.make_recipe(
+            "checks.cpuload_check", agent=cycle(agents), _quantity=5
+        )
+        memories = baker.make_recipe(
+            "checks.memory_check", agent=cycle(agents), _quantity=5
+        )
         pings = baker.make_recipe("checks.ping_check", agent=cycle(agents), _quantity=5)
-        scripts = baker.make_recipe("checks.script_check", agent=cycle(agents), _quantity=5)
+        scripts = baker.make_recipe(
+            "checks.script_check", agent=cycle(agents), _quantity=5
+        )
 
         # update the agent checks to alert on everything
-        agent.agentchecks.update(email_alert=True, text_alert=True, dashboard_alert=True)
-
+        agent.agentchecks.update(
+            email_alert=True, text_alert=True, dashboard_alert=True
+        )
 
     def test_handle_task_alerts(self):
         pass
@@ -766,21 +796,15 @@ class TestAlertTasks(TacticalTestCase):
     def test_override_email_settings(self):
         pass
 
-
     @patch("agents.models.Agent.nats_cmd")
     @patch("agents.tasks.agent_outage_sms_task.delay")
     @patch("agents.tasks.agent_outage_email_task.delay")
     @patch("agents.tasks.agent_recovery_email_task.delay")
     @patch("agents.tasks.agent_recovery_sms_task.delay")
     def test_agent_alert_actions(
-        self, 
-        recovery_sms,
-        recovery_email,
-        outage_email,
-        outage_sms,
-        nats_cmd
+        self, recovery_sms, recovery_email, outage_email, outage_sms, nats_cmd
     ):
-        
+
         from agents.tasks import agent_outages_task
 
         # Setup cmd mock
@@ -788,16 +812,27 @@ class TestAlertTasks(TacticalTestCase):
             "retcode": 0,
             "stdout": "success!",
             "stderr": "",
-            "execution_time": 5.0000
+            "execution_time": 5.0000,
         }
 
         nats_cmd.side_effect = ["pong", success]
 
         # setup data
-        agent = baker.make_recipe("agents.overdue_agent", version=settings.LATEST_AGENT_VER)
+        agent = baker.make_recipe(
+            "agents.overdue_agent", version=settings.LATEST_AGENT_VER
+        )
         failure_action = baker.make_recipe("scripts.script")
         resolved_action = baker.make_recipe("scripts.script")
-        alert_template = baker.make("alerts.AlertTemplate", is_active=True, agent_always_alert=True, action=failure_action, action_timeout=30, resolved_action=resolved_action, resolved_action_timeout=35, resolved_action_args=["nice_arg"])
+        alert_template = baker.make(
+            "alerts.AlertTemplate",
+            is_active=True,
+            agent_always_alert=True,
+            action=failure_action,
+            action_timeout=30,
+            resolved_action=resolved_action,
+            resolved_action_timeout=35,
+            resolved_action_args=["nice_arg"],
+        )
         agent.client.alert_template = alert_template
         agent.client.save()
 
@@ -808,10 +843,7 @@ class TestAlertTasks(TacticalTestCase):
             "func": "runscriptfull",
             "timeout": 30,
             "script_args": [],
-            "payload": {
-                "code": failure_action.code,
-                "shell": failure_action.shell
-            }
+            "payload": {"code": failure_action.code, "shell": failure_action.shell},
         }
 
         nats_cmd.assert_called_with(data, timeout=30, wait=True)
@@ -823,7 +855,7 @@ class TestAlertTasks(TacticalTestCase):
             "retcode": 0,
             "stdout": "success!",
             "stderr": "",
-            "execution_time": 5.0000
+            "execution_time": 5.0000,
         }
 
         nats_cmd.side_effect = ["pong", success]
@@ -854,10 +886,7 @@ class TestAlertTasks(TacticalTestCase):
             "func": "runscriptfull",
             "timeout": 35,
             "script_args": ["nice_arg"],
-            "payload": {
-                "code": resolved_action.code,
-                "shell": resolved_action.shell
-            }
+            "payload": {"code": resolved_action.code, "shell": resolved_action.shell},
         }
 
         nats_cmd.assert_called_with(data, timeout=35, wait=True)

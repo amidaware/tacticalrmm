@@ -21,7 +21,7 @@ winsvc_check = check.extend(
     svc_name="ServiceName",
     svc_display_name="ServiceName",
     svc_policy_mode="manual",
-    pass_if_svc_not_exist=False
+    pass_if_svc_not_exist=False,
 )
 
 eventlog_check = check.extend(

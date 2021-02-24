@@ -775,7 +775,7 @@ class Agent(BaseAuditModel):
 
         # called when agent is offline
         else:
-            
+
             # check if alert hasn't been created yet so create it
             if not Alert.objects.filter(agent=self, resolved=False).exists():
 

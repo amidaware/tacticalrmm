@@ -96,6 +96,7 @@ class AutomatedTask(BaseAuditModel):
     )
     run_time_date = DateTimeField(null=True, blank=True)
     remove_if_not_scheduled = models.BooleanField(default=False)
+    run_asap_after_missed = models.BooleanField(default=False)  # added in agent v1.4.7
     managed_by_policy = models.BooleanField(default=False)
     parent_task = models.PositiveIntegerField(null=True, blank=True)
     win_task_name = models.CharField(max_length=255, null=True, blank=True)
@@ -218,6 +219,7 @@ class AutomatedTask(BaseAuditModel):
             timeout=self.timeout,
             enabled=self.enabled,
             remove_if_not_scheduled=self.remove_if_not_scheduled,
+            run_asap_after_missed=self.run_asap_after_missed,
         )
 
         create_win_task_schedule.delay(task.pk)

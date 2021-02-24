@@ -1,13 +1,6 @@
 #!/bin/bash
 
-#####################################################
-
-POSTGRES_USER="changeme"
-POSTGRES_PW="hunter2"
-
-#####################################################
-
-SCRIPT_VERSION="9"
+SCRIPT_VERSION="10"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/backup.sh'
 
 GREEN='\033[0;32m'
@@ -31,11 +24,9 @@ if [ $EUID -eq 0 ]; then
   exit 1
 fi
 
-if [[ "$POSTGRES_USER" == "changeme" || "$POSTGRES_PW" == "hunter2" ]]; then
-  printf >&2 "${RED}You must change the postgres username/password at the top of this file.${NC}\n"
-  printf >&2 "${RED}Check the github readme for where to find them.${NC}\n"
-  exit 1
-fi
+POSTGRES_USER=$(grep -w USER /rmm/api/tacticalrmm/tacticalrmm/local_settings.py | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
+POSTGRES_PW=$(grep -w PASSWORD /rmm/api/tacticalrmm/tacticalrmm/local_settings.py | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
+
 
 if [ ! -d /rmmbackups ]; then
     sudo mkdir /rmmbackups

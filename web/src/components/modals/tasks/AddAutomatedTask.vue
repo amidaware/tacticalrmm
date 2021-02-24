@@ -120,7 +120,13 @@
               </template>
             </q-input>
             <div class="q-gutter-sm">
-              <q-checkbox v-model="autotask.remove_if_not_scheduled" label="Delete task after schedule date" />
+              <q-checkbox v-model="autotask.remove_if_not_scheduled" label="Delete task after scheduled date" />
+            </div>
+            <div class="q-gutter-sm">
+              <q-checkbox
+                v-model="autotask.run_asap_after_missed"
+                label="Run task ASAP after a scheduled start is missed (requires agent v1.4.7)"
+              />
             </div>
           </div>
           <div class="col-1"></div>
@@ -150,7 +156,7 @@
             @click="addTask"
             label="Add Task"
           />
-          <q-btn v-else @click="$refs.stepper.next()" color="primary" label="Next" />
+          <q-btn v-else @click="step2" color="primary" label="Next" />
           <q-btn v-if="step > 1" flat color="primary" @click="$refs.stepper.previous()" label="Back" class="q-ml-sm" />
         </q-stepper-navigation>
       </template>
@@ -181,6 +187,7 @@ export default {
         run_time_minute: null,
         run_time_date: null,
         remove_if_not_scheduled: false,
+        run_asap_after_missed: true,
         task_type: "scheduled",
         timeout: 120,
         alert_severity: "info",
@@ -254,6 +261,15 @@ export default {
           this.notifyError("Unable to get policy checks");
         });
     },
+    step2() {
+      if (this.step1Done) {
+        this.$refs.stepper.next();
+      } else {
+        if (!this.autotask.script) this.notifyError("Script field is required");
+        else if (!this.autotask.name) this.notifyError("Name field is required");
+        else if (!this.autotask.timeout) this.notifyError("Timeout field is required");
+      }
+    },
   },
   computed: {
     ...mapGetters(["selectedAgentPk"]),
@@ -270,9 +286,7 @@ export default {
       return r.sort((a, b) => a.label.localeCompare(b.label));
     },
     step1Done() {
-      return this.step > 1 && this.autotask.script !== null && this.autotask.name && this.autotask.timeout
-        ? true
-        : false;
+      return !!this.autotask.script && !!this.autotask.name && !!this.autotask.timeout ? true : false;
     },
     step2Done() {
       if (this.autotask.task_type === "scheduled") {

@@ -50,7 +50,7 @@
       <q-card-section>
         <q-select
           dense
-          label="Informational return codes (press Enter after typing each argument)"
+          label="Informational return codes (press Enter after typing each code)"
           filled
           v-model="scriptcheck.info_return_codes"
           use-input
@@ -65,7 +65,7 @@
       <q-card-section>
         <q-select
           dense
-          label="Warning return codes (press Enter after typing each argument)"
+          label="Warning return codes (press Enter after typing each code)"
           filled
           v-model="scriptcheck.warning_return_codes"
           use-input

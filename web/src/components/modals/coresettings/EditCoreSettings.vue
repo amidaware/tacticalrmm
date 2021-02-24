@@ -114,7 +114,7 @@
                   <div class="col-3">Recipients</div>
                   <div class="col-4"></div>
                   <div class="col-5">
-                    <q-list bordered dense v-if="ready && settings.email_alert_recipients.length !== 0">
+                    <q-list dense v-if="ready && settings.email_alert_recipients.length !== 0">
                       <q-item
                         v-for="email in settings.email_alert_recipients"
                         :key="email"
@@ -221,7 +221,7 @@
                   <div class="col-3">Recipients</div>
                   <div class="col-4"></div>
                   <div class="col-5">
-                    <q-list bordered dense v-if="ready && settings.sms_alert_recipients.length !== 0">
+                    <q-list dense v-if="ready && settings.sms_alert_recipients.length !== 0">
                       <q-item
                         v-for="num in settings.sms_alert_recipients"
                         :key="num"

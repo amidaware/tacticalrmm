@@ -1,12 +1,25 @@
-site_name: "Tactical RMM"
+site_name: "Tactical RMM Documentation"
 nav:
   - Home: index.md
-  - Installation:
+  - RMM Installation:
       - "Traditional Install": install_server.md
       - "Docker Install": install_docker.md
+  - Agent Installation: install_agent.md
+  - Updating:
+      - "Updating the RMM": update_server.md
+      - "Updating Agents": update_agents.md
+  - Functionality:
+      - "Remote Background": functions/remote_bg.md
+      - "Maintenance Mode": functions/maintenance_mode.md
+      - "Alerting": alerting.md
+      - "User Interface Preferences": functions/user_ui.md
+  - Backup: backup.md
+  - Restore: restore.md
   - Troubleshooting: troubleshooting.md
   - FAQ: faq.md
-site_description: "A remote monitoring and management tool for Windows computers"
+  - MeshCentral Integration: mesh_integration.md
+  - License: license.md
+site_description: "A remote monitoring and management tool"
 site_author: "wh1te909"
 
 dev_addr: "0.0.0.0:8005"
@@ -18,7 +31,6 @@ edit_uri: ""
 
 theme:
   name: "material"
-  custom_dir: "theme"
   logo: "images/onit.ico"
   favicon: "images/favicon.ico"
   language: "en"

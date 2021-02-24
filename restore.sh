@@ -1,15 +1,9 @@
 #!/bin/bash
 
-#####################################################
-
-pgusername="changeme"
-pgpw="hunter2"
-
-#####################################################
-
-SCRIPT_VERSION="18"
+SCRIPT_VERSION="19"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
+sudo apt update
 sudo apt install -y curl wget dirmngr gnupg lsb-release
 
 GREEN='\033[0;32m'
@@ -30,12 +24,6 @@ if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
 fi
 
 rm -f $TMP_FILE
-
-if [[ "$pgusername" == "changeme" || "$pgpw" == "hunter2" ]]; then
-  printf >&2 "${RED}You must change the postgres username/password at the top of this file.${NC}\n"
-  printf >&2 "${RED}Check the github readme for where to find them.${NC}\n"
-  exit 1
-fi
 
 osname=$(lsb_release -si); osname=${osname^}
 osname=$(echo "$osname" | tr  '[A-Z]' '[a-z]')
@@ -218,18 +206,7 @@ sudo apt update
 sudo apt install -y postgresql-13
 sleep 2
 
-print_green 'Restoring the database'
 
-sudo -u postgres psql -c "DROP DATABASE IF EXISTS tacticalrmm"
-sudo -u postgres psql -c "CREATE DATABASE tacticalrmm"
-sudo -u postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
-sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
-
-gzip -d $tmp_dir/postgres/*.psql.gz
-PGPASSWORD=${pgpw} psql -h localhost -U ${pgusername} -d tacticalrmm -f $tmp_dir/postgres/db*.psql
 
 
 print_green 'Restoring MongoDB'
@@ -280,6 +257,22 @@ sudo chmod +x /usr/local/bin/goversioninfo
 sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
 sudo chown ${USER}:${USER} /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
+
+print_green 'Restoring the database'
+
+pgusername=$(grep -w USER /rmm/api/tacticalrmm/tacticalrmm/local_settings.py | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
+pgpw=$(grep -w PASSWORD /rmm/api/tacticalrmm/tacticalrmm/local_settings.py | sed 's/^.*: //' | sed 's/.//' | sed -r 's/.{2}$//')
+
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS tacticalrmm"
+sudo -u postgres psql -c "CREATE DATABASE tacticalrmm"
+sudo -u postgres psql -c "CREATE USER ${pgusername} WITH PASSWORD '${pgpw}'"
+sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET client_encoding TO 'utf8'"
+sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET default_transaction_isolation TO 'read committed'"
+sudo -u postgres psql -c "ALTER ROLE ${pgusername} SET timezone TO 'UTC'"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tacticalrmm TO ${pgusername}"
+
+gzip -d $tmp_dir/postgres/*.psql.gz
+PGPASSWORD=${pgpw} psql -h localhost -U ${pgusername} -d tacticalrmm -f $tmp_dir/postgres/db*.psql
 
 cd /rmm/api
 python3.9 -m venv env

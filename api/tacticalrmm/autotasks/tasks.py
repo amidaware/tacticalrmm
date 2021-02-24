@@ -45,7 +45,7 @@ def create_win_task_schedule(pk, pending_action=False):
             task.run_time_date = now.astimezone(agent_tz).replace(
                 tzinfo=pytz.utc
             ) + djangotime.timedelta(minutes=5)
-            task.save()
+            task.save(update_fields=["run_time_date"])
 
         nats_data = {
             "func": "schedtask",
@@ -62,9 +62,12 @@ def create_win_task_schedule(pk, pending_action=False):
             },
         }
 
-        if task.remove_if_not_scheduled and pyver.parse(
+        if task.run_asap_after_missed and pyver.parse(
             task.agent.version
-        ) >= pyver.parse("1.1.2"):
+        ) >= pyver.parse("1.4.7"):
+            nats_data["schedtaskpayload"]["run_asap_after_missed"] = True
+
+        if task.remove_if_not_scheduled:
             nats_data["schedtaskpayload"]["deleteafter"] = True
 
     elif task.task_type == "checkfailure" or task.task_type == "manual":

@@ -19,7 +19,7 @@
               <div class="text-subtitle2">User Interface</div>
               <hr />
               <q-card-section class="row">
-                <div class="col-6">Agent table double-click action:</div>
+                <div class="col-6">Agent double-click action:</div>
                 <div class="col-2"></div>
                 <q-select
                   map-options

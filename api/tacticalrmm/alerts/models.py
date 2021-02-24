@@ -112,10 +112,6 @@ class Alert(models.Model):
                 hidden=True,
             )
 
-    @classmethod
-    def create_custom_alert(cls, custom):
-        pass
-
 
 class AlertTemplate(models.Model):
     name = models.CharField(max_length=100)

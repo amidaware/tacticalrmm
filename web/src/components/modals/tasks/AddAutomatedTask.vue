@@ -120,7 +120,13 @@
               </template>
             </q-input>
             <div class="q-gutter-sm">
-              <q-checkbox v-model="autotask.remove_if_not_scheduled" label="Delete task after schedule date" />
+              <q-checkbox v-model="autotask.remove_if_not_scheduled" label="Delete task after scheduled date" />
+            </div>
+            <div class="q-gutter-sm">
+              <q-checkbox
+                v-model="autotask.run_asap_after_missed"
+                label="Run task ASAP after a scheduled start is missed (requires agent v1.4.7)"
+              />
             </div>
           </div>
           <div class="col-1"></div>
@@ -181,6 +187,7 @@ export default {
         run_time_minute: null,
         run_time_date: null,
         remove_if_not_scheduled: false,
+        run_asap_after_missed: true,
         task_type: "scheduled",
         timeout: 120,
         alert_severity: "info",

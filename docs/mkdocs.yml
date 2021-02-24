@@ -8,12 +8,15 @@ nav:
   - Updating:
       - "Updating the RMM": update_server.md
       - "Updating Agents": update_agents.md
+  - Functionality:
+      - "Remote Background": functions/remote_bg.md
+      - "Maintenance Mode": functions/maintenance_mode.md
+      - "Alerting": alerting.md
+      - "User Interface Preferences": functions/user_ui.md
   - Backup: backup.md
   - Restore: restore.md
   - Troubleshooting: troubleshooting.md
   - FAQ: faq.md
-  - Functionality:
-      - "Alerting": alerting.md
   - MeshCentral Integration: mesh_integration.md
   - License: license.md
 site_description: "A remote monitoring and management tool"

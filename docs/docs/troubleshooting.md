@@ -18,7 +18,7 @@ The most common problem we've seen of agents not updating is due to Antivirus bl
 
 Windows Defender will 100% of the time block the updater from running unless an exclusion is set.
 
-Refer to the [Agent Installation](install_agent.md) instructions for AV exceptions to set and manually doing an agent update with logging to trouleshoot further.
+Refer to the [Agent Installation](install_agent.md) instructions for AV exceptions to set and manually doing an agent update with logging to troubleshoot further.
 
 Agents will also not automatically update if they are too old.
 

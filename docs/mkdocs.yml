@@ -31,7 +31,6 @@ edit_uri: ""
 
 theme:
   name: "material"
-  custom_dir: "theme"
   logo: "images/onit.ico"
   favicon: "images/favicon.ico"
   language: "en"

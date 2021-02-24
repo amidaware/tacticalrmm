@@ -1,5 +1,12 @@
 # Updating the RMM
 
+#### Keeping your linux server up to date
+
+You should periodically run `sudo apt update` and `sudo apt -y upgrade` to keep your server up to date.
+
+You can also update `npm` if prompted to by a message that might appear when running the `update.sh` script.
+
+Other than this, you should avoid making any changes to your server and let the `update.sh` script handle everything else for you.
 #### Updating to the latest RMM version
 
 !!!danger
@@ -29,6 +36,14 @@ This is usefull for a botched update that might have not completed fully.<br/><b
 The update script will also fix any permissions that might have gotten messed up during a botched update, or if you accidentally ran the update script as the `root` user.
 
 <br/>
+
+
+!!!warning
+    Do __not__ attempt to manually update MeshCentral to a newer version.
+    
+    You should let the `update.sh` script handle this for you. 
+    
+    The developers will test MeshCentral and make sure integration does not break before bumping the mesh version.
 
 #### Keeping your Let's Encrypt certificate up to date
 

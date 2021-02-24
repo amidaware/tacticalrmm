@@ -50,3 +50,31 @@ Run the tacticalrpc service manually with debug logging:
 This will print out a ton of info. You should be able to see the error from the debug log output.
 
 Please then copy/paste the logs and post them either in our [Discord support chat](https://discord.gg/upGTkWp), or create a [github issue](https://github.com/wh1te909/tacticalrmm/issues).
+
+
+#### Web UI frozen or not loading / website errors / general errors
+
+Check all the systemd services that the rmm uses to function and check to make sure they're all active/running and enabled:
+
+```bash
+sudo systemctl status rmm
+sudo systemctl status celery
+sudo systemctl status celerybeat
+sudo systemctl status nginx
+sudo systemctl status nats
+sudo systemctl status natsapi
+sudo systemctl status meshcentral
+sudo systemctl status mongod
+sudo systemctl status postgresql
+sudo systemctl status redis
+```
+
+Read through the log files in the following folders and check for errors:
+```bash
+/rmm/api/tacticalrmm/tacticalrmm/private/log
+/var/log/celery
+```
+
+
+
+

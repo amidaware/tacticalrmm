@@ -2,7 +2,7 @@
 
 !!!warning
     You must add antivirus exlusions for the tactical agent.<br/>
-    Any decent AV will flag the agent as a virus, since it technically is one due to the nature of this app.<br/>
+    Any decent AV will flag the agent as a virus, since it technically is one due to the nature of this software.<br/>
     Adding the following exlucions will make sure everything works, including agent update:<br/>
     `C:\Program Files\TacticalAgent\*`<br/>
     `C:\Program Files\Mesh Agent\*`<br/>

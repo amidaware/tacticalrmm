@@ -29,7 +29,7 @@ Edit the restore script with your editor of choice and change the postgres usern
 
 Refer to the [backup](backup.md) instructions on where to find this info.
 
-Copy the backup tar file to the new server and then call the update script, passing it the backup file as the first argument:
+Copy the backup tar file to the new server and then call the restore script, passing it the backup file as the first argument:
 
 ```bash
 chmod +x restore.sh

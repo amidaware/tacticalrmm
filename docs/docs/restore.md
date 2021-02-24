@@ -25,29 +25,7 @@ Download the restore script.
 wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh
 ```
 
-Edit `restore.sh` with your text editor of choice.
-
-Change the postgres username/password at the top of the file.
-You can find this info in the following file:
-```
-/rmm/api/tacticalrmm/tacticalrmm/local_settings.py
-```
-
-Look for this section and grab the USER / PASSWORD:
-```python
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'tacticalrmm',
-        'USER': 'someusername',
-        'PASSWORD': 'somepassword',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
-```
-
-Copy the [backup](backup.md) tar file to the new server and then call the restore script, passing it the backup file as the first argument:
+Call the restore script, passing it the backup file as the first argument:
 
 ```bash
 chmod +x restore.sh

@@ -17,6 +17,7 @@ nav:
   - Restore: restore.md
   - Troubleshooting: troubleshooting.md
   - FAQ: faq.md
+  - Management Commands: management_cmds.md
   - MeshCentral Integration: mesh_integration.md
   - License: license.md
 site_description: "A remote monitoring and management tool"

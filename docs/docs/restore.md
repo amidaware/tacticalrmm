@@ -11,7 +11,7 @@ Add it to the sudoers group and setup the firewall.
 Refer to the [installation instructions](install_server.md) for steps on how to do all of the above.
 
 #### Change DNS A records
-Open the DNS manager of whever your domain is hosted.
+Open the DNS manager of wherever your domain is hosted.
 
 Change the 3 A records `rmm`, `api` and `mesh` and point them to the public IP of your new server.
 

@@ -10,29 +10,9 @@ Linux / Mac agents are currently under development.
 Yes, you will just need to setup local DNS for the 3 subdomains, either by editing host files on all your agents or through a local DNS server.
 #### I am locked out of the web UI. How do I reset my password?
 
-SSH into your server and run these commands:
-
-!!!note
-    The code below will reset the password for the account that was created during install.
-    To reset a password for a different user, you should use the web UI (see the next question below), but can also do so through the command line by replacing<br/>
-    `#!python user = User.objects.first()`<br/>
-    with<br/>
-    `#!python user = User.objects.get(username='someuser')`
-    <br/>
-    in the code snippet below.
-
-
-```python
-tactical@tacrmm:~$ /rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py shell
-Python 3.9.2 (default, Feb 21 2021, 00:50:28)
-[GCC 9.3.0] on linux
-Type "help", "copyright", "credits" or "license" for more information.
-(InteractiveConsole)
->>> from accounts.models import User
->>> user = User.objects.first()
->>> user.set_password("superSekret123")
->>> user.save()
->>> exit()
+SSH into your server and run:
+```bash
+/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py reset_password <username>
 ```
 
 <br/>
@@ -42,17 +22,7 @@ From the web UI, click **Settings > User Administration** and then right-click o
 ![reset2fa](images/reset2fa.png)
 <br/><br/>
 Or from the command line:<br/>
-```python
-tactical@tacrmm:~$ /rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py shell
-Python 3.9.2 (default, Feb 21 2021, 00:50:28)
-[GCC 9.3.0] on linux
-Type "help", "copyright", "credits" or "license" for more information.
-(InteractiveConsole)
->>> from accounts.models import User
->>> user = User.objects.get(username='someuser')
->>> user.totp_key = None
->>> user.save(update_fields=['totp_key'])
->>> exit()
+```bash
+/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py reset_2fa <username>
 ```
-<br/>
 Then simply log out of the web UI and next time the user logs in they will be redirected to the 2FA setup page which will present a barcode to be scanned with the Authenticator app.

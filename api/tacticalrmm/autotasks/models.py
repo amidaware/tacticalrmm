@@ -224,159 +224,20 @@ class AutomatedTask(BaseAuditModel):
 
         create_win_task_schedule.delay(task.pk)
 
-    def handle_alert(self) -> None:
-        from alerts.models import Alert
-        from autotasks.tasks import (
-            handle_resolved_task_email_alert,
-            handle_resolved_task_sms_alert,
-            handle_task_email_alert,
-            handle_task_sms_alert,
+    def should_create_alert(self, alert_template):
+        return (
+            self.dashboard_alert
+            or self.email_alert
+            or self.text_alert
+            or (
+                alert_template
+                and (
+                    alert_template.task_always_alert
+                    or alert_template.task_always_email
+                    or alert_template.task_always_text
+                )
+            )
         )
-
-        self.status = "failing" if self.retcode != 0 else "passing"
-        self.save()
-
-        # return if agent is in maintenance mode
-        if self.agent.maintenance_mode:
-            return
-
-        # see if agent has an alert template and use that
-        alert_template = self.agent.get_alert_template()
-
-        # resolve alert if it exists
-        if self.status == "passing":
-            if Alert.objects.filter(assigned_task=self, resolved=False).exists():
-                alert = Alert.objects.get(assigned_task=self, resolved=False)
-                alert.resolve()
-
-                # check if resolved email should be send
-                if (
-                    alert_template and alert_template.task_email_on_resolved
-                ) and not alert.resolved_email_sent:
-                    handle_resolved_task_email_alert.delay(pk=alert.pk)
-
-                # check if resolved text should be sent
-                if (
-                    alert_template and alert_template.task_text_on_resolved
-                ) and not alert.resolved_sms_sent:
-                    handle_resolved_task_sms_alert.delay(pk=alert.pk)
-
-                # check if resolved script should be run
-                if not alert.resolved_action_run and (
-                    alert_template and alert_template.resolved_action
-                ):
-
-                    r = self.agent.run_script(
-                        scriptpk=alert_template.resolved_action.pk,
-                        args=alert_template.resolved_action_args,
-                        timeout=alert_template.resolved_action_timeout,
-                        wait=True,
-                        full=True,
-                        run_on_any=True,
-                    )
-
-                    # command was successful
-                    if type(r) == dict:
-                        alert.resolved_action_retcode = r["retcode"]
-                        alert.resolved_action_stdout = r["stdout"]
-                        alert.resolved_action_stderr = r["stderr"]
-                        alert.resolved_action_execution_time = "{:.4f}".format(
-                            r["execution_time"]
-                        )
-                        alert.resolved_action_run = djangotime.now()
-                        alert.save()
-                    else:
-                        logger.error(
-                            f"Resolved action: {alert_template.action.name} failed to run on any agent for {self.agent.hostname} resolved alert for task: {self.name}"
-                        )
-
-        # create alert if task is failing
-        else:
-            if not Alert.objects.filter(assigned_task=self, resolved=False).exists():
-
-                # check if alert should be created and if not return
-                if (
-                    self.dashboard_alert
-                    or self.email_alert
-                    or self.text_alert
-                    or (
-                        alert_template
-                        and (
-                            alert_template.task_always_alert
-                            or alert_template.task_always_email
-                            or alert_template.task_always_text
-                        )
-                    )
-                ):
-                    alert = Alert.create_task_alert(self)
-                else:
-                    return
-            else:
-                alert = Alert.objects.get(assigned_task=self, resolved=False)
-
-                # check if alert severity changed on task and update the alert
-                if self.alert_severity != alert.severity:
-                    alert.severity = self.alert_severity
-                    alert.save(update_fields=["severity"])
-
-            # create alert in dashboard if enabled
-            if self.dashboard_alert or (
-                alert_template
-                and self.alert_severity in alert_template.task_dashboard_alert_severity
-                and alert_template.task_always_alert
-            ):
-                alert.hidden = False
-                alert.save()
-
-            # send email if enabled
-            if self.email_alert or (
-                alert_template
-                and self.alert_severity in alert_template.task_email_alert_severity
-                and alert_template.task_always_email
-            ):
-                handle_task_email_alert.delay(
-                    pk=alert.pk,
-                    alert_template=alert_template.task_periodic_alert_days
-                    if alert_template
-                    else None,
-                )
-
-            # send text if enabled
-            if self.text_alert or (
-                alert_template
-                and self.alert_severity in alert_template.task_text_alert_severity
-                and alert_template.task_always_text
-            ):
-                handle_task_sms_alert.delay(
-                    pk=alert.pk,
-                    alert_template=alert_template.task_periodic_alert_days
-                    if alert_template
-                    else None,
-                )
-
-            # check if any scripts should be run
-            if alert_template and alert_template.action and not alert.action_run:
-                r = self.agent.run_script(
-                    scriptpk=alert_template.action.pk,
-                    args=alert_template.action_args,
-                    timeout=alert_template.action_timeout,
-                    wait=True,
-                    full=True,
-                    run_on_any=True,
-                )
-
-                # command was successful
-                if type(r) == dict:
-                    alert.action_retcode = r["retcode"]
-                    alert.action_stdout = r["stdout"]
-                    alert.action_stderr = r["stderr"]
-                    alert.action_execution_time = "{:.4f}".format(r["execution_time"])
-                    alert.action_run = djangotime.now()
-                    alert.save()
-                else:
-                    logger.error(
-                        f"Failure action: {alert_template.action.name} failed to run on any agent for {self.agent.hostname} failure alert for task: {self.name}"
-                    )
 
     def send_email(self):
         from core.models import CoreSettings

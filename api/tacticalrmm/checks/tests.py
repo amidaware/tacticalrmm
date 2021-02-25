@@ -1,4 +1,3 @@
-from logging import warning
 from unittest.mock import patch
 
 from django.utils import timezone as djangotime
@@ -970,24 +969,141 @@ class TestCheckTasks(TacticalTestCase):
         self.assertEqual(new_check.status, "passing")
 
     def test_handle_eventlog_check(self):
+        from checks.models import Check
+
         url = "/api/v3/checkrunner/"
 
-        eventlog = baker.make_recipe("checks.eventlog_check", agent=self.agent)
+        eventlog = baker.make_recipe(
+            "checks.eventlog_check",
+            event_type="warning",
+            fail_when="contains",
+            event_id=123,
+            alert_severity="warning",
+            agent=self.agent,
+        )
 
-        # test failing warning
-        data = {}
+        data = {
+            "id": eventlog.id,
+            "log": [
+                {
+                    "eventType": "warning",
+                    "eventID": 150,
+                    "source": "source",
+                    "message": "a test message",
+                },
+                {
+                    "eventType": "warning",
+                    "eventID": 123,
+                    "source": "source",
+                    "message": "a test message",
+                },
+                {
+                    "eventType": "error",
+                    "eventID": 123,
+                    "source": "source",
+                    "message": "a test message",
+                },
+            ],
+        }
 
-        # resp = self.client.patch(url, data, format="json")
-        # self.assertEqual(resp.status_code, 200)
+        # test failing when contains
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
 
-        # test failing error
-        data = {}
+        new_check = Check.objects.get(pk=eventlog.id)
 
-        # resp = self.client.patch(url, data, format="json")
-        # self.assertEqual(resp.status_code, 200)
+        self.assertEquals(new_check.alert_severity, "warning")
+        self.assertEquals(new_check.status, "failing")
 
-        # test passing
-        data = {}
+        # test passing when not contains and message
+        eventlog.event_message = "doesnt exist"
+        eventlog.save()
 
-        # resp = self.client.patch(url, data, format="json")
-        # self.assertEqual(resp.status_code, 200)
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=eventlog.id)
+
+        self.assertEquals(new_check.status, "passing")
+
+        # test failing when not contains and message and source
+        eventlog.fail_when = "not_contains"
+        eventlog.alert_severity = "error"
+        eventlog.event_message = "doesnt exist"
+        eventlog.event_source = "doesnt exist"
+        eventlog.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=eventlog.id)
+
+        self.assertEquals(new_check.status, "failing")
+        self.assertEquals(new_check.alert_severity, "error")
+
+        # test passing when contains with source and message
+        eventlog.event_message = "test"
+        eventlog.event_source = "source"
+        eventlog.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=eventlog.id)
+
+        self.assertEquals(new_check.status, "passing")
+
+        # test failing with wildcard not contains and source
+        eventlog.event_id_is_wildcard = True
+        eventlog.event_source = "doesn't exist"
+        eventlog.event_message = ""
+        eventlog.event_id = 0
+        eventlog.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=eventlog.id)
+
+        self.assertEquals(new_check.status, "failing")
+        self.assertEquals(new_check.alert_severity, "error")
+
+        # test passing with wildcard contains
+        eventlog.event_source = ""
+        eventlog.event_message = ""
+        eventlog.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=eventlog.id)
+
+        self.assertEquals(new_check.status, "passing")
+
+        # test failing with wildcard contains and message
+        eventlog.fail_when = "contains"
+        eventlog.event_type = "error"
+        eventlog.alert_severity = "info"
+        eventlog.event_message = "test"
+        eventlog.event_source = ""
+        eventlog.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=eventlog.id)
+
+        self.assertEquals(new_check.status, "failing")
+        self.assertEquals(new_check.alert_severity, "info")
+
+        # test passing with wildcard not contains message and source
+        eventlog.event_message = "doesnt exist"
+        eventlog.event_source = "doesnt exist"
+        eventlog.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=eventlog.id)
+
+        self.assertEquals(new_check.status, "passing")

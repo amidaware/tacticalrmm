@@ -2,6 +2,11 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
+from django.conf import settings
+
+from loguru import logger
+
+logger.configure(**settings.LOG_CONFIG)
 
 SEVERITY_CHOICES = [
     ("info", "Informational"),
@@ -78,7 +83,7 @@ class Alert(models.Model):
         self.save()
 
     @classmethod
-    def create_availability_alert(cls, agent):
+    def create_or_return_availability_alert(cls, agent):
         if not cls.objects.filter(agent=agent, resolved=False).exists():
             return cls.objects.create(
                 agent=agent,
@@ -87,9 +92,11 @@ class Alert(models.Model):
                 message=f"{agent.hostname} in {agent.client.name}\\{agent.site.name} is overdue.",
                 hidden=True,
             )
+        else:
+            return cls.objects.get(agent=agent, resolved=False)
 
     @classmethod
-    def create_check_alert(cls, check):
+    def create_or_return_check_alert(cls, check):
 
         if not cls.objects.filter(assigned_check=check, resolved=False).exists():
             return cls.objects.create(
@@ -99,9 +106,11 @@ class Alert(models.Model):
                 message=f"{check.agent.hostname} has a {check.check_type} check: {check.readable_desc} that failed.",
                 hidden=True,
             )
+        else:
+            return cls.objects.get(assigned_check=check, resolved=False)
 
     @classmethod
-    def create_task_alert(cls, task):
+    def create_or_return_task_alert(cls, task):
 
         if not cls.objects.filter(assigned_task=task, resolved=False).exists():
             return cls.objects.create(
@@ -111,6 +120,302 @@ class Alert(models.Model):
                 message=f"{task.agent.hostname} has task: {task.name} that failed.",
                 hidden=True,
             )
+        else:
+            return cls.objects.get(assigned_task=task, resolved=False)
+
+    @classmethod
+    def handle_alert_failure(cls, instance) -> None:
+        from agents.models import Agent
+        from autotasks.models import AutomatedTask
+        from checks.models import Check
+
+        # set variables
+        dashboard_severities = None
+        email_severities = None
+        text_severities = None
+        always_dashboard = None
+        always_email = None
+        always_text = None
+        alert_interval = None
+        email_task = None
+        text_task = None
+
+        # check what the instance passed is
+        if isinstance(instance, Agent):
+            from agents.tasks import agent_outage_email_task
+            from agents.tasks import agent_outage_sms_task
+
+            email_task = agent_outage_email_task
+            text_task = agent_outage_sms_task
+
+            email_alert = instance.overdue_email_alert
+            text_alert = instance.overdue_text_alert
+            dashboard_alert = instance.overdue_dashboard_alert
+            alert_template = instance.get_alert_template()
+            maintenance_mode = instance.maintenance_mode
+            alert_severity = "error"
+            agent = instance
+
+            # set alert_template settings
+            if alert_template:
+                dashboard_severities = ["error"]
+                email_severities = ["error"]
+                text_severities = ["error"]
+                always_dashboard = alert_template.agent_always_alert
+                always_email = alert_template.agent_always_email
+                always_text = alert_template.agent_always_text
+                alert_interval = alert_template.agent_periodic_alert_days
+
+            if instance.should_create_alert(alert_template):
+                alert = cls.create_or_return_availability_alert(instance)
+            else:
+                # check if there is an alert that exists
+                if cls.objects.filter(agent=instance, resolved=False).exists():
+                    alert = cls.objects.get(agent=instance, resolved=False)
+                else:
+                    alert = None
+
+        elif isinstance(instance, Check):
+            from checks.tasks import handle_check_email_alert_task
+            from checks.tasks import handle_check_sms_alert_task
+
+            email_task = handle_check_email_alert_task
+            text_task = handle_check_sms_alert_task
+
+            email_alert = instance.email_alert
+            text_alert = instance.text_alert
+            dashboard_alert = instance.dashboard_alert
+            alert_template = instance.agent.get_alert_template()
+            maintenance_mode = instance.agent.maintenance_mode
+            alert_severity = instance.alert_severity
+            agent = instance.agent
+
+            # set alert_template settings
+            if alert_template:
+                dashboard_severities = alert_template.check_dashboard_alert_severity
+                email_severities = alert_template.check_email_alert_severity
+                text_severities = alert_template.check_text_alert_severity
+                always_dashboard = alert_template.check_always_alert
+                always_email = alert_template.check_always_email
+                always_text = alert_template.check_always_text
+                alert_interval = alert_template.check_periodic_alert_days
+
+            if instance.should_create_alert(alert_template):
+                alert = cls.create_or_return_check_alert(instance)
+            else:
+                # check if there is an alert that exists
+                if cls.objects.filter(assigned_check=instance, resolved=False).exists():
+                    alert = cls.objects.get(assigned_check=instance, resolved=False)
+                else:
+                    alert = None
+
+        elif isinstance(instance, AutomatedTask):
+            from autotasks.tasks import handle_task_email_alert
+            from autotasks.tasks import handle_task_sms_alert
+
+            email_task = handle_task_email_alert
+            text_task = handle_task_sms_alert
+
+            email_alert = instance.email_alert
+            text_alert = instance.text_alert
+            dashboard_alert = instance.dashboard_alert
+            alert_template = instance.agent.get_alert_template()
+            maintenance_mode = instance.agent.maintenance_mode
+            alert_severity = instance.alert_severity
+            agent = instance.agent
+
+            # set alert_template settings
+            if alert_template:
+                dashboard_severities = alert_template.task_dashboard_alert_severity
+                email_severities = alert_template.task_email_alert_severity
+                text_severities = alert_template.task_text_alert_severity
+                always_dashboard = alert_template.task_always_alert
+                always_email = alert_template.task_always_email
+                always_text = alert_template.task_always_text
+                alert_interval = alert_template.task_periodic_alert_days
+
+            if instance.should_create_alert(alert_template):
+                alert = cls.create_or_return_task_alert(instance)
+            else:
+                # check if there is an alert that exists
+                if cls.objects.filter(assigned_task=instance, resolved=False).exists():
+                    alert = cls.objects.get(assigned_task=instance, resolved=False)
+                else:
+                    alert = None
+        else:
+            return
+
+        # return if agent is in maintenance mode
+        if maintenance_mode or not alert:
+            return
+
+        # check if alert severity changed on check and update the alert
+        if alert_severity != alert.severity:
+            alert.severity = alert_severity
+            alert.save(update_fields=["severity"])
+
+        # create alert in dashboard if enabled
+        if dashboard_alert or always_dashboard:
+
+            # check if alert template is set and specific severities are configured
+            if alert_template and alert.severity not in dashboard_severities:  # type: ignore
+                pass
+            else:
+                alert.hidden = False
+                alert.save()
+
+        # send email if enabled
+        if email_alert or always_email:
+
+            # check if alert template is set and specific severities are configured
+            if alert_template and alert.severity not in email_severities:  # type: ignore
+                pass
+            else:
+                email_task.delay(
+                    pk=alert.pk,
+                    alert_interval=alert_interval,
+                )
+
+        # send text if enabled
+        if text_alert or always_text:
+
+            # check if alert template is set and specific severities are configured
+            if alert_template and alert.severity not in text_severities:  # type: ignore
+                pass
+            else:
+                text_task.delay(pk=alert.pk, alert_interval=alert_interval)
+
+        # check if any scripts should be run
+        if alert_template and alert_template.action and not alert.action_run:
+            r = agent.run_script(
+                scriptpk=alert_template.action.pk,
+                args=alert_template.action_args,
+                timeout=alert_template.action_timeout,
+                wait=True,
+                full=True,
+                run_on_any=True,
+            )
+
+            # command was successful
+            if type(r) == dict:
+                alert.action_retcode = r["retcode"]
+                alert.action_stdout = r["stdout"]
+                alert.action_stderr = r["stderr"]
+                alert.action_execution_time = "{:.4f}".format(r["execution_time"])
+                alert.action_run = djangotime.now()
+                alert.save()
+            else:
+                logger.error(
+                    f"Failure action: {alert_template.action.name} failed to run on any agent for {agent.hostname} failure alert"
+                )
+
+    @classmethod
+    def handle_alert_resolve(cls, instance) -> None:
+        from agents.models import Agent
+        from autotasks.models import AutomatedTask
+        from checks.models import Check
+
+        # set variables
+        email_on_resolved = False
+        text_on_resolved = False
+        resolved_email_task = None
+        resolved_text_task = None
+
+        # check what the instance passed is
+        if isinstance(instance, Agent):
+            from agents.tasks import agent_recovery_email_task
+            from agents.tasks import agent_recovery_sms_task
+
+            resolved_email_task = agent_recovery_email_task
+            resolved_text_task = agent_recovery_sms_task
+
+            alert_template = instance.get_alert_template()
+            alert = cls.objects.get(agent=instance, resolved=False)
+            maintenance_mode = instance.maintenance_mode
+            agent = instance
+
+            if alert_template:
+                email_on_resolved = alert_template.agent_email_on_resolved
+                text_on_resolved = alert_template.agent_text_on_resolved
+
+        elif isinstance(instance, Check):
+            from checks.tasks import handle_resolved_check_email_alert_task
+            from checks.tasks import handle_resolved_check_sms_alert_task
+
+            resolved_email_task = handle_resolved_check_email_alert_task
+            resolved_text_task = handle_resolved_check_sms_alert_task
+
+            alert_template = instance.agent.get_alert_template()
+            alert = cls.objects.get(assigned_check=instance, resolved=False)
+            maintenance_mode = instance.agent.maintenance_mode
+            agent = instance.agent
+
+            if alert_template:
+                email_on_resolved = alert_template.check_email_on_resolved
+                text_on_resolved = alert_template.check_text_on_resolved
+
+        elif isinstance(instance, AutomatedTask):
+            from autotasks.tasks import handle_resolved_task_email_alert
+            from autotasks.tasks import handle_resolved_task_sms_alert
+
+            resolved_email_task = handle_resolved_task_email_alert
+            resolved_text_task = handle_resolved_task_sms_alert
+
+            alert_template = instance.agent.get_alert_template()
+            alert = cls.objects.get(assigned_task=instance, resolved=False)
+            maintenance_mode = instance.agent.maintenance_mode
+            agent = instance.agent
+
+            if alert_template:
+                email_on_resolved = alert_template.task_email_on_resolved
+                text_on_resolved = alert_template.task_text_on_resolved
+
+        else:
+            return
+
+        # return if agent is in maintenance mode
+        if maintenance_mode:
+            return
+
+        alert.resolve()
+
+        # check if a resolved email notification should be send
+        if email_on_resolved and not alert.resolved_email_sent:
+            resolved_email_task.delay(pk=alert.pk)
+
+        # check if resolved text should be sent
+        if text_on_resolved and not alert.resolved_sms_sent:
+            resolved_text_task.delay(pk=alert.pk)
+
+        # check if resolved script should be run
+        if (
+            alert_template
+            and alert_template.resolved_action
+            and not alert.resolved_action_run
+        ):
+            r = agent.run_script(
+                scriptpk=alert_template.resolved_action.pk,
+                args=alert_template.resolved_action_args,
+                timeout=alert_template.resolved_action_timeout,
+                wait=True,
+                full=True,
+                run_on_any=True,
+            )
+
+            # command was successful
+            if type(r) == dict:
+                alert.resolved_action_retcode = r["retcode"]
+                alert.resolved_action_stdout = r["stdout"]
+                alert.resolved_action_stderr = r["stderr"]
+                alert.resolved_action_execution_time = "{:.4f}".format(
+                    r["execution_time"]
+                )
+                alert.resolved_action_run = djangotime.now()
+                alert.save()
+            else:
+                logger.error(
+                    f"Resolved action: {alert_template.action.name} failed to run on any agent for {agent.hostname} resolved alert"
+                )
 
 
 class AlertTemplate(models.Model):

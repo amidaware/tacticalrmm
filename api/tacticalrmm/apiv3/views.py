@@ -36,6 +36,8 @@ class CheckIn(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request):
+        from alerts.models import Alert
+
         updated = False
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
         if pyver.parse(request.data["version"]) > pyver.parse(
@@ -60,7 +62,8 @@ class CheckIn(APIView):
             ).update(status="completed")
 
         # handles any alerting actions
-        agent.handle_alert(checkin=True)
+        if Alert.objects.filter(agent=agent, resolved=False).exists():
+            Alert.handle_alert_resolve(agent)
 
         recovery = agent.recoveryactions.filter(last_run=None).last()  # type: ignore
         if recovery is not None:
@@ -308,6 +311,7 @@ class TaskRunner(APIView):
 
     def patch(self, request, pk, agentid):
         from logs.models import AuditLog
+        from alerts.models import Alert
 
         agent = get_object_or_404(Agent, agent_id=agentid)
         task = get_object_or_404(AutomatedTask, pk=pk)
@@ -318,8 +322,17 @@ class TaskRunner(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save(last_run=djangotime.now())
 
+        status = "failing" if task.retcode != 0 else "passing"
+
         new_task = AutomatedTask.objects.get(pk=task.pk)
-        new_task.handle_alert()
+        new_task.status = status
+        new_task.save()
+
+        if status == "passing":
+            if Alert.objects.filter(assigned_task=self, resolved=False).exists():
+                Alert.handle_alert_resolve(new_task)
+        else:
+            Alert.handle_alert_failure(new_task)
 
         AuditLog.objects.create(
             username=agent.hostname,

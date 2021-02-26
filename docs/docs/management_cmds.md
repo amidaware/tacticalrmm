@@ -40,3 +40,31 @@ python manage.py remove_orphaned_tasks
 ```bash
 python manage.py get_mesh_exe_url
 ```
+
+#### Bulk update agent offline/overdue time
+
+```bash
+wget -q https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/api/tacticalrmm/agents/management/commands/bulk_change_checkin.py -O /rmm/api/tacticalrmm/agents/management/commands/bulk_change_checkin.py
+```
+Examples:
+
+Change offline time on all agents to 5 minutes
+```bash
+python manage.py bulk_change_checkin --offline --all 5
+```
+
+Change overdue time on all agents to 10 minutes
+```bash
+python manage.py bulk_change_checkin --overdue --all 10
+```
+
+Change overdue time on all agents in client named *Example Client* to 12 minutes
+```bash
+python manage.py bulk_change_checkin --overdue --client "Example Client" 12
+```
+
+Change offline time on all agents in site named *Example Site* to 2 minutes
+```bash
+python manage.py bulk_change_checkin --offline --site "Example Site" 2
+```
+

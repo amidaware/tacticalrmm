@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta
+from itertools import cycle
 from unittest.mock import patch
 
 from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker, seq
-from itertools import cycle
 
 from core.models import CoreSettings
 from tacticalrmm.test import TacticalTestCase

@@ -58,7 +58,7 @@ The following optional arguments can be passed to any of the installation method
 ```
 -log debug
 ```
-Will print very verbose logging during agent install. Usefull for troubleshooting agent install.
+Will print very verbose logging during agent install. Useful for troubleshooting agent install.
 
 ```
 -silent

@@ -261,6 +261,15 @@ sudo chown -R $USER:$GROUP /home/${USER}/.cache
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
 sudo chmod 775 -R /etc/letsencrypt
 
+CHECK_ADMIN_ENABLED=$(grep ADMIN_ENABLED /rmm/api/tacticalrmm/tacticalrmm/local_settings.py)
+if ! [[ $CHECK_ADMIN_ENABLED ]]; then
+adminenabled="$(cat << EOF
+ADMIN_ENABLED = False
+EOF
+)"
+echo "${adminenabled}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py > /dev/null
+fi
+
 CHECK_REMOVE_SALT=$(grep KEEP_SALT /rmm/api/tacticalrmm/tacticalrmm/local_settings.py)
 if ! [[ $CHECK_REMOVE_SALT ]]; then
   printf >&2 "${YELLOW}This update removes salt from the rmm${NC}\n"

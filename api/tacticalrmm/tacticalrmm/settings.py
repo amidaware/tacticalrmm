@@ -2,7 +2,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 SCRIPTS_DIR = "/srv/salt/scripts"
 
@@ -39,11 +39,9 @@ except ImportError:
     pass
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
-    "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework.authtoken",
@@ -66,9 +64,16 @@ INSTALLED_APPS = [
     "natsapi",
 ]
 
-if not "TRAVIS" in os.environ and not "AZPIPELINE" in os.environ:
-    if DEBUG:
+if not "AZPIPELINE" in os.environ:
+    if DEBUG:  # type: ignore
         INSTALLED_APPS += ("django_extensions",)
+
+if ADMIN_ENABLED:  # type: ignore
+    INSTALLED_APPS += (
+        "django.contrib.admin",
+        "django.contrib.messages",
+    )
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -78,10 +83,11 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+if ADMIN_ENABLED:  # type: ignore
+    MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)
 
 REST_KNOX = {
     "TOKEN_TTL": timedelta(hours=5),

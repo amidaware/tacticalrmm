@@ -68,7 +68,7 @@ if not "AZPIPELINE" in os.environ:
     if DEBUG:  # type: ignore
         INSTALLED_APPS += ("django_extensions",)
 
-if "AZPIPELINES" in os.environ:
+if "AZPIPELINE" in os.environ:
     ADMIN_ENABLED = False
 
 if ADMIN_ENABLED:  # type: ignore

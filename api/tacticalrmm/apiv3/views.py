@@ -264,10 +264,6 @@ class SupersededWinUpdate(APIView):
 
 
 class CheckRunner(APIView):
-    """
-    For the windows golang agent
-    """
-
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -301,10 +297,6 @@ class CheckRunnerInterval(APIView):
 
 
 class TaskRunner(APIView):
-    """
-    For the windows golang agent
-    """
-
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 

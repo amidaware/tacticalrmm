@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="40"
+SCRIPT_VERSION="41"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -406,6 +406,12 @@ python manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain
 deactivate
 read -n 1 -s -r -p "Press any key to continue..."
 
+uwsgiprocs=4
+if [[ "$numprocs" == "1" ]]; then
+  uwsgiprocs=2
+else
+  uwsgiprocs=$numprocs
+fi
 
 uwsgini="$(cat << EOF
 [uwsgi]
@@ -413,8 +419,8 @@ chdir = /rmm/api/tacticalrmm
 module = tacticalrmm.wsgi
 home = /rmm/api/env
 master = true
-processes = 6
-threads = 6
+processes = ${uwsgiprocs}
+threads = ${uwsgiprocs}
 enable-threads = true
 socket = /rmm/api/tacticalrmm/tacticalrmm.sock
 harakiri = 300
@@ -423,7 +429,6 @@ buffer-size = 65535
 vacuum = true
 die-on-term = true
 max-requests = 500
-max-requests-delta = 1000
 EOF
 )"
 echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="112"
+SCRIPT_VERSION="113"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -172,6 +172,37 @@ printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}
 done
 
+rm -f /rmm/api/tacticalrmm/app.ini
+
+numprocs=$(nproc)
+uwsgiprocs=4
+if [[ "$numprocs" == "1" ]]; then
+  uwsgiprocs=2
+else
+  uwsgiprocs=$numprocs
+fi
+
+uwsgini="$(cat << EOF
+[uwsgi]
+chdir = /rmm/api/tacticalrmm
+module = tacticalrmm.wsgi
+home = /rmm/api/env
+master = true
+processes = ${uwsgiprocs}
+threads = ${uwsgiprocs}
+enable-threads = true
+socket = /rmm/api/tacticalrmm/tacticalrmm.sock
+harakiri = 300
+chmod-socket = 660
+buffer-size = 65535
+vacuum = true
+die-on-term = true
+max-requests = 500
+EOF
+)"
+echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
+
+
 # forgot to add this in install script. catch any installs that don't have it enabled and enable it
 sudo systemctl enable natsapi.service
 
@@ -229,15 +260,6 @@ sudo chown -R $USER:$GROUP /home/${USER}/.config
 sudo chown -R $USER:$GROUP /home/${USER}/.cache
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
 sudo chmod 775 -R /etc/letsencrypt
-
-CHECK_BUFF_SIZE=$(grep buffer-size /rmm/api/tacticalrmm/app.ini)
-if ! [[ $CHECK_BUFF_SIZE ]]; then
-setbuff="$(cat << EOF
-buffer-size = 65535
-EOF
-)"
-echo "${setbuff}" | tee --append /rmm/api/tacticalrmm/app.ini > /dev/null
-fi
 
 CHECK_REMOVE_SALT=$(grep KEEP_SALT /rmm/api/tacticalrmm/tacticalrmm/local_settings.py)
 if ! [[ $CHECK_REMOVE_SALT ]]; then

@@ -5,11 +5,13 @@ import random
 import string
 
 from django.conf import settings
+from django.core.paginator import Paginator
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from loguru import logger
 from packaging import version as pyver
-from rest_framework import generics, status
+from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -224,37 +226,61 @@ def send_raw_cmd(request):
     return Response(r)
 
 
-class AgentsTableList(generics.ListAPIView):
-    queryset = (
-        Agent.objects.select_related("site")
-        .prefetch_related("agentchecks")
-        .only(
-            "pk",
-            "hostname",
-            "agent_id",
-            "site",
-            "monitoring_type",
-            "description",
-            "needs_reboot",
-            "overdue_text_alert",
-            "overdue_email_alert",
-            "overdue_time",
-            "offline_time",
-            "last_seen",
-            "boot_time",
-            "logged_in_username",
-            "last_logged_in_user",
-            "time_zone",
-            "maintenance_mode",
-        )
-    )
-    serializer_class = AgentTableSerializer
+class AgentsTableList(APIView):
+    def patch(self, request):
+        pagination = request.data["pagination"]
+        monType = request.data["monType"]
+        client = Q()
+        site = Q()
+        mon_type = Q()
 
-    def list(self, request):
-        queryset = self.get_queryset()
+        if monType == "server":
+            mon_type = Q(monitoring_type="server")
+        elif monType == "workstation":
+            mon_type = Q(monitoring_type="workstation")
+
+        if "clientPK" in request.data:
+            client = Q(site__client_id=request.data["clientPK"])
+
+        if "sitePK" in request.data:
+            site = Q(site_id=request.data["sitePK"])
+
+        queryset = (
+            Agent.objects.select_related("site")
+            .prefetch_related("agentchecks")
+            .filter(mon_type)
+            .filter(client)
+            .filter(site)
+            .only(
+                "pk",
+                "hostname",
+                "agent_id",
+                "site",
+                "monitoring_type",
+                "description",
+                "needs_reboot",
+                "overdue_text_alert",
+                "overdue_email_alert",
+                "overdue_time",
+                "offline_time",
+                "last_seen",
+                "boot_time",
+                "logged_in_username",
+                "last_logged_in_user",
+                "time_zone",
+                "maintenance_mode",
+            )
+            .order_by(pagination["sortBy"])
+        )
+        paginator = Paginator(queryset, pagination["rowsPerPage"])
+
         ctx = {"default_tz": get_default_timezone()}
-        serializer = AgentTableSerializer(queryset, many=True, context=ctx)
-        return Response(serializer.data)
+        serializer = AgentTableSerializer(
+            paginator.get_page(pagination["page"]), many=True, context=ctx
+        )
+
+        ret = {"agents": serializer.data, "total": paginator.count}
+        return Response(ret)
 
 
 @api_view()
@@ -267,66 +293,6 @@ def list_agents_no_detail(request):
 def agent_edit_details(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     return Response(AgentEditSerializer(agent).data)
-
-
-@api_view()
-def by_client(request, clientpk):
-    agents = (
-        Agent.objects.select_related("site")
-        .filter(site__client_id=clientpk)
-        .prefetch_related("agentchecks")
-        .only(
-            "pk",
-            "hostname",
-            "agent_id",
-            "site",
-            "monitoring_type",
-            "description",
-            "needs_reboot",
-            "overdue_text_alert",
-            "overdue_email_alert",
-            "overdue_time",
-            "offline_time",
-            "last_seen",
-            "boot_time",
-            "logged_in_username",
-            "last_logged_in_user",
-            "time_zone",
-            "maintenance_mode",
-        )
-    )
-    ctx = {"default_tz": get_default_timezone()}
-    return Response(AgentTableSerializer(agents, many=True, context=ctx).data)
-
-
-@api_view()
-def by_site(request, sitepk):
-    agents = (
-        Agent.objects.filter(site_id=sitepk)
-        .select_related("site")
-        .prefetch_related("agentchecks")
-        .only(
-            "pk",
-            "hostname",
-            "agent_id",
-            "site",
-            "monitoring_type",
-            "description",
-            "needs_reboot",
-            "overdue_text_alert",
-            "overdue_email_alert",
-            "overdue_time",
-            "offline_time",
-            "last_seen",
-            "boot_time",
-            "logged_in_username",
-            "last_logged_in_user",
-            "time_zone",
-            "maintenance_mode",
-        )
-    )
-    ctx = {"default_tz": get_default_timezone()}
-    return Response(AgentTableSerializer(agents, many=True, context=ctx).data)
 
 
 @api_view(["POST"])

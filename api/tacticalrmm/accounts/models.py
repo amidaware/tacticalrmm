@@ -27,6 +27,7 @@ class User(AbstractUser, BaseAuditModel):
     default_agent_tbl_tab = models.CharField(
         max_length=50, choices=AGENT_TBL_TAB_CHOICES, default="server"
     )
+    agents_per_page = models.PositiveIntegerField(default=50)
 
     agent = models.OneToOneField(
         "agents.Agent",

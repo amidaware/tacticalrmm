@@ -13,9 +13,11 @@
       row-key="id"
       binary-state-sort
       virtual-scroll
-      :pagination.sync="pagination"
-      :rows-per-page-options="[0]"
+      :pagination.sync="agentPagination"
+      :rows-per-page-options="[25, 50, 100, 200, 300, 500, 1000]"
       no-data-label="No Agents"
+      rows-per-page-label="Agents per page:"
+      @request="onRequest"
     >
       <!-- header slots -->
       <template v-slot:header-cell-smsalert="props">
@@ -413,7 +415,7 @@ import RunScript from "@/components/modals/agents/RunScript";
 
 export default {
   name: "AgentTable",
-  props: ["frame", "columns", "tab", "filter", "userName", "search", "visibleColumns"],
+  props: ["frame", "columns", "tab", "filter", "userName", "search", "visibleColumns", "agentTblPagination"],
   components: {
     EditAgent,
     RebootLater,
@@ -425,11 +427,6 @@ export default {
   mixins: [mixins],
   data() {
     return {
-      pagination: {
-        rowsPerPage: 0,
-        sortBy: "hostname",
-        descending: false,
-      },
       showSendCommand: false,
       showEditAgentModal: false,
       showRebootLaterModal: false,
@@ -441,6 +438,14 @@ export default {
     };
   },
   methods: {
+    onRequest(props) {
+      const { page, rowsPerPage, sortBy, descending } = props.pagination;
+      this.agentTblPagination.page = page;
+      this.agentTblPagination.rowsPerPage = rowsPerPage;
+      this.agentTblPagination.sortBy = sortBy;
+      this.agentTblPagination.descending = descending;
+      this.$emit("refreshEdit");
+    },
     filterTable(rows, terms, cols, cellValue) {
       const lowerTerms = terms ? terms.toLowerCase() : "";
       let advancedFilter = false;
@@ -758,6 +763,14 @@ export default {
     },
     agentTableLoading() {
       return this.$store.state.agentTableLoading;
+    },
+    agentPagination: {
+      get: function () {
+        return this.agentTblPagination;
+      },
+      set: function (newVal) {
+        this.$emit("agentPagChanged", newVal);
+      },
     },
   },
 };

@@ -199,4 +199,8 @@ class UserUI(APIView):
             user.default_agent_tbl_tab = request.data["default_agent_tbl_tab"]
             user.save(update_fields=["agent_dblclick_action", "default_agent_tbl_tab"])
 
+        if "agents_per_page" in request.data.keys():
+            user.agents_per_page = request.data["agents_per_page"]
+            user.save(update_fields=["agents_per_page"])
+
         return Response("ok")

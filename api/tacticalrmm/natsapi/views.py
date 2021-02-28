@@ -9,9 +9,9 @@ from rest_framework.decorators import (
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from tacticalrmm.utils import notify_error
 
 from agents.models import Agent
+from tacticalrmm.utils import notify_error
 
 logger.configure(**settings.LOG_CONFIG)
 

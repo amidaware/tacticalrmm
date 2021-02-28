@@ -283,6 +283,7 @@ class TestUserAction(TacticalTestCase):
             "userui": True,
             "agent_dblclick_action": "editagent",
             "default_agent_tbl_tab": "mixed",
+            "agents_per_page": 1000,
         }
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)

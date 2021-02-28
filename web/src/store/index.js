@@ -215,9 +215,6 @@ export default function () {
       loadSites(context) {
         return axios.get("/clients/sites/");
       },
-      loadAgents(context) {
-        return axios.get("/agents/listagents/");
-      },
       loadTree({ commit }) {
         axios.get("/clients/tree/").then(r => {
 

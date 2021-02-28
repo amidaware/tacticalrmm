@@ -46,6 +46,11 @@
                   class="col-4"
                 />
               </q-card-section>
+              <q-card-section class="row">
+                <div class="col-6">Agent table default records per page:</div>
+                <div class="col-2"></div>
+                <q-input v-model.number="agentsPerPage" type="number" filled style="max-width: 100px" />
+              </q-card-section>
             </q-tab-panel>
           </q-tab-panels>
 
@@ -60,7 +65,6 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import { mapState } from "vuex";
 
 export default {
   name: "UserPreferences",
@@ -69,6 +73,7 @@ export default {
     return {
       agentDblClickAction: "",
       defaultAgentTblTab: "",
+      agentsPerPage: 50,
       tab: "ui",
       splitterModel: 20,
       agentDblClickOptions: [
@@ -106,6 +111,7 @@ export default {
       this.$axios.get("/core/dashinfo/").then(r => {
         this.agentDblClickAction = r.data.dbl_click_action;
         this.defaultAgentTblTab = r.data.default_agent_tbl_tab;
+        this.agentsPerPage = r.data.agents_per_page;
       });
     },
     editUserPrefs() {
@@ -113,10 +119,12 @@ export default {
         userui: true,
         agent_dblclick_action: this.agentDblClickAction,
         default_agent_tbl_tab: this.defaultAgentTblTab,
+        agents_per_page: this.agentsPerPage,
       };
       this.$axios.patch("/accounts/users/ui/", data).then(r => {
         this.notifySuccess("Preferences were saved!");
         this.$emit("edited");
+        this.$emit("refresh");
         this.$emit("close");
       });
     },

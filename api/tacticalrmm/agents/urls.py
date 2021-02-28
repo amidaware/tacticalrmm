@@ -6,8 +6,6 @@ urlpatterns = [
     path("listagents/", views.AgentsTableList.as_view()),
     path("listagentsnodetail/", views.list_agents_no_detail),
     path("<int:pk>/agenteditdetails/", views.agent_edit_details),
-    path("byclient/<int:clientpk>/", views.by_client),
-    path("bysite/<int:sitepk>/", views.by_site),
     path("overdueaction/", views.overdue_action),
     path("sendrawcmd/", views.send_raw_cmd),
     path("<pk>/agentdetail/", views.agent_detail),

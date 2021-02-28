@@ -9,6 +9,7 @@ ACTION_TYPE_CHOICES = [
     ("schedreboot", "Scheduled Reboot"),
     ("taskaction", "Scheduled Task Action"),
     ("agentupdate", "Agent Update"),
+    ("chocoinstall", "Chocolatey Software Install"),
 ]
 
 AUDIT_ACTION_TYPE_CHOICES = [
@@ -249,9 +250,10 @@ class PendingAction(models.Model):
         if self.action_type == "schedreboot":
             obj = dt.datetime.strptime(self.details["time"], "%Y-%m-%d %H:%M:%S")
             return dt.datetime.strftime(obj, "%B %d, %Y at %I:%M %p")
-
         elif self.action_type == "taskaction" or self.action_type == "agentupdate":
             return "Next agent check-in"
+        elif self.action_type == "chocoinstall":
+            return "ASAP"
 
     @property
     def description(self):
@@ -260,6 +262,9 @@ class PendingAction(models.Model):
 
         elif self.action_type == "agentupdate":
             return f"Agent update to {self.details['version']}"
+
+        elif self.action_type == "chocoinstall":
+            return f"{self.details['name']} software install"
 
         elif self.action_type == "taskaction":
             if self.details["action"] == "taskdelete":

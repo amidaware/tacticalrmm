@@ -17,4 +17,5 @@ urlpatterns = [
     path("choco/", views.Choco.as_view()),
     path("winupdates/", views.WinUpdates.as_view()),
     path("superseded/", views.SupersededWinUpdate.as_view()),
+    path("<int:pk>/chocoresult/", views.ChocoResult.as_view()),
 ]

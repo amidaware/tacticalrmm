@@ -2,15 +2,16 @@ import asyncio
 from typing import Any
 
 from django.shortcuts import get_object_or_404
+from packaging import version as pyver
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from agents.models import Agent
+from logs.models import PendingAction
 from tacticalrmm.utils import filter_software, notify_error
 
 from .models import ChocoSoftware, InstalledSoftware
 from .serializers import ChocoSoftwareSerializer, InstalledSoftwareSerializer
-from .tasks import install_program
 
 
 @api_view()
@@ -21,11 +22,31 @@ def chocos(request):
 
 @api_view(["POST"])
 def install(request):
-    pk = request.data["pk"]
-    agent = get_object_or_404(Agent, pk=pk)
+    agent = get_object_or_404(Agent, pk=request.data["pk"])
+    if pyver.parse(agent.version) < pyver.parse("1.4.8"):
+        return notify_error("Requires agent v1.4.8")
+
     name = request.data["name"]
-    version = request.data["version"]
-    install_program.delay(pk, name, version)
+    ver = request.data["version"]
+
+    action = PendingAction.objects.create(
+        agent=agent,
+        action_type="chocoinstall",
+        details={"name": name, "version": ver, "output": None, "installed": False},
+    )
+
+    nats_data = {
+        "func": "installwithchoco",
+        "choco_prog_name": name,
+        "choco_prog_ver": ver,
+        "pending_action_pk": action.pk,
+    }
+
+    r = asyncio.run(agent.nats_cmd(nats_data, timeout=2))
+    if r != "ok":
+        action.delete()
+        return notify_error("Unable to contact the agent")
+
     return Response(f"{name} will be installed shortly on {agent.hostname}")
 
 

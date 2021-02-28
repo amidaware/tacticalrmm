@@ -64,8 +64,21 @@
             <q-td v-else-if="props.row.action_type === 'agentupdate'">
               <q-icon name="update" size="sm" />
             </q-td>
+            <q-td v-else-if="props.row.action_type === 'chocoinstall'">
+              <q-icon name="download" size="sm" />
+            </q-td>
             <q-td>{{ props.row.due }}</q-td>
             <q-td>{{ props.row.description }}</q-td>
+            <q-td v-if="props.row.action_type === 'chocoinstall'">
+              <q-btn
+                color="primary"
+                icon="preview"
+                size="sm"
+                label="View output"
+                @click="showOutput(props.row.details.output)"
+              />
+            </q-td>
+            <q-td v-else></q-td>
             <q-td v-show="!!!agentpk">{{ props.row.hostname }}</q-td>
             <q-td v-show="!!!agentpk">{{ props.row.client }}</q-td>
             <q-td v-show="!!!agentpk">{{ props.row.site }}</q-td>
@@ -107,22 +120,31 @@ export default {
         { name: "type", label: "Type", field: "action_type", align: "left", sortable: true },
         { name: "due", label: "Due", field: "due", align: "left", sortable: true },
         { name: "desc", label: "Description", field: "description", align: "left", sortable: true },
+        { name: "details", field: "details", align: "left", sortable: false },
         { name: "agent", label: "Agent", field: "hostname", align: "left", sortable: true },
         { name: "client", label: "Client", field: "client", align: "left", sortable: true },
         { name: "site", label: "Site", field: "site", align: "left", sortable: true },
       ],
-      all_visibleColumns: ["type", "due", "desc", "agent", "client", "site"],
+      all_visibleColumns: ["type", "due", "desc", "agent", "client", "site", "details"],
       agent_columns: [
         { name: "id", field: "id" },
         { name: "status", field: "status" },
         { name: "type", label: "Type", field: "action_type", align: "left", sortable: true },
         { name: "due", label: "Due", field: "due", align: "left", sortable: true },
         { name: "desc", label: "Description", field: "description", align: "left", sortable: true },
+        { name: "details", field: "details", align: "left", sortable: false },
       ],
-      agent_visibleColumns: ["type", "due", "desc"],
+      agent_visibleColumns: ["type", "due", "desc", "details"],
     };
   },
   methods: {
+    showOutput(details) {
+      this.$q.dialog({
+        style: "width: 75vw; max-width: 85vw;",
+        message: `<pre>${details}</pre>`,
+        html: true,
+      });
+    },
     getPendingActions() {
       this.$q.loading.show();
       this.clearRow();

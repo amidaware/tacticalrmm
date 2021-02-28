@@ -295,10 +295,10 @@ class Agent(BaseAuditModel):
 
         running_agent = self
         if run_on_any:
-            nats_ping = {"func": "ping", "timeout": 1}
+            nats_ping = {"func": "ping"}
 
             # try on self first
-            r = asyncio.run(self.nats_cmd(nats_ping))
+            r = asyncio.run(self.nats_cmd(nats_ping, timeout=1))
 
             if r == "pong":
                 running_agent = self
@@ -312,7 +312,7 @@ class Agent(BaseAuditModel):
                 ]
 
                 for agent in online:
-                    r = asyncio.run(agent.nats_cmd(nats_ping))
+                    r = asyncio.run(agent.nats_cmd(nats_ping, timeout=1))
                     if r == "pong":
                         running_agent = agent
                         break

@@ -110,7 +110,8 @@ Create a login for the RMM web UI:
 
 ![rmmlogin](images/rmmlogin.png)
 
-A bunch of URLS / usernames / passwords will be printed out at the end of the install script. Save these somewhere safe.
+A bunch of URLS / usernames / passwords will be printed out at the end of the install script. **Save these somewhere safe.** [Recover them if you didn't](faq.md#how-do-i-recover-my-meshcentral-login-credentials)
+
 
 Copy the url for the meshagent exe (`https://mesh.example.com/agentinvite?c=......`), paste it in your browser and download the mesh agent:
 

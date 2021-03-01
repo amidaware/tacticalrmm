@@ -8,6 +8,7 @@ nav:
   - Agent Installation: install_agent.md
   - Updating:
       - "Updating the RMM": update_server.md
+      - "Updating the RMM (Docker)": update_docker.md
       - "Updating Agents": update_agents.md
   - Functionality:
       - "Remote Background": functions/remote_bg.md

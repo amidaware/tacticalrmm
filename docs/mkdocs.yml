@@ -20,6 +20,7 @@ nav:
   - FAQ: faq.md
   - Management Commands: management_cmds.md
   - MeshCentral Integration: mesh_integration.md
+  - Contributing: contributing.md
   - License: license.md
 site_description: "A remote monitoring and management tool"
 site_author: "wh1te909"

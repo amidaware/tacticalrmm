@@ -16,7 +16,7 @@ Doing a prune first before running the backup will significantly speed up the po
 Run the backup script
 
 ```bash
-chmod +x backup.sh
+sudo chmod +x backup.sh
 ./backup.sh
 ```
 

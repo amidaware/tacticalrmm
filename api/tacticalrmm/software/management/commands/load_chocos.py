@@ -18,4 +18,4 @@ class Command(BaseCommand):
             ChocoSoftware.objects.all().delete()
 
         ChocoSoftware(chocos=chocos).save()
-        self.stdout.write("Chocos saved to db")
+        self.stdout.write(self.style.SUCCESS("Chocos saved to db"))

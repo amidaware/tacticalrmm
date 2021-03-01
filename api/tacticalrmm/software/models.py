@@ -8,11 +8,7 @@ class ChocoSoftware(models.Model):
     added = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        from .serializers import ChocoSoftwareSerializer
-
-        return (
-            str(len(ChocoSoftwareSerializer(self).data["chocos"])) + f" - {self.added}"
-        )
+        return f"{len(self.chocos)} - {self.added}"
 
 
 class ChocoLog(models.Model):

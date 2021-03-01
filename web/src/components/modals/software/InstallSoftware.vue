@@ -1,5 +1,5 @@
 <template>
-  <q-card style="width: 50vw; max-width: 80vw">
+  <q-card style="width: 40vw; max-width: 50vw">
     <q-card-section>
       <q-table
         class="remote-bg-tbl-sticky"
@@ -28,18 +28,11 @@
         <template slot="body" slot-scope="props" :props="props">
           <q-tr :props="props">
             <q-td auto-width>
-              <q-btn
-                size="sm"
-                color="grey-5"
-                icon="fas fa-plus"
-                text-color="black"
-                @click="install(props.row.name, props.row.version)"
-              />
+              <q-btn size="sm" color="grey-5" icon="fas fa-plus" text-color="black" @click="install(props.row.name)" />
             </q-td>
             <q-td @click="showDescription(props.row.name)">
               <span style="cursor: pointer; text-decoration: underline" class="text-primary">{{ props.row.name }}</span>
             </q-td>
-            <q-td>{{ props.row.version }}</q-td>
           </q-tr>
         </template>
       </q-table>
@@ -48,8 +41,6 @@
 </template>
 
 <script>
-import axios from "axios";
-import { mapState } from "vuex";
 import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 export default {
@@ -74,44 +65,39 @@ export default {
           field: "name",
           sortable: true,
         },
-        {
-          name: "version",
-          align: "left",
-          label: "Version",
-          field: "version",
-          sortable: false,
-        },
       ],
     };
   },
   methods: {
     getChocos() {
-      axios.get("/software/chocos/").then(r => {
+      this.$axios.get("/software/chocos/").then(r => {
         this.chocos = r.data;
       });
     },
     showDescription(name) {
       window.open(`https://chocolatey.org/packages/${name}`, "_blank");
     },
-    install(name, version) {
-      const data = { name: name, version: version, pk: this.agentpk };
+    install(name) {
+      const data = { name: name, pk: this.agentpk };
       this.$q
         .dialog({
-          title: "Install Software",
-          message: `Install ${name} on ${this.agentHostname}?`,
+          title: `Install ${name} on ${this.agentHostname}?`,
           persistent: true,
           ok: { label: "Install" },
-          cancel: { color: "negative" },
+          cancel: true,
         })
         .onOk(() => {
-          axios
+          this.$q.loading.show();
+          this.$axios
             .post("/software/install/", data)
             .then(r => {
+              this.$q.loading.hide();
               this.$emit("close");
-              this.notifySuccess(r.data);
+              this.notifySuccess(r.data, 5000);
             })
             .catch(e => {
-              this.notifyError("Something went wrong");
+              this.$q.loading.hide();
+              this.notifyError(e.response.data);
             });
         });
     },

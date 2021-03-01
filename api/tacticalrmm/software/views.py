@@ -11,13 +11,12 @@ from logs.models import PendingAction
 from tacticalrmm.utils import filter_software, notify_error
 
 from .models import ChocoSoftware, InstalledSoftware
-from .serializers import ChocoSoftwareSerializer, InstalledSoftwareSerializer
+from .serializers import InstalledSoftwareSerializer
 
 
 @api_view()
 def chocos(request):
-    chocos = ChocoSoftware.objects.last()
-    return Response(ChocoSoftwareSerializer(chocos).data["chocos"])
+    return Response(ChocoSoftware.objects.last().chocos)
 
 
 @api_view(["POST"])
@@ -27,18 +26,16 @@ def install(request):
         return notify_error("Requires agent v1.4.8")
 
     name = request.data["name"]
-    ver = request.data["version"]
 
     action = PendingAction.objects.create(
         agent=agent,
         action_type="chocoinstall",
-        details={"name": name, "version": ver, "output": None, "installed": False},
+        details={"name": name, "output": None, "installed": False},
     )
 
     nats_data = {
         "func": "installwithchoco",
         "choco_prog_name": name,
-        "choco_prog_ver": ver,
         "pending_action_pk": action.pk,
     }
 
@@ -47,7 +44,9 @@ def install(request):
         action.delete()
         return notify_error("Unable to contact the agent")
 
-    return Response(f"{name} will be installed shortly on {agent.hostname}")
+    return Response(
+        f"{name} will be installed shortly on {agent.hostname}. Check the Pending Actions menu to see the status/output"
+    )
 
 
 @api_view()

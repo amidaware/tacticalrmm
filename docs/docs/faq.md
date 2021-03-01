@@ -26,3 +26,18 @@ Or from the command line:<br/>
 /rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py reset_2fa <username>
 ```
 Then simply log out of the web UI and next time the user logs in they will be redirected to the 2FA setup page which will present a barcode to be scanned with the Authenticator app.
+
+<br/>
+
+#### How do I recover my MeshCentral login credentials?
+
+From Tactical's web UI: *Settings > Global Settings > MeshCentral*
+
+Copy the username then ssh into the server and run:
+
+```bash
+cd /meshcentral/
+sudo systemctl stop meshcentral
+node node_modules/meshcentral --resetaccount <username> --pass <newpassword>
+sudo systemctl start meshcentral
+```

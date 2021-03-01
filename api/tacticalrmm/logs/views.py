@@ -106,34 +106,38 @@ class FilterOptionsAuditLog(APIView):
         return Response("error", status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view()
-def agent_pending_actions(request, pk):
-    action = PendingAction.objects.filter(agent__pk=pk)
-    return Response(PendingActionSerializer(action, many=True).data)
+class PendingActions(APIView):
+    def patch(self, request):
+        status_filter = "completed" if request.data["showCompleted"] else "pending"
+        completed = PendingAction.objects.filter(status="completed").count()
+        if "agentPK" in request.data.keys():
+            actions = PendingAction.objects.filter(
+                agent__pk=request.data["agentPK"], status=status_filter
+            )
 
+        else:
+            actions = PendingAction.objects.filter(status=status_filter).select_related(
+                "agent"
+            )
 
-@api_view()
-def all_pending_actions(request):
-    actions = PendingAction.objects.all().select_related("agent")
-    return Response(PendingActionSerializer(actions, many=True).data)
+        ret = {
+            "actions": PendingActionSerializer(actions, many=True).data,
+            "completed_count": completed,
+        }
+        return Response(ret)
 
+    def delete(self, request):
+        action = get_object_or_404(PendingAction, pk=request.data["pk"])
+        nats_data = {
+            "func": "delschedtask",
+            "schedtaskpayload": {"name": action.details["taskname"]},
+        }
+        r = asyncio.run(action.agent.nats_cmd(nats_data, timeout=10))
+        if r != "ok":
+            return notify_error(r)
 
-@api_view(["DELETE"])
-def cancel_pending_action(request):
-    action = get_object_or_404(PendingAction, pk=request.data["pk"])
-    if not action.agent.has_gotasks:
-        return notify_error("Requires agent version 1.1.1 or greater")
-
-    nats_data = {
-        "func": "delschedtask",
-        "schedtaskpayload": {"name": action.details["taskname"]},
-    }
-    r = asyncio.run(action.agent.nats_cmd(nats_data, timeout=10))
-    if r != "ok":
-        return notify_error(r)
-
-    action.delete()
-    return Response(f"{action.agent.hostname}: {action.description} was cancelled")
+        action.delete()
+        return Response(f"{action.agent.hostname}: {action.description} was cancelled")
 
 
 @api_view()

@@ -3,9 +3,8 @@ from unittest.mock import patch
 
 from model_bakery import baker, seq
 
+from logs.models import PendingAction
 from tacticalrmm.test import TacticalTestCase
-
-from .serializers import PendingActionSerializer
 
 
 class TestAuditViews(TacticalTestCase):
@@ -177,63 +176,94 @@ class TestAuditViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
-    def test_agent_pending_actions(self):
-        agent = baker.make_recipe("agents.agent")
-        pending_actions = baker.make(
+    def test_get_pending_actions(self):
+        url = "/logs/pendingactions/"
+        agent1 = baker.make_recipe("agents.online_agent")
+        agent2 = baker.make_recipe("agents.online_agent")
+
+        baker.make(
             "logs.PendingAction",
-            agent=agent,
-            _quantity=6,
+            agent=agent1,
+            action_type="chocoinstall",
+            details={"name": "googlechrome", "output": None, "installed": False},
+            _quantity=12,
         )
-        url = f"/logs/{agent.pk}/pendingactions/"
+        baker.make(
+            "logs.PendingAction",
+            agent=agent2,
+            action_type="chocoinstall",
+            status="completed",
+            details={"name": "adobereader", "output": None, "installed": False},
+            _quantity=14,
+        )
 
-        resp = self.client.get(url, format="json")
-        serializer = PendingActionSerializer(pending_actions, many=True)
+        data = {"showCompleted": False}
+        r = self.client.patch(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data["actions"]), 12)  # type: ignore
+        self.assertEqual(r.data["completed_count"], 14)  # type: ignore
 
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 6)
-        self.assertEqual(resp.data, serializer.data)
+        PendingAction.objects.filter(action_type="chocoinstall").update(
+            status="completed"
+        )
+        data = {"showCompleted": True}
+        r = self.client.patch(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data["actions"]), 26)  # type: ignore
+        self.assertEqual(r.data["completed_count"], 26)  # type: ignore
 
-        self.check_not_authenticated("get", url)
+        data = {"showCompleted": True, "agentPK": agent1.pk}
+        r = self.client.patch(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data["actions"]), 12)  # type: ignore
+        self.assertEqual(r.data["completed_count"], 26)  # type: ignore
 
-    def test_all_pending_actions(self):
-        url = "/logs/allpendingactions/"
-        agent = baker.make_recipe("agents.agent")
-        pending_actions = baker.make("logs.PendingAction", agent=agent, _quantity=6)
-
-        resp = self.client.get(url, format="json")
-        serializer = PendingActionSerializer(pending_actions, many=True)
-
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 6)
-        self.assertEqual(resp.data, serializer.data)
-
-        self.check_not_authenticated("get", url)
+        self.check_not_authenticated("patch", url)
 
     @patch("agents.models.Agent.nats_cmd")
     def test_cancel_pending_action(self, nats_cmd):
-        url = "/logs/cancelpendingaction/"
-        # TODO fix this TypeError: Object of type coroutine is not JSON serializable
-        """ agent = baker.make("agents.Agent", version="1.1.1")
-        pending_action = baker.make(
+        nats_cmd.return_value = "ok"
+        url = "/logs/pendingactions/"
+        agent = baker.make_recipe("agents.online_agent")
+        action = baker.make(
             "logs.PendingAction",
             agent=agent,
+            action_type="schedreboot",
             details={
                 "time": "2021-01-13 18:20:00",
                 "taskname": "TacticalRMM_SchedReboot_wYzCCDVXlc",
             },
         )
 
-        data = {"pk": pending_action.id}
-        resp = self.client.delete(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
+        data = {"pk": action.pk}  # type: ignore
+        r = self.client.delete(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
         nats_data = {
             "func": "delschedtask",
             "schedtaskpayload": {"name": "TacticalRMM_SchedReboot_wYzCCDVXlc"},
         }
         nats_cmd.assert_called_with(nats_data, timeout=10)
 
-        # try request again and it should fail since pending action doesn't exist
-        resp = self.client.delete(url, data, format="json")
-        self.assertEqual(resp.status_code, 404) """
+        # try request again and it should 404 since pending action doesn't exist
+        r = self.client.delete(url, data, format="json")
+        self.assertEqual(r.status_code, 404)
+
+        nats_cmd.reset_mock()
+
+        action2 = baker.make(
+            "logs.PendingAction",
+            agent=agent,
+            action_type="schedreboot",
+            details={
+                "time": "2021-01-13 18:20:00",
+                "taskname": "TacticalRMM_SchedReboot_wYzCCDVXlc",
+            },
+        )
+
+        data = {"pk": action2.pk}  # type: ignore
+        nats_cmd.return_value = "error deleting sched task"
+        r = self.client.delete(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data, "error deleting sched task")  # type: ignore
 
         self.check_not_authenticated("delete", url)

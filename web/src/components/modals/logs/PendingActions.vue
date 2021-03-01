@@ -26,7 +26,7 @@
           <q-btn
             :label="showCompleted ? `Hide ${completedCount} Completed` : `Show ${completedCount} Completed`"
             :icon="showCompleted ? 'visibility_off' : 'visibility'"
-            @click="showCompleted = !showCompleted"
+            @click="toggleShowCompleted"
             dense
             unelevated
             no-caps
@@ -39,7 +39,7 @@
         dense
         :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
         class="remote-bg-tbl-sticky"
-        :data="filter"
+        :data="actions"
         :columns="columns"
         :visible-columns="visibleColumns"
         :pagination.sync="pagination"
@@ -69,7 +69,7 @@
             </q-td>
             <q-td>{{ props.row.due }}</q-td>
             <q-td>{{ props.row.description }}</q-td>
-            <q-td v-if="props.row.action_type === 'chocoinstall'">
+            <q-td v-if="props.row.action_type === 'chocoinstall' && props.row.status === 'completed'">
               <q-btn
                 color="primary"
                 icon="preview"
@@ -107,6 +107,7 @@ export default {
       selectedRow: null,
       showCompleted: false,
       selectedStatus: null,
+      completedCount: 0,
       actionType: null,
       hostname: "",
       pagination: {
@@ -145,14 +146,21 @@ export default {
         html: true,
       });
     },
+    toggleShowCompleted() {
+      this.showCompleted = !this.showCompleted;
+      this.getPendingActions();
+    },
     getPendingActions() {
+      let data = { showCompleted: this.showCompleted };
+      if (!!this.agentpk) data.agentPK = this.agentpk;
       this.$q.loading.show();
       this.clearRow();
       this.$axios
-        .get(this.url)
+        .patch("/logs/pendingactions/", data)
         .then(r => {
-          this.actions = Object.freeze(r.data);
-          if (!!this.agentpk) this.hostname = r.data[0].hostname;
+          this.completedCount = r.data.completed_count;
+          this.actions = Object.freeze(r.data.actions);
+          if (!!this.agentpk) this.hostname = r.data.actions[0].hostname;
           this.$q.loading.hide();
         })
         .catch(e => {
@@ -170,7 +178,7 @@ export default {
           this.$q.loading.show();
           const data = { pk: this.selectedRow };
           this.$axios
-            .delete("/logs/cancelpendingaction/", { data: data })
+            .delete("/logs/pendingactions/", { data: data })
             .then(r => {
               this.$q.loading.hide();
               this.getPendingActions();
@@ -202,12 +210,6 @@ export default {
     },
   },
   computed: {
-    url() {
-      return !!this.agentpk ? `/logs/${this.agentpk}/pendingactions/` : "/logs/allpendingactions/";
-    },
-    filter() {
-      return this.showCompleted ? this.actions : this.actions.filter(k => k.status === "pending");
-    },
     columns() {
       return !!this.agentpk ? this.agent_columns : this.all_columns;
     },
@@ -216,9 +218,6 @@ export default {
     },
     title() {
       return !!this.agentpk ? `Pending Actions for ${this.hostname}` : "All Pending Actions";
-    },
-    completedCount() {
-      return this.actions.filter(k => k.status === "completed").length;
     },
   },
   created() {

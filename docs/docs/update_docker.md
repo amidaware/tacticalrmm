@@ -29,6 +29,7 @@ echo "CERT_PUB_KEY=$(sudo base64 -w 0 /etc/letsencrypt/live/${rootdomain}/fullch
 echo "CERT_PRIV_KEY=$(sudo base64 -w 0 /etc/letsencrypt/live/${rootdomain}/privkey.pem)" >> .env
 ```
 
-!!!warning You must remove the old and any duplicate entries for CERT_PUB_KEY and CERT_PRIV_KEY in the .env file
+!!!warning 
+    You must remove the old and any duplicate entries for CERT_PUB_KEY and CERT_PRIV_KEY in the .env file
 
 Now run `sudo docker-compose restart` and the new certificate will be in effect

@@ -1,7 +1,12 @@
+import json
+import os
+
+from django.conf import settings
 from model_bakery import baker
 
 from tacticalrmm.test import TacticalTestCase
 
+from .models import ChocoSoftware
 from .serializers import InstalledSoftwareSerializer
 
 
@@ -12,7 +17,14 @@ class TestSoftwareViews(TacticalTestCase):
 
     def test_chocos_get(self):
         url = "/software/chocos/"
-        resp = self.client.get(url, format="json")
+        with open(os.path.join(settings.BASE_DIR, "software/chocos.json")) as f:
+            chocos = json.load(f)
+
+        if ChocoSoftware.objects.exists():
+            ChocoSoftware.objects.all().delete()
+
+        ChocoSoftware(chocos=chocos).save()
+        resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         self.check_not_authenticated("get", url)
 

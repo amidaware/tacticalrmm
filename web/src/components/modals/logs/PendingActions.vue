@@ -6,7 +6,7 @@
       <q-space />
       <q-btn dense flat icon="close" v-close-popup />
     </q-bar>
-    <div v-if="actions.length !== 0" class="q-pa-md">
+    <div v-if="completedCount !== 0" class="q-pa-md">
       <div class="row">
         <div class="col">
           <q-btn
@@ -67,7 +67,8 @@
             <q-td v-else-if="props.row.action_type === 'chocoinstall'">
               <q-icon name="download" size="sm" />
             </q-td>
-            <q-td>{{ props.row.due }}</q-td>
+            <q-td v-if="props.row.status !== 'completed'">{{ props.row.due }}</q-td>
+            <q-td v-else>Completed</q-td>
             <q-td>{{ props.row.description }}</q-td>
             <q-td v-if="props.row.action_type === 'chocoinstall' && props.row.status === 'completed'">
               <q-btn
@@ -141,7 +142,8 @@ export default {
   methods: {
     showOutput(details) {
       this.$q.dialog({
-        style: "width: 75vw; max-width: 85vw;",
+        style: "width: 75vw; max-width: 85vw; max-height: 65vh;",
+        class: "scroll",
         message: `<pre>${details}</pre>`,
         html: true,
       });

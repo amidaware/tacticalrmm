@@ -40,6 +40,13 @@ If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
             Add-MpPreference -ExclusionPath 'C:\Program Files\Mesh Agent\*'
             Add-MpPreference -ExclusionPath 'C:\Windows\Temp\trmm*\*'
         }
+    }
+    Catch {
+        # pass
+    }
+    
+    Try
+    {  
         Invoke-WebRequest -Uri $downloadlink -OutFile $OutPath\$output
         Start-Process -FilePath $OutPath\$output -ArgumentList ('/VERYSILENT /SUPPRESSMSGBOXES') -Wait
         write-host ('Extracting...')

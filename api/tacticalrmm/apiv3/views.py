@@ -310,8 +310,8 @@ class TaskRunner(APIView):
         return Response(TaskGOGetSerializer(task).data)
 
     def patch(self, request, pk, agentid):
-        from logs.models import AuditLog
         from alerts.models import Alert
+        from logs.models import AuditLog
 
         agent = get_object_or_404(Agent, agent_id=agentid)
         task = get_object_or_404(AutomatedTask, pk=pk)

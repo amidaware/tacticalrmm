@@ -721,8 +721,8 @@ class TestAlertTasks(TacticalTestCase):
     ):
 
         from checks.tasks import (
-            handle_check_sms_alert_task,
             handle_check_email_alert_task,
+            handle_check_sms_alert_task,
             handle_resolved_check_email_alert_task,
             handle_resolved_check_sms_alert_task,
         )
@@ -982,10 +982,10 @@ class TestAlertTasks(TacticalTestCase):
     ):
 
         from autotasks.tasks import (
-            handle_task_sms_alert,
-            handle_task_email_alert,
             handle_resolved_task_email_alert,
             handle_resolved_task_sms_alert,
+            handle_task_email_alert,
+            handle_task_sms_alert,
         )
 
         # create test data

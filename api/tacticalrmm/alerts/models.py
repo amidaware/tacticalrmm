@@ -1,11 +1,12 @@
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union
+
+from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
-from django.conf import settings
-from typing import Union, TYPE_CHECKING
-
 from loguru import logger
 
 if TYPE_CHECKING:
@@ -149,8 +150,7 @@ class Alert(models.Model):
 
         # check what the instance passed is
         if isinstance(instance, Agent):
-            from agents.tasks import agent_outage_email_task
-            from agents.tasks import agent_outage_sms_task
+            from agents.tasks import agent_outage_email_task, agent_outage_sms_task
 
             email_task = agent_outage_email_task
             text_task = agent_outage_sms_task
@@ -183,8 +183,10 @@ class Alert(models.Model):
                     alert = None
 
         elif isinstance(instance, Check):
-            from checks.tasks import handle_check_email_alert_task
-            from checks.tasks import handle_check_sms_alert_task
+            from checks.tasks import (
+                handle_check_email_alert_task,
+                handle_check_sms_alert_task,
+            )
 
             email_task = handle_check_email_alert_task
             text_task = handle_check_sms_alert_task
@@ -217,8 +219,7 @@ class Alert(models.Model):
                     alert = None
 
         elif isinstance(instance, AutomatedTask):
-            from autotasks.tasks import handle_task_email_alert
-            from autotasks.tasks import handle_task_sms_alert
+            from autotasks.tasks import handle_task_email_alert, handle_task_sms_alert
 
             email_task = handle_task_email_alert
             text_task = handle_task_sms_alert
@@ -330,8 +331,7 @@ class Alert(models.Model):
 
         # check what the instance passed is
         if isinstance(instance, Agent):
-            from agents.tasks import agent_recovery_email_task
-            from agents.tasks import agent_recovery_sms_task
+            from agents.tasks import agent_recovery_email_task, agent_recovery_sms_task
 
             resolved_email_task = agent_recovery_email_task
             resolved_text_task = agent_recovery_sms_task
@@ -346,8 +346,10 @@ class Alert(models.Model):
                 text_on_resolved = alert_template.agent_text_on_resolved
 
         elif isinstance(instance, Check):
-            from checks.tasks import handle_resolved_check_email_alert_task
-            from checks.tasks import handle_resolved_check_sms_alert_task
+            from checks.tasks import (
+                handle_resolved_check_email_alert_task,
+                handle_resolved_check_sms_alert_task,
+            )
 
             resolved_email_task = handle_resolved_check_email_alert_task
             resolved_text_task = handle_resolved_check_sms_alert_task
@@ -362,8 +364,10 @@ class Alert(models.Model):
                 text_on_resolved = alert_template.check_text_on_resolved
 
         elif isinstance(instance, AutomatedTask):
-            from autotasks.tasks import handle_resolved_task_email_alert
-            from autotasks.tasks import handle_resolved_task_sms_alert
+            from autotasks.tasks import (
+                handle_resolved_task_email_alert,
+                handle_resolved_task_sms_alert,
+            )
 
             resolved_email_task = handle_resolved_task_email_alert
             resolved_text_task = handle_resolved_task_sms_alert

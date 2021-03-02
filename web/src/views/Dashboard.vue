@@ -205,10 +205,11 @@
                 <q-input
                   v-model="search"
                   style="width: 450px"
-                  label="Search"
+                  label="Search (temporarily disabled)"
                   dense
                   outlined
                   clearable
+                  disable
                   @clear="clearFilter"
                   class="q-pr-md q-pb-xs"
                 >
@@ -216,7 +217,7 @@
                     <q-icon name="search" color="primary" />
                   </template>
                   <template v-slot:after>
-                    <q-btn round dense flat icon="filter_alt" :color="isFilteringTable ? 'green' : ''">
+                    <q-btn disable round dense flat icon="filter_alt" :color="isFilteringTable ? 'green' : ''">
                       <q-menu>
                         <q-list dense>
                           <q-item-label header>Filter Agent Table</q-item-label>
@@ -451,8 +452,8 @@ export default {
           name: "checks-status",
           align: "left",
           field: "checks",
-          sortable: true,
-          sort: (a, b, rowA, rowB) => parseInt(b.failing) - a.failing,
+          sortable: false,
+          //sort: (a, b, rowA, rowB) => parseInt(b.failing) - a.failing,
         },
         {
           name: "client_name",
@@ -497,13 +498,13 @@ export default {
           name: "patchespending",
           field: "patches_pending",
           align: "left",
-          sortable: true,
+          sortable: false,
         },
         {
           name: "pendingactions",
           field: "pending_actions",
           align: "left",
-          sortable: true,
+          sortable: false,
         },
         {
           name: "agentstatus",
@@ -512,21 +513,21 @@ export default {
           sortable: true,
         },
         {
-          name: "needsreboot",
+          name: "needs_reboot",
           field: "needs_reboot",
           align: "left",
           sortable: true,
         },
         {
-          name: "lastseen",
+          name: "last_seen",
           label: "Last Response",
           field: "last_seen",
           sortable: true,
           align: "left",
-          sort: (a, b) => this.dateStringToUnix(a) - this.dateStringToUnix(b),
+          //sort: (a, b) => this.dateStringToUnix(a) - this.dateStringToUnix(b),
         },
         {
-          name: "boottime",
+          name: "boot_time",
           label: "Boot Time",
           field: "boot_time",
           sortable: true,
@@ -546,9 +547,9 @@ export default {
         "patchespending",
         "pendingactions",
         "agentstatus",
-        "needsreboot",
-        "lastseen",
-        "boottime",
+        "needs_reboot",
+        "last_seen",
+        "boot_time",
       ],
     };
   },

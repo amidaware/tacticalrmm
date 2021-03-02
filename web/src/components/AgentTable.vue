@@ -69,7 +69,7 @@
           </q-icon>
         </q-th>
       </template>
-      <template v-slot:header-cell-needsreboot="props">
+      <template v-slot:header-cell-needs_reboot="props">
         <q-th auto-width :props="props">
           <q-icon name="fas fa-power-off" size="1.2em">
             <q-tooltip>Reboot</q-tooltip>
@@ -363,8 +363,8 @@
               <q-tooltip>Reboot required</q-tooltip>
             </q-icon>
           </q-td>
-          <q-td key="lastseen" :props="props">{{ formatDjangoDate(props.row.last_seen) }}</q-td>
-          <q-td key="boottime" :props="props">{{ bootTime(props.row.boot_time) }}</q-td>
+          <q-td key="last_seen" :props="props">{{ formatDjangoDate(props.row.last_seen) }}</q-td>
+          <q-td key="boot_time" :props="props">{{ bootTime(props.row.boot_time) }}</q-td>
         </q-tr>
       </template>
     </q-table>
@@ -439,6 +439,7 @@ export default {
   },
   methods: {
     onRequest(props) {
+      if (!!props.filter) return;
       const { page, rowsPerPage, sortBy, descending } = props.pagination;
       this.agentTblPagination.page = page;
       this.agentTblPagination.rowsPerPage = rowsPerPage;

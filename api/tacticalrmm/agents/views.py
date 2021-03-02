@@ -234,6 +234,19 @@ class AgentsTableList(APIView):
         site = Q()
         mon_type = Q()
 
+        if pagination["sortBy"] == "agentstatus":
+            sort = "last_seen"
+        elif pagination["sortBy"] == "client_name":
+            sort = "site__client__name"
+        elif pagination["sortBy"] == "site_name":
+            sort = "site__name"
+        elif pagination["sortBy"] == "user":
+            sort = "logged_in_username"
+        else:
+            sort = pagination["sortBy"]
+
+        order_by = f"-{sort}" if pagination["descending"] else sort
+
         if monType == "server":
             mon_type = Q(monitoring_type="server")
         elif monType == "workstation":
@@ -270,7 +283,7 @@ class AgentsTableList(APIView):
                 "time_zone",
                 "maintenance_mode",
             )
-            .order_by(pagination["sortBy"])
+            .order_by(order_by)
         )
         paginator = Paginator(queryset, pagination["rowsPerPage"])
 

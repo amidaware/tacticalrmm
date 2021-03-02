@@ -202,6 +202,7 @@ class TestAuditViews(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data["actions"]), 12)  # type: ignore
         self.assertEqual(r.data["completed_count"], 14)  # type: ignore
+        self.assertEqual(r.data["total"], 26)  # type: ignore
 
         PendingAction.objects.filter(action_type="chocoinstall").update(
             status="completed"
@@ -211,12 +212,14 @@ class TestAuditViews(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data["actions"]), 26)  # type: ignore
         self.assertEqual(r.data["completed_count"], 26)  # type: ignore
+        self.assertEqual(r.data["total"], 26)  # type: ignore
 
         data = {"showCompleted": True, "agentPK": agent1.pk}
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data["actions"]), 12)  # type: ignore
         self.assertEqual(r.data["completed_count"], 26)  # type: ignore
+        self.assertEqual(r.data["total"], 26)  # type: ignore
 
         self.check_not_authenticated("patch", url)
 

@@ -25,11 +25,11 @@ Download the restore script.
 
 ```bash
 wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh
+chmod +x restore.sh
 ```
 
 Call the restore script, passing it the backup file as the first argument:
 
 ```bash
-chmod +x restore.sh
 ./restore.sh rmm-backup-XXXXXXXXX.tar
 ```

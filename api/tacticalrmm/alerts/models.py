@@ -1,10 +1,17 @@
+from __future__ import annotations
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
 from django.conf import settings
+from typing import Union, TYPE_CHECKING
 
 from loguru import logger
+
+if TYPE_CHECKING:
+    from agents.models import Agent
+    from autotasks.models import AutomatedTask
+    from checks.models import Check
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -124,7 +131,7 @@ class Alert(models.Model):
             return cls.objects.get(assigned_task=task, resolved=False)
 
     @classmethod
-    def handle_alert_failure(cls, instance) -> None:
+    def handle_alert_failure(cls, instance: Union[Agent, AutomatedTask, Check]) -> None:
         from agents.models import Agent
         from autotasks.models import AutomatedTask
         from checks.models import Check
@@ -310,7 +317,7 @@ class Alert(models.Model):
                 )
 
     @classmethod
-    def handle_alert_resolve(cls, instance) -> None:
+    def handle_alert_resolve(cls, instance: Union[Agent, AutomatedTask, Check]) -> None:
         from agents.models import Agent
         from autotasks.models import AutomatedTask
         from checks.models import Check

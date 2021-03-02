@@ -324,7 +324,7 @@ class TaskRunner(APIView):
 
         status = "failing" if task.retcode != 0 else "passing"
 
-        new_task = AutomatedTask.objects.get(pk=task.pk)
+        new_task: AutomatedTask = AutomatedTask.objects.get(pk=task.pk)
         new_task.status = status
         new_task.save()
 

@@ -2,7 +2,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 SCRIPTS_DIR = "/srv/salt/scripts"
 
@@ -15,16 +15,16 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.4.18"
+TRMM_VERSION = "0.4.19"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.116"
+APP_VER = "0.0.117"
 
 # https://github.com/wh1te909/rmmagent
-LATEST_AGENT_VER = "1.4.7"
+LATEST_AGENT_VER = "1.4.8"
 
-MESH_VER = "0.7.73"
+MESH_VER = "0.7.79"
 
 # for the update script, bump when need to recreate venv or npm install
 PIP_VER = "10"
@@ -39,11 +39,9 @@ except ImportError:
     pass
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
-    "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework.authtoken",
@@ -66,9 +64,19 @@ INSTALLED_APPS = [
     "natsapi",
 ]
 
-if not "TRAVIS" in os.environ and not "AZPIPELINE" in os.environ:
-    if DEBUG:
+if not "AZPIPELINE" in os.environ:
+    if DEBUG:  # type: ignore
         INSTALLED_APPS += ("django_extensions",)
+
+if "AZPIPELINE" in os.environ:
+    ADMIN_ENABLED = False
+
+if ADMIN_ENABLED:  # type: ignore
+    INSTALLED_APPS += (
+        "django.contrib.admin",
+        "django.contrib.messages",
+    )
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -78,10 +86,11 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "tacticalrmm.middleware.AuditMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+if ADMIN_ENABLED:  # type: ignore
+    MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)
 
 REST_KNOX = {
     "TOKEN_TTL": timedelta(hours=5),

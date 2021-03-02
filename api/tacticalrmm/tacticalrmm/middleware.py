@@ -51,6 +51,8 @@ class AuditMiddleware:
                 # Here's our fully formed and authenticated (or not, depending on credentials) request
                 request = view.initialize_request(request)
             except (AttributeError, TypeError):
+                from rest_framework.views import APIView
+
                 # Can't initialize the request from this view. Fallback to using default permission classes
                 request = APIView().initialize_request(request)
 

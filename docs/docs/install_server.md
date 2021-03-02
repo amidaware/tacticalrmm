@@ -52,8 +52,8 @@ ufw allow ssh
 
 Allow ssh from only allowed IP's (__highly__ recommended)
 ```bash
-ufw allow from X.X.X.X to any port 22
-ufw allow from X.X.X.X to any port 22
+ufw allow proto tcp from X.X.X.X to any port 22
+ufw allow proto tcp from X.X.X.X to any port 22
 ```
 
 Enable and activate the firewall
@@ -69,7 +69,7 @@ We'll be using `example.com` as our domain for this example.
     The RMM uses 3 different sites. The Vue frontend e.g. `rmm.example.com` which is where you'll be accesing your RMM from the browser, the REST backend e.g. `api.example.com` and Meshcentral e.g. `mesh.example.com`
 
 
-Get the public IP of your server with `curl icanhazip.com`<br/>
+Get the public IP of your server with `curl https://icanhazip.tacticalrmm.io`<br/>
 Open the DNS manager of wherever the domain you purchased is hosted.<br/>
 Create 3 A records: `rmm`, `api` and `mesh` and point them to the public IP of your server:
 
@@ -110,7 +110,8 @@ Create a login for the RMM web UI:
 
 ![rmmlogin](images/rmmlogin.png)
 
-A bunch of URLS / usernames / passwords will be printed out at the end of the install script. Save these somewhere safe.
+A bunch of URLS / usernames / passwords will be printed out at the end of the install script. **Save these somewhere safe.** [Recover them if you didn't](faq.md#how-do-i-recover-my-meshcentral-login-credentials)
+
 
 Copy the url for the meshagent exe (`https://mesh.example.com/agentinvite?c=......`), paste it in your browser and download the mesh agent:
 

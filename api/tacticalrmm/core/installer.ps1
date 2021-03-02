@@ -33,11 +33,20 @@ If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
 
     Try
     {
-        Add-MpPreference -ExclusionPath 'C:\Program Files\TacticalAgent\*'
-        Add-MpPreference -ExclusionPath 'C:\Windows\Temp\winagent-v*.exe'
-        Add-MpPreference -ExclusionPath 'C:\Program Files\Mesh Agent\*'
-        Add-MpPreference -ExclusionPath 'C:\Windows\Temp\trmm*\*'
-        
+        $DefenderStatus = Get-MpComputerStatus | select  AntivirusEnabled
+        if ($DefenderStatus -match "True") {
+            Add-MpPreference -ExclusionPath 'C:\Program Files\TacticalAgent\*'
+            Add-MpPreference -ExclusionPath 'C:\Windows\Temp\winagent-v*.exe'
+            Add-MpPreference -ExclusionPath 'C:\Program Files\Mesh Agent\*'
+            Add-MpPreference -ExclusionPath 'C:\Windows\Temp\trmm*\*'
+        }
+    }
+    Catch {
+        # pass
+    }
+    
+    Try
+    {  
         Invoke-WebRequest -Uri $downloadlink -OutFile $OutPath\$output
         Start-Process -FilePath $OutPath\$output -ArgumentList ('/VERYSILENT /SUPPRESSMSGBOXES') -Wait
         write-host ('Extracting...')

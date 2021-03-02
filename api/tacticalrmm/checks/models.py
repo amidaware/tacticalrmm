@@ -3,26 +3,19 @@ import json
 import os
 import string
 from statistics import mean
-from typing import Any, Union
+from typing import Any
 
 import pytz
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.utils import timezone as djangotime
 from loguru import logger
 
 from alerts.models import SEVERITY_CHOICES
 from core.models import CoreSettings
 from logs.models import BaseAuditModel
 
-from .tasks import (
-    handle_check_email_alert_task,
-    handle_check_sms_alert_task,
-    handle_resolved_check_email_alert_task,
-    handle_resolved_check_sms_alert_task,
-)
 from .utils import bytes2human
 
 logger.configure(**settings.LOG_CONFIG)
@@ -205,7 +198,7 @@ class Check(BaseAuditModel):
             if self.error_threshold:
                 text += f" Error Threshold: {self.error_threshold}%"
 
-            return f"{self.get_check_type_display()}: Drive {self.disk} < {text}"  # type: ignore
+            return f"{self.get_check_type_display()}: Drive {self.disk} - {text}"  # type: ignore
         elif self.check_type == "ping":
             return f"{self.get_check_type_display()}: {self.name}"  # type: ignore
         elif self.check_type == "cpuload" or self.check_type == "memory":
@@ -216,7 +209,7 @@ class Check(BaseAuditModel):
             if self.error_threshold:
                 text += f" Error Threshold: {self.error_threshold}%"
 
-            return f"{self.get_check_type_display()} > {text}"  # type: ignore
+            return f"{self.get_check_type_display()} - {text}"  # type: ignore
         elif self.check_type == "winsvc":
             return f"{self.get_check_type_display()}: {self.svc_display_name}"  # type: ignore
         elif self.check_type == "eventlog":
@@ -266,161 +259,27 @@ class Check(BaseAuditModel):
             "modified_time",
         ]
 
-    def handle_alert(self) -> None:
-        from alerts.models import Alert, AlertTemplate
+    def should_create_alert(self, alert_template):
 
-        # return if agent is in maintenance mode
-        if self.agent.maintenance_mode:
-            return
-
-        # see if agent has an alert template and use that
-        alert_template: Union[AlertTemplate, None] = self.agent.get_alert_template()
-
-        # resolve alert if it exists
-        if self.status == "passing":
-            if Alert.objects.filter(assigned_check=self, resolved=False).exists():
-                alert = Alert.objects.get(assigned_check=self, resolved=False)
-                alert.resolve()
-
-                # check if a resolved email notification should be send
-                if (
-                    alert_template
-                    and alert_template.check_email_on_resolved
-                    and not alert.resolved_email_sent
-                ):
-                    handle_resolved_check_email_alert_task.delay(pk=alert.pk)
-
-                # check if resolved text should be sent
-                if (
-                    alert_template
-                    and alert_template.check_text_on_resolved
-                    and not alert.resolved_sms_sent
-                ):
-                    handle_resolved_check_sms_alert_task.delay(pk=alert.pk)
-
-                # check if resolved script should be run
-                if (
-                    alert_template
-                    and alert_template.resolved_action
-                    and not alert.resolved_action_run
-                ):
-                    r = self.agent.run_script(
-                        scriptpk=alert_template.resolved_action.pk,
-                        args=alert_template.resolved_action_args,
-                        timeout=alert_template.resolved_action_timeout,
-                        wait=True,
-                        full=True,
-                        run_on_any=True,
-                    )
-
-                    # command was successful
-                    if type(r) == dict:
-                        alert.resolved_action_retcode = r["retcode"]
-                        alert.resolved_action_stdout = r["stdout"]
-                        alert.resolved_action_stderr = r["stderr"]
-                        alert.resolved_action_execution_time = "{:.4f}".format(
-                            r["execution_time"]
-                        )
-                        alert.resolved_action_run = djangotime.now()
-                        alert.save()
-                    else:
-                        logger.error(
-                            f"Resolved action: {alert_template.action.name} failed to run on any agent for {self.agent.hostname} resolved alert for {self.check_type} check"
-                        )
-
-        elif self.fail_count >= self.fails_b4_alert:
-            if not Alert.objects.filter(assigned_check=self, resolved=False).exists():
-
-                # check if alert should be created and if not return
-                if (
-                    self.dashboard_alert
-                    or self.email_alert
-                    or self.text_alert
-                    or (
-                        alert_template
-                        and (
-                            alert_template.check_always_alert
-                            or alert_template.check_always_email
-                            or alert_template.check_always_text
-                        )
-                    )
-                ):
-                    alert = Alert.create_check_alert(self)
-                else:
-                    return
-            else:
-                alert = Alert.objects.get(assigned_check=self, resolved=False)
-
-                # check if alert severity changed on check and update the alert
-                if self.alert_severity != alert.severity:
-                    alert.severity = self.alert_severity
-                    alert.save(update_fields=["severity"])
-
-            # create alert in dashboard if enabled
-            if self.dashboard_alert or (
+        return (
+            self.dashboard_alert
+            or self.email_alert
+            or self.text_alert
+            or (
                 alert_template
-                and self.alert_severity in alert_template.check_dashboard_alert_severity
-                and alert_template.check_always_alert
-            ):
-                alert.hidden = False
-                alert.save()
-
-            # send email if enabled
-            if (
-                not alert.email_sent
-                and self.email_alert
-                or alert_template
-                and self.alert_severity in alert_template.check_email_alert_severity
-                and alert_template.check_always_email
-            ):
-                handle_check_email_alert_task.delay(
-                    pk=alert.pk,
-                    alert_interval=alert_template.check_periodic_alert_days
-                    if alert_template
-                    else None,
+                and (
+                    alert_template.check_always_alert
+                    or alert_template.check_always_email
+                    or alert_template.check_always_text
                 )
-
-            # send text if enabled
-            if self.text_alert or (
-                alert_template
-                and self.alert_severity in alert_template.check_text_alert_severity
-                and alert_template.check_always_text
-            ):
-                handle_check_sms_alert_task.delay(
-                    pk=alert.pk,
-                    alert_interval=alert_template.check_periodic_alert_days
-                    if alert_template
-                    else None,
-                )
-
-            # check if any scripts should be run
-            if alert_template and alert_template.action and not alert.action_run:
-                r = self.agent.run_script(
-                    scriptpk=alert_template.action.pk,
-                    args=alert_template.action_args,
-                    timeout=alert_template.action_timeout,
-                    wait=True,
-                    full=True,
-                    run_on_any=True,
-                )
-
-                # command was successful
-                if type(r) == dict:
-                    alert.action_retcode = r["retcode"]
-                    alert.action_stdout = r["stdout"]
-                    alert.action_stderr = r["stderr"]
-                    alert.action_execution_time = "{:.4f}".format(r["execution_time"])
-                    alert.action_run = djangotime.now()
-                    alert.save()
-                else:
-                    logger.error(
-                        f"Failure action: {alert_template.action.name} failed to run on any agent for {self.agent.hostname} failure alert for {self.check_type} check{r}"
-                    )
+            )
+        )
 
     def add_check_history(self, value: int, more_info: Any = None) -> None:
         CheckHistory.objects.create(check_history=self, y=value, results=more_info)
 
     def handle_checkv2(self, data):
+        from alerts.models import Alert
 
         # cpuload or mem checks
         if self.check_type == "cpuload" or self.check_type == "memory":
@@ -653,11 +512,14 @@ class Check(BaseAuditModel):
             self.fail_count += 1
             self.save(update_fields=["status", "fail_count", "alert_severity"])
 
+            if self.fail_count >= self.fails_b4_alert:
+                Alert.handle_alert_failure(self)
+
         elif self.status == "passing":
             self.fail_count = 0
             self.save(update_fields=["status", "fail_count", "alert_severity"])
-
-        self.handle_alert()
+            if Alert.objects.filter(assigned_check=self, resolved=False).exists():
+                Alert.handle_alert_resolve(self)
 
         return self.status
 

@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -27,6 +28,18 @@ var (
 	DownloadUrl string
 )
 
+var netTransport = &http.Transport{
+	Dial: (&net.Dialer{
+		Timeout: 5 * time.Second,
+	}).Dial,
+	TLSHandshakeTimeout: 5 * time.Second,
+}
+
+var netClient = &http.Client{
+	Timeout:   time.Second * 900,
+	Transport: netTransport,
+}
+
 func downloadAgent(filepath string) (err error) {
 
 	out, err := os.Create(filepath)
@@ -35,7 +48,7 @@ func downloadAgent(filepath string) (err error) {
 	}
 	defer out.Close()
 
-	resp, err := http.Get(DownloadUrl)
+	resp, err := netClient.Get(DownloadUrl)
 	if err != nil {
 		return err
 	}
@@ -59,7 +72,6 @@ func main() {
 	localMesh := flag.String("local-mesh", "", "Use local mesh agent")
 	silent := flag.Bool("silent", false, "Do not popup any message boxes during installation")
 	cert := flag.String("cert", "", "Path to ca.pem")
-	timeout := flag.String("timeout", "", "Timeout for subprocess calls")
 	flag.Parse()
 
 	var debug bool = false
@@ -91,10 +103,6 @@ func main() {
 
 	if len(strings.TrimSpace(*cert)) != 0 {
 		cmdArgs = append(cmdArgs, "-cert", *cert)
-	}
-
-	if len(strings.TrimSpace(*timeout)) != 0 {
-		cmdArgs = append(cmdArgs, "-timeout", *timeout)
 	}
 
 	if Rdp == "1" {

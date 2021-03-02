@@ -183,6 +183,8 @@ def agent_recovery_sms_task(pk: int) -> str:
 
 @app.task
 def agent_outages_task() -> None:
+    from alerts.models import Alert
+
     agents = Agent.objects.only(
         "pk",
         "last_seen",
@@ -195,7 +197,7 @@ def agent_outages_task() -> None:
 
     for agent in agents:
         if agent.status == "overdue":
-            agent.handle_alert()
+            Alert.handle_alert_failure(agent)
 
 
 @app.task

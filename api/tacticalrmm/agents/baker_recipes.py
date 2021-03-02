@@ -43,6 +43,10 @@ workstation_agent = agent.extend(
 
 online_agent = agent.extend(last_seen=djangotime.now())
 
+offline_agent = agent.extend(
+    last_seen=djangotime.now() - djangotime.timedelta(minutes=7)
+)
+
 overdue_agent = agent.extend(
     last_seen=djangotime.now() - djangotime.timedelta(minutes=35)
 )

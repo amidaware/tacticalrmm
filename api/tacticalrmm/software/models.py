@@ -8,23 +8,7 @@ class ChocoSoftware(models.Model):
     added = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        from .serializers import ChocoSoftwareSerializer
-
-        return (
-            str(len(ChocoSoftwareSerializer(self).data["chocos"])) + f" - {self.added}"
-        )
-
-
-class ChocoLog(models.Model):
-    agent = models.ForeignKey(Agent, related_name="chocolog", on_delete=models.CASCADE)
-    name = models.CharField(max_length=255)
-    version = models.CharField(max_length=255)
-    message = models.TextField()
-    installed = models.BooleanField(default=False)
-    time = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.agent.hostname} | {self.name} | {self.time}"
+        return f"{len(self.chocos)} - {self.added}"
 
 
 class InstalledSoftware(models.Model):

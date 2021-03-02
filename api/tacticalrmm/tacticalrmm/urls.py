@@ -1,12 +1,10 @@
 from django.conf import settings
-from django.contrib import admin
 from django.urls import include, path
 from knox import views as knox_views
 
 from accounts.views import CheckCreds, LoginView
 
 urlpatterns = [
-    path(settings.ADMIN_URL, admin.site.urls),
     path("checkcreds/", CheckCreds.as_view()),
     path("login/", LoginView.as_view()),
     path("logout/", knox_views.LogoutView.as_view()),
@@ -27,3 +25,8 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("natsapi/", include("natsapi.urls")),
 ]
+
+if hasattr(settings, "ADMIN_ENABLED") and settings.ADMIN_ENABLED:
+    from django.contrib import admin
+
+    urlpatterns += (path(settings.ADMIN_URL, admin.site.urls),)

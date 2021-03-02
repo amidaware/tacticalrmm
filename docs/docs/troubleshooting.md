@@ -51,8 +51,15 @@ This will print out a ton of info. You should be able to see the error from the 
 
 Please then copy/paste the logs and post them either in our [Discord support chat](https://discord.gg/upGTkWp), or create a [github issue](https://github.com/wh1te909/tacticalrmm/issues).
 
+<br/>
 
 #### Web UI frozen or not loading / website errors / general errors
+
+First, run the [update script](update_server.md#updating-to-the-latest-rmm-version) with the `--force` flag. <br/>This will fix permissions and reinstall python/node packages that might have gotten corrupted.
+
+```bash
+./update.sh --force
+```
 
 Check all the systemd services that the rmm uses to function and check to make sure they're all active/running and enabled:
 

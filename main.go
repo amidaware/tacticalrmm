@@ -9,7 +9,7 @@ import (
 	"github.com/wh1te909/tacticalrmm/natsapi"
 )
 
-var version = "1.0.8"
+var version = "1.1.0"
 
 func main() {
 	ver := flag.Bool("version", false, "Prints version")

@@ -22,10 +22,10 @@ func monitorAgents(c *resty.Client, nc *nats.Conn) {
 		Data: map[string]string{"mode": "tacagent"},
 	})
 
-	tick := time.NewTicker(10 * time.Minute)
+	tick := time.NewTicker(7 * time.Minute)
 	for range tick.C {
 		var wg sync.WaitGroup
-		agentids, _ := c.R().SetResult(&AgentIDS{}).Get("/offline/")
+		agentids, _ := c.R().SetResult(&AgentIDS{}).Get("/offline/agents/")
 		ids := agentids.Result().(*AgentIDS).IDs
 		wg.Add(len(ids))
 		var resp string
@@ -49,6 +49,7 @@ func monitorAgents(c *resty.Client, nc *nats.Conn) {
 				}
 			}(id, nc, &wg, c)
 		}
+		wg.Wait()
 	}
 }
 
@@ -61,7 +62,7 @@ func getWMI(c *resty.Client, nc *nats.Conn) {
 
 	tick := time.NewTicker(18 * time.Minute)
 	for range tick.C {
-		agentids, _ := c.R().SetResult(&AgentIDS{}).Get("/wmi/")
+		agentids, _ := c.R().SetResult(&AgentIDS{}).Get("/online/agents/")
 		ids := agentids.Result().(*AgentIDS).IDs
 		chunks := makeChunks(ids, 40)
 

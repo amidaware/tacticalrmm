@@ -201,5 +201,12 @@
         "name": "Display Message To User",
         "description": "Displays a popup message to the currently logged on user",
         "shell": "powershell"
+    },
+    {
+        "filename": "VerifyAntivirus.ps1",
+        "submittedBy": "https://github.com/beejayzed",
+        "name": "Verify Antivirus Status",
+        "description": "Verify and display status for all installed Antiviruses",
+        "shell": "powershell"
     }
 ]

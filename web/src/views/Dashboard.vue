@@ -195,6 +195,7 @@
                   indicator-color="primary"
                   align="left"
                   narrow-indicator
+                  @input="tabChanged"
                 >
                   <q-tab name="server" icon="fas fa-server" label="Servers" />
                   <q-tab name="workstation" icon="computer" label="Workstations" />
@@ -321,11 +322,13 @@
                 :frame="frame"
                 :columns="columns"
                 :tab="tab"
-                :filter="filteredAgents"
+                :filter="frozenAgents"
                 :userName="user"
                 :search="search"
                 :visibleColumns="visibleColumns"
+                :agentTblPagination="agentTblPagination"
                 @refreshEdit="refreshEntireSite"
+                @agentPagChanged="setAgentTblPagination"
               />
             </template>
             <template v-slot:separator>
@@ -363,13 +366,12 @@
     </q-dialog>
     <!-- user preferences modal -->
     <q-dialog v-model="showUserPreferencesModal">
-      <UserPreferences @close="showUserPreferencesModal = false" @edited="getDashInfo" />
+      <UserPreferences @close="showUserPreferencesModal = false" @edited="getDashInfo" @refresh="refreshEntireSite" />
     </q-dialog>
   </q-layout>
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 import { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import { mapState, mapGetters } from "vuex";
@@ -425,6 +427,13 @@ export default {
       filterRebootNeeded: false,
       currentTRMMVersion: null,
       showUserPreferencesModal: false,
+      agentTblPagination: {
+        rowsPerPage: 50,
+        rowsNumber: null,
+        sortBy: "hostname",
+        descending: false,
+        page: 1,
+      },
       columns: [
         {
           name: "smsalert",
@@ -550,6 +559,16 @@ export default {
     },
   },
   methods: {
+    tabChanged(val) {
+      if (this.allClientsActive) {
+        this.loadAllClients();
+      } else {
+        this.loadFrame(this.selectedTree, false);
+      }
+    },
+    setAgentTblPagination(val) {
+      this.agentTblPagination = val;
+    },
     toggleDark(val) {
       this.$q.dark.set(val);
       this.$axios.patch("/accounts/users/ui/", { dark_mode: val });
@@ -578,23 +597,33 @@ export default {
     loadFrame(activenode, destroySub = true) {
       if (destroySub) this.$store.commit("destroySubTable");
 
-      let url, urlType, id;
+      let execute = false;
+      let urlType, id;
+      let data = { pagination: this.agentTblPagination };
+
       if (typeof activenode === "string") {
         urlType = activenode.split("|")[0];
         id = activenode.split("|")[1];
 
         if (urlType === "Client") {
-          url = `/agents/byclient/${id}/`;
+          data.clientPK = id;
+          execute = true;
         } else if (urlType === "Site") {
-          url = `/agents/bysite/${id}/`;
+          data.sitePK = id;
+          execute = true;
         }
 
-        if (url) {
+        if (execute) {
           this.$store.commit("AGENT_TABLE_LOADING", true);
-          axios.get(url).then(r => {
-            this.frame = r.data;
-            this.$store.commit("AGENT_TABLE_LOADING", false);
-          });
+          // give time for vuex to set the tab, otherwise will always be 'server'
+          setTimeout(() => {
+            data.monType = this.tab;
+            this.$axios.patch("/agents/listagents/", data).then(r => {
+              this.frame = r.data.agents;
+              this.agentTblPagination.rowsNumber = r.data.total;
+              this.$store.commit("AGENT_TABLE_LOADING", false);
+            });
+          }, 500);
         }
       }
     },
@@ -612,12 +641,18 @@ export default {
     },
     loadAllClients() {
       this.$store.commit("AGENT_TABLE_LOADING", true);
-      axios.get("/agents/listagents/").then(r => {
-        this.frame = r.data;
-        //this.siteActive = "";
-        //this.$store.commit("destroySubTable");
-        this.$store.commit("AGENT_TABLE_LOADING", false);
-      });
+      // give time for vuex to set the tab, otherwise will always be 'server'
+      setTimeout(() => {
+        const data = {
+          pagination: this.agentTblPagination,
+          monType: this.tab,
+        };
+        this.$axios.patch("/agents/listagents/", data).then(r => {
+          this.frame = r.data.agents;
+          this.agentTblPagination.rowsNumber = r.data.total;
+          this.$store.commit("AGENT_TABLE_LOADING", false);
+        });
+      }, 500);
     },
     showPolicyAdd(node) {
       if (node.children) {
@@ -709,13 +744,16 @@ export default {
         this.workstationOfflineCount = r.data.total_workstation_offline_count;
       });
     },
-    getDashInfo(setDefaultTab = true) {
+    getDashInfo(edited = true) {
       this.$store.dispatch("getDashInfo").then(r => {
+        if (edited) {
+          this.agentTblPagination.rowsPerPage = r.data.agents_per_page;
+          this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", r.data.default_agent_tbl_tab);
+        }
         this.darkMode = r.data.dark_mode;
         this.$q.dark.set(this.darkMode);
         this.currentTRMMVersion = r.data.trmm_version;
         this.$store.commit("SET_AGENT_DBLCLICK_ACTION", r.data.dbl_click_action);
-        if (setDefaultTab) this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", r.data.default_agent_tbl_tab);
         this.$store.commit("setShowCommunityScripts", r.data.show_community_scripts);
       });
     },
@@ -809,13 +847,10 @@ export default {
       },
     },
     allClientsActive() {
-      return this.selectedTree === "" ? true : false;
+      return this.selectedTree === "";
     },
-    filteredAgents() {
-      if (this.tab === "mixed") {
-        return Object.freeze(this.frame);
-      }
-      return Object.freeze(this.frame.filter(k => k.monitoring_type === this.tab));
+    frozenAgents() {
+      return Object.freeze(this.frame);
     },
     activeNode() {
       return {
@@ -841,13 +876,12 @@ export default {
   },
   created() {
     this.getDashInfo();
-    this.getTree();
     this.$store.dispatch("getUpdatedSites");
     this.$store.dispatch("checkVer");
     this.getAgentCounts();
+    this.getTree();
   },
   mounted() {
-    this.loadFrame(this.activeNode);
     this.livePoll();
   },
   beforeDestroy() {

@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"runtime"
+
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-resty/resty/v2"
 	nats "github.com/nats-io/nats.go"
-	"github.com/ugorji/go/codec"
-	rmm "github.com/wh1te909/rmmagent/shared"
 )
 
 var rClient = resty.New()
@@ -51,7 +50,7 @@ func Listen(apihost, natshost, version string, debug bool) {
 	log.Println("Nats connection url: ", natsurl)
 
 	rClient.SetHostURL(api)
-	rClient.SetTimeout(30 * time.Second)
+	rClient.SetTimeout(10 * time.Second)
 	natsinfo, err := rClient.R().SetResult(&NatsInfo{}).Get("/natsinfo/")
 	if err != nil {
 		log.Fatalln(err)
@@ -75,122 +74,9 @@ func Listen(apihost, natshost, version string, debug bool) {
 		log.Fatalln(err)
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go getWMI(rClient, nc)
 	go monitorAgents(rClient, nc)
-
-	nc.Subscribe("*", func(msg *nats.Msg) {
-		var mh codec.MsgpackHandle
-		mh.RawToString = true
-		dec := codec.NewDecoderBytes(msg.Data, &mh)
-
-		switch msg.Reply {
-		case "hello":
-			go func() {
-				var p *rmm.CheckIn
-				if err := dec.Decode(&p); err == nil {
-					rClient.R().SetBody(p).Patch("/checkin/")
-				}
-			}()
-		case "startup":
-			go func() {
-				var p *rmm.CheckIn
-				if err := dec.Decode(&p); err == nil {
-					rClient.R().SetBody(p).Post("/checkin/")
-				}
-			}()
-		case "osinfo":
-			go func() {
-				var p *rmm.CheckInOS
-				if err := dec.Decode(&p); err == nil {
-					rClient.R().SetBody(p).Put("/checkin/")
-				}
-			}()
-		case "winservices":
-			go func() {
-				var p *rmm.CheckInWinServices
-				if err := dec.Decode(&p); err == nil {
-					rClient.R().SetBody(p).Put("/checkin/")
-				}
-			}()
-		case "publicip":
-			go func() {
-				var p *rmm.CheckInPublicIP
-				if err := dec.Decode(&p); err == nil {
-					rClient.R().SetBody(p).Put("/checkin/")
-				}
-			}()
-		case "disks":
-			go func() {
-				var p *rmm.CheckInDisk
-				if err := dec.Decode(&p); err == nil {
-					rClient.R().SetBody(p).Put("/checkin/")
-				}
-			}()
-		case "loggedonuser":
-			go func() {
-				var p *rmm.CheckInLoggedUser
-				if err := dec.Decode(&p); err == nil {
-					rClient.R().SetBody(p).Put("/checkin/")
-				}
-			}()
-		case "software":
-			go func() {
-				var p *rmm.CheckInSW
-				if err := dec.Decode(&p); err == nil {
-					rClient.R().SetBody(p).Put("/checkin/")
-				}
-			}()
-		case "syncmesh":
-			go func() {
-				var p *rmm.MeshNodeID
-				if err := dec.Decode(&p); err == nil {
-					rClient.R().SetBody(p).Post("/syncmesh/")
-				}
-			}()
-		case "getwinupdates":
-			go func() {
-				var p *rmm.WinUpdateResult
-				if err := dec.Decode(&p); err == nil {
-					rClient.R().SetBody(p).Post("/winupdates/")
-				}
-			}()
-		case "winupdateresult":
-			go func() {
-				var p *rmm.WinUpdateInstallResult
-				if err := dec.Decode(&p); err == nil {
-					rClient.R().SetBody(p).Patch("/winupdates/")
-				}
-			}()
-		case "superseded":
-			go func() {
-				var p *rmm.SupersededUpdate
-				if err := dec.Decode(&p); err == nil {
-					rClient.R().SetBody(p).Post("/superseded/")
-				}
-			}()
-		case "needsreboot":
-			go func() {
-				var p *rmm.AgentNeedsReboot
-				if err := dec.Decode(&p); err == nil {
-					rClient.R().SetBody(p).Put("/winupdates/")
-				}
-			}()
-		case "chocoinstall":
-			go func() {
-				var p *rmm.ChocoInstalled
-				if err := dec.Decode(&p); err == nil {
-					rClient.R().SetBody(p).Post("/choco/")
-				}
-			}()
-		}
-	})
-
-	nc.Flush()
-
-	if err := nc.LastError(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	runtime.Goexit()
+	wg.Wait()
 }

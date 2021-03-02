@@ -9,52 +9,28 @@ class TestNatsAPIViews(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
-    def test_nats_wmi(self):
-        url = "/natsapi/wmi/"
-        baker.make_recipe("agents.online_agent", version="1.2.0", _quantity=14)
+    def test_nats_agents(self):
         baker.make_recipe(
-            "agents.online_agent", version=settings.LATEST_AGENT_VER, _quantity=3
+            "agents.online_agent", version=settings.LATEST_AGENT_VER, _quantity=14
+        )
+
+        baker.make_recipe(
+            "agents.offline_agent", version=settings.LATEST_AGENT_VER, _quantity=6
         )
         baker.make_recipe(
             "agents.overdue_agent", version=settings.LATEST_AGENT_VER, _quantity=5
         )
-        baker.make_recipe("agents.online_agent", version="1.1.12", _quantity=7)
+
+        url = "/natsapi/online/agents/"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.json()["agent_ids"]), 17)
+        self.assertEqual(len(r.json()["agent_ids"]), 14)
 
-    def test_natscheckin_patch(self):
-        from logs.models import PendingAction
-
-        url = "/natsapi/checkin/"
-        agent_updated = baker.make_recipe("agents.agent", version="1.3.0")
-        PendingAction.objects.create(
-            agent=agent_updated,
-            action_type="agentupdate",
-            details={
-                "url": agent_updated.winagent_dl,
-                "version": agent_updated.version,
-                "inno": agent_updated.win_inno_exe,
-            },
-        )
-        action = agent_updated.pendingactions.filter(action_type="agentupdate").first()
-        self.assertEqual(action.status, "pending")
-
-        # test agent failed to update and still on same version
-        payload = {
-            "func": "hello",
-            "agent_id": agent_updated.agent_id,
-            "version": "1.3.0",
-        }
-        r = self.client.patch(url, payload, format="json")
+        url = "/natsapi/offline/agents/"
+        r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        action = agent_updated.pendingactions.filter(action_type="agentupdate").first()
-        self.assertEqual(action.status, "pending")
+        self.assertEqual(len(r.json()["agent_ids"]), 11)
 
-        # test agent successful update
-        payload["version"] = settings.LATEST_AGENT_VER
-        r = self.client.patch(url, payload, format="json")
-        self.assertEqual(r.status_code, 200)
-        action = agent_updated.pendingactions.filter(action_type="agentupdate").first()
-        self.assertEqual(action.status, "completed")
-        action.delete()
+        url = "/natsapi/asdjaksdasd/agents/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 400)

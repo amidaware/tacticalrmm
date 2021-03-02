@@ -53,3 +53,39 @@ class TestAPIv3(TacticalTestCase):
             r.json(),
             {"agent": self.agent.pk, "check_interval": self.agent.check_interval},
         )
+
+    def test_checkin_patch(self):
+        from logs.models import PendingAction
+
+        url = "/api/v3/checkin/"
+        agent_updated = baker.make_recipe("agents.agent", version="1.3.0")
+        PendingAction.objects.create(
+            agent=agent_updated,
+            action_type="agentupdate",
+            details={
+                "url": agent_updated.winagent_dl,
+                "version": agent_updated.version,
+                "inno": agent_updated.win_inno_exe,
+            },
+        )
+        action = agent_updated.pendingactions.filter(action_type="agentupdate").first()
+        self.assertEqual(action.status, "pending")
+
+        # test agent failed to update and still on same version
+        payload = {
+            "func": "hello",
+            "agent_id": agent_updated.agent_id,
+            "version": "1.3.0",
+        }
+        r = self.client.patch(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+        action = agent_updated.pendingactions.filter(action_type="agentupdate").first()
+        self.assertEqual(action.status, "pending")
+
+        # test agent successful update
+        payload["version"] = settings.LATEST_AGENT_VER
+        r = self.client.patch(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+        action = agent_updated.pendingactions.filter(action_type="agentupdate").first()
+        self.assertEqual(action.status, "completed")
+        action.delete()

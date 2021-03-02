@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="19"
+SCRIPT_VERSION="20"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -242,9 +242,36 @@ npm install meshcentral@${MESH_VER}
 
 print_green 'Restoring the backend'
 
+numprocs=$(nproc)
+uwsgiprocs=4
+if [[ "$numprocs" == "1" ]]; then
+  uwsgiprocs=2
+else
+  uwsgiprocs=$numprocs
+fi
+
+uwsgini="$(cat << EOF
+[uwsgi]
+chdir = /rmm/api/tacticalrmm
+module = tacticalrmm.wsgi
+home = /rmm/api/env
+master = true
+processes = ${uwsgiprocs}
+threads = ${uwsgiprocs}
+enable-threads = true
+socket = /rmm/api/tacticalrmm/tacticalrmm.sock
+harakiri = 300
+chmod-socket = 660
+buffer-size = 65535
+vacuum = true
+die-on-term = true
+max-requests = 500
+EOF
+)"
+echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
+
 cp $tmp_dir/rmm/local_settings.py /rmm/api/tacticalrmm/tacticalrmm/
 cp $tmp_dir/rmm/env /rmm/web/.env
-cp $tmp_dir/rmm/app.ini /rmm/api/tacticalrmm/
 gzip -d $tmp_dir/rmm/debug.log.gz
 cp $tmp_dir/rmm/debug.log /rmm/api/tacticalrmm/tacticalrmm/private/log/
 cp $tmp_dir/rmm/mesh*.exe /rmm/api/tacticalrmm/tacticalrmm/private/exe/

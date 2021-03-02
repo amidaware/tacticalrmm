@@ -1,12 +1,14 @@
 site_name: "Tactical RMM Documentation"
 nav:
   - Home: index.md
+  - Sponsor: sponsor.md
   - RMM Installation:
       - "Traditional Install": install_server.md
       - "Docker Install": install_docker.md
   - Agent Installation: install_agent.md
   - Updating:
       - "Updating the RMM": update_server.md
+      - "Updating the RMM (Docker)": update_docker.md
       - "Updating Agents": update_agents.md
   - Functionality:
       - "Remote Background": functions/remote_bg.md
@@ -17,7 +19,9 @@ nav:
   - Restore: restore.md
   - Troubleshooting: troubleshooting.md
   - FAQ: faq.md
+  - Management Commands: management_cmds.md
   - MeshCentral Integration: mesh_integration.md
+  - Contributing: contributing.md
   - License: license.md
 site_description: "A remote monitoring and management tool"
 site_author: "wh1te909"

@@ -6,7 +6,7 @@
       <q-space />
       <q-btn dense flat icon="close" v-close-popup />
     </q-bar>
-    <div v-if="actions.length !== 0" class="q-pa-md">
+    <div v-if="totalCount !== 0" class="q-pa-md">
       <div class="row">
         <div class="col">
           <q-btn
@@ -26,7 +26,7 @@
           <q-btn
             :label="showCompleted ? `Hide ${completedCount} Completed` : `Show ${completedCount} Completed`"
             :icon="showCompleted ? 'visibility_off' : 'visibility'"
-            @click="showCompleted = !showCompleted"
+            @click="toggleShowCompleted"
             dense
             unelevated
             no-caps
@@ -39,7 +39,7 @@
         dense
         :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
         class="remote-bg-tbl-sticky"
-        :data="filter"
+        :data="actions"
         :columns="columns"
         :visible-columns="visibleColumns"
         :pagination.sync="pagination"
@@ -64,8 +64,22 @@
             <q-td v-else-if="props.row.action_type === 'agentupdate'">
               <q-icon name="update" size="sm" />
             </q-td>
-            <q-td>{{ props.row.due }}</q-td>
+            <q-td v-else-if="props.row.action_type === 'chocoinstall'">
+              <q-icon name="download" size="sm" />
+            </q-td>
+            <q-td v-if="props.row.status !== 'completed'">{{ props.row.due }}</q-td>
+            <q-td v-else>Completed</q-td>
             <q-td>{{ props.row.description }}</q-td>
+            <q-td v-if="props.row.action_type === 'chocoinstall' && props.row.status === 'completed'">
+              <q-btn
+                color="primary"
+                icon="preview"
+                size="sm"
+                label="View output"
+                @click="showOutput(props.row.details.output)"
+              />
+            </q-td>
+            <q-td v-else></q-td>
             <q-td v-show="!!!agentpk">{{ props.row.hostname }}</q-td>
             <q-td v-show="!!!agentpk">{{ props.row.client }}</q-td>
             <q-td v-show="!!!agentpk">{{ props.row.site }}</q-td>
@@ -94,6 +108,8 @@ export default {
       selectedRow: null,
       showCompleted: false,
       selectedStatus: null,
+      completedCount: 0,
+      totalCount: 0,
       actionType: null,
       hostname: "",
       pagination: {
@@ -107,30 +123,48 @@ export default {
         { name: "type", label: "Type", field: "action_type", align: "left", sortable: true },
         { name: "due", label: "Due", field: "due", align: "left", sortable: true },
         { name: "desc", label: "Description", field: "description", align: "left", sortable: true },
+        { name: "details", field: "details", align: "left", sortable: false },
         { name: "agent", label: "Agent", field: "hostname", align: "left", sortable: true },
         { name: "client", label: "Client", field: "client", align: "left", sortable: true },
         { name: "site", label: "Site", field: "site", align: "left", sortable: true },
       ],
-      all_visibleColumns: ["type", "due", "desc", "agent", "client", "site"],
+      all_visibleColumns: ["type", "due", "desc", "agent", "client", "site", "details"],
       agent_columns: [
         { name: "id", field: "id" },
         { name: "status", field: "status" },
         { name: "type", label: "Type", field: "action_type", align: "left", sortable: true },
         { name: "due", label: "Due", field: "due", align: "left", sortable: true },
         { name: "desc", label: "Description", field: "description", align: "left", sortable: true },
+        { name: "details", field: "details", align: "left", sortable: false },
       ],
-      agent_visibleColumns: ["type", "due", "desc"],
+      agent_visibleColumns: ["type", "due", "desc", "details"],
     };
   },
   methods: {
+    showOutput(details) {
+      this.$q.dialog({
+        style: "width: 75vw; max-width: 85vw; max-height: 65vh;",
+        class: "scroll",
+        message: `<pre>${details}</pre>`,
+        html: true,
+      });
+    },
+    toggleShowCompleted() {
+      this.showCompleted = !this.showCompleted;
+      this.getPendingActions();
+    },
     getPendingActions() {
+      let data = { showCompleted: this.showCompleted };
+      if (!!this.agentpk) data.agentPK = this.agentpk;
       this.$q.loading.show();
       this.clearRow();
       this.$axios
-        .get(this.url)
+        .patch("/logs/pendingactions/", data)
         .then(r => {
-          this.actions = Object.freeze(r.data);
-          if (!!this.agentpk) this.hostname = r.data[0].hostname;
+          this.totalCount = r.data.total;
+          this.completedCount = r.data.completed_count;
+          this.actions = Object.freeze(r.data.actions);
+          if (!!this.agentpk) this.hostname = r.data.actions[0].hostname;
           this.$q.loading.hide();
         })
         .catch(e => {
@@ -148,7 +182,7 @@ export default {
           this.$q.loading.show();
           const data = { pk: this.selectedRow };
           this.$axios
-            .delete("/logs/cancelpendingaction/", { data: data })
+            .delete("/logs/pendingactions/", { data: data })
             .then(r => {
               this.$q.loading.hide();
               this.getPendingActions();
@@ -180,12 +214,6 @@ export default {
     },
   },
   computed: {
-    url() {
-      return !!this.agentpk ? `/logs/${this.agentpk}/pendingactions/` : "/logs/allpendingactions/";
-    },
-    filter() {
-      return this.showCompleted ? this.actions : this.actions.filter(k => k.status === "pending");
-    },
     columns() {
       return !!this.agentpk ? this.agent_columns : this.all_columns;
     },
@@ -194,9 +222,6 @@ export default {
     },
     title() {
       return !!this.agentpk ? `Pending Actions for ${this.hostname}` : "All Pending Actions";
-    },
-    completedCount() {
-      return this.actions.filter(k => k.status === "completed").length;
     },
   },
   created() {

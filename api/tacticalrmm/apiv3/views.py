@@ -22,6 +22,7 @@ from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
 from checks.models import Check
 from checks.serializers import CheckRunnerGetSerializer
 from checks.utils import bytes2human
+from logs.models import PendingAction
 from software.models import InstalledSoftware
 from tacticalrmm.utils import SoftwareList, filter_software, notify_error, reload_nats
 from winupdate.models import WinUpdate, WinUpdatePolicy
@@ -35,6 +36,8 @@ class CheckIn(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request):
+        from alerts.models import Alert
+
         updated = False
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
         if pyver.parse(request.data["version"]) > pyver.parse(
@@ -59,7 +62,8 @@ class CheckIn(APIView):
             ).update(status="completed")
 
         # handles any alerting actions
-        agent.handle_alert(checkin=True)
+        if Alert.objects.filter(agent=agent, resolved=False).exists():
+            Alert.handle_alert_resolve(agent)
 
         recovery = agent.recoveryactions.filter(last_run=None).last()  # type: ignore
         if recovery is not None:
@@ -264,10 +268,6 @@ class SupersededWinUpdate(APIView):
 
 
 class CheckRunner(APIView):
-    """
-    For the windows golang agent
-    """
-
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -301,10 +301,6 @@ class CheckRunnerInterval(APIView):
 
 
 class TaskRunner(APIView):
-    """
-    For the windows golang agent
-    """
-
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -314,6 +310,7 @@ class TaskRunner(APIView):
         return Response(TaskGOGetSerializer(task).data)
 
     def patch(self, request, pk, agentid):
+        from alerts.models import Alert
         from logs.models import AuditLog
 
         agent = get_object_or_404(Agent, agent_id=agentid)
@@ -325,8 +322,17 @@ class TaskRunner(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save(last_run=djangotime.now())
 
-        new_task = AutomatedTask.objects.get(pk=task.pk)
-        new_task.handle_alert()
+        status = "failing" if task.retcode != 0 else "passing"
+
+        new_task: AutomatedTask = AutomatedTask.objects.get(pk=task.pk)
+        new_task.status = status
+        new_task.save()
+
+        if status == "passing":
+            if Alert.objects.filter(assigned_task=new_task, resolved=False).exists():
+                Alert.handle_alert_resolve(new_task)
+        else:
+            Alert.handle_alert_failure(new_task)
 
         AuditLog.objects.create(
             username=agent.hostname,
@@ -474,4 +480,36 @@ class Installer(APIView):
                 f"Old installer detected (version {ver} ). Latest version is {settings.LATEST_AGENT_VER} Please generate a new installer from the RMM"
             )
 
+        return Response("ok")
+
+
+class ChocoResult(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        action = get_object_or_404(PendingAction, pk=pk)
+        results: str = request.data["results"]
+
+        software_name = action.details["name"].lower()
+        success = [
+            "install",
+            "of",
+            software_name,
+            "was",
+            "successful",
+            "installed",
+        ]
+        duplicate = [software_name, "already", "installed", "--force", "reinstall"]
+        installed = False
+
+        if all(x in results.lower() for x in success):
+            installed = True
+        elif all(x in results.lower() for x in duplicate):
+            installed = True
+
+        action.details["output"] = results
+        action.details["installed"] = installed
+        action.status = "completed"
+        action.save(update_fields=["details", "status"])
         return Response("ok")

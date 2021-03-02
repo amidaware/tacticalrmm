@@ -329,7 +329,7 @@ class TaskRunner(APIView):
         new_task.save()
 
         if status == "passing":
-            if Alert.objects.filter(assigned_task=self, resolved=False).exists():
+            if Alert.objects.filter(assigned_task=new_task, resolved=False).exists():
                 Alert.handle_alert_resolve(new_task)
         else:
             Alert.handle_alert_failure(new_task)

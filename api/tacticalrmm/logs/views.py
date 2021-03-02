@@ -109,7 +109,6 @@ class FilterOptionsAuditLog(APIView):
 class PendingActions(APIView):
     def patch(self, request):
         status_filter = "completed" if request.data["showCompleted"] else "pending"
-        completed = PendingAction.objects.filter(status="completed").count()
         if "agentPK" in request.data.keys():
             actions = PendingAction.objects.filter(
                 agent__pk=request.data["agentPK"], status=status_filter
@@ -122,7 +121,8 @@ class PendingActions(APIView):
 
         ret = {
             "actions": PendingActionSerializer(actions, many=True).data,
-            "completed_count": completed,
+            "completed_count": PendingAction.objects.filter(status="completed").count(),
+            "total": PendingAction.objects.count(),
         }
         return Response(ret)
 

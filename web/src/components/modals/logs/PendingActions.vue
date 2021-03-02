@@ -6,7 +6,7 @@
       <q-space />
       <q-btn dense flat icon="close" v-close-popup />
     </q-bar>
-    <div v-if="completedCount !== 0" class="q-pa-md">
+    <div v-if="totalCount !== 0" class="q-pa-md">
       <div class="row">
         <div class="col">
           <q-btn
@@ -109,6 +109,7 @@ export default {
       showCompleted: false,
       selectedStatus: null,
       completedCount: 0,
+      totalCount: 0,
       actionType: null,
       hostname: "",
       pagination: {
@@ -160,6 +161,7 @@ export default {
       this.$axios
         .patch("/logs/pendingactions/", data)
         .then(r => {
+          this.totalCount = r.data.total;
           this.completedCount = r.data.completed_count;
           this.actions = Object.freeze(r.data.actions);
           if (!!this.agentpk) this.hostname = r.data.actions[0].hostname;

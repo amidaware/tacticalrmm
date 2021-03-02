@@ -198,7 +198,7 @@ class Check(BaseAuditModel):
             if self.error_threshold:
                 text += f" Error Threshold: {self.error_threshold}%"
 
-            return f"{self.get_check_type_display()}: Drive {self.disk} < {text}"  # type: ignore
+            return f"{self.get_check_type_display()}: Drive {self.disk} - {text}"  # type: ignore
         elif self.check_type == "ping":
             return f"{self.get_check_type_display()}: {self.name}"  # type: ignore
         elif self.check_type == "cpuload" or self.check_type == "memory":
@@ -209,7 +209,7 @@ class Check(BaseAuditModel):
             if self.error_threshold:
                 text += f" Error Threshold: {self.error_threshold}%"
 
-            return f"{self.get_check_type_display()} > {text}"  # type: ignore
+            return f"{self.get_check_type_display()} - {text}"  # type: ignore
         elif self.check_type == "winsvc":
             return f"{self.get_check_type_display()}: {self.svc_display_name}"  # type: ignore
         elif self.check_type == "eventlog":

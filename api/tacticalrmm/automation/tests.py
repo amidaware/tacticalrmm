@@ -4,6 +4,7 @@ from unittest.mock import patch
 from model_bakery import baker, seq
 
 from agents.models import Agent
+from core.models import CoreSettings
 from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
 
@@ -31,7 +32,7 @@ class TestPolicyViews(TacticalTestCase):
         serializer = PolicyTableSerializer(policies, many=True)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)
+        self.assertEqual(resp.data, serializer.data)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
@@ -41,13 +42,13 @@ class TestPolicyViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 404)
 
         policy = baker.make("automation.Policy")
-        url = f"/automation/policies/{policy.pk}/"
+        url = f"/automation/policies/{policy.pk}/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         serializer = PolicySerializer(policy)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)
+        self.assertEqual(resp.data, serializer.data)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
@@ -79,13 +80,13 @@ class TestPolicyViews(TacticalTestCase):
             "desc": "policy desc",
             "active": True,
             "enforced": False,
-            "copyId": policy.pk,
+            "copyId": policy.pk,  # type: ignore
         }
 
         resp = self.client.post(f"/automation/policies/", data, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(policy.autotasks.count(), 3)
-        self.assertEqual(policy.policychecks.count(), 7)
+        self.assertEqual(policy.autotasks.count(), 3)  # type: ignore
+        self.assertEqual(policy.policychecks.count(), 7)  # type: ignore
 
         self.check_not_authenticated("post", url)
 
@@ -96,7 +97,7 @@ class TestPolicyViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 404)
 
         policy = baker.make("automation.Policy", active=True, enforced=False)
-        url = f"/automation/policies/{policy.pk}/"
+        url = f"/automation/policies/{policy.pk}/"  # type: ignore
 
         data = {
             "name": "Test Policy Update",
@@ -121,7 +122,7 @@ class TestPolicyViews(TacticalTestCase):
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         generate_agent_checks_from_policies_task.assert_called_with(
-            policypk=policy.pk, create_tasks=True
+            policypk=policy.pk, create_tasks=True  # type: ignore
         )
 
         self.check_not_authenticated("put", url)
@@ -138,7 +139,7 @@ class TestPolicyViews(TacticalTestCase):
         agents = baker.make_recipe(
             "agents.agent", site=site, policy=policy, _quantity=3
         )
-        url = f"/automation/policies/{policy.pk}/"
+        url = f"/automation/policies/{policy.pk}/"  # type: ignore
 
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -153,14 +154,14 @@ class TestPolicyViews(TacticalTestCase):
         # create policy with tasks
         policy = baker.make("automation.Policy")
         tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
-        url = f"/automation/{policy.pk}/policyautomatedtasks/"
+        url = f"/automation/{policy.pk}/policyautomatedtasks/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         serializer = AutoTasksFieldSerializer(tasks, many=True)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)
-        self.assertEqual(len(resp.data), 3)
+        self.assertEqual(resp.data, serializer.data)  # type: ignore
+        self.assertEqual(len(resp.data), 3)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
@@ -170,14 +171,14 @@ class TestPolicyViews(TacticalTestCase):
         policy = baker.make("automation.Policy")
         checks = self.create_checks(policy=policy)
 
-        url = f"/automation/{policy.pk}/policychecks/"
+        url = f"/automation/{policy.pk}/policychecks/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         serializer = PolicyCheckSerializer(checks, many=True)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)
-        self.assertEqual(len(resp.data), 7)
+        self.assertEqual(resp.data, serializer.data)  # type: ignore
+        self.assertEqual(len(resp.data), 7)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
@@ -199,7 +200,7 @@ class TestPolicyViews(TacticalTestCase):
         serializer = PolicyCheckStatusSerializer([managed_check], many=True)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)
+        self.assertEqual(resp.data, serializer.data)  # type: ignore
         self.check_not_authenticated("patch", url)
 
     def test_policy_overview(self):
@@ -212,40 +213,40 @@ class TestPolicyViews(TacticalTestCase):
         )
         clients = baker.make(
             "clients.Client",
-            server_policy=cycle(policies),
-            workstation_policy=cycle(policies),
+            server_policy=cycle(policies),  # type: ignore
+            workstation_policy=cycle(policies),  # type: ignore
             _quantity=5,
         )
         baker.make(
             "clients.Site",
-            client=cycle(clients),
-            server_policy=cycle(policies),
-            workstation_policy=cycle(policies),
+            client=cycle(clients),  # type: ignore
+            server_policy=cycle(policies),  # type: ignore
+            workstation_policy=cycle(policies),  # type: ignore
             _quantity=4,
         )
 
-        baker.make("clients.Site", client=cycle(clients), _quantity=3)
+        baker.make("clients.Site", client=cycle(clients), _quantity=3)  # type: ignore
         resp = self.client.get(url, format="json")
         clients = Client.objects.all()
         serializer = PolicyOverviewSerializer(clients, many=True)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)
+        self.assertEqual(resp.data, serializer.data)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
     def test_get_related(self):
         policy = baker.make("automation.Policy")
-        url = f"/automation/policies/{policy.pk}/related/"
+        url = f"/automation/policies/{policy.pk}/related/"  # type: ignore
 
         resp = self.client.get(url, format="json")
 
         self.assertEqual(resp.status_code, 200)
-        self.assertIsInstance(resp.data["server_clients"], list)
-        self.assertIsInstance(resp.data["workstation_clients"], list)
-        self.assertIsInstance(resp.data["server_sites"], list)
-        self.assertIsInstance(resp.data["workstation_sites"], list)
-        self.assertIsInstance(resp.data["agents"], list)
+        self.assertIsInstance(resp.data["server_clients"], list)  # type: ignore
+        self.assertIsInstance(resp.data["workstation_clients"], list)  # type: ignore
+        self.assertIsInstance(resp.data["server_sites"], list)  # type: ignore
+        self.assertIsInstance(resp.data["workstation_sites"], list)  # type: ignore
+        self.assertIsInstance(resp.data["agents"], list)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
@@ -257,16 +258,16 @@ class TestPolicyViews(TacticalTestCase):
 
         # create policy managed tasks
         policy_tasks = baker.make(
-            "autotasks.AutomatedTask", parent_task=task.id, _quantity=5
+            "autotasks.AutomatedTask", parent_task=task.id, _quantity=5  # type: ignore
         )
 
-        url = f"/automation/policyautomatedtaskstatus/{task.id}/task/"
+        url = f"/automation/policyautomatedtaskstatus/{task.id}/task/"  # type: ignore
 
         serializer = PolicyTaskStatusSerializer(policy_tasks, many=True)
         resp = self.client.patch(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)
-        self.assertEqual(len(resp.data), 5)
+        self.assertEqual(resp.data, serializer.data)  # type: ignore
+        self.assertEqual(len(resp.data), 5)  # type: ignore
 
         self.check_not_authenticated("patch", url)
 
@@ -284,7 +285,7 @@ class TestPolicyViews(TacticalTestCase):
         resp = self.client.put(url, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        mock_task.assert_called_once_with([task.pk for task in tasks])
+        mock_task.assert_called_once_with([task.pk for task in tasks])  # type: ignore
 
         self.check_not_authenticated("put", url)
 
@@ -299,7 +300,7 @@ class TestPolicyViews(TacticalTestCase):
         policy = baker.make("automation.Policy")
 
         data = {
-            "policy": policy.pk,
+            "policy": policy.pk,  # type: ignore
             "critical": "approve",
             "important": "approve",
             "moderate": "ignore",
@@ -325,11 +326,11 @@ class TestPolicyViews(TacticalTestCase):
 
         policy = baker.make("automation.Policy")
         patch_policy = baker.make("winupdate.WinUpdatePolicy", policy=policy)
-        url = f"/automation/winupdatepolicy/{patch_policy.pk}/"
+        url = f"/automation/winupdatepolicy/{patch_policy.pk}/"  # type: ignore
 
         data = {
-            "id": patch_policy.pk,
-            "policy": policy.pk,
+            "id": patch_policy.pk,  # type: ignore
+            "policy": policy.pk,  # type: ignore
             "critical": "approve",
             "important": "approve",
             "moderate": "ignore",
@@ -358,10 +359,10 @@ class TestPolicyViews(TacticalTestCase):
         }
 
         clients = baker.make("clients.Client", _quantity=6)
-        sites = baker.make("clients.Site", client=cycle(clients), _quantity=10)
+        sites = baker.make("clients.Site", client=cycle(clients), _quantity=10)  # type: ignore
         agents = baker.make_recipe(
             "agents.agent",
-            site=cycle(sites),
+            site=cycle(sites),  # type: ignore
             _quantity=6,
         )
 
@@ -371,24 +372,24 @@ class TestPolicyViews(TacticalTestCase):
         )
 
         # test reset agents in site
-        data = {"site": sites[0].id}
+        data = {"site": sites[0].id}  # type: ignore
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        agents = Agent.objects.filter(site=sites[0])
+        agents = Agent.objects.filter(site=sites[0])  # type: ignore
 
         for agent in agents:
             for k, v in inherit_fields.items():
                 self.assertEqual(getattr(agent.winupdatepolicy.get(), k), v)
 
         # test reset agents in client
-        data = {"client": clients[1].id}
+        data = {"client": clients[1].id}  # type: ignore
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        agents = Agent.objects.filter(site__client=clients[1])
+        agents = Agent.objects.filter(site__client=clients[1])  # type: ignore
 
         for agent in agents:
             for k, v in inherit_fields.items():
@@ -435,46 +436,46 @@ class TestPolicyTasks(TacticalTestCase):
 
         # Get Site and Client from an agent in list
         clients = baker.make("clients.Client", _quantity=5)
-        sites = baker.make("clients.Site", client=cycle(clients), _quantity=25)
+        sites = baker.make("clients.Site", client=cycle(clients), _quantity=25)  # type: ignore
         server_agents = baker.make_recipe(
             "agents.server_agent",
-            site=cycle(sites),
+            site=cycle(sites),  # type: ignore
             _quantity=25,
         )
         workstation_agents = baker.make_recipe(
             "agents.workstation_agent",
-            site=cycle(sites),
+            site=cycle(sites),  # type: ignore
             _quantity=25,
         )
 
         policy = baker.make("automation.Policy", active=True)
 
         # Add Client to Policy
-        policy.server_clients.add(server_agents[13].client)
-        policy.workstation_clients.add(workstation_agents[15].client)
+        policy.server_clients.add(server_agents[13].client)  # type: ignore
+        policy.workstation_clients.add(workstation_agents[15].client)  # type: ignore
 
         resp = self.client.get(
-            f"/automation/policies/{policy.pk}/related/", format="json"
+            f"/automation/policies/{policy.pk}/related/", format="json"  # type: ignore
         )
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEquals(len(resp.data["server_clients"]), 1)
-        self.assertEquals(len(resp.data["server_sites"]), 5)
-        self.assertEquals(len(resp.data["workstation_clients"]), 1)
-        self.assertEquals(len(resp.data["workstation_sites"]), 5)
-        self.assertEquals(len(resp.data["agents"]), 10)
+        self.assertEquals(len(resp.data["server_clients"]), 1)  # type: ignore
+        self.assertEquals(len(resp.data["server_sites"]), 5)  # type: ignore
+        self.assertEquals(len(resp.data["workstation_clients"]), 1)  # type: ignore
+        self.assertEquals(len(resp.data["workstation_sites"]), 5)  # type: ignore
+        self.assertEquals(len(resp.data["agents"]), 10)  # type: ignore
 
         # Add Site to Policy and the agents and sites length shouldn't change
-        policy.server_sites.add(server_agents[13].site)
-        policy.workstation_sites.add(workstation_agents[15].site)
-        self.assertEquals(len(resp.data["server_sites"]), 5)
-        self.assertEquals(len(resp.data["workstation_sites"]), 5)
-        self.assertEquals(len(resp.data["agents"]), 10)
+        policy.server_sites.add(server_agents[13].site)  # type: ignore
+        policy.workstation_sites.add(workstation_agents[15].site)  # type: ignore
+        self.assertEquals(len(resp.data["server_sites"]), 5)  # type: ignore
+        self.assertEquals(len(resp.data["workstation_sites"]), 5)  # type: ignore
+        self.assertEquals(len(resp.data["agents"]), 10)  # type: ignore
 
         # Add Agent to Policy and the agents length shouldn't change
-        policy.agents.add(server_agents[13])
-        policy.agents.add(workstation_agents[15])
-        self.assertEquals(len(resp.data["agents"]), 10)
+        policy.agents.add(server_agents[13])  # type: ignore
+        policy.agents.add(workstation_agents[15])  # type: ignore
+        self.assertEquals(len(resp.data["agents"]), 10)  # type: ignore
 
     def test_generating_agent_policy_checks(self):
         from .tasks import generate_agent_checks_from_policies_task
@@ -485,7 +486,7 @@ class TestPolicyTasks(TacticalTestCase):
         agent = baker.make_recipe("agents.agent", policy=policy)
 
         # test policy assigned to agent
-        generate_agent_checks_from_policies_task(policy.id)
+        generate_agent_checks_from_policies_task(policy.id)  # type: ignore
 
         # make sure all checks were created. should be 7
         agent_checks = Agent.objects.get(pk=agent.id).agentchecks.all()
@@ -535,7 +536,7 @@ class TestPolicyTasks(TacticalTestCase):
         agent = baker.make_recipe("agents.agent", site=site, policy=policy)
         self.create_checks(agent=agent, script=script)
 
-        generate_agent_checks_from_policies_task(policy.id, create_tasks=True)
+        generate_agent_checks_from_policies_task(policy.id, create_tasks=True)  # type: ignore
 
         # make sure each agent check says overriden_by_policy
         self.assertEqual(Agent.objects.get(pk=agent.id).agentchecks.count(), 14)
@@ -843,7 +844,7 @@ class TestPolicyTasks(TacticalTestCase):
         self.assertEqual(Agent.objects.get(pk=agent.id).agentchecks.count(), 7)
 
         # pick a policy check and delete it from the agent
-        policy_check_id = Policy.objects.get(pk=policy.id).policychecks.first().id
+        policy_check_id = Policy.objects.get(pk=policy.id).policychecks.first().id  # type: ignore
 
         delete_policy_check_task(policy_check_id)
 
@@ -868,7 +869,7 @@ class TestPolicyTasks(TacticalTestCase):
 
         # pick a policy check and update it with new values
         ping_check = (
-            Policy.objects.get(pk=policy.id)
+            Policy.objects.get(pk=policy.id)  # type: ignore
             .policychecks.filter(check_type="ping")
             .first()
         )
@@ -895,7 +896,7 @@ class TestPolicyTasks(TacticalTestCase):
         )
         agent = baker.make_recipe("agents.server_agent", policy=policy)
 
-        generate_agent_tasks_from_policies_task(policy.id)
+        generate_agent_tasks_from_policies_task(policy.id)  # type: ignore
 
         agent_tasks = Agent.objects.get(pk=agent.id).autotasks.all()
 
@@ -905,14 +906,14 @@ class TestPolicyTasks(TacticalTestCase):
         for task in agent_tasks:
             self.assertTrue(task.managed_by_policy)
             if task.name == "Task1":
-                self.assertEqual(task.parent_task, tasks[0].id)
-                self.assertEqual(task.name, tasks[0].name)
+                self.assertEqual(task.parent_task, tasks[0].id)  # type: ignore
+                self.assertEqual(task.name, tasks[0].name)  # type: ignore
             if task.name == "Task2":
-                self.assertEqual(task.parent_task, tasks[1].id)
-                self.assertEqual(task.name, tasks[1].name)
+                self.assertEqual(task.parent_task, tasks[1].id)  # type: ignore
+                self.assertEqual(task.name, tasks[1].name)  # type: ignore
             if task.name == "Task3":
-                self.assertEqual(task.parent_task, tasks[2].id)
-                self.assertEqual(task.name, tasks[2].name)
+                self.assertEqual(task.parent_task, tasks[2].id)  # type: ignore
+                self.assertEqual(task.name, tasks[2].name)  # type: ignore
 
     @patch("autotasks.tasks.delete_win_task_schedule.delay")
     def test_delete_policy_tasks(self, delete_win_task_schedule):
@@ -922,10 +923,10 @@ class TestPolicyTasks(TacticalTestCase):
         tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
         agent = baker.make_recipe("agents.server_agent", policy=policy)
 
-        delete_policy_autotask_task(tasks[0].id)
+        delete_policy_autotask_task(tasks[0].id)  # type: ignore
 
         delete_win_task_schedule.assert_called_with(
-            agent.autotasks.get(parent_task=tasks[0].id).id
+            agent.autotasks.get(parent_task=tasks[0].id).id  # type: ignore
         )
 
     @patch("autotasks.tasks.run_win_task.delay")
@@ -934,12 +935,12 @@ class TestPolicyTasks(TacticalTestCase):
 
         tasks = baker.make("autotasks.AutomatedTask", _quantity=3)
 
-        run_win_policy_autotask_task([task.id for task in tasks])
+        run_win_policy_autotask_task([task.id for task in tasks])  # type: ignore
 
-        run_win_task.side_effect = [task.id for task in tasks]
+        run_win_task.side_effect = [task.id for task in tasks]  # type: ignore
         self.assertEqual(run_win_task.call_count, 3)
-        for task in tasks:
-            run_win_task.assert_any_call(task.id)
+        for task in tasks:  # type: ignore
+            run_win_task.assert_any_call(task.id)  # type: ignore
 
     @patch("autotasks.tasks.enable_or_disable_win_task.delay")
     def test_update_policy_tasks(self, enable_or_disable_win_task):
@@ -952,17 +953,17 @@ class TestPolicyTasks(TacticalTestCase):
         )
         agent = baker.make_recipe("agents.server_agent", policy=policy)
 
-        tasks[0].enabled = False
-        tasks[0].save()
+        tasks[0].enabled = False  # type: ignore
+        tasks[0].save()  # type: ignore
 
-        update_policy_task_fields_task(tasks[0].id)
+        update_policy_task_fields_task(tasks[0].id)  # type: ignore
         enable_or_disable_win_task.assert_not_called()
 
-        self.assertFalse(agent.autotasks.get(parent_task=tasks[0].id).enabled)
+        self.assertFalse(agent.autotasks.get(parent_task=tasks[0].id).enabled)  # type: ignore
 
-        update_policy_task_fields_task(tasks[0].id, update_agent=True)
+        update_policy_task_fields_task(tasks[0].id, update_agent=True)  # type: ignore
         enable_or_disable_win_task.assert_called_with(
-            agent.autotasks.get(parent_task=tasks[0].id).id, False
+            agent.autotasks.get(parent_task=tasks[0].id).id, False  # type: ignore
         )
 
     @patch("agents.models.Agent.generate_tasks_from_policies")
@@ -984,3 +985,110 @@ class TestPolicyTasks(TacticalTestCase):
         generate_agent_checks_task([agent.pk for agent in agents], create_tasks=True)
         self.assertEquals(generate_checks.call_count, 5)
         self.assertEquals(generate_checks.call_count, 5)
+
+    @patch("autotasks.tasks.delete_win_task_schedule.delay")
+    def test_policy_exclusions(self, delete_task):
+        # setup data
+        policy = baker.make("automation.Policy", active=True)
+        baker.make_recipe("checks.memory_check", policy=policy)
+        task = baker.make("autotasks.AutomatedTask", policy=policy)
+        agent = baker.make_recipe(
+            "agents.agent", policy=policy, monitoring_type="server"
+        )
+
+        # make sure related agents on policy returns correctly
+        self.assertEqual(policy.related_agents().count(), 1)  # type: ignore
+        self.assertEqual(agent.agentchecks.count(), 1)  # type: ignore
+        self.assertEqual(agent.autotasks.count(), 1)  # type: ignore
+
+        # add agent to policy exclusions
+        policy.excluded_agents.set([agent])  # type: ignore
+
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
+        self.assertEqual(policy.related_agents().count(), 0)  # type: ignore
+        self.assertEqual(agent.agentchecks.count(), 0)  # type: ignore
+        delete_task.assert_called()
+        delete_task.reset_mock()
+
+        # delete agent tasks
+        agent.autotasks.all().delete()
+        policy.excluded_agents.clear()  # type: ignore
+
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
+        # make sure related agents on policy returns correctly
+        self.assertEqual(policy.related_agents().count(), 1)  # type: ignore
+        self.assertEqual(agent.agentchecks.count(), 1)  # type: ignore
+        self.assertEqual(agent.autotasks.count(), 1)  # type: ignore
+
+        # add policy exclusions to site
+        policy.excluded_sites.set([agent.site])  # type: ignore
+
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
+        self.assertEqual(policy.related_agents().count(), 0)  # type: ignore
+        self.assertEqual(agent.agentchecks.count(), 0)  # type: ignore
+        delete_task.assert_called()
+        delete_task.reset_mock()
+
+        # delete agent tasks and reset
+        agent.autotasks.all().delete()
+        policy.excluded_sites.clear()  # type: ignore
+
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
+        # make sure related agents on policy returns correctly
+        self.assertEqual(policy.related_agents().count(), 1)  # type: ignore
+        self.assertEqual(agent.agentchecks.count(), 1)  # type: ignore
+        self.assertEqual(agent.autotasks.count(), 1)  # type: ignore
+
+        # add policy exclusions to client
+        policy.excluded_clients.set([agent.client])  # type: ignore
+
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
+        self.assertEqual(policy.related_agents().count(), 0)  # type: ignore
+        self.assertEqual(agent.agentchecks.count(), 0)  # type: ignore
+        delete_task.assert_called()
+        delete_task.reset_mock()
+
+        # delete agent tasks and reset
+        agent.autotasks.all().delete()
+        policy.excluded_clients.clear()  # type: ignore
+        agent.policy = None
+        agent.save()
+
+        # test on default policy
+        core = CoreSettings.objects.first()
+        core.server_policy = policy
+        core.save()
+
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
+        # make sure related agents on policy returns correctly
+        self.assertEqual(agent.agentchecks.count(), 1)  # type: ignore
+        self.assertEqual(agent.autotasks.count(), 1)  # type: ignore
+
+        # add policy exclusions to client
+        policy.excluded_clients.set([agent.client])  # type: ignore
+
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
+        self.assertEqual(policy.related_agents().count(), 0)  # type: ignore
+        self.assertEqual(agent.agentchecks.count(), 0)  # type: ignore
+        delete_task.assert_called()
+        delete_task.reset_mock()
+
+    def test_removing_duplicate_pending_task_actions(self):
+        pass
+
+    def test_creating_checks_with_assigned_tasks(self):
+        pass

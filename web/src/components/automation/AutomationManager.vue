@@ -120,6 +120,13 @@
                         <q-item-section>Show Relations</q-item-section>
                       </q-item>
 
+                      <q-item clickable v-close-popup @click="showPolicyExclusions(props.row)">
+                        <q-item-section side>
+                          <q-icon name="rule" />
+                        </q-item-section>
+                        <q-item-section>Policy Exclusions</q-item-section>
+                      </q-item>
+
                       <q-item clickable v-close-popup @click="showPatchPolicyForm(props.row)">
                         <q-item-section side>
                           <q-icon name="system_update" />
@@ -165,6 +172,20 @@
                       class="text-primary"
                       @click="showRelations(props.row)"
                       >{{ `Show Relations (${props.row.agents_count})` }}</span
+                    >
+                  </q-td>
+                  <q-td>
+                    <span
+                      style="cursor: pointer; text-decoration: underline"
+                      class="text-primary"
+                      @click="showPolicyExclusions(props.row)"
+                      >{{
+                        `Show Policy Exclusions (${
+                          props.row.excluded_agents.length +
+                          props.row.excluded_clients.length +
+                          props.row.excluded_sites.length
+                        })`
+                      }}</span
                     >
                   </q-td>
                   <q-td>
@@ -236,6 +257,7 @@ import PolicyOverview from "@/components/automation/PolicyOverview";
 import RelationsView from "@/components/automation/modals/RelationsView";
 import PatchPolicyForm from "@/components/modals/agents/PatchPolicyForm";
 import AlertTemplateAdd from "@/components/modals/alerts/AlertTemplateAdd";
+import PolicyExclusions from "@/components/automation/modals/PolicyExclusions";
 import PolicyChecksTab from "@/components/automation/PolicyChecksTab";
 import PolicyAutomatedTasksTab from "@/components/automation/PolicyAutomatedTasksTab";
 
@@ -268,6 +290,11 @@ export default {
           name: "relations",
           label: "Relations",
           field: "relations",
+          align: "left",
+        },
+        {
+          name: "exclusions",
+          label: "Exclusions",
           align: "left",
         },
         {
@@ -407,6 +434,17 @@ export default {
           componentProps: {
             policy: policy,
           },
+        })
+        .onOk(() => {
+          this.refresh();
+        });
+    },
+    showPolicyExclusions(policy) {
+      this.$q
+        .dialog({
+          component: PolicyExclusions,
+          parent: this,
+          policy: policy,
         })
         .onOk(() => {
           this.refresh();

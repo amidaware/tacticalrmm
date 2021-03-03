@@ -4,9 +4,11 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
+from agents.serializers import AgentHostnameSerializer
 from autotasks.models import AutomatedTask
 from checks.models import Check
 from clients.models import Client
+from clients.serializers import ClientSerializer, SiteSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .models import Policy
@@ -25,6 +27,9 @@ class PolicyTableSerializer(ModelSerializer):
     agents_count = SerializerMethodField(read_only=True)
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
     alert_template = ReadOnlyField(source="alert_template.id")
+    excluded_clients = ClientSerializer(many=True)
+    excluded_sites = SiteSerializer(many=True)
+    excluded_agents = AgentHostnameSerializer(many=True)
 
     class Meta:
         model = Policy

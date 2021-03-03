@@ -5,8 +5,6 @@ import random
 import string
 
 from django.conf import settings
-from django.core.paginator import Paginator
-from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from loguru import logger
@@ -228,72 +226,45 @@ def send_raw_cmd(request):
 
 class AgentsTableList(APIView):
     def patch(self, request):
-        pagination = request.data["pagination"]
-        monType = request.data["monType"]
-        client = Q()
-        site = Q()
-        mon_type = Q()
-
-        if pagination["sortBy"] == "agentstatus":
-            sort = "last_seen"
-        elif pagination["sortBy"] == "client_name":
-            sort = "site__client__name"
-        elif pagination["sortBy"] == "site_name":
-            sort = "site__name"
-        elif pagination["sortBy"] == "user":
-            sort = "logged_in_username"
-        else:
-            sort = pagination["sortBy"]
-
-        order_by = f"-{sort}" if pagination["descending"] else sort
-
-        if monType == "server":
-            mon_type = Q(monitoring_type="server")
-        elif monType == "workstation":
-            mon_type = Q(monitoring_type="workstation")
-
-        if "clientPK" in request.data:
-            client = Q(site__client_id=request.data["clientPK"])
-
-        if "sitePK" in request.data:
-            site = Q(site_id=request.data["sitePK"])
-
-        queryset = (
-            Agent.objects.select_related("site")
-            .prefetch_related("agentchecks")
-            .filter(mon_type)
-            .filter(client)
-            .filter(site)
-            .only(
-                "pk",
-                "hostname",
-                "agent_id",
-                "site",
-                "monitoring_type",
-                "description",
-                "needs_reboot",
-                "overdue_text_alert",
-                "overdue_email_alert",
-                "overdue_time",
-                "offline_time",
-                "last_seen",
-                "boot_time",
-                "logged_in_username",
-                "last_logged_in_user",
-                "time_zone",
-                "maintenance_mode",
+        if "sitePK" in request.data.keys():
+            queryset = (
+                Agent.objects.select_related("site")
+                .prefetch_related("agentchecks")
+                .filter(site_id=request.data["sitePK"])
             )
-            .order_by(order_by)
-        )
-        paginator = Paginator(queryset, pagination["rowsPerPage"])
+        elif "clientPK" in request.data.keys():
+            queryset = (
+                Agent.objects.select_related("site")
+                .prefetch_related("agentchecks")
+                .filter(site__client_id=request.data["clientPK"])
+            )
+        else:
+            queryset = Agent.objects.select_related("site").prefetch_related(
+                "agentchecks"
+            )
 
+        queryset = queryset.only(
+            "pk",
+            "hostname",
+            "agent_id",
+            "site",
+            "monitoring_type",
+            "description",
+            "needs_reboot",
+            "overdue_text_alert",
+            "overdue_email_alert",
+            "overdue_time",
+            "offline_time",
+            "last_seen",
+            "boot_time",
+            "logged_in_username",
+            "last_logged_in_user",
+            "time_zone",
+            "maintenance_mode",
+        )
         ctx = {"default_tz": get_default_timezone()}
-        serializer = AgentTableSerializer(
-            paginator.get_page(pagination["page"]), many=True, context=ctx
-        )
-
-        ret = {"agents": serializer.data, "total": paginator.count}
-        return Response(ret)
+        serializer = AgentTableSerializer(queryset, many=True, context=ctx)
+        return Response(serializer.data)
 
 
 @api_view()

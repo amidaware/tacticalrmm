@@ -17,6 +17,15 @@ class Policy(BaseAuditModel):
         null=True,
         blank=True,
     )
+    excluded_sites = models.ManyToManyField(
+        "clients.Site", related_name="policy_exclusions", blank=True
+    )
+    excluded_clients = models.ManyToManyField(
+        "clients.Client", related_name="policy_exclusions", blank=True
+    )
+    excluded_agents = models.ManyToManyField(
+        "agents.Agent", related_name="policy_exclusions", blank=True
+    )
 
     def save(self, *args, **kwargs):
         from automation.tasks import generate_agent_checks_from_policies_task
@@ -52,19 +61,41 @@ class Policy(BaseAuditModel):
     def __str__(self):
         return self.name
 
+    def is_agent_excluded(self, agent):
+        return (
+            agent in self.excluded_agents.all()
+            or agent.site in self.excluded_sites.all()
+            or agent.client in self.excluded_clients.all()
+        )
+
     def related_agents(self):
         return self.get_related("server") | self.get_related("workstation")
 
     def get_related(self, mon_type):
-        explicit_agents = self.agents.filter(monitoring_type=mon_type)  # type: ignore
-        explicit_clients = getattr(self, f"{mon_type}_clients").all()
-        explicit_sites = getattr(self, f"{mon_type}_sites").all()
+        explicit_agents = (
+            self.agents.filter(monitoring_type=mon_type)  # type: ignore
+            .exclude(
+                pk__in=self.excluded_agents.only("pk").values_list("pk", flat=True)
+            )
+            .exclude(site__in=self.excluded_sites.all())
+            .exclude(site__client__in=self.excluded_clients.all())
+        )
+
+        explicit_clients = getattr(self, f"{mon_type}_clients").exclude(
+            pk__in=self.excluded_clients.all()
+        )
+        explicit_sites = getattr(self, f"{mon_type}_sites").exclude(
+            pk__in=self.excluded_sites.all()
+        )
 
         filtered_agents_pks = Policy.objects.none()
 
         filtered_agents_pks |= Agent.objects.filter(
             site__in=[
-                site for site in explicit_sites if site.client not in explicit_clients
+                site
+                for site in explicit_sites
+                if site.client not in explicit_clients
+                and site.client not in self.excluded_clients.all()
             ],
             monitoring_type=mon_type,
         ).values_list("pk", flat=True)
@@ -119,23 +150,39 @@ class Policy(BaseAuditModel):
             client_policy = client.workstation_policy
             site_policy = site.workstation_policy
 
-        if agent_policy and agent_policy.active:
+        if (
+            agent_policy
+            and agent_policy.active
+            and not agent_policy.is_agent_excluded(agent)
+        ):
             for task in agent_policy.autotasks.all():
                 if task.pk not in added_task_pks:
                     tasks.append(task)
                     added_task_pks.append(task.pk)
-        if site_policy and site_policy.active:
+        if (
+            site_policy
+            and site_policy.active
+            and not site_policy.is_agent_excluded(agent)
+        ):
             for task in site_policy.autotasks.all():
                 if task.pk not in added_task_pks:
                     tasks.append(task)
                     added_task_pks.append(task.pk)
-        if client_policy and client_policy.active:
+        if (
+            client_policy
+            and client_policy.active
+            and not client_policy.is_agent_excluded(agent)
+        ):
             for task in client_policy.autotasks.all():
                 if task.pk not in added_task_pks:
                     tasks.append(task)
                     added_task_pks.append(task.pk)
 
-        if default_policy and default_policy.active:
+        if (
+            default_policy
+            and default_policy.active
+            and not default_policy.is_agent_excluded(agent)
+        ):
             for task in default_policy.autotasks.all():
                 if task.pk not in added_task_pks:
                     tasks.append(task)
@@ -205,7 +252,11 @@ class Policy(BaseAuditModel):
         enforced_checks = list()
         policy_checks = list()
 
-        if agent_policy and agent_policy.active:
+        if (
+            agent_policy
+            and agent_policy.active
+            and not agent_policy.is_agent_excluded(agent)
+        ):
             if agent_policy.enforced:
                 for check in agent_policy.policychecks.all():
                     enforced_checks.append(check)
@@ -213,7 +264,11 @@ class Policy(BaseAuditModel):
                 for check in agent_policy.policychecks.all():
                     policy_checks.append(check)
 
-        if site_policy and site_policy.active:
+        if (
+            site_policy
+            and site_policy.active
+            and not site_policy.is_agent_excluded(agent)
+        ):
             if site_policy.enforced:
                 for check in site_policy.policychecks.all():
                     enforced_checks.append(check)
@@ -221,7 +276,11 @@ class Policy(BaseAuditModel):
                 for check in site_policy.policychecks.all():
                     policy_checks.append(check)
 
-        if client_policy and client_policy.active:
+        if (
+            client_policy
+            and client_policy.active
+            and not client_policy.is_agent_excluded(agent)
+        ):
             if client_policy.enforced:
                 for check in client_policy.policychecks.all():
                     enforced_checks.append(check)
@@ -229,7 +288,11 @@ class Policy(BaseAuditModel):
                 for check in client_policy.policychecks.all():
                     policy_checks.append(check)
 
-        if default_policy and default_policy.active:
+        if (
+            default_policy
+            and default_policy.active
+            and not default_policy.is_agent_excluded(agent)
+        ):
             if default_policy.enforced:
                 for check in default_policy.policychecks.all():
                     enforced_checks.append(check)

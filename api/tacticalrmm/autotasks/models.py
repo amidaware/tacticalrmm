@@ -7,7 +7,6 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import DateTimeField
-from django.utils import timezone as djangotime
 from loguru import logger
 
 from alerts.models import SEVERITY_CHOICES

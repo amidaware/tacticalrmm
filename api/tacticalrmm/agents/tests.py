@@ -54,66 +54,22 @@ class TestAgentsList(TacticalTestCase):
             _quantity=7,
         )
 
-        data = {
-            "pagination": {
-                "rowsPerPage": 50,
-                "rowsNumber": None,
-                "sortBy": "hostname",
-                "descending": False,
-                "page": 1,
-            },
-            "monType": "mixed",
-        }
+        # test all agents
+        r = self.client.patch(url, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data), 36)  # type: ignore
 
-        # test mixed
+        # test client1
+        data = {"clientPK": company1.pk}  # type: ignore
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["total"], 36)  # type: ignore
-        self.assertEqual(len(r.data["agents"]), 36)  # type: ignore
+        self.assertEqual(len(r.data), 25)  # type: ignore
 
-        # test servers
-        data["monType"] = "server"
-        data["pagination"]["rowsPerPage"] = 6
+        # test site3
+        data = {"sitePK": site3.pk}  # type: ignore
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["total"], 19)  # type: ignore
-        self.assertEqual(len(r.data["agents"]), 6)  # type: ignore
-
-        # test workstations
-        data["monType"] = "server"
-        data["pagination"]["rowsPerPage"] = 6
-        r = self.client.patch(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["total"], 19)  # type: ignore
-        self.assertEqual(len(r.data["agents"]), 6)  # type: ignore
-
-        # test client1 mixed
-        data = {
-            "pagination": {
-                "rowsPerPage": 3,
-                "rowsNumber": None,
-                "sortBy": "hostname",
-                "descending": False,
-                "page": 1,
-            },
-            "monType": "mixed",
-            "clientPK": company1.pk,  # type: ignore
-        }
-
-        r = self.client.patch(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["total"], 25)  # type: ignore
-        self.assertEqual(len(r.data["agents"]), 3)  # type: ignore
-
-        # test site3 workstations
-        del data["clientPK"]
-        data["monType"] = "workstation"
-        data["sitePK"] = site3.pk  # type: ignore
-
-        r = self.client.patch(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data["total"], 7)  # type: ignore
-        self.assertEqual(len(r.data["agents"]), 3)  # type: ignore
+        self.assertEqual(len(r.data), 11)  # type: ignore
 
         self.check_not_authenticated("patch", url)
 

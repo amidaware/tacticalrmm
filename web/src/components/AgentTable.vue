@@ -5,7 +5,7 @@
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       class="agents-tbl-sticky"
       :style="{ 'max-height': agentTableHeight }"
-      :data="filter"
+      :data="frame"
       :filter="search"
       :filter-method="filterTable"
       :columns="columns"
@@ -13,11 +13,9 @@
       row-key="id"
       binary-state-sort
       virtual-scroll
-      :pagination.sync="agentPagination"
-      :rows-per-page-options="[25, 50, 100, 200, 300, 500, 1000]"
+      :pagination.sync="pagination"
+      :rows-per-page-options="[0]"
       no-data-label="No Agents"
-      rows-per-page-label="Agents per page:"
-      @request="onRequest"
     >
       <!-- header slots -->
       <template v-slot:header-cell-smsalert="props">
@@ -346,6 +344,12 @@
               <q-tooltip>Pending Action Count: {{ props.row.pending_actions }}</q-tooltip>
             </q-icon>
           </q-td>
+          <!-- needs reboot -->
+          <q-td key="needsreboot">
+            <q-icon v-if="props.row.needs_reboot" name="fas fa-power-off" color="primary">
+              <q-tooltip>Reboot required</q-tooltip>
+            </q-icon>
+          </q-td>
           <q-td key="agentstatus">
             <q-icon v-if="props.row.status === 'overdue'" name="fas fa-signal" size="1.2em" color="negative">
               <q-tooltip>Agent overdue</q-tooltip>
@@ -355,12 +359,6 @@
             </q-icon>
             <q-icon v-else name="fas fa-signal" size="1.2em" color="positive">
               <q-tooltip>Agent online</q-tooltip>
-            </q-icon>
-          </q-td>
-          <!-- needs reboot -->
-          <q-td key="needsreboot">
-            <q-icon v-if="props.row.needs_reboot" name="fas fa-power-off" color="primary">
-              <q-tooltip>Reboot required</q-tooltip>
             </q-icon>
           </q-td>
           <q-td key="last_seen" :props="props">{{ formatDjangoDate(props.row.last_seen) }}</q-td>
@@ -415,7 +413,7 @@ import RunScript from "@/components/modals/agents/RunScript";
 
 export default {
   name: "AgentTable",
-  props: ["frame", "columns", "tab", "filter", "userName", "search", "visibleColumns", "agentTblPagination"],
+  props: ["frame", "columns", "tab", "userName", "search", "visibleColumns"],
   components: {
     EditAgent,
     RebootLater,
@@ -427,6 +425,11 @@ export default {
   mixins: [mixins],
   data() {
     return {
+      pagination: {
+        rowsPerPage: 0,
+        sortBy: "hostname",
+        descending: false,
+      },
       showSendCommand: false,
       showEditAgentModal: false,
       showRebootLaterModal: false,
@@ -438,15 +441,6 @@ export default {
     };
   },
   methods: {
-    onRequest(props) {
-      if (!!props.filter) return;
-      const { page, rowsPerPage, sortBy, descending } = props.pagination;
-      this.agentTblPagination.page = page;
-      this.agentTblPagination.rowsPerPage = rowsPerPage;
-      this.agentTblPagination.sortBy = sortBy;
-      this.agentTblPagination.descending = descending;
-      this.$emit("refreshEdit");
-    },
     filterTable(rows, terms, cols, cellValue) {
       const lowerTerms = terms ? terms.toLowerCase() : "";
       let advancedFilter = false;
@@ -764,14 +758,6 @@ export default {
     },
     agentTableLoading() {
       return this.$store.state.agentTableLoading;
-    },
-    agentPagination: {
-      get: function () {
-        return this.agentTblPagination;
-      },
-      set: function (newVal) {
-        this.$emit("agentPagChanged", newVal);
-      },
     },
   },
 };

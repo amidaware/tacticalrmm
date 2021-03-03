@@ -4,11 +4,11 @@ from rest_framework.serializers import (
     SerializerMethodField,
 )
 
+from agents.serializers import AgentHostnameSerializer
 from autotasks.models import AutomatedTask
 from checks.models import Check
 from clients.models import Client
 from clients.serializers import ClientSerializer, SiteSerializer
-from agents.serializers import AgentHostnameSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .models import Policy

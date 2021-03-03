@@ -195,7 +195,6 @@
                   indicator-color="primary"
                   align="left"
                   narrow-indicator
-                  @input="tabChanged"
                 >
                   <q-tab name="server" icon="fas fa-server" label="Servers" />
                   <q-tab name="workstation" icon="computer" label="Workstations" />
@@ -205,11 +204,10 @@
                 <q-input
                   v-model="search"
                   style="width: 450px"
-                  label="Search (temporarily disabled)"
+                  label="Search"
                   dense
                   outlined
                   clearable
-                  disable
                   @clear="clearFilter"
                   class="q-pr-md q-pb-xs"
                 >
@@ -217,7 +215,7 @@
                     <q-icon name="search" color="primary" />
                   </template>
                   <template v-slot:after>
-                    <q-btn disable round dense flat icon="filter_alt" :color="isFilteringTable ? 'green' : ''">
+                    <q-btn round dense flat icon="filter_alt" :color="isFilteringTable ? 'green' : ''">
                       <q-menu>
                         <q-list dense>
                           <q-item-label header>Filter Agent Table</q-item-label>
@@ -320,16 +318,13 @@
                 </q-input>
               </div>
               <AgentTable
-                :frame="frame"
+                :frame="filteredAgents"
                 :columns="columns"
                 :tab="tab"
-                :filter="frozenAgents"
                 :userName="user"
                 :search="search"
                 :visibleColumns="visibleColumns"
-                :agentTblPagination="agentTblPagination"
                 @refreshEdit="refreshEntireSite"
-                @agentPagChanged="setAgentTblPagination"
               />
             </template>
             <template v-slot:separator>
@@ -367,7 +362,7 @@
     </q-dialog>
     <!-- user preferences modal -->
     <q-dialog v-model="showUserPreferencesModal">
-      <UserPreferences @close="showUserPreferencesModal = false" @edited="getDashInfo" @refresh="refreshEntireSite" />
+      <UserPreferences @close="showUserPreferencesModal = false" @edited="getDashInfo" />
     </q-dialog>
   </q-layout>
 </template>
@@ -428,13 +423,6 @@ export default {
       filterRebootNeeded: false,
       currentTRMMVersion: null,
       showUserPreferencesModal: false,
-      agentTblPagination: {
-        rowsPerPage: 50,
-        rowsNumber: null,
-        sortBy: "hostname",
-        descending: false,
-        page: 1,
-      },
       columns: [
         {
           name: "smsalert",
@@ -452,8 +440,8 @@ export default {
           name: "checks-status",
           align: "left",
           field: "checks",
-          sortable: false,
-          //sort: (a, b, rowA, rowB) => parseInt(b.failing) - a.failing,
+          sortable: true,
+          sort: (a, b, rowA, rowB) => parseInt(b.failing) - a.failing,
         },
         {
           name: "client_name",
@@ -498,17 +486,11 @@ export default {
           name: "patchespending",
           field: "patches_pending",
           align: "left",
-          sortable: false,
+          sortable: true,
         },
         {
           name: "pendingactions",
           field: "pending_actions",
-          align: "left",
-          sortable: false,
-        },
-        {
-          name: "agentstatus",
-          field: "status",
           align: "left",
           sortable: true,
         },
@@ -519,12 +501,18 @@ export default {
           sortable: true,
         },
         {
+          name: "agentstatus",
+          field: "status",
+          align: "left",
+          sortable: false,
+        },
+        {
           name: "last_seen",
           label: "Last Response",
           field: "last_seen",
           sortable: true,
           align: "left",
-          //sort: (a, b) => this.dateStringToUnix(a) - this.dateStringToUnix(b),
+          sort: (a, b) => this.dateStringToUnix(a) - this.dateStringToUnix(b),
         },
         {
           name: "boot_time",
@@ -560,16 +548,6 @@ export default {
     },
   },
   methods: {
-    tabChanged(val) {
-      if (this.allClientsActive) {
-        this.loadAllClients();
-      } else {
-        this.loadFrame(this.selectedTree, false);
-      }
-    },
-    setAgentTblPagination(val) {
-      this.agentTblPagination = val;
-    },
     toggleDark(val) {
       this.$q.dark.set(val);
       this.$axios.patch("/accounts/users/ui/", { dark_mode: val });
@@ -600,7 +578,7 @@ export default {
 
       let execute = false;
       let urlType, id;
-      let data = { pagination: this.agentTblPagination };
+      let data = {};
 
       if (typeof activenode === "string") {
         urlType = activenode.split("|")[0];
@@ -616,15 +594,10 @@ export default {
 
         if (execute) {
           this.$store.commit("AGENT_TABLE_LOADING", true);
-          // give time for vuex to set the tab, otherwise will always be 'server'
-          setTimeout(() => {
-            data.monType = this.tab;
-            this.$axios.patch("/agents/listagents/", data).then(r => {
-              this.frame = r.data.agents;
-              this.agentTblPagination.rowsNumber = r.data.total;
-              this.$store.commit("AGENT_TABLE_LOADING", false);
-            });
-          }, 500);
+          this.$axios.patch("/agents/listagents/", data).then(r => {
+            this.frame = r.data;
+            this.$store.commit("AGENT_TABLE_LOADING", false);
+          });
         }
       }
     },
@@ -642,18 +615,10 @@ export default {
     },
     loadAllClients() {
       this.$store.commit("AGENT_TABLE_LOADING", true);
-      // give time for vuex to set the tab, otherwise will always be 'server'
-      setTimeout(() => {
-        const data = {
-          pagination: this.agentTblPagination,
-          monType: this.tab,
-        };
-        this.$axios.patch("/agents/listagents/", data).then(r => {
-          this.frame = r.data.agents;
-          this.agentTblPagination.rowsNumber = r.data.total;
-          this.$store.commit("AGENT_TABLE_LOADING", false);
-        });
-      }, 500);
+      this.$axios.patch("/agents/listagents/").then(r => {
+        this.frame = r.data;
+        this.$store.commit("AGENT_TABLE_LOADING", false);
+      });
     },
     showPolicyAdd(node) {
       if (node.children) {
@@ -747,10 +712,7 @@ export default {
     },
     getDashInfo(edited = true) {
       this.$store.dispatch("getDashInfo").then(r => {
-        if (edited) {
-          this.agentTblPagination.rowsPerPage = r.data.agents_per_page;
-          this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", r.data.default_agent_tbl_tab);
-        }
+        if (edited) this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", r.data.default_agent_tbl_tab);
         this.darkMode = r.data.dark_mode;
         this.$q.dark.set(this.darkMode);
         this.currentTRMMVersion = r.data.trmm_version;
@@ -850,8 +812,9 @@ export default {
     allClientsActive() {
       return this.selectedTree === "";
     },
-    frozenAgents() {
-      return Object.freeze(this.frame);
+    filteredAgents() {
+      if (this.tab === "mixed") return Object.freeze(this.frame);
+      return Object.freeze(this.frame.filter(k => k.monitoring_type === this.tab));
     },
     activeNode() {
       return {

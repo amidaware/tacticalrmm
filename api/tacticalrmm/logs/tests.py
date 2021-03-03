@@ -218,8 +218,8 @@ class TestAuditViews(TacticalTestCase):
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data["actions"]), 12)  # type: ignore
-        self.assertEqual(r.data["completed_count"], 26)  # type: ignore
-        self.assertEqual(r.data["total"], 26)  # type: ignore
+        self.assertEqual(r.data["completed_count"], 12)  # type: ignore
+        self.assertEqual(r.data["total"], 12)  # type: ignore
 
         self.check_not_authenticated("patch", url)
 

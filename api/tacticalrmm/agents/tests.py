@@ -421,42 +421,69 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
-    def test_recover(self):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_recover(self, nats_cmd):
         from agents.models import RecoveryAction
 
-        self.agent.version = "0.11.1"
-        self.agent.save(update_fields=["version"])
+        RecoveryAction.objects.all().delete()
         url = "/agents/recover/"
-        data = {"pk": self.agent.pk, "cmd": None, "mode": "mesh"}
+        agent = baker.make_recipe("agents.online_agent")
+
+        # test mesh realtime
+        data = {"pk": agent.pk, "cmd": None, "mode": "mesh"}
+        nats_cmd.return_value = "ok"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        self.assertEqual(RecoveryAction.objects.count(), 0)
+        nats_cmd.assert_called_with(
+            {"func": "recover", "payload": {"mode": "mesh"}}, timeout=10
+        )
+        nats_cmd.reset_mock()
 
-        data["mode"] = "mesh"
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 400)
-        self.assertIn("pending", r.json())
-
-        RecoveryAction.objects.all().delete()
-        data["mode"] = "command"
-        data["cmd"] = "ipconfig /flushdns"
+        # test mesh with agent rpc not working
+        data = {"pk": agent.pk, "cmd": None, "mode": "mesh"}
+        nats_cmd.return_value = "timeout"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
-
-        RecoveryAction.objects.all().delete()
-        data["cmd"] = None
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 400)
-
+        self.assertEqual(RecoveryAction.objects.count(), 1)
+        mesh_recovery = RecoveryAction.objects.first()
+        self.assertEqual(mesh_recovery.mode, "mesh")
+        nats_cmd.reset_mock()
         RecoveryAction.objects.all().delete()
 
-        self.agent.version = "0.9.4"
-        self.agent.save(update_fields=["version"])
-        data["mode"] = "mesh"
+        # test tacagent realtime
+        data = {"pk": agent.pk, "cmd": None, "mode": "tacagent"}
+        nats_cmd.return_value = "ok"
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(RecoveryAction.objects.count(), 0)
+        nats_cmd.assert_called_with(
+            {"func": "recover", "payload": {"mode": "tacagent"}}, timeout=10
+        )
+        nats_cmd.reset_mock()
+
+        # test tacagent with rpc not working
+        data = {"pk": agent.pk, "cmd": None, "mode": "tacagent"}
+        nats_cmd.return_value = "timeout"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
-        self.assertIn("0.9.5", r.json())
+        self.assertEqual(RecoveryAction.objects.count(), 0)
+        nats_cmd.reset_mock()
 
-        self.check_not_authenticated("post", url)
+        # test shell cmd without command
+        data = {"pk": agent.pk, "cmd": None, "mode": "command"}
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(RecoveryAction.objects.count(), 0)
+
+        # test shell cmd
+        data = {"pk": agent.pk, "cmd": "shutdown /r /t 10 /f", "mode": "command"}
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(RecoveryAction.objects.count(), 1)
+        cmd_recovery = RecoveryAction.objects.first()
+        self.assertEqual(cmd_recovery.mode, "command")
+        self.assertEqual(cmd_recovery.command, "shutdown /r /t 10 /f")
 
     def test_agents_agent_detail(self):
         url = f"/agents/{self.agent.pk}/agentdetail/"

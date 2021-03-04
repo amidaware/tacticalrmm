@@ -250,8 +250,10 @@ class PendingAction(models.Model):
         if self.action_type == "schedreboot":
             obj = dt.datetime.strptime(self.details["time"], "%Y-%m-%d %H:%M:%S")
             return dt.datetime.strftime(obj, "%B %d, %Y at %I:%M %p")
-        elif self.action_type == "taskaction" or self.action_type == "agentupdate":
+        elif self.action_type == "taskaction":
             return "Next agent check-in"
+        elif self.action_type == "agentupdate":
+            return "Next update cycle"
         elif self.action_type == "chocoinstall":
             return "ASAP"
 

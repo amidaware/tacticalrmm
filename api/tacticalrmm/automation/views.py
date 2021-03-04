@@ -79,7 +79,7 @@ class PolicySync(APIView):
         if "policy" in request.data.keys():
             from automation.tasks import generate_agent_checks_from_policies_task
 
-            generate_agent_checks_from_policies_task(
+            generate_agent_checks_from_policies_task.delay(
                 request.data["policy"], create_tasks=True
             )
             return Response("ok")

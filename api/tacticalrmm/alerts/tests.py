@@ -4,6 +4,8 @@ from unittest.mock import patch
 from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker, seq
+from alerts.tasks import cache_agents_alert_template
+from autotasks.models import AutomatedTask
 
 from core.models import CoreSettings
 from tacticalrmm.test import TacticalTestCase
@@ -395,8 +397,8 @@ class TestAlertTasks(TacticalTestCase):
         alert_templates = baker.make("alerts.AlertTemplate", _quantity=6)
 
         # should be None
-        self.assertFalse(workstation.get_alert_template())
-        self.assertFalse(server.get_alert_template())
+        self.assertFalse(workstation.set_alert_template())
+        self.assertFalse(server.set_alert_template())
 
         # assign first Alert Template as to a policy and apply it as default
         policy.alert_template = alert_templates[0]  # type: ignore
@@ -405,15 +407,15 @@ class TestAlertTasks(TacticalTestCase):
         core.server_policy = policy
         core.save()
 
-        self.assertEquals(server.get_alert_template().pk, alert_templates[0].pk)  # type: ignore
-        self.assertEquals(workstation.get_alert_template().pk, alert_templates[0].pk)  # type: ignore
+        self.assertEquals(server.set_alert_template().pk, alert_templates[0].pk)  # type: ignore
+        self.assertEquals(workstation.set_alert_template().pk, alert_templates[0].pk)  # type: ignore
 
         # assign second Alert Template to as default alert template
         core.alert_template = alert_templates[1]  # type: ignore
         core.save()
 
-        self.assertEquals(workstation.get_alert_template().pk, alert_templates[1].pk)  # type: ignore
-        self.assertEquals(server.get_alert_template().pk, alert_templates[1].pk)  # type: ignore
+        self.assertEquals(workstation.set_alert_template().pk, alert_templates[1].pk)  # type: ignore
+        self.assertEquals(server.set_alert_template().pk, alert_templates[1].pk)  # type: ignore
 
         # assign third Alert Template to client
         workstation.client.alert_template = alert_templates[2]  # type: ignore
@@ -421,8 +423,8 @@ class TestAlertTasks(TacticalTestCase):
         workstation.client.save()
         server.client.save()
 
-        self.assertEquals(workstation.get_alert_template().pk, alert_templates[2].pk)  # type: ignore
-        self.assertEquals(server.get_alert_template().pk, alert_templates[2].pk)  # type: ignore
+        self.assertEquals(workstation.set_alert_template().pk, alert_templates[2].pk)  # type: ignore
+        self.assertEquals(server.set_alert_template().pk, alert_templates[2].pk)  # type: ignore
 
         # apply policy to client and should override
         workstation.client.workstation_policy = policy
@@ -430,8 +432,8 @@ class TestAlertTasks(TacticalTestCase):
         workstation.client.save()
         server.client.save()
 
-        self.assertEquals(workstation.get_alert_template().pk, alert_templates[0].pk)  # type: ignore
-        self.assertEquals(server.get_alert_template().pk, alert_templates[0].pk)  # type: ignore
+        self.assertEquals(workstation.set_alert_template().pk, alert_templates[0].pk)  # type: ignore
+        self.assertEquals(server.set_alert_template().pk, alert_templates[0].pk)  # type: ignore
 
         # assign fouth Alert Template to site
         workstation.site.alert_template = alert_templates[3]  # type: ignore
@@ -439,8 +441,8 @@ class TestAlertTasks(TacticalTestCase):
         workstation.site.save()
         server.site.save()
 
-        self.assertEquals(workstation.get_alert_template().pk, alert_templates[3].pk)  # type: ignore
-        self.assertEquals(server.get_alert_template().pk, alert_templates[3].pk)  # type: ignore
+        self.assertEquals(workstation.set_alert_template().pk, alert_templates[3].pk)  # type: ignore
+        self.assertEquals(server.set_alert_template().pk, alert_templates[3].pk)  # type: ignore
 
         # apply policy to site
         workstation.site.workstation_policy = policy
@@ -448,8 +450,8 @@ class TestAlertTasks(TacticalTestCase):
         workstation.site.save()
         server.site.save()
 
-        self.assertEquals(workstation.get_alert_template().pk, alert_templates[0].pk)  # type: ignore
-        self.assertEquals(server.get_alert_template().pk, alert_templates[0].pk)  # type: ignore
+        self.assertEquals(workstation.set_alert_template().pk, alert_templates[0].pk)  # type: ignore
+        self.assertEquals(server.set_alert_template().pk, alert_templates[0].pk)  # type: ignore
 
         # apply policy to agents
         workstation.policy = policy
@@ -457,35 +459,35 @@ class TestAlertTasks(TacticalTestCase):
         workstation.save()
         server.save()
 
-        self.assertEquals(workstation.get_alert_template().pk, alert_templates[0].pk)  # type: ignore
-        self.assertEquals(server.get_alert_template().pk, alert_templates[0].pk)  # type: ignore
+        self.assertEquals(workstation.set_alert_template().pk, alert_templates[0].pk)  # type: ignore
+        self.assertEquals(server.set_alert_template().pk, alert_templates[0].pk)  # type: ignore
 
         # test disabling alert template
         alert_templates[0].is_active = False  # type: ignore
         alert_templates[0].save()  # type: ignore
 
-        self.assertEquals(workstation.get_alert_template().pk, alert_templates[3].pk)  # type: ignore
-        self.assertEquals(server.get_alert_template().pk, alert_templates[3].pk)  # type: ignore
+        self.assertEquals(workstation.set_alert_template().pk, alert_templates[3].pk)  # type: ignore
+        self.assertEquals(server.set_alert_template().pk, alert_templates[3].pk)  # type: ignore
 
         # test policy exclusions
         alert_templates[3].excluded_agents.set([workstation.pk])  # type: ignore
 
-        self.assertEquals(workstation.get_alert_template().pk, alert_templates[2].pk)  # type: ignore
-        self.assertEquals(server.get_alert_template().pk, alert_templates[3].pk)  # type: ignore
+        self.assertEquals(workstation.set_alert_template().pk, alert_templates[2].pk)  # type: ignore
+        self.assertEquals(server.set_alert_template().pk, alert_templates[3].pk)  # type: ignore
 
         # test workstation exclusions
         alert_templates[2].exclude_workstations = True  # type: ignore
         alert_templates[2].save()  # type: ignore
 
-        self.assertEquals(workstation.get_alert_template().pk, alert_templates[1].pk)  # type: ignore
-        self.assertEquals(server.get_alert_template().pk, alert_templates[3].pk)  # type: ignore
+        self.assertEquals(workstation.set_alert_template().pk, alert_templates[1].pk)  # type: ignore
+        self.assertEquals(server.set_alert_template().pk, alert_templates[3].pk)  # type: ignore
 
         # test server exclusions
         alert_templates[3].exclude_servers = True  # type: ignore
         alert_templates[3].save()  # type: ignore
 
-        self.assertEquals(workstation.get_alert_template().pk, alert_templates[1].pk)  # type: ignore
-        self.assertEquals(server.get_alert_template().pk, alert_templates[2].pk)  # type: ignore
+        self.assertEquals(workstation.set_alert_template().pk, alert_templates[1].pk)  # type: ignore
+        self.assertEquals(server.set_alert_template().pk, alert_templates[2].pk)  # type: ignore
 
     @patch("agents.tasks.sleep")
     @patch("core.models.CoreSettings.send_mail")
@@ -504,6 +506,7 @@ class TestAlertTasks(TacticalTestCase):
         send_email,
         sleep,
     ):
+        from agents.models import Agent
         from agents.tasks import (
             agent_outage_email_task,
             agent_outage_sms_task,
@@ -564,6 +567,8 @@ class TestAlertTasks(TacticalTestCase):
         agent_email_alert = baker.make_recipe(
             "agents.overdue_agent", overdue_email_alert=True
         )
+
+        cache_agents_alert_template()
         agent_outages_task()
 
         # should have created 6 alerts
@@ -663,6 +668,9 @@ class TestAlertTasks(TacticalTestCase):
         alert_template_always_text.agent_text_on_resolved = True  # type: ignore
         alert_template_always_text.save()  # type: ignore
 
+        agent_template_text = Agent.objects.get(pk=agent_template_text.pk)
+        agent_template_email = Agent.objects.get(pk=agent_template_email.pk)
+
         # have the two agents checkin
         url = "/api/v3/checkin/"
 
@@ -719,13 +727,15 @@ class TestAlertTasks(TacticalTestCase):
         send_email,
         sleep,
     ):
-
+        from checks.models import Check
         from checks.tasks import (
             handle_check_email_alert_task,
             handle_check_sms_alert_task,
             handle_resolved_check_email_alert_task,
             handle_resolved_check_sms_alert_task,
         )
+
+        from alerts.tasks import cache_agents_alert_template
 
         # create test data
         agent = baker.make_recipe("agents.agent")
@@ -799,6 +809,14 @@ class TestAlertTasks(TacticalTestCase):
         check_no_settings = baker.make_recipe(
             "checks.script_check", agent=agent_no_settings
         )
+
+        # update alert template and pull new checks from DB
+        cache_agents_alert_template()
+        check_template_email = Check.objects.get(pk=check_template_email.pk)
+        check_template_dashboard_text = Check.objects.get(
+            pk=check_template_dashboard_text.pk
+        )
+        check_template_blank = Check.objects.get(pk=check_template_blank.pk)
 
         # test agent with check that has alert settings
         check_agent.alert_severity = "warning"
@@ -905,11 +923,11 @@ class TestAlertTasks(TacticalTestCase):
             Alert.objects.filter(assigned_check=check_template_email).count(), 1
         )
 
-        alert_template_email.check_periodic_alert_days = 1
-        alert_template_email.save()
+        alert_template_email.check_periodic_alert_days = 1  # type: ignore
+        alert_template_email.save()  # type: ignore
 
-        alert_template_dashboard_text.check_periodic_alert_days = 1
-        alert_template_dashboard_text.save()
+        alert_template_dashboard_text.check_periodic_alert_days = 1  # type: ignore
+        alert_template_dashboard_text.save()  # type: ignore
 
         # set last email time for alert in the past
         alert_email = Alert.objects.get(assigned_check=check_template_email)
@@ -920,6 +938,13 @@ class TestAlertTasks(TacticalTestCase):
         alert_sms = Alert.objects.get(assigned_check=check_template_dashboard_text)
         alert_sms.sms_sent = djangotime.now() - djangotime.timedelta(days=20)
         alert_sms.save()
+
+        # refresh checks to get alert template changes
+        check_template_email = Check.objects.get(pk=check_template_email.pk)
+        check_template_dashboard_text = Check.objects.get(
+            pk=check_template_dashboard_text.pk
+        )
+        check_template_blank = Check.objects.get(pk=check_template_blank.pk)
 
         Alert.handle_alert_failure(check_template_email)
         Alert.handle_alert_failure(check_template_dashboard_text)
@@ -939,11 +964,18 @@ class TestAlertTasks(TacticalTestCase):
         resolved_email.assert_not_called()
 
         # test resolved notifications
-        alert_template_email.check_email_on_resolved = True
-        alert_template_email.save()
+        alert_template_email.check_email_on_resolved = True  # type: ignore
+        alert_template_email.save()  # type: ignore
 
-        alert_template_dashboard_text.check_text_on_resolved = True
-        alert_template_dashboard_text.save()
+        alert_template_dashboard_text.check_text_on_resolved = True  # type: ignore
+        alert_template_dashboard_text.save()  # type: ignore
+
+        # refresh checks to get alert template changes
+        check_template_email = Check.objects.get(pk=check_template_email.pk)
+        check_template_dashboard_text = Check.objects.get(
+            pk=check_template_dashboard_text.pk
+        )
+        check_template_blank = Check.objects.get(pk=check_template_blank.pk)
 
         Alert.handle_alert_resolve(check_template_email)
 
@@ -980,13 +1012,15 @@ class TestAlertTasks(TacticalTestCase):
         send_email,
         sleep,
     ):
-
+        from autotasks.models import AutomatedTask
         from autotasks.tasks import (
             handle_resolved_task_email_alert,
             handle_resolved_task_sms_alert,
             handle_task_email_alert,
             handle_task_sms_alert,
         )
+
+        from alerts.tasks import cache_agents_alert_template
 
         # create test data
         agent = baker.make_recipe("agents.agent")
@@ -1052,8 +1086,14 @@ class TestAlertTasks(TacticalTestCase):
             "autotasks.AutomatedTask", agent=agent_no_settings, alert_severity="warning"
         )
 
+        # update alert template and pull new checks from DB
+        cache_agents_alert_template()
+        task_template_email = AutomatedTask.objects.get(pk=task_template_email.pk)  # type: ignore
+        task_template_dashboard_text = AutomatedTask.objects.get(pk=task_template_dashboard_text.pk)  # type: ignore
+        task_template_blank = AutomatedTask.objects.get(pk=task_template_blank.pk)  # type: ignore
+
         # test agent with task that has alert settings
-        Alert.handle_alert_failure(task_agent)
+        Alert.handle_alert_failure(task_agent)  # type: ignore
 
         # alert should have been created and sms, email notifications sent
         self.assertTrue(Alert.objects.filter(assigned_task=task_agent).exists())
@@ -1081,7 +1121,7 @@ class TestAlertTasks(TacticalTestCase):
         send_sms.reset_mock()
 
         # test task with an agent that has an email always alert template
-        Alert.handle_alert_failure(task_template_email)
+        Alert.handle_alert_failure(task_template_email)  # type: ignore
 
         self.assertTrue(Alert.objects.filter(assigned_task=task_template_email))
         alertpk = Alert.objects.get(assigned_task=task_template_email).pk
@@ -1099,7 +1139,7 @@ class TestAlertTasks(TacticalTestCase):
         send_email.reset_mock()
 
         # test task with an agent that has an email always alert template
-        Alert.handle_alert_failure(task_template_dashboard_text)
+        Alert.handle_alert_failure(task_template_dashboard_text)  # type: ignore
 
         self.assertTrue(
             Alert.objects.filter(assigned_task=task_template_dashboard_text).exists()
@@ -1110,11 +1150,11 @@ class TestAlertTasks(TacticalTestCase):
         outage_sms.assert_not_called
 
         # update task alert seveity to error
-        task_template_dashboard_text.alert_severity = "error"
-        task_template_dashboard_text.save()
+        task_template_dashboard_text.alert_severity = "error"  # type: ignore
+        task_template_dashboard_text.save()  # type: ignore
 
         # now should trigger alert
-        Alert.handle_alert_failure(task_template_dashboard_text)
+        Alert.handle_alert_failure(task_template_dashboard_text)  # type: ignore
         outage_sms.assert_called_with(pk=alertpk, alert_interval=0)
         outage_sms.reset_mock()
 
@@ -1130,21 +1170,21 @@ class TestAlertTasks(TacticalTestCase):
         send_sms.reset_mock()
 
         # test task with an agent that has a blank alert template
-        Alert.handle_alert_failure(task_template_blank)
+        Alert.handle_alert_failure(task_template_blank)  # type: ignore
 
         self.assertFalse(
             Alert.objects.filter(assigned_task=task_template_blank).exists()
         )
 
         # test task that has no template and no settings
-        Alert.handle_alert_failure(task_no_settings)
+        Alert.handle_alert_failure(task_no_settings)  # type: ignore
 
         self.assertFalse(Alert.objects.filter(assigned_task=task_no_settings).exists())
 
         # test periodic notifications
 
         # make sure a failing task won't trigger another notification and only create a single alert
-        Alert.handle_alert_failure(task_template_email)
+        Alert.handle_alert_failure(task_template_email)  # type: ignore
         send_email.assert_not_called()
         send_sms.assert_not_called()
 
@@ -1152,11 +1192,11 @@ class TestAlertTasks(TacticalTestCase):
             Alert.objects.filter(assigned_task=task_template_email).count(), 1
         )
 
-        alert_template_email.task_periodic_alert_days = 1
-        alert_template_email.save()
+        alert_template_email.task_periodic_alert_days = 1  # type: ignore
+        alert_template_email.save()  # type: ignore
 
-        alert_template_dashboard_text.task_periodic_alert_days = 1
-        alert_template_dashboard_text.save()
+        alert_template_dashboard_text.task_periodic_alert_days = 1  # type: ignore
+        alert_template_dashboard_text.save()  # type: ignore
 
         # set last email time for alert in the past
         alert_email = Alert.objects.get(assigned_task=task_template_email)
@@ -1168,8 +1208,13 @@ class TestAlertTasks(TacticalTestCase):
         alert_sms.sms_sent = djangotime.now() - djangotime.timedelta(days=20)
         alert_sms.save()
 
-        Alert.handle_alert_failure(task_template_email)
-        Alert.handle_alert_failure(task_template_dashboard_text)
+        # refresh automated tasks to get new alert templates
+        task_template_email = AutomatedTask.objects.get(pk=task_template_email.pk)  # type: ignore
+        task_template_dashboard_text = AutomatedTask.objects.get(pk=task_template_dashboard_text.pk)  # type: ignore
+        task_template_blank = AutomatedTask.objects.get(pk=task_template_blank.pk)  # type: ignore
+
+        Alert.handle_alert_failure(task_template_email)  # type: ignore
+        Alert.handle_alert_failure(task_template_dashboard_text)  # type: ignore
 
         outage_email.assert_called_with(pk=alert_email.pk, alert_interval=1)
         outage_sms.assert_called_with(pk=alert_sms.pk, alert_interval=1)
@@ -1177,7 +1222,7 @@ class TestAlertTasks(TacticalTestCase):
         outage_sms.reset_mock()
 
         # test resolving alerts
-        Alert.handle_alert_resolve(task_agent)
+        Alert.handle_alert_resolve(task_agent)  # type: ignore
 
         self.assertTrue(Alert.objects.get(assigned_task=task_agent).resolved)
         self.assertTrue(Alert.objects.get(assigned_task=task_agent).resolved_on)
@@ -1186,19 +1231,24 @@ class TestAlertTasks(TacticalTestCase):
         resolved_email.assert_not_called()
 
         # test resolved notifications
-        alert_template_email.task_email_on_resolved = True
-        alert_template_email.save()
+        alert_template_email.task_email_on_resolved = True  # type: ignore
+        alert_template_email.save()  # type: ignore
 
-        alert_template_dashboard_text.task_text_on_resolved = True
-        alert_template_dashboard_text.save()
+        alert_template_dashboard_text.task_text_on_resolved = True  # type: ignore
+        alert_template_dashboard_text.save()  # type: ignore
 
-        Alert.handle_alert_resolve(task_template_email)
+        # refresh automated tasks to get new alert templates
+        task_template_email = AutomatedTask.objects.get(pk=task_template_email.pk)  # type: ignore
+        task_template_dashboard_text = AutomatedTask.objects.get(pk=task_template_dashboard_text.pk)  # type: ignore
+        task_template_blank = AutomatedTask.objects.get(pk=task_template_blank.pk)  # type: ignore
+
+        Alert.handle_alert_resolve(task_template_email)  # type: ignore
 
         resolved_email.assert_called_with(pk=alert_email.pk)
         resolved_sms.assert_not_called()
         resolved_email.reset_mock()
 
-        Alert.handle_alert_resolve(task_template_dashboard_text)
+        Alert.handle_alert_resolve(task_template_dashboard_text)  # type: ignore
 
         resolved_sms.assert_called_with(pk=alert_sms.pk)
         resolved_email.assert_not_called()
@@ -1275,6 +1325,8 @@ class TestAlertTasks(TacticalTestCase):
         )
         agent.client.alert_template = alert_template
         agent.client.save()
+
+        agent.set_alert_template()
 
         agent_outages_task()
 

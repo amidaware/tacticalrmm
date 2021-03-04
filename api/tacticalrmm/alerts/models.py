@@ -158,7 +158,7 @@ class Alert(models.Model):
             email_alert = instance.overdue_email_alert
             text_alert = instance.overdue_text_alert
             dashboard_alert = instance.overdue_dashboard_alert
-            alert_template = instance.get_alert_template()
+            alert_template = instance.alert_template
             maintenance_mode = instance.maintenance_mode
             alert_severity = "error"
             agent = instance
@@ -194,7 +194,7 @@ class Alert(models.Model):
             email_alert = instance.email_alert
             text_alert = instance.text_alert
             dashboard_alert = instance.dashboard_alert
-            alert_template = instance.agent.get_alert_template()
+            alert_template = instance.agent.alert_template
             maintenance_mode = instance.agent.maintenance_mode
             alert_severity = instance.alert_severity
             agent = instance.agent
@@ -227,7 +227,7 @@ class Alert(models.Model):
             email_alert = instance.email_alert
             text_alert = instance.text_alert
             dashboard_alert = instance.dashboard_alert
-            alert_template = instance.agent.get_alert_template()
+            alert_template = instance.agent.alert_template
             maintenance_mode = instance.agent.maintenance_mode
             alert_severity = instance.alert_severity
             agent = instance.agent
@@ -336,7 +336,7 @@ class Alert(models.Model):
             resolved_email_task = agent_recovery_email_task
             resolved_text_task = agent_recovery_sms_task
 
-            alert_template = instance.get_alert_template()
+            alert_template = instance.alert_template
             alert = cls.objects.get(agent=instance, resolved=False)
             maintenance_mode = instance.maintenance_mode
             agent = instance
@@ -354,7 +354,7 @@ class Alert(models.Model):
             resolved_email_task = handle_resolved_check_email_alert_task
             resolved_text_task = handle_resolved_check_sms_alert_task
 
-            alert_template = instance.agent.get_alert_template()
+            alert_template = instance.agent.alert_template
             alert = cls.objects.get(assigned_check=instance, resolved=False)
             maintenance_mode = instance.agent.maintenance_mode
             agent = instance.agent
@@ -372,7 +372,7 @@ class Alert(models.Model):
             resolved_email_task = handle_resolved_task_email_alert
             resolved_text_task = handle_resolved_task_sms_alert
 
-            alert_template = instance.agent.get_alert_template()
+            alert_template = instance.agent.alert_template
             alert = cls.objects.get(assigned_task=instance, resolved=False)
             maintenance_mode = instance.agent.maintenance_mode
             agent = instance.agent

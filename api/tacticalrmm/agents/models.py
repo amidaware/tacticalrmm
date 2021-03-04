@@ -20,7 +20,6 @@ from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrTimeout
 from packaging import version as pyver
 
-from alerts.models import AlertTemplate
 from core.models import TZ_CHOICES, CoreSettings
 from logs.models import BaseAuditModel
 
@@ -64,6 +63,13 @@ class Agent(BaseAuditModel):
         max_length=255, choices=TZ_CHOICES, null=True, blank=True
     )
     maintenance_mode = models.BooleanField(default=False)
+    alert_template = models.ForeignKey(
+        "alerts.AlertTemplate",
+        related_name="agents",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
     site = models.ForeignKey(
         "clients.Site",
         related_name="agents",
@@ -85,7 +91,7 @@ class Agent(BaseAuditModel):
         old_agent = type(self).objects.get(pk=self.pk) if self.pk else None
         super(BaseAuditModel, self).save(*args, **kwargs)
 
-        # check if new agent has been create
+        # check if new agent has been created
         # or check if policy have changed on agent
         # or if site has changed on agent and if so generate-policies
         if (
@@ -461,9 +467,9 @@ class Agent(BaseAuditModel):
             )
         )
 
-    # returns alert template assigned in the following order: policy, site, client, global
-    # will return None if nothing is found
-    def get_alert_template(self) -> Union[AlertTemplate, None]:
+    # sets alert template assigned in the following order: policy, site, client, global
+    # sets None if nothing is found
+    def set_alert_template(self):
 
         site = self.site
         client = self.client
@@ -563,9 +569,16 @@ class Agent(BaseAuditModel):
                 continue
 
             else:
+                # save alert_template to agent cache field
+                self.alert_template = template
+                self.save()
+
                 return template
 
         # no alert templates found or agent has been excluded
+        self.alert_template = None
+        self.save()
+
         return None
 
     def generate_checks_from_policies(self):
@@ -707,7 +720,7 @@ class Agent(BaseAuditModel):
             if action.details["task_id"] == task_id:
                 action.delete()
 
-    def should_create_alert(self, alert_template):
+    def should_create_alert(self, alert_template=None):
         return (
             self.overdue_dashboard_alert
             or self.overdue_email_alert
@@ -726,7 +739,6 @@ class Agent(BaseAuditModel):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
-        alert_template = self.get_alert_template()
         CORE.send_mail(
             f"{self.client.name}, {self.site.name}, {self.hostname} - data overdue",
             (
@@ -735,14 +747,13 @@ class Agent(BaseAuditModel):
                 f"agent {self.hostname} "
                 "within the expected time."
             ),
-            alert_template=alert_template,
+            alert_template=self.alert_template,
         )
 
     def send_recovery_email(self):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
-        alert_template = self.get_alert_template()
         CORE.send_mail(
             f"{self.client.name}, {self.site.name}, {self.hostname} - data received",
             (
@@ -751,27 +762,25 @@ class Agent(BaseAuditModel):
                 f"agent {self.hostname} "
                 "after an interruption in data transmission."
             ),
-            alert_template=alert_template,
+            alert_template=self.alert_template,
         )
 
     def send_outage_sms(self):
         from core.models import CoreSettings
 
-        alert_template = self.get_alert_template()
         CORE = CoreSettings.objects.first()
         CORE.send_sms(
             f"{self.client.name}, {self.site.name}, {self.hostname} - data overdue",
-            alert_template=alert_template,
+            alert_template=self.alert_template,
         )
 
     def send_recovery_sms(self):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
-        alert_template = self.get_alert_template()
         CORE.send_sms(
             f"{self.client.name}, {self.site.name}, {self.hostname} - data received",
-            alert_template=alert_template,
+            alert_template=self.alert_template,
         )
 
 

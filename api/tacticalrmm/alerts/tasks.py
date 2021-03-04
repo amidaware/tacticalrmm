@@ -12,3 +12,13 @@ def unsnooze_alerts() -> str:
     )
 
     return "ok"
+
+
+@app.task
+def cache_agents_alert_template():
+    from agents.models import Agent
+
+    for agent in Agent.objects.only("pk"):
+        agent.set_alert_template()
+
+    return "ok"

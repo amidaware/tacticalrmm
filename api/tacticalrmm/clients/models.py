@@ -33,6 +33,7 @@ class Client(BaseAuditModel):
 
     def save(self, *args, **kw):
         from automation.tasks import generate_agent_checks_by_location_task
+        from alerts.tasks import cache_agents_alert_template
 
         # get old client if exists
         old_client = type(self).objects.get(pk=self.pk) if self.pk else None
@@ -53,6 +54,9 @@ class Client(BaseAuditModel):
                 mon_type="workstation",
                 create_tasks=True,
             )
+
+        if old_client and old_client.alert_template != self.alert_template:
+            cache_agents_alert_template.delay()
 
     class Meta:
         ordering = ("name",)
@@ -128,6 +132,7 @@ class Site(BaseAuditModel):
 
     def save(self, *args, **kw):
         from automation.tasks import generate_agent_checks_by_location_task
+        from alerts.tasks import cache_agents_alert_template
 
         # get old client if exists
         old_site = type(self).objects.get(pk=self.pk) if self.pk else None
@@ -148,6 +153,9 @@ class Site(BaseAuditModel):
                 mon_type="workstation",
                 create_tasks=True,
             )
+
+        if old_site and old_site.alert_template != self.alert_template:
+            cache_agents_alert_template.delay()
 
     class Meta:
         ordering = ("name",)

@@ -79,6 +79,7 @@ class CoreSettings(BaseAuditModel):
 
     def save(self, *args, **kwargs):
         from automation.tasks import generate_all_agent_checks_task
+        from alerts.tasks import cache_agents_alert_template
 
         if not self.pk and CoreSettings.objects.exists():
             raise ValidationError("There can only be one CoreSettings instance")
@@ -104,6 +105,9 @@ class CoreSettings(BaseAuditModel):
             generate_all_agent_checks_task.delay(
                 mon_type="workstation", create_tasks=True
             )
+
+        if old_settings and old_settings.alert_template != self.alert_template:
+            cache_agents_alert_template.delay()
 
     def __str__(self):
         return "Global Site Settings"

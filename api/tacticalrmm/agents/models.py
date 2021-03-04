@@ -716,7 +716,7 @@ class Agent(BaseAuditModel):
     # for clearing duplicate pending actions on agent
     def remove_matching_pending_task_actions(self, task_id):
         # remove any other pending actions on agent with same task_id
-        for action in self.pendingactions.exclude(status="completed"):  # type: ignore
+        for action in self.pendingactions.filter(action_type="taskaction").exclude(status="completed"):  # type: ignore
             if action.details["task_id"] == task_id:
                 action.delete()
 

@@ -487,20 +487,12 @@ def recover(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
     mode = request.data["mode"]
 
-    if pyver.parse(agent.version) <= pyver.parse("0.9.5"):
-        return notify_error("Only available in agent version greater than 0.9.5")
-
-    if not agent.has_nats:
-        if mode == "tacagent" or mode == "rpc":
-            return notify_error("Requires agent version 1.1.0 or greater")
-
-    # attempt a realtime recovery if supported, otherwise fall back to old recovery method
-    if agent.has_nats:
-        if mode == "tacagent" or mode == "mesh":
-            data = {"func": "recover", "payload": {"mode": mode}}
-            r = asyncio.run(agent.nats_cmd(data, timeout=10))
-            if r == "ok":
-                return Response("Successfully completed recovery")
+    # attempt a realtime recovery, otherwise fall back to old recovery method
+    if mode == "tacagent" or mode == "mesh":
+        data = {"func": "recover", "payload": {"mode": mode}}
+        r = asyncio.run(agent.nats_cmd(data, timeout=10))
+        if r == "ok":
+            return Response("Successfully completed recovery")
 
     if agent.recoveryactions.filter(last_run=None).exists():  # type: ignore
         return notify_error(

@@ -28,6 +28,19 @@ The powershell method is very similar to the generated exe in that it simply dow
 The manual installation method requires you to first download the generic installer and call it using command line args.<br/><br/>
 This is useful for scripting the installation using Group Policy or some other batch deployment method.<br/>
 
+!!!warning
+Example GPO .bat file: update paths, and agent versions numbers before use
+```
+@ECHO OFF
+IF EXIST "c:\windows\temp\trmminstalled.txt" GOTO END
+timeout /t 60 /nobreak > NUL :: wait for network on computer start
+echo F|xcopy /S /Q /Y /F \\DOMAIN.LOCAL\SysVol\DOMAIN.LOCAL\Policies\{D3883EC1-2EE1-4397-9041-6FF57575B775}\Machine\Scripts\Startup\winagent-v1.4.8.exe C:\Windows\Temp\winagent-v1.4.8.exe
+cd C:\Windows\Temp
+winagent-v1.4.8.exe /VERYSILENT /SUPPRESSMSGBOXES && ping 127.0.0.1 -n 10 && "C:\Program Files\TacticalAgent\tacticalrmm.exe" -m install --api https://api.example.com --client-id 14 --site-id 34 --agent-type server --auth changeme
+echo "trmm installed" > c:\windows\temp\trmminstalled.txt
+:END
+```
+
 
 !!!tip
     You can reuse the installer for any of the deployment methods, you don't need to constantly create a new installer for each new agent.<br/>

@@ -228,26 +228,28 @@ class AgentsTableList(APIView):
     def patch(self, request):
         if "sitePK" in request.data.keys():
             queryset = (
-                Agent.objects.select_related("site")
+                Agent.objects.select_related("site", "policy", "alert_template")
                 .prefetch_related("agentchecks")
                 .filter(site_id=request.data["sitePK"])
             )
         elif "clientPK" in request.data.keys():
             queryset = (
-                Agent.objects.select_related("site")
+                Agent.objects.select_related("site", "policy", "alert_template")
                 .prefetch_related("agentchecks")
                 .filter(site__client_id=request.data["clientPK"])
             )
         else:
-            queryset = Agent.objects.select_related("site").prefetch_related(
-                "agentchecks"
-            )
+            queryset = Agent.objects.select_related(
+                "site", "policy", "alert_template"
+            ).prefetch_related("agentchecks")
 
         queryset = queryset.only(
             "pk",
             "hostname",
             "agent_id",
             "site",
+            "policy",
+            "alert_template",
             "monitoring_type",
             "description",
             "needs_reboot",

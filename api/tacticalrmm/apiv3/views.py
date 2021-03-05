@@ -65,13 +65,6 @@ class CheckIn(APIView):
         if Alert.objects.filter(agent=agent, resolved=False).exists():
             Alert.handle_alert_resolve(agent)
 
-        recovery = agent.recoveryactions.filter(last_run=None).last()  # type: ignore
-        if recovery is not None:
-            recovery.last_run = djangotime.now()
-            recovery.save(update_fields=["last_run"])
-            handle_agent_recovery_task.delay(pk=recovery.pk)  # type: ignore
-            return Response("ok")
-
         # get any pending actions
         if agent.pendingactions.filter(status="pending").exists():  # type: ignore
             agent.handle_pending_actions()
@@ -513,3 +506,27 @@ class ChocoResult(APIView):
         action.status = "completed"
         action.save(update_fields=["details", "status"])
         return Response("ok")
+
+
+class AgentRecovery(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, agentid):
+        agent = get_object_or_404(Agent, agent_id=agentid)
+        recovery = agent.recoveryactions.filter(last_run=None).last()  # type: ignore
+        ret = {"mode": "pass", "shellcmd": ""}
+        if recovery is None:
+            return Response(ret)
+
+        recovery.last_run = djangotime.now()
+        recovery.save(update_fields=["last_run"])
+
+        ret["mode"] = recovery.mode
+
+        if recovery.mode == "command":
+            ret["shellcmd"] = recovery.command
+        elif recovery.mode == "rpc":
+            reload_nats()
+
+        return Response(ret)

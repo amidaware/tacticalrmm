@@ -113,16 +113,24 @@ class PendingActions(APIView):
             actions = PendingAction.objects.filter(
                 agent__pk=request.data["agentPK"], status=status_filter
             )
+            total = PendingAction.objects.filter(
+                agent__pk=request.data["agentPK"]
+            ).count()
+            completed = PendingAction.objects.filter(
+                agent__pk=request.data["agentPK"], status="completed"
+            ).count()
 
         else:
             actions = PendingAction.objects.filter(status=status_filter).select_related(
                 "agent"
             )
+            total = PendingAction.objects.count()
+            completed = PendingAction.objects.filter(status="completed").count()
 
         ret = {
             "actions": PendingActionSerializer(actions, many=True).data,
-            "completed_count": PendingAction.objects.filter(status="completed").count(),
-            "total": PendingAction.objects.count(),
+            "completed_count": completed,
+            "total": total,
         }
         return Response(ret)
 

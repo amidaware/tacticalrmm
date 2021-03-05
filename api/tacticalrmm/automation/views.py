@@ -2,6 +2,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from tacticalrmm.utils import notify_error
+
 from agents.models import Agent
 from agents.serializers import AgentHostnameSerializer
 from autotasks.models import AutomatedTask
@@ -70,6 +72,20 @@ class GetUpdateDeletePolicy(APIView):
         get_object_or_404(Policy, pk=pk).delete()
 
         return Response("ok")
+
+
+class PolicySync(APIView):
+    def post(self, request):
+        if "policy" in request.data.keys():
+            from automation.tasks import generate_agent_checks_from_policies_task
+
+            generate_agent_checks_from_policies_task.delay(
+                request.data["policy"], create_tasks=True
+            )
+            return Response("ok")
+
+        else:
+            return notify_error("The request was invalid")
 
 
 class PolicyAutoTask(APIView):

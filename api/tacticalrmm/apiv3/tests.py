@@ -1,6 +1,5 @@
 import json
 import os
-from itertools import cycle
 from unittest.mock import patch
 
 from django.conf import settings
@@ -89,3 +88,42 @@ class TestAPIv3(TacticalTestCase):
         action = agent_updated.pendingactions.filter(action_type="agentupdate").first()
         self.assertEqual(action.status, "completed")
         action.delete()
+
+    @patch("apiv3.views.reload_nats")
+    def test_agent_recovery(self, reload_nats):
+        reload_nats.return_value = "ok"
+        r = self.client.get("/api/v3/34jahsdkjasncASDjhg2b3j4r/recover/")
+        self.assertEqual(r.status_code, 404)
+
+        agent = baker.make_recipe("agents.online_agent")
+        url = f"/api/v3/{agent.agent_id}/recovery/"
+
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json(), {"mode": "pass", "shellcmd": ""})
+        reload_nats.assert_not_called()
+
+        baker.make("agents.RecoveryAction", agent=agent, mode="mesh")
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json(), {"mode": "mesh", "shellcmd": ""})
+        reload_nats.assert_not_called()
+
+        baker.make(
+            "agents.RecoveryAction",
+            agent=agent,
+            mode="command",
+            command="shutdown /r /t 5 /f",
+        )
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(
+            r.json(), {"mode": "command", "shellcmd": "shutdown /r /t 5 /f"}
+        )
+        reload_nats.assert_not_called()
+
+        baker.make("agents.RecoveryAction", agent=agent, mode="rpc")
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json(), {"mode": "rpc", "shellcmd": ""})
+        reload_nats.assert_called_once()

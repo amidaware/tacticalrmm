@@ -25,7 +25,7 @@ class CheckSerializer(serializers.ModelSerializer):
 
     def get_alert_template(self, obj):
         if obj.agent:
-            alert_template = obj.agent.get_alert_template()
+            alert_template = obj.agent.alert_template
         else:
             alert_template = None
 

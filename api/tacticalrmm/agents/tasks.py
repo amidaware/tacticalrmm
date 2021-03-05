@@ -201,20 +201,6 @@ def agent_outages_task() -> None:
 
 
 @app.task
-def handle_agent_recovery_task(pk: int) -> None:
-    sleep(10)
-    from agents.models import RecoveryAction
-
-    action = RecoveryAction.objects.get(pk=pk)
-    if action.mode == "command":
-        data = {"func": "recoverycmd", "recoverycommand": action.command}
-    else:
-        data = {"func": "recover", "payload": {"mode": action.mode}}
-
-    asyncio.run(action.agent.nats_cmd(data, wait=False))
-
-
-@app.task
 def run_script_email_results_task(
     agentpk: int,
     scriptpk: int,

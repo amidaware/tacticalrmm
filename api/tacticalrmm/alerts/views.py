@@ -15,6 +15,8 @@ from .serializers import (
     AlertTemplateSerializer,
 )
 
+from .tasks import cache_agents_alert_template
+
 
 class GetAddAlerts(APIView):
     def patch(self, request):
@@ -194,6 +196,9 @@ class GetAddAlertTemplates(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
+        # cache alert_template value on agents
+        cache_agents_alert_template.delay()
+
         return Response("ok")
 
 
@@ -212,10 +217,16 @@ class GetUpdateDeleteAlertTemplate(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
+        # cache alert_template value on agents
+        cache_agents_alert_template.delay()
+
         return Response("ok")
 
     def delete(self, request, pk):
         get_object_or_404(AlertTemplate, pk=pk).delete()
+
+        # cache alert_template value on agents
+        cache_agents_alert_template.delay()
 
         return Response("ok")
 

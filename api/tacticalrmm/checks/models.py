@@ -259,7 +259,7 @@ class Check(BaseAuditModel):
             "modified_time",
         ]
 
-    def should_create_alert(self, alert_template):
+    def should_create_alert(self, alert_template=None):
 
         return (
             self.dashboard_alert
@@ -613,7 +613,6 @@ class Check(BaseAuditModel):
     def send_email(self):
 
         CORE = CoreSettings.objects.first()
-        alert_template = self.agent.get_alert_template()
 
         body: str = ""
         if self.agent:
@@ -695,12 +694,11 @@ class Check(BaseAuditModel):
                 except:
                     continue
 
-        CORE.send_mail(subject, body, alert_template=alert_template)
+        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)
 
     def send_sms(self):
 
         CORE = CoreSettings.objects.first()
-        alert_template = self.agent.get_alert_template()
         body: str = ""
 
         if self.agent:
@@ -744,21 +742,21 @@ class Check(BaseAuditModel):
         elif self.check_type == "eventlog":
             body = subject
 
-        CORE.send_sms(body, alert_template=alert_template)
+        CORE.send_sms(body, alert_template=self.agent.alert_template)
 
     def send_resolved_email(self):
         CORE = CoreSettings.objects.first()
-        alert_template = self.agent.get_alert_template()
+
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
         body = f"{self} is now back to normal"
 
-        CORE.send_mail(subject, body, alert_template=alert_template)
+        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)
 
     def send_resolved_sms(self):
         CORE = CoreSettings.objects.first()
-        alert_template = self.agent.get_alert_template()
+
         subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Resolved"
-        CORE.send_sms(subject, alert_template=alert_template)
+        CORE.send_sms(subject, alert_template=self.agent.alert_template)
 
 
 class CheckHistory(models.Model):

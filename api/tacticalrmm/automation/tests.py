@@ -426,6 +426,25 @@ class TestPolicyViews(TacticalTestCase):
 
         self.check_not_authenticated("delete", url)
 
+    @patch("automation.tasks.generate_agent_checks_from_policies_task.delay")
+    def test_sync_policy(self, generate_checks):
+        url = "/automation/sync/"
+
+        # test invalid data
+        data = {"invalid": 7}
+
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 400)
+
+        policy = baker.make("automation.Policy", active=True)
+        data = {"policy": policy.pk}  # type: ignore
+
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        generate_checks.assert_called_with(policy.pk, create_tasks=True)  # type: ignore
+
+        self.check_not_authenticated("post", url)
+
 
 class TestPolicyTasks(TacticalTestCase):
     def setUp(self):

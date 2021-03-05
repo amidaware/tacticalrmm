@@ -44,7 +44,7 @@ ufw allow proto tcp from any to any port 4222
 ```
 
 !!!info
-    SSH is only required for you to remotely login and do basic linux server administration for your rmm. It is not needed for any agent communication.<br/>
+    SSH (port 22 tcp) is only required for you to remotely login and do basic linux server administration for your rmm. It is not needed for any agent communication.<br/>
 Allow ssh from everywhere (__not__ recommended)
 ```bash
 ufw allow ssh

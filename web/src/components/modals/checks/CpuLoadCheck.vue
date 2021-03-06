@@ -36,6 +36,16 @@
           label="Number of consecutive failures before alert"
         />
       </q-card-section>
+      <q-card-section>
+        <q-input
+          dense
+          outlined
+          type="number"
+          v-model.number="cpuloadcheck.run_interval"
+          label="Check run interval (s)"
+          hint="Setting this will override the check run interval on the agent"
+        />
+      </q-card-section>
       <q-card-actions align="right">
         <q-btn v-if="mode === 'add'" label="Add" color="primary" type="submit" />
         <q-btn v-else-if="mode === 'edit'" label="Edit" color="primary" type="submit" />
@@ -63,6 +73,7 @@ export default {
         check_type: "cpuload",
         warning_threshold: 70,
         error_threshold: 90,
+        run_interval: 0,
         fails_b4_alert: 1,
       },
       failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],

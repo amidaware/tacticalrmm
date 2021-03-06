@@ -93,6 +93,7 @@ class Check(BaseAuditModel):
     fail_count = models.PositiveIntegerField(default=0)
     outage_history = models.JSONField(null=True, blank=True)  # store
     extra_details = models.JSONField(null=True, blank=True)
+    run_interval = models.PositiveIntegerField(blank=True, default=0)
     # check specific fields
 
     # for eventlog, script, ip, and service alert severity
@@ -566,6 +567,7 @@ class Check(BaseAuditModel):
             text_alert=self.text_alert,
             fails_b4_alert=self.fails_b4_alert,
             extra_details=self.extra_details,
+            run_interval=self.run_interval,
             error_threshold=self.error_threshold,
             warning_threshold=self.warning_threshold,
             disk=self.disk,
@@ -589,6 +591,7 @@ class Check(BaseAuditModel):
             event_message=self.event_message,
             fail_when=self.fail_when,
             search_last_days=self.search_last_days,
+            number_of_events_b4_alert=self.number_of_events_b4_alert,
         )
 
     def is_duplicate(self, check):

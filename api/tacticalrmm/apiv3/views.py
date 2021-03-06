@@ -266,12 +266,32 @@ class CheckRunner(APIView):
 
     def get(self, request, agentid):
         agent = get_object_or_404(Agent, agent_id=agentid)
-        checks = Check.objects.filter(agent__pk=agent.pk, overriden_by_policy=False)
+        checks = agent.agentchecks.filter(overriden_by_policy=False)  # type: ignore
 
+        run_list = [
+            check
+            for check in checks
+            # always run if check hasn't run yet
+            if not check.last_run
+            # if a check interval is set, see if the correct amount of seconds have passed
+            or (
+                check.run_interval
+                and (
+                    check.last_run
+                    < djangotime.now()
+                    - djangotime.timedelta(seconds=check.run_interval)
+                )
+                # if check interval isn't set, make sure the agent's check interval has passed before running
+            )
+            or (
+                check.last_run
+                < djangotime.now() - djangotime.timedelta(seconds=agent.check_interval)
+            )
+        ]
         ret = {
             "agent": agent.pk,
-            "check_interval": agent.check_interval,
-            "checks": CheckRunnerGetSerializer(checks, many=True).data,
+            "check_interval": agent.check_run_interval(),
+            "checks": CheckRunnerGetSerializer(run_list, many=True).data,
         }
         return Response(ret)
 
@@ -290,7 +310,10 @@ class CheckRunnerInterval(APIView):
 
     def get(self, request, agentid):
         agent = get_object_or_404(Agent, agent_id=agentid)
-        return Response({"agent": agent.pk, "check_interval": agent.check_interval})
+
+        return Response(
+            {"agent": agent.pk, "check_interval": agent.check_run_interval()}
+        )
 
 
 class TaskRunner(APIView):

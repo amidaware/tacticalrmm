@@ -114,6 +114,16 @@
           label="Number of consecutive failures before alert"
         />
       </q-card-section>
+      <q-card-section>
+        <q-input
+          outlined
+          dense
+          type="number"
+          v-model.number="eventlogcheck.run_interval"
+          label="Check run interval (s)"
+          hint="Setting this will override the check run interval on the agent"
+        />
+      </q-card-section>
       <q-card-actions align="right">
         <q-btn v-if="mode === 'add'" label="Add" color="primary" type="submit" />
         <q-btn v-else-if="mode === 'edit'" label="Edit" color="primary" type="submit" />
@@ -149,6 +159,7 @@ export default {
         number_of_events_b4_alert: 1,
         event_id_is_wildcard: false,
         alert_severity: "warning",
+        run_interval: 0,
       },
       eventMessage: false,
       eventSource: false,

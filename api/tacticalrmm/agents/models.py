@@ -277,6 +277,20 @@ class Agent(BaseAuditModel):
         except:
             return ["unknown disk"]
 
+    def check_run_interval(self) -> int:
+        interval = self.check_interval
+        # determine if any agent checks have a custom interval and set the lowest interval
+        for check in self.agentchecks.filter(overriden_by_policy=False):  # type: ignore
+            if check.run_interval and check.run_interval < interval:
+
+                # don't allow check runs less than 10s
+                if check.run_interval < 15:
+                    interval = 15
+                else:
+                    interval = check.run_interval
+
+        return interval
+
     def run_script(
         self,
         scriptpk: int,

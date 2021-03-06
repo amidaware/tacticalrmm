@@ -208,5 +208,12 @@
         "name": "Verify Antivirus Status",
         "description": "Verify and display status for all installed Antiviruses",
         "shell": "powershell"
+    },
+    {
+        "filename": "CreateAllUserLogonScript.ps1",
+        "submittedBy": "https://github.com/nr-plaxon",
+        "name": "Create User Logon Script",
+        "description": "Creates a powershell script that runs at logon of any user on the machine in the security context of the user.",
+        "shell": "powershell"
     }
 ]

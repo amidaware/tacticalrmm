@@ -96,6 +96,15 @@
         />
       </q-card-section>
       <q-card-section>
+        <q-input
+          label="Number of events found before alert"
+          dense
+          outlined
+          type="number"
+          v-model.number="eventlogcheck.number_of_events_b4_alert"
+        />
+      </q-card-section>
+      <q-card-section>
         <q-select
           outlined
           dense
@@ -137,6 +146,7 @@ export default {
         fail_when: "contains",
         search_last_days: 1,
         fails_b4_alert: 1,
+        number_of_events_b4_alert: 1,
         event_id_is_wildcard: false,
         alert_severity: "warning",
       },

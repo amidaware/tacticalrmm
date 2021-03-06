@@ -181,6 +181,9 @@ class Check(BaseAuditModel):
         max_length=255, choices=EVT_LOG_FAIL_WHEN_CHOICES, null=True, blank=True
     )
     search_last_days = models.PositiveIntegerField(null=True, blank=True)
+    number_of_events_b4_alert = models.PositiveIntegerField(
+        null=True, blank=True, default=1
+    )
 
     def __str__(self):
         if self.agent:
@@ -488,13 +491,13 @@ class Check(BaseAuditModel):
                             log.append(i)
 
             if self.fail_when == "contains":
-                if log:
+                if log and len(log) >= self.number_of_events_b4_alert:
                     self.status = "failing"
                 else:
                     self.status = "passing"
 
             elif self.fail_when == "not_contains":
-                if log:
+                if log and len(log) >= self.number_of_events_b4_alert:
                     self.status = "passing"
                 else:
                     self.status = "failing"

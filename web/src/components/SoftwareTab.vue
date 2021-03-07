@@ -88,7 +88,7 @@ export default {
           field: "install_date",
           sortable: false,
           format: (val, row) => {
-            return val === "01/01/1" ? "" : val;
+            return val === "01/01/1" || val === "01-1-01" ? "" : val;
           },
         },
         {

@@ -622,7 +622,7 @@ class Check(BaseAuditModel):
 
         body: str = ""
         if self.agent:
-            subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Failed"
+            subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Failed"
         else:
             subject = f"{self} Failed"
 

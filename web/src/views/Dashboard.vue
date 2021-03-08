@@ -504,7 +504,7 @@ export default {
           name: "agentstatus",
           field: "status",
           align: "left",
-          sortable: false,
+          sortable: true,
         },
         {
           name: "last_seen",

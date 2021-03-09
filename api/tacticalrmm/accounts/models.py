@@ -15,6 +15,11 @@ AGENT_TBL_TAB_CHOICES = [
     ("mixed", "Mixed"),
 ]
 
+CLIENT_TREE_SORT_CHOICES = [
+    ("alphafail", "Move failing clients to the top"),
+    ("alpha", "Sort alphabetically"),
+]
+
 
 class User(AbstractUser, BaseAuditModel):
     is_active = models.BooleanField(default=True)
@@ -27,7 +32,10 @@ class User(AbstractUser, BaseAuditModel):
     default_agent_tbl_tab = models.CharField(
         max_length=50, choices=AGENT_TBL_TAB_CHOICES, default="server"
     )
-    agents_per_page = models.PositiveIntegerField(default=50)
+    agents_per_page = models.PositiveIntegerField(default=50)  # not currently used
+    client_tree_sort = models.CharField(
+        max_length=50, choices=CLIENT_TREE_SORT_CHOICES, default="alphafail"
+    )
 
     agent = models.OneToOneField(
         "agents.Agent",

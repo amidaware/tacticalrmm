@@ -712,7 +712,10 @@ export default {
     },
     getDashInfo(edited = true) {
       this.$store.dispatch("getDashInfo").then(r => {
-        if (edited) this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", r.data.default_agent_tbl_tab);
+        if (edited) {
+          this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", r.data.default_agent_tbl_tab);
+          this.$store.commit("SET_CLIENT_TREE_SORT", r.data.client_tree_sort);
+        }
         this.darkMode = r.data.dark_mode;
         this.$q.dark.set(this.darkMode);
         this.currentTRMMVersion = r.data.trmm_version;

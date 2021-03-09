@@ -14,7 +14,7 @@ from logs.models import AuditLog
 from tacticalrmm.utils import notify_error
 
 from .models import User
-from .serializers import TOTPSetupSerializer, UserSerializer
+from .serializers import TOTPSetupSerializer, UserSerializer, UserUISerializer
 
 
 class CheckCreds(KnoxLoginView):
@@ -184,23 +184,9 @@ class TOTPSetup(APIView):
 
 class UserUI(APIView):
     def patch(self, request):
-        user = request.user
-
-        if "dark_mode" in request.data.keys():
-            user.dark_mode = request.data["dark_mode"]
-            user.save(update_fields=["dark_mode"])
-
-        if "show_community_scripts" in request.data.keys():
-            user.show_community_scripts = request.data["show_community_scripts"]
-            user.save(update_fields=["show_community_scripts"])
-
-        if "userui" in request.data.keys():
-            user.agent_dblclick_action = request.data["agent_dblclick_action"]
-            user.default_agent_tbl_tab = request.data["default_agent_tbl_tab"]
-            user.save(update_fields=["agent_dblclick_action", "default_agent_tbl_tab"])
-
-        if "agents_per_page" in request.data.keys():
-            user.agents_per_page = request.data["agents_per_page"]
-            user.save(update_fields=["agents_per_page"])
-
+        serializer = UserUISerializer(
+            instance=request.user, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response("ok")

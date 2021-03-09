@@ -17,6 +17,14 @@ from .models import User
 from .serializers import TOTPSetupSerializer, UserSerializer, UserUISerializer
 
 
+def _is_root_user(request, user) -> bool:
+    return (
+        hasattr(settings, "ROOT_USER")
+        and request.user != user
+        and user.username == settings.ROOT_USER
+    )
+
+
 class CheckCreds(KnoxLoginView):
 
     permission_classes = (AllowAny,)
@@ -105,11 +113,7 @@ class GetUpdateDeleteUser(APIView):
     def put(self, request, pk):
         user = get_object_or_404(User, pk=pk)
 
-        if (
-            hasattr(settings, "ROOT_USER")
-            and request.user != user
-            and user.username == settings.ROOT_USER
-        ):
+        if _is_root_user(request, user):
             return notify_error("The root user cannot be modified from the UI")
 
         serializer = UserSerializer(instance=user, data=request.data, partial=True)
@@ -120,11 +124,7 @@ class GetUpdateDeleteUser(APIView):
 
     def delete(self, request, pk):
         user = get_object_or_404(User, pk=pk)
-        if (
-            hasattr(settings, "ROOT_USER")
-            and request.user != user
-            and user.username == settings.ROOT_USER
-        ):
+        if _is_root_user(request, user):
             return notify_error("The root user cannot be deleted from the UI")
 
         user.delete()
@@ -137,11 +137,7 @@ class UserActions(APIView):
     # reset password
     def post(self, request):
         user = get_object_or_404(User, pk=request.data["id"])
-        if (
-            hasattr(settings, "ROOT_USER")
-            and request.user != user
-            and user.username == settings.ROOT_USER
-        ):
+        if _is_root_user(request, user):
             return notify_error("The root user cannot be modified from the UI")
 
         user.set_password(request.data["password"])
@@ -152,11 +148,7 @@ class UserActions(APIView):
     # reset two factor token
     def put(self, request):
         user = get_object_or_404(User, pk=request.data["id"])
-        if (
-            hasattr(settings, "ROOT_USER")
-            and request.user != user
-            and user.username == settings.ROOT_USER
-        ):
+        if _is_root_user(request, user):
             return notify_error("The root user cannot be modified from the UI")
 
         user.totp_key = ""

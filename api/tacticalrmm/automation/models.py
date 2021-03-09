@@ -28,8 +28,8 @@ class Policy(BaseAuditModel):
     )
 
     def save(self, *args, **kwargs):
-        from automation.tasks import generate_agent_checks_from_policies_task
         from alerts.tasks import cache_agents_alert_template
+        from automation.tasks import generate_agent_checks_from_policies_task
 
         # get old policy if exists
         old_policy = type(self).objects.get(pk=self.pk) if self.pk else None

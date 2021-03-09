@@ -32,8 +32,8 @@ class Client(BaseAuditModel):
     )
 
     def save(self, *args, **kw):
-        from automation.tasks import generate_agent_checks_by_location_task
         from alerts.tasks import cache_agents_alert_template
+        from automation.tasks import generate_agent_checks_by_location_task
 
         # get old client if exists
         old_client = type(self).objects.get(pk=self.pk) if self.pk else None
@@ -131,8 +131,8 @@ class Site(BaseAuditModel):
     )
 
     def save(self, *args, **kw):
-        from automation.tasks import generate_agent_checks_by_location_task
         from alerts.tasks import cache_agents_alert_template
+        from automation.tasks import generate_agent_checks_by_location_task
 
         # get old client if exists
         old_site = type(self).objects.get(pk=self.pk) if self.pk else None

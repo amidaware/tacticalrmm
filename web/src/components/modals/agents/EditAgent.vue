@@ -84,8 +84,8 @@
                     class="col-2"
                     :rules="[
                       val => !!val || '*Required',
-                      val => val >= 60 || 'Minimum is 60 seconds',
-                      val => val <= 3600 || 'Maximum is 3600 seconds',
+                      val => val >= 15 || 'Minimum is 15 seconds',
+                      val => val <= 86400 || 'Maximum is 86400 seconds',
                     ]"
                   />
                 </q-card-section>

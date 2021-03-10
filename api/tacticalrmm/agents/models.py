@@ -283,7 +283,7 @@ class Agent(BaseAuditModel):
         for check in self.agentchecks.filter(overriden_by_policy=False):  # type: ignore
             if check.run_interval and check.run_interval < interval:
 
-                # don't allow check runs less than 10s
+                # don't allow check runs less than 15s
                 if check.run_interval < 15:
                     interval = 15
                 else:

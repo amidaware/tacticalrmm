@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="41"
+SCRIPT_VERSION="42"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -366,7 +366,7 @@ MESH_USERNAME = "${meshusername}"
 MESH_SITE = "https://${meshdomain}"
 REDIS_HOST    = "localhost"
 KEEP_SALT = False
-ADMIN_ENABLED = False
+ADMIN_ENABLED = True
 EOF
 )"
 echo "${localvars}" > /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
@@ -811,6 +811,8 @@ python manage.py reload_nats
 deactivate
 sudo systemctl start nats.service
 
+## disable django admin
+sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
 print_green 'Restarting services'
 for i in rmm.service celery.service celerybeat.service natsapi.service

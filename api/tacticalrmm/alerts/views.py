@@ -14,7 +14,6 @@ from .serializers import (
     AlertTemplateRelationSerializer,
     AlertTemplateSerializer,
 )
-
 from .tasks import cache_agents_alert_template
 
 

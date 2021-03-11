@@ -78,8 +78,8 @@ class CoreSettings(BaseAuditModel):
     )
 
     def save(self, *args, **kwargs):
-        from automation.tasks import generate_all_agent_checks_task
         from alerts.tasks import cache_agents_alert_template
+        from automation.tasks import generate_all_agent_checks_task
 
         if not self.pk and CoreSettings.objects.exists():
             raise ValidationError("There can only be one CoreSettings instance")

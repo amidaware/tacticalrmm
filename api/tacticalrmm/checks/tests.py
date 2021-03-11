@@ -1003,6 +1003,12 @@ class TestCheckTasks(TacticalTestCase):
                     "source": "source",
                     "message": "a test message",
                 },
+                {
+                    "eventType": "error",
+                    "eventID": 123,
+                    "source": "source",
+                    "message": "a test message",
+                },
             ],
         }
 
@@ -1099,6 +1105,64 @@ class TestCheckTasks(TacticalTestCase):
         # test passing with wildcard not contains message and source
         eventlog.event_message = "doesnt exist"
         eventlog.event_source = "doesnt exist"
+        eventlog.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=eventlog.id)
+
+        self.assertEquals(new_check.status, "passing")
+
+        # test multiple events found and contains
+        # this should pass since only two events are found
+        eventlog.number_of_events_b4_alert = 3
+        eventlog.event_id_is_wildcard = False
+        eventlog.event_source = None
+        eventlog.event_message = None
+        eventlog.event_id = 123
+        eventlog.event_type = "error"
+        eventlog.fail_when = "contains"
+        eventlog.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=eventlog.id)
+
+        self.assertEquals(new_check.status, "passing")
+
+        # this should pass since there are two events returned
+        eventlog.number_of_events_b4_alert = 2
+        eventlog.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=eventlog.id)
+
+        self.assertEquals(new_check.status, "failing")
+
+        # test not contains
+        # this should fail since only two events are found
+        eventlog.number_of_events_b4_alert = 3
+        eventlog.event_id_is_wildcard = False
+        eventlog.event_source = None
+        eventlog.event_message = None
+        eventlog.event_id = 123
+        eventlog.event_type = "error"
+        eventlog.fail_when = "not_contains"
+        eventlog.save()
+
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        new_check = Check.objects.get(pk=eventlog.id)
+
+        self.assertEquals(new_check.status, "failing")
+
+        # this should pass since there are two events returned
+        eventlog.number_of_events_b4_alert = 2
         eventlog.save()
 
         resp = self.client.patch(url, data, format="json")

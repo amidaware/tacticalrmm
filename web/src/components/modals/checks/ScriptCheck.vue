@@ -90,6 +90,16 @@
           label="Number of consecutive failures before alert"
         />
       </q-card-section>
+      <q-card-section>
+        <q-input
+          outlined
+          dense
+          type="number"
+          v-model.number="scriptcheck.run_interval"
+          label="Check run interval (s)"
+          hint="Setting this will override the check run interval on the agent"
+        />
+      </q-card-section>
       <q-card-actions align="right">
         <q-btn v-if="mode === 'add'" label="Add" color="primary" type="submit" />
         <q-btn v-else-if="mode === 'edit'" label="Edit" color="primary" type="submit" />
@@ -120,6 +130,7 @@ export default {
         fails_b4_alert: 1,
         info_return_codes: [],
         warning_return_codes: [],
+        run_interval: 0,
       },
       scriptOptions: [],
       failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],

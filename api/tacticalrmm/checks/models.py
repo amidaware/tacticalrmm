@@ -93,6 +93,7 @@ class Check(BaseAuditModel):
     fail_count = models.PositiveIntegerField(default=0)
     outage_history = models.JSONField(null=True, blank=True)  # store
     extra_details = models.JSONField(null=True, blank=True)
+    run_interval = models.PositiveIntegerField(blank=True, default=0)
     # check specific fields
 
     # for eventlog, script, ip, and service alert severity
@@ -181,6 +182,9 @@ class Check(BaseAuditModel):
         max_length=255, choices=EVT_LOG_FAIL_WHEN_CHOICES, null=True, blank=True
     )
     search_last_days = models.PositiveIntegerField(null=True, blank=True)
+    number_of_events_b4_alert = models.PositiveIntegerField(
+        null=True, blank=True, default=1
+    )
 
     def __str__(self):
         if self.agent:
@@ -488,13 +492,13 @@ class Check(BaseAuditModel):
                             log.append(i)
 
             if self.fail_when == "contains":
-                if log:
+                if log and len(log) >= self.number_of_events_b4_alert:
                     self.status = "failing"
                 else:
                     self.status = "passing"
 
             elif self.fail_when == "not_contains":
-                if log:
+                if log and len(log) >= self.number_of_events_b4_alert:
                     self.status = "passing"
                 else:
                     self.status = "failing"
@@ -563,6 +567,7 @@ class Check(BaseAuditModel):
             text_alert=self.text_alert,
             fails_b4_alert=self.fails_b4_alert,
             extra_details=self.extra_details,
+            run_interval=self.run_interval,
             error_threshold=self.error_threshold,
             warning_threshold=self.warning_threshold,
             disk=self.disk,
@@ -586,6 +591,7 @@ class Check(BaseAuditModel):
             event_message=self.event_message,
             fail_when=self.fail_when,
             search_last_days=self.search_last_days,
+            number_of_events_b4_alert=self.number_of_events_b4_alert,
         )
 
     def is_duplicate(self, check):
@@ -616,7 +622,7 @@ class Check(BaseAuditModel):
 
         body: str = ""
         if self.agent:
-            subject = f"{self.agent.client.name}, {self.agent.site.name}, {self} Failed"
+            subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Failed"
         else:
             subject = f"{self} Failed"
 

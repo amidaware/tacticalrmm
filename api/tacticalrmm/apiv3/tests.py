@@ -3,6 +3,7 @@ import os
 from unittest.mock import patch
 
 from django.conf import settings
+from django.utils import timezone as djangotime
 from model_bakery import baker
 
 from tacticalrmm.test import TacticalTestCase
@@ -17,8 +18,44 @@ class TestAPIv3(TacticalTestCase):
     def test_get_checks(self):
         url = f"/api/v3/{self.agent.agent_id}/checkrunner/"
 
+        # add a check
+        check1 = baker.make_recipe("checks.ping_check", agent=self.agent)
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["check_interval"], self.agent.check_interval)  # type: ignore
+        self.assertEqual(len(r.data["checks"]), 1)  # type: ignore
+
+        # override check run interval
+        check2 = baker.make_recipe(
+            "checks.ping_check", agent=self.agent, run_interval=20
+        )
+
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["check_interval"], 20)  # type: ignore
+        self.assertEqual(len(r.data["checks"]), 2)  # type: ignore
+
+        # Set last_run on both checks and should return an empty list
+        check1.last_run = djangotime.now()
+        check1.save()
+        check2.last_run = djangotime.now()
+        check2.save()
+
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["check_interval"], 20)  # type: ignore
+        self.assertFalse(r.data["checks"])  # type: ignore
+
+        # set last_run greater than interval
+        check1.last_run = djangotime.now() - djangotime.timedelta(seconds=200)
+        check1.save()
+        check2.last_run = djangotime.now() - djangotime.timedelta(seconds=200)
+        check2.save()
+
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["check_interval"], 20)  # type: ignore
+        self.assertEquals(len(r.data["checks"]), 2)  # type: ignore
 
         url = "/api/v3/Maj34ACb324j234asdj2n34kASDjh34-DESKTOPTEST123/checkrunner/"
         r = self.client.get(url)
@@ -51,6 +88,28 @@ class TestAPIv3(TacticalTestCase):
         self.assertEqual(
             r.json(),
             {"agent": self.agent.pk, "check_interval": self.agent.check_interval},
+        )
+
+        # add check to agent with check interval set
+        check = baker.make_recipe(
+            "checks.ping_check", agent=self.agent, run_interval=30
+        )
+
+        r = self.client.get(url, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(
+            r.json(),
+            {"agent": self.agent.pk, "check_interval": 30},
+        )
+
+        # minimum check run interval is 15 seconds
+        check = baker.make_recipe("checks.ping_check", agent=self.agent, run_interval=5)
+
+        r = self.client.get(url, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(
+            r.json(),
+            {"agent": self.agent.pk, "check_interval": 15},
         )
 
     def test_checkin_patch(self):

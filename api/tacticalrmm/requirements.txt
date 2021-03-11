@@ -16,7 +16,7 @@ future==0.18.2
 kombu==5.0.2
 loguru==0.5.3
 msgpack==1.0.2
-packaging==20.8
+packaging==20.9
 psycopg2-binary==2.8.6
 pycparser==2.20
 pycryptodome==3.10.1
@@ -28,10 +28,10 @@ redis==3.5.3
 requests==2.25.1
 six==1.15.0
 sqlparse==0.4.1
-twilio==6.52.0
+twilio==6.53.0
 urllib3==1.26.3
 uWSGI==2.0.19.1
 validators==0.18.2
 vine==5.0.0
 websockets==8.1
-zipp==3.4.0
+zipp==3.4.1

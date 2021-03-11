@@ -13,28 +13,6 @@
           <div class="q-gutter-sm">
             <q-btn label="New" dense flat push unelevated no-caps icon="add" @click="showAddPolicyForm" />
             <q-btn
-              label="Edit"
-              :disable="!selectedPolicy"
-              dense
-              flat
-              push
-              unelevated
-              no-caps
-              icon="edit"
-              @click="showEditPolicyForm(selectedPolicy)"
-            />
-            <q-btn
-              label="Delete"
-              :disable="!selectedPolicy"
-              dense
-              flat
-              push
-              unelevated
-              no-caps
-              icon="delete"
-              @click="deletePolicy(selectedPolicy)"
-            />
-            <q-btn
               label="Policy Overview"
               dense
               flat

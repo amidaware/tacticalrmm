@@ -12,30 +12,6 @@
         <div class="q-pa-sm" style="min-height: 65vh; max-height: 65vh">
           <div class="q-gutter-sm">
             <q-btn ref="new" label="New" dense flat push unelevated no-caps icon="add" @click="showAddTemplateModal" />
-            <q-btn
-              ref="edit"
-              label="Edit"
-              :disable="!selectedTemplate"
-              dense
-              flat
-              push
-              unelevated
-              no-caps
-              icon="edit"
-              @click="showEditTemplateModal(selectedTemplate)"
-            />
-            <q-btn
-              ref="delete"
-              label="Delete"
-              :disable="!selectedTemplate"
-              dense
-              flat
-              push
-              unelevated
-              no-caps
-              icon="delete"
-              @click="deleteTemplate(selectedTemplate)"
-            />
           </div>
           <q-table
             dense

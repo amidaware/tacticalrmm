@@ -96,6 +96,15 @@
         />
       </q-card-section>
       <q-card-section>
+        <q-input
+          label="Number of events found before alert"
+          dense
+          outlined
+          type="number"
+          v-model.number="eventlogcheck.number_of_events_b4_alert"
+        />
+      </q-card-section>
+      <q-card-section>
         <q-select
           outlined
           dense
@@ -103,6 +112,16 @@
           v-model="eventlogcheck.fails_b4_alert"
           :options="failOptions"
           label="Number of consecutive failures before alert"
+        />
+      </q-card-section>
+      <q-card-section>
+        <q-input
+          outlined
+          dense
+          type="number"
+          v-model.number="eventlogcheck.run_interval"
+          label="Check run interval (s)"
+          hint="Setting this will override the check run interval on the agent"
         />
       </q-card-section>
       <q-card-actions align="right">
@@ -137,8 +156,10 @@ export default {
         fail_when: "contains",
         search_last_days: 1,
         fails_b4_alert: 1,
+        number_of_events_b4_alert: 1,
         event_id_is_wildcard: false,
         alert_severity: "warning",
+        run_interval: 0,
       },
       eventMessage: false,
       eventSource: false,

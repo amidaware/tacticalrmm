@@ -32,6 +32,7 @@ export default function () {
       showCommunityScripts: false,
       agentDblClickAction: "",
       defaultAgentTblTab: "server",
+      clientTreeSort: "alphafail",
     },
     getters: {
       loggedIn(state) {
@@ -139,6 +140,9 @@ export default function () {
       },
       SET_DEFAULT_AGENT_TBL_TAB(state, tab) {
         state.defaultAgentTblTab = tab
+      },
+      SET_CLIENT_TREE_SORT(state, val) {
+        state.clientTreeSort = val
       }
     },
     actions: {
@@ -215,7 +219,7 @@ export default function () {
       loadSites(context) {
         return axios.get("/clients/sites/");
       },
-      loadTree({ commit }) {
+      loadTree({ commit, state }) {
         axios.get("/clients/tree/").then(r => {
 
           if (r.data.length === 0) {
@@ -263,9 +267,15 @@ export default function () {
             output.push(clientNode);
           }
 
-          // move failing clients to the top
-          const sortedByFailing = output.sort(a => a.color === "negative" ? -1 : 1)
-          commit("loadTree", sortedByFailing);
+
+          if (state.clientTreeSort === "alphafail") {
+            // move failing clients to the top
+            const sortedByFailing = output.sort(a => a.color === "negative" ? -1 : 1);
+            commit("loadTree", sortedByFailing);
+          } else {
+            commit("loadTree", output);
+          }
+
         });
       },
       checkVer(context) {

@@ -46,6 +46,20 @@
                   class="col-4"
                 />
               </q-card-section>
+              <q-card-section class="row">
+                <div class="col-2">Client Sort:</div>
+                <div class="col-2"></div>
+                <q-select
+                  map-options
+                  emit-value
+                  outlined
+                  dense
+                  options-dense
+                  v-model="clientTreeSort"
+                  :options="clientTreeSortOptions"
+                  class="col-8"
+                />
+              </q-card-section>
             </q-tab-panel>
           </q-tab-panels>
 
@@ -68,8 +82,19 @@ export default {
     return {
       agentDblClickAction: "",
       defaultAgentTblTab: "",
+      clientTreeSort: "",
       tab: "ui",
       splitterModel: 20,
+      clientTreeSortOptions: [
+        {
+          label: "Sort alphabetically, moving failing clients to the top",
+          value: "alphafail",
+        },
+        {
+          label: "Sort alphabetically only",
+          value: "alpha",
+        },
+      ],
       agentDblClickOptions: [
         {
           label: "Edit Agent",
@@ -105,17 +130,19 @@ export default {
       this.$axios.get("/core/dashinfo/").then(r => {
         this.agentDblClickAction = r.data.dbl_click_action;
         this.defaultAgentTblTab = r.data.default_agent_tbl_tab;
+        this.clientTreeSort = r.data.client_tree_sort;
       });
     },
     editUserPrefs() {
       const data = {
-        userui: true,
         agent_dblclick_action: this.agentDblClickAction,
         default_agent_tbl_tab: this.defaultAgentTblTab,
+        client_tree_sort: this.clientTreeSort,
       };
       this.$axios.patch("/accounts/users/ui/", data).then(r => {
         this.notifySuccess("Preferences were saved!");
         this.$emit("edited");
+        this.$store.dispatch("loadTree");
         this.$emit("close");
       });
     },

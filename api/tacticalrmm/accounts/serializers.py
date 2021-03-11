@@ -4,6 +4,18 @@ from rest_framework.serializers import ModelSerializer, SerializerMethodField
 from .models import User
 
 
+class UserUISerializer(ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "dark_mode",
+            "show_community_scripts",
+            "agent_dblclick_action",
+            "default_agent_tbl_tab",
+            "client_tree_sort",
+        ]
+
+
 class UserSerializer(ModelSerializer):
     class Meta:
         model = User

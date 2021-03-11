@@ -4,9 +4,9 @@ from unittest.mock import patch
 from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker, seq
+
 from alerts.tasks import cache_agents_alert_template
 from autotasks.models import AutomatedTask
-
 from core.models import CoreSettings
 from tacticalrmm.test import TacticalTestCase
 
@@ -727,6 +727,7 @@ class TestAlertTasks(TacticalTestCase):
         send_email,
         sleep,
     ):
+        from alerts.tasks import cache_agents_alert_template
         from checks.models import Check
         from checks.tasks import (
             handle_check_email_alert_task,
@@ -734,8 +735,6 @@ class TestAlertTasks(TacticalTestCase):
             handle_resolved_check_email_alert_task,
             handle_resolved_check_sms_alert_task,
         )
-
-        from alerts.tasks import cache_agents_alert_template
 
         # create test data
         agent = baker.make_recipe("agents.agent")
@@ -1012,6 +1011,7 @@ class TestAlertTasks(TacticalTestCase):
         send_email,
         sleep,
     ):
+        from alerts.tasks import cache_agents_alert_template
         from autotasks.models import AutomatedTask
         from autotasks.tasks import (
             handle_resolved_task_email_alert,
@@ -1019,8 +1019,6 @@ class TestAlertTasks(TacticalTestCase):
             handle_task_email_alert,
             handle_task_sms_alert,
         )
-
-        from alerts.tasks import cache_agents_alert_template
 
         # create test data
         agent = baker.make_recipe("agents.agent")

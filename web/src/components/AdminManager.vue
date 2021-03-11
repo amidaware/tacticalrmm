@@ -11,30 +11,6 @@
       <div class="q-pa-md">
         <div class="q-gutter-sm">
           <q-btn ref="new" label="New" dense flat push unelevated no-caps icon="add" @click="showAddUserModal" />
-          <q-btn
-            ref="edit"
-            label="Edit"
-            :disable="selected.length === 0"
-            dense
-            flat
-            push
-            unelevated
-            no-caps
-            icon="edit"
-            @click="showEditUserModal(selected[0])"
-          />
-          <q-btn
-            ref="delete"
-            label="Delete"
-            :disable="selected.length === 0 || selected[0].username === logged_in_user"
-            dense
-            flat
-            push
-            unelevated
-            no-caps
-            icon="delete"
-            @click="deleteUser(selected[0])"
-          />
         </div>
         <q-table
           dense
@@ -97,7 +73,7 @@
                     v-close-popup
                     @click="deleteUser(props.row)"
                     id="context-delete"
-                    v-if="props.row.username !== logged_in_user"
+                    :disable="props.row.username === logged_in_user"
                   >
                     <q-item-section side>
                       <q-icon name="delete" />
@@ -226,7 +202,7 @@ export default {
         .onOk(() => {
           this.$store
             .dispatch("admin/deleteUser", data.id)
-            .then(response => {
+            .then(() => {
               this.$q.notify(notifySuccessConfig(`User ${data.username} was deleted!`));
             })
             .catch(e => {

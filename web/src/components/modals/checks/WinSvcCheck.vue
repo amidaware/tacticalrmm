@@ -112,6 +112,16 @@
           label="Number of consecutive failures before alert"
         />
       </q-card-section>
+      <q-card-section>
+        <q-input
+          dense
+          outlined
+          type="number"
+          v-model.number="winsvccheck.run_interval"
+          label="Check run interval (s)"
+          hint="Setting this will override the check run interval on the agent"
+        />
+      </q-card-section>
       <q-card-actions align="right">
         <q-btn v-if="mode === 'add'" label="Add" color="primary" type="submit" />
         <q-btn v-else-if="mode === 'edit'" label="Edit" color="primary" type="submit" />
@@ -146,6 +156,7 @@ export default {
         restart_if_stopped: false,
         fails_b4_alert: 1,
         alert_severity: "warning",
+        run_interval: 0,
       },
       severityOptions: [
         { label: "Informational", value: "info" },

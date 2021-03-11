@@ -31,28 +31,6 @@
             </q-list>
           </q-btn-dropdown>
           <q-btn
-            label="Edit"
-            :disable="!isRowSelected || isBuiltInScript(selectedScript.id)"
-            dense
-            flat
-            push
-            unelevated
-            no-caps
-            icon="edit"
-            @click="editScript(selectedScript)"
-          />
-          <q-btn
-            label="Delete"
-            :disable="!isRowSelected || isBuiltInScript(selectedScript.id)"
-            dense
-            flat
-            push
-            unelevated
-            no-caps
-            icon="delete"
-            @click="deleteScript(selectedScript.id)"
-          />
-          <q-btn
             label="View Code"
             :disable="!isRowSelected"
             dense
@@ -148,7 +126,7 @@
                     clickable
                     v-close-popup
                     @click="editScript(props.node)"
-                    v-if="props.node.script_type !== 'builtin'"
+                    :disable="props.node.script_type === 'builtin'"
                   >
                     <q-item-section side>
                       <q-icon name="edit" />
@@ -160,7 +138,7 @@
                     clickable
                     v-close-popup
                     @click="deleteScript(props.node.id)"
-                    v-if="props.node.script_type !== 'builtin'"
+                    :disable="props.node.script_type === 'builtin'"
                   >
                     <q-item-section side>
                       <q-icon name="delete" />
@@ -241,7 +219,7 @@
                       clickable
                       v-close-popup
                       @click="editScript(props.row)"
-                      v-if="props.row.script_type !== 'builtin'"
+                      :disable="props.row.script_type === 'builtin'"
                     >
                       <q-item-section side>
                         <q-icon name="edit" />
@@ -253,7 +231,7 @@
                       clickable
                       v-close-popup
                       @click="deleteScript(props.row.id)"
-                      v-if="props.row.script_type !== 'builtin'"
+                      :disable="props.row.script_type === 'builtin'"
                     >
                       <q-item-section side>
                         <q-icon name="delete" />

@@ -271,19 +271,13 @@ class TestUserAction(TacticalTestCase):
 
     def test_user_ui(self):
         url = "/accounts/users/ui/"
-        data = {"dark_mode": False}
-        r = self.client.patch(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-
-        data = {"show_community_scripts": True}
-        r = self.client.patch(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
 
         data = {
-            "userui": True,
+            "dark_mode": True,
+            "show_community_scripts": True,
             "agent_dblclick_action": "editagent",
             "default_agent_tbl_tab": "mixed",
-            "agents_per_page": 1000,
+            "client_tree_sort": "alpha",
         }
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)

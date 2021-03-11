@@ -260,6 +260,21 @@ class SupersededWinUpdate(APIView):
         return Response("ok")
 
 
+class RunChecks(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, agentid):
+        agent = get_object_or_404(Agent, agent_id=agentid)
+        checks = Check.objects.filter(agent__pk=agent.pk, overriden_by_policy=False)
+        ret = {
+            "agent": agent.pk,
+            "check_interval": agent.check_interval,
+            "checks": CheckRunnerGetSerializer(checks, many=True).data,
+        }
+        return Response(ret)
+
+
 class CheckRunner(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]

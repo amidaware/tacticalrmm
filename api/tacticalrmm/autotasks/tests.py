@@ -29,7 +29,6 @@ class TestAutotaskViews(TacticalTestCase):
         agent = baker.make_recipe("agents.agent")
         policy = baker.make("automation.Policy")
         check = baker.make_recipe("checks.diskspace_check", agent=agent)
-        old_agent = baker.make_recipe("agents.agent", version="1.1.0")
 
         # test script set to invalid pk
         data = {"autotask": {"script": 500}}
@@ -51,15 +50,6 @@ class TestAutotaskViews(TacticalTestCase):
 
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 404)
-
-        # test old agent version
-        data = {
-            "autotask": {"script": script.id},
-            "agent": old_agent.id,
-        }
-
-        resp = self.client.post(url, data, format="json")
-        self.assertEqual(resp.status_code, 400)
 
         # test add task to agent
         data = {
@@ -202,13 +192,6 @@ class TestAutotaskViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 200)
         nats_cmd.assert_called_with({"func": "runtask", "taskpk": task.id}, wait=False)
         nats_cmd.reset_mock()
-
-        old_agent = baker.make_recipe("agents.agent", version="1.0.2")
-        task2 = baker.make("autotasks.AutomatedTask", agent=old_agent)
-        url = f"/tasks/runwintask/{task2.id}/"
-        resp = self.client.get(url, format="json")
-        self.assertEqual(resp.status_code, 400)
-        nats_cmd.assert_not_called()
 
         self.check_not_authenticated("get", url)
 

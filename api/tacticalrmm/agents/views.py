@@ -69,10 +69,9 @@ def update_agents(request):
 def ping(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     status = "offline"
-    if agent.has_nats:
-        r = asyncio.run(agent.nats_cmd({"func": "ping"}, timeout=5))
-        if r == "pong":
-            status = "online"
+    r = asyncio.run(agent.nats_cmd({"func": "ping"}, timeout=5))
+    if r == "pong":
+        status = "online"
 
     return Response({"name": agent.hostname, "status": status})
 
@@ -80,8 +79,7 @@ def ping(request, pk):
 @api_view(["DELETE"])
 def uninstall(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
-    if agent.has_nats:
-        asyncio.run(agent.nats_cmd({"func": "uninstall"}, wait=False))
+    asyncio.run(agent.nats_cmd({"func": "uninstall"}, wait=False))
 
     name = agent.hostname
     agent.delete()
@@ -147,9 +145,6 @@ def agent_detail(request, pk):
 @api_view()
 def get_processes(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    if pyver.parse(agent.version) < pyver.parse("1.2.0"):
-        return notify_error("Requires agent version 1.2.0 or greater")
-
     r = asyncio.run(agent.nats_cmd(data={"func": "procs"}, timeout=5))
     if r == "timeout":
         return notify_error("Unable to contact the agent")
@@ -159,9 +154,6 @@ def get_processes(request, pk):
 @api_view()
 def kill_proc(request, pk, pid):
     agent = get_object_or_404(Agent, pk=pk)
-    if not agent.has_nats:
-        return notify_error("Requires agent version 1.1.0 or greater")
-
     r = asyncio.run(
         agent.nats_cmd({"func": "killproc", "procpid": int(pid)}, timeout=15)
     )
@@ -177,8 +169,6 @@ def kill_proc(request, pk, pid):
 @api_view()
 def get_event_log(request, pk, logtype, days):
     agent = get_object_or_404(Agent, pk=pk)
-    if not agent.has_nats:
-        return notify_error("Requires agent version 1.1.0 or greater")
     timeout = 180 if logtype == "Security" else 30
     data = {
         "func": "eventlog",
@@ -198,8 +188,6 @@ def get_event_log(request, pk, logtype, days):
 @api_view(["POST"])
 def send_raw_cmd(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
-    if not agent.has_nats:
-        return notify_error("Requires agent version 1.1.0 or greater")
     timeout = int(request.data["timeout"])
     data = {
         "func": "rawcmd",
@@ -296,9 +284,6 @@ class Reboot(APIView):
     # reboot now
     def post(self, request):
         agent = get_object_or_404(Agent, pk=request.data["pk"])
-        if not agent.has_nats:
-            return notify_error("Requires agent version 1.1.0 or greater")
-
         r = asyncio.run(agent.nats_cmd({"func": "rebootnow"}, timeout=10))
         if r != "ok":
             return notify_error("Unable to contact the agent")
@@ -308,8 +293,6 @@ class Reboot(APIView):
     # reboot later
     def patch(self, request):
         agent = get_object_or_404(Agent, pk=request.data["pk"])
-        if not agent.has_gotasks:
-            return notify_error("Requires agent version 1.1.1 or greater")
 
         try:
             obj = dt.datetime.strptime(request.data["datetime"], "%Y-%m-%d %H:%M")
@@ -324,6 +307,7 @@ class Reboot(APIView):
             "func": "schedtask",
             "schedtaskpayload": {
                 "type": "schedreboot",
+                "deleteafter": True,
                 "trigger": "once",
                 "name": task_name,
                 "year": int(dt.datetime.strftime(obj, "%Y")),
@@ -333,9 +317,6 @@ class Reboot(APIView):
                 "min": int(dt.datetime.strftime(obj, "%M")),
             },
         }
-
-        if pyver.parse(agent.version) >= pyver.parse("1.1.2"):
-            nats_data["schedtaskpayload"]["deleteafter"] = True
 
         r = asyncio.run(agent.nats_cmd(nats_data, timeout=10))
         if r != "ok":
@@ -561,9 +542,6 @@ def run_script(request):
 @api_view()
 def recover_mesh(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    if not agent.has_nats:
-        return notify_error("Requires agent version 1.1.0 or greater")
-
     data = {"func": "recover", "payload": {"mode": "mesh"}}
     r = asyncio.run(agent.nats_cmd(data, timeout=45))
     if r != "ok":
@@ -743,9 +721,6 @@ def agent_maintenance(request):
 class WMI(APIView):
     def get(self, request, pk):
         agent = get_object_or_404(Agent, pk=pk)
-        if pyver.parse(agent.version) < pyver.parse("1.1.2"):
-            return notify_error("Requires agent version 1.1.2 or greater")
-
         r = asyncio.run(agent.nats_cmd({"func": "sysinfo"}, timeout=20))
         if r != "ok":
             return notify_error("Unable to contact the agent")

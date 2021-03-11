@@ -63,8 +63,6 @@ def get_installed(request, pk):
 @api_view()
 def refresh_installed(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    if not agent.has_nats:
-        return notify_error("Requires agent version 1.1.0 or greater")
 
     r: Any = asyncio.run(agent.nats_cmd({"func": "softwarelist"}, timeout=15))
     if r == "timeout" or r == "natsdown":

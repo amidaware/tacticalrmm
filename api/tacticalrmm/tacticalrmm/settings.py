@@ -24,7 +24,7 @@ APP_VER = "0.0.121"
 # https://github.com/wh1te909/rmmagent
 LATEST_AGENT_VER = "1.4.12"
 
-MESH_VER = "0.7.84"
+MESH_VER = "0.7.88"
 
 # for the update script, bump when need to recreate venv or npm install
 PIP_VER = "11"

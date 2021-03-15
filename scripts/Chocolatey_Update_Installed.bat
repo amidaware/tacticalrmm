@@ -1,0 +1,1 @@
+cup -y all

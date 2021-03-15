@@ -215,5 +215,12 @@
         "name": "Create User Logon Script",
         "description": "Creates a powershell script that runs at logon of any user on the machine in the security context of the user.",
         "shell": "powershell"
+    },
+    {
+        "filename": "Chocolatey_Update_Installed.bat",
+        "submittedBy": "https://github.com/silversword411",
+        "name": "Chocolatey Update Installed Apps",
+        "description": "Update all apps that were installed using Chocolatey.",
+        "shell": "cmd"
     }
 ]

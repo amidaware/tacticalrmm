@@ -172,6 +172,10 @@ printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}
 done
 
+printf >&2 "${GREEN}Restarting postgresql database${NC}\n"
+sudo systemctl restart postgresql
+sleep 5
+
 rm -f /rmm/api/tacticalrmm/app.ini
 
 numprocs=$(nproc)
@@ -254,6 +258,8 @@ if ! [[ $HAS_NATS220 ]]; then
   sudo chown ${USER}:${USER} /usr/local/bin/nats-server
   rm -rf ${nats_tmp}
 fi
+
+sudo npm install -g npm
 
 cd /rmm
 git config user.email "admin@example.com"

@@ -216,6 +216,7 @@ curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs
+sudo npm install -g npm
 
 print_green 'Installing MongoDB'
 
@@ -251,6 +252,10 @@ echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
 sudo apt install -y postgresql-13
+sleep 2
+sudo systemctl enable postgresql
+sudo systemctl restart postgresql
+sleep 5
 
 print_green 'Creating database for the rmm'
 

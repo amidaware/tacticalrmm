@@ -133,6 +133,7 @@ curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs
+sudo npm install -g npm
 
 print_green 'Restoring Nginx'
 
@@ -205,9 +206,8 @@ wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-
 sudo apt update
 sudo apt install -y postgresql-13
 sleep 2
-
-
-
+sudo systemctl enable postgresql
+sudo systemctl restart postgresql
 
 print_green 'Restoring MongoDB'
 

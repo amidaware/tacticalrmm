@@ -236,5 +236,12 @@
         "name": "Event Viewer - Check for Bluescreens",
         "description": "This will check for Bluescreen events on your system",
         "shell": "powershell"
+    },
+    {
+        "filename": "Rename_Computer.ps1",
+        "submittedBy": "https://github.com/silversword411",
+        "name": "Rename Computer",
+        "description": "Rename computer. First parameter will be new PC name. 2nd parameter if yes will auto-reboot machine",
+        "shell": "powershell"
     }
 ]

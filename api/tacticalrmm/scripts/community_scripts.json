@@ -233,7 +233,7 @@
     {
         "filename": "Check_Events_for_Bluescreens.ps1",
         "submittedBy": "https://github.com/dinger1986",
-        "name": "AD - Check and Enable AD Recycle Bin",
+        "name": "Event Viewer - Check for Bluescreens",
         "description": "This will check for Bluescreen events on your system",
         "shell": "powershell"
     }

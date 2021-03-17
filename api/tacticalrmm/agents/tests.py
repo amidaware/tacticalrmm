@@ -198,11 +198,6 @@ class TestAgentViews(TacticalTestCase):
 
     @patch("agents.models.Agent.nats_cmd")
     def test_get_processes(self, mock_ret):
-        agent_old = baker.make_recipe("agents.online_agent", version="1.1.12")
-        url_old = f"/agents/{agent_old.pk}/getprocs/"
-        r = self.client.get(url_old)
-        self.assertEqual(r.status_code, 400)
-
         agent = baker.make_recipe("agents.online_agent", version="1.2.0")
         url = f"/agents/{agent.pk}/getprocs/"
 
@@ -340,6 +335,7 @@ class TestAgentViews(TacticalTestCase):
             "func": "schedtask",
             "schedtaskpayload": {
                 "type": "schedreboot",
+                "deleteafter": True,
                 "trigger": "once",
                 "name": r.data["task_name"],  # type: ignore
                 "year": 2025,

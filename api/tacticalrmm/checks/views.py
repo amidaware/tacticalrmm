@@ -161,8 +161,6 @@ class CheckHistory(APIView):
 @api_view()
 def run_checks(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
-    if not agent.has_nats:
-        return notify_error("Requires agent version 1.1.0 or greater")
 
     if pyver.parse(agent.version) >= pyver.parse("1.4.1"):
         r = asyncio.run(agent.nats_cmd({"func": "runchecks"}, timeout=15))

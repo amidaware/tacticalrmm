@@ -310,13 +310,7 @@ class TestCheckViews(TacticalTestCase):
     @patch("agents.models.Agent.nats_cmd")
     def test_run_checks(self, nats_cmd):
         agent = baker.make_recipe("agents.agent", version="1.4.1")
-        agent_old = baker.make_recipe("agents.agent", version="1.0.2")
         agent_b4_141 = baker.make_recipe("agents.agent", version="1.4.0")
-
-        url = f"/checks/runchecks/{agent_old.pk}/"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 400)
-        self.assertEqual(r.json(), "Requires agent version 1.1.0 or greater")
 
         url = f"/checks/runchecks/{agent_b4_141.pk}/"
         r = self.client.get(url)

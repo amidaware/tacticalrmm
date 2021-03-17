@@ -20,7 +20,7 @@ SSH into your server as the linux user you created during install.<br/><br/>
 __Never__ run any update scripts or commands as the `root` user.<br/>This will mess up permissions and break your installation.<br/><br/>
 Download the update script and run it:<br/>
 ```bash
-wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh
+wget -N https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh
 chmod +x update.sh
 ./update.sh
 ```

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="42"
+SCRIPT_VERSION="43"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -185,9 +185,9 @@ print_green 'Installing golang'
 
 sudo mkdir -p /usr/local/rmmgo
 go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)
-wget https://golang.org/dl/go1.16.linux-amd64.tar.gz -P ${go_tmp}
+wget https://golang.org/dl/go1.16.2.linux-amd64.tar.gz -P ${go_tmp}
 
-tar -xzf ${go_tmp}/go1.16.linux-amd64.tar.gz -C ${go_tmp}
+tar -xzf ${go_tmp}/go1.16.2.linux-amd64.tar.gz -C ${go_tmp}
 
 sudo mv ${go_tmp}/go /usr/local/rmmgo/
 rm -rf ${go_tmp}
@@ -195,11 +195,11 @@ rm -rf ${go_tmp}
 print_green 'Downloading NATS'
 
 nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-wget https://github.com/nats-io/nats-server/releases/download/v2.1.9/nats-server-v2.1.9-linux-amd64.tar.gz -P ${nats_tmp}
+wget https://github.com/nats-io/nats-server/releases/download/v2.2.0/nats-server-v2.2.0-linux-amd64.tar.gz -P ${nats_tmp}
 
-tar -xzf ${nats_tmp}/nats-server-v2.1.9-linux-amd64.tar.gz -C ${nats_tmp}
+tar -xzf ${nats_tmp}/nats-server-v2.2.0-linux-amd64.tar.gz -C ${nats_tmp}
 
-sudo mv ${nats_tmp}/nats-server-v2.1.9-linux-amd64/nats-server /usr/local/bin/
+sudo mv ${nats_tmp}/nats-server-v2.2.0-linux-amd64/nats-server /usr/local/bin/
 sudo chmod +x /usr/local/bin/nats-server
 sudo chown ${USER}:${USER} /usr/local/bin/nats-server
 rm -rf ${nats_tmp}
@@ -216,6 +216,7 @@ curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs
+sudo npm install -g npm
 
 print_green 'Installing MongoDB'
 
@@ -251,6 +252,10 @@ echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 sudo apt update
 sudo apt install -y postgresql-13
+sleep 2
+sudo systemctl enable postgresql
+sudo systemctl restart postgresql
+sleep 5
 
 print_green 'Creating database for the rmm'
 

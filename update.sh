@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="113"
+SCRIPT_VERSION="114"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -172,6 +172,10 @@ printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}
 done
 
+printf >&2 "${GREEN}Restarting postgresql database${NC}\n"
+sudo systemctl restart postgresql
+sleep 5
+
 rm -f /rmm/api/tacticalrmm/app.ini
 
 numprocs=$(nproc)
@@ -241,6 +245,21 @@ if ! [[ $HAS_PY39 ]]; then
   cd ~
   sudo rm -rf Python-3.9.2 Python-3.9.2.tgz
 fi
+
+HAS_NATS220=$(/usr/local/bin/nats-server -version | grep v2.2.0)
+if ! [[ $HAS_NATS220 ]]; then
+  printf >&2 "${GREEN}Updating nats to v2.2.0${NC}\n"
+  nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
+  wget https://github.com/nats-io/nats-server/releases/download/v2.2.0/nats-server-v2.2.0-linux-amd64.tar.gz -P ${nats_tmp}
+  tar -xzf ${nats_tmp}/nats-server-v2.2.0-linux-amd64.tar.gz -C ${nats_tmp}
+  sudo rm -f /usr/local/bin/nats-server
+  sudo mv ${nats_tmp}/nats-server-v2.2.0-linux-amd64/nats-server /usr/local/bin/
+  sudo chmod +x /usr/local/bin/nats-server
+  sudo chown ${USER}:${USER} /usr/local/bin/nats-server
+  rm -rf ${nats_tmp}
+fi
+
+sudo npm install -g npm
 
 cd /rmm
 git config user.email "admin@example.com"

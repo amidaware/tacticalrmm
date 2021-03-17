@@ -112,6 +112,23 @@ class TestAPIv3(TacticalTestCase):
             {"agent": self.agent.pk, "check_interval": 15},
         )
 
+    def test_run_checks(self):
+        # force run all checks regardless of interval
+        agent = baker.make_recipe("agents.online_agent")
+        baker.make_recipe("checks.ping_check", agent=agent)
+        baker.make_recipe("checks.diskspace_check", agent=agent)
+        baker.make_recipe("checks.cpuload_check", agent=agent)
+        baker.make_recipe("checks.memory_check", agent=agent)
+        baker.make_recipe("checks.eventlog_check", agent=agent)
+        for _ in range(10):
+            baker.make_recipe("checks.script_check", agent=agent)
+
+        url = f"/api/v3/{agent.agent_id}/runchecks/"
+        r = self.client.get(url)
+        self.assertEqual(r.json()["agent"], agent.pk)
+        self.assertIsInstance(r.json()["check_interval"], int)
+        self.assertEqual(len(r.json()["checks"]), 15)
+
     def test_checkin_patch(self):
         from logs.models import PendingAction
 

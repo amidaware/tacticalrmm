@@ -254,7 +254,7 @@ export default {
 }
 
 .prism-editor__container {
-  height: 60000em;
+  height: 30000em;
 }
 
 /* optional class for removing the outline */
@@ -264,7 +264,7 @@ export default {
 
 .prism-editor__textarea,
 .prism-editor__container {
-  width: 10000em !important;
+  width: 1000em !important;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }

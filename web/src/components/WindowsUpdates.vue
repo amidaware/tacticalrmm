@@ -66,7 +66,7 @@
               <q-tooltip>Missing</q-tooltip>
             </q-icon>
           </q-td>
-          <q-td>{{ props.row.severity }}</q-td>
+          <q-td>{{ formatSeverity(props.row.severity) }}</q-td>
           <q-td>{{ formatMessage(props.row.title) }}</q-td>
           <q-td
             @click.native="
@@ -155,6 +155,9 @@ export default {
     };
   },
   methods: {
+    formatSeverity(severity) {
+      return !severity ? "Other" : severity;
+    },
     editPolicy(pk, policy) {
       const data = { pk: pk, policy: policy };
       axios.patch(`/winupdate/editpolicy/`, data).then(r => {

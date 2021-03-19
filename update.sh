@@ -17,7 +17,7 @@ if [ "${SCRIPT_VERSION}" -ne "${NEW_VER}" ]; then
     wget -q "${SCRIPT_URL}" -O update.sh
     printf >&2 "${YELLOW}Script updated! Please re-run ./update.sh${NC}\n"
     rm -f $TMP_FILE
-    exit 1
+    $(basename $0) && exit
 fi
 
 rm -f $TMP_FILE

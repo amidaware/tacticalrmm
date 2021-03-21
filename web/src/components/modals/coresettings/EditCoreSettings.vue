@@ -7,6 +7,7 @@
           <q-tab name="emailalerts" label="Email Alerts" />
           <q-tab name="smsalerts" label="SMS Alerts" />
           <q-tab name="meshcentral" label="MeshCentral" />
+          <q-tab name="customfields" label="Custom Fields" />
         </q-tabs>
       </template>
       <template v-slot:after>
@@ -289,10 +290,13 @@
                   <q-input dense filled v-model="settings.mesh_token" class="col-6" />
                 </q-card-section>
               </q-tab-panel>
+              <q-tab-panel name="customfields">
+                <CustomFields />
+              </q-tab-panel>
             </q-tab-panels>
           </q-scroll-area>
           <q-card-section class="row items-center">
-            <q-btn label="Save" color="primary" type="submit" />
+            <q-btn v-show="tab !== 'customfields'" label="Save" color="primary" type="submit" />
             <q-btn
               v-show="tab === 'emailalerts'"
               label="Save and Test"
@@ -311,9 +315,13 @@
 <script>
 import mixins from "@/mixins/mixins";
 import ResetPatchPolicy from "@/components/modals/coresettings/ResetPatchPolicy";
+import CustomFields from "@/components/modals/coresettings/CustomFields";
 
 export default {
   name: "EditCoreSettings",
+  components: {
+    CustomFields,
+  },
   mixins: [mixins],
   data() {
     return {

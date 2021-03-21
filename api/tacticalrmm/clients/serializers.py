@@ -8,16 +8,18 @@ class SiteSerializer(ModelSerializer):
 
     class Meta:
         model = Site
-        fields = "__all__"
+        fields = (
+            "id",
+            "name",
+            "server_policy",
+            "workstation_policy",
+            "client_name",
+            "client",
+        )
 
     def validate(self, val):
         if "name" in val.keys() and "|" in val["name"]:
             raise ValidationError("Site name cannot contain the | character")
-
-        if self.context:
-            client = Client.objects.get(pk=self.context["clientpk"])
-            if Site.objects.filter(client=client, name=val["name"]).exists():
-                raise ValidationError(f"Site {val['name']} already exists")
 
         return val
 
@@ -27,16 +29,9 @@ class ClientSerializer(ModelSerializer):
 
     class Meta:
         model = Client
-        fields = "__all__"
+        fields = ("id", "name", "server_policy", "workstation_policy", "sites")
 
     def validate(self, val):
-
-        if "site" in self.context:
-            if "|" in self.context["site"]:
-                raise ValidationError("Site name cannot contain the | character")
-            if len(self.context["site"]) > 255:
-                raise ValidationError("Site name too long")
-
         if "name" in val.keys() and "|" in val["name"]:
             raise ValidationError("Client name cannot contain the | character")
 

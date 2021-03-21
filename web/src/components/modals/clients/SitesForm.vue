@@ -1,197 +1,158 @@
 <template>
-  <q-card style="min-width: 400px">
-    <q-card-section class="row">
-      <q-card-actions align="left">
-        <div class="text-h6">{{ modalTitle }}</div>
-      </q-card-actions>
-      <q-space />
-      <q-card-actions align="right">
-        <q-btn v-close-popup flat round dense icon="close" />
-      </q-card-actions>
-    </q-card-section>
-    <q-card-section>
-      <q-form @submit.prevent="submit">
-        <q-card-section>
-          <q-select
-            :rules="[val => !!val || '*Required']"
-            outlined
-            options-dense
-            label="Select client"
-            v-model="selected_client"
-            :options="client_options"
-            @input="op === 'edit' || op === 'delete' ? (selected_site = sites[0]) : () => {}"
-          />
-        </q-card-section>
-        <q-card-section v-if="op === 'edit' || op === 'delete'">
-          <q-select
-            :rules="[val => !!val || '*Required']"
-            outlined
-            options-dense
-            label="Select site"
-            v-model="selected_site"
-            :options="sites"
-          />
-        </q-card-section>
-        <q-card-section v-if="op === 'add' || op === 'edit'">
-          <q-input
-            v-if="op === 'add'"
-            outlined
-            v-model="site.name"
-            label="Site"
-            :rules="[val => !!val || '*Required']"
-          />
-          <q-input
-            v-else-if="op === 'edit'"
-            :rules="[val => !!val || '*Required']"
-            outlined
-            v-model="site.name"
-            label="Rename site"
-          />
-        </q-card-section>
-        <q-card-actions align="left">
-          <q-btn
-            :label="capitalize(op)"
-            :color="op === 'delete' ? 'negative' : 'primary'"
-            type="submit"
-            class="full-width"
-          />
-        </q-card-actions>
-      </q-form>
-    </q-card-section>
-  </q-card>
+  <q-dialog ref="dialog" @hide="onHide">
+    <q-card class="q-dialog-plugin" style="width: 60vw">
+      <q-bar>
+        {{ title }}
+        <q-space />
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+      <q-card-section>
+        <q-form @submit.prevent="submit">
+          <q-card-section>
+            <q-select
+              v-model="localSite.client"
+              label="Client"
+              :options="clientOptions"
+              outlined
+              dense
+              options-dense
+              map-options
+              emit-value
+              :rules="[val => !!val || 'Client is required']"
+            />
+          </q-card-section>
+          <q-card-section>
+            <q-input
+              :rules="[val => !!val || 'Name is required']"
+              outlined
+              dense
+              v-model="localSite.name"
+              label="Name"
+            />
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn dense flat label="Cancel" v-close-popup />
+            <q-btn dense flat label="Save" color="primary" type="submit" />
+          </q-card-actions>
+        </q-form>
+      </q-card-section>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
+import CustomField from "@/components/CustomField";
 import mixins from "@/mixins/mixins";
 export default {
-  name: "SitesForm",
+  name: "ClientsForm",
+  components: {
+    CustomField,
+  },
   mixins: [mixins],
   props: {
-    op: !String,
-    sitepk: Number,
+    site: !Object,
+    client: !Number,
   },
   data() {
     return {
-      client_options: [],
-      selected_client: null,
-      selected_site: null,
-      site: {
+      customFields: [],
+      clientOptions: [],
+      localSite: {
         id: null,
+        client: null,
         name: "",
       },
     };
   },
-  watch: {
-    selected_site(newSite, oldSite) {
-      this.site.id = newSite.value;
-      this.site.name = newSite.label;
-    },
-  },
   computed: {
-    sites() {
-      return !!this.selected_client ? this.formatSiteOptions(this.selected_client.sites) : [];
+    title() {
+      return this.editing ? "Edit Site" : "Add Site";
     },
-    modalTitle() {
-      if (this.op === "add") return "Add Site";
-      if (this.op === "edit") return "Edit Site";
-      if (this.op === "delete") return "Delete Site";
+    editing() {
+      return !!this.site;
     },
   },
   methods: {
     submit() {
-      if (this.op === "add") this.addSite();
-      if (this.op === "edit") this.editSite();
-      if (this.op === "delete") this.deleteSite();
-    },
-    getClients() {
-      this.$axios.get("/clients/clients/").then(r => {
-        this.client_options = this.formatClientOptions(r.data);
-
-        if (this.sitepk !== undefined && this.sitepk !== null) {
-          this.client_options.forEach(client => {
-            let site = client.sites.find(site => site.id === this.sitepk);
-
-            if (site !== undefined) {
-              this.selected_client = client;
-              this.selected_site = { value: site.id, label: site.name };
-            }
-          });
-        } else {
-          this.selected_client = this.client_options[0];
-          if (this.op !== "add") this.selected_site = this.sites[0];
-        }
-      });
+      if (!this.editing) this.addSite();
+      else this.editSite();
     },
     addSite() {
       this.$q.loading.show();
-
-      const data = {
-        client: this.selected_client.value,
-        name: this.site.name,
-      };
-
       this.$axios
-        .post("/clients/sites/", data)
-        .then(() => {
-          this.$emit("close");
-          this.$store.dispatch("loadTree");
+        .post("/clients/sites/", this.localSite)
+        .then(r => {
+          this.refreshDashboardTree();
           this.$q.loading.hide();
-          this.notifySuccess(`Site ${this.site.name} was added!`);
+          this.onOk();
+          this.notifySuccess(r.data);
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data.non_field_errors);
+          if (e.response.data.name) {
+            this.notifyError(e.response.data.name);
+          } else {
+            this.notifyError(e.response.data);
+          }
         });
     },
     editSite() {
       this.$q.loading.show();
-
-      const data = {
-        id: this.site.id,
-        name: this.site.name,
-        client: this.selected_client.value,
-      };
-
       this.$axios
-        .put(`/clients/${this.site.id}/site/`, data)
-        .then(() => {
-          this.$emit("edited");
-          this.$emit("close");
+        .put(`/clients/sites/${this.site.id}/`, this.localSite)
+        .then(r => {
+          this.refreshDashboardTree();
+          this.onOk();
           this.$q.loading.hide();
-          this.notifySuccess("Site was edited");
+          this.notifySuccess(r.data);
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data.non_field_errors);
+          if (e.response.data.name) {
+            this.notifyError(e.response.data.name);
+          } else {
+            this.notifyError(e.response.data);
+          }
         });
     },
-    deleteSite() {
-      this.$q
-        .dialog({
-          title: "Are you sure?",
-          message: `Delete site ${this.site.name}`,
-          cancel: true,
-          ok: { label: "Delete", color: "negative" },
-        })
-        .onOk(() => {
-          this.$q.loading.show();
-          this.$axios
-            .delete(`/clients/${this.site.id}/site/`)
-            .then(r => {
-              this.$emit("edited");
-              this.$emit("close");
-              this.$q.loading.hide();
-              this.notifySuccess(r.data);
-            })
-            .catch(e => {
-              this.$q.loading.hide();
-              this.notifyError(e.response.data, 6000);
-            });
+    refreshDashboardTree() {
+      this.$store.dispatch("loadTree");
+      this.$store.dispatch("getUpdatedSites");
+    },
+    getClients() {
+      this.$axios.get("/clients/clients/").then(r => {
+        r.data.forEach(client => {
+          this.clientOptions.push({ label: client.name, value: client.id });
         });
+      });
+    },
+    show() {
+      this.$refs.dialog.show();
+    },
+    hide() {
+      this.$refs.dialog.hide();
+    },
+    onHide() {
+      this.$emit("hide");
+    },
+    onOk() {
+      this.$emit("ok");
+      this.hide();
     },
   },
   created() {
     this.getClients();
+
+    // Copy site prop locally
+    if (this.editing) {
+      this.localSite.id = this.site.id;
+      this.localSite.name = this.site.name;
+      this.localSite.client = this.site.client;
+    }
+
+    if (this.client) this.localSite.client = this.client;
   },
 };
 </script>

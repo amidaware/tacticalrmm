@@ -1,189 +1,142 @@
 <template>
-  <q-card style="min-width: 400px">
-    <q-card-section class="row">
-      <q-card-actions align="left">
-        <div class="text-h6">{{ modalTitle }}</div>
-      </q-card-actions>
-      <q-space />
-      <q-card-actions align="right">
-        <q-btn v-close-popup flat round dense icon="close" />
-      </q-card-actions>
-    </q-card-section>
-    <q-card-section>
-      <q-form @submit.prevent="submit">
-        <q-card-section v-if="op === 'edit' || op === 'delete'">
-          <q-select
-            :rules="[val => !!val || '*Required']"
-            outlined
-            options-dense
-            label="Select client"
-            v-model="selected_client"
-            :options="client_options"
-          />
-        </q-card-section>
-        <q-card-section v-if="op === 'add'">
-          <q-input
-            outlined
-            v-model="client.name"
-            label="Client"
-            :rules="[val => (val && val.length > 0) || '*Required']"
-          />
-        </q-card-section>
-        <q-card-section v-if="op === 'add' || op === 'edit'">
-          <q-input
-            v-if="op === 'add'"
-            :rules="[val => !!val || '*Required']"
-            outlined
-            v-model="client.site"
-            label="Default first site"
-          />
-          <q-input
-            v-else-if="op === 'edit'"
-            :rules="[val => !!val || '*Required']"
-            outlined
-            v-model="client.name"
-            label="Rename client"
-          />
-        </q-card-section>
-        <q-card-actions align="left">
-          <q-btn
-            :label="capitalize(op)"
-            :color="op === 'delete' ? 'negative' : 'primary'"
-            type="submit"
-            class="full-width"
-          />
-        </q-card-actions>
-      </q-form>
-    </q-card-section>
-  </q-card>
+  <q-dialog ref="dialog" @hide="onHide">
+    <q-card class="q-dialog-plugin" style="width: 60vw">
+      <q-bar>
+        {{ title }}
+        <q-space />
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+      <q-card-section>
+        <q-form @submit.prevent="submit">
+          <q-card-section>
+            <q-input
+              outlined
+              dense
+              v-model="localClient.name"
+              label="Name"
+              :rules="[val => (val && val.length > 0) || '*Required']"
+            />
+          </q-card-section>
+          <q-card-section v-if="!editing">
+            <q-input
+              :rules="[val => !!val || '*Required']"
+              outlined
+              dense
+              v-model="site.name"
+              label="Default first site"
+            />
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn dense flat label="Cancel" v-close-popup />
+            <q-btn dense flat label="Save" color="primary" type="submit" />
+          </q-card-actions>
+        </q-form>
+      </q-card-section>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
+import CustomField from "@/components/CustomField";
 import mixins from "@/mixins/mixins";
 export default {
   name: "ClientsForm",
+  components: {
+    CustomField,
+  },
   mixins: [mixins],
   props: {
-    op: !String,
-    clientpk: Number,
+    client: !Object,
   },
   data() {
     return {
-      client_options: [],
-      selected_client: {},
-      client: {
-        id: null,
+      customFields: [],
+      site: {
         name: "",
-        site: "",
+      },
+      localClient: {
+        name: "",
       },
     };
   },
-  watch: {
-    selected_client(newClient, oldClient) {
-      this.client.id = newClient.value;
-      this.client.name = newClient.label;
-    },
-  },
   computed: {
-    modalTitle() {
-      if (this.op === "add") return "Add Client";
-      if (this.op === "edit") return "Edit Client";
-      if (this.op === "delete") return "Delete Client";
+    title() {
+      return this.editing ? "Edit Client" : "Add Client";
+    },
+    editing() {
+      return !!this.client;
     },
   },
   methods: {
     submit() {
-      if (this.op === "add") this.addClient();
-      if (this.op === "edit") this.editClient();
-      if (this.op === "delete") this.deleteClient();
-    },
-    getClients() {
-      this.$axios.get("/clients/clients/").then(r => {
-        this.client_options = r.data.map(client => ({ label: client.name, value: client.id }));
-
-        if (this.clientpk !== undefined && this.clientpk !== null) {
-          let client = this.client_options.find(client => client.value === this.clientpk);
-
-          this.selected_client = client;
-        } else {
-          this.selected_client = this.client_options[0];
-        }
-      });
+      if (!this.editing) this.addClient();
+      else this.editClient();
     },
     addClient() {
       this.$q.loading.show();
-      const data = {
-        client: this.client.name,
-        site: this.client.site,
-      };
       this.$axios
-        .post("/clients/clients/", data)
+        .post("/clients/clients/", { site: this.site, client: this.localClient })
         .then(r => {
-          this.$emit("close");
-          this.$store.dispatch("loadTree");
-          this.$store.dispatch("getUpdatedSites");
+          this.refreshDashboardTree();
           this.$q.loading.hide();
+          this.onOk();
           this.notifySuccess(r.data);
         })
         .catch(e => {
           this.$q.loading.hide();
-          if (e.response.data.client) {
-            this.notifyError(e.response.data.client);
+          if (e.response.data.name) {
+            this.notifyError(e.response.data.name);
           } else {
-            this.notifyError(e.response.data.non_field_errors);
+            this.notifyError(e.response.data);
           }
         });
     },
     editClient() {
       this.$q.loading.show();
-      const data = {
-        id: this.client.id,
-        name: this.client.name,
-      };
       this.$axios
-        .put(`/clients/${this.client.id}/client/`, this.client)
+        .put(`/clients/${this.client.id}/client/`, this.localClient)
         .then(r => {
-          this.$emit("edited");
-          this.$emit("close");
+          this.refreshDashboardTree();
+          this.onOk();
           this.$q.loading.hide();
           this.notifySuccess(r.data);
         })
         .catch(e => {
           this.$q.loading.hide();
-          if (e.response.data.client) {
-            this.notifyError(e.response.data.client);
+          console.log({ e });
+          if (e.response.data.name) {
+            this.notifyError(e.response.data.name);
           } else {
-            this.notifyError(e.response.data.non_field_errors);
+            this.notifyError(e.response.data);
           }
         });
     },
-    deleteClient() {
-      this.$q
-        .dialog({
-          title: "Are you sure?",
-          message: `Delete client ${this.client.name}`,
-          cancel: true,
-          ok: { label: "Delete", color: "negative" },
-        })
-        .onOk(() => {
-          this.$q.loading.show();
-          this.$axios
-            .delete(`/clients/${this.client.id}/client/`)
-            .then(r => {
-              this.$q.loading.hide();
-              this.$emit("edited");
-              this.$emit("close");
-              this.notifySuccess(r.data);
-            })
-            .catch(e => {
-              this.$q.loading.hide();
-              this.notifyError(e.response.data, 6000);
-            });
-        });
+    refreshDashboardTree() {
+      this.$store.dispatch("loadTree");
+      this.$store.dispatch("getUpdatedSites");
+    },
+    show() {
+      this.$refs.dialog.show();
+    },
+    hide() {
+      this.$refs.dialog.hide();
+    },
+    onHide() {
+      this.$emit("hide");
+    },
+    onOk() {
+      this.$emit("ok");
+      this.hide();
     },
   },
   created() {
-    if (this.op !== "add") this.getClients();
+    // Copy client prop locally
+    if (this.editing) {
+      this.localClient.id = this.client.id;
+      this.localClient.name = this.client.name;
+    }
   },
 };
 </script>

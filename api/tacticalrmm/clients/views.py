@@ -30,27 +30,37 @@ class GetAddClients(APIView):
 
     def post(self, request):
 
-        if "initialsetup" in request.data:
-            client = {"name": request.data["client"]["client"].strip()}
-            site = {"name": request.data["client"]["site"].strip()}
-            serializer = ClientSerializer(data=client, context=request.data["client"])
-            serializer.is_valid(raise_exception=True)
+        # create client
+        client_serializer = ClientSerializer(data=request.data["client"])
+        client_serializer.is_valid(raise_exception=True)
+        client = client_serializer.save()
+
+        # create site
+        site_serializer = SiteSerializer(
+            data={"client": client.id, "name": request.data["site"]["name"]}
+        )
+
+        # make sure site serializer doesn't return errors and save
+        if site_serializer.is_valid():
+            site_serializer.save()
+        else:
+            # delete client since site serializer was invalid
+            client.delete()
+            site_serializer.is_valid(raise_exception=True)
+
+        if "initialsetup" in request.data.keys():
             core = CoreSettings.objects.first()
             core.default_time_zone = request.data["timezone"]
             core.save(update_fields=["default_time_zone"])
-        else:
-            client = {"name": request.data["client"].strip()}
-            site = {"name": request.data["site"].strip()}
-            serializer = ClientSerializer(data=client, context=request.data)
-            serializer.is_valid(raise_exception=True)
 
-        obj = serializer.save()
-        Site(client=obj, name=site["name"]).save()
-
-        return Response(f"{obj} was added!")
+        return Response(f"{client} was added!")
 
 
-class GetUpdateDeleteClient(APIView):
+class GetUpdateClient(APIView):
+    def get(self, request, pk):
+        client = get_object_or_404(Client, pk=pk)
+        return Response(ClientSerializer(client).data)
+
     def put(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
 
@@ -58,15 +68,26 @@ class GetUpdateDeleteClient(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response("The Client was renamed")
+        return Response("The Client was updated")
 
-    def delete(self, request, pk):
+
+class DeleteClient(APIView):
+    def delete(self, request, pk, sitepk):
+        from automation.tasks import generate_all_agent_checks_task
+
         client = get_object_or_404(Client, pk=pk)
-        agent_count = Agent.objects.filter(site__client=client).count()
-        if agent_count > 0:
+        agents = Agent.objects.filter(site__client=client)
+
+        if not sitepk:
             return notify_error(
-                f"Cannot delete {client} while {agent_count} agents exist in it. Move the agents to another client first."
+                "There needs to be a site specified to move existing agents to"
             )
+
+        site = get_object_or_404(Site, pk=sitepk)
+        agents.update(site=site)
+
+        generate_all_agent_checks_task.delay("workstation", create_tasks=True)
+        generate_all_agent_checks_task.delay("server", create_tasks=True)
 
         client.delete()
         return Response(f"{client.name} was deleted!")
@@ -84,38 +105,49 @@ class GetAddSites(APIView):
         return Response(SiteSerializer(sites, many=True).data)
 
     def post(self, request):
-        name = request.data["name"].strip()
-        serializer = SiteSerializer(
-            data={"name": name, "client": request.data["client"]},
-            context={"clientpk": request.data["client"]},
-        )
+        serializer = SiteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
         return Response("ok")
 
 
-class GetUpdateDeleteSite(APIView):
+class GetUpdateSite(APIView):
     def put(self, request, pk):
 
         site = get_object_or_404(Site, pk=pk)
+
+        if site.client.id != request.data["client"] and site.client.sites.count() == 1:
+            return notify_error("A client must have at least one site")
+
         serializer = SiteSerializer(instance=site, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
         return Response("ok")
 
-    def delete(self, request, pk):
+
+class DeleteSite(APIView):
+    def delete(self, request, pk, sitepk):
+        from automation.tasks import generate_all_agent_checks_task
+
         site = get_object_or_404(Site, pk=pk)
         if site.client.sites.count() == 1:
             return notify_error(f"A client must have at least 1 site.")
 
-        agent_count = Agent.objects.filter(site=site).count()
+        agents = Agent.objects.filter(site=site)
 
-        if agent_count > 0:
+        if not sitepk:
             return notify_error(
-                f"Cannot delete {site.name} while {agent_count} agents exist in it. Move the agents to another site first."
+                f"There needs to be a site specified to move the agents to"
             )
+
+        agent_site = get_object_or_404(Site, pk=sitepk)
+
+        agents.update(site=agent_site)
+
+        generate_all_agent_checks_task.delay("workstation", create_tasks=True)
+        generate_all_agent_checks_task.delay("server", create_tasks=True)
 
         site.delete()
         return Response(f"{site.name} was deleted!")

@@ -1,5 +1,6 @@
 import os
 
+from django.shortcuts import get_object_or_404
 from django.conf import settings
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -10,8 +11,8 @@ from rest_framework.views import APIView
 
 from tacticalrmm.utils import notify_error
 
-from .models import CoreSettings
-from .serializers import CoreSettingsSerializer
+from .models import CoreSettings, CustomField
+from .serializers import CoreSettingsSerializer, CustomFieldSerializer
 
 
 class UploadMeshAgent(APIView):
@@ -133,3 +134,46 @@ def server_maintenance(request):
         return Response(f"{records_count} records were pruned from the database")
 
     return notify_error("The data is incorrect")
+
+
+class GetAddCustomFields(APIView):
+    def get(self, request):
+        fields = CustomField.objects.all()
+        return Response(CustomFieldSerializer(fields, many=True).data)
+
+    def patch(self, request):
+        if "model" in request.data.keys():
+            fields = CustomField.objects.filter(model=request.data["model"])
+            return Response(CustomFieldSerializer(fields, many=True).data)
+        else:
+            return notify_error("The request was invalid")
+
+    def post(self, request):
+        serializer = CustomFieldSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response("ok")
+
+
+class GetUpdateDeleteCustomFields(APIView):
+    def get(self, request, pk):
+        custom_field = get_object_or_404(CustomField, pk=pk)
+
+        return Response(CustomFieldSerializer(custom_field).data)
+
+    def put(self, request, pk):
+        custom_field = get_object_or_404(CustomField, pk=pk)
+
+        serializer = CustomFieldSerializer(
+            instance=custom_field, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response("ok")
+
+    def delete(self, request, pk):
+        get_object_or_404(CustomField, pk=pk).delete()
+
+        return Response("ok")

@@ -10,7 +10,7 @@
           <q-form @submit.prevent="finish">
             <q-card-section>
               <div>Add Client:</div>
-              <q-input dense outlined v-model="client.client" :rules="[val => !!val || '*Required']">
+              <q-input dense outlined v-model="client.name" :rules="[val => !!val || '*Required']">
                 <template v-slot:prepend>
                   <q-icon name="business" />
                 </template>
@@ -18,7 +18,7 @@
             </q-card-section>
             <q-card-section>
               <div>Add Site:</div>
-              <q-input dense outlined v-model="client.site" :rules="[val => !!val || '*Required']">
+              <q-input dense outlined v-model="site.name" :rules="[val => !!val || '*Required']">
                 <template v-slot:prepend>
                   <q-icon name="apartment" />
                 </template>
@@ -66,8 +66,10 @@ export default {
   data() {
     return {
       client: {
-        client: null,
-        site: null,
+        name: "",
+      },
+      site: {
+        name: "",
       },
       meshagent: null,
       allTimezones: [],
@@ -80,6 +82,7 @@ export default {
       this.$q.loading.show();
       const data = {
         client: this.client,
+        site: this.site,
         timezone: this.timezone,
         initialsetup: true,
       };

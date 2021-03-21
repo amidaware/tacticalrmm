@@ -1,4 +1,5 @@
 import { Notify, date } from "quasar";
+import axios from 'axios'
 
 export function notifySuccessConfig(msg, timeout = 2000) {
   return {
@@ -139,6 +140,15 @@ export default {
     },
     capitalize(string) {
       return string[0].toUpperCase() + string.substring(1)
+    },
+    getCustomFields(model) {
+      axios.patch("/core/customfields/", { model: model }).then(r => {
+        return r.data
+      })
+        .catch(e => {
+          this.notifyError("There was an issue getting Client Custom Fields")
+        })
     }
+
   }
 };

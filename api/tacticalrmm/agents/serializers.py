@@ -1,10 +1,20 @@
 import pytz
 from rest_framework import serializers
+from rest_framework.fields import SerializerMethodField
 
 from clients.serializers import ClientSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .models import Agent, Note
+from .models import Agent, AgentCustomField, Note
+from core.models import CustomField
+
+
+class AgentCustomFieldSerializer(serializers.ModelSerializer):
+    agent_fields = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+
+    class Meta:
+        model = AgentCustomField
+        fields = "__all__"
 
 
 class AgentSerializer(serializers.ModelSerializer):
@@ -123,6 +133,11 @@ class AgentEditSerializer(serializers.ModelSerializer):
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
     all_timezones = serializers.SerializerMethodField()
     client = ClientSerializer(read_only=True)
+    customfields = SerializerMethodField()
+
+    def get_customfields(self, instance):
+        customfields = CustomField.objects.filter(model="agent")
+        return AgentCustomFieldSerializer(customfields, many=True).data
 
     def get_all_timezones(self, obj):
         return pytz.all_timezones

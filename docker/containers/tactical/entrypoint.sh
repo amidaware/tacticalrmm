@@ -35,7 +35,11 @@ if [ "$1" = 'tactical-init' ]; then
   test -f "${TACTICAL_READY_FILE}" && rm "${TACTICAL_READY_FILE}"
 
   # copy container data to volume
-  cp -af ${TACTICAL_TMP_DIR}/. ${TACTICAL_DIR}/
+  # bad
+  #cp -af ${TACTICAL_TMP_DIR}/. ${TACTICAL_DIR}/
+  
+  # good
+  rsync -a --no-perms --no-owner --delete "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
 
   until (echo > /dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &> /dev/null; do
     echo "waiting for postgresql container to be ready..."

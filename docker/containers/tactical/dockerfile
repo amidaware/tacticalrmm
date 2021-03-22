@@ -15,7 +15,7 @@ SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 COPY api/tacticalrmm/requirements.txt ${TACTICAL_TMP_DIR}/api/requirements.txt
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc libc6-dev rsync && \
+    apt-get install -y --no-install-recommends gcc libc6-dev && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --upgrade pip && \
     pip install --no-cache-dir setuptools wheel gunicorn && \
@@ -46,7 +46,7 @@ COPY --from=CREATE_VENV_STAGE ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 # install deps
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends git && \
+    apt-get install -y --no-install-recommends git rsync && \
     rm -rf /var/lib/apt/lists/* && \
     go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo && \
     groupadd -g 1000 "${TACTICAL_USER}" && \

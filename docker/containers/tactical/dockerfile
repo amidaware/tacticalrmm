@@ -15,7 +15,7 @@ SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 COPY api/tacticalrmm/requirements.txt ${TACTICAL_TMP_DIR}/api/requirements.txt
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc libc6-dev && \
+    apt-get install -y --no-install-recommends gcc libc6-dev rsync && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --upgrade pip && \
     pip install --no-cache-dir setuptools wheel gunicorn && \

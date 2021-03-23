@@ -28,8 +28,8 @@ redis==3.5.3
 requests==2.25.1
 six==1.15.0
 sqlparse==0.4.1
-twilio==6.53.0
-urllib3==1.26.3
+twilio==6.54.0
+urllib3==1.26.4
 uWSGI==2.0.19.1
 validators==0.18.2
 vine==5.0.0

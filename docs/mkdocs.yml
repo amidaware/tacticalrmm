@@ -15,6 +15,7 @@ nav:
       - "Maintenance Mode": functions/maintenance_mode.md
       - "Alerting": alerting.md
       - "User Interface Preferences": functions/user_ui.md
+      - "Django Admin": functions/django_admin.md
   - Backup: backup.md
   - Restore: restore.md
   - Troubleshooting: troubleshooting.md

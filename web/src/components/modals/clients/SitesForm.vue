@@ -32,6 +32,11 @@
               label="Name"
             />
           </q-card-section>
+
+          <q-card-section v-for="field in customFields" :key="field.id">
+            <CustomField v-model="custom_fields[field.name]" :field="field" />
+          </q-card-section>
+
           <q-card-actions align="right">
             <q-btn dense flat label="Cancel" v-close-popup />
             <q-btn dense flat label="Save" color="primary" type="submit" />
@@ -60,10 +65,10 @@ export default {
       customFields: [],
       clientOptions: [],
       localSite: {
-        id: null,
         client: null,
         name: "",
       },
+      custom_fields: {},
     };
   },
   computed: {
@@ -84,6 +89,7 @@ export default {
       this.$axios
         .post("/clients/sites/", this.localSite)
         .then(r => {
+          this.saveCustomFields();
           this.refreshDashboardTree();
           this.$q.loading.hide();
           this.onOk();
@@ -103,6 +109,7 @@ export default {
       this.$axios
         .put(`/clients/sites/${this.site.id}/`, this.localSite)
         .then(r => {
+          this.saveCustomFields(this.site.id);
           this.refreshDashboardTree();
           this.onOk();
           this.$q.loading.hide();
@@ -117,6 +124,27 @@ export default {
           }
         });
     },
+    getSite() {
+      this.$q.loading.show();
+      this.$axios
+        .get(`/clients/sites/${this.site.id}/`)
+        .then(r => {
+          this.$q.loading.hide();
+          this.localSite.name = r.data.name;
+          this.localSite.client = r.data.client;
+
+          for (let field of this.customFields) {
+            const value = r.data.custom_fields.find(value => value.field === field.id);
+
+            if (!!value) this.$set(this.custom_fields, field.name, value.value);
+            else if (!!field.default_value) this.$set(this.custom_fields, field.name, field.default_value);
+            else this.$set(this.custom_fields, field.name, "");
+          }
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+        });
+    },
     refreshDashboardTree() {
       this.$store.dispatch("loadTree");
       this.$store.dispatch("getUpdatedSites");
@@ -127,6 +155,15 @@ export default {
           this.clientOptions.push({ label: client.name, value: client.id });
         });
       });
+    },
+    saveCustomFields(pk = None) {
+      this.$axios
+        .post(`/clients/sites/customfields/`, {
+          custom_fields: this.formatCustomFields(this.customFields, this.custom_fields, pk),
+        })
+        .catch(e => {
+          console.log({ e });
+        });
     },
     show() {
       this.$refs.dialog.show();
@@ -145,14 +182,17 @@ export default {
   created() {
     this.getClients();
 
+    // Get custom fields
+    this.getCustomFields("site").then(r => {
+      this.customFields = r.data;
+    });
+
     // Copy site prop locally
     if (this.editing) {
-      this.localSite.id = this.site.id;
-      this.localSite.name = this.site.name;
-      this.localSite.client = this.site.client;
+      this.getSite();
+    } else {
+      if (this.client) this.localSite.client = this.client;
     }
-
-    if (this.client) this.localSite.client = this.client;
   },
 };
 </script>

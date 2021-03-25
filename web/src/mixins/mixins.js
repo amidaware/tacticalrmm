@@ -142,13 +142,25 @@ export default {
       return string[0].toUpperCase() + string.substring(1)
     },
     getCustomFields(model) {
-      axios.patch("/core/customfields/", { model: model }).then(r => {
-        return r.data
-      })
+      return axios.patch("/core/customfields/", { model: model })
         .catch(e => {
-          this.notifyError("There was an issue getting Client Custom Fields")
+          this.notifyError("There was an issue getting Custom Fields")
         })
-    }
+    },
+    formatCustomFields(fields, values, pk) {
+      let tempArray = []
+
+      for (let field of fields) {
+        const value = values[field.name]
+        if (value !== field.default_value) {
+          let obj = { value: value, field: field.id }
+          if (!!pk) obj.model = pk
+          tempArray.push(obj)
+        }
+      }
+      console.log(tempArray)
+      return tempArray
+    },
 
   }
 };

@@ -21,9 +21,9 @@ services:
           - tactical-backend
 
   app-dev:
-    image: node:12-alpine
+    image: node:14-alpine
     restart: always
-    command: /bin/sh -c "npm install && npm run serve -- --host 0.0.0.0 --port ${APP_PORT}"
+    command: /bin/sh -c "npm install npm@latest -g && npm install && npm run serve -- --host 0.0.0.0 --port ${APP_PORT}"
     working_dir: /workspace/web
     volumes:
       - ..:/workspace:cached

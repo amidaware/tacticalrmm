@@ -27,12 +27,13 @@ from tacticalrmm.utils import (
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
-from .models import Agent, Note, RecoveryAction
+from .models import Agent, Note, RecoveryAction, AgentCustomField
 from .serializers import (
     AgentEditSerializer,
     AgentHostnameSerializer,
     AgentOverdueActionSerializer,
     AgentSerializer,
+    AgentCustomFieldSerializer,
     AgentTableSerializer,
     NoteSerializer,
     NotesSerializer,
@@ -724,4 +725,37 @@ class WMI(APIView):
         r = asyncio.run(agent.nats_cmd({"func": "sysinfo"}, timeout=20))
         if r != "ok":
             return notify_error("Unable to contact the agent")
+        return Response("ok")
+
+
+class AgentCustomFields(APIView):
+    def post(self, request):
+
+        if "custom_fields" in request.data.keys():
+
+            for field in request.data["custom_fields"]:
+
+                custom_field = {
+                    "value": field["value"],
+                    "field": field["field"],
+                    "agent": field["model"],
+                }
+                if AgentCustomField.objects.filter(
+                    field=field["field"], agent=field["model"]
+                ):
+                    value = AgentCustomField.objects.get(
+                        field=field["field"], agent=field["model"]
+                    )
+                    serializer = AgentCustomFieldSerializer(
+                        instance=value, data=custom_field, partial=True
+                    )
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+                else:
+                    serializer = AgentCustomFieldSerializer(data=custom_field)
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+        else:
+            return notify_error("The request is invalid")
+
         return Response("ok")

@@ -28,6 +28,10 @@
               label="Default first site"
             />
           </q-card-section>
+
+          <q-card-section v-for="field in customFields" :key="field.id">
+            <CustomField v-model="custom_fields[field.name]" :field="field" />
+          </q-card-section>
           <q-card-actions align="right">
             <q-btn dense flat label="Cancel" v-close-popup />
             <q-btn dense flat label="Save" color="primary" type="submit" />
@@ -59,6 +63,7 @@ export default {
       localClient: {
         name: "",
       },
+      custom_fields: {},
     };
   },
   computed: {
@@ -77,8 +82,12 @@ export default {
     addClient() {
       this.$q.loading.show();
       this.$axios
-        .post("/clients/clients/", { site: this.site, client: this.localClient })
+        .post("/clients/clients/", {
+          site: this.site,
+          client: this.localClient,
+        })
         .then(r => {
+          this.saveCustomFields();
           this.refreshDashboardTree();
           this.$q.loading.hide();
           this.onOk();
@@ -95,9 +104,11 @@ export default {
     },
     editClient() {
       this.$q.loading.show();
+
       this.$axios
         .put(`/clients/${this.client.id}/client/`, this.localClient)
         .then(r => {
+          this.saveCustomFields(this.client.id);
           this.refreshDashboardTree();
           this.onOk();
           this.$q.loading.hide();
@@ -111,6 +122,35 @@ export default {
           } else {
             this.notifyError(e.response.data);
           }
+        });
+    },
+    getClient() {
+      this.$q.loading.show();
+      this.$axios
+        .get(`/clients/${this.client.id}/client/`)
+        .then(r => {
+          this.$q.loading.hide();
+          this.localClient.name = r.data.name;
+
+          for (let field of this.customFields) {
+            const value = r.data.custom_fields.find(value => value.field === field.id);
+
+            if (!!value) this.$set(this.custom_fields, field.name, value.value);
+            else if (!!field.default_value) this.$set(this.custom_fields, field.name, field.default_value);
+            else this.$set(this.custom_fields, field.name, "");
+          }
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+        });
+    },
+    saveCustomFields(pk = None) {
+      this.$axios
+        .post(`/clients/customfields/`, {
+          custom_fields: this.formatCustomFields(this.customFields, this.custom_fields, pk),
+        })
+        .catch(e => {
+          console.log({ e });
         });
     },
     refreshDashboardTree() {
@@ -132,10 +172,14 @@ export default {
     },
   },
   created() {
+    // Get custom fields
+    this.getCustomFields("client").then(r => {
+      this.customFields = r.data;
+    });
+
     // Copy client prop locally
     if (this.editing) {
-      this.localClient.id = this.client.id;
-      this.localClient.name = this.client.name;
+      this.getClient();
     }
   },
 };

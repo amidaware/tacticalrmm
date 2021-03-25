@@ -1,10 +1,17 @@
 from rest_framework.serializers import ModelSerializer, ReadOnlyField, ValidationError
 
-from .models import Client, Deployment, Site
+from .models import Client, ClientCustomField, SiteCustomField, Deployment, Site
+
+
+class SiteCustomFieldSerializer(ModelSerializer):
+    class Meta:
+        model = SiteCustomField
+        fields = "__all__"
 
 
 class SiteSerializer(ModelSerializer):
     client_name = ReadOnlyField(source="client.name")
+    custom_fields = SiteCustomFieldSerializer(many=True, read_only=True)
 
     class Meta:
         model = Site
@@ -15,6 +22,7 @@ class SiteSerializer(ModelSerializer):
             "workstation_policy",
             "client_name",
             "client",
+            "custom_fields",
         )
 
     def validate(self, val):
@@ -24,12 +32,26 @@ class SiteSerializer(ModelSerializer):
         return val
 
 
+class ClientCustomFieldSerializer(ModelSerializer):
+    class Meta:
+        model = ClientCustomField
+        fields = "__all__"
+
+
 class ClientSerializer(ModelSerializer):
     sites = SiteSerializer(many=True, read_only=True)
+    custom_fields = ClientCustomFieldSerializer(many=True, read_only=True)
 
     class Meta:
         model = Client
-        fields = ("id", "name", "server_policy", "workstation_policy", "sites")
+        fields = (
+            "id",
+            "name",
+            "server_policy",
+            "workstation_policy",
+            "sites",
+            "custom_fields",
+        )
 
     def validate(self, val):
         if "name" in val.keys() and "|" in val["name"]:

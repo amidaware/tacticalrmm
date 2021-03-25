@@ -247,3 +247,6 @@ class CustomField(models.Model):
 
     class Meta:
         unique_together = (("model", "name"),)
+
+    def __str__(self):
+        return self.name

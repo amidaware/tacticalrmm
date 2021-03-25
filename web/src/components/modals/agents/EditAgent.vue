@@ -131,6 +131,9 @@
                   <q-checkbox v-model="agent.overdue_email_alert" label="Get overdue email alerts" />
                   <q-checkbox v-model="agent.overdue_text_alert" label="Get overdue sms alerts" />
                 </q-card-section>
+                <q-card-section v-for="field in customFields" :key="field.id">
+                  <CustomField v-model="custom_fields[field.name]" :field="field" />
+                </q-card-section>
               </q-tab-panel>
               <!-- patch -->
               <q-tab-panel name="patch">
@@ -151,13 +154,16 @@
 import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import PatchPolicyForm from "@/components/modals/agents/PatchPolicyForm";
+import CustomField from "@/components/CustomField";
 
 export default {
   name: "EditAgent",
-  components: { PatchPolicyForm },
+  components: { PatchPolicyForm, CustomField },
   mixins: [mixins],
   data() {
     return {
+      customFields: [],
+      custom_fields: {},
       agentLoaded: false,
       clientsLoaded: false,
       agent: {},
@@ -192,6 +198,14 @@ export default {
 
         this.agent.client = { label: r.data.client.name, id: r.data.client.id, sites: r.data.client.sites };
         this.agentLoaded = true;
+
+        for (let field of this.customFields) {
+          const value = r.data.custom_fields.find(value => value.field === field.id);
+
+          if (!!value) this.$set(this.custom_fields, field.name, value.value);
+          else if (!!field.default_value) this.$set(this.custom_fields, field.name, field.default_value);
+          else this.$set(this.custom_fields, field.name, "");
+        }
       });
     },
     getClientsSites() {
@@ -221,11 +235,21 @@ export default {
       this.$axios
         .patch("/agents/editagent/", this.agent)
         .then(r => {
+          this.saveCustomFields(this.agent.id)
           this.$emit("close");
           this.$emit("edited");
           this.notifySuccess("Agent was edited!");
         })
         .catch(() => this.notifyError("Something went wrong"));
+    },
+    saveCustomFields(pk = None) {
+      this.$axios
+        .post(`/agents/customfields/`, {
+          custom_fields: this.formatCustomFields(this.customFields, this.custom_fields, pk),
+        })
+        .catch(e => {
+          console.log({ e });
+        });
     },
   },
   computed: {
@@ -237,6 +261,10 @@ export default {
     },
   },
   created() {
+    // Get custom fields
+    this.getCustomFields("agent").then(r => {
+      this.customFields = r.data;
+    });
     this.getAgentInfo();
     this.getClientsSites();
   },

@@ -6,12 +6,12 @@ celery==5.0.5
 certifi==2020.12.5
 cffi==1.14.5
 chardet==4.0.0
-cryptography==3.4.6
+cryptography==3.4.7
 decorator==4.4.2
 Django==3.1.7
 django-cors-headers==3.7.0
 django-rest-knox==4.1.0
-djangorestframework==3.12.2
+djangorestframework==3.12.3
 future==0.18.2
 kombu==5.0.2
 loguru==0.5.3
@@ -28,8 +28,8 @@ redis==3.5.3
 requests==2.25.1
 six==1.15.0
 sqlparse==0.4.1
-twilio==6.53.0
-urllib3==1.26.3
+twilio==6.55.0
+urllib3==1.26.4
 uWSGI==2.0.19.1
 validators==0.18.2
 vine==5.0.0

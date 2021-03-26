@@ -167,7 +167,7 @@ class GetAddSites(APIView):
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
 
-        return Response("ok")
+        return Response(f"Site {site.name} was added!")
 
 
 class GetUpdateSite(APIView):
@@ -176,7 +176,6 @@ class GetUpdateSite(APIView):
         return Response(SiteSerializer(site).data)
 
     def put(self, request, pk):
-
         site = get_object_or_404(Site, pk=pk)
 
         if (
@@ -217,7 +216,7 @@ class GetUpdateSite(APIView):
                     serializer.is_valid(raise_exception=True)
                     serializer.save()
 
-        return Response("ok")
+        return Response("Site was edited!")
 
 
 class DeleteSite(APIView):
@@ -226,13 +225,13 @@ class DeleteSite(APIView):
 
         site = get_object_or_404(Site, pk=pk)
         if site.client.sites.count() == 1:
-            return notify_error(f"A client must have at least 1 site.")
+            return notify_error("A client must have at least 1 site.")
 
         agents = Agent.objects.filter(site=site)
 
         if not sitepk:
             return notify_error(
-                f"There needs to be a site specified to move the agents to"
+                "There needs to be a site specified to move the agents to"
             )
 
         agent_site = get_object_or_404(Site, pk=sitepk)

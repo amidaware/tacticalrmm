@@ -26,12 +26,12 @@ if [[ $* == *--force* ]]; then
     force=true
 fi
 
-sudo apt update
-
 if [ $EUID -eq 0 ]; then
   echo -ne "\033[0;31mDo NOT run this script as root. Exiting.\e[0m\n"
   exit 1
 fi
+
+sudo apt update
 
 strip="User="
 ORIGUSER=$(grep ${strip} /etc/systemd/system/rmm.service | sed -e "s/^${strip}//")
@@ -41,76 +41,10 @@ if [ "$ORIGUSER" != "$USER" ]; then
   exit 1
 fi
 
-CHECK_030_MIGRATION=$(grep natsapi /etc/nginx/sites-available/rmm.conf)
-if ! [[ $CHECK_030_MIGRATION ]]; then
-  printf >&2 "${RED}Manual configuration changes required before continuing.${NC}\n"
-  printf >&2 "${RED}Please follow the steps here and then re-run this update script.${NC}\n"
-  printf >&2 "${GREEN}https://github.com/wh1te909/tacticalrmm/blob/develop/docs/migration-0.3.0.md${NC}\n"
+CHECK_TOO_OLD=$(grep natsapi /etc/nginx/sites-available/rmm.conf)
+if ! [[ $CHECK_TOO_OLD ]]; then
+  printf >&2 "${RED}Your version of TRMM is no longer supported. Refusing to update.${NC}\n"
   exit 1
-fi
-
-CHECK_CELERY_V2=$(grep V2 /etc/systemd/system/celery.service)
-if ! [[ $CHECK_CELERY_V2 ]]; then
-printf >&2 "${GREEN}Updating celery.service${NC}\n"
-sudo systemctl stop celery.service
-sudo rm -f /etc/systemd/system/celery.service
-
-celeryservice="$(cat << EOF
-[Unit]
-Description=Celery Service V2
-After=network.target redis-server.service postgresql.service
-
-[Service]
-Type=forking
-User=${USER}
-Group=${USER}
-EnvironmentFile=/etc/conf.d/celery.conf
-WorkingDirectory=/rmm/api/tacticalrmm
-ExecStart=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi start \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
-ExecStop=/bin/sh -c '\${CELERY_BIN} multi stopwait \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --loglevel="\${CELERYD_LOG_LEVEL}"'
-ExecReload=/bin/sh -c '\${CELERY_BIN} -A \$CELERY_APP multi restart \$CELERYD_NODES --pidfile=\${CELERYD_PID_FILE} --logfile=\${CELERYD_LOG_FILE} --loglevel="\${CELERYD_LOG_LEVEL}" \$CELERYD_OPTS'
-Restart=always
-RestartSec=10s
-
-[Install]
-WantedBy=multi-user.target
-EOF
-)"
-echo "${celeryservice}" | sudo tee /etc/systemd/system/celery.service > /dev/null
-sudo systemctl daemon-reload
-sudo systemctl enable celery.service
-fi
-
-CHECK_CELERYBEAT_V2=$(grep V2 /etc/systemd/system/celerybeat.service)
-if ! [[ $CHECK_CELERYBEAT_V2 ]]; then
-printf >&2 "${GREEN}Updating celerybeat.service${NC}\n"
-sudo systemctl stop celerybeat.service
-sudo rm -f /etc/systemd/system/celerybeat.service
-
-celerybeatservice="$(cat << EOF
-[Unit]
-Description=Celery Beat Service V2
-After=network.target redis-server.service postgresql.service
-
-[Service]
-Type=simple
-User=${USER}
-Group=${USER}
-EnvironmentFile=/etc/conf.d/celery.conf
-WorkingDirectory=/rmm/api/tacticalrmm
-ExecStart=/bin/sh -c '\${CELERY_BIN} -A \${CELERY_APP} beat --pidfile=\${CELERYBEAT_PID_FILE} --logfile=\${CELERYBEAT_LOG_FILE} --loglevel=\${CELERYD_LOG_LEVEL}'
-Restart=always
-RestartSec=10s
-
-[Install]
-WantedBy=multi-user.target
-EOF
-)"
-echo "${celerybeatservice}" | sudo tee /etc/systemd/system/celerybeat.service > /dev/null
-
-sudo systemctl daemon-reload
-sudo systemctl enable celerybeat.service
-
 fi
 
 TMP_SETTINGS=$(mktemp -p "" "rmmsettings_XXXXXXXXXX")
@@ -132,38 +66,6 @@ LATEST_NPM_VER=$(grep "^NPM_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 
 CURRENT_PIP_VER=$(grep "^PIP_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 CURRENT_NPM_VER=$(grep "^NPM_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
-
-
-if [ ! -f /etc/systemd/system/natsapi.service ]; then
-natsapi="$(cat << EOF
-[Unit]
-Description=Tactical NATS API
-After=network.target rmm.service nginx.service nats.service
-
-[Service]
-Type=simple
-ExecStart=/usr/local/bin/nats-api
-User=${USER}
-Group=${USER}
-Restart=always
-RestartSec=5s
-
-[Install]
-WantedBy=multi-user.target
-EOF
-)"
-echo "${natsapi}" | sudo tee /etc/systemd/system/natsapi.service > /dev/null
-sudo systemctl daemon-reload
-sudo systemctl enable natsapi.service
-fi
-
-if [ -f /etc/systemd/system/celery-winupdate.service ]; then
-  printf >&2 "${GREEN}Removing celery-winupdate.service${NC}\n"
-  sudo systemctl stop celery-winupdate.service
-  sudo systemctl disable celery-winupdate.service
-  sudo rm -f /etc/systemd/system/celery-winupdate.service
-  sudo systemctl daemon-reload
-fi
 
 for i in nginx nats natsapi rmm celery celerybeat
 do

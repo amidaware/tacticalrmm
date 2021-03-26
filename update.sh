@@ -117,15 +117,15 @@ if ! [[ $CHECK_NGINX_WORKER_CONN ]]; then
   sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
 fi
 
-CHECK_HAS_GO116=$(/usr/local/rmmgo/go/bin/go version | grep go1.16)
+CHECK_HAS_GO116=$(/usr/local/rmmgo/go/bin/go version | grep go1.16.2)
 if ! [[ $CHECK_HAS_GO116 ]]; then
-  printf >&2 "${GREEN}Updating golang to version 1.16${NC}\n"
+  printf >&2 "${GREEN}Updating golang to version 1.16.2${NC}\n"
   sudo rm -rf /home/${USER}/go/
   sudo rm -rf /usr/local/rmmgo/
   sudo mkdir -p /usr/local/rmmgo
   go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)
-  wget https://golang.org/dl/go1.16.linux-amd64.tar.gz -P ${go_tmp}
-  tar -xzf ${go_tmp}/go1.16.linux-amd64.tar.gz -C ${go_tmp}
+  wget https://golang.org/dl/go1.16.2.linux-amd64.tar.gz -P ${go_tmp}
+  tar -xzf ${go_tmp}/go1.16.2.linux-amd64.tar.gz -C ${go_tmp}
   sudo mv ${go_tmp}/go /usr/local/rmmgo/
   rm -rf ${go_tmp}
   sudo chown -R $USER:$GROUP /home/${USER}/.cache

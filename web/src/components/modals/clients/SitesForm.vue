@@ -103,7 +103,7 @@ export default {
           if (e.response.data.name) {
             this.notifyError(e.response.data.name);
           } else {
-            this.notifyError(e.response.data);
+            this.notifyError(e.response.data.non_field_errors);
           }
         });
     },

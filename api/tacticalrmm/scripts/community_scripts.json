@@ -91,11 +91,12 @@
         "shell": "powershell"
     },
     {
-        "filename": "bios_check.ps1",
+        "filename": "Win_Bios_Bheck.ps1",
         "submittedBy": "https://github.com/ThatsNASt",
         "name": "Check BIOS Information",
-        "description": "Retreives and reports on BIOS make, version, and date   .",
-        "shell": "powershell"
+        "description": "Retreives and reports on BIOS make, version, and date.",
+        "shell": "powershell",
+        "category": "TRMM (Win):Hardware"
     },
     {
         "filename": "ResetHighPerformancePowerProfiletoDefaults.ps1",

@@ -51,7 +51,7 @@
           outlined
           type="number"
           v-model.number="diskcheck.run_interval"
-          label="Check run interval (s)"
+          label="Check run interval (s) in seconds"
           hint="Setting this will override the check run interval on the agent"
         />
       </q-card-section>

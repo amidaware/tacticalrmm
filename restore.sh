@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="21"
+SCRIPT_VERSION="22"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -129,7 +129,7 @@ rm -rf ${nats_tmp}
 
 print_green 'Installing NodeJS'
 
-curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs

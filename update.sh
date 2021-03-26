@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="115"
+SCRIPT_VERSION="116"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -158,6 +158,24 @@ if ! [[ $HAS_NATS220 ]]; then
   sudo chmod +x /usr/local/bin/nats-server
   sudo chown ${USER}:${USER} /usr/local/bin/nats-server
   rm -rf ${nats_tmp}
+fi
+
+HAS_NODE14=$(/usr/bin/node --version | grep v14)
+if ! [[ $HAS_NODE14 ]]; then
+  printf >&2 "${GREEN}Updating NodeJS to v14${NC}\n"
+  sudo systemctl stop meshcentral
+  sudo apt remove -y nodejs
+  sudo rm -rf /usr/lib/node_modules
+  sudo rm -rf /home/${USER}/.npm/*
+  curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+  sudo apt update
+  sudo apt install -y nodejs
+  sudo npm install -g npm
+  sudo chown ${USER}:${USER} -R /meshcentral
+  cd /meshcentral
+  rm -rf node_modules/
+  npm install meshcentral@${LATEST_MESH_VER}
+  sudo systemctl start meshcentral
 fi
 
 sudo npm install -g npm

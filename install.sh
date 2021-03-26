@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="43"
+SCRIPT_VERSION="44"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -212,7 +212,7 @@ sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx
 
 print_green 'Installing NodeJS'
 
-curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs

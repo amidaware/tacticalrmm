@@ -33,14 +33,25 @@ class TestClientViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    """ def test_add_client(self):
+    def test_add_client(self):
         url = "/clients/clients/"
-        payload = {"client": "Company 1", "site": "Site 1"}
+
+        # test successfull add client
+        payload = {
+            "client": {"name": "Client1"},
+            "site": {"name": "Site1"},
+            "custom_fields": [],
+        }
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
 
-        payload["client"] = "Company1|askd"
-        serializer = ClientSerializer(data={"name": payload["client"]}, context=payload)
+        # test add client with | in name
+        payload = {
+            "client": {"name": "Client2|d"},
+            "site": {"name": "Site1"},
+            "custom_fields": [],
+        }
+        serializer = ClientSerializer(data=payload["client"])
         with self.assertRaisesMessage(
             ValidationError, "Client name cannot contain the | character"
         ):
@@ -49,19 +60,22 @@ class TestClientViews(TacticalTestCase):
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 400)
 
-        payload = {"client": "Company 156", "site": "Site2|a34"}
-        serializer = ClientSerializer(data={"name": payload["client"]}, context=payload)
-        with self.assertRaisesMessage(
-            ValidationError, "Site name cannot contain the | character"
-        ):
-            self.assertFalse(serializer.is_valid(raise_exception=True))
-
+        # test add client with | in Site name
+        payload = {
+            "client": {"name": "Client2"},
+            "site": {"name": "Site1|fds"},
+            "custom_fields": [],
+        }
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 400)
 
         # test unique
-        payload = {"client": "Company 1", "site": "Site 1"}
-        serializer = ClientSerializer(data={"name": payload["client"]}, context=payload)
+        payload = {
+            "client": {"name": "Client1"},
+            "site": {"name": "Site1"},
+            "custom_fields": [],
+        }
+        serializer = ClientSerializer(data=payload["client"])
         with self.assertRaisesMessage(
             ValidationError, "client with this name already exists."
         ):
@@ -70,41 +84,41 @@ class TestClientViews(TacticalTestCase):
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 400)
 
-        # test long site name
-        payload = {"client": "Company 2394", "site": "Site123" * 100}
-        serializer = ClientSerializer(data={"name": payload["client"]}, context=payload)
-        with self.assertRaisesMessage(ValidationError, "Site name too long"):
-            self.assertFalse(serializer.is_valid(raise_exception=True))
-
-        r = self.client.post(url, payload, format="json")
-        self.assertEqual(r.status_code, 400)
-
+        # test initial setup
         payload = {
-            "client": {"client": "Company 4", "site": "HQ"},
-            "initialsetup": True,
+            "client": {"name": "Setup Client"},
+            "site": {"name": "Setup  Site"},
             "timezone": "America/Los_Angeles",
+            "initialsetup": True,
         }
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
 
-        self.check_not_authenticated("post", url) """
+        self.check_not_authenticated("post", url)
 
-    """ def test_edit_client(self):
+    def test_edit_client(self):
         # setup data
-        client = baker.make("clients.Client")
+        client = baker.make("clients.Client", name="OldClientName")
 
         # test invalid id
         r = self.client.put("/clients/500/client/", format="json")
         self.assertEqual(r.status_code, 404)
 
-        data = {"id": client.id, "name": "New Name"}
-
-        url = f"/clients/{client.id}/client/"
+        # test successfull edit client
+        data = {"client": {"name": "NewClientName"}, "custom_fields": []}
+        url = f"/clients/{client.id}/client/"  # type: ignore
         r = self.client.put(url, data, format="json")
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(Client.objects.filter(name="New Name").exists())
+        self.assertTrue(Client.objects.filter(name="NewClientName").exists())
+        self.assertFalse(Client.objects.filter(name="OldClientName").exists())
 
-        self.check_not_authenticated("put", url) """
+        # test edit client with | in name
+        data = {"client": {"name": "NewClie|ntName"}, "custom_fields": []}
+        url = f"/clients/{client.id}/client/"  # type: ignore
+        r = self.client.put(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        self.check_not_authenticated("put", url)
 
     @patch("automation.tasks.generate_all_agent_checks_task.delay")
     @patch("automation.tasks.generate_all_agent_checks_task.delay")

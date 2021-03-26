@@ -31,7 +31,6 @@ class GetAddClients(APIView):
         return Response(ClientSerializer(clients, many=True).data)
 
     def post(self, request):
-
         # create client
         client_serializer = ClientSerializer(data=request.data["client"])
         client_serializer.is_valid(raise_exception=True)
@@ -78,7 +77,9 @@ class GetUpdateClient(APIView):
     def put(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
 
-        serializer = ClientSerializer(data=request.data, instance=client, partial=True)
+        serializer = ClientSerializer(
+            data=request.data["client"], instance=client, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 

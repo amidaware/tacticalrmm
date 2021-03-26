@@ -86,10 +86,13 @@ export default {
     },
     addSite() {
       this.$q.loading.show();
+      const data = {
+        site: this.localSite,
+        custom_fields: this.formatCustomFields(this.customFields, this.custom_fields),
+      };
       this.$axios
-        .post("/clients/sites/", this.localSite)
+        .post("/clients/sites/", data)
         .then(r => {
-          this.saveCustomFields();
           this.refreshDashboardTree();
           this.$q.loading.hide();
           this.onOk();
@@ -106,10 +109,13 @@ export default {
     },
     editSite() {
       this.$q.loading.show();
+      const data = {
+        site: this.localSite,
+        custom_fields: this.formatCustomFields(this.customFields, this.custom_fields),
+      };
       this.$axios
-        .put(`/clients/sites/${this.site.id}/`, this.localSite)
+        .put(`/clients/sites/${this.site.id}/`, data)
         .then(r => {
-          this.saveCustomFields(this.site.id);
           this.refreshDashboardTree();
           this.onOk();
           this.$q.loading.hide();
@@ -155,15 +161,6 @@ export default {
           this.clientOptions.push({ label: client.name, value: client.id });
         });
       });
-    },
-    saveCustomFields(pk = None) {
-      this.$axios
-        .post(`/clients/sites/customfields/`, {
-          custom_fields: this.formatCustomFields(this.customFields, this.custom_fields, pk),
-        })
-        .catch(e => {
-          console.log({ e });
-        });
     },
     show() {
       this.$refs.dialog.show();

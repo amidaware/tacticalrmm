@@ -81,13 +81,14 @@ export default {
     },
     addClient() {
       this.$q.loading.show();
+      const data = {
+        client: this.localClient,
+        site: this.site,
+        custom_fields: this.formatCustomFields(this.customFields, this.custom_fields),
+      };
       this.$axios
-        .post("/clients/clients/", {
-          site: this.site,
-          client: this.localClient,
-        })
+        .post("/clients/clients/", data)
         .then(r => {
-          this.saveCustomFields();
           this.refreshDashboardTree();
           this.$q.loading.hide();
           this.onOk();
@@ -104,11 +105,14 @@ export default {
     },
     editClient() {
       this.$q.loading.show();
+      const data = {
+        client: this.localClient,
+        custom_fields: this.formatCustomFields(this.customFields, this.custom_fields),
+      };
 
       this.$axios
-        .put(`/clients/${this.client.id}/client/`, this.localClient)
+        .put(`/clients/${this.client.id}/client/`, data)
         .then(r => {
-          this.saveCustomFields(this.client.id);
           this.refreshDashboardTree();
           this.onOk();
           this.$q.loading.hide();
@@ -116,7 +120,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          console.log({ e });
           if (e.response.data.name) {
             this.notifyError(e.response.data.name);
           } else {
@@ -142,15 +145,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-        });
-    },
-    saveCustomFields(pk = None) {
-      this.$axios
-        .post(`/clients/customfields/`, {
-          custom_fields: this.formatCustomFields(this.customFields, this.custom_fields, pk),
-        })
-        .catch(e => {
-          console.log({ e });
         });
     },
     refreshDashboardTree() {

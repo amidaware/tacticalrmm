@@ -14,7 +14,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models import CoreSettings
+from core.models import CoreSettings, CustomField
 from logs.models import AuditLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
@@ -103,6 +103,37 @@ def edit_agent(request):
         )
         p_serializer.is_valid(raise_exception=True)
         p_serializer.save()
+
+        if "custom_fields" in request.data.keys():
+
+            for field in request.data["custom_fields"]:
+
+                # get custom field for validation
+                obj = CustomField.objects.get(pk=field["field"])
+
+                if obj.default_value and field.value == obj.default_value:
+                    continue
+
+                custom_field = {
+                    "value": field["value"],
+                    "field": field["field"],
+                    "agent": agent.id,
+                }
+                if AgentCustomField.objects.filter(
+                    field=field["field"], agent=agent.id
+                ):
+                    value = AgentCustomField.objects.get(
+                        field=field["field"], agent=agent.id
+                    )
+                    serializer = AgentCustomFieldSerializer(
+                        instance=value, data=custom_field
+                    )
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+                else:
+                    serializer = AgentCustomFieldSerializer(data=custom_field)
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
 
     return Response("ok")
 
@@ -725,37 +756,4 @@ class WMI(APIView):
         r = asyncio.run(agent.nats_cmd({"func": "sysinfo"}, timeout=20))
         if r != "ok":
             return notify_error("Unable to contact the agent")
-        return Response("ok")
-
-
-class AgentCustomFields(APIView):
-    def post(self, request):
-
-        if "custom_fields" in request.data.keys():
-
-            for field in request.data["custom_fields"]:
-
-                custom_field = {
-                    "value": field["value"],
-                    "field": field["field"],
-                    "agent": field["model"],
-                }
-                if AgentCustomField.objects.filter(
-                    field=field["field"], agent=field["model"]
-                ):
-                    value = AgentCustomField.objects.get(
-                        field=field["field"], agent=field["model"]
-                    )
-                    serializer = AgentCustomFieldSerializer(
-                        instance=value, data=custom_field, partial=True
-                    )
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-                else:
-                    serializer = AgentCustomFieldSerializer(data=custom_field)
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-        else:
-            return notify_error("The request is invalid")
-
         return Response("ok")

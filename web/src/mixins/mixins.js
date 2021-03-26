@@ -147,18 +147,14 @@ export default {
           this.notifyError("There was an issue getting Custom Fields")
         })
     },
-    formatCustomFields(fields, values, pk) {
+    formatCustomFields(fields, values) {
       let tempArray = []
 
       for (let field of fields) {
-        const value = values[field.name]
-        if (value !== field.default_value) {
-          let obj = { value: value, field: field.id }
-          if (!!pk) obj.model = pk
-          tempArray.push(obj)
-        }
+        let obj = { value: values[field.name], field: field.id }
+        tempArray.push(obj)
+
       }
-      console.log(tempArray)
       return tempArray
     },
 

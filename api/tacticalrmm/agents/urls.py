@@ -30,5 +30,4 @@ urlpatterns = [
     path("agent_counts/", views.agent_counts),
     path("maintenance/", views.agent_maintenance),
     path("<int:pk>/wmi/", views.WMI.as_view()),
-    path("customfields/", views.AgentCustomFields.as_view()),
 ]

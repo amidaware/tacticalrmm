@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from agents.models import Agent
-from core.models import CoreSettings
+from core.models import CoreSettings, CustomField
 from tacticalrmm.utils import generate_installer_exe, notify_error
 
 from .models import Client, Deployment, Site, ClientCustomField, SiteCustomField
@@ -55,6 +55,18 @@ class GetAddClients(APIView):
             core.default_time_zone = request.data["timezone"]
             core.save(update_fields=["default_time_zone"])
 
+        # save custom fields
+        if "custom_fields" in request.data.keys():
+            for field in request.data["custom_fields"]:
+                custom_field = {
+                    "value": field["value"],
+                    "field": field["field"],
+                    "client": client.id,
+                }
+                serializer = ClientCustomFieldSerializer(data=custom_field)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+
         return Response(f"{client} was added!")
 
 
@@ -69,6 +81,35 @@ class GetUpdateClient(APIView):
         serializer = ClientSerializer(data=request.data, instance=client, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+
+        # update custom fields
+        if "custom_fields" in request.data.keys():
+            for field in request.data["custom_fields"]:
+
+                # get custom field for validation
+                obj = CustomField.objects.get(pk=field["field"])
+
+                if obj.default_value and field.value == obj.default_value:
+                    continue
+
+                custom_field = {
+                    "value": field["value"],
+                    "field": field["field"],
+                    "client": pk,
+                }
+                if ClientCustomField.objects.filter(field=field["field"], client=pk):
+                    value = ClientCustomField.objects.get(
+                        field=field["field"], client=pk
+                    )
+                    serializer = ClientCustomFieldSerializer(
+                        instance=value, data=custom_field
+                    )
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+                else:
+                    serializer = ClientCustomFieldSerializer(data=custom_field)
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
 
         return Response("The Client was updated")
 
@@ -107,9 +148,24 @@ class GetAddSites(APIView):
         return Response(SiteSerializer(sites, many=True).data)
 
     def post(self, request):
-        serializer = SiteSerializer(data=request.data)
+        serializer = SiteSerializer(data=request.data["site"])
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        site = serializer.save()
+
+        # save custom fields
+        if "custom_fields" in request.data.keys():
+
+            for field in request.data["custom_fields"]:
+
+                custom_field = {
+                    "value": field["value"],
+                    "field": field["field"],
+                    "site": site.id,
+                }
+
+                serializer = SiteCustomFieldSerializer(data=custom_field)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
 
         return Response("ok")
 
@@ -123,12 +179,43 @@ class GetUpdateSite(APIView):
 
         site = get_object_or_404(Site, pk=pk)
 
-        if site.client.id != request.data["client"] and site.client.sites.count() == 1:
+        if (
+            site.client.id != request.data["site"]["client"]
+            and site.client.sites.count() == 1
+        ):
             return notify_error("A client must have at least one site")
 
-        serializer = SiteSerializer(instance=site, data=request.data, partial=True)
+        serializer = SiteSerializer(instance=site, data=request.data["site"])
         serializer.is_valid(raise_exception=True)
         serializer.save()
+
+        # update custom field
+        if "custom_fields" in request.data.keys():
+
+            for field in request.data["custom_fields"]:
+
+                # get custom field for validation
+                obj = CustomField.objects.get(pk=field["field"])
+
+                if obj.default_value and field.value == obj.default_value:
+                    continue
+
+                custom_field = {
+                    "value": field["value"],
+                    "field": field["field"],
+                    "site": pk,
+                }
+                if SiteCustomField.objects.filter(field=field["field"], site=pk):
+                    value = SiteCustomField.objects.get(field=field["field"], site=pk)
+                    serializer = SiteCustomFieldSerializer(
+                        instance=value, data=custom_field, partial=True
+                    )
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+                else:
+                    serializer = SiteCustomFieldSerializer(data=custom_field)
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
 
         return Response("ok")
 
@@ -243,67 +330,3 @@ class GenerateAgent(APIView):
             download_url=settings.DL_64 if d.arch == "64" else settings.DL_32,
             token=d.token_key,
         )
-
-
-class ClientCustomFields(APIView):
-    def post(self, request):
-
-        if "custom_fields" in request.data.keys():
-            for field in request.data["custom_fields"]:
-                custom_field = {
-                    "value": field["value"],
-                    "field": field["field"],
-                    "client": field["model"],
-                }
-                if ClientCustomField.objects.filter(
-                    field=field["field"], client=field["model"]
-                ):
-                    value = ClientCustomField.objects.get(
-                        field=field["field"], client=field["model"]
-                    )
-                    serializer = ClientCustomFieldSerializer(
-                        instance=value, data=custom_field, partial=True
-                    )
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-                else:
-                    serializer = ClientCustomFieldSerializer(data=custom_field)
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-        else:
-            return notify_error("The request is invalid")
-
-        return Response("ok")
-
-
-class SiteCustomFields(APIView):
-    def post(self, request):
-
-        if "custom_fields" in request.data.keys():
-
-            for field in request.data["custom_fields"]:
-
-                custom_field = {
-                    "value": field["value"],
-                    "field": field["field"],
-                    "site": field["model"],
-                }
-                if SiteCustomField.objects.filter(
-                    field=field["field"], site=field["model"]
-                ):
-                    value = SiteCustomField.objects.get(
-                        field=field["field"], site=field["model"]
-                    )
-                    serializer = SiteCustomFieldSerializer(
-                        instance=value, data=custom_field, partial=True
-                    )
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-                else:
-                    serializer = SiteCustomFieldSerializer(data=custom_field)
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-        else:
-            return notify_error("The request is invalid")
-
-        return Response("ok")

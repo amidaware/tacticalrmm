@@ -13,6 +13,4 @@ urlpatterns = [
     path("deployments/", views.AgentDeployment.as_view()),
     path("<int:pk>/deployment/", views.AgentDeployment.as_view()),
     path("<str:uid>/deploy/", views.GenerateAgent.as_view()),
-    path("customfields/", views.ClientCustomFields.as_view()),
-    path("sites/customfields/", views.SiteCustomFields.as_view()),
 ]

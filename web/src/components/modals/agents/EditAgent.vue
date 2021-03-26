@@ -233,23 +233,16 @@ export default {
       }
 
       this.$axios
-        .patch("/agents/editagent/", this.agent)
+        .patch("/agents/editagent/", {
+          ...this.agent,
+          custom_fields: this.formatCustomFields(this.customFields, this.custom_fields),
+        })
         .then(r => {
-          this.saveCustomFields(this.agent.id)
           this.$emit("close");
           this.$emit("edited");
           this.notifySuccess("Agent was edited!");
         })
         .catch(() => this.notifyError("Something went wrong"));
-    },
-    saveCustomFields(pk = None) {
-      this.$axios
-        .post(`/agents/customfields/`, {
-          custom_fields: this.formatCustomFields(this.customFields, this.custom_fields, pk),
-        })
-        .catch(e => {
-          console.log({ e });
-        });
     },
   },
   computed: {

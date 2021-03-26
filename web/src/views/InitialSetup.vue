@@ -57,7 +57,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 
 export default {
@@ -86,13 +85,13 @@ export default {
         timezone: this.timezone,
         initialsetup: true,
       };
-      axios
+      this.$axios
         .post("/clients/clients/", data)
         .then(r => {
           let formData = new FormData();
           formData.append("arch", this.arch);
           formData.append("meshagent", this.meshagent);
-          axios
+          this.$axios
             .put("/core/uploadmesh/", formData)
             .then(() => {
               this.$q.loading.hide();
@@ -113,7 +112,7 @@ export default {
         });
     },
     getSettings() {
-      axios.get("/core/getcoresettings/").then(r => {
+      this.$axios.get("/core/getcoresettings/").then(r => {
         this.allTimezones = Object.freeze(r.data.all_timezones);
         this.timezone = r.data.default_time_zone;
       });

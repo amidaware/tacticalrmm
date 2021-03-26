@@ -216,3 +216,37 @@ class CoreSettings(BaseAuditModel):
         from .serializers import CoreSerializer
 
         return CoreSerializer(core).data
+
+
+FIELD_TYPE_CHOICES = (
+    ("text", "Text"),
+    ("number", "Number"),
+    ("single", "Single"),
+    ("multiple", "Multiple"),
+    ("checkbox", "Checkbox"),
+    ("datetime", "DateTime"),
+)
+
+MODEL_CHOICES = (("client", "Client"), ("site", "Site"), ("agent", "Agent"))
+
+
+class CustomField(models.Model):
+
+    order = models.PositiveIntegerField(default=0)
+    model = models.CharField(max_length=25, choices=MODEL_CHOICES)
+    type = models.CharField(max_length=25, choices=FIELD_TYPE_CHOICES, default="text")
+    options = ArrayField(
+        models.CharField(max_length=255, null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
+    name = models.TextField(null=True, blank=True)
+    default_value = models.TextField(null=True, blank=True)
+    required = models.BooleanField(blank=True, default=False)
+
+    class Meta:
+        unique_together = (("model", "name"),)
+
+    def __str__(self):
+        return self.name

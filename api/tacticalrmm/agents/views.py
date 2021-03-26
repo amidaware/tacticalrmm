@@ -14,7 +14,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models import CoreSettings
+from core.models import CoreSettings, CustomField
 from logs.models import AuditLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
@@ -27,12 +27,13 @@ from tacticalrmm.utils import (
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
-from .models import Agent, Note, RecoveryAction
+from .models import Agent, Note, RecoveryAction, AgentCustomField
 from .serializers import (
     AgentEditSerializer,
     AgentHostnameSerializer,
     AgentOverdueActionSerializer,
     AgentSerializer,
+    AgentCustomFieldSerializer,
     AgentTableSerializer,
     NoteSerializer,
     NotesSerializer,
@@ -102,6 +103,37 @@ def edit_agent(request):
         )
         p_serializer.is_valid(raise_exception=True)
         p_serializer.save()
+
+        if "custom_fields" in request.data.keys():
+
+            for field in request.data["custom_fields"]:
+
+                # get custom field for validation
+                obj = CustomField.objects.get(pk=field["field"])
+
+                if obj.default_value and field.value == obj.default_value:
+                    continue
+
+                custom_field = {
+                    "value": field["value"],
+                    "field": field["field"],
+                    "agent": agent.id,
+                }
+                if AgentCustomField.objects.filter(
+                    field=field["field"], agent=agent.id
+                ):
+                    value = AgentCustomField.objects.get(
+                        field=field["field"], agent=agent.id
+                    )
+                    serializer = AgentCustomFieldSerializer(
+                        instance=value, data=custom_field
+                    )
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+                else:
+                    serializer = AgentCustomFieldSerializer(data=custom_field)
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
 
     return Response("ok")
 

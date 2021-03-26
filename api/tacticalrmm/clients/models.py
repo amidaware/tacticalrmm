@@ -159,6 +159,7 @@ class Site(BaseAuditModel):
 
     class Meta:
         ordering = ("name",)
+        unique_together = (("client", "name"),)
 
     def __str__(self):
         return self.name
@@ -233,3 +234,35 @@ class Deployment(models.Model):
 
     def __str__(self):
         return f"{self.client} - {self.site} - {self.mon_type}"
+
+
+class ClientCustomField(models.Model):
+    client = models.ForeignKey(
+        Client,
+        related_name="custom_fields",
+        on_delete=models.CASCADE,
+    )
+
+    field = models.ForeignKey(
+        "core.CustomField",
+        related_name="client_fields",
+        on_delete=models.CASCADE,
+    )
+
+    value = models.TextField(null=True, blank=True)
+
+
+class SiteCustomField(models.Model):
+    site = models.ForeignKey(
+        Site,
+        related_name="custom_fields",
+        on_delete=models.CASCADE,
+    )
+
+    field = models.ForeignKey(
+        "core.CustomField",
+        related_name="site_fields",
+        on_delete=models.CASCADE,
+    )
+
+    value = models.TextField(null=True, blank=True)

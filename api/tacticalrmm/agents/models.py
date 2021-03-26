@@ -4,7 +4,7 @@ import re
 import time
 from collections import Counter
 from distutils.version import LooseVersion
-from typing import Any, Union
+from typing import Any
 
 import msgpack
 import validators
@@ -18,7 +18,6 @@ from django.utils import timezone as djangotime
 from loguru import logger
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrTimeout
-from packaging import version as pyver
 
 from core.models import TZ_CHOICES, CoreSettings
 from logs.models import BaseAuditModel
@@ -837,3 +836,19 @@ class Note(models.Model):
 
     def __str__(self):
         return self.agent.hostname
+
+
+class AgentCustomField(models.Model):
+    agent = models.ForeignKey(
+        Agent,
+        related_name="custom_fields",
+        on_delete=models.CASCADE,
+    )
+
+    field = models.ForeignKey(
+        "core.CustomField",
+        related_name="agent_fields",
+        on_delete=models.CASCADE,
+    )
+
+    value = models.TextField(null=True, blank=True)

@@ -238,6 +238,7 @@ export default function () {
                 raw: `Site|${site.id}`,
                 header: "generic",
                 icon: "apartment",
+                client: client.id,
                 server_policy: site.server_policy,
                 workstation_policy: site.workstation_policy,
                 alert_template: site.alert_template

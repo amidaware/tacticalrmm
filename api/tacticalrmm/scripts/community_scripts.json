@@ -91,7 +91,7 @@
         "shell": "powershell"
     },
     {
-        "filename": "[Win]Bios_Check.ps1",
+        "filename": "Win_Bios_Check.ps1",
         "submittedBy": "https://github.com/ThatsNASt",
         "name": "Check BIOS Information",
         "description": "Retreives and reports on BIOS make, version, and date   .",

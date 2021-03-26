@@ -226,6 +226,7 @@ class Deployment(models.Model):
     )
     arch = models.CharField(max_length=255, choices=ARCH_CHOICES, default="64")
     expiry = models.DateTimeField(null=True, blank=True)
+    created = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     auth_token = models.ForeignKey(
         "knox.AuthToken", related_name="deploytokens", on_delete=models.CASCADE
     )

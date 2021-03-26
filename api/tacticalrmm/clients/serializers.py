@@ -100,4 +100,5 @@ class DeploymentSerializer(ModelSerializer):
             "arch",
             "expiry",
             "install_flags",
+            "created",
         ]

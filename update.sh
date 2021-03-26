@@ -190,37 +190,6 @@ EOF
 echo "${adminenabled}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py > /dev/null
 fi
 
-CHECK_REMOVE_SALT=$(grep KEEP_SALT /rmm/api/tacticalrmm/tacticalrmm/local_settings.py)
-if ! [[ $CHECK_REMOVE_SALT ]]; then
-  printf >&2 "${YELLOW}This update removes salt from the rmm${NC}\n"
-  printf >&2 "${YELLOW}You may continue to use salt on existing agents, but there will not be any more integration with tacticalrmm, and new agents will not install the salt-minion${NC}\n"
-  until [[ $rmsalt =~ (y|n) ]]; do
-    echo -ne "${YELLOW}Would you like to remove salt? (recommended) [y/n]${NC}: "
-    read rmsalt
-  done
-  if [[ $rmsalt == "y" ]]; then
-keepsalt="$(cat << EOF
-KEEP_SALT = False
-EOF
-)"
-  else
-keepsalt="$(cat << EOF
-KEEP_SALT = True
-EOF
-)"
-  fi
-  echo "${keepsalt}" | tee --append /rmm/api/tacticalrmm/tacticalrmm/local_settings.py > /dev/null
-
-  if [[ $rmsalt == "y" ]]; then
-    printf >&2 "${GREEN}Removing salt-master and salt-api${NC}\n"
-    for i in salt-api salt-master; do sudo systemctl stop $i; sudo systemctl disable $i; done
-    sudo apt remove -y --purge salt-master salt-api salt-common
-  else
-    sudo systemctl stop salt-api
-    sudo systemctl disable salt-api
-  fi
-fi
-
 /usr/local/rmmgo/go/bin/go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
 sudo cp /rmm/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/
 sudo chown ${USER}:${USER} /usr/local/bin/goversioninfo

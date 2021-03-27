@@ -77,11 +77,12 @@
         "shell": "powershell"
     },
     {
-        "filename": "bitlocker_create_status_report.ps1",
+        "filename": "Win_Bitlocker_Create_Status_Report.ps1",
         "submittedBy": "https://github.com/ThatsNASt",
         "name": "Create Bitlocker Status Report",
         "description": "Creates a Bitlocker status report.",
-        "shell": "powershell"
+        "shell": "powershell",
+        "category": "TRMM (Win):Storage"
     },
     {
         "filename": "bitlocker_retrieve_status_report.ps1",

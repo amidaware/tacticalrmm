@@ -225,11 +225,12 @@
         "shell": "cmd"
     },
     {
-        "filename": "AD_Check_And_Enable_AD_Recycle_Bin.ps1",
+        "filename": "Win_AD_Check_And_Enable_AD_Recycle_Bin.ps1",
         "submittedBy": "https://github.com/silversword411",
         "name": "AD - Check and Enable AD Recycle Bin",
         "description": "Only run on Domain Controllers, checks for Active Directory Recycle Bin and enables if not already enabled",
-        "shell": "powershell"
+        "shell": "powershell",
+        "category": "TRMM (Win):Active Directory"
     },
     {
         "filename": "Check_Events_for_Bluescreens.ps1",

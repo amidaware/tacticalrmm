@@ -56,7 +56,7 @@
               />
             </div>
 
-            <div class="col-2">Failure action timeout (s)</div>
+            <div class="col-2">Failure action timeout (seconds)</div>
             <div class="col-10">
               <q-input
                 outlined
@@ -108,7 +108,7 @@
               />
             </div>
 
-            <div class="col-2">Resolved action timeout (s)</div>
+            <div class="col-2">Resolved action timeout (seconds)</div>
             <div class="col-10">
               <q-input
                 outlined

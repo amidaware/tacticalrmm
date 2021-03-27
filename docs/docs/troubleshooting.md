@@ -69,7 +69,6 @@ sudo systemctl status celery
 sudo systemctl status celerybeat
 sudo systemctl status nginx
 sudo systemctl status nats
-sudo systemctl status natsapi
 sudo systemctl status meshcentral
 sudo systemctl status mongod
 sudo systemctl status postgresql

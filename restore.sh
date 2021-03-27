@@ -350,10 +350,6 @@ print_green 'Starting meshcentral'
 sudo systemctl enable meshcentral
 sudo systemctl start meshcentral
 
-print_green 'Starting natsapi'
-sudo systemctl enable natsapi.service
-sudo systemctl start natsapi.service
-
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
 printf >&2 "\n\n"
 printf >&2 "${YELLOW}Restore complete!${NC}\n\n"

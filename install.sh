@@ -482,26 +482,6 @@ EOF
 )"
 echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service > /dev/null
 
-natsapi="$(cat << EOF
-[Unit]
-Description=Tactical NATS API
-After=network.target rmm.service nginx.service nats.service
-
-[Service]
-Type=simple
-ExecStart=/usr/local/bin/nats-api
-User=${USER}
-Group=${USER}
-Restart=always
-RestartSec=5s
-
-[Install]
-WantedBy=multi-user.target
-EOF
-)"
-echo "${natsapi}" | sudo tee /etc/systemd/system/natsapi.service > /dev/null
-
-
 nginxrmm="$(cat << EOF
 server_tokens off;
 
@@ -808,7 +788,6 @@ sleep 5
 MESHEXE=$(node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} GenerateInviteLink --group TacticalRMM --hours 8)
 
 sudo systemctl enable nats.service
-sudo systemctl enable natsapi.service
 cd /rmm/api/tacticalrmm
 source /rmm/api/env/bin/activate
 python manage.py initial_db_setup
@@ -820,7 +799,7 @@ sudo systemctl start nats.service
 sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
 print_green 'Restarting services'
-for i in rmm.service celery.service celerybeat.service natsapi.service
+for i in rmm.service celery.service celerybeat.service
 do
   sudo systemctl stop ${i}
   sudo systemctl start ${i}

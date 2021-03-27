@@ -67,7 +67,15 @@ LATEST_NPM_VER=$(grep "^NPM_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 CURRENT_PIP_VER=$(grep "^PIP_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 CURRENT_NPM_VER=$(grep "^NPM_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
-for i in nginx nats natsapi rmm celery celerybeat
+if [ -f /etc/systemd/system/natsapi.service ]; then
+  printf >&2 "${GREEN}Removing natsapi.service${NC}\n"
+  sudo systemctl stop natsapi.service
+  sudo systemctl disable natsapi.service
+  sudo rm -f /etc/systemd/system/natsapi.service
+  sudo systemctl daemon-reload
+fi
+
+for i in nginx nats rmm celery celerybeat
 do
 printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}
@@ -106,10 +114,6 @@ max-requests = 500
 EOF
 )"
 echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
-
-
-# forgot to add this in install script. catch any installs that don't have it enabled and enable it
-sudo systemctl enable natsapi.service
 
 CHECK_NGINX_WORKER_CONN=$(grep "worker_connections 2048" /etc/nginx/nginx.conf)
 if ! [[ $CHECK_NGINX_WORKER_CONN ]]; then
@@ -254,7 +258,7 @@ sudo rm -rf /var/www/rmm/dist
 sudo cp -pr /rmm/web/dist /var/www/rmm/
 sudo chown www-data:www-data -R /var/www/rmm/dist
 
-for i in rmm celery celerybeat nginx nats natsapi
+for i in rmm celery celerybeat nginx nats
 do
 printf >&2 "${GREEN}Starting ${i} service${NC}\n"
 sudo systemctl start ${i}

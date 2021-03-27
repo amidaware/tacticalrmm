@@ -61,7 +61,6 @@ INSTALLED_APPS = [
     "logs",
     "scripts",
     "alerts",
-    "natsapi",
 ]
 
 if not "AZPIPELINE" in os.environ:

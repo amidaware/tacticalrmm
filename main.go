@@ -1,6 +1,6 @@
 package main
 
-// env CGO_ENABLED=0 go build -v -a -ldflags "-s -w" -o nats-api
+// env CGO_ENABLED=0 go build -ldflags "-s -w" -o nats-api
 
 import (
 	"flag"
@@ -9,13 +9,12 @@ import (
 	"github.com/wh1te909/tacticalrmm/natsapi"
 )
 
-var version = "1.1.1"
+var version = "2.0.0"
 
 func main() {
 	ver := flag.Bool("version", false, "Prints version")
-	apiHost := flag.String("api-host", "", "django full base url")
-	natsHost := flag.String("nats-host", "", "nats full connection string")
-	debug := flag.Bool("debug", false, "Debug")
+	mode := flag.String("m", "", "Mode")
+	config := flag.String("c", "", "config file")
 	flag.Parse()
 
 	if *ver {
@@ -23,5 +22,11 @@ func main() {
 		return
 	}
 
-	api.Listen(*apiHost, *natsHost, version, *debug)
+	switch *mode {
+	case "monitor":
+		api.MonitorAgents(*config)
+	case "wmi":
+		api.GetWMI(*config)
+	}
+
 }

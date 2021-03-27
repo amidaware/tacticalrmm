@@ -23,7 +23,6 @@ urlpatterns = [
     path("scripts/", include("scripts.urls")),
     path("alerts/", include("alerts.urls")),
     path("accounts/", include("accounts.urls")),
-    path("natsapi/", include("natsapi.urls")),
 ]
 
 if hasattr(settings, "ADMIN_ENABLED") and settings.ADMIN_ENABLED:

@@ -1,6 +1,9 @@
 import asyncio
 import datetime as dt
+import json
 import random
+import subprocess
+import tempfile
 from time import sleep
 from typing import Union
 
@@ -252,3 +255,48 @@ def run_script_email_results_task(
                 server.quit()
     except Exception as e:
         logger.error(e)
+
+
+def _get_nats_config() -> dict:
+    return {
+        "key": settings.SECRET_KEY,
+        "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
+    }
+
+
+@app.task
+def monitor_agents_task() -> None:
+    agents = Agent.objects.only(
+        "pk", "agent_id", "last_seen", "overdue_time", "offline_time"
+    )
+    ret = [i.agent_id for i in agents if i.status != "online"]
+    config = _get_nats_config()
+    config["agents"] = ret
+    with tempfile.NamedTemporaryFile() as fp:
+        with open(fp.name, "w") as f:
+            json.dump(config, f)
+
+        cmd = ["/usr/local/bin/nats-api", "-c", fp.name, "-m", "monitor"]
+        try:
+            subprocess.run(cmd, capture_output=True, timeout=30)
+        except Exception as e:
+            logger.error(e)
+
+
+@app.task
+def get_wmi_task() -> None:
+    agents = Agent.objects.only(
+        "pk", "agent_id", "last_seen", "overdue_time", "offline_time"
+    )
+    ret = [i.agent_id for i in agents if i.status == "online"]
+    config = _get_nats_config()
+    config["agents"] = ret
+    with tempfile.NamedTemporaryFile() as fp:
+        with open(fp.name, "w") as f:
+            json.dump(config, f)
+
+        cmd = ["/usr/local/bin/nats-api", "-c", fp.name, "-m", "wmi"]
+        try:
+            subprocess.run(cmd, capture_output=True, timeout=30)
+        except Exception as e:
+            logger.error(e)

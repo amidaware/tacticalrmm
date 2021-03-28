@@ -12,7 +12,7 @@ from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .models import Agent
+from .models import Agent, AgentCustomField
 from .serializers import AgentSerializer
 from .tasks import auto_self_agent_update_task
 
@@ -534,6 +534,35 @@ class TestAgentViews(TacticalTestCase):
         data = WinUpdatePolicySerializer(policy).data
         self.assertEqual(data["run_time_days"], [2, 3, 6])
 
+        # test adding custom fields
+        field = baker.make("core.CustomField", model="agent", type="text")
+        edit = {
+            "id": self.agent.pk,
+            "site": site.id,  # type: ignore
+            "description": "asjdk234andasd",
+            "custom_fields": [{"field": field.id, "value": "new value"}],  # type: ignore
+        }
+
+        r = self.client.patch(url, edit, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(
+            AgentCustomField.objects.filter(agent=self.agent, field=field).exists()
+        )
+
+        # test edit custom field
+        edit = {
+            "id": self.agent.pk,
+            "site": site.id,  # type: ignore
+            "description": "asjdk234andasd",
+            "custom_fields": [{"field": field.id, "value": "another value"}],  # type: ignore
+        }
+
+        r = self.client.patch(url, edit, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(
+            AgentCustomField.objects.get(agent=agent, field=field).value,
+            "another value",
+        )
         self.check_not_authenticated("patch", url)
 
     @patch("agents.models.Agent.get_login_token")

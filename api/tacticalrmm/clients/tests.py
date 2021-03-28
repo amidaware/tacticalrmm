@@ -6,7 +6,7 @@ from rest_framework.serializers import ValidationError
 
 from tacticalrmm.test import TacticalTestCase
 
-from .models import Client, Deployment, Site
+from .models import Client, Deployment, Site, ClientCustomField, SiteCustomField
 from .serializers import (
     ClientSerializer,
     ClientTreeSerializer,
@@ -94,7 +94,34 @@ class TestClientViews(TacticalTestCase):
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
 
+        # test add with custom fields
+        field = baker.make("core.CustomField", model="client", type="text")
+        payload = {
+            "client": {"name": "Custom Field Client"},
+            "site": {"name": "Setup  Site"},
+            "custom_fields": [{"field": field.id, "value": "new Value"}],  # type: ignore
+        }
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        client = Client.objects.get(name="Custom Field Client")
+        self.assertTrue(
+            ClientCustomField.objects.filter(client=client, field=field).exists()
+        )
+
         self.check_not_authenticated("post", url)
+
+    def test_get_client(self):
+        # setup data
+        client = baker.make("clients.Client")
+
+        url = f"/clients/{client.id}/client/"  # type: ignore
+        r = self.client.get(url, format="json")
+        serializer = ClientSerializer(client)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data, serializer.data)  # type: ignore
+
+        self.check_not_authenticated("get", url)
 
     def test_edit_client(self):
         # setup data
@@ -117,6 +144,39 @@ class TestClientViews(TacticalTestCase):
         url = f"/clients/{client.id}/client/"  # type: ignore
         r = self.client.put(url, data, format="json")
         self.assertEqual(r.status_code, 400)
+
+        # test add with custom fields new value
+        field = baker.make("core.CustomField", model="client", type="text")
+        payload = {
+            "client": {
+                "id": client.id,  # type: ignore
+                "name": "Custom Field Client",
+            },
+            "custom_fields": [{"field": field.id, "value": "new Value"}],  # type: ignore
+        }
+        r = self.client.put(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        client = Client.objects.get(name="Custom Field Client")
+        self.assertTrue(
+            ClientCustomField.objects.filter(client=client, field=field).exists()
+        )
+
+        # edit custom field value
+        payload = {
+            "client": {
+                "id": client.id,  # type: ignore
+                "name": "Custom Field Client",
+            },
+            "custom_fields": [{"field": field.id, "value": "another value"}],  # type: ignore
+        }
+        r = self.client.put(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        self.assertTrue(
+            ClientCustomField.objects.get(client=client, field=field).value,
+            "another value",
+        )
 
         self.check_not_authenticated("put", url)
 
@@ -201,7 +261,31 @@ class TestClientViews(TacticalTestCase):
         ):
             self.assertFalse(serializer.is_valid(raise_exception=True))
 
+        # test add with custom fields
+        field = baker.make("core.CustomField", model="site", type="text")
+        payload = {
+            "site": {"client": client.id, "name": "Custom Field Site"},  # type: ignore
+            "custom_fields": [{"field": field.id, "value": "new Value"}],  # type: ignore
+        }
+        r = self.client.post(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        site = Site.objects.get(name="Custom Field Site")
+        self.assertTrue(SiteCustomField.objects.filter(site=site, field=field).exists())
+
         self.check_not_authenticated("post", url)
+
+    def test_get_site(self):
+        # setup data
+        site = baker.make("clients.Site")
+
+        url = f"/clients/sites/{site.id}/"  # type: ignore
+        r = self.client.get(url, format="json")
+        serializer = SiteSerializer(site)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data, serializer.data)  # type: ignore
+
+        self.check_not_authenticated("get", url)
 
     def test_edit_site(self):
         # setup data
@@ -222,6 +306,39 @@ class TestClientViews(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertTrue(
             Site.objects.filter(client=client, name="New Site Name").exists()
+        )
+
+        # test add with custom fields new value
+        field = baker.make("core.CustomField", model="site", type="text")
+        payload = {
+            "site": {
+                "id": site.id,  # type: ignore
+                "client": site.client.id,  # type: ignore
+                "name": "Custom Field Site",
+            },
+            "custom_fields": [{"field": field.id, "value": "new Value"}],  # type: ignore
+        }
+        r = self.client.put(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        site = Site.objects.get(name="Custom Field Site")
+        self.assertTrue(SiteCustomField.objects.filter(site=site, field=field).exists())
+
+        # edit custom field value
+        payload = {
+            "site": {
+                "id": site.id,  # type: ignore
+                "client": client.id,  # type: ignore
+                "name": "Custom Field Site",
+            },
+            "custom_fields": [{"field": field.id, "value": "another value"}],  # type: ignore
+        }
+        r = self.client.put(url, payload, format="json")
+        self.assertEqual(r.status_code, 200)
+
+        self.assertTrue(
+            SiteCustomField.objects.get(site=site, field=field).value,
+            "another value",
         )
 
         self.check_not_authenticated("put", url)

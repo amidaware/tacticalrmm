@@ -104,36 +104,36 @@ def edit_agent(request):
         p_serializer.is_valid(raise_exception=True)
         p_serializer.save()
 
-        if "custom_fields" in request.data.keys():
+    if "custom_fields" in request.data.keys():
 
-            for field in request.data["custom_fields"]:
+        for field in request.data["custom_fields"]:
 
-                # get custom field for validation
-                obj = CustomField.objects.get(pk=field["field"])
+            # get custom field for validation
+            obj = CustomField.objects.get(pk=field["field"])
 
-                if obj.default_value and field.value == obj.default_value:
-                    continue
+            if obj.default_value and field.value == obj.default_value:
+                continue
 
-                custom_field = {
-                    "value": field["value"],
-                    "field": field["field"],
-                    "agent": agent.id,
-                }
-                if AgentCustomField.objects.filter(
-                    field=field["field"], agent=agent.id
-                ):
-                    value = AgentCustomField.objects.get(
-                        field=field["field"], agent=agent.id
-                    )
-                    serializer = AgentCustomFieldSerializer(
-                        instance=value, data=custom_field
-                    )
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-                else:
-                    serializer = AgentCustomFieldSerializer(data=custom_field)
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
+            custom_field = {
+                "value": field["value"],
+                "field": field["field"],
+                "agent": agent.id,  # type: ignore
+            }
+            if AgentCustomField.objects.filter(
+                field=field["field"], agent=agent.id  # type: ignore
+            ):
+                value = AgentCustomField.objects.get(
+                    field=field["field"], agent=agent.id  # type: ignore
+                )
+                serializer = AgentCustomFieldSerializer(
+                    instance=value, data=custom_field
+                )
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+            else:
+                serializer = AgentCustomFieldSerializer(data=custom_field)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
 
     return Response("ok")
 

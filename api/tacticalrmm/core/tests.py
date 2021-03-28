@@ -1,9 +1,10 @@
 from unittest.mock import patch
 
-from model_bakery import baker, seq
+from model_bakery import baker
 
-from core.models import CoreSettings
-from core.tasks import core_maintenance_tasks
+from .models import CoreSettings, CustomField
+from .tasks import core_maintenance_tasks
+from .serializers import CustomFieldSerializer
 from tacticalrmm.test import TacticalTestCase
 
 
@@ -42,7 +43,7 @@ class TestCoreTasks(TacticalTestCase):
         url = "/core/editsettings/"
 
         # setup
-        policies = baker.make("Policy", _quantity=2)
+        policies = baker.make("automation.Policy", _quantity=2)
         # test normal request
         data = {
             "smtp_from_email": "newexample@example.com",
@@ -59,14 +60,14 @@ class TestCoreTasks(TacticalTestCase):
 
         # test adding policy
         data = {
-            "workstation_policy": policies[0].id,
-            "server_policy": policies[1].id,
+            "workstation_policy": policies[0].id,  # type: ignore
+            "server_policy": policies[1].id,  # type: ignore
         }
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(CoreSettings.objects.first().server_policy.id, policies[1].id)
+        self.assertEqual(CoreSettings.objects.first().server_policy.id, policies[1].id)  # type: ignore
         self.assertEqual(
-            CoreSettings.objects.first().workstation_policy.id, policies[0].id
+            CoreSettings.objects.first().workstation_policy.id, policies[0].id  # type: ignore
         )
 
         self.assertEqual(generate_all_agent_checks_task.call_count, 2)
@@ -128,3 +129,97 @@ class TestCoreTasks(TacticalTestCase):
         remove_orphaned_win_tasks.assert_called()
 
         self.check_not_authenticated("post", url)
+
+    def test_get_custom_fields(self):
+        url = "/core/customfields/"
+
+        # setup
+        custom_fields = baker.make("core.CustomField", _quantity=2)
+
+        r = self.client.get(url)
+        serializer = CustomFieldSerializer(custom_fields, many=True)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data), 2)  # type: ignore
+        self.assertEqual(r.data, serializer.data)  # type: ignore
+
+        self.check_not_authenticated("get", url)
+
+    def test_get_custom_fields_by_model(self):
+        url = "/core/customfields/"
+
+        # setup
+        custom_fields = baker.make("core.CustomField", model="agent", _quantity=5)
+        baker.make("core.CustomField", model="client", _quantity=5)
+
+        # will error if request invalid
+        r = self.client.patch(url, {"invalid": ""})
+        self.assertEqual(r.status_code, 400)
+
+        data = {"model": "agent"}
+        r = self.client.patch(url, data)
+        serializer = CustomFieldSerializer(custom_fields, many=True)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data), 5)  # type: ignore
+        self.assertEqual(r.data, serializer.data)  # type: ignore
+
+        self.check_not_authenticated("patch", url)
+
+    def test_add_custom_field(self):
+        url = "/core/customfields/"
+
+        data = {"model": "client", "type": "text", "name": "Field"}
+        r = self.client.patch(url, data)
+        self.assertEqual(r.status_code, 200)
+
+        self.check_not_authenticated("post", url)
+
+    def test_get_custom_field(self):
+        # setup
+        custom_field = baker.make("core.CustomField")
+
+        # test not found
+        r = self.client.get("/core/customfields/500/")
+        self.assertEqual(r.status_code, 404)
+
+        url = f"/core/customfields/{custom_field.id}/"  # type: ignore
+        r = self.client.get(url)
+        serializer = CustomFieldSerializer(custom_field)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data, serializer.data)  # type: ignore
+
+        self.check_not_authenticated("get", url)
+
+    def test_update_custom_field(self):
+        # setup
+        custom_field = baker.make("core.CustomField")
+
+        # test not found
+        r = self.client.put("/core/customfields/500/")
+        self.assertEqual(r.status_code, 404)
+
+        url = f"/core/customfields/{custom_field.id}/"  # type: ignore
+        data = {"type": "single", "options": ["ione", "two", "three"]}
+        r = self.client.put(url, data)
+        self.assertEqual(r.status_code, 200)
+
+        new_field = CustomField.objects.get(pk=custom_field.id)  # type: ignore
+        self.assertEqual(new_field.type, data["type"])
+        self.assertEqual(new_field.options, data["options"])
+
+        self.check_not_authenticated("put", url)
+
+    def test_delete_custom_field(self):
+        # setup
+        custom_field = baker.make("core.CustomField")
+
+        # test not found
+        r = self.client.delete("/core/customfields/500/")
+        self.assertEqual(r.status_code, 404)
+
+        url = f"/core/customfields/{custom_field.id}/"  # type: ignore
+        r = self.client.delete(url)
+        self.assertEqual(r.status_code, 200)
+
+        self.assertFalse(CustomField.objects.filter(pk=custom_field.id).exists())  # type: ignore
+
+        self.check_not_authenticated("delete", url)

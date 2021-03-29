@@ -51,7 +51,13 @@
           {{ props.row.type }}
         </q-td>
         <!-- default value -->
-        <q-td>
+        <q-td v-if="props.row.type === 'checkbox'">
+          {{ props.row.checkbox_value }}
+        </q-td>
+        <q-td v-else-if="props.row.type === 'multiple'">
+          {{ props.row.default_values_multiple }}
+        </q-td>
+        <q-td v-else>
           {{ props.row.default_value }}
         </q-td>
         <!-- required -->
@@ -65,7 +71,7 @@
 
 <script>
 import CustomFieldsForm from "@/components/modals/coresettings/CustomFieldsForm";
-import mixins from "@/mixins/mixins"
+import mixins from "@/mixins/mixins";
 
 export default {
   name: "CustomFieldsTable",
@@ -88,7 +94,14 @@ export default {
           align: "left",
           sortable: true,
         },
-        { name: "type", label: "Field Type", field: "type", align: "left", sortable: true, format: (string => this.capitalize(string)) },
+        {
+          name: "type",
+          label: "Field Type",
+          field: "type",
+          align: "left",
+          sortable: true,
+          format: string => this.capitalize(string),
+        },
         { name: "default_value", label: "Default Value", field: "default_value", align: "left", sortable: true },
         { name: "required", label: "Required", field: "required", align: "left", sortable: true },
       ],

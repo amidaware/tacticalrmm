@@ -244,6 +244,13 @@ class CustomField(models.Model):
     name = models.TextField(null=True, blank=True)
     default_value = models.TextField(null=True, blank=True)
     required = models.BooleanField(blank=True, default=False)
+    checkbox_value = models.BooleanField(default=False)
+    default_values_multiple = ArrayField(
+        models.CharField(max_length=255, null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
 
     class Meta:
         unique_together = (("model", "name"),)

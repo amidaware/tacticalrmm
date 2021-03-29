@@ -49,6 +49,10 @@
             hide-dropdown-icon
             input-debounce="0"
             new-value-mode="add"
+            @input="
+              localField.default_value = '';
+              localField.default_values_multiple = [];
+            "
           />
         </q-card-section>
         <q-card-section>
@@ -87,19 +91,31 @@
           <q-toggle
             v-else-if="localField.type == 'checkbox'"
             label="Default Value"
-            v-model="localField.default_value"
+            v-model="localField.checkbox_value"
             color="green"
           />
 
-          <!-- For dropdowns -->
+          <!-- Dropdown Single -->
           <q-select
-            v-else-if="localField.type === 'single' || localField.type === 'multiple'"
+            v-else-if="localField.type === 'single'"
             label="Default Value"
             :options="localField.options"
             outlined
             dense
-            :multiple="localField.type === 'multiple'"
             v-model="localField.default_value"
+            :rules="[...defaultValueRules]"
+            reactive-rules
+          />
+
+          <!-- Dropdown Multiple -->
+          <q-select
+            v-else-if="localField.type === 'multiple'"
+            label="Default Value(s)"
+            :options="localField.options"
+            outlined
+            dense
+            multiple
+            v-model="localField.default_values_multiple"
             :rules="[...defaultValueRules]"
             reactive-rules
           />
@@ -149,6 +165,8 @@ export default {
         options: [],
         default_value: "",
         required: false,
+        checkbox_value: false,
+        default_values_multiple: [],
       },
       modelOptions: [
         { label: "Client", value: "client" },
@@ -181,6 +199,8 @@ export default {
   methods: {
     submit() {
       this.$q.loading.show();
+
+      if (this.localField.type === "multiple") delete this.localField.default_value;
 
       let data = {
         ...this.localField,

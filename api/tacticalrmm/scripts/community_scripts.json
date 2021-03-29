@@ -77,11 +77,12 @@
         "shell": "powershell"
     },
     {
-        "filename": "bitlocker_create_status_report.ps1",
+        "filename": "Win_Bitlocker_Create_Status_Report.ps1",
         "submittedBy": "https://github.com/ThatsNASt",
         "name": "Create Bitlocker Status Report",
         "description": "Creates a Bitlocker status report.",
-        "shell": "powershell"
+        "shell": "powershell",
+        "category": "TRMM (Win):Storage"
     },
     {
         "filename": "bitlocker_retrieve_status_report.ps1",
@@ -225,24 +226,35 @@
         "shell": "cmd"
     },
     {
-        "filename": "AD_Check_And_Enable_AD_Recycle_Bin.ps1",
+        "filename": "Win_AD_Check_And_Enable_AD_Recycle_Bin.ps1",
         "submittedBy": "https://github.com/silversword411",
         "name": "AD - Check and Enable AD Recycle Bin",
         "description": "Only run on Domain Controllers, checks for Active Directory Recycle Bin and enables if not already enabled",
-        "shell": "powershell"
+        "shell": "powershell",
+        "category": "TRMM (Win):Active Directory"
     },
     {
         "filename": "Check_Events_for_Bluescreens.ps1",
         "submittedBy": "https://github.com/dinger1986",
         "name": "Event Viewer - Check for Bluescreens",
         "description": "This will check for Bluescreen events on your system",
-        "shell": "powershell"
+        "shell": "powershell",
+        "category": "TRMM (Win):Monitoring"
     },
     {
         "filename": "Rename_Computer.ps1",
         "submittedBy": "https://github.com/silversword411",
         "name": "Rename Computer",
         "description": "Rename computer. First parameter will be new PC name. 2nd parameter if yes will auto-reboot machine",
-        "shell": "powershell"
+        "shell": "powershell",
+        "category": "TRMM (Win):Other"
+    },
+    {
+        "filename": "Win_MS_Install_All_Updates.ps1",
+        "submittedBy": "https://github.com/dinger1986",
+        "name": "Install all Updates",
+        "description": "Install All updating for Windows 10 using powershell",
+        "shell": "powershell",
+        "category": "TRMM (Win):Updates"
     }
 ]

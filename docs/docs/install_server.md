@@ -22,9 +22,17 @@ apt install -y wget curl sudo
 apt -y upgrade
 ```
 If a new kernel is installed, then reboot the server with the `reboot` command<br/><br/>
-Create a linux user to run the rmm and add it to the sudoers group.<br/>For this example we'll be using a user named `tactical` but feel free to create whatever name you want.
+Create a linux user named `tactical` to run the rmm and add it to the sudoers group.<br/>
+
+**For Ubuntu**:
 ```bash
 adduser tactical
+usermod -a -G sudo tactical
+```
+
+**For Debian**:
+```bash
+useradd -m -s /bin/bash tactical
 usermod -a -G sudo tactical
 ```
 

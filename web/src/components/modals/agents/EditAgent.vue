@@ -131,6 +131,7 @@
                   <q-checkbox v-model="agent.overdue_email_alert" label="Get overdue email alerts" />
                   <q-checkbox v-model="agent.overdue_text_alert" label="Get overdue sms alerts" />
                 </q-card-section>
+                <div class="text-h6">Custom Fields</div>
                 <q-card-section v-for="field in customFields" :key="field.id">
                   <CustomField v-model="custom_fields[field.name]" :field="field" />
                 </q-card-section>
@@ -202,9 +203,16 @@ export default {
         for (let field of this.customFields) {
           const value = r.data.custom_fields.find(value => value.field === field.id);
 
-          if (!!value) this.$set(this.custom_fields, field.name, value.value);
-          else if (!!field.default_value) this.$set(this.custom_fields, field.name, field.default_value);
-          else this.$set(this.custom_fields, field.name, "");
+          if (field.type === "multiple") {
+            if (value) this.$set(this.custom_fields, field.name, value.value);
+            else this.$set(this.custom_fields, field.name, []);
+          } else if (field.type === "checkbox") {
+            if (value) this.$set(this.custom_fields, field.name, value.value);
+            else this.$set(this.custom_fields, field.name, false);
+          } else {
+            if (value) this.$set(this.custom_fields, field.name, value.value);
+            else this.$set(this.custom_fields, field.name, "");
+          }
         }
       });
     },
@@ -242,7 +250,10 @@ export default {
           this.$emit("edited");
           this.notifySuccess("Agent was edited!");
         })
-        .catch(() => this.notifyError("Something went wrong"));
+        .catch(e => {
+          this.notifyError("Something went wrong")
+          console.log({e})
+        });
     },
   },
   computed: {

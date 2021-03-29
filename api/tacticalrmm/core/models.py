@@ -242,9 +242,9 @@ class CustomField(models.Model):
         default=list,
     )
     name = models.TextField(null=True, blank=True)
-    default_value = models.TextField(null=True, blank=True)
     required = models.BooleanField(blank=True, default=False)
-    checkbox_value = models.BooleanField(default=False)
+    default_value_string = models.TextField(null=True, blank=True)
+    default_value_bool = models.BooleanField(default=False)
     default_values_multiple = ArrayField(
         models.CharField(max_length=255, null=True, blank=True),
         null=True,
@@ -257,3 +257,12 @@ class CustomField(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def default_value(self):
+        if self.type == "multiple":
+            return self.default_values_multiple
+        elif self.type == "checkbox":
+            return self.default_value_bool
+        else:
+            return self.default_value_string

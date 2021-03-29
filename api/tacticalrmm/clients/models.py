@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 
 from agents.models import Agent
 from logs.models import BaseAuditModel
@@ -250,7 +251,26 @@ class ClientCustomField(models.Model):
         on_delete=models.CASCADE,
     )
 
-    value = models.TextField(null=True, blank=True)
+    string_value = models.TextField(null=True, blank=True)
+    bool_value = models.BooleanField(blank=True, default=False)
+    multiple_value = ArrayField(
+        models.TextField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
+
+    def __str__(self):
+        return self.field.name
+
+    @property
+    def value(self):
+        if self.field.type == "multiple":
+            return self.multiple_value
+        elif self.field.type == "checkbox":
+            return self.bool_value
+        else:
+            return self.string_value
 
 
 class SiteCustomField(models.Model):
@@ -266,4 +286,23 @@ class SiteCustomField(models.Model):
         on_delete=models.CASCADE,
     )
 
-    value = models.TextField(null=True, blank=True)
+    string_value = models.TextField(null=True, blank=True)
+    bool_value = models.BooleanField(blank=True, default=False)
+    multiple_value = ArrayField(
+        models.TextField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
+
+    def __str__(self):
+        return self.field.name
+
+    @property
+    def value(self):
+        if self.field.type == "multiple":
+            return self.multiple_value
+        elif self.field.type == "checkbox":
+            return self.bool_value
+        else:
+            return self.string_value

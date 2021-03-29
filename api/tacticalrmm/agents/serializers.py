@@ -122,7 +122,20 @@ class AgentTableSerializer(serializers.ModelSerializer):
 class AgentCustomFieldSerializer(serializers.ModelSerializer):
     class Meta:
         model = AgentCustomField
-        fields = "__all__"
+        fields = (
+            "id",
+            "field",
+            "agent",
+            "value",
+            "string_value",
+            "bool_value",
+            "multiple_value",
+        )
+        extra_kwargs = {
+            "string_value": {"write_only": True},
+            "bool_value": {"write_only": True},
+            "multiple_value": {"write_only": True},
+        }
 
 
 class AgentEditSerializer(serializers.ModelSerializer):

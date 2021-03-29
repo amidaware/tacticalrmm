@@ -108,17 +108,9 @@ def edit_agent(request):
 
         for field in request.data["custom_fields"]:
 
-            # get custom field for validation
-            obj = CustomField.objects.get(pk=field["field"])
+            custom_field = field
+            custom_field["agent"] = agent.id  # type: ignore
 
-            if obj.default_value and field.value == obj.default_value:
-                continue
-
-            custom_field = {
-                "value": field["value"],
-                "field": field["field"],
-                "agent": agent.id,  # type: ignore
-            }
             if AgentCustomField.objects.filter(
                 field=field["field"], agent=agent.id  # type: ignore
             ):

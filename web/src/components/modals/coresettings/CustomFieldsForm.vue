@@ -9,6 +9,7 @@
         </q-btn>
       </q-bar>
       <q-form @submit="submit">
+        <!-- model select -->
         <q-card-section>
           <q-select
             label="Target"
@@ -17,13 +18,16 @@
             emit-value
             outlined
             dense
+            :disable="editing"
             v-model="localField.model"
             :rules="[val => !!val || '*Required']"
           />
         </q-card-section>
+        <!-- name -->
         <q-card-section>
           <q-input label="Name" outlined dense v-model="localField.name" :rules="[val => !!val || '*Required']" />
         </q-card-section>
+        <!-- type select -->
         <q-card-section>
           <q-select
             label="Field Type"
@@ -33,10 +37,12 @@
             emit-value
             outlined
             dense
+            :disable="editing"
             v-model="localField.type"
             :rules="[val => !!val || '*Required']"
           />
         </q-card-section>
+        <!-- input options select for single and multiple input type -->
         <q-card-section v-if="localField.type === 'single' || localField.type == 'multiple'">
           <q-select
             dense
@@ -48,27 +54,29 @@
             multiple
             hide-dropdown-icon
             input-debounce="0"
-            new-value-mode="add"
+            new-value-mode="add-unique"
             @input="
-              localField.default_value = '';
+              localField.default_value_string = '';
               localField.default_values_multiple = [];
             "
           />
         </q-card-section>
-        <q-card-section>
+        <!-- default value -->
+        <q-card-section v-if="!!localField.type">
           <!-- For datetime field -->
           <q-input
             v-if="localField.type === 'datetime'"
             outlined
             dense
-            v-model="localField.default_value"
+            label="Default Value"
+            v-model="localField.default_value_string"
             :rules="[...defaultValueRules]"
             reactive-rules
           >
             <template v-slot:append>
               <q-icon name="event" class="cursor-pointer">
                 <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-date v-model="localField.default_value" mask="YYYY-MM-DD HH:mm">
+                  <q-date v-model="localField.default_value_string" mask="YYYY-MM-DD HH:mm">
                     <div class="row items-center justify-end">
                       <q-btn v-close-popup label="Close" color="primary" flat />
                     </div>
@@ -77,7 +85,7 @@
               </q-icon>
               <q-icon name="access_time" class="cursor-pointer">
                 <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-time v-model="localField.default_value" mask="YYYY-MM-DD HH:mm">
+                  <q-time v-model="localField.default_value_string" mask="YYYY-MM-DD HH:mm">
                     <div class="row items-center justify-end">
                       <q-btn v-close-popup label="Close" color="primary" flat />
                     </div>
@@ -91,7 +99,7 @@
           <q-toggle
             v-else-if="localField.type == 'checkbox'"
             label="Default Value"
-            v-model="localField.checkbox_value"
+            v-model="localField.default_value_bool"
             color="green"
           />
 
@@ -102,7 +110,7 @@
             :options="localField.options"
             outlined
             dense
-            v-model="localField.default_value"
+            v-model="localField.default_value_string"
             :rules="[...defaultValueRules]"
             reactive-rules
           />
@@ -127,7 +135,7 @@
             :type="localField.type === 'text' ? 'text' : 'number'"
             outlined
             dense
-            v-model="localField.default_value"
+            v-model="localField.default_value_string"
             :rules="[...defaultValueRules]"
             reactive-rules
           />
@@ -163,9 +171,9 @@ export default {
         model: "",
         type: "",
         options: [],
-        default_value: "",
         required: false,
-        checkbox_value: false,
+        default_value_string: "",
+        default_value_bool: false,
         default_values_multiple: [],
       },
       modelOptions: [
@@ -200,8 +208,6 @@ export default {
     submit() {
       this.$q.loading.show();
 
-      if (this.localField.type === "multiple") delete this.localField.default_value;
-
       let data = {
         ...this.localField,
       };
@@ -229,15 +235,17 @@ export default {
           })
           .catch(e => {
             this.$q.loading.hide();
+            console.log({ e });
             this.notifyError("There was an error adding the custom field");
           });
       }
     },
     clear() {
       this.localField.options = [];
-      this.localField.default_value =
-        this.localField.type === "single" || this.localField.type === "multiple" ? [] : "";
       this.localField.required = false;
+      this.localField.default_value_string = "";
+      this.localField.default_values_multiple = [];
+      this.localField.default_value_bool = false;
     },
     show() {
       this.$refs.dialog.show();

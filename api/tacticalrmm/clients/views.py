@@ -57,11 +57,10 @@ class GetAddClients(APIView):
         # save custom fields
         if "custom_fields" in request.data.keys():
             for field in request.data["custom_fields"]:
-                custom_field = {
-                    "value": field["value"],
-                    "field": field["field"],
-                    "client": client.id,
-                }
+
+                custom_field = field
+                custom_field["client"] = client.id
+
                 serializer = ClientCustomFieldSerializer(data=custom_field)
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
@@ -87,17 +86,9 @@ class GetUpdateClient(APIView):
         if "custom_fields" in request.data.keys():
             for field in request.data["custom_fields"]:
 
-                # get custom field for validation
-                obj = CustomField.objects.get(pk=field["field"])
+                custom_field = field
+                custom_field["client"] = pk
 
-                if obj.default_value and field.value == obj.default_value:
-                    continue
-
-                custom_field = {
-                    "value": field["value"],
-                    "field": field["field"],
-                    "client": pk,
-                }
                 if ClientCustomField.objects.filter(field=field["field"], client=pk):
                     value = ClientCustomField.objects.get(
                         field=field["field"], client=pk
@@ -158,11 +149,8 @@ class GetAddSites(APIView):
 
             for field in request.data["custom_fields"]:
 
-                custom_field = {
-                    "value": field["value"],
-                    "field": field["field"],
-                    "site": site.id,
-                }
+                custom_field = field
+                custom_field["site"] = site.id
 
                 serializer = SiteCustomFieldSerializer(data=custom_field)
                 serializer.is_valid(raise_exception=True)
@@ -194,17 +182,9 @@ class GetUpdateSite(APIView):
 
             for field in request.data["custom_fields"]:
 
-                # get custom field for validation
-                obj = CustomField.objects.get(pk=field["field"])
+                custom_field = field
+                custom_field["site"] = pk
 
-                if obj.default_value and field.value == obj.default_value:
-                    continue
-
-                custom_field = {
-                    "value": field["value"],
-                    "field": field["field"],
-                    "site": pk,
-                }
                 if SiteCustomField.objects.filter(field=field["field"], site=pk):
                     value = SiteCustomField.objects.get(field=field["field"], site=pk)
                     serializer = SiteCustomFieldSerializer(

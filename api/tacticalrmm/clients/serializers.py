@@ -6,7 +6,20 @@ from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 class SiteCustomFieldSerializer(ModelSerializer):
     class Meta:
         model = SiteCustomField
-        fields = "__all__"
+        fields = (
+            "id",
+            "field",
+            "site",
+            "value",
+            "string_value",
+            "bool_value",
+            "multiple_value",
+        )
+        extra_kwargs = {
+            "string_value": {"write_only": True},
+            "bool_value": {"write_only": True},
+            "multiple_value": {"write_only": True},
+        }
 
 
 class SiteSerializer(ModelSerializer):
@@ -35,7 +48,20 @@ class SiteSerializer(ModelSerializer):
 class ClientCustomFieldSerializer(ModelSerializer):
     class Meta:
         model = ClientCustomField
-        fields = "__all__"
+        fields = (
+            "id",
+            "field",
+            "client",
+            "value",
+            "string_value",
+            "bool_value",
+            "multiple_value",
+        )
+        extra_kwargs = {
+            "string_value": {"write_only": True},
+            "bool_value": {"write_only": True},
+            "multiple_value": {"write_only": True},
+        }
 
 
 class ClientSerializer(ModelSerializer):

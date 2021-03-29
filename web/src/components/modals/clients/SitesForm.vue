@@ -142,9 +142,27 @@ export default {
           for (let field of this.customFields) {
             const value = r.data.custom_fields.find(value => value.field === field.id);
 
-            if (!!value) this.$set(this.custom_fields, field.name, value.value);
-            else if (!!field.default_value) this.$set(this.custom_fields, field.name, field.default_value);
-            else this.$set(this.custom_fields, field.name, "");
+            // Set correct value for custom field
+            if (
+              field.type === "text" ||
+              field.type === "number" ||
+              field.type === "datetime" ||
+              field.type === "single"
+            ) {
+              if (!!value) this.$set(this.custom_fields, field.name, value.value);
+              else if (!!field.default_value) this.$set(this.custom_fields, field.name, field.default_value);
+              else this.$set(this.custom_fields, field.name, "");
+            } else if (field.type === "multiple") {
+              if (!!value) this.$set(this.custom_fields, field.name, value.multiple_value);
+              else if (!!field.multiple_default_value)
+                this.$set(this.custom_fields, field.name, field.multiple_default_value);
+              else this.$set(this.custom_fields, field.name, []);
+            } else if (field.type === "checkbox") {
+              if (!!value) this.$set(this.custom_fields, field.name, value.checkbox_value);
+              else if (!!field.checkbox_default_value)
+                this.$set(this.custom_fields, field.name, field.checkbox_default_value);
+              else this.$set(this.custom_fields, field.name, false);
+            }
           }
         })
         .catch(e => {

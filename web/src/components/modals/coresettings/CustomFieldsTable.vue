@@ -48,17 +48,17 @@
         </q-td>
         <!-- type -->
         <q-td>
-          {{ props.row.type }}
+          {{ capitalize(props.row.type) }}
         </q-td>
         <!-- default value -->
         <q-td v-if="props.row.type === 'checkbox'">
-          {{ props.row.checkbox_value }}
+          {{ props.row.default_value_bool }}
         </q-td>
         <q-td v-else-if="props.row.type === 'multiple'">
-          {{ props.row.default_values_multiple }}
+          <span v-if="props.row.default_values_multiple.length > 0">{{ props.row.default_values_multiple }}</span>
         </q-td>
         <q-td v-else>
-          {{ props.row.default_value }}
+          {{ props.row.default_value_string }}
         </q-td>
         <!-- required -->
         <q-td>
@@ -100,7 +100,6 @@ export default {
           field: "type",
           align: "left",
           sortable: true,
-          format: string => this.capitalize(string),
         },
         { name: "default_value", label: "Default Value", field: "default_value", align: "left", sortable: true },
         { name: "required", label: "Required", field: "required", align: "left", sortable: true },

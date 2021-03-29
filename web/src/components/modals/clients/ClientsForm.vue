@@ -110,6 +110,7 @@ export default {
         custom_fields: this.formatCustomFields(this.customFields, this.custom_fields),
       };
 
+      console.log(data);
       this.$axios
         .put(`/clients/${this.client.id}/client/`, data)
         .then(r => {
@@ -138,9 +139,16 @@ export default {
           for (let field of this.customFields) {
             const value = r.data.custom_fields.find(value => value.field === field.id);
 
-            if (!!value) this.$set(this.custom_fields, field.name, value.value);
-            else if (!!field.default_value) this.$set(this.custom_fields, field.name, field.default_value);
-            else this.$set(this.custom_fields, field.name, "");
+            if (field.type === "multiple") {
+              if (value) this.$set(this.custom_fields, field.name, value.value);
+              else this.$set(this.custom_fields, field.name, []);
+            } else if (field.type === "checkbox") {
+              if (value) this.$set(this.custom_fields, field.name, value.value);
+              else this.$set(this.custom_fields, field.name, false);
+            } else {
+              if (value) this.$set(this.custom_fields, field.name, value.value);
+              else this.$set(this.custom_fields, field.name, "");
+            }
           }
         })
         .catch(e => {

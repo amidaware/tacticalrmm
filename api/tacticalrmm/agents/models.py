@@ -5,6 +5,7 @@ import time
 from collections import Counter
 from distutils.version import LooseVersion
 from typing import Any
+from django.contrib.postgres.fields import ArrayField
 
 import msgpack
 import validators
@@ -851,4 +852,23 @@ class AgentCustomField(models.Model):
         on_delete=models.CASCADE,
     )
 
-    value = models.TextField(null=True, blank=True)
+    string_value = models.TextField(null=True, blank=True)
+    bool_value = models.BooleanField(blank=True, default=False)
+    multiple_value = ArrayField(
+        models.TextField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
+
+    def __str__(self):
+        return self.field
+
+    @property
+    def value(self):
+        if self.field.type == "multiple":
+            return self.multiple_value
+        elif self.field.type == "checkbox":
+            return self.bool_value
+        else:
+            return self.string_value

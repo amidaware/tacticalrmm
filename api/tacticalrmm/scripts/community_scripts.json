@@ -1,31 +1,35 @@
 [
     {
-        "filename": "ClearFirefoxCache.ps1",
+        "filename": "Win_Clear_Firefox_Cache.ps1",
         "submittedBy": "https://github.com/Omnicef",
         "name": "Clear Firefox Cache",
         "description": "This script will clean up Mozilla Firefox for all users.",
-        "shell": "powershell"
+        "shell": "powershell",
+        "category": "TRMM (Win):Browsers"
     },
     {
-        "filename": "ClearGoogleChromeCache.ps1",
+        "filename": "Win_Clear_Google_Chrome_Cache.ps1",
         "submittedBy": "https://github.com/Omnicef",
         "name": "Clear Google Chrome Cache",
         "description": "This script will clean up Google Chrome for all users.",
-        "shell": "powershell"
+        "shell": "powershell",
+        "category": "TRMM (Win):Browsers"
     },
     {
-        "filename": "Reset-WindowsUpdate.ps1",
+        "filename": "Win_Reset_Windows_Update.ps1",
         "submittedBy": "https://github.com/Omnicef",
         "name": "Reset Windows Update",
         "description": "This script will reset all of the Windows Updates components to DEFAULT SETTINGS.",
-        "shell": "powershell"
+        "shell": "powershell",
+        "category": "TRMM (Win):Updates"
     },
     {
-        "filename": "Start-Cleanup.ps1",
+        "filename": "Win_Start_Cleanup.ps1",
         "submittedBy": "https://github.com/Omnicef",
         "name": "Cleanup C: drive",
         "description": "Cleans the C: drive's Window Temperary files, Windows SoftwareDistribution folder, the local users Temperary folder, IIS logs (if applicable) and empties the recycling bin. All deleted files will go into a log transcript in $env:TEMP. By default this script leaves files that are newer than 7 days old however this variable can be edited.",
-        "shell": "powershell"
+        "shell": "powershell",
+        "category": "TRMM (Win):Other"
     },
     {
         "filename": "WindowsDefenderFullScanBackground.ps1",
@@ -42,11 +46,12 @@
         "shell": "powershell"
     },
     {
-        "filename": "speedtest.py",
+        "filename": "Speedtest.py",
         "submittedBy": "https://github.com/wh1te909",
-        "name": "Speed Test",
+        "name": "Speed Test (Python)",
         "description": "Runs a Speed Test",
-        "shell": "python"
+        "shell": "python",
+        "category": "TRMM (Win):Network"
     },
     {
         "filename": "Rename-Installed-App.ps1",
@@ -144,9 +149,10 @@
     {
         "filename": "Speedtest.ps1",
         "submittedBy": "https://github.com/dinger1986",
-        "name": "PS Speed Test",
+        "name": "Speed Test (PS)",
         "description": "Powershell speed test (win 10 or server2016+)",
-        "shell": "powershell"
+        "shell": "powershell",
+        "category": "TRMM (Win):Network"
     },
     {
         "filename": "SyncTime.bat",

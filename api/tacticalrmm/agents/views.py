@@ -27,13 +27,13 @@ from tacticalrmm.utils import (
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
-from .models import Agent, Note, RecoveryAction, AgentCustomField
+from .models import Agent, AgentCustomField, Note, RecoveryAction
 from .serializers import (
+    AgentCustomFieldSerializer,
     AgentEditSerializer,
     AgentHostnameSerializer,
     AgentOverdueActionSerializer,
     AgentSerializer,
-    AgentCustomFieldSerializer,
     AgentTableSerializer,
     NoteSerializer,
     NotesSerializer,

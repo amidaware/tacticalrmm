@@ -2,10 +2,11 @@ from unittest.mock import patch
 
 from model_bakery import baker
 
-from .models import CoreSettings, CustomField
-from .tasks import core_maintenance_tasks
-from .serializers import CustomFieldSerializer
 from tacticalrmm.test import TacticalTestCase
+
+from .models import CoreSettings, CustomField
+from .serializers import CustomFieldSerializer
+from .tasks import core_maintenance_tasks
 
 
 class TestCoreTasks(TacticalTestCase):

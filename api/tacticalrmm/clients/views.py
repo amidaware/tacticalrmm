@@ -14,14 +14,14 @@ from agents.models import Agent
 from core.models import CoreSettings, CustomField
 from tacticalrmm.utils import generate_installer_exe, notify_error
 
-from .models import Client, Deployment, Site, ClientCustomField, SiteCustomField
+from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 from .serializers import (
+    ClientCustomFieldSerializer,
     ClientSerializer,
     ClientTreeSerializer,
     DeploymentSerializer,
-    SiteSerializer,
-    ClientCustomFieldSerializer,
     SiteCustomFieldSerializer,
+    SiteSerializer,
 )
 
 

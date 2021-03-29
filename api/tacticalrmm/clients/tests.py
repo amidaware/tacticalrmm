@@ -6,7 +6,7 @@ from rest_framework.serializers import ValidationError
 
 from tacticalrmm.test import TacticalTestCase
 
-from .models import Client, Deployment, Site, ClientCustomField, SiteCustomField
+from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 from .serializers import (
     ClientSerializer,
     ClientTreeSerializer,

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Agent, Note, RecoveryAction, AgentCustomField
+from .models import Agent, AgentCustomField, Note, RecoveryAction
 
 admin.site.register(Agent)
 admin.site.register(RecoveryAction)

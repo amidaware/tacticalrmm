@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Client, Deployment, Site, ClientCustomField, SiteCustomField
+from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 
 admin.site.register(Client)
 admin.site.register(Site)

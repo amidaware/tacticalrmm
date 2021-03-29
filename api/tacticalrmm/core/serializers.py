@@ -1,4 +1,3 @@
-from django.db.models import fields
 import pytz
 from rest_framework import serializers
 

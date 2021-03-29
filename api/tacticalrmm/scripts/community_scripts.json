@@ -14,20 +14,6 @@
         "shell": "powershell"
     },
     {
-        "filename": "InstallAdobeReader.ps1",
-        "submittedBy": "https://github.com/Omnicef",
-        "name": "Install Adobe Reader DC",
-        "description": "Installs Adobe Reader DC.",
-        "shell": "powershell"
-    },
-    {
-        "filename": "InstallDuplicati.ps1",
-        "submittedBy": "https://github.com/Omnicef",
-        "name": "Install Duplicati",
-        "description": "This script installs Duplicati 2.0.5.1 as a service.",
-        "shell": "powershell"
-    },
-    {
         "filename": "Reset-WindowsUpdate.ps1",
         "submittedBy": "https://github.com/Omnicef",
         "name": "Reset Windows Update",
@@ -242,7 +228,7 @@
         "category": "TRMM (Win):Monitoring"
     },
     {
-        "filename": "Rename_Computer.ps1",
+        "filename": "Win_Rename_Computer.ps1",
         "submittedBy": "https://github.com/silversword411",
         "name": "Rename Computer",
         "description": "Rename computer. First parameter will be new PC name. 2nd parameter if yes will auto-reboot machine",

@@ -99,7 +99,7 @@ class TestClientViews(TacticalTestCase):
         payload = {
             "client": {"name": "Custom Field Client"},
             "site": {"name": "Setup  Site"},
-            "custom_fields": [{"field": field.id, "value": "new Value"}],  # type: ignore
+            "custom_fields": [{"field": field.id, "string_value": "new Value"}],  # type: ignore
         }
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
@@ -146,13 +146,13 @@ class TestClientViews(TacticalTestCase):
         self.assertEqual(r.status_code, 400)
 
         # test add with custom fields new value
-        field = baker.make("core.CustomField", model="client", type="text")
+        field = baker.make("core.CustomField", model="client", type="checkbox")
         payload = {
             "client": {
                 "id": client.id,  # type: ignore
                 "name": "Custom Field Client",
             },
-            "custom_fields": [{"field": field.id, "value": "new Value"}],  # type: ignore
+            "custom_fields": [{"field": field.id, "bool_value": True}],  # type: ignore
         }
         r = self.client.put(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
@@ -168,14 +168,13 @@ class TestClientViews(TacticalTestCase):
                 "id": client.id,  # type: ignore
                 "name": "Custom Field Client",
             },
-            "custom_fields": [{"field": field.id, "value": "another value"}],  # type: ignore
+            "custom_fields": [{"field": field.id, "bool_value": False}],  # type: ignore
         }
         r = self.client.put(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
 
-        self.assertTrue(
-            ClientCustomField.objects.get(client=client, field=field).value,
-            "another value",
+        self.assertFalse(
+            ClientCustomField.objects.get(client=client, field=field).value
         )
 
         self.check_not_authenticated("put", url)
@@ -262,10 +261,15 @@ class TestClientViews(TacticalTestCase):
             self.assertFalse(serializer.is_valid(raise_exception=True))
 
         # test add with custom fields
-        field = baker.make("core.CustomField", model="site", type="text")
+        field = baker.make(
+            "core.CustomField",
+            model="site",
+            type="single",
+            options=["one", "two", "three"],
+        )
         payload = {
             "site": {"client": client.id, "name": "Custom Field Site"},  # type: ignore
-            "custom_fields": [{"field": field.id, "value": "new Value"}],  # type: ignore
+            "custom_fields": [{"field": field.id, "string_value": "one"}],  # type: ignore
         }
         r = self.client.post(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
@@ -309,14 +313,19 @@ class TestClientViews(TacticalTestCase):
         )
 
         # test add with custom fields new value
-        field = baker.make("core.CustomField", model="site", type="text")
+        field = baker.make(
+            "core.CustomField",
+            model="site",
+            type="multiple",
+            options=["one", "two", "three"],
+        )
         payload = {
             "site": {
                 "id": site.id,  # type: ignore
                 "client": site.client.id,  # type: ignore
                 "name": "Custom Field Site",
             },
-            "custom_fields": [{"field": field.id, "value": "new Value"}],  # type: ignore
+            "custom_fields": [{"field": field.id, "multiple_value": ["two", "three"]}],  # type: ignore
         }
         r = self.client.put(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
@@ -331,14 +340,14 @@ class TestClientViews(TacticalTestCase):
                 "client": client.id,  # type: ignore
                 "name": "Custom Field Site",
             },
-            "custom_fields": [{"field": field.id, "value": "another value"}],  # type: ignore
+            "custom_fields": [{"field": field.id, "multiple_value": ["one"]}],  # type: ignore
         }
         r = self.client.put(url, payload, format="json")
         self.assertEqual(r.status_code, 200)
 
         self.assertTrue(
             SiteCustomField.objects.get(site=site, field=field).value,
-            "another value",
+            ["one"],
         )
 
         self.check_not_authenticated("put", url)

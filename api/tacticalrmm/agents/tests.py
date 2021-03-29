@@ -535,12 +535,12 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(data["run_time_days"], [2, 3, 6])
 
         # test adding custom fields
-        field = baker.make("core.CustomField", model="agent", type="text")
+        field = baker.make("core.CustomField", model="agent", type="number")
         edit = {
             "id": self.agent.pk,
             "site": site.id,  # type: ignore
             "description": "asjdk234andasd",
-            "custom_fields": [{"field": field.id, "value": "new value"}],  # type: ignore
+            "custom_fields": [{"field": field.id, "string_value": "123"}],  # type: ignore
         }
 
         r = self.client.patch(url, edit, format="json")
@@ -554,14 +554,14 @@ class TestAgentViews(TacticalTestCase):
             "id": self.agent.pk,
             "site": site.id,  # type: ignore
             "description": "asjdk234andasd",
-            "custom_fields": [{"field": field.id, "value": "another value"}],  # type: ignore
+            "custom_fields": [{"field": field.id, "string_value": "456"}],  # type: ignore
         }
 
         r = self.client.patch(url, edit, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(
             AgentCustomField.objects.get(agent=agent, field=field).value,
-            "another value",
+            "456",
         )
         self.check_not_authenticated("patch", url)
 

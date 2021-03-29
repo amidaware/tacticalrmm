@@ -238,13 +238,23 @@
         "submittedBy": "https://github.com/dinger1986",
         "name": "Event Viewer - Check for Bluescreens",
         "description": "This will check for Bluescreen events on your system",
-        "shell": "powershell"
+        "shell": "powershell",
+        "category": "TRMM (Win):Monitoring"
     },
     {
         "filename": "Rename_Computer.ps1",
         "submittedBy": "https://github.com/silversword411",
         "name": "Rename Computer",
         "description": "Rename computer. First parameter will be new PC name. 2nd parameter if yes will auto-reboot machine",
-        "shell": "powershell"
+        "shell": "powershell",
+        "category": "TRMM (Win):Other"
+    },
+    {
+        "filename": "Win_MS_Install_All_Updates.ps1",
+        "submittedBy": "https://github.com/dinger1986",
+        "name": "Install all Updates",
+        "description": "Install All updating for Windows 10 using powershell",
+        "shell": "powershell",
+        "category": "TRMM (Win):Updates"
     }
 ]

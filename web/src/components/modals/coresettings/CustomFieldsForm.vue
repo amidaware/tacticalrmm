@@ -235,7 +235,6 @@ export default {
           })
           .catch(e => {
             this.$q.loading.hide();
-            console.log({ e });
             this.notifyError("There was an error adding the custom field");
           });
       }

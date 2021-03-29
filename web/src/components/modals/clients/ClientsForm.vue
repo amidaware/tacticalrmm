@@ -110,7 +110,6 @@ export default {
         custom_fields: this.formatCustomFields(this.customFields, this.custom_fields),
       };
 
-      console.log(data);
       this.$axios
         .put(`/clients/${this.client.id}/client/`, data)
         .then(r => {

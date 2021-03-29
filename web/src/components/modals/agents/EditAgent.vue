@@ -251,8 +251,7 @@ export default {
           this.notifySuccess("Agent was edited!");
         })
         .catch(e => {
-          this.notifyError("Something went wrong")
-          console.log({e})
+          this.notifyError("Something went wrong");
         });
     },
   },

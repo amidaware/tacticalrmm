@@ -363,8 +363,7 @@ class TestAgentViews(TacticalTestCase):
         self.check_not_authenticated("patch", url)
 
     @patch("os.path.exists")
-    @patch("subprocess.run")
-    def test_install_agent(self, mock_subprocess, mock_file_exists):
+    def test_install_agent(self, mock_file_exists):
         url = f"/agents/installagent/"
 
         site = baker.make("clients.Site")
@@ -382,29 +381,20 @@ class TestAgentViews(TacticalTestCase):
         }
 
         mock_file_exists.return_value = False
-        mock_subprocess.return_value.returncode = 0
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 406)
 
         mock_file_exists.return_value = True
-        mock_subprocess.return_value.returncode = 1
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 413)
-
-        mock_file_exists.return_value = True
-        mock_subprocess.return_value.returncode = 0
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
 
         data["arch"] = "32"
-        mock_subprocess.return_value.returncode = 0
         mock_file_exists.return_value = False
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 415)
 
         data["installMethod"] = "manual"
         data["arch"] = "64"
-        mock_subprocess.return_value.returncode = 0
         mock_file_exists.return_value = True
         r = self.client.post(url, data, format="json")
         self.assertIn("rdp", r.json()["cmd"])

@@ -181,17 +181,6 @@ CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
 sudo chmod 775 -R /etc/letsencrypt
 
-print_green 'Installing golang'
-
-sudo mkdir -p /usr/local/rmmgo
-go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)
-wget https://golang.org/dl/go1.16.2.linux-amd64.tar.gz -P ${go_tmp}
-
-tar -xzf ${go_tmp}/go1.16.2.linux-amd64.tar.gz -C ${go_tmp}
-
-sudo mv ${go_tmp}/go /usr/local/rmmgo/
-rm -rf ${go_tmp}
-
 print_green 'Downloading NATS'
 
 nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
@@ -375,11 +364,6 @@ ADMIN_ENABLED = True
 EOF
 )"
 echo "${localvars}" > /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
-
-/usr/local/rmmgo/go/bin/go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
-sudo cp /rmm/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/
-sudo chown ${USER}:${USER} /usr/local/bin/goversioninfo
-sudo chmod +x /usr/local/bin/goversioninfo
 
 sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
 sudo chown ${USER}:${USER} /usr/local/bin/nats-api

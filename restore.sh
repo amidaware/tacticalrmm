@@ -103,17 +103,7 @@ fi
 # prevents logging issues with some VPS providers like Vultr if this is a freshly provisioned instance that hasn't been rebooted yet
 sudo systemctl restart systemd-journald.service
 
-print_green 'Installing golang'
-
 sudo apt update
-sudo mkdir -p /usr/local/rmmgo
-go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)
-wget https://golang.org/dl/go1.16.2.linux-amd64.tar.gz -P ${go_tmp}
-
-tar -xzf ${go_tmp}/go1.16.2.linux-amd64.tar.gz -C ${go_tmp}
-
-sudo mv ${go_tmp}/go /usr/local/rmmgo/
-rm -rf ${go_tmp}
 
 print_green 'Downloading NATS'
 
@@ -275,11 +265,6 @@ cp $tmp_dir/rmm/env /rmm/web/.env
 gzip -d $tmp_dir/rmm/debug.log.gz
 cp $tmp_dir/rmm/debug.log /rmm/api/tacticalrmm/tacticalrmm/private/log/
 cp $tmp_dir/rmm/mesh*.exe /rmm/api/tacticalrmm/tacticalrmm/private/exe/
-
-/usr/local/rmmgo/go/bin/go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
-sudo cp /rmm/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/
-sudo chown ${USER}:${USER} /usr/local/bin/goversioninfo
-sudo chmod +x /usr/local/bin/goversioninfo
 
 sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
 sudo chown ${USER}:${USER} /usr/local/bin/nats-api

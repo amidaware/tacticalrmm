@@ -1,7 +1,6 @@
 FROM python:3.9.2-slim
 
 ENV TACTICAL_DIR /opt/tactical
-ENV TACTICAL_GO_DIR /usr/local/rmmgo
 ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
 ENV WORKSPACE_DIR /workspace
 ENV TACTICAL_USER tactical
@@ -13,9 +12,6 @@ EXPOSE 8000
 
 RUN groupadd -g 1000 tactical && \
     useradd -u 1000 -g 1000 tactical
-
-# Copy Go Files
-COPY --from=golang:1.16 /usr/local/go ${TACTICAL_GO_DIR}/go
 
 # Copy Dev python reqs
 COPY ./requirements.txt /

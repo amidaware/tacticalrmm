@@ -11,8 +11,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from agents.models import Agent
-from core.models import CoreSettings, CustomField
-from tacticalrmm.utils import generate_installer_exe, notify_error
+from core.models import CoreSettings
+from tacticalrmm.utils import notify_error
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 from .serializers import (
@@ -278,6 +278,10 @@ class GenerateAgent(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request, uid):
+        import requests
+        import tempfile
+        from django.http import FileResponse
+
         try:
             _ = uuid.UUID(uid, version=4)
         except ValueError:
@@ -295,18 +299,36 @@ class GenerateAgent(APIView):
         client = re.sub(r"([^a-zA-Z0-9]+)", "", client)
         site = re.sub(r"([^a-zA-Z0-9]+)", "", site)
         ext = ".exe" if d.arch == "64" else "-x86.exe"
+        file_name = f"rmm-{client}-{site}-{d.mon_type}{ext}"
 
-        return generate_installer_exe(
-            file_name=f"rmm-{client}-{site}-{d.mon_type}{ext}",
-            goarch="amd64" if d.arch == "64" else "386",
-            inno=inno,
-            api=f"https://{request.get_host()}",
-            client_id=d.client.pk,
-            site_id=d.site.pk,
-            atype=d.mon_type,
-            rdp=d.install_flags["rdp"],
-            ping=d.install_flags["ping"],
-            power=d.install_flags["power"],
-            download_url=settings.DL_64 if d.arch == "64" else settings.DL_32,
-            token=d.token_key,
-        )
+        data = {
+            "client": d.client.pk,
+            "site": d.site.pk,
+            "agenttype": d.mon_type,
+            "rdp": str(d.install_flags["rdp"]),
+            "ping": str(d.install_flags["ping"]),
+            "power": str(d.install_flags["power"]),
+            "goarch": "amd64" if d.arch == "64" else "386",
+            "token": d.token_key,
+            "inno": inno,
+            "url": settings.DL_64 if d.arch == "64" else settings.DL_32,
+            "api": f"https://{request.get_host()}",
+        }
+        headers = {"Content-type": "application/json"}
+
+        with tempfile.NamedTemporaryFile() as fp:
+            r = requests.post(
+                settings.EXE_GEN_URL,
+                json=data,
+                headers=headers,
+                stream=True,
+            )
+            with open(fp.name, "wb") as f:
+                for chunk in r.iter_content(chunk_size=1024):
+                    if chunk:
+                        f.write(chunk)
+            del r
+            response = FileResponse(
+                open(fp.name, "rb"), as_attachment=True, filename=file_name
+            )
+            return response

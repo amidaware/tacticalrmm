@@ -220,11 +220,12 @@
         "shell": "powershell"
     },
     {
-        "filename": "Chocolatey_Update_Installed.bat",
+        "filename": "Win_Chocolatey_Update_Installed.bat",
         "submittedBy": "https://github.com/silversword411",
         "name": "Chocolatey Update Installed Apps",
         "description": "Update all apps that were installed using Chocolatey.",
-        "shell": "cmd"
+        "shell": "cmd",
+        "category": "TRMM (Win):3rd Party Software>Chocolatey"
     },
     {
         "filename": "Win_AD_Check_And_Enable_AD_Recycle_Bin.ps1",

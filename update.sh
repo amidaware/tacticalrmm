@@ -153,6 +153,7 @@ fi
 HAS_NODE14=$(/usr/bin/node --version | grep v14)
 if ! [[ $HAS_NODE14 ]]; then
   printf >&2 "${GREEN}Updating NodeJS to v14${NC}\n"
+  rm -rf /rmm/web/node_modules
   sudo systemctl stop meshcentral
   sudo apt remove -y nodejs
   sudo rm -rf /usr/lib/node_modules

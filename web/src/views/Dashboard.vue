@@ -617,7 +617,7 @@ export default {
           object: node,
         })
         .onOk(() => {
-          this.getTree();
+          this.clearTreeSelected();
         });
     },
     showAddSiteModal(node) {
@@ -666,7 +666,7 @@ export default {
           object: node,
         })
         .onOk(() => {
-          this.getTree();
+          this.clearTreeSelected();
         });
     },
     reload() {

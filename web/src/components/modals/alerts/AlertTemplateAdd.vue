@@ -65,15 +65,22 @@ export default {
 
       this.$q.loading.show();
 
-      const data = {
-        id: this.object.id,
-        alert_template: this.selectedTemplate,
-      };
-
       let url = "";
-      if (this.type === "client") url = `/clients/${this.object.id}/client/`;
-      else if (this.type === "site") url = `/clients/${this.object.id}/site/`;
-      else if (this.type === "policy") url = `/automation/policies/${this.object.id}/`;
+      let data = {};
+      if (this.type === "client") {
+        url = `/clients/${this.object.id}/client/`;
+        data = {
+          client: { id: this.object.id, alert_template: this.selectedTemplate },
+        };
+      } else if (this.type === "site") {
+        url = `/clients/sites/${this.object.id}/`;
+        data = {
+          site: { id: this.object.id, alert_template: this.selectedTemplate },
+        };
+      } else if (this.type === "policy") {
+        url = `/automation/policies/${this.object.id}/`;
+        data = { id: this.object.id, alert_template: this.selectedTemplate };
+      }
 
       const text = this.selectedTemplate ? "assigned" : "removed";
       this.$axios

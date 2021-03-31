@@ -87,7 +87,7 @@ def uninstall(request):
     return Response(f"{name} will now be uninstalled.")
 
 
-@api_view(["PATCH"])
+@api_view(["PATCH", "PUT"])
 def edit_agent(request):
     agent = get_object_or_404(Agent, pk=request.data["id"])
 

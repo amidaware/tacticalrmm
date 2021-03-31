@@ -33,6 +33,7 @@ class SiteSerializer(ModelSerializer):
             "name",
             "server_policy",
             "workstation_policy",
+            "alert_template",
             "client_name",
             "client",
             "custom_fields",
@@ -75,6 +76,7 @@ class ClientSerializer(ModelSerializer):
             "name",
             "server_policy",
             "workstation_policy",
+            "alert_template",
             "sites",
             "custom_fields",
         )

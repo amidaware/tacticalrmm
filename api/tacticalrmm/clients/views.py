@@ -167,13 +167,15 @@ class GetUpdateSite(APIView):
     def put(self, request, pk):
         site = get_object_or_404(Site, pk=pk)
 
-        if (
+        if "client" in request.data["site"].keys() and (
             site.client.id != request.data["site"]["client"]
             and site.client.sites.count() == 1
         ):
             return notify_error("A client must have at least one site")
 
-        serializer = SiteSerializer(instance=site, data=request.data["site"])
+        serializer = SiteSerializer(
+            instance=site, data=request.data["site"], partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 

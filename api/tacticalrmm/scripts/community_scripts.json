@@ -252,7 +252,7 @@
     "category": "TRMM (Win):Other"
   },
   {
-    "filename": "Finish updates and restart.ps1",
+    "filename": "Finish_updates_and_restart.ps1",
     "submittedBy": "https://github.com/tremor021",
     "name": "Finish updates and restart",
     "description": "Finish installing updates and restart PC",
@@ -260,7 +260,7 @@
     "category": "TRMM (Win):Other"
   },
   {
-    "filename": "Finish updates and shutdown.ps1",
+    "filename": "Finish_updates_and_shutdown.ps1",
     "submittedBy": "https://github.com/tremor021",
     "name": "Finish updates and shutdown",
     "description": "Finish installing updates and shutdown PC",

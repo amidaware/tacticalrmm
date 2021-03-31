@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "api/tacticalrmm/env/bin/python",
+    "python.pythonPath": "c:\\Users\\Slavisa\\AppData\\Local\\Programs\\Python\\Python39\\python.exe",
     "python.languageServer": "Pylance",
     "python.analysis.extraPaths": [
         "api/tacticalrmm",

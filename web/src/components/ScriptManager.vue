@@ -291,6 +291,7 @@
                     props.row.description
                   }}</q-tooltip>
                 </q-td>
+                <q-td>{{ props.row.default_timeout }}</q-td>
               </q-tr>
             </template>
           </q-table>
@@ -368,8 +369,15 @@ export default {
           align: "left",
           sortable: false,
         },
+        {
+          name: "default_timeout",
+          label: "Default Timeout (seconds)",
+          field: "default_timeout",
+          align: "left",
+          sortable: true,
+        },
       ],
-      visibleColumns: ["favorite", "name", "category", "desc", "shell"],
+      visibleColumns: ["favorite", "name", "category", "desc", "shell", "default_timeout"],
     };
   },
   methods: {

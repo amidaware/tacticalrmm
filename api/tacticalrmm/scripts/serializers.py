@@ -14,6 +14,7 @@ class ScriptTableSerializer(ModelSerializer):
             "shell",
             "category",
             "favorite",
+            "default_timeout",
         ]
 
 
@@ -28,6 +29,7 @@ class ScriptSerializer(ModelSerializer):
             "category",
             "favorite",
             "code_base64",
+            "default_timeout",
         ]
 
 

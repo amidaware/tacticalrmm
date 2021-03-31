@@ -29,6 +29,7 @@ class Script(BaseAuditModel):
     favorite = models.BooleanField(default=False)
     category = models.CharField(max_length=100, null=True, blank=True)
     code_base64 = models.TextField(null=True, blank=True)
+    default_timeout = models.PositiveIntegerField(default=90)
 
     def __str__(self):
         return self.name

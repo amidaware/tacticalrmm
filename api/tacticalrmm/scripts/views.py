@@ -30,6 +30,7 @@ class GetAddScripts(APIView):
             "category": request.data["category"],
             "description": request.data["description"],
             "shell": request.data["shell"],
+            "default_timeout": request.data["default_timeout"],
             "script_type": "userdefined",  # force all uploads to be userdefined. built in scripts cannot be edited by user
         }
 

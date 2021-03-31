@@ -511,9 +511,10 @@ export default {
       }, 500);
     },
     runFavScript(scriptpk, agentpk) {
+      let default_timeout = this.favoriteScripts.find(i => i.value === scriptpk).timeout;
       const data = {
         pk: agentpk,
-        timeout: 900,
+        timeout: default_timeout,
         scriptPK: scriptpk,
         output: "forget",
         args: [],
@@ -532,7 +533,7 @@ export default {
         }
         this.favoriteScripts = r.data
           .filter(k => k.favorite === true)
-          .map(script => ({ label: script.name, value: script.id }))
+          .map(script => ({ label: script.name, value: script.id, timeout: script.default_timeout }))
           .sort((a, b) => a.label.localeCompare(b.label));
       });
     },

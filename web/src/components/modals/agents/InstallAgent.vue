@@ -189,29 +189,38 @@ export default {
           this.arch === "64"
             ? `rmm-${clientStripped}-${siteStripped}-${this.agenttype}.exe`
             : `rmm-${clientStripped}-${siteStripped}-${this.agenttype}-x86.exe`;
+
         this.$axios
-          .post("/agents/installagent/", data, { responseType: "blob" })
+          .post("/agents/installagent/", data)
           .then(r => {
-            this.$q.loading.hide();
-            const blob = new Blob([r.data], { type: "application/vnd.microsoft.portable-executable" });
-            let link = document.createElement("a");
-            link.href = window.URL.createObjectURL(blob);
-            link.download = fileName;
-            link.click();
-            this.showDLMessage();
+            const newData = {
+              client: this.client.value,
+              site: this.site.value,
+              agenttype: this.agenttype,
+              power: this.power ? "1" : "0",
+              rdp: this.rdp ? "1" : "0",
+              ping: this.ping ? "1" : "0",
+              goarch: r.data.goarch,
+              token: r.data.token,
+              inno: r.data.inno,
+              url: r.data.url,
+              api,
+            };
+
+            this.$axios.post(r.data.genurl, newData, { responseType: "blob" }).then(r => {
+              this.$q.loading.hide();
+              const blob = new Blob([r.data], { type: "application/vnd.microsoft.portable-executable" });
+              let link = document.createElement("a");
+              link.href = window.URL.createObjectURL(blob);
+              link.download = fileName;
+              link.click();
+              this.showDLMessage();
+            });
           })
           .catch(e => {
+            this.$q.loading.hide();
             let err;
             switch (e.response.status) {
-              case 409:
-                err = "Golang is not installed";
-                break;
-              case 412:
-                err = "Golang build failed. Check debug log for the error message";
-                break;
-              case 413:
-                err = "Golang generate failed. Check debug log for the error message";
-                break;
               case 406:
                 err = "Missing 64 bit meshagent.exe. Upload it from File > Upload Mesh Agent";
                 break;
@@ -219,9 +228,8 @@ export default {
                 err = "Missing 32 bit meshagent-x86.exe. Upload it from File > Upload Mesh Agent";
                 break;
               default:
-                err = "Something went wrong";
+                err = e.response.data;
             }
-            this.$q.loading.hide();
             this.notifyError(err, 4000);
           });
       } else if (this.installMethod === "powershell") {

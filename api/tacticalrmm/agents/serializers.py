@@ -4,7 +4,7 @@ from rest_framework import serializers
 from clients.serializers import ClientSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .models import Agent, Note
+from .models import Agent, AgentCustomField, Note
 
 
 class AgentSerializer(serializers.ModelSerializer):
@@ -119,10 +119,30 @@ class AgentTableSerializer(serializers.ModelSerializer):
         depth = 2
 
 
+class AgentCustomFieldSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AgentCustomField
+        fields = (
+            "id",
+            "field",
+            "agent",
+            "value",
+            "string_value",
+            "bool_value",
+            "multiple_value",
+        )
+        extra_kwargs = {
+            "string_value": {"write_only": True},
+            "bool_value": {"write_only": True},
+            "multiple_value": {"write_only": True},
+        }
+
+
 class AgentEditSerializer(serializers.ModelSerializer):
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
     all_timezones = serializers.SerializerMethodField()
     client = ClientSerializer(read_only=True)
+    custom_fields = AgentCustomFieldSerializer(many=True, read_only=True)
 
     def get_all_timezones(self, obj):
         return pytz.all_timezones
@@ -146,6 +166,7 @@ class AgentEditSerializer(serializers.ModelSerializer):
             "all_timezones",
             "winupdatepolicy",
             "policy",
+            "custom_fields",
         ]
 
 

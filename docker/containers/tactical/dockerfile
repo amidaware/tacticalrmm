@@ -30,33 +30,30 @@ FROM python:3.9.2-slim
 ENV VIRTUAL_ENV /opt/venv
 ENV TACTICAL_DIR /opt/tactical
 ENV TACTICAL_TMP_DIR /tmp/tactical
-ENV TACTICAL_GO_DIR /usr/local/rmmgo
 ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
 ENV TACTICAL_USER tactical
-ENV PATH "${VIRTUAL_ENV}/bin:${TACTICAL_GO_DIR}/go/bin:$PATH"
+ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
 
 # copy files from repo
 COPY api/tacticalrmm ${TACTICAL_TMP_DIR}/api
 COPY scripts ${TACTICAL_TMP_DIR}/scripts
 
 # copy go install from build stage
-COPY --from=golang:1.16 /usr/local/go ${TACTICAL_GO_DIR}/go
 COPY --from=CREATE_VENV_STAGE ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
 # install deps
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends git rsync && \
+    apt-get install -y --no-install-recommends rsync && \
     rm -rf /var/lib/apt/lists/* && \
-    go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo && \
     groupadd -g 1000 "${TACTICAL_USER}" && \
     useradd -M -d "${TACTICAL_DIR}" -s /bin/bash -u 1000 -g 1000 "${TACTICAL_USER}"
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
-# overwrite goversioninfo file
-COPY api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/goversioninfo
-RUN chmod +x /usr/local/bin/goversioninfo
+# copy nats-api file
+COPY natsapi/bin/nats-api /usr/local/bin/
+RUN chmod +x /usr/local/bin/nats-api
 
 # docker init
 COPY docker/containers/tactical/entrypoint.sh /

@@ -17,6 +17,7 @@
           map-options
           emit-value
           options-dense
+          @input="setDefaultTimeout"
         />
       </q-card-section>
       <q-card-section>
@@ -73,11 +74,7 @@
           style="max-width: 150px"
           label="Timeout (seconds)"
           stack-label
-          :rules="[
-            val => !!val || '*Required',
-            val => val >= 10 || 'Minimum is 10 seconds',
-            val => val <= 25200 || 'Maximum is 25,200 seconds',
-          ]"
+          :rules="[val => !!val || '*Required', val => val >= 5 || 'Minimum is 5 seconds']"
         />
       </q-card-section>
       <q-card-actions align="center">
@@ -92,7 +89,7 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import { mapGetters, mapState } from "vuex";
+import { mapState } from "vuex";
 
 export default {
   name: "RunScript",
@@ -123,6 +120,9 @@ export default {
     },
   },
   methods: {
+    setDefaultTimeout() {
+      this.timeout = this.scriptOptions.find(i => i.value === this.scriptPK).timeout;
+    },
     getScripts() {
       let scripts;
       this.$axios.get("/scripts/scripts/").then(r => {
@@ -132,7 +132,7 @@ export default {
           scripts = r.data.filter(i => i.script_type !== "builtin");
         }
         this.scriptOptions = scripts
-          .map(script => ({ label: script.name, value: script.id }))
+          .map(script => ({ label: script.name, value: script.id, timeout: script.default_timeout }))
           .sort((a, b) => a.label.localeCompare(b.label));
       });
     },

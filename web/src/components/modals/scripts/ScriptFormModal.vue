@@ -48,6 +48,17 @@
               label="Shell Type"
             />
           </div>
+          <div class="q-pa-sm col-2">
+            <q-input
+              type="number"
+              filled
+              dense
+              :readonly="readonly"
+              v-model.number="localScript.default_timeout"
+              label="Timeout (seconds)"
+              :rules="[val => val >= 5 || 'Minimum is 5']"
+            />
+          </div>
           <div class="q-pa-sm col-3">
             <q-select
               hint="Press Enter or Tab when adding a new value"
@@ -65,7 +76,7 @@
               :readonly="readonly"
             />
           </div>
-          <div class="q-pa-sm col-4">
+          <div class="q-pa-sm col-2">
             <q-input filled dense :readonly="readonly" v-model="localScript.description" label="Description" />
           </div>
         </q-card-section>
@@ -118,6 +129,7 @@ export default {
         category: "",
         favorite: false,
         script_type: "userdefined",
+        default_timeout: 90,
       },
       maximized: false,
       filterOptions: [],
@@ -217,7 +229,7 @@ export default {
       return !this.readonly ? "click" : null;
     },
     getMaxWidth() {
-      return this.maximized ? "" : "width: 60vw; max-width: 90vw";
+      return this.maximized ? "" : "width: 70vw; max-width: 90vw";
     },
     heightVar() {
       return this.maximized ? "--prism-height: 80vh" : "--prism-height: 70vh";
@@ -232,6 +244,7 @@ export default {
       this.localScript.shell = this.script.shell;
       this.localScript.category = this.script.category;
       this.localScript.script_type = this.script.script_type;
+      this.localScript.default_timeout = this.script.default_timeout;
       this.getCode();
     }
   },

@@ -150,9 +150,6 @@ EOF
 fi
 
 if [ "$1" = 'tactical-api' ]; then
-  cp "${WORKSPACE_DIR}"/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/goversioninfo
-  chmod +x /usr/local/bin/goversioninfo
-  
   check_tactical_ready
   "${VIRTUAL_ENV}"/bin/python manage.py runserver 0.0.0.0:"${API_PORT}"
 fi

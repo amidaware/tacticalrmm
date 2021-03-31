@@ -36,6 +36,7 @@ class TestScriptViews(TacticalTestCase):
             "shell": "powershell",
             "category": "New",
             "code": "Some Test Code\nnew Line",
+            "default_timeout": 99,
         }
 
         # test without file upload
@@ -55,6 +56,7 @@ class TestScriptViews(TacticalTestCase):
             "shell": "cmd",
             "category": "New",
             "filename": file,
+            "default_timeout": 4455,
         }
 
         # test with file upload
@@ -79,6 +81,7 @@ class TestScriptViews(TacticalTestCase):
             "description": "Description Change",
             "shell": script.shell,
             "code": "Test Code\nAnother Line",
+            "default_timeout": 13344556,
         }
 
         # test edit a userdefined script
@@ -104,6 +107,7 @@ class TestScriptViews(TacticalTestCase):
             "shell": script.shell,
             "favorite": True,
             "code": "Test Code\nAnother Line",
+            "default_timeout": 54345,
         }
         # test marking a builtin script as favorite
         resp = self.client.put(

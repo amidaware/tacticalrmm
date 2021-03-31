@@ -37,6 +37,7 @@
               ><span v-if="props.row.arch === '64'">64 bit</span><span v-else>32 bit</span></q-td
             >
             <q-td key="expiry" :props="props">{{ props.row.expiry }}</q-td>
+            <q-td key="created" :props="props">{{ props.row.created }}</q-td>
             <q-td key="flags" :props="props"
               ><q-badge color="grey-8" label="View Flags" />
               <q-tooltip content-style="font-size: 12px">{{ props.row.install_flags }}</q-tooltip>
@@ -58,7 +59,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 import NewDeployment from "@/components/modals/clients/NewDeployment";
 import { copyToClipboard } from "quasar";
@@ -82,11 +82,12 @@ export default {
         { name: "mon_type", label: "Type", field: "mon_type", align: "left", sortable: true },
         { name: "arch", label: "Arch", field: "arch", align: "left", sortable: true },
         { name: "expiry", label: "Expiry", field: "expiry", align: "left", sortable: true },
+        { name: "created", label: "Created", field: "created", align: "left", sortable: true },
         { name: "flags", label: "Flags", field: "install_flags", align: "left" },
         { name: "link", label: "Download Link", align: "left" },
         { name: "delete", label: "Delete", align: "left" },
       ],
-      visibleColumns: ["client", "site", "mon_type", "arch", "expiry", "flags", "link", "delete"],
+      visibleColumns: ["client", "site", "mon_type", "arch", "expiry", "created", "flags", "link", "delete"],
 
       pagination: {
         rowsPerPage: 50,

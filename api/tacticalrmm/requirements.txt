@@ -11,7 +11,7 @@ decorator==4.4.2
 Django==3.1.7
 django-cors-headers==3.7.0
 django-rest-knox==4.1.0
-djangorestframework==3.12.3
+djangorestframework==3.12.4
 future==0.18.2
 kombu==5.0.2
 loguru==0.5.3

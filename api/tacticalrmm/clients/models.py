@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 
 from agents.models import Agent
 from logs.models import BaseAuditModel
@@ -159,6 +160,7 @@ class Site(BaseAuditModel):
 
     class Meta:
         ordering = ("name",)
+        unique_together = (("client", "name"),)
 
     def __str__(self):
         return self.name
@@ -225,6 +227,7 @@ class Deployment(models.Model):
     )
     arch = models.CharField(max_length=255, choices=ARCH_CHOICES, default="64")
     expiry = models.DateTimeField(null=True, blank=True)
+    created = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     auth_token = models.ForeignKey(
         "knox.AuthToken", related_name="deploytokens", on_delete=models.CASCADE
     )
@@ -233,3 +236,73 @@ class Deployment(models.Model):
 
     def __str__(self):
         return f"{self.client} - {self.site} - {self.mon_type}"
+
+
+class ClientCustomField(models.Model):
+    client = models.ForeignKey(
+        Client,
+        related_name="custom_fields",
+        on_delete=models.CASCADE,
+    )
+
+    field = models.ForeignKey(
+        "core.CustomField",
+        related_name="client_fields",
+        on_delete=models.CASCADE,
+    )
+
+    string_value = models.TextField(null=True, blank=True)
+    bool_value = models.BooleanField(blank=True, default=False)
+    multiple_value = ArrayField(
+        models.TextField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
+
+    def __str__(self):
+        return self.field.name
+
+    @property
+    def value(self):
+        if self.field.type == "multiple":
+            return self.multiple_value
+        elif self.field.type == "checkbox":
+            return self.bool_value
+        else:
+            return self.string_value
+
+
+class SiteCustomField(models.Model):
+    site = models.ForeignKey(
+        Site,
+        related_name="custom_fields",
+        on_delete=models.CASCADE,
+    )
+
+    field = models.ForeignKey(
+        "core.CustomField",
+        related_name="site_fields",
+        on_delete=models.CASCADE,
+    )
+
+    string_value = models.TextField(null=True, blank=True)
+    bool_value = models.BooleanField(blank=True, default=False)
+    multiple_value = ArrayField(
+        models.TextField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
+
+    def __str__(self):
+        return self.field.name
+
+    @property
+    def value(self):
+        if self.field.type == "multiple":
+            return self.multiple_value
+        elif self.field.type == "checkbox":
+            return self.bool_value
+        else:
+            return self.string_value

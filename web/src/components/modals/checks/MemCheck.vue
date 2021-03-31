@@ -42,7 +42,7 @@
           dense
           type="number"
           v-model.number="memcheck.run_interval"
-          label="Check run interval (s)"
+          label="Check run interval (seconds)"
           hint="Setting this will override the check run interval on the agent"
         />
       </q-card-section>

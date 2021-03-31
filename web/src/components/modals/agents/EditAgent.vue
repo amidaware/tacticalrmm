@@ -131,6 +131,10 @@
                   <q-checkbox v-model="agent.overdue_email_alert" label="Get overdue email alerts" />
                   <q-checkbox v-model="agent.overdue_text_alert" label="Get overdue sms alerts" />
                 </q-card-section>
+                <div class="text-h6">Custom Fields</div>
+                <q-card-section v-for="field in customFields" :key="field.id">
+                  <CustomField v-model="custom_fields[field.name]" :field="field" />
+                </q-card-section>
               </q-tab-panel>
               <!-- patch -->
               <q-tab-panel name="patch">
@@ -151,13 +155,16 @@
 import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import PatchPolicyForm from "@/components/modals/agents/PatchPolicyForm";
+import CustomField from "@/components/CustomField";
 
 export default {
   name: "EditAgent",
-  components: { PatchPolicyForm },
+  components: { PatchPolicyForm, CustomField },
   mixins: [mixins],
   data() {
     return {
+      customFields: [],
+      custom_fields: {},
       agentLoaded: false,
       clientsLoaded: false,
       agent: {},
@@ -192,6 +199,21 @@ export default {
 
         this.agent.client = { label: r.data.client.name, id: r.data.client.id, sites: r.data.client.sites };
         this.agentLoaded = true;
+
+        for (let field of this.customFields) {
+          const value = r.data.custom_fields.find(value => value.field === field.id);
+
+          if (field.type === "multiple") {
+            if (value) this.$set(this.custom_fields, field.name, value.value);
+            else this.$set(this.custom_fields, field.name, []);
+          } else if (field.type === "checkbox") {
+            if (value) this.$set(this.custom_fields, field.name, value.value);
+            else this.$set(this.custom_fields, field.name, false);
+          } else {
+            if (value) this.$set(this.custom_fields, field.name, value.value);
+            else this.$set(this.custom_fields, field.name, "");
+          }
+        }
       });
     },
     getClientsSites() {
@@ -219,13 +241,18 @@ export default {
       }
 
       this.$axios
-        .patch("/agents/editagent/", this.agent)
+        .patch("/agents/editagent/", {
+          ...this.agent,
+          custom_fields: this.formatCustomFields(this.customFields, this.custom_fields),
+        })
         .then(r => {
           this.$emit("close");
           this.$emit("edited");
           this.notifySuccess("Agent was edited!");
         })
-        .catch(() => this.notifyError("Something went wrong"));
+        .catch(e => {
+          this.notifyError("Something went wrong");
+        });
     },
   },
   computed: {
@@ -237,6 +264,10 @@ export default {
     },
   },
   created() {
+    // Get custom fields
+    this.getCustomFields("agent").then(r => {
+      this.customFields = r.data;
+    });
     this.getAgentInfo();
     this.getClientsSites();
   },

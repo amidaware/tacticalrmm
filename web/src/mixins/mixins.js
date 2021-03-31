@@ -1,4 +1,5 @@
 import { Notify, date } from "quasar";
+import axios from 'axios'
 
 export function notifySuccessConfig(msg, timeout = 2000) {
   return {
@@ -139,6 +140,27 @@ export default {
     },
     capitalize(string) {
       return string[0].toUpperCase() + string.substring(1)
-    }
+    },
+    getCustomFields(model) {
+      return axios.patch("/core/customfields/", { model: model })
+        .catch(e => {
+          this.notifyError("There was an issue getting Custom Fields")
+        })
+    },
+    formatCustomFields(fields, values) {
+      let tempArray = []
+
+      for (let field of fields) {
+        if (values[field.name] !== null || values[field.name] !== undefined)
+          if (field.type === "multiple") {
+            tempArray.push({ multiple_value: values[field.name], field: field.id })
+          } else if (field.type === "checkbox") {
+            tempArray.push({ bool_value: values[field.name], field: field.id })
+          } else {
+            tempArray.push({ string_value: values[field.name], field: field.id })
+          }
+      }
+      return tempArray
+    },
   }
 };

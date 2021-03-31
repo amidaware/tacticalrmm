@@ -12,13 +12,15 @@ from rest_framework.views import APIView
 
 from agents.models import Agent
 from core.models import CoreSettings
-from tacticalrmm.utils import generate_installer_exe, notify_error
+from tacticalrmm.utils import notify_error
 
-from .models import Client, Deployment, Site
+from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 from .serializers import (
+    ClientCustomFieldSerializer,
     ClientSerializer,
     ClientTreeSerializer,
     DeploymentSerializer,
+    SiteCustomFieldSerializer,
     SiteSerializer,
 )
 
@@ -29,44 +31,98 @@ class GetAddClients(APIView):
         return Response(ClientSerializer(clients, many=True).data)
 
     def post(self, request):
+        # create client
+        client_serializer = ClientSerializer(data=request.data["client"])
+        client_serializer.is_valid(raise_exception=True)
+        client = client_serializer.save()
 
-        if "initialsetup" in request.data:
-            client = {"name": request.data["client"]["client"].strip()}
-            site = {"name": request.data["client"]["site"].strip()}
-            serializer = ClientSerializer(data=client, context=request.data["client"])
-            serializer.is_valid(raise_exception=True)
+        # create site
+        site_serializer = SiteSerializer(
+            data={"client": client.id, "name": request.data["site"]["name"]}
+        )
+
+        # make sure site serializer doesn't return errors and save
+        if site_serializer.is_valid():
+            site_serializer.save()
+        else:
+            # delete client since site serializer was invalid
+            client.delete()
+            site_serializer.is_valid(raise_exception=True)
+
+        if "initialsetup" in request.data.keys():
             core = CoreSettings.objects.first()
             core.default_time_zone = request.data["timezone"]
             core.save(update_fields=["default_time_zone"])
-        else:
-            client = {"name": request.data["client"].strip()}
-            site = {"name": request.data["site"].strip()}
-            serializer = ClientSerializer(data=client, context=request.data)
-            serializer.is_valid(raise_exception=True)
 
-        obj = serializer.save()
-        Site(client=obj, name=site["name"]).save()
+        # save custom fields
+        if "custom_fields" in request.data.keys():
+            for field in request.data["custom_fields"]:
 
-        return Response(f"{obj} was added!")
+                custom_field = field
+                custom_field["client"] = client.id
+
+                serializer = ClientCustomFieldSerializer(data=custom_field)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+
+        return Response(f"{client} was added!")
 
 
-class GetUpdateDeleteClient(APIView):
+class GetUpdateClient(APIView):
+    def get(self, request, pk):
+        client = get_object_or_404(Client, pk=pk)
+        return Response(ClientSerializer(client).data)
+
     def put(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
 
-        serializer = ClientSerializer(data=request.data, instance=client, partial=True)
+        serializer = ClientSerializer(
+            data=request.data["client"], instance=client, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response("The Client was renamed")
+        # update custom fields
+        if "custom_fields" in request.data.keys():
+            for field in request.data["custom_fields"]:
 
-    def delete(self, request, pk):
+                custom_field = field
+                custom_field["client"] = pk
+
+                if ClientCustomField.objects.filter(field=field["field"], client=pk):
+                    value = ClientCustomField.objects.get(
+                        field=field["field"], client=pk
+                    )
+                    serializer = ClientCustomFieldSerializer(
+                        instance=value, data=custom_field
+                    )
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+                else:
+                    serializer = ClientCustomFieldSerializer(data=custom_field)
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+
+        return Response("The Client was updated")
+
+
+class DeleteClient(APIView):
+    def delete(self, request, pk, sitepk):
+        from automation.tasks import generate_all_agent_checks_task
+
         client = get_object_or_404(Client, pk=pk)
-        agent_count = Agent.objects.filter(site__client=client).count()
-        if agent_count > 0:
+        agents = Agent.objects.filter(site__client=client)
+
+        if not sitepk:
             return notify_error(
-                f"Cannot delete {client} while {agent_count} agents exist in it. Move the agents to another client first."
+                "There needs to be a site specified to move existing agents to"
             )
+
+        site = get_object_or_404(Site, pk=sitepk)
+        agents.update(site=site)
+
+        generate_all_agent_checks_task.delay("workstation", create_tasks=True)
+        generate_all_agent_checks_task.delay("server", create_tasks=True)
 
         client.delete()
         return Response(f"{client.name} was deleted!")
@@ -84,38 +140,87 @@ class GetAddSites(APIView):
         return Response(SiteSerializer(sites, many=True).data)
 
     def post(self, request):
-        name = request.data["name"].strip()
-        serializer = SiteSerializer(
-            data={"name": name, "client": request.data["client"]},
-            context={"clientpk": request.data["client"]},
-        )
+        serializer = SiteSerializer(data=request.data["site"])
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        site = serializer.save()
 
-        return Response("ok")
+        # save custom fields
+        if "custom_fields" in request.data.keys():
+
+            for field in request.data["custom_fields"]:
+
+                custom_field = field
+                custom_field["site"] = site.id
+
+                serializer = SiteCustomFieldSerializer(data=custom_field)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+
+        return Response(f"Site {site.name} was added!")
 
 
-class GetUpdateDeleteSite(APIView):
-    def put(self, request, pk):
-
+class GetUpdateSite(APIView):
+    def get(self, request, pk):
         site = get_object_or_404(Site, pk=pk)
-        serializer = SiteSerializer(instance=site, data=request.data, partial=True)
+        return Response(SiteSerializer(site).data)
+
+    def put(self, request, pk):
+        site = get_object_or_404(Site, pk=pk)
+
+        if (
+            site.client.id != request.data["site"]["client"]
+            and site.client.sites.count() == 1
+        ):
+            return notify_error("A client must have at least one site")
+
+        serializer = SiteSerializer(instance=site, data=request.data["site"])
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response("ok")
+        # update custom field
+        if "custom_fields" in request.data.keys():
 
-    def delete(self, request, pk):
+            for field in request.data["custom_fields"]:
+
+                custom_field = field
+                custom_field["site"] = pk
+
+                if SiteCustomField.objects.filter(field=field["field"], site=pk):
+                    value = SiteCustomField.objects.get(field=field["field"], site=pk)
+                    serializer = SiteCustomFieldSerializer(
+                        instance=value, data=custom_field, partial=True
+                    )
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+                else:
+                    serializer = SiteCustomFieldSerializer(data=custom_field)
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+
+        return Response("Site was edited!")
+
+
+class DeleteSite(APIView):
+    def delete(self, request, pk, sitepk):
+        from automation.tasks import generate_all_agent_checks_task
+
         site = get_object_or_404(Site, pk=pk)
         if site.client.sites.count() == 1:
-            return notify_error(f"A client must have at least 1 site.")
+            return notify_error("A client must have at least 1 site.")
 
-        agent_count = Agent.objects.filter(site=site).count()
+        agents = Agent.objects.filter(site=site)
 
-        if agent_count > 0:
+        if not sitepk:
             return notify_error(
-                f"Cannot delete {site.name} while {agent_count} agents exist in it. Move the agents to another site first."
+                "There needs to be a site specified to move the agents to"
             )
+
+        agent_site = get_object_or_404(Site, pk=sitepk)
+
+        agents.update(site=agent_site)
+
+        generate_all_agent_checks_task.delay("workstation", create_tasks=True)
+        generate_all_agent_checks_task.delay("server", create_tasks=True)
 
         site.delete()
         return Response(f"{site.name} was deleted!")
@@ -173,6 +278,10 @@ class GenerateAgent(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request, uid):
+        import requests
+        import tempfile
+        from django.http import FileResponse
+
         try:
             _ = uuid.UUID(uid, version=4)
         except ValueError:
@@ -190,18 +299,36 @@ class GenerateAgent(APIView):
         client = re.sub(r"([^a-zA-Z0-9]+)", "", client)
         site = re.sub(r"([^a-zA-Z0-9]+)", "", site)
         ext = ".exe" if d.arch == "64" else "-x86.exe"
+        file_name = f"rmm-{client}-{site}-{d.mon_type}{ext}"
 
-        return generate_installer_exe(
-            file_name=f"rmm-{client}-{site}-{d.mon_type}{ext}",
-            goarch="amd64" if d.arch == "64" else "386",
-            inno=inno,
-            api=f"https://{request.get_host()}",
-            client_id=d.client.pk,
-            site_id=d.site.pk,
-            atype=d.mon_type,
-            rdp=d.install_flags["rdp"],
-            ping=d.install_flags["ping"],
-            power=d.install_flags["power"],
-            download_url=settings.DL_64 if d.arch == "64" else settings.DL_32,
-            token=d.token_key,
-        )
+        data = {
+            "client": d.client.pk,
+            "site": d.site.pk,
+            "agenttype": d.mon_type,
+            "rdp": str(d.install_flags["rdp"]),
+            "ping": str(d.install_flags["ping"]),
+            "power": str(d.install_flags["power"]),
+            "goarch": "amd64" if d.arch == "64" else "386",
+            "token": d.token_key,
+            "inno": inno,
+            "url": settings.DL_64 if d.arch == "64" else settings.DL_32,
+            "api": f"https://{request.get_host()}",
+        }
+        headers = {"Content-type": "application/json"}
+
+        with tempfile.NamedTemporaryFile() as fp:
+            r = requests.post(
+                settings.EXE_GEN_URL,
+                json=data,
+                headers=headers,
+                stream=True,
+            )
+            with open(fp.name, "wb") as f:
+                for chunk in r.iter_content(chunk_size=1024):
+                    if chunk:
+                        f.write(chunk)
+            del r
+            response = FileResponse(
+                open(fp.name, "rb"), as_attachment=True, filename=file_name
+            )
+            return response

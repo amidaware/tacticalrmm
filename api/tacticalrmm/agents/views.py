@@ -19,7 +19,6 @@ from logs.models import AuditLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from tacticalrmm.utils import (
-    generate_installer_exe,
     get_default_timezone,
     notify_error,
     reload_nats,
@@ -27,8 +26,9 @@ from tacticalrmm.utils import (
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
-from .models import Agent, Note, RecoveryAction
+from .models import Agent, AgentCustomField, Note, RecoveryAction
 from .serializers import (
+    AgentCustomFieldSerializer,
     AgentEditSerializer,
     AgentHostnameSerializer,
     AgentOverdueActionSerializer,
@@ -102,6 +102,29 @@ def edit_agent(request):
         )
         p_serializer.is_valid(raise_exception=True)
         p_serializer.save()
+
+    if "custom_fields" in request.data.keys():
+
+        for field in request.data["custom_fields"]:
+
+            custom_field = field
+            custom_field["agent"] = agent.id  # type: ignore
+
+            if AgentCustomField.objects.filter(
+                field=field["field"], agent=agent.id  # type: ignore
+            ):
+                value = AgentCustomField.objects.get(
+                    field=field["field"], agent=agent.id  # type: ignore
+                )
+                serializer = AgentCustomFieldSerializer(
+                    instance=value, data=custom_field
+                )
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+            else:
+                serializer = AgentCustomFieldSerializer(data=custom_field)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
 
     return Response("ok")
 
@@ -357,26 +380,21 @@ def install_agent(request):
         f"winagent-v{version}.exe" if arch == "64" else f"winagent-v{version}-x86.exe"
     )
     download_url = settings.DL_64 if arch == "64" else settings.DL_32
+    goarch = "amd64" if arch == "64" else "386"
 
     _, token = AuthToken.objects.create(
         user=request.user, expiry=dt.timedelta(hours=request.data["expires"])
     )
 
     if request.data["installMethod"] == "exe":
-        return generate_installer_exe(
-            file_name="rmm-installer.exe",
-            goarch="amd64" if arch == "64" else "386",
-            inno=inno,
-            api=request.data["api"],
-            client_id=client_id,
-            site_id=site_id,
-            atype=request.data["agenttype"],
-            rdp=request.data["rdp"],
-            ping=request.data["ping"],
-            power=request.data["power"],
-            download_url=download_url,
-            token=token,
-        )
+        ret = {
+            "token": token,
+            "url": download_url,
+            "inno": inno,
+            "goarch": goarch,
+            "genurl": settings.EXE_GEN_URL,
+        }
+        return Response(ret)
 
     elif request.data["installMethod"] == "manual":
         cmd = [

@@ -1,7 +1,7 @@
 import pytz
 from rest_framework import serializers
 
-from .models import CoreSettings
+from .models import CoreSettings, CustomField
 
 
 class CoreSettingsSerializer(serializers.ModelSerializer):
@@ -20,4 +20,10 @@ class CoreSettingsSerializer(serializers.ModelSerializer):
 class CoreSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoreSettings
+        fields = "__all__"
+
+
+class CustomFieldSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomField
         fields = "__all__"

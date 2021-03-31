@@ -67,6 +67,17 @@
           map-options
         />
       </q-card-section>
+      <q-card-section class="row">
+        <div class="col-4">Default Timeout (seconds)</div>
+        <q-input
+          type="number"
+          outlined
+          dense
+          class="col-8"
+          v-model.number="script.default_timeout"
+          :rules="[val => val >= 5 || 'Minimum is 5']"
+        />
+      </q-card-section>
       <q-card-actions>
         <q-space />
         <q-btn dense flat label="Cancel" v-close-popup />
@@ -92,6 +103,7 @@ export default {
         description: "",
         shell: "powershell",
         category: null,
+        default_timeout: 90,
       },
       shellOptions: [
         { label: "Powershell", value: "powershell" },
@@ -120,6 +132,7 @@ export default {
       formData.append("name", this.script.name);
       formData.append("shell", this.script.shell);
       formData.append("description", this.script.description);
+      formData.append("default_timeout", this.script.default_timeout);
 
       this.$axios
         .post("/scripts/scripts/", formData)

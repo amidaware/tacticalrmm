@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="43"
+SCRIPT_VERSION="44"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -181,17 +181,6 @@ CERT_PUB_KEY=/etc/letsencrypt/live/${rootdomain}/fullchain.pem
 sudo chown ${USER}:${USER} -R /etc/letsencrypt
 sudo chmod 775 -R /etc/letsencrypt
 
-print_green 'Installing golang'
-
-sudo mkdir -p /usr/local/rmmgo
-go_tmp=$(mktemp -d -t rmmgo-XXXXXXXXXX)
-wget https://golang.org/dl/go1.16.2.linux-amd64.tar.gz -P ${go_tmp}
-
-tar -xzf ${go_tmp}/go1.16.2.linux-amd64.tar.gz -C ${go_tmp}
-
-sudo mv ${go_tmp}/go /usr/local/rmmgo/
-rm -rf ${go_tmp}
-
 print_green 'Downloading NATS'
 
 nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
@@ -212,7 +201,7 @@ sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx
 
 print_green 'Installing NodeJS'
 
-curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
 sudo apt update
 sudo apt install -y gcc g++ make
 sudo apt install -y nodejs
@@ -376,11 +365,6 @@ EOF
 )"
 echo "${localvars}" > /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
-/usr/local/rmmgo/go/bin/go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
-sudo cp /rmm/api/tacticalrmm/core/goinstaller/bin/goversioninfo /usr/local/bin/
-sudo chown ${USER}:${USER} /usr/local/bin/goversioninfo
-sudo chmod +x /usr/local/bin/goversioninfo
-
 sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin
 sudo chown ${USER}:${USER} /usr/local/bin/nats-api
 sudo chmod +x /usr/local/bin/nats-api
@@ -481,26 +465,6 @@ WantedBy=multi-user.target
 EOF
 )"
 echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service > /dev/null
-
-natsapi="$(cat << EOF
-[Unit]
-Description=Tactical NATS API
-After=network.target rmm.service nginx.service nats.service
-
-[Service]
-Type=simple
-ExecStart=/usr/local/bin/nats-api
-User=${USER}
-Group=${USER}
-Restart=always
-RestartSec=5s
-
-[Install]
-WantedBy=multi-user.target
-EOF
-)"
-echo "${natsapi}" | sudo tee /etc/systemd/system/natsapi.service > /dev/null
-
 
 nginxrmm="$(cat << EOF
 server_tokens off;
@@ -808,7 +772,6 @@ sleep 5
 MESHEXE=$(node node_modules/meshcentral/meshctrl.js --url wss://${meshdomain}:443 --loginuser ${meshusername} --loginpass ${MESHPASSWD} GenerateInviteLink --group TacticalRMM --hours 8)
 
 sudo systemctl enable nats.service
-sudo systemctl enable natsapi.service
 cd /rmm/api/tacticalrmm
 source /rmm/api/env/bin/activate
 python manage.py initial_db_setup
@@ -820,7 +783,7 @@ sudo systemctl start nats.service
 sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
 print_green 'Restarting services'
-for i in rmm.service celery.service celerybeat.service natsapi.service
+for i in rmm.service celery.service celerybeat.service
 do
   sudo systemctl stop ${i}
   sudo systemctl start ${i}

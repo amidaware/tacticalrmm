@@ -7,9 +7,6 @@ RUN apk add --no-cache inotify-tools supervisor bash
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
-COPY natsapi/bin/nats-api /usr/local/bin/
-RUN chmod +x /usr/local/bin/nats-api
-
 COPY docker/containers/tactical-nats/entrypoint.sh /
 RUN chmod +x /entrypoint.sh
 

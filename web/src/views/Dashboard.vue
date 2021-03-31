@@ -89,7 +89,7 @@
     </q-header>
 
     <q-page-container>
-      <FileBar :clients="clients" @edited="refreshEntireSite" />
+      <FileBar />
       <q-splitter v-model="outsideModel">
         <template v-slot:before>
           <div v-if="!treeReady" class="q-pa-sm q-gutter-sm text-center" style="height: 30vh">
@@ -119,13 +119,13 @@
 
                     <q-menu context-menu>
                       <q-list dense style="min-width: 200px">
-                        <q-item clickable v-close-popup @click="showEditModal(props.node, 'edit')">
+                        <q-item clickable v-close-popup @click="showEditModal(props.node)">
                           <q-item-section side>
                             <q-icon name="edit" />
                           </q-item-section>
                           <q-item-section>Edit</q-item-section>
                         </q-item>
-                        <q-item clickable v-close-popup @click="showDeleteModal(props.node, 'delete')">
+                        <q-item clickable v-close-popup @click="showDeleteModal(props.node)">
                           <q-item-section side>
                             <q-icon name="delete" />
                           </q-item-section>
@@ -133,6 +133,18 @@
                         </q-item>
 
                         <q-separator></q-separator>
+
+                        <q-item
+                          v-if="props.node.children"
+                          clickable
+                          v-close-popup
+                          @click="showAddSiteModal(props.node)"
+                        >
+                          <q-item-section side>
+                            <q-icon name="add" />
+                          </q-item-section>
+                          <q-item-section>Add Site</q-item-section>
+                        </q-item>
 
                         <q-item clickable v-close-popup @click="showToggleMaintenance(props.node)">
                           <q-item-section side>
@@ -338,24 +350,6 @@
       </q-splitter>
     </q-page-container>
 
-    <!-- client form modal -->
-    <q-dialog v-model="showClientsFormModal" @hide="closeClientsFormModal">
-      <ClientsForm
-        @close="closeClientsFormModal"
-        :op="clientOp"
-        :clientpk="deleteEditModalPk"
-        @edited="refreshEntireSite"
-      />
-    </q-dialog>
-    <!-- edit site modal -->
-    <q-dialog v-model="showSitesFormModal" @hide="closeClientsFormModal">
-      <SitesForm
-        @close="closeClientsFormModal"
-        :op="clientOp"
-        :sitepk="deleteEditModalPk"
-        @edited="refreshEntireSite"
-      />
-    </q-dialog>
     <!-- install agent modal -->
     <q-dialog v-model="showInstallAgentModal" @hide="closeInstallAgent">
       <InstallAgent @close="closeInstallAgent" :sitepk="parseInt(sitePk)" />
@@ -369,7 +363,6 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import { mapState, mapGetters } from "vuex";
 import FileBar from "@/components/FileBar";
 import AgentTable from "@/components/AgentTable";
@@ -378,6 +371,7 @@ import AlertsIcon from "@/components/AlertsIcon";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
 import ClientsForm from "@/components/modals/clients/ClientsForm";
 import SitesForm from "@/components/modals/clients/SitesForm";
+import DeleteClient from "@/components/modals/clients/DeleteClient";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import UserPreferences from "@/components/modals/coresettings/UserPreferences";
 import AlertTemplateAdd from "@/components/modals/alerts/AlertTemplateAdd";
@@ -388,8 +382,6 @@ export default {
     AgentTable,
     SubTableTabs,
     AlertsIcon,
-    ClientsForm,
-    SitesForm,
     InstallAgent,
     UserPreferences,
   },
@@ -397,12 +389,8 @@ export default {
   data() {
     return {
       darkMode: true,
-      showClientsFormModal: false,
-      showSitesFormModal: false,
-      deleteEditModalPk: null,
       showInstallAgentModal: false,
       sitePk: null,
-      clientOp: null,
       serverCount: 0,
       serverOfflineCount: 0,
       workstationCount: 0,
@@ -621,53 +609,45 @@ export default {
       });
     },
     showPolicyAdd(node) {
-      if (node.children) {
-        this.$q
-          .dialog({
-            component: PolicyAdd,
-            parent: this,
-            type: "client",
-            object: node,
-          })
-          .onOk(() => {
-            this.getTree();
-          });
-      } else {
-        this.$q
-          .dialog({
-            component: PolicyAdd,
-            parent: this,
-            type: "site",
-            object: node,
-          })
-          .onOk(() => {
-            this.getTree();
-          });
-      }
+      this.$q
+        .dialog({
+          component: PolicyAdd,
+          parent: this,
+          type: node.children ? "client" : "site",
+          object: node,
+        })
+        .onOk(() => {
+          this.getTree();
+        });
     },
-    showEditModal(node, op) {
-      this.deleteEditModalPk = node.id;
-      this.clientOp = op;
-      if (node.children) {
-        this.showClientsFormModal = true;
-      } else {
-        this.showSitesFormModal = true;
-      }
+    showAddSiteModal(node) {
+      this.$q.dialog({
+        component: SitesForm,
+        parent: this,
+        client: node.id,
+      });
     },
-    showDeleteModal(node, op) {
-      this.deleteEditModalPk = node.id;
-      this.clientOp = op;
+    showEditModal(node) {
+      let props = {};
       if (node.children) {
-        this.showClientsFormModal = true;
+        props.client = { id: node.id, name: node.label };
       } else {
-        this.showSitesFormModal = true;
+        props.site = { id: node.id, name: node.label, client: node.client };
       }
+
+      this.$q.dialog({
+        component: node.children ? ClientsForm : SitesForm,
+        parent: this,
+        ...props,
+      });
     },
-    closeClientsFormModal() {
-      this.showClientsFormModal = false;
-      this.showSitesFormModal = false;
-      this.deleteEditModalPk = null;
-      this.clientOp = null;
+    showDeleteModal(node) {
+      this.$q.dialog({
+        component: DeleteClient,
+        parent: this,
+        object: { id: node.id, name: node.label },
+        type: node.children ? "client" : "site",
+      });
     },
     showInstallAgent(node) {
       this.sitePk = node.id;
@@ -734,11 +714,11 @@ export default {
       this.$store
         .dispatch("toggleMaintenanceMode", data)
         .then(response => {
-          this.$q.notify(notifySuccessConfig(text));
+          this.notifySuccess(text);
           this.getTree();
         })
         .catch(error => {
-          this.$q.notify(notifyErrorConfig("An Error occured. Please try again"));
+          this.notifyError("An Error occured. Please try again");
         });
     },
     menuMaintenanceText(node) {

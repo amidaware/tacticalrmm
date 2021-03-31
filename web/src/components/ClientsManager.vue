@@ -24,6 +24,8 @@
             virtual-scroll
             :rows-per-page-options="[0]"
             no-data-label="No Clients"
+            :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+            class="settings-tbl-sticky"
           >
             <!-- body slots -->
             <template v-slot:body="props">
@@ -101,7 +103,7 @@ export default {
       pagination: {
         rowsPerPage: 0,
         sortBy: "name",
-        descending: true,
+        descending: false,
       },
     };
   },

@@ -7,7 +7,7 @@
           <q-tab name="emailalerts" label="Email Alerts" />
           <q-tab name="smsalerts" label="SMS Alerts" />
           <q-tab name="meshcentral" label="MeshCentral" />
-          <!-- <q-tab name="customfields" label="Custom Fields" /> -->
+          <q-tab name="customfields" label="Custom Fields" />
         </q-tabs>
       </template>
       <template v-slot:after>

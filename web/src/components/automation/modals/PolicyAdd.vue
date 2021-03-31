@@ -111,45 +111,43 @@ export default {
 
       let data = {};
       let url = "";
-      if (this.type === "client" || this.type === "site") {
+      if (this.type === "client") {
+        url = `/clients/${this.object.id}/client/`;
         data = {
-          pk: this.object.id,
-          server_policy: this.selectedServerPolicy,
-          workstation_policy: this.selectedWorkstationPolicy,
+          client: {
+            pk: this.object.id,
+            server_policy: this.selectedServerPolicy,
+            workstation_policy: this.selectedWorkstationPolicy,
+          },
         };
-
-        if (this.type === "client") url = `/clients/${this.object.id}/client/`;
-        else if (this.type === "site") url = `/clients/${this.object.id}/site/`;
-
-        this.$axios
-          .put(url, data)
-          .then(r => {
-            this.$q.loading.hide();
-            this.onOk();
-            this.notifySuccess("Policies Updated Successfully!");
-          })
-          .catch(e => {
-            this.$q.loading.hide();
-            this.notifyError("There was an error updating policies");
-          });
+      } else if (this.type === "site") {
+        url = `/clients/sites/${this.object.id}/`;
+        data = {
+          site: {
+            pk: this.object.id,
+            server_policy: this.selectedServerPolicy,
+            workstation_policy: this.selectedWorkstationPolicy,
+          },
+        };
       } else if (this.type === "agent") {
+        url = "/agents/editagent/";
         data = {
           id: this.object.id,
           policy: this.selectedAgentPolicy,
         };
-
-        this.$axios
-          .patch("/agents/editagent/", data)
-          .then(r => {
-            this.$q.loading.hide();
-            this.onOk();
-            this.notifySuccess("Policies Updated Successfully!");
-          })
-          .catch(e => {
-            this.$q.loading.hide();
-            this.notifyError("There was an error updating policies");
-          });
       }
+
+      this.$axios
+        .put(url, data)
+        .then(r => {
+          this.$q.loading.hide();
+          this.onOk();
+          this.notifySuccess("Policies Updated Successfully!");
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+          this.notifyError("There was an error updating policies");
+        });
     },
     getPolicies() {
       this.$q.loading.show();

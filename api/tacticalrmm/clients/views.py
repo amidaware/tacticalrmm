@@ -6,6 +6,7 @@ import pytz
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
+from loguru import logger
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -23,6 +24,8 @@ from .serializers import (
     SiteCustomFieldSerializer,
     SiteSerializer,
 )
+
+logger.configure(**settings.LOG_CONFIG)
 
 
 class GetAddClients(APIView):
@@ -167,13 +170,15 @@ class GetUpdateSite(APIView):
     def put(self, request, pk):
         site = get_object_or_404(Site, pk=pk)
 
-        if (
+        if "client" in request.data["site"].keys() and (
             site.client.id != request.data["site"]["client"]
             and site.client.sites.count() == 1
         ):
             return notify_error("A client must have at least one site")
 
-        serializer = SiteSerializer(instance=site, data=request.data["site"])
+        serializer = SiteSerializer(
+            instance=site, data=request.data["site"], partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
@@ -278,8 +283,8 @@ class GenerateAgent(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request, uid):
-        import requests
         import tempfile
+        import requests
         from django.http import FileResponse
 
         try:
@@ -317,12 +322,20 @@ class GenerateAgent(APIView):
         headers = {"Content-type": "application/json"}
 
         with tempfile.NamedTemporaryFile() as fp:
-            r = requests.post(
-                settings.EXE_GEN_URL,
-                json=data,
-                headers=headers,
-                stream=True,
-            )
+            try:
+                r = requests.post(
+                    settings.EXE_GEN_URL,
+                    json=data,
+                    headers=headers,
+                    stream=True,
+                    timeout=900,
+                )
+            except Exception as e:
+                logger.error(str(e))
+                return notify_error(
+                    "Something went wrong. Check debug error log for exact error message"
+                )
+
             with open(fp.name, "wb") as f:
                 for chunk in r.iter_content(chunk_size=1024):
                     if chunk:

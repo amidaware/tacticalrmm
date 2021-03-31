@@ -231,3 +231,12 @@ class TestScriptViews(TacticalTestCase):
         # test updating already added community scripts
         Script.load_community_scripts()
         self.assertEqual(len(info), community_scripts)
+
+    def test_script_filenames_do_not_contain_spaces(self):
+        with open(
+            os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")
+        ) as f:
+            info = json.load(f)
+            for script in info:
+                fn: str = script["filename"]
+                self.assertTrue(" " not in script["filename"])

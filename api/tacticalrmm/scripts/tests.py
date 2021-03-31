@@ -239,4 +239,4 @@ class TestScriptViews(TacticalTestCase):
             info = json.load(f)
             for script in info:
                 fn: str = script["filename"]
-                self.assertTrue(" " not in script["filename"])
+                self.assertTrue(" " not in fn)

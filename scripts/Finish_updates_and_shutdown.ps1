@@ -1,0 +1,1 @@
+Stop-Computer -ComputerName $env:COMPUTERNAME -Force

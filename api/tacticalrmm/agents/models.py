@@ -296,10 +296,13 @@ class Agent(BaseAuditModel):
         from scripts.models import Script
 
         script = Script.objects.get(pk=scriptpk)
+
+        parsed_args = script.parse_script_args(self, script.shell, args)
+
         data = {
             "func": "runscriptfull" if full else "runscript",
             "timeout": timeout,
-            "script_args": args,
+            "script_args": parsed_args,
             "payload": {
                 "code": script.code,
                 "shell": script.shell,

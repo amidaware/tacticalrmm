@@ -30,3 +30,4 @@ mkdocs-material
 pymdown-extensions
 Pygments
 mypy
+pysnooper

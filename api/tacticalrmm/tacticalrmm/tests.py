@@ -1,9 +1,18 @@
+import json
+import os
 from unittest.mock import mock_open, patch
 
 import requests
+from django.conf import settings
 from django.test import TestCase, override_settings
 
-from .utils import generate_winagent_exe, reload_nats
+from .utils import (
+    bitdays_to_string,
+    filter_software,
+    generate_winagent_exe,
+    get_bit_days,
+    reload_nats,
+)
 
 
 class TestUtils(TestCase):
@@ -64,3 +73,32 @@ class TestUtils(TestCase):
         _ = reload_nats()
 
         mock_subprocess.assert_called_once()
+
+    def test_bitdays_to_string(self):
+        a = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        all_days = [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+        ]
+
+        bit_weekdays = get_bit_days(a)
+        r = bitdays_to_string(bit_weekdays)
+        self.assertEqual(r, ", ".join(a))
+
+        bit_weekdays = get_bit_days(all_days)
+        r = bitdays_to_string(bit_weekdays)
+        self.assertEqual(r, "Every day")
+
+    def test_filter_software(self):
+        with open(
+            os.path.join(settings.BASE_DIR, "tacticalrmm/test_data/software1.json")
+        ) as f:
+            sw = json.load(f)
+
+        r = filter_software(sw)
+        self.assertIsInstance(r, list)

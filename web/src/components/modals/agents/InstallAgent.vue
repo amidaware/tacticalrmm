@@ -144,6 +144,11 @@ export default {
         .toLowerCase()
         .replace(/([^a-zA-Z0-9]+)/g, "");
 
+      const fileName =
+        this.arch === "64"
+          ? `rmm-${clientStripped}-${siteStripped}-${this.agenttype}.exe`
+          : `rmm-${clientStripped}-${siteStripped}-${this.agenttype}-x86.exe`;
+
       const data = {
         installMethod: this.installMethod,
         client: this.client.value,
@@ -155,6 +160,7 @@ export default {
         ping: this.ping ? 1 : 0,
         arch: this.arch,
         api,
+        fileName,
       };
 
       if (this.installMethod === "manual") {
@@ -185,37 +191,16 @@ export default {
       } else if (this.installMethod === "exe") {
         this.$q.loading.show({ message: "Generating executable..." });
 
-        const fileName =
-          this.arch === "64"
-            ? `rmm-${clientStripped}-${siteStripped}-${this.agenttype}.exe`
-            : `rmm-${clientStripped}-${siteStripped}-${this.agenttype}-x86.exe`;
-
         this.$axios
-          .post("/agents/installagent/", data)
+          .post("/agents/installagent/", data, { responseType: "blob" })
           .then(r => {
-            const newData = {
-              client: this.client.value,
-              site: this.site.value,
-              agenttype: this.agenttype,
-              power: this.power ? "1" : "0",
-              rdp: this.rdp ? "1" : "0",
-              ping: this.ping ? "1" : "0",
-              goarch: r.data.goarch,
-              token: r.data.token,
-              inno: r.data.inno,
-              url: r.data.url,
-              api,
-            };
-
-            this.$axios.post(r.data.genurl, newData, { responseType: "blob" }).then(r => {
-              this.$q.loading.hide();
-              const blob = new Blob([r.data], { type: "application/vnd.microsoft.portable-executable" });
-              let link = document.createElement("a");
-              link.href = window.URL.createObjectURL(blob);
-              link.download = fileName;
-              link.click();
-              this.showDLMessage();
-            });
+            this.$q.loading.hide();
+            const blob = new Blob([r.data], { type: "application/vnd.microsoft.portable-executable" });
+            let link = document.createElement("a");
+            link.href = window.URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+            this.showDLMessage();
           })
           .catch(e => {
             this.$q.loading.hide();
@@ -227,8 +212,11 @@ export default {
               case 415:
                 err = "Missing 32 bit meshagent-x86.exe. Upload it from File > Upload Mesh Agent";
                 break;
+              case 400:
+                err = "Exe build failed. Check debug error log for exact error message";
+                break;
               default:
-                err = e.response.data;
+                err = "Something went wrong";
             }
             this.notifyError(err, 4000);
           });

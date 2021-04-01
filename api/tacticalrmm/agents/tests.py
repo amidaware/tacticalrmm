@@ -364,7 +364,7 @@ class TestAgentViews(TacticalTestCase):
 
     @patch("os.path.exists")
     def test_install_agent(self, mock_file_exists):
-        url = f"/agents/installagent/"
+        url = "/agents/installagent/"
 
         site = baker.make("clients.Site")
         data = {
@@ -372,12 +372,13 @@ class TestAgentViews(TacticalTestCase):
             "site": site.id,  # type: ignore
             "arch": "64",
             "expires": 23,
-            "installMethod": "exe",
+            "installMethod": "manual",
             "api": "https://api.example.com",
             "agenttype": "server",
             "rdp": 1,
             "ping": 0,
             "power": 0,
+            "fileName": "rmm-client-site-server.exe",
         }
 
         mock_file_exists.return_value = False
@@ -393,7 +394,6 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 415)
 
-        data["installMethod"] = "manual"
         data["arch"] = "64"
         mock_file_exists.return_value = True
         r = self.client.post(url, data, format="json")
@@ -404,6 +404,9 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertIn("power", r.json()["cmd"])
         self.assertIn("ping", r.json()["cmd"])
+
+        data["installMethod"] = "powershell"
+        self.assertEqual(r.status_code, 200)
 
         self.check_not_authenticated("post", url)
 

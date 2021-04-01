@@ -2,10 +2,14 @@ import json
 import os
 import string
 import subprocess
+import tempfile
 import time
+from typing import Union
 
 import pytz
+import requests
 from django.conf import settings
+from django.http import FileResponse
 from loguru import logger
 from rest_framework import status
 from rest_framework.response import Response
@@ -27,6 +31,71 @@ WEEK_DAYS = {
     "Friday": 0x20,
     "Saturday": 0x40,
 }
+
+
+def generate_winagent_exe(
+    client: int,
+    site: int,
+    agent_type: str,
+    rdp: int,
+    ping: int,
+    power: int,
+    arch: str,
+    token: str,
+    api: str,
+    file_name: str,
+) -> Union[Response, FileResponse]:
+
+    inno = (
+        f"winagent-v{settings.LATEST_AGENT_VER}.exe"
+        if arch == "64"
+        else f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
+    )
+
+    data = {
+        "client": client,
+        "site": site,
+        "agenttype": agent_type,
+        "rdp": str(rdp),
+        "ping": str(ping),
+        "power": str(power),
+        "goarch": "amd64" if arch == "64" else "386",
+        "token": token,
+        "inno": inno,
+        "url": settings.DL_64 if arch == "64" else settings.DL_32,
+        "api": api,
+    }
+    headers = {"Content-type": "application/json"}
+
+    errors = []
+    with tempfile.NamedTemporaryFile() as fp:
+        for url in settings.EXE_GEN_URLS:
+            try:
+                r = requests.post(
+                    url,
+                    json=data,
+                    headers=headers,
+                    stream=True,
+                    timeout=900,
+                )
+            except Exception as e:
+                errors.append(str(e))
+            else:
+                errors = []
+                break
+
+        if errors:
+            logger.error(errors)
+            return notify_error(
+                "Something went wrong. Check debug error log for exact error message"
+            )
+
+        with open(fp.name, "wb") as f:
+            for chunk in r.iter_content(chunk_size=1024):  # type: ignore
+                if chunk:
+                    f.write(chunk)
+        del r
+        return FileResponse(open(fp.name, "rb"), as_attachment=True, filename=file_name)
 
 
 def get_default_timezone():

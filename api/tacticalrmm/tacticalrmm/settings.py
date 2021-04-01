@@ -33,7 +33,9 @@ NPM_VER = "12"
 DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
 DL_32 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
 
-EXE_GEN_URL = "https://exe.tacticalrmm.io/api/v1/exe"
+EXE_GEN_URLS = [
+    "https://exe.tacticalrmm.io/api/v1/exe",
+]
 
 try:
     from .local_settings import *

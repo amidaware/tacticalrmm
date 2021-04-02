@@ -23,7 +23,7 @@ class TestScriptViews(TacticalTestCase):
         serializer = ScriptTableSerializer(scripts, many=True)
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(serializer.data, resp.data)
+        self.assertEqual(serializer.data, resp.data)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
@@ -37,10 +37,12 @@ class TestScriptViews(TacticalTestCase):
             "category": "New",
             "code": "Some Test Code\nnew Line",
             "default_timeout": 99,
+            "args": ["hello", "world", r"{{agent.public_ip}}"],
+            "favorite": False,
         }
 
         # test without file upload
-        resp = self.client.post(url, data)
+        resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(Script.objects.filter(name="Name").exists())
         self.assertEqual(Script.objects.get(name="Name").code, data["code"])
@@ -57,6 +59,9 @@ class TestScriptViews(TacticalTestCase):
             "category": "New",
             "filename": file,
             "default_timeout": 4455,
+            "args": json.dumps(
+                ["hello", "world", r"{{agent.public_ip}}"]
+            ),  # simulate javascript's JSON.stringify() for formData
         }
 
         # test with file upload
@@ -124,11 +129,11 @@ class TestScriptViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 404)
 
         script = baker.make("scripts.Script")
-        url = f"/scripts/{script.pk}/script/"
+        url = f"/scripts/{script.pk}/script/"  # type: ignore
         serializer = ScriptSerializer(script)
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(serializer.data, resp.data)
+        self.assertEqual(serializer.data, resp.data)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
@@ -164,27 +169,27 @@ class TestScriptViews(TacticalTestCase):
         script = baker.make(
             "scripts.Script", code_base64="VGVzdA==", shell="powershell"
         )
-        url = f"/scripts/{script.pk}/download/"
+        url = f"/scripts/{script.pk}/download/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, {"filename": f"{script.name}.ps1", "code": "Test"})
+        self.assertEqual(resp.data, {"filename": f"{script.name}.ps1", "code": "Test"})  # type: ignore
 
         # test batch file
         script = baker.make("scripts.Script", code_base64="VGVzdA==", shell="cmd")
-        url = f"/scripts/{script.pk}/download/"
+        url = f"/scripts/{script.pk}/download/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, {"filename": f"{script.name}.bat", "code": "Test"})
+        self.assertEqual(resp.data, {"filename": f"{script.name}.bat", "code": "Test"})  # type: ignore
 
         # test python file
         script = baker.make("scripts.Script", code_base64="VGVzdA==", shell="python")
-        url = f"/scripts/{script.pk}/download/"
+        url = f"/scripts/{script.pk}/download/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, {"filename": f"{script.name}.py", "code": "Test"})
+        self.assertEqual(resp.data, {"filename": f"{script.name}.py", "code": "Test"})  # type: ignore
 
         self.check_not_authenticated("get", url)
 

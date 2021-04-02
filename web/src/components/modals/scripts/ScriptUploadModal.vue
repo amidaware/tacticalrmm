@@ -146,11 +146,12 @@ export default {
         formData.append("category", "");
       }
 
+      formData.append("file_upload", true);
       formData.append("name", this.script.name);
       formData.append("shell", this.script.shell);
       formData.append("description", this.script.description);
       formData.append("default_timeout", this.script.default_timeout);
-      formData.append("args", this.script.args);
+      formData.append("args", JSON.stringify(this.script.args));
 
       this.$axios
         .post("/scripts/scripts/", formData)

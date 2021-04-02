@@ -162,7 +162,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          console.log({ e });
           this.notifyError(e.response.data.non_field_errors, 4000);
         });
     },

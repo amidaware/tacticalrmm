@@ -80,6 +80,21 @@
             <q-input filled dense :readonly="readonly" v-model="localScript.description" label="Description" />
           </div>
         </q-card-section>
+        <div class="q-px-sm q-pt-none q-pb-sm q-mt-none row">
+          <q-select
+            label="Script Arguments (press Enter after typing each argument)"
+            class="col-12"
+            filled
+            v-model="localScript.args"
+            use-input
+            use-chips
+            multiple
+            dense
+            hide-dropdown-icon
+            input-debounce="0"
+            new-value-mode="add"
+          />
+        </div>
         <prism-editor
           class="editor"
           :readonly="readonly"
@@ -126,6 +141,7 @@ export default {
         code: "",
         shell: "powershell",
         description: "",
+        args: [],
         category: "",
         favorite: false,
         script_type: "userdefined",
@@ -232,7 +248,7 @@ export default {
       return this.maximized ? "" : "width: 70vw; max-width: 90vw";
     },
     heightVar() {
-      return this.maximized ? "--prism-height: 80vh" : "--prism-height: 70vh";
+      return this.maximized ? "--prism-height: 76vh" : "--prism-height: 70vh";
     },
   },
   created() {
@@ -245,6 +261,7 @@ export default {
       this.localScript.category = this.script.category;
       this.localScript.script_type = this.script.script_type;
       this.localScript.default_timeout = this.script.default_timeout;
+      this.localScript.args = this.script.args;
       this.getCode();
     }
   },

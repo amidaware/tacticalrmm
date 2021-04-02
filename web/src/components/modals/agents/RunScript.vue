@@ -17,8 +17,19 @@
           map-options
           emit-value
           options-dense
-          @input="setDefaultTimeout"
-        />
+          @input="setScriptDefaults"
+        >
+          <template v-slot:option="scope">
+            <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+              <q-item-section>
+                <q-item-label v-html="scope.opt.label"></q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
+              scope.opt.category
+            }}</q-item-label>
+          </template>
+        </q-select>
       </q-card-section>
       <q-card-section>
         <q-select
@@ -120,21 +131,11 @@ export default {
     },
   },
   methods: {
-    setDefaultTimeout() {
-      this.timeout = this.scriptOptions.find(i => i.value === this.scriptPK).timeout;
-    },
-    getScripts() {
-      let scripts;
-      this.$axios.get("/scripts/scripts/").then(r => {
-        if (this.showCommunityScripts) {
-          scripts = r.data;
-        } else {
-          scripts = r.data.filter(i => i.script_type !== "builtin");
-        }
-        this.scriptOptions = scripts
-          .map(script => ({ label: script.name, value: script.id, timeout: script.default_timeout }))
-          .sort((a, b) => a.label.localeCompare(b.label));
-      });
+    setScriptDefaults() {
+      const script = this.scriptOptions.find(i => i.value === this.scriptPK);
+
+      this.timeout = script.timeout;
+      this.args = script.args;
     },
     send() {
       this.ret = null;
@@ -167,7 +168,7 @@ export default {
     },
   },
   created() {
-    this.getScripts();
+    this.scriptOptions = this.getScriptOptions(this.showCommunityScripts);
   },
 };
 </script>

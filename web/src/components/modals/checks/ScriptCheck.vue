@@ -31,7 +31,19 @@
           map-options
           emit-value
           :disable="this.mode === 'edit'"
-        />
+          @input="setScriptDefaults"
+        >
+          <template v-slot:option="scope">
+            <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+              <q-item-section>
+                <q-item-label v-html="scope.opt.label"></q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
+              scope.opt.category
+            }}</q-item-label>
+          </template>
+        </q-select>
       </q-card-section>
       <q-card-section>
         <q-select
@@ -111,6 +123,8 @@
 
 <script>
 import mixins from "@/mixins/mixins";
+import { mapGetters } from "vuex";
+
 export default {
   name: "ScriptCheck",
   props: {
@@ -136,14 +150,10 @@ export default {
       failOptions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     };
   },
+  computed: {
+    ...mapGetters(["showCommunityScripts"]),
+  },
   methods: {
-    getScripts() {
-      this.$axios.get("/scripts/scripts/").then(r => {
-        this.scriptOptions = r.data
-          .map(script => ({ label: script.name, value: script.id }))
-          .sort((a, b) => a.label.localeCompare(b.label));
-      });
-    },
     getCheck() {
       this.$axios.get(`/checks/${this.checkpk}/check/`).then(r => {
         this.scriptcheck = r.data;
@@ -175,6 +185,12 @@ export default {
         })
         .catch(e => this.notifyError(e.response.data.non_field_errors));
     },
+    setScriptDefaults() {
+      const script = this.scriptOptions.find(i => i.value === this.scriptcheck.script);
+
+      this.scriptcheck.timeout = script.timeout;
+      this.scriptcheck.script_args = script.args;
+    },
     reloadChecks() {
       if (this.agentpk) {
         this.$store.dispatch("loadChecks", this.agentpk);
@@ -189,7 +205,7 @@ export default {
       this.getCheck();
     }
 
-    this.getScripts();
+    this.scriptOptions = this.getScriptOptions(this.showCommunityScripts);
   },
 };
 </script>

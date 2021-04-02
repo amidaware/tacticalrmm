@@ -37,7 +37,19 @@
                 :options="scriptOptions"
                 map-options
                 emit-value
-              />
+                @input="setScriptDefaults('failure')"
+              >
+                <template v-slot:option="scope">
+                  <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+                    <q-item-section>
+                      <q-item-label v-html="scope.opt.label"></q-item-label>
+                    </q-item-section>
+                  </q-item>
+                  <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
+                    scope.opt.category
+                  }}</q-item-label>
+                </template>
+              </q-select>
             </div>
 
             <div class="col-2 q-my-sm">Failure action args</div>
@@ -89,7 +101,19 @@
                 :options="scriptOptions"
                 map-options
                 emit-value
-              />
+                @input="setScriptDefaults('resolved')"
+              >
+                <template v-slot:option="scope">
+                  <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+                    <q-item-section>
+                      <q-item-label v-html="scope.opt.label"></q-item-label>
+                    </q-item-section>
+                  </q-item>
+                  <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
+                    scope.opt.category
+                  }}</q-item-label>
+                </template>
+              </q-select>
             </div>
 
             <div class="col-2 q-my-sm">Resolved action args</div>
@@ -517,6 +541,7 @@
 
 <script>
 import mixins from "@/mixins/mixins";
+import { mapGetters } from "vuex";
 
 export default {
   name: "AlertTemplateForm",
@@ -577,6 +602,7 @@ export default {
     };
   },
   computed: {
+    ...mapGetters(["showCommunityScripts"]),
     title() {
       return this.editing ? "Edit Alert Template" : "Add Alert Template";
     },
@@ -585,6 +611,15 @@ export default {
     },
   },
   methods: {
+    setScriptDefaults(type) {
+      if (type === "failure") {
+        const script = this.scriptOptions.find(i => i.value === this.template.action);
+        this.template.action_args = script.args;
+      } else if (type === "resolved") {
+        const script = this.scriptOptions.find(i => i.value === this.template.resolved_action);
+        this.template.resolved_action_args = script.args;
+      }
+    },
     toggleAddEmail() {
       this.$q
         .dialog({
@@ -657,13 +692,6 @@ export default {
           });
       }
     },
-    getScripts() {
-      this.$axios.get("/scripts/scripts/").then(r => {
-        this.scriptOptions = r.data
-          .map(script => ({ label: script.name, value: script.id }))
-          .sort((a, b) => a.label.localeCompare(b.label));
-      });
-    },
     show() {
       this.$refs.dialog.show();
     },
@@ -679,7 +707,7 @@ export default {
     },
   },
   mounted() {
-    this.getScripts();
+    this.scriptOptions = this.getScriptOptions();
     // Copy alertTemplate prop locally
     if (this.editing) Object.assign(this.template, this.alertTemplate);
   },

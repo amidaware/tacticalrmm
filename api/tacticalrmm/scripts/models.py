@@ -1,8 +1,7 @@
 import base64
 from typing import List, Union, Any
 import re
-
-# import pysnooper
+from django.contrib.postgres.fields import ArrayField
 
 from django.db import models
 
@@ -29,6 +28,12 @@ class Script(BaseAuditModel):
     )
     script_type = models.CharField(
         max_length=100, choices=SCRIPT_TYPES, default="userdefined"
+    )
+    args = ArrayField(
+        models.TextField(null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
     )
     favorite = models.BooleanField(default=False)
     category = models.CharField(max_length=100, null=True, blank=True)
@@ -73,12 +78,23 @@ class Script(BaseAuditModel):
                 s = cls.objects.filter(script_type="builtin").filter(
                     name=script["name"]
                 )
+
+                category = (
+                    script["category"] if "category" in script.keys() else "Community"
+                )
+
+                default_timeout = (
+                    script["default_timeout"]
+                    if "default_timeout" in script.keys()
+                    else 90
+                )
                 if s.exists():
                     i = s.first()
                     i.name = script["name"]
                     i.description = script["description"]
-                    i.category = "Community"
+                    i.category = category
                     i.shell = script["shell"]
+                    i.default_timeout = default_timeout
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
                         script_bytes = (
@@ -91,6 +107,7 @@ class Script(BaseAuditModel):
                             "name",
                             "description",
                             "category",
+                            "default_timeout",
                             "code_base64",
                             "shell",
                         ]
@@ -111,7 +128,8 @@ class Script(BaseAuditModel):
                             filename=script["filename"],
                             shell=script["shell"],
                             script_type="builtin",
-                            category="Community",
+                            category=category,
+                            default_timeout=default_timeout,
                         ).save()
 
     @staticmethod
@@ -122,7 +140,6 @@ class Script(BaseAuditModel):
         return ScriptSerializer(script).data
 
     @classmethod
-    #    @pysnooper.snoop()
     def parse_script_args(
         cls, agent, shell: str, args: List[str] = list()
     ) -> Union[List[str], None]:
@@ -166,7 +183,7 @@ class Script(BaseAuditModel):
                 if hasattr(obj, temp[1]):
                     value = getattr(obj, temp[1])
 
-                elif CustomField.objects.filter(model=model, name=temp[1]):
+                elif CustomField.objects.filter(model=model, name=temp[1]).exists():
 
                     field = CustomField.objects.get(model=model, name=temp[1])
                     model_fields = getattr(field, f"{model}_fields")

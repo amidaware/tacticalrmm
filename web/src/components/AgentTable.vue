@@ -511,13 +511,13 @@ export default {
       }, 500);
     },
     runFavScript(scriptpk, agentpk) {
-      let default_timeout = this.favoriteScripts.find(i => i.value === scriptpk).timeout;
+      const script = this.favoriteScripts.find(i => i.value === scriptpk);
       const data = {
         pk: agentpk,
-        timeout: default_timeout,
+        timeout: scripttimeout,
         scriptPK: scriptpk,
         output: "forget",
-        args: [],
+        args: script.args,
       };
       this.$axios
         .post("/agents/runscript/", data)
@@ -533,7 +533,7 @@ export default {
         }
         this.favoriteScripts = r.data
           .filter(k => k.favorite === true)
-          .map(script => ({ label: script.name, value: script.id, timeout: script.default_timeout }))
+          .map(script => ({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args }))
           .sort((a, b) => a.label.localeCompare(b.label));
       });
     },

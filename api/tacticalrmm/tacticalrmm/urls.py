@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.urls import include, path
 from knox import views as knox_views
+from core import consumers
 
 from accounts.views import CheckCreds, LoginView
 
@@ -29,3 +30,7 @@ if hasattr(settings, "ADMIN_ENABLED") and settings.ADMIN_ENABLED:
     from django.contrib import admin
 
     urlpatterns += (path(settings.ADMIN_URL, admin.site.urls),)
+
+ws_urlpatterns = [
+    path("ws/nettop/", consumers.NetTop.as_asgi()),  # type: ignore
+]

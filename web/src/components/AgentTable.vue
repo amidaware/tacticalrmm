@@ -514,7 +514,7 @@ export default {
       const script = this.favoriteScripts.find(i => i.value === scriptpk);
       const data = {
         pk: agentpk,
-        timeout: scripttimeout,
+        timeout: script.timeout,
         scriptPK: scriptpk,
         output: "forget",
         args: script.args,

@@ -249,7 +249,8 @@
     "name": "Rename Computer",
     "description": "Rename computer. First parameter will be new PC name. 2nd parameter if yes will auto-reboot machine",
     "shell": "powershell",
-    "category": "TRMM (Win):Other"
+    "category": "TRMM (Win):Other",
+    "default_timeout": 30
   },
   {
     "filename": "Finish_updates_and_restart.ps1",

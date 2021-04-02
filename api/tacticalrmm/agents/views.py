@@ -672,49 +672,6 @@ def bulk(request):
 
 
 @api_view(["POST"])
-def agent_counts(request):
-
-    server_offline_count = len(
-        [
-            agent
-            for agent in Agent.objects.filter(monitoring_type="server").only(
-                "pk",
-                "last_seen",
-                "overdue_time",
-                "offline_time",
-            )
-            if not agent.status == "online"
-        ]
-    )
-
-    workstation_offline_count = len(
-        [
-            agent
-            for agent in Agent.objects.filter(monitoring_type="workstation").only(
-                "pk",
-                "last_seen",
-                "overdue_time",
-                "offline_time",
-            )
-            if not agent.status == "online"
-        ]
-    )
-
-    return Response(
-        {
-            "total_server_count": Agent.objects.filter(
-                monitoring_type="server"
-            ).count(),
-            "total_server_offline_count": server_offline_count,
-            "total_workstation_count": Agent.objects.filter(
-                monitoring_type="workstation"
-            ).count(),
-            "total_workstation_offline_count": workstation_offline_count,
-        }
-    )
-
-
-@api_view(["POST"])
 def agent_maintenance(request):
     if request.data["type"] == "Client":
         Agent.objects.filter(site__client_id=request.data["id"]).update(

@@ -32,5 +32,5 @@ if hasattr(settings, "ADMIN_ENABLED") and settings.ADMIN_ENABLED:
     urlpatterns += (path(settings.ADMIN_URL, admin.site.urls),)
 
 ws_urlpatterns = [
-    path("ws/nettop/", consumers.NetTop.as_asgi()),  # type: ignore
+    path("ws/dashinfo/", consumers.DashInfo.as_asgi()),  # type: ignore
 ]

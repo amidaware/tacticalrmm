@@ -154,9 +154,6 @@ export default function () {
       toggleMaintenanceMode(context, data) {
         return axios.post("/agents/maintenance/", data)
       },
-      /* getAgentCounts(context, data = {}) {
-        return axios.post("/agents/agent_counts/", data)
-      }, */
       getDashInfo(context) {
         return axios.get("/core/dashinfo/");
       },

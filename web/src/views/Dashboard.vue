@@ -540,7 +540,7 @@ export default {
   methods: {
     setupWS() {
       console.log("Starting websocket");
-      this.ws = new WebSocket(`ws://${this.wsUrl}/ws/nettop/?access_token=${this.token}`);
+      this.ws = new WebSocket(`ws://${this.wsUrl}/ws/dashinfo/?access_token=${this.token}`);
       this.ws.onopen = e => {
         console.log("Connected to ws");
       };
@@ -550,9 +550,6 @@ export default {
         this.$q.dark.set(this.darkMode);
         this.currentTRMMVersion = data.trmm_version;
         this.serverCount = data.total_server_count;
-        this.$store.commit("SET_AGENT_DBLCLICK_ACTION", data.dbl_click_action);
-        this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", data.default_agent_tbl_tab);
-        this.$store.commit("SET_CLIENT_TREE_SORT", data.client_tree_sort);
         this.serverOfflineCount = data.total_server_offline_count;
         this.workstationCount = data.total_workstation_count;
         this.workstationOfflineCount = data.total_workstation_offline_count;
@@ -562,7 +559,7 @@ export default {
         if (e.code !== 1000) {
           setTimeout(() => {
             this.setupWS();
-          }, 5 * 1000);
+          }, 2 * 1000);
         }
       };
       this.ws.onerror = err => {
@@ -577,7 +574,6 @@ export default {
     refreshEntireSite() {
       this.$store.dispatch("loadTree");
       this.getDashInfo(false);
-      //this.getAgentCounts();
 
       if (this.allClientsActive) {
         this.loadAllClients();
@@ -709,30 +705,21 @@ export default {
     livePoll() {
       this.poll = setInterval(() => {
         this.$store.dispatch("checkVer");
-        //this.getAgentCounts();
         this.getDashInfo(false);
       }, 60 * 5 * 1000);
     },
     setSplitter(val) {
       this.$store.commit("SET_SPLITTER", val);
     },
-    /* getAgentCounts(selected) {
-      this.$store.dispatch("getAgentCounts").then(r => {
-        this.serverCount = r.data.total_server_count;
-        this.serverOfflineCount = r.data.total_server_offline_count;
-        this.workstationCount = r.data.total_workstation_count;
-        this.workstationOfflineCount = r.data.total_workstation_offline_count;
-      });
-    }, */
     getDashInfo(edited = true) {
       this.$store.dispatch("getDashInfo").then(r => {
-        /* if (edited) {
+        if (edited) {
           this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", r.data.default_agent_tbl_tab);
           this.$store.commit("SET_CLIENT_TREE_SORT", r.data.client_tree_sort);
-        } */
-        //this.darkMode = r.data.dark_mode;
-        //this.$q.dark.set(this.darkMode);
-        //this.$store.commit("SET_AGENT_DBLCLICK_ACTION", r.data.dbl_click_action);
+        }
+        this.darkMode = r.data.dark_mode;
+        this.$q.dark.set(this.darkMode);
+        this.$store.commit("SET_AGENT_DBLCLICK_ACTION", r.data.dbl_click_action);
         this.$store.commit("setShowCommunityScripts", r.data.show_community_scripts);
       });
     },
@@ -865,7 +852,6 @@ export default {
     this.getDashInfo();
     this.$store.dispatch("getUpdatedSites");
     this.$store.dispatch("checkVer");
-    //this.getAgentCounts();
     this.getTree();
   },
   mounted() {

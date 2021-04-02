@@ -9,7 +9,7 @@ from agents.models import Agent
 from accounts.models import User
 
 
-class NetTop(AsyncWebsocketConsumer):
+class DashInfo(AsyncWebsocketConsumer):
     async def connect(self):
 
         self.user = self.scope["user"]
@@ -19,12 +19,12 @@ class NetTop(AsyncWebsocketConsumer):
 
         await self.accept()
         self.connected = True
-        self.net = asyncio.create_task(self.send_net_top())
+        self.dash_info = asyncio.create_task(self.send_dash_info())
 
     async def disconnect(self, close_code):
 
         try:
-            self.net.cancel()
+            self.dash_info.cancel()
         except:
             pass
 
@@ -82,7 +82,7 @@ class NetTop(AsyncWebsocketConsumer):
         }
         return json.dumps(ret)
 
-    async def send_net_top(self):
+    async def send_dash_info(self):
         while self.connected:
             c = await self.get_dashboard_info()
             await self.send(c)

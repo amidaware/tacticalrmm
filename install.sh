@@ -444,6 +444,26 @@ EOF
 )"
 echo "${rmmservice}" | sudo tee /etc/systemd/system/rmm.service > /dev/null
 
+daphneservice="$(cat << EOF
+[Unit]
+Description=django channels daemon
+After=network.target
+
+[Service]
+User=${USER}
+Group=www-data
+WorkingDirectory=/rmm/api/tacticalrmm
+Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/rmm/api/env/bin/daphne -u /rmm/daphne.sock tacticalrmm.asgi:application
+Restart=always
+RestartSec=3s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service > /dev/null
+
 natsservice="$(cat << EOF
 [Unit]
 Description=NATS Server
@@ -512,6 +532,20 @@ server {
         include     /etc/nginx/uwsgi_params;
         uwsgi_read_timeout 500s;
         uwsgi_ignore_client_abort on;
+    }
+
+    location ~ ^/ws/ {
+        proxy_pass http://unix:/rmm/daphne.sock;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \"upgrade";
+
+        proxy_redirect     off;
+        proxy_set_header   Host \$host;
+        proxy_set_header   X-Real-IP \$remote_addr;
+        proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Host \$server_name;
     }
 
     location / {
@@ -713,7 +747,7 @@ sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/fro
 
 print_green 'Enabling Services'
 
-for i in rmm.service celery.service celerybeat.service nginx
+for i in rmm.service daphne.service celery.service celerybeat.service nginx
 do
   sudo systemctl enable ${i}
   sudo systemctl stop ${i}
@@ -783,7 +817,7 @@ sudo systemctl start nats.service
 sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
 print_green 'Restarting services'
-for i in rmm.service celery.service celerybeat.service
+for i in rmm.service daphne.service celery.service celerybeat.service
 do
   sudo systemctl stop ${i}
   sudo systemctl start ${i}

@@ -1,15 +1,15 @@
 import asyncio
-import json
 
-from django.contrib.auth.models import AnonymousUser
-from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
+from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.conf import settings
-from agents.models import Agent
+from django.contrib.auth.models import AnonymousUser
+
 from accounts.models import User
+from agents.models import Agent
 
 
-class DashInfo(AsyncWebsocketConsumer):
+class DashInfo(AsyncJsonWebsocketConsumer):
     async def connect(self):
 
         self.user = self.scope["user"]
@@ -31,7 +31,7 @@ class DashInfo(AsyncWebsocketConsumer):
         self.connected = False
         await self.close()
 
-    async def receive(self, text_data=None, bytes_data=None):
+    async def receive(self, json_data=None):
         pass
 
     @database_sync_to_async
@@ -80,10 +80,10 @@ class DashInfo(AsyncWebsocketConsumer):
                 monitoring_type="workstation"
             ).count(),
         }
-        return json.dumps(ret)
+        return ret
 
     async def send_dash_info(self):
         while self.connected:
             c = await self.get_dashboard_info()
-            await self.send(c)
+            await self.send_json(c)
             await asyncio.sleep(1)

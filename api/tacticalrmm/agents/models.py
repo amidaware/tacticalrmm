@@ -5,7 +5,6 @@ import time
 from collections import Counter
 from distutils.version import LooseVersion
 from typing import Any
-from django.contrib.postgres.fields import ArrayField
 
 import msgpack
 import validators
@@ -14,6 +13,7 @@ from Crypto.Hash import SHA3_384
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone as djangotime
 from loguru import logger

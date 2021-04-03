@@ -1,9 +1,9 @@
 from django.conf import settings
 from django.urls import include, path
 from knox import views as knox_views
-from core import consumers
 
 from accounts.views import CheckCreds, LoginView
+from core import consumers
 
 urlpatterns = [
     path("checkcreds/", CheckCreds.as_view()),

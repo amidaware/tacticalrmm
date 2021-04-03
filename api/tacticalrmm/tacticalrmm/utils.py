@@ -8,16 +8,15 @@ from typing import Union
 
 import pytz
 import requests
+from channels.auth import AuthMiddlewareStack
+from channels.db import database_sync_to_async
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from django.http import FileResponse
+from knox.auth import TokenAuthentication
 from loguru import logger
 from rest_framework import status
 from rest_framework.response import Response
-
-from channels.auth import AuthMiddlewareStack
-from knox.auth import TokenAuthentication
-from django.contrib.auth.models import AnonymousUser
-from channels.db import database_sync_to_async
 
 from agents.models import Agent
 

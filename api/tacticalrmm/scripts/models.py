@@ -1,8 +1,8 @@
 import base64
-from typing import List, Union, Any
 import re
-from django.contrib.postgres.fields import ArrayField
+from typing import Any, List, Union
 
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 from logs.models import BaseAuditModel

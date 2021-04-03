@@ -1,5 +1,0 @@
-{
-  "e2e-cypress": {
-    "runnerCommand": "cross-env E2E_TEST=true start-test \"quasar dev\" http-get://localhost:8080 \"cypress run\""
-  }
-}

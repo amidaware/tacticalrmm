@@ -1,8 +1,0 @@
-{
-  "@quasar/testing": {},
-  "@quasar/testing-e2e-cypress": {
-    "options": [
-      "scripts"
-    ]
-  }
-}

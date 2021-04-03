@@ -540,7 +540,7 @@ export default {
   methods: {
     setupWS() {
       console.log("Starting websocket");
-      const proto = process.env.NODE_ENV === "production" ? "wss" : "ws";
+      const proto = process.env.NODE_ENV === "production" || process.env.DOCKER_BUILD ? "wss" : "ws";
       this.ws = new WebSocket(`${proto}://${this.wsUrl}/ws/dashinfo/?access_token=${this.token}`);
       this.ws.onopen = e => {
         console.log("Connected to ws");

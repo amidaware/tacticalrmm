@@ -1,12 +1,38 @@
 from unittest.mock import patch
 
+from channels.db import database_sync_to_async
+from channels.testing import WebsocketCommunicator
 from model_bakery import baker
 
 from tacticalrmm.test import TacticalTestCase
 
+from .consumers import DashInfo
 from .models import CoreSettings, CustomField
 from .serializers import CustomFieldSerializer
 from .tasks import core_maintenance_tasks
+
+
+class TestConsumers(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+        self.authenticate()
+
+    @database_sync_to_async
+    def get_token(self):
+        from rest_framework.authtoken.models import Token
+
+        token = Token.objects.create(user=self.john)
+        return token.key
+
+    async def test_dash_info(self):
+        key = self.get_token()
+        communicator = WebsocketCommunicator(
+            DashInfo.as_asgi(), f"/ws/dashinfo/?access_token={key}"
+        )
+        communicator.scope["user"] = self.john
+        connected, _ = await communicator.connect()
+        assert connected
+        await communicator.disconnect()
 
 
 class TestCoreTasks(TacticalTestCase):

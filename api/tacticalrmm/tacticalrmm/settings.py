@@ -37,7 +37,7 @@ EXE_GEN_URLS = [
     "https://exe.tacticalrmm.io/api/v1/exe",
 ]
 
-ASGI_APPLICATION = "tacticalrmm.routing.application"
+ASGI_APPLICATION = "tacticalrmm.asgi.application"
 
 try:
     from .local_settings import *

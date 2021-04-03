@@ -37,6 +37,8 @@ EXE_GEN_URLS = [
     "https://exe.tacticalrmm.io/api/v1/exe",
 ]
 
+ASGI_APPLICATION = "tacticalrmm.asgi.application"
+
 try:
     from .local_settings import *
 except ImportError:
@@ -47,6 +49,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.staticfiles",
+    "channels",
     "rest_framework",
     "rest_framework.authtoken",
     "knox",

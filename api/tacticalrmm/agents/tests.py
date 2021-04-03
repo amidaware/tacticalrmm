@@ -843,7 +843,7 @@ class TestAgentViewsNew(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
-    def test_agent_counts(self):
+    """ def test_agent_counts(self):
         url = "/agents/agent_counts/"
 
         # create some data
@@ -870,7 +870,7 @@ class TestAgentViewsNew(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data, data)  # type: ignore
 
-        self.check_not_authenticated("post", url)
+        self.check_not_authenticated("post", url) """
 
     def test_agent_maintenance_mode(self):
         url = "/agents/maintenance/"

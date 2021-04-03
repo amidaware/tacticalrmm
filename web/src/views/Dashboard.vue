@@ -364,6 +364,7 @@
 <script>
 import mixins from "@/mixins/mixins";
 import { mapState, mapGetters } from "vuex";
+import { getBaseUrl } from "@/boot/axios";
 import FileBar from "@/components/FileBar";
 import AgentTable from "@/components/AgentTable";
 import SubTableTabs from "@/components/SubTableTabs";
@@ -388,6 +389,7 @@ export default {
   mixins: [mixins],
   data() {
     return {
+      ws: null,
       darkMode: true,
       showInstallAgentModal: false,
       sitePk: null,
@@ -536,6 +538,36 @@ export default {
     },
   },
   methods: {
+    setupWS() {
+      console.log("Starting websocket");
+      const proto = process.env.NODE_ENV === "production" ? "wss" : "ws";
+      this.ws = new WebSocket(`${proto}://${this.wsUrl}/ws/dashinfo/?access_token=${this.token}`);
+      this.ws.onopen = e => {
+        console.log("Connected to ws");
+      };
+      this.ws.onmessage = e => {
+        const data = JSON.parse(e.data);
+        this.darkMode = data.dark_mode;
+        this.$q.dark.set(this.darkMode);
+        this.currentTRMMVersion = data.trmm_version;
+        this.serverCount = data.total_server_count;
+        this.serverOfflineCount = data.total_server_offline_count;
+        this.workstationCount = data.total_workstation_count;
+        this.workstationOfflineCount = data.total_workstation_offline_count;
+      };
+      this.ws.onclose = e => {
+        console.log(`Closed code: ${e.code}`);
+        if (e.code !== 1000) {
+          setTimeout(() => {
+            this.setupWS();
+          }, 2 * 1000);
+        }
+      };
+      this.ws.onerror = err => {
+        console.log(`ERROR! Code: ${err.code}`);
+        this.ws.close();
+      };
+    },
     toggleDark(val) {
       this.$q.dark.set(val);
       this.$axios.patch("/accounts/users/ui/", { dark_mode: val });
@@ -543,7 +575,6 @@ export default {
     refreshEntireSite() {
       this.$store.dispatch("loadTree");
       this.getDashInfo(false);
-      this.getAgentCounts();
 
       if (this.allClientsActive) {
         this.loadAllClients();
@@ -675,20 +706,11 @@ export default {
     livePoll() {
       this.poll = setInterval(() => {
         this.$store.dispatch("checkVer");
-        this.getAgentCounts();
         this.getDashInfo(false);
       }, 60 * 5 * 1000);
     },
     setSplitter(val) {
       this.$store.commit("SET_SPLITTER", val);
-    },
-    getAgentCounts(selected) {
-      this.$store.dispatch("getAgentCounts").then(r => {
-        this.serverCount = r.data.total_server_count;
-        this.serverOfflineCount = r.data.total_server_offline_count;
-        this.workstationCount = r.data.total_workstation_count;
-        this.workstationOfflineCount = r.data.total_workstation_offline_count;
-      });
     },
     getDashInfo(edited = true) {
       this.$store.dispatch("getDashInfo").then(r => {
@@ -698,7 +720,6 @@ export default {
         }
         this.darkMode = r.data.dark_mode;
         this.$q.dark.set(this.darkMode);
-        this.currentTRMMVersion = r.data.trmm_version;
         this.$store.commit("SET_AGENT_DBLCLICK_ACTION", r.data.dbl_click_action);
         this.$store.commit("setShowCommunityScripts", r.data.show_community_scripts);
       });
@@ -784,6 +805,12 @@ export default {
       clients: state => state.clients,
     }),
     ...mapGetters(["selectedAgentPk", "needRefresh"]),
+    wsUrl() {
+      return getBaseUrl().split("://")[1];
+    },
+    token() {
+      return this.$store.state.token;
+    },
     tab: {
       get: function () {
         return this.$store.state.defaultAgentTblTab;
@@ -822,16 +849,17 @@ export default {
     },
   },
   created() {
+    this.setupWS();
     this.getDashInfo();
     this.$store.dispatch("getUpdatedSites");
     this.$store.dispatch("checkVer");
-    this.getAgentCounts();
     this.getTree();
   },
   mounted() {
     this.livePoll();
   },
   beforeDestroy() {
+    this.ws.close();
     clearInterval(this.poll);
   },
 };

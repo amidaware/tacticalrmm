@@ -1,14 +1,15 @@
 import os
+
 import django
 
-from channels.routing import ProtocolTypeRouter, URLRouter
-from django.core.asgi import get_asgi_application
+from channels.routing import ProtocolTypeRouter, URLRouter  # isort:skip
+from django.core.asgi import get_asgi_application  # isort:skip
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tacticalrmm.settings")
 django.setup()
 
-from tacticalrmm.utils import KnoxAuthMiddlewareStack
-from .urls import ws_urlpatterns
+from tacticalrmm.utils import KnoxAuthMiddlewareStack  # isort:skip
+from .urls import ws_urlpatterns  # isort:skip
 
 
 application = ProtocolTypeRouter(

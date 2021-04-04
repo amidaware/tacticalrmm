@@ -82,9 +82,9 @@ cls() {
 CHECK_HAS_DAPHNE=$(grep daphne.sock /etc/nginx/sites-available/rmm.conf)
 if ! [[ $CHECK_HAS_DAPHNE ]]; then
   cls
-  echo -ne "${GREEN}Nginx config changes required before continuing.${NC}\n"
-  echo -ne "${GREEN}Please check the v0.5.0 release notes on github for instructions, then re-run this script.${NC}\n"
-  echo -ne "${GREEN}Aborting...${NC}\n"
+  echo -ne "${RED}Nginx config changes required before continuing.${NC}\n"
+  echo -ne "${RED}Please check the v0.5.0 release notes on github for instructions, then re-run this script.${NC}\n"
+  echo -ne "${RED}Aborting...${NC}\n"
   exit 1
 fi
 
@@ -96,7 +96,7 @@ if ! sudo nginx -t > /dev/null 2>&1; then
   exit 1
 fi
 
-if [ -f /etc/systemd/system/daphne.service ]; then
+if ! [ -f /etc/systemd/system/daphne.service ]; then
 daphneservice="$(cat << EOF
 [Unit]
 Description=django channels daemon

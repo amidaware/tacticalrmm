@@ -84,6 +84,7 @@ if ! [[ $CHECK_HAS_DAPHNE ]]; then
   cls
   echo -ne "${RED}Nginx config changes required before continuing.${NC}\n"
   echo -ne "${RED}Please check the v0.5.0 release notes on github for instructions, then re-run this script.${NC}\n"
+  echo -ne "${YELLOW}https://github.com/wh1te909/tacticalrmm/releases/tag/v0.5.0${NC}\n"
   echo -ne "${RED}Aborting...${NC}\n"
   exit 1
 fi

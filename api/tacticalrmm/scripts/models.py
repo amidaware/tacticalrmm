@@ -1,7 +1,6 @@
 import base64
 import re
 from typing import Any, List, Union
-
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
@@ -88,6 +87,9 @@ class Script(BaseAuditModel):
                     if "default_timeout" in script.keys()
                     else 90
                 )
+
+                args = script["args"] if "args" in script.keys() else []
+
                 if s.exists():
                     i = s.first()
                     i.name = script["name"]
@@ -95,6 +97,7 @@ class Script(BaseAuditModel):
                     i.category = category
                     i.shell = script["shell"]
                     i.default_timeout = default_timeout
+                    i.args = args
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
                         script_bytes = (
@@ -110,6 +113,7 @@ class Script(BaseAuditModel):
                             "default_timeout",
                             "code_base64",
                             "shell",
+                            "args",
                         ]
                     )
                 else:
@@ -130,6 +134,7 @@ class Script(BaseAuditModel):
                             script_type="builtin",
                             category=category,
                             default_timeout=default_timeout,
+                            args=args,
                         ).save()
 
     @staticmethod
@@ -187,17 +192,21 @@ class Script(BaseAuditModel):
 
                     field = CustomField.objects.get(model=model, name=temp[1])
                     model_fields = getattr(field, f"{model}_fields")
+                    value = None
                     if model_fields.filter(**{model: obj}).exists():
-
                         value = model_fields.get(**{model: obj}).value
-                    else:
+
+                    if not value and field.default_value:
                         value = field.default_value
 
                     # check if value exists and if not use defa
                     if value and field.type == "multiple":
                         value = format_shell_array(shell, value)
-                    elif field.type == "checkbox":
+                    elif value and field.type == "checkbox":
                         value = format_shell_bool(shell, value)
+
+                    if not value:
+                        continue
 
                 else:
                     # ignore arg since property is invalid
@@ -224,7 +233,7 @@ def format_shell_array(shell: str, value: Any) -> str:
         temp_string = ""
         for item in value:
             temp_string += item + ","
-        return "[" + temp_string.strip(",") + "]"
+        return temp_string.strip(",")
 
 
 def format_shell_bool(shell: str, value: Any) -> str:

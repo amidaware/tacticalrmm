@@ -1,6 +1,8 @@
 import base64
 import re
+from loguru import logger
 from typing import Any, List, Union
+from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
@@ -16,6 +18,8 @@ SCRIPT_TYPES = [
     ("userdefined", "User Defined"),
     ("builtin", "Built In"),
 ]
+
+logger.configure(**settings.LOG_CONFIG)
 
 
 class Script(BaseAuditModel):
@@ -213,7 +217,12 @@ class Script(BaseAuditModel):
                     continue
 
                 # replace the value in the arg and push to array
-                temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))  # type: ignore
+                # log any unhashable type errors
+                try:
+                    temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))  # type: ignore
+                except Exception as e:
+                    logger.error(e)
+                    continue
 
             else:
                 temp_args.append(arg)

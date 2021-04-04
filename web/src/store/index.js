@@ -50,6 +50,9 @@ export default function () {
       checks(state) {
         return state.agentChecks;
       },
+      showCommunityScripts(state) {
+        return state.showCommunityScripts;
+      },
       sortedUpdates(state) {
         // sort patches by latest then not installed
         if (!state.winUpdates.winupdates) {

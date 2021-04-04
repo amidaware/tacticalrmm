@@ -5,7 +5,6 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 
-from accounts.models import User
 from agents.models import Agent
 
 
@@ -62,15 +61,8 @@ class DashInfo(AsyncJsonWebsocketConsumer):
             ]
         )
 
-        user = User.objects.get(pk=self.user.pk)
-
         ret = {
             "trmm_version": settings.TRMM_VERSION,
-            "client_tree_sort": user.client_tree_sort,
-            "default_agent_tbl_tab": user.default_agent_tbl_tab,
-            "dbl_click_action": user.agent_dblclick_action,
-            "dark_mode": user.dark_mode,
-            "show_community_scripts": user.show_community_scripts,
             "total_server_offline_count": server_offline_count,
             "total_workstation_offline_count": workstation_offline_count,
             "total_server_count": Agent.objects.filter(
@@ -86,4 +78,4 @@ class DashInfo(AsyncJsonWebsocketConsumer):
         while self.connected:
             c = await self.get_dashboard_info()
             await self.send_json(c)
-            await asyncio.sleep(1)
+            await asyncio.sleep(30)

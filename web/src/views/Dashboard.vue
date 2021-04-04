@@ -547,8 +547,6 @@ export default {
       };
       this.ws.onmessage = e => {
         const data = JSON.parse(e.data);
-        this.darkMode = data.dark_mode;
-        this.$q.dark.set(this.darkMode);
         this.currentTRMMVersion = data.trmm_version;
         this.serverCount = data.total_server_count;
         this.serverOfflineCount = data.total_server_offline_count;

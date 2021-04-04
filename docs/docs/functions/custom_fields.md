@@ -10,7 +10,6 @@ Please check the following video for examples until proper docs are written:
 
 [https://www.youtube.com/watch?v=0-5jGGL3FOM](https://www.youtube.com/watch?v=0-5jGGL3FOM)
 
-<iframe src="https://www.youtube.com/watch?v=0-5jGGL3FOM" frameborder="0"> 
 
 
 

@@ -4,8 +4,6 @@
 
 You should periodically run `sudo apt update` and `sudo apt -y upgrade` to keep your server up to date.
 
-You can also update `npm` if prompted to by a message that might appear when running the `update.sh` script.
-
 Other than this, you should avoid making any changes to your server and let the `update.sh` script handle everything else for you.
 #### Updating to the latest RMM version
 

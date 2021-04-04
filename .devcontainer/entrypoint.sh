@@ -164,3 +164,8 @@ if [ "$1" = 'tactical-celerybeat-dev' ]; then
   test -f "${WORKSPACE_DIR}/api/tacticalrmm/celerybeat.pid" && rm "${WORKSPACE_DIR}/api/tacticalrmm/celerybeat.pid"
   "${VIRTUAL_ENV}"/bin/celery -A tacticalrmm beat -l debug
 fi
+
+if [ "$1" = 'tactical-websockets-dev' ]; then
+  check_tactical_ready
+  "${VIRTUAL_ENV}"/bin/daphne tacticalrmm.asgi:application --port 8383 -b 0.0.0.0
+fi

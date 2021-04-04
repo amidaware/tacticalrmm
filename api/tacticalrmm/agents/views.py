@@ -18,11 +18,7 @@ from core.models import CoreSettings
 from logs.models import AuditLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
-from tacticalrmm.utils import (
-    get_default_timezone,
-    notify_error,
-    reload_nats,
-)
+from tacticalrmm.utils import get_default_timezone, notify_error, reload_nats
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
@@ -380,21 +376,26 @@ def install_agent(request):
         f"winagent-v{version}.exe" if arch == "64" else f"winagent-v{version}-x86.exe"
     )
     download_url = settings.DL_64 if arch == "64" else settings.DL_32
-    goarch = "amd64" if arch == "64" else "386"
 
     _, token = AuthToken.objects.create(
         user=request.user, expiry=dt.timedelta(hours=request.data["expires"])
     )
 
     if request.data["installMethod"] == "exe":
-        ret = {
-            "token": token,
-            "url": download_url,
-            "inno": inno,
-            "goarch": goarch,
-            "genurl": settings.EXE_GEN_URL,
-        }
-        return Response(ret)
+        from tacticalrmm.utils import generate_winagent_exe
+
+        return generate_winagent_exe(
+            client=client_id,
+            site=site_id,
+            agent_type=request.data["agenttype"],
+            rdp=request.data["rdp"],
+            ping=request.data["ping"],
+            power=request.data["power"],
+            arch=arch,
+            token=token,
+            api=request.data["api"],
+            file_name=request.data["fileName"],
+        )
 
     elif request.data["installMethod"] == "manual":
         cmd = [
@@ -668,49 +669,6 @@ def bulk(request):
         return Response(f"Patch status scan will now run on {len(agents)} agents")
 
     return notify_error("Something went wrong")
-
-
-@api_view(["POST"])
-def agent_counts(request):
-
-    server_offline_count = len(
-        [
-            agent
-            for agent in Agent.objects.filter(monitoring_type="server").only(
-                "pk",
-                "last_seen",
-                "overdue_time",
-                "offline_time",
-            )
-            if not agent.status == "online"
-        ]
-    )
-
-    workstation_offline_count = len(
-        [
-            agent
-            for agent in Agent.objects.filter(monitoring_type="workstation").only(
-                "pk",
-                "last_seen",
-                "overdue_time",
-                "offline_time",
-            )
-            if not agent.status == "online"
-        ]
-    )
-
-    return Response(
-        {
-            "total_server_count": Agent.objects.filter(
-                monitoring_type="server"
-            ).count(),
-            "total_server_offline_count": server_offline_count,
-            "total_workstation_count": Agent.objects.filter(
-                monitoring_type="workstation"
-            ).count(),
-            "total_workstation_offline_count": workstation_offline_count,
-        }
-    )
 
 
 @api_view(["POST"])

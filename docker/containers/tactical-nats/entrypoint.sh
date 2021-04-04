@@ -2,6 +2,14 @@
 
 set -e
 
+: "${DEV:=0}"
+
+if [ "${DEV}" = 1 ]; then
+  NATS_CONFIG=/workspace/api/tacticalrmm/nats-rmm.conf
+else
+  NATS_CONFIG="${TACTICAL_DIR}/api/nats-rmm.conf"
+fi
+
 sleep 15
 until [ -f "${TACTICAL_READY_FILE}" ]; do
   echo "waiting for init container to finish install or update..."

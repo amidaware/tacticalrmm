@@ -135,6 +135,21 @@ services:
     depends_on:
       - tactical-postgres
 
+  # container for django backend
+  tactical-websockets:
+    image: ${IMAGE_REPO}tactical:${VERSION}
+    command: ["tactical-websockets"]
+    restart: always
+    networks:
+      - proxy
+      - api-db
+      - redis
+    volumes:
+      - tactical_data:/opt/tactical
+    depends_on:
+      - tactical-postgres
+      - tactical-backend
+
   tactical-nginx:
   # container for tactical reverse proxy
     image: ${IMAGE_REPO}tactical-nginx:${VERSION}

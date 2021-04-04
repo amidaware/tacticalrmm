@@ -3,7 +3,7 @@ FROM node:14-alpine AS builder
 WORKDIR /home/node/app
 
 COPY ./web/package.json .
-RUN npm install -g npm
+RUN npm install -g npm@latest
 RUN npm install
 
 COPY ./web .

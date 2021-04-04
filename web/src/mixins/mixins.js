@@ -136,31 +136,67 @@ export default {
       return clients.map(client => ({ label: client.name, value: client.id, sites: client.sites }))
     },
     formatSiteOptions(sites) {
-      return sites.map(site => ({ label: site.name, value: site.id }))
+      return sites.map(site => ({ label: site.name, value: site.id }));
     },
     capitalize(string) {
-      return string[0].toUpperCase() + string.substring(1)
+      return string[0].toUpperCase() + string.substring(1);
     },
     getCustomFields(model) {
       return axios.patch("/core/customfields/", { model: model })
         .catch(e => {
-          this.notifyError("There was an issue getting Custom Fields")
-        })
+          this.notifyError("There was an issue getting Custom Fields");
+        });
     },
     formatCustomFields(fields, values) {
-      let tempArray = []
+      let tempArray = [];
 
       for (let field of fields) {
         if (values[field.name] !== null || values[field.name] !== undefined)
           if (field.type === "multiple") {
-            tempArray.push({ multiple_value: values[field.name], field: field.id })
+            tempArray.push({ multiple_value: values[field.name], field: field.id });
           } else if (field.type === "checkbox") {
-            tempArray.push({ bool_value: values[field.name], field: field.id })
+            tempArray.push({ bool_value: values[field.name], field: field.id });
           } else {
-            tempArray.push({ string_value: values[field.name], field: field.id })
+            tempArray.push({ string_value: values[field.name], field: field.id });
           }
       }
       return tempArray
     },
+    getScriptOptions(showCommunityScripts = false) {
+      let options = [];
+      axios.get("/scripts/scripts/").then(r => {
+        let scripts;
+        if (showCommunityScripts) {
+          scripts = r.data;
+        } else {
+          scripts = r.data.filter(i => i.script_type !== "builtin");
+        }
+
+        let categories = [];
+        let create_unassigned = false
+        scripts.forEach(script => {
+          if (!!script.category && !categories.includes(script.category)) {
+            categories.push(script.category);
+          } else {
+            create_unassigned = true
+          }
+        });
+
+        if (create_unassigned) categories.push("Unassigned")
+
+        categories.forEach(cat => {
+          options.push({ category: cat });
+          scripts.forEach(script => {
+            if (script.category === cat) {
+              options.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args });
+            } else if (cat === "Unassigned" && !script.category) {
+              options.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args });
+            }
+          })
+        });
+      });
+
+      return options;
+    }
   }
-};
+}

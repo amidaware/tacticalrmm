@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="116"
+SCRIPT_VERSION="117"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -75,7 +75,53 @@ if [ -f /etc/systemd/system/natsapi.service ]; then
   sudo systemctl daemon-reload
 fi
 
-for i in nginx nats rmm celery celerybeat
+cls() {
+  printf "\033c"
+}
+
+CHECK_HAS_DAPHNE=$(grep daphne.sock /etc/nginx/sites-available/rmm.conf)
+if ! [[ $CHECK_HAS_DAPHNE ]]; then
+  cls
+  echo -ne "${RED}Nginx config changes required before continuing.${NC}\n"
+  echo -ne "${RED}Please check the v0.5.0 release notes on github for instructions, then re-run this script.${NC}\n"
+  echo -ne "${YELLOW}https://github.com/wh1te909/tacticalrmm/releases/tag/v0.5.0${NC}\n"
+  echo -ne "${RED}Aborting...${NC}\n"
+  exit 1
+fi
+
+if ! sudo nginx -t > /dev/null 2>&1; then
+  sudo nginx -t
+  echo -ne "\n"
+  echo -ne "${RED}You have syntax errors in your nginx configs. See errors above. Please fix them and re-run this script.${NC}\n"
+  echo -ne "${RED}Aborting...${NC}\n"
+  exit 1
+fi
+
+if ! [ -f /etc/systemd/system/daphne.service ]; then
+daphneservice="$(cat << EOF
+[Unit]
+Description=django channels daemon
+After=network.target
+
+[Service]
+User=${USER}
+Group=www-data
+WorkingDirectory=/rmm/api/tacticalrmm
+Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/rmm/api/env/bin/daphne -u /rmm/daphne.sock tacticalrmm.asgi:application
+Restart=always
+RestartSec=3s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service > /dev/null
+sudo systemctl daemon-reload
+sudo systemctl enable daphne.service
+fi
+
+for i in nginx nats rmm daphne celery celerybeat
 do
 printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}
@@ -240,7 +286,7 @@ sudo rm -rf /var/www/rmm/dist
 sudo cp -pr /rmm/web/dist /var/www/rmm/
 sudo chown www-data:www-data -R /var/www/rmm/dist
 
-for i in rmm celery celerybeat nginx nats
+for i in rmm daphne celery celerybeat nginx nats
 do
 printf >&2 "${GREEN}Starting ${i} service${NC}\n"
 sudo systemctl start ${i}

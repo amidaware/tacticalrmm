@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="22"
+SCRIPT_VERSION="23"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -323,7 +323,7 @@ sudo chown -R $USER:$GROUP /home/${USER}/.cache
 print_green 'Enabling Services'
 sudo systemctl daemon-reload
 
-for i in celery.service celerybeat.service rmm.service nginx
+for i in celery.service celerybeat.service rmm.service daphne.service nginx
 do
   sudo systemctl enable ${i}
   sudo systemctl stop ${i}

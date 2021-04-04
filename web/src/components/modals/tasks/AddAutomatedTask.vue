@@ -29,7 +29,19 @@
             label="Select script"
             map-options
             emit-value
-          />
+            @input="setScriptDefaults"
+          >
+            <template v-slot:option="scope">
+              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+                <q-item-section>
+                  <q-item-label v-html="scope.opt.label"></q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
+                scope.opt.category
+              }}</q-item-label>
+            </template>
+          </q-select>
         </q-card-section>
         <q-card-section>
           <q-select
@@ -210,6 +222,12 @@ export default {
     };
   },
   methods: {
+    setScriptDefaults() {
+      const script = this.scriptOptions.find(i => i.value === this.autotask.script);
+
+      this.autotask.timeout = script.timeout;
+      this.autotask.script_args = script.args;
+    },
     clear() {
       this.autotask.assigned_check = null;
       this.autotask.run_time_days = [];
@@ -242,13 +260,6 @@ export default {
           .catch(e => this.notifyError(e.response.data));
       }
     },
-    getScripts() {
-      this.$axios.get("/scripts/scripts/").then(r => {
-        this.scriptOptions = r.data
-          .map(script => ({ label: script.name, value: script.id }))
-          .sort((a, b) => a.label.localeCompare(b.label));
-      });
-    },
     getPolicyChecks() {
       this.$axios
         .get(`/automation/${this.policypk}/policychecks/`)
@@ -272,7 +283,7 @@ export default {
     },
   },
   computed: {
-    ...mapGetters(["selectedAgentPk"]),
+    ...mapGetters(["selectedAgentPk", "showCommunityScripts"]),
     checks() {
       return this.policypk
         ? this.policyChecks
@@ -303,7 +314,7 @@ export default {
     },
   },
   created() {
-    this.getScripts();
+    this.scriptOptions = this.getScriptOptions(this.showCommunityScripts);
 
     if (this.policypk) {
       this.getPolicyChecks();

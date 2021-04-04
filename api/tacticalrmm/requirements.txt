@@ -1,13 +1,11 @@
-amqp==5.0.5
 asgiref==3.3.1
 asyncio-nats-client==0.11.4
-billiard==3.6.3.0
 celery==5.0.5
 certifi==2020.12.5
 cffi==1.14.5
+channels==3.0.3
 chardet==4.0.0
 cryptography==3.4.7
-decorator==4.4.2
 Django==3.1.7
 django-cors-headers==3.7.0
 django-rest-knox==4.1.0

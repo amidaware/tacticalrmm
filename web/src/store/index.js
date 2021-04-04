@@ -50,6 +50,9 @@ export default function () {
       checks(state) {
         return state.agentChecks;
       },
+      showCommunityScripts(state) {
+        return state.showCommunityScripts;
+      },
       sortedUpdates(state) {
         // sort patches by latest then not installed
         if (!state.winUpdates.winupdates) {
@@ -153,9 +156,6 @@ export default function () {
       },
       toggleMaintenanceMode(context, data) {
         return axios.post("/agents/maintenance/", data)
-      },
-      getAgentCounts(context, data = {}) {
-        return axios.post("/agents/agent_counts/", data)
       },
       getDashInfo(context) {
         return axios.get("/core/dashinfo/");

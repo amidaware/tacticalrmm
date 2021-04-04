@@ -284,6 +284,9 @@
                   </q-icon>
                 </q-td>
                 <q-td>{{ props.row.name }}</q-td>
+                <q-td>
+                  <span v-if="props.row.args.length > 0">{{ props.row.args }}</span>
+                </q-td>
                 <q-td>{{ props.row.category }}</q-td>
                 <q-td>
                   {{ truncateText(props.row.description) }}
@@ -356,6 +359,12 @@ export default {
           sortable: true,
         },
         {
+          name: "args",
+          label: "Default Args",
+          field: "args",
+          align: "left",
+        },
+        {
           name: "category",
           label: "Category",
           field: "category",
@@ -377,7 +386,7 @@ export default {
           sortable: true,
         },
       ],
-      visibleColumns: ["favorite", "name", "category", "desc", "shell", "default_timeout"],
+      visibleColumns: ["favorite", "name", "args", "category", "desc", "shell", "default_timeout"],
     };
   },
   methods: {

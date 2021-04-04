@@ -68,6 +68,22 @@
         />
       </q-card-section>
       <q-card-section class="row">
+        <div class="col-2">Script Arguments:</div>
+        <q-select
+          label="(press Enter after typing each argument)"
+          class="col-10"
+          filled
+          v-model="script.args"
+          use-input
+          use-chips
+          multiple
+          dense
+          hide-dropdown-icon
+          input-debounce="0"
+          new-value-mode="add"
+        />
+      </q-card-section>
+      <q-card-section class="row">
         <div class="col-4">Default Timeout (seconds)</div>
         <q-input
           type="number"
@@ -104,6 +120,7 @@ export default {
         shell: "powershell",
         category: null,
         default_timeout: 90,
+        args: [],
       },
       shellOptions: [
         { label: "Powershell", value: "powershell" },
@@ -129,10 +146,12 @@ export default {
         formData.append("category", "");
       }
 
+      formData.append("file_upload", true);
       formData.append("name", this.script.name);
       formData.append("shell", this.script.shell);
       formData.append("description", this.script.description);
       formData.append("default_timeout", this.script.default_timeout);
+      formData.append("args", JSON.stringify(this.script.args));
 
       this.$axios
         .post("/scripts/scripts/", formData)

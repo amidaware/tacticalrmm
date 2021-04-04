@@ -2,7 +2,6 @@ import asyncio
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 
 from agents.models import Agent
@@ -62,7 +61,6 @@ class DashInfo(AsyncJsonWebsocketConsumer):
         )
 
         ret = {
-            "trmm_version": settings.TRMM_VERSION,
             "total_server_offline_count": server_offline_count,
             "total_workstation_offline_count": workstation_offline_count,
             "total_server_count": Agent.objects.filter(

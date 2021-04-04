@@ -547,7 +547,6 @@ export default {
       };
       this.ws.onmessage = e => {
         const data = JSON.parse(e.data);
-        this.currentTRMMVersion = data.trmm_version;
         this.serverCount = data.total_server_count;
         this.serverOfflineCount = data.total_server_offline_count;
         this.workstationCount = data.total_workstation_count;
@@ -718,6 +717,7 @@ export default {
         }
         this.darkMode = r.data.dark_mode;
         this.$q.dark.set(this.darkMode);
+        this.currentTRMMVersion = r.data.trmm_version;
         this.$store.commit("SET_AGENT_DBLCLICK_ACTION", r.data.dbl_click_action);
         this.$store.commit("setShowCommunityScripts", r.data.show_community_scripts);
       });

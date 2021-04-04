@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="44"
+SCRIPT_VERSION="45"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -132,30 +132,13 @@ CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$rmmdomain" | grep "$meshdomain"
 HAS_11=$(grep 127.0.1.1 /etc/hosts)
 
 if ! [[ $CHECK_HOSTS ]]; then
-    echo -ne "${GREEN}We need to append your 3 subdomains to the line starting with 127.0.1.1 in your hosts file.${NC}\n"
-    until [[ $edithosts =~ (y|n) ]]; do
-        echo -ne "${GREEN}Would you like me to do this for you? [y/n]${NC}: "
-        read edithosts
-    done
-
-    if [[ $edithosts == "y" ]]; then
-        if [[ $HAS_11 ]]; then
-          sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts
-        else
-          echo "127.0.1.1 ${rmmdomain} $frontenddomain $meshdomain" | sudo tee --append /etc/hosts > /dev/null
-        fi
-    else
-        if [[ $HAS_11 ]]; then
-          echo -ne "${GREEN}Please manually edit your /etc/hosts file to match the line below and re-run this script.${NC}\n"
-          sed "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts | grep 127.0.1.1
-        else
-          echo -ne "\n${GREEN}Append the following line to your /etc/hosts file${NC}\n"
-          echo "127.0.1.1 ${rmmdomain} $frontenddomain $meshdomain"
-        fi
-        exit 1
-    fi
+  print_green 'Adding subdomains to hosts file'
+  if [[ $HAS_11 ]]; then
+    sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} ${frontenddomain} ${meshdomain}/" /etc/hosts
+  else
+    echo "127.0.1.1 ${rmmdomain} ${frontenddomain} ${meshdomain}" | sudo tee --append /etc/hosts > /dev/null
+  fi
 fi
-
 
 BEHIND_NAT=false
 IPV4=$(ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)

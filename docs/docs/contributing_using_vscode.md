@@ -71,13 +71,17 @@ Open browser and look at your repo (It should reflect your commit)
 
 #### 6a. Request your changes to be pulled into the primary repo (Pull Request)
 
-Choose 
+![Changes you've made need integration with master repo](images/trmm_contribute-notice.png)
+
+In browser create pull request
 
 ### 7. Sync your local fork
 
 [https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork)
 
 Bring changes from original repo to your local vscode copy so you're current with changes made in original Github repo
+
+![Sync Fork](images/trmm_need_sync_local_fork.png)
 
 ```
 git pull --rebase upstream develop

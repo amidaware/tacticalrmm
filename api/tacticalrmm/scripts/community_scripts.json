@@ -140,19 +140,21 @@
   },
   {
     "guid": "375323e5-cac6-4f35-a304-bb7cef35902d",
-    "filename": "DiskStatus.ps1",
+    "filename": "Win_Disk_Status.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Check Disks",
+    "name": "Check Disk Hardware Health (using Event Viewer errors)",
     "description": "Checks local disks for errors reported in event viewer within the last 24 hours",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Hardware"
   },
   {
     "guid": "7c14beb4-d1c3-41aa-8e70-92a267d6e080",
-    "filename": "DuplicatiStatus.ps1",
+    "filename": "Win_Duplicati_Status.ps1",
     "submittedBy": "https://github.com/dinger1986",
     "name": "Check Duplicati",
     "description": "Checks Duplicati Backup is running properly over the last 24 hours",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):3rd Party Software"
   },
   {
     "guid": "da51111c-aff6-4d87-9d76-0608e1f67fe5",

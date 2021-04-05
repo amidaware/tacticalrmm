@@ -12,8 +12,22 @@ param (
   [string] $action
 )
 
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$ErrorCount = 0
 
+if (!$serviceName) {
+    write-output "Variable not specified ScreenConnectService, please create a global custom field under Client called ScreenConnectService, Example Value: `"ScreenConnect Client (1327465grctq84yrtocq)`" `n"
+    $ErrorCount += 1
+}
+if (!$url) {
+    write-output "Variable not specified ScreenConnectInstaller, please create a global custom field under Client called ScreenConnectInstaller, Example Value: `"https://myinstance.screenconnect.com/Bin/ConnectWiseControl.ClientSetup.exe?h=stupidlylongurlhere`" `n"
+    $ErrorCount += 1
+}
+
+if (!$ErrorCount -eq 0) {
+exit 1
+}
+
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 if ($action -eq "uninstall") {
         $MyApp = Get-WmiObject -Class Win32_Product | Where-Object{$_.Name -eq "$serviceName"}
         $MyApp.Uninstall()

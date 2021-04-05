@@ -90,6 +90,7 @@ git pull --rebase upstream develop
 
 Then you're `push`ing that updated local repo to your online Github fork
 
+![Sync push/pulls](images/trmm_vscode_git_pending.png)
 
 ### 8. Verify and Repeat
 

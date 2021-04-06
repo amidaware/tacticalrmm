@@ -1,27 +1,30 @@
 [
   {
     "guid": "6820cb5e-5a7f-4d9b-8c22-d54677e3cc04",
-    "filename": "ClearFirefoxCache.ps1",
+    "filename": "Win_Clear_Firefox_Cache.ps1",
     "submittedBy": "https://github.com/Omnicef",
     "name": "Clear Firefox Cache",
     "description": "This script will clean up Mozilla Firefox for all users.",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Browsers"
   },
   {
     "guid": "3ff6a386-11d1-4f9d-8cca-1b0563bb6443",
-    "filename": "ClearGoogleChromeCache.ps1",
+    "filename": "Win_Clear_Google_Chrome_Cache.ps1",
     "submittedBy": "https://github.com/Omnicef",
     "name": "Clear Google Chrome Cache",
     "description": "This script will clean up Google Chrome for all users.",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Browsers"
   },
   {
     "guid": "be1de837-f677-4ac5-aa0c-37a0fc9991fc",
-    "filename": "InstallAdobeReader.ps1",
+    "filename": "Win_Install_Adobe_Reader.ps1",
     "submittedBy": "https://github.com/Omnicef",
     "name": "Install Adobe Reader DC",
     "description": "Installs Adobe Reader DC.",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):3rd Party Software>Chocolatey"
   },
   {
     "guid": "2ee134d5-76aa-4160-b334-a1efbc62079f",
@@ -34,51 +37,57 @@
   },
   {
     "guid": "81cc5bcb-01bf-4b0c-89b9-0ac0f3fe0c04",
-    "filename": "Reset-WindowsUpdate.ps1",
+    "filename": "Win_Reset_Windows_Update.ps1",
     "submittedBy": "https://github.com/Omnicef",
     "name": "Reset Windows Update",
     "description": "This script will reset all of the Windows Updates components to DEFAULT SETTINGS.",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Updates"
   },
   {
     "guid": "8db87ff0-a9b4-4d9d-bc55-377bbcb85b6d",
-    "filename": "Start-Cleanup.ps1",
+    "filename": "Win_Start_Cleanup.ps1",
     "submittedBy": "https://github.com/Omnicef",
     "name": "Cleanup C: drive",
     "description": "Cleans the C: drive's Window Temperary files, Windows SoftwareDistribution folder, the local users Temperary folder, IIS logs (if applicable) and empties the recycling bin. All deleted files will go into a log transcript in $env:TEMP. By default this script leaves files that are newer than 7 days old however this variable can be edited.",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Other"
   },
   {
     "guid": "2f28e8c1-ae0f-4b46-a826-f513974526a3",
-    "filename": "WindowsDefenderFullScanBackground.ps1",
+    "filename": "Win_Defender_FullScan_Background.ps1",
     "submittedBy": "https://github.com/Omnicef",
     "name": "Windows Defender Full Scan",
     "description": "Runs a Windows Defender Full background scan.",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Security>Antivirus"
   },
   {
     "guid": "adf81ddb-3b77-415c-a89b-2ccc826b5aa7",
-    "filename": "WindowsDefenderQuickScanBackground.ps1",
+    "filename": "Win_Defender_QuickScan_Background.ps1",
     "submittedBy": "https://github.com/Omnicef",
     "name": "Windows Defender Quick Scan",
     "description": "Runs a Quick Scan using Windows Defender in the Background.",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Security>Antivirus"
   },
   {
     "guid": "3c46290b-85db-4cd2-93a2-943c8c93b3b1",
-    "filename": "speedtest.py",
+    "filename": "Speedtest.py",
     "submittedBy": "https://github.com/wh1te909",
     "name": "Speed Test",
-    "description": "Runs a Speed Test",
-    "shell": "python"
+    "description": "Runs a Speed Test using Python",
+    "shell": "python",
+    "category": "TRMM (Win):Network"
   },
   {
     "guid": "9d34f482-1f0c-4b2f-b65f-a9cf3c13ef5f",
-    "filename": "Rename-Installed-App.ps1",
+    "filename": "Win_Rename_Installed_App.ps1",
     "submittedBy": "https://github.com/bradhawkins85",
     "name": "Rename Tactical RMM Agent",
     "description": "Updates the DisplayName registry entry for the Tactical RMM windows agent to your desired name. This script takes 1 required argument: the name you wish to set.",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):TacticalRMM Related"
   },
   {
     "guid": "525ae965-1dcf-4c17-92b3-5da3cf6819f5",
@@ -86,7 +95,8 @@
     "submittedBy": "https://github.com/ThatsNASt",
     "name": "Check C Drive for Bitlocker Status",
     "description": "Runs a check on drive C for Bitlocker status.",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Storage"
   },
   {
     "guid": "2ea35fa2-c227-4d17-a40e-4d39f252e27a",
@@ -103,7 +113,8 @@
     "submittedBy": "https://github.com/ThatsNASt",
     "name": "Retreive Bitlocker Status Report",
     "description": "Retreives a Bitlocker status report.",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Storage"
   },
   {
     "guid": "cfa14c28-4dfc-4d4e-95ee-a380652e058d",
@@ -120,7 +131,8 @@
     "submittedBy": "https://github.com/azulskyknight",
     "name": "Reset High Perf Power Profile",
     "description": "Resets monitor, disk, standby, and hibernate timers in the default High Performance power profile to their default values. It also re-indexes the AC and DC power profiles into their default order.",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Power"
   },
   {
     "guid": "2cbd30b0-84dd-4388-a36d-2e2e980f1a3e",
@@ -128,7 +140,8 @@
     "submittedBy": "https://github.com/azulskyknight",
     "name": "Set High Perf Power Profile",
     "description": "Sets the High Performance Power profile to the active power profile. Use this to keep machines from falling asleep.",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Power"
   },
   {
     "guid": "553236d3-81bc-49f4-af8a-0cff925a7f6d",
@@ -136,7 +149,8 @@
     "submittedBy": "https://github.com/RVL-Solutions and https://github.com/darimm",
     "name": "Windows 10 Upgrade",
     "description": "Forces an upgrade to the latest release of Windows 10.",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Updates"
   },
   {
     "guid": "375323e5-cac6-4f35-a304-bb7cef35902d",
@@ -162,7 +176,8 @@
     "submittedBy": "https://github.com/dinger1986",
     "name": "Enable Windows Defender",
     "description": "Enables Windows Defender and sets preferences",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Security>Antivirus"
   },
   {
     "guid": "a223d03a-e22e-40e0-94f2-92dd8c481d14",
@@ -170,7 +185,8 @@
     "submittedBy": "https://github.com/dinger1986",
     "name": "Install SSH",
     "description": "Installs and enabled OpenSSH Server",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Windows Features"
   },
   {
     "guid": "2435297a-6263-4e90-8688-1847400d0e22",
@@ -178,7 +194,8 @@
     "submittedBy": "https://github.com/dinger1986",
     "name": "Enable RDP",
     "description": "Enables RDP",
-    "shell": "cmd"
+    "shell": "cmd",
+    "category": "TRMM (Win):Windows Features"
   },
   {
     "guid": "24f19ead-fdfe-46b4-9dcb-4cd0e12a3940",
@@ -186,7 +203,8 @@
     "submittedBy": "https://github.com/dinger1986",
     "name": "PS Speed Test",
     "description": "Powershell speed test (win 10 or server2016+)",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Network"
   },
   {
     "guid": "a821975c-60df-4d58-8990-6cf8a55b4ee0",
@@ -194,7 +212,8 @@
     "submittedBy": "https://github.com/dinger1986",
     "name": "Sync DC Time",
     "description": "Syncs time with domain controller",
-    "shell": "cmd"
+    "shell": "cmd",
+    "category": "TRMM (Win):Active Directory"
   },
   {
     "guid": "b720e320-7755-4c89-9992-e1a6c43699ed",
@@ -202,7 +221,8 @@
     "submittedBy": "https://github.com/dinger1986",
     "name": "Clear Defender Logs",
     "description": "Clears Windows Defender Logs",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Security>Antivirus"
   },
   {
     "guid": "d980fda3-a068-47eb-8495-1aab07a24e64",
@@ -210,7 +230,8 @@
     "submittedBy": "https://github.com/dinger1986",
     "name": "Defender Status",
     "description": "This will check for Malware, Antispyware, that Windows Defender is Healthy, last scan etc within the last 24 hours",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Security>Antivirus"
   },
   {
     "guid": "9956e936-6fdb-4488-a9d8-8b274658037f",
@@ -218,7 +239,8 @@
     "submittedBy": "https://github.com/dinger1986",
     "name": "Disable Fast Startup",
     "description": "Disables Faststartup on Windows 10",
-    "shell": "cmd"
+    "shell": "cmd",
+    "category": "TRMM (Win):Power"
   },
   {
     "guid": "2472bbaf-1941-4722-8a58-d1dd0f528801",
@@ -226,7 +248,8 @@
     "submittedBy": "https://github.com/dinger1986",
     "name": "TRMM Defender Exclusions",
     "description": "Windows Defender Exclusions for Tactical RMM",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Security>Antivirus"
   },
   {
     "guid": "b253dc76-41a0-48ca-9cea-bee4277402c4",
@@ -234,7 +257,8 @@
     "submittedBy": "https://github.com/bradhawkins85",
     "name": "Display Message To User",
     "description": "Displays a popup message to the currently logged on user",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Other"
   },
   {
     "guid": "19224d21-bd39-44bc-b9cf-8f1ba3ca9c11",
@@ -242,7 +266,8 @@
     "submittedBy": "https://github.com/beejayzed",
     "name": "Verify Antivirus Status",
     "description": "Verify and display status for all installed Antiviruses",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Security>Antivirus"
   },
   {
     "guid": "f88c5c52-c6fe-44db-b727-b7912a4279ed",
@@ -250,7 +275,8 @@
     "submittedBy": "https://github.com/nr-plaxon",
     "name": "Create User Logon Script",
     "description": "Creates a powershell script that runs at logon of any user on the machine in the security context of the user.",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):Other"
   },
   {
     "guid": "5615aa90-0272-427b-8acf-0ca019612501",
@@ -319,6 +345,7 @@
       "-action install"
     ],
     "default_timeout": "90",
-    "shell": "powershell"
+    "shell": "powershell",
+    "category": "TRMM (Win):3rd Party Software"
   }
 ]

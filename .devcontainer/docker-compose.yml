@@ -2,6 +2,7 @@ version: '3.4'
 
 services:
   api-dev:
+    container_name: trmm-api-dev
     image: api-dev
     restart: always
     build:
@@ -21,6 +22,7 @@ services:
           - tactical-backend
 
   app-dev:
+    container_name: trmm-app-dev
     image: node:14-alpine
     restart: always
     command: /bin/sh -c "npm install npm@latest -g && npm install && npm run serve -- --host 0.0.0.0 --port ${APP_PORT}"
@@ -36,6 +38,7 @@ services:
 
   # nats
   nats-dev:
+    container_name: trmm-nats-dev
     image: ${IMAGE_REPO}tactical-nats:${VERSION}
     restart: always
     environment:
@@ -55,6 +58,7 @@ services:
 
   # meshcentral container
   meshcentral-dev:
+    container_name: trmm-meshcentral-dev
     image: ${IMAGE_REPO}tactical-meshcentral:${VERSION}
     restart: always
     environment: 
@@ -77,6 +81,7 @@ services:
 
   # mongodb container for meshcentral
   mongodb-dev:
+    container_name: trmm-mongodb-dev
     image: mongo:4.4
     restart: always
     environment:
@@ -92,6 +97,7 @@ services:
 
   # postgres database for api service
   postgres-dev:
+    container_name: trmm-postgres-dev
     image: postgres:13-alpine
     restart: always
     environment:
@@ -107,6 +113,7 @@ services:
 
   # redis container for celery tasks
   redis-dev:
+    container_name: trmm-redis-dev
     restart: always
     image: redis:6.0-alpine
     networks:
@@ -115,6 +122,7 @@ services:
           - tactical-redis
 
   init-dev:
+    container_name: trmm-init-dev
     image: api-dev
     build:
       context: .
@@ -143,6 +151,7 @@ services:
 
   # container for celery worker service
   celery-dev:
+    container_name: trmm-celery-dev
     image: api-dev
     build:
       context: .
@@ -160,6 +169,7 @@ services:
 
   # container for celery beat service
   celerybeat-dev:
+    container_name: trmm-celerybeat-dev
     image: api-dev
     build:
       context: .
@@ -175,8 +185,9 @@ services:
       - postgres-dev
       - redis-dev
 
-  # container for celery beat service
+  # container for websockets communication
   websockets-dev:
+    container_name: trmm-websockets-dev
     image: api-dev
     build:
       context: .
@@ -194,8 +205,9 @@ services:
       - postgres-dev
       - redis-dev
 
-  nginx-dev:
   # container for tactical reverse proxy
+  nginx-dev:
+    container_name: trmm-nginx-dev
     image: ${IMAGE_REPO}tactical-nginx:${VERSION}
     restart: always
     environment:

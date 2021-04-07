@@ -91,7 +91,7 @@
   },
   {
     "guid": "525ae965-1dcf-4c17-92b3-5da3cf6819f5",
-    "filename": "bitlocker_encrypted_drive_c.ps1",
+    "filename": "Win_Bitlocker_Encrypted_Drive_c.ps1",
     "submittedBy": "https://github.com/ThatsNASt",
     "name": "Check C Drive for Bitlocker Status",
     "description": "Runs a check on drive C for Bitlocker status.",
@@ -109,7 +109,7 @@
   },
   {
     "guid": "9e5769c1-3873-4941-bf70-e851e0afbd6d",
-    "filename": "bitlocker_retrieve_status_report.ps1",
+    "filename": "Win_Bitlocker_Retrieve_Status_Report.ps1",
     "submittedBy": "https://github.com/ThatsNASt",
     "name": "Retreive Bitlocker Status Report",
     "description": "Retreives a Bitlocker status report.",
@@ -127,7 +127,7 @@
   },
   {
     "guid": "95a2ee6f-b89b-4551-856e-3081b041caa7",
-    "filename": "ResetHighPerformancePowerProfiletoDefaults.ps1",
+    "filename": "Win_Reset_High_Performance_Power_Profile_to_Defaults.ps1",
     "submittedBy": "https://github.com/azulskyknight",
     "name": "Reset High Perf Power Profile",
     "description": "Resets monitor, disk, standby, and hibernate timers in the default High Performance power profile to their default values. It also re-indexes the AC and DC power profiles into their default order.",
@@ -136,7 +136,7 @@
   },
   {
     "guid": "2cbd30b0-84dd-4388-a36d-2e2e980f1a3e",
-    "filename": "SetHighPerformancePowerProfile.ps1",
+    "filename": "Win_Set_High_Performance_Power_Profile.ps1",
     "submittedBy": "https://github.com/azulskyknight",
     "name": "Set High Perf Power Profile",
     "description": "Sets the High Performance Power profile to the active power profile. Use this to keep machines from falling asleep.",
@@ -145,7 +145,7 @@
   },
   {
     "guid": "553236d3-81bc-49f4-af8a-0cff925a7f6d",
-    "filename": "Windows10Upgrade.ps1",
+    "filename": "Win_10_Upgrade.ps1",
     "submittedBy": "https://github.com/RVL-Solutions and https://github.com/darimm",
     "name": "Windows 10 Upgrade",
     "description": "Forces an upgrade to the latest release of Windows 10.",
@@ -172,7 +172,7 @@
   },
   {
     "guid": "da51111c-aff6-4d87-9d76-0608e1f67fe5",
-    "filename": "EnableDefender.ps1",
+    "filename": "Win_Defender_Enable.ps1",
     "submittedBy": "https://github.com/dinger1986",
     "name": "Enable Windows Defender",
     "description": "Enables Windows Defender and sets preferences",
@@ -181,7 +181,7 @@
   },
   {
     "guid": "a223d03a-e22e-40e0-94f2-92dd8c481d14",
-    "filename": "OpenSSHServerInstall.ps1",
+    "filename": "Win_Open_SSH_Server_Install.ps1",
     "submittedBy": "https://github.com/dinger1986",
     "name": "Install SSH",
     "description": "Installs and enabled OpenSSH Server",
@@ -190,7 +190,7 @@
   },
   {
     "guid": "2435297a-6263-4e90-8688-1847400d0e22",
-    "filename": "RDP_enable.bat",
+    "filename": "Win_RDP_enable.bat",
     "submittedBy": "https://github.com/dinger1986",
     "name": "Enable RDP",
     "description": "Enables RDP",
@@ -199,16 +199,16 @@
   },
   {
     "guid": "24f19ead-fdfe-46b4-9dcb-4cd0e12a3940",
-    "filename": "Speedtest.ps1",
+    "filename": "Win_Speedtest.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "PS Speed Test",
-    "description": "Powershell speed test (win 10 or server2016+)",
+    "name": "Speed Test Powershell",
+    "description": "Speed Test with Powershell(win 10 or server2016+)",
     "shell": "powershell",
     "category": "TRMM (Win):Network"
   },
   {
     "guid": "a821975c-60df-4d58-8990-6cf8a55b4ee0",
-    "filename": "SyncTime.bat",
+    "filename": "Win_Sync_Time.bat",
     "submittedBy": "https://github.com/dinger1986",
     "name": "Sync DC Time",
     "description": "Syncs time with domain controller",
@@ -217,7 +217,7 @@
   },
   {
     "guid": "b720e320-7755-4c89-9992-e1a6c43699ed",
-    "filename": "WinDefenderClearLogs.ps1",
+    "filename": "Win_Defender_Clear_Logs.ps1",
     "submittedBy": "https://github.com/dinger1986",
     "name": "Clear Defender Logs",
     "description": "Clears Windows Defender Logs",
@@ -226,7 +226,7 @@
   },
   {
     "guid": "d980fda3-a068-47eb-8495-1aab07a24e64",
-    "filename": "WinDefenderStatus.ps1",
+    "filename": "Win_Defender_Status.ps1",
     "submittedBy": "https://github.com/dinger1986",
     "name": "Defender Status",
     "description": "This will check for Malware, Antispyware, that Windows Defender is Healthy, last scan etc within the last 24 hours",
@@ -235,7 +235,7 @@
   },
   {
     "guid": "9956e936-6fdb-4488-a9d8-8b274658037f",
-    "filename": "disable_FastStartup.bat",
+    "filename": "Win_Disable_Fast_Startup.bat",
     "submittedBy": "https://github.com/dinger1986",
     "name": "Disable Fast Startup",
     "description": "Disables Faststartup on Windows 10",
@@ -244,7 +244,7 @@
   },
   {
     "guid": "2472bbaf-1941-4722-8a58-d1dd0f528801",
-    "filename": "updatetacticalexclusion.ps1",
+    "filename": "Win_Update_Tactical_Exclusion.ps1",
     "submittedBy": "https://github.com/dinger1986",
     "name": "TRMM Defender Exclusions",
     "description": "Windows Defender Exclusions for Tactical RMM",
@@ -253,7 +253,7 @@
   },
   {
     "guid": "b253dc76-41a0-48ca-9cea-bee4277402c4",
-    "filename": "Display_Message_To_User.ps1",
+    "filename": "Win_Display_Message_To_User.ps1",
     "submittedBy": "https://github.com/bradhawkins85",
     "name": "Display Message To User",
     "description": "Displays a popup message to the currently logged on user",
@@ -262,7 +262,7 @@
   },
   {
     "guid": "19224d21-bd39-44bc-b9cf-8f1ba3ca9c11",
-    "filename": "VerifyAntivirus.ps1",
+    "filename": "Win_Antivirus_Verify.ps1",
     "submittedBy": "https://github.com/beejayzed",
     "name": "Verify Antivirus Status",
     "description": "Verify and display status for all installed Antiviruses",
@@ -271,7 +271,7 @@
   },
   {
     "guid": "f88c5c52-c6fe-44db-b727-b7912a4279ed",
-    "filename": "CreateAllUserLogonScript.ps1",
+    "filename": "Win_Create_All_User_Logon_Script.ps1",
     "submittedBy": "https://github.com/nr-plaxon",
     "name": "Create User Logon Script",
     "description": "Creates a powershell script that runs at logon of any user on the machine in the security context of the user.",
@@ -298,7 +298,7 @@
   },
   {
     "guid": "71090fc4-faa6-460b-adb0-95d7863544e1",
-    "filename": "Check_Events_for_Bluescreens.ps1",
+    "filename": "Win_Check_Events_for_Bluescreens.ps1",
     "submittedBy": "https://github.com/dinger1986",
     "name": "Event Viewer - Check for Bluescreens",
     "description": "This will check for Bluescreen events on your system",
@@ -317,7 +317,7 @@
   },
   {
     "guid": "f396dae2-c768-45c5-bd6c-176e56ed3614",
-    "filename": "Finish_updates_and_restart.ps1",
+    "filename": "Win_Finish_updates_and_restart.ps1",
     "submittedBy": "https://github.com/tremor021",
     "name": "Finish updates and restart",
     "description": "Finish installing updates and restart PC",
@@ -326,7 +326,7 @@
   },
   {
     "guid": "63f89be0-a9c9-4c61-9b55-bce0b28b90b2",
-    "filename": "Finish_updates_and_shutdown.ps1",
+    "filename": "Win_Finish_updates_and_shutdown.ps1",
     "submittedBy": "https://github.com/tremor021",
     "name": "Finish updates and shutdown",
     "description": "Finish installing updates and shutdown PC",

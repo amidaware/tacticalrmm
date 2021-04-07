@@ -38,6 +38,8 @@ EXE_GEN_URLS = [
     "https://exe.tacticalrmm.io/api/v1/exe",
 ]
 
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
 ASGI_APPLICATION = "tacticalrmm.asgi.application"
 
 try:

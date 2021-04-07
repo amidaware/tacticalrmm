@@ -335,7 +335,7 @@
   },
   {
     "guid": "e09895d5-ca13-44a2-a38c-6e77c740f0e8",
-    "filename": "ScreenConnectAIO.ps1",
+    "filename": "Win_ScreenConnectAIO.ps1",
     "submittedBy": "https://github.com/bradhawkins85",
     "name": "ScreenConnect AIO",
     "description": "Install, Uninstall, Start and Stop ScreenConnect Access Agent",

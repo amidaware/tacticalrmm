@@ -10,6 +10,8 @@ $ping = pingchange
 $auth = '"tokenchange"'
 $downloadlink = 'downloadchange'
 
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 $serviceName = 'tacticalagent'
 If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
     write-host ('Tactical RMM Is Already Installed')

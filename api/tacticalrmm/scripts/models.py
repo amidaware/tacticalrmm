@@ -87,7 +87,7 @@ class Script(BaseAuditModel):
                 )
 
                 default_timeout = (
-                    script["default_timeout"]
+                    int(script["default_timeout"])
                     if "default_timeout" in script.keys()
                     else 90
                 )

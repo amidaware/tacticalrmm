@@ -651,7 +651,11 @@ class Agent(BaseAuditModel):
             except ErrTimeout:
                 ret = "timeout"
             else:
-                ret = msgpack.loads(msg.data)  # type: ignore
+                try:
+                    ret = msgpack.loads(msg.data)  # type: ignore
+                except Exception as e:
+                    logger.error(e)
+                    ret = str(e)
 
             await nc.close()
             return ret

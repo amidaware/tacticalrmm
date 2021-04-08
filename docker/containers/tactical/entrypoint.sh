@@ -29,15 +29,15 @@ function check_tactical_ready {
 # tactical-init
 if [ "$1" = 'tactical-init' ]; then
 
-  mkdir -p ${TACTICAL_DIR}/tmp
-  mkdir -p ${TACTICAL_DIR}/scripts/userdefined
-  mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/exe
-
   test -f "${TACTICAL_READY_FILE}" && rm "${TACTICAL_READY_FILE}"
 
   # copy container data to volume
   rsync -a --no-perms --no-owner --delete --exclude "tmp/*" --exclude "certs/*" --exclude="api/tacticalrmm/private/*" "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
 
+  mkdir -p ${TACTICAL_DIR}/tmp
+  mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/exe
+  mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/logs
+  
   until (echo > /dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &> /dev/null; do
     echo "waiting for postgresql container to be ready..."
     sleep 5

@@ -186,13 +186,16 @@ export default {
 
         categories.forEach(cat => {
           options.push({ category: cat });
+          let tmp = [];
           scripts.forEach(script => {
             if (script.category === cat) {
-              options.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args });
+              tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args });
             } else if (cat === "Unassigned" && !script.category) {
-              options.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args });
+              tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args });
             }
           })
+          const sorted = tmp.sort((a, b) => a.label.localeCompare(b.label));
+          options.push(...sorted);
         });
       });
 

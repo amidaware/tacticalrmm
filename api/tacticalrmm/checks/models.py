@@ -667,16 +667,7 @@ class Check(BaseAuditModel):
                 body = subject + f" - Average memory usage: {avg}%, {text}"
 
         elif self.check_type == "winsvc":
-
-            try:
-                status = list(
-                    filter(lambda x: x["name"] == self.svc_name, self.agent.services)
-                )[0]["status"]
-            # catch services that don't exist if policy check
-            except:
-                status = "Unknown"
-
-            body = subject + f" - Status: {status.upper()}"
+            body = subject + f" - Status: {self.more_info}"
 
         elif self.check_type == "eventlog":
 
@@ -741,10 +732,7 @@ class Check(BaseAuditModel):
             elif self.check_type == "memory":
                 body = subject + f" - Average memory usage: {avg}%, {text}"
         elif self.check_type == "winsvc":
-            status = list(
-                filter(lambda x: x["name"] == self.svc_name, self.agent.services)
-            )[0]["status"]
-            body = subject + f" - Status: {status.upper()}"
+            body = subject + f" - Status: {self.more_info}"
         elif self.check_type == "eventlog":
             body = subject
 

@@ -15,27 +15,30 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.5.0"
+TRMM_VERSION = "0.5.1"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.126"
+APP_VER = "0.0.127"
 
 # https://github.com/wh1te909/rmmagent
 LATEST_AGENT_VER = "1.4.13"
 
-MESH_VER = "0.7.93"
+MESH_VER = "0.8.5"
 
 # for the update script, bump when need to recreate venv or npm install
-PIP_VER = "14"
-NPM_VER = "13"
+PIP_VER = "15"
+NPM_VER = "14"
 
 DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
 DL_32 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
 
 EXE_GEN_URLS = [
+    "https://exe2.tacticalrmm.io/api/v1/exe",
     "https://exe.tacticalrmm.io/api/v1/exe",
 ]
+
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 ASGI_APPLICATION = "tacticalrmm.asgi.application"
 

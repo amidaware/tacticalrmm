@@ -136,10 +136,11 @@ if [ "$1" = 'tactical-init-dev' ]; then
   webenv="$(cat << EOF
 PROD_URL = "${HTTP_PROTOCOL}://${API_HOST}"
 DEV_URL = "${HTTP_PROTOCOL}://${API_HOST}"
-APP_URL = https://${APP_HOST}
+APP_URL = "https://${APP_HOST}"
+DOCKER_BUILD = 1
 EOF
 )"
-  echo "${webenv}" | tee ${WORKSPACE_DIR}/web/.env > /dev/null
+  echo "${webenv}" | tee "${WORKSPACE_DIR}"/web/.env > /dev/null
 
   # chown everything to tactical user
   chown -R "${TACTICAL_USER}":"${TACTICAL_USER}" "${WORKSPACE_DIR}"

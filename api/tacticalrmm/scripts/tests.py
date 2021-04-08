@@ -1,3 +1,4 @@
+from email.policy import default
 import json
 import os
 from pathlib import Path
@@ -206,6 +207,7 @@ class TestScriptViews(TacticalTestCase):
         ) as f:
             info = json.load(f)
 
+        guids = []
         for script in info:
             fn: str = script["filename"]
             self.assertTrue(os.path.exists(os.path.join(scripts_dir, fn)))
@@ -221,6 +223,19 @@ class TestScriptViews(TacticalTestCase):
                 self.assertEqual(script["shell"], "cmd")
             elif fn.endswith(".py"):
                 self.assertEqual(script["shell"], "python")
+
+            if "args" in script.keys():
+                self.assertIsInstance(script["args"], list)
+
+            # allows strings as long as they can be type casted to int
+            if "default_timeout" in script.keys():
+                self.assertIsInstance(int(script["default_timeout"]), int)
+
+            self.assertIn("guid", script.keys())
+            guids.append(script["guid"])
+
+        # check guids are unique
+        self.assertEqual(len(guids), len(set(guids)))
 
     def test_load_community_scripts(self):
         with open(

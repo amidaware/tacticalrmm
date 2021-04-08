@@ -22,6 +22,7 @@ volumes:
 services:
   # postgres database for api service
   tactical-postgres:
+    container_name: trmm-postgres
     image: postgres:13-alpine
     restart: always
     environment:
@@ -35,6 +36,7 @@ services:
 
   # redis container for celery tasks
   tactical-redis:
+    container_name: trmm-redis
     image: redis:6.0-alpine
     restart: always
     networks:
@@ -42,6 +44,7 @@ services:
 
   # used to initialize the docker environment
   tactical-init:
+    container_name: trmm-init
     image: ${IMAGE_REPO}tactical:${VERSION}
     restart: on-failure
     command: ["tactical-init"]
@@ -65,6 +68,7 @@ services:
   
   # nats
   tactical-nats:
+    container_name: trmm-nats
     image: ${IMAGE_REPO}tactical-nats:${VERSION}
     restart: always
     environment:
@@ -80,6 +84,7 @@ services:
 
   # meshcentral container
   tactical-meshcentral:
+    container_name: trmm-meshcentral
     image: ${IMAGE_REPO}tactical-meshcentral:${VERSION}
     restart: always
     environment: 
@@ -101,6 +106,7 @@ services:
 
   # mongodb container for meshcentral
   tactical-mongodb:
+    container_name: trmm-mongodb
     image: mongo:4.4
     restart: always
     environment:
@@ -114,6 +120,7 @@ services:
 
   # container that hosts vue frontend
   tactical-frontend:
+    container_name: trmm-frontend
     image: ${IMAGE_REPO}tactical-frontend:${VERSION}
     restart: always
     networks:
@@ -123,6 +130,7 @@ services:
 
   # container for django backend
   tactical-backend:
+    container_name: trmm-backend
     image: ${IMAGE_REPO}tactical:${VERSION}
     command: ["tactical-backend"]
     restart: always
@@ -135,8 +143,9 @@ services:
     depends_on:
       - tactical-postgres
 
-  # container for django backend
+  # container for django websockets connections
   tactical-websockets:
+    container_name: trmm-websockets
     image: ${IMAGE_REPO}tactical:${VERSION}
     command: ["tactical-websockets"]
     restart: always
@@ -150,8 +159,9 @@ services:
       - tactical-postgres
       - tactical-backend
 
-  tactical-nginx:
   # container for tactical reverse proxy
+  tactical-nginx:
+    container_name: trmm-nginx
     image: ${IMAGE_REPO}tactical-nginx:${VERSION}
     restart: always
     environment:
@@ -171,6 +181,7 @@ services:
 
   # container for celery worker service
   tactical-celery:
+    container_name: trmm-celery
     image: ${IMAGE_REPO}tactical:${VERSION}
     command: ["tactical-celery"]
     restart: always
@@ -186,6 +197,7 @@ services:
 
   # container for celery beat service
   tactical-celerybeat:
+    container_name: trmm-celerybeat
     image: ${IMAGE_REPO}tactical:${VERSION}
     command: ["tactical-celerybeat"]
     restart: always

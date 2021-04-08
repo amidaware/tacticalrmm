@@ -16,14 +16,14 @@
     "dotenv": "^8.2.0",
     "prismjs": "^1.22.0",
     "qrcode.vue": "^1.7.0",
-    "quasar": "^1.15.9",
+    "quasar": "^1.15.10",
     "vue-apexcharts": "^1.6.0",
     "vue-prism-editor": "^1.2.2"
   },
   "devDependencies": {
-    "@quasar/app": "^2.2.3",
+    "@quasar/app": "^2.2.4",
     "@quasar/cli": "^1.1.3",
-    "core-js": "^3.10.0",
+    "core-js": "^3.10.1",
     "eslint-plugin-cypress": "^2.11.2",
     "flush-promises": "^1.0.2",
     "fs-extra": "^9.1.0"

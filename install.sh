@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="45"
+SCRIPT_VERSION="46"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -359,7 +359,7 @@ python3.9 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir setuptools==53.0.0 wheel==0.36.2
+pip install --no-cache-dir setuptools==54.2.0 wheel==0.36.2
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input

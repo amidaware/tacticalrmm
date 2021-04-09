@@ -335,7 +335,7 @@
   },
   {
     "guid": "e09895d5-ca13-44a2-a38c-6e77c740f0e8",
-    "filename": "ScreenConnectAIO.ps1",
+    "filename": "Win_ScreenConnectAIO.ps1",
     "submittedBy": "https://github.com/bradhawkins85",
     "name": "ScreenConnect AIO",
     "description": "Install, Uninstall, Start and Stop ScreenConnect Access Agent",
@@ -347,5 +347,55 @@
     "default_timeout": "90",
     "shell": "powershell",
     "category": "TRMM (Win):3rd Party Software"
+  },
+  {
+    "guid": "3abbb62a-3757-492c-8979-b4fc6174845d",
+    "filename": "Win_Disable_AutoRun.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Disable Autorun",
+    "description": "Disable Autorun System Wide",
+    "shell": "cmd",
+    "category": "TRMM (Win):Other",
+    "default_timeout": "30"
+  },
+  {
+    "guid": "4a11877a-7555-494c-ac74-29d6df3c1989",
+    "filename": "Win_Disable_Cortana.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Disable Cortana",
+    "description": "Disable Cortana System Wide",
+    "shell": "cmd",
+    "category": "TRMM (Win):Other",
+    "default_timeout": "30"
+  },
+  {
+    "guid": "28ef1387-dd4f-4bab-b042-26250914e370",
+    "filename": "Win_WOL_Enable_Status.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "WoL - Enable function",
+    "description": "Wake on Lan enable on Dell, HP, Lenovo",
+    "shell": "powershell",
+    "category": "TRMM (Win):Network",
+    "default_timeout": "90"
+  },
+  {
+    "guid": "685d5432-0b84-46d5-98e8-3ec2054150fe",
+    "filename": "Win_WOL_Test_State.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "WoL - Test State",
+    "description": "Wake on Lan test status",
+    "shell": "powershell",
+    "category": "TRMM (Win):Network",
+    "default_timeout": "90"
+  },
+  {
+    "guid": "6ce5682a-49db-4c0b-9417-609cf905ac43",
+    "filename": "Win_Win10_Change_Key_and_Activate.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Change Win10 Product Key and Activate",
+    "description": "Insert new product key and Activate. Requires 1 parameter the product key you want to use",
+    "shell": "powershell",
+    "category": "TRMM (Win):Other",
+    "default_timeout": "90"
   }
 ]

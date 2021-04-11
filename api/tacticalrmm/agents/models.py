@@ -819,12 +819,6 @@ class RecoveryAction(models.Model):
     def __str__(self):
         return f"{self.agent.hostname} - {self.mode}"
 
-    def send(self):
-        ret = {"recovery": self.mode}
-        if self.mode == "command":
-            ret["cmd"] = self.command
-        return ret
-
 
 class Note(models.Model):
     agent = models.ForeignKey(

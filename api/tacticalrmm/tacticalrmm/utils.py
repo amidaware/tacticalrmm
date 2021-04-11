@@ -228,3 +228,20 @@ class KnoxAuthMiddlewareInstance:
 KnoxAuthMiddlewareStack = lambda inner: KnoxAuthMiddlewareInstance(
     AuthMiddlewareStack(inner)
 )
+
+
+def run_nats_api_cmd(mode: str, ids: list[str], timeout: int = 30) -> None:
+    config = {
+        "key": settings.SECRET_KEY,
+        "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
+    }
+    config["agents"] = ids
+    with tempfile.NamedTemporaryFile() as fp:
+        with open(fp.name, "w") as f:
+            json.dump(config, f)
+
+        cmd = ["/usr/local/bin/nats-api", "-c", fp.name, "-m", mode]
+        try:
+            subprocess.run(cmd, capture_output=True, timeout=timeout)
+        except Exception as e:
+            logger.error(e)

@@ -196,6 +196,21 @@ class Agent(BaseAuditModel):
             return ["unknown cpu model"]
 
     @property
+    def graphics(self):
+        ret = []
+        try:
+            graphics = self.wmi_detail["graphics"]
+            for i in graphics:
+                caption = [x["Caption"] for x in i if "Caption" in x][0]
+                if "microsoft remote display adapter" in caption.lower():
+                    continue
+
+                ret.append([x["Caption"] for x in i if "Caption" in x][0])
+            return ", ".join(ret)
+        except:
+            return "Graphics info requires agent v1.4.14"
+
+    @property
     def local_ips(self):
         ret = []
         try:

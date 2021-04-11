@@ -39,6 +39,13 @@
             </q-item-section>
             <q-item-section>{{ disk }}</q-item-section>
           </q-item>
+          <!-- graphics -->
+          <q-item>
+            <q-item-section avatar>
+              <q-icon name="fas fa-tv" />
+            </q-item-section>
+            <q-item-section>{{ summary.graphics }}</q-item-section>
+          </q-item>
           <q-item>
             <q-item-section avatar>
               <q-icon name="fas fa-globe-americas" />

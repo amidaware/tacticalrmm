@@ -36,6 +36,7 @@ class User(AbstractUser, BaseAuditModel):
     client_tree_sort = models.CharField(
         max_length=50, choices=CLIENT_TREE_SORT_CHOICES, default="alphafail"
     )
+    client_tree_splitter = models.PositiveIntegerField(default=11)
 
     agent = models.OneToOneField(
         "agents.Agent",

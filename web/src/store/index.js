@@ -33,8 +33,12 @@ export default function () {
       agentDblClickAction: "",
       defaultAgentTblTab: "server",
       clientTreeSort: "alphafail",
+      clientTreeSplitter: 11,
     },
     getters: {
+      clientTreeSplitterModel(state) {
+        return state.clientTreeSplitter;
+      },
       loggedIn(state) {
         return state.token !== null;
       },
@@ -132,6 +136,9 @@ export default function () {
         agentHeight <= 15.0 ? state.tableHeight = "15vh" : state.tableHeight = `${agentHeight}vh`;
         tabsHeight <= 15.0 ? state.tabHeight = "15vh" : state.tabHeight = `${tabsHeight}vh`;
       },
+      SET_CLIENT_SPLITTER(state, val) {
+        state.clientTreeSplitter = val;
+      },
       SET_NOTES(state, notes) {
         state.notes = notes;
       },
@@ -149,6 +156,11 @@ export default function () {
       }
     },
     actions: {
+      setClientTreeSplitter(context, val) {
+        axios.patch("/accounts/users/ui/", { client_tree_splitter: Math.trunc(val) }).then(r => {
+          context.commit("SET_CLIENT_SPLITTER", val)
+        })
+      },
       setShowCommunityScripts(context, data) {
         axios.patch("/accounts/users/ui/", { show_community_scripts: data }).then(r => {
           context.commit("setShowCommunityScripts", data)

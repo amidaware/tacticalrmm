@@ -278,6 +278,7 @@ class TestUserAction(TacticalTestCase):
             "agent_dblclick_action": "editagent",
             "default_agent_tbl_tab": "mixed",
             "client_tree_sort": "alpha",
+            "client_tree_splitter": 14,
         }
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)

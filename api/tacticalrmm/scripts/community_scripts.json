@@ -464,11 +464,11 @@
   },
   {
     "guid": "c6014da2-b188-4e1b-b96a-e3440ade3a6a",
-    "filename": "Win_RecycleBin_Empty.bat",
+    "filename": "Win_RecycleBin_Empty.ps1",
     "submittedBy": "https://github.com/silversword411",
     "name": "File System - Empty Recycle Bin",
-    "description": "Empty the recycle bin on C",
-    "shell": "cmd",
+    "description": "Empty the recycle bin",
+    "shell": "powershell",
     "category": "TRMM (Win):Storage"
   }
 ]

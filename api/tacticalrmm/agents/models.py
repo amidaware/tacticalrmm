@@ -197,15 +197,21 @@ class Agent(BaseAuditModel):
 
     @property
     def graphics(self):
-        ret = []
+        ret, mrda = [], []
         try:
             graphics = self.wmi_detail["graphics"]
             for i in graphics:
                 caption = [x["Caption"] for x in i if "Caption" in x][0]
                 if "microsoft remote display adapter" in caption.lower():
+                    mrda.append("yes")
                     continue
 
                 ret.append([x["Caption"] for x in i if "Caption" in x][0])
+
+            # only return this if no other graphics cards
+            if not ret and mrda:
+                return "Microsoft Remote Display Adapter"
+
             return ", ".join(ret)
         except:
             return "Graphics info requires agent v1.4.14"

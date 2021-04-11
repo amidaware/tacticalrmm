@@ -711,6 +711,7 @@ export default {
     getDashInfo(edited = true) {
       this.$store.dispatch("getDashInfo").then(r => {
         if (edited) {
+          this.$q.loadingBar.setDefaults({ color: r.data.loading_bar_color });
           this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", r.data.default_agent_tbl_tab);
           this.$store.commit("SET_CLIENT_TREE_SORT", r.data.client_tree_sort);
           this.$store.commit("SET_CLIENT_SPLITTER", r.data.client_tree_splitter);

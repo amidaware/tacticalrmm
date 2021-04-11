@@ -72,10 +72,11 @@ export default {
         this.title = `${r.data.hostname} - ${r.data.client} - ${r.data.site} | Remote Background`;
       });
     },
-    getDark() {
+    getUI() {
       this.$store.dispatch("getDashInfo").then(r => {
         this.darkMode = r.data.dark_mode;
         this.$q.dark.set(this.darkMode);
+        this.$q.loadingBar.setDefaults({ color: r.data.loading_bar_color });
       });
     },
   },
@@ -90,7 +91,7 @@ export default {
     },
   },
   created() {
-    this.getDark();
+    this.getUI();
     this.genURLS();
   },
 };

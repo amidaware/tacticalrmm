@@ -37,6 +37,7 @@ class User(AbstractUser, BaseAuditModel):
         max_length=50, choices=CLIENT_TREE_SORT_CHOICES, default="alphafail"
     )
     client_tree_splitter = models.PositiveIntegerField(default=11)
+    loading_bar_color = models.CharField(max_length=255, default="red")
 
     agent = models.OneToOneField(
         "agents.Agent",

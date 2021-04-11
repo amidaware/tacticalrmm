@@ -89,7 +89,6 @@ module.exports = function () {
       ],
       config: {
         loadingBar: {
-          color: "red",
           size: "4px"
         },
         notify: {

@@ -234,8 +234,8 @@ def run_nats_api_cmd(mode: str, ids: list[str], timeout: int = 30) -> None:
     config = {
         "key": settings.SECRET_KEY,
         "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
+        "agents": ids,
     }
-    config["agents"] = ids
     with tempfile.NamedTemporaryFile() as fp:
         with open(fp.name, "w") as f:
             json.dump(config, f)

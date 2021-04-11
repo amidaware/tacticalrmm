@@ -12,6 +12,7 @@ from .utils import (
     generate_winagent_exe,
     get_bit_days,
     reload_nats,
+    run_nats_api_cmd,
 )
 
 
@@ -72,6 +73,12 @@ class TestUtils(TestCase):
     def test_reload_nats(self, mock_subprocess):
         _ = reload_nats()
 
+        mock_subprocess.assert_called_once()
+
+    @patch("subprocess.run")
+    def test_run_nats_api_cmd(self, mock_subprocess):
+        ids = ["a", "b", "c"]
+        _ = run_nats_api_cmd("monitor", ids)
         mock_subprocess.assert_called_once()
 
     def test_bitdays_to_string(self):

@@ -135,15 +135,6 @@
     "category": "TRMM (Win):Hardware"
   },
   {
-    "guid": "e1c27982-b955-4766-85b6-d92527a177cf",
-    "filename": "Win_Hardware_Monitor_Get_Info.ps1",
-    "submittedBy": "https://github.com/MaxAnderson95/",
-    "name": "Monitor - Get Info",
-    "description": "Retreives and reports on Monitor info: Manufacturer, Model, Serial",
-    "shell": "powershell",
-    "category": "TRMM (Win):Hardware"
-  },
-  {
     "guid": "95a2ee6f-b89b-4551-856e-3081b041caa7",
     "filename": "Win_Reset_High_Performance_Power_Profile_to_Defaults.ps1",
     "submittedBy": "https://github.com/azulskyknight",
@@ -468,6 +459,15 @@
     "submittedBy": "https://github.com/silversword411",
     "name": "File System - Enable Long Paths",
     "description": "Enables NTFS Long paths greater than 260 characters",
+    "shell": "cmd",
+    "category": "TRMM (Win):Storage"
+  },
+  {
+    "guid": "c6014da2-b188-4e1b-b96a-e3440ade3a6a",
+    "filename": "Win_RecycleBin_Empty.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "File System - Empty Recycle Bin",
+    "description": "Empty the recycle bin on C",
     "shell": "cmd",
     "category": "TRMM (Win):Storage"
   }

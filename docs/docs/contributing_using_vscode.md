@@ -19,7 +19,7 @@ Login to your Github
 
 Choose local folder
 
-### 3a. Install extra vscode Extensions
+#### 3a. Install extra vscode Extensions
 
 GitLens
 

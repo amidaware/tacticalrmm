@@ -47,6 +47,18 @@
                 />
               </q-card-section>
               <q-card-section class="row">
+                <div class="col-4">Loading Bar Color:</div>
+                <div class="col-4"></div>
+                <q-select
+                  outlined
+                  dense
+                  options-dense
+                  v-model="loading_bar_color"
+                  :options="loadingBarColors"
+                  class="col-4"
+                />
+              </q-card-section>
+              <q-card-section class="row">
                 <div class="col-2">Client Sort:</div>
                 <div class="col-2"></div>
                 <q-select
@@ -73,6 +85,7 @@
 </template>
 
 <script>
+import { loadingBarColors } from "@/mixins/data";
 import mixins from "@/mixins/mixins";
 
 export default {
@@ -80,11 +93,13 @@ export default {
   mixins: [mixins],
   data() {
     return {
+      loadingBarColors,
       agentDblClickAction: "",
       defaultAgentTblTab: "",
       clientTreeSort: "",
       tab: "ui",
       splitterModel: 20,
+      loading_bar_color: "",
       clientTreeSortOptions: [
         {
           label: "Sort alphabetically, moving failing clients to the top",
@@ -131,6 +146,7 @@ export default {
         this.agentDblClickAction = r.data.dbl_click_action;
         this.defaultAgentTblTab = r.data.default_agent_tbl_tab;
         this.clientTreeSort = r.data.client_tree_sort;
+        this.loading_bar_color = r.data.loading_bar_color;
       });
     },
     editUserPrefs() {
@@ -138,6 +154,7 @@ export default {
         agent_dblclick_action: this.agentDblClickAction,
         default_agent_tbl_tab: this.defaultAgentTblTab,
         client_tree_sort: this.clientTreeSort,
+        loading_bar_color: this.loading_bar_color,
       };
       this.$axios.patch("/accounts/users/ui/", data).then(r => {
         this.notifySuccess("Preferences were saved!");

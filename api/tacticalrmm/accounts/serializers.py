@@ -13,6 +13,8 @@ class UserUISerializer(ModelSerializer):
             "agent_dblclick_action",
             "default_agent_tbl_tab",
             "client_tree_sort",
+            "client_tree_splitter",
+            "loading_bar_color",
         ]
 
 

@@ -90,7 +90,7 @@
 
     <q-page-container>
       <FileBar />
-      <q-splitter v-model="outsideModel">
+      <q-splitter v-model="clientTreeSplitter">
         <template v-slot:before>
           <div v-if="!treeReady" class="q-pa-sm q-gutter-sm text-center" style="height: 30vh">
             <q-spinner size="40px" color="primary" />
@@ -397,7 +397,6 @@ export default {
       serverOfflineCount: 0,
       workstationCount: 0,
       workstationOfflineCount: 0,
-      outsideModel: 11,
       selectedTree: "",
       innerModel: 50,
       clientActive: "",
@@ -712,8 +711,10 @@ export default {
     getDashInfo(edited = true) {
       this.$store.dispatch("getDashInfo").then(r => {
         if (edited) {
+          this.$q.loadingBar.setDefaults({ color: r.data.loading_bar_color });
           this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", r.data.default_agent_tbl_tab);
           this.$store.commit("SET_CLIENT_TREE_SORT", r.data.client_tree_sort);
+          this.$store.commit("SET_CLIENT_SPLITTER", r.data.client_tree_splitter);
         }
         this.darkMode = r.data.dark_mode;
         this.$q.dark.set(this.darkMode);
@@ -802,12 +803,20 @@ export default {
       treeReady: state => state.treeReady,
       clients: state => state.clients,
     }),
-    ...mapGetters(["selectedAgentPk", "needRefresh"]),
+    ...mapGetters(["selectedAgentPk", "needRefresh", "clientTreeSplitterModel"]),
     wsUrl() {
       return getBaseUrl().split("://")[1];
     },
     token() {
       return this.$store.state.token;
+    },
+    clientTreeSplitter: {
+      get: function () {
+        return this.clientTreeSplitterModel;
+      },
+      set: function (newVal) {
+        this.$store.dispatch("setClientTreeSplitter", newVal);
+      },
     },
     tab: {
       get: function () {

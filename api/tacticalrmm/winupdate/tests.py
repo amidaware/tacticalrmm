@@ -14,8 +14,29 @@ class TestWinUpdateViews(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
-    def test_get_winupdates(self):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_run_update_scan(self, nats_cmd):
+        agent = baker.make_recipe("agents.agent")
+        url = f"/winupdate/{agent.pk}/runupdatescan/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        nats_cmd.assert_called_with({"func": "getwinupdates"}, wait=False)
 
+        self.check_not_authenticated("get", url)
+
+    @patch("agents.models.Agent.nats_cmd")
+    def test_install_updates(self, nats_cmd):
+        agent = baker.make_recipe("agents.agent")
+        baker.make("winupdate.WinUpdate", agent=agent, _quantity=4)
+        baker.make("winupdate.WinUpdatePolicy", agent=agent)
+        url = f"/winupdate/{agent.pk}/installnow/"
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        nats_cmd.assert_called_once()
+
+        self.check_not_authenticated("get", url)
+
+    def test_get_winupdates(self):
         agent = baker.make_recipe("agents.agent")
         baker.make("winupdate.WinUpdate", agent=agent, _quantity=4)
 
@@ -27,8 +48,8 @@ class TestWinUpdateViews(TacticalTestCase):
         resp = self.client.get(url, format="json")
         serializer = UpdateSerializer(agent)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data["winupdates"]), 4)
-        self.assertEqual(resp.data, serializer.data)
+        self.assertEqual(len(resp.data["winupdates"]), 4)  # type: ignore
+        self.assertEqual(resp.data, serializer.data)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
@@ -99,7 +120,7 @@ class TestWinUpdateViews(TacticalTestCase):
         resp = self.client.patch(url, invalid_data, format="json")
         self.assertEqual(resp.status_code, 404)
 
-        data = {"pk": winupdate.pk, "policy": "inherit"}
+        data = {"pk": winupdate.pk, "policy": "inherit"}  # type: ignore
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)

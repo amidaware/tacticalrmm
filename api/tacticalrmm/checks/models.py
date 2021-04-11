@@ -633,12 +633,15 @@ class Check(BaseAuditModel):
             if self.error_threshold:
                 text += f" Error Threshold: {self.error_threshold}%"
 
-            percent_used = [
-                d["percent"] for d in self.agent.disks if d["device"] == self.disk
-            ][0]
-            percent_free = 100 - percent_used
+            try:
+                percent_used = [
+                    d["percent"] for d in self.agent.disks if d["device"] == self.disk
+                ][0]
+                percent_free = 100 - percent_used
 
-            body = subject + f" - Free: {percent_free}%, {text}"
+                body = subject + f" - Free: {percent_free}%, {text}"
+            except:
+                body = subject + f" - Disk {self.disk} does not exist"
 
         elif self.check_type == "script":
 
@@ -710,11 +713,15 @@ class Check(BaseAuditModel):
             if self.error_threshold:
                 text += f" Error Threshold: {self.error_threshold}%"
 
-            percent_used = [
-                d["percent"] for d in self.agent.disks if d["device"] == self.disk
-            ][0]
-            percent_free = 100 - percent_used
-            body = subject + f" - Free: {percent_free}%, {text}"
+            try:
+                percent_used = [
+                    d["percent"] for d in self.agent.disks if d["device"] == self.disk
+                ][0]
+                percent_free = 100 - percent_used
+                body = subject + f" - Free: {percent_free}%, {text}"
+            except:
+                body = subject + f" - Disk {self.disk} does not exist"
+
         elif self.check_type == "script":
             body = subject + f" - Return code: {self.retcode}"
         elif self.check_type == "ping":

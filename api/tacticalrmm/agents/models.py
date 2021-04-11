@@ -196,6 +196,27 @@ class Agent(BaseAuditModel):
             return ["unknown cpu model"]
 
     @property
+    def graphics(self):
+        ret, mrda = [], []
+        try:
+            graphics = self.wmi_detail["graphics"]
+            for i in graphics:
+                caption = [x["Caption"] for x in i if "Caption" in x][0]
+                if "microsoft remote display adapter" in caption.lower():
+                    mrda.append("yes")
+                    continue
+
+                ret.append([x["Caption"] for x in i if "Caption" in x][0])
+
+            # only return this if no other graphics cards
+            if not ret and mrda:
+                return "Microsoft Remote Display Adapter"
+
+            return ", ".join(ret)
+        except:
+            return "Graphics info requires agent v1.4.14"
+
+    @property
     def local_ips(self):
         ret = []
         try:
@@ -322,7 +343,7 @@ class Agent(BaseAuditModel):
                 online = [
                     agent
                     for agent in Agent.objects.only(
-                        "pk", "last_seen", "overdue_time", "offline_time"
+                        "pk", "agent_id", "last_seen", "overdue_time", "offline_time"
                     )
                     if agent.status == "online"
                 ]
@@ -818,12 +839,6 @@ class RecoveryAction(models.Model):
 
     def __str__(self):
         return f"{self.agent.hostname} - {self.mode}"
-
-    def send(self):
-        ret = {"recovery": self.mode}
-        if self.mode == "command":
-            ret["cmd"] = self.command
-        return ret
 
 
 class Note(models.Model):

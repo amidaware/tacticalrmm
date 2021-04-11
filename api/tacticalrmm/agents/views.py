@@ -40,7 +40,7 @@ logger.configure(**settings.LOG_CONFIG)
 
 @api_view()
 def get_agent_versions(request):
-    agents = Agent.objects.only("pk")
+    agents = Agent.objects.prefetch_related("site").only("pk", "hostname")
     return Response(
         {
             "versions": [settings.LATEST_AGENT_VER],

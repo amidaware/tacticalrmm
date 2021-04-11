@@ -397,5 +397,42 @@
     "shell": "powershell",
     "category": "TRMM (Win):Other",
     "default_timeout": "90"
+  },
+  {
+    "guid": "83f6c6ea-6120-4fd3-bec8-d3abc505dcdf",
+    "filename": "Win_TRMM_Start_Menu_Delete_Shortcut.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "TRMM Delete Start Menu Shortcut for App",
+    "description": "Tactical RMM delete its application shortcut that's installed in the start menu",
+    "shell": "powershell",
+    "category": "TRMM (Win):TacticalRMM Related",
+    "default_timeout": "10"
+  },
+  {
+    "guid": "60130fca-7636-446e-acd7-cc5d29d609c2",
+    "filename": "Win_Firewall_Check_Status.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Windows Firewall - Check Status",
+    "description": "Windows Firewall - Check state, report status",
+    "shell": "powershell",
+    "category": "TRMM (Win):Network"
+  },
+  {
+    "guid": "93379675-c01c-433f-87df-a11597c959f0",
+    "filename": "Win_UAC_Check_Status.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Windows UAC - Check Status",
+    "description": "Windows UAC - Report status",
+    "shell": "powershell",
+    "category": "TRMM (Win):Security"
+  },
+  {
+    "guid": "7ea6a11a-05c0-4151-b5c1-cb8af029299f",
+    "filename": "Win_AzureAD_Check_Connection_Status.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Azure AD - Check Status",
+    "description": "Azure AD - Check if joined or not",
+    "shell": "powershell",
+    "category": "TRMM (Win):Azure>AD"
   }
 ]

@@ -59,4 +59,6 @@ const monthDays = [
   "31"
 ]
 
-export { scheduledTimes, monthDays };
+const loadingBarColors = ["red", "pink", "purple", "deep-purple", "indigo", "blue", "light-blue", "cyan", "teal", "green", "light-green", "lime", "yellow", "amber", "orange", "deep-orange", "brown", "grey", "blue-grey"]
+
+export { scheduledTimes, monthDays, loadingBarColors };

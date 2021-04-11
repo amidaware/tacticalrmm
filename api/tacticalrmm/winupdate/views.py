@@ -1,12 +1,11 @@
 import asyncio
 
 from django.shortcuts import get_object_or_404
-from packaging import version as pyver
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from agents.models import Agent
-from tacticalrmm.utils import get_default_timezone, notify_error
+from tacticalrmm.utils import get_default_timezone
 
 from .models import WinUpdate
 from .serializers import UpdateSerializer
@@ -24,9 +23,6 @@ def get_win_updates(request, pk):
 def run_update_scan(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     agent.delete_superseded_updates()
-    if pyver.parse(agent.version) < pyver.parse("1.3.0"):
-        return notify_error("Requires agent version 1.3.0 or greater")
-
     asyncio.run(agent.nats_cmd({"func": "getwinupdates"}, wait=False))
     return Response("ok")
 
@@ -35,9 +31,6 @@ def run_update_scan(request, pk):
 def install_updates(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     agent.delete_superseded_updates()
-    if pyver.parse(agent.version) < pyver.parse("1.3.0"):
-        return notify_error("Requires agent version 1.3.0 or greater")
-
     agent.approve_updates()
     nats_data = {
         "func": "installwinupdates",

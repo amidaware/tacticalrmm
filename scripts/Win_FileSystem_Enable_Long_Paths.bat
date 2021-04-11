@@ -1,0 +1,1 @@
+REG ADD "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem" /V LongPathsEnabled /T REG_DWORD /D 1 /F

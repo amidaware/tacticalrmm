@@ -216,6 +216,15 @@
     "category": "TRMM (Win):Active Directory"
   },
   {
+    "guid": "b6b9912f-4274-4162-99cc-9fd47fbcb292",
+    "filename": "Win_ADDC_Sync_Start.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "ADDC - Sync AD",
+    "description": "Trigger AD Sync on domain controller",
+    "shell": "cmd",
+    "category": "TRMM (Win):Active Directory"
+  },
+  {
     "guid": "b720e320-7755-4c89-9992-e1a6c43699ed",
     "filename": "Win_Defender_Clear_Logs.ps1",
     "submittedBy": "https://github.com/dinger1986",
@@ -434,5 +443,14 @@
     "description": "Azure AD - Check if joined or not",
     "shell": "powershell",
     "category": "TRMM (Win):Azure>AD"
+  },
+  {
+    "guid": "e18c64d0-b783-4b52-b44b-9bb7592b439b",
+    "filename": "Win_FileSystem_Enable_Long_Paths.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "File System - Enable Long Paths",
+    "description": "Enables NTFS Long paths greater than 260 characters",
+    "shell": "cmd",
+    "category": "TRMM (Win):Storage"
   }
 ]

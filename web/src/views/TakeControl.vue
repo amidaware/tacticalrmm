@@ -54,6 +54,12 @@ export default {
     };
   },
   methods: {
+    getUI() {
+      this.$store.dispatch("getDashInfo").then(r => {
+        this.$q.dark.set(r.data.dark_mode);
+        this.$q.loadingBar.setDefaults({ color: r.data.loading_bar_color });
+      });
+    },
     genURL() {
       this.$q.loading.show();
       this.visible = false;
@@ -117,6 +123,7 @@ export default {
     },
   },
   created() {
+    this.getUI();
     this.genURL();
   },
 };

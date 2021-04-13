@@ -633,12 +633,15 @@ class Check(BaseAuditModel):
             if self.error_threshold:
                 text += f" Error Threshold: {self.error_threshold}%"
 
-            percent_used = [
-                d["percent"] for d in self.agent.disks if d["device"] == self.disk
-            ][0]
-            percent_free = 100 - percent_used
+            try:
+                percent_used = [
+                    d["percent"] for d in self.agent.disks if d["device"] == self.disk
+                ][0]
+                percent_free = 100 - percent_used
 
-            body = subject + f" - Free: {percent_free}%, {text}"
+                body = subject + f" - Free: {percent_free}%, {text}"
+            except:
+                body = subject + f" - Disk {self.disk} does not exist"
 
         elif self.check_type == "script":
 
@@ -667,16 +670,7 @@ class Check(BaseAuditModel):
                 body = subject + f" - Average memory usage: {avg}%, {text}"
 
         elif self.check_type == "winsvc":
-
-            try:
-                status = list(
-                    filter(lambda x: x["name"] == self.svc_name, self.agent.services)
-                )[0]["status"]
-            # catch services that don't exist if policy check
-            except:
-                status = "Unknown"
-
-            body = subject + f" - Status: {status.upper()}"
+            body = subject + f" - Status: {self.more_info}"
 
         elif self.check_type == "eventlog":
 
@@ -719,11 +713,15 @@ class Check(BaseAuditModel):
             if self.error_threshold:
                 text += f" Error Threshold: {self.error_threshold}%"
 
-            percent_used = [
-                d["percent"] for d in self.agent.disks if d["device"] == self.disk
-            ][0]
-            percent_free = 100 - percent_used
-            body = subject + f" - Free: {percent_free}%, {text}"
+            try:
+                percent_used = [
+                    d["percent"] for d in self.agent.disks if d["device"] == self.disk
+                ][0]
+                percent_free = 100 - percent_used
+                body = subject + f" - Free: {percent_free}%, {text}"
+            except:
+                body = subject + f" - Disk {self.disk} does not exist"
+
         elif self.check_type == "script":
             body = subject + f" - Return code: {self.retcode}"
         elif self.check_type == "ping":
@@ -741,10 +739,7 @@ class Check(BaseAuditModel):
             elif self.check_type == "memory":
                 body = subject + f" - Average memory usage: {avg}%, {text}"
         elif self.check_type == "winsvc":
-            status = list(
-                filter(lambda x: x["name"] == self.svc_name, self.agent.services)
-            )[0]["status"]
-            body = subject + f" - Status: {status.upper()}"
+            body = subject + f" - Status: {self.more_info}"
         elif self.check_type == "eventlog":
             body = subject
 

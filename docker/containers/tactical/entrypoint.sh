@@ -29,14 +29,15 @@ function check_tactical_ready {
 # tactical-init
 if [ "$1" = 'tactical-init' ]; then
 
-  mkdir -p ${TACTICAL_DIR}/tmp
-  mkdir -p ${TACTICAL_DIR}/scripts/userdefined
-
   test -f "${TACTICAL_READY_FILE}" && rm "${TACTICAL_READY_FILE}"
 
   # copy container data to volume
   rsync -a --no-perms --no-owner --delete --exclude "tmp/*" --exclude "certs/*" --exclude="api/tacticalrmm/private/*" "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
 
+  mkdir -p ${TACTICAL_DIR}/tmp
+  mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/exe
+  mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/logs
+  
   until (echo > /dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &> /dev/null; do
     echo "waiting for postgresql container to be ready..."
     sleep 5
@@ -61,6 +62,9 @@ DOCKER_BUILD = True
 
 CERT_FILE = '/opt/tactical/certs/fullchain.pem'
 KEY_FILE = '/opt/tactical/certs/privkey.pem'
+
+EXE_DIR = '/opt/tactical/api/tacticalrmm/private/exe'
+LOG_DIR = '/opt/tactical/api/tacticalrmm/private/log'
 
 SCRIPTS_DIR = '/opt/tactical/scripts'
 
@@ -163,4 +167,13 @@ if [ "$1" = 'tactical-celerybeat' ]; then
   check_tactical_ready
   test -f "${TACTICAL_DIR}/api/celerybeat.pid" && rm "${TACTICAL_DIR}/api/celerybeat.pid"
   celery -A tacticalrmm beat -l info
+fi
+
+# backend container
+if [ "$1" = 'tactical-websockets' ]; then
+  check_tactical_ready
+
+  export DJANGO_SETTINGS_MODULE=tacticalrmm.settings
+
+  daphne tacticalrmm.asgi:application --port 8383 -b 0.0.0.0
 fi

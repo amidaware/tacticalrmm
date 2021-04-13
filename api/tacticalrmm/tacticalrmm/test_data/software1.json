@@ -1,0 +1,2012 @@
+[
+    {
+        "name": "7-Zip 19.00 (x64)",
+        "size": "5.2 MB",
+        "source": "",
+        "version": "19.00",
+        "location": "C:\\Program Files\\7-Zip\\",
+        "publisher": "Igor Pavlov",
+        "uninstall": "C:\\Program Files\\7-Zip\\Uninstall.exe",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Git version 2.22.0.windows.1",
+        "size": "262.0 MB",
+        "source": "",
+        "version": "2.22.0.windows.1",
+        "location": "C:\\Program Files\\Git\\",
+        "publisher": "The Git Development Community",
+        "uninstall": "\"C:\\Program Files\\Git\\unins000.exe\"",
+        "install_date": "2019-06-09 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Service Pack 2 for SQL Server 2016 (KB4052908) (64-bit)",
+        "size": "0 B",
+        "source": "",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\Update Cache\\KB4052908\\ServicePack\\setup.exe\" /Action=RemovePatch /AllInstances ",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "GDR 5101 for SQL Server 2016 (KB4505220) (64-bit)",
+        "size": "0 B",
+        "source": "",
+        "version": "13.2.5101.9",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\Update Cache\\KB4505220\\GDR\\setup.exe\" /Action=RemovePatch /AllInstances ",
+        "install_date": "2020-01-26 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "GDR 5102 for SQL Server 2016 (KB4532097) (64-bit)",
+        "size": "0 B",
+        "source": "",
+        "version": "13.2.5102.14",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\Update Cache\\KB4532097\\GDR\\setup.exe\" /Action=RemovePatch /AllInstances ",
+        "install_date": "2020-05-28 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Mesh Agent background service",
+        "size": "2.9 MB",
+        "source": "",
+        "version": "",
+        "location": "C:\\Program Files\\Mesh Agent\\",
+        "publisher": "",
+        "uninstall": "C:\\Program Files\\Mesh Agent\\MeshAgent.exe -funinstall",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server 2016 (64-bit)",
+        "size": "0 B",
+        "source": "",
+        "version": "",
+        "location": "",
+        "publisher": "",
+        "uninstall": "",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server 2016 (64-bit)",
+        "size": "0 B",
+        "source": "",
+        "version": "",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\SQLServer2016\\x64\\SetupARP.exe\"",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Office Professional Plus 2019 - en-us",
+        "size": "0 B",
+        "source": "",
+        "version": "16.0.10368.20035",
+        "location": "C:\\Program Files (x86)\\Microsoft Office",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\Program Files\\Common Files\\Microsoft Shared\\ClickToRun\\OfficeClickToRun.exe\" scenario=install scenariosubtype=ARP sourcetype=None productstoremove=ProPlus2019Volume.16_en-us_x-none culture=en-us version.16=16.0",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "R for Windows 3.6.0",
+        "size": "202.2 MB",
+        "source": "",
+        "version": "3.6.0",
+        "location": "C:\\Program Files\\R\\R-3.6.0\\",
+        "publisher": "R Core Team",
+        "uninstall": "\"C:\\Program Files\\R\\R-3.6.0\\unins000.exe\"",
+        "install_date": "2019-06-09 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Sublime Text 3",
+        "size": "36.2 MB",
+        "source": "",
+        "version": "",
+        "location": "C:\\Program Files\\Sublime Text 3\\",
+        "publisher": "Sublime HQ Pty Ltd",
+        "uninstall": "\"C:\\Program Files\\Sublime Text 3\\unins000.exe\"",
+        "install_date": "2020-01-31 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Tableau Server 2019.1 (20191.19.0215.0259)",
+        "size": "5.6 GB",
+        "source": "",
+        "version": "2019.1.1",
+        "location": "C:\\Program Files\\Tableau\\Tableau Server\\",
+        "publisher": "Tableau Software",
+        "uninstall": "\"C:\\Program Files\\Tableau\\Tableau Server\\unins000.exe\"",
+        "install_date": "2019-06-24 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visio Professional 2016 - en-us",
+        "size": "0 B",
+        "source": "",
+        "version": "16.0.10368.20035",
+        "location": "C:\\Program Files (x86)\\Microsoft Office",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\Program Files\\Common Files\\Microsoft Shared\\ClickToRun\\OfficeClickToRun.exe\" scenario=install scenariosubtype=ARP sourcetype=None productstoremove=VisioProRetail.16_en-us_x-none culture=en-us version.16=16.0",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2013 x64 Additional Runtime - 12.0.40664",
+        "size": "12.1 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{010792BA-551A-3AC0-A7EF-0FAB4156C382}v12.0.40664\\packages\\vcRuntimeAdditional_amd64\\",
+        "version": "12.0.40664",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{010792BA-551A-3AC0-A7EF-0FAB4156C382}",
+        "install_date": "2020-07-15 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server Management Studio",
+        "size": "210.3 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{054D303A-F7E8-4DD8-9E1C-0B8CDA9DCE8A}v15.0.18131.0\\x64\\",
+        "version": "15.0.18131.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{054D303A-F7E8-4DD8-9E1C-0B8CDA9DCE8A}",
+        "install_date": "2019-06-15 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.3 Executables (64-bit)",
+        "size": "1.2 MB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Package Cache\\{0BCF826B-3863-44FA-8562-F51BBF326AC1}v3.7.3150.0\\",
+        "version": "3.7.3150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{0BCF826B-3863-44FA-8562-F51BBF326AC1}",
+        "install_date": "2019-06-09 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Data quality client",
+        "size": "172.0 kB",
+        "source": "E:\\1033_ENU_LP\\x64\\setup\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{0C41EB54-B85C-4090-9EB7-03D54C80F8BC}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Database Engine Services",
+        "size": "71.4 MB",
+        "source": "E:\\1033_ENU_LP\\x64\\setup\\sql_engine_core_inst_loc_msi\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{0C457EC3-E998-4041-B856-908D5A2C1708}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Sql Server Customer Experience Improvement Program",
+        "size": "626.7 kB",
+        "source": "E:\\x64\\setup\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{0D9BD39A-A870-4FDF-B590-1E9787CF16D9}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server 2016 LocalDB ",
+        "size": "245.1 MB",
+        "source": "C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\Update Cache\\KB4532097\\GDR\\1033_ENU_LP\\x64\\setup\\x64\\",
+        "version": "13.2.5102.14",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{1512894A-B11F-4DF6-9920-D3E415950CB0}",
+        "install_date": "2020-05-28 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server Management Studio for Reporting Services",
+        "size": "27.1 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{1634EEF5-129D-434C-A0F8-F273BC33B6C7}v15.0.18131.0\\x64\\",
+        "version": "15.0.18131.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{1634EEF5-129D-434C-A0F8-F273BC33B6C7}",
+        "install_date": "2019-06-15 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Common Files",
+        "size": "868.4 kB",
+        "source": "E:\\1033_ENU_LP\\x64\\setup\\sql_common_core_loc_msi\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{16F3645F-1343-4462-92DC-9AE66A2E68A3}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft ODBC Driver 17 for SQL Server",
+        "size": "4.1 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{175BC9FC-C256-4EFC-9D87-4A9AF3B47A12}v17.3.1.1\\x64\\",
+        "version": "17.3.1.1",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{175BC9FC-C256-4EFC-9D87-4A9AF3B47A12}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.3 Documentation (64-bit)",
+        "size": "8.1 MB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Package Cache\\{191BD530-3F3D-43AE-A903-0F96D4FC8B25}v3.7.3150.0\\",
+        "version": "3.7.3150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{191BD530-3F3D-43AE-A903-0F96D4FC8B25}",
+        "install_date": "2019-06-09 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.3 Test Suite (64-bit)",
+        "size": "21.6 MB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Package Cache\\{19E966E1-0536-4D97-8B2C-34B6D0AC6B00}v3.7.3150.0\\",
+        "version": "3.7.3150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{19E966E1-0536-4D97-8B2C-34B6D0AC6B00}",
+        "install_date": "2019-06-09 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.3 Development Libraries (64-bit)",
+        "size": "2.6 MB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Package Cache\\{1B267487-4679-4044-A552-84DD4038CA43}v3.7.3150.0\\",
+        "version": "3.7.3150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{1B267487-4679-4044-A552-84DD4038CA43}",
+        "install_date": "2019-06-09 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2010  x64 Redistributable - 10.0.40219",
+        "size": "14.5 MB",
+        "source": "E:\\redist\\VisualStudioShell\\VC10SP1\\x64\\",
+        "version": "10.0.40219",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{1D8E6291-B0D5-35EC-8441-6616F567A0F7}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.3 Add to Path (64-bit)",
+        "size": "41.0 kB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Package Cache\\{1EA7C86B-5C03-4CD1-B5C1-AB9DCE7C4E9A}v3.7.3150.0\\",
+        "version": "3.7.3150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{1EA7C86B-5C03-4CD1-B5C1-AB9DCE7C4E9A}",
+        "install_date": "2019-06-09 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual Studio Team Foundation Server 2017 Update 9 Office Integration (x64)",
+        "size": "31.5 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.TeamFoundation.OfficeIntegration,version=15.129.28621.1,chip=x64\\",
+        "version": "15.129.28621",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{29F73FA6-CA54-3F2F-980F-D1E1DC4E9C81}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Advanced Analytics",
+        "size": "5.0 MB",
+        "source": "E:\\x64\\setup\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{2C4BA3CB-E23E-4AAD-B3C6-5F50F2D3997F}",
+        "install_date": "2020-05-28 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Integration Services",
+        "size": "150.0 MB",
+        "source": "E:\\x64\\setup\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{2C5A8F43-F8FB-41D6-AFE7-31FD24A4A4B2}",
+        "install_date": "2020-05-28 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "AlteryxProductName",
+        "size": "2.4 GB",
+        "source": "C:\\Users\\RRANGA~1\\AppData\\Local\\Temp\\mia1\\",
+        "version": "2020.1.2.24185",
+        "location": "C:\\Alteryx\\",
+        "publisher": "Alteryx",
+        "uninstall": "",
+        "install_date": "2020-04-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 DMF",
+        "size": "1.4 MB",
+        "source": "E:\\x64\\setup\\",
+        "version": "13.0.1601.5",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{2FFF0757-4360-42F5-8814-16BB5CF0145F}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 DMF",
+        "size": "417.8 kB",
+        "source": "E:\\1033_ENU_LP\\x64\\setup\\",
+        "version": "13.0.1601.5",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{34A20DEE-6AD4-44A6-95FF-DFF95CD22B8C}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.7 Utility Scripts (64-bit)",
+        "size": "753.7 kB",
+        "source": "C:\\ProgramData\\Package Cache\\{3B826D9B-4141-455E-967A-B0984088BC2E}v3.7.7150.0\\",
+        "version": "3.7.7150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{3B826D9B-4141-455E-967A-B0984088BC2E}",
+        "install_date": "2020-04-22 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft VSS Writer for SQL Server 2016",
+        "size": "4.8 MB",
+        "source": "E:\\1033_ENU_LP\\x64\\setup\\x64\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{3E013EB4-FF9E-4CCA-BAB6-318932614FAE}",
+        "install_date": "2020-05-28 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Shared Management Objects",
+        "size": "6.0 MB",
+        "source": "C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\Update Cache\\KB4052908\\ServicePack\\1033_ENU_LP\\x64\\setup\\",
+        "version": "13.0.16107.4",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{3E2AB7C7-2019-4126-AF5A-F840DE02DA73}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "psqlODBC_x64",
+        "size": "8.1 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{3F8971B0-061B-4163-9D3F-EA94151B2FCF}v09.06.0504\\",
+        "version": "09.06.0504",
+        "location": "",
+        "publisher": "PostgreSQL Global Development Group",
+        "uninstall": "MsiExec.exe /I{3F8971B0-061B-4163-9D3F-EA94151B2FCF}",
+        "install_date": "2019-06-24 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.7 Test Suite (64-bit)",
+        "size": "21.8 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{40D70865-BA27-44B6-AA5C-2215098AEA50}v3.7.7150.0\\",
+        "version": "3.7.7150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{40D70865-BA27-44B6-AA5C-2215098AEA50}",
+        "install_date": "2020-04-22 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Datto Windows Agent",
+        "size": "23.8 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{46801BD6-3F6F-4629-A5A1-0D645BD88705}v2.7.1.0\\",
+        "version": "2.7.1.0",
+        "location": "C:\\Program Files\\Datto\\",
+        "publisher": "Datto Inc.",
+        "uninstall": "MsiExec.exe /X{46801BD6-3F6F-4629-A5A1-0D645BD88705}",
+        "install_date": "2020-11-24 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Analysis Services OLE DB Provider",
+        "size": "472.1 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{47F4ECBA-EEEB-4967-8D9A-11945ACFEBC4}v15.0.1600.41\\x64\\",
+        "version": "15.0.1600.41",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{47F4ECBA-EEEB-4967-8D9A-11945ACFEBC4}",
+        "install_date": "2019-06-15 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server 2016 T-SQL ScriptDom ",
+        "size": "7.7 MB",
+        "source": "C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\Update Cache\\KB4052908\\ServicePack\\1033_ENU_LP\\x64\\setup\\x64\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{4E5A8BEC-BEB0-4E74-8B0D-8C6728697A0A}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "64 Bit HP CIO Components Installer",
+        "size": "865.3 kB",
+        "source": "C:\\Windows\\system32\\spool\\DRIVERS\\x64\\3\\",
+        "version": "22.2.1",
+        "location": "",
+        "publisher": "HP Inc.",
+        "uninstall": "MsiExec.exe /I{50229C72-539F-4E65-BEB5-F0491C5074B7}",
+        "install_date": "2020-10-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Connection Info",
+        "size": "270.3 kB",
+        "source": "C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\Update Cache\\KB4052908\\ServicePack\\1033_ENU_LP\\x64\\setup\\",
+        "version": "13.0.16108.4",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{5043CE58-6AAF-488C-AC2A-A405FFF85B57}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Database Engine Services",
+        "size": "315.8 MB",
+        "source": "E:\\x64\\setup\\sql_engine_core_inst_msi\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{51574D2C-DE28-4441-BDC2-967F0FFC0918}",
+        "install_date": "2020-05-28 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Data quality client",
+        "size": "62.3 MB",
+        "source": "E:\\x64\\setup\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{51B449C1-3374-4009-B9E2-2D4D02C33B2A}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server Management Studio",
+        "size": "5.0 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{5227D66A-0C5B-4B89-AB53-9FEFFBC2EE25}v15.0.18131.0\\x64\\",
+        "version": "15.0.18131.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{5227D66A-0C5B-4B89-AB53-9FEFFBC2EE25}",
+        "install_date": "2019-06-15 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2013 x64 Minimum Runtime - 12.0.40664",
+        "size": "2.6 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{53CF6934-A98D-3D84-9146-FC4EDF3D5641}v12.0.40664\\packages\\vcRuntimeMinimum_amd64\\",
+        "version": "12.0.40664",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{53CF6934-A98D-3D84-9146-FC4EDF3D5641}",
+        "install_date": "2020-07-15 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Common Files",
+        "size": "54.4 MB",
+        "source": "E:\\x64\\setup\\sql_common_core_msi\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{57846DA8-8B5D-4466-B850-E8CDFC94046C}",
+        "install_date": "2020-05-28 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Integration Services",
+        "size": "8.3 MB",
+        "source": "E:\\1033_ENU_LP\\x64\\setup\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{59BE49ED-6B98-4451-8046-0FFAC19D096D}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.7 Standard Library (64-bit)",
+        "size": "26.8 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{5F12F065-8081-4D3A-B4B1-9A90953CE8CF}v3.7.7150.0\\",
+        "version": "3.7.7150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{5F12F065-8081-4D3A-B4B1-9A90953CE8CF}",
+        "install_date": "2020-04-22 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "IntelliTraceProfilerProxy",
+        "size": "17.4 kB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.IntelliTrace.ProfilerProxy.Msi.x64,version=15.0.17289.1,chip=x64\\",
+        "version": "15.0.17289.01",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{5F42C347-0A33-4BCE-B9D7-CCD1082C3187}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Java(TM) SE Development Kit 13.0.2 (64-bit)",
+        "size": "310.3 MB",
+        "source": "C:\\Users\\rranganathan\\AppData\\LocalLow\\Oracle\\Java\\jdk13.0.2_x64\\",
+        "version": "13.0.2.0",
+        "location": "C:\\Program Files\\Java\\jdk-13.0.2\\",
+        "publisher": "Oracle Corporation",
+        "uninstall": "MsiExec.exe /X{606493F9-D1F1-5355-BB8A-F0E30F1AFFED}",
+        "install_date": "2020-04-03 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.7 Executables (64-bit)",
+        "size": "1.3 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{60776648-6B18-47AC-AAA3-0C0DCFC28F26}v3.7.7150.0\\",
+        "version": "3.7.7150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{60776648-6B18-47AC-AAA3-0C0DCFC28F26}",
+        "install_date": "2020-04-22 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server 2008 Setup Support Files ",
+        "size": "40.9 MB",
+        "source": "E:\\1033_ENU_LP\\x64\\setup\\sql2008support\\",
+        "version": "10.3.5500.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{6292D514-17A4-403F-98F9-E150F10C043D}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Database Engine Shared",
+        "size": "119.7 MB",
+        "source": "E:\\x64\\setup\\sql_engine_core_shared_msi\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{686A81C0-C8E4-46F6-952F-B19A28E8C430}",
+        "install_date": "2020-05-28 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Active Directory Authentication Library for SQL Server",
+        "size": "3.3 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{6BF11ECE-3CE8-4FBA-991A-1F55AA6BE5BF}v15.0.1300.359\\x64\\",
+        "version": "15.0.1300.359",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{6BF11ECE-3CE8-4FBA-991A-1F55AA6BE5BF}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Connection Info",
+        "size": "557.1 kB",
+        "source": "C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\Update Cache\\KB4052908\\ServicePack\\x64\\setup\\",
+        "version": "13.0.16108.4",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{6EE546C8-37CE-47FA-9BED-9EB3CB79E8CA}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual Studio Installer",
+        "size": "0 B",
+        "source": "",
+        "version": "1.18.1100.314",
+        "location": "\"C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\"",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vs_installer.exe\" /uninstall",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.3 pip Bootstrap (64-bit)",
+        "size": "254.0 kB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Package Cache\\{71ACF08D-4328-4A9E-9146-96765CB5EAD2}v3.7.3150.0\\",
+        "version": "3.7.3150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{71ACF08D-4328-4A9E-9146-96765CB5EAD2}",
+        "install_date": "2019-06-09 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 SQL Diagnostics",
+        "size": "528.4 kB",
+        "source": "E:\\x64\\setup\\",
+        "version": "13.0.1601.5",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{766BE25E-D2B5-4E76-BCB0-29B801BADB3F}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 SQL Data Quality Common",
+        "size": "9.3 MB",
+        "source": "E:\\x64\\setup\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{78281525-26B5-48E0-AB36-DFEE117D96BA}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Amazon Redshift ODBC Driver 64-bit",
+        "size": "38.0 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{788C401A-726B-4CE7-8BC2-89FD7967A6ED}v1.3.7.1000\\",
+        "version": "1.3.7.1000",
+        "location": "",
+        "publisher": "Amazon Corporate LLC",
+        "uninstall": "MsiExec.exe /X{788C401A-726B-4CE7-8BC2-89FD7967A6ED}",
+        "install_date": "2019-06-24 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server 2016 RsFx Driver",
+        "size": "1.4 MB",
+        "source": "C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\Update Cache\\KB4052908\\ServicePack\\x64\\setup\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{78C0059C-F34F-4249-8F7E-D8C0A8609389}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Client Tools Extensions",
+        "size": "33.4 MB",
+        "source": "E:\\1033_ENU_LP\\x64\\setup\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{7E94713F-EF30-46EB-B809-BBA8603FBF9E}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Database Engine Shared",
+        "size": "12.4 MB",
+        "source": "E:\\1033_ENU_LP\\x64\\setup\\sql_engine_core_shared_loc_msi\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{81CABA93-27C0-4BD9-9B5E-227C76B59F46}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft MPI (7.0.12437.8)",
+        "size": "10.0 MB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Temp\\6100f202-2eb2-4516-976a-1de6327888bf\\",
+        "version": "7.0.12437.8",
+        "location": "C:\\Program Files\\Microsoft MPI\\",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{8499ACD3-C1E3-45AB-BF96-DA491727EBE1}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Silverlight",
+        "size": "53.2 MB",
+        "source": "c:\\e7b19bbe8f5bbea313402512e6e19c3e\\",
+        "version": "5.1.50918.0",
+        "location": "c:\\Program Files\\Microsoft Silverlight\\",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{89F4137D-6C26-4A84-BDB8-2E5A4BB71E00}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 XEvent",
+        "size": "725.0 kB",
+        "source": "E:\\x64\\setup\\",
+        "version": "13.0.1601.5",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{8CF2CA8E-3984-46B9-B493-F844F3774FA1}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Office 16 Click-to-Run Licensing Component",
+        "size": "3.1 MB",
+        "source": "c:\\program files (x86)\\microsoft office\\root\\integration\\",
+        "version": "16.0.10368.20035",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{90160000-008F-0000-1000-0000000FF1CE}",
+        "install_date": "2020-11-17 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Office 16 Click-to-Run Extensibility Component 64-bit Registration",
+        "size": "1.6 MB",
+        "source": "c:\\program files (x86)\\microsoft office\\root\\integration\\",
+        "version": "16.0.10368.20035",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{90160000-00DD-0000-1000-0000000FF1CE}",
+        "install_date": "2020-11-17 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server 2012 Command Line Utilities ",
+        "size": "897.0 kB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\sqlcmdlnutils,version=15.1.61903.1040,chip=x64,language=en-US\\",
+        "version": "11.3.6020.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{9198AD57-6396-4DF8-8D0C-20EA764F7986}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.7 Development Libraries (64-bit)",
+        "size": "2.6 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{937814BD-E132-48AA-95BF-1DA243130C61}v3.7.7150.0\\",
+        "version": "3.7.7150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{937814BD-E132-48AA-95BF-1DA243130C61}",
+        "install_date": "2020-04-22 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Client Tools",
+        "size": "61.4 kB",
+        "source": "C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\Update Cache\\KB3182545\\ServicePack\\x64\\setup\\",
+        "version": "13.0.14500.10",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{9478E350-F157-4724-AE17-6ADA0E9E2351}",
+        "install_date": "2019-06-24 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft System CLR Types for SQL Server vNext CTP1.6",
+        "size": "6.6 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\sqlsysclrtypes,version=15.1.61903.1040,chip=x64,language=en-US\\",
+        "version": "15.0.600.33",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{98DD6908-C582-452A-954D-E79E6DF0310A}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.7 Core Interpreter (64-bit)",
+        "size": "3.8 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{9BE0AC23-0551-4755-94A3-F4D377E3CF16}v3.7.7150.0\\",
+        "version": "3.7.7150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{9BE0AC23-0551-4755-94A3-F4D377E3CF16}",
+        "install_date": "2020-04-22 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2017 X64 Additional Runtime - 14.16.27024",
+        "size": "12.5 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{9D29FC96-9EEE-4253-943F-96B3BBFDD0B6}v14.16.27024\\packages\\vcRuntimeAdditional_amd64\\",
+        "version": "14.16.27024",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{9D29FC96-9EEE-4253-943F-96B3BBFDD0B6}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server 2012 Native Client ",
+        "size": "7.5 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{9D93D367-A2CC-4378-BD63-79EF3FE76C78}v11.4.7462.6\\x64\\",
+        "version": "11.4.7462.6",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{9D93D367-A2CC-4378-BD63-79EF3FE76C78}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.7 Documentation (64-bit)",
+        "size": "8.2 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{9EED2F05-DE91-4CE8-B562-AB64115D2CD5}v3.7.7150.0\\",
+        "version": "3.7.7150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{9EED2F05-DE91-4CE8-B562-AB64115D2CD5}",
+        "install_date": "2020-04-22 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Client Tools",
+        "size": "81.9 kB",
+        "source": "C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\Update Cache\\KB3182545\\ServicePack\\1033_ENU_LP\\x64\\setup\\",
+        "version": "13.0.14500.10",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{A070F2AC-A75B-448C-BECB-B794EB7E0E0D}",
+        "install_date": "2019-06-24 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft ODBC Driver 13 for SQL Server",
+        "size": "8.9 MB",
+        "source": "C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\Update Cache\\KB4052908\\ServicePack\\1033_ENU_LP\\x64\\setup\\x64\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{A5B9FE63-24F8-49BF-B657-FEA9342696B0}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Tableau 2019.1 (20191.19.0515.1028)",
+        "size": "1.6 GB",
+        "source": "C:\\ProgramData\\Package Cache\\{A89E73F2-4046-44E7-91FF-1E3EC2E778BB}v19.1.298\\",
+        "version": "19.1.298",
+        "location": "C:\\Program Files\\Tableau\\Tableau 2019.1\\",
+        "publisher": "Tableau Software",
+        "uninstall": "MsiExec.exe /I{A89E73F2-4046-44E7-91FF-1E3EC2E778BB}",
+        "install_date": "2019-06-24 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual Studio Tools for Applications 2015 x64 Hosting Support",
+        "size": "2.3 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{A8C30947-7C1B-3A31-8FD8-CEC6D3357D34}v14.0.23829\\packages\\vsta_hostingcore_amd64\\",
+        "version": "14.0.23829",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{A8C30947-7C1B-3A31-8FD8-CEC6D3357D34}",
+        "install_date": "2019-06-24 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 sql_inst_mr",
+        "size": "483.3 kB",
+        "source": "E:\\x64\\setup\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{A99F2E27-0849-4B34-9A7C-CF44DB0DC7A3}",
+        "install_date": "2020-05-28 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Client Tools Extensions",
+        "size": "215.0 MB",
+        "source": "E:\\x64\\setup\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{AB765DC7-7642-4D1C-BEDC-035516CCD224}",
+        "install_date": "2020-05-28 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual Studio Tools for Applications 2017 x64 Hosting Support",
+        "size": "2.9 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{AFFB9D8D-6E58-38A0-A7DD-F6F1F4247B36}v15.0.27520\\packages\\vsta_hostingcore_amd64\\",
+        "version": "15.0.27520",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{AFFB9D8D-6E58-38A0-A7DD-F6F1F4247B36}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Shared Management Objects",
+        "size": "6.5 MB",
+        "source": "C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\Update Cache\\KB4052908\\ServicePack\\x64\\setup\\",
+        "version": "13.0.16107.4",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{B1161C6B-1DD3-45E7-8769-9C318038459C}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server 2016 Setup (English)",
+        "size": "169.8 MB",
+        "source": "C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\Update Cache\\KB4532097\\GDR\\1033_ENU_LP\\x64\\setup\\sqlsupport_msi\\",
+        "version": "13.2.5102.14",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{B51F53D8-FAAB-41D8-BE9E-E552F803C393}",
+        "install_date": "2020-05-28 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "VC12X64Redist",
+        "size": "6.6 MB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Temp\\{85A939E4-F2AF-4CAA-AD43-9730AF78F015}\\",
+        "version": "1.00.0000",
+        "location": "C:\\Program Files (x86)\\Intuit\\VC12X64Redist\\",
+        "publisher": "Intuit Inc.",
+        "uninstall": "MsiExec.exe /I{B573CC21-AE24-4BC5-9B0B-15CF29A3F982}",
+        "install_date": "2019-07-11 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SSMS Post Install Tasks",
+        "size": "303.1 kB",
+        "source": "C:\\ProgramData\\Package Cache\\{B6C6843D-F4FD-4462-B28B-CBC91DC15525}v15.0.18131.0\\x64\\",
+        "version": "15.0.18131.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{B6C6843D-F4FD-4462-B28B-CBC91DC15525}",
+        "install_date": "2019-06-15 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Shared Management Objects Extensions",
+        "size": "6.3 MB",
+        "source": "E:\\x64\\setup\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{B6E1A5EB-1C58-4A04-B76B-E5FE1BE22CA1}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server Management Studio for Analysis Services",
+        "size": "320.7 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{B7883A76-622B-43DF-996D-5876A9616A3C}v15.0.18131.0\\x64\\",
+        "version": "15.0.18131.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{B7883A76-622B-43DF-996D-5876A9616A3C}",
+        "install_date": "2019-06-15 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual Studio Team Foundation Server 2017 Update 9 Office Integration Language Pack (x64) - ENU",
+        "size": "852.0 kB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.TeamFoundation.OfficeIntegration.Resources,version=15.129.28621.1,chip=x64,language=en-US\\",
+        "version": "15.129.28621",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{BC956E0F-8C68-3A9D-934C-979A3E2AB8C5}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.3 Core Interpreter (64-bit)",
+        "size": "3.8 MB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Package Cache\\{C0018D52-93E9-4331-A17F-C040CE3A5B0F}v3.7.3150.0\\",
+        "version": "3.7.3150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{C0018D52-93E9-4331-A17F-C040CE3A5B0F}",
+        "install_date": "2019-06-09 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.7 Add to Path (64-bit)",
+        "size": "41.0 kB",
+        "source": "C:\\ProgramData\\Package Cache\\{C6C5A493-E7FB-4E3C-AEAF-1F95E3ECA272}v3.7.7150.0\\",
+        "version": "3.7.7150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{C6C5A493-E7FB-4E3C-AEAF-1F95E3ECA272}",
+        "install_date": "2020-04-22 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.3 Utility Scripts (64-bit)",
+        "size": "753.7 kB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Package Cache\\{CA54F025-DD88-408B-85F4-682C2B3A4E76}v3.7.3150.0\\",
+        "version": "3.7.3150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{CA54F025-DD88-408B-85F4-682C2B3A4E76}",
+        "install_date": "2019-06-09 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.3 Standard Library (64-bit)",
+        "size": "25.6 MB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Package Cache\\{CAD7D30A-2F6F-4565-A83D-92EABF40C587}v3.7.3150.0\\",
+        "version": "3.7.3150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{CAD7D30A-2F6F-4565-A83D-92EABF40C587}",
+        "install_date": "2019-06-09 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Batch Parser",
+        "size": "3.1 MB",
+        "source": "E:\\x64\\setup\\",
+        "version": "13.0.1601.5",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{D7A905DB-9A1E-4670-9488-F979F8A77A58}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.3 Tcl/Tk Support (64-bit)",
+        "size": "16.8 MB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Package Cache\\{DA3783AD-20F9-4119-BE30-9C3ACF888C3B}v3.7.3150.0\\",
+        "version": "3.7.3150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{DA3783AD-20F9-4119-BE30-9C3ACF888C3B}",
+        "install_date": "2019-06-09 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.7 pip Bootstrap (64-bit)",
+        "size": "254.0 kB",
+        "source": "C:\\ProgramData\\Package Cache\\{DE9BCC96-48C4-4275-A383-C49B3957A617}v3.7.7150.0\\",
+        "version": "3.7.7150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{DE9BCC96-48C4-4275-A383-C49B3957A617}",
+        "install_date": "2020-04-22 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 XEvent",
+        "size": "86.0 kB",
+        "source": "E:\\1033_ENU_LP\\x64\\setup\\",
+        "version": "13.0.1601.5",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{E6FFAAAF-D8B5-4D46-8514-26E96D9F3D8D}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft OLE DB Driver for SQL Server",
+        "size": "5.1 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{EE6D1BC2-277F-4841-8FC9-DE132F856BB8}v18.2.1.0\\x64\\",
+        "version": "18.2.1.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{EE6D1BC2-277F-4841-8FC9-DE132F856BB8}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2017 X64 Minimum Runtime - 14.16.27024",
+        "size": "2.3 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{F1B0FB3A-E0EA-47A6-9383-3650655403B0}v14.16.27024\\packages\\vcRuntimeMinimum_amd64\\",
+        "version": "14.16.27024",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{F1B0FB3A-E0EA-47A6-9383-3650655403B0}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python 3.7.7 Tcl/Tk Support (64-bit)",
+        "size": "16.9 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{F21D9D7C-3E98-4CF3-B450-30F794588EA7}v3.7.7150.0\\",
+        "version": "3.7.7150.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /I{F21D9D7C-3E98-4CF3-B450-30F794588EA7}",
+        "install_date": "2020-04-22 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "QuickBooks Runtime Redistributable",
+        "size": "6.4 MB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Temp\\{BE81E255-BA4C-4681-B362-B16842F22A45}\\",
+        "version": "1.00.0000",
+        "location": "C:\\Program Files (x86)\\Intuit\\VC10X64Redist\\",
+        "publisher": "Intuit Inc.",
+        "uninstall": "MsiExec.exe /I{F2A4F809-2DE6-4D27-888B-4D2BB8DAF20E}",
+        "install_date": "2019-07-11 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server 2016 Shared Management Objects Extensions",
+        "size": "634.9 kB",
+        "source": "E:\\1033_ENU_LP\\x64\\setup\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{FA548BCB-5732-40F8-85B0-61515D18D9C1}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server 2016 T-SQL Language Service ",
+        "size": "7.6 MB",
+        "source": "C:\\Program Files\\Microsoft SQL Server\\130\\Setup Bootstrap\\Update Cache\\KB3182545\\ServicePack\\1033_ENU_LP\\x64\\setup\\x64\\",
+        "version": "13.0.14500.10",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{FE3BF1DD-677E-4793-9770-C07AECC88882}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Visual Studio Community 2017",
+        "size": "0 B",
+        "source": "",
+        "version": "15.9.28307.665",
+        "location": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vs_installer.exe\" uninstall --installPath \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\"",
+        "install_date": "2019-06-09 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Help Viewer 2.3",
+        "size": "12.7 MB",
+        "source": "",
+        "version": "2.3.28107",
+        "location": "C:\\Program Files (x86)\\Microsoft Help Viewer\\v2.3\\",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "msiexec.exe /X{BEFC10C1-7032-3C8E-80BC-621A77BFEABD}",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Salt Minion 1.1.0 (Python 3)",
+        "size": "252.0 MB",
+        "source": "",
+        "version": "1.1.0",
+        "location": "",
+        "publisher": "SaltStack, Inc",
+        "uninstall": "c:\\salt\\uninst.exe",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "WinSCP 5.15.2",
+        "size": "92.4 MB",
+        "source": "",
+        "version": "5.15.2",
+        "location": "C:\\Program Files (x86)\\WinSCP\\",
+        "publisher": "Martin Prikryl",
+        "uninstall": "\"C:\\Program Files (x86)\\WinSCP\\unins000.exe\"",
+        "install_date": "2019-06-09 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual Studio Tools for Applications 2015 Language Support - ENU Language Pack",
+        "size": "4.3 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{0343F10B-C31B-3A2F-B2C1-C42E84CCAF5E}v14.0.23107.00\\packages\\vsta_lslp\\",
+        "version": "14.0.23107.00",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{0343F10B-C31B-3A2F-B2C1-C42E84CCAF5E}",
+        "install_date": "2019-06-24 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.40664",
+        "size": "21.6 MB",
+        "source": "",
+        "version": "12.0.40664.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\ProgramData\\Package Cache\\{042d26ef-3dbe-4c25-95d3-4c1b11b235a7}\\vcredist_x64.exe\"  /uninstall",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.30501",
+        "size": "0 B",
+        "source": "",
+        "version": "12.0.30501.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\ProgramData\\Package Cache\\{050d4fc8-5d48-4b8f-8972-47c82c46020f}\\vcredist_x64.exe\"  /uninstall",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Python Launcher",
+        "size": "1.8 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{06667732-CFB4-44B1-86AF-D7FDF9962B84}v3.7.7008.0\\",
+        "version": "3.7.7008.0",
+        "location": "",
+        "publisher": "Python Software Foundation",
+        "uninstall": "MsiExec.exe /X{06667732-CFB4-44B1-86AF-D7FDF9962B84}",
+        "install_date": "2020-04-22 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Tableau 2019.1 (20191.19.0515.1028)",
+        "size": "2.0 GB",
+        "source": "",
+        "version": "19.1.298",
+        "location": "",
+        "publisher": "Tableau Software",
+        "uninstall": "\"C:\\ProgramData\\Package Cache\\{096464ec-850e-4d41-aa97-39ba3a11f071}\\tableau-setup-std-tableau-2019-1.19.0515.1028-x64.exe\" /modify",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "QuickBooks Premier Edition 2020",
+        "size": "0 B",
+        "source": "",
+        "version": "30.0.4001.3000",
+        "location": "C:\\Program Files (x86)\\Intuit\\QuickBooks 2020\\",
+        "publisher": "Intuit Inc.",
+        "uninstall": "msiexec.exe /I {88C0857B-7734-4EA5-A7D9-636DF8622B63} UNIQUE_NAME=\"superpro\" QBFULLNAME=\"QuickBooks Premier Edition 2020\" ADDREMOVE=1",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Tactical RMM Agent",
+        "size": "33.0 MB",
+        "source": "",
+        "version": "1.1.0",
+        "location": "C:\\Program Files\\TacticalAgent\\",
+        "publisher": "Tactical Techs",
+        "uninstall": "\"C:\\Program Files\\TacticalAgent\\unins000.exe\"",
+        "install_date": "2020-11-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual Studio Tools for Applications 2015 x86 Hosting Support",
+        "size": "3.3 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{11A9EF3E-6616-31B1-82BC-1080366FA34D}v14.0.23829\\packages\\vsta_hostingcore_x86\\",
+        "version": "14.0.23829",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{11A9EF3E-6616-31B1-82BC-1080366FA34D}",
+        "install_date": "2019-06-24 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server Management Studio - 18.1",
+        "size": "2.6 GB",
+        "source": "",
+        "version": "15.0.18131.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\ProgramData\\Package Cache\\{1643af48-a2d8-4806-847c-8d565a9af98a}\\SSMS-Setup-ENU.exe\"  /uninstall",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "vcpp_crt.redist.clickonce",
+        "size": "12.3 kB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.VisualCpp.CRT.ClickOnce.Msi,version=14.16.27012,language=en-US\\",
+        "version": "14.16.27012",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{16E08161-F78C-4FFC-8E12-F9BEA280795F}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft .NET Framework 4.5.2 Multi-Targeting Pack",
+        "size": "51.9 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.Net.4.5.2.TargetingPack,version=4.5.51651.1\\",
+        "version": "4.5.51651",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{19E8AE59-4D4A-3534-B567-6CC08FA4102E}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Analysis Services OLE DB Provider",
+        "size": "229.4 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{1AA706B4-11B8-44C4-B61A-9DBA1E49026F}v15.0.1600.41\\x86\\",
+        "version": "15.0.1600.41",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{1AA706B4-11B8-44C4-B61A-9DBA1E49026F}",
+        "install_date": "2019-06-15 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "vs_tipsmsi",
+        "size": "43.0 kB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.VisualStudio.TestTools.TP.Legacy.Tips.Msi,version=15.0.27005.2\\",
+        "version": "15.0.27005",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{1AC6CC3D-7724-4D84-9270-798A2191AB1C}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "vs_filehandler_x86",
+        "size": "2.1 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.VisualStudio.FileHandler.Msi,version=15.9.28302.56,chip=x86\\",
+        "version": "15.9.28302",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{1F42A73E-CF26-4D67-BA79-752CA56B639F}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual Studio Setup Configuration",
+        "size": "749.6 kB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.VisualStudio.Setup.Configuration,version=1.18.21.37008\\",
+        "version": "1.18.21.37008",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{23B8EFE9-8716-4560-B3D7-EBAFCDFD25A2}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Java 8 Update 241",
+        "size": "109.1 MB",
+        "source": "C:\\Users\\rranganathan\\AppData\\LocalLow\\Oracle\\Java\\jre1.8.0_241\\",
+        "version": "8.0.2410.7",
+        "location": "C:\\Program Files (x86)\\Java\\jre1.8.0_241\\",
+        "publisher": "Oracle Corporation",
+        "uninstall": "MsiExec.exe /X{26A24AE4-039D-4CA4-87B4-2F32180241F0}",
+        "install_date": "2020-04-03 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft .NET Framework Cumulative Intellisense Pack for Visual Studio (ENU)",
+        "size": "74.8 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.Net.Cumulative.TargetingPack.Resources,version=4.7.2558.2,language=en-US\\",
+        "version": "4.7.02558",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{276CB8F7-CA1E-41FE-8307-A55D95D33D99}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server Integration Services Singleton",
+        "size": "229.4 kB",
+        "source": "C:\\ProgramData\\Package Cache\\{295DDC25-2FE0-4C5C-9C66-6B2B5A30ADB3}v14.0.3002.136\\payload\\",
+        "version": "14.0.3002.136",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{295DDC25-2FE0-4C5C-9C66-6B2B5A30ADB3}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft .NET Framework 4.6 Targeting Pack",
+        "size": "42.4 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.Net.4.6.TargetingPack,version=4.6.81.1\\",
+        "version": "4.6.00081",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{2CC6A4A7-AAC2-46C9-9DBB-3727B5954F65}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Integration Services",
+        "size": "109.6 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{2D0F1E38-3391-44A3-8983-C66A0E205F97}v15.0.1300.388\\x86\\",
+        "version": "15.0.1300.388",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{2D0F1E38-3391-44A3-8983-C66A0E205F97}",
+        "install_date": "2019-06-15 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft .NET Framework 4.6.1 SDK",
+        "size": "21.0 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.Net.4.6.1.SDK,version=4.6.1055.1\\",
+        "version": "4.6.01055",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{2F0ECC80-B9E4-4485-8083-CD32F22ABD92}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server 2016 Analysis Management Objects ",
+        "size": "21.4 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{32C74307-3B94-4992-A275-22F810D62551}v13.1.4495.10\\payload\\",
+        "version": "13.1.4495.10",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{32C74307-3B94-4992-A275-22F810D62551}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual Studio Tools for Applications 2015 Language Support",
+        "size": "59.3 MB",
+        "source": "",
+        "version": "14.0.23107.10",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\ProgramData\\Package Cache\\{353253a9-15a3-4727-b415-79b4e6be765e}\\vsta_ls.exe\"  /uninstall",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.40649",
+        "size": "18.0 MB",
+        "source": "",
+        "version": "12.0.40649.5",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\ProgramData\\Package Cache\\{35b83883-40fa-423c-ae73-2aff7e1ea820}\\vcredist_x86.exe\"  /uninstall",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "vs_minshellinteropmsi",
+        "size": "2.3 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.VisualStudio.MinShell.Interop.Msi,version=15.8.27825.0\\",
+        "version": "15.8.27825",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{3A78DA3D-C8D4-429D-B536-6E59A0088451}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server Integration Services Singleton",
+        "size": "2.1 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{3E0169C6-D446-4715-932C-9C6433177C4D}v15.0.1100.123\\payload\\",
+        "version": "15.0.1100.123",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{3E0169C6-D446-4715-932C-9C6433177C4D}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "vs_communitymsires",
+        "size": "20.5 kB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.VisualStudio.Community.Msi.Resources,version=15.0.26621.2,language=en-US\\",
+        "version": "15.0.26621",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{40040E64-50EB-4FCF-B209-DA0B20821759}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Java Auto Updater",
+        "size": "2.0 MB",
+        "source": "C:\\Users\\rranganathan\\AppData\\LocalLow\\Oracle\\Java\\jre1.8.0_241\\",
+        "version": "2.8.241.7",
+        "location": "",
+        "publisher": "Oracle Corporation",
+        "uninstall": "",
+        "install_date": "2020-04-03 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server Data-Tier Application Framework (x86)",
+        "size": "13.4 MB",
+        "source": "E:\\1033_ENU_LP\\x64\\setup\\x86\\",
+        "version": "13.0.3225.4",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{5084D16B-E1D2-4F25-8B86-A03B4F9E1A72}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server 2012 Analysis Management Objects ",
+        "size": "10.7 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{53086A62-13F3-4FC5-AA41-211FD74340B3}v11.4.7001.0\\payload\\",
+        "version": "11.4.7001.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{53086A62-13F3-4FC5-AA41-211FD74340B3}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft .NET Framework 4.5 Multi-Targeting Pack",
+        "size": "43.9 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.Net.4.5.TargetingPack,version=4.5.50709.1\\",
+        "version": "4.5.50710",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{56E962F0-4FB0-3C67-88DB-9EAA6EEFC493}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "vs_SQLClickOnceBootstrappermsi",
+        "size": "7.8 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.SQL.ClickOnceBootstrapper.Msi,version=15.0.27005.2\\",
+        "version": "15.0.27005",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{5779B6DD-604A-41CE-BC3D-9D4BDDA22AD2}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Roslyn Language Services - x86",
+        "size": "22.2 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{5B47029B-1E62-30FF-906E-694851C22782}v14.0.23107\\packages\\vs_RoslynLanguageServices\\",
+        "version": "14.0.23107",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{5B47029B-1E62-30FF-906E-694851C22782}",
+        "install_date": "2019-06-24 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Browser for SQL Server 2016",
+        "size": "10.9 MB",
+        "source": "E:\\1033_ENU_LP\\x64\\setup\\",
+        "version": "13.2.5026.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{5B860485-0F07-41DC-BA8C-3A839A141FBA}",
+        "install_date": "2020-05-28 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2017 X86 Minimum Runtime - 14.16.27024",
+        "size": "1.7 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{5EEFCEFB-E5F7-4C82-99A5-813F04AA4FBD}v14.16.27024\\packages\\vcRuntimeMinimum_x86\\",
+        "version": "14.16.27024",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{5EEFCEFB-E5F7-4C82-99A5-813F04AA4FBD}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Google Update Helper",
+        "size": "42.0 kB",
+        "source": "C:\\Program Files (x86)\\Google\\Update\\1.3.36.32\\",
+        "version": "1.3.36.31",
+        "location": "",
+        "publisher": "Google LLC",
+        "uninstall": "MsiExec.exe /I{60EC980A-BDA2-4CB6-A427-B07A5498B4CA}",
+        "install_date": "2020-10-14 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft System CLR Types for SQL Server vNext CTP1.6",
+        "size": "4.7 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\sqlsysclrtypes,version=15.1.61903.1040,chip=x86,language=en-US\\",
+        "version": "15.0.600.33",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{640EECB8-1962-4D23-ACB2-310107EC7ED9}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2017 Redistributable (x64) - 14.16.27029",
+        "size": "24.2 MB",
+        "source": "",
+        "version": "14.16.27029.1",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\ProgramData\\Package Cache\\{64ff2cb0-807c-4ee9-87ef-ec1b2ede0daf}\\VC_redist.x64.exe\"  /uninstall",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "vs_minshellmsi",
+        "size": "299.0 kB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.VisualStudio.MinShell.Msi,version=15.9.28302.56\\",
+        "version": "15.9.28302",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{68B8AD33-CE97-4C3D-9583-669C39D21BA5}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft .NET Framework 4.5.1 Multi-Targeting Pack",
+        "size": "51.8 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.Net.4.5.1.TargetingPack,version=4.5.50932.1\\",
+        "version": "4.5.50932",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{6A0C6700-EA93-372C-8871-DCCF13D160A4}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "vs_clickoncesigntoolmsi",
+        "size": "315.4 kB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.ClickOnce.SignTool.Msi,version=15.0.27005.2\\",
+        "version": "15.0.27005",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{6A1ECF65-2CBF-4B33-9D4A-D1C0A0E5FE45}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Roslyn Language Services - x86",
+        "size": "45.1 kB",
+        "source": "C:\\ProgramData\\Package Cache\\{6C1985E7-E1C5-3A95-86EF-2C62465F15C3}v14.0.23107\\packages\\vs_RoslynLanguageServicesResMsi\\",
+        "version": "14.0.23107",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{6C1985E7-E1C5-3A95-86EF-2C62465F15C3}",
+        "install_date": "2019-06-24 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "vs_minshellmsires",
+        "size": "155.6 kB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.VisualStudio.MinShell.Msi.Resources,version=15.0.26621.2,language=en-US\\",
+        "version": "15.0.26621",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{6DFE6F8D-B61D-4348-AB70-4ABF1210DFD5}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "vs_communitymsi",
+        "size": "39.1 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.VisualStudio.Community.Msi,version=15.9.28307.53\\",
+        "version": "15.9.28307",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{71797C29-380A-492C-B35A-F5E4A7B57BDC}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2017 X86 Additional Runtime - 14.16.27024",
+        "size": "10.6 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{7258184A-EC44-4B1A-A7D3-68D85A35BFD0}v14.16.27024\\packages\\vcRuntimeAdditional_x86\\",
+        "version": "14.16.27024",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{7258184A-EC44-4B1A-A7D3-68D85A35BFD0}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft NetStandard SDK",
+        "size": "521.0 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.Net.CoreSDK.50,version=1.0.23909\\",
+        "version": "15.0.51105",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{737FDDA7-B944-4CB5-92D9-3D56373BD301}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Portable Library Multi-Targeting Pack",
+        "size": "47.7 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.PortableLibrary.TargetingPack.Msi,version=15.0.26621.2\\",
+        "version": "15.0.26621.02",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{812F31DC-FAA6-3979-B3D6-5D6BAAF2945D}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual Studio Tools for Applications 2015 Language Support",
+        "size": "18.8 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{85CEB20F-C2D6-3FDC-9A9D-5957CD88E9E5}v14.0.23107.00\\packages\\vsta_lscore\\",
+        "version": "14.0.23107.00",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{85CEB20F-C2D6-3FDC-9A9D-5957CD88E9E5}",
+        "install_date": "2019-06-24 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server 2014 Analysis Management Objects ",
+        "size": "11.2 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{888AE2B5-7376-40F0-A0DD-A1D0151F41F9}v12.2.5556.0\\payload\\",
+        "version": "12.2.5556.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{888AE2B5-7376-40F0-A0DD-A1D0151F41F9}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "QuickBooks",
+        "size": "1.7 GB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Temp\\Premier_us30R1\\qbooks\\",
+        "version": "30.0.4001.3000",
+        "location": "C:\\Program Files (x86)\\Intuit\\QuickBooks 2020\\",
+        "publisher": "Intuit Inc.",
+        "uninstall": "MsiExec.exe /I{88C0857B-7734-4EA5-A7D9-636DF8622B63}",
+        "install_date": "2020-02-19 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft .NET Framework 4.6.1 Targeting Pack",
+        "size": "42.4 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.Net.4.6.1.TargetingPack,version=4.6.1055.1\\",
+        "version": "4.6.01055",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{8BC3EEC9-090F-4C53-A8DA-1BEC913040F9}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Office 16 Click-to-Run Extensibility Component",
+        "size": "16.0 MB",
+        "source": "c:\\program files (x86)\\microsoft office\\root\\integration\\",
+        "version": "16.0.10368.20035",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{90160000-008C-0000-0000-0000000FF1CE}",
+        "install_date": "2020-11-17 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Office 16 Click-to-Run Localization Component",
+        "size": "49.2 kB",
+        "source": "c:\\program files (x86)\\microsoft office\\root\\integration\\",
+        "version": "16.0.10368.20035",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{90160000-008C-0409-0000-0000000FF1CE}",
+        "install_date": "2020-11-17 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "vs_clickoncebootstrappermsires",
+        "size": "151.6 kB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.ClickOnce.BootStrapper.Msi.Resources,version=15.0.27005.2\\",
+        "version": "15.0.27005",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{91DDDFB5-1782-48C2-BA2A-8F4D9DE39D27}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual Studio Tools for Applications 2017 x86 Hosting Support",
+        "size": "3.9 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{9594C97E-6A20-38B3-81BB-2778C4780BE1}v15.0.27520\\packages\\vsta_hostingcore_x86\\",
+        "version": "15.0.27520",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{9594C97E-6A20-38B3-81BB-2778C4780BE1}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2008 Redistributable - x86 9.0.30729.17",
+        "size": "10.8 MB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Temp\\Premier_us25r5\\thirdparty\\crt9\\",
+        "version": "9.0.30729",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{9A25302D-30C0-39D9-BD6F-21E6EC160475}",
+        "install_date": "2019-07-11 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2008 Redistributable - x86 9.0.30729.6161",
+        "size": "10.7 MB",
+        "source": "c:\\6cc70203393d1e76b8ad3430aa\\",
+        "version": "9.0.30729.6161",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{9BE518E6-ECC6-35A9-88E4-87755C07200F}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server Integration Services 2016",
+        "size": "126.9 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{A16CB865-1DD2-4FFC-910D-DC926ED448E3}v13.1.4495.10\\payload\\",
+        "version": "13.1.4495.10",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{A16CB865-1DD2-4FFC-910D-DC926ED448E3}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Google Chrome",
+        "size": "61.1 MB",
+        "source": "C:\\ProgramData\\SolarWinds MSP\\PME\\ThirdPartyPatch\\Downloads\\f7aa248b-6982-498c-825d-847b0104f3a2\\",
+        "version": "87.0.4280.66",
+        "location": "",
+        "publisher": "Google LLC",
+        "uninstall": "MsiExec.exe /X{A1EF1931-5EC5-38FE-B7D5-69FBF816716A}",
+        "install_date": "2020-04-17 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "vs_filehandler_amd64",
+        "size": "2.1 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.VisualStudio.FileHandler.Msi,version=15.9.28302.56,chip=x64\\",
+        "version": "15.9.28302",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{A254DA0E-26A1-43C3-95BE-7A24D5599473}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "vs_FileTracker_Singleton",
+        "size": "1.0 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.Build.FileTracker.Msi,version=15.9.28128.53\\",
+        "version": "15.9.28128",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{A41E138F-5A3F-443C-B72D-957AB994FB5A}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "vs_clickoncebootstrappermsi",
+        "size": "520.2 kB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.ClickOnce.BootStrapper.Msi,version=15.0.27005.2\\",
+        "version": "15.0.27005",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{A68D7884-F036-4A0D-AE1A-410E0311E135}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2013 x86 Additional Runtime - 12.0.40649",
+        "size": "9.7 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{A8589745-51BC-3963-B4E9-201CF8693538}v12.0.40649\\packages\\vcRuntimeAdditional_x86\\",
+        "version": "12.0.40649",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{A8589745-51BC-3963-B4E9-201CF8693538}",
+        "install_date": "2019-11-10 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Printer Installer Client",
+        "size": "0 B",
+        "source": "\\\\althh.local\\SYSVOL\\althh.local\\scripts\\msi\\",
+        "version": "25.0.0.414",
+        "location": "C:\\Program Files (x86)\\Printer Properties Pro\\Printer Installer Client\\",
+        "publisher": "PrinterLogic",
+        "uninstall": "MsiExec.exe /I{A9DE0858-9DDD-4E1B-B041-C2AA90DCBF74}",
+        "install_date": "2020-10-06 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Visual Studio 2017 Isolated Shell for SSMS",
+        "size": "422.5 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{AAA9F15B-AF45-4562-9991-93A848D3A902}v15.0.28307.421\\redist\\",
+        "version": "15.0.28307.421",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{AAA9F15B-AF45-4562-9991-93A848D3A902}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual Studio Tools for Applications 2015",
+        "size": "9.2 MB",
+        "source": "",
+        "version": "14.0.23829",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\ProgramData\\Package Cache\\{ab213ab7-4792-4c6f-a3fa-8485d06c3475}\\vsta_setup.exe\"  /uninstall",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Adobe Refresh Manager",
+        "size": "1.9 MB",
+        "source": "C:\\Program Files (x86)\\Common Files\\Adobe\\ARM\\1.0\\Cache\\",
+        "version": "1.8.0",
+        "location": "C:\\Program Files (x86)\\Common Files\\Adobe\\ARM\\1.0\\",
+        "publisher": "Adobe Systems Incorporated",
+        "uninstall": "MsiExec.exe /I{AC76BA86-0804-1033-1959-001824406920}",
+        "install_date": "2020-11-24 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Adobe Acrobat Reader DC",
+        "size": "369.9 MB",
+        "source": "C:\\ProgramData\\Adobe\\Setup\\{AC76BA86-7AD7-1033-7B44-AC0F074E4100}\\",
+        "version": "20.013.20066",
+        "location": "C:\\Program Files (x86)\\Adobe\\Acrobat Reader DC\\",
+        "publisher": "Adobe Systems Incorporated",
+        "uninstall": "MsiExec.exe /I{AC76BA86-7AD7-1033-7B44-AC0F074E4100}",
+        "install_date": "2020-11-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "IntelliTraceProfilerProxy",
+        "size": "13.3 kB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.IntelliTrace.ProfilerProxy.Msi,version=15.0.17289.1,chip=neutral\\",
+        "version": "15.0.17289.01",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{ACBAA378-519A-441D-9349-C0AAD8DEAD04}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Portable Library Multi-Targeting Pack Language Pack - enu",
+        "size": "24.0 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.PortableLibrary.TargetingPack.Msi.Resources,version=15.0.26621.2,language=en-US\\",
+        "version": "15.0.26621.02",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{BA3309CA-7099-3F6B-B386-EB7CC895C410}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Help Viewer 2.3",
+        "size": "13.7 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{BEFC10C1-7032-3C8E-80BC-621A77BFEABD}v2.3.28107\\redist\\",
+        "version": "2.3.28107",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{BEFC10C1-7032-3C8E-80BC-621A77BFEABD}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual Studio Tools for Applications 2015 Language Support Finalizer",
+        "size": "118.8 kB",
+        "source": "C:\\ProgramData\\Package Cache\\{BF6E6B74-88F5-358F-AB6D-0A42C18F2824}v14.0.23107.00\\packages\\vsta_langsfinalizer\\",
+        "version": "14.0.23107.00",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{BF6E6B74-88F5-358F-AB6D-0A42C18F2824}",
+        "install_date": "2019-06-24 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "vs_devenvmsi",
+        "size": "122.9 kB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.VisualStudio.Devenv.Msi,version=15.0.26621.2\\",
+        "version": "15.0.26621",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{BFFA2FFB-1095-4ADD-A352-368806D2412B}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft AS OLE DB Provider for SQL Server 2016",
+        "size": "203.5 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{C3F39D86-CF82-4666-82C6-4FF7B4FCDEBD}v13.1.4495.10\\payload\\",
+        "version": "13.1.4495.10",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{C3F39D86-CF82-4666-82C6-4FF7B4FCDEBD}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft SQL Server Data Tools - Visual Studio 2017",
+        "size": "2.1 GB",
+        "source": "",
+        "version": "14.0.16186.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\ProgramData\\Package Cache\\{cdaa6804-e168-418e-a677-8893d7e9400d}\\SSDT-Setup-ENU.exe\" /modify",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft .NET Framework 4 Multi-Targeting Pack",
+        "size": "87.5 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.Net.4.TargetingPack,version=4.0.30319.1\\",
+        "version": "4.0.30319",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{CFEF48A8-BFB8-3EAC-8BA5-DE4F8AA267CE}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Update for  (KB2504637)",
+        "size": "0 B",
+        "source": "",
+        "version": "1",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "C:\\Windows\\SysWOW64\\msiexec.exe /package {CFEF48A8-BFB8-3EAC-8BA5-DE4F8AA267CE} /uninstall {815F0BC1-7E54-300C-9ACA-C9460FDF6F78} /qb+ REBOOTPROMPT=&quot;&quot;",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "ClickOnce Bootstrapper Package for Microsoft .NET Framework",
+        "size": "8.2 MB",
+        "source": "C:\\ProgramData\\Microsoft\\VisualStudio\\Packages\\Microsoft.Net.ClickOnceBootstrapper,version=4.7.3063.2\\",
+        "version": "4.7.03083",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{D256A5B9-68DA-4F6C-A447-A93E5639A46D}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server Integration Services 2014",
+        "size": "81.9 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{D5D68C12-ECF0-49BB-9722-DA964B722E08}v12.2.5556.0\\payload\\",
+        "version": "12.2.5556.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{D5D68C12-ECF0-49BB-9722-DA964B722E08}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "SQL Server Integration Services 2012",
+        "size": "81.2 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{DB97C76B-9116-42C5-8814-0041856EB9E6}v11.4.7001.0\\payload\\",
+        "version": "11.4.7001.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{DB97C76B-9116-42C5-8814-0041856EB9E6}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Datto Windows Agent",
+        "size": "67.4 MB",
+        "source": "",
+        "version": "2.7.1.0",
+        "location": "",
+        "publisher": "Datto Inc.",
+        "uninstall": "\"C:\\ProgramData\\Package Cache\\{dcbeae19-1ab6-4da8-99e0-a836605cce27}\\DattoWindowsAgent.exe\" /modify",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft ASP.NET MVC 2",
+        "size": "870.4 kB",
+        "source": "C:\\Windows\\TEMP\\IXP000.TMP\\",
+        "version": "2.0.60926.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{DD8FF2F3-0D97-4CF3-AF78-FA0E1B242244}",
+        "install_date": "2020-01-25 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2013 x86 Minimum Runtime - 12.0.40649",
+        "size": "2.1 MB",
+        "source": "C:\\ProgramData\\Package Cache\\{DEA7F8E3-B7B9-3C3C-945B-7F8CE9041748}v12.0.40649\\packages\\vcRuntimeMinimum_x86\\",
+        "version": "12.0.40649",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{DEA7F8E3-B7B9-3C3C-945B-7F8CE9041748}",
+        "install_date": "2019-11-10 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Zoom",
+        "size": "92.0 MB",
+        "source": "C:\\ProgramData\\SolarWinds MSP\\PME\\ThirdPartyPatch\\Downloads\\7694e632-dd08-4309-9af7-b017ae248b6e\\",
+        "version": "5.0.25694",
+        "location": "",
+        "publisher": "Zoom",
+        "uninstall": "MsiExec.exe /X{E5CD5A3D-EB3C-4DFB-B4B9-0A5B32E8E377}",
+        "install_date": "2020-05-28 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "VC12X86Redist",
+        "size": "9.0 MB",
+        "source": "C:\\Users\\it\\AppData\\Local\\Temp\\{D337CEF5-E1C4-4EC8-B06A-4D0A9F864CE9}\\",
+        "version": "1.00.0000",
+        "location": "C:\\Program Files (x86)\\Intuit\\VC12X86Redist\\",
+        "publisher": "Intuit Inc.",
+        "uninstall": "MsiExec.exe /I{EA9886ED-21F8-4867-A049-CE6817291EE6}",
+        "install_date": "2019-07-11 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2010  x86 Redistributable - 10.0.40219",
+        "size": "11.6 MB",
+        "source": "E:\\redist\\VisualStudioShell\\VC10SP1\\x86\\",
+        "version": "10.0.40219",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /X{F0C3E5D1-1ADE-321E-8167-68EF0DE699A5}",
+        "install_date": "2019-06-08 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2017 Redistributable (x86) - 14.16.27029",
+        "size": "21.1 MB",
+        "source": "",
+        "version": "14.16.27029.1",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\ProgramData\\Package Cache\\{f50edb7e-c25e-47b4-bc4f-7ec4a4d256b1}\\VC_redist.x86.exe\"  /uninstall",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.30501",
+        "size": "18.0 MB",
+        "source": "",
+        "version": "12.0.30501.0",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\ProgramData\\Package Cache\\{f65db027-aff3-4070-886a-0d87064aabb1}\\vcredist_x86.exe\"  /uninstall",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual Studio Tools for Applications 2017",
+        "size": "20.1 MB",
+        "source": "",
+        "version": "15.0.27520",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "\"C:\\ProgramData\\Package Cache\\{f895a2f1-ae3f-4212-8af1-7fa1f8c212ea}\\vsta_setup.exe\"  /uninstall",
+        "install_date": "0001-01-01 00:00:00 +0000 UTC"
+    },
+    {
+        "name": "Microsoft Visual Studio Tools for Applications 2015 Finalizer",
+        "size": "118.8 kB",
+        "source": "C:\\ProgramData\\Package Cache\\{F93E37BD-4053-37CA-A7BB-A5B74508006C}v14.0.23829\\packages\\vsta_finalizer\\",
+        "version": "14.0.23829",
+        "location": "",
+        "publisher": "Microsoft Corporation",
+        "uninstall": "MsiExec.exe /I{F93E37BD-4053-37CA-A7BB-A5B74508006C}",
+        "install_date": "2019-06-24 00:00:00 +0000 UTC"
+    }
+]

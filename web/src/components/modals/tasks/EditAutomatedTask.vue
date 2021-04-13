@@ -34,7 +34,19 @@
             hide-dropdown-icon
             input-debounce="0"
             new-value-mode="add"
-          />
+            @input="setScriptDefaults"
+          >
+            <template v-slot:option="scope">
+              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+                <q-item-section>
+                  <q-item-label v-html="scope.opt.label"></q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
+                scope.opt.category
+              }}</q-item-label>
+            </template>
+          </q-select>
         </q-card-section>
         <q-card-section>
           <q-input
@@ -78,6 +90,7 @@
 
 <script>
 import mixins from "@/mixins/mixins";
+import { mapGetters } from "vuex";
 
 export default {
   name: "EditAutomatedTask",
@@ -103,7 +116,16 @@ export default {
       ],
     };
   },
+  computed: {
+    ...mapGetters(["showCommunityScripts"]),
+  },
   methods: {
+    setScriptDefaults() {
+      const script = this.scriptOptions.find(i => i.value === this.autotask.script);
+
+      this.autotask.timeout = script.timeout;
+      this.autotask.script_args = script.args;
+    },
     submit() {
       this.$q.loading.show();
 
@@ -117,22 +139,6 @@ export default {
         .catch(e => {
           this.$q.loading.hide();
           this.notifyError("There was an issue editing the task");
-        });
-    },
-    getScripts() {
-      this.$q.loading.show();
-      this.$axios
-        .get("/scripts/scripts/")
-        .then(r => {
-          this.scriptOptions = r.data
-            .map(script => ({ label: script.name, value: script.id }))
-            .sort((a, b) => a.label.localeCompare(b.label));
-
-          this.$q.loading.hide();
-        })
-        .catch(e => {
-          this.$q.loading.hide();
-          this.notifyError("There was an error getting scripts");
         });
     },
     show() {
@@ -150,7 +156,7 @@ export default {
     },
   },
   mounted() {
-    this.getScripts();
+    this.scriptOptions = this.getScriptOptions(this.showCommunityScripts);
 
     // copy only certain task props locally
     this.localTask.id = this.task.id;

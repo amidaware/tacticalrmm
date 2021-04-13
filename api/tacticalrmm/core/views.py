@@ -65,6 +65,8 @@ def dashboard_info(request):
             "dbl_click_action": request.user.agent_dblclick_action,
             "default_agent_tbl_tab": request.user.default_agent_tbl_tab,
             "client_tree_sort": request.user.client_tree_sort,
+            "client_tree_splitter": request.user.client_tree_splitter,
+            "loading_bar_color": request.user.loading_bar_color,
         }
     )
 

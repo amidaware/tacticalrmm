@@ -1,4 +1,5 @@
 import base64
+import json
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -24,7 +25,6 @@ class GetAddScripts(APIView):
         return Response(ScriptTableSerializer(scripts, many=True).data)
 
     def post(self, request, format=None):
-
         data = {
             "name": request.data["name"],
             "category": request.data["category"],
@@ -34,16 +34,24 @@ class GetAddScripts(APIView):
             "script_type": "userdefined",  # force all uploads to be userdefined. built in scripts cannot be edited by user
         }
 
-        if "favorite" in request.data:
+        # code editor upload
+        if "args" in request.data.keys() and isinstance(request.data["args"], list):
+            data["args"] = request.data["args"]
+
+        # file upload, have to json load it cuz it's formData
+        if "args" in request.data.keys() and "file_upload" in request.data.keys():
+            data["args"] = json.loads(request.data["args"])
+
+        if "favorite" in request.data.keys():
             data["favorite"] = request.data["favorite"]
 
-        if "filename" in request.data:
+        if "filename" in request.data.keys():
             message_bytes = request.data["filename"].read()
             data["code_base64"] = base64.b64encode(message_bytes).decode(
                 "ascii", "ignore"
             )
 
-        elif "code" in request.data:
+        elif "code" in request.data.keys():
             message_bytes = request.data["code"].encode("ascii", "ignore")
             data["code_base64"] = base64.b64encode(message_bytes).decode("ascii")
 

@@ -136,10 +136,11 @@ if [ "$1" = 'tactical-init-dev' ]; then
   webenv="$(cat << EOF
 PROD_URL = "${HTTP_PROTOCOL}://${API_HOST}"
 DEV_URL = "${HTTP_PROTOCOL}://${API_HOST}"
-APP_URL = https://${APP_HOST}
+APP_URL = "https://${APP_HOST}"
+DOCKER_BUILD = 1
 EOF
 )"
-  echo "${webenv}" | tee ${WORKSPACE_DIR}/web/.env > /dev/null
+  echo "${webenv}" | tee "${WORKSPACE_DIR}"/web/.env > /dev/null
 
   # chown everything to tactical user
   chown -R "${TACTICAL_USER}":"${TACTICAL_USER}" "${WORKSPACE_DIR}"
@@ -163,4 +164,9 @@ if [ "$1" = 'tactical-celerybeat-dev' ]; then
   check_tactical_ready
   test -f "${WORKSPACE_DIR}/api/tacticalrmm/celerybeat.pid" && rm "${WORKSPACE_DIR}/api/tacticalrmm/celerybeat.pid"
   "${VIRTUAL_ENV}"/bin/celery -A tacticalrmm beat -l debug
+fi
+
+if [ "$1" = 'tactical-websockets-dev' ]; then
+  check_tactical_ready
+  "${VIRTUAL_ENV}"/bin/daphne tacticalrmm.asgi:application --port 8383 -b 0.0.0.0
 fi

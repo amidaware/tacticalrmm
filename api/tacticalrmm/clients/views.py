@@ -283,9 +283,7 @@ class GenerateAgent(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request, uid):
-        import tempfile
-        import requests
-        from django.http import FileResponse
+        from tacticalrmm.utils import generate_winagent_exe
 
         try:
             _ = uuid.UUID(uid, version=4)
@@ -294,11 +292,6 @@ class GenerateAgent(APIView):
 
         d = get_object_or_404(Deployment, uid=uid)
 
-        inno = (
-            f"winagent-v{settings.LATEST_AGENT_VER}.exe"
-            if d.arch == "64"
-            else f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
-        )
         client = d.client.name.replace(" ", "").lower()
         site = d.site.name.replace(" ", "").lower()
         client = re.sub(r"([^a-zA-Z0-9]+)", "", client)
@@ -306,42 +299,15 @@ class GenerateAgent(APIView):
         ext = ".exe" if d.arch == "64" else "-x86.exe"
         file_name = f"rmm-{client}-{site}-{d.mon_type}{ext}"
 
-        data = {
-            "client": d.client.pk,
-            "site": d.site.pk,
-            "agenttype": d.mon_type,
-            "rdp": str(d.install_flags["rdp"]),
-            "ping": str(d.install_flags["ping"]),
-            "power": str(d.install_flags["power"]),
-            "goarch": "amd64" if d.arch == "64" else "386",
-            "token": d.token_key,
-            "inno": inno,
-            "url": settings.DL_64 if d.arch == "64" else settings.DL_32,
-            "api": f"https://{request.get_host()}",
-        }
-        headers = {"Content-type": "application/json"}
-
-        with tempfile.NamedTemporaryFile() as fp:
-            try:
-                r = requests.post(
-                    settings.EXE_GEN_URL,
-                    json=data,
-                    headers=headers,
-                    stream=True,
-                    timeout=900,
-                )
-            except Exception as e:
-                logger.error(str(e))
-                return notify_error(
-                    "Something went wrong. Check debug error log for exact error message"
-                )
-
-            with open(fp.name, "wb") as f:
-                for chunk in r.iter_content(chunk_size=1024):
-                    if chunk:
-                        f.write(chunk)
-            del r
-            response = FileResponse(
-                open(fp.name, "rb"), as_attachment=True, filename=file_name
-            )
-            return response
+        return generate_winagent_exe(
+            client=d.client.pk,
+            site=d.site.pk,
+            agent_type=d.mon_type,
+            rdp=d.install_flags["rdp"],
+            ping=d.install_flags["ping"],
+            power=d.install_flags["power"],
+            arch=d.arch,
+            token=d.token_key,
+            api=f"https://{request.get_host()}",
+            file_name=file_name,
+        )

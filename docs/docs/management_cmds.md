@@ -43,11 +43,6 @@ python manage.py get_mesh_exe_url
 
 #### Bulk update agent offline/overdue time
 
-```bash
-wget -q https://raw.githubusercontent.com/wh1te909/tacticalrmm/develop/api/tacticalrmm/agents/management/commands/bulk_change_checkin.py -O /rmm/api/tacticalrmm/agents/management/commands/bulk_change_checkin.py
-```
-Examples:
-
 Change offline time on all agents to 5 minutes
 ```bash
 python manage.py bulk_change_checkin --offline --all 5

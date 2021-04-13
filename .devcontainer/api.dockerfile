@@ -8,7 +8,7 @@ ENV VIRTUAL_ENV ${WORKSPACE_DIR}/api/tacticalrmm/env
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-EXPOSE 8000
+EXPOSE 8000 8383
 
 RUN groupadd -g 1000 tactical && \
     useradd -u 1000 -g 1000 tactical

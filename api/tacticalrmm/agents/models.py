@@ -5,7 +5,6 @@ import time
 from collections import Counter
 from distutils.version import LooseVersion
 from typing import Any
-from django.contrib.postgres.fields import ArrayField
 
 import msgpack
 import validators
@@ -14,6 +13,7 @@ from Crypto.Hash import SHA3_384
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone as djangotime
 from loguru import logger
@@ -196,6 +196,27 @@ class Agent(BaseAuditModel):
             return ["unknown cpu model"]
 
     @property
+    def graphics(self):
+        ret, mrda = [], []
+        try:
+            graphics = self.wmi_detail["graphics"]
+            for i in graphics:
+                caption = [x["Caption"] for x in i if "Caption" in x][0]
+                if "microsoft remote display adapter" in caption.lower():
+                    mrda.append("yes")
+                    continue
+
+                ret.append([x["Caption"] for x in i if "Caption" in x][0])
+
+            # only return this if no other graphics cards
+            if not ret and mrda:
+                return "Microsoft Remote Display Adapter"
+
+            return ", ".join(ret)
+        except:
+            return "Graphics info requires agent v1.4.14"
+
+    @property
     def local_ips(self):
         ret = []
         try:
@@ -296,10 +317,13 @@ class Agent(BaseAuditModel):
         from scripts.models import Script
 
         script = Script.objects.get(pk=scriptpk)
+
+        parsed_args = script.parse_script_args(self, script.shell, args)
+
         data = {
             "func": "runscriptfull" if full else "runscript",
             "timeout": timeout,
-            "script_args": args,
+            "script_args": parsed_args,
             "payload": {
                 "code": script.code,
                 "shell": script.shell,
@@ -319,7 +343,7 @@ class Agent(BaseAuditModel):
                 online = [
                     agent
                     for agent in Agent.objects.only(
-                        "pk", "last_seen", "overdue_time", "offline_time"
+                        "pk", "agent_id", "last_seen", "overdue_time", "offline_time"
                     )
                     if agent.status == "online"
                 ]
@@ -648,7 +672,11 @@ class Agent(BaseAuditModel):
             except ErrTimeout:
                 ret = "timeout"
             else:
-                ret = msgpack.loads(msg.data)  # type: ignore
+                try:
+                    ret = msgpack.loads(msg.data)  # type: ignore
+                except Exception as e:
+                    logger.error(e)
+                    ret = str(e)
 
             await nc.close()
             return ret
@@ -811,12 +839,6 @@ class RecoveryAction(models.Model):
 
     def __str__(self):
         return f"{self.agent.hostname} - {self.mode}"
-
-    def send(self):
-        ret = {"recovery": self.mode}
-        if self.mode == "command":
-            ret["cmd"] = self.command
-        return ret
 
 
 class Note(models.Model):

@@ -10,7 +10,7 @@
    script leaves files that are newer than 7 days old however this variable can be edited.
 
 .EXAMPLE
-   PS C:\> .\Start-Cleanup.ps1
+   PS C:\> .\Win_Start_Cleanup.ps1
    Save the file to your hard drive with a .PS1 extention and run the file from an elavated PowerShell prompt.
 
 .NOTES

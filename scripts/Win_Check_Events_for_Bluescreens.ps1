@@ -13,7 +13,7 @@ exit 1
 
 {
 else 
-Write-Output "No bluescreen events detected"
+Write-Output "No bluescreen events detected in the past 24 hours."
 exit 0
 }
 

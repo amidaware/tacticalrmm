@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="11"
+SCRIPT_VERSION="12"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/backup.sh'
 
 GREEN='\033[0;32m'
@@ -73,6 +73,9 @@ sudo tar -czvf ${tmp_dir}/nginx/etc-nginx.tar.gz -C /etc/nginx .
 sudo tar -czvf ${tmp_dir}/confd/etc-confd.tar.gz -C /etc/conf.d .
 
 sudo cp ${sysd}/rmm.service ${sysd}/celery.service ${sysd}/celerybeat.service ${sysd}/meshcentral.service ${sysd}/nats.service ${tmp_dir}/systemd/
+if [ -f "${sysd}/daphne.service" ]; then
+    sudo cp ${sysd}/daphne.service ${tmp_dir}/systemd/
+fi
 
 cat /rmm/api/tacticalrmm/tacticalrmm/private/log/debug.log | gzip -9 > ${tmp_dir}/rmm/debug.log.gz
 cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py /rmm/api/tacticalrmm/app.ini ${tmp_dir}/rmm/

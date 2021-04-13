@@ -1,3 +1,4 @@
+from email.policy import default
 import json
 import os
 from pathlib import Path
@@ -23,7 +24,7 @@ class TestScriptViews(TacticalTestCase):
         serializer = ScriptTableSerializer(scripts, many=True)
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(serializer.data, resp.data)
+        self.assertEqual(serializer.data, resp.data)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
@@ -37,10 +38,12 @@ class TestScriptViews(TacticalTestCase):
             "category": "New",
             "code": "Some Test Code\nnew Line",
             "default_timeout": 99,
+            "args": ["hello", "world", r"{{agent.public_ip}}"],
+            "favorite": False,
         }
 
         # test without file upload
-        resp = self.client.post(url, data)
+        resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(Script.objects.filter(name="Name").exists())
         self.assertEqual(Script.objects.get(name="Name").code, data["code"])
@@ -57,6 +60,9 @@ class TestScriptViews(TacticalTestCase):
             "category": "New",
             "filename": file,
             "default_timeout": 4455,
+            "args": json.dumps(
+                ["hello", "world", r"{{agent.public_ip}}"]
+            ),  # simulate javascript's JSON.stringify() for formData
         }
 
         # test with file upload
@@ -124,11 +130,11 @@ class TestScriptViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 404)
 
         script = baker.make("scripts.Script")
-        url = f"/scripts/{script.pk}/script/"
+        url = f"/scripts/{script.pk}/script/"  # type: ignore
         serializer = ScriptSerializer(script)
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(serializer.data, resp.data)
+        self.assertEqual(serializer.data, resp.data)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
@@ -164,27 +170,27 @@ class TestScriptViews(TacticalTestCase):
         script = baker.make(
             "scripts.Script", code_base64="VGVzdA==", shell="powershell"
         )
-        url = f"/scripts/{script.pk}/download/"
+        url = f"/scripts/{script.pk}/download/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, {"filename": f"{script.name}.ps1", "code": "Test"})
+        self.assertEqual(resp.data, {"filename": f"{script.name}.ps1", "code": "Test"})  # type: ignore
 
         # test batch file
         script = baker.make("scripts.Script", code_base64="VGVzdA==", shell="cmd")
-        url = f"/scripts/{script.pk}/download/"
+        url = f"/scripts/{script.pk}/download/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, {"filename": f"{script.name}.bat", "code": "Test"})
+        self.assertEqual(resp.data, {"filename": f"{script.name}.bat", "code": "Test"})  # type: ignore
 
         # test python file
         script = baker.make("scripts.Script", code_base64="VGVzdA==", shell="python")
-        url = f"/scripts/{script.pk}/download/"
+        url = f"/scripts/{script.pk}/download/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, {"filename": f"{script.name}.py", "code": "Test"})
+        self.assertEqual(resp.data, {"filename": f"{script.name}.py", "code": "Test"})  # type: ignore
 
         self.check_not_authenticated("get", url)
 
@@ -201,6 +207,7 @@ class TestScriptViews(TacticalTestCase):
         ) as f:
             info = json.load(f)
 
+        guids = []
         for script in info:
             fn: str = script["filename"]
             self.assertTrue(os.path.exists(os.path.join(scripts_dir, fn)))
@@ -217,6 +224,19 @@ class TestScriptViews(TacticalTestCase):
             elif fn.endswith(".py"):
                 self.assertEqual(script["shell"], "python")
 
+            if "args" in script.keys():
+                self.assertIsInstance(script["args"], list)
+
+            # allows strings as long as they can be type casted to int
+            if "default_timeout" in script.keys():
+                self.assertIsInstance(int(script["default_timeout"]), int)
+
+            self.assertIn("guid", script.keys())
+            guids.append(script["guid"])
+
+        # check guids are unique
+        self.assertEqual(len(guids), len(set(guids)))
+
     def test_load_community_scripts(self):
         with open(
             os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")
@@ -231,3 +251,12 @@ class TestScriptViews(TacticalTestCase):
         # test updating already added community scripts
         Script.load_community_scripts()
         self.assertEqual(len(info), community_scripts)
+
+    def test_script_filenames_do_not_contain_spaces(self):
+        with open(
+            os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")
+        ) as f:
+            info = json.load(f)
+            for script in info:
+                fn: str = script["filename"]
+                self.assertTrue(" " not in fn)

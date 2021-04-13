@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="44"
+SCRIPT_VERSION="46"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -132,30 +132,13 @@ CHECK_HOSTS=$(grep 127.0.1.1 /etc/hosts | grep "$rmmdomain" | grep "$meshdomain"
 HAS_11=$(grep 127.0.1.1 /etc/hosts)
 
 if ! [[ $CHECK_HOSTS ]]; then
-    echo -ne "${GREEN}We need to append your 3 subdomains to the line starting with 127.0.1.1 in your hosts file.${NC}\n"
-    until [[ $edithosts =~ (y|n) ]]; do
-        echo -ne "${GREEN}Would you like me to do this for you? [y/n]${NC}: "
-        read edithosts
-    done
-
-    if [[ $edithosts == "y" ]]; then
-        if [[ $HAS_11 ]]; then
-          sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts
-        else
-          echo "127.0.1.1 ${rmmdomain} $frontenddomain $meshdomain" | sudo tee --append /etc/hosts > /dev/null
-        fi
-    else
-        if [[ $HAS_11 ]]; then
-          echo -ne "${GREEN}Please manually edit your /etc/hosts file to match the line below and re-run this script.${NC}\n"
-          sed "/127.0.1.1/s/$/ ${rmmdomain} $frontenddomain $meshdomain/" /etc/hosts | grep 127.0.1.1
-        else
-          echo -ne "\n${GREEN}Append the following line to your /etc/hosts file${NC}\n"
-          echo "127.0.1.1 ${rmmdomain} $frontenddomain $meshdomain"
-        fi
-        exit 1
-    fi
+  print_green 'Adding subdomains to hosts file'
+  if [[ $HAS_11 ]]; then
+    sudo sed -i "/127.0.1.1/s/$/ ${rmmdomain} ${frontenddomain} ${meshdomain}/" /etc/hosts
+  else
+    echo "127.0.1.1 ${rmmdomain} ${frontenddomain} ${meshdomain}" | sudo tee --append /etc/hosts > /dev/null
+  fi
 fi
-
 
 BEHIND_NAT=false
 IPV4=$(ip -4 addr | sed -ne 's|^.* inet \([^/]*\)/.* scope global.*$|\1|p' | head -1)
@@ -376,7 +359,7 @@ python3.9 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir setuptools==53.0.0 wheel==0.36.2
+pip install --no-cache-dir setuptools==54.2.0 wheel==0.36.2
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input
@@ -443,6 +426,26 @@ WantedBy=multi-user.target
 EOF
 )"
 echo "${rmmservice}" | sudo tee /etc/systemd/system/rmm.service > /dev/null
+
+daphneservice="$(cat << EOF
+[Unit]
+Description=django channels daemon
+After=network.target
+
+[Service]
+User=${USER}
+Group=www-data
+WorkingDirectory=/rmm/api/tacticalrmm
+Environment="PATH=/rmm/api/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/rmm/api/env/bin/daphne -u /rmm/daphne.sock tacticalrmm.asgi:application
+Restart=always
+RestartSec=3s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service > /dev/null
 
 natsservice="$(cat << EOF
 [Unit]
@@ -512,6 +515,20 @@ server {
         include     /etc/nginx/uwsgi_params;
         uwsgi_read_timeout 500s;
         uwsgi_ignore_client_abort on;
+    }
+
+    location ~ ^/ws/ {
+        proxy_pass http://unix:/rmm/daphne.sock;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_redirect     off;
+        proxy_set_header   Host \$host;
+        proxy_set_header   X-Real-IP \$remote_addr;
+        proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Host \$server_name;
     }
 
     location / {
@@ -713,7 +730,7 @@ sudo ln -s /etc/nginx/sites-available/frontend.conf /etc/nginx/sites-enabled/fro
 
 print_green 'Enabling Services'
 
-for i in rmm.service celery.service celerybeat.service nginx
+for i in rmm.service daphne.service celery.service celerybeat.service nginx
 do
   sudo systemctl enable ${i}
   sudo systemctl stop ${i}
@@ -783,7 +800,7 @@ sudo systemctl start nats.service
 sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
 print_green 'Restarting services'
-for i in rmm.service celery.service celerybeat.service
+for i in rmm.service daphne.service celery.service celerybeat.service
 do
   sudo systemctl stop ${i}
   sudo systemctl start ${i}

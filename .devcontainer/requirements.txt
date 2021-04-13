@@ -1,6 +1,7 @@
 # To ensure app dependencies are ported from your virtual environment/host machine into your container, run 'pip freeze > requirements.txt' in the terminal to overwrite this file
 asyncio-nats-client
 celery
+channels
 Django
 django-cors-headers
 django-rest-knox
@@ -30,3 +31,5 @@ mkdocs-material
 pymdown-extensions
 Pygments
 mypy
+pysnooper
+isort

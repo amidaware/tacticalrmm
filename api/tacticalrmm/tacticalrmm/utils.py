@@ -2,10 +2,18 @@ import json
 import os
 import string
 import subprocess
+import tempfile
 import time
+from typing import Union
 
 import pytz
+import requests
+from channels.auth import AuthMiddlewareStack
+from channels.db import database_sync_to_async
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
+from django.http import FileResponse
+from knox.auth import TokenAuthentication
 from loguru import logger
 from rest_framework import status
 from rest_framework.response import Response
@@ -29,6 +37,71 @@ WEEK_DAYS = {
 }
 
 
+def generate_winagent_exe(
+    client: int,
+    site: int,
+    agent_type: str,
+    rdp: int,
+    ping: int,
+    power: int,
+    arch: str,
+    token: str,
+    api: str,
+    file_name: str,
+) -> Union[Response, FileResponse]:
+
+    inno = (
+        f"winagent-v{settings.LATEST_AGENT_VER}.exe"
+        if arch == "64"
+        else f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
+    )
+
+    data = {
+        "client": client,
+        "site": site,
+        "agenttype": agent_type,
+        "rdp": str(rdp),
+        "ping": str(ping),
+        "power": str(power),
+        "goarch": "amd64" if arch == "64" else "386",
+        "token": token,
+        "inno": inno,
+        "url": settings.DL_64 if arch == "64" else settings.DL_32,
+        "api": api,
+    }
+    headers = {"Content-type": "application/json"}
+
+    errors = []
+    with tempfile.NamedTemporaryFile() as fp:
+        for url in settings.EXE_GEN_URLS:
+            try:
+                r = requests.post(
+                    url,
+                    json=data,
+                    headers=headers,
+                    stream=True,
+                    timeout=900,
+                )
+            except Exception as e:
+                errors.append(str(e))
+            else:
+                errors = []
+                break
+
+        if errors:
+            logger.error(errors)
+            return notify_error(
+                "Something went wrong. Check debug error log for exact error message"
+            )
+
+        with open(fp.name, "wb") as f:
+            for chunk in r.iter_content(chunk_size=1024):  # type: ignore
+                if chunk:
+                    f.write(chunk)
+        del r
+        return FileResponse(open(fp.name, "rb"), as_attachment=True, filename=file_name)
+
+
 def get_default_timezone():
     from core.models import CoreSettings
 
@@ -38,7 +111,7 @@ def get_default_timezone():
 def get_bit_days(days: list[str]) -> int:
     bit_days = 0
     for day in days:
-        bit_days |= WEEK_DAYS.get(day)
+        bit_days |= WEEK_DAYS.get(day)  # type: ignore
     return bit_days
 
 
@@ -128,3 +201,47 @@ def reload_nats():
         subprocess.run(
             ["/usr/local/bin/nats-server", "-signal", "reload"], capture_output=True
         )
+
+
+@database_sync_to_async
+def get_user(access_token):
+    try:
+        auth = TokenAuthentication()
+        token = access_token.decode().split("access_token=")[1]
+        user = auth.authenticate_credentials(token.encode())
+    except Exception:
+        return AnonymousUser()
+    else:
+        return user[0]
+
+
+class KnoxAuthMiddlewareInstance:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        scope["user"] = await get_user(scope["query_string"])
+
+        return await self.app(scope, receive, send)
+
+
+KnoxAuthMiddlewareStack = lambda inner: KnoxAuthMiddlewareInstance(
+    AuthMiddlewareStack(inner)
+)
+
+
+def run_nats_api_cmd(mode: str, ids: list[str], timeout: int = 30) -> None:
+    config = {
+        "key": settings.SECRET_KEY,
+        "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
+        "agents": ids,
+    }
+    with tempfile.NamedTemporaryFile() as fp:
+        with open(fp.name, "w") as f:
+            json.dump(config, f)
+
+        cmd = ["/usr/local/bin/nats-api", "-c", fp.name, "-m", mode]
+        try:
+            subprocess.run(cmd, capture_output=True, timeout=timeout)
+        except Exception as e:
+            logger.error(e)

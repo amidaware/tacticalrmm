@@ -16,6 +16,7 @@ class AgentSerializer(serializers.ModelSerializer):
     local_ips = serializers.ReadOnlyField()
     make_model = serializers.ReadOnlyField()
     physical_disks = serializers.ReadOnlyField()
+    graphics = serializers.ReadOnlyField()
     checks = serializers.ReadOnlyField()
     timezone = serializers.ReadOnlyField()
     all_timezones = serializers.SerializerMethodField()

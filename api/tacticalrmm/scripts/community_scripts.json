@@ -117,6 +117,15 @@
     "category": "TRMM (Win):Storage"
   },
   {
+    "guid": "72b93487-0266-43f0-97cc-03d4c7ee0b44",
+    "filename": "Win_Bitlocker_Get_Recovery_Keys.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Bitlocker - Get Recovery Keys",
+    "description": "Retreives a Bitlocker Recovery Keys",
+    "shell": "powershell",
+    "category": "TRMM (Win):Storage"
+  },
+  {
     "guid": "cfa14c28-4dfc-4d4e-95ee-a380652e058d",
     "filename": "Win_Bios_Check.ps1",
     "submittedBy": "https://github.com/ThatsNASt",

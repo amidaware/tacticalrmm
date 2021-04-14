@@ -551,5 +551,23 @@
     "description": "Empty the recycle bin",
     "shell": "powershell",
     "category": "TRMM (Win):Storage"
+  },
+  {
+    "guid": "57997ec7-b293-4fd5-9f90-a25426d0eb90",
+    "filename": "Get_Computer_Users.ps1",
+    "submittedBy": "https://github.com/tremor021",
+    "name": "Get Computer Users",
+    "description": "Get list of computer users and show which one is enabled",
+    "shell": "powershell",
+    "category": "TRMM (Win):Other"
+  },
+  {
+    "guid": "77da9c87-5a7a-4ba1-bdde-3eeb3b01d62d",
+    "filename": "Set_Network_To_Private.ps1",
+    "submittedBy": "https://github.com/tremor021",
+    "name": "Set Network To Private",
+    "description": "Sets current network type to Private",
+    "shell": "powershell",
+    "category": "TRMM (Win):Network"
   }
 ]

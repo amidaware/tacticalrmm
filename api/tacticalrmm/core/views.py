@@ -11,8 +11,12 @@ from rest_framework.views import APIView
 
 from tacticalrmm.utils import notify_error
 
-from .models import CoreSettings, CustomField
-from .serializers import CoreSettingsSerializer, CustomFieldSerializer
+from .models import CoreSettings, CustomField, CodeSignToken
+from .serializers import (
+    CoreSettingsSerializer,
+    CustomFieldSerializer,
+    CodeSignTokenSerializer,
+)
 
 
 class UploadMeshAgent(APIView):
@@ -179,3 +183,48 @@ class GetUpdateDeleteCustomFields(APIView):
         get_object_or_404(CustomField, pk=pk).delete()
 
         return Response("ok")
+
+
+class CodeSign(APIView):
+    def get(self, request):
+        token = CodeSignToken.objects.first()
+        return Response(CodeSignTokenSerializer(token).data)
+
+    def patch(self, request):
+        import requests
+
+        errors = []
+        for url in settings.EXE_GEN_URLS:
+            try:
+                r = requests.post(
+                    f"{url}/api/v1/checktoken",
+                    json={"token": request.data["token"]},
+                    headers={"Content-type": "application/json"},
+                    timeout=15,
+                )
+            except Exception as e:
+                errors.append(str(e))
+            else:
+                errors = []
+                break
+
+        if errors:
+            return notify_error(", ".join(errors))
+
+        if r.status_code == 400 or r.status_code == 401:  # type: ignore
+            return notify_error(r.json()["ret"])  # type: ignore
+        elif r.status_code == 200:  # type: ignore
+            t = CodeSignToken.objects.first()
+            if t is None:
+                CodeSignToken.objects.create(token=request.data["token"])
+            else:
+                serializer = CodeSignTokenSerializer(instance=t, data=request.data)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+            return Response("Token was saved")
+
+        try:
+            ret = r.json()["ret"]  # type: ignore
+        except:
+            ret = "Something went wrong"
+        return notify_error(ret)

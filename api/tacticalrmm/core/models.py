@@ -266,3 +266,16 @@ class CustomField(models.Model):
             return self.default_value_bool
         else:
             return self.default_value_string
+
+
+class CodeSignToken(models.Model):
+    token = models.CharField(max_length=255, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.pk and CodeSignToken.objects.exists():
+            raise ValidationError("There can only be one CodeSignToken instance")
+
+        super(CodeSignToken, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return "Code signing token"

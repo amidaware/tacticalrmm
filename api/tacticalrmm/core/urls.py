@@ -12,4 +12,5 @@ urlpatterns = [
     path("servermaintenance/", views.server_maintenance),
     path("customfields/", views.GetAddCustomFields.as_view()),
     path("customfields/<int:pk>/", views.GetUpdateDeleteCustomFields.as_view()),
+    path("codesign/", views.CodeSign.as_view()),
 ]

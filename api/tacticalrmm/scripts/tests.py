@@ -245,12 +245,39 @@ class TestScriptViews(TacticalTestCase):
 
         Script.load_community_scripts()
 
-        community_scripts = Script.objects.filter(script_type="builtin").count()
-        self.assertEqual(len(info), community_scripts)
+        community_scripts_count = Script.objects.filter(script_type="builtin").count()
+        if len(info) != community_scripts_count:
+            raise Exception(
+                f"There are {len(info)} scripts in json file but only {community_scripts_count} in database"
+            )
 
         # test updating already added community scripts
         Script.load_community_scripts()
-        self.assertEqual(len(info), community_scripts)
+        community_scripts_count2 = Script.objects.filter(script_type="builtin").count()
+        self.assertEqual(len(info), community_scripts_count2)
+
+    def test_community_script_has_jsonfile_entry(self):
+        with open(
+            os.path.join(settings.BASE_DIR, "scripts/community_scripts.json")
+        ) as f:
+            info = json.load(f)
+
+        filenames = [i["filename"] for i in info]
+
+        # normal
+        if not settings.DOCKER_BUILD:
+            scripts_dir = os.path.join(Path(settings.BASE_DIR).parents[1], "scripts")
+        # docker
+        else:
+            scripts_dir = settings.SCRIPTS_DIR
+
+        with os.scandir(scripts_dir) as it:
+            for f in it:
+                if not f.name.startswith(".") and f.is_file():
+                    if f.name not in filenames:
+                        raise Exception(
+                            f"{f.name} is missing an entry in community_scripts.json"
+                        )
 
     def test_script_filenames_do_not_contain_spaces(self):
         with open(
@@ -259,4 +286,5 @@ class TestScriptViews(TacticalTestCase):
             info = json.load(f)
             for script in info:
                 fn: str = script["filename"]
-                self.assertTrue(" " not in fn)
+                if " " in fn:
+                    raise Exception(f"{fn} must not contain spaces in filename")

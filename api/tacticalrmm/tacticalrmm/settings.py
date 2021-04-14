@@ -34,8 +34,8 @@ DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_
 DL_32 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
 
 EXE_GEN_URLS = [
-    "https://exe2.tacticalrmm.io/api/v1/exe",
-    "https://exe.tacticalrmm.io/api/v1/exe",
+    "https://exe2.tacticalrmm.io",
+    "https://exe.tacticalrmm.io",
 ]
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"

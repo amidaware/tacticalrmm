@@ -463,6 +463,24 @@
     "category": "TRMM (Win):Storage"
   },
   {
+    "guid": "c6252ca8-5172-42ea-9114-e447f80868f5",
+    "filename": "Win_USB_Disable_Access.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "USB - Disable Access",
+    "description": "USB - Disable Plugged in USB devices",
+    "shell": "cmd",
+    "category": "TRMM (Win):Storage"
+  },
+  {
+    "guid": "3785952f-69fb-4bda-b2fe-5e3e8642738a",
+    "filename": "Win_USB_Enable_Access.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "USB - Enable Access",
+    "description": "USB - Enable Plugged in USB devices",
+    "shell": "cmd",
+    "category": "TRMM (Win):Storage"
+  },
+  {
     "guid": "c6014da2-b188-4e1b-b96a-e3440ade3a6a",
     "filename": "Win_RecycleBin_Empty.ps1",
     "submittedBy": "https://github.com/silversword411",

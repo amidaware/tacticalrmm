@@ -89,6 +89,10 @@
               <q-item clickable v-close-popup @click="showEditCoreSettingsModal = true">
                 <q-item-section>Global Settings</q-item-section>
               </q-item>
+              <!-- code sign -->
+              <q-item clickable v-close-popup @click="showCodeSign = true">
+                <q-item-section>Code Signing</q-item-section>
+              </q-item>
             </q-list>
           </q-menu>
         </q-btn>
@@ -179,6 +183,10 @@
       <q-dialog v-model="showServerMaintenance">
         <ServerMaintenance @close="showMaintenance = false" />
       </q-dialog>
+      <!-- Code Sign -->
+      <q-dialog v-model="showCodeSign">
+        <CodeSign @close="showCodeSign = false" />
+      </q-dialog>
     </q-bar>
   </div>
 </template>
@@ -201,6 +209,7 @@ import AuditManager from "@/components/AuditManager";
 import BulkAction from "@/components/modals/agents/BulkAction";
 import Deployment from "@/components/Deployment";
 import ServerMaintenance from "@/components/modals/core/ServerMaintenance";
+import CodeSign from "@/components/modals/coresettings/CodeSign";
 
 export default {
   name: "FileBar",
@@ -217,6 +226,7 @@ export default {
     BulkAction,
     Deployment,
     ServerMaintenance,
+    CodeSign,
   },
   data() {
     return {
@@ -233,6 +243,7 @@ export default {
       showDeployment: false,
       showDebugLog: false,
       showScriptManager: false,
+      showCodeSign: false,
     };
   },
   methods: {

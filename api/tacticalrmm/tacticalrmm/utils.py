@@ -19,6 +19,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from agents.models import Agent
+from core.models import CodeSignToken
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -56,6 +57,11 @@ def generate_winagent_exe(
         else f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
     )
 
+    try:
+        codetoken = CodeSignToken.objects.first().token
+    except:
+        codetoken = ""
+
     data = {
         "client": client,
         "site": site,
@@ -68,6 +74,7 @@ def generate_winagent_exe(
         "inno": inno,
         "url": settings.DL_64 if arch == "64" else settings.DL_32,
         "api": api,
+        "codesigntoken": codetoken,
     }
     headers = {"Content-type": "application/json"}
 
@@ -76,7 +83,7 @@ def generate_winagent_exe(
         for url in settings.EXE_GEN_URLS:
             try:
                 r = requests.post(
-                    url,
+                    f"{url}/api/v1/exe",
                     json=data,
                     headers=headers,
                     stream=True,

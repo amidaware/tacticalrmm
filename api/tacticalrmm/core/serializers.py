@@ -1,7 +1,7 @@
 import pytz
 from rest_framework import serializers
 
-from .models import CoreSettings, CustomField
+from .models import CoreSettings, CustomField, CodeSignToken
 
 
 class CoreSettingsSerializer(serializers.ModelSerializer):
@@ -26,4 +26,10 @@ class CoreSerializer(serializers.ModelSerializer):
 class CustomFieldSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomField
+        fields = "__all__"
+
+
+class CodeSignTokenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CodeSignToken
         fields = "__all__"

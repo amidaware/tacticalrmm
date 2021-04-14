@@ -324,6 +324,15 @@
     "category": "TRMM (Win):Monitoring"
   },
   {
+    "guid": "8373846f-facc-49b9-9891-3a780a394c89",
+    "filename": "Win_Local_User_Created_Monitor.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Event Viewer - Monitor for new Users",
+    "description": "Event Viewer Monitor - Notify when new Local user is created",
+    "shell": "powershell",
+    "category": "TRMM (Win):Monitoring"
+  },
+  {
     "guid": "5d905886-9eb1-4129-8b81-a013f842eb24",
     "filename": "Win_Rename_Computer.ps1",
     "submittedBy": "https://github.com/silversword411",

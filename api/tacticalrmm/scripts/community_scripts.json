@@ -135,6 +135,15 @@
     "category": "TRMM (Win):Hardware"
   },
   {
+    "guid": "e1c27982-b955-4766-85b6-d92527a177cf",
+    "filename": "Win_Hardware_Monitor_Get_Info.ps1",
+    "submittedBy": "https://github.com/MaxAnderson95/",
+    "name": "Monitor - Get Info",
+    "description": "Retreives and reports on Monitor info: Manufacturer, Model, Serial",
+    "shell": "powershell",
+    "category": "TRMM (Win):Hardware"
+  },
+  {
     "guid": "ae231ac4-b01f-4a39-a9d2-3d817af75260",
     "filename": "Win_Hardware_RAM_Status.ps1",
     "submittedBy": "https://github.com/silversword411",

@@ -342,6 +342,15 @@
     "category": "TRMM (Win):Monitoring"
   },
   {
+    "guid": "08ca81f2-f044-4dfc-ad47-090b19b19d76",
+    "filename": "Win_User_Logged_in_with_Temp_Profile.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "User Logged in with temp profile check",
+    "description": "Check if users are logged in with a temp profile",
+    "shell": "powershell",
+    "category": "TRMM (Win):Other"
+  },
+  {
     "guid": "5d905886-9eb1-4129-8b81-a013f842eb24",
     "filename": "Win_Rename_Computer.ps1",
     "submittedBy": "https://github.com/silversword411",

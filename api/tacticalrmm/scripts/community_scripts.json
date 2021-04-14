@@ -470,5 +470,14 @@
     "description": "Empty the recycle bin",
     "shell": "powershell",
     "category": "TRMM (Win):Storage"
+  },
+  {
+    "guid": "c6014da2-b188-4e1b-b96a-e3440ade3a6a",
+    "filename": "Get_Computer_Users.ps1",
+    "submittedBy": "https://github.com/tremor021",
+    "name": "Get Computer Users",
+    "description": "Get list of computer users and show which one is enabled",
+    "shell": "powershell",
+    "category": "TRMM (Win):Other"
   }
 ]

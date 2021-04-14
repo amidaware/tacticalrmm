@@ -102,7 +102,7 @@
     "guid": "2ea35fa2-c227-4d17-a40e-4d39f252e27a",
     "filename": "Win_Bitlocker_Create_Status_Report.ps1",
     "submittedBy": "https://github.com/ThatsNASt",
-    "name": "Create Bitlocker Status Report",
+    "name": "Bitlocker - Create Status Report",
     "description": "Creates a Bitlocker status report.",
     "shell": "powershell",
     "category": "TRMM (Win):Storage"

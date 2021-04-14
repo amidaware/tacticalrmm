@@ -318,8 +318,8 @@
     "guid": "71090fc4-faa6-460b-adb0-95d7863544e1",
     "filename": "Win_Check_Events_for_Bluescreens.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Event Viewer - Check for Bluescreens",
-    "description": "This will check for Bluescreen events on your system",
+    "name": "Event Viewer - Bluescreen Notification",
+    "description": "Event Viewer Monitor - Notify Bluescreen events on your system",
     "shell": "powershell",
     "category": "TRMM (Win):Monitoring"
   },
@@ -327,8 +327,17 @@
     "guid": "8373846f-facc-49b9-9891-3a780a394c89",
     "filename": "Win_Local_User_Created_Monitor.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Event Viewer - Monitor for new Users",
+    "name": "Event Viewer - New User Notification",
     "description": "Event Viewer Monitor - Notify when new Local user is created",
+    "shell": "powershell",
+    "category": "TRMM (Win):Monitoring"
+  },
+  {
+    "guid": "65e5cef1-8338-4180-a0bc-cd54e62de690",
+    "filename": "Win_Task_Scheduler_New_Items_Monitor.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Event Viewer - Task Scheduler New Item Notification",
+    "description": "Event Viewer Monitor - Notify when new Task Scheduler item is created",
     "shell": "powershell",
     "category": "TRMM (Win):Monitoring"
   },

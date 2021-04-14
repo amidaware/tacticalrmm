@@ -261,6 +261,15 @@
     "category": "TRMM (Win):Power"
   },
   {
+    "guid": "f628a02b-16c3-4ab5-b788-dec5bc2af1d9",
+    "filename": "Win_Power_Disable_Hibernation.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Power - Hibernate Disable",
+    "description": "Disables Hibernation",
+    "shell": "cmd",
+    "category": "TRMM (Win):Power"
+  },
+  {
     "guid": "2472bbaf-1941-4722-8a58-d1dd0f528801",
     "filename": "Win_Update_Tactical_Exclusion.ps1",
     "submittedBy": "https://github.com/dinger1986",

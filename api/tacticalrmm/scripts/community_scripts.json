@@ -572,7 +572,7 @@
   },
   {
     "guid": "768f42d5-7b45-45ed-8233-254ae537aaa2",
-    "filename": "Win_Add_Task_To_TaskScheduler.ps1",
+    "filename": "Win_TaskScheduler_Add_Task.ps1",
     "submittedBy": "https://github.com/tremor021",
     "name": "Add task to TaskScheduler",
     "description": "Add a task to Task Scheduler, needs editing",

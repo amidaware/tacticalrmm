@@ -454,6 +454,15 @@
     "category": "TRMM (Win):Azure>AD"
   },
   {
+    "guid": "7d81859a-1ba3-42b0-8664-29844f0dd765",
+    "filename": "Win_Azure_Mars_Cloud_Backup_Status.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Azure - Mars Cloud backup Status",
+    "description": "Azure - Mars Cloud backup Check Status",
+    "shell": "powershell",
+    "category": "TRMM (Win):Azure>Backup"
+  },
+  {
     "guid": "e18c64d0-b783-4b52-b44b-9bb7592b439b",
     "filename": "Win_FileSystem_Enable_Long_Paths.bat",
     "submittedBy": "https://github.com/silversword411",

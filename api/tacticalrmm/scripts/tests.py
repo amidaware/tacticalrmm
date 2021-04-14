@@ -245,12 +245,16 @@ class TestScriptViews(TacticalTestCase):
 
         Script.load_community_scripts()
 
-        community_scripts = Script.objects.filter(script_type="builtin").count()
-        self.assertEqual(len(info), community_scripts)
+        community_scripts_count = Script.objects.filter(script_type="builtin").count()
+        if len(info) != community_scripts_count:
+            raise Exception(
+                f"There are {len(info)} scripts in json file but only {community_scripts_count} in database"
+            )
 
         # test updating already added community scripts
         Script.load_community_scripts()
-        self.assertEqual(len(info), community_scripts)
+        community_scripts_count2 = Script.objects.filter(script_type="builtin").count()
+        self.assertEqual(len(info), community_scripts_count2)
 
     def test_community_script_has_jsonfile_entry(self):
         with open(
@@ -282,4 +286,5 @@ class TestScriptViews(TacticalTestCase):
             info = json.load(f)
             for script in info:
                 fn: str = script["filename"]
-                self.assertTrue(" " not in fn)
+                if " " in fn:
+                    raise Exception(f"{fn} must not contain spaces in filename")

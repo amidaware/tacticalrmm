@@ -13,8 +13,8 @@ python3 -m venv env
 source env/bin/activate
 pip install --upgrade pip
 pip install --upgrade setuptools wheel
-pip install -r api/tacticalrmm/requirements-dev.txt
-cd docs
+pip install -r tacticalrmm/api/tacticalrmm/requirements-dev.txt
+cd tacticalrmm/docs
 mkdocs serve
 ```
 

@@ -51,7 +51,7 @@
     "name": "Disk - Cleanup C: drive",
     "description": "Cleans the C: drive's Window Temperary files, Windows SoftwareDistribution folder, the local users Temperary folder, IIS logs (if applicable) and empties the recycling bin. All deleted files will go into a log transcript in $env:TEMP. By default this script leaves files that are newer than 7 days old however this variable can be edited.",
     "shell": "powershell",
-    "category": "TRMM (Win):Other"
+    "category": "TRMM (Win):Maintenance"
   },
   {
     "guid": "2f28e8c1-ae0f-4b46-a826-f513974526a3",
@@ -75,7 +75,7 @@
     "guid": "3c46290b-85db-4cd2-93a2-943c8c93b3b1",
     "filename": "Speedtest.py",
     "submittedBy": "https://github.com/wh1te909",
-    "name": "Network - Speed Test",
+    "name": "Speed Test - Python",
     "description": "Runs a Speed Test using Python",
     "shell": "python",
     "category": "TRMM (Win):Network"
@@ -228,7 +228,7 @@
     "guid": "24f19ead-fdfe-46b4-9dcb-4cd0e12a3940",
     "filename": "Win_Speedtest.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Speed Test Powershell",
+    "name": "Speed Test - Powershell",
     "description": "Speed Test with Powershell(win 10 or server2016+)",
     "shell": "powershell",
     "category": "TRMM (Win):Network"
@@ -327,7 +327,7 @@
     "guid": "5615aa90-0272-427b-8acf-0ca019612501",
     "filename": "Win_Chocolatey_Update_Installed.bat",
     "submittedBy": "https://github.com/silversword411",
-    "name": "Chocolatey Update Installed Apps",
+    "name": "Update Installed Apps",
     "description": "Update all apps that were installed using Chocolatey.",
     "shell": "cmd",
     "category": "TRMM (Win):3rd Party Software>Chocolatey"
@@ -394,7 +394,7 @@
     "name": "Updates - Finish and restart",
     "description": "Finish installing Windows updates and restart PC",
     "shell": "powershell",
-    "category": "TRMM (Win):Other"
+    "category": "TRMM (Win):Updates"
   },
   {
     "guid": "63f89be0-a9c9-4c61-9b55-bce0b28b90b2",
@@ -403,7 +403,7 @@
     "name": "Updates - Finish and Shutdown",
     "description": "Finish installing Windows updates and shutdown PC",
     "shell": "powershell",
-    "category": "TRMM (Win):Other"
+    "category": "TRMM (Win):Updates"
   },
   {
     "guid": "e09895d5-ca13-44a2-a38c-6e77c740f0e8",

@@ -563,9 +563,9 @@
   },
   {
     "guid": "77da9c87-5a7a-4ba1-bdde-3eeb3b01d62d",
-    "filename": "Win_Set_Network_To_Private.ps1",
+    "filename": "Win_Network_Set_To_Private.ps1",
     "submittedBy": "https://github.com/tremor021",
-    "name": "Set Network To Private",
+    "name": "Network Category - Set Network To Private",
     "description": "Sets current network type to Private",
     "shell": "powershell",
     "category": "TRMM (Win):Network"
@@ -574,7 +574,7 @@
     "guid": "768f42d5-7b45-45ed-8233-254ae537aaa2",
     "filename": "Win_TaskScheduler_Add_Task.ps1",
     "submittedBy": "https://github.com/tremor021",
-    "name": "Add task to TaskScheduler",
+    "name": "Task Scheduler - Add a task",
     "description": "Add a task to Task Scheduler, needs editing",
     "shell": "powershell",
     "category": "TRMM (Win):Other"

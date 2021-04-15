@@ -914,8 +914,9 @@ class TestAgentTasks(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
+    @patch("agents.tasks._get_exegen_url")
     @patch("agents.models.Agent.nats_cmd")
-    def test_agent_update(self, nats_cmd):
+    def test_agent_update(self, nats_cmd, get_exe):
         from agents.tasks import agent_update
 
         agent_noarch = baker.make_recipe(
@@ -926,63 +927,96 @@ class TestAgentTasks(TacticalTestCase):
         r = agent_update(agent_noarch.pk)
         self.assertEqual(r, "noarch")
 
-        agent_1111 = baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version="1.1.11",
-        )
-        r = agent_update(agent_1111.pk)
-        self.assertEqual(r, "not supported")
-
-        agent64_1112 = baker.make_recipe(
-            "agents.agent",
-            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
-            version="1.1.12",
-        )
-
-        r = agent_update(agent64_1112.pk)
-        self.assertEqual(r, "created")
-        action = PendingAction.objects.get(agent__pk=agent64_1112.pk)
-        self.assertEqual(action.action_type, "agentupdate")
-        self.assertEqual(action.status, "pending")
-        self.assertEqual(
-            action.details["url"],
-            "https://github.com/wh1te909/rmmagent/releases/download/v1.3.0/winagent-v1.3.0.exe",
-        )
-        self.assertEqual(action.details["inno"], "winagent-v1.3.0.exe")
-        self.assertEqual(action.details["version"], "1.3.0")
-        nats_cmd.assert_called_with(
-            {
-                "func": "agentupdate",
-                "payload": {
-                    "url": "https://github.com/wh1te909/rmmagent/releases/download/v1.3.0/winagent-v1.3.0.exe",
-                    "version": "1.3.0",
-                    "inno": "winagent-v1.3.0.exe",
-                },
-            },
-            wait=False,
-        )
-
-        agent_64_130 = baker.make_recipe(
+        agent_130 = baker.make_recipe(
             "agents.agent",
             operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
             version="1.3.0",
         )
-        nats_cmd.return_value = "ok"
-        r = agent_update(agent_64_130.pk)
+        r = agent_update(agent_130.pk)
+        self.assertEqual(r, "not supported")
+
+        # test __without__ code signing
+        agent64_nosign = baker.make_recipe(
+            "agents.agent",
+            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
+            version="1.4.14",
+        )
+
+        r = agent_update(agent64_nosign.pk, None)
         self.assertEqual(r, "created")
+        action = PendingAction.objects.get(agent__pk=agent64_nosign.pk)
+        self.assertEqual(action.action_type, "agentupdate")
+        self.assertEqual(action.status, "pending")
+        self.assertEqual(
+            action.details["url"],
+            f"https://github.com/wh1te909/rmmagent/releases/download/v{settings.LATEST_AGENT_VER}/winagent-v{settings.LATEST_AGENT_VER}.exe",
+        )
+        self.assertEqual(
+            action.details["inno"], f"winagent-v{settings.LATEST_AGENT_VER}.exe"
+        )
+        self.assertEqual(action.details["version"], settings.LATEST_AGENT_VER)
         nats_cmd.assert_called_with(
             {
                 "func": "agentupdate",
                 "payload": {
-                    "url": settings.DL_64,
+                    "url": f"https://github.com/wh1te909/rmmagent/releases/download/v{settings.LATEST_AGENT_VER}/winagent-v{settings.LATEST_AGENT_VER}.exe",
                     "version": settings.LATEST_AGENT_VER,
                     "inno": f"winagent-v{settings.LATEST_AGENT_VER}.exe",
                 },
             },
             wait=False,
         )
-        action = PendingAction.objects.get(agent__pk=agent_64_130.pk)
+
+        # test __with__ code signing (64 bit)
+        codesign = baker.make("core.CodeSignToken", token="testtoken123")
+        agent64_sign = baker.make_recipe(
+            "agents.agent",
+            operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
+            version="1.4.14",
+        )
+
+        nats_cmd.return_value = "ok"
+        get_exe.return_value = "https://exe.tacticalrmm.io"
+        r = agent_update(agent64_sign.pk, codesign.token)  # type: ignore
+        self.assertEqual(r, "created")
+        nats_cmd.assert_called_with(
+            {
+                "func": "agentupdate",
+                "payload": {
+                    "url": f"https://exe.tacticalrmm.io/api/v1/winagents/?version={settings.LATEST_AGENT_VER}&arch=64&token=testtoken123",  # type: ignore
+                    "version": settings.LATEST_AGENT_VER,
+                    "inno": f"winagent-v{settings.LATEST_AGENT_VER}.exe",
+                },
+            },
+            wait=False,
+        )
+        action = PendingAction.objects.get(agent__pk=agent64_sign.pk)
+        self.assertEqual(action.action_type, "agentupdate")
+        self.assertEqual(action.status, "pending")
+
+        # test __with__ code signing (32 bit)
+        agent32_sign = baker.make_recipe(
+            "agents.agent",
+            operating_system="Windows 10 Pro, 32 bit (build 19041.450)",
+            version="1.4.14",
+        )
+
+        nats_cmd.return_value = "ok"
+        get_exe.return_value = "https://exe.tacticalrmm.io"
+        r = agent_update(agent32_sign.pk, codesign.token)  # type: ignore
+        self.assertEqual(r, "created")
+        nats_cmd.assert_called_with(
+            {
+                "func": "agentupdate",
+                "payload": {
+                    "url": f"https://exe.tacticalrmm.io/api/v1/winagents/?version={settings.LATEST_AGENT_VER}&arch=32&token=testtoken123",  # type: ignore
+                    "version": settings.LATEST_AGENT_VER,
+                    "inno": f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe",
+                },
+            },
+            wait=False,
+        )
+        action = PendingAction.objects.get(agent__pk=agent32_sign.pk)
         self.assertEqual(action.action_type, "agentupdate")
         self.assertEqual(action.status, "pending")
 

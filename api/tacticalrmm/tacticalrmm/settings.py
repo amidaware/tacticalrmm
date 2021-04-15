@@ -22,7 +22,7 @@ TRMM_VERSION = "0.5.3"
 APP_VER = "0.0.128"
 
 # https://github.com/wh1te909/rmmagent
-LATEST_AGENT_VER = "1.4.14"
+LATEST_AGENT_VER = "1.5.0"
 
 MESH_VER = "0.7.93"
 

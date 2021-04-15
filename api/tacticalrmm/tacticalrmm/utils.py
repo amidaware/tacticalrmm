@@ -4,6 +4,7 @@ import string
 import subprocess
 import tempfile
 import time
+import urllib.parse
 from typing import Union
 
 import pytz
@@ -51,6 +52,8 @@ def generate_winagent_exe(
     file_name: str,
 ) -> Union[Response, FileResponse]:
 
+    from agents.tasks import _get_exegen_url
+
     inno = (
         f"winagent-v{settings.LATEST_AGENT_VER}.exe"
         if arch == "64"
@@ -59,8 +62,16 @@ def generate_winagent_exe(
 
     try:
         codetoken = CodeSignToken.objects.first().token
+        base_url = _get_exegen_url() + "/api/v1/winagents/?"
+        params = {
+            "version": settings.LATEST_AGENT_VER,
+            "arch": arch,
+            "token": codetoken,
+        }
+        dl_url = base_url + urllib.parse.urlencode(params)
     except:
         codetoken = ""
+        dl_url = settings.DL_64 if arch == "64" else settings.DL_32
 
     data = {
         "client": client,
@@ -72,7 +83,7 @@ def generate_winagent_exe(
         "goarch": "amd64" if arch == "64" else "386",
         "token": token,
         "inno": inno,
-        "url": settings.DL_64 if arch == "64" else settings.DL_32,
+        "url": dl_url,
         "api": api,
         "codesigntoken": codetoken,
     }

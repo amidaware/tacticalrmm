@@ -461,6 +461,16 @@
     "default_timeout": "90"
   },
   {
+    "guid": "abe78170-7cf9-435b-9666-c5ef6c11a106",
+    "filename": "Win_Network_IPv6_Disable.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Network IPv6 - Disable",
+    "description": "Disable IPv6 on all adapters",
+    "shell": "powershell",
+    "category": "TRMM (Win):Network",
+    "default_timeout": "90"
+  },
+  {
     "guid": "6ce5682a-49db-4c0b-9417-609cf905ac43",
     "filename": "Win_Win10_Change_Key_and_Activate.ps1",
     "submittedBy": "https://github.com/silversword411",

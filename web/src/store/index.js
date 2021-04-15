@@ -256,7 +256,7 @@ export default function () {
                 alert_template: site.alert_template
               }
 
-              if (site.maintenance_mode) { siteNode["color"] = "warning" }
+              if (site.maintenance_mode) { siteNode["color"] = "green" }
               else if (site.failing_checks) { siteNode["color"] = "negative" }
 
               childSites.push(siteNode);
@@ -274,7 +274,7 @@ export default function () {
               children: childSites
             }
 
-            if (client.maintenance_mode) clientNode["color"] = "warning"
+            if (client.maintenance_mode) clientNode["color"] = "green"
             else if (client.failing_checks) clientNode["color"] = "negative"
 
             output.push(clientNode);

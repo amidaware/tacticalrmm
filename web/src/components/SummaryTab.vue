@@ -4,7 +4,7 @@
     <q-btn class="q-mr-sm" dense flat push icon="refresh" @click="refreshSummary" />
     <span>
       <b>{{ summary.hostname }}</b>
-      <span v-if="summary.maintenance_mode"> &bull; <q-badge color="warning"> Maintenance Mode </q-badge> </span>
+      <span v-if="summary.maintenance_mode"> &bull; <q-badge color="green"> Maintenance Mode </q-badge> </span>
       &bull; {{ summary.operating_system }} &bull; Agent v{{ summary.version }}
     </span>
     <hr />

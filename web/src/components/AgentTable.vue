@@ -303,7 +303,7 @@
             />
           </q-td>
           <q-td key="checks-status" :props="props">
-            <q-icon v-if="props.row.maintenance_mode" name="fas fa-check-double" size="1.2em" color="warning">
+            <q-icon v-if="props.row.maintenance_mode" name="construction" size="1.2em" color="green">
               <q-tooltip>Maintenance Mode Enabled</q-tooltip>
             </q-icon>
             <q-icon

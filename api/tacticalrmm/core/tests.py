@@ -1,3 +1,4 @@
+import requests
 from unittest.mock import patch
 
 from channels.db import database_sync_to_async
@@ -10,6 +11,28 @@ from .consumers import DashInfo
 from .models import CoreSettings, CustomField
 from .serializers import CustomFieldSerializer
 from .tasks import core_maintenance_tasks
+
+
+class TestCodeSign(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+        self.authenticate()
+        self.url = "/core/codesign/"
+
+    def test_get_codesign(self):
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 200)
+
+        self.check_not_authenticated("get", self.url)
+
+    @patch("requests.post")
+    def test_edit_codesign_timeout(self, mock_post):
+        mock_post.side_effect = requests.exceptions.ConnectionError()
+        data = {"token": "token123"}
+        r = self.client.patch(self.url, data, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        self.check_not_authenticated("patch", self.url)
 
 
 class TestConsumers(TacticalTestCase):

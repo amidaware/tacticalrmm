@@ -1,6 +1,8 @@
 import asyncio
 import datetime as dt
 import random
+import requests
+import urllib.parse
 from time import sleep
 from typing import Union
 
@@ -10,7 +12,7 @@ from loguru import logger
 from packaging import version as pyver
 
 from agents.models import Agent
-from core.models import CoreSettings
+from core.models import CoreSettings, CodeSignToken
 from logs.models import PendingAction
 from scripts.models import Script
 from tacticalrmm.celery import app
@@ -19,13 +21,24 @@ from tacticalrmm.utils import run_nats_api_cmd
 logger.configure(**settings.LOG_CONFIG)
 
 
-def agent_update(pk: int) -> str:
+def _get_exegen_url() -> str:
+    urls: list[str] = settings.EXE_GEN_URLS
+    for url in urls:
+        try:
+            r = requests.get(url, timeout=10)
+        except:
+            continue
+
+        if r.status_code == 200:
+            return url
+
+    return random.choice(urls)
+
+
+def agent_update(pk: int, codesigntoken: str = None) -> str:
     agent = Agent.objects.get(pk=pk)
 
-    if pyver.parse(agent.version) <= pyver.parse("1.1.11"):
-        logger.warning(
-            f"{agent.hostname} v{agent.version} is running an unsupported version. Refusing to auto update."
-        )
+    if pyver.parse(agent.version) <= pyver.parse("1.3.0"):
         return "not supported"
 
     # skip if we can't determine the arch
@@ -35,18 +48,15 @@ def agent_update(pk: int) -> str:
         )
         return "noarch"
 
-    # removed sqlite in 1.4.0 to get rid of cgo dependency
-    # 1.3.0 has migration func to move from sqlite to win registry, so force an upgrade to 1.3.0 if old agent
-    if pyver.parse(agent.version) >= pyver.parse("1.3.0"):
-        version = settings.LATEST_AGENT_VER
-        url = agent.winagent_dl
-        inno = agent.win_inno_exe
+    version = settings.LATEST_AGENT_VER
+    inno = agent.win_inno_exe
+
+    if codesigntoken is not None and pyver.parse(version) >= pyver.parse("1.5.0"):
+        base_url = _get_exegen_url() + "/api/v1/winagents/?"
+        params = {"version": version, "arch": agent.arch, "token": codesigntoken}
+        url = base_url + urllib.parse.urlencode(params)
     else:
-        version = "1.3.0"
-        inno = (
-            "winagent-v1.3.0.exe" if agent.arch == "64" else "winagent-v1.3.0-x86.exe"
-        )
-        url = f"https://github.com/wh1te909/rmmagent/releases/download/v1.3.0/{inno}"
+        url = agent.winagent_dl
 
     if agent.pendingactions.filter(
         action_type="agentupdate", status="pending"
@@ -79,10 +89,15 @@ def agent_update(pk: int) -> str:
 
 @app.task
 def send_agent_update_task(pks: list[int]) -> None:
+    try:
+        codesigntoken = CodeSignToken.objects.first().token
+    except:
+        codesigntoken = None
+
     chunks = (pks[i : i + 30] for i in range(0, len(pks), 30))
     for chunk in chunks:
         for pk in chunk:
-            agent_update(pk)
+            agent_update(pk, codesigntoken)
             sleep(0.05)
         sleep(4)
 
@@ -92,6 +107,11 @@ def auto_self_agent_update_task() -> None:
     core = CoreSettings.objects.first()
     if not core.agent_auto_update:
         return
+
+    try:
+        codesigntoken = CodeSignToken.objects.first().token
+    except:
+        codesigntoken = None
 
     q = Agent.objects.only("pk", "version")
     pks: list[int] = [
@@ -103,7 +123,7 @@ def auto_self_agent_update_task() -> None:
     chunks = (pks[i : i + 30] for i in range(0, len(pks), 30))
     for chunk in chunks:
         for pk in chunk:
-            agent_update(pk)
+            agent_update(pk, codesigntoken)
             sleep(0.05)
         sleep(4)
 

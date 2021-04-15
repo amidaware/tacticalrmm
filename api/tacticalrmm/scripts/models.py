@@ -23,6 +23,7 @@ logger.configure(**settings.LOG_CONFIG)
 
 
 class Script(BaseAuditModel):
+    guid = name = models.CharField(max_length=64, null=True, blank=True)
     name = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
     filename = models.CharField(max_length=255)  # deprecated
@@ -78,9 +79,7 @@ class Script(BaseAuditModel):
 
         for script in info:
             if os.path.exists(os.path.join(scripts_dir, script["filename"])):
-                s = cls.objects.filter(script_type="builtin").filter(
-                    name=script["name"]
-                )
+                s = cls.objects.filter(script_type="builtin", guid=script["guid"])
 
                 category = (
                     script["category"] if "category" in script.keys() else "Community"
@@ -120,6 +119,46 @@ class Script(BaseAuditModel):
                             "args",
                         ]
                     )
+
+                # check if script was added without a guid
+                elif cls.objects.filter(
+                    script_type="builtin", name=script["name"]
+                ).exists():
+                    s = cls.objects.get(script_type="builtin", name=script["name"])
+
+                    if not s.guid:
+                        print(f"Updating GUID for: {script['name']}")
+                        s.guid = script["guid"]
+                        s.name = script["name"]
+                        s.description = script["description"]
+                        s.category = category
+                        s.shell = script["shell"]
+                        s.default_timeout = default_timeout
+                        s.args = args
+
+                        with open(
+                            os.path.join(scripts_dir, script["filename"]), "rb"
+                        ) as f:
+                            script_bytes = (
+                                f.read().decode("utf-8").encode("ascii", "ignore")
+                            )
+                            s.code_base64 = base64.b64encode(script_bytes).decode(
+                                "ascii"
+                            )
+
+                        s.save(
+                            update_fields=[
+                                "guid",
+                                "name",
+                                "description",
+                                "category",
+                                "default_timeout",
+                                "code_base64",
+                                "shell",
+                                "args",
+                            ]
+                        )
+
                 else:
                     print(f"Adding new community script: {script['name']}")
 
@@ -131,6 +170,7 @@ class Script(BaseAuditModel):
 
                         cls(
                             code_base64=code_base64,
+                            guid=script["guid"],
                             name=script["name"],
                             description=script["description"],
                             filename=script["filename"],
@@ -140,6 +180,9 @@ class Script(BaseAuditModel):
                             default_timeout=default_timeout,
                             args=args,
                         ).save()
+
+        # delete community scripts that had their name changed
+        cls.objects.filter(script_type="builtin", guid=None).delete()
 
     @staticmethod
     def serialize(script):

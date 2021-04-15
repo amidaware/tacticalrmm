@@ -4,6 +4,7 @@ import string
 import subprocess
 import tempfile
 import time
+import urllib.parse
 from typing import Union
 
 import pytz
@@ -19,6 +20,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from agents.models import Agent
+from core.models import CodeSignToken
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -50,11 +52,26 @@ def generate_winagent_exe(
     file_name: str,
 ) -> Union[Response, FileResponse]:
 
+    from agents.tasks import _get_exegen_url
+
     inno = (
         f"winagent-v{settings.LATEST_AGENT_VER}.exe"
         if arch == "64"
         else f"winagent-v{settings.LATEST_AGENT_VER}-x86.exe"
     )
+
+    try:
+        codetoken = CodeSignToken.objects.first().token
+        base_url = _get_exegen_url() + "/api/v1/winagents/?"
+        params = {
+            "version": settings.LATEST_AGENT_VER,
+            "arch": arch,
+            "token": codetoken,
+        }
+        dl_url = base_url + urllib.parse.urlencode(params)
+    except:
+        codetoken = ""
+        dl_url = settings.DL_64 if arch == "64" else settings.DL_32
 
     data = {
         "client": client,
@@ -66,8 +83,9 @@ def generate_winagent_exe(
         "goarch": "amd64" if arch == "64" else "386",
         "token": token,
         "inno": inno,
-        "url": settings.DL_64 if arch == "64" else settings.DL_32,
+        "url": dl_url,
         "api": api,
+        "codesigntoken": codetoken,
     }
     headers = {"Content-type": "application/json"}
 
@@ -76,7 +94,7 @@ def generate_winagent_exe(
         for url in settings.EXE_GEN_URLS:
             try:
                 r = requests.post(
-                    url,
+                    f"{url}/api/v1/exe",
                     json=data,
                     headers=headers,
                     stream=True,

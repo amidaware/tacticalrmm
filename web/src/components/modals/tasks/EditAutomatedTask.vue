@@ -20,21 +20,6 @@
             label="Select script"
             map-options
             emit-value
-          />
-        </q-card-section>
-        <q-card-section>
-          <q-select
-            dense
-            label="Script Arguments (press Enter after typing each argument)"
-            filled
-            v-model="localTask.script_args"
-            use-input
-            use-chips
-            multiple
-            hide-dropdown-icon
-            input-debounce="0"
-            new-value-mode="add"
-            @input="setScriptDefaults"
           >
             <template v-slot:option="scope">
               <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
@@ -49,12 +34,28 @@
           </q-select>
         </q-card-section>
         <q-card-section>
+          <q-select
+            dense
+            label="Script Arguments (press Enter after typing each argument)"
+            filled
+            v-model="localTask.script_args"
+            use-input
+            use-chips
+            multiple
+            hide-dropdown-icon
+            input-debounce="0"
+            new-value-mode="add"
+            @input="setScriptDefaults"
+          />
+        </q-card-section>
+        <q-card-section>
           <q-input
             :rules="[val => !!val || '*Required']"
             outlined
             dense
             v-model="localTask.name"
             label="Descriptive name of task"
+            class="q-pb-none"
           />
         </q-card-section>
         <q-card-section>
@@ -77,6 +78,7 @@
             v-model.number="localTask.timeout"
             type="number"
             label="Maximum permitted execution time (seconds)"
+            class="q-pb-none"
           />
         </q-card-section>
         <q-card-actions align="right">

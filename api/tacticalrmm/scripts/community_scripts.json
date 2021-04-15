@@ -3,7 +3,7 @@
     "guid": "6820cb5e-5a7f-4d9b-8c22-d54677e3cc04",
     "filename": "Win_Clear_Firefox_Cache.ps1",
     "submittedBy": "https://github.com/Omnicef",
-    "name": "Clear Firefox Cache",
+    "name": "Firefox - Clean Cache",
     "description": "This script will clean up Mozilla Firefox for all users.",
     "shell": "powershell",
     "category": "TRMM (Win):Browsers"
@@ -12,7 +12,7 @@
     "guid": "3ff6a386-11d1-4f9d-8cca-1b0563bb6443",
     "filename": "Win_Clear_Google_Chrome_Cache.ps1",
     "submittedBy": "https://github.com/Omnicef",
-    "name": "Clear Google Chrome Cache",
+    "name": "Chrome - Clear Cache for All Users",
     "description": "This script will clean up Google Chrome for all users.",
     "shell": "powershell",
     "category": "TRMM (Win):Browsers"
@@ -21,7 +21,7 @@
     "guid": "be1de837-f677-4ac5-aa0c-37a0fc9991fc",
     "filename": "Win_Install_Adobe_Reader.ps1",
     "submittedBy": "https://github.com/Omnicef",
-    "name": "Install Adobe Reader DC",
+    "name": "Adobe Reader DC - Install",
     "description": "Installs Adobe Reader DC.",
     "shell": "powershell",
     "category": "TRMM (Win):3rd Party Software>Chocolatey"
@@ -30,7 +30,7 @@
     "guid": "2ee134d5-76aa-4160-b334-a1efbc62079f",
     "filename": "Win_Install_Duplicati.ps1",
     "submittedBy": "https://github.com/Omnicef",
-    "name": "Install Duplicati",
+    "name": "Duplicati - Install",
     "description": "This script installs Duplicati 2.0.5.1 as a service.",
     "shell": "powershell",
     "category": "TRMM (Win):3rd Party Software"
@@ -39,7 +39,7 @@
     "guid": "81cc5bcb-01bf-4b0c-89b9-0ac0f3fe0c04",
     "filename": "Win_Reset_Windows_Update.ps1",
     "submittedBy": "https://github.com/Omnicef",
-    "name": "Reset Windows Update",
+    "name": "Windows Update - Reset",
     "description": "This script will reset all of the Windows Updates components to DEFAULT SETTINGS.",
     "shell": "powershell",
     "category": "TRMM (Win):Updates"
@@ -48,7 +48,7 @@
     "guid": "8db87ff0-a9b4-4d9d-bc55-377bbcb85b6d",
     "filename": "Win_Start_Cleanup.ps1",
     "submittedBy": "https://github.com/Omnicef",
-    "name": "Cleanup C: drive",
+    "name": "Disk - Cleanup C: drive",
     "description": "Cleans the C: drive's Window Temperary files, Windows SoftwareDistribution folder, the local users Temperary folder, IIS logs (if applicable) and empties the recycling bin. All deleted files will go into a log transcript in $env:TEMP. By default this script leaves files that are newer than 7 days old however this variable can be edited.",
     "shell": "powershell",
     "category": "TRMM (Win):Other"
@@ -57,7 +57,7 @@
     "guid": "2f28e8c1-ae0f-4b46-a826-f513974526a3",
     "filename": "Win_Defender_FullScan_Background.ps1",
     "submittedBy": "https://github.com/Omnicef",
-    "name": "Windows Defender Full Scan",
+    "name": "Defender - Full Scan",
     "description": "Runs a Windows Defender Full background scan.",
     "shell": "powershell",
     "category": "TRMM (Win):Security>Antivirus"
@@ -66,7 +66,7 @@
     "guid": "adf81ddb-3b77-415c-a89b-2ccc826b5aa7",
     "filename": "Win_Defender_QuickScan_Background.ps1",
     "submittedBy": "https://github.com/Omnicef",
-    "name": "Windows Defender Quick Scan",
+    "name": "Defender - Quick Scan",
     "description": "Runs a Quick Scan using Windows Defender in the Background.",
     "shell": "powershell",
     "category": "TRMM (Win):Security>Antivirus"
@@ -75,7 +75,7 @@
     "guid": "3c46290b-85db-4cd2-93a2-943c8c93b3b1",
     "filename": "Speedtest.py",
     "submittedBy": "https://github.com/wh1te909",
-    "name": "Speed Test",
+    "name": "Network - Speed Test",
     "description": "Runs a Speed Test using Python",
     "shell": "python",
     "category": "TRMM (Win):Network"
@@ -84,7 +84,7 @@
     "guid": "9d34f482-1f0c-4b2f-b65f-a9cf3c13ef5f",
     "filename": "Win_Rename_Installed_App.ps1",
     "submittedBy": "https://github.com/bradhawkins85",
-    "name": "Rename Tactical RMM Agent",
+    "name": "TacticalRMM Agent Rename",
     "description": "Updates the DisplayName registry entry for the Tactical RMM windows agent to your desired name. This script takes 1 required argument: the name you wish to set.",
     "shell": "powershell",
     "category": "TRMM (Win):TacticalRMM Related"
@@ -93,7 +93,7 @@
     "guid": "525ae965-1dcf-4c17-92b3-5da3cf6819f5",
     "filename": "Win_Bitlocker_Encrypted_Drive_c.ps1",
     "submittedBy": "https://github.com/ThatsNASt",
-    "name": "Check C Drive for Bitlocker Status",
+    "name": "Bitlocker - Check C Drive for Status",
     "description": "Runs a check on drive C for Bitlocker status.",
     "shell": "powershell",
     "category": "TRMM (Win):Storage"
@@ -111,8 +111,17 @@
     "guid": "9e5769c1-3873-4941-bf70-e851e0afbd6d",
     "filename": "Win_Bitlocker_Retrieve_Status_Report.ps1",
     "submittedBy": "https://github.com/ThatsNASt",
-    "name": "Retreive Bitlocker Status Report",
+    "name": "Bitlocker - Retrieve Status Report",
     "description": "Retreives a Bitlocker status report.",
+    "shell": "powershell",
+    "category": "TRMM (Win):Storage"
+  },
+  {
+    "guid": "72b93487-0266-43f0-97cc-03d4c7ee0b44",
+    "filename": "Win_Bitlocker_Get_Recovery_Keys.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Bitlocker - Get Recovery Keys",
+    "description": "Retreives a Bitlocker Recovery Keys",
     "shell": "powershell",
     "category": "TRMM (Win):Storage"
   },
@@ -120,8 +129,26 @@
     "guid": "cfa14c28-4dfc-4d4e-95ee-a380652e058d",
     "filename": "Win_Bios_Check.ps1",
     "submittedBy": "https://github.com/ThatsNASt",
-    "name": "Check BIOS Information",
+    "name": "BIOS - Check Information",
     "description": "Retreives and reports on BIOS make, version, and date.",
+    "shell": "powershell",
+    "category": "TRMM (Win):Hardware"
+  },
+  {
+    "guid": "e1c27982-b955-4766-85b6-d92527a177cf",
+    "filename": "Win_Hardware_Monitor_Get_Info.ps1",
+    "submittedBy": "https://github.com/MaxAnderson95/",
+    "name": "Monitor - Get Info",
+    "description": "Retreives and reports on Monitor info: Manufacturer, Model, Serial",
+    "shell": "powershell",
+    "category": "TRMM (Win):Hardware"
+  },
+  {
+    "guid": "ae231ac4-b01f-4a39-a9d2-3d817af75260",
+    "filename": "Win_Hardware_RAM_Status.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "RAM - Check Information",
+    "description": "Retreives and reports on RAM info: DIMM's, total memory, slots total and used",
     "shell": "powershell",
     "category": "TRMM (Win):Hardware"
   },
@@ -129,7 +156,7 @@
     "guid": "95a2ee6f-b89b-4551-856e-3081b041caa7",
     "filename": "Win_Reset_High_Performance_Power_Profile_to_Defaults.ps1",
     "submittedBy": "https://github.com/azulskyknight",
-    "name": "Reset High Perf Power Profile",
+    "name": "Power Profile - Reset High Perf Power Profile to defaults",
     "description": "Resets monitor, disk, standby, and hibernate timers in the default High Performance power profile to their default values. It also re-indexes the AC and DC power profiles into their default order.",
     "shell": "powershell",
     "category": "TRMM (Win):Power"
@@ -138,7 +165,7 @@
     "guid": "2cbd30b0-84dd-4388-a36d-2e2e980f1a3e",
     "filename": "Win_Set_High_Performance_Power_Profile.ps1",
     "submittedBy": "https://github.com/azulskyknight",
-    "name": "Set High Perf Power Profile",
+    "name": "Power Profile - Set High Performance",
     "description": "Sets the High Performance Power profile to the active power profile. Use this to keep machines from falling asleep.",
     "shell": "powershell",
     "category": "TRMM (Win):Power"
@@ -156,7 +183,7 @@
     "guid": "375323e5-cac6-4f35-a304-bb7cef35902d",
     "filename": "Win_Disk_Status.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Check Disk Hardware Health (using Event Viewer errors)",
+    "name": "Disk Hardware Health Check (using Event Viewer errors)",
     "description": "Checks local disks for errors reported in event viewer within the last 24 hours",
     "shell": "powershell",
     "category": "TRMM (Win):Hardware"
@@ -165,7 +192,7 @@
     "guid": "7c14beb4-d1c3-41aa-8e70-92a267d6e080",
     "filename": "Win_Duplicati_Status.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Check Duplicati",
+    "name": "Duplicati - Check",
     "description": "Checks Duplicati Backup is running properly over the last 24 hours",
     "shell": "powershell",
     "category": "TRMM (Win):3rd Party Software"
@@ -174,7 +201,7 @@
     "guid": "da51111c-aff6-4d87-9d76-0608e1f67fe5",
     "filename": "Win_Defender_Enable.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Enable Windows Defender",
+    "name": "Defender - Enable",
     "description": "Enables Windows Defender and sets preferences",
     "shell": "powershell",
     "category": "TRMM (Win):Security>Antivirus"
@@ -183,8 +210,8 @@
     "guid": "a223d03a-e22e-40e0-94f2-92dd8c481d14",
     "filename": "Win_Open_SSH_Server_Install.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Install SSH",
-    "description": "Installs and enabled OpenSSH Server",
+    "name": "SSH - Install Feature and Enable",
+    "description": "Installs and enabled OpenSSH Server Feature in Win10",
     "shell": "powershell",
     "category": "TRMM (Win):Windows Features"
   },
@@ -192,7 +219,7 @@
     "guid": "2435297a-6263-4e90-8688-1847400d0e22",
     "filename": "Win_RDP_enable.bat",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Enable RDP",
+    "name": "RDP - Enable",
     "description": "Enables RDP",
     "shell": "cmd",
     "category": "TRMM (Win):Windows Features"
@@ -210,8 +237,17 @@
     "guid": "a821975c-60df-4d58-8990-6cf8a55b4ee0",
     "filename": "Win_Sync_Time.bat",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Sync DC Time",
+    "name": "ADDC - Sync DC Time",
     "description": "Syncs time with domain controller",
+    "shell": "cmd",
+    "category": "TRMM (Win):Active Directory"
+  },
+  {
+    "guid": "b6b9912f-4274-4162-99cc-9fd47fbcb292",
+    "filename": "Win_ADDC_Sync_Start.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "ADDC - Sync AD",
+    "description": "Trigger AD Sync on domain controller",
     "shell": "cmd",
     "category": "TRMM (Win):Active Directory"
   },
@@ -219,7 +255,7 @@
     "guid": "b720e320-7755-4c89-9992-e1a6c43699ed",
     "filename": "Win_Defender_Clear_Logs.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Clear Defender Logs",
+    "name": "Defender - Clear Logs",
     "description": "Clears Windows Defender Logs",
     "shell": "powershell",
     "category": "TRMM (Win):Security>Antivirus"
@@ -228,7 +264,7 @@
     "guid": "d980fda3-a068-47eb-8495-1aab07a24e64",
     "filename": "Win_Defender_Status.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Defender Status",
+    "name": "Defender - Status",
     "description": "This will check for Malware, Antispyware, that Windows Defender is Healthy, last scan etc within the last 24 hours",
     "shell": "powershell",
     "category": "TRMM (Win):Security>Antivirus"
@@ -237,8 +273,17 @@
     "guid": "9956e936-6fdb-4488-a9d8-8b274658037f",
     "filename": "Win_Disable_Fast_Startup.bat",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Disable Fast Startup",
+    "name": "Power - Fast Startup Disable",
     "description": "Disables Faststartup on Windows 10",
+    "shell": "cmd",
+    "category": "TRMM (Win):Power"
+  },
+  {
+    "guid": "f628a02b-16c3-4ab5-b788-dec5bc2af1d9",
+    "filename": "Win_Power_Disable_Hibernation.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Power - Hibernate Disable",
+    "description": "Disables Hibernation",
     "shell": "cmd",
     "category": "TRMM (Win):Power"
   },
@@ -255,7 +300,7 @@
     "guid": "b253dc76-41a0-48ca-9cea-bee4277402c4",
     "filename": "Win_Display_Message_To_User.ps1",
     "submittedBy": "https://github.com/bradhawkins85",
-    "name": "Display Message To User",
+    "name": "Message Popup To User",
     "description": "Displays a popup message to the currently logged on user",
     "shell": "powershell",
     "category": "TRMM (Win):Other"
@@ -264,7 +309,7 @@
     "guid": "19224d21-bd39-44bc-b9cf-8f1ba3ca9c11",
     "filename": "Win_Antivirus_Verify.ps1",
     "submittedBy": "https://github.com/beejayzed",
-    "name": "Verify Antivirus Status",
+    "name": "Antivirus - Verify Status",
     "description": "Verify and display status for all installed Antiviruses",
     "shell": "powershell",
     "category": "TRMM (Win):Security>Antivirus"
@@ -273,7 +318,7 @@
     "guid": "f88c5c52-c6fe-44db-b727-b7912a4279ed",
     "filename": "Win_Create_All_User_Logon_Script.ps1",
     "submittedBy": "https://github.com/nr-plaxon",
-    "name": "Create User Logon Script",
+    "name": "Template Example - Create User Logon Script",
     "description": "Creates a powershell script that runs at logon of any user on the machine in the security context of the user.",
     "shell": "powershell",
     "category": "TRMM (Win):Other"
@@ -291,7 +336,7 @@
     "guid": "fff8024d-d72e-4457-84fa-6c780f69a16f",
     "filename": "Win_AD_Check_And_Enable_AD_Recycle_Bin.ps1",
     "submittedBy": "https://github.com/silversword411",
-    "name": "AD - Check and Enable AD Recycle Bin",
+    "name": "ADDC - Check and Enable AD Recycle Bin",
     "description": "Only run on Domain Controllers, checks for Active Directory Recycle Bin and enables if not already enabled",
     "shell": "powershell",
     "category": "TRMM (Win):Active Directory"
@@ -300,10 +345,37 @@
     "guid": "71090fc4-faa6-460b-adb0-95d7863544e1",
     "filename": "Win_Check_Events_for_Bluescreens.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Event Viewer - Check for Bluescreens",
-    "description": "This will check for Bluescreen events on your system",
+    "name": "Event Viewer - Bluescreen Notification",
+    "description": "Event Viewer Monitor - Notify Bluescreen events on your system",
     "shell": "powershell",
     "category": "TRMM (Win):Monitoring"
+  },
+  {
+    "guid": "8373846f-facc-49b9-9891-3a780a394c89",
+    "filename": "Win_Local_User_Created_Monitor.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Event Viewer - New User Notification",
+    "description": "Event Viewer Monitor - Notify when new Local user is created",
+    "shell": "powershell",
+    "category": "TRMM (Win):Monitoring"
+  },
+  {
+    "guid": "65e5cef1-8338-4180-a0bc-cd54e62de690",
+    "filename": "Win_Task_Scheduler_New_Items_Monitor.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Event Viewer - Task Scheduler New Item Notification",
+    "description": "Event Viewer Monitor - Notify when new Task Scheduler item is created",
+    "shell": "powershell",
+    "category": "TRMM (Win):Monitoring"
+  },
+  {
+    "guid": "08ca81f2-f044-4dfc-ad47-090b19b19d76",
+    "filename": "Win_User_Logged_in_with_Temp_Profile.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "User Logged in with temp profile check",
+    "description": "Check if users are logged in with a temp profile",
+    "shell": "powershell",
+    "category": "TRMM (Win):Other"
   },
   {
     "guid": "5d905886-9eb1-4129-8b81-a013f842eb24",
@@ -319,8 +391,8 @@
     "guid": "f396dae2-c768-45c5-bd6c-176e56ed3614",
     "filename": "Win_Finish_updates_and_restart.ps1",
     "submittedBy": "https://github.com/tremor021",
-    "name": "Finish updates and restart",
-    "description": "Finish installing updates and restart PC",
+    "name": "Updates - Finish and restart",
+    "description": "Finish installing Windows updates and restart PC",
     "shell": "powershell",
     "category": "TRMM (Win):Other"
   },
@@ -328,8 +400,8 @@
     "guid": "63f89be0-a9c9-4c61-9b55-bce0b28b90b2",
     "filename": "Win_Finish_updates_and_shutdown.ps1",
     "submittedBy": "https://github.com/tremor021",
-    "name": "Finish updates and shutdown",
-    "description": "Finish installing updates and shutdown PC",
+    "name": "Updates - Finish and Shutdown",
+    "description": "Finish installing Windows updates and shutdown PC",
     "shell": "powershell",
     "category": "TRMM (Win):Other"
   },
@@ -352,7 +424,7 @@
     "guid": "3abbb62a-3757-492c-8979-b4fc6174845d",
     "filename": "Win_Disable_AutoRun.bat",
     "submittedBy": "https://github.com/silversword411",
-    "name": "Disable Autorun",
+    "name": "Autorun - Disable",
     "description": "Disable Autorun System Wide",
     "shell": "cmd",
     "category": "TRMM (Win):Other",
@@ -362,7 +434,7 @@
     "guid": "4a11877a-7555-494c-ac74-29d6df3c1989",
     "filename": "Win_Disable_Cortana.bat",
     "submittedBy": "https://github.com/silversword411",
-    "name": "Disable Cortana",
+    "name": "Cortana - Disable",
     "description": "Disable Cortana System Wide",
     "shell": "cmd",
     "category": "TRMM (Win):Other",
@@ -372,7 +444,7 @@
     "guid": "28ef1387-dd4f-4bab-b042-26250914e370",
     "filename": "Win_WOL_Enable_Status.ps1",
     "submittedBy": "https://github.com/silversword411",
-    "name": "WoL - Enable function",
+    "name": "Network WoL - Enable function",
     "description": "Wake on Lan enable on Dell, HP, Lenovo",
     "shell": "powershell",
     "category": "TRMM (Win):Network",
@@ -382,7 +454,7 @@
     "guid": "685d5432-0b84-46d5-98e8-3ec2054150fe",
     "filename": "Win_WOL_Test_State.ps1",
     "submittedBy": "https://github.com/silversword411",
-    "name": "WoL - Test State",
+    "name": "Network WoL - Test State",
     "description": "Wake on Lan test status",
     "shell": "powershell",
     "category": "TRMM (Win):Network",
@@ -392,7 +464,7 @@
     "guid": "6ce5682a-49db-4c0b-9417-609cf905ac43",
     "filename": "Win_Win10_Change_Key_and_Activate.ps1",
     "submittedBy": "https://github.com/silversword411",
-    "name": "Change Win10 Product Key and Activate",
+    "name": "Product Key in Win10 Change and Activate",
     "description": "Insert new product key and Activate. Requires 1 parameter the product key you want to use",
     "shell": "powershell",
     "category": "TRMM (Win):Other",
@@ -434,5 +506,77 @@
     "description": "Azure AD - Check if joined or not",
     "shell": "powershell",
     "category": "TRMM (Win):Azure>AD"
+  },
+  {
+    "guid": "7d81859a-1ba3-42b0-8664-29844f0dd765",
+    "filename": "Win_Azure_Mars_Cloud_Backup_Status.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Azure - Mars Cloud backup Status",
+    "description": "Azure - Mars Cloud backup Check Status",
+    "shell": "powershell",
+    "category": "TRMM (Win):Azure>Backup"
+  },
+  {
+    "guid": "e18c64d0-b783-4b52-b44b-9bb7592b439b",
+    "filename": "Win_FileSystem_Enable_Long_Paths.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "File System - Enable Long Paths",
+    "description": "Enables NTFS Long paths greater than 260 characters",
+    "shell": "cmd",
+    "category": "TRMM (Win):Storage"
+  },
+  {
+    "guid": "c6252ca8-5172-42ea-9114-e447f80868f5",
+    "filename": "Win_USB_Disable_Access.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "USB - Disable Access",
+    "description": "USB - Disable Plugged in USB devices",
+    "shell": "cmd",
+    "category": "TRMM (Win):Storage"
+  },
+  {
+    "guid": "3785952f-69fb-4bda-b2fe-5e3e8642738a",
+    "filename": "Win_USB_Enable_Access.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "USB - Enable Access",
+    "description": "USB - Enable Plugged in USB devices",
+    "shell": "cmd",
+    "category": "TRMM (Win):Storage"
+  },
+  {
+    "guid": "c6014da2-b188-4e1b-b96a-e3440ade3a6a",
+    "filename": "Win_RecycleBin_Empty.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "File System - Empty Recycle Bin",
+    "description": "Empty the recycle bin",
+    "shell": "powershell",
+    "category": "TRMM (Win):Storage"
+  },
+  {
+    "guid": "57997ec7-b293-4fd5-9f90-a25426d0eb90",
+    "filename": "Win_Get_Computer_Users.ps1",
+    "submittedBy": "https://github.com/tremor021",
+    "name": "Get Computer Users",
+    "description": "Get list of computer users and show which one is enabled",
+    "shell": "powershell",
+    "category": "TRMM (Win):Other"
+  },
+  {
+    "guid": "77da9c87-5a7a-4ba1-bdde-3eeb3b01d62d",
+    "filename": "Win_Set_Network_To_Private.ps1",
+    "submittedBy": "https://github.com/tremor021",
+    "name": "Set Network To Private",
+    "description": "Sets current network type to Private",
+    "shell": "powershell",
+    "category": "TRMM (Win):Network"
+  },
+  {
+    "guid": "768f42d5-7b45-45ed-8233-254ae537aaa2",
+    "filename": "Win_TaskScheduler_Add_Task.ps1",
+    "submittedBy": "https://github.com/tremor021",
+    "name": "Add task to TaskScheduler",
+    "description": "Add a task to Task Scheduler, needs editing",
+    "shell": "powershell",
+    "category": "TRMM (Win):Other"
   }
 ]

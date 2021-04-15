@@ -283,10 +283,18 @@
                     <q-tooltip> Batch </q-tooltip>
                   </q-icon>
                 </q-td>
+                <!-- name -->
                 <q-td>{{ props.row.name }}</q-td>
+                <!-- args -->
                 <q-td>
-                  <span v-if="props.row.args.length > 0">{{ props.row.args }}</span>
+                  <span v-if="props.row.args.length > 0">
+                    {{ truncateText(props.row.args.toString()) }}
+                    <q-tooltip v-if="props.row.args.toString().length >= 60" content-style="font-size: 12px">
+                      {{ props.row.args }}
+                    </q-tooltip>
+                  </span>
                 </q-td>
+
                 <q-td>{{ props.row.category }}</q-td>
                 <q-td>
                   {{ truncateText(props.row.description) }}
@@ -363,6 +371,7 @@ export default {
           label: "Default Args",
           field: "args",
           align: "left",
+          sortable: true,
         },
         {
           name: "category",
@@ -516,11 +525,9 @@ export default {
     },
     categories() {
       let list = [];
-      this.scripts.forEach(script => {
+      this.visibleScripts.forEach(script => {
         if (!!script.category && !list.includes(script.category)) {
-          if (script.category !== "Community") {
-            list.push(script.category);
-          }
+          list.push(script.category);
         }
       });
       return list;
@@ -538,8 +545,7 @@ export default {
         let scriptsTemp = Object.assign([], this.visibleScripts);
         let categoriesTemp = Object.assign([], this.categories);
 
-        // add Community and Unassigned values and categories array
-        if (this.showCommunityScripts) categoriesTemp.push("Community");
+        // add Unassigned category
         categoriesTemp.push("Unassigned");
 
         const sorted = categoriesTemp.sort();

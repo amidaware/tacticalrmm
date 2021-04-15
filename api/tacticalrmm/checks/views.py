@@ -111,6 +111,10 @@ class GetUpdateDeleteCheck(APIView):
         if check.policy:
             update_policy_check_fields_task(checkpk=pk)
 
+        # resolve any alerts that are open
+        if "check_reset" in request.data.keys():
+            obj.alert.filter(resolved=False).get().resolve()
+
         return Response(f"{obj.readable_desc} was edited!")
 
     def delete(self, request, pk):

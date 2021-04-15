@@ -72,6 +72,14 @@
             <q-avatar size="lg" square icon="cancel" color="red" text-color="white" />
             <small>{{ summary.checks.failing }} checks failing</small>
           </q-chip>
+          <q-chip v-if="summary.checks.warning" square size="lg">
+            <q-avatar size="lg" square icon="warning" color="warning" text-color="white" />
+            <small>{{ summary.checks.warning }} checks warning</small>
+          </q-chip>
+          <q-chip v-if="summary.checks.info" square size="lg">
+            <q-avatar size="lg" square icon="info" color="info" text-color="white" />
+            <small>{{ summary.checks.info }} checks info</small>
+          </q-chip>
           <span v-if="awaitingSync(summary.checks.total, summary.checks.passing, summary.checks.failing)"
             >{{ summary.checks.total }} checks awaiting first synchronization</span
           >

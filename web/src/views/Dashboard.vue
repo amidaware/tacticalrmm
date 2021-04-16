@@ -730,7 +730,7 @@ export default {
         action: node.color === "green" ? false : true,
       };
 
-      const text = node.color === "warning" ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
+      const text = node.color === "green" ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
       this.$store
         .dispatch("toggleMaintenanceMode", data)
         .then(response => {

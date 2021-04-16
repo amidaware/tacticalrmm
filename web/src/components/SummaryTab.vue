@@ -4,7 +4,7 @@
     <q-btn class="q-mr-sm" dense flat push icon="refresh" @click="refreshSummary" />
     <span>
       <b>{{ summary.hostname }}</b>
-      <span v-if="summary.maintenance_mode"> &bull; <q-badge color="warning"> Maintenance Mode </q-badge> </span>
+      <span v-if="summary.maintenance_mode"> &bull; <q-badge color="green"> Maintenance Mode </q-badge> </span>
       &bull; {{ summary.operating_system }} &bull; Agent v{{ summary.version }}
     </span>
     <hr />
@@ -71,6 +71,14 @@
           <q-chip v-if="summary.checks.failing" square size="lg">
             <q-avatar size="lg" square icon="cancel" color="red" text-color="white" />
             <small>{{ summary.checks.failing }} checks failing</small>
+          </q-chip>
+          <q-chip v-if="summary.checks.warning" square size="lg">
+            <q-avatar size="lg" square icon="warning" color="warning" text-color="white" />
+            <small>{{ summary.checks.warning }} checks warning</small>
+          </q-chip>
+          <q-chip v-if="summary.checks.info" square size="lg">
+            <q-avatar size="lg" square icon="info" color="info" text-color="white" />
+            <small>{{ summary.checks.info }} checks info</small>
           </q-chip>
           <span v-if="awaitingSync(summary.checks.total, summary.checks.passing, summary.checks.failing)"
             >{{ summary.checks.total }} checks awaiting first synchronization</span

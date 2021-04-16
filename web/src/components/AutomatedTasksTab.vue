@@ -18,6 +18,7 @@
       <template v-else>
         <q-table
           dense
+          :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="tabs-tbl-sticky"
           :style="{ 'max-height': tabsTableHeight }"
           :data="tasks"

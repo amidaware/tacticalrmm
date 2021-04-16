@@ -93,7 +93,7 @@
       <div class="col-3">Day of month to run:</div>
       <div class="col-4"></div>
       <q-select
-        :disable="winupdatepolicy.run_time_frequency === 'inherit'"
+        v-show="winupdatepolicy.run_time_frequency !== 'inherit'"
         dense
         class="col-5"
         outlined
@@ -103,11 +103,10 @@
         map-options
       />
     </q-card-section>
-    <q-card-section class="row">
+    <q-card-section class="row" v-show="winupdatepolicy.run_time_frequency !== 'inherit'">
       <div class="col-3">Scheduled Time:</div>
       <div class="col-4"></div>
       <q-select
-        :disable="winupdatepolicy.run_time_frequency === 'inherit'"
         dense
         class="col-5"
         outlined
@@ -118,51 +117,17 @@
       />
     </q-card-section>
     <q-card-section
-      v-if="winupdatepolicy.run_time_frequency === 'daily' || winupdatepolicy.run_time_frequency === 'inherit'"
+      v-if="winupdatepolicy.run_time_frequency === 'daily'"
+      v-show="winupdatepolicy.run_time_frequency !== 'inherit'"
     >
       <div class="q-gutter-sm">
-        <q-checkbox
-          :disable="winupdatepolicy.run_time_frequency === 'inherit'"
-          v-model="winupdatepolicy.run_time_days"
-          :val="1"
-          label="Monday"
-        />
-        <q-checkbox
-          :disable="winupdatepolicy.run_time_frequency === 'inherit'"
-          v-model="winupdatepolicy.run_time_days"
-          :val="2"
-          label="Tuesday"
-        />
-        <q-checkbox
-          :disable="winupdatepolicy.run_time_frequency === 'inherit'"
-          v-model="winupdatepolicy.run_time_days"
-          :val="3"
-          label="Wednesday"
-        />
-        <q-checkbox
-          :disable="winupdatepolicy.run_time_frequency === 'inherit'"
-          v-model="winupdatepolicy.run_time_days"
-          :val="4"
-          label="Thursday"
-        />
-        <q-checkbox
-          :disable="winupdatepolicy.run_time_frequency === 'inherit'"
-          v-model="winupdatepolicy.run_time_days"
-          :val="5"
-          label="Friday"
-        />
-        <q-checkbox
-          :disable="winupdatepolicy.run_time_frequency === 'inherit'"
-          v-model="winupdatepolicy.run_time_days"
-          :val="6"
-          label="Saturday"
-        />
-        <q-checkbox
-          :disable="winupdatepolicy.run_time_frequency === 'inherit'"
-          v-model="winupdatepolicy.run_time_days"
-          :val="0"
-          label="Sunday"
-        />
+        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="1" label="Monday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="2" label="Tuesday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="3" label="Wednesday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="4" label="Thursday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="5" label="Friday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="6" label="Saturday" />
+        <q-checkbox v-model="winupdatepolicy.run_time_days" :val="0" label="Sunday" />
       </div>
     </q-card-section>
     <!-- Reboot After Installation -->
@@ -189,20 +154,15 @@
         <q-checkbox v-model="winupdatepolicy.reprocess_failed_inherit" label="Inherit failed patch settings" />
       </div>
     </q-card-section>
-    <q-card-section class="row">
+    <q-card-section class="row" v-show="!winupdatepolicy.reprocess_failed_inherit">
       <div class="col-5">
-        <q-checkbox
-          :disable="winupdatepolicy.reprocess_failed_inherit"
-          v-model="winupdatepolicy.reprocess_failed"
-          label="Reprocess failed patches"
-        />
+        <q-checkbox v-model="winupdatepolicy.reprocess_failed" label="Reprocess failed patches" />
       </div>
 
       <div class="col-3">
         <q-input
           dense
           v-model.number="winupdatepolicy.reprocess_failed_times"
-          :disable="winupdatepolicy.reprocess_failed_inherit"
           type="number"
           filled
           label="Times"
@@ -210,11 +170,7 @@
         />
       </div>
       <div class="col-3"></div>
-      <q-checkbox
-        v-model="winupdatepolicy.email_if_fail"
-        :disable="winupdatepolicy.reprocess_failed_inherit"
-        label="Send an email when patch installation fails"
-      />
+      <q-checkbox v-model="winupdatepolicy.email_if_fail" label="Send an email when patch installation fails" />
     </q-card-section>
     <q-card-actions align="left" v-if="policy">
       <q-btn label="Submit" color="primary" @click="submit" />
@@ -249,6 +205,7 @@ export default {
         run_time_hour: 3,
         run_time_frequency: "daily",
         run_time_days: [],
+        run_time_day: 1,
         reboot_after_install: "never",
         reprocess_failed_inherit: false,
         reprocess_failed: false,

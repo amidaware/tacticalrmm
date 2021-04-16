@@ -86,16 +86,24 @@ class Client(BaseAuditModel):
             .prefetch_related("agentchecks")
         )
 
-        failing = 0
+        data = {"error": False, "warning": False}
+
         for agent in agents:
             if agent.checks["has_failing_checks"]:
-                failing += 1
+
+                if agent.checks["warning"]:
+                    data["warning"] = True
+
+                if agent.checks["failing"]:
+                    data["error"] = True
+                    break
 
             if agent.overdue_email_alert or agent.overdue_text_alert:
                 if agent.status == "overdue":
-                    failing += 1
+                    data["error"] = True
+                    break
 
-        return failing > 0
+        return data
 
     @staticmethod
     def serialize(client):
@@ -184,16 +192,24 @@ class Site(BaseAuditModel):
             .prefetch_related("agentchecks")
         )
 
-        failing = 0
+        data = {"error": False, "warning": False}
+
         for agent in agents:
+
             if agent.checks["has_failing_checks"]:
-                failing += 1
+                if agent.checks["warning"]:
+                    data["warning"] = True
+
+                if agent.checks["failing"]:
+                    data["error"] = True
+                    break
 
             if agent.overdue_email_alert or agent.overdue_text_alert:
                 if agent.status == "overdue":
-                    failing += 1
+                    data["error"] = True
+                    break
 
-        return failing > 0
+        return data
 
     @staticmethod
     def serialize(site):

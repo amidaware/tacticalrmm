@@ -124,6 +124,13 @@
                     <q-item-section>Delete</q-item-section>
                   </q-item>
                   <q-separator></q-separator>
+                  <q-item clickable v-close-popup @click="resetCheck(props.row.id)">
+                    <q-item-section side>
+                      <q-icon name="info" />
+                    </q-item-section>
+                    <q-item-section>Reset Check Status</q-item-section>
+                  </q-item>
+                  <q-separator></q-separator>
                   <q-item clickable v-close-popup>
                     <q-item-section>Close</q-item-section>
                   </q-item>
@@ -431,7 +438,25 @@ export default {
         });
       });
     },
+    resetCheck(check) {
+      const data = {
+        check_reset: true,
+        status: "passing",
+      };
+
+      axios
+        .patch(`/checks/${check}/check/`, data)
+        .then(r => {
+          this.$emit("refreshEdit");
+          this.$store.dispatch("loadChecks", this.selectedAgentPk);
+          this.notifySuccess("The check was reset");
+        })
+        .catch(e => {
+          this.notifyError("There was an issue resetting the check");
+        });
+    },
     onRefresh(id) {
+      this.$emit("refreshEdit");
       this.$store.dispatch("loadChecks", id);
       this.$store.dispatch("loadAutomatedTasks", id);
     },

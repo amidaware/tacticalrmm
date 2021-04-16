@@ -25,7 +25,7 @@
         <SummaryTab />
       </q-tab-panel>
       <q-tab-panel name="checks" class="q-pb-xs q-pt-none">
-        <ChecksTab />
+        <ChecksTab @refreshEdit="$emit('refreshEdit')" />
       </q-tab-panel>
       <q-tab-panel name="tasks" class="q-pb-xs q-pt-none">
         <AutomatedTasksTab />

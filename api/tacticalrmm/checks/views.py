@@ -86,7 +86,10 @@ class GetUpdateDeleteCheck(APIView):
         check = get_object_or_404(Check, pk=pk)
 
         # remove fields that should not be changed when editing a check from the frontend
-        if "check_alert" not in request.data.keys():
+        if (
+            "check_alert" not in request.data.keys()
+            and "check_reset" not in request.data.keys()
+        ):
             [request.data.pop(i) for i in check.non_editable_fields]
 
         # set event id to 0 if wildcard because it needs to be an integer field for db
@@ -107,6 +110,11 @@ class GetUpdateDeleteCheck(APIView):
         # Update policy check fields
         if check.policy:
             update_policy_check_fields_task(checkpk=pk)
+
+        # resolve any alerts that are open
+        if "check_reset" in request.data.keys():
+            if obj.alert.filter(resolved=False).exists():
+                obj.alert.get(resolved=False).resolve()
 
         return Response(f"{obj.readable_desc} was edited!")
 

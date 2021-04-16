@@ -166,7 +166,7 @@ class Agent(BaseAuditModel):
 
     @property
     def checks(self):
-        total, passing, failing = 0, 0, 0
+        total, passing, failing, warning, info = 0, 0, 0, 0, 0
 
         if self.agentchecks.exists():  # type: ignore
             for i in self.agentchecks.all():  # type: ignore
@@ -174,13 +174,20 @@ class Agent(BaseAuditModel):
                 if i.status == "passing":
                     passing += 1
                 elif i.status == "failing":
-                    failing += 1
+                    if i.alert_severity == "error":
+                        failing += 1
+                    elif i.alert_severity == "warning":
+                        warning += 1
+                    elif i.alert_severity == "info":
+                        info += 1
 
         ret = {
             "total": total,
             "passing": passing,
             "failing": failing,
-            "has_failing_checks": failing > 0,
+            "warning": warning,
+            "info": info,
+            "has_failing_checks": failing > 0 or warning > 0,
         }
         return ret
 

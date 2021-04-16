@@ -353,6 +353,7 @@ class Reboot(APIView):
 
 @api_view(["POST"])
 def install_agent(request):
+    from agents.utils import get_winagent_url
     from knox.models import AuthToken
 
     client_id = request.data["client"]
@@ -375,7 +376,7 @@ def install_agent(request):
     inno = (
         f"winagent-v{version}.exe" if arch == "64" else f"winagent-v{version}-x86.exe"
     )
-    download_url = settings.DL_64 if arch == "64" else settings.DL_32
+    download_url = get_winagent_url(arch)
 
     _, token = AuthToken.objects.create(
         user=request.user, expiry=dt.timedelta(hours=request.data["expires"])

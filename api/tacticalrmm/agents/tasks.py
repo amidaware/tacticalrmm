@@ -1,7 +1,6 @@
 import asyncio
 import datetime as dt
 import random
-import requests
 import urllib.parse
 from time import sleep
 from typing import Union
@@ -21,21 +20,9 @@ from tacticalrmm.utils import run_nats_api_cmd
 logger.configure(**settings.LOG_CONFIG)
 
 
-def _get_exegen_url() -> str:
-    urls: list[str] = settings.EXE_GEN_URLS
-    for url in urls:
-        try:
-            r = requests.get(url, timeout=10)
-        except:
-            continue
-
-        if r.status_code == 200:
-            return url
-
-    return random.choice(urls)
-
-
 def agent_update(pk: int, codesigntoken: str = None) -> str:
+    from agents.utils import get_exegen_url
+
     agent = Agent.objects.get(pk=pk)
 
     if pyver.parse(agent.version) <= pyver.parse("1.3.0"):
@@ -52,7 +39,7 @@ def agent_update(pk: int, codesigntoken: str = None) -> str:
     inno = agent.win_inno_exe
 
     if codesigntoken is not None and pyver.parse(version) >= pyver.parse("1.5.0"):
-        base_url = _get_exegen_url() + "/api/v1/winagents/?"
+        base_url = get_exegen_url() + "/api/v1/winagents/?"
         params = {"version": version, "arch": agent.arch, "token": codesigntoken}
         url = base_url + urllib.parse.urlencode(params)
     else:

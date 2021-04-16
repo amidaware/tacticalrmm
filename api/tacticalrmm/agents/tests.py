@@ -914,7 +914,7 @@ class TestAgentTasks(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
-    @patch("agents.tasks._get_exegen_url")
+    @patch("agents.utils.get_exegen_url")
     @patch("agents.models.Agent.nats_cmd")
     def test_agent_update(self, nats_cmd, get_exe):
         from agents.tasks import agent_update

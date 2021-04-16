@@ -52,7 +52,7 @@ def generate_winagent_exe(
     file_name: str,
 ) -> Union[Response, FileResponse]:
 
-    from agents.tasks import _get_exegen_url
+    from agents.utils import get_exegen_url
 
     inno = (
         f"winagent-v{settings.LATEST_AGENT_VER}.exe"
@@ -62,7 +62,7 @@ def generate_winagent_exe(
 
     try:
         codetoken = CodeSignToken.objects.first().token
-        base_url = _get_exegen_url() + "/api/v1/winagents/?"
+        base_url = get_exegen_url() + "/api/v1/winagents/?"
         params = {
             "version": settings.LATEST_AGENT_VER,
             "arch": arch,

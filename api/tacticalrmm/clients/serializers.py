@@ -95,7 +95,6 @@ class SiteTreeSerializer(ModelSerializer):
     class Meta:
         model = Site
         fields = "__all__"
-        ordering = ("failing_checks",)
 
 
 class ClientTreeSerializer(ModelSerializer):
@@ -106,7 +105,6 @@ class ClientTreeSerializer(ModelSerializer):
     class Meta:
         model = Client
         fields = "__all__"
-        ordering = ("failing_checks",)
 
 
 class DeploymentSerializer(ModelSerializer):

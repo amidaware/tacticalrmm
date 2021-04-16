@@ -113,7 +113,8 @@ class GetUpdateDeleteCheck(APIView):
 
         # resolve any alerts that are open
         if "check_reset" in request.data.keys():
-            obj.alert.filter(resolved=False).get().resolve()
+            if obj.alert.filter(resolved=False).exists():
+                obj.alert.get(resolved=False).resolve()
 
         return Response(f"{obj.readable_desc} was edited!")
 

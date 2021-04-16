@@ -187,7 +187,7 @@ class Agent(BaseAuditModel):
             "failing": failing,
             "warning": warning,
             "info": info,
-            "has_failing_checks": failing > 0,
+            "has_failing_checks": failing > 0 or warning > 0,
         }
         return ret
 

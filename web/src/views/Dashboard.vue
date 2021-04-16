@@ -343,7 +343,7 @@
               <q-avatar color="primary" text-color="white" size="30px" icon="drag_indicator" />
             </template>
             <template v-slot:after>
-              <SubTableTabs />
+              <SubTableTabs @refreshEdit="refreshEntireSite" />
             </template>
           </q-splitter>
         </template>
@@ -727,7 +727,7 @@ export default {
       let data = {
         id: node.id,
         type: node.raw.split("|")[0],
-        action: node.color === "warning" ? false : true,
+        action: node.color === "green" ? false : true,
       };
 
       const text = node.color === "warning" ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
@@ -742,7 +742,7 @@ export default {
         });
     },
     menuMaintenanceText(node) {
-      return node.color === "warning" ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
+      return node.color === "green" ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
     },
     clearFilter() {
       this.filterTextLength = 0;

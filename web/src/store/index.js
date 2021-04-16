@@ -257,7 +257,8 @@ export default function () {
               }
 
               if (site.maintenance_mode) { siteNode["color"] = "green" }
-              else if (site.failing_checks) { siteNode["color"] = "negative" }
+              else if (site.failing_checks.error) { siteNode["color"] = "negative" }
+              else if (site.failing_checks.warning) { siteNode["color"] = "warning" }
 
               childSites.push(siteNode);
             }
@@ -275,7 +276,8 @@ export default function () {
             }
 
             if (client.maintenance_mode) clientNode["color"] = "green"
-            else if (client.failing_checks) clientNode["color"] = "negative"
+            else if (client.failing_checks.error) { clientNode["color"] = "negative" }
+            else if (client.failing_checks.warning) { clientNode["color"] = "warning" }
 
             output.push(clientNode);
           }

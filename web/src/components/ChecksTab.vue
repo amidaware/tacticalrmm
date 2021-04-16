@@ -447,6 +447,7 @@ export default {
       axios
         .patch(`/checks/${check}/check/`, data)
         .then(r => {
+          this.$emit("refreshEdit");
           this.$store.dispatch("loadChecks", this.selectedAgentPk);
           this.notifySuccess("The check was reset");
         })
@@ -455,6 +456,7 @@ export default {
         });
     },
     onRefresh(id) {
+      this.$emit("refreshEdit");
       this.$store.dispatch("loadChecks", id);
       this.$store.dispatch("loadAutomatedTasks", id);
     },

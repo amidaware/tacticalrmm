@@ -306,13 +306,14 @@
             <q-icon v-if="props.row.maintenance_mode" name="construction" size="1.2em" color="green">
               <q-tooltip>Maintenance Mode Enabled</q-tooltip>
             </q-icon>
-            <q-icon
-              v-else-if="props.row.checks.has_failing_checks"
-              name="fas fa-check-double"
-              size="1.2em"
-              color="negative"
-            >
+            <q-icon v-else-if="props.row.checks.failing > 0" name="fas fa-check-double" size="1.2em" color="negative">
               <q-tooltip>Checks failing</q-tooltip>
+            </q-icon>
+            <q-icon v-else-if="props.row.checks.warning > 0" name="fas fa-check-double" size="1.2em" color="warning">
+              <q-tooltip>Checks warning</q-tooltip>
+            </q-icon>
+            <q-icon v-else-if="props.row.checks.info > 0" name="fas fa-check-double" size="1.2em" color="info">
+              <q-tooltip>Checks info</q-tooltip>
             </q-icon>
             <q-icon v-else name="fas fa-check-double" size="1.2em" color="positive">
               <q-tooltip>Checks passing</q-tooltip>

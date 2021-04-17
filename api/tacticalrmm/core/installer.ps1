@@ -1,5 +1,4 @@
 # author: https://github.com/bradhawkins85
-$innosetup = 'innosetupchange'
 $api = '"apichange"'
 $clientid = 'clientchange'
 $siteid = 'sitechange'
@@ -8,7 +7,15 @@ $power = powerchange
 $rdp = rdpchange
 $ping = pingchange
 $auth = '"tokenchange"'
-$downloadlink = 'downloadchange'
+
+$headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+$headers.Add("Content-Type", "application/json")
+$headers.Add("Authorization", "token " + [string]::Format($auth))
+$response = Invoke-RestMethod "$api/agents/getagentversions/" -Method 'GET' -Headers $headers
+$agentversion = $response.versions
+
+$innosetup = "winagent-v$agentversion.exe"
+$downloadlink = "https://github.com/wh1te909/rmmagent/releases/download/v$agentversion/winagent-v$agentversion.exe"
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 

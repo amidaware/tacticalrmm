@@ -47,7 +47,11 @@
         <q-card-section>
           <div class="q-gutter-sm">
             <q-checkbox v-model="rdp" dense label="Enable RDP" />
-            <q-checkbox v-model="ping" dense label="Enable Ping" />
+            <q-checkbox v-model="ping" dense label="Enable Ping">
+              <q-tooltip>
+                Enable ICMP echo requests in the local firewall
+              </q-tooltip>
+            </q-checkbox>
             <q-checkbox v-model="power" dense v-show="agenttype === 'workstation'" label="Disable sleep/hibernate" />
           </div>
         </q-card-section>

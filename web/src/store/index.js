@@ -285,7 +285,9 @@ export default function () {
 
           if (state.clientTreeSort === "alphafail") {
             // move failing clients to the top
-            const sortedByFailing = output.sort(a => a.color === "negative" ? -1 : 1);
+            const failing = output.filter(i => i.color === "negative" || i.color === "warning");
+            const ok = output.filter(i => i.color !== "negative" && i.color !== "warning");
+            const sortedByFailing = [...failing, ...ok];
             commit("loadTree", sortedByFailing);
           } else {
             commit("loadTree", output);

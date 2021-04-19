@@ -82,7 +82,7 @@
   },
   {
     "guid": "9d34f482-1f0c-4b2f-b65f-a9cf3c13ef5f",
-    "filename": "Win_Rename_Installed_App.ps1",
+    "filename": "Win_TRMM_Rename_Installed_App.ps1",
     "submittedBy": "https://github.com/bradhawkins85",
     "name": "TacticalRMM Agent Rename",
     "description": "Updates the DisplayName registry entry for the Tactical RMM windows agent to your desired name. This script takes 1 required argument: the name you wish to set.",
@@ -484,8 +484,8 @@
     "guid": "83f6c6ea-6120-4fd3-bec8-d3abc505dcdf",
     "filename": "Win_TRMM_Start_Menu_Delete_Shortcut.ps1",
     "submittedBy": "https://github.com/silversword411",
-    "name": "TRMM Delete Start Menu Shortcut for App",
-    "description": "Tactical RMM delete its application shortcut that's installed in the start menu",
+    "name": "TacticalRMM Delete Start Menu Shortcut for App",
+    "description": "Delete its application shortcut that's installed in the start menu by default",
     "shell": "powershell",
     "category": "TRMM (Win):TacticalRMM Related",
     "default_timeout": "10"

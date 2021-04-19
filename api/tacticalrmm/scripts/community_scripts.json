@@ -471,6 +471,16 @@
     "default_timeout": "90"
   },
   {
+    "guid": "745bb7cd-b71a-4f2e-b6f2-c579b1828162",
+    "filename": "Win_Network_DHCP_Set.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Network - Set Primary NIC to DHCP",
+    "description": "Enable DHCP on primary adapter",
+    "shell": "cmd",
+    "category": "TRMM (Win):Network",
+    "default_timeout": "90"
+  },
+  {
     "guid": "6ce5682a-49db-4c0b-9417-609cf905ac43",
     "filename": "Win_Win10_Change_Key_and_Activate.ps1",
     "submittedBy": "https://github.com/silversword411",

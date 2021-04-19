@@ -51,6 +51,15 @@ This will print out a ton of info. You should be able to see the error from the 
 
 Please then copy/paste the logs and post them either in our [Discord support chat](https://discord.gg/upGTkWp), or create a [github issue](https://github.com/wh1te909/tacticalrmm/issues).
 
+##### Alternate - Agent not connecting to server
+
+Uninstall client
+```
+"C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT
+```
+
+Then reinstall agent
+
 <br/>
 
 #### All other errors

@@ -481,6 +481,16 @@
     "default_timeout": "90"
   },
   {
+    "guid": "83aa4d51-63ce-41e7-829f-3c16e6115bbf",
+    "filename": "Win_Network_DNS_Set_to_1.1.1.2.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Network - Set all NICs to use DNS of 1.1.1.2",
+    "description": "Domain computers skipped. Sets all NICs to have primary DNS server of 1.1.1.2, backup of 1.0.0.2 (Cloudflare malware blocking)",
+    "shell": "powershell",
+    "category": "TRMM (Win):Network",
+    "default_timeout": "90"
+  },
+  {
     "guid": "6ce5682a-49db-4c0b-9417-609cf905ac43",
     "filename": "Win_Win10_Change_Key_and_Activate.ps1",
     "submittedBy": "https://github.com/silversword411",

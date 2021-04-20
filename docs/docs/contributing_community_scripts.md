@@ -2,16 +2,16 @@
 
 ### File names 
 
-Under `/scripts` should generally follow this format:
+Under `/scripts` the file name should generally follow this format:
 
 ```
 (Platform)_(Category or Function)_(What It Does).xxx
 ```
 
 !!!info
-    Although Tactical RMM only has a Windows agent for now, we're planning for future with script names
+    Although Tactical RMM only has a Windows agent for now, we're planning for a future with more platform support
 
-Platform for now are
+Platform for now are:
 
 ```
 Win
@@ -79,7 +79,7 @@ c:\ProgramData\TacticalRMM\temp
 c:\ProgramData\TacticalRMM\
 ```
 
-- Command Parameters are good. Optional command parameters for extra functions are better
+- Command Parameters are good. Optional command parameters for extra functions are better. 
 
 ### Bad Habits
 

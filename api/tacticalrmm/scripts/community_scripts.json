@@ -1,7 +1,7 @@
 [
   {
     "guid": "6820cb5e-5a7f-4d9b-8c22-d54677e3cc04",
-    "filename": "Win_Clear_Firefox_Cache.ps1",
+    "filename": "Win_Firefox_Clear_Cache.ps1",
     "submittedBy": "https://github.com/Omnicef",
     "name": "Firefox - Clean Cache",
     "description": "This script will clean up Mozilla Firefox for all users.",
@@ -10,7 +10,7 @@
   },
   {
     "guid": "3ff6a386-11d1-4f9d-8cca-1b0563bb6443",
-    "filename": "Win_Clear_Google_Chrome_Cache.ps1",
+    "filename": "Win_Google_Chrome_Clear_Cache.ps1",
     "submittedBy": "https://github.com/Omnicef",
     "name": "Chrome - Clear Cache for All Users",
     "description": "This script will clean up Google Chrome for all users.",
@@ -154,7 +154,7 @@
   },
   {
     "guid": "95a2ee6f-b89b-4551-856e-3081b041caa7",
-    "filename": "Win_Reset_High_Performance_Power_Profile_to_Defaults.ps1",
+    "filename": "Win_Power_Profile_Reset_High_Performance_to_Defaults.ps1",
     "submittedBy": "https://github.com/azulskyknight",
     "name": "Power Profile - Reset High Perf Power Profile to defaults",
     "description": "Resets monitor, disk, standby, and hibernate timers in the default High Performance power profile to their default values. It also re-indexes the AC and DC power profiles into their default order.",
@@ -163,7 +163,7 @@
   },
   {
     "guid": "2cbd30b0-84dd-4388-a36d-2e2e980f1a3e",
-    "filename": "Win_Set_High_Performance_Power_Profile.ps1",
+    "filename": "Win_Power_Profile_Set_High_Performance.ps1",
     "submittedBy": "https://github.com/azulskyknight",
     "name": "Power Profile - Set High Performance",
     "description": "Sets the High Performance Power profile to the active power profile. Use this to keep machines from falling asleep.",
@@ -432,7 +432,7 @@
   },
   {
     "guid": "3abbb62a-3757-492c-8979-b4fc6174845d",
-    "filename": "Win_Disable_AutoRun.bat",
+    "filename": "Win_AutoRun_Disable.bat",
     "submittedBy": "https://github.com/silversword411",
     "name": "Autorun - Disable",
     "description": "Disable Autorun System Wide",
@@ -442,7 +442,7 @@
   },
   {
     "guid": "4a11877a-7555-494c-ac74-29d6df3c1989",
-    "filename": "Win_Disable_Cortana.bat",
+    "filename": "Win_Cortana_Disable.bat",
     "submittedBy": "https://github.com/silversword411",
     "name": "Cortana - Disable",
     "description": "Disable Cortana System Wide",

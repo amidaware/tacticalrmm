@@ -2,6 +2,7 @@ site_name: "Tactical RMM Documentation"
 nav:
   - Home: index.md
   - Sponsor: sponsor.md
+  - Code Signing: code_signing.md
   - RMM Installation:
       - "Traditional Install": install_server.md
       - "Docker Install": install_docker.md
@@ -23,7 +24,7 @@ nav:
   - FAQ: faq.md
   - Management Commands: management_cmds.md
   - MeshCentral Integration: mesh_integration.md
-  - Contributing: 
+  - Contributing:
       - "Contributing to Docs": contributing.md
       - "Contributing using VSCode": contributing_using_vscode.md
       - "Contributing to Community Scripts": contributing_community_scripts.md

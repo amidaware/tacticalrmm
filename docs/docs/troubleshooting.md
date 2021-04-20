@@ -30,6 +30,9 @@ If you have agents that are relatively old, you will need to uninstall them manu
 
 #### Agents not checking in or showing up / General agent issues
 
+First, reload NATS from tactical's web UI:<br />
+*Tools > Server Maintenance > Reload Nats Configuration*
+
 Open CMD as admin on the problem computer and stop the agent services:
 
 ```cmd
@@ -51,16 +54,7 @@ This will print out a ton of info. You should be able to see the error from the 
 
 Please then copy/paste the logs and post them either in our [Discord support chat](https://discord.gg/upGTkWp), or create a [github issue](https://github.com/wh1te909/tacticalrmm/issues).
 
-##### Alternate - Agent not connecting to server
-
-Uninstall client
-```
-"C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT
-```
-
-Then reinstall agent
-
-<br/>
+If all else fails, simply uninstall the agent either from control panel or silently with `"C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT` and then reinstall the agent.
 
 #### All other errors
 

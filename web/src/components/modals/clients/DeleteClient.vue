@@ -55,6 +55,7 @@ export default {
     return {
       siteOptions: [],
       selectedSite: null,
+      agentCount: 0,
     };
   },
   methods: {
@@ -112,6 +113,7 @@ export default {
     },
     getSites() {
       this.$axios.get("/clients/clients/").then(r => {
+        this.agentCount = this.getAgentCount(r.data, this.type, this.object.id);
         r.data.forEach(client => {
           // remove client that is being deleted from options
           if (this.type === "client") {

@@ -270,7 +270,7 @@
     "category": "TRMM (Win):Security>Antivirus"
   },
   {
-    "guid": "d980fda3-a068-47eb-8495-1aab07a24e64",
+    "guid": "6a0202fc-1b27-4905-95c0-0a03bb881893",
     "filename": "Win_Defender_Status_Report_LastYear.ps1",
     "submittedBy": "https://github.com/silversword411",
     "name": "Defender - Status Report Last Year",

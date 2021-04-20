@@ -1,3 +1,5 @@
+# Cloudflare Family DNS see https://blog.cloudflare.com/introducing-1-1-1-1-for-families/
+
 $ErrorActionPreference = 'SilentlyContinue'
 
 if ((Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain){

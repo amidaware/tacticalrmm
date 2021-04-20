@@ -8,7 +8,7 @@
     The install script has been tested on the following public cloud providers: DigitalOcean, Linode, Vultr, BuyVM (highly recommended), Hetzner, AWS, Google Cloud and Azure, as well as behind NAT on Hyper-V, Proxmox and ESXi.
 
 - A real (internet resolvable) domain is needed to generate a Let's Encrypt wildcard cert. <br/>If you cannot afford to purchase a domain ($12 a year) then you can get one for free at [freenom.com](https://www.freenom.com/)
-- example.local is NOT a real domain. No you [don't have to expose your server](faq.md#can-i-run-tactical-rmm-locally-behind-nat-without-exposing-anything-to-the-internet) to the internet<br/><br/>
+- example.local is __NOT__ a real domain. No you [don't have to expose your server](faq.md#can-i-run-tactical-rmm-locally-behind-nat-without-exposing-anything-to-the-internet) to the internet<br/><br/>
 
 - A TOTP based authenticator app. Some popular ones are Google Authenticator, Authy and Microsoft Authenticator.<br/><br/>
 

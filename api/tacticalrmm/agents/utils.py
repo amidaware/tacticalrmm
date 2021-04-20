@@ -1,7 +1,7 @@
 import random
-import requests
 import urllib.parse
 
+import requests
 from django.conf import settings
 
 

@@ -1,10 +1,11 @@
 import base64
 import re
-from loguru import logger
 from typing import Any, List, Union
+
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+from loguru import logger
 
 from logs.models import BaseAuditModel
 

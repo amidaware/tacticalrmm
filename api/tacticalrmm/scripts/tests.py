@@ -1,6 +1,6 @@
-from email.policy import default
 import json
 import os
+from email.policy import default
 from pathlib import Path
 
 from django.conf import settings

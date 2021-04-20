@@ -11,11 +11,11 @@ from rest_framework.views import APIView
 
 from tacticalrmm.utils import notify_error
 
-from .models import CoreSettings, CustomField, CodeSignToken
+from .models import CodeSignToken, CoreSettings, CustomField
 from .serializers import (
+    CodeSignTokenSerializer,
     CoreSettingsSerializer,
     CustomFieldSerializer,
-    CodeSignTokenSerializer,
 )
 
 

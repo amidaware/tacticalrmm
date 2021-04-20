@@ -11,7 +11,7 @@ from loguru import logger
 from packaging import version as pyver
 
 from agents.models import Agent
-from core.models import CoreSettings, CodeSignToken
+from core.models import CodeSignToken, CoreSettings
 from logs.models import PendingAction
 from scripts.models import Script
 from tacticalrmm.celery import app

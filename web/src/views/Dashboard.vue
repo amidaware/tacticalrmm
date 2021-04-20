@@ -721,6 +721,7 @@ export default {
         this.currentTRMMVersion = r.data.trmm_version;
         this.$store.commit("SET_AGENT_DBLCLICK_ACTION", r.data.dbl_click_action);
         this.$store.commit("setShowCommunityScripts", r.data.show_community_scripts);
+        this.$store.commit("SET_NO_CODE_SIGN", r.data.no_code_sign);
       });
     },
     showToggleMaintenance(node) {

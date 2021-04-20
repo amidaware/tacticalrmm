@@ -40,11 +40,13 @@ Consider they are viewed in 3 different locations:
 
 Script Manager
 
-    - List View (sortable by any column)
+- List View (sortable by any column)
 
-    - Folder View (Grouped by Categories)
+- Folder View (Grouped by Categories)
 
- Running scripts manually or adding tasks (or adding in Automation Manager)
+Run or Add script 
+
+- Running scripts manually or adding tasks (or adding in Automation Manager)
 
 !!!info
     A good max length is 50-60 chars or less for display in these 3 locations
@@ -59,15 +61,15 @@ Category or Function - What It Does
 
 ![json_name_examples](images/community_scripts_name_field_example1.png)
 
-## Script Files
+## Making Script Files
 
 ### Good Habits
 
-Try and make them fully self-contained. 
+- Try and make them fully self-contained. 
 
-If they pull data from elsewhere, create comment notes at the top with references for others to audit/validate
+- If they pull data from elsewhere, create comment notes at the top with references for others to audit/validate
 
-Good folder locations
+- Good folder locations
 ```
 c:\ProgramData\TacticalRMM\
 c:\ProgramData\TacticalRMM\scripts
@@ -77,18 +79,18 @@ c:\ProgramData\TacticalRMM\temp
 c:\ProgramData\TacticalRMM\
 ```
 
-Command Parameters are good. Optional command parameters for extra functions are better
+- Command Parameters are good. Optional command parameters for extra functions are better
 
 ### Bad Habits
 
-Assumes non-standard configurations
+- Assumes non-standard configurations
 
-Doesn't play well with other community scripts (reused names etc.)
+- Doesn't play well with other community scripts (reused names etc.)
 
 
 ## Useful Reference Script Examples
 
-RunAsUser
+RunAsUser (since Tactical RMM runs as system)
 [https://github.com/wh1te909/tacticalrmm/blob/develop/scripts/Win_Display_Message_To_User.ps1](https://github.com/wh1te909/tacticalrmm/blob/develop/scripts/Win_Display_Message_To_User.ps1)
 
 Command Paramater Ninja

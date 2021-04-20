@@ -299,7 +299,7 @@
   },
   {
     "guid": "2472bbaf-1941-4722-8a58-d1dd0f528801",
-    "filename": "Win_Update_Tactical_Exclusion.ps1",
+    "filename": "Win_TRMM_AV_Update_Exclusion.ps1",
     "submittedBy": "https://github.com/dinger1986",
     "name": "TRMM Defender Exclusions",
     "description": "Windows Defender Exclusions for Tactical RMM",
@@ -399,7 +399,7 @@
   },
   {
     "guid": "f396dae2-c768-45c5-bd6c-176e56ed3614",
-    "filename": "Win_Finish_updates_and_restart.ps1",
+    "filename": "Win_Updates_Finish_and_Restart.ps1",
     "submittedBy": "https://github.com/tremor021",
     "name": "Updates - Finish and restart",
     "description": "Finish installing Windows updates and restart PC",
@@ -408,7 +408,7 @@
   },
   {
     "guid": "63f89be0-a9c9-4c61-9b55-bce0b28b90b2",
-    "filename": "Win_Finish_updates_and_shutdown.ps1",
+    "filename": "Win_Updates_Finish_and_Shutdown.ps1",
     "submittedBy": "https://github.com/tremor021",
     "name": "Updates - Finish and Shutdown",
     "description": "Finish installing Windows updates and shutdown PC",

@@ -385,7 +385,7 @@
       </q-dialog>
     </div>
     <!-- send command modal -->
-    <q-dialog v-model="showSendCommand">
+    <q-dialog v-model="showSendCommand" persistent>
       <SendCommand @close="showSendCommand = false" :pk="selectedAgentPk" />
     </q-dialog>
     <!-- agent recovery modal -->
@@ -393,7 +393,7 @@
       <AgentRecovery @close="showAgentRecovery = false" :pk="selectedAgentPk" />
     </q-dialog>
     <!-- run script modal -->
-    <q-dialog v-model="showRunScript">
+    <q-dialog v-model="showRunScript" persistent>
       <RunScript @close="showRunScript = false" :pk="selectedAgentPk" />
     </q-dialog>
   </div>

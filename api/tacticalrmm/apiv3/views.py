@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
-from agents.models import Agent
+from agents.models import Agent, AgentCustomField
 from agents.serializers import WinAgentSerializer
 from autotasks.models import AutomatedTask
 from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
@@ -65,9 +65,17 @@ class CheckIn(APIView):
         if Alert.objects.filter(agent=agent, resolved=False).exists():
             Alert.handle_alert_resolve(agent)
 
-        # get any pending actions
-        if agent.pendingactions.filter(status="pending").exists():  # type: ignore
-            agent.handle_pending_actions()
+        # sync scheduled tasks
+        if agent.autotasks.exclude(sync_status="synced").exists():  # type: ignore
+            tasks = agent.autotasks.exclude(sync_status="synced")  # type: ignore
+
+            for task in tasks:
+                if task.sync_status == "pendingdeletion":
+                    task.delete_task_on_agent()
+                elif task.sync_status == "initial":
+                    task.modify_task_on_agent()
+                elif task.sync_status == "notsynced":
+                    task.create_task_on_agent()
 
         return Response("ok")
 
@@ -351,11 +359,23 @@ class TaskRunner(APIView):
             instance=task, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(last_run=djangotime.now())
+        new_task = serializer.save(last_run=djangotime.now())
 
-        status = "failing" if task.retcode != 0 else "passing"
+        # check if task is a collector and update the custom field
+        if task.custom_field:
+            if not task.stderr:
+                agent_field = AgentCustomField.objects.get(
+                    field=task.custom_field, agent=task.agent
+                )
+                agent_field.value = new_task.stdout
+                agent_field.save()
 
-        new_task: AutomatedTask = AutomatedTask.objects.get(pk=task.pk)
+                status = "passing"
+            else:
+                status = "failing"
+        else:
+            status = "failing" if task.retcode != 0 else "passing"
+
         new_task.status = status
         new_task.save()
 

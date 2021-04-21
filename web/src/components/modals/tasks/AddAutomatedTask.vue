@@ -64,6 +64,28 @@
             dense
             v-model="autotask.name"
             label="Descriptive name of task"
+            class="q-pb-none"
+          />
+        </q-card-section>
+        <q-card-section>
+          <q-checkbox
+            dense
+            label="Collector Task"
+            v-model="collector"
+            class="q-pb-sm"
+            @input="autotask.custom_field = null"
+          />
+          <q-select
+            v-if="collector"
+            v-model="autotask.custom_field"
+            :options="customFieldOptions"
+            dense
+            label="Custom Field to update"
+            outlined
+            map-options
+            emit-value
+            options-dense
+            hint="The return value of script will be saved to custom field selected"
           />
         </q-card-section>
         <q-card-section>
@@ -86,6 +108,7 @@
             v-model.number="autotask.timeout"
             type="number"
             label="Maximum permitted execution time (seconds)"
+            class="q-pb-none"
           />
         </q-card-section>
       </q-step>
@@ -190,10 +213,13 @@ export default {
     return {
       step: 1,
       scriptOptions: [],
+      customFieldOptions: [],
+      collector: false,
       autotask: {
         script: null,
         script_args: [],
         assigned_check: null,
+        custom_field: null,
         name: null,
         run_time_days: [],
         run_time_minute: null,
@@ -319,6 +345,10 @@ export default {
     if (this.policypk) {
       this.getPolicyChecks();
     }
+
+    this.getCustomFields("agent").then(r => {
+      this.customFieldOptions = r.data.map(field => ({ label: field.name, value: field.id }));
+    });
   },
 };
 </script>

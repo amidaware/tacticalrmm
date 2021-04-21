@@ -7,7 +7,7 @@ from tacticalrmm.middleware import get_debug_info, get_username
 
 ACTION_TYPE_CHOICES = [
     ("schedreboot", "Scheduled Reboot"),
-    ("taskaction", "Scheduled Task Action"),
+    ("taskaction", "Scheduled Task Action"),  # deprecated
     ("agentupdate", "Agent Update"),
     ("chocoinstall", "Chocolatey Software Install"),
 ]
@@ -41,13 +41,6 @@ AUDIT_OBJECT_TYPE_CHOICES = [
     ("coresettings", "Core Settings"),
     ("bulk", "Bulk"),
 ]
-
-# taskaction details format
-# {
-#   "action": "taskcreate" | "taskdelete" | "tasktoggle",
-#   "value": "Enable" | "Disable" # only needed for task toggle,
-#   "task_id": 1
-# }
 
 STATUS_CHOICES = [
     ("pending", "Pending"),
@@ -250,8 +243,6 @@ class PendingAction(models.Model):
         if self.action_type == "schedreboot":
             obj = dt.datetime.strptime(self.details["time"], "%Y-%m-%d %H:%M:%S")
             return dt.datetime.strftime(obj, "%B %d, %Y at %I:%M %p")
-        elif self.action_type == "taskaction":
-            return "Next agent check-in"
         elif self.action_type == "agentupdate":
             return "Next update cycle"
         elif self.action_type == "chocoinstall":
@@ -267,20 +258,6 @@ class PendingAction(models.Model):
 
         elif self.action_type == "chocoinstall":
             return f"{self.details['name']} software install"
-
-        elif self.action_type == "taskaction":
-            if self.details["action"] == "taskdelete":
-                return "Device pending task deletion"
-            elif self.details["action"] == "taskcreate":
-                return "Device pending task creation"
-            elif self.details["action"] == "tasktoggle":
-                # value is bool
-                if self.details["value"]:
-                    action = "enable"
-                else:
-                    action = "disable"
-
-                return f"Device pending task {action}"
 
 
 class BaseAuditModel(models.Model):

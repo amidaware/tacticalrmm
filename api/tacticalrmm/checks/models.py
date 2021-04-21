@@ -6,15 +6,14 @@ from statistics import mean
 from typing import Any
 
 import pytz
+from alerts.models import SEVERITY_CHOICES
+from core.models import CoreSettings
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from loguru import logger
-
-from alerts.models import SEVERITY_CHOICES
-from core.models import CoreSettings
 from logs.models import BaseAuditModel
+from loguru import logger
 
 from .utils import bytes2human
 
@@ -261,6 +260,39 @@ class Check(BaseAuditModel):
             "created_time",
             "modified_by",
             "modified_time",
+        ]
+
+    @property
+    def policy_fields_to_copy(self):
+        return [
+            "warning_threshold",
+            "error_threshold",
+            "alert_severity",
+            "name",
+            "run_interval",
+            "disk",
+            "fails_b4_alert",
+            "ip",
+            "script",
+            "script_args",
+            "info_return_codes",
+            "warning_return_codes",
+            "timeout",
+            "pass_if_start_pending",
+            "pass_if_svc_not_exist",
+            "restart_if_stopped",
+            "log_name",
+            "event_id",
+            "event_id_is_wildcard",
+            "event_type",
+            "event_source",
+            "event_message",
+            "fail_when",
+            "search_last_days",
+            "number_of_events_b4_alert",
+            "email_alert",
+            "text_alert",
+            "dashboard_alert",
         ]
 
     def should_create_alert(self, alert_template=None):
@@ -551,48 +583,21 @@ class Check(BaseAuditModel):
 
     def create_policy_check(self, agent=None, policy=None):
 
-        if not agent and not policy or agent and policy:
+        if (not agent and not policy) or (agent and policy):
             return
 
-        Check.objects.create(
+        check = Check.objects.create(
             agent=agent,
             policy=policy,
             managed_by_policy=bool(agent),
             parent_check=(self.pk if agent else None),
-            name=self.name,
-            alert_severity=self.alert_severity,
             check_type=self.check_type,
-            email_alert=self.email_alert,
-            dashboard_alert=self.dashboard_alert,
-            text_alert=self.text_alert,
-            fails_b4_alert=self.fails_b4_alert,
-            extra_details=self.extra_details,
-            run_interval=self.run_interval,
-            error_threshold=self.error_threshold,
-            warning_threshold=self.warning_threshold,
-            disk=self.disk,
-            ip=self.ip,
-            script=self.script,
-            script_args=self.script_args,
-            timeout=self.timeout,
-            info_return_codes=self.info_return_codes,
-            warning_return_codes=self.warning_return_codes,
-            svc_name=self.svc_name,
-            svc_display_name=self.svc_display_name,
-            pass_if_start_pending=self.pass_if_start_pending,
-            pass_if_svc_not_exist=self.pass_if_svc_not_exist,
-            restart_if_stopped=self.restart_if_stopped,
-            svc_policy_mode=self.svc_policy_mode,
-            log_name=self.log_name,
-            event_id=self.event_id,
-            event_id_is_wildcard=self.event_id_is_wildcard,
-            event_type=self.event_type,
-            event_source=self.event_source,
-            event_message=self.event_message,
-            fail_when=self.fail_when,
-            search_last_days=self.search_last_days,
-            number_of_events_b4_alert=self.number_of_events_b4_alert,
         )
+
+        for field in self.policy_fields_to_copy:
+            setattr(check, field, getattr(self, field))
+
+        check.save()
 
     def is_duplicate(self, check):
         if self.check_type == "diskspace":

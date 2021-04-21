@@ -97,9 +97,8 @@ class Agent(BaseAuditModel):
         # or if site has changed on agent and if so generate-policies
         if (
             not old_agent
-            or old_agent
-            and old_agent.policy != self.policy
-            or old_agent.site != self.site
+            or (old_agent and old_agent.policy != self.policy)
+            or (old_agent.site != self.site)
         ):
             self.generate_checks_from_policies()
             self.generate_tasks_from_policies()
@@ -731,36 +730,6 @@ class Agent(BaseAuditModel):
             self.winupdates.filter(pk__in=pks).delete()  # type: ignore
         except:
             pass
-
-    # define how the agent should handle pending actions
-    def handle_pending_actions(self):
-        pending_actions = self.pendingactions.filter(status="pending")  # type: ignore
-
-        for action in pending_actions:
-            if action.action_type == "taskaction":
-                from autotasks.tasks import (
-                    create_win_task_schedule,
-                    delete_win_task_schedule,
-                    enable_or_disable_win_task,
-                )
-
-                task_id = action.details["task_id"]
-
-                if action.details["action"] == "taskcreate":
-                    create_win_task_schedule.delay(task_id, pending_action=action.id)
-                elif action.details["action"] == "tasktoggle":
-                    enable_or_disable_win_task.delay(
-                        task_id, action.details["value"], pending_action=action.id
-                    )
-                elif action.details["action"] == "taskdelete":
-                    delete_win_task_schedule.delay(task_id, pending_action=action.id)
-
-    # for clearing duplicate pending actions on agent
-    def remove_matching_pending_task_actions(self, task_id):
-        # remove any other pending actions on agent with same task_id
-        for action in self.pendingactions.filter(action_type="taskaction").exclude(status="completed"):  # type: ignore
-            if action.details["task_id"] == task_id:
-                action.delete()
 
     def should_create_alert(self, alert_template=None):
         return (

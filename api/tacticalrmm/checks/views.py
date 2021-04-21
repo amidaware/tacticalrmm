@@ -1,6 +1,8 @@
 import asyncio
 from datetime import datetime as dt
 
+from agents.models import Agent
+from automation.models import Policy
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
@@ -8,14 +10,6 @@ from packaging import version as pyver
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from agents.models import Agent
-from automation.models import Policy
-from automation.tasks import (
-    delete_policy_check_task,
-    generate_agent_checks_from_policies_task,
-    update_policy_check_fields_task,
-)
 from scripts.models import Script
 from tacticalrmm.utils import notify_error
 
@@ -25,6 +19,8 @@ from .serializers import CheckHistorySerializer, CheckSerializer
 
 class AddCheck(APIView):
     def post(self, request):
+        from automation.tasks import generate_agent_checks_task
+
         policy = None
         agent = None
 
@@ -53,28 +49,30 @@ class AddCheck(APIView):
             data=request.data["check"], partial=True, context=parent
         )
         serializer.is_valid(raise_exception=True)
-        obj = serializer.save(**parent, script=script)
+        new_check = serializer.save(**parent, script=script)
 
         # Generate policy Checks
         if policy:
-            generate_agent_checks_from_policies_task.delay(policypk=policy.pk)
+            generate_agent_checks_task.delay(policy=policy.pk)
         elif agent:
             checks = agent.agentchecks.filter(  # type: ignore
-                check_type=obj.check_type, managed_by_policy=True
+                check_type=new_check.check_type, managed_by_policy=True
             )
 
             # Should only be one
-            duplicate_check = [check for check in checks if check.is_duplicate(obj)]
+            duplicate_check = [
+                check for check in checks if check.is_duplicate(new_check)
+            ]
 
             if duplicate_check:
                 policy = Check.objects.get(pk=duplicate_check[0].parent_check).policy
                 if policy.enforced:
-                    obj.overriden_by_policy = True
-                    obj.save()
+                    new_check.overriden_by_policy = True
+                    new_check.save()
                 else:
                     duplicate_check[0].delete()
 
-        return Response(f"{obj.readable_desc} was added!")
+        return Response(f"{new_check.readable_desc} was added!")
 
 
 class GetUpdateDeleteCheck(APIView):
@@ -83,6 +81,10 @@ class GetUpdateDeleteCheck(APIView):
         return Response(CheckSerializer(check).data)
 
     def patch(self, request, pk):
+        from automation.tasks import (
+            update_policy_check_fields_task,
+        )
+
         check = get_object_or_404(Check, pk=pk)
 
         # remove fields that should not be changed when editing a check from the frontend
@@ -105,36 +107,31 @@ class GetUpdateDeleteCheck(APIView):
 
         serializer = CheckSerializer(instance=check, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        obj = serializer.save()
-
-        # Update policy check fields
-        if check.policy:
-            update_policy_check_fields_task(checkpk=pk)
+        check = serializer.save()
 
         # resolve any alerts that are open
         if "check_reset" in request.data.keys():
-            if obj.alert.filter(resolved=False).exists():
-                obj.alert.get(resolved=False).resolve()
+            if check.alert.filter(resolved=False).exists():
+                check.alert.get(resolved=False).resolve()
 
-        return Response(f"{obj.readable_desc} was edited!")
+        if check.policy:
+            update_policy_check_fields_task.delay(check=check.pk)
+
+        return Response(f"{check.readable_desc} was edited!")
 
     def delete(self, request, pk):
-        check = get_object_or_404(Check, pk=pk)
+        from automation.tasks import generate_agent_checks_task
 
-        check_pk = check.pk
-        policy_pk = None
-        if check.policy:
-            policy_pk = check.policy.pk
-
+        check = get_object_or_404(Check, pk)
         check.delete()
 
         # Policy check deleted
         if check.policy:
-            delete_policy_check_task.delay(checkpk=check_pk)
+            Check.objects.filter(parent_check=check.pk).delete()
 
             # Re-evaluate agent checks is policy was enforced
             if check.policy.enforced:
-                generate_agent_checks_from_policies_task.delay(policypk=policy_pk)
+                generate_agent_checks_task.delay(policy=check.policy)
 
         # Agent check deleted
         elif check.agent:

@@ -35,25 +35,18 @@ class Client(BaseAuditModel):
 
     def save(self, *args, **kw):
         from alerts.tasks import cache_agents_alert_template
-        from automation.tasks import generate_agent_checks_by_location_task
+        from automation.tasks import generate_agent_checks_task
 
         # get old client if exists
         old_client = type(self).objects.get(pk=self.pk) if self.pk else None
         super(BaseAuditModel, self).save(*args, **kw)
 
-        # check if server polcies have changed and initiate task to reapply policies if so
-        if old_client and old_client.server_policy != self.server_policy:
-            generate_agent_checks_by_location_task.delay(
-                location={"site__client_id": self.pk},
-                mon_type="server",
-                create_tasks=True,
-            )
-
-        # check if workstation polcies have changed and initiate task to reapply policies if so
-        if old_client and old_client.workstation_policy != self.workstation_policy:
-            generate_agent_checks_by_location_task.delay(
-                location={"site__client_id": self.pk},
-                mon_type="workstation",
+        # check if polcies have changed and initiate task to reapply policies if so
+        if (old_client and old_client.server_policy != self.server_policy) or (
+            old_client and old_client.workstation_policy != self.workstation_policy
+        ):
+            generate_agent_checks_task.delay(
+                client=self.pk,
                 create_tasks=True,
             )
 
@@ -147,27 +140,17 @@ class Site(BaseAuditModel):
 
     def save(self, *args, **kw):
         from alerts.tasks import cache_agents_alert_template
-        from automation.tasks import generate_agent_checks_by_location_task
+        from automation.tasks import generate_agent_checks_task
 
         # get old client if exists
         old_site = type(self).objects.get(pk=self.pk) if self.pk else None
         super(Site, self).save(*args, **kw)
 
-        # check if server polcies have changed and initiate task to reapply policies if so
-        if old_site and old_site.server_policy != self.server_policy:
-            generate_agent_checks_by_location_task.delay(
-                location={"site_id": self.pk},
-                mon_type="server",
-                create_tasks=True,
-            )
-
-        # check if workstation polcies have changed and initiate task to reapply policies if so
-        if old_site and old_site.workstation_policy != self.workstation_policy:
-            generate_agent_checks_by_location_task.delay(
-                location={"site_id": self.pk},
-                mon_type="workstation",
-                create_tasks=True,
-            )
+        # check if polcies have changed and initiate task to reapply policies if so
+        if (old_site and old_site.server_policy != self.server_policy) or (
+            old_site and old_site.workstation_policy != self.workstation_policy
+        ):
+            generate_agent_checks_task.delay(site=self.pk, create_tasks=True)
 
         if old_site and old_site.alert_template != self.alert_template:
             cache_agents_alert_template.delay()

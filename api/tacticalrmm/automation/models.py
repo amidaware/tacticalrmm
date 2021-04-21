@@ -1,7 +1,6 @@
-from django.db import models
-
 from agents.models import Agent
 from core.models import CoreSettings
+from django.db import models
 from logs.models import BaseAuditModel
 
 
@@ -29,7 +28,8 @@ class Policy(BaseAuditModel):
 
     def save(self, *args, **kwargs):
         from alerts.tasks import cache_agents_alert_template
-        from automation.tasks import generate_agent_checks_from_policies_task
+
+        from automation.tasks import generate_agent_checks_task
 
         # get old policy if exists
         old_policy = type(self).objects.get(pk=self.pk) if self.pk else None
@@ -38,8 +38,8 @@ class Policy(BaseAuditModel):
         # generate agent checks only if active and enforced were changed
         if old_policy:
             if old_policy.active != self.active or old_policy.enforced != self.enforced:
-                generate_agent_checks_from_policies_task.delay(
-                    policypk=self.pk,
+                generate_agent_checks_task.delay(
+                    policy=self.pk,
                     create_tasks=True,
                 )
 
@@ -52,7 +52,10 @@ class Policy(BaseAuditModel):
         agents = list(self.related_agents().only("pk").values_list("pk", flat=True))
         super(BaseAuditModel, self).delete(*args, **kwargs)
 
-        generate_agent_checks_task.delay(agents, create_tasks=True)
+        generate_agent_checks_task.delay(agents=agents, create_tasks=True)
+
+    def __str__(self):
+        return self.name
 
     @property
     def is_default_server_policy(self):
@@ -61,9 +64,6 @@ class Policy(BaseAuditModel):
     @property
     def is_default_workstation_policy(self):
         return self.default_workstation_policy.exists()  # type: ignore
-
-    def __str__(self):
-        return self.name
 
     def is_agent_excluded(self, agent):
         return (
@@ -123,9 +123,6 @@ class Policy(BaseAuditModel):
 
     @staticmethod
     def cascade_policy_tasks(agent):
-        from autotasks.models import AutomatedTask
-        from autotasks.tasks import delete_win_task_schedule
-        from logs.models import PendingAction
 
         # List of all tasks to be applied
         tasks = list()
@@ -200,26 +197,16 @@ class Policy(BaseAuditModel):
                 if taskpk not in added_task_pks
             ]
         ):
-            delete_win_task_schedule.delay(task.pk)
+            if task.sync_status == "initial":
+                task.delete()
+            else:
+                task.sync_status = "pendingdeletion"
+                task.save()
 
-        # handle matching tasks that haven't synced to agent yet or pending deletion due to agent being offline
-        for action in agent.pendingactions.filter(action_type="taskaction").exclude(
-            status="completed"
-        ):
-            task = AutomatedTask.objects.get(pk=action.details["task_id"])
-            if (
-                task.parent_task in agent_tasks_parent_pks
-                and task.parent_task in added_task_pks
-            ):
-                agent.remove_matching_pending_task_actions(task.id)
-
-                PendingAction(
-                    agent=agent,
-                    action_type="taskaction",
-                    details={"action": "taskcreate", "task_id": task.id},
-                ).save()
-                task.sync_status = "notsynced"
-                task.save(update_fields=["sync_status"])
+        # change tasks from pendingdeletion to notsynced if policy was added or changed
+        agent.autotasks.filter(sync_status="pendingdeletion").filter(
+            parent_task__in=[taskpk for taskpk in added_task_pks]
+        ).update(sync_status="notsynced")
 
         return [task for task in tasks if task.pk not in agent_tasks_parent_pks]
 

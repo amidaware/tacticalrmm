@@ -61,6 +61,15 @@
               </q-icon>
             </q-th>
           </template>
+
+          <template v-slot:header-cell-collector="props">
+            <q-th auto-width :props="props">
+              <q-icon name="mdi-database-arrow-up" size="1.5em">
+                <q-tooltip>Collector Task</q-tooltip>
+              </q-icon>
+            </q-th>
+          </template>
+
           <!-- body slots -->
           <template v-slot:body="props" :props="props">
             <q-tr class="cursor-pointer" @dblclick="showEditTask(props.row)">
@@ -130,6 +139,12 @@
                   v-model="props.row.dashboard_alert"
                 />
               </q-td>
+              <!-- is collector task -->
+              <q-td>
+                <q-icon v-if="!!props.row.custom_field" style="font-size: 1.3rem" name="check">
+                  <q-tooltip>The task updates a custom field on the agent</q-tooltip>
+                </q-icon>
+              </q-td>
               <q-td>{{ props.row.name }}</q-td>
               <q-td>{{ props.row.schedule }}</q-td>
               <q-td>
@@ -182,6 +197,7 @@ export default {
         { name: "smsalert", field: "text_alert", align: "left" },
         { name: "emailalert", field: "email_alert", align: "left" },
         { name: "dashboardalert", field: "dashboard_alert", align: "left" },
+        { name: "collector", label: "Collector", field: "custom_field", align: "left" },
         { name: "name", label: "Name", field: "name", align: "left" },
         {
           name: "schedule",

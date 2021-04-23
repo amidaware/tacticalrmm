@@ -1,4 +1,5 @@
 
+## Getting Started
 
 ### 1. Install vscode
 [https://code.visualstudio.com/download](https://code.visualstudio.com/download)
@@ -95,3 +96,15 @@ Then you're `push`ing that updated local repo to your online Github fork
 ### 8. Verify and Repeat
 
 Check your Github fork in browser, should be up to date now with original. Repeat 6 or 7 as necessary
+
+## Reference
+
+### Customizing the Admin Web Interface
+
+Created using quasar, it's all your .vue files in `web/src/components/modals/agents/RunScript.vue`
+
+Learn stuff here
+
+https://quasar.dev/
+
+

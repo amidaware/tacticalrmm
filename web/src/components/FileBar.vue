@@ -90,7 +90,7 @@
                 <q-item-section>Global Settings</q-item-section>
               </q-item>
               <!-- code sign -->
-              <q-item clickable v-close-popup @click="showCodeSign = true">
+              <q-item v-if="!noCodeSigning" clickable v-close-popup @click="showCodeSign = true">
                 <q-item-section>Code Signing</q-item-section>
               </q-item>
             </q-list>
@@ -245,6 +245,11 @@ export default {
       showScriptManager: false,
       showCodeSign: false,
     };
+  },
+  computed: {
+    noCodeSigning() {
+      return this.$store.state.noCodeSign;
+    },
   },
   methods: {
     showBulkActionModal(mode) {

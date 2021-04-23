@@ -34,6 +34,7 @@ export default function () {
       defaultAgentTblTab: "server",
       clientTreeSort: "alphafail",
       clientTreeSplitter: 11,
+      noCodeSign: false,
     },
     getters: {
       clientTreeSplitterModel(state) {
@@ -153,6 +154,9 @@ export default function () {
       },
       SET_CLIENT_TREE_SORT(state, val) {
         state.clientTreeSort = val
+      },
+      SET_NO_CODE_SIGN(state, val) {
+        state.noCodeSign = val
       }
     },
     actions: {
@@ -285,7 +289,9 @@ export default function () {
 
           if (state.clientTreeSort === "alphafail") {
             // move failing clients to the top
-            const sortedByFailing = output.sort(a => a.color === "negative" ? -1 : 1);
+            const failing = output.filter(i => i.color === "negative" || i.color === "warning");
+            const ok = output.filter(i => i.color !== "negative" && i.color !== "warning");
+            const sortedByFailing = [...failing, ...ok];
             commit("loadTree", sortedByFailing);
           } else {
             commit("loadTree", output);

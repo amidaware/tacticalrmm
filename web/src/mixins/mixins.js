@@ -147,6 +147,19 @@ export default {
           this.notifyError("There was an issue getting Custom Fields");
         });
     },
+    getAgentCount(data, type, id) {
+      if (type === "client") {
+        return data.find(i => id === i.id).agent_count
+      } else {
+        const sites = data.map(i => i.sites)
+        for (let i of sites) {
+          for (let k of i) {
+            if (k.id === id) return k.agent_count;
+          }
+        }
+        return 0;
+      }
+    },
     formatCustomFields(fields, values) {
       let tempArray = [];
 

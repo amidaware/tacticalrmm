@@ -353,8 +353,9 @@ class Reboot(APIView):
 
 @api_view(["POST"])
 def install_agent(request):
-    from agents.utils import get_winagent_url
     from knox.models import AuthToken
+
+    from agents.utils import get_winagent_url
 
     client_id = request.data["client"]
     site_id = request.data["site"]

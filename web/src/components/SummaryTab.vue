@@ -80,7 +80,16 @@
             <q-avatar size="lg" square icon="info" color="info" text-color="white" />
             <small>{{ summary.checks.info }} checks info</small>
           </q-chip>
-          <span v-if="awaitingSync(summary.checks.total, summary.checks.passing, summary.checks.failing)"
+          <span
+            v-if="
+              awaitingSync(
+                summary.checks.total,
+                summary.checks.passing,
+                summary.checks.failing,
+                summary.checks.warning,
+                summary.checks.info
+              )
+            "
             >{{ summary.checks.total }} checks awaiting first synchronization</span
           >
         </template>
@@ -113,8 +122,8 @@ export default {
     return {};
   },
   methods: {
-    awaitingSync(total, passing, failing) {
-      return total !== 0 && passing === 0 && failing === 0 ? true : false;
+    awaitingSync(total, passing, failing, warning, info) {
+      return total !== 0 && passing === 0 && failing === 0 && warning === 0 && info === 0;
     },
     refreshSummary() {
       this.$q.loading.show();

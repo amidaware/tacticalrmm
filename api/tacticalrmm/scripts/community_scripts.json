@@ -1,7 +1,7 @@
 [
   {
     "guid": "6820cb5e-5a7f-4d9b-8c22-d54677e3cc04",
-    "filename": "Win_Clear_Firefox_Cache.ps1",
+    "filename": "Win_Firefox_Clear_Cache.ps1",
     "submittedBy": "https://github.com/Omnicef",
     "name": "Firefox - Clean Cache",
     "description": "This script will clean up Mozilla Firefox for all users.",
@@ -10,7 +10,7 @@
   },
   {
     "guid": "3ff6a386-11d1-4f9d-8cca-1b0563bb6443",
-    "filename": "Win_Clear_Google_Chrome_Cache.ps1",
+    "filename": "Win_Google_Chrome_Clear_Cache.ps1",
     "submittedBy": "https://github.com/Omnicef",
     "name": "Chrome - Clear Cache for All Users",
     "description": "This script will clean up Google Chrome for all users.",
@@ -82,7 +82,7 @@
   },
   {
     "guid": "9d34f482-1f0c-4b2f-b65f-a9cf3c13ef5f",
-    "filename": "Win_Rename_Installed_App.ps1",
+    "filename": "Win_TRMM_Rename_Installed_App.ps1",
     "submittedBy": "https://github.com/bradhawkins85",
     "name": "TacticalRMM Agent Rename",
     "description": "Updates the DisplayName registry entry for the Tactical RMM windows agent to your desired name. This script takes 1 required argument: the name you wish to set.",
@@ -154,7 +154,7 @@
   },
   {
     "guid": "95a2ee6f-b89b-4551-856e-3081b041caa7",
-    "filename": "Win_Reset_High_Performance_Power_Profile_to_Defaults.ps1",
+    "filename": "Win_Power_Profile_Reset_High_Performance_to_Defaults.ps1",
     "submittedBy": "https://github.com/azulskyknight",
     "name": "Power Profile - Reset High Perf Power Profile to defaults",
     "description": "Resets monitor, disk, standby, and hibernate timers in the default High Performance power profile to their default values. It also re-indexes the AC and DC power profiles into their default order.",
@@ -163,7 +163,7 @@
   },
   {
     "guid": "2cbd30b0-84dd-4388-a36d-2e2e980f1a3e",
-    "filename": "Win_Set_High_Performance_Power_Profile.ps1",
+    "filename": "Win_Power_Profile_Set_High_Performance.ps1",
     "submittedBy": "https://github.com/azulskyknight",
     "name": "Power Profile - Set High Performance",
     "description": "Sets the High Performance Power profile to the active power profile. Use this to keep machines from falling asleep.",
@@ -192,7 +192,7 @@
     "guid": "7c14beb4-d1c3-41aa-8e70-92a267d6e080",
     "filename": "Win_Duplicati_Status.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Duplicati - Check",
+    "name": "Duplicati - Check Status",
     "description": "Checks Duplicati Backup is running properly over the last 24 hours",
     "shell": "powershell",
     "category": "TRMM (Win):3rd Party Software"
@@ -262,12 +262,22 @@
   },
   {
     "guid": "d980fda3-a068-47eb-8495-1aab07a24e64",
-    "filename": "Win_Defender_Status.ps1",
+    "filename": "Win_Defender_Status_Report_Last24hrs.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Defender - Status",
-    "description": "This will check for Malware, Antispyware, that Windows Defender is Healthy, last scan etc within the last 24 hours",
+    "name": "Defender - Status Report Last 24hr",
+    "description": "Using Event Viewer, this will check for Malware and Antispyware within the last 24 hours and display, otherwise will report as Healthy",
     "shell": "powershell",
     "category": "TRMM (Win):Security>Antivirus"
+  },
+  {
+    "guid": "6a0202fc-1b27-4905-95c0-0a03bb881893",
+    "filename": "Win_Defender_Status_Report_LastYear.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Defender - Status Report Last Year",
+    "description": "Using Event Viewer, this will check for Malware and Antispyware and display, otherwise will report as Healthy",
+    "shell": "powershell",
+    "category": "TRMM (Win):Security>Antivirus",
+    "default_timeout": "300"
   },
   {
     "guid": "9956e936-6fdb-4488-a9d8-8b274658037f",
@@ -289,7 +299,7 @@
   },
   {
     "guid": "2472bbaf-1941-4722-8a58-d1dd0f528801",
-    "filename": "Win_Update_Tactical_Exclusion.ps1",
+    "filename": "Win_TRMM_AV_Update_Exclusion.ps1",
     "submittedBy": "https://github.com/dinger1986",
     "name": "TRMM Defender Exclusions",
     "description": "Windows Defender Exclusions for Tactical RMM",
@@ -389,19 +399,10 @@
   },
   {
     "guid": "f396dae2-c768-45c5-bd6c-176e56ed3614",
-    "filename": "Win_Finish_updates_and_restart.ps1",
+    "filename": "Win_Power_RestartorShutdown.ps1",
     "submittedBy": "https://github.com/tremor021",
-    "name": "Updates - Finish and restart",
-    "description": "Finish installing Windows updates and restart PC",
-    "shell": "powershell",
-    "category": "TRMM (Win):Updates"
-  },
-  {
-    "guid": "63f89be0-a9c9-4c61-9b55-bce0b28b90b2",
-    "filename": "Win_Finish_updates_and_shutdown.ps1",
-    "submittedBy": "https://github.com/tremor021",
-    "name": "Updates - Finish and Shutdown",
-    "description": "Finish installing Windows updates and shutdown PC",
+    "name": "Power - Restart or Shutdown PC",
+    "description": "Restart PC. Add parameter: shutdown if you want to shutdown computer",
     "shell": "powershell",
     "category": "TRMM (Win):Updates"
   },
@@ -422,7 +423,7 @@
   },
   {
     "guid": "3abbb62a-3757-492c-8979-b4fc6174845d",
-    "filename": "Win_Disable_AutoRun.bat",
+    "filename": "Win_AutoRun_Disable.bat",
     "submittedBy": "https://github.com/silversword411",
     "name": "Autorun - Disable",
     "description": "Disable Autorun System Wide",
@@ -432,7 +433,7 @@
   },
   {
     "guid": "4a11877a-7555-494c-ac74-29d6df3c1989",
-    "filename": "Win_Disable_Cortana.bat",
+    "filename": "Win_Cortana_Disable.bat",
     "submittedBy": "https://github.com/silversword411",
     "name": "Cortana - Disable",
     "description": "Disable Cortana System Wide",
@@ -444,7 +445,7 @@
     "guid": "28ef1387-dd4f-4bab-b042-26250914e370",
     "filename": "Win_WOL_Enable_Status.ps1",
     "submittedBy": "https://github.com/silversword411",
-    "name": "Network WoL - Enable function",
+    "name": "BROKEN Network WoL - Enable function",
     "description": "Wake on Lan enable on Dell, HP, Lenovo",
     "shell": "powershell",
     "category": "TRMM (Win):Network",
@@ -454,7 +455,7 @@
     "guid": "685d5432-0b84-46d5-98e8-3ec2054150fe",
     "filename": "Win_WOL_Test_State.ps1",
     "submittedBy": "https://github.com/silversword411",
-    "name": "Network WoL - Test State",
+    "name": "BROKEN Network WoL - Test State",
     "description": "Wake on Lan test status",
     "shell": "powershell",
     "category": "TRMM (Win):Network",
@@ -466,6 +467,26 @@
     "submittedBy": "https://github.com/silversword411",
     "name": "Network IPv6 - Disable",
     "description": "Disable IPv6 on all adapters",
+    "shell": "powershell",
+    "category": "TRMM (Win):Network",
+    "default_timeout": "90"
+  },
+  {
+    "guid": "745bb7cd-b71a-4f2e-b6f2-c579b1828162",
+    "filename": "Win_Network_DHCP_Set.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Network - Set Primary NIC to DHCP",
+    "description": "Enable DHCP on primary adapter",
+    "shell": "cmd",
+    "category": "TRMM (Win):Network",
+    "default_timeout": "90"
+  },
+  {
+    "guid": "83aa4d51-63ce-41e7-829f-3c16e6115bbf",
+    "filename": "Win_Network_DNS_Set_to_1.1.1.2.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Network - Set all NICs to use DNS of 1.1.1.2",
+    "description": "Domain computers skipped. Sets all NICs to have primary DNS server of 1.1.1.2, backup of 1.0.0.2 (Cloudflare malware blocking)",
     "shell": "powershell",
     "category": "TRMM (Win):Network",
     "default_timeout": "90"
@@ -484,8 +505,8 @@
     "guid": "83f6c6ea-6120-4fd3-bec8-d3abc505dcdf",
     "filename": "Win_TRMM_Start_Menu_Delete_Shortcut.ps1",
     "submittedBy": "https://github.com/silversword411",
-    "name": "TRMM Delete Start Menu Shortcut for App",
-    "description": "Tactical RMM delete its application shortcut that's installed in the start menu",
+    "name": "TacticalRMM Delete Start Menu Shortcut for App",
+    "description": "Delete its application shortcut that's installed in the start menu by default",
     "shell": "powershell",
     "category": "TRMM (Win):TacticalRMM Related",
     "default_timeout": "10"

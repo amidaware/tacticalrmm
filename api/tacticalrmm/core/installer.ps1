@@ -9,6 +9,7 @@ $rdp = rdpchange
 $ping = pingchange
 $auth = '"tokenchange"'
 $downloadlink = 'downloadchange'
+$apilink = $downloadlink.split('/')
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
@@ -47,24 +48,35 @@ If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
         # pass
     }
     
-    Try
-    {  
-        Invoke-WebRequest -Uri $downloadlink -OutFile $OutPath\$output
-        Start-Process -FilePath $OutPath\$output -ArgumentList ('/VERYSILENT /SUPPRESSMSGBOXES') -Wait
-        write-host ('Extracting...')
-        Start-Sleep -s 5
-        Start-Process -FilePath "C:\Program Files\TacticalAgent\tacticalrmm.exe" -ArgumentList $installArgs -Wait
-        exit 0
-    }
-    Catch
-    {
-        $ErrorMessage = $_.Exception.Message
-        $FailedItem = $_.Exception.ItemName
-        Write-Error -Message "$ErrorMessage $FailedItem"
-        exit 1
-    }
-    Finally
-    {
-        Remove-Item -Path $OutPath\$output
+    $X = 0
+    do {
+      Write-Output "Waiting for network"
+      Start-Sleep -s 5
+      $X += 1      
+    } until(($connectreult = Test-NetConnection $apilink[2] -Port 443 | ? { $_.TcpTestSucceeded }) -or $X -eq 3)
+    
+    if ($connectreult.TcpTestSucceeded -eq $true){
+        Try
+        {  
+            Invoke-WebRequest -Uri $downloadlink -OutFile $OutPath\$output
+            Start-Process -FilePath $OutPath\$output -ArgumentList ('/VERYSILENT /SUPPRESSMSGBOXES') -Wait
+            write-host ('Extracting...')
+            Start-Sleep -s 5
+            Start-Process -FilePath "C:\Program Files\TacticalAgent\tacticalrmm.exe" -ArgumentList $installArgs -Wait
+            exit 0
+        }
+        Catch
+        {
+            $ErrorMessage = $_.Exception.Message
+            $FailedItem = $_.Exception.ItemName
+            Write-Error -Message "$ErrorMessage $FailedItem"
+            exit 1
+        }
+        Finally
+        {
+            Remove-Item -Path $OutPath\$output
+        }
+    } else {
+        Write-Output "Unable to connect to server"
     }
 }

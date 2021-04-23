@@ -11,11 +11,11 @@ from rest_framework.views import APIView
 
 from tacticalrmm.utils import notify_error
 
-from .models import CoreSettings, CustomField, CodeSignToken
+from .models import CodeSignToken, CoreSettings, CustomField
 from .serializers import (
+    CodeSignTokenSerializer,
     CoreSettingsSerializer,
     CustomFieldSerializer,
-    CodeSignTokenSerializer,
 )
 
 
@@ -71,6 +71,7 @@ def dashboard_info(request):
             "client_tree_sort": request.user.client_tree_sort,
             "client_tree_splitter": request.user.client_tree_splitter,
             "loading_bar_color": request.user.loading_bar_color,
+            "no_code_sign": hasattr(settings, "NOCODESIGN") and settings.NOCODESIGN,
         }
     )
 

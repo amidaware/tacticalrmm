@@ -1,6 +1,6 @@
-import requests
 from unittest.mock import patch
 
+import requests
 from channels.db import database_sync_to_async
 from channels.testing import WebsocketCommunicator
 from model_bakery import baker

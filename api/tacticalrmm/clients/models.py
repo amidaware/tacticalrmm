@@ -66,6 +66,10 @@ class Client(BaseAuditModel):
         return self.name
 
     @property
+    def agent_count(self) -> int:
+        return Agent.objects.filter(site__client=self).count()
+
+    @property
     def has_maintenanace_mode_agents(self):
         return (
             Agent.objects.filter(site__client=self, maintenance_mode=True).count() > 0
@@ -172,6 +176,10 @@ class Site(BaseAuditModel):
 
     def __str__(self):
         return self.name
+
+    @property
+    def agent_count(self) -> int:
+        return Agent.objects.filter(site=self).count()
 
     @property
     def has_maintenanace_mode_agents(self):

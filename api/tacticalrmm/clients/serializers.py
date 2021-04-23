@@ -25,6 +25,7 @@ class SiteCustomFieldSerializer(ModelSerializer):
 class SiteSerializer(ModelSerializer):
     client_name = ReadOnlyField(source="client.name")
     custom_fields = SiteCustomFieldSerializer(many=True, read_only=True)
+    agent_count = ReadOnlyField()
 
     class Meta:
         model = Site
@@ -37,6 +38,7 @@ class SiteSerializer(ModelSerializer):
             "client_name",
             "client",
             "custom_fields",
+            "agent_count",
         )
 
     def validate(self, val):
@@ -68,6 +70,7 @@ class ClientCustomFieldSerializer(ModelSerializer):
 class ClientSerializer(ModelSerializer):
     sites = SiteSerializer(many=True, read_only=True)
     custom_fields = ClientCustomFieldSerializer(many=True, read_only=True)
+    agent_count = ReadOnlyField()
 
     class Meta:
         model = Client
@@ -79,6 +82,7 @@ class ClientSerializer(ModelSerializer):
             "alert_template",
             "sites",
             "custom_fields",
+            "agent_count",
         )
 
     def validate(self, val):

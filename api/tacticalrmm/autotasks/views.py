@@ -53,7 +53,7 @@ class AddAutoTask(APIView):
             create_win_task_schedule.delay(pk=task.pk)
 
         elif task.policy:
-            generate_agent_autotasks_task.delay(policy=task.policy)
+            generate_agent_autotasks_task.delay(policy=task.policy.pk)
 
         return Response("Task will be created shortly!")
 
@@ -84,7 +84,6 @@ class AutoTask(APIView):
 
     def patch(self, request, pk):
         from automation.tasks import update_policy_autotasks_fields_task
-
         from autotasks.tasks import enable_or_disable_win_task
 
         task = get_object_or_404(AutomatedTask, pk=pk)
@@ -96,7 +95,9 @@ class AutoTask(APIView):
             action = "enabled" if action else "disabled"
 
             if task.policy:
-                update_policy_autotasks_fields_task.delay(task.pk, update_agent=True)
+                update_policy_autotasks_fields_task.delay(
+                    task=task.pk, update_agent=True
+                )
             elif task.agent:
                 enable_or_disable_win_task.delay(pk=task.pk)
 
@@ -107,14 +108,12 @@ class AutoTask(APIView):
 
     def delete(self, request, pk):
         from automation.tasks import delete_policy_autotasks_task
-
         from autotasks.tasks import delete_win_task_schedule
 
         task = get_object_or_404(AutomatedTask, pk=pk)
 
         if task.agent:
             delete_win_task_schedule.delay(pk=task.pk)
-
         elif task.policy:
             delete_policy_autotasks_task.delay(task=task.pk)
 

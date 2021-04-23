@@ -88,8 +88,8 @@ class TestCoreTasks(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @patch("automation.tasks.generate_all_agent_checks_task.delay")
-    def test_edit_coresettings(self, generate_all_agent_checks_task):
+    @patch("automation.tasks.generate_agent_checks_task.delay")
+    def test_edit_coresettings(self, generate_agent_checks_task):
         url = "/core/editsettings/"
 
         # setup
@@ -106,7 +106,7 @@ class TestCoreTasks(TacticalTestCase):
         )
         self.assertEqual(CoreSettings.objects.first().mesh_token, data["mesh_token"])
 
-        generate_all_agent_checks_task.assert_not_called()
+        generate_agent_checks_task.assert_not_called()
 
         # test adding policy
         data = {
@@ -120,9 +120,9 @@ class TestCoreTasks(TacticalTestCase):
             CoreSettings.objects.first().workstation_policy.id, policies[0].id  # type: ignore
         )
 
-        self.assertEqual(generate_all_agent_checks_task.call_count, 2)
+        generate_agent_checks_task.assert_called_once()
 
-        generate_all_agent_checks_task.reset_mock()
+        generate_agent_checks_task.reset_mock()
 
         # test remove policy
         data = {
@@ -132,7 +132,7 @@ class TestCoreTasks(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(CoreSettings.objects.first().workstation_policy, None)
 
-        self.assertEqual(generate_all_agent_checks_task.call_count, 1)
+        self.assertEqual(generate_agent_checks_task.call_count, 1)
 
         self.check_not_authenticated("patch", url)
 

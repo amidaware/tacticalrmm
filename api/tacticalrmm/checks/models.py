@@ -263,7 +263,7 @@ class Check(BaseAuditModel):
         ]
 
     @property
-    def policy_fields_to_copy(self):
+    def policy_fields_to_copy(self) -> list[str]:
         return [
             "warning_threshold",
             "error_threshold",
@@ -278,6 +278,9 @@ class Check(BaseAuditModel):
             "info_return_codes",
             "warning_return_codes",
             "timeout",
+            "svc_name",
+            "svc_display_name",
+            "svc_policy_mode",
             "pass_if_start_pending",
             "pass_if_svc_not_exist",
             "restart_if_stopped",
@@ -592,6 +595,7 @@ class Check(BaseAuditModel):
             managed_by_policy=bool(agent),
             parent_check=(self.pk if agent else None),
             check_type=self.check_type,
+            script=self.script,
         )
 
         for field in self.policy_fields_to_copy:

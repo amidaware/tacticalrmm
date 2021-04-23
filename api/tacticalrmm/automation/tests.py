@@ -52,7 +52,8 @@ class TestPolicyViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    def test_add_policy(self):
+    @patch("autotasks.models.AutomatedTask.create_task_on_agent")
+    def test_add_policy(self, create_task):
         url = "/automation/policies/"
 
         data = {
@@ -90,8 +91,8 @@ class TestPolicyViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
-    @patch("automation.tasks.generate_agent_checks_from_policies_task.delay")
-    def test_update_policy(self, generate_agent_checks_from_policies_task):
+    @patch("automation.tasks.generate_agent_checks_task.delay")
+    def test_update_policy(self, generate_agent_checks_task):
         # returns 404 for invalid policy pk
         resp = self.client.put("/automation/policies/500/", format="json")
         self.assertEqual(resp.status_code, 404)
@@ -110,7 +111,7 @@ class TestPolicyViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 200)
 
         # only called if active or enforced are updated
-        generate_agent_checks_from_policies_task.assert_not_called()
+        generate_agent_checks_task.assert_not_called()
 
         data = {
             "name": "Test Policy Update",
@@ -121,8 +122,8 @@ class TestPolicyViews(TacticalTestCase):
 
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        generate_agent_checks_from_policies_task.assert_called_with(
-            policypk=policy.pk, create_tasks=True  # type: ignore
+        generate_agent_checks_task.assert_called_with(
+            policy=policy.pk, create_tasks=True  # type: ignore
         )
 
         self.check_not_authenticated("put", url)
@@ -145,7 +146,7 @@ class TestPolicyViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 200)
 
         generate_agent_checks_task.assert_called_with(
-            [agent.pk for agent in agents], create_tasks=True
+            agents=[agent.pk for agent in agents], create_tasks=True
         )
 
         self.check_not_authenticated("delete", url)
@@ -271,7 +272,7 @@ class TestPolicyViews(TacticalTestCase):
 
         self.check_not_authenticated("patch", url)
 
-    @patch("automation.tasks.run_win_policy_autotask_task.delay")
+    @patch("automation.tasks.run_win_policy_autotasks_task.delay")
     def test_run_win_task(self, mock_task):
 
         # create managed policy tasks
@@ -281,11 +282,12 @@ class TestPolicyViews(TacticalTestCase):
             parent_task=1,
             _quantity=6,
         )
+
         url = "/automation/runwintask/1/"
         resp = self.client.put(url, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        mock_task.assert_called_once_with([task.pk for task in tasks])  # type: ignore
+        mock_task.assert_called()  # type: ignore
 
         self.check_not_authenticated("put", url)
 
@@ -426,7 +428,7 @@ class TestPolicyViews(TacticalTestCase):
 
         self.check_not_authenticated("delete", url)
 
-    @patch("automation.tasks.generate_agent_checks_from_policies_task.delay")
+    @patch("automation.tasks.generate_agent_checks_task.delay")
     def test_sync_policy(self, generate_checks):
         url = "/automation/sync/"
 
@@ -441,7 +443,7 @@ class TestPolicyViews(TacticalTestCase):
 
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        generate_checks.assert_called_with(policy.pk, create_tasks=True)  # type: ignore
+        generate_checks.assert_called_with(policy=policy.pk, create_tasks=True)  # type: ignore
 
         self.check_not_authenticated("post", url)
 
@@ -497,7 +499,7 @@ class TestPolicyTasks(TacticalTestCase):
         self.assertEquals(len(resp.data["agents"]), 10)  # type: ignore
 
     def test_generating_agent_policy_checks(self):
-        from .tasks import generate_agent_checks_from_policies_task
+        from .tasks import generate_agent_checks_task
 
         # setup data
         policy = baker.make("automation.Policy", active=True)
@@ -505,7 +507,7 @@ class TestPolicyTasks(TacticalTestCase):
         agent = baker.make_recipe("agents.agent", policy=policy)
 
         # test policy assigned to agent
-        generate_agent_checks_from_policies_task(policy.id)  # type: ignore
+        generate_agent_checks_task(policy=policy.id)  # type: ignore
 
         # make sure all checks were created. should be 7
         agent_checks = Agent.objects.get(pk=agent.id).agentchecks.all()
@@ -545,7 +547,7 @@ class TestPolicyTasks(TacticalTestCase):
                 self.assertEqual(check.event_type, checks[6].event_type)
 
     def test_generating_agent_policy_checks_with_enforced(self):
-        from .tasks import generate_agent_checks_from_policies_task
+        from .tasks import generate_agent_checks_task
 
         # setup data
         policy = baker.make("automation.Policy", active=True, enforced=True)
@@ -555,7 +557,7 @@ class TestPolicyTasks(TacticalTestCase):
         agent = baker.make_recipe("agents.agent", site=site, policy=policy)
         self.create_checks(agent=agent, script=script)
 
-        generate_agent_checks_from_policies_task(policy.id, create_tasks=True)  # type: ignore
+        generate_agent_checks_task(policy=policy.id, create_tasks=True)  # type: ignore
 
         # make sure each agent check says overriden_by_policy
         self.assertEqual(Agent.objects.get(pk=agent.id).agentchecks.count(), 14)
@@ -566,13 +568,12 @@ class TestPolicyTasks(TacticalTestCase):
             7,
         )
 
-    @patch("automation.tasks.generate_agent_checks_by_location_task.delay")
+    @patch("autotasks.models.AutomatedTask.create_task_on_agent")
+    @patch("automation.tasks.generate_agent_checks_task.delay")
     def test_generating_agent_policy_checks_by_location(
-        self, generate_agent_checks_by_location_task
+        self, generate_agent_checks_mock, create_task
     ):
-        from automation.tasks import (
-            generate_agent_checks_by_location_task as generate_agent_checks,
-        )
+        from automation.tasks import generate_agent_checks_task
 
         # setup data
         policy = baker.make("automation.Policy", active=True)
@@ -596,16 +597,14 @@ class TestPolicyTasks(TacticalTestCase):
         workstation_agent.client.save()
 
         # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site__client_id": workstation_agent.client.pk},
-            mon_type="workstation",
+        generate_agent_checks_mock.assert_called_with(
+            client=workstation_agent.client.pk,
             create_tasks=True,
         )
-        generate_agent_checks_by_location_task.reset_mock()
+        generate_agent_checks_mock.reset_mock()
 
-        generate_agent_checks(
-            location={"site__client_id": workstation_agent.client.pk},
-            mon_type="workstation",
+        generate_agent_checks_task(
+            client=workstation_agent.client.pk,
             create_tasks=True,
         )
 
@@ -620,16 +619,14 @@ class TestPolicyTasks(TacticalTestCase):
         workstation_agent.client.save()
 
         # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site__client_id": workstation_agent.client.pk},
-            mon_type="workstation",
+        generate_agent_checks_mock.assert_called_with(
+            client=workstation_agent.client.pk,
             create_tasks=True,
         )
-        generate_agent_checks_by_location_task.reset_mock()
+        generate_agent_checks_mock.reset_mock()
 
-        generate_agent_checks(
-            location={"site__client_id": workstation_agent.client.pk},
-            mon_type="workstation",
+        generate_agent_checks_task(
+            client=workstation_agent.client.pk,
             create_tasks=True,
         )
 
@@ -644,16 +641,14 @@ class TestPolicyTasks(TacticalTestCase):
         server_agent.client.save()
 
         # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site__client_id": server_agent.client.pk},
-            mon_type="server",
+        generate_agent_checks_mock.assert_called_with(
+            client=server_agent.client.pk,
             create_tasks=True,
         )
-        generate_agent_checks_by_location_task.reset_mock()
+        generate_agent_checks_mock.reset_mock()
 
-        generate_agent_checks(
-            location={"site__client_id": server_agent.client.pk},
-            mon_type="server",
+        generate_agent_checks_task(
+            client=server_agent.client.pk,
             create_tasks=True,
         )
 
@@ -668,16 +663,14 @@ class TestPolicyTasks(TacticalTestCase):
         server_agent.client.save()
 
         # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site__client_id": server_agent.client.pk},
-            mon_type="server",
+        generate_agent_checks_mock.assert_called_with(
+            client=server_agent.client.pk,
             create_tasks=True,
         )
-        generate_agent_checks_by_location_task.reset_mock()
+        generate_agent_checks_mock.reset_mock()
 
-        generate_agent_checks(
-            location={"site__client_id": server_agent.client.pk},
-            mon_type="server",
+        generate_agent_checks_task(
+            client=server_agent.client.pk,
             create_tasks=True,
         )
 
@@ -692,16 +685,14 @@ class TestPolicyTasks(TacticalTestCase):
         workstation_agent.site.save()
 
         # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site_id": workstation_agent.site.pk},
-            mon_type="workstation",
+        generate_agent_checks_mock.assert_called_with(
+            site=workstation_agent.site.pk,
             create_tasks=True,
         )
-        generate_agent_checks_by_location_task.reset_mock()
+        generate_agent_checks_mock.reset_mock()
 
-        generate_agent_checks(
-            location={"site_id": workstation_agent.site.pk},
-            mon_type="workstation",
+        generate_agent_checks_task(
+            site=workstation_agent.site.pk,
             create_tasks=True,
         )
 
@@ -716,16 +707,14 @@ class TestPolicyTasks(TacticalTestCase):
         workstation_agent.site.save()
 
         # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site_id": workstation_agent.site.pk},
-            mon_type="workstation",
+        generate_agent_checks_mock.assert_called_with(
+            site=workstation_agent.site.pk,
             create_tasks=True,
         )
-        generate_agent_checks_by_location_task.reset_mock()
+        generate_agent_checks_mock.reset_mock()
 
-        generate_agent_checks(
-            location={"site_id": workstation_agent.site.pk},
-            mon_type="workstation",
+        generate_agent_checks_task(
+            site=workstation_agent.site.pk,
             create_tasks=True,
         )
 
@@ -740,16 +729,14 @@ class TestPolicyTasks(TacticalTestCase):
         server_agent.site.save()
 
         # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site_id": server_agent.site.pk},
-            mon_type="server",
+        generate_agent_checks_mock.assert_called_with(
+            site=server_agent.site.pk,
             create_tasks=True,
         )
-        generate_agent_checks_by_location_task.reset_mock()
+        generate_agent_checks_mock.reset_mock()
 
-        generate_agent_checks(
-            location={"site_id": server_agent.site.pk},
-            mon_type="server",
+        generate_agent_checks_task(
+            site=server_agent.site.pk,
             create_tasks=True,
         )
 
@@ -764,16 +751,14 @@ class TestPolicyTasks(TacticalTestCase):
         server_agent.site.save()
 
         # should trigger task in save method on core
-        generate_agent_checks_by_location_task.assert_called_with(
-            location={"site_id": server_agent.site.pk},
-            mon_type="server",
+        generate_agent_checks_mock.assert_called_with(
+            site=server_agent.site.pk,
             create_tasks=True,
         )
-        generate_agent_checks_by_location_task.reset_mock()
+        generate_agent_checks_mock.reset_mock()
 
-        generate_agent_checks(
-            location={"site_id": server_agent.site.pk},
-            mon_type="server",
+        generate_agent_checks_task(
+            site=server_agent.site.pk,
             create_tasks=True,
         )
 
@@ -783,13 +768,10 @@ class TestPolicyTasks(TacticalTestCase):
             Agent.objects.get(pk=workstation_agent.id).agentchecks.count(), 0
         )
 
-    @patch("automation.tasks.generate_all_agent_checks_task.delay")
-    def test_generating_policy_checks_for_all_agents(
-        self, generate_all_agent_checks_task
-    ):
+    @patch("automation.tasks.generate_agent_checks_task.delay")
+    def test_generating_policy_checks_for_all_agents(self, generate_agent_checks_mock):
         from core.models import CoreSettings
-
-        from .tasks import generate_all_agent_checks_task as generate_all_checks
+        from .tasks import generate_agent_checks_task
 
         # setup data
         policy = baker.make("automation.Policy", active=True)
@@ -801,11 +783,9 @@ class TestPolicyTasks(TacticalTestCase):
         core.server_policy = policy
         core.save()
 
-        generate_all_agent_checks_task.assert_called_with(
-            mon_type="server", create_tasks=True
-        )
-        generate_all_agent_checks_task.reset_mock()
-        generate_all_checks(mon_type="server", create_tasks=True)
+        generate_agent_checks_mock.assert_called_with(all=True, create_tasks=True)
+        generate_agent_checks_mock.reset_mock()
+        generate_agent_checks_task(all=True, create_tasks=True)
 
         # all servers should have 7 checks
         for agent in server_agents:
@@ -818,15 +798,9 @@ class TestPolicyTasks(TacticalTestCase):
         core.workstation_policy = policy
         core.save()
 
-        generate_all_agent_checks_task.assert_any_call(
-            mon_type="workstation", create_tasks=True
-        )
-        generate_all_agent_checks_task.assert_any_call(
-            mon_type="server", create_tasks=True
-        )
-        generate_all_agent_checks_task.reset_mock()
-        generate_all_checks(mon_type="server", create_tasks=True)
-        generate_all_checks(mon_type="workstation", create_tasks=True)
+        generate_agent_checks_mock.assert_any_call(all=True, create_tasks=True)
+        generate_agent_checks_mock.reset_mock()
+        generate_agent_checks_task(all=True, create_tasks=True)
 
         # all workstations should have 7 checks
         for agent in server_agents:
@@ -838,11 +812,9 @@ class TestPolicyTasks(TacticalTestCase):
         core.workstation_policy = None
         core.save()
 
-        generate_all_agent_checks_task.assert_called_with(
-            mon_type="workstation", create_tasks=True
-        )
-        generate_all_agent_checks_task.reset_mock()
-        generate_all_checks(mon_type="workstation", create_tasks=True)
+        generate_agent_checks_mock.assert_called_with(all=True, create_tasks=True)
+        generate_agent_checks_mock.reset_mock()
+        generate_agent_checks_task(all=True, create_tasks=True)
 
         # nothing should have the checks
         for agent in server_agents:
@@ -851,31 +823,8 @@ class TestPolicyTasks(TacticalTestCase):
         for agent in workstation_agents:
             self.assertEqual(Agent.objects.get(pk=agent.id).agentchecks.count(), 0)
 
-    def test_delete_policy_check(self):
-        from .models import Policy
-        from .tasks import delete_policy_check_task
-
-        policy = baker.make("automation.Policy", active=True)
-        self.create_checks(policy=policy)
-        agent = baker.make_recipe("agents.server_agent", policy=policy)
-
-        # make sure agent has 7 checks
-        self.assertEqual(Agent.objects.get(pk=agent.id).agentchecks.count(), 7)
-
-        # pick a policy check and delete it from the agent
-        policy_check_id = Policy.objects.get(pk=policy.id).policychecks.first().id  # type: ignore
-
-        delete_policy_check_task(policy_check_id)
-
-        # make sure policy check doesn't exist on agent
-        self.assertEqual(Agent.objects.get(pk=agent.id).agentchecks.count(), 6)
-        self.assertFalse(
-            Agent.objects.get(pk=agent.id)
-            .agentchecks.filter(parent_check=policy_check_id)
-            .exists()
-        )
-
-    def update_policy_check_fields(self):
+    @patch("autotasks.models.AutomatedTask.create_task_on_agent")
+    def update_policy_check_fields(self, create_task):
         from .models import Policy
         from .tasks import update_policy_check_fields_task
 
@@ -905,8 +854,9 @@ class TestPolicyTasks(TacticalTestCase):
             "12.12.12.12",
         )
 
-    def test_generate_agent_tasks(self):
-        from .tasks import generate_agent_tasks_from_policies_task
+    @patch("autotasks.models.AutomatedTask.create_task_on_agent")
+    def test_generate_agent_tasks(self, create_task):
+        from .tasks import generate_agent_autotasks_task
 
         # create test data
         policy = baker.make("automation.Policy", active=True)
@@ -915,7 +865,7 @@ class TestPolicyTasks(TacticalTestCase):
         )
         agent = baker.make_recipe("agents.server_agent", policy=policy)
 
-        generate_agent_tasks_from_policies_task(policy.id)  # type: ignore
+        generate_agent_autotasks_task(policy=policy.id)  # type: ignore
 
         agent_tasks = Agent.objects.get(pk=agent.id).autotasks.all()
 
@@ -934,56 +884,61 @@ class TestPolicyTasks(TacticalTestCase):
                 self.assertEqual(task.parent_task, tasks[2].id)  # type: ignore
                 self.assertEqual(task.name, tasks[2].name)  # type: ignore
 
-    @patch("autotasks.tasks.delete_win_task_schedule.delay")
-    def test_delete_policy_tasks(self, delete_win_task_schedule):
-        from .tasks import delete_policy_autotask_task
+    @patch("autotasks.models.AutomatedTask.create_task_on_agent")
+    @patch("autotasks.models.AutomatedTask.delete_task_on_agent")
+    def test_delete_policy_tasks(self, delete_task_on_agent, create_task):
+        from .tasks import delete_policy_autotasks_task
 
         policy = baker.make("automation.Policy", active=True)
         tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
-        agent = baker.make_recipe("agents.server_agent", policy=policy)
+        baker.make_recipe("agents.server_agent", policy=policy)
 
-        delete_policy_autotask_task(tasks[0].id)  # type: ignore
+        delete_policy_autotasks_task(task=tasks[0].id)  # type: ignore
 
-        delete_win_task_schedule.assert_called_with(
-            agent.autotasks.get(parent_task=tasks[0].id).id  # type: ignore
-        )
+        delete_task_on_agent.assert_called()
 
-    @patch("autotasks.tasks.run_win_task.delay")
-    def test_run_policy_task(self, run_win_task):
-        from .tasks import run_win_policy_autotask_task
+    @patch("autotasks.models.AutomatedTask.create_task_on_agent")
+    @patch("autotasks.models.AutomatedTask.run_win_task")
+    def test_run_policy_task(self, run_win_task, create_task):
+        from .tasks import run_win_policy_autotasks_task
 
-        tasks = baker.make("autotasks.AutomatedTask", _quantity=3)
+        policy = baker.make("automation.Policy", active=True)
+        tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
+        baker.make_recipe("agents.server_agent", policy=policy)
 
-        run_win_policy_autotask_task([task.id for task in tasks])  # type: ignore
+        run_win_policy_autotasks_task(task=tasks[0].id)  # type: ignore
 
-        run_win_task.side_effect = [task.id for task in tasks]  # type: ignore
-        self.assertEqual(run_win_task.call_count, 3)
-        for task in tasks:  # type: ignore
-            run_win_task.assert_any_call(task.id)  # type: ignore
+        run_win_task.assert_called_once()
 
-    @patch("autotasks.tasks.enable_or_disable_win_task.delay")
-    def test_update_policy_tasks(self, enable_or_disable_win_task):
-        from .tasks import update_policy_task_fields_task
+    @patch("autotasks.models.AutomatedTask.create_task_on_agent")
+    @patch("autotasks.models.AutomatedTask.modify_task_on_agent")
+    def test_update_policy_tasks(self, modify_task_on_agent, create_task):
+        from .tasks import update_policy_autotasks_fields_task
 
         # setup data
         policy = baker.make("automation.Policy", active=True)
         tasks = baker.make(
-            "autotasks.AutomatedTask", enabled=True, policy=policy, _quantity=3
+            "autotasks.AutomatedTask",
+            enabled=True,
+            policy=policy,
+            _quantity=3,
         )
         agent = baker.make_recipe("agents.server_agent", policy=policy)
 
         tasks[0].enabled = False  # type: ignore
         tasks[0].save()  # type: ignore
 
-        update_policy_task_fields_task(tasks[0].id)  # type: ignore
-        enable_or_disable_win_task.assert_not_called()
+        update_policy_autotasks_fields_task(task=tasks[0].id)  # type: ignore
+        modify_task_on_agent.assert_not_called()
 
         self.assertFalse(agent.autotasks.get(parent_task=tasks[0].id).enabled)  # type: ignore
 
-        update_policy_task_fields_task(tasks[0].id, update_agent=True)  # type: ignore
-        enable_or_disable_win_task.assert_called_with(
-            agent.autotasks.get(parent_task=tasks[0].id).id, False  # type: ignore
-        )
+        update_policy_autotasks_fields_task(task=tasks[0].id, update_agent=True)  # type: ignore
+        modify_task_on_agent.assert_not_called()
+
+        agent.autotasks.update(sync_status="synced")
+        update_policy_autotasks_fields_task(task=tasks[0].id, update_agent=True)  # type: ignore
+        modify_task_on_agent.assert_called_once()
 
     @patch("agents.models.Agent.generate_tasks_from_policies")
     @patch("agents.models.Agent.generate_checks_from_policies")
@@ -996,17 +951,19 @@ class TestPolicyTasks(TacticalTestCase):
         generate_checks.reset_mock()
         generate_tasks.reset_mock()
 
-        generate_agent_checks_task([agent.pk for agent in agents])
+        generate_agent_checks_task(agents=[agent.pk for agent in agents])
         self.assertEquals(generate_checks.call_count, 5)
         generate_tasks.assert_not_called()
         generate_checks.reset_mock()
 
-        generate_agent_checks_task([agent.pk for agent in agents], create_tasks=True)
+        generate_agent_checks_task(
+            agents=[agent.pk for agent in agents], create_tasks=True
+        )
         self.assertEquals(generate_checks.call_count, 5)
         self.assertEquals(generate_checks.call_count, 5)
 
-    @patch("autotasks.tasks.delete_win_task_schedule.delay")
-    def test_policy_exclusions(self, delete_task):
+    @patch("autotasks.models.AutomatedTask.create_task_on_agent")
+    def test_policy_exclusions(self, create_task):
         # setup data
         policy = baker.make("automation.Policy", active=True)
         baker.make_recipe("checks.memory_check", policy=policy)
@@ -1028,8 +985,6 @@ class TestPolicyTasks(TacticalTestCase):
 
         self.assertEqual(policy.related_agents().count(), 0)  # type: ignore
         self.assertEqual(agent.agentchecks.count(), 0)  # type: ignore
-        delete_task.assert_called()
-        delete_task.reset_mock()
 
         # delete agent tasks
         agent.autotasks.all().delete()
@@ -1051,8 +1006,6 @@ class TestPolicyTasks(TacticalTestCase):
 
         self.assertEqual(policy.related_agents().count(), 0)  # type: ignore
         self.assertEqual(agent.agentchecks.count(), 0)  # type: ignore
-        delete_task.assert_called()
-        delete_task.reset_mock()
 
         # delete agent tasks and reset
         agent.autotasks.all().delete()
@@ -1074,8 +1027,6 @@ class TestPolicyTasks(TacticalTestCase):
 
         self.assertEqual(policy.related_agents().count(), 0)  # type: ignore
         self.assertEqual(agent.agentchecks.count(), 0)  # type: ignore
-        delete_task.assert_called()
-        delete_task.reset_mock()
 
         # delete agent tasks and reset
         agent.autotasks.all().delete()
@@ -1103,11 +1054,3 @@ class TestPolicyTasks(TacticalTestCase):
 
         self.assertEqual(policy.related_agents().count(), 0)  # type: ignore
         self.assertEqual(agent.agentchecks.count(), 0)  # type: ignore
-        delete_task.assert_called()
-        delete_task.reset_mock()
-
-    def test_removing_duplicate_pending_task_actions(self):
-        pass
-
-    def test_creating_checks_with_assigned_tasks(self):
-        pass

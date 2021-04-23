@@ -67,7 +67,7 @@ def update_policy_check_fields_task(check: int) -> str:
     update_fields: Dict[Any, Any] = {}
 
     for field in c.policy_fields_to_copy:
-        setattr(update_fields, field, getattr(c, field))
+        update_fields[field] = getattr(c, field)
 
     Check.objects.filter(parent_check=check).update(**update_fields)
 
@@ -127,15 +127,17 @@ def update_policy_autotasks_fields_task(task: int, update_agent: bool = False) -
     from autotasks.models import AutomatedTask
 
     t = AutomatedTask.objects.get(pk=task)
-    update_fields: Dict[Any, Any] = {}
+    update_fields: Dict[str, Any] = {}
 
     for field in t.policy_fields_to_copy:
-        setattr(update_fields, field, getattr(t, field))
+        update_fields[field] = getattr(t, field)
 
     AutomatedTask.objects.filter(parent_task=task).update(**update_fields)
 
     if update_agent:
-        for t in AutomatedTask.objects.filter(parent_task=task):
+        for t in AutomatedTask.objects.filter(parent_task=task).exclude(
+            sync_status="initial"
+        ):
             t.modify_task_on_agent()
 
     return "ok"

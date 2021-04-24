@@ -57,7 +57,7 @@
           <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
             <code>-desc "Desired custom description on agent"</code>
           </q-badge>
-          <span> Set description field during install </span>
+          <span> Set agent description field during install </span>
         </div>
       </q-expansion-item>
       <br />

@@ -364,11 +364,30 @@ class TaskRunner(APIView):
         # check if task is a collector and update the custom field
         if task.custom_field:
             if not task.stderr:
-                agent_field = AgentCustomField.objects.get(
+
+                if AgentCustomField.objects.filter(
                     field=task.custom_field, agent=task.agent
-                )
-                agent_field.value = new_task.stdout
-                agent_field.save()
+                ).exists():
+                    agent_field = AgentCustomField.objects.get(
+                        field=task.custom_field, agent=task.agent
+                    )
+                else:
+                    agent_field = AgentCustomField.objects.create(
+                        field=task.custom_field, agent=task.agent
+                    )
+
+                # get last line of stdout
+                value = new_task.stdout.split("\n")[-1].strip()
+
+                if task.custom_field.type in ["text", "number", "single", "datetime"]:
+                    agent_field.string_value = value
+                    agent_field.save()
+                elif task.custom_field.type == "multiple":
+                    agent_field.multiple_value = value.split(",")
+                    agent_field.save()
+                elif task.custom_field.type == "checkbox":
+                    agent_field.bool_value = bool(value)
+                    agent_field.save()
 
                 status = "passing"
             else:

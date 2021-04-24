@@ -94,20 +94,29 @@ class Policy(BaseAuditModel):
 
         filtered_agents_pks = Policy.objects.none()
 
-        filtered_agents_pks |= Agent.objects.filter(
-            site__in=[
-                site
-                for site in explicit_sites
-                if site.client not in explicit_clients
-                and site.client not in self.excluded_clients.all()
-            ],
-            monitoring_type=mon_type,
-        ).values_list("pk", flat=True)
+        filtered_agents_pks |= (
+            Agent.objects.exclude(block_policy_inheritance=True)
+            .filter(
+                site__in=[
+                    site
+                    for site in explicit_sites
+                    if site.client not in explicit_clients
+                    and site.client not in self.excluded_clients.all()
+                ],
+                monitoring_type=mon_type,
+            )
+            .values_list("pk", flat=True)
+        )
 
-        filtered_agents_pks |= Agent.objects.filter(
-            site__client__in=[client for client in explicit_clients],
-            monitoring_type=mon_type,
-        ).values_list("pk", flat=True)
+        filtered_agents_pks |= (
+            Agent.objects.exclude(block_policy_inheritance=True)
+            .exclude(site__block_policy_inheritance=True)
+            .filter(
+                site__client__in=[client for client in explicit_clients],
+                monitoring_type=mon_type,
+            )
+            .values_list("pk", flat=True)
+        )
 
         return Agent.objects.filter(
             models.Q(pk__in=filtered_agents_pks)
@@ -150,6 +159,17 @@ class Policy(BaseAuditModel):
             default_policy = CoreSettings.objects.first().workstation_policy
             client_policy = client.workstation_policy
             site_policy = site.workstation_policy
+
+        # check if client/site/agent is blocking inheritance and blank out policies
+        if agent.block_policy_inheritance:
+            site_policy = None
+            client_policy = None
+            default_policy = None
+        elif site.block_policy_inheritance:
+            client_policy = None
+            default_policy = None
+        elif client.block_policy_inheritance:
+            default_policy = None
 
         if (
             agent_policy
@@ -237,6 +257,17 @@ class Policy(BaseAuditModel):
             default_policy = CoreSettings.objects.first().workstation_policy
             client_policy = client.workstation_policy
             site_policy = site.workstation_policy
+
+        # check if client/site/agent is blocking inheritance and blank out policies
+        if agent.block_policy_inheritance:
+            site_policy = None
+            client_policy = None
+            default_policy = None
+        elif site.block_policy_inheritance:
+            client_policy = None
+            default_policy = None
+        elif client.block_policy_inheritance:
+            default_policy = None
 
         # Used to hold the policies that will be applied and the order in which they are applied
         # Enforced policies are applied first

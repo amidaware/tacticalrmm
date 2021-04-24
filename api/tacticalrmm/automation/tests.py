@@ -1054,3 +1054,82 @@ class TestPolicyTasks(TacticalTestCase):
 
         self.assertEqual(policy.related_agents().count(), 0)  # type: ignore
         self.assertEqual(agent.agentchecks.count(), 0)  # type: ignore
+
+    @patch("autotasks.models.AutomatedTask.create_task_on_agent")
+    def test_policy_inheritance_blocking(self, create_task):
+        # setup data
+        policy = baker.make("automation.Policy", active=True)
+        baker.make_recipe("checks.memory_check", policy=policy)
+        baker.make("autotasks.AutomatedTask", policy=policy)
+        agent = baker.make_recipe("agents.agent", monitoring_type="server")
+
+        core = CoreSettings.objects.first()
+        core.server_policy = policy
+        core.save()
+
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
+        # should get policies from default policy
+        self.assertTrue(agent.autotasks.all())
+        self.assertTrue(agent.agentchecks.all())
+
+        # test client blocking inheritance
+        agent.site.client.block_policy_inheritance = True
+        agent.site.client.save()
+
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
+        self.assertFalse(agent.autotasks.all())
+        self.assertFalse(agent.agentchecks.all())
+
+        agent.site.client.server_policy = policy
+        agent.site.client.save()
+
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
+        # should get policies from client policy
+        self.assertTrue(agent.autotasks.all())
+        self.assertTrue(agent.agentchecks.all())
+
+        # test site blocking inheritance
+        agent.site.block_policy_inheritance = True
+        agent.site.save()
+
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
+        self.assertFalse(agent.autotasks.all())
+        self.assertFalse(agent.agentchecks.all())
+
+        agent.site.server_policy = policy
+        agent.site.save()
+
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
+        # should get policies from site policy
+        self.assertTrue(agent.autotasks.all())
+        self.assertTrue(agent.agentchecks.all())
+
+        # test agent blocking inheritance
+        agent.block_policy_inheritance = True
+        agent.save()
+
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
+        self.assertFalse(agent.autotasks.all())
+        self.assertFalse(agent.agentchecks.all())
+
+        agent.policy = policy
+        agent.save()
+
+        agent.generate_checks_from_policies()
+        agent.generate_tasks_from_policies()
+
+        # should get policies from agent policy
+        self.assertTrue(agent.autotasks.all())
+        self.assertTrue(agent.agentchecks.all())

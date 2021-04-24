@@ -99,6 +99,7 @@ class Agent(BaseAuditModel):
             not old_agent
             or (old_agent and old_agent.policy != self.policy)
             or (old_agent.site != self.site)
+            or (old_agent.block_policy_inheritance != self.block_policy_inheritance)
         ):
             self.generate_checks_from_policies()
             self.generate_tasks_from_policies()

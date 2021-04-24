@@ -42,16 +42,22 @@ class Client(BaseAuditModel):
         super(BaseAuditModel, self).save(*args, **kw)
 
         # check if polcies have changed and initiate task to reapply policies if so
-        if (old_client and old_client.server_policy != self.server_policy) or (
-            old_client and old_client.workstation_policy != self.workstation_policy
-        ):
-            generate_agent_checks_task.delay(
-                client=self.pk,
-                create_tasks=True,
-            )
+        if old_client:
+            if (
+                (old_client.server_policy != self.server_policy)
+                or (old_client.workstation_policy != self.workstation_policy)
+                or (
+                    old_client.block_policy_inheritance != self.block_policy_inheritance
+                )
+            ):
 
-        if old_client and old_client.alert_template != self.alert_template:
-            cache_agents_alert_template.delay()
+                generate_agent_checks_task.delay(
+                    client=self.pk,
+                    create_tasks=True,
+                )
+
+            if old_client.alert_template != self.alert_template:
+                cache_agents_alert_template.delay()
 
     class Meta:
         ordering = ("name",)
@@ -147,13 +153,17 @@ class Site(BaseAuditModel):
         super(Site, self).save(*args, **kw)
 
         # check if polcies have changed and initiate task to reapply policies if so
-        if (old_site and old_site.server_policy != self.server_policy) or (
-            old_site and old_site.workstation_policy != self.workstation_policy
-        ):
-            generate_agent_checks_task.delay(site=self.pk, create_tasks=True)
+        if old_site:
+            if (
+                (old_site.server_policy != self.server_policy)
+                or (old_site.workstation_policy != self.workstation_policy)
+                or (old_site.block_policy_inheritance != self.block_policy_inheritance)
+            ):
 
-        if old_site and old_site.alert_template != self.alert_template:
-            cache_agents_alert_template.delay()
+                generate_agent_checks_task.delay(site=self.pk, create_tasks=True)
+
+                if old_site.alert_template != self.alert_template:
+                    cache_agents_alert_template.delay()
 
     class Meta:
         ordering = ("name",)

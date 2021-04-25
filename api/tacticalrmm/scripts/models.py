@@ -198,7 +198,7 @@ class Script(BaseAuditModel):
     ) -> Union[List[str], None]:
         from core.models import CustomField, GlobalKVStore
 
-        if not list:
+        if not args:
             return []
 
         temp_args = list()

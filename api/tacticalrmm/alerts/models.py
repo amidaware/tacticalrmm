@@ -1,3 +1,5 @@
+import re
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union
@@ -297,7 +299,7 @@ class Alert(models.Model):
         if alert_template and alert_template.action and not alert.action_run:
             r = agent.run_script(
                 scriptpk=alert_template.action.pk,
-                args=alert_template.action_args,
+                args=alert.parse_script_args(alert_template.action_args),
                 timeout=alert_template.action_timeout,
                 wait=True,
                 full=True,
@@ -406,7 +408,7 @@ class Alert(models.Model):
         ):
             r = agent.run_script(
                 scriptpk=alert_template.resolved_action.pk,
-                args=alert_template.resolved_action_args,
+                args=alert.parse_script_args(alert_template.resolved_action_args),
                 timeout=alert_template.resolved_action_timeout,
                 wait=True,
                 full=True,
@@ -427,6 +429,36 @@ class Alert(models.Model):
                 logger.error(
                     f"Resolved action: {alert_template.action.name} failed to run on any agent for {agent.hostname} resolved alert"
                 )
+
+    def parse_script_args(self, args: list[str]):
+
+        if not args:
+            return []
+
+        temp_args = list()
+        # pattern to match for injection
+        pattern = re.compile(".*\\{\\{alert\\.(.*)\\}\\}.*")
+
+        for arg in args:
+            match = pattern.match(arg)
+            if match:
+                name = match.group(1)
+
+                if hasattr(self, name):
+                    value = getattr(self, name)
+                else:
+                    continue
+
+                try:
+                    temp_args.append(re.sub("\\{\\{.*\\}\\}", "'" + value + "'", arg))  # type: ignore
+                except Exception as e:
+                    logger.error(e)
+                    continue
+
+            else:
+                temp_args.append(arg)
+
+        return temp_args
 
 
 class AlertTemplate(models.Model):

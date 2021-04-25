@@ -247,6 +247,7 @@ class CustomField(models.Model):
         blank=True,
         default=list,
     )
+    hide_in_ui = models.BooleanField(default=False)
 
     class Meta:
         unique_together = (("model", "name"),)

@@ -50,6 +50,10 @@
         <q-td>
           {{ capitalize(props.row.type) }}
         </q-td>
+        <!-- hide in ui -->
+        <q-td>
+          <q-icon v-if="props.row.hide_in_ui" name="check" />
+        </q-td>
         <!-- default value -->
         <q-td v-if="props.row.type === 'checkbox'">
           {{ props.row.default_value_bool }}
@@ -101,6 +105,7 @@ export default {
           align: "left",
           sortable: true,
         },
+        { name: "hide_in_ui", label: "Hide in UI", field: "hide_in_ui", align: "left", sortable: true },
         { name: "default_value", label: "Default Value", field: "default_value", align: "left", sortable: true },
         { name: "required", label: "Required", field: "required", align: "left", sortable: true },
       ],

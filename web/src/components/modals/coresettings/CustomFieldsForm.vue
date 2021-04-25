@@ -147,6 +147,7 @@
             v-model="localField.required"
             color="green"
           />
+          <q-toggle label="Hide in Dashboard" v-model="localField.hide_in_ui" color="green" />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancel" v-close-popup />
@@ -175,6 +176,7 @@ export default {
         default_value_string: "",
         default_value_bool: false,
         default_values_multiple: [],
+        hide_in_ui: false,
       },
       modelOptions: [
         { label: "Client", value: "client" },

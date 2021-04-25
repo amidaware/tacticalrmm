@@ -1,7 +1,7 @@
 import pytz
 from rest_framework import serializers
 
-from .models import CodeSignToken, CoreSettings, CustomField
+from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore
 
 
 class CoreSettingsSerializer(serializers.ModelSerializer):
@@ -32,4 +32,10 @@ class CustomFieldSerializer(serializers.ModelSerializer):
 class CodeSignTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = CodeSignToken
+        fields = "__all__"
+
+
+class KeyStoreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GlobalKVStore
         fields = "__all__"

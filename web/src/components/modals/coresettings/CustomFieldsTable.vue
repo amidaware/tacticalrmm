@@ -13,12 +13,7 @@
   >
     <!-- body slots -->
     <template v-slot:body="props">
-      <q-tr
-        :props="props"
-        class="cursor-pointer"
-        @contextmenu="selectedTemplate = props.row"
-        @dblclick="editCustomField(props.row)"
-      >
+      <q-tr :props="props" class="cursor-pointer" @dblclick="editCustomField(props.row)">
         <!-- context menu -->
         <q-menu context-menu>
           <q-list dense style="min-width: 200px">
@@ -133,7 +128,7 @@ export default {
         .onOk(() => {
           this.$q.loading.show();
           this.$axios
-            .delete(`core/customfields/${field.id}/`)
+            .delete(`/core/customfields/${field.id}/`)
             .then(r => {
               this.refresh();
               this.$q.loading.hide();

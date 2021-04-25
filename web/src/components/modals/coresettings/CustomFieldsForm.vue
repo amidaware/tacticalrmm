@@ -224,7 +224,6 @@ export default {
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.onOk();
             this.notifyError("There was an error editing the custom field");
           });
       } else {
@@ -263,7 +262,7 @@ export default {
     },
   },
   mounted() {
-    // If pk prop is set that means we are editting
+    // If pk prop is set that means we are editing
     if (this.field) Object.assign(this.localField, this.field);
 
     // Set model to current tab

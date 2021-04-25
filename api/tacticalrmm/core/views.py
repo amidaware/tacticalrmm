@@ -11,11 +11,12 @@ from rest_framework.views import APIView
 
 from tacticalrmm.utils import notify_error
 
-from .models import CodeSignToken, CoreSettings, CustomField
+from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore
 from .serializers import (
     CodeSignTokenSerializer,
     CoreSettingsSerializer,
     CustomFieldSerializer,
+    KeyStoreSerializer,
 )
 
 
@@ -229,3 +230,32 @@ class CodeSign(APIView):
         except:
             ret = "Something went wrong"
         return notify_error(ret)
+
+
+class GetAddKeyStore(APIView):
+    def get(self, request):
+        keys = GlobalKVStore.objects.all()
+        return Response(KeyStoreSerializer(keys, many=True).data)
+
+    def post(self, request):
+        serializer = KeyStoreSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response("ok")
+
+
+class UpdateDeleteKeyStore(APIView):
+    def put(self, request, pk):
+        key = get_object_or_404(GlobalKVStore, pk=pk)
+
+        serializer = KeyStoreSerializer(instance=key, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response("ok")
+
+    def delete(self, request, pk):
+        get_object_or_404(GlobalKVStore, pk=pk).delete()
+
+        return Response("ok")

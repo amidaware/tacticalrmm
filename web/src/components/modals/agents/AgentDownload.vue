@@ -53,6 +53,12 @@
           </q-badge>
           <span> To use a domain CA </span>
         </div>
+        <div class="q-pa-xs q-gutter-xs">
+          <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
+            <code>-desc "Desired custom description on agent"</code>
+          </q-badge>
+          <span> Set agent description field during install </span>
+        </div>
       </q-expansion-item>
       <br />
       <p class="text-italic">Note: the auth token above will be valid for {{ info.expires }} hours.</p>

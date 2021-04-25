@@ -66,8 +66,7 @@ class TestUtils(TestCase):
         mock_subprocess.assert_not_called()
 
     @override_settings(
-        ALLOWED_HOSTS=["api.example.com"],
-        SECRET_KEY="sekret",
+        ALLOWED_HOSTS=["api.example.com"], SECRET_KEY="sekret", DOCKER_BUILD=False
     )
     @patch("subprocess.run")
     def test_reload_nats(self, mock_subprocess):

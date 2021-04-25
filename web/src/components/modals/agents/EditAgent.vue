@@ -266,7 +266,7 @@ export default {
   created() {
     // Get custom fields
     this.getCustomFields("agent").then(r => {
-      this.customFields = r.data;
+      this.customFields = r.data.filter(field => !field.hide_in_ui);
     });
     this.getAgentInfo();
     this.getClientsSites();

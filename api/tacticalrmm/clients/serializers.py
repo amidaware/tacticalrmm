@@ -39,6 +39,7 @@ class SiteSerializer(ModelSerializer):
             "client",
             "custom_fields",
             "agent_count",
+            "block_policy_inheritance",
         )
 
     def validate(self, val):
@@ -80,6 +81,7 @@ class ClientSerializer(ModelSerializer):
             "server_policy",
             "workstation_policy",
             "alert_template",
+            "block_policy_inheritance",
             "sites",
             "custom_fields",
             "agent_count",

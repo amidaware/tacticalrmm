@@ -179,13 +179,9 @@ class TestClientViews(TacticalTestCase):
 
         self.check_not_authenticated("put", url)
 
-    @patch("automation.tasks.generate_all_agent_checks_task.delay")
-    @patch("automation.tasks.generate_all_agent_checks_task.delay")
-    def test_delete_client(self, task1, task2):
+    def test_delete_client(self):
         from agents.models import Agent
 
-        task1.return_value = "ok"
-        task2.return_value = "ok"
         # setup data
         client_to_delete = baker.make("clients.Client")
         client_to_move = baker.make("clients.Client")
@@ -352,13 +348,9 @@ class TestClientViews(TacticalTestCase):
 
         self.check_not_authenticated("put", url)
 
-    @patch("automation.tasks.generate_all_agent_checks_task.delay")
-    @patch("automation.tasks.generate_all_agent_checks_task.delay")
-    def test_delete_site(self, task1, task2):
+    def test_delete_site(self):
         from agents.models import Agent
 
-        task1.return_value = "ok"
-        task2.return_value = "ok"
         # setup data
         client = baker.make("clients.Client")
         site_to_delete = baker.make("clients.Site", client=client)

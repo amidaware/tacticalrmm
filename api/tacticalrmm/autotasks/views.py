@@ -1,28 +1,22 @@
-import asyncio
-
+from agents.models import Agent
+from checks.models import Check
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from agents.models import Agent
-from checks.models import Check
 from scripts.models import Script
 from tacticalrmm.utils import get_bit_days, get_default_timezone, notify_error
 
 from .models import AutomatedTask
 from .serializers import AutoTaskSerializer, TaskSerializer
-from .tasks import (
-    create_win_task_schedule,
-    delete_win_task_schedule,
-    enable_or_disable_win_task,
-)
 
 
 class AddAutoTask(APIView):
     def post(self, request):
         from automation.models import Policy
-        from automation.tasks import generate_agent_tasks_from_policies_task
+        from automation.tasks import generate_agent_autotasks_task
+
+        from autotasks.tasks import create_win_task_schedule
 
         data = request.data
         script = get_object_or_404(Script, pk=data["autotask"]["script"])
@@ -47,7 +41,7 @@ class AddAutoTask(APIView):
         del data["autotask"]["run_time_days"]
         serializer = TaskSerializer(data=data["autotask"], partial=True, context=parent)
         serializer.is_valid(raise_exception=True)
-        obj = serializer.save(
+        task = serializer.save(
             **parent,
             script=script,
             win_task_name=AutomatedTask.generate_task_name(),
@@ -55,11 +49,11 @@ class AddAutoTask(APIView):
             run_time_bit_weekdays=bit_weekdays,
         )
 
-        if not "policy" in data:
-            create_win_task_schedule.delay(pk=obj.pk)
+        if task.agent:
+            create_win_task_schedule.delay(pk=task.pk)
 
-        if "policy" in data:
-            generate_agent_tasks_from_policies_task.delay(data["policy"])
+        elif task.policy:
+            generate_agent_autotasks_task.delay(policy=task.policy.pk)
 
         return Response("Task will be created shortly!")
 
@@ -75,7 +69,7 @@ class AutoTask(APIView):
         return Response(AutoTaskSerializer(agent, context=ctx).data)
 
     def put(self, request, pk):
-        from automation.tasks import update_policy_task_fields_task
+        from automation.tasks import update_policy_autotasks_fields_task
 
         task = get_object_or_404(AutomatedTask, pk=pk)
 
@@ -84,46 +78,52 @@ class AutoTask(APIView):
         serializer.save()
 
         if task.policy:
-            update_policy_task_fields_task.delay(task.pk)
+            update_policy_autotasks_fields_task.delay(task=task.pk)
 
         return Response("ok")
 
     def patch(self, request, pk):
-        from automation.tasks import update_policy_task_fields_task
+        from automation.tasks import update_policy_autotasks_fields_task
+        from autotasks.tasks import enable_or_disable_win_task
 
         task = get_object_or_404(AutomatedTask, pk=pk)
 
         if "enableordisable" in request.data:
             action = request.data["enableordisable"]
-
-            if not task.policy:
-                enable_or_disable_win_task.delay(pk=task.pk, action=action)
-
-            else:
-                update_policy_task_fields_task.delay(task.pk, update_agent=True)
-
             task.enabled = action
             task.save(update_fields=["enabled"])
             action = "enabled" if action else "disabled"
+
+            if task.policy:
+                update_policy_autotasks_fields_task.delay(
+                    task=task.pk, update_agent=True
+                )
+            elif task.agent:
+                enable_or_disable_win_task.delay(pk=task.pk)
+
             return Response(f"Task will be {action} shortly")
 
+        else:
+            return notify_error("The request was invalid")
+
     def delete(self, request, pk):
-        from automation.tasks import delete_policy_autotask_task
+        from automation.tasks import delete_policy_autotasks_task
+        from autotasks.tasks import delete_win_task_schedule
 
         task = get_object_or_404(AutomatedTask, pk=pk)
 
-        if not task.policy:
+        if task.agent:
             delete_win_task_schedule.delay(pk=task.pk)
-
-        if task.policy:
-            delete_policy_autotask_task.delay(task.pk)
-            task.delete()
+        elif task.policy:
+            delete_policy_autotasks_task.delay(task=task.pk)
 
         return Response(f"{task.name} will be deleted shortly")
 
 
 @api_view()
 def run_task(request, pk):
+    from autotasks.tasks import run_win_task
+
     task = get_object_or_404(AutomatedTask, pk=pk)
-    asyncio.run(task.agent.nats_cmd({"func": "runtask", "taskpk": task.pk}, wait=False))
+    run_win_task.delay(pk=pk)
     return Response(f"{task.name} will now be run on {task.agent.hostname}")

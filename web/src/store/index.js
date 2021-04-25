@@ -257,7 +257,8 @@ export default function () {
                 client: client.id,
                 server_policy: site.server_policy,
                 workstation_policy: site.workstation_policy,
-                alert_template: site.alert_template
+                alert_template: site.alert_template,
+                blockInheritance: site.block_policy_inheritance
               }
 
               if (site.maintenance_mode) { siteNode["color"] = "green" }
@@ -276,6 +277,7 @@ export default function () {
               server_policy: client.server_policy,
               workstation_policy: client.workstation_policy,
               alert_template: client.alert_template,
+              blockInheritance: client.block_policy_inheritance,
               children: childSites
             }
 

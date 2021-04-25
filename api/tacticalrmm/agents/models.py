@@ -63,6 +63,7 @@ class Agent(BaseAuditModel):
         max_length=255, choices=TZ_CHOICES, null=True, blank=True
     )
     maintenance_mode = models.BooleanField(default=False)
+    block_policy_inheritance = models.BooleanField(default=False)
     alert_template = models.ForeignKey(
         "alerts.AlertTemplate",
         related_name="agents",
@@ -96,9 +97,9 @@ class Agent(BaseAuditModel):
         # or if site has changed on agent and if so generate-policies
         if (
             not old_agent
-            or old_agent
-            and old_agent.policy != self.policy
-            or old_agent.site != self.site
+            or (old_agent and old_agent.policy != self.policy)
+            or (old_agent.site != self.site)
+            or (old_agent.block_policy_inheritance != self.block_policy_inheritance)
         ):
             self.generate_checks_from_policies()
             self.generate_tasks_from_policies()
@@ -421,21 +422,34 @@ class Agent(BaseAuditModel):
 
             # check site policy if agent policy doesn't have one
             elif site.server_policy and site.server_policy.winupdatepolicy.exists():
-                patch_policy = site.server_policy.winupdatepolicy.get()
+                # make sure agent isn;t blocking policy inheritance
+                if not self.block_policy_inheritance:
+                    patch_policy = site.server_policy.winupdatepolicy.get()
 
             # if site doesn't have a patch policy check the client
             elif (
                 site.client.server_policy
                 and site.client.server_policy.winupdatepolicy.exists()
             ):
-                patch_policy = site.client.server_policy.winupdatepolicy.get()
+                # make sure agent and site are not blocking inheritance
+                if (
+                    not self.block_policy_inheritance
+                    and not site.block_policy_inheritance
+                ):
+                    patch_policy = site.client.server_policy.winupdatepolicy.get()
 
             # if patch policy still doesn't exist check default policy
             elif (
                 core_settings.server_policy
                 and core_settings.server_policy.winupdatepolicy.exists()
             ):
-                patch_policy = core_settings.server_policy.winupdatepolicy.get()
+                # make sure agent site and client are not blocking inheritance
+                if (
+                    not self.block_policy_inheritance
+                    and not site.block_policy_inheritance
+                    and not site.client.block_policy_inheritance
+                ):
+                    patch_policy = core_settings.server_policy.winupdatepolicy.get()
 
         elif self.monitoring_type == "workstation":
             # check agent policy first which should override client or site policy
@@ -446,21 +460,36 @@ class Agent(BaseAuditModel):
                 site.workstation_policy
                 and site.workstation_policy.winupdatepolicy.exists()
             ):
-                patch_policy = site.workstation_policy.winupdatepolicy.get()
+                # make sure agent isn;t blocking policy inheritance
+                if not self.block_policy_inheritance:
+                    patch_policy = site.workstation_policy.winupdatepolicy.get()
 
             # if site doesn't have a patch policy check the client
             elif (
                 site.client.workstation_policy
                 and site.client.workstation_policy.winupdatepolicy.exists()
             ):
-                patch_policy = site.client.workstation_policy.winupdatepolicy.get()
+                # make sure agent and site are not blocking inheritance
+                if (
+                    not self.block_policy_inheritance
+                    and not site.block_policy_inheritance
+                ):
+                    patch_policy = site.client.workstation_policy.winupdatepolicy.get()
 
             # if patch policy still doesn't exist check default policy
             elif (
                 core_settings.workstation_policy
                 and core_settings.workstation_policy.winupdatepolicy.exists()
             ):
-                patch_policy = core_settings.workstation_policy.winupdatepolicy.get()
+                # make sure agent site and client are not blocking inheritance
+                if (
+                    not self.block_policy_inheritance
+                    and not site.block_policy_inheritance
+                    and not site.client.block_policy_inheritance
+                ):
+                    patch_policy = (
+                        core_settings.workstation_policy.winupdatepolicy.get()
+                    )
 
         # if policy still doesn't exist return the agent patch policy
         if not patch_policy:
@@ -527,6 +556,7 @@ class Agent(BaseAuditModel):
             and site.server_policy
             and site.server_policy.alert_template
             and site.server_policy.alert_template.is_active
+            and not self.block_policy_inheritance
         ):
             templates.append(site.server_policy.alert_template)
         if (
@@ -534,6 +564,7 @@ class Agent(BaseAuditModel):
             and site.workstation_policy
             and site.workstation_policy.alert_template
             and site.workstation_policy.alert_template.is_active
+            and not self.block_policy_inheritance
         ):
             templates.append(site.workstation_policy.alert_template)
 
@@ -547,6 +578,8 @@ class Agent(BaseAuditModel):
             and client.server_policy
             and client.server_policy.alert_template
             and client.server_policy.alert_template.is_active
+            and not self.block_policy_inheritance
+            and not site.block_policy_inheritance
         ):
             templates.append(client.server_policy.alert_template)
         if (
@@ -554,15 +587,28 @@ class Agent(BaseAuditModel):
             and client.workstation_policy
             and client.workstation_policy.alert_template
             and client.workstation_policy.alert_template.is_active
+            and not self.block_policy_inheritance
+            and not site.block_policy_inheritance
         ):
             templates.append(client.workstation_policy.alert_template)
 
         # check if alert template is on client and return
-        if client.alert_template and client.alert_template.is_active:
+        if (
+            client.alert_template
+            and client.alert_template.is_active
+            and not self.block_policy_inheritance
+            and not site.block_policy_inheritance
+        ):
             templates.append(client.alert_template)
 
         # check if alert template is applied globally and return
-        if core.alert_template and core.alert_template.is_active:
+        if (
+            core.alert_template
+            and core.alert_template.is_active
+            and not self.block_policy_inheritance
+            and not site.block_policy_inheritance
+            and not client.block_policy_inheritance
+        ):
             templates.append(core.alert_template)
 
         # if agent is a workstation, check if policy with alert template is assigned to the site, client, or core
@@ -571,6 +617,9 @@ class Agent(BaseAuditModel):
             and core.server_policy
             and core.server_policy.alert_template
             and core.server_policy.alert_template.is_active
+            and not self.block_policy_inheritance
+            and not site.block_policy_inheritance
+            and not client.block_policy_inheritance
         ):
             templates.append(core.server_policy.alert_template)
         if (
@@ -578,6 +627,9 @@ class Agent(BaseAuditModel):
             and core.workstation_policy
             and core.workstation_policy.alert_template
             and core.workstation_policy.alert_template.is_active
+            and not self.block_policy_inheritance
+            and not site.block_policy_inheritance
+            and not client.block_policy_inheritance
         ):
             templates.append(core.workstation_policy.alert_template)
 
@@ -730,36 +782,6 @@ class Agent(BaseAuditModel):
             self.winupdates.filter(pk__in=pks).delete()  # type: ignore
         except:
             pass
-
-    # define how the agent should handle pending actions
-    def handle_pending_actions(self):
-        pending_actions = self.pendingactions.filter(status="pending")  # type: ignore
-
-        for action in pending_actions:
-            if action.action_type == "taskaction":
-                from autotasks.tasks import (
-                    create_win_task_schedule,
-                    delete_win_task_schedule,
-                    enable_or_disable_win_task,
-                )
-
-                task_id = action.details["task_id"]
-
-                if action.details["action"] == "taskcreate":
-                    create_win_task_schedule.delay(task_id, pending_action=action.id)
-                elif action.details["action"] == "tasktoggle":
-                    enable_or_disable_win_task.delay(
-                        task_id, action.details["value"], pending_action=action.id
-                    )
-                elif action.details["action"] == "taskdelete":
-                    delete_win_task_schedule.delay(task_id, pending_action=action.id)
-
-    # for clearing duplicate pending actions on agent
-    def remove_matching_pending_task_actions(self, task_id):
-        # remove any other pending actions on agent with same task_id
-        for action in self.pendingactions.filter(action_type="taskaction").exclude(status="completed"):  # type: ignore
-            if action.details["task_id"] == task_id:
-                action.delete()
 
     def should_create_alert(self, alert_template=None):
         return (

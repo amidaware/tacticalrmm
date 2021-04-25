@@ -33,6 +33,7 @@
             />
           </q-card-section>
 
+          <div class="text-h6">Custom Fields</div>
           <q-card-section v-for="field in customFields" :key="field.id">
             <CustomField v-model="custom_fields[field.name]" :field="field" />
           </q-card-section>
@@ -199,7 +200,7 @@ export default {
 
     // Get custom fields
     this.getCustomFields("site").then(r => {
-      this.customFields = r.data;
+      this.customFields = r.data.filter(field => !field.hide_in_ui);
     });
 
     // Copy site prop locally

@@ -79,7 +79,7 @@ class CoreSettings(BaseAuditModel):
 
     def save(self, *args, **kwargs):
         from alerts.tasks import cache_agents_alert_template
-        from automation.tasks import generate_all_agent_checks_task
+        from automation.tasks import generate_agent_checks_task
 
         if not self.pk and CoreSettings.objects.exists():
             raise ValidationError("There can only be one CoreSettings instance")
@@ -97,14 +97,10 @@ class CoreSettings(BaseAuditModel):
         super(BaseAuditModel, self).save(*args, **kwargs)
 
         # check if server polcies have changed and initiate task to reapply policies if so
-        if old_settings and old_settings.server_policy != self.server_policy:
-            generate_all_agent_checks_task.delay(mon_type="server", create_tasks=True)
-
-        # check if workstation polcies have changed and initiate task to reapply policies if so
-        if old_settings and old_settings.workstation_policy != self.workstation_policy:
-            generate_all_agent_checks_task.delay(
-                mon_type="workstation", create_tasks=True
-            )
+        if (old_settings and old_settings.server_policy != self.server_policy) or (
+            old_settings and old_settings.workstation_policy != self.workstation_policy
+        ):
+            generate_agent_checks_task.delay(all=True, create_tasks=True)
 
         if old_settings and old_settings.alert_template != self.alert_template:
             cache_agents_alert_template.delay()
@@ -251,6 +247,7 @@ class CustomField(models.Model):
         blank=True,
         default=list,
     )
+    hide_in_ui = models.BooleanField(default=False)
 
     class Meta:
         unique_together = (("model", "name"),)
@@ -279,3 +276,56 @@ class CodeSignToken(models.Model):
 
     def __str__(self):
         return "Code signing token"
+
+
+class GlobalKVStore(models.Model):
+    name = models.CharField(max_length=25)
+    value = models.TextField()
+
+    def __str__(self):
+        return self.name
+
+
+RUN_ON_CHOICES = (
+    ("client", "Client"),
+    ("site", "Site"),
+    ("agent", "Agent"),
+    ("once", "Once"),
+)
+
+SCHEDULE_CHOICES = (("daily", "Daily"), ("weekly", "Weekly"), ("monthly", "Monthly"))
+
+
+""" class GlobalTask(models.Model):
+    script = models.ForeignKey(
+        "scripts.Script",
+        null=True,
+        blank=True,
+        related_name="script",
+        on_delete=models.SET_NULL,
+    )
+    script_args = ArrayField(
+        models.CharField(max_length=255, null=True, blank=True),
+        null=True,
+        blank=True,
+        default=list,
+    )
+    custom_field = models.OneToOneField(
+        "core.CustomField",
+        related_name="globaltask",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    timeout = models.PositiveIntegerField(default=120)
+    retcode = models.IntegerField(null=True, blank=True)
+    retvalue = models.TextField(null=True, blank=True)
+    stdout = models.TextField(null=True, blank=True)
+    stderr = models.TextField(null=True, blank=True)
+    execution_time = models.CharField(max_length=100, default="0.0000")
+    run_schedule = models.CharField(
+        max_length=25, choices=SCHEDULE_CHOICES, default="once"
+    )
+    run_on = models.CharField(
+        max_length=25, choices=RUN_ON_CHOICES, default="once"
+    ) """

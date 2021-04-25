@@ -62,6 +62,8 @@
               <q-td v-else-if="props.row.sync_status === 'notsynced'">Will sync on next agent checkin</q-td>
               <q-td v-else-if="props.row.sync_status === 'synced'">Synced with agent</q-td>
               <q-td v-else-if="props.row.sync_status === 'pendingdeletion'">Pending deletion on agent</q-td>
+              <q-td v-else-if="props.row.sync_status === 'initial'">Waiting for task creation on agent</q-td>
+              <q-td v-else></q-td>
               <!-- more info -->
               <q-td v-if="props.row.check_type === 'ping'">
                 <span

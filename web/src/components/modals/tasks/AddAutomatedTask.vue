@@ -85,7 +85,7 @@
             map-options
             emit-value
             options-dense
-            hint="The return value of script will be saved to custom field selected"
+            hint="The last line of script output will be saved to custom field selected"
           />
         </q-card-section>
         <q-card-section>

@@ -1,7 +1,6 @@
-import re
-
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING, Union
 
 from django.conf import settings

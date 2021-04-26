@@ -65,7 +65,7 @@ python manage.py bulk_change_checkin --overdue --all 10
 
 Change overdue time on all agents in site named *Example Site* to 4 minutes
 ```bash
-python manage.py bulk_change_checkin --overdue --site "Example Client" 4
+python manage.py bulk_change_checkin --overdue --site "Example Site" 4
 ```
 
 Change overdue time on all agents in client named *Example Client* to 14 minutes

@@ -48,18 +48,27 @@ Change offline time on all agents to 5 minutes
 python manage.py bulk_change_checkin --offline --all 5
 ```
 
-Change overdue time on all agents to 10 minutes
-```bash
-python manage.py bulk_change_checkin --overdue --all 10
-```
-
-Change overdue time on all agents in client named *Example Client* to 12 minutes
-```bash
-python manage.py bulk_change_checkin --overdue --client "Example Client" 12
-```
-
 Change offline time on all agents in site named *Example Site* to 2 minutes
 ```bash
 python manage.py bulk_change_checkin --offline --site "Example Site" 2
 ```
 
+Change offline time on all agents in client named *Example Client* to 12 minutes
+```bash
+python manage.py bulk_change_checkin --offline --client "Example Client" 12
+```
+
+Change overdue time on all agents to 10 minutes
+```bash
+python manage.py bulk_change_checkin --overdue --all 10
+```
+
+Change overdue time on all agents in site named *Example Site* to 4 minutes
+```bash
+python manage.py bulk_change_checkin --overdue --site "Example Client" 4
+```
+
+Change overdue time on all agents in client named *Example Client* to 14 minutes
+```bash
+python manage.py bulk_change_checkin --overdue --client "Example Client" 14
+```

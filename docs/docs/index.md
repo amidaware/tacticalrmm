@@ -10,8 +10,6 @@ It uses an [agent](https://github.com/wh1te909/rmmagent) written in Golang and i
 
 ## [LIVE DEMO](https://rmm.tacticalrmm.io/)
 
-*Tactical RMM is currently in alpha and subject to breaking changes. Use in production at your own risk.*
-
 ## Features
 
 - Teamviewer-like remote desktop control

@@ -11,8 +11,6 @@ It uses an [agent](https://github.com/wh1te909/rmmagent) written in golang and i
 # [LIVE DEMO](https://rmm.tacticalrmm.io/)
 Demo database resets every hour. Alot of features are disabled for obvious reasons due to the nature of this app.
 
-*Tactical RMM is currently in alpha and subject to breaking changes. Use in production at your own risk.*
-
 ### [Discord Chat](https://discord.gg/upGTkWp)
 
 ### [Documentation](https://wh1te909.github.io/tacticalrmm/)

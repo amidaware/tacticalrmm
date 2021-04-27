@@ -60,13 +60,7 @@
                 <q-card-section class="row">
                   <div class="col-2">Description:</div>
                   <div class="col-2"></div>
-                  <q-input
-                    outlined
-                    dense
-                    v-model="agent.description"
-                    class="col-8"
-                    :rules="[val => !!val || '*Required']"
-                  />
+                  <q-input outlined dense v-model="agent.description" class="col-8" />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Timezone:</div>

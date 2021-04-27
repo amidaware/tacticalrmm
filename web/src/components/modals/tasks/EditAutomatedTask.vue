@@ -15,11 +15,12 @@
             dense
             options-dense
             outlined
-            v-model="localTask.script"
+            v-model="autotask.script"
             :options="scriptOptions"
             label="Select script"
             map-options
             emit-value
+            @input="setScriptDefaults"
           >
             <template v-slot:option="scope">
               <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
@@ -38,14 +39,13 @@
             dense
             label="Script Arguments (press Enter after typing each argument)"
             filled
-            v-model="localTask.script_args"
+            v-model="autotask.script_args"
             use-input
             use-chips
             multiple
             hide-dropdown-icon
             input-debounce="0"
             new-value-mode="add"
-            @input="setScriptDefaults"
           />
         </q-card-section>
         <q-card-section>
@@ -53,14 +53,14 @@
             :rules="[val => !!val || '*Required']"
             outlined
             dense
-            v-model="localTask.name"
+            v-model="autotask.name"
             label="Descriptive name of task"
             class="q-pb-none"
           />
         </q-card-section>
         <q-card-section>
           <q-select
-            v-model="localTask.alert_severity"
+            v-model="autotask.alert_severity"
             :options="severityOptions"
             dense
             label="Alert Severity"
@@ -71,11 +71,32 @@
           />
         </q-card-section>
         <q-card-section>
+          <q-checkbox
+            dense
+            label="Collector Task"
+            v-model="collector"
+            class="q-pb-sm"
+            @input="autotask.custom_field = null"
+          />
+          <q-select
+            v-if="collector"
+            v-model="autotask.custom_field"
+            :options="customFieldOptions"
+            dense
+            label="Custom Field to update"
+            outlined
+            map-options
+            emit-value
+            options-dense
+            hint="The return value of script will be saved to custom field selected"
+          />
+        </q-card-section>
+        <q-card-section>
           <q-input
             :rules="[val => !!val || '*Required']"
             outlined
             dense
-            v-model.number="localTask.timeout"
+            v-model.number="autotask.timeout"
             type="number"
             label="Maximum permitted execution time (seconds)"
             class="q-pb-none"
@@ -102,14 +123,17 @@ export default {
   },
   data() {
     return {
-      localTask: {
+      autotask: {
         id: null,
         name: "",
         script: null,
         script_args: [],
         alert_severity: null,
         timeout: 120,
+        custom_field: null,
       },
+      collector: false,
+      customFieldOptions: [],
       scriptOptions: [],
       severityOptions: [
         { label: "Informational", value: "info" },
@@ -132,7 +156,7 @@ export default {
       this.$q.loading.show();
 
       this.$axios
-        .put(`/tasks/${this.localTask.id}/automatedtasks/`, this.localTask)
+        .put(`/tasks/${this.autotask.id}/automatedtasks/`, this.autotask)
         .then(r => {
           this.$q.loading.hide();
           this.onOk();
@@ -160,13 +184,20 @@ export default {
   mounted() {
     this.scriptOptions = this.getScriptOptions(this.showCommunityScripts);
 
+    this.getCustomFields("agent").then(r => {
+      this.customFieldOptions = r.data.map(field => ({ label: field.name, value: field.id }));
+    });
+
+    this.collector = !!this.task.custom_field;
+
     // copy only certain task props locally
-    this.localTask.id = this.task.id;
-    this.localTask.name = this.task.name;
-    this.localTask.script = this.task.script;
-    this.localTask.script_args = this.task.script_args;
-    this.localTask.alert_severity = this.task.alert_severity;
-    this.localTask.timeout = this.task.timeout;
+    this.autotask.id = this.task.id;
+    this.autotask.name = this.task.name;
+    this.autotask.script = this.task.script;
+    this.autotask.script_args = this.task.script_args;
+    this.autotask.alert_severity = this.task.alert_severity;
+    this.autotask.timeout = this.task.timeout;
+    this.autotask.custom_field = this.task.custom_field;
   },
 };
 </script>

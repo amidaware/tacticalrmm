@@ -15,14 +15,14 @@ Needs an official install_devbox.sh script
 ## Install Ubuntu 20.04 LTS
 Don't forget to 
 
-```
+```bash
 sudo apt-get updates && sudo apt-get upgrade
 ```
 
 ### Optional
 Set all users in sudo group not to require password every time:
 
-```
+```bash
 sudo visudo
 ```
 
@@ -36,14 +36,14 @@ Add this:
 
 Create folder to dump into
 
-```
+```bash
 sudo mkdir /rmm
 sudo chown ${USER}:${USER} -R /rmm
 cd /rmm
 ```
 
 Get dev install script
-```
+```bash
 wget https://raw.githubusercontent.com/silversword411/tacticalrmm-devdocs/blob/main/install_devbox.sh
 ```
 
@@ -53,7 +53,7 @@ and replace with your forked repo URL (example commented out below)
 
 ## Run it
 
-```
+```bash
 ./install_devbox.sh
 ```
 ## Watch for
@@ -98,7 +98,16 @@ pip install -r requirements.txt
 
 Then run tests
 
-```
+```bash
 python manage.py test
 ```
 
+## Misc Notes
+
+### Spinning up front end web interface in development
+
+
+```bash
+cd /web
+npm run serve
+```

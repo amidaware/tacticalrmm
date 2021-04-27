@@ -116,6 +116,7 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "logged_username",
             "italic",
             "policy",
+            "block_policy_inheritance",
         ]
         depth = 2
 

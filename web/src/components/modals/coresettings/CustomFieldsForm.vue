@@ -147,6 +147,7 @@
             v-model="localField.required"
             color="green"
           />
+          <q-toggle label="Hide in Dashboard" v-model="localField.hide_in_ui" color="green" />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancel" v-close-popup />
@@ -175,6 +176,7 @@ export default {
         default_value_string: "",
         default_value_bool: false,
         default_values_multiple: [],
+        hide_in_ui: false,
       },
       modelOptions: [
         { label: "Client", value: "client" },
@@ -222,7 +224,6 @@ export default {
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.onOk();
             this.notifyError("There was an error editing the custom field");
           });
       } else {
@@ -261,7 +262,7 @@ export default {
     },
   },
   mounted() {
-    // If pk prop is set that means we are editting
+    // If pk prop is set that means we are editing
     if (this.field) Object.assign(this.localField, this.field);
 
     // Set model to current tab

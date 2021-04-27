@@ -13,12 +13,7 @@
   >
     <!-- body slots -->
     <template v-slot:body="props">
-      <q-tr
-        :props="props"
-        class="cursor-pointer"
-        @contextmenu="selectedTemplate = props.row"
-        @dblclick="editCustomField(props.row)"
-      >
+      <q-tr :props="props" class="cursor-pointer" @dblclick="editCustomField(props.row)">
         <!-- context menu -->
         <q-menu context-menu>
           <q-list dense style="min-width: 200px">
@@ -49,6 +44,10 @@
         <!-- type -->
         <q-td>
           {{ capitalize(props.row.type) }}
+        </q-td>
+        <!-- hide in ui -->
+        <q-td>
+          <q-icon v-if="props.row.hide_in_ui" name="check" />
         </q-td>
         <!-- default value -->
         <q-td v-if="props.row.type === 'checkbox'">
@@ -101,6 +100,7 @@ export default {
           align: "left",
           sortable: true,
         },
+        { name: "hide_in_ui", label: "Hide in UI", field: "hide_in_ui", align: "left", sortable: true },
         { name: "default_value", label: "Default Value", field: "default_value", align: "left", sortable: true },
         { name: "required", label: "Required", field: "required", align: "left", sortable: true },
       ],
@@ -128,7 +128,7 @@ export default {
         .onOk(() => {
           this.$q.loading.show();
           this.$axios
-            .delete(`core/customfields/${field.id}/`)
+            .delete(`/core/customfields/${field.id}/`)
             .then(r => {
               this.refresh();
               this.$q.loading.hide();

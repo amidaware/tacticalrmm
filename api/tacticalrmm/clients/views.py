@@ -111,7 +111,7 @@ class GetUpdateClient(APIView):
 
 class DeleteClient(APIView):
     def delete(self, request, pk, sitepk):
-        from automation.tasks import generate_all_agent_checks_task
+        from automation.tasks import generate_agent_checks_task
 
         client = get_object_or_404(Client, pk=pk)
         agents = Agent.objects.filter(site__client=client)
@@ -124,8 +124,7 @@ class DeleteClient(APIView):
         site = get_object_or_404(Site, pk=sitepk)
         agents.update(site=site)
 
-        generate_all_agent_checks_task.delay("workstation", create_tasks=True)
-        generate_all_agent_checks_task.delay("server", create_tasks=True)
+        generate_agent_checks_task.delay(all=True, create_tasks=True)
 
         client.delete()
         return Response(f"{client.name} was deleted!")
@@ -207,7 +206,7 @@ class GetUpdateSite(APIView):
 
 class DeleteSite(APIView):
     def delete(self, request, pk, sitepk):
-        from automation.tasks import generate_all_agent_checks_task
+        from automation.tasks import generate_agent_checks_task
 
         site = get_object_or_404(Site, pk=pk)
         if site.client.sites.count() == 1:
@@ -224,8 +223,7 @@ class DeleteSite(APIView):
 
         agents.update(site=agent_site)
 
-        generate_all_agent_checks_task.delay("workstation", create_tasks=True)
-        generate_all_agent_checks_task.delay("server", create_tasks=True)
+        generate_agent_checks_task.delay(all=True, create_tasks=True)
 
         site.delete()
         return Response(f"{site.name} was deleted!")

@@ -13,4 +13,6 @@ urlpatterns = [
     path("customfields/", views.GetAddCustomFields.as_view()),
     path("customfields/<int:pk>/", views.GetUpdateDeleteCustomFields.as_view()),
     path("codesign/", views.CodeSign.as_view()),
+    path("keystore/", views.GetAddKeyStore.as_view()),
+    path("keystore/<int:pk>/", views.UpdateDeleteKeyStore.as_view()),
 ]

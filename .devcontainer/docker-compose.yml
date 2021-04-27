@@ -227,6 +227,21 @@ services:
     volumes:
       - tactical-data-dev:/opt/tactical
 
+  mkdocs-dev:
+    container_name: trmm-mkdocs-dev
+    image: api-dev
+    restart: always
+    build:
+      context: .
+      dockerfile: ./api.dockerfile
+    command: ["tactical-mkdocs-dev"]
+    ports:
+      - "8005:8005"
+    volumes:
+      - ..:/workspace:cached
+    networks:
+      - dev
+
 volumes:
   tactical-data-dev:
   postgres-data-dev:

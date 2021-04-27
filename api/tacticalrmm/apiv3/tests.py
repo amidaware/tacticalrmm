@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker
+from autotasks.models import AutomatedTask
 
 from tacticalrmm.test import TacticalTestCase
 
@@ -203,3 +204,138 @@ class TestAPIv3(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json(), {"mode": "rpc", "shellcmd": ""})
         reload_nats.assert_called_once()
+
+    def test_task_runner_get(self):
+        from autotasks.serializers import TaskGOGetSerializer
+
+        r = self.client.get("/api/v3/500/asdf9df9dfdf/taskrunner/")
+        self.assertEqual(r.status_code, 404)
+
+        # setup data
+        agent = baker.make_recipe("agents.agent")
+        task = baker.make("autotasks.AutomatedTask", agent=agent)
+
+        url = f"/api/v3/{task.pk}/{agent.agent_id}/taskrunner/"  # type: ignore
+
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(TaskGOGetSerializer(task).data, r.data)  # type: ignore
+
+    def test_task_runner_results(self):
+        from agents.models import AgentCustomField
+
+        r = self.client.patch("/api/v3/500/asdf9df9dfdf/taskrunner/")
+        self.assertEqual(r.status_code, 404)
+
+        # setup data
+        agent = baker.make_recipe("agents.agent")
+        task = baker.make("autotasks.AutomatedTask", agent=agent)
+
+        url = f"/api/v3/{task.pk}/{agent.agent_id}/taskrunner/"  # type: ignore
+
+        # test passing task
+        data = {
+            "stdout": "test test \ntestest stdgsd\n",
+            "stderr": "",
+            "retcode": 0,
+            "execution_time": 3.560,
+        }
+
+        r = self.client.patch(url, data)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(AutomatedTask.objects.get(pk=task.pk).status == "passing")  # type: ignore
+
+        # test failing task
+        data = {
+            "stdout": "test test \ntestest stdgsd\n",
+            "stderr": "",
+            "retcode": 1,
+            "execution_time": 3.560,
+        }
+
+        r = self.client.patch(url, data)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(AutomatedTask.objects.get(pk=task.pk).status == "failing")  # type: ignore
+
+        # test collector task
+        text = baker.make("core.CustomField", model="agent", type="text", name="Test")
+        boolean = baker.make(
+            "core.CustomField", model="agent", type="checkbox", name="Test1"
+        )
+        multiple = baker.make(
+            "core.CustomField", model="agent", type="multiple", name="Test2"
+        )
+
+        # test text fields
+        task.custom_field = text  # type: ignore
+        task.save()  # type: ignore
+
+        # test failing failing with stderr
+        data = {
+            "stdout": "test test \nthe last line",
+            "stderr": "This is an error",
+            "retcode": 1,
+            "execution_time": 3.560,
+        }
+
+        r = self.client.patch(url, data)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(AutomatedTask.objects.get(pk=task.pk).status == "failing")  # type: ignore
+
+        # test saving to text field
+        data = {
+            "stdout": "test test \nthe last line",
+            "stderr": "",
+            "retcode": 0,
+            "execution_time": 3.560,
+        }
+
+        r = self.client.patch(url, data)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(AutomatedTask.objects.get(pk=task.pk).status, "passing")  # type: ignore
+        self.assertEqual(AgentCustomField.objects.get(field=text, agent=task.agent).value, "the last line")  # type: ignore
+
+        # test saving to checkbox field
+        task.custom_field = boolean  # type: ignore
+        task.save()  # type: ignore
+
+        data = {
+            "stdout": "1",
+            "stderr": "",
+            "retcode": 0,
+            "execution_time": 3.560,
+        }
+
+        r = self.client.patch(url, data)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(AutomatedTask.objects.get(pk=task.pk).status, "passing")  # type: ignore
+        self.assertTrue(AgentCustomField.objects.get(field=boolean, agent=task.agent).value)  # type: ignore
+
+        # test saving to multiple field with commas
+        task.custom_field = multiple  # type: ignore
+        task.save()  # type: ignore
+
+        data = {
+            "stdout": "this,is,an,array",
+            "stderr": "",
+            "retcode": 0,
+            "execution_time": 3.560,
+        }
+
+        r = self.client.patch(url, data)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(AutomatedTask.objects.get(pk=task.pk).status, "passing")  # type: ignore
+        self.assertEqual(AgentCustomField.objects.get(field=multiple, agent=task.agent).value, ["this", "is", "an", "array"])  # type: ignore
+
+        # test mutiple with a single value
+        data = {
+            "stdout": "this",
+            "stderr": "",
+            "retcode": 0,
+            "execution_time": 3.560,
+        }
+
+        r = self.client.patch(url, data)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(AutomatedTask.objects.get(pk=task.pk).status, "passing")  # type: ignore
+        self.assertEqual(AgentCustomField.objects.get(field=multiple, agent=task.agent).value, ["this"])  # type: ignore

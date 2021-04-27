@@ -8,8 +8,8 @@ from model_bakery import baker
 from tacticalrmm.test import TacticalTestCase
 
 from .consumers import DashInfo
-from .models import CoreSettings, CustomField
-from .serializers import CustomFieldSerializer
+from .models import CoreSettings, CustomField, GlobalKVStore
+from .serializers import CustomFieldSerializer, KeyStoreSerializer
 from .tasks import core_maintenance_tasks
 
 
@@ -88,8 +88,8 @@ class TestCoreTasks(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @patch("automation.tasks.generate_all_agent_checks_task.delay")
-    def test_edit_coresettings(self, generate_all_agent_checks_task):
+    @patch("automation.tasks.generate_agent_checks_task.delay")
+    def test_edit_coresettings(self, generate_agent_checks_task):
         url = "/core/editsettings/"
 
         # setup
@@ -106,7 +106,7 @@ class TestCoreTasks(TacticalTestCase):
         )
         self.assertEqual(CoreSettings.objects.first().mesh_token, data["mesh_token"])
 
-        generate_all_agent_checks_task.assert_not_called()
+        generate_agent_checks_task.assert_not_called()
 
         # test adding policy
         data = {
@@ -120,9 +120,9 @@ class TestCoreTasks(TacticalTestCase):
             CoreSettings.objects.first().workstation_policy.id, policies[0].id  # type: ignore
         )
 
-        self.assertEqual(generate_all_agent_checks_task.call_count, 2)
+        generate_agent_checks_task.assert_called_once()
 
-        generate_all_agent_checks_task.reset_mock()
+        generate_agent_checks_task.reset_mock()
 
         # test remove policy
         data = {
@@ -132,7 +132,7 @@ class TestCoreTasks(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(CoreSettings.objects.first().workstation_policy, None)
 
-        self.assertEqual(generate_all_agent_checks_task.call_count, 1)
+        self.assertEqual(generate_agent_checks_task.call_count, 1)
 
         self.check_not_authenticated("patch", url)
 
@@ -271,5 +271,63 @@ class TestCoreTasks(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
 
         self.assertFalse(CustomField.objects.filter(pk=custom_field.id).exists())  # type: ignore
+
+        self.check_not_authenticated("delete", url)
+
+    def test_get_keystore(self):
+        url = "/core/keystore/"
+
+        # setup
+        keys = baker.make("core.GlobalKVStore", _quantity=2)
+
+        r = self.client.get(url)
+        serializer = KeyStoreSerializer(keys, many=True)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data), 2)  # type: ignore
+        self.assertEqual(r.data, serializer.data)  # type: ignore
+
+        self.check_not_authenticated("get", url)
+
+    def test_add_keystore(self):
+        url = "/core/keystore/"
+
+        data = {"name": "test", "value": "text"}
+        r = self.client.post(url, data)
+        self.assertEqual(r.status_code, 200)
+
+        self.check_not_authenticated("post", url)
+
+    def test_update_keystore(self):
+        # setup
+        key = baker.make("core.GlobalKVStore")
+
+        # test not found
+        r = self.client.put("/core/keystore/500/")
+        self.assertEqual(r.status_code, 404)
+
+        url = f"/core/keystore/{key.id}/"  # type: ignore
+        data = {"name": "test", "value": "text"}
+        r = self.client.put(url, data)
+        self.assertEqual(r.status_code, 200)
+
+        new_key = GlobalKVStore.objects.get(pk=key.id)  # type: ignore
+        self.assertEqual(new_key.name, data["name"])
+        self.assertEqual(new_key.value, data["value"])
+
+        self.check_not_authenticated("put", url)
+
+    def test_delete_keystore(self):
+        # setup
+        key = baker.make("core.GlobalKVStore")
+
+        # test not found
+        r = self.client.delete("/core/keystore/500/")
+        self.assertEqual(r.status_code, 404)
+
+        url = f"/core/keystore/{key.id}/"  # type: ignore
+        r = self.client.delete(url)
+        self.assertEqual(r.status_code, 200)
+
+        self.assertFalse(GlobalKVStore.objects.filter(pk=key.id).exists())  # type: ignore
 
         self.check_not_authenticated("delete", url)

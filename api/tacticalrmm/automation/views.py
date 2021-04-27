@@ -1,13 +1,12 @@
-from django.shortcuts import get_object_or_404
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
 from agents.models import Agent
 from agents.serializers import AgentHostnameSerializer
 from autotasks.models import AutomatedTask
 from checks.models import Check
 from clients.models import Client
 from clients.serializers import ClientSerializer, SiteSerializer
+from django.shortcuts import get_object_or_404
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from tacticalrmm.utils import notify_error
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
@@ -22,7 +21,6 @@ from .serializers import (
     PolicyTableSerializer,
     PolicyTaskStatusSerializer,
 )
-from .tasks import run_win_policy_autotask_task
 
 
 class GetAddPolicies(APIView):
@@ -76,10 +74,10 @@ class GetUpdateDeletePolicy(APIView):
 class PolicySync(APIView):
     def post(self, request):
         if "policy" in request.data.keys():
-            from automation.tasks import generate_agent_checks_from_policies_task
+            from automation.tasks import generate_agent_checks_task
 
-            generate_agent_checks_from_policies_task.delay(
-                request.data["policy"], create_tasks=True
+            generate_agent_checks_task.delay(
+                policy=request.data["policy"], create_tasks=True
             )
             return Response("ok")
 
@@ -101,8 +99,9 @@ class PolicyAutoTask(APIView):
 
     # bulk run win tasks associated with policy
     def put(self, request, task):
-        tasks = AutomatedTask.objects.filter(parent_task=task)
-        run_win_policy_autotask_task.delay([task.id for task in tasks])
+        from .tasks import run_win_policy_autotasks_task
+
+        run_win_policy_autotasks_task.delay(task=task)
         return Response("Affected agent tasks will run shortly")
 
 

@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
-from agents.models import Agent
+from agents.models import Agent, AgentCustomField
 from agents.serializers import WinAgentSerializer
 from autotasks.models import AutomatedTask
 from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
@@ -65,9 +65,17 @@ class CheckIn(APIView):
         if Alert.objects.filter(agent=agent, resolved=False).exists():
             Alert.handle_alert_resolve(agent)
 
-        # get any pending actions
-        if agent.pendingactions.filter(status="pending").exists():  # type: ignore
-            agent.handle_pending_actions()
+        # sync scheduled tasks
+        if agent.autotasks.exclude(sync_status="synced").exists():  # type: ignore
+            tasks = agent.autotasks.exclude(sync_status="synced")  # type: ignore
+
+            for task in tasks:
+                if task.sync_status == "pendingdeletion":
+                    task.delete_task_on_agent()
+                elif task.sync_status == "initial":
+                    task.modify_task_on_agent()
+                elif task.sync_status == "notsynced":
+                    task.create_task_on_agent()
 
         return Response("ok")
 
@@ -351,11 +359,42 @@ class TaskRunner(APIView):
             instance=task, data=request.data, partial=True
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(last_run=djangotime.now())
+        new_task = serializer.save(last_run=djangotime.now())
 
-        status = "failing" if task.retcode != 0 else "passing"
+        # check if task is a collector and update the custom field
+        if task.custom_field:
+            if not task.stderr:
 
-        new_task: AutomatedTask = AutomatedTask.objects.get(pk=task.pk)
+                if AgentCustomField.objects.filter(
+                    field=task.custom_field, agent=task.agent
+                ).exists():
+                    agent_field = AgentCustomField.objects.get(
+                        field=task.custom_field, agent=task.agent
+                    )
+                else:
+                    agent_field = AgentCustomField.objects.create(
+                        field=task.custom_field, agent=task.agent
+                    )
+
+                # get last line of stdout
+                value = new_task.stdout.split("\n")[-1].strip()
+
+                if task.custom_field.type in ["text", "number", "single", "datetime"]:
+                    agent_field.string_value = value
+                    agent_field.save()
+                elif task.custom_field.type == "multiple":
+                    agent_field.multiple_value = value.split(",")
+                    agent_field.save()
+                elif task.custom_field.type == "checkbox":
+                    agent_field.bool_value = bool(value)
+                    agent_field.save()
+
+                status = "passing"
+            else:
+                status = "failing"
+        else:
+            status = "failing" if task.retcode != 0 else "passing"
+
         new_task.status = status
         new_task.save()
 
@@ -393,7 +432,7 @@ class SysInfo(APIView):
 
 
 class MeshExe(APIView):
-    """ Sends the mesh exe to the installer """
+    """Sends the mesh exe to the installer"""
 
     def post(self, request):
         exe = "meshagent.exe" if request.data["arch"] == "64" else "meshagent-x86.exe"

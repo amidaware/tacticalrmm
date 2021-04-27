@@ -8,6 +8,7 @@
           <q-tab name="smsalerts" label="SMS Alerts" />
           <q-tab name="meshcentral" label="MeshCentral" />
           <q-tab name="customfields" label="Custom Fields" />
+          <q-tab name="keystore" label="Key Store" />
         </q-tabs>
       </template>
       <template v-slot:after>
@@ -24,7 +25,9 @@
                 <div class="text-subtitle2">General</div>
                 <hr />
                 <q-card-section class="row">
-                  <q-checkbox v-model="settings.agent_auto_update" label="Enable agent automatic self update" />
+                  <q-checkbox v-model="settings.agent_auto_update" label="Enable agent automatic self update">
+                    <q-tooltip> Runs at 35mins past every hour </q-tooltip>
+                  </q-checkbox>
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Default agent timezone:</div>
@@ -293,10 +296,14 @@
               <q-tab-panel name="customfields">
                 <CustomFields />
               </q-tab-panel>
+
+              <q-tab-panel name="keystore">
+                <KeyStoreTable />
+              </q-tab-panel>
             </q-tab-panels>
           </q-scroll-area>
           <q-card-section class="row items-center">
-            <q-btn v-show="tab !== 'customfields'" label="Save" color="primary" type="submit" />
+            <q-btn v-show="tab !== 'customfields' || tab !== 'keystore'" label="Save" color="primary" type="submit" />
             <q-btn
               v-show="tab === 'emailalerts'"
               label="Save and Test"
@@ -316,11 +323,13 @@
 import mixins from "@/mixins/mixins";
 import ResetPatchPolicy from "@/components/modals/coresettings/ResetPatchPolicy";
 import CustomFields from "@/components/modals/coresettings/CustomFields";
+import KeyStoreTable from "@/components/modals/coresettings/KeyStoreTable";
 
 export default {
   name: "EditCoreSettings",
   components: {
     CustomFields,
+    KeyStoreTable,
   },
   mixins: [mixins],
   data() {

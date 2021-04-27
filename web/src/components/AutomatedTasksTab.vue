@@ -60,6 +60,14 @@
             <q-th auto-width :props="props"></q-th>
           </template>
 
+          <template v-slot:header-cell-collector="props">
+            <q-th auto-width :props="props">
+              <q-icon name="mdi-database-arrow-up" size="1.5em">
+                <q-tooltip>Collector Task</q-tooltip>
+              </q-icon>
+            </q-th>
+          </template>
+
           <template v-slot:header-cell-status="props">
             <q-th auto-width :props="props"></q-th>
           </template>
@@ -170,6 +178,13 @@
                   <q-tooltip>This task is managed by a policy</q-tooltip>
                 </q-icon>
               </q-td>
+
+              <!-- is collector task -->
+              <q-td>
+                <q-icon v-if="!!props.row.custom_field" style="font-size: 1.3rem" name="check">
+                  <q-tooltip>The task updates a custom field on the agent</q-tooltip>
+                </q-icon>
+              </q-td>
               <!-- status icon -->
               <q-td v-if="props.row.status === 'passing'">
                 <q-icon style="font-size: 1.3rem" color="positive" name="check_circle">
@@ -199,6 +214,8 @@
               <q-td v-if="props.row.sync_status === 'notsynced'">Will sync on next agent checkin</q-td>
               <q-td v-else-if="props.row.sync_status === 'synced'">Synced with agent</q-td>
               <q-td v-else-if="props.row.sync_status === 'pendingdeletion'">Pending deletion on agent</q-td>
+              <q-td v-else-if="props.row.sync_status === 'initial'">Waiting for task creation on agent</q-td>
+              <q-td v-else></q-td>
               <q-td v-if="props.row.retcode !== null || props.row.stdout || props.row.stderr">
                 <span
                   style="cursor: pointer; text-decoration: underline"
@@ -249,36 +266,43 @@ export default {
         { name: "emailalert", field: "email_alert", align: "left" },
         { name: "dashboardalert", field: "dashboard_alert", align: "left" },
         { name: "policystatus", align: "left" },
+        { name: "collector", label: "Collector", field: "custom_field", align: "left", sortable: true },
         { name: "status", align: "left" },
-        { name: "name", label: "Name", field: "name", align: "left" },
-        { name: "sync_status", label: "Sync Status", field: "sync_status", align: "left" },
+        { name: "name", label: "Name", field: "name", align: "left", sortable: true },
+        { name: "sync_status", label: "Sync Status", field: "sync_status", align: "left", sortable: true },
         {
           name: "moreinfo",
           label: "More Info",
           field: "more_info",
           align: "left",
+          sortable: true,
         },
         {
           name: "datetime",
           label: "Last Run Time",
           field: "last_run",
           align: "left",
+          sortable: true,
         },
         {
           name: "schedule",
           label: "Schedule",
           field: "schedule",
           align: "left",
+          sortable: true,
         },
         {
           name: "assignedcheck",
           label: "Assigned Check",
           field: "assigned_check",
           align: "left",
+          sortable: true,
         },
       ],
       pagination: {
         rowsPerPage: 9999,
+        sortBy: "name",
+        descending: false,
       },
     };
   },
@@ -383,7 +407,7 @@ export default {
       automatedTasks: state => state.automatedTasks,
     }),
     tasks() {
-      return this.automatedTasks.autotasks;
+      return this.automatedTasks.autotasks.filter(task => task.sync_status !== "pendingdeletion");
     },
   },
 };

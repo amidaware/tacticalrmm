@@ -50,6 +50,10 @@
             label="Policy"
           >
           </q-select>
+
+          <q-checkbox label="Block policy inheritance" v-model="blockInheritance">
+            <q-tooltip>This {{ type }} will not inherit from higher policies</q-tooltip>
+          </q-checkbox>
         </q-card-section>
         <q-card-section v-else>
           No Automation Policies have been setup. Go to Settings > Automation Manager
@@ -85,6 +89,7 @@ export default {
       selectedWorkstationPolicy: null,
       selectedServerPolicy: null,
       selectedAgentPolicy: null,
+      blockInheritance: false,
       options: [],
     };
   },
@@ -94,13 +99,17 @@ export default {
       if (this.type === "client" || this.type === "site") {
         if (
           this.object.workstation_policy === this.selectedWorkstationPolicy &&
-          this.object.server_policy === this.selectedServerPolicy
+          this.object.server_policy === this.selectedServerPolicy &&
+          this.object.blockInheritance === this.blockInheritance
         ) {
           this.hide();
           return;
         }
       } else if (this.type === "agent") {
-        if (this.object.policy === this.selectedAgentPolicy) {
+        if (
+          this.object.policy === this.selectedAgentPolicy &&
+          this.object.block_policy_inheritance === this.blockInheritance
+        ) {
           this.hide();
           return;
         }
@@ -118,6 +127,7 @@ export default {
             pk: this.object.id,
             server_policy: this.selectedServerPolicy,
             workstation_policy: this.selectedWorkstationPolicy,
+            block_policy_inheritance: this.blockInheritance,
           },
         };
       } else if (this.type === "site") {
@@ -127,6 +137,7 @@ export default {
             pk: this.object.id,
             server_policy: this.selectedServerPolicy,
             workstation_policy: this.selectedWorkstationPolicy,
+            block_policy_inheritance: this.blockInheritance,
           },
         };
       } else if (this.type === "agent") {
@@ -134,6 +145,7 @@ export default {
         data = {
           id: this.object.id,
           policy: this.selectedAgentPolicy,
+          block_policy_inheritance: this.blockInheritance,
         };
       }
 
@@ -186,8 +198,10 @@ export default {
     if (this.type !== "agent") {
       this.selectedServerPolicy = this.object.server_policy;
       this.selectedWorkstationPolicy = this.object.workstation_policy;
+      this.blockInheritance = this.object.blockInheritance;
     } else {
       this.selectedAgentPolicy = this.object.policy;
+      this.blockInheritance = this.object.block_policy_inheritance;
     }
   },
 };

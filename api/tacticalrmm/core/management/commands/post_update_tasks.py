@@ -1,12 +1,8 @@
-import os
-import shutil
-import subprocess
-import tempfile
-
 from django.core.management.base import BaseCommand
 
 from agents.models import Agent
 from scripts.models import Script
+from logs.models import PendingAction
 
 
 class Command(BaseCommand):
@@ -28,6 +24,9 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.SUCCESS(f"Migrated disks on {agent.hostname}")
                 )
+
+        # remove task pending actions. deprecated 4/20/2021
+        PendingAction.objects.filter(action_type="taskaction").delete()
 
         # load community scripts into the db
         Script.load_community_scripts()

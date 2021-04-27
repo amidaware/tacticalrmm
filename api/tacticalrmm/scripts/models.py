@@ -196,9 +196,9 @@ class Script(BaseAuditModel):
     def parse_script_args(
         cls, agent, shell: str, args: List[str] = list()
     ) -> Union[List[str], None]:
-        from core.models import CustomField
+        from core.models import CustomField, GlobalKVStore
 
-        if not list:
+        if not args:
             return []
 
         temp_args = list()
@@ -219,6 +219,18 @@ class Script(BaseAuditModel):
                 if len(temp) != 2:
                     # ignore arg since it is invalid
                     continue
+
+                # value is in the global keystore and replace value
+                if temp[0] == "global":
+                    if GlobalKVStore.objects.filter(name=temp[1]).exists():
+                        value = GlobalKVStore.objects.get(name=temp[1]).value
+                        temp_args.append(
+                            re.sub("\\{\\{.*\\}\\}", "'" + value + "'", arg)
+                        )
+                        continue
+                    else:
+                        # ignore since value doesn't exist
+                        continue
 
                 if temp[0] == "client":
                     model = "client"
@@ -263,7 +275,7 @@ class Script(BaseAuditModel):
                 # replace the value in the arg and push to array
                 # log any unhashable type errors
                 try:
-                    temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))  # type: ignore
+                    temp_args.append(re.sub("\\{\\{.*\\}\\}", "'" + value + "'", arg))  # type: ignore
                 except Exception as e:
                     logger.error(e)
                     continue

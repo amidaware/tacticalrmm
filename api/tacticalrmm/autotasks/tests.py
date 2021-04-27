@@ -4,7 +4,6 @@ from unittest.mock import call, patch
 from django.utils import timezone as djangotime
 from model_bakery import baker
 
-from logs.models import PendingAction
 from tacticalrmm.test import TacticalTestCase
 
 from .models import AutomatedTask
@@ -17,10 +16,10 @@ class TestAutotaskViews(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
-    @patch("automation.tasks.generate_agent_tasks_from_policies_task.delay")
+    @patch("automation.tasks.generate_agent_autotasks_task.delay")
     @patch("autotasks.tasks.create_win_task_schedule.delay")
     def test_add_autotask(
-        self, create_win_task_schedule, generate_agent_tasks_from_policies_task
+        self, create_win_task_schedule, generate_agent_autotasks_task
     ):
         url = "/tasks/automatedtasks/"
 
@@ -84,13 +83,13 @@ class TestAutotaskViews(TacticalTestCase):
                 "task_type": "manual",
                 "assigned_check": None,
             },
-            "policy": policy.id,
+            "policy": policy.id,  # type: ignore
         }
 
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        generate_agent_tasks_from_policies_task.assert_called_with(policy.id)
+        generate_agent_autotasks_task.assert_called_with(policy=policy.id)  # type: ignore
 
         self.check_not_authenticated("post", url)
 
@@ -106,14 +105,14 @@ class TestAutotaskViews(TacticalTestCase):
         serializer = AutoTaskSerializer(agent)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)
+        self.assertEqual(resp.data, serializer.data)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
     @patch("autotasks.tasks.enable_or_disable_win_task.delay")
-    @patch("automation.tasks.update_policy_task_fields_task.delay")
+    @patch("automation.tasks.update_policy_autotasks_fields_task.delay")
     def test_update_autotask(
-        self, update_policy_task_fields_task, enable_or_disable_win_task
+        self, update_policy_autotasks_fields_task, enable_or_disable_win_task
     ):
         # setup data
         agent = baker.make_recipe("agents.agent")
@@ -125,32 +124,32 @@ class TestAutotaskViews(TacticalTestCase):
         resp = self.client.patch("/tasks/500/automatedtasks/", format="json")
         self.assertEqual(resp.status_code, 404)
 
-        url = f"/tasks/{agent_task.id}/automatedtasks/"
+        url = f"/tasks/{agent_task.id}/automatedtasks/"  # type: ignore
 
         # test editing agent task
         data = {"enableordisable": False}
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        enable_or_disable_win_task.assert_called_with(pk=agent_task.id, action=False)
+        enable_or_disable_win_task.assert_called_with(pk=agent_task.id)  # type: ignore
 
-        url = f"/tasks/{policy_task.id}/automatedtasks/"
+        url = f"/tasks/{policy_task.id}/automatedtasks/"  # type: ignore
 
         # test editing policy task
         data = {"enableordisable": True}
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        update_policy_task_fields_task.assert_called_with(
-            policy_task.id, update_agent=True
+        update_policy_autotasks_fields_task.assert_called_with(
+            task=policy_task.id, update_agent=True  # type: ignore
         )
 
         self.check_not_authenticated("patch", url)
 
     @patch("autotasks.tasks.delete_win_task_schedule.delay")
-    @patch("automation.tasks.delete_policy_autotask_task.delay")
+    @patch("automation.tasks.delete_policy_autotasks_task.delay")
     def test_delete_autotask(
-        self, delete_policy_autotask_task, delete_win_task_schedule
+        self, delete_policy_autotasks_task, delete_win_task_schedule
     ):
         # setup data
         agent = baker.make_recipe("agents.agent")
@@ -163,21 +162,21 @@ class TestAutotaskViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 404)
 
         # test delete agent task
-        url = f"/tasks/{agent_task.id}/automatedtasks/"
+        url = f"/tasks/{agent_task.id}/automatedtasks/"  # type: ignore
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        delete_win_task_schedule.assert_called_with(pk=agent_task.id)
+        delete_win_task_schedule.assert_called_with(pk=agent_task.id)  # type: ignore
 
         # test delete policy task
-        url = f"/tasks/{policy_task.id}/automatedtasks/"
+        url = f"/tasks/{policy_task.id}/automatedtasks/"  # type: ignore
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        delete_policy_autotask_task.assert_called_with(policy_task.id)
+        delete_policy_autotasks_task.assert_called_with(task=policy_task.id)  # type: ignore
 
         self.check_not_authenticated("delete", url)
 
-    @patch("agents.models.Agent.nats_cmd")
-    def test_run_autotask(self, nats_cmd):
+    @patch("autotasks.tasks.run_win_task.delay")
+    def test_run_autotask(self, run_win_task):
         # setup data
         agent = baker.make_recipe("agents.agent", version="1.1.0")
         task = baker.make("autotasks.AutomatedTask", agent=agent)
@@ -187,11 +186,10 @@ class TestAutotaskViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 404)
 
         # test run agent task
-        url = f"/tasks/runwintask/{task.id}/"
+        url = f"/tasks/runwintask/{task.id}/"  # type: ignore
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
-        nats_cmd.assert_called_with({"func": "runtask", "taskpk": task.id}, wait=False)
-        nats_cmd.reset_mock()
+        run_win_task.assert_called()
 
         self.check_not_authenticated("get", url)
 
@@ -284,9 +282,9 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             run_time_bit_weekdays=127,
             run_time_minute="21:55",
         )
-        self.assertEqual(self.task1.sync_status, "notsynced")
+        self.assertEqual(self.task1.sync_status, "initial")
         nats_cmd.return_value = "ok"
-        ret = create_win_task_schedule.s(pk=self.task1.pk, pending_action=False).apply()
+        ret = create_win_task_schedule.s(pk=self.task1.pk).apply()
         self.assertEqual(nats_cmd.call_count, 1)
         nats_cmd.assert_called_with(
             {
@@ -301,29 +299,16 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "min": 55,
                 },
             },
-            timeout=10,
+            timeout=5,
         )
         self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
         self.assertEqual(self.task1.sync_status, "synced")
 
         nats_cmd.return_value = "timeout"
-        ret = create_win_task_schedule.s(pk=self.task1.pk, pending_action=False).apply()
+        ret = create_win_task_schedule.s(pk=self.task1.pk).apply()
         self.assertEqual(ret.status, "SUCCESS")
         self.task1 = AutomatedTask.objects.get(pk=self.task1.pk)
-        self.assertEqual(self.task1.sync_status, "notsynced")
-
-        # test pending action
-        self.pending_action = PendingAction.objects.create(
-            agent=self.agent, action_type="taskaction"
-        )
-        self.assertEqual(self.pending_action.status, "pending")
-        nats_cmd.return_value = "ok"
-        ret = create_win_task_schedule.s(
-            pk=self.task1.pk, pending_action=self.pending_action.pk
-        ).apply()
-        self.assertEqual(ret.status, "SUCCESS")
-        self.pending_action = PendingAction.objects.get(pk=self.pending_action.pk)
-        self.assertEqual(self.pending_action.status, "completed")
+        self.assertEqual(self.task1.sync_status, "initial")
 
         # test runonce with future date
         nats_cmd.reset_mock()
@@ -337,7 +322,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             run_time_date=run_time_date,
         )
         nats_cmd.return_value = "ok"
-        ret = create_win_task_schedule.s(pk=self.task2.pk, pending_action=False).apply()
+        ret = create_win_task_schedule.s(pk=self.task2.pk).apply()
         nats_cmd.assert_called_with(
             {
                 "func": "schedtask",
@@ -353,7 +338,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "min": int(dt.datetime.strftime(self.task2.run_time_date, "%M")),
                 },
             },
-            timeout=10,
+            timeout=5,
         )
         self.assertEqual(ret.status, "SUCCESS")
 
@@ -369,7 +354,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             run_time_date=run_time_date,
         )
         nats_cmd.return_value = "ok"
-        ret = create_win_task_schedule.s(pk=self.task3.pk, pending_action=False).apply()
+        ret = create_win_task_schedule.s(pk=self.task3.pk).apply()
         self.task3 = AutomatedTask.objects.get(pk=self.task3.pk)
         self.assertEqual(ret.status, "SUCCESS")
 
@@ -385,7 +370,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             assigned_check=self.check,
         )
         nats_cmd.return_value = "ok"
-        ret = create_win_task_schedule.s(pk=self.task4.pk, pending_action=False).apply()
+        ret = create_win_task_schedule.s(pk=self.task4.pk).apply()
         nats_cmd.assert_called_with(
             {
                 "func": "schedtask",
@@ -396,7 +381,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "name": task_name,
                 },
             },
-            timeout=10,
+            timeout=5,
         )
         self.assertEqual(ret.status, "SUCCESS")
 
@@ -410,7 +395,7 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             task_type="manual",
         )
         nats_cmd.return_value = "ok"
-        ret = create_win_task_schedule.s(pk=self.task5.pk, pending_action=False).apply()
+        ret = create_win_task_schedule.s(pk=self.task5.pk).apply()
         nats_cmd.assert_called_with(
             {
                 "func": "schedtask",
@@ -421,6 +406,6 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
                     "name": task_name,
                 },
             },
-            timeout=10,
+            timeout=5,
         )
         self.assertEqual(ret.status, "SUCCESS")

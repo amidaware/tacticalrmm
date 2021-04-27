@@ -84,6 +84,14 @@ Bring changes from original repo to your local vscode copy so you're current wit
 
 ![Sync Fork](images/trmm_need_sync_local_fork.png)
 
+In VSCode open TERMINAL
+
+```
+Ctrl+`
+```
+
+Tell git to pull from the GitHub upstream repo all new changes into your local directory
+
 ```
 git pull --rebase upstream develop
 ```

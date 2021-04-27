@@ -262,22 +262,12 @@
   },
   {
     "guid": "d980fda3-a068-47eb-8495-1aab07a24e64",
-    "filename": "Win_Defender_Status_Report_Last24hrs.ps1",
+    "filename": "Win_Defender_Status_Report.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Defender - Status Report Last 24hr",
-    "description": "Using Event Viewer, this will check for Malware and Antispyware within the last 24 hours and display, otherwise will report as Healthy",
+    "name": "Defender - Status Report",
+    "description": "This will check for Malware and Antispyware within the last 24 hours and display, otherwise will report as Healthy. Command Parameter: (number) if provided will check that number of days back in the log.",
     "shell": "powershell",
     "category": "TRMM (Win):Security>Antivirus"
-  },
-  {
-    "guid": "6a0202fc-1b27-4905-95c0-0a03bb881893",
-    "filename": "Win_Defender_Status_Report_LastYear.ps1",
-    "submittedBy": "https://github.com/silversword411",
-    "name": "Defender - Status Report Last Year",
-    "description": "Using Event Viewer, this will check for Malware and Antispyware and display, otherwise will report as Healthy",
-    "shell": "powershell",
-    "category": "TRMM (Win):Security>Antivirus",
-    "default_timeout": "300"
   },
   {
     "guid": "9956e936-6fdb-4488-a9d8-8b274658037f",

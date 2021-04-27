@@ -1,0 +1,1 @@
+cleanmgr.exe /AUTOCLEAN

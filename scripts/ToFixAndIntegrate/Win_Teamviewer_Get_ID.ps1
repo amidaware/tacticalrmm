@@ -1,0 +1,1 @@
+(Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\TeamViewer").ClientID

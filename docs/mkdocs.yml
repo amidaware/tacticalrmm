@@ -12,6 +12,9 @@ nav:
       - "Updating the RMM (Docker)": update_docker.md
       - "Updating Agents": update_agents.md
   - Functionality:
+      - "Automated Tasks": functions/automated_tasks.md
+      - "Scripting": functions/scripting.md
+      - "Global Keystore": functions/keystore.md
       - "Custom Fields": functions/custom_fields.md
       - "Remote Background": functions/remote_bg.md
       - "Maintenance Mode": functions/maintenance_mode.md

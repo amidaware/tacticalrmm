@@ -14,6 +14,22 @@ class TestCheckViews(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
+    def test_delete_agent_check(self):
+        # setup data
+        agent = baker.make_recipe("agents.agent")
+        check = baker.make_recipe("checks.diskspace_check", agent=agent)
+
+        resp = self.client.delete("/checks/500/check/", format="json")
+        self.assertEqual(resp.status_code, 404)
+
+        url = f"/checks/{check.pk}/check/"
+
+        resp = self.client.delete(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(agent.agentchecks.all())
+
+        self.check_not_authenticated("delete", url)
+
     def test_get_disk_check(self):
         # setup data
         disk_check = baker.make_recipe("checks.diskspace_check")

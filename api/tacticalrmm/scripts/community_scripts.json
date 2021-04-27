@@ -607,7 +607,17 @@
     "name": "EXAMPLE File Copying using powershell",
     "description": "Reference Script: Will need manual tweaking, for copying files/folders from paths/websites to local",
     "shell": "powershell",
-    "category": "TRMM (Win):Misc",
+    "category": "TRMM (Win):Misc>Reference",
+    "default_timeout": "1"
+  },
+  {
+    "guid": "168037d8-78e6-4a6a-a9a9-8ec2c1dbe949",
+    "filename": "Win_MSI_Install.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "EXAMPLE Function for running MSI install via powershell",
+    "description": "Reference Script: Will need manual tweaking, for running MSI from powershell",
+    "shell": "powershell",
+    "category": "TRMM (Win):Misc>Reference",
     "default_timeout": "1"
   }
 ]

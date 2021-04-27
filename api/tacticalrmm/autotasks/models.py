@@ -64,9 +64,9 @@ class AutomatedTask(BaseAuditModel):
         blank=True,
         on_delete=models.CASCADE,
     )
-    custom_field = models.OneToOneField(
+    custom_field = models.ForeignKey(
         "core.CustomField",
-        related_name="autotask",
+        related_name="autotasks",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,

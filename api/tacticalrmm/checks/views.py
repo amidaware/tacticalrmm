@@ -122,7 +122,7 @@ class GetUpdateDeleteCheck(APIView):
     def delete(self, request, pk):
         from automation.tasks import generate_agent_checks_task
 
-        check = get_object_or_404(Check, pk)
+        check = get_object_or_404(Check, pk=pk)
         check.delete()
 
         # Policy check deleted

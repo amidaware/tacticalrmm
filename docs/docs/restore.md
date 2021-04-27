@@ -4,7 +4,9 @@
     It is currently not possible to restore to a different domain/subdomain, only to a different physical or virtual server.
 
 !!!danger
-    You must update your old RMM to the latest version using the `update.sh` script before attempting to restore.
+    The restore script will always restore to the latest available RMM version on github.
+
+    Make sure you update your old RMM to the latest version using the `update.sh` script and then run a fresh backup to use with this restore script.
 #### Prepare the new server
 Create the same exact linux user account as you did when you installed the original server.
 

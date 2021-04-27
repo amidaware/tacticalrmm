@@ -599,5 +599,15 @@
     "description": "Add a task to Task Scheduler, needs editing",
     "shell": "powershell",
     "category": "TRMM (Win):Other"
+  },
+  {
+    "guid": "17040742-184a-4251-8f7b-4a1b0a1f02d1",
+    "filename": "Win_File_Copy_Misc.ps1",
+    "submittedBy": "https://github.com/tremor021",
+    "name": "EXAMPLE File Copying using powershell",
+    "description": "Reference Script: Will need manual tweaking, for copying files/folders from paths/websites to local",
+    "shell": "powershell",
+    "category": "TRMM (Win):Misc",
+    "default_timeout": "1"
   }
 ]

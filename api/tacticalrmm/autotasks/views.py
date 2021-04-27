@@ -116,6 +116,7 @@ class AutoTask(APIView):
             delete_win_task_schedule.delay(pk=task.pk)
         elif task.policy:
             delete_policy_autotasks_task.delay(task=task.pk)
+            task.delete()
 
         return Response(f"{task.name} will be deleted shortly")
 

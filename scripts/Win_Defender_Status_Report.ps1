@@ -1,5 +1,12 @@
-# This will check for Malware, Antispyware, that Windows Defender is Healthy, last scan etc within the last 24 hours
-# If parameter is supplied, it will search the log for that many days
+<#
+.Synopsis
+   Defender - Status Report
+.DESCRIPTION
+   This will check Event Log for Windows Defender Malware and Antispyware reports, otherwise will report as Healthy. By default if no command parameter is provided it will check the last 1 day (good for a scheduled daily task). 
+   If a number is provided as a command parameter it will search back that number of days back provided (good for collecting all AV alerts on the computer).
+.EXAMPLE
+   Win_Defender_Status_reports.ps1 365
+#>
 
 $param1 = $args[0]
 

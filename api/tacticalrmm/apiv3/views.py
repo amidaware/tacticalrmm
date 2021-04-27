@@ -432,7 +432,7 @@ class SysInfo(APIView):
 
 
 class MeshExe(APIView):
-    """ Sends the mesh exe to the installer """
+    """Sends the mesh exe to the installer"""
 
     def post(self, request):
         exe = "meshagent.exe" if request.data["arch"] == "64" else "meshagent-x86.exe"

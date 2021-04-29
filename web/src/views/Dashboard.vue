@@ -8,7 +8,14 @@
       <q-toolbar>
         <q-btn dense flat push @click="refreshEntireSite" icon="refresh" />
         <q-toolbar-title>
-          Tactical RMM<span class="text-overline">&nbsp;&nbsp;&nbsp;v{{ currentTRMMVersion }}</span>
+          Tactical RMM<span class="text-overline q-ml-sm">v{{ currentTRMMVersion }}</span>
+          <span
+            class="text-overline q-ml-md"
+            v-if="latestTRMMVersion !== 'error' && currentTRMMVersion !== latestTRMMVersion"
+            ><q-badge color="warning"
+              ><a :href="latestReleaseURL" target="_blank">v{{ latestTRMMVersion }} available</a></q-badge
+            ></span
+          >
         </q-toolbar-title>
 
         <!-- temp dark mode toggle -->
@@ -411,6 +418,7 @@ export default {
       filterChecksFailing: false,
       filterRebootNeeded: false,
       currentTRMMVersion: null,
+      latestTRMMVersion: "error",
       showUserPreferencesModal: false,
       columns: [
         {
@@ -719,6 +727,7 @@ export default {
         this.darkMode = r.data.dark_mode;
         this.$q.dark.set(this.darkMode);
         this.currentTRMMVersion = r.data.trmm_version;
+        this.latestTRMMVersion = r.data.latest_trmm_ver;
         this.$store.commit("SET_AGENT_DBLCLICK_ACTION", r.data.dbl_click_action);
         this.$store.commit("setShowCommunityScripts", r.data.show_community_scripts);
         this.$store.commit("SET_NO_CODE_SIGN", r.data.no_code_sign);
@@ -805,6 +814,11 @@ export default {
       clients: state => state.clients,
     }),
     ...mapGetters(["selectedAgentPk", "needRefresh", "clientTreeSplitterModel"]),
+    latestReleaseURL() {
+      return this.latestTRMMVersion !== "error"
+        ? `https://github.com/wh1te909/tacticalrmm/releases/tag/v${this.latestTRMMVersion}`
+        : "";
+    },
     wsUrl() {
       return getBaseUrl().split("://")[1];
     },

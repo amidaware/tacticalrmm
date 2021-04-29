@@ -46,3 +46,14 @@ Customize to your tastes (it doesn't need to be internet configured, just add re
 127.0.0.1    mesh.example.com
 ```
 
+## View mkdocks live edits in browser
+
+Change stuff in `/docs/docs/`
+
+mkdocs is Exposed on Port: 8005
+
+Open: [http://rmm.example.com:8005/](http://rmm.example.com:8005/)
+
+## View django administration
+
+Open: [http://rmm.example.com:8000/admin/](http://rmm.example.com:8000/admin/)

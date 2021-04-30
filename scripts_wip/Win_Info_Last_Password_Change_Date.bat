@@ -1,0 +1,1 @@
+NET USER %username% /DOMAIN | FIND /I "Password last set"

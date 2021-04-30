@@ -61,7 +61,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 
 export default {
@@ -76,7 +75,7 @@ export default {
 
   methods: {
     checkCreds() {
-      axios
+      this.$axios
         .post("/checkcreds/", this.credentials)
         .then(r => {
           if (r.data.totp === "totp not set") {
@@ -91,9 +90,7 @@ export default {
             this.prompt = true;
           }
         })
-        .catch(e => {
-          this.notifyError("Bad credentials");
-        });
+        .catch(e => {});
     },
     onSubmit() {
       this.$store

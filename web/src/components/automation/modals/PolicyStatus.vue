@@ -189,7 +189,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Unable to load check status");
         });
     },
     getTaskData() {
@@ -202,7 +201,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Unable to load task status");
         });
     },
     closeEventLogOutput() {

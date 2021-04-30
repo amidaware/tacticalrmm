@@ -132,7 +132,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 import { mapGetters } from "vuex";
 export default {
@@ -186,10 +185,13 @@ export default {
     },
     setServices() {
       if (this.policypk) {
-        axios.get("/services/defaultservices/").then(r => {
-          this.svcData = Object.freeze(r.data);
-          this.winsvccheck.svc_policy_mode = "default";
-        });
+        this.$axios
+          .get("/services/defaultservices/")
+          .then(r => {
+            this.svcData = Object.freeze(r.data);
+            this.winsvccheck.svc_policy_mode = "default";
+          })
+          .catch(e => {});
       } else {
         this.svcData = Object.freeze(this.agentServices);
       }
@@ -198,7 +200,10 @@ export default {
       this.winsvccheck.svc_display_name = this.serviceOptions.find(i => i.value === this.winsvccheck.svc_name).label;
     },
     getCheck() {
-      axios.get(`/checks/${this.checkpk}/check/`).then(r => (this.winsvccheck = r.data));
+      this.$axios
+        .get(`/checks/${this.checkpk}/check/`)
+        .then(r => (this.winsvccheck = r.data))
+        .catch(e => {});
     },
     addCheck() {
       const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
@@ -206,24 +211,24 @@ export default {
         ...pk,
         check: this.winsvccheck,
       };
-      axios
+      this.$axios
         .post("/checks/checks/", data)
         .then(r => {
           this.$emit("close");
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     editCheck() {
-      axios
+      this.$axios
         .patch(`/checks/${this.checkpk}/check/`, this.winsvccheck)
         .then(r => {
           this.$emit("close");
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     reloadChecks() {
       if (this.agentpk) {

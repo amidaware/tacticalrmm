@@ -61,7 +61,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 
 export default {
@@ -111,7 +110,7 @@ export default {
     getEventLog() {
       this.events = [];
       this.$q.loading.show({ message: `Loading ${this.logType} event log...please wait` });
-      axios
+      this.$axios
         .get(`/agents/${this.pk}/geteventlog/${this.logType}/${this.days}/`)
         .then(r => {
           this.events = Object.freeze(r.data);
@@ -119,7 +118,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data);
         });
     },
   },

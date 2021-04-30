@@ -251,9 +251,12 @@ export default {
   },
   methods: {
     getClients() {
-      this.$axios.get("/clients/clients/").then(r => {
-        this.clientsOptions = Object.freeze(r.data.map(client => ({ label: client.name, value: client.id })));
-      });
+      this.$axios
+        .get("/clients/clients/")
+        .then(r => {
+          this.clientsOptions = Object.freeze(r.data.map(client => ({ label: client.name, value: client.id })));
+        })
+        .catch(e => {});
     },
     search() {
       this.$q.loading.show();
@@ -277,7 +280,6 @@ export default {
           this.alerts = Object.freeze(r.data);
         })
         .catch(e => {
-          this.notifyError("There was an issue getting alerts");
           this.$q.loading.hide();
         });
     },
@@ -311,7 +313,6 @@ export default {
             })
             .catch(e => {
               this.$q.loading.hide();
-              this.notifyError("There was an issue snoozing alert");
             });
         });
     },
@@ -332,7 +333,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("There was an issue unsnoozing the alert");
         });
     },
     resolveAlert(alert) {
@@ -352,7 +352,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("There was an issue resolving alert");
         });
     },
     resolveAlertBulk(alerts) {
@@ -372,7 +371,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("There was an error resolving alerts");
         });
     },
     snoozeAlertBulk(alerts) {
@@ -405,7 +403,6 @@ export default {
             })
             .catch(e => {
               this.$q.loading.hide();
-              this.notifyError("There was an error resolving alerts");
             });
         });
     },

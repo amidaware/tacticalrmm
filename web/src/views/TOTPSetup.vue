@@ -61,9 +61,7 @@ export default {
             this.qr_url = r.data.qr_url;
           }
         })
-        .catch(e => {
-          this.$q.loading.hide();
-        });
+        .catch(e => this.$q.loading.hide());
     },
     logout() {
       this.$q.loading.show();

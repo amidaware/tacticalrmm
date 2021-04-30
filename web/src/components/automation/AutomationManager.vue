@@ -319,7 +319,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Unable to get policies");
         });
     },
     clearRow() {
@@ -348,7 +347,6 @@ export default {
             })
             .catch(error => {
               this.$q.loading.hide();
-              this.notifyError("An Error occured while deleting policy");
             });
         });
     },
@@ -450,7 +448,6 @@ export default {
         })
         .catch(error => {
           this.$q.loading.hide();
-          this.notifyError("An Error occured while sending policy sync request");
         });
     },
     toggleCheckbox(policy, type) {
@@ -480,7 +477,6 @@ export default {
         })
         .catch(error => {
           this.$q.loading.hide();
-          this.notifyError("An Error occured while editing policy");
         });
     },
     patchPolicyText(policy) {

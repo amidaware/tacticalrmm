@@ -283,7 +283,7 @@ export default {
             }
             this.notifySuccess(r.data);
           })
-          .catch(e => this.notifyError(e.response.data));
+          .catch(e => {});
       }
     },
     getPolicyChecks() {
@@ -295,7 +295,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Unable to get policy checks");
         });
     },
     step2() {

@@ -85,9 +85,7 @@
 </template>
 
 <script>
-import axios from "axios";
-import { mapState } from "vuex";
-import { mapGetters } from "vuex";
+import { mapGetters, mapState } from "vuex";
 import mixins from "@/mixins/mixins";
 
 export default {
@@ -160,10 +158,13 @@ export default {
     },
     editPolicy(pk, policy) {
       const data = { pk: pk, policy: policy };
-      axios.patch(`/winupdate/editpolicy/`, data).then(r => {
-        this.refreshUpdates(this.updates.pk);
-        this.notifySuccess("Policy edited!");
-      });
+      this.$axios
+        .patch(`/winupdate/editpolicy/`, data)
+        .then(r => {
+          this.refreshUpdates(this.updates.pk);
+          this.notifySuccess("Policy edited!");
+        })
+        .catch(e => {});
     },
     refreshUpdates(pk) {
       this.$store.dispatch("loadWinUpdates", pk);

@@ -144,15 +144,11 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data, 4000);
         });
     },
     refreshProcs() {
       this.polling = setInterval(() => {
-        this.$axios
-          .get(`/agents/${this.pk}/getprocs/`)
-          .then(r => (this.procs = r.data))
-          .catch(() => console.log("Unable to contact the agent"));
+        this.$axios.get(`/agents/${this.pk}/getprocs/`).then(r => (this.procs = r.data));
       }, this.pollInterval * 1000);
     },
     killProc(pid, name) {
@@ -165,7 +161,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data);
         });
     },
     stopPoll() {
@@ -192,7 +187,10 @@ export default {
       this.refreshProcs();
     },
     getAgent() {
-      this.$axios.get(`/agents/${this.pk}/agentdetail/`).then(r => (this.mem = r.data.total_ram));
+      this.$axios
+        .get(`/agents/${this.pk}/agentdetail/`)
+        .then(r => (this.mem = r.data.total_ram))
+        .catch(e => {});
     },
     convert(percent) {
       const mb = this.mem * 1024;

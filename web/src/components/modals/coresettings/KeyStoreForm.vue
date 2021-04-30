@@ -69,7 +69,6 @@ export default {
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.notifyError("There was an error editing the key");
           });
       } else {
         this.$axios
@@ -81,7 +80,6 @@ export default {
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.notifyError("There was an error adding the key");
           });
       }
     },

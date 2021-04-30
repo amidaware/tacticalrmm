@@ -91,7 +91,6 @@ export default {
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.notifyError("There was an error editing the policy");
           });
       } else {
         if (this.copyPolicy) {
@@ -107,7 +106,6 @@ export default {
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.notifyError("There was an error adding the policy");
           });
       }
     },

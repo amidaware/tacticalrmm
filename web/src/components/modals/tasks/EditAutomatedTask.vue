@@ -164,7 +164,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("There was an issue editing the task");
         });
     },
     show() {

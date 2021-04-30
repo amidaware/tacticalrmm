@@ -43,7 +43,7 @@ export default {
         .then(r => {
           this.settings = r.data;
         })
-        .catch(e => this.notifyError(e.response.data));
+        .catch(e => {});
     },
     editToken() {
       this.$q.loading.show();
@@ -56,7 +56,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data, 4000);
         });
     },
   },

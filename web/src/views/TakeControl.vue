@@ -75,7 +75,6 @@ export default {
         .catch(e => {
           this.visible = true;
           this.$q.loading.hide();
-          this.notifyError("Something went wrong");
         });
     },
     restart() {
@@ -99,7 +98,6 @@ export default {
         .catch(e => {
           this.visible = true;
           this.$q.loading.hide();
-          this.notifyError(e.response.data);
         });
     },
     repair() {
@@ -118,7 +116,6 @@ export default {
         .catch(e => {
           this.visible = true;
           this.$q.loading.hide();
-          this.notifyError(e.response.data);
         });
     },
   },

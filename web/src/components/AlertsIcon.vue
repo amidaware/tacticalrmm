@@ -69,7 +69,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          //this.notifyError("Unable to get alerts");
         });
     },
     showOverview() {
@@ -112,7 +111,6 @@ export default {
             })
             .catch(e => {
               this.$q.loading.hide();
-              this.notifyError("There was an issue snoozing alert");
             });
         });
     },
@@ -133,7 +131,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("There was an issue resolving alert");
         });
     },
     alertIconColor(severity) {

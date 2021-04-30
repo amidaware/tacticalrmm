@@ -124,40 +124,37 @@ export default {
               this.refreshNotes();
               this.notifySuccess(r.data);
             })
-            .catch(() => this.notifyError("Something went wrong"));
+            .catch(e => {});
         });
     },
     editNote(pk) {
-      this.$axios
-        .get(`/agents/${pk}/note/`)
-        .then(r => {
-          this.note = r.data;
-          this.$q
-            .dialog({
-              title: "Edit Note",
-              prompt: {
-                model: this.note.note,
-                type: "textarea",
-              },
-              style: "width: 30vw; max-width: 50vw;",
-              ok: { label: "Save" },
-              cancel: true,
-            })
-            .onOk(data => {
-              this.note.note = data;
-              this.$axios
-                .patch(`/agents/${pk}/note/`, this.note)
-                .then(r => {
-                  this.refreshNotes();
-                  this.notifySuccess(r.data);
-                })
-                .catch(() => this.notifyError("Something went wrong"));
-            })
-            .onDismiss(() => {
-              this.note = {};
-            });
-        })
-        .catch(() => this.notifyError("Something went wrong"));
+      this.$axios.get(`/agents/${pk}/note/`).then(r => {
+        this.note = r.data;
+        this.$q
+          .dialog({
+            title: "Edit Note",
+            prompt: {
+              model: this.note.note,
+              type: "textarea",
+            },
+            style: "width: 30vw; max-width: 50vw;",
+            ok: { label: "Save" },
+            cancel: true,
+          })
+          .onOk(data => {
+            this.note.note = data;
+            this.$axios
+              .patch(`/agents/${pk}/note/`, this.note)
+              .then(r => {
+                this.refreshNotes();
+                this.notifySuccess(r.data);
+              })
+              .catch(e => {});
+          })
+          .onDismiss(() => {
+            this.note = {};
+          });
+      });
     },
     deleteNote(pk) {
       this.$q
@@ -173,7 +170,7 @@ export default {
               this.refreshNotes();
               this.notifySuccess(r.data);
             })
-            .catch(() => this.notifyError("Something went wrong"));
+            .catch(e => {});
         });
     },
     refreshNotes() {

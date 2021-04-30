@@ -1,38 +1,6 @@
 import { Notify, date } from "quasar";
 import axios from 'axios'
 
-export function notifySuccessConfig(msg, timeout = 2000) {
-  return {
-    type: "positive",
-    message: msg,
-    timeout: timeout
-  }
-};
-
-export function notifyErrorConfig(msg, timeout = 2000) {
-  return {
-    type: "negative",
-    message: msg,
-    timeout: timeout
-  }
-};
-
-export function notifyWarningConfig(msg, timeout = 2000) {
-  return {
-    type: "warning",
-    message: msg,
-    timeout: timeout
-  }
-};
-
-export function notifyInfoConfig(msg, timeout = 2000) {
-  return {
-    type: "info",
-    message: msg,
-    timeout: timeout
-  }
-};
-
 function getTimeLapse(unixtime) {
   var previous = unixtime * 1000;
   var current = new Date();
@@ -74,16 +42,32 @@ export default {
 
     },
     notifySuccess(msg, timeout = 2000) {
-      Notify.create(notifySuccessConfig(msg, timeout));
+      Notify.create({
+        type: "positive",
+        message: msg,
+        timeout: timeout
+      });
     },
     notifyError(msg, timeout = 2000) {
-      Notify.create(notifyErrorConfig(msg, timeout));
+      Notify.create({
+        type: "negative",
+        message: msg,
+        timeout: timeout
+      });
     },
     notifyWarning(msg, timeout = 2000) {
-      Notify.create(notifyWarningConfig(msg, timeout));
+      Notify.create({
+        type: "warning",
+        message: msg,
+        timeout: timeout
+      });
     },
     notifyInfo(msg, timeout = 2000) {
-      Notify.create(notifyInfoConfig(msg, timeout));
+      Notify.create({
+        type: "info",
+        message: msg,
+        timeout: timeout
+      });
     },
 
     isValidThreshold(warning, error, diskcheck = false) {
@@ -143,9 +127,6 @@ export default {
     },
     getCustomFields(model) {
       return axios.patch("/core/customfields/", { model: model })
-        .catch(e => {
-          this.notifyError("There was an issue getting Custom Fields");
-        });
     },
     getAgentCount(data, type, id) {
       if (type === "client") {
@@ -210,7 +191,8 @@ export default {
           const sorted = tmp.sort((a, b) => a.label.localeCompare(b.label));
           options.push(...sorted);
         });
-      });
+      })
+        .catch(e => { });
 
       return options;
     }

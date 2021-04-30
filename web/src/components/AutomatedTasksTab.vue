@@ -243,7 +243,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import { mapState, mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import AddAutomatedTask from "@/components/modals/tasks/AddAutomatedTask";
@@ -312,13 +311,13 @@ export default {
         return;
       }
       const data = { enableordisable: action };
-      axios
+      this.$axios
         .patch(`/tasks/${pk}/automatedtasks/`, data)
         .then(r => {
           this.$store.dispatch("loadAutomatedTasks", this.automatedTasks.pk);
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError("Something went wrong"));
+        .catch(e => {});
     },
     taskAlert(pk, alert_type, action, managed_by_policy) {
       if (managed_by_policy) {
@@ -339,7 +338,7 @@ export default {
       }
 
       const act = action ? "enabled" : "disabled";
-      axios
+      this.$axios
         .put(`/tasks/${pk}/automatedtasks/`, data)
         .then(r => {
           this.$q.loading.hide();
@@ -347,7 +346,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("There was an issue editing task");
         });
     },
     refreshTasks(id) {
@@ -376,10 +374,10 @@ export default {
         this.notifyError("Task cannot be run when it's disabled. Enable it first.");
         return;
       }
-      axios
+      this.$axios
         .get(`/tasks/runwintask/${pk}/`)
         .then(r => this.notifySuccess(r.data))
-        .catch(() => this.notifyError("Something went wrong"));
+        .catch(e => {});
     },
     deleteTask(name, pk) {
       this.$q
@@ -390,14 +388,14 @@ export default {
           persistent: true,
         })
         .onOk(() => {
-          axios
+          this.$axios
             .delete(`/tasks/${pk}/automatedtasks/`)
             .then(r => {
               this.$store.dispatch("loadAutomatedTasks", this.automatedTasks.pk);
               this.$store.dispatch("loadChecks", this.automatedTasks.pk);
               this.notifySuccess(r.data);
             })
-            .catch(e => this.notifyError("Something went wrong"));
+            .catch(e => {});
         });
     },
   },

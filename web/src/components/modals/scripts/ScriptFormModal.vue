@@ -170,7 +170,6 @@ export default {
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.notifyError(e.response.data.non_field_errors, 4000);
           });
       } else {
         this.$axios
@@ -182,7 +181,6 @@ export default {
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.notifyError(e.response.data.non_field_errors, 4000);
           });
       }
     },
@@ -196,7 +194,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data.non_field_errors, 4000);
         });
     },
     highlighter(code) {

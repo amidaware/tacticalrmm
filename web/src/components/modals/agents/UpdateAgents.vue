@@ -67,7 +67,6 @@ export default {
         })
         .catch(() => {
           this.$q.loading.hide();
-          this.notifyError("Something went wrong");
         });
     },
     update() {
@@ -79,7 +78,7 @@ export default {
           this.$emit("edited");
           this.notifySuccess("Agents will now be updated");
         })
-        .catch(() => this.notifyError("Something went wrong"));
+        .catch(e => {});
     },
   },
   computed: {

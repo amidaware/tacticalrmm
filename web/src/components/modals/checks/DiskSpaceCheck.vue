@@ -65,7 +65,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 export default {
@@ -94,17 +93,23 @@ export default {
   methods: {
     setDiskOptions() {
       if (this.policypk) {
-        axios.get("/checks/getalldisks/").then(r => {
-          this.diskOptions = r.data;
-          this.diskcheck.disk = "C:";
-        });
+        this.$axios
+          .get("/checks/getalldisks/")
+          .then(r => {
+            this.diskOptions = r.data;
+            this.diskcheck.disk = "C:";
+          })
+          .catch(e => {});
       } else {
         this.diskOptions = this.agentDisks.map(i => i.device);
         this.diskcheck.disk = this.diskOptions[0];
       }
     },
     getCheck() {
-      axios.get(`/checks/${this.checkpk}/check/`).then(r => (this.diskcheck = r.data));
+      this.$axios
+        .get(`/checks/${this.checkpk}/check/`)
+        .then(r => (this.diskcheck = r.data))
+        .catch(e => {});
     },
     addCheck() {
       if (!this.isValidThreshold(this.diskcheck.warning_threshold, this.diskcheck.error_threshold, true)) {
@@ -116,28 +121,28 @@ export default {
         ...pk,
         check: this.diskcheck,
       };
-      axios
+      this.$axios
         .post("/checks/checks/", data)
         .then(r => {
           this.$emit("close");
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     editCheck() {
       if (!this.isValidThreshold(this.diskcheck.warning_threshold, this.diskcheck.error_threshold, true)) {
         return;
       }
 
-      axios
+      this.$axios
         .patch(`/checks/${this.checkpk}/check/`, this.diskcheck)
         .then(r => {
           this.$emit("close");
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     reloadChecks() {
       if (this.agentpk) {

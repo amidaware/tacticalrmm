@@ -174,47 +174,53 @@ export default {
   },
   methods: {
     getAgentInfo() {
-      this.$axios.get(`/agents/${this.selectedAgentPk}/agenteditdetails/`).then(r => {
-        this.agent = r.data;
-        this.allTimezones = Object.freeze(r.data.all_timezones);
+      this.$axios
+        .get(`/agents/${this.selectedAgentPk}/agenteditdetails/`)
+        .then(r => {
+          this.agent = r.data;
+          this.allTimezones = Object.freeze(r.data.all_timezones);
 
-        // r.data.time_zone is the actual db column from the agent
-        // r.data.timezone is a computed property based on the db time_zone field
-        // which whill return null if the time_zone field is not set
-        // and is therefore inheriting from the default global setting
-        if (r.data.time_zone === null) {
-          this.timezone = r.data.timezone;
-          this.original_tz = r.data.timezone;
-        } else {
-          this.tz_inherited = false;
-          this.timezone = r.data.time_zone;
-          this.original_tz = r.data.time_zone;
-        }
-
-        this.agent.client = { label: r.data.client.name, id: r.data.client.id, sites: r.data.client.sites };
-        this.agentLoaded = true;
-
-        for (let field of this.customFields) {
-          const value = r.data.custom_fields.find(value => value.field === field.id);
-
-          if (field.type === "multiple") {
-            if (value) this.$set(this.custom_fields, field.name, value.value);
-            else this.$set(this.custom_fields, field.name, []);
-          } else if (field.type === "checkbox") {
-            if (value) this.$set(this.custom_fields, field.name, value.value);
-            else this.$set(this.custom_fields, field.name, false);
+          // r.data.time_zone is the actual db column from the agent
+          // r.data.timezone is a computed property based on the db time_zone field
+          // which whill return null if the time_zone field is not set
+          // and is therefore inheriting from the default global setting
+          if (r.data.time_zone === null) {
+            this.timezone = r.data.timezone;
+            this.original_tz = r.data.timezone;
           } else {
-            if (value) this.$set(this.custom_fields, field.name, value.value);
-            else this.$set(this.custom_fields, field.name, "");
+            this.tz_inherited = false;
+            this.timezone = r.data.time_zone;
+            this.original_tz = r.data.time_zone;
           }
-        }
-      });
+
+          this.agent.client = { label: r.data.client.name, id: r.data.client.id, sites: r.data.client.sites };
+          this.agentLoaded = true;
+
+          for (let field of this.customFields) {
+            const value = r.data.custom_fields.find(value => value.field === field.id);
+
+            if (field.type === "multiple") {
+              if (value) this.$set(this.custom_fields, field.name, value.value);
+              else this.$set(this.custom_fields, field.name, []);
+            } else if (field.type === "checkbox") {
+              if (value) this.$set(this.custom_fields, field.name, value.value);
+              else this.$set(this.custom_fields, field.name, false);
+            } else {
+              if (value) this.$set(this.custom_fields, field.name, value.value);
+              else this.$set(this.custom_fields, field.name, "");
+            }
+          }
+        })
+        .catch(e => {});
     },
     getClientsSites() {
-      this.$axios.get("/clients/clients/").then(r => {
-        this.client_options = this.formatClientOptions(r.data);
-        this.clientsLoaded = true;
-      });
+      this.$axios
+        .get("/clients/clients/")
+        .then(r => {
+          this.client_options = this.formatClientOptions(r.data);
+          this.clientsLoaded = true;
+        })
+        .catch(e => {});
     },
     editAgent() {
       delete this.agent.all_timezones;
@@ -244,9 +250,7 @@ export default {
           this.$emit("edited");
           this.notifySuccess("Agent was edited!");
         })
-        .catch(e => {
-          this.notifyError("Something went wrong");
-        });
+        .catch(e => {});
     },
   },
   computed: {

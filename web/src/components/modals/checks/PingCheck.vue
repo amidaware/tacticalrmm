@@ -58,7 +58,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 export default {
   name: "PingCheck",
@@ -89,7 +88,10 @@ export default {
   },
   methods: {
     getCheck() {
-      axios.get(`/checks/${this.checkpk}/check/`).then(r => (this.pingcheck = r.data));
+      this.$axios
+        .get(`/checks/${this.checkpk}/check/`)
+        .then(r => (this.pingcheck = r.data))
+        .catch(e => {});
     },
     addCheck() {
       const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
@@ -97,24 +99,24 @@ export default {
         ...pk,
         check: this.pingcheck,
       };
-      axios
+      this.$axios
         .post("/checks/checks/", data)
         .then(r => {
           this.$emit("close");
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     editCheck() {
-      axios
+      this.$axios
         .patch(`/checks/${this.checkpk}/check/`, this.pingcheck)
         .then(r => {
           this.$emit("close");
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     reloadChecks() {
       if (this.agentpk) {

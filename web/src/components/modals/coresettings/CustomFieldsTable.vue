@@ -136,7 +136,6 @@ export default {
             })
             .catch(error => {
               this.$q.loading.hide();
-              this.notifyError(`An Error occured while deleting custom field: ${field.name}`);
             });
         });
     },

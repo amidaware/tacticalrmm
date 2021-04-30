@@ -86,7 +86,7 @@ export default {
           link.download = fileName;
           link.click();
         })
-        .catch(e => this.notifyError(e.response.data));
+        .catch(e => {});
     },
   },
 };

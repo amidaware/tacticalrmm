@@ -401,9 +401,12 @@ export default {
   methods: {
     getScripts() {
       this.clearRow();
-      this.$axios.get("/scripts/scripts/").then(r => {
-        this.scripts = r.data;
-      });
+      this.$axios
+        .get("/scripts/scripts/")
+        .then(r => {
+          this.scripts = r.data;
+        })
+        .catch(e => {});
     },
     setShowCommunityScripts(show) {
       this.$store.dispatch("setShowCommunityScripts", show);
@@ -431,7 +434,6 @@ export default {
         })
         .catch(() => {
           this.$q.loading.hide();
-          this.notifyError("Something went wrong");
         });
     },
     deleteScript(scriptpk) {
@@ -448,7 +450,7 @@ export default {
               this.getScripts();
               this.notifySuccess(r.data);
             })
-            .catch(() => this.notifySuccess("Something went wrong"));
+            .catch(e => {});
         });
     },
     downloadScript(script) {
@@ -461,7 +463,7 @@ export default {
           link.download = data.filename;
           link.click();
         })
-        .catch(() => this.notifyError("Something went wrong"));
+        .catch(e => {});
     },
     truncateText(txt) {
       return txt.length >= 60 ? txt.substring(0, 60) + "..." : txt;

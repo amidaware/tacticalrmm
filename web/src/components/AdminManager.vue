@@ -137,7 +137,7 @@
 </template>
 
 <script>
-import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
+import mixins from "@/mixins/mixins";
 import { mapState } from "vuex";
 import UserForm from "@/components/modals/admin/UserForm";
 import UserResetPasswordForm from "@/components/modals/admin/UserResetPasswordForm";
@@ -203,11 +203,9 @@ export default {
           this.$store
             .dispatch("admin/deleteUser", data.id)
             .then(() => {
-              this.$q.notify(notifySuccessConfig(`User ${data.username} was deleted!`));
+              this.notifySuccess(`User ${data.username} was deleted!`);
             })
-            .catch(e => {
-              this.$q.notify(notifyErrorConfig(e.response.data));
-            });
+            .catch(e => {});
         });
     },
     showEditUserModal(data) {
@@ -238,11 +236,9 @@ export default {
       this.$store
         .dispatch("admin/editUser", data)
         .then(response => {
-          this.$q.notify(notifySuccessConfig(text));
+          this.notifySuccess(text);
         })
-        .catch(error => {
-          this.$q.notify(notifyErrorConfig("An Error occured while editing user"));
-        });
+        .catch(e => {});
     },
     ResetPassword(user) {
       this.resetUserId = user.id;
@@ -266,14 +262,9 @@ export default {
           ok: { label: "Reset", color: "positive" },
         })
         .onOk(() => {
-          this.$store
-            .dispatch("admin/resetUserTOTP", data)
-            .then(response => {
-              this.$q.notify(notifySuccessConfig(response.data, 4000));
-            })
-            .catch(e => {
-              this.$q.notify(notifyErrorConfig(e.response.data));
-            });
+          this.$store.dispatch("admin/resetUserTOTP", data).then(response => {
+            this.notifySuccess(response.data, 4000);
+          });
         });
     },
     rowSelectedClass(id, selected) {

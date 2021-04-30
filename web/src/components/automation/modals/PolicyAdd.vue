@@ -158,7 +158,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("There was an error updating policies");
         });
     },
     getPolicies() {
@@ -175,7 +174,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Add error occured while loading policies");
         });
     },
     show() {

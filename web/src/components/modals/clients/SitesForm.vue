@@ -101,11 +101,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          if (e.response.data.name) {
-            this.notifyError(e.response.data.name);
-          } else {
-            this.notifyError(e.response.data.non_field_errors);
-          }
         });
     },
     editSite() {
@@ -124,11 +119,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          if (e.response.data.name) {
-            this.notifyError(e.response.data.name);
-          } else {
-            this.notifyError(e.response.data.non_field_errors);
-          }
         });
     },
     getSite() {
@@ -175,11 +165,14 @@ export default {
       this.$store.dispatch("getUpdatedSites");
     },
     getClients() {
-      this.$axios.get("/clients/clients/").then(r => {
-        r.data.forEach(client => {
-          this.clientOptions.push({ label: client.name, value: client.id });
-        });
-      });
+      this.$axios
+        .get("/clients/clients/")
+        .then(r => {
+          r.data.forEach(client => {
+            this.clientOptions.push({ label: client.name, value: client.id });
+          });
+        })
+        .catch(e => {});
     },
     show() {
       this.$refs.dialog.show();

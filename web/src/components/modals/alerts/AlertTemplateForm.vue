@@ -676,7 +676,6 @@ export default {
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.notifyError(e.response.data);
           });
       } else {
         this.$axios
@@ -688,7 +687,6 @@ export default {
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.notifyError(e);
           });
       }
     },

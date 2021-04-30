@@ -355,11 +355,14 @@ export default {
   },
   methods: {
     getCoreSettings() {
-      this.$axios.get("/core/getcoresettings/").then(r => {
-        this.settings = r.data;
-        this.allTimezones = Object.freeze(r.data.all_timezones);
-        this.ready = true;
-      });
+      this.$axios
+        .get("/core/getcoresettings/")
+        .then(r => {
+          this.settings = r.data;
+          this.allTimezones = Object.freeze(r.data.all_timezones);
+          this.ready = true;
+        })
+        .catch(e => {});
     },
     getPolicies() {
       this.$q.loading.show();
@@ -371,13 +374,15 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Unable to get policies");
         });
     },
     getAlertTemplates() {
-      this.$axios.get("alerts/alerttemplates").then(r => {
-        this.alertTemplateOptions = r.data.map(template => ({ label: template.name, value: template.id }));
-      });
+      this.$axios
+        .get("alerts/alerttemplates")
+        .then(r => {
+          this.alertTemplateOptions = r.data.map(template => ({ label: template.name, value: template.id }));
+        })
+        .catch(e => {});
     },
     showResetPatchPolicy() {
       this.$q.dialog({
@@ -457,7 +462,6 @@ export default {
         })
         .catch(() => {
           this.$q.loading.hide();
-          this.notifyError("You have some invalid input. Please check all fields");
         });
     },
   },

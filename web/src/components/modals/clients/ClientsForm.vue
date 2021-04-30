@@ -97,11 +97,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          if (e.response.data.name) {
-            this.notifyError(e.response.data.name);
-          } else {
-            this.notifyError(e.response.data);
-          }
         });
     },
     editClient() {
@@ -121,11 +116,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          if (e.response.data.name) {
-            this.notifyError(e.response.data.name);
-          } else {
-            this.notifyError(e.response.data);
-          }
         });
     },
     getClient() {

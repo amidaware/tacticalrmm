@@ -192,7 +192,7 @@ export default {
             this.eventMessage = true;
           }
         })
-        .catch(() => this.notifyError("Something went wrong"));
+        .catch(e => {});
     },
     addCheck() {
       const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
@@ -217,7 +217,7 @@ export default {
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     editCheck() {
       this.eventlogcheck.event_id_is_wildcard = this.eventlogcheck.event_id === "*" ? true : false;
@@ -237,7 +237,7 @@ export default {
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     reloadChecks() {
       if (this.agentpk) {

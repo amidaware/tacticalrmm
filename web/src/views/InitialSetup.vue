@@ -97,25 +97,18 @@ export default {
               this.$q.loading.hide();
               this.$router.push({ name: "Dashboard" });
             })
-            .catch(e => {
-              this.$q.loading.hide();
-              this.notifyError("error uploading");
-            });
+            .catch(e => this.$q.loading.hide());
         })
-        .catch(e => {
-          this.$q.loading.hide();
-          if (e.response.data.name) {
-            this.notifyError(e.response.data.name);
-          } else {
-            this.notifyError(e.response.data.non_field_errors);
-          }
-        });
+        .catch(e => this.$q.loading.hide());
     },
     getSettings() {
-      this.$axios.get("/core/getcoresettings/").then(r => {
-        this.allTimezones = Object.freeze(r.data.all_timezones);
-        this.timezone = r.data.default_time_zone;
-      });
+      this.$axios
+        .get("/core/getcoresettings/")
+        .then(r => {
+          this.allTimezones = Object.freeze(r.data.all_timezones);
+          this.timezone = r.data.default_time_zone;
+        })
+        .catch(e => {});
     },
   },
   created() {

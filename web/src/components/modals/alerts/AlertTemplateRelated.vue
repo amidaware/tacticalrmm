@@ -105,7 +105,6 @@ export default {
       })
       .catch(e => {
         this.$q.loading.hide();
-        this.notifyError("There was an error getting related templates");
       });
   },
 };

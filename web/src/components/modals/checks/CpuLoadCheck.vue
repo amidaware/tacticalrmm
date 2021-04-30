@@ -56,7 +56,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 export default {
   name: "CpuLoadCheck",
@@ -81,7 +80,10 @@ export default {
   },
   methods: {
     getCheck() {
-      axios.get(`/checks/${this.checkpk}/check/`).then(r => (this.cpuloadcheck = r.data));
+      this.$axios
+        .get(`/checks/${this.checkpk}/check/`)
+        .then(r => (this.cpuloadcheck = r.data))
+        .catch(e => {});
     },
     addCheck() {
       if (!this.isValidThreshold(this.cpuloadcheck.warning_threshold, this.cpuloadcheck.error_threshold)) {
@@ -93,28 +95,28 @@ export default {
         ...pk,
         check: this.cpuloadcheck,
       };
-      axios
+      this.$axios
         .post("/checks/checks/", data)
         .then(r => {
           this.$emit("close");
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     editCheck() {
       if (!this.isValidThreshold(this.cpuloadcheck.warning_threshold, this.cpuloadcheck.error_threshold)) {
         return;
       }
 
-      axios
+      this.$axios
         .patch(`/checks/${this.checkpk}/check/`, this.cpuloadcheck)
         .then(r => {
           this.$emit("close");
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     reloadChecks() {
       if (this.agentpk) {

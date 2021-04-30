@@ -118,7 +118,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Unable to get Clients.");
         });
     },
     showClientDeleteModal(client) {

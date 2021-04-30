@@ -239,22 +239,27 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data);
         });
     },
     getClients() {
-      this.$axios.get("/clients/clients/").then(r => {
-        this.client_options = this.formatClientOptions(r.data);
+      this.$axios
+        .get("/clients/clients/")
+        .then(r => {
+          this.client_options = this.formatClientOptions(r.data);
 
-        this.client = this.client_options[0];
-        this.site = this.sites[0];
-      });
+          this.client = this.client_options[0];
+          this.site = this.sites[0];
+        })
+        .catch(e => {});
     },
     getAgents() {
-      this.$axios.get("/agents/listagentsnodetail/").then(r => {
-        const ret = r.data.map(agent => ({ label: agent.hostname, value: agent.pk }));
-        this.agents = Object.freeze(ret.sort((a, b) => a.label.localeCompare(b.label)));
-      });
+      this.$axios
+        .get("/agents/listagentsnodetail/")
+        .then(r => {
+          const ret = r.data.map(agent => ({ label: agent.hostname, value: agent.pk }));
+          this.agents = Object.freeze(ret.sort((a, b) => a.label.localeCompare(b.label)));
+        })
+        .catch(e => {});
     },
     setTitles() {
       switch (this.mode) {

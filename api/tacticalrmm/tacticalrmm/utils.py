@@ -263,3 +263,20 @@ def run_nats_api_cmd(mode: str, ids: list[str], timeout: int = 30) -> None:
             subprocess.run(cmd, capture_output=True, timeout=timeout)
         except Exception as e:
             logger.error(e)
+
+
+def get_latest_trmm_ver() -> str:
+    url = "https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py"
+    try:
+        r = requests.get(url, timeout=5)
+    except:
+        return "error"
+
+    try:
+        for line in r.text.splitlines():
+            if "TRMM_VERSION" in line:
+                return line.split(" ")[2].strip('"')
+    except Exception as e:
+        logger.error(e)
+
+    return "error"

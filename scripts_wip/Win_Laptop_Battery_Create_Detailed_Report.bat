@@ -1,0 +1,1 @@
+powercfg /batteryreport /output "C:\battery-report.html"

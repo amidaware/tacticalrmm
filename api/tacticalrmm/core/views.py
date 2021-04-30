@@ -62,9 +62,12 @@ def version(request):
 
 @api_view()
 def dashboard_info(request):
+    from tacticalrmm.utils import get_latest_trmm_ver
+
     return Response(
         {
             "trmm_version": settings.TRMM_VERSION,
+            "latest_trmm_ver": get_latest_trmm_ver(),
             "dark_mode": request.user.dark_mode,
             "show_community_scripts": request.user.show_community_scripts,
             "dbl_click_action": request.user.agent_dblclick_action,

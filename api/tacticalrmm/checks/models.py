@@ -4,6 +4,7 @@ import os
 import string
 from statistics import mean
 from typing import Any
+from packaging import version as pyver
 
 import pytz
 from alerts.models import SEVERITY_CHOICES
@@ -421,16 +422,20 @@ class Check(BaseAuditModel):
 
         # ping checks
         elif self.check_type == "ping":
-            success = ["Reply", "bytes", "time", "TTL"]
             output = data["output"]
 
-            if data["has_stdout"]:
-                if all(x in output for x in success):
-                    self.status = "passing"
-                else:
+            if pyver.parse(self.agent.version) <= pyver.parse("1.5.2"):
+                # DEPRECATED
+                success = ["Reply", "bytes", "time", "TTL"]
+                if data["has_stdout"]:
+                    if all(x in output for x in success):
+                        self.status = "passing"
+                    else:
+                        self.status = "failing"
+                elif data["has_stderr"]:
                     self.status = "failing"
-            elif data["has_stderr"]:
-                self.status = "failing"
+            else:
+                self.status = data["status"]
 
             self.more_info = output
             self.save(update_fields=["more_info"])

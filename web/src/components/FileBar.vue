@@ -119,6 +119,25 @@
             </q-list>
           </q-menu>
         </q-btn>
+        <!-- help -->
+        <q-btn size="md" dense no-caps flat label="Help">
+          <q-menu auto-close>
+            <q-list dense style="min-width: 100px">
+              <q-item clickable v-close-popup @click="openHelp('docs')">
+                <q-item-section>Documentation</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="openHelp('bug')">
+                <q-item-section>Bug Report</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="openHelp('feature')">
+                <q-item-section>Feature Request</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="openHelp('discord')">
+                <q-item-section>Join Discord</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
       </q-btn-group>
       <q-space />
       <!-- edit core settings modal -->
@@ -252,6 +271,24 @@ export default {
     },
   },
   methods: {
+    openHelp(mode) {
+      let url;
+      switch (mode) {
+        case "docs":
+          url = "https://wh1te909.github.io/tacticalrmm/";
+          break;
+        case "bug":
+          url = "https://github.com/wh1te909/tacticalrmm/issues/new?template=bug_report.md";
+          break;
+        case "feature":
+          url = "https://github.com/wh1te909/tacticalrmm/issues/new?template=feature_request.md";
+          break;
+        case "discord":
+          url = "https://discord.gg/upGTkWp";
+          break;
+      }
+      window.open(url, "_blank");
+    },
     showBulkActionModal(mode) {
       this.bulkMode = mode;
       this.showBulkAction = true;

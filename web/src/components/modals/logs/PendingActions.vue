@@ -67,7 +67,10 @@
             <q-td v-else-if="props.row.action_type === 'chocoinstall'">
               <q-icon name="download" size="sm" />
             </q-td>
-            <q-td v-if="props.row.status !== 'completed'">{{ props.row.due }}</q-td>
+            <q-td v-if="props.row.status !== 'completed'">
+              <span v-if="props.row.action_type === 'agentupdate'">{{ agentUpdateTime }}</span>
+              <span v-else>{{ props.row.due }}</span>
+            </q-td>
             <q-td v-else>Completed</q-td>
             <q-td>{{ props.row.description }}</q-td>
             <q-td v-if="props.row.action_type === 'chocoinstall' && props.row.status === 'completed'">
@@ -138,6 +141,7 @@ export default {
         { name: "details", field: "details", align: "left", sortable: false },
       ],
       agent_visibleColumns: ["type", "due", "desc", "details"],
+      agentUpdateTime: this.getNextAgentUpdateTime(),
     };
   },
   methods: {

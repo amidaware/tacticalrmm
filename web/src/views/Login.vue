@@ -95,7 +95,7 @@ export default {
     onSubmit() {
       this.$store
         .dispatch("retrieveToken", this.credentials)
-        .then(response => {
+        .then(() => {
           this.credentials = {};
           this.$router.push({ name: "Dashboard" });
         })

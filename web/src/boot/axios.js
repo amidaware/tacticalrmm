@@ -42,7 +42,9 @@ export default function ({ router, store }) {
       if (!error.response) {
         text = error.message
       }
-
+      else if (error.config.url === "/checkcreds/") {
+        text = "Bad credentials"
+      }
       // unauthorized
       else if (error.response.status === 401) {
         router.push({ path: "/expired" });

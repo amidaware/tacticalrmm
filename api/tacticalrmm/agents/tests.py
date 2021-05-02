@@ -152,8 +152,9 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("post", url)
 
+    @patch("time.sleep")
     @patch("agents.models.Agent.nats_cmd")
-    def test_ping(self, nats_cmd):
+    def test_ping(self, nats_cmd, mock_sleep):
         url = f"/agents/{self.agent.pk}/ping/"
 
         nats_cmd.return_value = "timeout"

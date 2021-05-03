@@ -81,13 +81,15 @@ c:\ProgramData\TacticalRMM\
 
 - Command Parameters are good. Optional command parameters for extra functions are better. 
 
-- Add standardized Comment headers to scripts:
+- Add standardized Comment headers to scripts (include the first 2, more if appropriate):
 ```powershell
 <#
 .Synopsis
    Short description
+   eg Check IP address
 .DESCRIPTION
    Long description
+   eg Checks IP address on all local network adapters, and returns results
 .EXAMPLE
    Example of how to use this cmdlet
 .EXAMPLE
@@ -98,6 +100,7 @@ c:\ProgramData\TacticalRMM\
    Output from this cmdlet (if any)
 .NOTES
    General notes
+   eg v1.0
 .COMPONENT
    The component this cmdlet belongs to
 .ROLE

@@ -1,6 +1,9 @@
 #Uses RunAsUser and BurntToast to display a popup message to the currently logged on user.
 #Accepts all arguments as the message text or can quote with 'your message here' if using special characters in the message.
 #Optional: C:\Program Files\TacticalAgent\BurntToastLogo.png will be displayed if the file exists. Image dimensions 478px (W) x 236px (H)
+#BurntToast Module Source and Examples: https://github.com/Windos/BurntToast
+#RunAsUser Module Source and Examples: https://github.com/KelvinTegelaar/RunAsUser
+
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 

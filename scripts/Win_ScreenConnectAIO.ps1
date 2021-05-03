@@ -1,7 +1,7 @@
 <#
-Requires global variables for serviceName "ScreenConnectService" and url "ScreenConnectInstaller"
+Requires global variables for serviceName "ScreenConnectService" and url "ScreenConnectInstaller"'
 serviceName is the name of the ScreenConnect Service once it is installed EG: "ScreenConnect Client (1327465grctq84yrtocq)"
-url is the path the download the exe version of the ScreenConnect Access installer
+url is the path the download the exe version of the ScreenConnect Access installer'
 Both variables values must start and end with " (Prior to TRMM Version 0.6.5), remove / don't use " on TRMM Version 0.6.5 or later.
 Also accepts uninstall variable to remove the installed instance if required. 
 #>

@@ -603,6 +603,16 @@
     "category": "TRMM (Win):Other"
   },
   {
+    "guid": "e371f1c6-0dd9-44de-824c-a17e1ca4c4ab",
+    "filename": "Win_Outlook_SentItems_To_Delegated_Folders.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Outlook - Delegated folders set for all profiles",
+    "description": "Uses RunAsUser to setup sent items for the currently logged on user on delegated folders to go into the delegated folders sent for all.",
+    "shell": "powershell",
+    "category": "TRMM (Win):Office",
+    "default_timeout": "90"
+  },
+  {
     "guid": "17040742-184a-4251-8f7b-4a1b0a1f02d1",
     "filename": "Win_File_Copy_Misc.ps1",
     "submittedBy": "https://github.com/tremor021",

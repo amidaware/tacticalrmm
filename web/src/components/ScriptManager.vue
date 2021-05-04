@@ -465,9 +465,6 @@ export default {
         })
         .catch(e => {});
     },
-    truncateText(txt) {
-      return txt.length >= 60 ? txt.substring(0, 60) + "..." : txt;
-    },
     isBuiltInScript(pk) {
       try {
         return this.scripts.find(i => i.id === pk).script_type === "builtin" ? true : false;

@@ -1,5 +1,5 @@
 <template>
-  <q-card style="min-width: 85vh">
+  <q-card style="min-width: 60vw">
     <q-splitter v-model="splitterModel">
       <template v-slot:before>
         <q-tabs dense v-model="tab" vertical class="text-primary">

@@ -405,6 +405,8 @@
     "args": [
       "-serviceName {{client.ScreenConnectService}}",
       "-url {{client.ScreenConnectInstaller}}",
+      "-clientname {{client.name}}",
+      "-sitename {{site.name}}",
       "-action install"
     ],
     "default_timeout": "90",

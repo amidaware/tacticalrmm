@@ -57,7 +57,10 @@
           <span v-if="props.row.default_values_multiple.length > 0">{{ props.row.default_values_multiple }}</span>
         </q-td>
         <q-td v-else>
-          {{ props.row.default_value_string }}
+          {{ truncateText(props.row.default_value_string) }}
+          <q-tooltip v-if="props.row.default_value_string.length >= 60" content-style="font-size: 12px">{{
+            props.row.default_value_string
+          }}</q-tooltip>
         </q-td>
         <!-- required -->
         <q-td>

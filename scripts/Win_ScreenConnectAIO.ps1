@@ -87,7 +87,7 @@ if ($action -eq "uninstall") {
         {
 			    $start_time = Get-Date
 			    $wc = New-Object System.Net.WebClient
-			    $wc.DownloadFile("$url", "$OutPath\$output")
+			    $wc.DownloadFile("$url&c=$company&c=$site", "$OutPath\$output")
             Start-Process -FilePath $OutPath\$output -Wait
 			    Write-Output "Time taken to download and install: $((Get-Date).Subtract($start_time).Seconds) second(s)"
             exit 0

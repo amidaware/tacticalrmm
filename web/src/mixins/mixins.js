@@ -209,5 +209,8 @@ export default {
       const b = date.formatDate(ret, "h:mm A");
       return `${a} at ${b}`;
     },
+    truncateText(txt) {
+      return txt.length >= 60 ? txt.substring(0, 60) + "..." : txt;
+    },
   }
 }

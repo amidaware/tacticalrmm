@@ -484,6 +484,16 @@
     "default_timeout": "90"
   },
   {
+    "guid": "0caa33bc-89ca-47e0-ad4a-04626ae6384d",
+    "filename": "Win_Network_TCP_Reset_Stack.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Network - Reset tcp using netsh",
+    "description": "resets tcp stack using netsh",
+    "shell": "cmd",
+    "category": "TRMM (Win):Network",
+    "default_timeout": "120"
+  },
+  {
     "guid": "6ce5682a-49db-4c0b-9417-609cf905ac43",
     "filename": "Win_Win10_Change_Key_and_Activate.ps1",
     "submittedBy": "https://github.com/silversword411",

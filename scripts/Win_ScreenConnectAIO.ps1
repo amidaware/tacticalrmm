@@ -9,11 +9,14 @@ Also accepts uninstall variable to remove the installed instance if required.
 param (
   [string] $serviceName,
   [string] $url,
-  [string] $action, 
-  [string] $company,
-  [string] $site
+  [string] $clientname,
+  [string] $sitename,
+  [string] $action
 )
 
+$clientname = $clientname.Replace(" ","%20")
+$sitename = $sitename.Replace(" ","%20")
+$url = $url.Replace("&t=&c=&c=&c=&c=&c=&c=&c=&c=","&t=&c=$clientname&c=$sitename&c=&c=&c=&c=&c=&c=")
 $ErrorCount = 0
 
 if (!$serviceName) {

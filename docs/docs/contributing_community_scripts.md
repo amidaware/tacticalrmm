@@ -69,7 +69,7 @@ Category or Function - What It Does
 
 - If they pull data from elsewhere, create comment notes at the top with references for others to audit/validate
 
-- Good folder locations
+- Good folder locations to use for standardized things:
 ```
 c:\ProgramData\TacticalRMM\
 c:\ProgramData\TacticalRMM\scripts

@@ -83,18 +83,12 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("There was an error reseting policies");
         });
     },
     getClients() {
-      this.$store
-        .dispatch("loadClients")
-        .then(r => {
-          this.client_options = this.formatClientOptions(r.data);
-        })
-        .catch(e => {
-          this.notifyError("There was an error loading the clients!");
-        });
+      this.$store.dispatch("loadClients").then(r => {
+        this.client_options = this.formatClientOptions(r.data);
+      });
     },
     clearClient() {
       this.client = null;

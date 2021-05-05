@@ -222,7 +222,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Unable to pull Alert Templates.");
         });
     },
     clearRow() {
@@ -250,7 +249,6 @@ export default {
             })
             .catch(error => {
               this.$q.loading.hide();
-              this.notifyError(`An Error occured while deleting alert template: ${template.name}`);
             });
         });
     },
@@ -307,9 +305,7 @@ export default {
         .then(r => {
           this.notifySuccess(text);
         })
-        .catch(error => {
-          this.notifyError("An Error occured while editing the template");
-        });
+        .catch(error => {});
     },
     rowSelectedClass(id, selectedTemplate) {
       if (selectedTemplate && selectedTemplate.id === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";

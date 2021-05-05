@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="118"
+SCRIPT_VERSION="119"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -66,6 +66,9 @@ LATEST_NPM_VER=$(grep "^NPM_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 
 CURRENT_PIP_VER=$(grep "^PIP_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 CURRENT_NPM_VER=$(grep "^NPM_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
+
+SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
+WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
 if [ -f /etc/systemd/system/natsapi.service ]; then
   printf >&2 "${GREEN}Removing natsapi.service${NC}\n"
@@ -183,14 +186,14 @@ if ! [[ $HAS_PY39 ]]; then
   sudo rm -rf Python-3.9.2 Python-3.9.2.tgz
 fi
 
-HAS_NATS220=$(/usr/local/bin/nats-server -version | grep v2.2.0)
+HAS_NATS220=$(/usr/local/bin/nats-server -version | grep v2.2.2)
 if ! [[ $HAS_NATS220 ]]; then
-  printf >&2 "${GREEN}Updating nats to v2.2.0${NC}\n"
+  printf >&2 "${GREEN}Updating nats to v2.2.2${NC}\n"
   nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-  wget https://github.com/nats-io/nats-server/releases/download/v2.2.0/nats-server-v2.2.0-linux-amd64.tar.gz -P ${nats_tmp}
-  tar -xzf ${nats_tmp}/nats-server-v2.2.0-linux-amd64.tar.gz -C ${nats_tmp}
+  wget https://github.com/nats-io/nats-server/releases/download/v2.2.2/nats-server-v2.2.2-linux-amd64.tar.gz -P ${nats_tmp}
+  tar -xzf ${nats_tmp}/nats-server-v2.2.2-linux-amd64.tar.gz -C ${nats_tmp}
   sudo rm -f /usr/local/bin/nats-server
-  sudo mv ${nats_tmp}/nats-server-v2.2.0-linux-amd64/nats-server /usr/local/bin/
+  sudo mv ${nats_tmp}/nats-server-v2.2.2-linux-amd64/nats-server /usr/local/bin/
   sudo chmod +x /usr/local/bin/nats-server
   sudo chown ${USER}:${USER} /usr/local/bin/nats-server
   rm -rf ${nats_tmp}
@@ -256,7 +259,7 @@ if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]] || [[ "$force" = true ]]; t
   source /rmm/api/env/bin/activate
   cd /rmm/api/tacticalrmm
   pip install --no-cache-dir --upgrade pip
-  pip install --no-cache-dir setuptools==54.2.0 wheel==0.36.2
+  pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
   pip install --no-cache-dir -r requirements.txt
 else
   source /rmm/api/env/bin/activate

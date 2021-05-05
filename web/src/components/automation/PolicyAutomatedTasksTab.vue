@@ -244,7 +244,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("There was an issue getting tasks");
         });
     },
     taskEnableorDisable(pk, action) {
@@ -259,7 +258,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("There was an issue editing the task");
         });
     },
     taskAlert(pk, alert_type, action, managed_by_policy) {
@@ -286,7 +284,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("There was an issue editing task");
         });
     },
     showEditTask(task) {
@@ -323,7 +320,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("There was an issue running the task");
         });
     },
     deleteTask(name, pk) {
@@ -345,7 +341,6 @@ export default {
             })
             .catch(e => {
               this.$q.loading.hide();
-              this.notifyError("There was an issue deleting the task");
             });
         });
     },

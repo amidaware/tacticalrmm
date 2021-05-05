@@ -92,7 +92,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Something went wrong!");
         });
     },
     getAlertTemplates() {
@@ -108,7 +107,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Add error occured while loading alert templates");
         });
     },
     show() {

@@ -308,7 +308,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import DiskSpaceCheck from "@/components/modals/checks/DiskSpaceCheck";
@@ -430,13 +429,16 @@ export default {
       data.check_alert = true;
       const act = action ? "enabled" : "disabled";
       const color = action ? "positive" : "warning";
-      axios.patch(`/checks/${id}/check/`, data).then(r => {
-        this.$q.notify({
-          color: color,
-          icon: "fas fa-check-circle",
-          message: `${alert_type} alerts ${act}`,
-        });
-      });
+      this.$axios
+        .patch(`/checks/${id}/check/`, data)
+        .then(r => {
+          this.$q.notify({
+            color: color,
+            icon: "fas fa-check-circle",
+            message: `${alert_type} alerts ${act}`,
+          });
+        })
+        .catch(e => {});
     },
     resetCheck(check) {
       const data = {
@@ -444,16 +446,14 @@ export default {
         status: "passing",
       };
 
-      axios
+      this.$axios
         .patch(`/checks/${check}/check/`, data)
         .then(r => {
           this.$emit("refreshEdit");
           this.$store.dispatch("loadChecks", this.selectedAgentPk);
           this.notifySuccess("The check was reset");
         })
-        .catch(e => {
-          this.notifyError("There was an issue resetting the check");
-        });
+        .catch(e => {});
     },
     onRefresh(id) {
       this.$emit("refreshEdit");
@@ -482,14 +482,14 @@ export default {
           persistent: true,
         })
         .onOk(() => {
-          axios
+          this.$axios
             .delete(`/checks/${pk}/check/`)
             .then(r => {
               this.$store.dispatch("loadChecks", this.selectedAgentPk);
               this.$store.dispatch("loadAutomatedTasks", this.selectedAgentPk);
               this.notifySuccess(r.data);
             })
-            .catch(e => this.notifyError(e.response.data));
+            .catch(e => {});
         });
     },
     showCheckGraphModal(check) {

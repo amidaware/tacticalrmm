@@ -83,7 +83,6 @@ export default {
             })
             .catch(e => {
               this.$q.loading.hide();
-              this.notifyError(e.response.data, 6000);
             });
         });
     },
@@ -107,36 +106,38 @@ export default {
             })
             .catch(e => {
               this.$q.loading.hide();
-              this.notifyError(e.response.data, 6000);
             });
         });
     },
     getSites() {
-      this.$axios.get("/clients/clients/").then(r => {
-        this.agentCount = this.getAgentCount(r.data, this.type, this.object.id);
-        r.data.forEach(client => {
-          // remove client that is being deleted from options
-          if (this.type === "client") {
-            if (client.id !== this.object.id) {
+      this.$axios
+        .get("/clients/clients/")
+        .then(r => {
+          this.agentCount = this.getAgentCount(r.data, this.type, this.object.id);
+          r.data.forEach(client => {
+            // remove client that is being deleted from options
+            if (this.type === "client") {
+              if (client.id !== this.object.id) {
+                this.siteOptions.push({ category: client.name });
+
+                client.sites.forEach(site => {
+                  this.siteOptions.push({ label: site.name, value: site.id });
+                });
+              }
+            } else {
               this.siteOptions.push({ category: client.name });
 
               client.sites.forEach(site => {
-                this.siteOptions.push({ label: site.name, value: site.id });
+                if (site.id !== this.object.id) {
+                  this.siteOptions.push({ label: site.name, value: site.id });
+                } else if (client.sites.length === 1) {
+                  this.siteOptions.pop();
+                }
               });
             }
-          } else {
-            this.siteOptions.push({ category: client.name });
-
-            client.sites.forEach(site => {
-              if (site.id !== this.object.id) {
-                this.siteOptions.push({ label: site.name, value: site.id });
-              } else if (client.sites.length === 1) {
-                this.siteOptions.pop();
-              }
-            });
-          }
-        });
-      });
+          });
+        })
+        .catch(e => {});
     },
     refreshDashboardTree() {
       this.$store.dispatch("loadTree");

@@ -48,9 +48,7 @@
           <div class="q-gutter-sm">
             <q-checkbox v-model="rdp" dense label="Enable RDP" />
             <q-checkbox v-model="ping" dense label="Enable Ping">
-              <q-tooltip>
-                Enable ICMP echo requests in the local firewall
-              </q-tooltip>
+              <q-tooltip> Enable ICMP echo requests in the local firewall </q-tooltip>
             </q-checkbox>
             <q-checkbox v-model="power" dense v-show="agenttype === 'workstation'" label="Disable sleep/hibernate" />
           </div>
@@ -82,7 +80,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 import AgentDownload from "@/components/modals/agents/AgentDownload";
 import { getBaseUrl } from "@/boot/axios";
@@ -113,7 +110,7 @@ export default {
   methods: {
     getClients() {
       this.$q.loading.show();
-      axios
+      this.$axios
         .get("/clients/clients/")
         .then(r => {
           this.client_options = this.formatClientOptions(r.data);
@@ -133,7 +130,6 @@ export default {
           this.$q.loading.hide();
         })
         .catch(() => {
-          this.notifyError("Something went wrong");
           this.$q.loading.hide();
         });
     },
@@ -178,20 +174,7 @@ export default {
             };
             this.showAgentDownload = true;
           })
-          .catch(e => {
-            let err;
-            switch (e.response.status) {
-              case 406:
-                err = "Missing 64 bit meshagent.exe. Upload it from File > Upload Mesh Agent";
-                break;
-              case 415:
-                err = "Missing 32 bit meshagent-x86.exe. Upload it from File > Upload Mesh Agent";
-                break;
-              default:
-                err = "Something went wrong";
-            }
-            this.notifyError(err, 4000);
-          });
+          .catch(e => {});
       } else if (this.installMethod === "exe") {
         this.$q.loading.show({ message: "Generating executable..." });
 
@@ -236,20 +219,7 @@ export default {
             link.click();
             this.showDLMessage();
           })
-          .catch(e => {
-            let err;
-            switch (e.response.status) {
-              case 406:
-                err = "Missing 64 bit meshagent.exe. Upload it from File > Upload Mesh Agent";
-                break;
-              case 415:
-                err = "Missing 32 bit meshagent-x86.exe. Upload it from File > Upload Mesh Agent";
-                break;
-              default:
-                err = "Something went wrong";
-            }
-            this.notifyError(err, 4000);
-          });
+          .catch(e => {});
       }
     },
     showDLMessage() {

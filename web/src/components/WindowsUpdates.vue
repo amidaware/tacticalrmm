@@ -2,7 +2,11 @@
   <div v-if="!selectedAgentPk">No agent selected</div>
   <div v-else-if="Object.keys(sortedUpdates).length === 0">No Patches</div>
   <div v-else class="q-pa-xs">
-    <q-btn label="Refresh" dense flat push @click="refreshUpdates(updates.pk)" icon="refresh" />
+    <q-btn dense flat push @click="refreshUpdates(updates.pk)" icon="refresh" class="q-mr-sm"/>
+    <span v-if="summary.patches_last_installed" class="text-bold">
+      Patches last installed: {{ summary.patches_last_installed }}
+    </span>
+    <span v-else class="text-bold">Patches last installed: Never</span>
     <q-table
       dense
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
@@ -85,9 +89,7 @@
 </template>
 
 <script>
-import axios from "axios";
-import { mapState } from "vuex";
-import { mapGetters } from "vuex";
+import { mapGetters, mapState } from "vuex";
 import mixins from "@/mixins/mixins";
 
 export default {
@@ -160,10 +162,13 @@ export default {
     },
     editPolicy(pk, policy) {
       const data = { pk: pk, policy: policy };
-      axios.patch(`/winupdate/editpolicy/`, data).then(r => {
-        this.refreshUpdates(this.updates.pk);
-        this.notifySuccess("Policy edited!");
-      });
+      this.$axios
+        .patch(`/winupdate/editpolicy/`, data)
+        .then(r => {
+          this.refreshUpdates(this.updates.pk);
+          this.notifySuccess("Policy edited!");
+        })
+        .catch(e => {});
     },
     refreshUpdates(pk) {
       this.$store.dispatch("loadWinUpdates", pk);
@@ -190,6 +195,9 @@ export default {
     },
   },
   computed: {
+    summary() {
+      return this.$store.state.agentSummary;
+    },
     ...mapState({
       updates: state => Object.freeze(state.winUpdates),
     }),

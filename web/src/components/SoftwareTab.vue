@@ -45,7 +45,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 import { mapGetters } from "vuex";
 import { mapState } from "vuex";
@@ -112,7 +111,7 @@ export default {
     refreshSoftware() {
       const pk = this.selectedAgentPk;
       this.loading = true;
-      axios
+      this.$axios
         .get(`/software/refresh/${pk}`)
         .then(r => {
           this.$store.dispatch("loadInstalledSoftware", pk);
@@ -120,7 +119,6 @@ export default {
         })
         .catch(e => {
           this.loading = false;
-          this.notifyError(e.response.data);
         });
     },
   },

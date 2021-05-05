@@ -234,6 +234,23 @@ class CodeSign(APIView):
             ret = "Something went wrong"
         return notify_error(ret)
 
+    def post(self, request):
+        from agents.models import Agent
+        from agents.tasks import force_code_sign
+
+        err = "A valid token must be saved first"
+        try:
+            t = CodeSignToken.objects.first().token
+        except:
+            return notify_error(err)
+
+        if t is None or t == "":
+            return notify_error(err)
+
+        pks: list[int] = list(Agent.objects.only("pk").values_list("pk", flat=True))
+        force_code_sign.delay(pks=pks)
+        return Response("Agents will be code signed shortly")
+
 
 class GetAddKeyStore(APIView):
     def get(self, request):

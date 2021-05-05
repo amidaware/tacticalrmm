@@ -163,7 +163,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data.non_field_errors, 4000);
         });
     },
     filterFn(val, update) {

@@ -120,8 +120,8 @@
           dense
           type="number"
           v-model.number="eventlogcheck.run_interval"
-          label="Check run interval (seconds)"
-          hint="Setting this will override the check run interval on the agent"
+          label="Run this check every (seconds)"
+          hint="Setting this value to anything other than 0 will override the 'Run checks every' setting on the agent"
         />
       </q-card-section>
       <q-card-actions align="right">
@@ -192,7 +192,7 @@ export default {
             this.eventMessage = true;
           }
         })
-        .catch(() => this.notifyError("Something went wrong"));
+        .catch(e => {});
     },
     addCheck() {
       const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
@@ -217,7 +217,7 @@ export default {
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     editCheck() {
       this.eventlogcheck.event_id_is_wildcard = this.eventlogcheck.event_id === "*" ? true : false;
@@ -237,7 +237,7 @@ export default {
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     reloadChecks() {
       if (this.agentpk) {

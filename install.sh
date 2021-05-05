@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="46"
+SCRIPT_VERSION="47"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -167,11 +167,11 @@ sudo chmod 775 -R /etc/letsencrypt
 print_green 'Downloading NATS'
 
 nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-wget https://github.com/nats-io/nats-server/releases/download/v2.2.0/nats-server-v2.2.0-linux-amd64.tar.gz -P ${nats_tmp}
+wget https://github.com/nats-io/nats-server/releases/download/v2.2.2/nats-server-v2.2.2-linux-amd64.tar.gz -P ${nats_tmp}
 
-tar -xzf ${nats_tmp}/nats-server-v2.2.0-linux-amd64.tar.gz -C ${nats_tmp}
+tar -xzf ${nats_tmp}/nats-server-v2.2.2-linux-amd64.tar.gz -C ${nats_tmp}
 
-sudo mv ${nats_tmp}/nats-server-v2.2.0-linux-amd64/nats-server /usr/local/bin/
+sudo mv ${nats_tmp}/nats-server-v2.2.2-linux-amd64/nats-server /usr/local/bin/
 sudo chmod +x /usr/local/bin/nats-server
 sudo chown ${USER}:${USER} /usr/local/bin/nats-server
 rm -rf ${nats_tmp}
@@ -354,12 +354,15 @@ sudo chmod +x /usr/local/bin/nats-api
 
 print_green 'Installing the backend'
 
+SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" /rmm/api/tacticalrmm/tacticalrmm/settings.py | awk -F'[= "]' '{print $5}')
+WHEEL_VER=$(grep "^WHEEL_VER" /rmm/api/tacticalrmm/tacticalrmm/settings.py | awk -F'[= "]' '{print $5}')
+
 cd /rmm/api
 python3.9 -m venv env
 source /rmm/api/env/bin/activate
 cd /rmm/api/tacticalrmm
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir setuptools==54.2.0 wheel==0.36.2
+pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input

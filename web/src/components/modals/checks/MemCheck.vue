@@ -42,8 +42,8 @@
           dense
           type="number"
           v-model.number="memcheck.run_interval"
-          label="Check run interval (seconds)"
-          hint="Setting this will override the check run interval on the agent"
+          label="Run this check every (seconds)"
+          hint="Setting this value to anything other than 0 will override the 'Run checks every' setting on the agent"
         />
       </q-card-section>
       <q-card-actions align="right">
@@ -56,7 +56,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 export default {
   name: "MemCheck",
@@ -81,7 +80,10 @@ export default {
   },
   methods: {
     getCheck() {
-      axios.get(`/checks/${this.checkpk}/check/`).then(r => (this.memcheck = r.data));
+      this.$axios
+        .get(`/checks/${this.checkpk}/check/`)
+        .then(r => (this.memcheck = r.data))
+        .catch(e => {});
     },
     addCheck() {
       if (!this.isValidThreshold(this.memcheck.warning_threshold, this.memcheck.error_threshold)) {
@@ -93,28 +95,28 @@ export default {
         ...pk,
         check: this.memcheck,
       };
-      axios
+      this.$axios
         .post("/checks/checks/", data)
         .then(r => {
           this.$emit("close");
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     editCheck() {
       if (!this.isValidThreshold(this.memcheck.warning_threshold, this.memcheck.error_threshold)) {
         return;
       }
 
-      axios
+      this.$axios
         .patch(`/checks/${this.checkpk}/check/`, this.memcheck)
         .then(r => {
           this.$emit("close");
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     reloadChecks() {
       if (this.agentpk) {

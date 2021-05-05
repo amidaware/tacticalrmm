@@ -250,7 +250,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Unable to get checks");
         });
     },
     checkAlert(id, alert_type, action) {
@@ -280,7 +279,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Unable to edit check alert");
         });
     },
     showAddDialog(component) {
@@ -340,7 +338,6 @@ export default {
             })
             .catch(e => {
               this.$q.loading.hide();
-              this.notifyError("An Error Occurred while deleting");
             });
         });
     },

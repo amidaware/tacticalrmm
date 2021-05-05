@@ -9,13 +9,7 @@
       <q-card-section class="row">
         <div class="col-2">Username:</div>
         <div class="col-10">
-          <q-input
-            outlined
-            dense
-            v-model="username"
-            :rules="[ val => !!val || '*Required']"
-            class="q-pa-none"
-          />
+          <q-input outlined dense v-model="username" :rules="[val => !!val || '*Required']" class="q-pa-none" />
         </div>
       </q-card-section>
       <q-card-section class="row" v-if="!this.pk">
@@ -26,15 +20,11 @@
             dense
             v-model="password"
             :type="isPwd ? 'password' : 'text'"
-            :rules="[ val => !!val || '*Required']"
+            :rules="[val => !!val || '*Required']"
             class="q-pa-none"
           >
             <template v-slot:append>
-              <q-icon
-                :name="isPwd ? 'visibility_off' : 'visibility'"
-                class="cursor-pointer"
-                @click="isPwd = !isPwd"
-              />
+              <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer" @click="isPwd = !isPwd" />
             </template>
           </q-input>
         </div>
@@ -78,7 +68,7 @@
 
 <script>
 import { mapState } from "vuex";
-import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
+import mixins from "@/mixins/mixins";
 
 export default {
   name: "UserForm",
@@ -139,11 +129,10 @@ export default {
           .then(r => {
             this.$q.loading.hide();
             this.$emit("close");
-            this.$q.notify(notifySuccessConfig("User edited!"));
+            this.notifySuccess("User edited!");
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.$q.notify(notifyErrorConfig(e.response.data));
           });
       } else {
         formData.password = this.password;
@@ -153,11 +142,10 @@ export default {
           .then(r => {
             this.$q.loading.hide();
             this.$emit("close");
-            this.$q.notify(notifySuccessConfig(`User ${r.data} was added!`));
+            this.notifySuccess(`User ${r.data} was added!`);
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.$q.notify(notifyErrorConfig(e.response.data));
           });
       }
     },

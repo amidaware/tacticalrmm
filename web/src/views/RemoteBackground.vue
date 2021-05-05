@@ -66,11 +66,14 @@ export default {
   },
   methods: {
     genURLS() {
-      this.$axios.get(`/agents/${this.pk}/meshcentral/`).then(r => {
-        this.terminal = r.data.terminal;
-        this.file = r.data.file;
-        this.title = `${r.data.hostname} - ${r.data.client} - ${r.data.site} | Remote Background`;
-      });
+      this.$axios
+        .get(`/agents/${this.pk}/meshcentral/`)
+        .then(r => {
+          this.terminal = r.data.terminal;
+          this.file = r.data.file;
+          this.title = `${r.data.hostname} - ${r.data.client} - ${r.data.site} | Remote Background`;
+        })
+        .catch(e => {});
     },
     getUI() {
       this.$store.dispatch("getDashInfo").then(r => {

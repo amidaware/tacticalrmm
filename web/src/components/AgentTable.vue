@@ -400,7 +400,6 @@
 </template>
 
 <script>
-import { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
 import mixins from "@/mixins/mixins";
 import { mapGetters } from "vuex";
 import { date } from "quasar";
@@ -523,7 +522,7 @@ export default {
       this.$axios
         .post("/agents/runscript/", data)
         .then(r => this.notifySuccess(r.data))
-        .catch(e => this.notifyError(e.response.data));
+        .catch(e => {});
     },
     getFavoriteScripts() {
       this.favoriteScripts = [];
@@ -536,7 +535,8 @@ export default {
           .filter(k => k.favorite === true)
           .map(script => ({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args }))
           .sort((a, b) => a.label.localeCompare(b.label));
-      });
+      })
+      .catch(e => {});
     },
     runPatchStatusScan(pk, hostname) {
       this.$axios
@@ -544,7 +544,7 @@ export default {
         .then(r => {
           this.notifySuccess(`Scan will be run shortly on ${hostname}`);
         })
-        .catch(e => this.notifyError(e.response.data));
+        .catch(e => {});
     },
     installPatches(pk) {
       this.$q.loading.show();
@@ -556,7 +556,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data, 5000);
         });
     },
     agentEdited() {
@@ -588,7 +587,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data);
         });
     },
     removeAgent(pk, name) {
@@ -615,7 +613,7 @@ export default {
                 location.reload();
               }, 2000);
             })
-            .catch(() => this.notifyError("Something went wrong"));
+            .catch(e => {});
         });
     },
     pingAgent(pk) {
@@ -647,7 +645,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data);
         });
     },
     rebootNow(pk, hostname) {
@@ -668,7 +665,6 @@ export default {
             })
             .catch(e => {
               this.$q.loading.hide();
-              this.notifyError(e.response.data);
             });
         });
     },
@@ -702,7 +698,7 @@ export default {
             message: `Overdue ${category} alerts ${action} on ${r.data}`,
           });
         })
-        .catch(() => this.notifyError("Something went wrong"));
+        .catch(e => {});
     },
     agentClass(status) {
       if (status === "offline") {
@@ -733,15 +729,10 @@ export default {
       };
 
       const text = agent.maintenance_mode ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
-      this.$store
-        .dispatch("toggleMaintenanceMode", data)
-        .then(response => {
-          this.$q.notify(notifySuccessConfig(text));
-          this.$emit("refreshEdit");
-        })
-        .catch(error => {
-          this.$q.notify(notifyErrorConfig("An Error occured. Please try again"));
-        });
+      this.$store.dispatch("toggleMaintenanceMode", data).then(response => {
+        this.notifySuccess(text);
+        this.$emit("refreshEdit");
+      });
     },
     menuMaintenanceText(mode) {
       return mode ? "Disable Maintenance Mode" : "Enable Maintenance Mode";

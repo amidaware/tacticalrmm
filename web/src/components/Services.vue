@@ -247,7 +247,6 @@ export default {
         })
         .catch(e => {
           this.serviceDetailVisible = false;
-          this.notifyError(e.response.data);
         });
     },
     startupTypeChanged() {
@@ -273,7 +272,6 @@ export default {
         .catch(e => {
           this.serviceDetailVisible = false;
           this.serviceDetailsModal = false;
-          this.notifyError(e.response.data, 3000);
         });
     },
     serviceAction(name, action, fullname) {
@@ -309,7 +307,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data, 3000);
         });
     },
     getServices() {
@@ -322,7 +319,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data);
         });
     },
   },

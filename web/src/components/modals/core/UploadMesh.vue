@@ -14,7 +14,7 @@
         <div class="row">
           <q-file
             v-model="meshagent"
-            :rules="[ val => !!val || '*Required' ]"
+            :rules="[val => !!val || '*Required']"
             label="Upload MeshAgent"
             stack-label
             filled
@@ -35,7 +35,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import mixins from "@/mixins/mixins";
 
 export default {
@@ -53,7 +52,7 @@ export default {
       let formData = new FormData();
       formData.append("arch", this.arch);
       formData.append("meshagent", this.meshagent);
-      axios
+      this.$axios
         .put("/core/uploadmesh/", formData)
         .then(() => {
           this.$q.loading.hide();
@@ -62,7 +61,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Unable to upload");
         });
     },
   },

@@ -87,7 +87,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("Error getting policy tree data");
         });
     },
     processTreeDataFromApi(data) {

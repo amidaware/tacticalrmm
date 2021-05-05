@@ -5,6 +5,17 @@
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
+    <q-card-section class="row">
+      <q-btn
+        :disable="!settings.token"
+        label="Code sign all agents"
+        color="positive"
+        class="full-width"
+        @click="doCodeSign"
+      >
+        <q-tooltip>Force all existing agents to be updated to the code-signed version</q-tooltip>
+      </q-btn>
+    </q-card-section>
     <q-form @submit.prevent="editToken">
       <q-card-section class="row">
         <div class="col-2">Token:</div>
@@ -43,7 +54,7 @@ export default {
         .then(r => {
           this.settings = r.data;
         })
-        .catch(e => this.notifyError(e.response.data));
+        .catch(e => {});
     },
     editToken() {
       this.$q.loading.show();
@@ -52,11 +63,21 @@ export default {
         .then(r => {
           this.$q.loading.hide();
           this.notifySuccess(r.data);
-          this.$emit("close");
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.response.data, 4000);
+        });
+    },
+    doCodeSign() {
+      this.$q.loading.show();
+      this.$axios
+        .post("/core/codesign/")
+        .then(r => {
+          this.$q.loading.hide();
+          this.notifySuccess(r.data);
+        })
+        .catch(() => {
+          this.$q.loading.hide();
         });
     },
   },

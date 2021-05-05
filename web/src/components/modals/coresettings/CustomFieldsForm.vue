@@ -224,7 +224,6 @@ export default {
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.notifyError("There was an error editing the custom field");
           });
       } else {
         this.$axios
@@ -236,7 +235,6 @@ export default {
           })
           .catch(e => {
             this.$q.loading.hide();
-            this.notifyError("There was an error adding the custom field");
           });
       }
     },

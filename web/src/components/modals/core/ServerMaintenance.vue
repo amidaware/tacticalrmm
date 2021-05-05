@@ -91,7 +91,6 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError(e.data);
         });
     },
   },

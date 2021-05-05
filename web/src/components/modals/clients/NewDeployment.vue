@@ -114,7 +114,7 @@ export default {
           this.$emit("added");
           this.notifySuccess("Deployment added");
         })
-        .catch(() => this.notifyError("Something went wrong"));
+        .catch(e => {});
     },
     getCurrentDate() {
       let d = new Date();
@@ -132,7 +132,6 @@ export default {
           this.$q.loading.hide();
         })
         .catch(() => {
-          this.notifyError("Something went wrong");
           this.$q.loading.hide();
         });
     },

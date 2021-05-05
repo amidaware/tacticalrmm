@@ -247,7 +247,6 @@ export default {
             })
             .catch(error => {
               this.$q.loading.hide();
-              this.notifyError("An Error occured while editing patch policy");
             });
         } else {
           // adding patch policy
@@ -260,7 +259,6 @@ export default {
             })
             .catch(error => {
               this.$q.loading.hide();
-              this.notifyError("An Error occured while adding patch policy");
             });
         }
       }
@@ -283,7 +281,6 @@ export default {
             })
             .catch(error => {
               this.$q.loading.hide();
-              this.notifyError("An Error occured while clearing the patch policy");
             });
         });
     },

@@ -14,14 +14,10 @@
             dense
             v-model="password"
             :type="isPwd ? 'password' : 'text'"
-            :rules="[ val => !!val || '*Required']"
+            :rules="[val => !!val || '*Required']"
           >
             <template v-slot:append>
-              <q-icon
-                :name="isPwd ? 'visibility_off' : 'visibility'"
-                class="cursor-pointer"
-                @click="isPwd = !isPwd"
-              />
+              <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer" @click="isPwd = !isPwd" />
             </template>
           </q-input>
         </div>
@@ -34,7 +30,7 @@
 </template>
 
 <script>
-import mixins, { notifySuccessConfig, notifyErrorConfig } from "@/mixins/mixins";
+import mixins from "@/mixins/mixins";
 
 export default {
   name: "UserResetForm",
@@ -59,11 +55,10 @@ export default {
         .then(r => {
           this.$q.loading.hide();
           this.$emit("close");
-          this.$q.notify(notifySuccessConfig("User Password Reset!"));
+          this.notifySuccess("User Password Reset!");
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.$q.notify(notifyErrorConfig(e.response.data));
         });
     },
   },

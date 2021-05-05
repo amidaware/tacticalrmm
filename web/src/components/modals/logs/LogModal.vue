@@ -40,8 +40,6 @@
 </template>
 
 <script>
-import axios from "axios";
-import { mapState } from "vuex";
 export default {
   name: "LogModal",
   data() {
@@ -56,7 +54,7 @@ export default {
   },
   methods: {
     downloadLog() {
-      axios
+      this.$axios
         .get("/logs/downloadlog/", { responseType: "blob" })
         .then(({ data }) => {
           const blob = new Blob([data], { type: "text/plain" });
@@ -65,14 +63,17 @@ export default {
           link.download = "debug.log";
           link.click();
         })
-        .catch(error => console.error(error));
+        .catch(e => {});
     },
     getLog() {
-      axios.get(`/logs/debuglog/${this.loglevel}/${this.agent}/${this.order}/`).then(r => {
-        this.logContent = r.data.log;
-        this.agents = r.data.agents.map(k => k.hostname).sort();
-        this.agents.unshift("all");
-      });
+      this.$axios
+        .get(`/logs/debuglog/${this.loglevel}/${this.agent}/${this.order}/`)
+        .then(r => {
+          this.logContent = r.data.log;
+          this.agents = r.data.agents.map(k => k.hostname).sort();
+          this.agents.unshift("all");
+        })
+        .catch(e => {});
     },
   },
   created() {

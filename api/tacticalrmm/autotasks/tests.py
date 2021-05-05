@@ -171,6 +171,7 @@ class TestAutotaskViews(TacticalTestCase):
         url = f"/tasks/{policy_task.id}/automatedtasks/"  # type: ignore
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
+        self.assertFalse(AutomatedTask.objects.filter(pk=policy_task.id))  # type: ignore
         delete_policy_autotasks_task.assert_called_with(task=policy_task.id)  # type: ignore
 
         self.check_not_authenticated("delete", url)

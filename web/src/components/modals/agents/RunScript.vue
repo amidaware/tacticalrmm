@@ -163,7 +163,6 @@ export default {
         })
         .catch(e => {
           this.loading = false;
-          this.notifyError(e.response.data);
         });
     },
   },

@@ -574,7 +574,7 @@ export default {
     },
     toggleDark(val) {
       this.$q.dark.set(val);
-      this.$axios.patch("/accounts/users/ui/", { dark_mode: val });
+      this.$axios.patch("/accounts/users/ui/", { dark_mode: val }).catch(e => {});
     },
     refreshEntireSite() {
       this.$store.dispatch("loadTree");
@@ -617,10 +617,13 @@ export default {
 
         if (execute) {
           this.$store.commit("AGENT_TABLE_LOADING", true);
-          this.$axios.patch("/agents/listagents/", data).then(r => {
-            this.frame = r.data;
-            this.$store.commit("AGENT_TABLE_LOADING", false);
-          });
+          this.$axios
+            .patch("/agents/listagents/", data)
+            .then(r => {
+              this.frame = r.data;
+              this.$store.commit("AGENT_TABLE_LOADING", false);
+            })
+            .catch(e => {});
         }
       }
     },
@@ -638,10 +641,13 @@ export default {
     },
     loadAllClients() {
       this.$store.commit("AGENT_TABLE_LOADING", true);
-      this.$axios.patch("/agents/listagents/").then(r => {
-        this.frame = r.data;
-        this.$store.commit("AGENT_TABLE_LOADING", false);
-      });
+      this.$axios
+        .patch("/agents/listagents/")
+        .then(r => {
+          this.frame = r.data;
+          this.$store.commit("AGENT_TABLE_LOADING", false);
+        })
+        .catch(e => {});
     },
     showPolicyAdd(node) {
       this.$q
@@ -741,15 +747,10 @@ export default {
       };
 
       const text = node.color === "green" ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
-      this.$store
-        .dispatch("toggleMaintenanceMode", data)
-        .then(response => {
-          this.notifySuccess(text);
-          this.getTree();
-        })
-        .catch(error => {
-          this.notifyError("An Error occured. Please try again");
-        });
+      this.$store.dispatch("toggleMaintenanceMode", data).then(response => {
+        this.notifySuccess(text);
+        this.getTree();
+      });
     },
     menuMaintenanceText(node) {
       return node.color === "green" ? "Disable Maintenance Mode" : "Enable Maintenance Mode";

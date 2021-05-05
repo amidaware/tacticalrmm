@@ -405,6 +405,8 @@
     "args": [
       "-serviceName {{client.ScreenConnectService}}",
       "-url {{client.ScreenConnectInstaller}}",
+      "-clientname {{client.name}}",
+      "-sitename {{site.name}}",
       "-action install"
     ],
     "default_timeout": "90",
@@ -480,6 +482,16 @@
     "shell": "powershell",
     "category": "TRMM (Win):Network",
     "default_timeout": "90"
+  },
+  {
+    "guid": "0caa33bc-89ca-47e0-ad4a-04626ae6384d",
+    "filename": "Win_Network_TCP_Reset_Stack.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Network - Reset tcp using netsh",
+    "description": "resets tcp stack using netsh",
+    "shell": "cmd",
+    "category": "TRMM (Win):Network",
+    "default_timeout": "120"
   },
   {
     "guid": "6ce5682a-49db-4c0b-9417-609cf905ac43",
@@ -599,6 +611,16 @@
     "description": "Add a task to Task Scheduler, needs editing",
     "shell": "powershell",
     "category": "TRMM (Win):Other"
+  },
+  {
+    "guid": "e371f1c6-0dd9-44de-824c-a17e1ca4c4ab",
+    "filename": "Win_Outlook_SentItems_To_Delegated_Folders.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Outlook - Delegated folders set for all profiles",
+    "description": "Uses RunAsUser to setup sent items for the currently logged on user on delegated folders to go into the delegated folders sent for all.",
+    "shell": "powershell",
+    "category": "TRMM (Win):Office",
+    "default_timeout": "90"
   },
   {
     "guid": "17040742-184a-4251-8f7b-4a1b0a1f02d1",

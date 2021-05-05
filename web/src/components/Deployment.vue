@@ -98,9 +98,12 @@ export default {
   },
   methods: {
     getDeployments() {
-      this.$axios.get("/clients/deployments/").then(r => {
-        this.deployments = r.data;
-      });
+      this.$axios
+        .get("/clients/deployments/")
+        .then(r => {
+          this.deployments = r.data;
+        })
+        .catch(e => {});
     },
     deleteDeployment(pk) {
       this.$q
@@ -116,7 +119,7 @@ export default {
               this.getDeployments();
               this.notifySuccess("Deployment deleted");
             })
-            .catch(() => this.notifyError("Something went wrong"));
+            .catch(e => {});
         });
     },
     copyLink(props) {

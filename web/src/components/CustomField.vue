@@ -1,5 +1,6 @@
 <template>
   <q-input
+    :class="longTextClass(field)"
     v-if="field.type === 'text' || field.type === 'number'"
     ref="input"
     outlined
@@ -87,6 +88,11 @@ export default {
       else if (field.type === "checkbox")
         return field.default_value_bool ? `Default value: ${field.default_value_bool}` : "";
       else return field.default_value_string ? `Default value: ${field.default_value_string}` : "";
+    },
+    longTextClass(field) {
+      return field.hasOwnProperty("default_value_string") && field.default_value_string.length >= 130
+        ? "q-mb-xl q-mt-xl"
+        : "";
     },
   },
   computed: {

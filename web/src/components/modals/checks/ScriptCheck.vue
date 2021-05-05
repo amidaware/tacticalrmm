@@ -108,8 +108,8 @@
           dense
           type="number"
           v-model.number="scriptcheck.run_interval"
-          label="Check run interval (seconds)"
-          hint="Setting this will override the check run interval on the agent"
+          label="Run this check every (seconds)"
+          hint="Setting this value to anything other than 0 will override the 'Run checks every' setting on the agent"
         />
       </q-card-section>
       <q-card-actions align="right">
@@ -155,10 +155,13 @@ export default {
   },
   methods: {
     getCheck() {
-      this.$axios.get(`/checks/${this.checkpk}/check/`).then(r => {
-        this.scriptcheck = r.data;
-        this.scriptcheck.script = r.data.script.id;
-      });
+      this.$axios
+        .get(`/checks/${this.checkpk}/check/`)
+        .then(r => {
+          this.scriptcheck = r.data;
+          this.scriptcheck.script = r.data.script.id;
+        })
+        .catch(e => {});
     },
     addCheck() {
       const pk = this.policypk ? { policy: this.policypk } : { pk: this.agentpk };
@@ -173,7 +176,7 @@ export default {
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     editCheck() {
       this.$axios
@@ -183,7 +186,7 @@ export default {
           this.reloadChecks();
           this.notifySuccess(r.data);
         })
-        .catch(e => this.notifyError(e.response.data.non_field_errors));
+        .catch(e => {});
     },
     setScriptDefaults() {
       const script = this.scriptOptions.find(i => i.value === this.scriptcheck.script);

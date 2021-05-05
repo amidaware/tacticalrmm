@@ -274,9 +274,12 @@ export default {
   },
   methods: {
     getClients() {
-      this.$axios.get("/clients/clients/").then(r => {
-        this.clientsOptions = Object.freeze(r.data.map(client => ({ label: client.name, value: client.id })));
-      });
+      this.$axios
+        .get("/clients/clients/")
+        .then(r => {
+          this.clientsOptions = Object.freeze(r.data.map(client => ({ label: client.name, value: client.id })));
+        })
+        .catch(e => {});
     },
     getUserOptions(val, update, abort) {
       if (val.length < 2) {

@@ -142,12 +142,15 @@ export default {
   },
   methods: {
     getUserPrefs() {
-      this.$axios.get("/core/dashinfo/").then(r => {
-        this.agentDblClickAction = r.data.dbl_click_action;
-        this.defaultAgentTblTab = r.data.default_agent_tbl_tab;
-        this.clientTreeSort = r.data.client_tree_sort;
-        this.loading_bar_color = r.data.loading_bar_color;
-      });
+      this.$axios
+        .get("/core/dashinfo/")
+        .then(r => {
+          this.agentDblClickAction = r.data.dbl_click_action;
+          this.defaultAgentTblTab = r.data.default_agent_tbl_tab;
+          this.clientTreeSort = r.data.client_tree_sort;
+          this.loading_bar_color = r.data.loading_bar_color;
+        })
+        .catch(e => {});
     },
     editUserPrefs() {
       const data = {
@@ -156,12 +159,15 @@ export default {
         client_tree_sort: this.clientTreeSort,
         loading_bar_color: this.loading_bar_color,
       };
-      this.$axios.patch("/accounts/users/ui/", data).then(r => {
-        this.notifySuccess("Preferences were saved!");
-        this.$emit("edited");
-        this.$store.dispatch("loadTree");
-        this.$emit("close");
-      });
+      this.$axios
+        .patch("/accounts/users/ui/", data)
+        .then(r => {
+          this.notifySuccess("Preferences were saved!");
+          this.$emit("edited");
+          this.$store.dispatch("loadTree");
+          this.$emit("close");
+        })
+        .catch(e => {});
     },
   },
   created() {

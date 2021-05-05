@@ -37,7 +37,7 @@ except ImportError:
     gzip = None
     GZIP_BASE = object
 
-__version__ = "2.1.2"
+__version__ = "2.1.3"
 
 
 class FakeShutdownEvent(object):
@@ -728,7 +728,9 @@ def build_request(url, data=None, headers=None, bump="0", secure=False):
     )
 
     headers.update(
-        {"Cache-Control": "no-cache",}
+        {
+            "Cache-Control": "no-cache",
+        }
     )
 
     printer("%s %s" % (("GET", "POST")[bool(data)], final_url), debug=True)
@@ -840,6 +842,8 @@ class HTTPDownloader(threading.Thread):
                 f.close()
         except IOError:
             pass
+        except HTTP_ERRORS:
+            pass
 
 
 class HTTPUploaderData(object):
@@ -907,7 +911,7 @@ class HTTPUploader(threading.Thread):
         self.request = request
         self.request.data.start = self.starttime = start
         self.size = size
-        self.result = None
+        self.result = 0
         self.timeout = timeout
         self.i = i
 
@@ -944,6 +948,8 @@ class HTTPUploader(threading.Thread):
                 self.result = 0
         except (IOError, SpeedtestUploadTimeout):
             self.result = sum(self.request.data.total)
+        except HTTP_ERRORS:
+            self.result = 0
 
 
 class SpeedtestResults(object):
@@ -1159,7 +1165,9 @@ class Speedtest(object):
         self._best = {}
 
         self.results = SpeedtestResults(
-            client=self.config["client"], opener=self._opener, secure=secure,
+            client=self.config["client"],
+            opener=self._opener,
+            secure=secure,
         )
 
     @property
@@ -1233,7 +1241,7 @@ class Speedtest(object):
             # times = get_attributes_by_tag_name(root, 'times')
             client = get_attributes_by_tag_name(root, "client")
 
-        ignore_servers = list(map(int, server_config["ignoreids"].split(",")))
+        ignore_servers = [int(i) for i in server_config["ignoreids"].split(",") if i]
 
         ratio = int(upload["ratio"])
         upload_max = int(upload["maxchunkcount"])

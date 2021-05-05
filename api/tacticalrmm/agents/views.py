@@ -3,6 +3,7 @@ import datetime as dt
 import os
 import random
 import string
+import time
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -65,9 +66,18 @@ def update_agents(request):
 def ping(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     status = "offline"
-    r = asyncio.run(agent.nats_cmd({"func": "ping"}, timeout=5))
-    if r == "pong":
-        status = "online"
+    attempts = 0
+    while 1:
+        r = asyncio.run(agent.nats_cmd({"func": "ping"}, timeout=2))
+        if r == "pong":
+            status = "online"
+            break
+        else:
+            attempts += 1
+            time.sleep(1)
+
+        if attempts >= 5:
+            break
 
     return Response({"name": agent.hostname, "status": status})
 

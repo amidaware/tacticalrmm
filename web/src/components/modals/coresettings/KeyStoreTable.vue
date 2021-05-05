@@ -144,7 +144,6 @@ export default {
             })
             .catch(error => {
               this.$q.loading.hide();
-              this.notifyError(`An Error occured while deleting key: ${key.name}`);
             });
         });
     },

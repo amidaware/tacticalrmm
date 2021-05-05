@@ -108,27 +108,35 @@ export default {
         })
         .catch(e => {
           this.$q.loading.hide();
-          this.notifyError("There was an issue adding alert exclusions");
         });
     },
     getClients() {
-      this.$axios.get("/clients/clients/").then(r => {
-        this.clientOptions = r.data.map(client => ({ label: client.name, value: client.id }));
-      });
+      this.$axios
+        .get("/clients/clients/")
+        .then(r => {
+          this.clientOptions = r.data.map(client => ({ label: client.name, value: client.id }));
+        })
+        .catch(e => {});
     },
     getSites() {
-      this.$axios.get("/clients/clients/").then(r => {
-        r.data.forEach(client => {
-          this.siteOptions.push({ category: client.name });
-          client.sites.forEach(site => this.siteOptions.push({ label: site.name, value: site.id }));
-        });
-      });
+      this.$axios
+        .get("/clients/clients/")
+        .then(r => {
+          r.data.forEach(client => {
+            this.siteOptions.push({ category: client.name });
+            client.sites.forEach(site => this.siteOptions.push({ label: site.name, value: site.id }));
+          });
+        })
+        .catch(e => {});
     },
     getAgents() {
-      this.$axios.get("/agents/listagentsnodetail/").then(r => {
-        const ret = r.data.map(agent => ({ label: agent.hostname, value: agent.pk }));
-        this.agentOptions = Object.freeze(ret.sort((a, b) => a.label.localeCompare(b.label)));
-      });
+      this.$axios
+        .get("/agents/listagentsnodetail/")
+        .then(r => {
+          const ret = r.data.map(agent => ({ label: agent.hostname, value: agent.pk }));
+          this.agentOptions = Object.freeze(ret.sort((a, b) => a.label.localeCompare(b.label)));
+        })
+        .catch(e => {});
     },
     getOptions() {
       this.getClients();

@@ -164,11 +164,13 @@ export default function () {
         axios.patch("/accounts/users/ui/", { client_tree_splitter: Math.trunc(val) }).then(r => {
           context.commit("SET_CLIENT_SPLITTER", val)
         })
+          .catch(e => { })
       },
       setShowCommunityScripts(context, data) {
         axios.patch("/accounts/users/ui/", { show_community_scripts: data }).then(r => {
           context.commit("setShowCommunityScripts", data)
         })
+          .catch(e => { })
       },
       toggleMaintenanceMode(context, data) {
         return axios.post("/agents/maintenance/", data)
@@ -180,31 +182,37 @@ export default function () {
         axios.get(`/tasks/${pk}/automatedtasks/`).then(r => {
           context.commit("SET_AUTOMATED_TASKS", r.data);
         })
+          .catch(e => { })
       },
       loadInstalledSoftware(context, pk) {
         axios.get(`/software/installed/${pk}`).then(r => {
           context.commit("SET_INSTALLED_SOFTWARE", r.data.software);
-        });
+        })
+          .catch(e => { });
       },
       loadWinUpdates(context, pk) {
         axios.get(`/winupdate/${pk}/getwinupdates/`).then(r => {
           context.commit("SET_WIN_UPDATE", r.data);
-        });
+        })
+          .catch(e => { });
       },
       loadSummary(context, pk) {
         axios.get(`/agents/${pk}/agentdetail/`).then(r => {
           context.commit("setSummary", r.data);
-        });
+        })
+          .catch(e => { });
       },
       loadChecks(context, pk) {
         axios.get(`/checks/${pk}/loadchecks/`).then(r => {
           context.commit("setChecks", r.data);
-        });
+        })
+          .catch(e => { });
       },
       loadNotes(context, pk) {
         axios.get(`/agents/${pk}/notes/`).then(r => {
           context.commit("SET_NOTES", r.data.notes);
-        });
+        })
+          .catch(e => { });
       },
       loadDefaultServices(context) {
         return axios.get("/services/getdefaultservices/");
@@ -227,7 +235,8 @@ export default function () {
       getUpdatedSites(context) {
         axios.get("/clients/clients/").then(r => {
           context.commit("getUpdatedSites", r.data);
-        });
+        })
+          .catch(e => { });
       },
       loadClients(context) {
         return axios.get("/clients/clients/");
@@ -299,7 +308,8 @@ export default function () {
             commit("loadTree", output);
           }
 
-        });
+        })
+          .catch(e => { });
       },
       checkVer(context) {
         axios.get("/core/version/").then(r => {
@@ -317,6 +327,7 @@ export default function () {
             return;
           }
         })
+          .catch(e => { })
       },
       reload() {
         localStorage.removeItem("rmmver");
@@ -334,14 +345,7 @@ export default function () {
               context.commit("retrieveToken", { token, username });
               resolve(response);
             })
-            .catch(error => {
-              Notify.create({
-                type: "negative",
-                timeout: 1000,
-                message: "Bad token"
-              });
-              reject(error);
-            });
+            .catch(e => { })
         });
       },
       destroyToken(context) {

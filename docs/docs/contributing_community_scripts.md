@@ -69,7 +69,7 @@ Category or Function - What It Does
 
 - If they pull data from elsewhere, create comment notes at the top with references for others to audit/validate
 
-- Good folder locations
+- Good folder locations to use for standardized things:
 ```
 c:\ProgramData\TacticalRMM\
 c:\ProgramData\TacticalRMM\scripts
@@ -80,6 +80,35 @@ c:\ProgramData\TacticalRMM\
 ```
 
 - Command Parameters are good. Optional command parameters for extra functions are better. 
+
+- Add standardized Comment headers to scripts (include the first 2, more if appropriate):
+```powershell
+<#
+.Synopsis
+   Short description
+   eg Check IP address
+.DESCRIPTION
+   Long description
+   eg Checks IP address on all local network adapters, and returns results
+.EXAMPLE
+   Example of how to use this cmdlet
+.EXAMPLE
+   Another example of how to use this cmdlet
+.INPUTS
+   Inputs to this cmdlet (if any)
+.OUTPUTS
+   Output from this cmdlet (if any)
+.NOTES
+   General notes
+   eg v1.0
+.COMPONENT
+   The component this cmdlet belongs to
+.ROLE
+   The role this cmdlet belongs to
+.FUNCTIONALITY
+   The functionality that best describes this cmdlet
+#>
+```
 
 ### Bad Habits
 

@@ -108,8 +108,8 @@
           dense
           type="number"
           v-model.number="scriptcheck.run_interval"
-          label="Check run interval (seconds)"
-          hint="Setting this will override the check run interval on the agent"
+          label="Run this check every (seconds)"
+          hint="Setting this value to anything other than 0 will override the 'Run checks every' setting on the agent"
         />
       </q-card-section>
       <q-card-actions align="right">

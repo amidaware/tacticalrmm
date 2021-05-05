@@ -20,7 +20,7 @@ from tacticalrmm.utils import run_nats_api_cmd
 logger.configure(**settings.LOG_CONFIG)
 
 
-def agent_update(pk: int, codesigntoken: str = None) -> str:
+def agent_update(pk: int, codesigntoken: str = None, force: bool = False) -> str:
     from agents.utils import get_exegen_url
 
     agent = Agent.objects.get(pk=pk)
@@ -45,22 +45,23 @@ def agent_update(pk: int, codesigntoken: str = None) -> str:
     else:
         url = agent.winagent_dl
 
-    if agent.pendingactions.filter(
-        action_type="agentupdate", status="pending"
-    ).exists():
-        agent.pendingactions.filter(
+    if not force:
+        if agent.pendingactions.filter(
             action_type="agentupdate", status="pending"
-        ).delete()
+        ).exists():
+            agent.pendingactions.filter(
+                action_type="agentupdate", status="pending"
+            ).delete()
 
-    PendingAction.objects.create(
-        agent=agent,
-        action_type="agentupdate",
-        details={
-            "url": url,
-            "version": version,
-            "inno": inno,
-        },
-    )
+        PendingAction.objects.create(
+            agent=agent,
+            action_type="agentupdate",
+            details={
+                "url": url,
+                "version": version,
+                "inno": inno,
+            },
+        )
 
     nats_data = {
         "func": "agentupdate",
@@ -72,6 +73,21 @@ def agent_update(pk: int, codesigntoken: str = None) -> str:
     }
     asyncio.run(agent.nats_cmd(nats_data, wait=False))
     return "created"
+
+
+@app.task
+def force_code_sign(pks: list[int]) -> None:
+    try:
+        token = CodeSignToken.objects.first().token
+    except:
+        return
+
+    chunks = (pks[i : i + 50] for i in range(0, len(pks), 50))
+    for chunk in chunks:
+        for pk in chunk:
+            agent_update(pk=pk, codesigntoken=token, force=True)
+            sleep(0.05)
+        sleep(4)
 
 
 @app.task

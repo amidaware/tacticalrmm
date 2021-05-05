@@ -65,3 +65,8 @@ Will print very verbose logging during agent install. Useful for troubleshooting
 -silent
 ```
 This will not popup any message boxes during install, either any error messages or the "Installation was successfull" message box that pops up at the end of a successfull install.
+
+```
+-proxy "http://proxyserver:port"
+```
+Use a http proxy

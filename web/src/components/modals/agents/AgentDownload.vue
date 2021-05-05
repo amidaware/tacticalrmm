@@ -59,6 +59,12 @@
           </q-badge>
           <span> Set agent description field during install </span>
         </div>
+        <div class="q-pa-xs q-gutter-xs">
+          <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
+            <code>-proxy "http://proxyserver:port"</code>
+          </q-badge>
+          <span>Use a http proxy</span>
+        </div>
       </q-expansion-item>
       <br />
       <p class="text-italic">Note: the auth token above will be valid for {{ info.expires }} hours.</p>

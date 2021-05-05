@@ -7,7 +7,7 @@ channels==3.0.3
 chardet==4.0.0
 cryptography==3.4.7
 daphne==3.0.2
-Django==3.2.0
+Django==3.2.1
 django-cors-headers==3.7.0
 django-rest-knox==4.1.0
 djangorestframework==3.12.4
@@ -27,7 +27,7 @@ redis==3.5.3
 requests==2.25.1
 six==1.15.0
 sqlparse==0.4.1
-twilio==6.56.0
+twilio==6.57.0
 urllib3==1.26.4
 uWSGI==2.0.19.1
 validators==0.18.2

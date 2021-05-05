@@ -67,6 +67,9 @@ LATEST_NPM_VER=$(grep "^NPM_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 CURRENT_PIP_VER=$(grep "^PIP_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 CURRENT_NPM_VER=$(grep "^NPM_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 
+SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
+WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
+
 if [ -f /etc/systemd/system/natsapi.service ]; then
   printf >&2 "${GREEN}Removing natsapi.service${NC}\n"
   sudo systemctl stop natsapi.service
@@ -256,7 +259,7 @@ if [[ "${CURRENT_PIP_VER}" != "${LATEST_PIP_VER}" ]] || [[ "$force" = true ]]; t
   source /rmm/api/env/bin/activate
   cd /rmm/api/tacticalrmm
   pip install --no-cache-dir --upgrade pip
-  pip install --no-cache-dir setuptools==54.2.0 wheel==0.36.2
+  pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
   pip install --no-cache-dir -r requirements.txt
 else
   source /rmm/api/env/bin/activate

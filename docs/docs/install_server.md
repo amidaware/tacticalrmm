@@ -129,3 +129,6 @@ Copy the url for the meshagent exe (`https://mesh.example.com/agentinvite?c=....
 Navigate to `https://rmm.example.com` and login with the username/password you created during install.<br/><br/>
 Once logged in, you will be redirected to the initial setup page.<br/><br/>
 Create your first client/site, choose the default timezone and then upload the mesh agent you just downloaded.
+
+!!!note
+    Though it is an unsupported configuration, if you are using HAProxy this might be of use to you [HAProxy Configuration Notes](unsupported_HAProxy.md)

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="118"
+SCRIPT_VERSION="119"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'

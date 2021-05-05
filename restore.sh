@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="24"
+SCRIPT_VERSION="25"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 sudo apt update

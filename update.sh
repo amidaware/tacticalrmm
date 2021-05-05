@@ -186,14 +186,14 @@ if ! [[ $HAS_PY39 ]]; then
   sudo rm -rf Python-3.9.2 Python-3.9.2.tgz
 fi
 
-HAS_NATS220=$(/usr/local/bin/nats-server -version | grep v2.2.0)
+HAS_NATS220=$(/usr/local/bin/nats-server -version | grep v2.2.2)
 if ! [[ $HAS_NATS220 ]]; then
-  printf >&2 "${GREEN}Updating nats to v2.2.0${NC}\n"
+  printf >&2 "${GREEN}Updating nats to v2.2.2${NC}\n"
   nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-  wget https://github.com/nats-io/nats-server/releases/download/v2.2.0/nats-server-v2.2.0-linux-amd64.tar.gz -P ${nats_tmp}
-  tar -xzf ${nats_tmp}/nats-server-v2.2.0-linux-amd64.tar.gz -C ${nats_tmp}
+  wget https://github.com/nats-io/nats-server/releases/download/v2.2.2/nats-server-v2.2.2-linux-amd64.tar.gz -P ${nats_tmp}
+  tar -xzf ${nats_tmp}/nats-server-v2.2.2-linux-amd64.tar.gz -C ${nats_tmp}
   sudo rm -f /usr/local/bin/nats-server
-  sudo mv ${nats_tmp}/nats-server-v2.2.0-linux-amd64/nats-server /usr/local/bin/
+  sudo mv ${nats_tmp}/nats-server-v2.2.2-linux-amd64/nats-server /usr/local/bin/
   sudo chmod +x /usr/local/bin/nats-server
   sudo chown ${USER}:${USER} /usr/local/bin/nats-server
   rm -rf ${nats_tmp}

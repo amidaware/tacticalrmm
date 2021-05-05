@@ -123,11 +123,12 @@ class GetUpdateDeleteCheck(APIView):
         from automation.tasks import generate_agent_checks_task
 
         check = get_object_or_404(Check, pk=pk)
+
         check.delete()
 
         # Policy check deleted
         if check.policy:
-            Check.objects.filter(parent_check=check.pk).delete()
+            Check.objects.filter(managed_by_policy=True, parent_check=pk).delete()
 
             # Re-evaluate agent checks is policy was enforced
             if check.policy.enforced:

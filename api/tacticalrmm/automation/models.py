@@ -430,11 +430,12 @@ class Policy(BaseAuditModel):
 
         # remove policy checks from agent that fell out of policy scope
         agent.agentchecks.filter(
+            managed_by_policy=True,
             parent_check__in=[
                 checkpk
                 for checkpk in agent_checks_parent_pks
                 if checkpk not in [check.pk for check in final_list]
-            ]
+            ],
         ).delete()
 
         return [

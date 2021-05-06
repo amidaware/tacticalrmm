@@ -1,4 +1,5 @@
 import os
+import re
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -8,15 +9,15 @@ from rest_framework.exceptions import ParseError
 from rest_framework.parsers import FileUploadParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from tacticalrmm.utils import notify_error
 
-from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore
+from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
 from .serializers import (
     CodeSignTokenSerializer,
     CoreSettingsSerializer,
     CustomFieldSerializer,
     KeyStoreSerializer,
+    URLActionSerializer,
 )
 
 
@@ -279,3 +280,47 @@ class UpdateDeleteKeyStore(APIView):
         get_object_or_404(GlobalKVStore, pk=pk).delete()
 
         return Response("ok")
+
+
+class GetAddURLAction(APIView):
+    def get(self, request):
+        actions = URLAction.objects.all()
+        return Response(URLActionSerializer(actions, many=True).data)
+
+    def post(self, request):
+        serializer = URLActionSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response("ok")
+
+
+class UpdateDeleteURLAction(APIView):
+    def put(self, request, pk):
+        action = get_object_or_404(URLAction, pk=pk)
+
+        serializer = URLActionSerializer(
+            instance=action, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response("ok")
+
+    def delete(self, request, pk):
+        get_object_or_404(URLAction, pk=pk).delete()
+
+        return Response("ok")
+
+
+class RunURLAction(APIView):
+    def patch(self, request):
+        from agents.models import Agent
+
+        agent = get_object_or_404(Agent, pk=request.data["agent"])
+        action = get_object_or_404(URLAction, pk=request.data["action"])
+
+        pattern = re.compile("\\{\\{(\\w+\\.\\w+)\\}\\}")
+
+        for string in re.findall(pattern, action.pattern):
+            pass

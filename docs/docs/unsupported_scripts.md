@@ -1,11 +1,14 @@
-# HAProxy
+# Unsupported Reference scripts
 
 !!!note 
-    This is not a supported configuration by Tactical RMM, but it's provided here for your reference. 
+    These are not supported scripts/configurations by Tactical RMM, but it's provided here for your reference. 
+
+## HAProxy
+
 
 Check/Change the mesh central config.json, some of the values may be set already, CertUrl must be changed to point to the HAProxy server.
 
-## Meshcentral Adjustment
+### Meshcentral Adjustment
 
 Credit to [@bradhawkins](https://github.com/bradhawkins85)
 
@@ -39,7 +42,7 @@ Restart meshcentral
 service meshcentral restart
 ```
 
-## HAProxy Config
+### HAProxy Config
 
 The order of use_backend is important `Tactical-Mesh-WebSocket_ipvANY` must be before `Tactical-Mesh_ipvANY`
 The values of `timeout connect`, `timeout server`, `timeout tunnel` in `Tactical-Mesh-WebSocket` have been configured to maintain a stable agent connection, however you may need to adjust these values to suit your environment. 
@@ -116,4 +119,49 @@ backend Tactical-Mesh_ipvANY
 	http-request add-header X-Forwarded-Host %[req.hdr(Host)] 
 	http-request add-header X-Forwarded-Proto https 
 	server			tactical 192.168.10.123:443 id 101 ssl check inter 1000  verify none 
+```
+
+## fail2ban
+
+### Install fail2ban
+
+```bash
+sudo apt install -y fail2ban
+```
+
+### Set Tactical fail2ban filter conf File
+
+
+```
+tacticalfail2banfilter="$(cat << EOF
+[Definition]
+failregex = ^<HOST>.*400.17.*$
+ignoreregex = ^<HOST>.*200.*$
+EOF
+)"
+sudo echo "${tacticalfail2banfilter}" > /etc/fail2ban/filter.d/tacticalrmm.conf
+```
+
+### Set Tactical fail2ban jail conf File
+
+```
+tacticalfail2banjail="$(cat << EOF
+[tacticalrmm]
+enabled = true
+port = 80,443
+filter = tacticalrmm
+action = iptables-allports[name=tactical]
+logpath = /rmm/api/tacticalrmm/tacticalrmm/private/log/access.log
+maxretry = 3
+bantime = 14400
+findtime = 14400
+EOF
+)"
+sudo echo "${tacticalfail2banjail}" > /etc/fail2ban/jail.d/tacticalrmm.local
+```
+
+### Restart fail2ban
+
+```bash
+sudo systemctl restart fail2ban
 ```

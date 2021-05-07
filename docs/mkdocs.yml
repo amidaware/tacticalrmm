@@ -17,6 +17,7 @@ nav:
       - "Global Keystore": functions/keystore.md
       - "Custom Fields": functions/custom_fields.md
       - "Remote Background": functions/remote_bg.md
+      - "URL Actions": functions/url_actions.md
       - "Maintenance Mode": functions/maintenance_mode.md
       - "Alerting": alerting.md
       - "User Interface Preferences": functions/user_ui.md

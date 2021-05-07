@@ -790,8 +790,10 @@ export default {
         action: action.id,
       };
       this.$axios
-        .patch("/core/urlaction/run", data)
-        .then(r => {})
+        .patch("/core/urlaction/run/", data)
+        .then(r => {
+          window.open(r.data, "_blank");
+        })
         .catch(() => {});
     },
   },

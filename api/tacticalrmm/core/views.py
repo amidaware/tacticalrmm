@@ -316,11 +316,19 @@ class UpdateDeleteURLAction(APIView):
 class RunURLAction(APIView):
     def patch(self, request):
         from agents.models import Agent
+        from requests.utils import requote_uri
+        from tacticalrmm.utils import replace_db_values
 
         agent = get_object_or_404(Agent, pk=request.data["agent"])
         action = get_object_or_404(URLAction, pk=request.data["action"])
 
-        pattern = re.compile("\\{\\{(\\w+\\.\\w+)\\}\\}")
+        pattern = re.compile("\\{\\{([\\w\\s]+\\.[\\w\\s]+)\\}\\}")
+
+        url_pattern = action.pattern
 
         for string in re.findall(pattern, action.pattern):
-            pass
+            value = replace_db_values(string=string, agent=agent, quotes=False)
+
+            url_pattern = re.sub("\\{\\{" + string + "\\}\\}", str(value), url_pattern)
+
+        return Response(requote_uri(url_pattern))

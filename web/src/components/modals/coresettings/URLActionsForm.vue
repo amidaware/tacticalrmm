@@ -60,7 +60,7 @@ export default {
       return this.editing ? "Edit URL Action" : "Add URL Action";
     },
     editing() {
-      return !!this.globalAction;
+      return !!this.action;
     },
   },
   methods: {

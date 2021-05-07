@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from typing import TYPE_CHECKING, Union
-
+import pysnooper
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -444,12 +444,12 @@ class Alert(models.Model):
                 name = match.group(1)
 
                 if hasattr(self, name):
-                    value = getattr(self, name)
+                    value = f"'{getattr(self, name)}'"
                 else:
                     continue
 
                 try:
-                    temp_args.append(re.sub("\\{\\{.*\\}\\}", "'" + value + "'", arg))  # type: ignore
+                    temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))  # type: ignore
                 except Exception as e:
                     logger.error(e)
                     continue

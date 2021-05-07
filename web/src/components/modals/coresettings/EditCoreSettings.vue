@@ -308,7 +308,12 @@
             </q-tab-panels>
           </q-scroll-area>
           <q-card-section class="row items-center">
-            <q-btn v-show="tab !== 'customfields' || tab !== 'keystore'" label="Save" color="primary" type="submit" />
+            <q-btn
+              v-show="tab !== 'customfields' && tab !== 'keystore' && tab !== 'urlactions'"
+              label="Save"
+              color="primary"
+              type="submit"
+            />
             <q-btn
               v-show="tab === 'emailalerts'"
               label="Save and Test"

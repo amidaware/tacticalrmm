@@ -5,12 +5,14 @@ import subprocess
 import tempfile
 import time
 import urllib.parse
-from typing import Union
+from typing import Optional, Union
 
 import pytz
 import requests
+from agents.models import Agent
 from channels.auth import AuthMiddlewareStack
 from channels.db import database_sync_to_async
+from core.models import CodeSignToken
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.http import FileResponse
@@ -18,9 +20,6 @@ from knox.auth import TokenAuthentication
 from loguru import logger
 from rest_framework import status
 from rest_framework.response import Response
-
-from agents.models import Agent
-from core.models import CodeSignToken
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -280,3 +279,106 @@ def get_latest_trmm_ver() -> str:
         logger.error(e)
 
     return "error"
+
+
+def replace_db_values(
+    string: str, agent: Agent = None, shell: str = None, quotes=True
+) -> Union[str, None]:
+    from core.models import CustomField, GlobalKVStore
+
+    # split by period if exists. First should be model and second should be property i.e {{client.name}}
+    temp = string.split(".")
+
+    # check for model and property
+    if len(temp) < 2:
+        # ignore arg since it is invalid
+        return None
+
+    # value is in the global keystore and replace value
+    if temp[0] == "global":
+        if GlobalKVStore.objects.filter(name=temp[1]).exists():
+            value = GlobalKVStore.objects.get(name=temp[1]).value
+
+            return f"'{value}'" if quotes else value
+        else:
+            logger.error(
+                f"Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store"
+            )
+            return None
+
+    if not agent:
+        # agent must be set if not global property
+        return f"There was an error finding the agent: {agent}"
+
+    if temp[0] == "client":
+        model = "client"
+        obj = agent.client
+    elif temp[0] == "site":
+        model = "site"
+        obj = agent.site
+    elif temp[0] == "agent":
+        model = "agent"
+        obj = agent
+    else:
+        # ignore arg since it is invalid
+        logger.error(
+            f"Not enough information to find value for: {string}. Only agent, site, client, and global are supported."
+        )
+        return None
+
+    if hasattr(obj, temp[1]):
+        value = f"'{getattr(obj, temp[1])}'" if quotes else getattr(obj, temp[1])
+
+    elif CustomField.objects.filter(model=model, name=temp[1]).exists():
+
+        field = CustomField.objects.get(model=model, name=temp[1])
+        model_fields = getattr(field, f"{model}_fields")
+        value = None
+        if model_fields.filter(**{model: obj}).exists():
+            value = model_fields.get(**{model: obj}).value
+
+        # need explicit None check since a false boolean value will pass default value
+        if value == None and field.default_value:
+            value = field.default_value
+
+        # check if value exists and if not use defa
+        if value and field.type == "multiple":
+            value = (
+                f"'{format_shell_array(value)}'"
+                if quotes
+                else format_shell_array(value)
+            )
+        elif value != None and field.type == "checkbox":
+            value = format_shell_bool(value, shell)
+        else:
+            value = f"'{value}'" if quotes else value
+
+    else:
+        # ignore arg since property is invalid
+        logger.error(
+            f"Couldn't find property on supplied variable: {string}. Make sure it exists as a custom field or a valid agent property"
+        )
+        return None
+
+    # log any unhashable type errors
+    if value != None:
+        return value  # type: ignore
+    else:
+        logger.error(
+            f"Couldn't lookup value for: {string}. Make sure it exists as a custom field or a valid agent property"
+        )
+        return None
+
+
+def format_shell_array(value: list) -> str:
+    temp_string = ""
+    for item in value:
+        temp_string += item + ","
+    return f"{temp_string.strip(',')}"
+
+
+def format_shell_bool(value: bool, shell: Optional[str]) -> str:
+    if shell == "powershell":
+        return "$True" if value else "$False"
+    else:
+        return "1" if value else "0"

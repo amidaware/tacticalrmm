@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 from typing import TYPE_CHECKING, Union
-import pysnooper
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models

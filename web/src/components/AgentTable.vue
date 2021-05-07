@@ -111,7 +111,7 @@
 
               <q-item clickable v-ripple @click="getURLActions">
                 <q-item-section side>
-                  <q-icon size="xs" name="star" />
+                  <q-icon size="sm" name="mdi-open-in-new" />
                 </q-item-section>
                 <q-item-section>Run URL Action</q-item-section>
                 <q-item-section side>
@@ -125,7 +125,7 @@
                       dense
                       clickable
                       v-close-popup
-                      @click="runURLAction(props.row.id, action)"
+                      @click="runURLAction(props.row.id, action.id)"
                     >
                       {{ action.name }}
                     </q-item>
@@ -532,6 +532,9 @@ export default {
           case "remotebg":
             this.remoteBG(pk);
             break;
+          case "urlaction":
+            this.runURLAction(pk, this.agentUrlAction);
+            break;
         }
       }, 500);
     },
@@ -787,7 +790,7 @@ export default {
     runURLAction(agentid, action) {
       const data = {
         agent: agentid,
-        action: action.id,
+        action: action,
       };
       this.$axios
         .patch("/core/urlaction/run/", data)
@@ -801,6 +804,9 @@ export default {
     ...mapGetters(["selectedAgentPk", "agentTableHeight"]),
     agentDblClickAction() {
       return this.$store.state.agentDblClickAction;
+    },
+    agentUrlAction() {
+      return this.$store.state.agentUrlAction;
     },
     selectedRow() {
       return this.$store.state.selectedRow;

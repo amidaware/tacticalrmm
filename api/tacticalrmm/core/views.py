@@ -73,6 +73,7 @@ def dashboard_info(request):
             "show_community_scripts": request.user.show_community_scripts,
             "dbl_click_action": request.user.agent_dblclick_action,
             "default_agent_tbl_tab": request.user.default_agent_tbl_tab,
+            "url_action": request.user.url_action.id,
             "client_tree_sort": request.user.client_tree_sort,
             "client_tree_splitter": request.user.client_tree_splitter,
             "loading_bar_color": request.user.loading_bar_color,

@@ -4,20 +4,23 @@ import json
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from loguru import logger
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.parsers import FileUploadParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 
 from tacticalrmm.utils import notify_error
 
 from .models import Script
 from .serializers import ScriptSerializer, ScriptTableSerializer
+from .permissions import ManageScriptsPerms
 
 logger.configure(**settings.LOG_CONFIG)
 
 
 class GetAddScripts(APIView):
+    permission_classes = [IsAuthenticated, ManageScriptsPerms]
     parser_class = (FileUploadParser,)
 
     def get(self, request):
@@ -63,6 +66,8 @@ class GetAddScripts(APIView):
 
 
 class GetUpdateDeleteScript(APIView):
+    permission_classes = [IsAuthenticated, ManageScriptsPerms]
+
     def get(self, request, pk):
         script = get_object_or_404(Script, pk=pk)
         return Response(ScriptSerializer(script).data)
@@ -103,6 +108,7 @@ class GetUpdateDeleteScript(APIView):
 
 
 @api_view()
+@permission_classes([IsAuthenticated, ManageScriptsPerms])
 def download(request, pk):
     script = get_object_or_404(Script, pk=pk)
 

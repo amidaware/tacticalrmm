@@ -6,6 +6,7 @@ from clients.models import Client
 from clients.serializers import ClientSerializer, SiteSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from tacticalrmm.utils import notify_error
 from winupdate.models import WinUpdatePolicy
@@ -21,9 +22,12 @@ from .serializers import (
     PolicyTableSerializer,
     PolicyTaskStatusSerializer,
 )
+from .permissions import AutomationPolicyPerms
 
 
 class GetAddPolicies(APIView):
+    permission_classes = [IsAuthenticated, AutomationPolicyPerms]
+
     def get(self, request):
         policies = Policy.objects.all()
 
@@ -51,6 +55,8 @@ class GetAddPolicies(APIView):
 
 
 class GetUpdateDeletePolicy(APIView):
+    permission_classes = [IsAuthenticated, AutomationPolicyPerms]
+
     def get(self, request, pk):
         policy = get_object_or_404(Policy, pk=pk)
 
@@ -86,7 +92,7 @@ class PolicySync(APIView):
 
 
 class PolicyAutoTask(APIView):
-
+    permission_classes = [IsAuthenticated, AutomationPolicyPerms]
     # tasks associated with policy
     def get(self, request, pk):
         tasks = AutomatedTask.objects.filter(policy=pk)
@@ -106,6 +112,8 @@ class PolicyAutoTask(APIView):
 
 
 class PolicyCheck(APIView):
+    permission_classes = [IsAuthenticated, AutomationPolicyPerms]
+
     def get(self, request, pk):
         checks = Check.objects.filter(policy__pk=pk, agent=None)
         return Response(PolicyCheckSerializer(checks, many=True).data)
@@ -178,7 +186,7 @@ class GetRelated(APIView):
 
 
 class UpdatePatchPolicy(APIView):
-
+    permission_classes = [IsAuthenticated, AutomationPolicyPerms]
     # create new patch policy
     def post(self, request):
         policy = get_object_or_404(Policy, pk=request.data["policy"])

@@ -1,14 +1,16 @@
 import asyncio
 
 from django.shortcuts import get_object_or_404
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 from agents.models import Agent
 from tacticalrmm.utils import get_default_timezone
 
 from .models import WinUpdate
 from .serializers import UpdateSerializer
+from .permissions import ManageWinUpdatePerms
 
 
 @api_view()
@@ -20,6 +22,7 @@ def get_win_updates(request, pk):
 
 
 @api_view()
+@permission_classes([IsAuthenticated, ManageWinUpdatePerms])
 def run_update_scan(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     agent.delete_superseded_updates()
@@ -28,6 +31,7 @@ def run_update_scan(request, pk):
 
 
 @api_view()
+@permission_classes([IsAuthenticated, ManageWinUpdatePerms])
 def install_updates(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     agent.delete_superseded_updates()
@@ -41,6 +45,7 @@ def install_updates(request, pk):
 
 
 @api_view(["PATCH"])
+@permission_classes([IsAuthenticated, ManageWinUpdatePerms])
 def edit_policy(request):
     patch = get_object_or_404(WinUpdate, pk=request.data["pk"])
     patch.action = request.data["policy"]

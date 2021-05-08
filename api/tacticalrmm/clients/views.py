@@ -10,6 +10,7 @@ from loguru import logger
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 
 from agents.models import Agent
 from core.models import CoreSettings
@@ -25,10 +26,14 @@ from .serializers import (
     SiteSerializer,
 )
 
+from .permissions import ManageClientsPerms, ManageSitesPerms, ManageDeploymentPerms
+
 logger.configure(**settings.LOG_CONFIG)
 
 
 class GetAddClients(APIView):
+    permission_classes = [IsAuthenticated, ManageClientsPerms]
+
     def get(self, request):
         clients = Client.objects.all()
         return Response(ClientSerializer(clients, many=True).data)
@@ -72,6 +77,8 @@ class GetAddClients(APIView):
 
 
 class GetUpdateClient(APIView):
+    permission_classes = [IsAuthenticated, ManageClientsPerms]
+
     def get(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
         return Response(ClientSerializer(client).data)
@@ -110,6 +117,8 @@ class GetUpdateClient(APIView):
 
 
 class DeleteClient(APIView):
+    permission_classes = [IsAuthenticated, ManageClientsPerms]
+
     def delete(self, request, pk, sitepk):
         from automation.tasks import generate_agent_checks_task
 
@@ -137,6 +146,8 @@ class GetClientTree(APIView):
 
 
 class GetAddSites(APIView):
+    permission_classes = [IsAuthenticated, ManageSitesPerms]
+
     def get(self, request):
         sites = Site.objects.all()
         return Response(SiteSerializer(sites, many=True).data)
@@ -162,6 +173,8 @@ class GetAddSites(APIView):
 
 
 class GetUpdateSite(APIView):
+    permission_classes = [IsAuthenticated, ManageSitesPerms]
+
     def get(self, request, pk):
         site = get_object_or_404(Site, pk=pk)
         return Response(SiteSerializer(site).data)
@@ -205,6 +218,8 @@ class GetUpdateSite(APIView):
 
 
 class DeleteSite(APIView):
+    permission_classes = [IsAuthenticated, ManageSitesPerms]
+
     def delete(self, request, pk, sitepk):
         from automation.tasks import generate_agent_checks_task
 
@@ -230,6 +245,8 @@ class DeleteSite(APIView):
 
 
 class AgentDeployment(APIView):
+    permission_classes = [IsAuthenticated, ManageDeploymentPerms]
+
     def get(self, request):
         deps = Deployment.objects.all()
         return Response(DeploymentSerializer(deps, many=True).data)

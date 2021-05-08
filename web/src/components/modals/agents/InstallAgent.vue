@@ -199,8 +199,8 @@ export default {
               case 415:
                 err = "Missing 32 bit meshagent-x86.exe. Upload it from File > Upload Mesh Agent";
                 break;
-              case 400:
-                err = "Exe build failed. Check debug error log for exact error message";
+              case 403:
+                err = "You do not have permissions to perform this action";
                 break;
               default:
                 err = "Something went wrong";

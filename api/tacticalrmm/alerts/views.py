@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 
 from tacticalrmm.utils import notify_error
 
@@ -15,9 +16,12 @@ from .serializers import (
     AlertTemplateSerializer,
 )
 from .tasks import cache_agents_alert_template
+from .permissions import ManageAlertsPerms
 
 
 class GetAddAlerts(APIView):
+    permission_classes = [IsAuthenticated, ManageAlertsPerms]
+
     def patch(self, request):
 
         # top 10 alerts for dashboard icon
@@ -109,6 +113,8 @@ class GetAddAlerts(APIView):
 
 
 class GetUpdateDeleteAlert(APIView):
+    permission_classes = [IsAuthenticated, ManageAlertsPerms]
+
     def get(self, request, pk):
         alert = get_object_or_404(Alert, pk=pk)
 
@@ -163,6 +169,8 @@ class GetUpdateDeleteAlert(APIView):
 
 
 class BulkAlerts(APIView):
+    permission_classes = [IsAuthenticated, ManageAlertsPerms]
+
     def post(self, request):
         if request.data["bulk_action"] == "resolve":
             Alert.objects.filter(id__in=request.data["alerts"]).update(
@@ -185,6 +193,8 @@ class BulkAlerts(APIView):
 
 
 class GetAddAlertTemplates(APIView):
+    permission_classes = [IsAuthenticated, ManageAlertsPerms]
+
     def get(self, request):
         alert_templates = AlertTemplate.objects.all()
 
@@ -202,6 +212,8 @@ class GetAddAlertTemplates(APIView):
 
 
 class GetUpdateDeleteAlertTemplate(APIView):
+    permission_classes = [IsAuthenticated, ManageAlertsPerms]
+
     def get(self, request, pk):
         alert_template = get_object_or_404(AlertTemplate, pk=pk)
 

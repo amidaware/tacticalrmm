@@ -7,17 +7,21 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from packaging import version as pyver
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 from scripts.models import Script
 from tacticalrmm.utils import notify_error
 
 from .models import Check
 from .serializers import CheckHistorySerializer, CheckSerializer
+from .permissions import ManageChecksPerms, RunChecksPerms
 
 
 class AddCheck(APIView):
+    permission_classes = [IsAuthenticated, ManageChecksPerms]
+
     def post(self, request):
         from automation.tasks import generate_agent_checks_task
 
@@ -76,6 +80,8 @@ class AddCheck(APIView):
 
 
 class GetUpdateDeleteCheck(APIView):
+    permission_classes = [IsAuthenticated, ManageChecksPerms]
+
     def get(self, request, pk):
         check = get_object_or_404(Check, pk=pk)
         return Response(CheckSerializer(check).data)
@@ -165,6 +171,7 @@ class CheckHistory(APIView):
 
 
 @api_view()
+@permission_classes([IsAuthenticated, RunChecksPerms])
 def run_checks(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
 

@@ -3,11 +3,12 @@ import os
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ParseError
 from rest_framework.parsers import FileUploadParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 
 from tacticalrmm.utils import notify_error
 
@@ -18,9 +19,16 @@ from .serializers import (
     CustomFieldSerializer,
     KeyStoreSerializer,
 )
+from .permissions import (
+    EditCoreSettingsPerms,
+    ServerMaintPerms,
+    CodeSignPerms,
+)
+from agents.permissions import MeshPerms
 
 
 class UploadMeshAgent(APIView):
+    permission_classes = [IsAuthenticated, MeshPerms]
     parser_class = (FileUploadParser,)
 
     def put(self, request, format=None):
@@ -46,6 +54,7 @@ def get_core_settings(request):
 
 
 @api_view(["PATCH"])
+@permission_classes([IsAuthenticated, EditCoreSettingsPerms])
 def edit_settings(request):
     coresettings = CoreSettings.objects.first()
     serializer = CoreSettingsSerializer(instance=coresettings, data=request.data)
@@ -94,6 +103,7 @@ def email_test(request):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated, ServerMaintPerms])
 def server_maintenance(request):
     from tacticalrmm.utils import reload_nats
 
@@ -148,6 +158,8 @@ def server_maintenance(request):
 
 
 class GetAddCustomFields(APIView):
+    permission_classes = [IsAuthenticated, EditCoreSettingsPerms]
+
     def get(self, request):
         fields = CustomField.objects.all()
         return Response(CustomFieldSerializer(fields, many=True).data)
@@ -168,6 +180,8 @@ class GetAddCustomFields(APIView):
 
 
 class GetUpdateDeleteCustomFields(APIView):
+    permission_classes = [IsAuthenticated, EditCoreSettingsPerms]
+
     def get(self, request, pk):
         custom_field = get_object_or_404(CustomField, pk=pk)
 
@@ -191,6 +205,8 @@ class GetUpdateDeleteCustomFields(APIView):
 
 
 class CodeSign(APIView):
+    permission_classes = [IsAuthenticated, CodeSignPerms]
+
     def get(self, request):
         token = CodeSignToken.objects.first()
         return Response(CodeSignTokenSerializer(token).data)
@@ -253,6 +269,8 @@ class CodeSign(APIView):
 
 
 class GetAddKeyStore(APIView):
+    permission_classes = [IsAuthenticated, EditCoreSettingsPerms]
+
     def get(self, request):
         keys = GlobalKVStore.objects.all()
         return Response(KeyStoreSerializer(keys, many=True).data)
@@ -266,6 +284,8 @@ class GetAddKeyStore(APIView):
 
 
 class UpdateDeleteKeyStore(APIView):
+    permission_classes = [IsAuthenticated, EditCoreSettingsPerms]
+
     def put(self, request, pk):
         key = get_object_or_404(GlobalKVStore, pk=pk)
 

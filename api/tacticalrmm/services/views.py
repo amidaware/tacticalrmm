@@ -3,14 +3,16 @@ import asyncio
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from loguru import logger
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 from agents.models import Agent
 from checks.models import Check
 from tacticalrmm.utils import notify_error
 
 from .serializers import ServicesSerializer
+from .permissions import ManageWinSvcsPerms
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -34,6 +36,7 @@ def default_services(request):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated, ManageWinSvcsPerms])
 def service_action(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
     action = request.data["sv_action"]
@@ -85,6 +88,7 @@ def service_detail(request, pk, svcname):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated, ManageWinSvcsPerms])
 def edit_service(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
     data = {

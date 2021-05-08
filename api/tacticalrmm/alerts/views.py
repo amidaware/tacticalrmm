@@ -3,20 +3,20 @@ from datetime import datetime as dt
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
 
 from tacticalrmm.utils import notify_error
 
 from .models import Alert, AlertTemplate
+from .permissions import ManageAlertsPerms
 from .serializers import (
     AlertSerializer,
     AlertTemplateRelationSerializer,
     AlertTemplateSerializer,
 )
 from .tasks import cache_agents_alert_template
-from .permissions import ManageAlertsPerms
 
 
 class GetAddAlerts(APIView):

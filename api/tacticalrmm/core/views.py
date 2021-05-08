@@ -7,13 +7,15 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ParseError
 from rest_framework.parsers import FileUploadParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
 
+from agents.permissions import MeshPerms
 from tacticalrmm.utils import notify_error
 
 from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
+from .permissions import CodeSignPerms, EditCoreSettingsPerms, ServerMaintPerms
 from .serializers import (
     CodeSignTokenSerializer,
     CoreSettingsSerializer,
@@ -21,12 +23,6 @@ from .serializers import (
     KeyStoreSerializer,
     URLActionSerializer,
 )
-from .permissions import (
-    EditCoreSettingsPerms,
-    ServerMaintPerms,
-    CodeSignPerms,
-)
-from agents.permissions import MeshPerms
 
 
 class UploadMeshAgent(APIView):
@@ -339,8 +335,9 @@ class UpdateDeleteURLAction(APIView):
 
 class RunURLAction(APIView):
     def patch(self, request):
-        from agents.models import Agent
         from requests.utils import requote_uri
+
+        from agents.models import Agent
         from tacticalrmm.utils import replace_db_values
 
         agent = get_object_or_404(Agent, pk=request.data["agent"])

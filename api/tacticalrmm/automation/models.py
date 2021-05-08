@@ -1,6 +1,7 @@
+from django.db import models
+
 from agents.models import Agent
 from core.models import CoreSettings
-from django.db import models
 from logs.models import BaseAuditModel
 
 
@@ -28,7 +29,6 @@ class Policy(BaseAuditModel):
 
     def save(self, *args, **kwargs):
         from alerts.tasks import cache_agents_alert_template
-
         from automation.tasks import generate_agent_checks_task
 
         # get old policy if exists

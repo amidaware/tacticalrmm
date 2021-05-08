@@ -6,9 +6,9 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from loguru import logger
-from tacticalrmm.utils import replace_db_values
 
 from logs.models import BaseAuditModel
+from tacticalrmm.utils import replace_db_values
 
 SCRIPT_SHELLS = [
     ("powershell", "Powershell"),

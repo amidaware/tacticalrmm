@@ -5,6 +5,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from model_bakery import baker
+
 from tacticalrmm.test import TacticalTestCase
 
 from .models import Script

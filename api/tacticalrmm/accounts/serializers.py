@@ -1,8 +1,8 @@
 import pyotp
 from rest_framework.serializers import (
     ModelSerializer,
-    SerializerMethodField,
     ReadOnlyField,
+    SerializerMethodField,
 )
 
 from .models import User

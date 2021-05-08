@@ -1,22 +1,23 @@
 import asyncio
 from datetime import datetime as dt
 
-from agents.models import Agent
-from automation.models import Policy
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from packaging import version as pyver
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+
+from agents.models import Agent
+from automation.models import Policy
 from scripts.models import Script
 from tacticalrmm.utils import notify_error
 
 from .models import Check
-from .serializers import CheckHistorySerializer, CheckSerializer
 from .permissions import ManageChecksPerms, RunChecksPerms
+from .serializers import CheckHistorySerializer, CheckSerializer
 
 
 class AddCheck(APIView):
@@ -87,9 +88,7 @@ class GetUpdateDeleteCheck(APIView):
         return Response(CheckSerializer(check).data)
 
     def patch(self, request, pk):
-        from automation.tasks import (
-            update_policy_check_fields_task,
-        )
+        from automation.tasks import update_policy_check_fields_task
 
         check = get_object_or_404(Check, pk=pk)
 

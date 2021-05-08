@@ -5,15 +5,16 @@ import string
 from typing import List
 
 import pytz
-from alerts.models import SEVERITY_CHOICES
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import DateTimeField
 from django.utils import timezone as djangotime
-from logs.models import BaseAuditModel
 from loguru import logger
 from packaging import version as pyver
+
+from alerts.models import SEVERITY_CHOICES
+from logs.models import BaseAuditModel
 from tacticalrmm.utils import bitdays_to_string
 
 logger.configure(**settings.LOG_CONFIG)

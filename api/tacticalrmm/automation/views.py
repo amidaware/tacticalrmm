@@ -1,18 +1,20 @@
+from django.shortcuts import get_object_or_404
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from agents.models import Agent
 from agents.serializers import AgentHostnameSerializer
 from autotasks.models import AutomatedTask
 from checks.models import Check
 from clients.models import Client
 from clients.serializers import ClientSerializer, SiteSerializer
-from django.shortcuts import get_object_or_404
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
 from tacticalrmm.utils import notify_error
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .models import Policy
+from .permissions import AutomationPolicyPerms
 from .serializers import (
     AutoTasksFieldSerializer,
     PolicyCheckSerializer,
@@ -22,7 +24,6 @@ from .serializers import (
     PolicyTableSerializer,
     PolicyTaskStatusSerializer,
 )
-from .permissions import AutomationPolicyPerms
 
 
 class GetAddPolicies(APIView):

@@ -7,16 +7,16 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from loguru import logger
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
 
 from agents.models import Agent
 from core.models import CoreSettings
 from tacticalrmm.utils import notify_error
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
+from .permissions import ManageClientsPerms, ManageDeploymentPerms, ManageSitesPerms
 from .serializers import (
     ClientCustomFieldSerializer,
     ClientSerializer,
@@ -25,8 +25,6 @@ from .serializers import (
     SiteCustomFieldSerializer,
     SiteSerializer,
 )
-
-from .permissions import ManageClientsPerms, ManageSitesPerms, ManageDeploymentPerms
 
 logger.configure(**settings.LOG_CONFIG)
 

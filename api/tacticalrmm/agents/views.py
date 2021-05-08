@@ -12,9 +12,9 @@ from loguru import logger
 from packaging import version as pyver
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
 
 from core.models import CoreSettings
 from logs.models import AuditLog, PendingAction
@@ -25,6 +25,20 @@ from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
 from .models import Agent, AgentCustomField, Note, RecoveryAction
+from .permissions import (
+    EditAgentPerms,
+    EvtLogPerms,
+    InstallAgentPerms,
+    ManageNotesPerms,
+    ManageProcPerms,
+    MeshPerms,
+    RebootAgentPerms,
+    RunBulkPerms,
+    RunScriptPerms,
+    SendCMDPerms,
+    UninstallPerms,
+    UpdateAgentPerms,
+)
 from .serializers import (
     AgentCustomFieldSerializer,
     AgentEditSerializer,
@@ -36,20 +50,6 @@ from .serializers import (
     NotesSerializer,
 )
 from .tasks import run_script_email_results_task, send_agent_update_task
-from .permissions import (
-    MeshPerms,
-    UninstallPerms,
-    UpdateAgentPerms,
-    EditAgentPerms,
-    ManageProcPerms,
-    EvtLogPerms,
-    SendCMDPerms,
-    RebootAgentPerms,
-    InstallAgentPerms,
-    RunScriptPerms,
-    ManageNotesPerms,
-    RunBulkPerms,
-)
 
 logger.configure(**settings.LOG_CONFIG)
 

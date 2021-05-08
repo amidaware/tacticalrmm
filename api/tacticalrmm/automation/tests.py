@@ -771,6 +771,7 @@ class TestPolicyTasks(TacticalTestCase):
     @patch("automation.tasks.generate_agent_checks_task.delay")
     def test_generating_policy_checks_for_all_agents(self, generate_agent_checks_mock):
         from core.models import CoreSettings
+
         from .tasks import generate_agent_checks_task
 
         # setup data

@@ -9,10 +9,8 @@ from typing import Optional, Union
 
 import pytz
 import requests
-from agents.models import Agent
 from channels.auth import AuthMiddlewareStack
 from channels.db import database_sync_to_async
-from core.models import CodeSignToken
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.http import FileResponse
@@ -20,6 +18,9 @@ from knox.auth import TokenAuthentication
 from loguru import logger
 from rest_framework import status
 from rest_framework.response import Response
+
+from agents.models import Agent
+from core.models import CodeSignToken
 
 logger.configure(**settings.LOG_CONFIG)
 

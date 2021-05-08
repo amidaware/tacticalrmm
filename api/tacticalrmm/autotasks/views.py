@@ -1,16 +1,17 @@
-from agents.models import Agent
-from checks.models import Check
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+
+from agents.models import Agent
+from checks.models import Check
 from scripts.models import Script
 from tacticalrmm.utils import get_bit_days, get_default_timezone, notify_error
 
 from .models import AutomatedTask
-from .serializers import AutoTaskSerializer, TaskSerializer
 from .permissions import ManageAutoTaskPerms, RunAutoTaskPerms
+from .serializers import AutoTaskSerializer, TaskSerializer
 
 
 class AddAutoTask(APIView):
@@ -19,7 +20,6 @@ class AddAutoTask(APIView):
     def post(self, request):
         from automation.models import Policy
         from automation.tasks import generate_agent_autotasks_task
-
         from autotasks.tasks import create_win_task_schedule
 
         data = request.data

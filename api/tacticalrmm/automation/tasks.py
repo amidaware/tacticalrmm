@@ -13,7 +13,6 @@ def generate_agent_checks_task(
     create_tasks: bool = False,
 ) -> Union[str, None]:
     from agents.models import Agent
-
     from automation.models import Policy
 
     p = Policy.objects.get(pk=policy) if policy else None
@@ -78,7 +77,6 @@ def update_policy_check_fields_task(check: int) -> str:
 # generates policy tasks on agents affected by a policy
 def generate_agent_autotasks_task(policy: int = None) -> str:
     from agents.models import Agent
-
     from automation.models import Policy
 
     p: Policy = Policy.objects.get(pk=policy)

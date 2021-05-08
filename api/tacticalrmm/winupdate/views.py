@@ -2,15 +2,15 @@ import asyncio
 
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from agents.models import Agent
 from tacticalrmm.utils import get_default_timezone
 
 from .models import WinUpdate
-from .serializers import UpdateSerializer
 from .permissions import ManageWinUpdatePerms
+from .serializers import UpdateSerializer
 
 
 @api_view()

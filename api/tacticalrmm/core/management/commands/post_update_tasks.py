@@ -1,8 +1,8 @@
 from django.core.management.base import BaseCommand
 
 from agents.models import Agent
-from scripts.models import Script
 from logs.models import PendingAction
+from scripts.models import Script
 
 
 class Command(BaseCommand):

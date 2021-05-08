@@ -4,17 +4,18 @@ import os
 import string
 from statistics import mean
 from typing import Any
-from packaging import version as pyver
 
 import pytz
-from alerts.models import SEVERITY_CHOICES
-from core.models import CoreSettings
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from logs.models import BaseAuditModel
 from loguru import logger
+from packaging import version as pyver
+
+from alerts.models import SEVERITY_CHOICES
+from core.models import CoreSettings
+from logs.models import BaseAuditModel
 
 from .utils import bytes2human
 

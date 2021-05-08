@@ -6,17 +6,16 @@ from django.shortcuts import get_object_or_404
 from knox.views import LoginView as KnoxLoginView
 from rest_framework import status
 from rest_framework.authtoken.serializers import AuthTokenSerializer
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
 
 from logs.models import AuditLog
 from tacticalrmm.utils import notify_error
 
 from .models import User
-from .serializers import TOTPSetupSerializer, UserSerializer, UserUISerializer
 from .permissions import AccountsPerms
+from .serializers import TOTPSetupSerializer, UserSerializer, UserUISerializer
 
 
 def _is_root_user(request, user) -> bool:

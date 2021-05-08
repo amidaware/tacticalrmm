@@ -10,9 +10,9 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
 
 from accounts.models import User
 from accounts.serializers import UserSerializer
@@ -21,8 +21,8 @@ from agents.serializers import AgentHostnameSerializer
 from tacticalrmm.utils import notify_error
 
 from .models import AuditLog, PendingAction
+from .permissions import AuditLogPerms, DebugLogPerms, ManagePendingActionPerms
 from .serializers import AuditLogSerializer, PendingActionSerializer
-from .permissions import AuditLogPerms, ManagePendingActionPerms, DebugLogPerms
 
 
 class GetAuditLogs(APIView):

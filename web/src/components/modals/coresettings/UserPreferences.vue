@@ -30,6 +30,21 @@
                   v-model="agentDblClickAction"
                   :options="agentDblClickOptions"
                   class="col-4"
+                  @input="url_action = null"
+                />
+              </q-card-section>
+              <q-card-section class="row" v-if="agentDblClickAction === 'urlaction'">
+                <div class="col-6">URL Action:</div>
+                <div class="col-2"></div>
+                <q-select
+                  map-options
+                  emit-value
+                  outlined
+                  dense
+                  options-dense
+                  v-model="url_action"
+                  :options="urlActions"
+                  class="col-4"
                 />
               </q-card-section>
               <q-card-section class="row">
@@ -97,9 +112,11 @@ export default {
       agentDblClickAction: "",
       defaultAgentTblTab: "",
       clientTreeSort: "",
+      url_action: null,
       tab: "ui",
       splitterModel: 20,
       loading_bar_color: "",
+      urlActions: [],
       clientTreeSortOptions: [
         {
           label: "Sort alphabetically, moving failing clients to the top",
@@ -123,6 +140,10 @@ export default {
           label: "Remote Background",
           value: "remotebg",
         },
+        {
+          label: "Run URL Action",
+          value: "urlaction",
+        },
       ],
       defaultAgentTblTabOptions: [
         {
@@ -140,12 +161,32 @@ export default {
       ],
     };
   },
+  watch: {
+    agentDblClickAction(new_value, old_value) {
+      if (new_value === "urlaction") {
+        this.getURLActions();
+      }
+    },
+  },
   methods: {
+    getURLActions() {
+      this.$axios
+        .get("/core/urlaction/")
+        .then(r => {
+          if (r.data.length === 0) {
+            this.notifyWarning("No URL Actions configured. Go to Settings > Global Settings > URL Actions");
+            return;
+          }
+          this.urlActions = r.data.map(action => ({ label: action.name, value: action.id }));
+        })
+        .catch(() => {});
+    },
     getUserPrefs() {
       this.$axios
         .get("/core/dashinfo/")
         .then(r => {
           this.agentDblClickAction = r.data.dbl_click_action;
+          this.url_action = r.data.url_action;
           this.defaultAgentTblTab = r.data.default_agent_tbl_tab;
           this.clientTreeSort = r.data.client_tree_sort;
           this.loading_bar_color = r.data.loading_bar_color;
@@ -153,8 +194,13 @@ export default {
         .catch(e => {});
     },
     editUserPrefs() {
+      if (this.agentDblClickAction === "urlaction" && this.url_action === null) {
+        this.notifyError("Select a URL Action");
+        return;
+      }
       const data = {
         agent_dblclick_action: this.agentDblClickAction,
+        url_action: this.url_action,
         default_agent_tbl_tab: this.defaultAgentTblTab,
         client_tree_sort: this.clientTreeSort,
         loading_bar_color: this.loading_bar_color,

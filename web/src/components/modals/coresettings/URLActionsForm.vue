@@ -11,12 +11,23 @@
       <q-form @submit="submit">
         <!-- name -->
         <q-card-section>
-          <q-input label="Name" outlined dense v-model="localKey.name" :rules="[val => !!val || '*Required']" />
+          <q-input label="Name" outlined dense v-model="localAction.name" :rules="[val => !!val || '*Required']" />
         </q-card-section>
 
-        <!-- value -->
+        <!-- description -->
         <q-card-section>
-          <q-input label="Value" outlined dense v-model="localKey.value" :rules="[val => !!val || '*Required']" />
+          <q-input label="Description" outlined dense v-model="localAction.desc" />
+        </q-card-section>
+
+        <!-- pattern -->
+        <q-card-section>
+          <q-input
+            label="URL Pattern"
+            outlined
+            dense
+            v-model="localAction.pattern"
+            :rules="[val => !!val || '*Required']"
+          />
         </q-card-section>
 
         <q-card-actions align="right">
@@ -32,23 +43,24 @@
 import mixins from "@/mixins/mixins";
 
 export default {
-  name: "KeyStoreForm",
+  name: "URLActionsForm",
   mixins: [mixins],
-  props: { globalKey: Object },
+  props: { action: Object },
   data() {
     return {
-      localKey: {
+      localAction: {
         name: "",
-        value: "",
+        desc: "",
+        pattern: "",
       },
     };
   },
   computed: {
     title() {
-      return this.editing ? "Edit Global Key" : "Add Global Key";
+      return this.editing ? "Edit URL Action" : "Add URL Action";
     },
     editing() {
-      return !!this.globalKey;
+      return !!this.action;
     },
   },
   methods: {
@@ -56,27 +68,27 @@ export default {
       this.$q.loading.show();
 
       let data = {
-        ...this.localKey,
+        ...this.localAction,
       };
 
       if (this.editing) {
         this.$axios
-          .put(`/core/keystore/${data.id}/`, data)
+          .put(`/core/urlaction/${data.id}/`, data)
           .then(r => {
             this.$q.loading.hide();
             this.onOk();
-            this.notifySuccess("Key was edited!");
+            this.notifySuccess("Url Action was edited!");
           })
           .catch(e => {
             this.$q.loading.hide();
           });
       } else {
         this.$axios
-          .post("/core/keystore/", data)
+          .post("/core/urlaction/", data)
           .then(r => {
             this.$q.loading.hide();
             this.onOk();
-            this.notifySuccess("Key was added!");
+            this.notifySuccess("URL Action was added!");
           })
           .catch(e => {
             this.$q.loading.hide();
@@ -99,7 +111,7 @@ export default {
   },
   mounted() {
     // If pk prop is set that means we are editing
-    if (this.globalKey) Object.assign(this.localKey, this.globalKey);
+    if (this.action) Object.assign(this.localAction, this.action);
   },
 };
 </script>

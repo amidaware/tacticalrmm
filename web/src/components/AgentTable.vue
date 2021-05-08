@@ -109,6 +109,30 @@
                 <q-item-section>Take Control</q-item-section>
               </q-item>
 
+              <q-item clickable v-ripple @click="getURLActions">
+                <q-item-section side>
+                  <q-icon size="sm" name="mdi-open-in-new" />
+                </q-item-section>
+                <q-item-section>Run URL Action</q-item-section>
+                <q-item-section side>
+                  <q-icon name="keyboard_arrow_right" />
+                </q-item-section>
+                <q-menu auto-close anchor="top end" self="top start">
+                  <q-list>
+                    <q-item
+                      v-for="action in urlActions"
+                      :key="action.id"
+                      dense
+                      clickable
+                      v-close-popup
+                      @click="runURLAction(props.row.id, action.id)"
+                    >
+                      {{ action.name }}
+                    </q-item>
+                  </q-list>
+                </q-menu>
+              </q-item>
+
               <q-item clickable v-ripple v-close-popup @click="showSendCommand = true">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-terminal" />
@@ -438,6 +462,7 @@ export default {
       showPendingActions: false,
       pendingActionAgentPk: null,
       favoriteScripts: [],
+      urlActions: [],
     };
   },
   methods: {
@@ -507,6 +532,9 @@ export default {
           case "remotebg":
             this.remoteBG(pk);
             break;
+          case "urlaction":
+            this.runURLAction(pk, this.agentUrlAction);
+            break;
         }
       }, 500);
     },
@@ -526,17 +554,24 @@ export default {
     },
     getFavoriteScripts() {
       this.favoriteScripts = [];
-      this.$axios.get("/scripts/scripts/").then(r => {
-        if (r.data.filter(k => k.favorite === true).length === 0) {
-          this.notifyWarning("You don't have any scripts favorited!");
-          return;
-        }
-        this.favoriteScripts = r.data
-          .filter(k => k.favorite === true)
-          .map(script => ({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args }))
-          .sort((a, b) => a.label.localeCompare(b.label));
-      })
-      .catch(e => {});
+      this.$axios
+        .get("/scripts/scripts/")
+        .then(r => {
+          if (r.data.filter(k => k.favorite === true).length === 0) {
+            this.notifyWarning("You don't have any scripts favorited!");
+            return;
+          }
+          this.favoriteScripts = r.data
+            .filter(k => k.favorite === true)
+            .map(script => ({
+              label: script.name,
+              value: script.id,
+              timeout: script.default_timeout,
+              args: script.args,
+            }))
+            .sort((a, b) => a.label.localeCompare(b.label));
+        })
+        .catch(e => {});
     },
     runPatchStatusScan(pk, hostname) {
       this.$axios
@@ -740,11 +775,38 @@ export default {
     rowSelectedClass(id) {
       if (this.selectedRow === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";
     },
+    getURLActions() {
+      this.$axios
+        .get("/core/urlaction/")
+        .then(r => {
+          if (r.data.length === 0) {
+            this.notifyWarning("No URL Actions configured. Go to Settings > Global Settings > URL Actions");
+            return;
+          }
+          this.urlActions = r.data;
+        })
+        .catch(() => {});
+    },
+    runURLAction(agentid, action) {
+      const data = {
+        agent: agentid,
+        action: action,
+      };
+      this.$axios
+        .patch("/core/urlaction/run/", data)
+        .then(r => {
+          window.open(r.data, "_blank");
+        })
+        .catch(() => {});
+    },
   },
   computed: {
     ...mapGetters(["selectedAgentPk", "agentTableHeight"]),
     agentDblClickAction() {
       return this.$store.state.agentDblClickAction;
+    },
+    agentUrlAction() {
+      return this.$store.state.agentUrlAction;
     },
     selectedRow() {
       return this.$store.state.selectedRow;

@@ -1,12 +1,10 @@
 import json
 import os
-from email.policy import default
 from pathlib import Path
 
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from model_bakery import baker
-
 from tacticalrmm.test import TacticalTestCase
 
 from .models import Script
@@ -15,6 +13,7 @@ from .serializers import ScriptSerializer, ScriptTableSerializer
 
 class TestScriptViews(TacticalTestCase):
     def setUp(self):
+        self.setup_coresettings()
         self.authenticate()
 
     def test_get_scripts(self):
@@ -288,3 +287,194 @@ class TestScriptViews(TacticalTestCase):
                 fn: str = script["filename"]
                 if " " in fn:
                     raise Exception(f"{fn} must not contain spaces in filename")
+
+    def test_script_arg_variable_replacement(self):
+
+        agent = baker.make_recipe("agents.agent", public_ip="12.12.12.12")
+        args = [
+            "-Parameter",
+            "-Another {{agent.public_ip}}",
+            "-Client {{client.name}}",
+            "-Site {{site.name}}",
+        ]
+
+        self.assertEqual(
+            [
+                "-Parameter",
+                "-Another '12.12.12.12'",
+                f"-Client '{agent.client.name}'",
+                f"-Site '{agent.site.name}'",
+            ],
+            Script.parse_script_args(agent=agent, shell="python", args=args),
+        )
+
+    def test_script_arg_replacement_custom_field(self):
+        agent = baker.make_recipe("agents.agent")
+        field = baker.make(
+            "core.CustomField",
+            name="Test Field",
+            model="agent",
+            type="text",
+            default_value_string="DEFAULT",
+        )
+
+        args = ["-Parameter", "-Another {{agent.Test Field}}"]
+
+        # test default value
+        self.assertEqual(
+            ["-Parameter", "-Another 'DEFAULT'"],
+            Script.parse_script_args(agent=agent, shell="python", args=args),
+        )
+
+        # test with set value
+        baker.make(
+            "agents.AgentCustomField",
+            field=field,
+            agent=agent,
+            string_value="CUSTOM VALUE",
+        )
+        self.assertEqual(
+            ["-Parameter", "-Another 'CUSTOM VALUE'"],
+            Script.parse_script_args(agent=agent, shell="python", args=args),
+        )
+
+    def test_script_arg_replacement_client_custom_fields(self):
+        agent = baker.make_recipe("agents.agent")
+        field = baker.make(
+            "core.CustomField",
+            name="Test Field",
+            model="client",
+            type="text",
+            default_value_string="DEFAULT",
+        )
+
+        args = ["-Parameter", "-Another {{client.Test Field}}"]
+
+        # test default value
+        self.assertEqual(
+            ["-Parameter", "-Another 'DEFAULT'"],
+            Script.parse_script_args(agent=agent, shell="python", args=args),
+        )
+
+        # test with set value
+        baker.make(
+            "clients.ClientCustomField",
+            field=field,
+            client=agent.client,
+            string_value="CUSTOM VALUE",
+        )
+        self.assertEqual(
+            ["-Parameter", "-Another 'CUSTOM VALUE'"],
+            Script.parse_script_args(agent=agent, shell="python", args=args),
+        )
+
+    def test_script_arg_replacement_site_custom_fields(self):
+        agent = baker.make_recipe("agents.agent")
+        field = baker.make(
+            "core.CustomField",
+            name="Test Field",
+            model="site",
+            type="text",
+            default_value_string="DEFAULT",
+        )
+
+        args = ["-Parameter", "-Another {{site.Test Field}}"]
+
+        # test default value
+        self.assertEqual(
+            ["-Parameter", "-Another 'DEFAULT'"],
+            Script.parse_script_args(agent=agent, shell="python", args=args),
+        )
+
+        # test with set value
+        baker.make(
+            "clients.SiteCustomField",
+            field=field,
+            site=agent.site,
+            string_value="CUSTOM VALUE",
+        )
+        self.assertEqual(
+            ["-Parameter", "-Another 'CUSTOM VALUE'"],
+            Script.parse_script_args(agent=agent, shell="python", args=args),
+        )
+
+    def test_script_arg_replacement_array_fields(self):
+        agent = baker.make_recipe("agents.agent")
+        field = baker.make(
+            "core.CustomField",
+            name="Test Field",
+            model="agent",
+            type="multiple",
+            default_values_multiple=["this", "is", "an", "array"],
+        )
+
+        args = ["-Parameter", "-Another {{agent.Test Field}}"]
+
+        # test default value
+        self.assertEqual(
+            ["-Parameter", "-Another 'this,is,an,array'"],
+            Script.parse_script_args(agent=agent, shell="python", args=args),
+        )
+
+        # test with set value and python shell
+        baker.make(
+            "agents.AgentCustomField",
+            field=field,
+            agent=agent,
+            multiple_value=["this", "is", "new"],
+        )
+        self.assertEqual(
+            ["-Parameter", "-Another 'this,is,new'"],
+            Script.parse_script_args(agent=agent, shell="python", args=args),
+        )
+
+    def test_script_arg_replacement_boolean_fields(self):
+        agent = baker.make_recipe("agents.agent")
+        field = baker.make(
+            "core.CustomField",
+            name="Test Field",
+            model="agent",
+            type="checkbox",
+            default_value_bool=True,
+        )
+
+        args = ["-Parameter", "-Another {{agent.Test Field}}"]
+
+        # test default value with python
+        self.assertEqual(
+            ["-Parameter", "-Another 1"],
+            Script.parse_script_args(agent=agent, shell="python", args=args),
+        )
+
+        # test with set value and python shell
+        custom = baker.make(
+            "agents.AgentCustomField",
+            field=field,
+            agent=agent,
+            bool_value=False,
+        )
+        self.assertEqual(
+            ["-Parameter", "-Another 0"],
+            Script.parse_script_args(agent=agent, shell="python", args=args),
+        )
+
+        # test with set value and cmd shell
+        self.assertEqual(
+            ["-Parameter", "-Another 0"],
+            Script.parse_script_args(agent=agent, shell="cmd", args=args),
+        )
+
+        # test with set value and powershell
+        self.assertEqual(
+            ["-Parameter", "-Another $False"],
+            Script.parse_script_args(agent=agent, shell="powershell", args=args),
+        )
+
+        # test with True value powershell
+        custom.bool_value = True  # type: ignore
+        custom.save()  # type: ignore
+
+        self.assertEqual(
+            ["-Parameter", "-Another $True"],
+            Script.parse_script_args(agent=agent, shell="powershell", args=args),
+        )

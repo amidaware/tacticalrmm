@@ -8,8 +8,8 @@ from model_bakery import baker
 from tacticalrmm.test import TacticalTestCase
 
 from .consumers import DashInfo
-from .models import CoreSettings, CustomField, GlobalKVStore
-from .serializers import CustomFieldSerializer, KeyStoreSerializer
+from .models import CoreSettings, CustomField, GlobalKVStore, URLAction
+from .serializers import CustomFieldSerializer, KeyStoreSerializer, URLActionSerializer
 from .tasks import core_maintenance_tasks
 
 
@@ -331,3 +331,89 @@ class TestCoreTasks(TacticalTestCase):
         self.assertFalse(GlobalKVStore.objects.filter(pk=key.id).exists())  # type: ignore
 
         self.check_not_authenticated("delete", url)
+
+    def test_get_urlaction(self):
+        url = "/core/urlaction/"
+
+        # setup
+        action = baker.make("core.URLAction", _quantity=2)
+
+        r = self.client.get(url)
+        serializer = URLActionSerializer(action, many=True)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data), 2)  # type: ignore
+        self.assertEqual(r.data, serializer.data)  # type: ignore
+
+        self.check_not_authenticated("get", url)
+
+    def test_add_urlaction(self):
+        url = "/core/urlaction/"
+
+        data = {"name": "name", "desc": "desc", "pattern": "pattern"}
+        r = self.client.post(url, data)
+        self.assertEqual(r.status_code, 200)
+
+        self.check_not_authenticated("post", url)
+
+    def test_update_urlaction(self):
+        # setup
+        action = baker.make("core.URLAction")
+
+        # test not found
+        r = self.client.put("/core/urlaction/500/")
+        self.assertEqual(r.status_code, 404)
+
+        url = f"/core/urlaction/{action.id}/"  # type: ignore
+        data = {"name": "test", "pattern": "text"}
+        r = self.client.put(url, data)
+        self.assertEqual(r.status_code, 200)
+
+        new_action = URLAction.objects.get(pk=action.id)  # type: ignore
+        self.assertEqual(new_action.name, data["name"])
+        self.assertEqual(new_action.pattern, data["pattern"])
+
+        self.check_not_authenticated("put", url)
+
+    def test_delete_urlaction(self):
+        # setup
+        action = baker.make("core.URLAction")
+
+        # test not found
+        r = self.client.delete("/core/urlaction/500/")
+        self.assertEqual(r.status_code, 404)
+
+        url = f"/core/urlaction/{action.id}/"  # type: ignore
+        r = self.client.delete(url)
+        self.assertEqual(r.status_code, 200)
+
+        self.assertFalse(URLAction.objects.filter(pk=action.id).exists())  # type: ignore
+
+        self.check_not_authenticated("delete", url)
+
+    def test_run_url_action(self):
+        self.maxDiff = None
+        # setup
+        agent = baker.make_recipe(
+            "agents.agent", agent_id="123123-assdss4s-343-sds545-45dfdf|DESKTOP"
+        )
+        baker.make("core.GlobalKVStore", name="Test Name", value="value with space")
+        action = baker.make(
+            "core.URLAction",
+            pattern="https://remote.example.com/connect?globalstore={{global.Test Name}}&client_name={{client.name}}&site id={{site.id}}&agent_id={{agent.agent_id}}",
+        )
+
+        url = "/core/urlaction/run/"
+        # test not found
+        r = self.client.patch(url, {"agent": 500, "action": 500})
+        self.assertEqual(r.status_code, 404)
+
+        data = {"agent": agent.id, "action": action.id}  # type: ignore
+        r = self.client.patch(url, data)
+        self.assertEqual(r.status_code, 200)
+
+        self.assertEqual(
+            r.data,  # type: ignore
+            f"https://remote.example.com/connect?globalstore=value%20with%20space&client_name={agent.client.name}&site%20id={agent.site.id}&agent_id=123123-assdss4s-343-sds545-45dfdf%7CDESKTOP",
+        )
+
+        self.check_not_authenticated("patch", url)

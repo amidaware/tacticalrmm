@@ -7,6 +7,7 @@ AGENT_DBLCLICK_CHOICES = [
     ("editagent", "Edit Agent"),
     ("takecontrol", "Take Control"),
     ("remotebg", "Remote Background"),
+    ("urlaction", "URL Action"),
 ]
 
 AGENT_TBL_TAB_CHOICES = [
@@ -28,6 +29,13 @@ class User(AbstractUser, BaseAuditModel):
     show_community_scripts = models.BooleanField(default=True)
     agent_dblclick_action = models.CharField(
         max_length=50, choices=AGENT_DBLCLICK_CHOICES, default="editagent"
+    )
+    url_action = models.ForeignKey(
+        "core.URLAction",
+        related_name="user",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
     )
     default_agent_tbl_tab = models.CharField(
         max_length=50, choices=AGENT_TBL_TAB_CHOICES, default="server"

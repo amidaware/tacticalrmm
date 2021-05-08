@@ -1,4 +1,5 @@
 import os
+import re
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -12,12 +13,13 @@ from rest_framework.permissions import IsAuthenticated
 
 from tacticalrmm.utils import notify_error
 
-from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore
+from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
 from .serializers import (
     CodeSignTokenSerializer,
     CoreSettingsSerializer,
     CustomFieldSerializer,
     KeyStoreSerializer,
+    URLActionSerializer,
 )
 from .permissions import (
     EditCoreSettingsPerms,
@@ -81,6 +83,9 @@ def dashboard_info(request):
             "show_community_scripts": request.user.show_community_scripts,
             "dbl_click_action": request.user.agent_dblclick_action,
             "default_agent_tbl_tab": request.user.default_agent_tbl_tab,
+            "url_action": request.user.url_action.id
+            if request.user.url_action
+            else None,
             "client_tree_sort": request.user.client_tree_sort,
             "client_tree_splitter": request.user.client_tree_splitter,
             "loading_bar_color": request.user.loading_bar_color,
@@ -299,3 +304,55 @@ class UpdateDeleteKeyStore(APIView):
         get_object_or_404(GlobalKVStore, pk=pk).delete()
 
         return Response("ok")
+
+
+class GetAddURLAction(APIView):
+    def get(self, request):
+        actions = URLAction.objects.all()
+        return Response(URLActionSerializer(actions, many=True).data)
+
+    def post(self, request):
+        serializer = URLActionSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response("ok")
+
+
+class UpdateDeleteURLAction(APIView):
+    def put(self, request, pk):
+        action = get_object_or_404(URLAction, pk=pk)
+
+        serializer = URLActionSerializer(
+            instance=action, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response("ok")
+
+    def delete(self, request, pk):
+        get_object_or_404(URLAction, pk=pk).delete()
+
+        return Response("ok")
+
+
+class RunURLAction(APIView):
+    def patch(self, request):
+        from agents.models import Agent
+        from requests.utils import requote_uri
+        from tacticalrmm.utils import replace_db_values
+
+        agent = get_object_or_404(Agent, pk=request.data["agent"])
+        action = get_object_or_404(URLAction, pk=request.data["action"])
+
+        pattern = re.compile("\\{\\{([\\w\\s]+\\.[\\w\\s]+)\\}\\}")
+
+        url_pattern = action.pattern
+
+        for string in re.findall(pattern, action.pattern):
+            value = replace_db_values(string=string, agent=agent, quotes=False)
+
+            url_pattern = re.sub("\\{\\{" + string + "\\}\\}", str(value), url_pattern)
+
+        return Response(requote_uri(url_pattern))

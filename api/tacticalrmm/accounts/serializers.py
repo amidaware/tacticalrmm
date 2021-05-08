@@ -15,6 +15,7 @@ class UserUISerializer(ModelSerializer):
             "dark_mode",
             "show_community_scripts",
             "agent_dblclick_action",
+            "url_action",
             "default_agent_tbl_tab",
             "client_tree_sort",
             "client_tree_splitter",

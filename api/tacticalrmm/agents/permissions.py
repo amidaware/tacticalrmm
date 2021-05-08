@@ -19,7 +19,7 @@ class UpdateAgentPerms(permissions.BasePermission):
 
 class EditAgentPerms(permissions.BasePermission):
     def has_permission(self, r, view):
-        return _is_su(r) or r.user.can_edit_agents
+        return _is_su(r) or r.user.can_edit_agent
 
 
 class ManageProcPerms(permissions.BasePermission):

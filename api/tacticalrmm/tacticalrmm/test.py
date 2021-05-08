@@ -10,9 +10,11 @@ from core.models import CoreSettings
 class TacticalTestCase(TestCase):
     def authenticate(self):
         self.john = User(username="john")
+        self.john.is_superuser = True
         self.john.set_password("hunter2")
         self.john.save()
         self.alice = User(username="alice")
+        self.alice.is_superuser = True
         self.alice.set_password("hunter2")
         self.alice.save()
         self.client_setup()
@@ -20,7 +22,8 @@ class TacticalTestCase(TestCase):
 
     def setup_agent_auth(self, agent):
         agent_user = User.objects.create_user(
-            username=agent.agent_id, password=User.objects.make_random_password(60)
+            username=agent.agent_id,
+            password=User.objects.make_random_password(60),
         )
         Token.objects.create(user=agent_user)
 

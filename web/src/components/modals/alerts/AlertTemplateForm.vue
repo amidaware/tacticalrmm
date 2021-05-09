@@ -1,6 +1,6 @@
 <template>
   <q-dialog ref="dialog" @hide="onHide">
-    <q-card style="width: 50vw; max-width: 50vw">
+    <q-card style="width: 90vw; max-width: 90vw">
       <q-bar>
         {{ title }}
         <q-space />
@@ -8,28 +8,106 @@
           <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
-      <q-form ref="form" @submit.prevent="onSubmit">
-        <q-scroll-area :thumb-style="thumbStyle" style="height: 60vh">
-          <q-card-section class="row">
-            <div class="col-2 q-mt-sm">Name</div>
-            <div class="col-10">
-              <q-input outlined dense v-model="template.name" :rules="[val => !!val || '*Required']" />
-            </div>
-            <div class="col-12">
-              <q-toggle v-model="template.is_active" color="green" label="Enabled" left-label />
-            </div>
+      <q-stepper v-model="step" ref="stepper" alternative-labels header-nav color="primary" animated>
+        <q-step :name="1" :error="!template.name && step > 1" title="General Settings" icon="settings">
+          <q-card flat>
+            <q-card-section>
+              <q-input
+                label="Name"
+                class="q-mb-none"
+                outlined
+                dense
+                v-model="template.name"
+                :rules="[val => !!val || '*Required']"
+              />
+            </q-card-section>
 
-            <div class="col-2 q-my-sm">
+            <q-card-section>
+              <q-toggle v-model="template.is_active" color="green" label="Enabled" left-label />
+            </q-card-section>
+
+            <div class="q-pl-md text-subtitle1">Email Settings (Overrides global email settings)</div>
+
+            <q-card-section>
+              <q-input label="Email From address" class="q-mb-sm" outlined dense v-model="template.email_from" />
+            </q-card-section>
+
+            <q-card-section class="row">
+              <div class="col-2 q-mb-sm">Email recipients</div>
+              <div class="col-4 q-mb-sm">
+                <q-list dense v-if="template.email_recipients.length !== 0">
+                  <q-item v-for="email in template.email_recipients" :key="email" dense>
+                    <q-item-section>
+                      <q-item-label>{{ email }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                      <q-icon class="cursor-pointer" name="delete" color="red" @click="removeEmail(email)" />
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+                <q-list v-else>
+                  <q-item-section>
+                    <q-item-label>No recipients</q-item-label>
+                  </q-item-section>
+                </q-list>
+              </div>
+              <div class="col-3 q-mb-sm"></div>
+              <div class="col-3 q-mb-sm">
+                <q-btn size="sm" icon="fas fa-plus" color="secondary" label="Add email" @click="toggleAddEmail" />
+              </div>
+            </q-card-section>
+
+            <div class="q-pl-md text-subtitle1">SMS Settings (Overrides global SMS settings)</div>
+
+            <q-card-section class="row">
+              <div class="col-2 q-mb-sm">SMS recipients</div>
+              <div class="col-4 q-mb-md">
+                <q-list dense v-if="template.text_recipients.length !== 0">
+                  <q-item v-for="num in template.text_recipients" :key="num" dense>
+                    <q-item-section>
+                      <q-item-label>{{ num }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                      <q-icon class="cursor-pointer" name="delete" color="red" @click="removeSMSNumber(num)" />
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+                <q-list v-else>
+                  <q-item-section>
+                    <q-item-label>No recipients</q-item-label>
+                  </q-item-section>
+                </q-list>
+              </div>
+              <div class="col-3 q-mb-sm"></div>
+              <div class="col-3 q-mb-sm">
+                <q-btn
+                  class="cursor-pointer"
+                  size="sm"
+                  icon="fas fa-plus"
+                  color="secondary"
+                  label="Add sms number"
+                  @click="toggleAddSMSNumber"
+                />
+              </div>
+            </q-card-section>
+          </q-card>
+        </q-step>
+
+        <q-step :name="2" title="Alert Actions" icon="warning">
+          <q-card flat>
+            <div class="q-pl-md text-subtitle1">
               <span style="text-decoration: underline; cursor: help"
-                >Failure action
+                >Alert Failure Settings
                 <q-tooltip>
-                  Optionally run a script on an agent when it triggers an alert. This will be run once per alert, and
-                  may run on any online agent.</q-tooltip
-                >
+                  The selected script will run when an alert is triggered. This script will run on any online agent.
+                </q-tooltip>
               </span>
             </div>
-            <div class="col-10 q-mb-sm">
+
+            <q-card-section>
               <q-select
+                class="q-mb-sm"
+                label="Failure action"
                 dense
                 options-dense
                 outlined
@@ -50,11 +128,9 @@
                   }}</q-item-label>
                 </template>
               </q-select>
-            </div>
 
-            <div class="col-2 q-my-sm">Failure action args</div>
-            <div class="col-10 q-mb-sm">
               <q-select
+                class="q-mb-sm"
                 dense
                 label="Failure action arguments (press Enter after typing each argument)"
                 filled
@@ -66,11 +142,10 @@
                 input-debounce="0"
                 new-value-mode="add"
               />
-            </div>
 
-            <div class="col-2">Failure action timeout (seconds)</div>
-            <div class="col-10">
               <q-input
+                class="q-mb-sm"
+                label="Failure action timeout (seconds)"
                 outlined
                 type="number"
                 v-model.number="template.action_timeout"
@@ -81,19 +156,21 @@
                   val => val <= 60 || 'Timeout must be 60 or less',
                 ]"
               />
-            </div>
+            </q-card-section>
 
-            <div class="col-2 q-my-sm">
+            <div class="q-pl-md text-subtitle1">
               <span style="text-decoration: underline; cursor: help"
-                >Resolved action
+                >Alert Resolved Settings
                 <q-tooltip>
-                  Optionally run a script on an agent when the alert is resolved. This will be run once per alert, and
-                  may run on any online agent.</q-tooltip
-                >
+                  The selected script will run when an alert is resolved. This script will run on any online agent.
+                </q-tooltip>
               </span>
             </div>
-            <div class="col-10 q-mb-sm">
+
+            <q-card-section>
               <q-select
+                class="q-mb-sm"
+                label="Resolved Action"
                 dense
                 options-dense
                 outlined
@@ -114,11 +191,9 @@
                   }}</q-item-label>
                 </template>
               </q-select>
-            </div>
 
-            <div class="col-2 q-my-sm">Resolved action args</div>
-            <div class="col-10 q-mb-sm">
               <q-select
+                class="q-mb-sm"
                 dense
                 label="Resolved action arguments (press Enter after typing each argument)"
                 filled
@@ -130,11 +205,10 @@
                 input-debounce="0"
                 new-value-mode="add"
               />
-            </div>
 
-            <div class="col-2">Resolved action timeout (seconds)</div>
-            <div class="col-10">
               <q-input
+                class="q-mb-sm"
+                label="Resolved action timeout (seconds)"
                 outlined
                 type="number"
                 v-model.number="template.resolved_action_timeout"
@@ -145,152 +219,110 @@
                   val => val <= 60 || 'Timeout must be 60 or less',
                 ]"
               />
-            </div>
-          </q-card-section>
+            </q-card-section>
+          </q-card>
+        </q-step>
 
-          <div class="q-pl-md text-subtitle1">Email Settings (Overrides global email settings)</div>
-          <q-separator class="q-mb-sm" />
-
-          <q-card-section class="row">
-            <div class="col-2 q-mb-sm">Email recipients</div>
-            <div class="col-4 q-mb-sm">
-              <q-list dense v-if="template.email_recipients.length !== 0">
-                <q-item v-for="email in template.email_recipients" :key="email" dense>
-                  <q-item-section>
-                    <q-item-label>{{ email }}</q-item-label>
-                  </q-item-section>
-                  <q-item-section side>
-                    <q-icon class="cursor-pointer" name="delete" color="red" @click="removeEmail(email)" />
-                  </q-item-section>
-                </q-item>
-              </q-list>
-              <q-list v-else>
-                <q-item-section>
-                  <q-item-label>No recipients</q-item-label>
-                </q-item-section>
-              </q-list>
+        <q-step :name="3" title="Agent Overdue Settings" icon="devices">
+          <q-card flat>
+            <div class="q-pl-md text-subtitle1">
+              <span style="text-decoration: underline; cursor: help"
+                >Alert Failure Settings
+                <q-tooltip>
+                  Select what notifications should be sent when an agent is overdue. Enabled will override the agent
+                  notification setting sand always notify. Not configured will use what notification settings are
+                  configured on the agent. Disabled will override the agent notification settings and never notify.
+                </q-tooltip>
+              </span>
             </div>
-            <div class="col-3 q-mb-sm"></div>
-            <div class="col-3 q-mb-sm">
-              <q-btn size="sm" icon="fas fa-plus" color="secondary" label="Add email" @click="toggleAddEmail" />
-            </div>
-
-            <div class="col-2 q-mt-sm">Email From address</div>
-            <div class="col-10">
-              <q-input class="q-mb-sm" outlined dense v-model="template.email_from" />
-            </div>
-          </q-card-section>
-
-          <div class="q-pl-md text-subtitle1">SMS Settings (Overrides global SMS settings)</div>
-          <q-separator class="q-mb-sm" />
-
-          <q-card-section class="row">
-            <div class="col-2 q-mb-sm">SMS recipients</div>
-            <div class="col-4 q-mb-md">
-              <q-list dense v-if="template.text_recipients.length !== 0">
-                <q-item v-for="num in template.text_recipients" :key="num" dense>
-                  <q-item-section>
-                    <q-item-label>{{ num }}</q-item-label>
-                  </q-item-section>
-                  <q-item-section side>
-                    <q-icon class="cursor-pointer" name="delete" color="red" @click="removeSMSNumber(num)" />
-                  </q-item-section>
-                </q-item>
-              </q-list>
-              <q-list v-else>
-                <q-item-section>
-                  <q-item-label>No recipients</q-item-label>
-                </q-item-section>
-              </q-list>
-            </div>
-            <div class="col-3 q-mb-sm"></div>
-            <div class="col-3 q-mb-sm">
-              <q-btn
-                class="cursor-pointer"
-                size="sm"
-                icon="fas fa-plus"
-                color="secondary"
-                label="Add sms number"
-                @click="toggleAddSMSNumber"
+            <q-card-section>
+              <q-toggle
+                v-model="template.agent_always_email"
+                label="Email"
+                color="green"
+                left-label
+                toggle-indeterminate
               />
-            </div>
-          </q-card-section>
-
-          <div class="q-pl-md text-subtitle1">Agent Alert Settings</div>
-          <q-separator class="q-mb-sm" />
-
-          <q-card-section class="row">
-            <div class="col-4">
-              <q-toggle v-model="template.agent_email_on_resolved" color="green" left-label>
-                <span style="text-decoration: underline; cursor: help"
-                  >Email on resolved<q-tooltip>Sends an email when agent is back online</q-tooltip></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-4">
-              <q-toggle v-model="template.agent_text_on_resolved" color="green" left-label>
-                <span style="text-decoration: underline; cursor: help"
-                  >Text on resolved<q-tooltip>Sends an SMS message when agent is back online</q-tooltip></span
-                >
-              </q-toggle>
-            </div>
-            <div class="col-4"></div>
-
-            <div class="col-4">
-              <q-toggle v-model="template.agent_always_email" color="green" left-label toggle-indeterminate>
-                <span style="text-decoration: underline; cursor: help"
-                  >Always email<q-tooltip
-                    >Overrides the email alert option on the agent if configured. Default: Not Configured</q-tooltip
-                  ></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-4">
-              <q-toggle v-model="template.agent_always_text" color="green" left-label toggle-indeterminate>
-                <span style="text-decoration: underline; cursor: help"
-                  >Always sms<q-tooltip
-                    >Overrides the sms alert option on the agent if configured. Default: Not Configured</q-tooltip
-                  ></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-4">
-              <q-toggle v-model="template.agent_always_alert" color="green" left-label toggle-indeterminate>
-                <span style="text-decoration: underline; cursor: help"
-                  >Always dashboard alert<q-tooltip
-                    >Overrides the dashboard alert option on the agents if configured. Default: Not
-                    Configured</q-tooltip
-                  ></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-3 q-mt-sm">Periodic notification (days)</div>
-            <div class="col-2">
+              <q-toggle
+                v-model="template.agent_always_text"
+                label="Text"
+                color="green"
+                left-label
+                toggle-indeterminate
+              />
+              <q-toggle
+                v-model="template.agent_always_alert"
+                label="Dashboard"
+                color="green"
+                left-label
+                toggle-indeterminate
+              />
+            </q-card-section>
+            <q-card-section>
               <q-input
+                label="Alert again if not resolved after (days)"
                 outlined
                 type="number"
                 v-model.number="template.agent_periodic_alert_days"
                 dense
                 :rules="[val => val >= 0 || 'Periodic days must be 0 or greater']"
               />
-            </div>
-          </q-card-section>
+            </q-card-section>
 
-          <div class="q-pl-md text-subtitle1">Check Alert Settings</div>
-          <q-separator class="q-mb-sm" />
-
-          <q-card-section class="row">
-            <div class="col-2 q-my-sm">
+            <div class="q-pl-md text-subtitle1">
               <span style="text-decoration: underline; cursor: help"
-                >Email on severity<q-tooltip>Sends a email only on selected severities</q-tooltip></span
-              >
+                >Alert Resolved Settings
+                <q-tooltip> Select what notifications should be sent when an overdue agent is back online. </q-tooltip>
+              </span>
             </div>
-            <div class="col-10 q-mb-sm">
+            <q-card-section>
+              <q-toggle v-model="template.agent_email_on_resolved" label="Email" color="green" left-label />
+              <q-toggle v-model="template.agent_text_on_resolved" label="Text" color="green" left-label />
+            </q-card-section>
+          </q-card>
+        </q-step>
+
+        <q-step :name="4" title="Check Settings" icon="fas fa-check-double">
+          <q-card flat>
+            <div class="q-pl-md text-subtitle1">
+              <span style="text-decoration: underline; cursor: help"
+                >Alert Failure Settings
+                <q-tooltip>
+                  Select what notifications are sent when a check fails. Enabled will override the check notification
+                  settings and always notify. Not configured will use the notification settings configured on the check.
+                  Disabled will override the check notification settings and never notify.
+                </q-tooltip>
+              </span>
+            </div>
+
+            <q-card-section>
+              <q-toggle
+                v-model="template.check_always_email"
+                label="Email"
+                color="green"
+                left-label
+                toggle-indeterminate
+              />
+              <q-toggle
+                v-model="template.check_always_text"
+                label="Text"
+                color="green"
+                left-label
+                toggle-indeterminate
+              />
+              <q-toggle
+                v-model="template.check_always_alert"
+                label="Dashboard"
+                color="green"
+                left-label
+                toggle-indeterminate
+              />
+            </q-card-section>
+
+            <q-card-section>
               <q-select
+                label="Only email on alert severity"
+                hint="This needs to be set in order to receive email notifications"
                 v-model="template.check_email_alert_severity"
                 outlined
                 dense
@@ -301,15 +333,12 @@
                 map-options
                 :options="severityOptions"
               />
-            </div>
+            </q-card-section>
 
-            <div class="col-2 q-mt-sm">
-              <span style="text-decoration: underline; cursor: help"
-                >SMS on severity <q-tooltip>Sends a SMS message only on selected severities</q-tooltip></span
-              >
-            </div>
-            <div class="col-10">
+            <q-card-section>
               <q-select
+                label="Only text on alert severity"
+                hint="This needs to be set in order to receive text notifications"
                 v-model="template.check_text_alert_severity"
                 outlined
                 dense
@@ -320,16 +349,12 @@
                 map-options
                 :options="severityOptions"
               />
-            </div>
+            </q-card-section>
 
-            <div class="col-2 q-mt-sm">
-              <span style="text-decoration: underline; cursor: help"
-                >Dashboard alert on severity
-                <q-tooltip>Adds an alert in the dashboard only on selected severities</q-tooltip></span
-              >
-            </div>
-            <div class="col-10 q-mt-sm">
+            <q-card-section>
               <q-select
+                label="Only show dashboard alert on severity"
+                hint="This needs to be set in order to receive dashboard notifications"
                 v-model="template.check_dashboard_alert_severity"
                 outlined
                 dense
@@ -340,83 +365,73 @@
                 map-options
                 :options="severityOptions"
               />
-            </div>
+            </q-card-section>
 
-            <div class="col-4">
-              <q-toggle v-model="template.check_email_on_resolved" color="green" left-label>
-                <span style="text-decoration: underline; cursor: help"
-                  >Email on resolved <q-tooltip>Sends an email when check alert has resolved</q-tooltip></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-4">
-              <q-toggle v-model="template.check_text_on_resolved" color="green" left-label>
-                <span style="text-decoration: underline; cursor: help"
-                  >Text on resolved <q-tooltip>Sends an SMS message when check alert has resolved</q-tooltip></span
-                >
-              </q-toggle>
-            </div>
-            <div class="col-4"></div>
-
-            <div class="col-4">
-              <q-toggle v-model="template.check_always_email" color="green" left-label toggle-indeterminate>
-                <span style="text-decoration: underline; cursor: help"
-                  >Always email
-                  <q-tooltip
-                    >Overrides the email alert setting on checks if configured. Default: Not Configured</q-tooltip
-                  ></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-4">
-              <q-toggle v-model="template.check_always_text" color="green" left-label toggle-indeterminate>
-                <span style="text-decoration: underline; cursor: help"
-                  >Always sms
-                  <q-tooltip
-                    >Overrides the SMS alert setting on checks if configured. Default: Not Configured</q-tooltip
-                  ></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-4">
-              <q-toggle v-model="template.check_always_alert" color="green" left-label toggle-indeterminate>
-                <span style="text-decoration: underline; cursor: help"
-                  >Always dashboard alert
-                  <q-tooltip
-                    >Overrides the dashboard alert option on the agents if configured. Default: Not
-                    Configured</q-tooltip
-                  ></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-3 q-mt-sm">Periodic notification (days)</div>
-            <div class="col-2">
+            <q-card-section>
               <q-input
+                label="Alert again if not resolved after (days)"
                 outlined
                 type="number"
                 v-model.number="template.check_periodic_alert_days"
                 dense
                 :rules="[val => val >= 0 || 'Periodic days must be 0 or greater']"
               />
-            </div>
-          </q-card-section>
+            </q-card-section>
 
-          <div class="q-pl-md text-subtitle1">Automated Task Alert Settings</div>
-          <q-separator class="q-my-sm" />
-
-          <q-card-section class="row">
-            <div class="col-2 q-mb-sm">
+            <div class="q-pl-md text-subtitle1">
               <span style="text-decoration: underline; cursor: help"
-                >Email on severity
-                <q-tooltip>Sends a email only on selected severities</q-tooltip>
+                >Alert Resolved Settings
+                <q-tooltip> Select what notifications are sent when a failed check is resolved. </q-tooltip>
               </span>
             </div>
-            <div class="col-10 q-mb-sm">
+            <q-card-section>
+              <q-toggle v-model="template.check_email_on_resolved" label="Email" color="green" left-label />
+              <q-toggle v-model="template.check_text_on_resolved" label="Text" color="green" left-label />
+            </q-card-section>
+          </q-card>
+        </q-step>
+
+        <q-step :name="5" title="Automated Task Settings" icon="fas fa-tasks">
+          <q-card flat>
+            <div class="q-pl-md text-subtitle1">
+              <span style="text-decoration: underline; cursor: help"
+                >Alert Failure Settings
+                <q-tooltip>
+                  Select what notifications are sent when an automated task fails. Enabled will override the task
+                  notification settings and always notify. Not configured will use the notification settings configured
+                  on the task. Disabled will override the task notification settings and never notify.
+                </q-tooltip>
+              </span>
+            </div>
+
+            <q-card-section>
+              <q-toggle
+                v-model="template.task_always_email"
+                label="Email"
+                color="green"
+                left-label
+                toggle-indeterminate
+              />
+              <q-toggle
+                v-model="template.task_always_text"
+                label="Text"
+                color="green"
+                left-label
+                toggle-indeterminate
+              />
+              <q-toggle
+                v-model="template.task_always_alert"
+                label="Dashboard"
+                color="green"
+                left-label
+                toggle-indeterminate
+              />
+            </q-card-section>
+
+            <q-card-section>
               <q-select
+                label="Only email on alert severity"
+                hint="This needs to be set in order to receive email notifications"
                 v-model="template.task_email_alert_severity"
                 outlined
                 dense
@@ -427,14 +442,12 @@
                 map-options
                 :options="severityOptions"
               />
-            </div>
-            <div class="col-2 q-mt-sm">
-              <span style="text-decoration: underline; cursor: help"
-                >SMS on severity <q-tooltip>Sends an SMS message only on selected severities</q-tooltip></span
-              >:
-            </div>
-            <div class="col-10">
+            </q-card-section>
+
+            <q-card-section>
               <q-select
+                label="Only text on alert severity"
+                hint="This needs to be set in order to receive text notifications"
                 v-model="template.task_text_alert_severity"
                 outlined
                 dense
@@ -445,16 +458,12 @@
                 map-options
                 :options="severityOptions"
               />
-            </div>
+            </q-card-section>
 
-            <div class="col-2 q-mt-sm">
-              <span style="text-decoration: underline; cursor: help"
-                >Dashboard alert on severity
-                <q-tooltip>Adds an alert in the dashboard only on selected severities</q-tooltip></span
-              >:
-            </div>
-            <div class="col-10 q-mt-sm">
+            <q-card-section>
               <q-select
+                label="Only show dashboard alert on severity"
+                hint="This needs to be set in order to receive dashboard notifications"
                 v-model="template.task_dashboard_alert_severity"
                 outlined
                 dense
@@ -465,76 +474,47 @@
                 map-options
                 :options="severityOptions"
               />
-            </div>
+            </q-card-section>
 
-            <div class="col-4">
-              <q-toggle v-model="template.task_email_on_resolved" color="green" left-label>
-                <span style="text-decoration: underline; cursor: help"
-                  >Email on resolved <q-tooltip>Sends an email when task alert has resolved</q-tooltip></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-4">
-              <q-toggle v-model="template.task_text_on_resolved" color="green" left-label>
-                <span style="text-decoration: underline; cursor: help"
-                  >Text on resolved <q-tooltip>Sends an SMS message when task alert has resolved</q-tooltip></span
-                >
-              </q-toggle>
-            </div>
-            <div class="col-4"></div>
-
-            <div class="col-4">
-              <q-toggle v-model="template.task_always_email" color="green" left-label toggle-indeterminate>
-                <span style="text-decoration: underline; cursor: help"
-                  >Always email
-                  <q-tooltip
-                    >Overrides the email alert option on the task if configured. Default: Not Configured</q-tooltip
-                  ></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-4">
-              <q-toggle v-model="template.task_always_text" color="green" left-label toggle-indeterminate>
-                <span style="text-decoration: underline; cursor: help"
-                  >Always sms
-                  <q-tooltip
-                    >Overrides the SMS alert option on the task if configured. Default: Not Configured</q-tooltip
-                  ></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-4">
-              <q-toggle v-model="template.task_always_alert" color="green" left-label toggle-indeterminate>
-                <span style="text-decoration: underline; cursor: help"
-                  >Always dashboard alert
-                  <q-tooltip
-                    >Overrides the dashboard alert option on the task if configured. Default: Not Configured</q-tooltip
-                  ></span
-                >
-              </q-toggle>
-            </div>
-
-            <div class="col-3 q-mt-sm">Periodic notification (days)</div>
-            <div class="col-2">
+            <q-card-section>
               <q-input
+                label="Alert again if not resolved (days)"
                 outlined
                 type="number"
                 v-model.number="template.task_periodic_alert_days"
                 dense
-                :rules="[val => val >= 0]"
+                :rules="[val => val >= 0 || 'Periodic days must be 0 or greater']"
               />
-            </div>
-          </q-card-section>
-        </q-scroll-area>
+            </q-card-section>
 
-        <q-card-actions align="right">
-          <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn dense flat label="Save" color="primary" type="submit" />
-        </q-card-actions>
-      </q-form>
+            <div class="q-pl-md text-subtitle1">
+              <span style="text-decoration: underline; cursor: help"
+                >Alert Resolved Settings
+                <q-tooltip> Select what notifications are sent when a failed task is resolved. </q-tooltip>
+              </span>
+            </div>
+            <q-card-section>
+              <q-toggle v-model="template.task_email_on_resolved" label="Email" color="green" left-label />
+              <q-toggle v-model="template.check_text_on_resolved" label="Text" color="green" left-label />
+            </q-card-section>
+          </q-card>
+        </q-step>
+        <template v-slot:navigation>
+          <q-stepper-navigation class="row">
+            <q-btn
+              v-if="step > 1"
+              flat
+              color="primary"
+              @click="$refs.stepper.previous()"
+              label="Back"
+              class="q-mr-xs"
+            />
+            <q-btn v-if="step < 5" @click="$refs.stepper.next()" color="primary" label="Next" />
+            <q-space />
+            <q-btn @click="onSubmit" color="primary" label="Submit" />
+          </q-stepper-navigation>
+        </template>
+      </q-stepper>
     </q-card>
   </q-dialog>
 </template>
@@ -549,6 +529,7 @@ export default {
   props: { alertTemplate: Object },
   data() {
     return {
+      step: 1,
       template: {
         name: "",
         is_active: true,
@@ -664,6 +645,11 @@ export default {
       this.template.text_recipients = removed;
     },
     onSubmit() {
+      if (!this.template.name) {
+        this.notifyError("Name needs to be set");
+        return;
+      }
+
       this.$q.loading.show();
 
       if (this.editing) {

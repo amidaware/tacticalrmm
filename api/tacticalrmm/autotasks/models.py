@@ -237,7 +237,8 @@ class AutomatedTask(BaseAuditModel):
 
         task.save()
 
-        task.create_task_on_agent()
+        if agent:
+            task.create_task_on_agent()
 
     def create_task_on_agent(self):
         from agents.models import Agent

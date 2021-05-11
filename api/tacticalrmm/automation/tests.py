@@ -54,6 +54,8 @@ class TestPolicyViews(TacticalTestCase):
 
     @patch("autotasks.models.AutomatedTask.create_task_on_agent")
     def test_add_policy(self, create_task):
+        from automation.models import Policy
+
         url = "/automation/policies/"
 
         data = {
@@ -72,8 +74,12 @@ class TestPolicyViews(TacticalTestCase):
 
         # create policy with tasks and checks
         policy = baker.make("automation.Policy")
-        self.create_checks(policy=policy)
-        baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
+        checks = self.create_checks(policy=policy)
+        tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
+
+        # assign a task to a check
+        tasks[0].assigned_check = checks[0]  # type: ignore
+        tasks[0].save()  # type: ignore
 
         # test copy tasks and checks to another policy
         data = {
@@ -86,8 +92,16 @@ class TestPolicyViews(TacticalTestCase):
 
         resp = self.client.post(f"/automation/policies/", data, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(policy.autotasks.count(), 3)  # type: ignore
-        self.assertEqual(policy.policychecks.count(), 7)  # type: ignore
+
+        copied_policy = Policy.objects.get(name=data["name"])
+
+        self.assertEqual(copied_policy.autotasks.count(), 3)  # type: ignore
+        self.assertEqual(copied_policy.policychecks.count(), 7)  # type: ignore
+
+        # make sure correct task was assign to the check
+        self.assertEqual(copied_policy.autotasks.get(name=tasks[0].name).assigned_check.check_type, checks[0].check_type)  # type: ignore
+
+        create_task.assert_not_called()
 
         self.check_not_authenticated("post", url)
 

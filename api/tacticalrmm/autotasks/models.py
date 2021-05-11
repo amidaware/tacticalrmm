@@ -5,16 +5,15 @@ import string
 from typing import List
 
 import pytz
+from alerts.models import SEVERITY_CHOICES
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import DateTimeField
 from django.utils import timezone as djangotime
+from logs.models import BaseAuditModel
 from loguru import logger
 from packaging import version as pyver
-
-from alerts.models import SEVERITY_CHOICES
-from logs.models import BaseAuditModel
 from tacticalrmm.utils import bitdays_to_string
 
 logger.configure(**settings.LOG_CONFIG)
@@ -197,32 +196,18 @@ class AutomatedTask(BaseAuditModel):
 
         return TaskSerializer(task).data
 
-    def create_policy_task(self, agent=None, policy=None):
+    def create_policy_task(self, agent=None, policy=None, assigned_check=None):
 
         # if policy is present, then this task is being copied to another policy
         # if agent is present, then this task is being created on an agent from a policy
         # exit if neither are set or if both are set
-        if not agent and not policy or agent and policy:
+        # also exit if assigned_check is set because this task will be created when the check is
+        if (
+            (not agent and not policy)
+            or (agent and policy)
+            or (self.assigned_check and not assigned_check)
+        ):
             return
-
-        assigned_check = None
-
-        # get correct assigned check to task if set
-        if agent and self.assigned_check:
-            # check if there is a matching check on the agent
-            if agent.agentchecks.filter(parent_check=self.assigned_check.pk).exists():
-                assigned_check = agent.agentchecks.filter(
-                    parent_check=self.assigned_check.pk
-                ).first()
-        elif policy and self.assigned_check:
-            if policy.policychecks.filter(name=self.assigned_check.name).exists():
-                assigned_check = policy.policychecks.filter(
-                    name=self.assigned_check.name
-                ).first()
-            else:
-                assigned_check = policy.policychecks.filter(
-                    check_type=self.assigned_check.check_type
-                ).first()
 
         task = AutomatedTask.objects.create(
             agent=agent,
@@ -233,7 +218,8 @@ class AutomatedTask(BaseAuditModel):
         )
 
         for field in self.policy_fields_to_copy:
-            setattr(task, field, getattr(self, field))
+            if field != "assigned_check":
+                setattr(task, field, getattr(self, field))
 
         task.save()
 

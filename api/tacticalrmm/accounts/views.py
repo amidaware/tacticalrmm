@@ -14,7 +14,7 @@ from logs.models import AuditLog
 from tacticalrmm.utils import notify_error
 
 from .models import User, Role
-from .permissions import AccountsPerms
+from .permissions import AccountsPerms, RolesPerms
 from .serializers import (
     TOTPSetupSerializer,
     UserSerializer,
@@ -202,6 +202,8 @@ class PermsList(APIView):
 
 
 class GetAddRoles(APIView):
+    permission_classes = [IsAuthenticated, RolesPerms]
+
     def get(self, request):
         roles = Role.objects.all()
         return Response(RoleSerializer(roles, many=True).data)
@@ -214,6 +216,8 @@ class GetAddRoles(APIView):
 
 
 class GetUpdateDeleteRole(APIView):
+    permission_classes = [IsAuthenticated, RolesPerms]
+
     def get(self, request, pk):
         role = get_object_or_404(Role, pk=pk)
         return Response(RoleSerializer(role).data)

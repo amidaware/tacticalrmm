@@ -26,6 +26,7 @@
         <q-card-section class="row">
           <div class="q-gutter-sm">
             <q-checkbox v-model="role.can_manage_accounts" label="Manage User Accounts" />
+            <q-checkbox v-model="role.can_manage_roles" label="Manage Permissions" />
           </div>
         </q-card-section>
 
@@ -195,6 +196,7 @@ export default {
         can_manage_software: false,
         can_manage_winupdates: false,
         can_manage_accounts: false,
+        can_manage_roles: false,
       },
     };
   },

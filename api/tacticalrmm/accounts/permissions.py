@@ -9,3 +9,11 @@ class AccountsPerms(permissions.BasePermission):
             return True
 
         return _has_perm(r, "can_manage_accounts")
+
+
+class RolesPerms(permissions.BasePermission):
+    def has_permission(self, r, view):
+        if r.method == "GET":
+            return True
+
+        return _has_perm(r, "can_manage_roles")

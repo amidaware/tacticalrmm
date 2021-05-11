@@ -132,6 +132,7 @@ class Role(models.Model):
 
     # accounts
     can_manage_accounts = models.BooleanField(default=False)
+    can_manage_roles = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -172,4 +173,5 @@ class Role(models.Model):
             "can_manage_software",
             "can_manage_winupdates",
             "can_manage_accounts",
+            "can_manage_roles",
         ]

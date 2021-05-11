@@ -81,6 +81,10 @@
               <q-item clickable v-close-popup @click="showAlertsManager">
                 <q-item-section>Alerts Manager</q-item-section>
               </q-item>
+              <!-- permissions manager -->
+              <q-item clickable v-close-popup @click="showPermissionsManager">
+                <q-item-section>Permissions Manager</q-item-section>
+              </q-item>
               <!-- admin manager -->
               <q-item clickable v-close-popup @click="showAdminManager = true">
                 <q-item-section>User Administration</q-item-section>
@@ -229,6 +233,7 @@ import BulkAction from "@/components/modals/agents/BulkAction";
 import Deployment from "@/components/Deployment";
 import ServerMaintenance from "@/components/modals/core/ServerMaintenance";
 import CodeSign from "@/components/modals/coresettings/CodeSign";
+import PermissionsManager from "@/components/PermissionsManager";
 
 export default {
   name: "FileBar",
@@ -246,6 +251,7 @@ export default {
     Deployment,
     ServerMaintenance,
     CodeSign,
+    PermissionsManager,
   },
   data() {
     return {
@@ -324,6 +330,12 @@ export default {
     showAddSiteModal() {
       this.$q.dialog({
         component: SitesForm,
+        parent: this,
+      });
+    },
+    showPermissionsManager() {
+      this.$q.dialog({
+        component: PermissionsManager,
         parent: this,
       });
     },

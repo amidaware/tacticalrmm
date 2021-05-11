@@ -1,6 +1,6 @@
 from rest_framework import permissions
 
-from tacticalrmm.permissions import _is_su
+from tacticalrmm.permissions import _has_perm
 
 
 class ManageAlertsPerms(permissions.BasePermission):
@@ -8,4 +8,4 @@ class ManageAlertsPerms(permissions.BasePermission):
         if r.method == "GET" or r.method == "PATCH":
             return True
 
-        return _is_su(r) or r.user.can_manage_alerts
+        return _has_perm(r, "can_manage_alerts")

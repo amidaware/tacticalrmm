@@ -55,7 +55,25 @@ class User(AbstractUser, BaseAuditModel):
         on_delete=models.CASCADE,
     )
 
-    ## perms
+    role = models.ForeignKey(
+        "accounts.Role",
+        null=True,
+        blank=True,
+        related_name="roles",
+        on_delete=models.SET_NULL,
+    )
+
+    @staticmethod
+    def serialize(user):
+        # serializes the task and returns json
+        from .serializers import UserSerializer
+
+        return UserSerializer(user).data
+
+
+class Role(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    is_superuser = models.BooleanField(default=False)
 
     # agents
     can_use_mesh = models.BooleanField(default=False)
@@ -115,15 +133,13 @@ class User(AbstractUser, BaseAuditModel):
     # accounts
     can_manage_accounts = models.BooleanField(default=False)
 
+    def __str__(self):
+        return self.name
+
     @staticmethod
-    def serialize(user):
-        # serializes the task and returns json
-        from .serializers import UserSerializer
-
-        return UserSerializer(user).data
-
-    def perms(self):
+    def perms():
         return [
+            "is_superuser",
             "can_use_mesh",
             "can_uninstall_agents",
             "can_update_agents",

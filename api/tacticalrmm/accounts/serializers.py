@@ -1,11 +1,7 @@
 import pyotp
-from rest_framework.serializers import (
-    ModelSerializer,
-    ReadOnlyField,
-    SerializerMethodField,
-)
+from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
-from .models import User
+from .models import User, Role
 
 
 class UserUISerializer(ModelSerializer):
@@ -24,8 +20,6 @@ class UserUISerializer(ModelSerializer):
 
 
 class UserSerializer(ModelSerializer):
-    perms = ReadOnlyField()
-
     class Meta:
         model = User
         fields = [
@@ -36,40 +30,7 @@ class UserSerializer(ModelSerializer):
             "email",
             "is_active",
             "last_login",
-            "is_superuser",
-            "can_use_mesh",
-            "can_uninstall_agents",
-            "can_update_agents",
-            "can_edit_agent",
-            "can_manage_procs",
-            "can_view_eventlogs",
-            "can_send_cmd",
-            "can_reboot_agents",
-            "can_install_agents",
-            "can_run_scripts",
-            "can_run_bulk",
-            "can_manage_notes",
-            "can_edit_core_settings",
-            "can_do_server_maint",
-            "can_code_sign",
-            "can_manage_checks",
-            "can_run_checks",
-            "can_manage_clients",
-            "can_manage_sites",
-            "can_manage_deployments",
-            "can_manage_automation_policies",
-            "can_manage_autotasks",
-            "can_run_autotasks",
-            "can_view_auditlogs",
-            "can_manage_pendingactions",
-            "can_view_debuglogs",
-            "can_manage_scripts",
-            "can_manage_alerts",
-            "can_manage_winsvcs",
-            "can_manage_software",
-            "can_manage_winupdates",
-            "can_manage_accounts",
-            "perms",
+            "role",
         ]
 
 
@@ -89,3 +50,9 @@ class TOTPSetupSerializer(ModelSerializer):
         return pyotp.totp.TOTP(obj.totp_key).provisioning_uri(
             obj.username, issuer_name="Tactical RMM"
         )
+
+
+class RoleSerializer(ModelSerializer):
+    class Meta:
+        model = Role
+        fields = "__all__"

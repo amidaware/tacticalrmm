@@ -13,9 +13,14 @@ from rest_framework.views import APIView
 from logs.models import AuditLog
 from tacticalrmm.utils import notify_error
 
-from .models import User
+from .models import User, Role
 from .permissions import AccountsPerms
-from .serializers import TOTPSetupSerializer, UserSerializer, UserUISerializer
+from .serializers import (
+    TOTPSetupSerializer,
+    UserSerializer,
+    UserUISerializer,
+    RoleSerializer,
+)
 
 
 def _is_root_user(request, user) -> bool:
@@ -101,6 +106,10 @@ class GetAddUsers(APIView):
 
         user.first_name = request.data["first_name"]
         user.last_name = request.data["last_name"]
+        if "role" in request.data.keys():
+            role = get_object_or_404(Role, pk=request.data["role"])
+            user.role = role
+
         user.save()
         return Response(user.username)
 
@@ -184,4 +193,39 @@ class UserUI(APIView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        return Response("ok")
+
+
+class PermsList(APIView):
+    def get(self, request):
+        return Response(Role.perms())
+
+
+class GetAddRoles(APIView):
+    def get(self, request):
+        roles = Role.objects.all()
+        return Response(RoleSerializer(roles, many=True).data)
+
+    def post(self, request):
+        serializer = RoleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response("ok")
+
+
+class GetUpdateDeleteRole(APIView):
+    def get(self, request, pk):
+        role = get_object_or_404(Role, pk=pk)
+        return Response(RoleSerializer(role).data)
+
+    def put(self, request, pk):
+        role = get_object_or_404(Role, pk=pk)
+        serializer = RoleSerializer(instance=role, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response("ok")
+
+    def delete(self, request, pk):
+        role = get_object_or_404(Role, pk=pk)
+        role.delete()
         return Response("ok")

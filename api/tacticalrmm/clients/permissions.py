@@ -1,6 +1,6 @@
 from rest_framework import permissions
 
-from tacticalrmm.permissions import _is_su
+from tacticalrmm.permissions import _has_perm
 
 
 class ManageClientsPerms(permissions.BasePermission):
@@ -8,7 +8,7 @@ class ManageClientsPerms(permissions.BasePermission):
         if r.method == "GET":
             return True
 
-        return _is_su(r) or r.user.can_manage_clients
+        return _has_perm(r, "can_manage_clients")
 
 
 class ManageSitesPerms(permissions.BasePermission):
@@ -16,7 +16,7 @@ class ManageSitesPerms(permissions.BasePermission):
         if r.method == "GET":
             return True
 
-        return _is_su(r) or r.user.can_manage_sites
+        return _has_perm(r, "can_manage_sites")
 
 
 class ManageDeploymentPerms(permissions.BasePermission):
@@ -24,4 +24,4 @@ class ManageDeploymentPerms(permissions.BasePermission):
         if r.method == "GET":
             return True
 
-        return _is_su(r) or r.user.can_manage_deployments
+        return _has_perm(r, "can_manage_deployments")

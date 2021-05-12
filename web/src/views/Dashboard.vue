@@ -597,6 +597,7 @@ export default {
       }
     },
     loadFrame(activenode, destroySub = true) {
+      this.clearFilter();
       if (destroySub) this.$store.commit("destroySubTable");
 
       let execute = false;
@@ -632,6 +633,7 @@ export default {
       this.$store.dispatch("loadTree");
     },
     clearTreeSelected() {
+      this.clearFilter();
       this.selectedTree = "";
       this.getTree();
     },

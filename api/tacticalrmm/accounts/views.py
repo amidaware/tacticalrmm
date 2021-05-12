@@ -106,7 +106,7 @@ class GetAddUsers(APIView):
 
         user.first_name = request.data["first_name"]
         user.last_name = request.data["last_name"]
-        if "role" in request.data.keys():
+        if "role" in request.data.keys() and isinstance(request.data["role"], int):
             role = get_object_or_404(Role, pk=request.data["role"])
             user.role = role
 

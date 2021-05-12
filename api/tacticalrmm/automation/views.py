@@ -1,14 +1,13 @@
-from django.shortcuts import get_object_or_404
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
 from agents.models import Agent
 from agents.serializers import AgentHostnameSerializer
 from autotasks.models import AutomatedTask
 from checks.models import Check
 from clients.models import Client
 from clients.serializers import ClientSerializer, SiteSerializer
+from django.shortcuts import get_object_or_404
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from tacticalrmm.utils import notify_error
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
@@ -64,11 +63,21 @@ class GetUpdateDeletePolicy(APIView):
         return Response(PolicySerializer(policy).data)
 
     def put(self, request, pk):
+        from .tasks import generate_agent_checks_task
+
         policy = get_object_or_404(Policy, pk=pk)
 
         serializer = PolicySerializer(instance=policy, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+
+        # check for excluding objects and in the request and if present generate policies
+        if (
+            "excluded_sites" in request.data.keys()
+            or "excluded_clients" in request.data.keys()
+            or "excluded_agents" in request.data.keys()
+        ):
+            generate_agent_checks_task.delay(policy=pk, create_tasks=True)
 
         return Response("ok")
 

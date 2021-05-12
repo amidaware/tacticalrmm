@@ -49,6 +49,18 @@
         </div>
         <div class="q-pa-xs q-gutter-xs">
           <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
+            <code>-meshdir "C:\Program Files\Your Company Name\Mesh Agent"</code>
+          </q-badge>
+          <span>Specify full path to the directory containing MeshAgent.exe if using custom agent branding</span>
+        </div>
+        <div class="q-pa-xs q-gutter-xs">
+          <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
+            <code>-nomesh</code>
+          </q-badge>
+          <span>Don't install the mesh agent</span>
+        </div>
+        <div class="q-pa-xs q-gutter-xs">
+          <q-badge class="text-caption q-mr-xs" color="grey" text-color="black">
             <code>-cert "C:\\&lt;some folder or path&gt;\\ca.pem"</code>
           </q-badge>
           <span> To use a domain CA </span>

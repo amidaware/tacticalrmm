@@ -599,7 +599,7 @@ def run_script(request):
 def recover_mesh(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     data = {"func": "recover", "payload": {"mode": "mesh"}}
-    r = asyncio.run(agent.nats_cmd(data, timeout=45))
+    r = asyncio.run(agent.nats_cmd(data, timeout=90))
     if r != "ok":
         return notify_error("Unable to contact the agent")
 

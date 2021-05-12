@@ -438,7 +438,10 @@ export default {
           align: "left",
           field: "checks",
           sortable: true,
-          sort: (a, b, rowA, rowB) => parseInt(b.failing) - a.failing,
+          sort: (a, b, rowA, rowB) =>
+            parseInt(b.failing) - parseInt(a.failing) ||
+            parseInt(b.warning) - parseInt(a.warning) ||
+            parseInt(b.info) - parseInt(a.info),
         },
         {
           name: "client_name",

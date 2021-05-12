@@ -754,7 +754,7 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertIn(self.agent.hostname, r.data)  # type: ignore
         nats_cmd.assert_called_with(
-            {"func": "recover", "payload": {"mode": "mesh"}}, timeout=45
+            {"func": "recover", "payload": {"mode": "mesh"}}, timeout=90
         )
 
         nats_cmd.return_value = "timeout"

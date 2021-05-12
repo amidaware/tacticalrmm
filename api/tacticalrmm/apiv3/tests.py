@@ -5,8 +5,8 @@ from unittest.mock import patch
 from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker
-from autotasks.models import AutomatedTask
 
+from autotasks.models import AutomatedTask
 from tacticalrmm.test import TacticalTestCase
 
 

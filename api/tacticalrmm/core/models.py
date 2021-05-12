@@ -286,6 +286,12 @@ class GlobalKVStore(models.Model):
         return self.name
 
 
+class URLAction(models.Model):
+    name = models.CharField(max_length=25)
+    desc = models.CharField(max_length=100, null=True, blank=True)
+    pattern = models.TextField()
+
+
 RUN_ON_CHOICES = (
     ("client", "Client"),
     ("site", "Site"),

@@ -1,6 +1,6 @@
 import base64
 import re
-from typing import Any, List, Union
+from typing import List, Optional
 
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
@@ -8,6 +8,7 @@ from django.db import models
 from loguru import logger
 
 from logs.models import BaseAuditModel
+from tacticalrmm.utils import replace_db_values
 
 SCRIPT_SHELLS = [
     ("powershell", "Powershell"),
@@ -193,10 +194,7 @@ class Script(BaseAuditModel):
         return ScriptSerializer(script).data
 
     @classmethod
-    def parse_script_args(
-        cls, agent, shell: str, args: List[str] = list()
-    ) -> Union[List[str], None]:
-        from core.models import CustomField, GlobalKVStore
+    def parse_script_args(cls, agent, shell: str, args: List[str] = list()) -> list:
 
         if not args:
             return []
@@ -211,100 +209,15 @@ class Script(BaseAuditModel):
             if match:
                 # only get the match between the () in regex
                 string = match.group(1)
+                value = replace_db_values(string=string, agent=agent, shell=shell)
 
-                # split by period if exists. First should be model and second should be property
-                temp = string.split(".")
-
-                # check for model and property
-                if len(temp) != 2:
-                    # ignore arg since it is invalid
-                    continue
-
-                # value is in the global keystore and replace value
-                if temp[0] == "global":
-                    if GlobalKVStore.objects.filter(name=temp[1]).exists():
-                        value = GlobalKVStore.objects.get(name=temp[1]).value
-                        temp_args.append(
-                            re.sub("\\{\\{.*\\}\\}", "'" + value + "'", arg)
-                        )
-                        continue
-                    else:
-                        # ignore since value doesn't exist
-                        continue
-
-                if temp[0] == "client":
-                    model = "client"
-                    obj = agent.client
-                elif temp[0] == "site":
-                    model = "site"
-                    obj = agent.site
-                elif temp[0] == "agent":
-                    model = "agent"
-                    obj = agent
+                if value:
+                    temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))
                 else:
-                    # ignore arg since it is invalid
-                    continue
-
-                if hasattr(obj, temp[1]):
-                    value = getattr(obj, temp[1])
-
-                elif CustomField.objects.filter(model=model, name=temp[1]).exists():
-
-                    field = CustomField.objects.get(model=model, name=temp[1])
-                    model_fields = getattr(field, f"{model}_fields")
-                    value = None
-                    if model_fields.filter(**{model: obj}).exists():
-                        value = model_fields.get(**{model: obj}).value
-
-                    if not value and field.default_value:
-                        value = field.default_value
-
-                    # check if value exists and if not use defa
-                    if value and field.type == "multiple":
-                        value = format_shell_array(shell, value)
-                    elif value and field.type == "checkbox":
-                        value = format_shell_bool(shell, value)
-
-                    if not value:
-                        continue
-
-                else:
-                    # ignore arg since property is invalid
-                    continue
-
-                # replace the value in the arg and push to array
-                # log any unhashable type errors
-                try:
-                    temp_args.append(re.sub("\\{\\{.*\\}\\}", "'" + value + "'", arg))  # type: ignore
-                except Exception as e:
-                    logger.error(e)
-                    continue
+                    # pass parameter unaltered
+                    temp_args.append(arg)
 
             else:
                 temp_args.append(arg)
 
         return temp_args
-
-
-def format_shell_array(shell: str, value: Any) -> str:
-    if shell == "cmd":
-        return "array args are not supported with batch"
-    elif shell == "powershell":
-        temp_string = ""
-        for item in value:
-            temp_string += item + ","
-        return temp_string.strip(",")
-    else:  # python
-        temp_string = ""
-        for item in value:
-            temp_string += item + ","
-        return temp_string.strip(",")
-
-
-def format_shell_bool(shell: str, value: Any) -> str:
-    if shell == "cmd":
-        return "1" if value else "0"
-    elif shell == "powershell":
-        return "$True" if value else "$False"
-    else:  # python
-        return "True" if value else "False"

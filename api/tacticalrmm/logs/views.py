@@ -9,7 +9,8 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -20,10 +21,13 @@ from agents.serializers import AgentHostnameSerializer
 from tacticalrmm.utils import notify_error
 
 from .models import AuditLog, PendingAction
+from .permissions import AuditLogPerms, DebugLogPerms, ManagePendingActionPerms
 from .serializers import AuditLogSerializer, PendingActionSerializer
 
 
 class GetAuditLogs(APIView):
+    permission_classes = [IsAuthenticated, AuditLogPerms]
+
     def patch(self, request):
         from agents.models import Agent
         from clients.models import Client
@@ -92,6 +96,8 @@ class GetAuditLogs(APIView):
 
 
 class FilterOptionsAuditLog(APIView):
+    permission_classes = [IsAuthenticated, AuditLogPerms]
+
     def post(self, request):
         if request.data["type"] == "agent":
             agents = Agent.objects.filter(hostname__icontains=request.data["pattern"])
@@ -107,6 +113,8 @@ class FilterOptionsAuditLog(APIView):
 
 
 class PendingActions(APIView):
+    permission_classes = [IsAuthenticated, ManagePendingActionPerms]
+
     def patch(self, request):
         status_filter = "completed" if request.data["showCompleted"] else "pending"
         if "agentPK" in request.data.keys():
@@ -149,6 +157,7 @@ class PendingActions(APIView):
 
 
 @api_view()
+@permission_classes([IsAuthenticated, DebugLogPerms])
 def debug_log(request, mode, hostname, order):
     log_file = settings.LOG_CONFIG["handlers"][0]["sink"]
 
@@ -191,6 +200,7 @@ def debug_log(request, mode, hostname, order):
 
 
 @api_view()
+@permission_classes([IsAuthenticated, DebugLogPerms])
 def download_log(request):
     log_file = settings.LOG_CONFIG["handlers"][0]["sink"]
     if settings.DEBUG:

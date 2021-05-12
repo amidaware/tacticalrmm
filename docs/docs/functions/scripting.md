@@ -60,7 +60,7 @@ Scripts can also be run periodically on an agent and trigger an alert if it fail
 
 Scripts can be triggered when an alert is triggered and resolved. This script will run on any online agent and supports passing the alert information as arguments. 
 
-For configuring **Alert Templates**, see [Alerting](../alerting.md)
+For configuring **Alert Templates**, see [Alerting](./alerting.md)
 
 See below for populating dashboard data in scripts and the available options.
 

@@ -3,7 +3,8 @@ from typing import Any
 
 from django.shortcuts import get_object_or_404
 from packaging import version as pyver
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from agents.models import Agent
@@ -11,6 +12,7 @@ from logs.models import PendingAction
 from tacticalrmm.utils import filter_software, notify_error
 
 from .models import ChocoSoftware, InstalledSoftware
+from .permissions import ManageSoftwarePerms
 from .serializers import InstalledSoftwareSerializer
 
 
@@ -20,6 +22,7 @@ def chocos(request):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated, ManageSoftwarePerms])
 def install(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
     if pyver.parse(agent.version) < pyver.parse("1.4.8"):

@@ -49,6 +49,10 @@ export default function ({ router, store }) {
       else if (error.response.status === 401) {
         router.push({ path: "/expired" });
       }
+      // perms
+      else if (error.response.status === 403) {
+        text = error.response.data.detail;
+      }
       else if (error.response.status === 400) {
 
         if (error.response.data.non_field_errors) {

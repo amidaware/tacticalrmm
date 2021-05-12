@@ -1,7 +1,7 @@
 import pyotp
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
-from .models import User
+from .models import User, Role
 
 
 class UserUISerializer(ModelSerializer):
@@ -11,6 +11,7 @@ class UserUISerializer(ModelSerializer):
             "dark_mode",
             "show_community_scripts",
             "agent_dblclick_action",
+            "url_action",
             "default_agent_tbl_tab",
             "client_tree_sort",
             "client_tree_splitter",
@@ -21,7 +22,7 @@ class UserUISerializer(ModelSerializer):
 class UserSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = (
+        fields = [
             "id",
             "username",
             "first_name",
@@ -29,7 +30,8 @@ class UserSerializer(ModelSerializer):
             "email",
             "is_active",
             "last_login",
-        )
+            "role",
+        ]
 
 
 class TOTPSetupSerializer(ModelSerializer):
@@ -48,3 +50,9 @@ class TOTPSetupSerializer(ModelSerializer):
         return pyotp.totp.TOTP(obj.totp_key).provisioning_uri(
             obj.username, issuer_name="Tactical RMM"
         )
+
+
+class RoleSerializer(ModelSerializer):
+    class Meta:
+        model = Role
+        fields = "__all__"

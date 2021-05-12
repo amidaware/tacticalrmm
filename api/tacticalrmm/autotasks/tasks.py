@@ -7,9 +7,9 @@ from typing import Union
 from django.conf import settings
 from django.utils import timezone as djangotime
 from loguru import logger
-from tacticalrmm.celery import app
 
 from autotasks.models import AutomatedTask
+from tacticalrmm.celery import app
 
 logger.configure(**settings.LOG_CONFIG)
 

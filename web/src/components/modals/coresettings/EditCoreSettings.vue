@@ -9,6 +9,7 @@
           <q-tab name="meshcentral" label="MeshCentral" />
           <q-tab name="customfields" label="Custom Fields" />
           <q-tab name="keystore" label="Key Store" />
+          <q-tab name="urlactions" label="URL Actions" />
         </q-tabs>
       </template>
       <template v-slot:after>
@@ -300,10 +301,19 @@
               <q-tab-panel name="keystore">
                 <KeyStoreTable />
               </q-tab-panel>
+
+              <q-tab-panel name="urlactions">
+                <URLActionsTable />
+              </q-tab-panel>
             </q-tab-panels>
           </q-scroll-area>
           <q-card-section class="row items-center">
-            <q-btn v-show="tab !== 'customfields' || tab !== 'keystore'" label="Save" color="primary" type="submit" />
+            <q-btn
+              v-show="tab !== 'customfields' && tab !== 'keystore' && tab !== 'urlactions'"
+              label="Save"
+              color="primary"
+              type="submit"
+            />
             <q-btn
               v-show="tab === 'emailalerts'"
               label="Save and Test"
@@ -324,12 +334,14 @@ import mixins from "@/mixins/mixins";
 import ResetPatchPolicy from "@/components/modals/coresettings/ResetPatchPolicy";
 import CustomFields from "@/components/modals/coresettings/CustomFields";
 import KeyStoreTable from "@/components/modals/coresettings/KeyStoreTable";
+import URLActionsTable from "@/components/modals/coresettings/URLActionsTable";
 
 export default {
   name: "EditCoreSettings",
   components: {
     CustomFields,
     KeyStoreTable,
+    URLActionsTable,
   },
   mixins: [mixins],
   data() {

@@ -1387,3 +1387,14 @@ class TestAlertTasks(TacticalTestCase):
         self.assertEqual(alert.resolved_action_execution_time, "5.0000")
         self.assertEqual(alert.resolved_action_stdout, "success!")
         self.assertEqual(alert.resolved_action_stderr, "")
+
+    def test_parse_script_args(self):
+        alert = baker.make("alerts.Alert")
+
+        args = ["-Parameter", "-Another {{alert.id}}"]
+
+        # test default value
+        self.assertEqual(
+            ["-Parameter", f"-Another '{alert.id}'"],  # type: ignore
+            alert.parse_script_args(args=args),  # type: ignore
+        )

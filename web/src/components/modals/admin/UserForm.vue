@@ -1,24 +1,31 @@
 <template>
-  <q-card style="width: 60vw">
+  <q-card style="min-width: 85vh">
     <q-form ref="form" @submit="onSubmit">
       <q-card-section class="row items-center">
         <div class="text-h6">{{ title }}</div>
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </q-card-section>
+
       <q-card-section class="row">
         <div class="col-2">Username:</div>
         <div class="col-10">
-          <q-input outlined dense v-model="username" :rules="[val => !!val || '*Required']" class="q-pa-none" />
+          <q-input
+            outlined
+            dense
+            v-model="settings.username"
+            :rules="[val => !!val || '*Required']"
+            class="q-pa-none"
+          />
         </div>
       </q-card-section>
-      <q-card-section class="row" v-if="!this.pk">
+      <q-card-section class="row" v-if="!pk">
         <div class="col-2">Password:</div>
         <div class="col-10">
           <q-input
             outlined
             dense
-            v-model="password"
+            v-model="settings.password"
             :type="isPwd ? 'password' : 'text'"
             :rules="[val => !!val || '*Required']"
             class="q-pa-none"
@@ -35,7 +42,7 @@
           <q-input
             outlined
             dense
-            v-model="email"
+            v-model="settings.email"
             :rules="[val => isValidEmail(val) || 'Invalid email']"
             class="q-pa-none"
           />
@@ -44,23 +51,40 @@
       <q-card-section class="row">
         <div class="col-2">First Name:</div>
         <div class="col-10">
-          <q-input outlined dense v-model="first_name" />
+          <q-input outlined dense v-model="settings.first_name" />
         </div>
       </q-card-section>
       <q-card-section class="row">
         <div class="col-2">Last Name:</div>
         <div class="col-10">
-          <q-input outlined dense v-model="last_name" />
+          <q-input outlined dense v-model="settings.last_name" />
         </div>
       </q-card-section>
       <q-card-section class="row">
         <div class="col-2">Active:</div>
         <div class="col-10">
-          <q-toggle v-model="is_active" color="green" :disable="username === logged_in_user" />
+          <q-toggle v-model="settings.is_active" color="green" :disable="settings.username === logged_in_user" />
         </div>
       </q-card-section>
+      <q-card-section class="row">
+        <div class="col-2">Role:</div>
+        <template v-if="roles.length === 0"
+          ><span>No roles have been created. Create some from Settings > Permissions Manager</span></template
+        >
+        <template v-else
+          ><q-select
+            map-options
+            emit-value
+            outlined
+            dense
+            options-dense
+            v-model="settings.role"
+            :options="roles"
+            class="col-10"
+        /></template>
+      </q-card-section>
       <q-card-section class="row items-center">
-        <q-btn :label="title" color="primary" type="submit" />
+        <q-btn :disable="!disableSave" label="Save" color="primary" type="submit" />
       </q-card-section>
     </q-form>
   </q-card>
@@ -76,16 +100,27 @@ export default {
   props: { pk: Number },
   data() {
     return {
-      username: "",
-      password: "",
-      email: "",
-      first_name: "",
-      last_name: "",
-      is_active: true,
+      settings: {
+        username: "",
+        password: "",
+        email: "",
+        first_name: "",
+        last_name: "",
+        is_active: true,
+        role: null,
+      },
+      roles: [],
       isPwd: true,
     };
   },
   computed: {
+    disableSave() {
+      if (this.pk) {
+        return !!this.settings.username;
+      } else {
+        return !!this.settings.username && !!this.settings.password;
+      }
+    },
     title() {
       return this.pk ? "Edit User" : "Add User";
     },
@@ -96,55 +131,48 @@ export default {
   methods: {
     getUser() {
       this.$q.loading.show();
-
       this.$store.dispatch("admin/loadUser", this.pk).then(r => {
         this.$q.loading.hide();
-
-        this.username = r.data.username;
-        this.email = r.data.email;
-        this.is_active = r.data.is_active;
-        this.first_name = r.data.first_name;
-        this.last_name = r.data.last_name;
+        this.settings = r.data;
       });
+    },
+    getRoles() {
+      this.$axios
+        .get("/accounts/roles/")
+        .then(r => {
+          this.roles = r.data.map(role => ({ label: role.name, value: role.id }));
+        })
+        .catch(() => {});
     },
     onSubmit() {
       this.$q.loading.show();
-      let formData = {
-        id: this.pk,
-        username: this.username,
-        email: this.email,
-        is_active: this.is_active,
-        first_name: this.first_name,
-        last_name: this.last_name,
-      };
+      delete this.settings.last_login;
 
       if (this.pk) {
         // dont allow updating is_active if username is same as logged in user
-        if (formData.username === this.logged_in_user) {
-          delete formData.is_active;
+        if (this.settings.username === this.logged_in_user) {
+          delete this.settings.is_active;
         }
 
         this.$store
-          .dispatch("admin/editUser", formData)
-          .then(r => {
+          .dispatch("admin/editUser", this.settings)
+          .then(() => {
             this.$q.loading.hide();
             this.$emit("close");
             this.notifySuccess("User edited!");
           })
-          .catch(e => {
+          .catch(() => {
             this.$q.loading.hide();
           });
       } else {
-        formData.password = this.password;
-
         this.$store
-          .dispatch("admin/addUser", formData)
+          .dispatch("admin/addUser", this.settings)
           .then(r => {
             this.$q.loading.hide();
             this.$emit("close");
             this.notifySuccess(`User ${r.data} was added!`);
           })
-          .catch(e => {
+          .catch(() => {
             this.$q.loading.hide();
           });
       }
@@ -155,6 +183,7 @@ export default {
     if (this.pk) {
       this.getUser();
     }
+    this.getRoles();
   },
 };
 </script>

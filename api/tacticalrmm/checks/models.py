@@ -4,7 +4,6 @@ import os
 import string
 from statistics import mean
 from typing import Any
-from packaging import version as pyver
 
 import pytz
 from alerts.models import SEVERITY_CHOICES
@@ -15,6 +14,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from logs.models import BaseAuditModel
 from loguru import logger
+from packaging import version as pyver
 
 from .utils import bytes2human
 
@@ -602,6 +602,9 @@ class Check(BaseAuditModel):
             check_type=self.check_type,
             script=self.script,
         )
+
+        for task in self.assignedtask.all():  # type: ignore
+            task.create_policy_task(agent=agent, policy=policy, assigned_check=check)
 
         for field in self.policy_fields_to_copy:
             setattr(check, field, getattr(self, field))

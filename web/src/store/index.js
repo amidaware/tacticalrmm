@@ -31,6 +31,7 @@ export default function () {
       tabHeight: "35vh",
       showCommunityScripts: false,
       agentDblClickAction: "",
+      agentUrlAction: null,
       defaultAgentTblTab: "server",
       clientTreeSort: "alphafail",
       clientTreeSplitter: 11,
@@ -148,6 +149,9 @@ export default function () {
       },
       SET_AGENT_DBLCLICK_ACTION(state, action) {
         state.agentDblClickAction = action
+      },
+      SET_URL_ACTION(state, action) {
+        state.agentUrlAction = action
       },
       SET_DEFAULT_AGENT_TBL_TAB(state, tab) {
         state.defaultAgentTblTab = tab

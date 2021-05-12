@@ -11,7 +11,8 @@ from django.shortcuts import get_object_or_404
 from loguru import logger
 from packaging import version as pyver
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -24,6 +25,20 @@ from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
 from .models import Agent, AgentCustomField, Note, RecoveryAction
+from .permissions import (
+    EditAgentPerms,
+    EvtLogPerms,
+    InstallAgentPerms,
+    ManageNotesPerms,
+    ManageProcPerms,
+    MeshPerms,
+    RebootAgentPerms,
+    RunBulkPerms,
+    RunScriptPerms,
+    SendCMDPerms,
+    UninstallPerms,
+    UpdateAgentPerms,
+)
 from .serializers import (
     AgentCustomFieldSerializer,
     AgentEditSerializer,
@@ -51,6 +66,7 @@ def get_agent_versions(request):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated, UpdateAgentPerms])
 def update_agents(request):
     q = Agent.objects.filter(pk__in=request.data["pks"]).only("pk", "version")
     pks: list[int] = [
@@ -63,6 +79,7 @@ def update_agents(request):
 
 
 @api_view()
+@permission_classes([IsAuthenticated, UninstallPerms])
 def ping(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     status = "offline"
@@ -83,10 +100,10 @@ def ping(request, pk):
 
 
 @api_view(["DELETE"])
+@permission_classes([IsAuthenticated, UninstallPerms])
 def uninstall(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
     asyncio.run(agent.nats_cmd({"func": "uninstall"}, wait=False))
-
     name = agent.hostname
     agent.delete()
     reload_nats()
@@ -94,6 +111,7 @@ def uninstall(request):
 
 
 @api_view(["PATCH", "PUT"])
+@permission_classes([IsAuthenticated, EditAgentPerms])
 def edit_agent(request):
     agent = get_object_or_404(Agent, pk=request.data["id"])
 
@@ -136,6 +154,7 @@ def edit_agent(request):
 
 
 @api_view()
+@permission_classes([IsAuthenticated, MeshPerms])
 def meshcentral(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     core = CoreSettings.objects.first()
@@ -181,6 +200,7 @@ def get_processes(request, pk):
 
 
 @api_view()
+@permission_classes([IsAuthenticated, ManageProcPerms])
 def kill_proc(request, pk, pid):
     agent = get_object_or_404(Agent, pk=pk)
     r = asyncio.run(
@@ -196,6 +216,7 @@ def kill_proc(request, pk, pid):
 
 
 @api_view()
+@permission_classes([IsAuthenticated, EvtLogPerms])
 def get_event_log(request, pk, logtype, days):
     agent = get_object_or_404(Agent, pk=pk)
     timeout = 180 if logtype == "Security" else 30
@@ -215,6 +236,7 @@ def get_event_log(request, pk, logtype, days):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated, SendCMDPerms])
 def send_raw_cmd(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
     timeout = int(request.data["timeout"])
@@ -310,6 +332,7 @@ def overdue_action(request):
 
 
 class Reboot(APIView):
+    permission_classes = [IsAuthenticated, RebootAgentPerms]
     # reboot now
     def post(self, request):
         agent = get_object_or_404(Agent, pk=request.data["pk"])
@@ -362,6 +385,7 @@ class Reboot(APIView):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated, InstallAgentPerms])
 def install_agent(request):
     from knox.models import AuthToken
 
@@ -534,6 +558,7 @@ def recover(request):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated, RunScriptPerms])
 def run_script(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
     script = get_object_or_404(Script, pk=request.data["scriptPK"])
@@ -574,7 +599,7 @@ def run_script(request):
 def recover_mesh(request, pk):
     agent = get_object_or_404(Agent, pk=pk)
     data = {"func": "recover", "payload": {"mode": "mesh"}}
-    r = asyncio.run(agent.nats_cmd(data, timeout=45))
+    r = asyncio.run(agent.nats_cmd(data, timeout=90))
     if r != "ok":
         return notify_error("Unable to contact the agent")
 
@@ -616,6 +641,8 @@ class GetAddNotes(APIView):
 
 
 class GetEditDeleteNote(APIView):
+    permission_classes = [IsAuthenticated, ManageNotesPerms]
+
     def get(self, request, pk):
         note = get_object_or_404(Note, pk=pk)
         return Response(NoteSerializer(note).data)
@@ -634,6 +661,7 @@ class GetEditDeleteNote(APIView):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated, RunBulkPerms])
 def bulk(request):
     if request.data["target"] == "agents" and not request.data["agentPKs"]:
         return notify_error("Must select at least 1 agent")

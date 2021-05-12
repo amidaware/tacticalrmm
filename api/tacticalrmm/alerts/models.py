@@ -444,12 +444,12 @@ class Alert(models.Model):
                 name = match.group(1)
 
                 if hasattr(self, name):
-                    value = getattr(self, name)
+                    value = f"'{getattr(self, name)}'"
                 else:
                     continue
 
                 try:
-                    temp_args.append(re.sub("\\{\\{.*\\}\\}", "'" + value + "'", arg))  # type: ignore
+                    temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))  # type: ignore
                 except Exception as e:
                     logger.error(e)
                     continue

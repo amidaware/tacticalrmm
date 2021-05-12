@@ -438,7 +438,10 @@ export default {
           align: "left",
           field: "checks",
           sortable: true,
-          sort: (a, b, rowA, rowB) => parseInt(b.failing) - a.failing,
+          sort: (a, b, rowA, rowB) =>
+            parseInt(b.failing) - parseInt(a.failing) ||
+            parseInt(b.warning) - parseInt(a.warning) ||
+            parseInt(b.info) - parseInt(a.info),
         },
         {
           name: "client_name",
@@ -597,6 +600,7 @@ export default {
       }
     },
     loadFrame(activenode, destroySub = true) {
+      this.clearFilter();
       if (destroySub) this.$store.commit("destroySubTable");
 
       let execute = false;
@@ -632,6 +636,7 @@ export default {
       this.$store.dispatch("loadTree");
     },
     clearTreeSelected() {
+      this.clearFilter();
       this.selectedTree = "";
       this.getTree();
     },
@@ -735,6 +740,7 @@ export default {
         this.currentTRMMVersion = r.data.trmm_version;
         this.latestTRMMVersion = r.data.latest_trmm_ver;
         this.$store.commit("SET_AGENT_DBLCLICK_ACTION", r.data.dbl_click_action);
+        this.$store.commit("SET_URL_ACTION", r.data.url_action);
         this.$store.commit("setShowCommunityScripts", r.data.show_community_scripts);
         this.$store.commit("SET_NO_CODE_SIGN", r.data.no_code_sign);
       });

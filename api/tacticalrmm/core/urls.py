@@ -15,4 +15,7 @@ urlpatterns = [
     path("codesign/", views.CodeSign.as_view()),
     path("keystore/", views.GetAddKeyStore.as_view()),
     path("keystore/<int:pk>/", views.UpdateDeleteKeyStore.as_view()),
+    path("urlaction/", views.GetAddURLAction.as_view()),
+    path("urlaction/<int:pk>/", views.UpdateDeleteURLAction.as_view()),
+    path("urlaction/run/", views.RunURLAction.as_view()),
 ]

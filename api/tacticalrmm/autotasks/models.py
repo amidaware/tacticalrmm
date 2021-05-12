@@ -196,32 +196,18 @@ class AutomatedTask(BaseAuditModel):
 
         return TaskSerializer(task).data
 
-    def create_policy_task(self, agent=None, policy=None):
+    def create_policy_task(self, agent=None, policy=None, assigned_check=None):
 
         # if policy is present, then this task is being copied to another policy
         # if agent is present, then this task is being created on an agent from a policy
         # exit if neither are set or if both are set
-        if not agent and not policy or agent and policy:
+        # also exit if assigned_check is set because this task will be created when the check is
+        if (
+            (not agent and not policy)
+            or (agent and policy)
+            or (self.assigned_check and not assigned_check)
+        ):
             return
-
-        assigned_check = None
-
-        # get correct assigned check to task if set
-        if agent and self.assigned_check:
-            # check if there is a matching check on the agent
-            if agent.agentchecks.filter(parent_check=self.assigned_check.pk).exists():
-                assigned_check = agent.agentchecks.filter(
-                    parent_check=self.assigned_check.pk
-                ).first()
-        elif policy and self.assigned_check:
-            if policy.policychecks.filter(name=self.assigned_check.name).exists():
-                assigned_check = policy.policychecks.filter(
-                    name=self.assigned_check.name
-                ).first()
-            else:
-                assigned_check = policy.policychecks.filter(
-                    check_type=self.assigned_check.check_type
-                ).first()
 
         task = AutomatedTask.objects.create(
             agent=agent,
@@ -232,11 +218,13 @@ class AutomatedTask(BaseAuditModel):
         )
 
         for field in self.policy_fields_to_copy:
-            setattr(task, field, getattr(self, field))
+            if field != "assigned_check":
+                setattr(task, field, getattr(self, field))
 
         task.save()
 
-        task.create_task_on_agent()
+        if agent:
+            task.create_task_on_agent()
 
     def create_task_on_agent(self):
         from agents.models import Agent

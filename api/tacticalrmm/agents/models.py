@@ -263,6 +263,11 @@ class Agent(BaseAuditModel):
                 make = [x["Manufacturer"] for x in mobo if "Manufacturer" in x][0]
                 model = [x["Product"] for x in mobo if "Product" in x][0]
 
+            if make.lower() == "lenovo":
+                sysfam = [x["SystemFamily"] for x in comp_sys if "SystemFamily" in x][0]
+                if "to be filled" not in sysfam.lower():
+                    model = sysfam
+
             return f"{make} {model}"
         except:
             pass

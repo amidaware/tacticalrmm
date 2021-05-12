@@ -14,7 +14,7 @@
           <q-input label="Name" outlined dense v-model="localKey.name" :rules="[val => !!val || '*Required']" />
         </q-card-section>
 
-        <!-- name -->
+        <!-- value -->
         <q-card-section>
           <q-input label="Value" outlined dense v-model="localKey.value" :rules="[val => !!val || '*Required']" />
         </q-card-section>

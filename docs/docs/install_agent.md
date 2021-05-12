@@ -70,3 +70,13 @@ This will not popup any message boxes during install, either any error messages 
 -proxy "http://proxyserver:port"
 ```
 Use a http proxy
+
+```
+-meshdir "C:\Program Files\Your Company Name\Mesh Agent"
+```
+Specify the full path to the directory containing `MeshAgent.exe` if using custom agent branding for your MeshCentral instance.
+
+```
+-nomesh
+```
+Do not install meshcentral agent during tactical agent install. Note: take control, remote terminal and file browser will not work.

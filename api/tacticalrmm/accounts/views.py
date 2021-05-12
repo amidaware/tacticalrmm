@@ -6,15 +6,21 @@ from django.shortcuts import get_object_or_404
 from knox.views import LoginView as KnoxLoginView
 from rest_framework import status
 from rest_framework.authtoken.serializers import AuthTokenSerializer
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from logs.models import AuditLog
 from tacticalrmm.utils import notify_error
 
-from .models import User
-from .serializers import TOTPSetupSerializer, UserSerializer, UserUISerializer
+from .models import User, Role
+from .permissions import AccountsPerms, RolesPerms
+from .serializers import (
+    TOTPSetupSerializer,
+    UserSerializer,
+    UserUISerializer,
+    RoleSerializer,
+)
 
 
 def _is_root_user(request, user) -> bool:
@@ -78,6 +84,8 @@ class LoginView(KnoxLoginView):
 
 
 class GetAddUsers(APIView):
+    permission_classes = [IsAuthenticated, AccountsPerms]
+
     def get(self, request):
         users = User.objects.filter(agent=None)
 
@@ -98,13 +106,17 @@ class GetAddUsers(APIView):
 
         user.first_name = request.data["first_name"]
         user.last_name = request.data["last_name"]
-        # Can be changed once permissions and groups are introduced
-        user.is_superuser = True
+        if "role" in request.data.keys() and isinstance(request.data["role"], int):
+            role = get_object_or_404(Role, pk=request.data["role"])
+            user.role = role
+
         user.save()
         return Response(user.username)
 
 
 class GetUpdateDeleteUser(APIView):
+    permission_classes = [IsAuthenticated, AccountsPerms]
+
     def get(self, request, pk):
         user = get_object_or_404(User, pk=pk)
 
@@ -133,7 +145,7 @@ class GetUpdateDeleteUser(APIView):
 
 
 class UserActions(APIView):
-
+    permission_classes = [IsAuthenticated, AccountsPerms]
     # reset password
     def post(self, request):
         user = get_object_or_404(User, pk=request.data["id"])
@@ -181,4 +193,43 @@ class UserUI(APIView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        return Response("ok")
+
+
+class PermsList(APIView):
+    def get(self, request):
+        return Response(Role.perms())
+
+
+class GetAddRoles(APIView):
+    permission_classes = [IsAuthenticated, RolesPerms]
+
+    def get(self, request):
+        roles = Role.objects.all()
+        return Response(RoleSerializer(roles, many=True).data)
+
+    def post(self, request):
+        serializer = RoleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response("ok")
+
+
+class GetUpdateDeleteRole(APIView):
+    permission_classes = [IsAuthenticated, RolesPerms]
+
+    def get(self, request, pk):
+        role = get_object_or_404(Role, pk=pk)
+        return Response(RoleSerializer(role).data)
+
+    def put(self, request, pk):
+        role = get_object_or_404(Role, pk=pk)
+        serializer = RoleSerializer(instance=role, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response("ok")
+
+    def delete(self, request, pk):
+        role = get_object_or_404(Role, pk=pk)
+        role.delete()
         return Response("ok")

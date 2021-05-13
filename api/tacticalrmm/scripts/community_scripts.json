@@ -153,6 +153,15 @@
     "category": "TRMM (Win):Hardware"
   },
   {
+    "guid": "72c56717-28ed-4cc6-b30f-b362d30fb4b6",
+    "filename": "Win_Hardware_SN.ps1",
+    "submittedBy": "https://github.com/subzdev",
+    "name": "Hardware - Get Serial Number",
+    "description": "Returns BIOS Serial Number - Use with Custom Fields for later use",
+    "shell": "powershell",
+    "category": "TRMM (Win):Collectors"
+  },
+  {
     "guid": "95a2ee6f-b89b-4551-856e-3081b041caa7",
     "filename": "Win_Power_Profile_Reset_High_Performance_to_Defaults.ps1",
     "submittedBy": "https://github.com/azulskyknight",

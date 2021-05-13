@@ -6,9 +6,9 @@
         :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
         title="Software"
         dense
-        :data="chocos"
+        :rows="chocos"
         :columns="columns"
-        :pagination.sync="pagination"
+        :v-model:pagination="pagination"
         :filter="filter"
         binary-state-sort
         hide-bottom
@@ -25,7 +25,7 @@
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
         </template>
-        <template slot="body" slot-scope="props" :props="props">
+        <template v-slot:body="props">
           <q-tr :props="props">
             <q-td auto-width>
               <q-btn size="sm" color="grey-5" icon="fas fa-plus" text-color="black" @click="install(props.row.name)" />
@@ -45,6 +45,7 @@ import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 export default {
   name: "InstallSoftware",
+  emits: ["close"],
   props: ["agentpk"],
   mixins: [mixins],
   data() {

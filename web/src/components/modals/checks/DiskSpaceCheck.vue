@@ -69,6 +69,7 @@ import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 export default {
   name: "DiskSpaceCheck",
+  emits: ["close"],
   props: {
     agentpk: Number,
     policypk: Number,

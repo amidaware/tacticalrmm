@@ -5,7 +5,7 @@
         Alert Exclusions for {{ template.name }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <q-form ref="form" @submit.prevent="onSubmit">
@@ -37,7 +37,12 @@
             emit-value
           >
             <template v-slot:option="scope">
-              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+              <q-item
+                v-if="!scope.opt.category"
+                v-bind="scope.itemProps"
+                v-on="scope.itemProps.itemEvents"
+                class="q-pl-lg"
+              >
                 <q-item-section>
                   <q-item-label v-html="scope.opt.label"></q-item-label>
                 </q-item-section>
@@ -92,6 +97,7 @@
 import mixins from "@/mixins/mixins";
 export default {
   name: "AlertExclusions",
+  emits: ["hide", "ok"],
   props: { template: !Object },
   mixins: [mixins],
   data() {

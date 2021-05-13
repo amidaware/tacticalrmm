@@ -4,7 +4,7 @@
       Update Agents
       <q-space />
       <q-btn dense flat icon="close" v-close-popup>
-        <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        <q-tooltip class="bg-white text-primary">Close</q-tooltip>
       </q-btn>
     </q-bar>
     <q-separator />
@@ -41,6 +41,7 @@
 import mixins from "@/mixins/mixins";
 export default {
   name: "UpdateAgents",
+  emits: ["close", "edit"],
   mixins: [mixins],
   data() {
     return {
@@ -75,7 +76,7 @@ export default {
         .post("/agents/updateagents/", data)
         .then(r => {
           this.$emit("close");
-          this.$emit("edited");
+          this.$emit("edit");
           this.notifySuccess("Agents will now be updated");
         })
         .catch(e => {});

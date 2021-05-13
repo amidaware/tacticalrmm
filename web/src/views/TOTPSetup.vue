@@ -83,7 +83,7 @@ export default {
     this.getQRCodeData();
     this.$q.dark.set(false);
   },
-  beforeDestroy() {
+  beforeUnmount() {
     if (!this.cleared_token) {
       this.logout();
     }

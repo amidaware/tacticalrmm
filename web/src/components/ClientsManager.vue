@@ -6,7 +6,7 @@
           <q-btn @click="getClients" class="q-mr-sm" dense flat push icon="refresh" />Clients Manager
           <q-space />
           <q-btn dense flat icon="close" v-close-popup>
-            <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+            <q-tooltip class="bg-white text-primary">Close</q-tooltip>
           </q-btn>
         </q-bar>
         <div class="q-pa-sm" style="min-height: 65vh; max-height: 65vh">
@@ -15,9 +15,9 @@
           </div>
           <q-table
             dense
-            :data="clients"
+            :rows="clients"
             :columns="columns"
-            :pagination.sync="pagination"
+            :v-model:pagination="pagination"
             row-key="id"
             binary-state-sort
             hide-pagination
@@ -92,6 +92,7 @@ import SitesTable from "@/components/modals/clients/SitesTable";
 
 export default {
   name: "ClientsManager",
+  emits: ["hide", "ok", "cancel"],
   mixins: [mixins],
   data() {
     return {
@@ -124,9 +125,10 @@ export default {
       this.$q
         .dialog({
           component: DeleteClient,
-          parent: this,
-          object: client,
-          type: "client",
+          componentProps: {
+            object: client,
+            type: "client",
+          },
         })
         .onOk(() => {
           this.getClients();
@@ -136,8 +138,9 @@ export default {
       this.$q
         .dialog({
           component: ClientsForm,
-          parent: this,
-          client: client,
+          componentProps: {
+            client: client,
+          },
         })
         .onOk(() => {
           this.getClients();
@@ -147,7 +150,6 @@ export default {
       this.$q
         .dialog({
           component: ClientsForm,
-          parent: this,
         })
         .onOk(() => {
           this.getClients();
@@ -157,8 +159,9 @@ export default {
       this.$q
         .dialog({
           component: SitesForm,
-          parent: this,
-          client: client.id,
+          componentProps: {
+            client: client.id,
+          },
         })
         .onOk(() => {
           this.getClients();
@@ -167,8 +170,9 @@ export default {
     showSitesTable(client) {
       this.$q.dialog({
         component: SitesTable,
-        parent: this,
-        client: client,
+        componentProps: {
+          client: client,
+        },
       });
     },
     show() {

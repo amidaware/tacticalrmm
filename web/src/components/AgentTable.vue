@@ -5,7 +5,7 @@
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       class="agents-tbl-sticky"
       :style="{ 'max-height': agentTableHeight }"
-      :data="frame"
+      :rows="frame"
       :filter="search"
       :filter-method="filterTable"
       :columns="columns"
@@ -13,7 +13,7 @@
       row-key="id"
       binary-state-sort
       virtual-scroll
-      :pagination.sync="pagination"
+      :v-model:pagination="pagination"
       :rows-per-page-options="[0]"
       no-data-label="No Agents"
     >
@@ -75,7 +75,7 @@
         </q-th>
       </template>
       <!-- body slots -->
-      <template slot="body" slot-scope="props" :props="props">
+      <template v-slot:body="props">
         <q-tr
           @contextmenu="agentRowSelected(props.row.id, props.row.agent_id)"
           :props="props"
@@ -396,16 +396,16 @@
     </q-inner-loading>
     <!-- edit agent modal -->
     <q-dialog v-model="showEditAgentModal">
-      <EditAgent @close="showEditAgentModal = false" @edited="agentEdited" />
+      <EditAgent @close="showEditAgentModal = false" @edit="agentEdited" />
     </q-dialog>
     <!-- reboot later modal -->
     <q-dialog v-model="showRebootLaterModal">
-      <RebootLater @close="showRebootLaterModal = false" @edited="agentEdited" />
+      <RebootLater @close="showRebootLaterModal = false" @edit="agentEdited" />
     </q-dialog>
     <!-- pending actions modal -->
     <div class="q-pa-md q-gutter-sm">
       <q-dialog v-model="showPendingActions" @hide="closePendingActionsModal">
-        <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" @edited="agentEdited" />
+        <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" @edit="agentEdited" />
       </q-dialog>
     </div>
     <!-- send command modal -->
@@ -438,6 +438,7 @@ import RunScript from "@/components/modals/agents/RunScript";
 export default {
   name: "AgentTable",
   props: ["frame", "columns", "tab", "userName", "search", "visibleColumns"],
+  emits: ["edit"],
   components: {
     EditAgent,
     RebootLater,
@@ -594,7 +595,7 @@ export default {
         });
     },
     agentEdited() {
-      this.$emit("refreshEdit");
+      this.$emit("edit");
     },
     showPendingActionsModal(pk) {
       this.showPendingActions = true;
@@ -748,12 +749,13 @@ export default {
       this.$q
         .dialog({
           component: PolicyAdd,
-          parent: this,
-          type: "agent",
-          object: agent,
+          componentProps: {
+            type: "agent",
+            object: agent,
+          },
         })
         .onOk(() => {
-          this.$emit("refreshEdit");
+          this.$emit("edit");
         });
     },
     toggleMaintenance(agent) {
@@ -766,7 +768,7 @@ export default {
       const text = agent.maintenance_mode ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
       this.$store.dispatch("toggleMaintenanceMode", data).then(response => {
         this.notifySuccess(text);
-        this.$emit("refreshEdit");
+        this.$emit("edit");
       });
     },
     menuMaintenanceText(mode) {

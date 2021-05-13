@@ -5,7 +5,7 @@
       <q-space />Audit Manager
       <q-space />
       <q-btn dense flat icon="close" v-close-popup>
-        <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        <q-tooltip class="bg-white text-primary">Close</q-tooltip>
       </q-btn>
     </q-bar>
     <div class="text-h6 q-pl-sm q-pt-sm">Filter</div>
@@ -125,10 +125,10 @@
         class="audit-mgr-tbl-sticky"
         binary-state-sort
         title="Audit Logs"
-        :data="auditLogs"
+        :rows="auditLogs"
         :columns="columns"
         row-key="id"
-        :pagination.sync="pagination"
+        :v-model:pagination="pagination"
         :rows-per-page-options="[25, 50, 100, 500, 1000]"
         :no-data-label="noDataText"
         @row-click="showDetails"

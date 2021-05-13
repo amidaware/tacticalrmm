@@ -21,9 +21,9 @@
       dense
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       class="remote-bg-tbl-sticky"
-      :data="events"
+      :rows="events"
       :columns="columns"
-      :pagination.sync="pagination"
+      :v-model:pagination="pagination"
       :filter="filter"
       row-key="uid"
       binary-state-sort
@@ -43,7 +43,7 @@
           </template>
         </q-input>
       </template>
-      <template slot="body" slot-scope="props" :props="props">
+      <template v-slot:body="props">
         <q-tr :props="props">
           <q-td>{{ props.row.eventType }}</q-td>
           <q-td>{{ props.row.source }}</q-td>

@@ -105,6 +105,7 @@ import mixins from "@/mixins/mixins";
 
 export default {
   name: "UserPreferences",
+  emits: ["edit", "close"],
   mixins: [mixins],
   data() {
     return {
@@ -209,7 +210,7 @@ export default {
         .patch("/accounts/users/ui/", data)
         .then(r => {
           this.notifySuccess("Preferences were saved!");
-          this.$emit("edited");
+          this.$emit("edit");
           this.$store.dispatch("loadTree");
           this.$emit("close");
         })

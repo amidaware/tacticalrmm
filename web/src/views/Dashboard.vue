@@ -116,7 +116,7 @@
                 node-key="raw"
                 no-nodes-label="No Clients"
                 selected-color="primary"
-                :selected.sync="selectedTree"
+                :v-model:selected="selectedTree"
                 @update:selected="loadFrame(selectedTree)"
               >
                 <template v-slot:default-header="props">
@@ -345,14 +345,14 @@
                 :userName="user"
                 :search="search"
                 :visibleColumns="visibleColumns"
-                @refreshEdit="refreshEntireSite"
+                @edit="refreshEntireSite"
               />
             </template>
             <template v-slot:separator>
               <q-avatar color="primary" text-color="white" size="30px" icon="drag_indicator" />
             </template>
             <template v-slot:after>
-              <SubTableTabs @refreshEdit="refreshEntireSite" />
+              <SubTableTabs @edit="refreshEntireSite" />
             </template>
           </q-splitter>
         </template>
@@ -365,7 +365,7 @@
     </q-dialog>
     <!-- user preferences modal -->
     <q-dialog v-model="showUserPreferencesModal">
-      <UserPreferences @close="showUserPreferencesModal = false" @edited="getDashInfo" />
+      <UserPreferences @close="showUserPreferencesModal = false" @edit="getDashInfo" />
     </q-dialog>
   </q-layout>
 </template>
@@ -660,9 +660,10 @@ export default {
       this.$q
         .dialog({
           component: PolicyAdd,
-          parent: this,
-          type: node.children ? "client" : "site",
-          object: node,
+          componentProps: {
+            type: node.children ? "client" : "site",
+            object: node,
+          },
         })
         .onOk(() => {
           this.clearTreeSelected();
@@ -671,8 +672,9 @@ export default {
     showAddSiteModal(node) {
       this.$q.dialog({
         component: SitesForm,
-        parent: this,
-        client: node.id,
+        componentProps: {
+          client: node.id,
+        },
       });
     },
     showEditModal(node) {
@@ -685,16 +687,18 @@ export default {
 
       this.$q.dialog({
         component: node.children ? ClientsForm : SitesForm,
-        parent: this,
-        ...props,
+        componentProps: {
+          ...props,
+        },
       });
     },
     showDeleteModal(node) {
       this.$q.dialog({
         component: DeleteClient,
-        parent: this,
-        object: { id: node.id, name: node.label },
-        type: node.children ? "client" : "site",
+        componentProps: {
+          object: { id: node.id, name: node.label },
+          type: node.children ? "client" : "site",
+        },
       });
     },
     showInstallAgent(node) {
@@ -709,9 +713,10 @@ export default {
       this.$q
         .dialog({
           component: AlertTemplateAdd,
-          parent: this,
-          type: node.children ? "client" : "site",
-          object: node,
+          componentProps: {
+            type: node.children ? "client" : "site",
+            object: node,
+          },
         })
         .onOk(() => {
           this.clearTreeSelected();
@@ -889,7 +894,7 @@ export default {
   mounted() {
     this.livePoll();
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.ws.close();
     clearInterval(this.poll);
   },

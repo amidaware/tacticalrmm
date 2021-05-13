@@ -18,9 +18,18 @@
 <script>
 import mixins from "@/mixins/mixins";
 
+import { createMetaMixin } from "quasar";
+
 export default {
   name: "TakeControl",
-  mixins: [mixins],
+  mixins: [
+    mixins,
+    createMetaMixin(function () {
+      return {
+        title: this.title,
+      };
+    }),
+  ],
   data() {
     return {
       control: "",
@@ -47,11 +56,6 @@ export default {
         return color;
       }
     },
-  },
-  meta() {
-    return {
-      title: this.title,
-    };
   },
   methods: {
     getUI() {

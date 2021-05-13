@@ -12,10 +12,10 @@
         grid
         class="tabs-tbl-sticky"
         :style="{ 'max-height': tabsTableHeight }"
-        :data="notes"
+        :rows="notes"
         :columns="columns"
         :visible-columns="visibleColumns"
-        :pagination.sync="pagination"
+        :v-model:pagination="pagination"
         row-key="id"
         :rows-per-page-options="[0]"
         hide-bottom

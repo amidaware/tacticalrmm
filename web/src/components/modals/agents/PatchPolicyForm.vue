@@ -187,6 +187,7 @@ import mixins from "@/mixins/mixins";
 
 export default {
   name: "PatchPolicyForm",
+  emits: ["close", "hide"],
   props: {
     policy: Object,
     agent: Object,

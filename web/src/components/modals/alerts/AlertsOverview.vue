@@ -7,7 +7,7 @@
         Alerts Overview
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
 
@@ -57,13 +57,13 @@
         <q-table
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="audit-mgr-tbl-sticky"
-          :data="alerts"
+          :rows="alerts"
           :columns="columns"
           :rows-per-page-options="[25, 50, 100, 500, 1000]"
-          :pagination.sync="pagination"
+          :v-model:pagination="pagination"
           :no-data-label="noDataText"
           :visible-columns="visibleColumns"
-          :selected.sync="selectedAlerts"
+          :v-model:selected="selectedAlerts"
           selection="multiple"
           binary-state-sort
           row-key="id"
@@ -162,6 +162,7 @@ import ScriptOutput from "@/components/modals/checks/ScriptOutput";
 
 export default {
   name: "AlertsOverview",
+  emits: ["hide"],
   mixins: [mixins],
   data() {
     return {

@@ -4,9 +4,9 @@
       dense
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       class="remote-bg-tbl-sticky"
-      :data="procs"
+      :rows="procs"
       :columns="columns"
-      :pagination.sync="pagination"
+      :v-model:pagination="pagination"
       :filter="filter"
       row-key="id"
       binary-state-sort
@@ -41,7 +41,7 @@
           </template>
         </q-input>
       </template>
-      <template slot="body" slot-scope="props" :props="props">
+      <template v-slot:body="props">
         <q-tr :props="props">
           <q-menu context-menu>
             <q-list dense style="min-width: 200px">
@@ -204,7 +204,7 @@ export default {
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
     },
   },
-  beforeDestroy() {
+  beforeUnmount() {
     clearInterval(this.polling);
   },
   created() {

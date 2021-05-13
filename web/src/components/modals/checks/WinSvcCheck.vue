@@ -136,6 +136,7 @@ import mixins from "@/mixins/mixins";
 import { mapGetters } from "vuex";
 export default {
   name: "WinSvcCheck",
+  emits: ["close"],
   props: {
     agentpk: Number,
     policypk: Number,

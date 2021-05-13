@@ -153,6 +153,7 @@ import CustomField from "@/components/CustomField";
 
 export default {
   name: "EditAgent",
+  emits: ["edit", "close"],
   components: { PatchPolicyForm, CustomField },
   mixins: [mixins],
   data() {
@@ -247,7 +248,7 @@ export default {
         })
         .then(r => {
           this.$emit("close");
-          this.$emit("edited");
+          this.$emit("edit");
           this.notifySuccess("Agent was edited!");
         })
         .catch(e => {});

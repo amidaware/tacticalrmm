@@ -32,7 +32,12 @@
             @input="setScriptDefaults"
           >
             <template v-slot:option="scope">
-              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+              <q-item
+                v-if="!scope.opt.category"
+                v-bind="scope.itemProps"
+                v-on="scope.itemProps.itemEvents"
+                class="q-pl-lg"
+              >
                 <q-item-section>
                   <q-item-label v-html="scope.opt.label"></q-item-label>
                 </q-item-section>
@@ -217,6 +222,7 @@ import mixins from "@/mixins/mixins";
 
 export default {
   name: "AddAutomatedTask",
+  emits: ["close"],
   props: {
     policypk: Number,
   },

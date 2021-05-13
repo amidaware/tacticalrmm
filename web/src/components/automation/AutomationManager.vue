@@ -6,7 +6,7 @@
           <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />Automation Manager
           <q-space />
           <q-btn dense flat icon="close" v-close-popup>
-            <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+            <q-tooltip class="bg-white text-primary">Close</q-tooltip>
           </q-btn>
         </q-bar>
         <q-card-section>
@@ -27,9 +27,9 @@
             <q-table
               :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
               class="tabs-tbl-sticky"
-              :data="policies"
+              :rows="policies"
               :columns="columns"
-              :pagination.sync="pagination"
+              :v-model:pagination="pagination"
               :rows-per-page-options="[0]"
               dense
               row-key="id"
@@ -248,6 +248,7 @@ import PolicyAutomatedTasksTab from "@/components/automation/PolicyAutomatedTask
 
 export default {
   name: "AutomationManager",
+  emits: ["hide", "ok", "cancel"],
   components: { PolicyChecksTab, PolicyAutomatedTasksTab },
   mixins: [mixins],
   data() {
@@ -353,21 +354,20 @@ export default {
     showRelations(policy) {
       this.$q.dialog({
         component: RelationsView,
-        parent: this,
-        policy: policy,
+        componentProps: {
+          policy: policy,
+        },
       });
     },
     showPolicyOverview() {
       this.$q.dialog({
         component: PolicyOverview,
-        parent: this,
       });
     },
     showAddPolicyForm(policy = undefined) {
       this.$q
         .dialog({
           component: PolicyForm,
-          parent: this,
         })
         .onOk(() => {
           this.refresh();
@@ -377,8 +377,9 @@ export default {
       this.$q
         .dialog({
           component: PolicyForm,
-          parent: this,
-          copyPolicy: policy,
+          componentProps: {
+            copyPolicy: policy,
+          },
         })
         .onOk(() => {
           this.refresh();
@@ -388,8 +389,9 @@ export default {
       this.$q
         .dialog({
           component: PolicyForm,
-          parent: this,
-          policy: policy,
+          componentProps: {
+            policy: policy,
+          },
         })
         .onOk(() => {
           this.refresh();
@@ -399,9 +401,10 @@ export default {
       this.$q
         .dialog({
           component: AlertTemplateAdd,
-          parent: this,
-          type: "policy",
-          object: policy,
+          componentProps: {
+            type: "policy",
+            object: policy,
+          },
         })
         .onOk(() => {
           this.refresh();
@@ -411,11 +414,12 @@ export default {
       this.$q
         .dialog({
           component: DialogWrapper,
-          parent: this,
-          title: policy.winupdatepolicy.length > 0 ? "Edit Patch Policy" : "Add Patch Policy",
-          vuecomponent: PatchPolicyForm,
           componentProps: {
-            policy: policy,
+            title: policy.winupdatepolicy.length > 0 ? "Edit Patch Policy" : "Add Patch Policy",
+            vuecomponent: PatchPolicyForm,
+            componentProps: {
+              policy: policy,
+            },
           },
         })
         .onOk(() => {
@@ -426,8 +430,9 @@ export default {
       this.$q
         .dialog({
           component: PolicyExclusions,
-          parent: this,
-          policy: policy,
+          componentProps: {
+            policy: policy,
+          },
         })
         .onOk(() => {
           this.refresh();

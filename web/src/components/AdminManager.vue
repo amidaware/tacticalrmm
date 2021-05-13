@@ -5,7 +5,7 @@
         <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />User Administration
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <div class="q-pa-md">
@@ -14,10 +14,10 @@
         </div>
         <q-table
           dense
-          :data="users"
+          :rows="users"
           :columns="columns"
-          :pagination.sync="pagination"
-          :selected.sync="selected"
+          :v-model:pagination="pagination"
+          :v-model:selected="selected"
           selection="single"
           row-key="id"
           binary-state-sort

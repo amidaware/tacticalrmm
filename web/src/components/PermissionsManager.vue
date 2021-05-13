@@ -20,14 +20,14 @@
           class="audit-mgr-tbl-sticky"
           binary-state-sort
           virtual-scroll
-          :data="roles"
+          :rows="roles"
           :columns="columns"
           :visible-columns="visibleColumns"
           row-key="id"
-          :pagination.sync="pagination"
+          :v-model:pagination="pagination"
           no-data-label="No Roles"
         >
-          <template slot="body" slot-scope="props" :props="props">
+          <template v-slot:body="props">
             <q-tr>
               <q-td key="name" :props="props">{{ props.row.name }}</q-td>
               <q-td class="q-pa-md q-gutter-sm" key="actions" :props="props"
@@ -53,6 +53,7 @@ import RolesForm from "@/components/modals/admin/RolesForm";
 
 export default {
   name: "PermissionsManager",
+  emits: ["hide", "ok", "cancel"],
   mixins: [mixins],
   components: { RolesForm },
   data() {

@@ -52,7 +52,7 @@ const routes = [
     name: "SessionExpired",
     component: () => import("@/views/SessionExpired")
   },
-  { path: "*", component: () => import("@/views/NotFound") }
+  { path: "/:catchAll(.*)*", component: () => import("@/views/NotFound") }
 ]
 
 export default routes

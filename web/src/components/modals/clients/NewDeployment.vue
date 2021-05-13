@@ -81,6 +81,7 @@ import { date } from "quasar";
 
 export default {
   name: "NewDeployment",
+  emits: ["close", "add"],
   mixins: [mixins],
   data() {
     return {
@@ -111,7 +112,7 @@ export default {
         .post("/clients/deployments/", data)
         .then(r => {
           this.$emit("close");
-          this.$emit("added");
+          this.$emit("add");
           this.notifySuccess("Deployment added");
         })
         .catch(e => {});

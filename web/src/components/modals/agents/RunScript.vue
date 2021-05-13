@@ -20,7 +20,12 @@
           @input="setScriptDefaults"
         >
           <template v-slot:option="scope">
-            <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+            <q-item
+              v-if="!scope.opt.category"
+              v-bind="scope.itemProps"
+              v-on="scope.itemProps.itemEvents"
+              class="q-pl-lg"
+            >
               <q-item-section>
                 <q-item-label v-html="scope.opt.label"></q-item-label>
               </q-item-section>
@@ -104,6 +109,7 @@ import { mapState } from "vuex";
 
 export default {
   name: "RunScript",
+  emits: ["close"],
   mixins: [mixins],
   props: {
     pk: Number,

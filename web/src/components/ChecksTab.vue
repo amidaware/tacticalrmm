@@ -60,11 +60,11 @@
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="tabs-tbl-sticky"
           :style="{ 'max-height': tabsTableHeight }"
-          :data="checks"
+          :rows="checks"
           :columns="columns"
           :row-key="row => row.id + row.check_type"
           binary-state-sort
-          :pagination.sync="pagination"
+          :v-model:pagination="pagination"
           hide-bottom
         >
           <!-- header slots -->
@@ -96,7 +96,7 @@
             <q-th auto-width :props="props"></q-th>
           </template>
           <!-- body slots -->
-          <template slot="body" slot-scope="props" :props="props">
+          <template v-slot:body="props">
             <q-tr @contextmenu="checkpk = props.row.id">
               <!-- context menu -->
               <q-menu context-menu>
@@ -326,6 +326,7 @@ import CheckGraph from "@/components/graphs/CheckGraph";
 
 export default {
   name: "ChecksTab",
+  emits: ["edit"],
   components: {
     DiskSpaceCheck,
     MemCheck,
@@ -452,14 +453,14 @@ export default {
       this.$axios
         .patch(`/checks/${check}/check/`, data)
         .then(r => {
-          this.$emit("refreshEdit");
+          this.$emit("edit");
           this.$store.dispatch("loadChecks", this.selectedAgentPk);
           this.notifySuccess("The check was reset");
         })
         .catch(e => {});
     },
     onRefresh(id) {
-      this.$emit("refreshEdit");
+      this.$emit("edit");
       this.$store.dispatch("loadChecks", id);
       this.$store.dispatch("loadAutomatedTasks", id);
     },
@@ -498,15 +499,17 @@ export default {
     showCheckGraphModal(check) {
       this.$q.dialog({
         component: CheckGraph,
-        parent: this,
-        check: check,
+        componentProps: {
+          check: check,
+        },
       });
     },
     showScriptOutput(script) {
       this.$q.dialog({
         component: ScriptOutput,
-        parent: this,
-        scriptInfo: script,
+        componentProps: {
+          scriptInfo: script,
+        },
       });
     },
   },

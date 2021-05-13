@@ -21,11 +21,11 @@
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="tabs-tbl-sticky"
           :style="{ 'max-height': tabsTableHeight }"
-          :data="tasks"
+          :rows="tasks"
           :columns="columns"
           :row-key="row => row.id"
           binary-state-sort
-          :pagination.sync="pagination"
+          :v-model:pagination="pagination"
           hide-bottom
         >
           <!-- header slots -->
@@ -72,7 +72,7 @@
             <q-th auto-width :props="props"></q-th>
           </template>
           <!-- body slots -->
-          <template slot="body" slot-scope="props" :props="props">
+          <template v-slot:body="props">
             <q-tr @contextmenu="editTaskPk = props.row.id">
               <!-- context menu -->
               <q-menu context-menu>
@@ -354,16 +354,18 @@ export default {
     showScriptOutput(script) {
       this.$q.dialog({
         component: ScriptOutput,
-        parent: this,
-        scriptInfo: script,
+        componentProps: {
+          scriptInfo: script,
+        },
       });
     },
     showEditTask(task) {
       this.$q
         .dialog({
           component: EditAutomatedTask,
-          parent: this,
-          task: task,
+          componentProps: {
+            task: task,
+          },
         })
         .onOk(() => {
           this.refreshTasks(this.automatedTasks.pk);

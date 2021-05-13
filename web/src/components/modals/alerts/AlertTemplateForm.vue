@@ -5,7 +5,7 @@
         {{ title }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <q-stepper v-model="step" ref="stepper" alternative-labels header-nav color="primary" animated>
@@ -119,7 +119,12 @@
                 @input="setScriptDefaults('failure')"
               >
                 <template v-slot:option="scope">
-                  <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+                  <q-item
+                    v-if="!scope.opt.category"
+                    v-bind="scope.itemProps"
+                    v-on="scope.itemProps.itemEvents"
+                    class="q-pl-lg"
+                  >
                     <q-item-section>
                       <q-item-label v-html="scope.opt.label"></q-item-label>
                     </q-item-section>
@@ -183,7 +188,12 @@
                 @input="setScriptDefaults('resolved')"
               >
                 <template v-slot:option="scope">
-                  <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+                  <q-item
+                    v-if="!scope.opt.category"
+                    v-bind="scope.itemProps"
+                    v-on="scope.itemProps.itemEvents"
+                    class="q-pl-lg"
+                  >
                     <q-item-section>
                       <q-item-label v-html="scope.opt.label"></q-item-label>
                     </q-item-section>
@@ -527,6 +537,7 @@ import { mapGetters } from "vuex";
 
 export default {
   name: "AlertTemplateForm",
+  emits: ["hide", "ok", "cancel"],
   mixins: [mixins],
   props: { alertTemplate: Object },
   data() {

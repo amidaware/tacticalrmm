@@ -15,10 +15,10 @@
         <q-table
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="tabs-tbl-sticky"
-          :data="tasks"
+          :rows="tasks"
           :columns="columns"
           :rows-per-page-options="[0]"
-          :pagination.sync="pagination"
+          :v-model:pagination="pagination"
           dense
           row-key="id"
           binary-state-sort
@@ -290,8 +290,9 @@ export default {
       this.$q
         .dialog({
           component: EditAutomatedTask,
-          parent: this,
-          task: task,
+          componentProps: {
+            task: task,
+          },
         })
         .onOk(() => {
           this.getTasks();
@@ -300,9 +301,10 @@ export default {
     showStatus(task) {
       this.$q.dialog({
         component: PolicyStatus,
-        parent: this,
-        type: "task",
-        item: task,
+        componentProps: {
+          type: "task",
+          item: task,
+        },
       });
     },
     runTask(pk, enabled) {

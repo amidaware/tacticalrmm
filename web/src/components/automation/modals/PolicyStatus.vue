@@ -5,7 +5,7 @@
         {{ title.slice(0, 27) }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <q-card-section>
@@ -13,9 +13,9 @@
           style="max-height: 35vh"
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="tabs-tbl-sticky"
-          :data="data"
+          :rows="data"
           :columns="columns"
-          :pagination.sync="pagination"
+          :v-model:pagination="pagination"
           :rows-per-page-options="[0]"
           :visibleColumns="visibleColumns"
           row-key="id"
@@ -118,6 +118,7 @@ import EventLogCheckOutput from "@/components/modals/checks/EventLogCheckOutput"
 
 export default {
   name: "PolicyStatus",
+  emits: ["hide", "ok", "cancel"],
   components: {
     EventLogCheckOutput,
   },
@@ -226,8 +227,9 @@ export default {
     showScriptOutput(script) {
       this.$q.dialog({
         component: ScriptOutput,
-        parent: this,
-        scriptInfo: script,
+        componentProps: {
+          scriptInfo: script,
+        },
       });
     },
     show() {

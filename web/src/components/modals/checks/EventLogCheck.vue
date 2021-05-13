@@ -137,6 +137,7 @@
 import mixins from "@/mixins/mixins";
 export default {
   name: "EventLogCheck",
+  emits: ["close"],
   props: {
     agentpk: Number,
     policypk: Number,

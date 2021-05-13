@@ -357,6 +357,7 @@ import URLActionsTable from "@/components/modals/coresettings/URLActionsTable";
 
 export default {
   name: "EditCoreSettings",
+  emits: ["close"],
   components: {
     CustomFields,
     KeyStoreTable,
@@ -418,7 +419,6 @@ export default {
     showResetPatchPolicy() {
       this.$q.dialog({
         component: ResetPatchPolicy,
-        parent: this,
       });
     },
     toggleAddEmail() {

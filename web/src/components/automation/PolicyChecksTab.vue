@@ -54,9 +54,9 @@
         <q-table
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="tabs-tbl-sticky"
-          :data="checks"
+          :rows="checks"
           :columns="columns"
-          :pagination.sync="pagination"
+          :v-model:pagination="pagination"
           :rows-per-page-options="[0]"
           row-key="id"
           binary-state-sort
@@ -344,9 +344,10 @@ export default {
     showPolicyStatus(check) {
       this.$q.dialog({
         component: PolicyStatus,
-        parent: this,
-        type: "check",
-        item: check,
+        componentProps: {
+          type: "check",
+          item: check,
+        },
       });
     },
   },

@@ -157,6 +157,7 @@ import mixins from "@/mixins/mixins";
 
 export default {
   name: "RolesForm",
+  emits: ["close"],
   mixins: [mixins],
   props: { pk: Number },
   data() {

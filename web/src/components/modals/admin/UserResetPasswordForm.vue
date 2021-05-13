@@ -33,7 +33,8 @@
 import mixins from "@/mixins/mixins";
 
 export default {
-  name: "UserResetForm",
+  name: "UserResetPasswordForm",
+  emits: ["close"],
   mixins: [mixins],
   props: { pk: Number, username: String },
   data() {

@@ -59,6 +59,7 @@
 import mixins from "@/mixins/mixins";
 export default {
   name: "MemCheck",
+  emits: ["close"],
   props: {
     agentpk: Number,
     policypk: Number,

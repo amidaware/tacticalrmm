@@ -1,13 +1,9 @@
-import Vue from "vue";
-import Vuex from "vuex";
+import { createStore } from 'vuex'
 import axios from "axios";
-import { Notify } from "quasar";
 import adminModule from "./admin.js"
 
-Vue.use(Vuex);
-
 export default function () {
-  const Store = new Vuex.Store({
+  const Store = new createStore({
     modules: {
       admin: adminModule
     },

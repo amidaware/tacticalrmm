@@ -48,8 +48,17 @@ import ProcessManager from "@/components/ProcessManager";
 import Services from "@/components/Services";
 import EventLog from "@/components/EventLog";
 
+import { createMetaMixin } from "quasar";
+
 export default {
   name: "RemoteBackground",
+  mixins: [
+    createMetaMixin(function () {
+      return {
+        title: this.title,
+      };
+    }),
+  ],
   components: {
     Services,
     EventLog,
@@ -82,11 +91,6 @@ export default {
         this.$q.loadingBar.setDefaults({ color: r.data.loading_bar_color });
       });
     },
-  },
-  meta() {
-    return {
-      title: this.title,
-    };
   },
   computed: {
     pk() {

@@ -61,6 +61,7 @@
 import mixins from "@/mixins/mixins";
 export default {
   name: "PingCheck",
+  emits: ["close"],
   props: {
     agentpk: Number,
     policypk: Number,

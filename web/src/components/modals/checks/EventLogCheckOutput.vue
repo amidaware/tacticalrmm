@@ -11,9 +11,9 @@
           dense
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="remote-bg-tbl-sticky"
-          :data="evtlogdata.extra_details.log"
+          :rows="evtlogdata.extra_details.log"
           :columns="columns"
-          :pagination.sync="pagination"
+          :v-model:pagination="pagination"
           row-key="uid"
           binary-state-sort
           virtual-scroll
@@ -45,7 +45,7 @@ export default {
       ],
     };
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.$emit("close");
   },
 };

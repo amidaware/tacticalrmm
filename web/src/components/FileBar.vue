@@ -175,7 +175,7 @@
       <!-- Update Agents Modal -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showUpdateAgentsModal" maximized transition-show="slide-up" transition-hide="slide-down">
-          <UpdateAgents @close="showUpdateAgentsModal = false" @edited="edited" />
+          <UpdateAgents @close="showUpdateAgentsModal = false" @edit="edited" />
         </q-dialog>
       </div>
       <!-- Script Manager -->
@@ -237,6 +237,7 @@ import PermissionsManager from "@/components/PermissionsManager";
 
 export default {
   name: "FileBar",
+  emits: ["edit"],
   components: {
     LogModal,
     PendingActions,
@@ -306,41 +307,35 @@ export default {
     showAutomationManager() {
       this.$q.dialog({
         component: AutomationManager,
-        parent: this,
       });
     },
     showAlertsManager() {
       this.$q.dialog({
         component: AlertsManager,
-        parent: this,
       });
     },
     showClientsManager() {
       this.$q.dialog({
         component: ClientsManager,
-        parent: this,
       });
     },
     showAddClientModal() {
       this.$q.dialog({
         component: ClientsForm,
-        parent: this,
       });
     },
     showAddSiteModal() {
       this.$q.dialog({
         component: SitesForm,
-        parent: this,
       });
     },
     showPermissionsManager() {
       this.$q.dialog({
         component: PermissionsManager,
-        parent: this,
       });
     },
     edited() {
-      this.$emit("edited");
+      this.$emit("edit");
     },
   },
 };

@@ -6,7 +6,7 @@
         {{ title }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <div class="row">
@@ -36,10 +36,11 @@
   </q-dialog>
 </template>
 <script>
-import VueApexCharts from "vue-apexcharts";
+import VueApexCharts from "vue3-apexcharts";
 
 export default {
   name: "CheckGraph",
+  emits: ["hide", "ok", "cancel"],
   components: {
     apexchart: VueApexCharts,
   },

@@ -96,6 +96,7 @@ import mixins from "@/mixins/mixins";
 
 export default {
   name: "UserForm",
+  emits: ["close"],
   mixins: [mixins],
   props: { pk: Number },
   data() {

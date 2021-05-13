@@ -59,6 +59,7 @@
 import mixins from "@/mixins/mixins";
 export default {
   name: "CpuLoadCheck",
+  emits: ["close"],
   props: {
     agentpk: Number,
     policypk: Number,

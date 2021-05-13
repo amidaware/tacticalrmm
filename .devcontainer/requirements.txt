@@ -2,6 +2,7 @@
 asyncio-nats-client
 celery
 channels
+channels_redis
 Django
 django-cors-headers
 django-rest-knox

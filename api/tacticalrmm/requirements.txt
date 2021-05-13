@@ -4,6 +4,7 @@ celery==5.0.5
 certifi==2020.12.5
 cffi==1.14.5
 channels==3.0.3
+channels_redis==3.2.0
 chardet==4.0.0
 cryptography==3.4.7
 daphne==3.0.2

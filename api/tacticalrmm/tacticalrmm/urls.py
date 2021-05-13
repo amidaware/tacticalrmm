@@ -3,7 +3,7 @@ from django.urls import include, path
 from knox import views as knox_views
 
 from accounts.views import CheckCreds, LoginView
-from core import consumers
+from core.consumers import DashInfo
 
 urlpatterns = [
     path("checkcreds/", CheckCreds.as_view()),
@@ -32,5 +32,5 @@ if hasattr(settings, "ADMIN_ENABLED") and settings.ADMIN_ENABLED:
     urlpatterns += (path(settings.ADMIN_URL, admin.site.urls),)
 
 ws_urlpatterns = [
-    path("ws/dashinfo/", consumers.DashInfo.as_asgi()),  # type: ignore
+    path("ws/dashinfo/", DashInfo.as_asgi()),  # type: ignore
 ]

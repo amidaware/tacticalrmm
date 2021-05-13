@@ -169,6 +169,15 @@ LOG_CONFIG = {
     "handlers": [{"sink": os.path.join(LOG_DIR, "debug.log"), "serialize": False}]
 }
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(REDIS_HOST, 6379)],  # type: ignore
+        },
+    },
+}
+
 if "AZPIPELINE" in os.environ:
     DATABASES = {
         "default": {

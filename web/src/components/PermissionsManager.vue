@@ -24,7 +24,7 @@
           :columns="columns"
           :visible-columns="visibleColumns"
           row-key="id"
-          :v-model:pagination="pagination"
+          v-model:pagination="pagination"
           no-data-label="No Roles"
         >
           <template v-slot:body="props">

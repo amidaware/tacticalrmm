@@ -15,7 +15,7 @@
       :rows="sortedUpdates"
       :columns="columns"
       :visible-columns="visibleColumns"
-      :v-model:pagination="pagination"
+      v-model:pagination="pagination"
       :filter="filter"
       row-key="id"
       binary-state-sort
@@ -73,9 +73,7 @@
           <q-td>{{ formatSeverity(props.row.severity) }}</q-td>
           <q-td>{{ formatMessage(props.row.title) }}</q-td>
           <q-td
-            @click.native="
-              showFullMsg(props.row.title, props.row.description, props.row.more_info_urls, props.row.categories)
-            "
+            @click="showFullMsg(props.row.title, props.row.description, props.row.more_info_urls, props.row.categories)"
           >
             <span style="cursor: pointer; text-decoration: underline" class="text-primary">{{
               formatMessage(props.row.description)

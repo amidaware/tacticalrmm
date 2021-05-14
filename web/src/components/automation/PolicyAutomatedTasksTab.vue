@@ -18,7 +18,7 @@
           :rows="tasks"
           :columns="columns"
           :rows-per-page-options="[0]"
-          :v-model:pagination="pagination"
+          v-model:pagination="pagination"
           dense
           row-key="id"
           binary-state-sort

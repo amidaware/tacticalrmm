@@ -116,7 +116,7 @@
                 node-key="raw"
                 no-nodes-label="No Clients"
                 selected-color="primary"
-                :v-model:selected="selectedTree"
+                v-model:selected="selectedTree"
                 @update:selected="loadFrame(selectedTree)"
               >
                 <template v-slot:default-header="props">
@@ -341,7 +341,6 @@
               <AgentTable
                 :frame="filteredAgents"
                 :columns="columns"
-                :tab="tab"
                 :userName="user"
                 :search="search"
                 :visibleColumns="visibleColumns"
@@ -387,6 +386,8 @@ import UserPreferences from "@/components/modals/coresettings/UserPreferences";
 import AlertTemplateAdd from "@/components/modals/alerts/AlertTemplateAdd";
 
 export default {
+  name: "Dashboard",
+  emits: [],
   components: {
     FileBar,
     AgentTable,
@@ -840,18 +841,18 @@ export default {
       return this.$store.state.token;
     },
     clientTreeSplitter: {
-      get: function () {
+      get() {
         return this.clientTreeSplitterModel;
       },
-      set: function (newVal) {
-        this.$store.dispatch("setClientTreeSplitter", newVal);
+      set(newVal) {
+        this.$store.commit("SET_CLIENT_SPLITTER", newVal);
       },
     },
     tab: {
-      get: function () {
+      get() {
         return this.$store.state.defaultAgentTblTab;
       },
-      set: function (newVal) {
+      set(newVal) {
         this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", newVal);
       },
     },
@@ -860,7 +861,7 @@ export default {
     },
     filteredAgents() {
       if (this.tab === "mixed") return Object.freeze(this.frame);
-      return Object.freeze(this.frame.filter(k => k.monitoring_type === this.tab));
+      else return Object.freeze(this.frame.filter(k => k.monitoring_type === this.tab));
     },
     activeNode() {
       return {

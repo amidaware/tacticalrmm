@@ -94,9 +94,9 @@
             :filter="search"
             no-connectors
             node-key="id"
-            :v-model:expanded="expanded"
+            v-model:expanded="expanded"
             @update:selected="nodeSelected"
-            :v-model:selected="selected"
+            v-model:selected="selected"
             no-results-label="No Scripts Found"
             no-nodes-label="No Scripts Found"
           >
@@ -186,7 +186,7 @@
             :rows="visibleScripts"
             :columns="columns"
             :visible-columns="visibleColumns"
-            :v-model:pagination="pagination"
+            v-model:pagination="pagination"
             :filter="search"
             row-key="id"
             binary-state-sort

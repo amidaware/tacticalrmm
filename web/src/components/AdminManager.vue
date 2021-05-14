@@ -16,8 +16,8 @@
           dense
           :rows="users"
           :columns="columns"
-          :v-model:pagination="pagination"
-          :v-model:selected="selected"
+          v-model:pagination="pagination"
+          v-model:selected="selected"
           selection="single"
           row-key="id"
           binary-state-sort

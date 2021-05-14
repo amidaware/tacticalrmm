@@ -128,7 +128,7 @@
         :rows="auditLogs"
         :columns="columns"
         row-key="id"
-        :v-model:pagination="pagination"
+        v-model:pagination="pagination"
         :rows-per-page-options="[25, 50, 100, 500, 1000]"
         :no-data-label="noDataText"
         @row-click="showDetails"

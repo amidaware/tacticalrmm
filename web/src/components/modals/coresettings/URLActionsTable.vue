@@ -10,7 +10,7 @@
       dense
       :rows="actions"
       :columns="columns"
-      :v-model:pagination="pagination"
+      v-model:pagination="pagination"
       row-key="id"
       binary-state-sort
       hide-pagination

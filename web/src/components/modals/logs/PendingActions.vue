@@ -42,7 +42,7 @@
         :rows="actions"
         :columns="columns"
         :visible-columns="visibleColumns"
-        :v-model:pagination="pagination"
+        v-model:pagination="pagination"
         row-key="id"
         binary-state-sort
         hide-bottom

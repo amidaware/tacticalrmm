@@ -16,7 +16,7 @@
               :nodes="clientSiteTree"
               node-key="key"
               selected-color="primary"
-              :v-model:selected="selectedPolicyId"
+              v-model:selected="selectedPolicyId"
             ></q-tree>
           </div>
         </template>

@@ -27,7 +27,7 @@
       :rows="software"
       :columns="columns"
       :filter="filter"
-      :v-model:pagination="pagination"
+      v-model:pagination="pagination"
       binary-state-sort
       hide-bottom
       row-key="id"

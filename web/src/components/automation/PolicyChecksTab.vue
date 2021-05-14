@@ -56,7 +56,7 @@
           class="tabs-tbl-sticky"
           :rows="checks"
           :columns="columns"
-          :v-model:pagination="pagination"
+          v-model:pagination="pagination"
           :rows-per-page-options="[0]"
           row-key="id"
           binary-state-sort

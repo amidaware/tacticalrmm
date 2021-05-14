@@ -25,7 +25,7 @@
           :columns="columns"
           :row-key="row => row.id"
           binary-state-sort
-          :v-model:pagination="pagination"
+          v-model:pagination="pagination"
           hide-bottom
         >
           <!-- header slots -->

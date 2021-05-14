@@ -60,10 +60,10 @@
           :rows="alerts"
           :columns="columns"
           :rows-per-page-options="[25, 50, 100, 500, 1000]"
-          :v-model:pagination="pagination"
+          v-model:pagination="pagination"
           :no-data-label="noDataText"
           :visible-columns="visibleColumns"
-          :v-model:selected="selectedAlerts"
+          v-model:selected="selectedAlerts"
           selection="multiple"
           binary-state-sort
           row-key="id"

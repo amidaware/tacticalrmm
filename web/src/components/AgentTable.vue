@@ -13,7 +13,7 @@
       row-key="id"
       binary-state-sort
       virtual-scroll
-      :v-model:pagination="pagination"
+      v-model:pagination="pagination"
       :rows-per-page-options="[0]"
       no-data-label="No Agents"
     >
@@ -437,7 +437,7 @@ import RunScript from "@/components/modals/agents/RunScript";
 
 export default {
   name: "AgentTable",
-  props: ["frame", "columns", "tab", "userName", "search", "visibleColumns"],
+  props: ["frame", "columns", "userName", "search", "visibleColumns"],
   emits: ["edit"],
   components: {
     EditAgent,

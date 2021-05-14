@@ -6,7 +6,7 @@
       class="remote-bg-tbl-sticky"
       :rows="procs"
       :columns="columns"
-      :v-model:pagination="pagination"
+      v-model:pagination="pagination"
       :filter="filter"
       row-key="id"
       binary-state-sort

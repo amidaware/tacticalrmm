@@ -8,7 +8,7 @@
         dense
         :rows="chocos"
         :columns="columns"
-        :v-model:pagination="pagination"
+        v-model:pagination="pagination"
         :filter="filter"
         binary-state-sort
         hide-bottom

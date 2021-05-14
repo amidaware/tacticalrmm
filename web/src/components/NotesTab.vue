@@ -15,7 +15,7 @@
         :rows="notes"
         :columns="columns"
         :visible-columns="visibleColumns"
-        :v-model:pagination="pagination"
+        v-model:pagination="pagination"
         row-key="id"
         :rows-per-page-options="[0]"
         hide-bottom

@@ -23,7 +23,7 @@
       class="remote-bg-tbl-sticky"
       :rows="events"
       :columns="columns"
-      :v-model:pagination="pagination"
+      v-model:pagination="pagination"
       :filter="filter"
       row-key="uid"
       binary-state-sort
@@ -49,7 +49,7 @@
           <q-td>{{ props.row.source }}</q-td>
           <q-td>{{ props.row.eventID }}</q-td>
           <q-td>{{ props.row.time }}</q-td>
-          <q-td @click.native="showFullMsg(props.row.message)">
+          <q-td @click="showFullMsg(props.row.message)">
             <span style="cursor: pointer; text-decoration: underline" class="text-primary">{{
               formatMessage(props.row.message)
             }}</span>

@@ -15,7 +15,7 @@
           class="tabs-tbl-sticky"
           :rows="data"
           :columns="columns"
-          :v-model:pagination="pagination"
+          v-model:pagination="pagination"
           :rows-per-page-options="[0]"
           :visibleColumns="visibleColumns"
           row-key="id"

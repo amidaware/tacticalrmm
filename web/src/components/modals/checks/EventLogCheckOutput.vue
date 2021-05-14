@@ -13,7 +13,7 @@
           class="remote-bg-tbl-sticky"
           :rows="evtlogdata.extra_details.log"
           :columns="columns"
-          :v-model:pagination="pagination"
+          v-model:pagination="pagination"
           row-key="uid"
           binary-state-sort
           virtual-scroll

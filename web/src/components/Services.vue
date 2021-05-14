@@ -6,7 +6,7 @@
       class="remote-bg-tbl-sticky"
       :rows="servicesData"
       :columns="columns"
-      :v-model:pagination="pagination"
+      v-model:pagination="pagination"
       :filter="filter"
       row-key="display_name"
       binary-state-sort

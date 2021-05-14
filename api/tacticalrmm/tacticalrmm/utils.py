@@ -336,13 +336,16 @@ def replace_db_values(
         model_fields = getattr(field, f"{model}_fields")
         value = None
         if model_fields.filter(**{model: obj}).exists():
-            value = model_fields.get(**{model: obj}).value
+            if field.type != "checkbox" and model_fields.get(**{model: obj}).value:
+                value = model_fields.get(**{model: obj}).value
+            elif field.type == "checkbox":
+                value = model_fields.get(**{model: obj}).value
 
         # need explicit None check since a false boolean value will pass default value
-        if value == None and field.default_value:
+        if value == None and field.default_value != None:
             value = field.default_value
 
-        # check if value exists and if not use defa
+        # check if value exists and if not use default
         if value and field.type == "multiple":
             value = (
                 f"'{format_shell_array(value)}'"

@@ -178,7 +178,7 @@ export default {
 
         if (create_unassigned) categories.push("Unassigned")
 
-        categories.forEach(cat => {
+        categories.sort().forEach(cat => {
           options.push({ category: cat });
           let tmp = [];
           scripts.forEach(script => {

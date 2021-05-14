@@ -86,6 +86,15 @@ if not "AZPIPELINE" in os.environ:
     if DEBUG:  # type: ignore
         INSTALLED_APPS += ("django_extensions",)
 
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [(REDIS_HOST, 6379)],  # type: ignore
+            },
+        },
+    }
+
 if "AZPIPELINE" in os.environ:
     ADMIN_ENABLED = False
 

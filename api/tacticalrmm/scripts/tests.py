@@ -388,7 +388,7 @@ class TestScriptViews(TacticalTestCase):
         )
 
         # test with set value
-        baker.make(
+        value = baker.make(
             "clients.SiteCustomField",
             field=field,
             site=agent.site,
@@ -396,6 +396,24 @@ class TestScriptViews(TacticalTestCase):
         )
         self.assertEqual(
             ["-Parameter", "-Another 'CUSTOM VALUE'"],
+            Script.parse_script_args(agent=agent, shell="python", args=args),
+        )
+
+        # test with set but empty field value
+        value.string_value = ""  # type: ignore
+        value.save()  # type: ignore
+
+        self.assertEqual(
+            ["-Parameter", "-Another 'DEFAULT'"],
+            Script.parse_script_args(agent=agent, shell="python", args=args),
+        )
+
+        # test blank default and value
+        field.default_value_string = ""  # type: ignore
+        field.save()  # type: ignore
+
+        self.assertEqual(
+            ["-Parameter", "-Another ''"],
             Script.parse_script_args(agent=agent, shell="python", args=args),
         )
 

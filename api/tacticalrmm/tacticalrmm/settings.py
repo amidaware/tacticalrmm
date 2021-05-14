@@ -45,6 +45,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 ASGI_APPLICATION = "tacticalrmm.asgi.application"
 
+REST_KNOX = {
+    "TOKEN_TTL": timedelta(hours=5),
+    "AUTO_REFRESH": True,
+    "MIN_REFRESH_INTERVAL": 600,
+}
+
 try:
     from .local_settings import *
 except ImportError:
@@ -104,11 +110,6 @@ MIDDLEWARE = [
 if ADMIN_ENABLED:  # type: ignore
     MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)
 
-REST_KNOX = {
-    "TOKEN_TTL": timedelta(hours=5),
-    "AUTO_REFRESH": True,
-    "MIN_REFRESH_INTERVAL": 600,
-}
 
 ROOT_URLCONF = "tacticalrmm.urls"
 

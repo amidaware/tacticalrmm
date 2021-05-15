@@ -6,6 +6,7 @@ from loguru import logger
 from autotasks.models import AutomatedTask
 from autotasks.tasks import delete_win_task_schedule
 from checks.tasks import prune_check_history
+from agents.tasks import clear_faults_task
 from core.models import CoreSettings
 from tacticalrmm.celery import app
 
@@ -28,6 +29,11 @@ def core_maintenance_tasks():
         if now > task_time_utc:
             delete_win_task_schedule.delay(task.pk)
 
+    core = CoreSettings.objects.first()
+
     # remove old CheckHistory data
-    older_than = CoreSettings.objects.first().check_history_prune_days
-    prune_check_history.delay(older_than)
+    if core.check_history_prune_days > 0:
+        prune_check_history.delay(core.check_history_prune_days)
+    # clear faults
+    if core.clear_faults_days > 0:
+        clear_faults_task.delay(core.clear_faults_days)

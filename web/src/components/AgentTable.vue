@@ -111,7 +111,7 @@
 
               <q-item clickable v-ripple @click="getURLActions">
                 <q-item-section side>
-                  <q-icon size="sm" name="mdi-open-in-new" />
+                  <q-icon size="xs" name="mdi-open-in-new" />
                 </q-item-section>
                 <q-item-section>Run URL Action</q-item-section>
                 <q-item-section side>

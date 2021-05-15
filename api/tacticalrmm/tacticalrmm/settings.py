@@ -15,11 +15,11 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.6.9"
+TRMM_VERSION = "0.6.10"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.135"
+APP_VER = "0.0.136"
 
 # https://github.com/wh1te909/rmmagent
 LATEST_AGENT_VER = "1.5.6"
@@ -44,6 +44,12 @@ EXE_GEN_URLS = [
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 ASGI_APPLICATION = "tacticalrmm.asgi.application"
+
+REST_KNOX = {
+    "TOKEN_TTL": timedelta(hours=5),
+    "AUTO_REFRESH": True,
+    "MIN_REFRESH_INTERVAL": 600,
+}
 
 try:
     from .local_settings import *
@@ -80,6 +86,15 @@ if not "AZPIPELINE" in os.environ:
     if DEBUG:  # type: ignore
         INSTALLED_APPS += ("django_extensions",)
 
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [(REDIS_HOST, 6379)],  # type: ignore
+            },
+        },
+    }
+
 if "AZPIPELINE" in os.environ:
     ADMIN_ENABLED = False
 
@@ -104,11 +119,6 @@ MIDDLEWARE = [
 if ADMIN_ENABLED:  # type: ignore
     MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)
 
-REST_KNOX = {
-    "TOKEN_TTL": timedelta(hours=5),
-    "AUTO_REFRESH": True,
-    "MIN_REFRESH_INTERVAL": 600,
-}
 
 ROOT_URLCONF = "tacticalrmm.urls"
 

@@ -60,7 +60,18 @@
             use-chips
             map-options
             emit-value
-          />
+          >
+            <template v-slot:option="scope">
+              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+                <q-item-section>
+                  <q-item-label v-html="scope.opt.label"></q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
+                scope.opt.category
+              }}</q-item-label>
+            </template>
+          </q-select>
         </q-card-section>
 
         <q-card-actions align="right">
@@ -122,19 +133,10 @@ export default {
         })
         .catch(e => {});
     },
-    getAgents() {
-      this.$axios
-        .get("/agents/listagentsnodetail/")
-        .then(r => {
-          const ret = r.data.map(agent => ({ label: agent.hostname, value: agent.pk }));
-          this.agentOptions = Object.freeze(ret.sort((a, b) => a.label.localeCompare(b.label)));
-        })
-        .catch(e => {});
-    },
     getOptions() {
       this.getClients();
       this.getSites();
-      this.getAgents();
+      this.agentOptions = Object.freeze(this.getAgentOptions());
     },
     show() {
       this.$refs.dialog.show();

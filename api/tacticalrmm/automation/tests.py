@@ -1,10 +1,9 @@
 from itertools import cycle
 from unittest.mock import patch
 
-from model_bakery import baker, seq
-
 from agents.models import Agent
 from core.models import CoreSettings
+from model_bakery import baker, seq
 from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
 
@@ -124,7 +123,7 @@ class TestPolicyViews(TacticalTestCase):
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        # only called if active or enforced are updated
+        # only called if active, enforced, or excluded objects are updated
         generate_agent_checks_task.assert_not_called()
 
         data = {
@@ -132,6 +131,23 @@ class TestPolicyViews(TacticalTestCase):
             "desc": "policy desc Update",
             "active": False,
             "enforced": False,
+        }
+
+        resp = self.client.put(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        generate_agent_checks_task.assert_called_with(
+            policy=policy.pk, create_tasks=True  # type: ignore
+        )
+        generate_agent_checks_task.reset_mock()
+
+        # make sure policies are re-evaluated when excluded changes
+        agents = baker.make_recipe("agents.agent", _quantity=2)
+        clients = baker.make("clients.Client", _quantity=2)
+        sites = baker.make("clients.Site", _quantity=2)
+        data = {
+            "excluded_agents": [agent.pk for agent in agents],  # type: ignore
+            "excluded_sites": [site.pk for site in sites],  # type: ignore
+            "excluded_clients": [client.pk for client in clients],  # type: ignore
         }
 
         resp = self.client.put(url, data, format="json")

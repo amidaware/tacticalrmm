@@ -153,6 +153,15 @@
     "category": "TRMM (Win):Hardware"
   },
   {
+    "guid": "72c56717-28ed-4cc6-b30f-b362d30fb4b6",
+    "filename": "Win_Hardware_SN.ps1",
+    "submittedBy": "https://github.com/subzdev",
+    "name": "Hardware - Get Serial Number",
+    "description": "Returns BIOS Serial Number - Use with Custom Fields for later use",
+    "shell": "powershell",
+    "category": "TRMM (Win):Collectors"
+  },
+  {
     "guid": "95a2ee6f-b89b-4551-856e-3081b041caa7",
     "filename": "Win_Power_Profile_Reset_High_Performance_to_Defaults.ps1",
     "submittedBy": "https://github.com/azulskyknight",
@@ -340,6 +349,15 @@
     "description": "Only run on Domain Controllers, checks for Active Directory Recycle Bin and enables if not already enabled",
     "shell": "powershell",
     "category": "TRMM (Win):Active Directory"
+  },
+  {
+    "guid": "3afd07c0-04fd-4b23-b5f2-88205c0744d4",
+    "filename": "Win_User_Admins_Local_Disable.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Local Administrators - Disables all local admins if joined to domain or AzureAD",
+    "description": "Checks to see if computer is either joined to a AD domain or Azure AD. If it is, it disables all local admin accounts. If not joined to domain/AzureAD, leaves admin accounts in place",
+    "shell": "powershell",
+    "category": "TRMM (Win):User Management"
   },
   {
     "guid": "71090fc4-faa6-460b-adb0-95d7863544e1",

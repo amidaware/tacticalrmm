@@ -128,5 +128,16 @@ Command Paramater Ninja
 Optional Command Parameters and testing for errors
 [https://github.com/wh1te909/tacticalrmm/blob/develop/scripts/Win_Rename_Computer.ps1](https://github.com/wh1te909/tacticalrmm/blob/develop/scripts/Win_Rename_Computer.ps1)
 
+## Volunteers Needed
 
+If you want to contribute back to the project there are a lot of scripts that need some TLC (Tender Loving Care) please paruse thru them here: [https://github.com/wh1te909/tacticalrmm/tree/develop/scripts_wip](https://github.com/wh1te909/tacticalrmm/tree/develop/scripts_wip)
+
+Discuss/ask questions in the Discord group [here](https://discord.com/channels/736478043522072608/744281869499105290)
+
+What you can add is:
+
+   - Add standardized Comment headers per above
+   - Parameterize scripts where appropriate
+   - Add $ExitCode and error conditions as appropriate
+   - Contact @silversword in Discord if you need help doing Github additions/edits/adding to the community Library and have questions about [Script Library Naming Conventions](#script-library-naming-conventions)
 

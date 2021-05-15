@@ -51,6 +51,7 @@ class CoreSettings(BaseAuditModel):
     )
     # removes check history older than days
     check_history_prune_days = models.PositiveIntegerField(default=30)
+    clear_faults_days = models.IntegerField(default=0)
     mesh_token = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_username = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_site = models.CharField(max_length=255, null=True, blank=True, default="")

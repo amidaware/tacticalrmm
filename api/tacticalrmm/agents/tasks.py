@@ -279,6 +279,34 @@ def run_script_email_results_task(
 
 
 @app.task
+def clear_faults_task(older_than_days: int) -> None:
+    # https://github.com/wh1te909/tacticalrmm/issues/484
+    agents = Agent.objects.exclude(last_seen__isnull=True).filter(
+        last_seen__lt=djangotime.now() - djangotime.timedelta(days=older_than_days)
+    )
+    for agent in agents:
+        if agent.agentchecks.exists():
+            for check in agent.agentchecks.all():
+                # reset check status
+                check.status = "passing"
+                check.save(update_fields=["status"])
+                if check.alert.filter(resolved=False).exists():
+                    check.alert.get(resolved=False).resolve()
+
+        # reset overdue alerts
+        agent.overdue_email_alert = False
+        agent.overdue_text_alert = False
+        agent.overdue_dashboard_alert = False
+        agent.save(
+            update_fields=[
+                "overdue_email_alert",
+                "overdue_text_alert",
+                "overdue_dashboard_alert",
+            ]
+        )
+
+
+@app.task
 def monitor_agents_task() -> None:
     agents = Agent.objects.only(
         "pk", "agent_id", "last_seen", "overdue_time", "offline_time"

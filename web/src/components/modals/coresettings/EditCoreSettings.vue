@@ -88,9 +88,28 @@
                   />
                 </q-card-section>
                 <q-card-section class="row">
-                  <div class="col-4">Remove Check History older than (days):</div>
+                  <div class="col-4">Remove Check Graph History older than (days):</div>
                   <div class="col-2"></div>
-                  <q-input outlined dense v-model="settings.check_history_prune_days" class="col-6" />
+                  <q-input
+                    hint="Setting this value to 0 disables this feature"
+                    outlined
+                    dense
+                    v-model.number="settings.check_history_prune_days"
+                    class="col-6"
+                    :rules="[val => val >= 0 || 'Minimum is 0']"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4">Clear faults on agents that haven't checked in after (days):</div>
+                  <div class="col-2"></div>
+                  <q-input
+                    hint="Setting this value to 0 disables this feature"
+                    outlined
+                    dense
+                    v-model.number="settings.clear_faults_days"
+                    class="col-6"
+                    :rules="[val => val >= 0 || 'Minimum is 0']"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Reset Patch Policy on Agents:</div>

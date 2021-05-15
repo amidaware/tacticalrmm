@@ -304,10 +304,11 @@ class CheckRunner(APIView):
                     < djangotime.now()
                     - djangotime.timedelta(seconds=check.run_interval)
                 )
-                # if check interval isn't set, make sure the agent's check interval has passed before running
             )
+            # if check interval isn't set, make sure the agent's check interval has passed before running
             or (
-                check.last_run
+                not check.run_interval
+                and check.last_run
                 < djangotime.now() - djangotime.timedelta(seconds=agent.check_interval)
             )
         ]

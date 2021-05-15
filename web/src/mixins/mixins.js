@@ -171,7 +171,7 @@ export default {
         scripts.forEach(script => {
           if (!!script.category && !categories.includes(script.category)) {
             categories.push(script.category);
-          } else if (!!script.category) {
+          } else if (!script.category) {
             create_unassigned = true
           }
         });

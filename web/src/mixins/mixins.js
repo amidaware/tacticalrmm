@@ -171,7 +171,7 @@ export default {
         scripts.forEach(script => {
           if (!!script.category && !categories.includes(script.category)) {
             categories.push(script.category);
-          } else {
+          } else if (!!script.category) {
             create_unassigned = true
           }
         });
@@ -188,6 +188,40 @@ export default {
               tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args });
             }
           })
+          const sorted = tmp.sort((a, b) => a.label.localeCompare(b.label));
+          options.push(...sorted);
+        });
+      })
+        .catch(e => { });
+
+      return options;
+    },
+    getAgentOptions() {
+
+      let options = []
+      axios.get("/agents/listagentsnodetail/").then(r => {
+        const agents = r.data.map(agent => ({
+          label: agent.hostname,
+          value: agent.pk,
+          cat: `${agent.client} > ${agent.site}`,
+        }));
+
+        let categories = [];
+        agents.forEach(option => {
+          if (!categories.includes(option.cat)) {
+            categories.push(option.cat);
+          }
+        });
+
+        categories.sort().forEach(cat => {
+          options.push({ category: cat });
+          let tmp = []
+          agents.forEach(agent => {
+            if (agent.cat === cat) {
+              tmp.push(agent);
+            }
+          });
+
           const sorted = tmp.sort((a, b) => a.label.localeCompare(b.label));
           options.push(...sorted);
         });

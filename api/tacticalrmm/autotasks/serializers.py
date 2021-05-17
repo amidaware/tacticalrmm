@@ -68,6 +68,12 @@ class TaskRunnerGetSerializer(serializers.ModelSerializer):
 
 class TaskGOGetSerializer(serializers.ModelSerializer):
     script = ScriptCheckSerializer(read_only=True)
+    script_args = serializers.SerializerMethodField()
+
+    def get_script_args(self, obj):
+        return Script.parse_script_args(
+            agent=obj.agent, shell=obj.script.shell, args=obj.script_args
+        )
 
     class Meta:
         model = AutomatedTask

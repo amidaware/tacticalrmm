@@ -50,127 +50,125 @@
         </q-menu>
       </q-btn>
       <q-btn v-if="!!selectedPolicy" dense flat push @click="getChecks" icon="refresh" />
-      <template>
-        <q-table
-          :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
-          class="tabs-tbl-sticky"
-          :rows="checks"
-          :columns="columns"
-          v-model:pagination="pagination"
-          :rows-per-page-options="[0]"
-          row-key="id"
-          binary-state-sort
-          dense
-          hide-pagination
-          virtual-scroll
-        >
-          <!-- No data Slot -->
-          <template v-slot:no-data>
-            <div class="full-width row flex-center q-gutter-sm">
-              <span v-if="!selectedPolicy">Click on a policy to see the checks</span>
-              <span v-else>There are no checks added to this policy</span>
-            </div>
-          </template>
-          <!-- header slots -->
-          <template v-slot:header-cell-smsalert="props">
-            <q-th auto-width :props="props">
-              <q-icon name="phone_android" size="1.5em">
-                <q-tooltip>SMS Alert</q-tooltip>
-              </q-icon>
-            </q-th>
-          </template>
-          <template v-slot:header-cell-emailalert="props">
-            <q-th auto-width :props="props">
-              <q-icon name="email" size="1.5em">
-                <q-tooltip>Email Alert</q-tooltip>
-              </q-icon>
-            </q-th>
-          </template>
-          <template v-slot:header-cell-dashboardalert="props">
-            <q-th auto-width :props="props">
-              <q-icon name="notifications" size="1.5em">
-                <q-tooltip>Dashboard Alert</q-tooltip>
-              </q-icon>
-            </q-th>
-          </template>
-          <template v-slot:header-cell-statusicon="props">
-            <q-th auto-width :props="props"></q-th>
-          </template>
-          <!-- body slots -->
-          <template v-slot:body="props">
-            <q-tr :props="props" class="cursor-pointer" @dblclick="showEditDialog(props.row)">
-              <!-- context menu -->
-              <q-menu context-menu>
-                <q-list dense style="min-width: 200px">
-                  <q-item clickable v-close-popup @click="showEditDialog(props.row)">
-                    <q-item-section side>
-                      <q-icon name="edit" />
-                    </q-item-section>
-                    <q-item-section>Edit</q-item-section>
-                  </q-item>
-                  <q-item clickable v-close-popup @click="deleteCheck(props.row)">
-                    <q-item-section side>
-                      <q-icon name="delete" />
-                    </q-item-section>
-                    <q-item-section>Delete</q-item-section>
-                  </q-item>
+      <q-table
+        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+        class="tabs-tbl-sticky"
+        :rows="checks"
+        :columns="columns"
+        v-model:pagination="pagination"
+        :rows-per-page-options="[0]"
+        row-key="id"
+        binary-state-sort
+        dense
+        hide-pagination
+        virtual-scroll
+      >
+        <!-- No data Slot -->
+        <template v-slot:no-data>
+          <div class="full-width row flex-center q-gutter-sm">
+            <span v-if="!selectedPolicy">Click on a policy to see the checks</span>
+            <span v-else>There are no checks added to this policy</span>
+          </div>
+        </template>
+        <!-- header slots -->
+        <template v-slot:header-cell-smsalert="props">
+          <q-th auto-width :props="props">
+            <q-icon name="phone_android" size="1.5em">
+              <q-tooltip>SMS Alert</q-tooltip>
+            </q-icon>
+          </q-th>
+        </template>
+        <template v-slot:header-cell-emailalert="props">
+          <q-th auto-width :props="props">
+            <q-icon name="email" size="1.5em">
+              <q-tooltip>Email Alert</q-tooltip>
+            </q-icon>
+          </q-th>
+        </template>
+        <template v-slot:header-cell-dashboardalert="props">
+          <q-th auto-width :props="props">
+            <q-icon name="notifications" size="1.5em">
+              <q-tooltip>Dashboard Alert</q-tooltip>
+            </q-icon>
+          </q-th>
+        </template>
+        <template v-slot:header-cell-statusicon="props">
+          <q-th auto-width :props="props"></q-th>
+        </template>
+        <!-- body slots -->
+        <template v-slot:body="props">
+          <q-tr :props="props" class="cursor-pointer" @dblclick="showEditDialog(props.row)">
+            <!-- context menu -->
+            <q-menu context-menu>
+              <q-list dense style="min-width: 200px">
+                <q-item clickable v-close-popup @click="showEditDialog(props.row)">
+                  <q-item-section side>
+                    <q-icon name="edit" />
+                  </q-item-section>
+                  <q-item-section>Edit</q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="deleteCheck(props.row)">
+                  <q-item-section side>
+                    <q-icon name="delete" />
+                  </q-item-section>
+                  <q-item-section>Delete</q-item-section>
+                </q-item>
 
-                  <q-separator></q-separator>
+                <q-separator></q-separator>
 
-                  <q-item clickable v-close-popup @click="showPolicyStatus(props.row)">
-                    <q-item-section side>
-                      <q-icon name="sync" />
-                    </q-item-section>
-                    <q-item-section>Policy Status</q-item-section>
-                  </q-item>
+                <q-item clickable v-close-popup @click="showPolicyStatus(props.row)">
+                  <q-item-section side>
+                    <q-icon name="sync" />
+                  </q-item-section>
+                  <q-item-section>Policy Status</q-item-section>
+                </q-item>
 
-                  <q-separator></q-separator>
+                <q-separator></q-separator>
 
-                  <q-item clickable v-close-popup>
-                    <q-item-section>Close</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-menu>
-              <!-- tds -->
-              <q-td>
-                <q-checkbox
-                  dense
-                  @input="checkAlert(props.row.id, 'Text', props.row.text_alert)"
-                  v-model="props.row.text_alert"
-                />
-              </q-td>
-              <q-td>
-                <q-checkbox
-                  dense
-                  @input="checkAlert(props.row.id, 'Email', props.row.email_alert)"
-                  v-model="props.row.email_alert"
-                />
-              </q-td>
-              <q-td>
-                <q-checkbox
-                  dense
-                  @input="checkAlert(props.row.id, 'Dashboard', props.row.dashboard_alert)"
-                  v-model="props.row.dashboard_alert"
-                />
-              </q-td>
-              <q-td>{{ props.row.readable_desc }}</q-td>
-              <q-td>
-                <span
-                  style="cursor: pointer; text-decoration: underline"
-                  @click="showPolicyStatus(props.row)"
-                  class="status-cell text-primary"
-                  >See Status</span
-                >
-              </q-td>
-              <q-td v-if="props.row.assignedtask !== null && props.row.assignedtask.length === 1">{{
-                props.row.assignedtask[0].name
-              }}</q-td>
-              <q-td v-else-if="props.row.assignedtask">{{ props.row.assignedtask.length }} Tasks</q-td>
-              <q-td v-else></q-td>
-            </q-tr>
-          </template>
-        </q-table>
-      </template>
+                <q-item clickable v-close-popup>
+                  <q-item-section>Close</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+            <!-- tds -->
+            <q-td>
+              <q-checkbox
+                dense
+                @input="checkAlert(props.row.id, 'Text', props.row.text_alert)"
+                v-model="props.row.text_alert"
+              />
+            </q-td>
+            <q-td>
+              <q-checkbox
+                dense
+                @input="checkAlert(props.row.id, 'Email', props.row.email_alert)"
+                v-model="props.row.email_alert"
+              />
+            </q-td>
+            <q-td>
+              <q-checkbox
+                dense
+                @input="checkAlert(props.row.id, 'Dashboard', props.row.dashboard_alert)"
+                v-model="props.row.dashboard_alert"
+              />
+            </q-td>
+            <q-td>{{ props.row.readable_desc }}</q-td>
+            <q-td>
+              <span
+                style="cursor: pointer; text-decoration: underline"
+                @click="showPolicyStatus(props.row)"
+                class="status-cell text-primary"
+                >See Status</span
+              >
+            </q-td>
+            <q-td v-if="props.row.assignedtask !== null && props.row.assignedtask.length === 1">{{
+              props.row.assignedtask[0].name
+            }}</q-td>
+            <q-td v-else-if="props.row.assignedtask">{{ props.row.assignedtask.length }} Tasks</q-td>
+            <q-td v-else></q-td>
+          </q-tr>
+        </template>
+      </q-table>
     </div>
 
     <!-- add/edit modals -->

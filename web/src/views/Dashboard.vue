@@ -19,13 +19,7 @@
         </q-toolbar-title>
 
         <!-- temp dark mode toggle -->
-        <q-toggle
-          v-model="darkMode"
-          class="q-mr-sm"
-          @input="toggleDark(darkMode)"
-          checked-icon="nights_stay"
-          unchecked-icon="wb_sunny"
-        />
+        <q-toggle v-model="darkMode" class="q-mr-sm" checked-icon="nights_stay" unchecked-icon="wb_sunny" />
 
         <!-- Devices Chip -->
         <q-chip class="cursor-pointer">
@@ -203,7 +197,13 @@
         </template>
 
         <template v-slot:after>
-          <q-splitter v-model="innerModel" reverse horizontal style="height: 87vh" @input="setSplitter(innerModel)">
+          <q-splitter
+            v-model="innerModel"
+            reverse
+            horizontal
+            style="height: 87vh"
+            @update:model-value="setSplitter(innerModel)"
+          >
             <template v-slot:before>
               <div class="row">
                 <q-tabs
@@ -400,7 +400,6 @@ export default {
   data() {
     return {
       ws: null,
-      darkMode: true,
       showInstallAgentModal: false,
       sitePk: null,
       serverCount: 0,
@@ -578,10 +577,6 @@ export default {
         this.ws.close();
       };
     },
-    toggleDark(val) {
-      this.$q.dark.set(val);
-      this.$axios.patch("/accounts/users/ui/", { dark_mode: val }).catch(e => {});
-    },
     refreshEntireSite() {
       this.$store.dispatch("loadTree");
       this.getDashInfo(false);
@@ -743,8 +738,7 @@ export default {
           this.$store.commit("SET_CLIENT_TREE_SORT", r.data.client_tree_sort);
           this.$store.commit("SET_CLIENT_SPLITTER", r.data.client_tree_splitter);
         }
-        this.darkMode = r.data.dark_mode;
-        this.$q.dark.set(this.darkMode);
+        this.$q.dark.set(r.data.dark_mode);
         this.currentTRMMVersion = r.data.trmm_version;
         this.latestTRMMVersion = r.data.latest_trmm_ver;
         this.$store.commit("SET_AGENT_DBLCLICK_ACTION", r.data.dbl_click_action);
@@ -828,7 +822,7 @@ export default {
       treeReady: state => state.treeReady,
       clients: state => state.clients,
     }),
-    ...mapGetters(["selectedAgentPk", "needRefresh", "clientTreeSplitterModel"]),
+    ...mapGetters(["selectedAgentPk", "needRefresh"]),
     latestReleaseURL() {
       return this.latestTRMMVersion !== "error"
         ? `https://github.com/wh1te909/tacticalrmm/releases/tag/v${this.latestTRMMVersion}`
@@ -842,7 +836,7 @@ export default {
     },
     clientTreeSplitter: {
       get() {
-        return this.clientTreeSplitterModel;
+        return this.$store.state.clientTreeSplitter;
       },
       set(newVal) {
         this.$store.commit("SET_CLIENT_SPLITTER", newVal);
@@ -860,8 +854,8 @@ export default {
       return this.selectedTree === "";
     },
     filteredAgents() {
-      if (this.tab === "mixed") return Object.freeze(this.frame);
-      else return Object.freeze(this.frame.filter(k => k.monitoring_type === this.tab));
+      if (this.tab === "mixed") return this.frame;
+      else return this.frame.filter(k => k.monitoring_type === this.tab);
     },
     activeNode() {
       return {
@@ -883,6 +877,15 @@ export default {
     },
     totalOfflineAgents() {
       return this.serverOfflineCount + this.workstationOfflineCount;
+    },
+    darkMode: {
+      get() {
+        return this.$q.dark.isActive;
+      },
+      set(value) {
+        this.$axios.patch("/accounts/users/ui/", { dark_mode: value }).catch(e => {});
+        this.$q.dark.set(value);
+      },
     },
   },
   created() {

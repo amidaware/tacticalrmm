@@ -4,7 +4,7 @@
       dense
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       class="agents-tbl-sticky"
-      :style="{ 'max-height': agentTableHeight }"
+      :table-style="{ 'max-height': agentTableHeight }"
       :rows="frame"
       :filter="search"
       :filter-method="filterTable"
@@ -16,6 +16,7 @@
       v-model:pagination="pagination"
       :rows-per-page-options="[0]"
       no-data-label="No Agents"
+      :loading="agentTableLoading"
     >
       <!-- header slots -->
       <template v-slot:header-cell-smsalert="props">
@@ -391,9 +392,6 @@
         </q-tr>
       </template>
     </q-table>
-    <q-inner-loading :showing="agentTableLoading">
-      <q-spinner size="40px" color="primary" />
-    </q-inner-loading>
     <!-- edit agent modal -->
     <q-dialog v-model="showEditAgentModal">
       <EditAgent @close="showEditAgentModal = false" @edit="agentEdited" />

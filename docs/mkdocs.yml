@@ -22,6 +22,7 @@ nav:
       - "Alerting": functions/alerting.md
       - "User Interface Preferences": functions/user_ui.md
       - "Django Admin": functions/django_admin.md
+      - "Settings Override": functions/settings_override.md
   - Backup: backup.md
   - Restore: restore.md
   - Troubleshooting: troubleshooting.md

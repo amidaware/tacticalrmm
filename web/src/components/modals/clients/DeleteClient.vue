@@ -22,12 +22,7 @@
             :rules="[val => !!val || 'Select the site that the agents should be moved to']"
           >
             <template v-slot:option="scope">
-              <q-item
-                v-if="!scope.opt.category"
-                v-bind="scope.itemProps"
-                v-on="scope.itemProps.itemEvents"
-                class="q-pl-lg"
-              >
+              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
                 <q-item-section>
                   <q-item-label v-html="scope.opt.label"></q-item-label>
                 </q-item-section>

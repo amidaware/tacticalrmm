@@ -4,7 +4,7 @@
     <q-menu style="max-height: 30vh">
       <q-list separator>
         <q-item v-if="alertsCount === 0">No New Alerts</q-item>
-        <q-item v-for="alert in topAlerts" :key="alert.id">
+        <q-item v-for="alert in topAlerts">
           <q-item-section>
             <q-item-label overline>{{ alert.client }} - {{ alert.site }} - {{ alert.hostname }}</q-item-label>
             <q-item-label lines="1">

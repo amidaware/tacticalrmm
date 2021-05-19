@@ -8,8 +8,8 @@
     :label="field.name"
     :type="field.type === 'text' ? 'text' : 'number'"
     :hint="hintText(field)"
-    :model-value="model_value"
-    @update:model-value="value => $emit('update:model-value', value)"
+    :modelValue="modelValue"
+    @update:modelValue="value => $emit('update:modelValue', value)"
     :rules="[...validationRules]"
     reactive-rules
     autogrow
@@ -20,8 +20,8 @@
     ref="input"
     :label="field.name"
     :hint="hintText(field)"
-    :model-value="model_value"
-    @update:model-value="value => $emit('update:model-value', value)"
+    :modelValue="modelValue"
+    @update:modelValue="value => $emit('update:modelValue', value)"
   />
 
   <q-input
@@ -31,8 +31,8 @@
     :hint="hintText(field)"
     outlined
     dense
-    :model-value="model_value"
-    @update:model-value="value => $emit('update:model-value', value)"
+    :modelValue="modelValue"
+    @update:modelValue="value => $emit('update:modelValue', value)"
     :rules="[...validationRules]"
     reactive-rules
   >
@@ -40,8 +40,8 @@
       <q-icon name="event" class="cursor-pointer">
         <q-popup-proxy transition-show="scale" transition-hide="scale">
           <q-date
-            :model-value="model_value"
-            @update:model-value="value => $emit('update:model-value', value)"
+            :modelValue="modelValue"
+            @update:modelValue="value => $emit('update:modelValue', value)"
             mask="YYYY-MM-DD HH:mm"
           >
             <div class="row items-center justify-end">
@@ -53,8 +53,8 @@
       <q-icon name="access_time" class="cursor-pointer">
         <q-popup-proxy transition-show="scale" transition-hide="scale">
           <q-time
-            :model-value="model_value"
-            @update:model-value="value => $emit('update:model-value', value)"
+            :modelValue="modelValue"
+            @update:modelValue="value => $emit('update:modelValue', value)"
             mask="YYYY-MM-DD HH:mm"
           >
             <div class="row items-center justify-end">
@@ -69,8 +69,8 @@
   <q-select
     v-else-if="field.type === 'single' || field.type === 'multiple'"
     ref="input"
-    :model-value="model_value"
-    @update:model-value="value => $emit('update:model-value', value)"
+    :modelValue="modelValue"
+    @update:modelValue="value => $emit('update:modelValue', value)"
     outlined
     dense
     :hint="hintText(field)"
@@ -86,7 +86,7 @@
 <script>
 export default {
   name: "CustomField",
-  props: ["field", "model-value"],
+  props: ["field", "modelValue"],
   methods: {
     validate(...args) {
       return this.$refs.input.validate(...args);
@@ -105,9 +105,6 @@ export default {
     },
   },
   computed: {
-    model_value() {
-      return this["model-value"];
-    },
     validationRules() {
       const rules = [];
 

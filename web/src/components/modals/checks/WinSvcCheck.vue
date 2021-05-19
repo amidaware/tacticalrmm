@@ -189,12 +189,12 @@ export default {
         this.$axios
           .get("/services/defaultservices/")
           .then(r => {
-            this.svcData = Object.freeze(r.data);
+            this.svcData = r.data;
             this.winsvccheck.svc_policy_mode = "default";
           })
           .catch(e => {});
       } else {
-        this.svcData = Object.freeze(this.agentServices);
+        this.svcData = this.agentServices;
       }
     },
     getDisplayName() {

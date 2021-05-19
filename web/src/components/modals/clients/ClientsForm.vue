@@ -30,7 +30,7 @@
           </q-card-section>
 
           <div class="text-h6">Custom Fields</div>
-          <q-card-section v-for="field in customFields" :key="field.id">
+          <q-card-section v-for="field in customFields">
             <CustomField v-model="custom_fields[field.name]" :field="field" />
           </q-card-section>
           <q-card-actions align="right">

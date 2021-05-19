@@ -36,7 +36,7 @@
               <div class="col-2 q-mb-sm">Email recipients</div>
               <div class="col-4 q-mb-sm">
                 <q-list dense v-if="template.email_recipients.length !== 0">
-                  <q-item v-for="email in template.email_recipients" :key="email" dense>
+                  <q-item v-for="email in template.email_recipients" dense>
                     <q-item-section>
                       <q-item-label>{{ email }}</q-item-label>
                     </q-item-section>
@@ -63,7 +63,7 @@
               <div class="col-2 q-mb-sm">SMS recipients</div>
               <div class="col-4 q-mb-md">
                 <q-list dense v-if="template.text_recipients.length !== 0">
-                  <q-item v-for="num in template.text_recipients" :key="num" dense>
+                  <q-item v-for="num in template.text_recipients" dense>
                     <q-item-section>
                       <q-item-label>{{ num }}</q-item-label>
                     </q-item-section>
@@ -119,12 +119,7 @@
                 @input="setScriptDefaults('failure')"
               >
                 <template v-slot:option="scope">
-                  <q-item
-                    v-if="!scope.opt.category"
-                    v-bind="scope.itemProps"
-                    v-on="scope.itemProps.itemEvents"
-                    class="q-pl-lg"
-                  >
+                  <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
                     <q-item-section>
                       <q-item-label v-html="scope.opt.label"></q-item-label>
                     </q-item-section>
@@ -188,12 +183,7 @@
                 @input="setScriptDefaults('resolved')"
               >
                 <template v-slot:option="scope">
-                  <q-item
-                    v-if="!scope.opt.category"
-                    v-bind="scope.itemProps"
-                    v-on="scope.itemProps.itemEvents"
-                    class="q-pl-lg"
-                  >
+                  <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
                     <q-item-section>
                       <q-item-label v-html="scope.opt.label"></q-item-label>
                     </q-item-section>

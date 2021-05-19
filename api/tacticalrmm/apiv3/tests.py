@@ -213,7 +213,8 @@ class TestAPIv3(TacticalTestCase):
 
         # setup data
         agent = baker.make_recipe("agents.agent")
-        task = baker.make("autotasks.AutomatedTask", agent=agent)
+        script = baker.make_recipe("scripts.script")
+        task = baker.make("autotasks.AutomatedTask", agent=agent, script=script)
 
         url = f"/api/v3/{task.pk}/{agent.agent_id}/taskrunner/"  # type: ignore
 

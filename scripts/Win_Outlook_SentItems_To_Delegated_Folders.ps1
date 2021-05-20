@@ -10,28 +10,6 @@
    Submitted by: https://github.com/dinger1986
 #>
 
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-$regpath = HKCU:\Software\Microsoft\Office\16.0\Outlook\Preferences
-$regname = DelegateSentItemsStyle
-$regvalue = 1
-$regproperty = Dword
-
-
-If (!(test-path '%ProgramData%\Tactical RMM\temp')) {
-    New-Item -ItemType Directory -Force -Path '%ProgramData%\Tactical RMM\temp'
-}
-
-If (!(test-path C:\TEMP\curpsxpolicy.txt)) {
-    $curexpolicy = Get-ExecutionPolicy
-
-    (
-        echo $curexpolicy
-    )>"%ProgramData%\Tactical RMM\temp\curpsxpolicy.txt"
-}
-
-Set-ExecutionPolicy -ExecutionPolicy Unrestricted
-
 if (Get-PackageProvider -Name NuGet) {
     Write-Output "NuGet Already Added"
 } 
@@ -48,14 +26,30 @@ else {
     Install-Module -Name RunAsUser -Force
 }
 
+If (!(test-path $env:programdata\TacticalRMM\temp\)) {
+    New-Item -ItemType Directory -Force -Path $env:programdata\TacticalRMM\temp\
+}
+
+If (!(test-path $env:programdata\TacticalRMM\temp\curpsxpolicy.txt)) {
+    $curexpolicy = Get-ExecutionPolicy
+
+    (
+        Write-Output $curexpolicy
+    )>$env:programdata\TacticalRMM\temp\curpsxpolicy.txt
+}
+Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell -Name ExecutionPolicy -Value Unrestricted
+
 Invoke-AsCurrentUser -scriptblock {
-    New-ItemProperty -Path "$regpath" -Name "$regname" -Value "$regvalue"  -PropertyType "$regproperty"
+    # Modify below for other versions of Office
+    $regpath = 'Software\Microsoft\Office\16.0\Outlook\Preferences'
+    $regname = "DelegateSentItemsStyle"
+    $regvalue = "1"
+    $regproperty = "Dword"
+    New-ItemProperty -Path HKCU:\$regpath -Name $regname -Value $regvalue  -PropertyType $regproperty
 }
 
 Write-Output "Successfully changed Sent Items for Delegated folders"
 
-$curpsxpol = Get-Content -Path "%ProgramData%\Tactical RMM\temp\curpsxpolicy.txt";
+$curpsxpol = Get-Content -Path $env:programdata\TacticalRMM\temp\curpsxpolicy.txt;
     
 Set-ExecutionPolicy -ExecutionPolicy $curpsxpol
-
-del "%ProgramData%\Tactical RMM\temp\curpsxpolicy.txt"

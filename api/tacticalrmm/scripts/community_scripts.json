@@ -162,6 +162,18 @@
     "category": "TRMM (Win):Collectors"
   },
   {
+    "guid": "973c34d7-cab0-4fda-999c-b4933655f946",
+    "filename": "Win_Screenconnect_GetGUID.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Screenconnect - Get GUID for client",
+    "description": "Returns Screenconnect GUID for client - Use with Custom Fields for later use. ",
+    "args": [
+      "-serviceName {{client.ScreenConnectService}}"
+    ],
+    "shell": "powershell",
+    "category": "TRMM (Win):Collectors"
+  },
+  {
     "guid": "95a2ee6f-b89b-4551-856e-3081b041caa7",
     "filename": "Win_Power_Profile_Reset_High_Performance_to_Defaults.ps1",
     "submittedBy": "https://github.com/azulskyknight",

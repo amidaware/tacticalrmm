@@ -1,7 +1,9 @@
-md -Path 'C:\agent' -Force
-wget "http://www.yourwebsite.com/logos/yourico.ico" -outfile "c:\agent\yourico.ico"
+
+
+mkdir -Path 'C:\agent' -Force
+Invoke-WebRequest "http://www.yourwebsite.com/logos/yourico.ico" -outfile "c:\agent\yourico.ico"
 $WshShell = New-Object -comObject WScript.Shell
-$path = "C:\Users\All Users\desktop\Jaxsupport.url"
+$path = "C:\Users\All Users\desktop\Shortcut.url"
 $targetpath = "https://yourwebsite.com"
 $iconlocation = "c:\agent\yourico.ico"
 $iconfile = "IconFile=" + $iconlocation

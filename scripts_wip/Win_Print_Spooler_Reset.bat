@@ -1,3 +1,5 @@
+REM Print Spooler reset script. Will stop spooler, fix permissions on print folders, clear all files in print queues, and restart spooler service.
+
 REM Stop Print Spooler 
 net stop "Spooler"
 

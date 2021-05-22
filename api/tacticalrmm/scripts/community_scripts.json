@@ -6,7 +6,9 @@
     "name": "Firefox - Clean Cache",
     "description": "This script will clean up Mozilla Firefox for all users.",
     "shell": "powershell",
-    "category": "TRMM (Win):Browsers"
+    "category": "TRMM (Win):Browsers",
+    "default_timeout": "300"
+
   },
   {
     "guid": "3ff6a386-11d1-4f9d-8cca-1b0563bb6443",
@@ -15,7 +17,8 @@
     "name": "Chrome - Clear Cache for All Users",
     "description": "This script will clean up Google Chrome for all users.",
     "shell": "powershell",
-    "category": "TRMM (Win):Browsers"
+    "category": "TRMM (Win):Browsers",
+    "default_timeout": "300"
   },
   {
     "guid": "be1de837-f677-4ac5-aa0c-37a0fc9991fc",
@@ -24,7 +27,8 @@
     "name": "Adobe Reader DC - Install",
     "description": "Installs Adobe Reader DC.",
     "shell": "powershell",
-    "category": "TRMM (Win):3rd Party Software>Chocolatey"
+    "category": "TRMM (Win):3rd Party Software>Chocolatey",
+    "default_timeout": "300"
   },
   {
     "guid": "2ee134d5-76aa-4160-b334-a1efbc62079f",
@@ -33,7 +37,8 @@
     "name": "Duplicati - Install",
     "description": "This script installs Duplicati 2.0.5.1 as a service.",
     "shell": "powershell",
-    "category": "TRMM (Win):3rd Party Software"
+    "category": "TRMM (Win):3rd Party Software",
+    "default_timeout": "300"   
   },
   {
     "guid": "81cc5bcb-01bf-4b0c-89b9-0ac0f3fe0c04",
@@ -42,7 +47,8 @@
     "name": "Windows Update - Reset",
     "description": "This script will reset all of the Windows Updates components to DEFAULT SETTINGS.",
     "shell": "powershell",
-    "category": "TRMM (Win):Updates"
+    "category": "TRMM (Win):Updates",
+    "default_timeout": "300"    
   },
   {
     "guid": "8db87ff0-a9b4-4d9d-bc55-377bbcb85b6d",
@@ -51,7 +57,8 @@
     "name": "Disk - Cleanup C: drive",
     "description": "Cleans the C: drive's Window Temperary files, Windows SoftwareDistribution folder, the local users Temperary folder, IIS logs (if applicable) and empties the recycling bin. All deleted files will go into a log transcript in $env:TEMP. By default this script leaves files that are newer than 7 days old however this variable can be edited.",
     "shell": "powershell",
-    "category": "TRMM (Win):Maintenance"
+    "category": "TRMM (Win):Maintenance",
+    "default_timeout": "25000"    
   },
   {
     "guid": "2f28e8c1-ae0f-4b46-a826-f513974526a3",
@@ -78,7 +85,8 @@
     "name": "Speed Test - Python",
     "description": "Runs a Speed Test using Python",
     "shell": "python",
-    "category": "TRMM (Win):Network"
+    "category": "TRMM (Win):Network",
+    "default_timeout": "120"
   },
   {
     "guid": "9d34f482-1f0c-4b2f-b65f-a9cf3c13ef5f",
@@ -198,7 +206,8 @@
     "name": "Windows 10 Upgrade",
     "description": "Forces an upgrade to the latest release of Windows 10.",
     "shell": "powershell",
-    "category": "TRMM (Win):Updates"
+    "category": "TRMM (Win):Updates",
+    "default_timeout": "25000"
   },
   {
     "guid": "375323e5-cac6-4f35-a304-bb7cef35902d",
@@ -234,7 +243,8 @@
     "name": "SSH - Install Feature and Enable",
     "description": "Installs and enabled OpenSSH Server Feature in Win10",
     "shell": "powershell",
-    "category": "TRMM (Win):Windows Features"
+    "category": "TRMM (Win):Windows Features",
+    "default_timeout": "300"
   },
   {
     "guid": "2435297a-6263-4e90-8688-1847400d0e22",
@@ -351,7 +361,8 @@
     "name": "Update Installed Apps",
     "description": "Update all apps that were installed using Chocolatey.",
     "shell": "cmd",
-    "category": "TRMM (Win):3rd Party Software>Chocolatey"
+    "category": "TRMM (Win):3rd Party Software>Chocolatey",
+    "default_timeout": "3600"
   },
   {
     "guid": "fff8024d-d72e-4457-84fa-6c780f69a16f",

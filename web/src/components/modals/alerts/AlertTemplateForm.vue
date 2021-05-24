@@ -694,7 +694,7 @@ export default {
     },
   },
   mounted() {
-    this.scriptOptions = this.getScriptOptions();
+    this.getScriptOptions(this.showCommunityScripts).then(options => (this.scriptOptions = Object.freeze(options)));
     // Copy alertTemplate prop locally
     if (this.editing) Object.assign(this.template, this.alertTemplate);
   },

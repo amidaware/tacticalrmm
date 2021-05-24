@@ -888,14 +888,13 @@ export default {
       },
     },
   },
-  created() {
+  mounted() {
     this.setupWS();
     this.getDashInfo();
     this.$store.dispatch("getUpdatedSites");
     this.$store.dispatch("checkVer");
     this.getTree();
-  },
-  mounted() {
+
     this.livePoll();
   },
   beforeUnmount() {

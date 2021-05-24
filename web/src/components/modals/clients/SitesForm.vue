@@ -189,7 +189,7 @@ export default {
       this.hide();
     },
   },
-  created() {
+  mounted() {
     this.getClients();
 
     // Get custom fields

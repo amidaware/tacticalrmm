@@ -76,7 +76,7 @@ export default {
         .catch(e => {});
     },
   },
-  created() {
+  mounted() {
     this.getLog();
   },
 };

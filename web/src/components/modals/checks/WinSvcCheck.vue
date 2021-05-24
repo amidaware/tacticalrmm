@@ -237,10 +237,8 @@ export default {
       }
     },
   },
-  created() {
-    this.setServices();
-  },
   mounted() {
+    this.setServices();
     if (this.mode === "edit") {
       this.getCheck();
     }

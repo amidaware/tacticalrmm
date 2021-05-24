@@ -207,14 +207,13 @@ export default {
   beforeUnmount() {
     clearInterval(this.polling);
   },
-  created() {
+  mounted() {
     this.getAgent();
     // disable loading bar
     this.$q.loadingBar.setDefaults({ size: "0px" });
 
     this.getProcesses();
-  },
-  mounted() {
+
     this.refreshProcs();
   },
 };

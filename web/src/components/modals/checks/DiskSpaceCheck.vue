@@ -154,7 +154,7 @@ export default {
   computed: {
     ...mapGetters(["agentDisks"]),
   },
-  created() {
+  mounted() {
     if (this.mode === "add") {
       this.setDiskOptions();
     } else if (this.mode === "edit") {

@@ -228,7 +228,7 @@ export default {
       return !!this.agentpk ? `Pending Actions for ${this.hostname}` : "All Pending Actions";
     },
   },
-  created() {
+  mounted() {
     this.getPendingActions();
   },
 };

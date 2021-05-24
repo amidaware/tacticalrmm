@@ -278,11 +278,11 @@ export default {
       }
     },
   },
-  created() {
+  mounted() {
     this.setTitles();
     this.getClients();
     this.getAgents();
-    this.scriptOptions = this.getScriptOptions(this.showCommunityScripts);
+    this.getScriptOptions(this.showCommunityScripts).then(options => (this.scriptOptions = Object.freeze(options)));
 
     this.selected_mode = this.mode;
   },

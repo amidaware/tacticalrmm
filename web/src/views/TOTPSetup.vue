@@ -79,7 +79,7 @@ export default {
         });
     },
   },
-  created() {
+  mounted() {
     this.getQRCodeData();
     this.$q.dark.set(false);
   },

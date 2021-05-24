@@ -129,7 +129,7 @@ export default {
       });
     },
   },
-  created() {
+  mounted() {
     this.getDeployments();
   },
 };

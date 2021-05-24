@@ -204,8 +204,8 @@ export default {
       /^\d+$/.test(val) ? done(val) : done();
     },
   },
-  created() {
-    this.scriptOptions = this.getScriptOptions(this.showCommunityScripts);
+  mounted() {
+    this.getScriptOptions(this.showCommunityScripts).then(options => (this.scriptOptions = Object.freeze(options)));
 
     if (this.mode === "edit") this.getCheck();
   },

@@ -250,7 +250,7 @@ export default {
       return text;
     },
   },
-  created() {
+  mounted() {
     this.getClients();
   },
 };

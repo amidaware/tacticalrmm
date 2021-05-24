@@ -164,7 +164,7 @@ export default {
       this.hide();
     },
   },
-  created() {
+  mounted() {
     // Get custom fields
     this.getCustomFields("client").then(r => {
       this.customFields = r.data.filter(field => !field.hide_in_ui);

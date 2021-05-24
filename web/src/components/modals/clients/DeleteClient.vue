@@ -158,7 +158,7 @@ export default {
       this.hide();
     },
   },
-  created() {
+  mounted() {
     this.getSites();
   },
 };

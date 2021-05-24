@@ -253,7 +253,7 @@ export default {
       return this.maximized ? "--prism-height: 76vh" : "--prism-height: 70vh";
     },
   },
-  created() {
+  mounted() {
     if (!!this.script) {
       this.localScript.id = this.script.id;
       this.localScript.name = this.script.name;

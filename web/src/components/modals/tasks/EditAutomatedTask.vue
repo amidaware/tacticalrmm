@@ -190,7 +190,7 @@ export default {
     },
   },
   mounted() {
-    this.scriptOptions = this.getScriptOptions(this.showCommunityScripts);
+    this.getScriptOptions(this.showCommunityScripts).then(options => (this.scriptOptions = Object.freeze(options)));
 
     this.getCustomFields("agent").then(r => {
       this.customFieldOptions = r.data.map(field => ({ label: field.name, value: field.id }));

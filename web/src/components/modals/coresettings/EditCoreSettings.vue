@@ -494,7 +494,7 @@ export default {
         });
     },
   },
-  created() {
+  mounted() {
     this.getCoreSettings();
     this.getPolicies();
     this.getAlertTemplates();

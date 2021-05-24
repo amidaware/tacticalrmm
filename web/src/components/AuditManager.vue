@@ -327,7 +327,7 @@ export default {
         this.$axios
           .post(`logs/auditlogs/optionsfilter/`, data)
           .then(r => {
-            this.agentOptions = Object.freeze(r.data.map(agent => agent.hostname));
+            this.getAgentOptions().then(options => (this.agentOptions = Object.freeze(options)));
             this.$q.loading.hide();
           })
           .catch(e => {
@@ -438,7 +438,7 @@ export default {
       return this.searched ? "No data found. Try to refine you search" : "Click search to find audit logs";
     },
   },
-  created() {
+  mounted() {
     this.getClients();
   },
 };

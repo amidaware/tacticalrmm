@@ -217,7 +217,7 @@ export default {
         .catch(e => {});
     },
   },
-  created() {
+  mounted() {
     this.getUserPrefs();
   },
 };

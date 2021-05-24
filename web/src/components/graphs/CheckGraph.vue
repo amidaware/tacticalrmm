@@ -153,7 +153,7 @@ export default {
       this.$emit("hide");
     },
   },
-  created() {
+  mounted() {
     // create warning and error annotation on chart for certain check types
     if (
       this.check.check_type === "cpuload" ||

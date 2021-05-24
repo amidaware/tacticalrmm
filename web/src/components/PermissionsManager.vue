@@ -120,7 +120,7 @@ export default {
       this.$emit("hide");
     },
   },
-  created() {
+  mounted() {
     this.getRoles();
   },
 };

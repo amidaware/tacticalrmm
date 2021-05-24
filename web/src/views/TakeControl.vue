@@ -123,7 +123,7 @@ export default {
         });
     },
   },
-  created() {
+  mounted() {
     this.getUI();
     this.genURL();
   },

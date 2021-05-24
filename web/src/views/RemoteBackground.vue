@@ -97,7 +97,7 @@ export default {
       return this.$route.params.pk;
     },
   },
-  created() {
+  mounted() {
     this.getUI();
     this.genURLS();
   },

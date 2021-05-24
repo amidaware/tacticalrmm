@@ -125,7 +125,7 @@ export default {
       }
     },
   },
-  created() {
+  mounted() {
     if (this.mode === "edit") {
       this.getCheck();
     }

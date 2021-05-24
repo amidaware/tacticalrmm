@@ -105,7 +105,7 @@ export default {
   computed: {
     ...mapGetters(["agentHostname"]),
   },
-  created() {
+  mounted() {
     this.getChocos();
   },
 };

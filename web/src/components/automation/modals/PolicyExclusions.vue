@@ -137,7 +137,7 @@ export default {
     getOptions() {
       this.getClients();
       this.getSites();
-      this.agentOptions = this.getAgentOptions();
+      this.getAgentOptions().then(options => (this.agentOptions = Object.freeze(options)));
     },
     show() {
       this.$refs.dialog.show();

@@ -97,7 +97,7 @@ export default {
       return options.sort((a, b) => a.label.localeCompare(b.label));
     },
   },
-  created() {
+  mounted() {
     this.getVersions();
   },
 };

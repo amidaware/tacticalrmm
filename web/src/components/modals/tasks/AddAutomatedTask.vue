@@ -1,22 +1,16 @@
 <template>
-  <q-card v-if="scriptOptions.length === 0" class="q-pa-xs" style="min-width: 400px">
+  <q-card class="q-pa-xs" style="min-width: 40vw">
     <q-card-section class="row items-center">
       <div class="text-h6">Add Automated Task</div>
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
-    <q-card-section>
+
+    <q-card-section v-if="scriptOptions.length === 0">
       <p>You need to upload a script first</p>
       <p>Settings -> Script Manager</p>
     </q-card-section>
-  </q-card>
-  <q-card v-else class="q-pa-xs" style="min-width: 40vw">
-    <q-card-section class="row items-center">
-      <div class="text-h6">Add Automated Task</div>
-      <q-space />
-      <q-btn icon="close" flat round dense v-close-popup />
-    </q-card-section>
-    <q-stepper v-model="step" ref="stepper" color="primary" animated>
+    <q-stepper v-else v-model="step" ref="stepper" color="primary" animated>
       <q-step :name="1" title="Select Task" :done="step1Done" :error="!step1Done">
         <q-card-section>
           <q-select
@@ -352,8 +346,8 @@ export default {
       }
     },
   },
-  created() {
-    this.scriptOptions = this.getScriptOptions(this.showCommunityScripts);
+  mounted() {
+    this.getScriptOptions(this.showCommunityScripts).then(options => (this.scriptOptions = Object.freeze(options)));
 
     if (this.policypk) {
       this.getPolicyChecks();

@@ -142,7 +142,7 @@ export default {
       return this.client !== null ? this.formatSiteOptions(this.client.sites) : [];
     },
   },
-  created() {
+  mounted() {
     this.getCurrentDate();
     this.getClients();
   },

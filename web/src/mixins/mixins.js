@@ -156,77 +156,73 @@ export default {
       }
       return tempArray
     },
-    getScriptOptions(showCommunityScripts = false) {
+    async getScriptOptions(showCommunityScripts = false) {
       let options = [];
-      axios.get("/scripts/scripts/").then(r => {
-        let scripts;
-        if (showCommunityScripts) {
-          scripts = r.data;
-        } else {
-          scripts = r.data.filter(i => i.script_type !== "builtin");
+      const { data } = await axios.get("/scripts/scripts/")
+      let scripts;
+      if (showCommunityScripts) {
+        scripts = data;
+      } else {
+        scripts = data.filter(i => i.script_type !== "builtin");
+      }
+
+      let categories = [];
+      let create_unassigned = false
+      scripts.forEach(script => {
+        if (!!script.category && !categories.includes(script.category)) {
+          categories.push(script.category);
+        } else if (!script.category) {
+          create_unassigned = true
         }
+      });
 
-        let categories = [];
-        let create_unassigned = false
+      if (create_unassigned) categories.push("Unassigned")
+
+      categories.sort().forEach(cat => {
+        options.push({ category: cat });
+        let tmp = [];
         scripts.forEach(script => {
-          if (!!script.category && !categories.includes(script.category)) {
-            categories.push(script.category);
-          } else if (!script.category) {
-            create_unassigned = true
+          if (script.category === cat) {
+            tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args });
+          } else if (cat === "Unassigned" && !script.category) {
+            tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args });
           }
-        });
-
-        if (create_unassigned) categories.push("Unassigned")
-
-        categories.sort().forEach(cat => {
-          options.push({ category: cat });
-          let tmp = [];
-          scripts.forEach(script => {
-            if (script.category === cat) {
-              tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args });
-            } else if (cat === "Unassigned" && !script.category) {
-              tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args });
-            }
-          })
-          const sorted = tmp.sort((a, b) => a.label.localeCompare(b.label));
-          options.push(...sorted);
-        });
-      })
-        .catch(e => { });
+        })
+        const sorted = tmp.sort((a, b) => a.label.localeCompare(b.label));
+        options.push(...sorted);
+      });
 
       return options;
     },
-    getAgentOptions() {
+    async getAgentOptions() {
 
       let options = []
-      axios.get("/agents/listagentsnodetail/").then(r => {
-        const agents = r.data.map(agent => ({
-          label: agent.hostname,
-          value: agent.pk,
-          cat: `${agent.client} > ${agent.site}`,
-        }));
+      const { data } = await axios.get("/agents/listagentsnodetail/")
+      const agents = data.map(agent => ({
+        label: agent.hostname,
+        value: agent.pk,
+        cat: `${agent.client} > ${agent.site}`,
+      }));
 
-        let categories = [];
-        agents.forEach(option => {
-          if (!categories.includes(option.cat)) {
-            categories.push(option.cat);
+      let categories = [];
+      agents.forEach(option => {
+        if (!categories.includes(option.cat)) {
+          categories.push(option.cat);
+        }
+      });
+
+      categories.sort().forEach(cat => {
+        options.push({ category: cat });
+        let tmp = []
+        agents.forEach(agent => {
+          if (agent.cat === cat) {
+            tmp.push(agent);
           }
         });
 
-        categories.sort().forEach(cat => {
-          options.push({ category: cat });
-          let tmp = []
-          agents.forEach(agent => {
-            if (agent.cat === cat) {
-              tmp.push(agent);
-            }
-          });
-
-          const sorted = tmp.sort((a, b) => a.label.localeCompare(b.label));
-          options.push(...sorted);
-        });
-      })
-        .catch(e => { });
+        const sorted = tmp.sort((a, b) => a.label.localeCompare(b.label));
+        options.push(...sorted);
+      });
 
       return options;
     },

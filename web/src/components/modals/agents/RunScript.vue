@@ -167,8 +167,8 @@ export default {
         });
     },
   },
-  created() {
-    this.scriptOptions = this.getScriptOptions(this.showCommunityScripts);
+  mounted() {
+    this.getScriptOptions(this.showCommunityScripts).then(options => (this.scriptOptions = Object.freeze(options)));
   },
 };
 </script>

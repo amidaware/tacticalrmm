@@ -88,6 +88,9 @@ module.exports = function () {
           timeout: 2000,
           textColor: "white",
           actions: [{ icon: "close", color: "white" }]
+        },
+        loading: {
+          delay: 500
         }
       }
     },

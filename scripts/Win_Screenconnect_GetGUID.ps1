@@ -3,7 +3,8 @@ Requires global variables for serviceName "ScreenConnectService"
 serviceName is the name of the ScreenConnect Service once it is installed EG: "ScreenConnect Client (1327465grctq84yrtocq)"
 Variable value must start and end with " (Prior to TRMM Version 0.6.5), remove / don't use " on TRMM Version 0.6.5 or later.
 Requires Custom Fields Agent entry Name: ScreenConnectGUID   Type: text
-URL Action entry: https://YOURNAME.screenconnect.com/Host#Access/All%20Machines//{{agent.ScreenConnectGUID}}/Join
+URL Action entry (check your screenconnect to see what folder name is your "All Machines" folder): https://YOURNAME.screenconnect.com/Host#Access/All%20Machines//{{agent.ScreenConnectGUID}}/Join
+    or https://YOURNAME.screenconnect.com/Host#Access/All%20Machines%20by%20Company//{{agent.ScreenConnectGUID}}/Join
 #>
 
 param (

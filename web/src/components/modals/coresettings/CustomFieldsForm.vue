@@ -138,6 +138,7 @@
             v-model="localField.default_value_string"
             :rules="[...defaultValueRules]"
             reactive-rules
+            autogrow
           />
         </q-card-section>
         <q-card-section>

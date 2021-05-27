@@ -14,6 +14,10 @@
 
 ## Install
 
+!!!info
+    It is recommended that you keep your server updated regularly (monthly). SSL wildcard certs will expire every 3 months and need manual updating as well. <br/><br/>
+    Until we reach production release, there may be architectural changes that may be made to Tactical RMM and only a regular patching schedule is supported by developers.
+
 #### Run updates and setup the linux user
 SSH into the server as **root**.<br/><br/>
 Download and run the prereqs and latest updates<br/>

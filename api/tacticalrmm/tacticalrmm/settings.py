@@ -30,7 +30,7 @@ MESH_VER = "0.8.35"
 PIP_VER = "16"
 NPM_VER = "15"
 
-SETUPTOOLS_VER = "56.1.0"
+SETUPTOOLS_VER = "57.0.0"
 WHEEL_VER = "0.36.2"
 
 DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"

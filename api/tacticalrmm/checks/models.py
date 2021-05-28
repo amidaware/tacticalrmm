@@ -375,12 +375,7 @@ class Check(BaseAuditModel):
             self.stdout = data["stdout"]
             self.stderr = data["stderr"]
             self.retcode = data["retcode"]
-            try:
-                # python agent
-                self.execution_time = "{:.4f}".format(data["stop"] - data["start"])
-            except:
-                # golang agent
-                self.execution_time = "{:.4f}".format(data["runtime"])
+            self.execution_time = "{:.4f}".format(data["runtime"])
 
             if data["retcode"] in self.info_return_codes:
                 self.alert_severity = "info"
@@ -435,49 +430,7 @@ class Check(BaseAuditModel):
             )
 
         elif self.check_type == "eventlog":
-            log = []
-            is_wildcard = self.event_id_is_wildcard
-            eventType = self.event_type
-            eventID = self.event_id
-            source = self.event_source
-            message = self.event_message
-            r = data["log"]
-
-            for i in r:
-                if i["eventType"] == eventType:
-                    if not is_wildcard and not int(i["eventID"]) == eventID:
-                        continue
-
-                    if not source and not message:
-                        if is_wildcard:
-                            log.append(i)
-                        elif int(i["eventID"]) == eventID:
-                            log.append(i)
-                        continue
-
-                    if source and message:
-                        if is_wildcard:
-                            if source in i["source"] and message in i["message"]:
-                                log.append(i)
-
-                        elif int(i["eventID"]) == eventID:
-                            if source in i["source"] and message in i["message"]:
-                                log.append(i)
-
-                        continue
-
-                    if source and source in i["source"]:
-                        if is_wildcard:
-                            log.append(i)
-                        elif int(i["eventID"]) == eventID:
-                            log.append(i)
-
-                    if message and message in i["message"]:
-                        if is_wildcard:
-                            log.append(i)
-                        elif int(i["eventID"]) == eventID:
-                            log.append(i)
-
+            log = data["log"]
             if self.fail_when == "contains":
                 if log and len(log) >= self.number_of_events_b4_alert:
                     self.status = "failing"

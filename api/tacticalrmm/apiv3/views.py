@@ -326,7 +326,7 @@ class CheckRunner(APIView):
 
         check.last_run = djangotime.now()
         check.save(update_fields=["last_run"])
-        status = check.handle_checkv2(request.data)
+        status = check.handle_check(request.data)
         if status == "failing" and check.assignedtask.exists():  # type: ignore
             check.handle_assigned_task()
 

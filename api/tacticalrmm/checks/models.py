@@ -315,7 +315,7 @@ class Check(BaseAuditModel):
     def add_check_history(self, value: int, more_info: Any = None) -> None:
         CheckHistory.objects.create(check_history=self, y=value, results=more_info)
 
-    def handle_checkv2(self, data):
+    def handle_check(self, data):
         from alerts.models import Alert
 
         # cpuload or mem checks

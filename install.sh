@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="48"
+SCRIPT_VERSION="49"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -167,11 +167,11 @@ sudo chmod 775 -R /etc/letsencrypt
 print_green 'Downloading NATS'
 
 nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-wget https://github.com/nats-io/nats-server/releases/download/v2.2.3/nats-server-v2.2.3-linux-amd64.tar.gz -P ${nats_tmp}
+wget https://github.com/nats-io/nats-server/releases/download/v2.2.6/nats-server-v2.2.6-linux-amd64.tar.gz -P ${nats_tmp}
 
-tar -xzf ${nats_tmp}/nats-server-v2.2.3-linux-amd64.tar.gz -C ${nats_tmp}
+tar -xzf ${nats_tmp}/nats-server-v2.2.6-linux-amd64.tar.gz -C ${nats_tmp}
 
-sudo mv ${nats_tmp}/nats-server-v2.2.3-linux-amd64/nats-server /usr/local/bin/
+sudo mv ${nats_tmp}/nats-server-v2.2.6-linux-amd64/nats-server /usr/local/bin/
 sudo chmod +x /usr/local/bin/nats-server
 sudo chown ${USER}:${USER} /usr/local/bin/nats-server
 rm -rf ${nats_tmp}

@@ -70,7 +70,7 @@
             dense
             label="Default Value"
             v-model="localField.default_value_string"
-            :rules="[...defaultValueRules]"
+            :rules="defaultValueRules"
             reactive-rules
           >
             <template v-slot:append>
@@ -111,7 +111,7 @@
             outlined
             dense
             v-model="localField.default_value_string"
-            :rules="[...defaultValueRules]"
+            :rules="defaultValueRules"
             reactive-rules
           />
 
@@ -124,7 +124,7 @@
             dense
             multiple
             v-model="localField.default_values_multiple"
-            :rules="[...defaultValueRules]"
+            :rules="defaultValueRules"
             reactive-rules
           />
 
@@ -136,7 +136,7 @@
             outlined
             dense
             v-model="localField.default_value_string"
-            :rules="[...defaultValueRules]"
+            :rules="defaultValueRules"
             reactive-rules
             autogrow
           />
@@ -205,6 +205,8 @@ export default {
     defaultValueRules() {
       if (this.localField.required) {
         return [val => !!val || `Default Value needs to be set for required fields`];
+      } else {
+        return [];
       }
     },
   },

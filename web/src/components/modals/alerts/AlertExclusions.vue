@@ -143,7 +143,7 @@ export default {
     getOptions() {
       this.getClients();
       this.getSites();
-      this.agentOptions = Object.freeze(this.getAgentOptions());
+      this.agentOptions = this.getAgentOptions();
     },
     show() {
       this.$refs.dialog.show();
@@ -159,7 +159,7 @@ export default {
       this.hide();
     },
   },
-  mounted() {
+  created() {
     this.getOptions();
 
     // copy prop data locally

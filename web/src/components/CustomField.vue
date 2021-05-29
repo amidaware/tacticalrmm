@@ -12,6 +12,7 @@
     @input="value => $emit('input', value)"
     :rules="[...validationRules]"
     reactive-rules
+    autogrow
   />
 
   <q-toggle

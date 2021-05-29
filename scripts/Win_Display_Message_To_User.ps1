@@ -31,6 +31,7 @@ else {
     Install-Module -Name RunAsUser -Force
 }
 
+# Used to pull variables in and use them inside the script block. Contains message to show user
 Set-Content -Path c:\windows\temp\message.txt -Value $args
 
 Invoke-AsCurrentUser -scriptblock {
@@ -55,5 +56,5 @@ Invoke-AsCurrentUser -scriptblock {
     Submit-BTNotification -Content $Content
 }
 
-
+# Cleanup temp file for message variables
 Remove-Item -Path c:\windows\temp\message.txt

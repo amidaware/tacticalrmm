@@ -400,7 +400,7 @@ class TestCheckTasks(TacticalTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
-        self.agent = baker.make_recipe("agents.agent")
+        self.agent = baker.make_recipe("agents.agent", version="1.5.7")
 
     def test_prune_check_history(self):
         from .tasks import prune_check_history
@@ -526,6 +526,7 @@ class TestCheckTasks(TacticalTestCase):
             "percent_used": 85,
             "total": 500,
             "free": 400,
+            "more_info": "More info",
         }
 
         resp = self.client.patch(url, data, format="json")
@@ -543,6 +544,7 @@ class TestCheckTasks(TacticalTestCase):
             "percent_used": 95,
             "total": 500,
             "free": 400,
+            "more_info": "More info",
         }
 
         resp = self.client.patch(url, data, format="json")
@@ -573,6 +575,7 @@ class TestCheckTasks(TacticalTestCase):
             "percent_used": 95,
             "total": 500,
             "free": 400,
+            "more_info": "More info",
         }
 
         resp = self.client.patch(url, data, format="json")
@@ -592,6 +595,7 @@ class TestCheckTasks(TacticalTestCase):
             "percent_used": 95,
             "total": 500,
             "free": 400,
+            "more_info": "More info",
         }
 
         resp = self.client.patch(url, data, format="json")
@@ -608,6 +612,7 @@ class TestCheckTasks(TacticalTestCase):
             "percent_used": 50,
             "total": 500,
             "free": 400,
+            "more_info": "More info",
         }
 
         resp = self.client.patch(url, data, format="json")
@@ -791,12 +796,7 @@ class TestCheckTasks(TacticalTestCase):
         )
 
         # test failing info
-        data = {
-            "id": ping.id,
-            "output": "Reply from 192.168.1.27: Destination host unreachable",
-            "has_stdout": True,
-            "has_stderr": False,
-        }
+        data = {"id": ping.id, "status": "failing", "output": "reply from a.com"}
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -806,13 +806,6 @@ class TestCheckTasks(TacticalTestCase):
         self.assertEqual(new_check.alert_severity, "info")
 
         # test failing warning
-        data = {
-            "id": ping.id,
-            "output": "Reply from 192.168.1.27: Destination host unreachable",
-            "has_stdout": True,
-            "has_stderr": False,
-        }
-
         ping.alert_severity = "warning"
         ping.save()
 
@@ -824,13 +817,6 @@ class TestCheckTasks(TacticalTestCase):
         self.assertEqual(new_check.alert_severity, "warning")
 
         # test failing error
-        data = {
-            "id": ping.id,
-            "output": "Reply from 192.168.1.27: Destination host unreachable",
-            "has_stdout": True,
-            "has_stderr": False,
-        }
-
         ping.alert_severity = "error"
         ping.save()
 
@@ -842,13 +828,6 @@ class TestCheckTasks(TacticalTestCase):
         self.assertEqual(new_check.alert_severity, "error")
 
         # test failing error
-        data = {
-            "id": ping.id,
-            "output": "some output",
-            "has_stdout": False,
-            "has_stderr": True,
-        }
-
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
@@ -857,12 +836,7 @@ class TestCheckTasks(TacticalTestCase):
         self.assertEqual(new_check.alert_severity, "error")
 
         # test passing
-        data = {
-            "id": ping.id,
-            "output": "Reply from 192.168.1.1: bytes=32 time<1ms TTL=64",
-            "has_stdout": True,
-            "has_stderr": False,
-        }
+        data = {"id": ping.id, "status": "passing", "output": "reply from a.com"}
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -881,7 +855,7 @@ class TestCheckTasks(TacticalTestCase):
         )
 
         # test passing running
-        data = {"id": winsvc.id, "exists": True, "status": "running"}
+        data = {"id": winsvc.id, "status": "passing", "more_info": "ok"}
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -889,20 +863,8 @@ class TestCheckTasks(TacticalTestCase):
         new_check = Check.objects.get(pk=winsvc.id)
         self.assertEqual(new_check.status, "passing")
 
-        # test passing start pending
-        winsvc.pass_if_start_pending = True
-        winsvc.save()
-
-        data = {"id": winsvc.id, "exists": True, "status": "start_pending"}
-
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        new_check = Check.objects.get(pk=winsvc.id)
-        self.assertEqual(new_check.status, "passing")
-
-        # test failing no start
-        data = {"id": winsvc.id, "exists": True, "status": "not running"}
+        # test failing
+        data = {"id": winsvc.id, "status": "failing", "more_info": "ok"}
 
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -911,7 +873,7 @@ class TestCheckTasks(TacticalTestCase):
         self.assertEqual(new_check.status, "failing")
         self.assertEqual(new_check.alert_severity, "info")
 
-        # test failing and attempt start
+        """ # test failing and attempt start
         winsvc.restart_if_stopped = True
         winsvc.alert_severity = "warning"
         winsvc.save()
@@ -976,9 +938,9 @@ class TestCheckTasks(TacticalTestCase):
         self.assertEqual(resp.status_code, 200)
 
         new_check = Check.objects.get(pk=winsvc.id)
-        self.assertEqual(new_check.status, "passing")
+        self.assertEqual(new_check.status, "passing") """
 
-    def test_handle_eventlog_check(self):
+    """ def test_handle_eventlog_check(self):
         from checks.models import Check
 
         url = "/api/v3/checkrunner/"
@@ -1180,4 +1142,4 @@ class TestCheckTasks(TacticalTestCase):
 
         new_check = Check.objects.get(pk=eventlog.id)
 
-        self.assertEquals(new_check.status, "passing")
+        self.assertEquals(new_check.status, "passing") """

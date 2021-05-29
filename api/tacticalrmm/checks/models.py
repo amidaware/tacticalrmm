@@ -1,4 +1,3 @@
-import asyncio
 import json
 import os
 import string
@@ -14,9 +13,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from logs.models import BaseAuditModel
 from loguru import logger
-from packaging import version as pyver
 
-from .utils import bytes2human
 
 logger.configure(**settings.LOG_CONFIG)
 
@@ -318,7 +315,7 @@ class Check(BaseAuditModel):
     def add_check_history(self, value: int, more_info: Any = None) -> None:
         CheckHistory.objects.create(check_history=self, y=value, results=more_info)
 
-    def handle_checkv2(self, data):
+    def handle_check(self, data):
         from alerts.models import Alert
 
         # cpuload or mem checks
@@ -349,9 +346,6 @@ class Check(BaseAuditModel):
         elif self.check_type == "diskspace":
             if data["exists"]:
                 percent_used = round(data["percent_used"])
-                total = bytes2human(data["total"])
-                free = bytes2human(data["free"])
-
                 if self.error_threshold and (100 - percent_used) < self.error_threshold:
                     self.status = "failing"
                     self.alert_severity = "error"
@@ -365,7 +359,7 @@ class Check(BaseAuditModel):
                 else:
                     self.status = "passing"
 
-                self.more_info = f"Total: {total}B, Free: {free}B"
+                self.more_info = data["more_info"]
 
                 # add check history
                 self.add_check_history(100 - percent_used)
@@ -381,12 +375,7 @@ class Check(BaseAuditModel):
             self.stdout = data["stdout"]
             self.stderr = data["stderr"]
             self.retcode = data["retcode"]
-            try:
-                # python agent
-                self.execution_time = "{:.4f}".format(data["stop"] - data["start"])
-            except:
-                # golang agent
-                self.execution_time = "{:.4f}".format(data["runtime"])
+            self.execution_time = "{:.4f}".format(data["runtime"])
 
             if data["retcode"] in self.info_return_codes:
                 self.alert_severity = "info"
@@ -422,22 +411,8 @@ class Check(BaseAuditModel):
 
         # ping checks
         elif self.check_type == "ping":
-            output = data["output"]
-
-            if pyver.parse(self.agent.version) <= pyver.parse("1.5.2"):
-                # DEPRECATED
-                success = ["Reply", "bytes", "time", "TTL"]
-                if data["has_stdout"]:
-                    if all(x in output for x in success):
-                        self.status = "passing"
-                    else:
-                        self.status = "failing"
-                elif data["has_stderr"]:
-                    self.status = "failing"
-            else:
-                self.status = data["status"]
-
-            self.more_info = output
+            self.status = data["status"]
+            self.more_info = data["output"]
             self.save(update_fields=["more_info"])
 
             self.add_check_history(
@@ -446,41 +421,8 @@ class Check(BaseAuditModel):
 
         # windows service checks
         elif self.check_type == "winsvc":
-            svc_stat = data["status"]
-            self.more_info = f"Status {svc_stat.upper()}"
-
-            if data["exists"]:
-                if svc_stat == "running":
-                    self.status = "passing"
-                elif svc_stat == "start_pending" and self.pass_if_start_pending:
-                    self.status = "passing"
-                else:
-                    if self.agent and self.restart_if_stopped:
-                        nats_data = {
-                            "func": "winsvcaction",
-                            "payload": {"name": self.svc_name, "action": "start"},
-                        }
-                        r = asyncio.run(self.agent.nats_cmd(nats_data, timeout=32))
-                        if r == "timeout" or r == "natsdown":
-                            self.status = "failing"
-                        elif not r["success"] and r["errormsg"]:
-                            self.status = "failing"
-                        elif r["success"]:
-                            self.status = "passing"
-                            self.more_info = f"Status RUNNING"
-                        else:
-                            self.status = "failing"
-                    else:
-                        self.status = "failing"
-
-            else:
-                if self.pass_if_svc_not_exist:
-                    self.status = "passing"
-                else:
-                    self.status = "failing"
-
-                self.more_info = f"Service {self.svc_name} does not exist"
-
+            self.status = data["status"]
+            self.more_info = data["more_info"]
             self.save(update_fields=["more_info"])
 
             self.add_check_history(
@@ -488,49 +430,7 @@ class Check(BaseAuditModel):
             )
 
         elif self.check_type == "eventlog":
-            log = []
-            is_wildcard = self.event_id_is_wildcard
-            eventType = self.event_type
-            eventID = self.event_id
-            source = self.event_source
-            message = self.event_message
-            r = data["log"]
-
-            for i in r:
-                if i["eventType"] == eventType:
-                    if not is_wildcard and not int(i["eventID"]) == eventID:
-                        continue
-
-                    if not source and not message:
-                        if is_wildcard:
-                            log.append(i)
-                        elif int(i["eventID"]) == eventID:
-                            log.append(i)
-                        continue
-
-                    if source and message:
-                        if is_wildcard:
-                            if source in i["source"] and message in i["message"]:
-                                log.append(i)
-
-                        elif int(i["eventID"]) == eventID:
-                            if source in i["source"] and message in i["message"]:
-                                log.append(i)
-
-                        continue
-
-                    if source and source in i["source"]:
-                        if is_wildcard:
-                            log.append(i)
-                        elif int(i["eventID"]) == eventID:
-                            log.append(i)
-
-                    if message and message in i["message"]:
-                        if is_wildcard:
-                            log.append(i)
-                        elif int(i["eventID"]) == eventID:
-                            log.append(i)
-
+            log = data["log"]
             if self.fail_when == "contains":
                 if log and len(log) >= self.number_of_events_b4_alert:
                     self.status = "failing"
@@ -566,6 +466,11 @@ class Check(BaseAuditModel):
                 Alert.handle_alert_resolve(self)
 
         return self.status
+
+    def handle_assigned_task(self) -> None:
+        for task in self.assignedtask.all():  # type: ignore
+            if task.enabled:
+                task.run_win_task()
 
     @staticmethod
     def serialize(check):

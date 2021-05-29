@@ -72,18 +72,18 @@ export default {
 
     isValidThreshold(warning, error, diskcheck = false) {
       if (warning === 0 && error === 0) {
-        Notify.create(notifyErrorConfig("Warning Threshold or Error Threshold need to be set", 2000));
-        return false
+        Notify.create({ type: "negative", timeout: 2000, message: "Warning Threshold or Error Threshold need to be set" });
+        return false;
       }
 
       if (!diskcheck && warning > error && warning > 0 && error > 0) {
-        Notify.create(notifyErrorConfig("Warning Threshold must be less than Error Threshold", 2000));
-        return false
+        Notify.create({ type: "negative", timeout: 2000, message: "Warning Threshold must be less than Error Threshold" });
+        return false;
       }
 
       if (diskcheck && warning < error && warning > 0 && error > 0) {
-        Notify.create(notifyErrorConfig("Warning Threshold must be more than Error Threshold", 2000));
-        return false
+        Notify.create({ type: "negative", timeout: 2000, message: "Warning Threshold must be more than Error Threshold" });
+        return false;
       }
 
       return true;

@@ -321,11 +321,16 @@ class CheckRunner(APIView):
 
     def patch(self, request):
         check = get_object_or_404(Check, pk=request.data["id"])
+        if pyver.parse(check.agent.version) < pyver.parse("1.5.7"):
+            return notify_error("unsupported")
+
         check.last_run = djangotime.now()
         check.save(update_fields=["last_run"])
-        status = check.handle_checkv2(request.data)
+        status = check.handle_check(request.data)
+        if status == "failing" and check.assignedtask.exists():  # type: ignore
+            check.handle_assigned_task()
 
-        return Response(status)
+        return Response("ok")
 
 
 class CheckRunnerInterval(APIView):
@@ -378,9 +383,18 @@ class TaskRunner(APIView):
                     )
 
                 # get last line of stdout
-                value = new_task.stdout.split("\n")[-1].strip()
+                value = (
+                    new_task.stdout
+                    if task.collector_all_output
+                    else new_task.stdout.split("\n")[-1].strip()
+                )
 
-                if task.custom_field.type in ["text", "number", "single", "datetime"]:
+                if task.custom_field.type in [
+                    "text",
+                    "number",
+                    "single",
+                    "datetime",
+                ]:
                     agent_field.string_value = value
                     agent_field.save()
                 elif task.custom_field.type == "multiple":

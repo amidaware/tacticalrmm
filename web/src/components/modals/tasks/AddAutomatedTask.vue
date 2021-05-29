@@ -73,7 +73,12 @@
             label="Collector Task"
             v-model="collector"
             class="q-pb-sm"
-            @input="autotask.custom_field = null"
+            @input="
+              () => {
+                autotask.custom_field = null;
+                autotask.collector_all_ouput = false;
+              }
+            "
           />
           <q-select
             v-if="collector"
@@ -86,6 +91,13 @@
             emit-value
             options-dense
             hint="The last line of script output will be saved to custom field selected"
+          />
+          <q-checkbox
+            v-if="collector"
+            dense
+            label="Save all output (Only for text area)"
+            v-model="autotask.collector_all_output"
+            class="q-py-sm"
           />
         </q-card-section>
         <q-card-section>
@@ -229,6 +241,7 @@ export default {
         task_type: "scheduled",
         timeout: 120,
         alert_severity: "info",
+        collector_all_output: false,
       },
       policyChecks: [],
       severityOptions: [

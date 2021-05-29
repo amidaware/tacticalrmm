@@ -261,6 +261,9 @@
                   @click="eventLogMoreInfo(props.row)"
                   >Last Output</span
                 >
+                <span v-else-if="props.row.check_type === 'diskspace' || props.row.check_type === 'winsvc'">{{
+                  props.row.more_info
+                }}</span>
               </q-td>
               <q-td>{{ props.row.last_run || "Never" }}</q-td>
               <q-td v-if="props.row.assigned_task !== null && props.row.assigned_task.length > 1"

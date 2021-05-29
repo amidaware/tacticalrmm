@@ -111,6 +111,7 @@
                 dense
                 options-dense
                 outlined
+                clearable
                 v-model="template.action"
                 :options="scriptOptions"
                 map-options
@@ -174,6 +175,7 @@
                 dense
                 options-dense
                 outlined
+                clearable
                 v-model="template.resolved_action"
                 :options="scriptOptions"
                 map-options

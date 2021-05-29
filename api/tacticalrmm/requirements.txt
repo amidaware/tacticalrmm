@@ -1,6 +1,6 @@
 asgiref==3.3.4
 asyncio-nats-client==0.11.4
-celery==5.0.5
+celery==5.1.0
 certifi==2020.12.5
 cffi==1.14.5
 channels==3.0.3
@@ -8,12 +8,11 @@ channels_redis==3.2.0
 chardet==4.0.0
 cryptography==3.4.7
 daphne==3.0.2
-Django==3.2.2
+Django==3.2.3
 django-cors-headers==3.7.0
 django-rest-knox==4.1.0
 djangorestframework==3.12.4
 future==0.18.2
-kombu==5.0.2
 loguru==0.5.3
 msgpack==1.0.2
 packaging==20.9
@@ -26,10 +25,10 @@ pytz==2021.1
 qrcode==6.1
 redis==3.5.3
 requests==2.25.1
-six==1.15.0
+six==1.16.0
 sqlparse==0.4.1
-twilio==6.57.0
-urllib3==1.26.4
+twilio==6.59.0
+urllib3==1.26.5
 uWSGI==2.0.19.1
 validators==0.18.2
 vine==5.0.0

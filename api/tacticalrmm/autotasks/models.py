@@ -104,6 +104,7 @@ class AutomatedTask(BaseAuditModel):
     task_type = models.CharField(
         max_length=100, choices=TASK_TYPE_CHOICES, default="manual"
     )
+    collector_all_output = models.BooleanField(default=False)
     run_time_date = DateTimeField(null=True, blank=True)
     remove_if_not_scheduled = models.BooleanField(default=False)
     run_asap_after_missed = models.BooleanField(default=False)  # added in agent v1.4.7

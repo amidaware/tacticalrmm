@@ -90,6 +90,13 @@
             options-dense
             hint="The return value of script will be saved to custom field selected"
           />
+          <q-checkbox
+            v-if="collector"
+            dense
+            label="Save all output (Only for text area)"
+            v-model="autotask.collector_all_output"
+            class="q-py-sm"
+          />
         </q-card-section>
         <q-card-section>
           <q-input
@@ -131,6 +138,7 @@ export default {
         alert_severity: null,
         timeout: 120,
         custom_field: null,
+        collector_all_output: false,
       },
       collector: false,
       customFieldOptions: [],
@@ -197,6 +205,7 @@ export default {
     this.autotask.alert_severity = this.task.alert_severity;
     this.autotask.timeout = this.task.timeout;
     this.autotask.custom_field = this.task.custom_field;
+    this.autotask.collector_all_output = this.task.collector_all_output;
   },
 };
 </script>

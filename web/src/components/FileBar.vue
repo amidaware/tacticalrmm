@@ -94,7 +94,7 @@
                 <q-item-section>Global Settings</q-item-section>
               </q-item>
               <!-- code sign -->
-              <q-item v-if="!noCodeSigning" clickable v-close-popup @click="showCodeSign = true">
+              <q-item v-if="!hosted" clickable v-close-popup @click="showCodeSign = true">
                 <q-item-section>Code Signing</q-item-section>
               </q-item>
             </q-list>
@@ -124,7 +124,7 @@
           </q-menu>
         </q-btn>
         <!-- help -->
-        <q-btn size="md" dense no-caps flat label="Help">
+        <q-btn v-if="!hosted" size="md" dense no-caps flat label="Help">
           <q-menu auto-close>
             <q-list dense style="min-width: 100px">
               <q-item clickable v-close-popup @click="openHelp('docs')">
@@ -272,8 +272,8 @@ export default {
     };
   },
   computed: {
-    noCodeSigning() {
-      return this.$store.state.noCodeSign;
+    hosted() {
+      return this.$store.state.hosted;
     },
   },
   methods: {

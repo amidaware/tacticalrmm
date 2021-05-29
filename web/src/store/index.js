@@ -35,7 +35,7 @@ export default function () {
       defaultAgentTblTab: "server",
       clientTreeSort: "alphafail",
       clientTreeSplitter: 11,
-      noCodeSign: false,
+      hosted: false,
     },
     getters: {
       clientTreeSplitterModel(state) {
@@ -159,8 +159,8 @@ export default function () {
       SET_CLIENT_TREE_SORT(state, val) {
         state.clientTreeSort = val
       },
-      SET_NO_CODE_SIGN(state, val) {
-        state.noCodeSign = val
+      SET_HOSTED(state, val) {
+        state.hosted = val
       }
     },
     actions: {

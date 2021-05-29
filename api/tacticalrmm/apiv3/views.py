@@ -383,9 +383,18 @@ class TaskRunner(APIView):
                     )
 
                 # get last line of stdout
-                value = new_task.stdout.split("\n")[-1].strip()
+                value = (
+                    new_task.stdout
+                    if task.collector_all_output
+                    else new_task.stdout.split("\n")[-1].strip()
+                )
 
-                if task.custom_field.type in ["text", "number", "single", "datetime"]:
+                if task.custom_field.type in [
+                    "text",
+                    "number",
+                    "single",
+                    "datetime",
+                ]:
                     agent_field.string_value = value
                     agent_field.save()
                 elif task.custom_field.type == "multiple":

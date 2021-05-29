@@ -211,6 +211,7 @@ def agent_outages_task() -> None:
 
     agents = Agent.objects.only(
         "pk",
+        "agent_id",
         "last_seen",
         "offline_time",
         "overdue_time",

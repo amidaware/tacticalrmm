@@ -321,11 +321,16 @@ class CheckRunner(APIView):
 
     def patch(self, request):
         check = get_object_or_404(Check, pk=request.data["id"])
+        if pyver.parse(check.agent.version) < pyver.parse("1.5.7"):
+            return notify_error("unsupported")
+
         check.last_run = djangotime.now()
         check.save(update_fields=["last_run"])
         status = check.handle_checkv2(request.data)
+        if status == "failing" and check.assignedtask.exists():  # type: ignore
+            check.handle_assigned_task()
 
-        return Response(status)
+        return Response("ok")
 
 
 class CheckRunnerInterval(APIView):

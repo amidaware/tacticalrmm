@@ -183,6 +183,7 @@ class AutomatedTask(BaseAuditModel):
             "remove_if_not_scheduled",
             "run_asap_after_missed",
             "custom_field",
+            "collector_all_output",
         ]
 
     @staticmethod

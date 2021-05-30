@@ -30,7 +30,7 @@
           </q-card-section>
 
           <div class="text-h6">Custom Fields</div>
-          <q-card-section v-for="field in customFields">
+          <q-card-section v-for="field in customFields" :key="field.id">
             <CustomField v-model="custom_fields[field.name]" :field="field" />
           </q-card-section>
           <q-card-actions align="right">
@@ -131,14 +131,14 @@ export default {
             const value = r.data.custom_fields.find(value => value.field === field.id);
 
             if (field.type === "multiple") {
-              if (value) this.$set(this.custom_fields, field.name, value.value);
-              else this.$set(this.custom_fields, field.name, []);
+              if (value) this.custom_fields[field.name] = value.value;
+              else this.custom_fields[field.name] = [];
             } else if (field.type === "checkbox") {
-              if (value) this.$set(this.custom_fields, field.name, value.value);
-              else this.$set(this.custom_fields, field.name, false);
+              if (value) this.custom_fields[field.name] = value.value;
+              else this.this.custom_fields[field.name] = false;
             } else {
-              if (value) this.$set(this.custom_fields, field.name, value.value);
-              else this.$set(this.custom_fields, field.name, "");
+              if (value) this.custom_fields[field.name] = value.value;
+              else this.custom_fields[field.name] = "";
             }
           }
         })

@@ -21,7 +21,7 @@
     "vue3-apexcharts": "^1.4.0"
   },
   "devDependencies": {
-    "@quasar/app": "^3.0.0-beta.27",
+    "@quasar/app": "^3.0.0-beta.28",
     "@quasar/cli": "^1.2.0"
   },
   "browserslist": [

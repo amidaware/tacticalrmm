@@ -1,5 +1,5 @@
 <template>
-  <q-card style="min-width: 800px" v-if="agentLoaded && clientsLoaded">
+  <q-card style="min-width: 800px">
     <q-splitter v-model="splitterModel">
       <template v-slot:before>
         <q-tabs dense v-model="tab" vertical class="text-primary">
@@ -19,31 +19,29 @@
               <!-- general -->
               <q-tab-panel name="general">
                 <q-card-section class="row">
-                  <div class="col-2">Client:</div>
-                  <div class="col-2"></div>
-                  <q-select
-                    @input="agent.site = site_options[0].value"
-                    dense
-                    options-dense
-                    outlined
-                    v-model="agent.client"
-                    :options="client_options"
-                    class="col-8"
-                  />
-                </q-card-section>
-                <q-card-section class="row">
                   <div class="col-2">Site:</div>
                   <div class="col-2"></div>
                   <q-select
-                    class="col-8"
                     dense
                     options-dense
-                    emit-value
-                    map-options
                     outlined
                     v-model="agent.site"
-                    :options="site_options"
-                  />
+                    :options="siteOptions"
+                    map-options
+                    emit-value
+                    class="col-8"
+                  >
+                    <template v-slot:option="scope">
+                      <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
+                        <q-item-section>
+                          <q-item-label v-html="scope.opt.label"></q-item-label>
+                        </q-item-section>
+                      </q-item>
+                      <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
+                        scope.opt.category
+                      }}</q-item-label>
+                    </template>
+                  </q-select>
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Type:</div>
@@ -126,7 +124,7 @@
                   <q-checkbox v-model="agent.overdue_text_alert" label="Get overdue sms alerts" />
                 </q-card-section>
                 <div class="text-h6">Custom Fields</div>
-                <q-card-section v-for="field in customFields">
+                <q-card-section v-for="field in customFields" :key="field.id">
                   <CustomField v-model="custom_fields[field.name]" :field="field" />
                 </q-card-section>
               </q-tab-panel>
@@ -160,8 +158,6 @@ export default {
     return {
       customFields: [],
       custom_fields: {},
-      agentLoaded: false,
-      clientsLoaded: false,
       agent: {},
       monTypes: ["server", "workstation"],
       client_options: [],
@@ -171,6 +167,7 @@ export default {
       tz_inherited: true,
       original_tz: null,
       allTimezones: [],
+      siteOptions: [],
     };
   },
   methods: {
@@ -194,39 +191,36 @@ export default {
             this.original_tz = r.data.time_zone;
           }
 
-          this.agent.client = { label: r.data.client.name, id: r.data.client.id, sites: r.data.client.sites };
-          this.agentLoaded = true;
-
           for (let field of this.customFields) {
             const value = r.data.custom_fields.find(value => value.field === field.id);
 
             if (field.type === "multiple") {
-              if (value) this.$set(this.custom_fields, field.name, value.value);
-              else this.$set(this.custom_fields, field.name, []);
+              if (value) this.custom_fields[field.name] = value.value;
+              else this.custom_fields[field.name] = [];
             } else if (field.type === "checkbox") {
-              if (value) this.$set(this.custom_fields, field.name, value.value);
-              else this.$set(this.custom_fields, field.name, false);
+              if (value) this.custom_fields[field.name] = value.value;
+              else this.this.custom_fields[field.name] = false;
             } else {
-              if (value) this.$set(this.custom_fields, field.name, value.value);
-              else this.$set(this.custom_fields, field.name, "");
+              if (value) this.custom_fields[field.name] = value.value;
+              else this.custom_fields[field.name] = "";
             }
           }
         })
         .catch(e => {});
     },
-    getClientsSites() {
+    getSiteOptions() {
       this.$axios
         .get("/clients/clients/")
         .then(r => {
-          this.client_options = this.formatClientOptions(r.data);
-          this.clientsLoaded = true;
+          r.data.forEach(client => {
+            this.siteOptions.push({ category: client.name });
+            client.sites.forEach(site => this.siteOptions.push({ label: site.name, value: site.id }));
+          });
         })
         .catch(e => {});
     },
     editAgent() {
       delete this.agent.all_timezones;
-      delete this.agent.client;
-      delete this.agent.sites;
       delete this.agent.timezone;
       delete this.agent.winupdatepolicy[0].created_by;
       delete this.agent.winupdatepolicy[0].created_time;
@@ -256,11 +250,6 @@ export default {
   },
   computed: {
     ...mapGetters(["selectedAgentPk"]),
-    site_options() {
-      if (this.agentLoaded && this.clientsLoaded) {
-        return this.formatSiteOptions(this.agent.client["sites"]);
-      }
-    },
   },
   mounted() {
     // Get custom fields
@@ -268,7 +257,7 @@ export default {
       this.customFields = r.data.filter(field => !field.hide_in_ui);
     });
     this.getAgentInfo();
-    this.getClientsSites();
+    this.getSiteOptions();
   },
 };
 </script>

@@ -145,14 +145,13 @@ export default {
       let tempArray = [];
 
       for (let field of fields) {
-        if (values[field.name] !== null || values[field.name] !== undefined)
-          if (field.type === "multiple") {
-            tempArray.push({ multiple_value: values[field.name], field: field.id });
-          } else if (field.type === "checkbox") {
-            tempArray.push({ bool_value: values[field.name], field: field.id });
-          } else {
-            tempArray.push({ string_value: values[field.name], field: field.id });
-          }
+        if (field.type === "multiple") {
+          tempArray.push({ multiple_value: values[field.name], field: field.id });
+        } else if (field.type === "checkbox") {
+          tempArray.push({ bool_value: values[field.name], field: field.id });
+        } else {
+          tempArray.push({ string_value: values[field.name], field: field.id });
+        }
       }
       return tempArray
     },

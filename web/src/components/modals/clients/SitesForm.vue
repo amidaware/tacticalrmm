@@ -34,7 +34,7 @@
           </q-card-section>
 
           <div class="text-h6">Custom Fields</div>
-          <q-card-section v-for="field in customFields">
+          <q-card-section v-for="field in customFields" :key="field.id">
             <CustomField v-model="custom_fields[field.name]" :field="field" />
           </q-card-section>
 
@@ -134,26 +134,15 @@ export default {
           for (let field of this.customFields) {
             const value = r.data.custom_fields.find(value => value.field === field.id);
 
-            // Set correct value for custom field
-            if (
-              field.type === "text" ||
-              field.type === "number" ||
-              field.type === "datetime" ||
-              field.type === "single"
-            ) {
-              if (!!value) this.$set(this.custom_fields, field.name, value.value);
-              else if (!!field.default_value) this.$set(this.custom_fields, field.name, field.default_value);
-              else this.$set(this.custom_fields, field.name, "");
-            } else if (field.type === "multiple") {
-              if (!!value) this.$set(this.custom_fields, field.name, value.multiple_value);
-              else if (!!field.multiple_default_value)
-                this.$set(this.custom_fields, field.name, field.multiple_default_value);
-              else this.$set(this.custom_fields, field.name, []);
+            if (field.type === "multiple") {
+              if (value) this.custom_fields[field.name] = value.value;
+              else this.custom_fields[field.name] = [];
             } else if (field.type === "checkbox") {
-              if (!!value) this.$set(this.custom_fields, field.name, value.checkbox_value);
-              else if (!!field.checkbox_default_value)
-                this.$set(this.custom_fields, field.name, field.checkbox_default_value);
-              else this.$set(this.custom_fields, field.name, false);
+              if (value) this.custom_fields[field.name] = value.value;
+              else this.this.custom_fields[field.name] = false;
+            } else {
+              if (value) this.custom_fields[field.name] = value.value;
+              else this.custom_fields[field.name] = "";
             }
           }
         })

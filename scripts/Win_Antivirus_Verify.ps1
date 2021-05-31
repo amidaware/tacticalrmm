@@ -4,6 +4,8 @@
 #antivirusName must match the "displayName" exactly
 #If no antivirusName parameter is specified, the tool returns success if there is any active up to date antivirus on the system
 
+# OS Build must be greater than 14393 to support this script. If it's not it returns exit code 2
+
 
 param($antivirusName = "*")
 
@@ -91,6 +93,11 @@ function Add-ProductStates {
             return $results
         }
     }
+}
+
+if ([environment]::OSVersion.Version.Build -le 14393) {
+	write-host "Antivirus check not supported on this OS. Returning Exit Code 2."
+	exit 2
 }
 
 

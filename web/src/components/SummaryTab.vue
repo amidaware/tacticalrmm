@@ -19,7 +19,7 @@
             </q-item-section>
             <q-item-section>{{ summary.make_model }}</q-item-section>
           </q-item>
-          <q-item v-for="(cpu, i) in summary.cpu_model">
+          <q-item v-for="(cpu, i) in summary.cpu_model" :key="cpu + i">
             <q-item-section avatar>
               <q-icon name="fas fa-microchip" />
             </q-item-section>
@@ -33,7 +33,7 @@
           </q-item>
 
           <!-- physical disks -->
-          <q-item v-for="(disk, i) in summary.physical_disks">
+          <q-item v-for="(disk, i) in summary.physical_disks" :key="disk + i">
             <q-item-section avatar>
               <q-icon name="far fa-hdd" />
             </q-item-section>
@@ -99,7 +99,7 @@
       <!-- right -->
       <div class="col-3">
         <span class="text-subtitle2 text-bold">Disks</span>
-        <div v-for="disk in disks">
+        <div v-for="disk in disks" :key="disk.device">
           <span>{{ disk.device }} ({{ disk.fstype }})</span>
           <q-linear-progress rounded size="15px" :value="disk.percent / 100" color="green" class="q-mt-sm" />
           <span>{{ disk.free }} free of {{ disk.total }}</span>

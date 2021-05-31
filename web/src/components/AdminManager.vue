@@ -25,18 +25,12 @@
           :hide-bottom="!!selected"
         >
           <!-- header slots -->
-          <template v-slot:header="props">
-            <q-tr :props="props">
-              <template v-for="col in props.cols" :key="col.name">
-                <q-th v-if="col.name === 'active'" auto-width>
-                  <q-icon name="power_settings_new" size="1.5em">
-                    <q-tooltip>Enable User</q-tooltip>
-                  </q-icon>
-                </q-th>
-
-                <q-th v-else :props="props">{{ col.label }}</q-th>
-              </template>
-            </q-tr>
+          <template v-slot:header-cell-active="props">
+            <q-th :props="props" auto-width>
+              <q-icon name="power_settings_new" size="1.5em">
+                <q-tooltip>Enable User</q-tooltip>
+              </q-icon>
+            </q-th>
           </template>
           <!-- No data Slot -->
           <template v-slot:no-data>

@@ -141,6 +141,7 @@
                     <q-list dense v-if="ready && settings.email_alert_recipients.length !== 0">
                       <q-item
                         v-for="email in settings.email_alert_recipients"
+                        :key="email"
                         clickable
                         v-ripple
                         @click="removeEmail(email)"
@@ -247,6 +248,7 @@
                     <q-list dense v-if="ready && settings.sms_alert_recipients.length !== 0">
                       <q-item
                         v-for="num in settings.sms_alert_recipients"
+                        :key="num"
                         clickable
                         v-ripple
                         @click="removeSMSNumber(num)"

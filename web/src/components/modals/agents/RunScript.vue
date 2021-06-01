@@ -17,7 +17,7 @@
           map-options
           emit-value
           options-dense
-          @input="setScriptDefaults"
+          @update:model-value="setScriptDefaults"
         >
           <template v-slot:option="scope">
             <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
@@ -46,8 +46,8 @@
       </q-card-section>
       <q-card-section>
         <div class="q-gutter-sm">
-          <q-radio dense v-model="output" val="wait" label="Wait for Output" @input="emails = []" />
-          <q-radio dense v-model="output" val="forget" label="Fire and Forget" @input="emails = []" />
+          <q-radio dense v-model="output" val="wait" label="Wait for Output" @update:model-value="emails = []" />
+          <q-radio dense v-model="output" val="forget" label="Fire and Forget" @update:model-value="emails = []" />
           <q-radio dense v-model="output" val="email" label="Email results" />
         </div>
       </q-card-section>
@@ -58,7 +58,7 @@
             v-model="emailmode"
             val="default"
             label="Use email addresses from global settings"
-            @input="emails = []"
+            @update:model-value="emails = []"
           />
           <q-radio dense v-model="emailmode" val="custom" label="Custom emails" />
         </div>

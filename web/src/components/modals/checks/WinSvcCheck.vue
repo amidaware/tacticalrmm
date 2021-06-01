@@ -15,14 +15,14 @@
           v-model="winsvccheck.svc_policy_mode"
           val="default"
           label="Choose from defaults"
-          @input="clearServiceOptions"
+          @update:model-value="clearServiceOptions"
         />
         <q-radio
           v-if="policypk && this.mode !== 'edit'"
           v-model="winsvccheck.svc_policy_mode"
           val="manual"
           label="Enter manually"
-          @input="clearServiceOptions"
+          @update:model-value="clearServiceOptions"
         />
         <q-select
           v-if="policypk && winsvccheck.svc_policy_mode === 'default' && this.mode !== 'edit'"
@@ -35,7 +35,7 @@
           label="Service"
           map-options
           emit-value
-          @input="getDisplayName"
+          @update:model-value="getDisplayName"
         />
         <!-- disable selection if editing -->
         <q-select
@@ -79,7 +79,7 @@
           label="Service"
           map-options
           emit-value
-          @input="getDisplayName"
+          @update:model-value="getDisplayName"
           :disable="this.mode === 'edit'"
         />
       </q-card-section>

@@ -20,7 +20,7 @@
             label="Select script"
             map-options
             emit-value
-            @input="setScriptDefaults"
+            @update:model-value="setScriptDefaults"
           >
             <template v-slot:option="scope">
               <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
@@ -76,7 +76,7 @@
             label="Collector Task"
             v-model="collector"
             class="q-pb-sm"
-            @input="autotask.custom_field = null"
+            @update:model-value="autotask.custom_field = null"
           />
           <q-select
             v-if="collector"

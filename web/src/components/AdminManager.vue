@@ -203,14 +203,15 @@ export default {
         });
     },
     toggleEnabled(user) {
+      console.log(user);
       if (user.username === this.logged_in_user) {
         return;
       }
-      let text = user.is_active ? "User enabled successfully" : "User disabled successfully";
+      let text = !user.is_active ? "User enabled successfully" : "User disabled successfully";
 
       const data = {
         id: user.id,
-        is_active: user.is_active,
+        is_active: !user.is_active,
       };
 
       this.$axios

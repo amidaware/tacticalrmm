@@ -289,7 +289,7 @@
             <q-checkbox
               v-else
               dense
-              @input="overdueAlert('text', props.row.id, props.row.overdue_text_alert)"
+              @update:model-value="overdueAlert('text', props.row.id, props.row.overdue_text_alert)"
               v-model="props.row.overdue_text_alert"
             />
           </q-td>
@@ -306,7 +306,7 @@
             <q-checkbox
               v-else
               dense
-              @input="overdueAlert('email', props.row.id, props.row.overdue_email_alert)"
+              @update:model-value="overdueAlert('email', props.row.id, props.row.overdue_email_alert)"
               v-model="props.row.overdue_email_alert"
             />
           </q-td>
@@ -323,7 +323,7 @@
             <q-checkbox
               v-else
               dense
-              @input="overdueAlert('dashboard', props.row.id, props.row.overdue_dashboard_alert)"
+              @update:model-value="overdueAlert('dashboard', props.row.id, props.row.overdue_dashboard_alert)"
               v-model="props.row.overdue_dashboard_alert"
             />
           </q-td>
@@ -717,12 +717,12 @@ export default {
       else if (category === "text") db_field = "overdue_text_alert";
       else if (category === "dashboard") db_field = "overdue_dashboard_alert";
 
-      const action = alert_action ? "enabled" : "disabled";
+      const action = !alert_action ? "enabled" : "disabled";
       const data = {
         pk: pk,
-        [db_field]: alert_action,
+        [db_field]: !alert_action,
       };
-      const alertColor = alert_action ? "positive" : "warning";
+      const alertColor = !alert_action ? "positive" : "warning";
       this.$axios
         .post("/agents/overdueaction/", data)
         .then(r => {

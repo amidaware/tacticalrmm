@@ -135,11 +135,19 @@
                   </q-menu>
                   <!-- enabled checkbox -->
                   <q-td>
-                    <q-checkbox dense @input="toggleCheckbox(props.row, 'Active')" v-model="props.row.active" />
+                    <q-checkbox
+                      dense
+                      @update:model-value="toggleCheckbox(props.row, 'Active')"
+                      v-model="props.row.active"
+                    />
                   </q-td>
                   <!-- enforced checkbox -->
                   <q-td>
-                    <q-checkbox dense @input="toggleCheckbox(props.row, 'Enforced')" v-model="props.row.enforced" />
+                    <q-checkbox
+                      dense
+                      @update:model-value="toggleCheckbox(props.row, 'Enforced')"
+                      v-model="props.row.enforced"
+                    />
                   </q-td>
                   <q-td>
                     {{ props.row.name }}
@@ -459,19 +467,19 @@ export default {
       this.$q.loading.show();
       let text = "";
 
-      if (type === "Active") {
-        text = policy.active ? "Policy enabled successfully" : "Policy disabled successfully";
-      } else if (type === "Enforced") {
-        text = policy.enforced ? "Policy enforced successfully" : "Policy enforcement disabled";
-      }
-
       const data = {
         id: policy.id,
         name: policy.name,
         desc: policy.desc,
-        active: policy.active,
-        enforced: policy.enforced,
       };
+
+      if (type === "Active") {
+        text = !policy.active ? "Policy enabled successfully" : "Policy disabled successfully";
+        data["active"] = !policy.active;
+      } else if (type === "Enforced") {
+        text = !policy.enforced ? "Policy enforced successfully" : "Policy enforcement disabled";
+        data["enforced"] = !policy.enforced;
+      }
 
       this.$axios
         .put(`/automation/policies/${data.id}/`, data)

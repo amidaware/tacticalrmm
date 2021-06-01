@@ -98,7 +98,7 @@
                 </q-menu>
                 <!-- enabled checkbox -->
                 <q-td>
-                  <q-checkbox dense @input="toggleEnabled(props.row)" v-model="props.row.is_active" />
+                  <q-checkbox dense @update:model-value="toggleEnabled(props.row)" v-model="props.row.is_active" />
                 </q-td>
                 <!-- agent settings -->
                 <q-td>
@@ -296,11 +296,11 @@ export default {
       });
     },
     toggleEnabled(template) {
-      let text = template.is_active ? "Template enabled successfully" : "Template disabled successfully";
+      let text = !template.is_active ? "Template enabled successfully" : "Template disabled successfully";
 
       const data = {
         id: template.id,
-        is_active: template.is_active,
+        is_active: !template.is_active,
       };
 
       this.$axios

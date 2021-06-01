@@ -23,7 +23,7 @@
             label="Select script"
             map-options
             emit-value
-            @input="setScriptDefaults"
+            @update:model-value="setScriptDefaults"
           >
             <template v-slot:option="scope">
               <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
@@ -67,7 +67,7 @@
             label="Collector Task"
             v-model="collector"
             class="q-pb-sm"
-            @input="
+            @update:model-value="
               () => {
                 autotask.custom_field = null;
                 autotask.collector_all_ouput = false;
@@ -120,10 +120,10 @@
       </q-step>
 
       <q-step :name="2" title="Choose Schedule" :done="step2Done" :error="!step2Done">
-        <q-radio v-model="autotask.task_type" val="scheduled" label="Scheduled" @input="clear" />
-        <q-radio v-model="autotask.task_type" val="runonce" label="Run Once" @input="clear" />
-        <q-radio v-model="autotask.task_type" val="checkfailure" label="On check failure" @input="clear" />
-        <q-radio v-model="autotask.task_type" val="manual" label="Manual" @input="clear" />
+        <q-radio v-model="autotask.task_type" val="scheduled" label="Scheduled" @update:model-value="clear" />
+        <q-radio v-model="autotask.task_type" val="runonce" label="Run Once" @update:model-value="clear" />
+        <q-radio v-model="autotask.task_type" val="checkfailure" label="On check failure" @update:model-value="clear" />
+        <q-radio v-model="autotask.task_type" val="manual" label="Manual" @update:model-value="clear" />
         <div v-if="autotask.task_type === 'scheduled'" class="row q-pa-lg">
           <div class="col-3">
             Run on Days:

@@ -88,7 +88,7 @@
             <div class="col-3">Startup type:</div>
             <div class="col-5">
               <q-select
-                @input="startupTypeChanged"
+                @update:model-value="startupTypeChanged"
                 dense
                 options-dense
                 outlined

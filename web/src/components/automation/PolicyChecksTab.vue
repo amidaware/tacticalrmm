@@ -134,21 +134,21 @@
             <q-td>
               <q-checkbox
                 dense
-                @input="checkAlert(props.row.id, 'Text', props.row.text_alert)"
+                @update:model-value="checkAlert(props.row.id, 'Text', props.row.text_alert)"
                 v-model="props.row.text_alert"
               />
             </q-td>
             <q-td>
               <q-checkbox
                 dense
-                @input="checkAlert(props.row.id, 'Email', props.row.email_alert)"
+                @update:model-value="checkAlert(props.row.id, 'Email', props.row.email_alert)"
                 v-model="props.row.email_alert"
               />
             </q-td>
             <q-td>
               <q-checkbox
                 dense
-                @input="checkAlert(props.row.id, 'Dashboard', props.row.dashboard_alert)"
+                @update:model-value="checkAlert(props.row.id, 'Dashboard', props.row.dashboard_alert)"
                 v-model="props.row.dashboard_alert"
               />
             </q-td>
@@ -255,16 +255,16 @@ export default {
       const data = {};
 
       if (alert_type === "Email") {
-        data.email_alert = action;
+        data.email_alert = !action;
       } else if (alert_type === "Text") {
-        data.text_alert = action;
+        data.text_alert = !action;
       } else {
-        data.dashboard_alert = action;
+        data.dashboard_alert = !action;
       }
 
       data.check_alert = true;
-      const act = action ? "enabled" : "disabled";
-      const color = action ? "positive" : "warning";
+      const act = !action ? "enabled" : "disabled";
+      const color = !action ? "positive" : "warning";
       this.$axios
         .patch(`/checks/${id}/check/`, data)
         .then(r => {

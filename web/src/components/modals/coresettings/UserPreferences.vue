@@ -30,7 +30,7 @@
                   v-model="agentDblClickAction"
                   :options="agentDblClickOptions"
                   class="col-4"
-                  @input="url_action = null"
+                  @update:model-value="url_action = null"
                 />
               </q-card-section>
               <q-card-section class="row" v-if="agentDblClickAction === 'urlaction'">

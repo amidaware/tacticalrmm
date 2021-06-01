@@ -22,7 +22,7 @@
       Select Agent
       <br />
       <hr />
-      <q-checkbox v-model="selectAll" label="Select All" @input="selectAllAction" />
+      <q-checkbox v-model="selectAll" label="Select All" @update:model-value="selectAllAction" />
       <q-btn v-show="group.length !== 0" label="Update" color="primary" @click="update" class="q-ml-xl" />
       <hr />
       <q-option-group

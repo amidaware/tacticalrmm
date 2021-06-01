@@ -32,7 +32,7 @@
           <q-select
             label="Field Type"
             :options="typeOptions"
-            @input="clear"
+            @update:model-value="clear"
             map-options
             emit-value
             outlined
@@ -55,7 +55,7 @@
             hide-dropdown-icon
             input-debounce="0"
             new-value-mode="add-unique"
-            @input="
+            @update:model-value="
               localField.default_value_string = '';
               localField.default_values_multiple = [];
             "

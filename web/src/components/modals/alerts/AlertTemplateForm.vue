@@ -116,7 +116,7 @@
                 :options="scriptOptions"
                 map-options
                 emit-value
-                @input="setScriptDefaults('failure')"
+                @update:model-value="setScriptDefaults('failure')"
               >
                 <template v-slot:option="scope">
                   <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
@@ -180,7 +180,7 @@
                 :options="scriptOptions"
                 map-options
                 emit-value
-                @input="setScriptDefaults('resolved')"
+                @update:model-value="setScriptDefaults('resolved')"
               >
                 <template v-slot:option="scope">
                   <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">

@@ -17,7 +17,7 @@
         <hr />
         <q-card-section class="row">
           <div class="q-gutter-sm">
-            <q-checkbox v-model="role.is_superuser" label="Super User" @input="superUser" />
+            <q-checkbox v-model="role.is_superuser" label="Super User" @update:model-value="superUser" />
           </div>
         </q-card-section>
 

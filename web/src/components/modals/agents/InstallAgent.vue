@@ -19,7 +19,7 @@
             label="Client"
             v-model="client"
             :options="client_options"
-            @input="site = sites[0]"
+            @update:model-value="site = sites[0]"
           />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
@@ -27,7 +27,7 @@
         </q-card-section>
         <q-card-section>
           <div class="q-gutter-sm">
-            <q-radio v-model="agenttype" val="server" label="Server" @input="power = false" />
+            <q-radio v-model="agenttype" val="server" label="Server" @update:model-value="power = false" />
             <q-radio v-model="agenttype" val="workstation" label="Workstation" />
           </div>
         </q-card-section>

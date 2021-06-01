@@ -9,7 +9,7 @@
           v-model="days"
           :options="lastDays"
           :label="showDays"
-          @input="getEventLog"
+          @update:model-value="getEventLog"
         />
       </div>
       <div class="col-7"></div>
@@ -33,9 +33,15 @@
       <template v-slot:top>
         <q-btn dense flat push @click="getEventLog" icon="refresh" />
         <q-space />
-        <q-radio v-model="logType" color="cyan" val="Application" label="Application" @input="getEventLog" />
-        <q-radio v-model="logType" color="cyan" val="System" label="System" @input="getEventLog" />
-        <q-radio v-model="logType" color="cyan" val="Security" label="Security" @input="getEventLog" />
+        <q-radio
+          v-model="logType"
+          color="cyan"
+          val="Application"
+          label="Application"
+          @update:model-value="getEventLog"
+        />
+        <q-radio v-model="logType" color="cyan" val="System" label="System" @update:model-value="getEventLog" />
+        <q-radio v-model="logType" color="cyan" val="Security" label="Security" @update:model-value="getEventLog" />
         <q-space />
         <q-input v-model="filter" outlined label="Search" dense clearable>
           <template v-slot:prepend>

@@ -151,7 +151,9 @@
                 <q-checkbox
                   v-else
                   dense
-                  @input="checkAlert(props.row.id, 'Text', props.row.text_alert, props.row.managed_by_policy)"
+                  @update:model-value="
+                    checkAlert(props.row.id, 'Text', props.row.text_alert, props.row.managed_by_policy)
+                  "
                   v-model="props.row.text_alert"
                   :disable="props.row.managed_by_policy"
                 />
@@ -170,7 +172,9 @@
                 <q-checkbox
                   v-else
                   dense
-                  @input="checkAlert(props.row.id, 'Email', props.row.email_alert, props.row.managed_by_policy)"
+                  @update:model-value="
+                    checkAlert(props.row.id, 'Email', props.row.email_alert, props.row.managed_by_policy)
+                  "
                   v-model="props.row.email_alert"
                   :disable="props.row.managed_by_policy"
                 />
@@ -189,7 +193,9 @@
                 <q-checkbox
                   v-else
                   dense
-                  @input="checkAlert(props.row.id, 'Dashboard', props.row.dashboard_alert, props.row.managed_by_policy)"
+                  @update:model-value="
+                    checkAlert(props.row.id, 'Dashboard', props.row.dashboard_alert, props.row.managed_by_policy)
+                  "
                   v-model="props.row.dashboard_alert"
                   :disable="props.row.managed_by_policy"
                 />
@@ -423,16 +429,16 @@ export default {
 
       const data = {};
       if (alert_type === "Email") {
-        data.email_alert = action;
+        data.email_alert = !action;
       } else if (alert_type === "Text") {
-        data.text_alert = action;
+        data.text_alert = !action;
       } else {
-        data.dashboard_alert = action;
+        data.dashboard_alert = !action;
       }
 
       data.check_alert = true;
-      const act = action ? "enabled" : "disabled";
-      const color = action ? "positive" : "warning";
+      const act = !action ? "enabled" : "disabled";
+      const color = !action ? "positive" : "warning";
       this.$axios
         .patch(`/checks/${id}/check/`, data)
         .then(r => {

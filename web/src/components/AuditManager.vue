@@ -11,7 +11,7 @@
     <div class="text-h6 q-pl-sm q-pt-sm">Filter</div>
     <div class="row">
       <div class="q-pa-sm col-1">
-        <q-option-group v-model="filterType" :options="filterTypeOptions" color="primary" @input="clear" />
+        <q-option-group v-model="filterType" :options="filterTypeOptions" color="primary" @update:model-value="clear" />
       </div>
       <div class="q-pa-sm col-2" v-if="filterType === 'agents'">
         <q-select

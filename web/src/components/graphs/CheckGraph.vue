@@ -21,7 +21,7 @@
           outlined
           dense
           class="q-pr-md q-pt-md"
-          @input="getChartData"
+          @update:model-value="getChartData"
         />
       </div>
       <apexchart

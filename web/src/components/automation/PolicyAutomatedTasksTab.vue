@@ -110,7 +110,7 @@
             <q-td>
               <q-checkbox
                 dense
-                @input="taskEnableorDisable(props.row.id, props.row.enabled)"
+                @update:model-value="taskEnableorDisable(props.row.id, props.row.enabled)"
                 v-model="props.row.enabled"
               />
             </q-td>
@@ -118,7 +118,7 @@
             <q-td>
               <q-checkbox
                 dense
-                @input="taskAlert(props.row.id, 'Text', props.row.text_alert, props.row.managed_by_policy)"
+                @update:model-value="taskAlert(props.row.id, 'Text', props.row.text_alert)"
                 v-model="props.row.text_alert"
               />
             </q-td>
@@ -126,7 +126,7 @@
             <q-td>
               <q-checkbox
                 dense
-                @input="taskAlert(props.row.id, 'Email', props.row.email_alert, props.row.managed_by_policy)"
+                @update:model-value="taskAlert(props.row.id, 'Email', props.row.email_alert)"
                 v-model="props.row.email_alert"
               />
             </q-td>
@@ -134,7 +134,7 @@
             <q-td>
               <q-checkbox
                 dense
-                @input="taskAlert(props.row.id, 'Dashboard', props.row.dashboard_alert, props.row.managed_by_policy)"
+                @update:model-value="taskAlert(props.row.id, 'Dashboard', props.row.dashboard_alert)"
                 v-model="props.row.dashboard_alert"
               />
             </q-td>
@@ -246,7 +246,7 @@ export default {
     },
     taskEnableorDisable(pk, action) {
       this.$q.loading.show();
-      const data = { id: pk, enableordisable: action };
+      const data = { id: pk, enableordisable: !action };
       this.$axios
         .patch(`/tasks/${pk}/automatedtasks/`, data)
         .then(r => {
@@ -258,7 +258,7 @@ export default {
           this.$q.loading.hide();
         });
     },
-    taskAlert(pk, alert_type, action, managed_by_policy) {
+    taskAlert(pk, alert_type, action) {
       this.$q.loading.show();
 
       const data = {
@@ -266,14 +266,14 @@ export default {
       };
 
       if (alert_type === "Email") {
-        data.email_alert = action;
+        data.email_alert = !action;
       } else if (alert_type === "Text") {
-        data.text_alert = action;
+        data.text_alert = !action;
       } else {
-        data.dashboard_alert = action;
+        data.dashboard_alert = !action;
       }
 
-      const act = action ? "enabled" : "disabled";
+      const act = !action ? "enabled" : "disabled";
       this.$axios
         .put(`/tasks/${pk}/automatedtasks/`, data)
         .then(r => {

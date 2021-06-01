@@ -2,7 +2,7 @@
   <div style="width: 900px; max-width: 90vw">
     <q-card>
       <q-bar>
-        <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />User Administration
+        <q-btn ref="refresh" @click="getUsers" class="q-mr-sm" dense flat push icon="refresh" />User Administration
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
@@ -17,46 +17,34 @@
           :rows="users"
           :columns="columns"
           v-model:pagination="pagination"
-          v-model:selected="selected"
-          selection="single"
           row-key="id"
           binary-state-sort
           hide-pagination
-          :hide-bottom="!!selected"
+          virtual-scroll
         >
           <!-- header slots -->
-          <template v-slot:header-cell-active="props">
+          <template v-slot:header-cell-is_active="props">
             <q-th :props="props" auto-width>
               <q-icon name="power_settings_new" size="1.5em">
                 <q-tooltip>Enable User</q-tooltip>
               </q-icon>
             </q-th>
           </template>
+
           <!-- No data Slot -->
           <template v-slot:no-data>
             <div class="full-width row flex-center q-gutter-sm">
               <span v-if="users.length === 0">No Users</span>
             </div>
           </template>
+
           <!-- body slots -->
           <template v-slot:body="props">
-            <q-tr
-              :props="props"
-              class="cursor-pointer"
-              :class="rowSelectedClass(props.row.id, selected)"
-              @click="
-                editUserId = props.row.id;
-                props.selected = true;
-              "
-              @contextmenu="
-                editUserId = props.row.id;
-                props.selected = true;
-              "
-            >
+            <q-tr :props="props" class="cursor-pointer" @dblclick="showEditUserModal(props.row)">
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item clickable v-close-popup @click="showEditUserModal(selected[0])" id="context-edit">
+                  <q-item clickable v-close-popup @click="showEditUserModal(props.row)">
                     <q-item-section side>
                       <q-icon name="edit" />
                     </q-item-section>
@@ -66,7 +54,6 @@
                     clickable
                     v-close-popup
                     @click="deleteUser(props.row)"
-                    id="context-delete"
                     :disable="props.row.username === logged_in_user"
                   >
                     <q-item-section side>
@@ -102,7 +89,7 @@
               <q-td>
                 <q-checkbox
                   dense
-                  @input="toggleEnabled(props.row)"
+                  @update:model-value="toggleEnabled(props.row)"
                   v-model="props.row.is_active"
                   :disable="props.row.username === logged_in_user"
                 />
@@ -117,16 +104,6 @@
         </q-table>
       </div>
     </q-card>
-
-    <!-- user form modal -->
-    <q-dialog v-model="showUserFormModal" @hide="closeUserFormModal">
-      <UserForm :pk="editUserId" @close="closeUserFormModal" />
-    </q-dialog>
-
-    <!-- user reset password form modal -->
-    <q-dialog v-model="showResetPasswordModal" @hide="closeResetPasswordModal">
-      <UserResetPasswordForm :pk="resetUserId" :username="resetUserName" @close="closeResetPasswordModal" />
-    </q-dialog>
   </div>
 </template>
 
@@ -138,83 +115,92 @@ import UserResetPasswordForm from "@/components/modals/admin/UserResetPasswordFo
 
 export default {
   name: "AdminManager",
-  components: { UserForm, UserResetPasswordForm },
   mixins: [mixins],
   data() {
     return {
-      showUserFormModal: false,
-      showResetPasswordModal: false,
-      editUserId: null,
-      resetUserId: null,
-      resetUserName: null,
-      selected: [],
+      users: [],
       columns: [
         { name: "is_active", label: "Active", field: "is_active", align: "left" },
-        { name: "username", label: "Username", field: "username", align: "left" },
+        { name: "username", label: "Username", field: "username", align: "left", sortable: true },
         {
           name: "name",
           label: "Name",
           field: "name",
           align: "left",
+          sortable: true,
         },
         {
           name: "email",
           label: "Email",
           field: "email",
           align: "left",
+          sortable: true,
         },
         {
           name: "last_login",
           label: "Last Login",
           field: "last_login",
           align: "left",
+          sortable: true,
         },
       ],
       pagination: {
-        rowsPerPage: 9999,
+        rowsPerPage: 0,
+        sortBy: "username",
+        descending: true,
       },
     };
   },
   methods: {
     getUsers() {
-      this.$store.dispatch("admin/loadUsers");
+      this.$q.loading.show();
+      this.$axios
+        .get("/accounts/users/")
+        .then(r => {
+          this.users = r.data;
+          this.$q.loading.hide();
+        })
+        .catch(() => {
+          this.$q.loading.hide();
+        });
     },
-    clearRow() {
-      this.selected = [];
-    },
-    refresh() {
-      this.getUsers();
-      this.clearRow();
-    },
-    deleteUser(data) {
+    deleteUser(user) {
       this.$q
         .dialog({
-          title: `Delete user ${data.username}?`,
+          title: `Delete user ${user.username}?`,
           cancel: true,
           ok: { label: "Delete", color: "negative" },
         })
         .onOk(() => {
-          this.$store
-            .dispatch("admin/deleteUser", data.id)
+          this.$axios
+            .delete(`/accounts/${user.id}/users/`)
             .then(() => {
-              this.notifySuccess(`User ${data.username} was deleted!`);
+              this.getUsers();
+              this.notifySuccess(`User ${user.username} was deleted!`);
             })
             .catch(e => {});
         });
     },
-    showEditUserModal(data) {
-      this.editUserId = data.id;
-      this.showUserFormModal = true;
-    },
-    closeUserFormModal() {
-      this.showUserFormModal = false;
-      this.editUserId = null;
-      this.refresh();
+    showEditUserModal(user) {
+      this.$q
+        .dialog({
+          component: UserForm,
+          componentProps: {
+            user: user,
+          },
+        })
+        .onOk(() => {
+          this.getUsers();
+        });
     },
     showAddUserModal() {
-      this.editUserId = null;
-      this.selected = [];
-      this.showUserFormModal = true;
+      this.$q
+        .dialog({
+          component: UserForm,
+        })
+        .onOk(() => {
+          this.getUsers();
+        });
     },
     toggleEnabled(user) {
       if (user.username === this.logged_in_user) {
@@ -227,22 +213,24 @@ export default {
         is_active: user.is_active,
       };
 
-      this.$store
-        .dispatch("admin/editUser", data)
-        .then(response => {
+      this.$axios
+        .put(`/accounts/${data.id}/users/`, data)
+        .then(() => {
           this.notifySuccess(text);
         })
         .catch(e => {});
     },
     ResetPassword(user) {
-      this.resetUserId = user.id;
-      this.resetUserName = user.username;
-      this.showResetPasswordModal = true;
-    },
-    closeResetPasswordModal(user) {
-      this.resetUserId = null;
-      this.resetUserName = null;
-      this.showResetPasswordModal = false;
+      this.$q
+        .dialog({
+          component: UserResetPasswordForm,
+          componentProps: {
+            user: user,
+          },
+        })
+        .onOk(() => {
+          this.getUsers();
+        });
     },
     reset2FA(user) {
       const data = {
@@ -256,23 +244,19 @@ export default {
           ok: { label: "Reset", color: "positive" },
         })
         .onOk(() => {
-          this.$store.dispatch("admin/resetUserTOTP", data).then(response => {
+          this.$axios.put("/accounts/users/reset_totp/", data).then(response => {
             this.notifySuccess(response.data, 4000);
           });
         });
     },
-    rowSelectedClass(id, selected) {
-      if (selected.length !== 0 && selected[0].id === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";
-    },
   },
   computed: {
     ...mapState({
-      users: state => state.admin.users,
       logged_in_user: state => state.username,
     }),
   },
   mounted() {
-    this.refresh();
+    this.getUsers();
   },
 };
 </script>

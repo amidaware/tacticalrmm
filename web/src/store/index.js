@@ -1,12 +1,8 @@
 import { createStore } from 'vuex'
 import axios from "axios";
-import adminModule from "./admin.js"
 
 export default function () {
   const Store = new createStore({
-    modules: {
-      admin: adminModule
-    },
     state() {
       return {
         username: localStorage.getItem("user_name") || null,

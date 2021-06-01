@@ -12,7 +12,7 @@
               Scan the QR Code with your authenticator app and then click Finish to be redirected back to the signin
               page. If you navigate away from this page you 2FA signin will need to be reset!
             </p>
-            <qrcode-vue :value="qr_url" size="200" level="H" />
+            <qrcode-vue :value="qr_url" :size="200" level="H" />
           </q-card-section>
           <q-card-section v-if="totp_key">
             <p>You can also use the below code to configure the authenticator manually.</p>
@@ -47,8 +47,8 @@ export default {
     getQRCodeData() {
       this.$q.loading.show();
 
-      this.$store
-        .dispatch("admin/setupTOTP")
+      this.$axios
+        .post("/accounts/users/setup_totp/")
         .then(r => {
           this.$q.loading.hide();
 

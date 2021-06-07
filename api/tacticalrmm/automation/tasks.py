@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Union
 from tacticalrmm.celery import app
 
 
-@app.task
+@app.task(retry_backoff=5, retry_jitter=True, retry_kwargs={"max_retries": 5})
 def generate_agent_checks_task(
     policy: int = None,
     site: int = None,
@@ -57,7 +57,9 @@ def generate_agent_checks_task(
     return "ok"
 
 
-@app.task
+@app.task(
+    acks_late=True, retry_backoff=5, retry_jitter=True, retry_kwargs={"max_retries": 5}
+)
 # updates policy managed check fields on agents
 def update_policy_check_fields_task(check: int) -> str:
     from checks.models import Check
@@ -73,7 +75,7 @@ def update_policy_check_fields_task(check: int) -> str:
     return "ok"
 
 
-@app.task
+@app.task(retry_backoff=5, retry_jitter=True, retry_kwargs={"max_retries": 5})
 # generates policy tasks on agents affected by a policy
 def generate_agent_autotasks_task(policy: int = None) -> str:
     from agents.models import Agent
@@ -100,7 +102,12 @@ def generate_agent_autotasks_task(policy: int = None) -> str:
     return "ok"
 
 
-@app.task
+@app.task(
+    acks_late=True,
+    retry_backoff=5,
+    retry_jitter=True,
+    retry_kwargs={"max_retries": 5},
+)
 def delete_policy_autotasks_task(task: int) -> str:
     from autotasks.models import AutomatedTask
 
@@ -120,7 +127,12 @@ def run_win_policy_autotasks_task(task: int) -> str:
     return "ok"
 
 
-@app.task
+@app.task(
+    acks_late=True,
+    retry_backoff=5,
+    retry_jitter=True,
+    retry_kwargs={"max_retries": 5},
+)
 def update_policy_autotasks_fields_task(task: int, update_agent: bool = False) -> str:
     from autotasks.models import AutomatedTask
 

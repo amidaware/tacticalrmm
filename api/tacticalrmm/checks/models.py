@@ -509,7 +509,10 @@ class Check(BaseAuditModel):
         )
 
         for task in self.assignedtask.all():  # type: ignore
-            task.create_policy_task(agent=agent, policy=policy, assigned_check=check)
+            if not agent.autotasks.filter(parent_task=task.pk).exists():
+                task.create_policy_task(
+                    agent=agent, policy=policy, assigned_check=check
+                )
 
         for field in self.policy_fields_to_copy:
             setattr(check, field, getattr(self, field))

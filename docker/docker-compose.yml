@@ -18,6 +18,7 @@ volumes:
   postgres_data:
   mongo_data:
   mesh_data:
+  redis_data:
 
 services:
   # postgres database for api service
@@ -38,7 +39,10 @@ services:
   tactical-redis:
     container_name: trmm-redis
     image: redis:6.0-alpine
+    command: redis-server --appendonly yes
     restart: always
+    volumes: 
+      - redis_data:/data
     networks:
       - redis
 

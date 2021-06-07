@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="122"
+SCRIPT_VERSION="123"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -306,6 +306,10 @@ if [[ "${CURRENT_MESH_VER}" != "${LATEST_MESH_VER}" ]] || [[ "$force" = true ]];
   npm install meshcentral@${LATEST_MESH_VER}
   sudo systemctl start meshcentral
 fi
+
+# apply redis configuration
+sudo redis-cli config set appendonly yes
+sudo redis-cli config rewrite
 
 rm -f $TMP_SETTINGS
 printf >&2 "${GREEN}Update finished!${NC}\n"

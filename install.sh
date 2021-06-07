@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="49"
+SCRIPT_VERSION="50"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -216,6 +216,10 @@ sudo rm -rf Python-3.9.2 Python-3.9.2.tgz
 
 print_green 'Installing redis and git'
 sudo apt install -y ca-certificates redis git
+
+# apply redis configuration
+sudo redis-cli config set appendonly yes
+sudo redis-cli config rewrite
 
 print_green 'Installing postgresql'
 

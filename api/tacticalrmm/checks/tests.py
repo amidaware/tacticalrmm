@@ -363,10 +363,10 @@ class TestCheckViews(TacticalTestCase):
         # setup data
         agent = baker.make_recipe("agents.agent")
         check = baker.make_recipe("checks.diskspace_check", agent=agent)
-        baker.make("checks.CheckHistory", check_history=check, _quantity=30)
+        baker.make("checks.CheckHistory", check_id=check.id, _quantity=30)
         check_history_data = baker.make(
             "checks.CheckHistory",
-            check_history=check,
+            check_id=check.id,
             _quantity=30,
         )
 
@@ -407,10 +407,10 @@ class TestCheckTasks(TacticalTestCase):
 
         # setup data
         check = baker.make_recipe("checks.diskspace_check")
-        baker.make("checks.CheckHistory", check_history=check, _quantity=30)
+        baker.make("checks.CheckHistory", check_id=check.id, _quantity=30)
         check_history_data = baker.make(
             "checks.CheckHistory",
-            check_history=check,
+            check_id=check.id,
             _quantity=30,
         )
 

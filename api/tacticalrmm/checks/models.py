@@ -509,7 +509,9 @@ class Check(BaseAuditModel):
         )
 
         for task in self.assignedtask.all():  # type: ignore
-            if not agent.autotasks.filter(parent_task=task.pk).exists():
+            if policy or (
+                agent and not agent.autotasks.filter(parent_task=task.pk).exists()
+            ):
                 task.create_policy_task(
                     agent=agent, policy=policy, assigned_check=check
                 )

@@ -193,6 +193,9 @@ sudo apt install -y ca-certificates redis git
 sudo tar -xzf ${tmp_dir}/redis/etc-redis.tar.gz -C /var/lib/redis
 sudo redis-check-aof --fix /var/lib/redis/appendonly.aof
 
+sudo redis-cli config set appendonly yes
+sudo redis-cli config rewrite
+
 print_green 'Installing postgresql'
 
 echo "$postgresql_repo" | sudo tee /etc/apt/sources.list.d/pgdg.list

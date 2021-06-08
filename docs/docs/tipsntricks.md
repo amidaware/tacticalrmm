@@ -13,7 +13,7 @@ Top right click Username, look at preferences pane. Set default tab: Servers|Wor
 ### Install Tactical RMM via Screeconnect commands window
 
 1. Create a Deplopment under Agents | Manage Deployments
-2. Replace `<deployment URL>` below with your Deployment Download Link. 
+2. Replace `<deployment URL>` below with your Deployment Download Link.
 
 **x64**
 
@@ -48,3 +48,5 @@ if ($proc.ExitCode -ne 0) {
 }
 Remove-Item -Path "c:\temp\trmminstallx86.exe" -Force 
 ```
+
+### 

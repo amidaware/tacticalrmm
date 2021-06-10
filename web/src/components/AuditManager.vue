@@ -35,6 +35,16 @@
               <q-item-section class="text-grey">No results</q-item-section>
             </q-item>
           </template>
+          <template v-slot:option="scope">
+            <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
+              <q-item-section>
+                <q-item-label v-html="scope.opt.label"></q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
+              scope.opt.category
+            }}</q-item-label>
+          </template>
         </q-select>
       </div>
       <div class="q-pa-sm col-2" v-if="filterType === 'clients'">
@@ -158,6 +168,7 @@
 import AuditLogDetail from "@/components/modals/logs/AuditLogDetail";
 import mixins from "@/mixins/mixins";
 import { exportFile } from "quasar";
+import { formatAgentOptions } from "@/utils/format";
 
 function wrapCsvValue(val, formatFn) {
   let formatted = formatFn !== void 0 ? formatFn(val) : val;
@@ -327,7 +338,7 @@ export default {
         this.$axios
           .post(`logs/auditlogs/optionsfilter/`, data)
           .then(r => {
-            this.getAgentOptions().then(options => (this.agentOptions = Object.freeze(options)));
+            this.agentOptions = Object.freeze(formatAgentOptions(r.data));
             this.$q.loading.hide();
           })
           .catch(e => {

@@ -1,6 +1,8 @@
 import { Notify, date } from "quasar";
 import axios from 'axios'
 
+import { formatAgentOptions } from "@/utils/format"
+
 function getTimeLapse(unixtime) {
   var previous = unixtime * 1000;
   var current = new Date();
@@ -195,35 +197,9 @@ export default {
     },
     async getAgentOptions() {
 
-      let options = []
       const { data } = await axios.get("/agents/listagentsnodetail/")
-      const agents = data.map(agent => ({
-        label: agent.hostname,
-        value: agent.pk,
-        cat: `${agent.client} > ${agent.site}`,
-      }));
 
-      let categories = [];
-      agents.forEach(option => {
-        if (!categories.includes(option.cat)) {
-          categories.push(option.cat);
-        }
-      });
-
-      categories.sort().forEach(cat => {
-        options.push({ category: cat });
-        let tmp = []
-        agents.forEach(agent => {
-          if (agent.cat === cat) {
-            tmp.push(agent);
-          }
-        });
-
-        const sorted = tmp.sort((a, b) => a.label.localeCompare(b.label));
-        options.push(...sorted);
-      });
-
-      return options;
+      return formatAgentOptions(data)
     },
     getNextAgentUpdateTime() {
       const d = new Date();

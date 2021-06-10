@@ -928,3 +928,23 @@ class AgentCustomField(models.Model):
             return self.bool_value
         else:
             return self.string_value
+
+
+AGENT_HISTORY_TYPES = (
+    ("task_run", "Task Run"),
+    ("script_run", "Script Run"),
+    ("cmd_run", "CMD Run"),
+)
+
+AGENT_HISTORY_STATUS = (("success", "Success"), ("failure", "Failure"))
+
+
+class AgentHistory(models.Model):
+    type = models.CharField(
+        max_length=50, choices=AGENT_HISTORY_TYPES, default="cmd_run"
+    )
+    status = models.CharField(
+        max_length=50, choices=AGENT_HISTORY_STATUS, default="mesh"
+    )
+    expires = models.DateTimeField(null=True, blank=True)
+    results = models.TextField(null=True, blank=True)

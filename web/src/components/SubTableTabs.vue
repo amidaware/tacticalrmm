@@ -16,8 +16,11 @@
       <q-tab name="tasks" icon="fas fa-tasks" label="Tasks" />
       <q-tab name="patches" icon="system_update" label="Patches" />
       <q-tab name="software" icon="fab fa-windows" label="Software" />
+      <q-tab name="history" icon="history" label="History" />
       <q-tab name="notes" icon="far fa-sticky-note" label="Notes" />
       <q-tab name="assets" icon="fas fa-barcode" label="Assets" />
+      <q-tab name="debug" icon="bug_report" label="Debug" />
+      <q-tab name="audit" icon="travel_explore" label="Audit" />
     </q-tabs>
     <q-separator />
     <q-tab-panels v-model="subtab" :animated="false">
@@ -36,11 +39,20 @@
       <q-tab-panel name="software" class="q-pb-xs q-pt-none">
         <SoftwareTab />
       </q-tab-panel>
+      <q-tab-panel name="history" class="q-pb-xs q-pt-none">
+        <HistoryTab />
+      </q-tab-panel>
       <q-tab-panel name="notes" class="q-pb-xs q-pt-none">
         <NotesTab />
       </q-tab-panel>
       <q-tab-panel name="assets" class="q-pb-xs q-pt-none">
         <AssetsTab />
+      </q-tab-panel>
+      <q-tab-panel name="debug" class="q-pb-xs q-pt-none">
+        <DebugTab />
+      </q-tab-panel>
+      <q-tab-panel name="audit" class="q-pb-xs q-pt-none">
+        <AuditTab />
       </q-tab-panel>
     </q-tab-panels>
   </div>
@@ -52,8 +64,12 @@ import ChecksTab from "@/components/ChecksTab";
 import AutomatedTasksTab from "@/components/AutomatedTasksTab";
 import WindowsUpdates from "@/components/WindowsUpdates";
 import SoftwareTab from "@/components/SoftwareTab";
+import HistoryTab from "@/components/HistoryTab";
+import AuditTab from "@/components/AuditTab";
+import DebugTab from "@/components/DebugTab";
 import AssetsTab from "@/components/AssetsTab";
 import NotesTab from "@/components/NotesTab";
+
 export default {
   name: "SubTableTabs",
   emits: ["edit"],
@@ -63,6 +79,9 @@ export default {
     AutomatedTasksTab,
     WindowsUpdates,
     SoftwareTab,
+    HistoryTab,
+    AuditTab,
+    DebugTab,
     AssetsTab,
     NotesTab,
   },

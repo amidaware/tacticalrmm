@@ -32,5 +32,5 @@ urllib3==1.26.5
 uWSGI==2.0.19.1
 validators==0.18.2
 vine==5.0.0
-websockets==8.1
+websockets==9.1
 zipp==3.4.1

@@ -115,7 +115,10 @@ services:
   redis-dev:
     container_name: trmm-redis-dev
     restart: always
+    command: redis-server --appendonly yes
     image: redis:6.0-alpine
+    volumes: 
+      - redis-data-dev:/data
     networks:
       dev:
         aliases:
@@ -247,6 +250,7 @@ volumes:
   postgres-data-dev:
   mongo-dev-data:
   mesh-data-dev:
+  redis-data-dev:
 
 networks:
   dev:

@@ -10,6 +10,7 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import DateTimeField
+from django.db.utils import DatabaseError
 from django.utils import timezone as djangotime
 from logs.models import BaseAuditModel
 from loguru import logger
@@ -183,6 +184,7 @@ class AutomatedTask(BaseAuditModel):
             "remove_if_not_scheduled",
             "run_asap_after_missed",
             "custom_field",
+            "collector_all_output",
         ]
 
     @staticmethod
@@ -364,9 +366,14 @@ class AutomatedTask(BaseAuditModel):
 
         if r != "ok" and "The system cannot find the file specified" not in r:
             self.sync_status = "pendingdeletion"
-            self.save(update_fields=["sync_status"])
+
+            try:
+                self.save(update_fields=["sync_status"])
+            except DatabaseError:
+                pass
+
             logger.warning(
-                f"{agent.hostname} task {self.name} was successfully modified"
+                f"{agent.hostname} task {self.name} will be deleted on next checkin"
             )
             return "timeout"
         else:

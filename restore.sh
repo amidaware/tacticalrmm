@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="27"
+SCRIPT_VERSION="28"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -188,6 +188,13 @@ sudo rm -rf Python-3.9.2 Python-3.9.2.tgz
 
 print_green 'Installing redis and git'
 sudo apt install -y ca-certificates redis git
+
+# redis configuration
+sudo tar -xzf ${tmp_dir}/redis/etc-redis.tar.gz -C /var/lib/redis
+sudo redis-check-aof --fix /var/lib/redis/appendonly.aof
+
+sudo redis-cli config set appendonly yes
+sudo redis-cli config rewrite
 
 print_green 'Installing postgresql'
 

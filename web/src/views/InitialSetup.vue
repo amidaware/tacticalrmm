@@ -37,6 +37,7 @@
                   stack-label
                   filled
                   counter
+                  class="full-width"
                   accept=".exe"
                 >
                   <template v-slot:prepend>

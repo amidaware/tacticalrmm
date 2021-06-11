@@ -1,4 +1,9 @@
 ## Copied from https://github.com/ThatsNASt/tacticalrmm to add to new pull request for https://github.com/wh1te909/tacticalrmm
+#
+# WARNING
+# 1. Only applies to drive C
+# 2. Assumes you're encrypting more than the used space. "Used Space Only Encrypted" is the default windows behavior which is not compatible here.
+
 function Log-Message {
     Param
     (
@@ -22,7 +27,7 @@ function Log-Message {
 $log = "BitlockerReport.txt"
 
 #Find BL info
-$mbde = [string](manage-bde -status)
+$mbde = [string](manage-bde -status C:)
 $mbdeProt = (manage-bde -protectors -get c: | Select-Object -Skip 6)
 #Dig out the recovery password, check for PIN
 ForEach ($line in $mbdeProt) {

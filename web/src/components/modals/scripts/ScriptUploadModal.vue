@@ -46,6 +46,7 @@
             stack-label
             filled
             counter
+            class="full-width"
             accept=".ps1, .bat, .py"
           >
             <template v-slot:prepend>

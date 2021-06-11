@@ -105,6 +105,7 @@ Then you're `push`ing that updated local repo to your online Github fork
 
 Check your Github fork in browser, should be up to date now with original. Repeat 6 or 7 as necessary
 
+*****
 ## Reference
 
 ### Customizing the Admin Web Interface

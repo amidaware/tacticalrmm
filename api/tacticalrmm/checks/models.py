@@ -313,7 +313,7 @@ class Check(BaseAuditModel):
         )
 
     def add_check_history(self, value: int, more_info: Any = None) -> None:
-        CheckHistory.objects.create(check_history=self, y=value, results=more_info)
+        CheckHistory.objects.create(check_id=self.pk, y=value, results=more_info)
 
     def handle_check(self, data):
         from alerts.models import Alert
@@ -509,7 +509,12 @@ class Check(BaseAuditModel):
         )
 
         for task in self.assignedtask.all():  # type: ignore
-            task.create_policy_task(agent=agent, policy=policy, assigned_check=check)
+            if policy or (
+                agent and not agent.autotasks.filter(parent_task=task.pk).exists()
+            ):
+                task.create_policy_task(
+                    agent=agent, policy=policy, assigned_check=check
+                )
 
         for field in self.policy_fields_to_copy:
             setattr(check, field, getattr(self, field))
@@ -683,14 +688,10 @@ class Check(BaseAuditModel):
 
 
 class CheckHistory(models.Model):
-    check_history = models.ForeignKey(
-        Check,
-        related_name="check_history",
-        on_delete=models.CASCADE,
-    )
+    check_id = models.PositiveIntegerField(default=0)
     x = models.DateTimeField(auto_now_add=True)
     y = models.PositiveIntegerField(null=True, blank=True, default=None)
     results = models.JSONField(null=True, blank=True)
 
     def __str__(self):
-        return self.check_history.readable_desc
+        return self.x

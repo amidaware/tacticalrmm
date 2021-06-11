@@ -15,7 +15,7 @@ from automation.models import Policy
 from scripts.models import Script
 from tacticalrmm.utils import notify_error
 
-from .models import Check
+from .models import Check, CheckHistory
 from .permissions import ManageChecksPerms, RunChecksPerms
 from .serializers import CheckHistorySerializer, CheckSerializer
 
@@ -146,7 +146,7 @@ class GetUpdateDeleteCheck(APIView):
         return Response(f"{check.readable_desc} was deleted!")
 
 
-class CheckHistory(APIView):
+class GetCheckHistory(APIView):
     def patch(self, request, checkpk):
         check = get_object_or_404(Check, pk=checkpk)
 
@@ -160,7 +160,7 @@ class CheckHistory(APIView):
                     - djangotime.timedelta(days=request.data["timeFilter"]),
                 )
 
-        check_history = check.check_history.filter(timeFilter).order_by("-x")  # type: ignore
+        check_history = CheckHistory.objects.filter(check_id=checkpk).filter(timeFilter).order_by("-x")  # type: ignore
 
         return Response(
             CheckHistorySerializer(

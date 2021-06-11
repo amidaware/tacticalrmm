@@ -61,6 +61,8 @@ Category or Function - What It Does
 
 ![json_name_examples](images/community_scripts_name_field_example1.png)
 
+*****
+
 ## Making Script Files
 
 ### Good Habits
@@ -117,6 +119,8 @@ c:\ProgramData\TacticalRMM\
 - Doesn't play well with other community scripts (reused names etc.)
 
 
+*****
+
 ## Useful Reference Script Examples
 
 RunAsUser (since Tactical RMM runs as system)
@@ -127,6 +131,8 @@ Command Paramater Ninja
 
 Optional Command Parameters and testing for errors
 [https://github.com/wh1te909/tacticalrmm/blob/develop/scripts/Win_Rename_Computer.ps1](https://github.com/wh1te909/tacticalrmm/blob/develop/scripts/Win_Rename_Computer.ps1)
+
+*****
 
 ## Volunteers Needed
 

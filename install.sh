@@ -491,12 +491,14 @@ map \$http_user_agent \$ignore_ua {
 
 server {
     listen 80;
+    listen [::]:80;
     server_name ${rmmdomain};
     return 301 https://\$server_name\$request_uri;
 }
 
 server {
     listen 443 ssl;
+    listen [::]:443 ssl;
     server_name ${rmmdomain};
     client_max_body_size 300M;
     access_log /rmm/api/tacticalrmm/tacticalrmm/private/log/access.log combined if=\$ignore_ua;
@@ -553,6 +555,7 @@ echo "${nginxrmm}" | sudo tee /etc/nginx/sites-available/rmm.conf > /dev/null
 nginxmesh="$(cat << EOF
 server {
   listen 80;
+  listen [::]:80;
   server_name ${meshdomain};
   return 301 https://\$server_name\$request_uri;
 }
@@ -560,6 +563,7 @@ server {
 server {
 
     listen 443 ssl;
+    listen [::]:443 ssl;
     proxy_send_timeout 330s;
     proxy_read_timeout 330s;
     server_name ${meshdomain};
@@ -714,6 +718,7 @@ server {
     access_log /var/log/nginx/frontend-access.log;
 
     listen 443 ssl;
+    listen [::]:443 ssl;
     ssl_certificate ${CERT_PUB_KEY};
     ssl_certificate_key ${CERT_PRIV_KEY};
     ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
@@ -724,7 +729,8 @@ server {
         return 301 https://\$host\$request_uri;
     }
 
-    listen      80;
+    listen 80;
+    listen [::]:80;
     server_name ${frontenddomain};
     return 404;
 }

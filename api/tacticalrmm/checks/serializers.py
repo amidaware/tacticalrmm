@@ -6,6 +6,7 @@ from autotasks.models import AutomatedTask
 from scripts.serializers import ScriptCheckSerializer, ScriptSerializer
 
 from .models import Check, CheckHistory
+from scripts.models import Script
 
 
 class AssignedTaskField(serializers.ModelSerializer):
@@ -159,6 +160,12 @@ class AssignedTaskCheckRunnerField(serializers.ModelSerializer):
 class CheckRunnerGetSerializer(serializers.ModelSerializer):
     # only send data needed for agent to run a check
     script = ScriptCheckSerializer(read_only=True)
+    script_args = serializers.SerializerMethodField()
+
+    def get_script_args(self, obj):
+        return Script.parse_script_args(
+            agent=obj.agent, shell=obj.script.shell, args=obj.script_args
+        )
 
     class Meta:
         model = Check

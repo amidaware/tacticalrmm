@@ -163,6 +163,9 @@ class CheckRunnerGetSerializer(serializers.ModelSerializer):
     script_args = serializers.SerializerMethodField()
 
     def get_script_args(self, obj):
+        if obj.check_type != "script":
+            return []
+
         return Script.parse_script_args(
             agent=obj.agent, shell=obj.script.shell, args=obj.script_args
         )

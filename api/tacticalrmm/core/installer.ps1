@@ -53,9 +53,9 @@ If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
       Write-Output "Waiting for network"
       Start-Sleep -s 5
       $X += 1      
-    } until(($connectreult = Test-NetConnection $apilink[2] -Port 443 | ? { $_.TcpTestSucceeded }) -or $X -eq 3)
+    } until(($connectresult = Test-NetConnection $apilink[2] -Port 443 | ? { $_.TcpTestSucceeded }) -or $X -eq 3)
     
-    if ($connectreult.TcpTestSucceeded -eq $true){
+    if ($connectresult.TcpTestSucceeded -eq $true){
         Try
         {  
             Invoke-WebRequest -Uri $downloadlink -OutFile $OutPath\$output

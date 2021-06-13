@@ -28,7 +28,7 @@
               <q-item clickable v-close-popup @click="showAuditManager = true">
                 <q-item-section>Audit Log</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="showDebugLog = true">
+              <q-item clickable v-close-popup @click="showDebugLog()">
                 <q-item-section>Debug Log</q-item-section>
               </q-item>
             </q-list>
@@ -148,12 +148,6 @@
       <q-dialog v-model="showEditCoreSettingsModal">
         <EditCoreSettings @close="showEditCoreSettingsModal = false" />
       </q-dialog>
-      <!-- debug log modal -->
-      <div class="q-pa-md q-gutter-sm">
-        <q-dialog v-model="showDebugLog" maximized transition-show="slide-up" transition-hide="slide-down">
-          <LogModal @close="showDebugLog = false" />
-        </q-dialog>
-      </div>
       <!-- pending actions modal -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showPendingActions">
@@ -215,7 +209,7 @@
 </template>
 
 <script>
-import LogModal from "@/components/modals/logs/LogModal";
+import DebugLogModal from "@/components/modals/logs/DebugLogModal";
 import PendingActions from "@/components/modals/logs/PendingActions";
 import ClientsManager from "@/components/ClientsManager";
 import ClientsForm from "@/components/modals/clients/ClientsForm";
@@ -239,7 +233,6 @@ export default {
   name: "FileBar",
   emits: ["edit"],
   components: {
-    LogModal,
     PendingActions,
     UpdateAgents,
     ScriptManager,
@@ -267,7 +260,6 @@ export default {
       showPendingActions: false,
       bulkMode: null,
       showDeployment: false,
-      showDebugLog: false,
       showScriptManager: false,
       showCodeSign: false,
     };
@@ -332,6 +324,11 @@ export default {
     showPermissionsManager() {
       this.$q.dialog({
         component: PermissionsManager,
+      });
+    },
+    showDebugLog() {
+      this.$q.dialog({
+        component: DebugLogModal,
       });
     },
     edited() {

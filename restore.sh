@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="28"
+SCRIPT_VERSION="29"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -190,7 +190,7 @@ print_green 'Installing redis and git'
 sudo apt install -y ca-certificates redis git
 
 # redis configuration
-sudo tar -xzf ${tmp_dir}/redis/etc-redis.tar.gz -C /var/lib/redis
+sudo gzip -dkc ${tmp_dir}/redis/appendonly.aof.gz | sudo tee /var/lib/redis/appendonly.aof > /dev/null
 sudo redis-check-aof --fix /var/lib/redis/appendonly.aof
 
 sudo redis-cli config set appendonly yes

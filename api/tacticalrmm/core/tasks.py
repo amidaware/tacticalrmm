@@ -1,7 +1,5 @@
 import pytz
-from django.conf import settings
 from django.utils import timezone as djangotime
-from loguru import logger
 
 from autotasks.models import AutomatedTask
 from autotasks.tasks import delete_win_task_schedule
@@ -9,8 +7,6 @@ from checks.tasks import prune_check_history
 from agents.tasks import clear_faults_task
 from core.models import CoreSettings
 from tacticalrmm.celery import app
-
-logger.configure(**settings.LOG_CONFIG)
 
 
 @app.task

@@ -6,7 +6,6 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
-from loguru import logger
 from packaging import version as pyver
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
@@ -22,12 +21,10 @@ from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
 from checks.models import Check
 from checks.serializers import CheckRunnerGetSerializer
 from checks.utils import bytes2human
-from logs.models import PendingAction
+from logs.models import PendingAction, DebugLog
 from software.models import InstalledSoftware
 from tacticalrmm.utils import SoftwareList, filter_software, notify_error, reload_nats
 from winupdate.models import WinUpdate, WinUpdatePolicy
-
-logger.configure(**settings.LOG_CONFIG)
 
 
 class CheckIn(APIView):
@@ -182,7 +179,11 @@ class WinUpdates(APIView):
 
         if reboot:
             asyncio.run(agent.nats_cmd({"func": "rebootnow"}, wait=False))
-            logger.info(f"{agent.hostname} is rebooting after updates were installed.")
+            DebugLog.info(
+                agent=agent,
+                log_type="windows_updates",
+                message=f"{agent.hostname} is rebooting after updates were installed.",
+            )
 
         agent.delete_superseded_updates()
         return Response("ok")

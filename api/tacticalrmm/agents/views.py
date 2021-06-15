@@ -8,7 +8,6 @@ import time
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from loguru import logger
 from packaging import version as pyver
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -17,7 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.models import CoreSettings
-from logs.models import AuditLog, PendingAction
+from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from tacticalrmm.utils import get_default_timezone, notify_error, reload_nats
@@ -50,8 +49,6 @@ from .serializers import (
     NotesSerializer,
 )
 from .tasks import run_script_email_results_task, send_agent_update_task
-
-logger.configure(**settings.LOG_CONFIG)
 
 
 @api_view()
@@ -508,7 +505,7 @@ def install_agent(request):
             try:
                 os.remove(ps1)
             except Exception as e:
-                logger.error(str(e))
+                DebugLog.error(message=str(e))
 
         with open(ps1, "w") as f:
             f.write(text)

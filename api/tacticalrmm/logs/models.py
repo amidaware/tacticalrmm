@@ -212,8 +212,59 @@ class AuditLog(models.Model):
         )
 
 
+LOG_LEVEL_CHOICES = [
+    ("info", "Info"),
+    ("warning", "Warning"),
+    ("error", "Error"),
+    ("critical", "Critical"),
+]
+
+LOG_TYPE_CHOICES = [
+    ("agent_update", "Agent Update"),
+    ("agent_issues", "Agent Issues"),
+    ("win_updates", "Windows Updates"),
+    ("system_issues", "System Issues"),
+    ("scripting", "Scripting"),
+]
+
+
 class DebugLog(models.Model):
-    pass
+    entry_time = models.DateTimeField(auto_now_add=True)
+    agent = models.ForeignKey(
+        "agents.Agent",
+        related_name="debuglogs",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    log_level = models.CharField(
+        max_length=50, choices=LOG_LEVEL_CHOICES, default="info"
+    )
+    log_type = models.CharField(
+        max_length=50, choices=LOG_TYPE_CHOICES, default="system_issues"
+    )
+    message = models.TextField(null=True, blank=True)
+
+    @classmethod
+    def info(
+        cls,
+        message,
+        agent=None,
+        log_type="system_issues",
+    ):
+        cls(log_level="info", agent=agent, log_type=log_type, message=message)
+
+    @classmethod
+    def warning(cls, message, agent=None, log_type="system_issues"):
+        cls(log_level="warning", agent=agent, log_type=log_type, message=message)
+
+    @classmethod
+    def error(cls, message, agent=None, log_type="system_issues"):
+        cls(log_level="error", agent=agent, log_type=log_type, message=message)
+
+    @classmethod
+    def critical(cls, message, agent=None, log_type="system_issues"):
+        cls(log_level="critical", agent=agent, log_type=log_type, message=message)
 
 
 class PendingAction(models.Model):

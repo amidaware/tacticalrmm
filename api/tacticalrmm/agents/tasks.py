@@ -10,17 +10,14 @@ from typing import Union
 
 from django.conf import settings
 from django.utils import timezone as djangotime
-from loguru import logger
 from packaging import version as pyver
 
 from agents.models import Agent
 from core.models import CodeSignToken, CoreSettings
-from logs.models import PendingAction
+from logs.models import PendingAction, DebugLog
 from scripts.models import Script
 from tacticalrmm.celery import app
 from tacticalrmm.utils import run_nats_api_cmd
-
-logger.configure(**settings.LOG_CONFIG)
 
 
 def agent_update(pk: int, codesigntoken: str = None, force: bool = False) -> str:
@@ -33,8 +30,10 @@ def agent_update(pk: int, codesigntoken: str = None, force: bool = False) -> str
 
     # skip if we can't determine the arch
     if agent.arch is None:
-        logger.warning(
-            f"Unable to determine arch on {agent.hostname}. Skipping agent update."
+        DebugLog.warning(
+            agent=agent,
+            log_type="agent_issues",
+            message=f"Unable to determine arch on {agent.hostname}({agent.pk}). Skipping agent update.",
         )
         return "noarch"
 
@@ -242,7 +241,11 @@ def run_script_email_results_task(
         scriptpk=script.pk, args=args, full=True, timeout=nats_timeout, wait=True
     )
     if r == "timeout":
-        logger.error(f"{agent.hostname} timed out running script.")
+        DebugLog.error(
+            agent=agent,
+            log_type="scripting",
+            message=f"{agent.hostname}({agent.pk}) timed out running script.",
+        )
         return
 
     CORE = CoreSettings.objects.first()
@@ -279,7 +282,7 @@ def run_script_email_results_task(
                 server.send_message(msg)
                 server.quit()
     except Exception as e:
-        logger.error(e)
+        DebugLog.error(message=e)
 
 
 @app.task

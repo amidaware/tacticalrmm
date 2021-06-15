@@ -15,14 +15,13 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.http import FileResponse
 from knox.auth import TokenAuthentication
-from loguru import logger
 from rest_framework import status
 from rest_framework.response import Response
 
 from agents.models import Agent
 from core.models import CodeSignToken
+from logs.models import DebugLog
 
-logger.configure(**settings.LOG_CONFIG)
 
 notify_error = lambda msg: Response(msg, status=status.HTTP_400_BAD_REQUEST)
 
@@ -107,7 +106,7 @@ def generate_winagent_exe(
                 break
 
         if errors:
-            logger.error(errors)
+            DebugLog.error(message=errors)
             return notify_error(
                 "Something went wrong. Check debug error log for exact error message"
             )
@@ -185,8 +184,10 @@ def reload_nats():
                 {"user": agent.agent_id, "password": agent.user.auth_token.key}
             )
         except:
-            logger.critical(
-                f"{agent.hostname} does not have a user account, NATS will not work"
+            DebugLog.critical(
+                agent=agent,
+                log_type="agent_issues",
+                message=f"{agent.hostname} does not have a user account, NATS will not work",
             )
 
     domain = settings.ALLOWED_HOSTS[0].split(".", 1)[1]
@@ -262,7 +263,7 @@ def run_nats_api_cmd(mode: str, ids: list[str], timeout: int = 30) -> None:
         try:
             subprocess.run(cmd, capture_output=True, timeout=timeout)
         except Exception as e:
-            logger.error(e)
+            DebugLog.error(message=e)
 
 
 def get_latest_trmm_ver() -> str:
@@ -277,7 +278,7 @@ def get_latest_trmm_ver() -> str:
             if "TRMM_VERSION" in line:
                 return line.split(" ")[2].strip('"')
     except Exception as e:
-        logger.error(e)
+        DebugLog.error(message=e)
 
     return "error"
 
@@ -302,8 +303,10 @@ def replace_db_values(
 
             return f"'{value}'" if quotes else value
         else:
-            logger.error(
-                f"Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store"
+            DebugLog.error(
+                agent=agent,
+                log_type="scripting",
+                message=f"{agent.hostname} Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store",
             )
             return None
 
@@ -322,8 +325,10 @@ def replace_db_values(
         obj = agent
     else:
         # ignore arg since it is invalid
-        logger.error(
-            f"Not enough information to find value for: {string}. Only agent, site, client, and global are supported."
+        DebugLog.error(
+            agent=agent,
+            log_type="scripting",
+            message=f"{agent.hostname} Not enough information to find value for: {string}. Only agent, site, client, and global are supported.",
         )
         return None
 
@@ -359,8 +364,10 @@ def replace_db_values(
 
     else:
         # ignore arg since property is invalid
-        logger.error(
-            f"Couldn't find property on supplied variable: {string}. Make sure it exists as a custom field or a valid agent property"
+        DebugLog.error(
+            agent=agent,
+            log_type="scripting",
+            message=f"{agent.hostname} Couldn't find property on supplied variable: {string}. Make sure it exists as a custom field or a valid agent property",
         )
         return None
 
@@ -368,8 +375,10 @@ def replace_db_values(
     if value != None:
         return value  # type: ignore
     else:
-        logger.error(
-            f"Couldn't lookup value for: {string}. Make sure it exists as a custom field or a valid agent property"
+        DebugLog.error(
+            agent=agent,
+            log_type="scripting",
+            message=f" {agent.hostname}({agent.pk}) Couldn't lookup value for: {string}. Make sure it exists as a custom field or a valid agent property",
         )
         return None
 

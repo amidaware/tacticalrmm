@@ -3,15 +3,12 @@ import datetime as dt
 import time
 
 import pytz
-from django.conf import settings
 from django.utils import timezone as djangotime
-from loguru import logger
 from packaging import version as pyver
 
 from agents.models import Agent
 from tacticalrmm.celery import app
-
-logger.configure(**settings.LOG_CONFIG)
+from logs.models import DebugLog
 
 
 @app.task
@@ -120,7 +117,11 @@ def check_agent_update_schedule_task():
 
             if install:
                 # initiate update on agent asynchronously and don't worry about ret code
-                logger.info(f"Installing windows updates on {agent.salt_id}")
+                DebugLog.info(
+                    agent=agent,
+                    log_type="windows_updates",
+                    message=f"Installing windows updates on {agent.hostname}",
+                )
                 nats_data = {
                     "func": "installwinupdates",
                     "guids": agent.get_approved_update_guids(),

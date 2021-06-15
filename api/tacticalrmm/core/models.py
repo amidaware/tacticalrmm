@@ -6,12 +6,10 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.db import models
-from loguru import logger
 from twilio.rest import Client as TwClient
 
-from logs.models import BaseAuditModel
+from logs.models import BaseAuditModel, DebugLog
 
-logger.configure(**settings.LOG_CONFIG)
 
 TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
 
@@ -184,7 +182,7 @@ class CoreSettings(BaseAuditModel):
                     server.quit()
 
         except Exception as e:
-            logger.error(f"Sending email failed with error: {e}")
+            DebugLog.error(message=f"Sending email failed with error: {e}")
             if test:
                 return str(e)
         else:
@@ -205,7 +203,7 @@ class CoreSettings(BaseAuditModel):
             try:
                 tw_client.messages.create(body=body, to=num, from_=self.twilio_number)
             except Exception as e:
-                logger.error(f"SMS failed to send: {e}")
+                DebugLog.error(message=f"SMS failed to send: {e}")
 
     @staticmethod
     def serialize(core):

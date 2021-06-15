@@ -12,10 +12,6 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from logs.models import BaseAuditModel
-from loguru import logger
-
-
-logger.configure(**settings.LOG_CONFIG)
 
 CHECK_TYPE_CHOICES = [
     ("diskspace", "Disk Space Check"),

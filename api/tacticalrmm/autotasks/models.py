@@ -6,18 +6,14 @@ from typing import List
 
 import pytz
 from alerts.models import SEVERITY_CHOICES
-from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import DateTimeField
 from django.db.utils import DatabaseError
 from django.utils import timezone as djangotime
-from logs.models import BaseAuditModel
-from loguru import logger
+from logs.models import BaseAuditModel, DebugLog
 from packaging import version as pyver
 from tacticalrmm.utils import bitdays_to_string
-
-logger.configure(**settings.LOG_CONFIG)
 
 RUN_TIME_DAY_CHOICES = [
     (0, "Monday"),
@@ -306,14 +302,20 @@ class AutomatedTask(BaseAuditModel):
         if r != "ok":
             self.sync_status = "initial"
             self.save(update_fields=["sync_status"])
-            logger.warning(
-                f"Unable to create scheduled task {self.name} on {agent.hostname}. It will be created when the agent checks in."
+            DebugLog.warning(
+                agent=agent,
+                log_type="agent_issues",
+                message=f"Unable to create scheduled task {self.name} on {agent.hostname}. It will be created when the agent checks in.",
             )
             return "timeout"
         else:
             self.sync_status = "synced"
             self.save(update_fields=["sync_status"])
-            logger.info(f"{agent.hostname} task {self.name} was successfully created")
+            DebugLog.info(
+                agent=agent,
+                log_type="agent_issues",
+                message=f"{agent.hostname} task {self.name} was successfully created",
+            )
 
         return "ok"
 
@@ -338,14 +340,20 @@ class AutomatedTask(BaseAuditModel):
         if r != "ok":
             self.sync_status = "notsynced"
             self.save(update_fields=["sync_status"])
-            logger.warning(
-                f"Unable to modify scheduled task {self.name} on {agent.hostname}. It will try again on next agent checkin"
+            DebugLog.warning(
+                agent=agent,
+                log_type="agent_issues",
+                message=f"Unable to modify scheduled task {self.name} on {agent.hostname}({agent.pk}). It will try again on next agent checkin",
             )
             return "timeout"
         else:
             self.sync_status = "synced"
             self.save(update_fields=["sync_status"])
-            logger.info(f"{agent.hostname} task {self.name} was successfully modified")
+            DebugLog.info(
+                agent=agent,
+                log_type="agent_issues",
+                message=f"{agent.hostname} task {self.name} was successfully modified",
+            )
 
         return "ok"
 
@@ -372,13 +380,19 @@ class AutomatedTask(BaseAuditModel):
             except DatabaseError:
                 pass
 
-            logger.warning(
-                f"{agent.hostname} task {self.name} will be deleted on next checkin"
+            DebugLog.warning(
+                agent=agent,
+                log_type="agent_issues",
+                message=f"{agent.hostname} task {self.name} will be deleted on next checkin",
             )
             return "timeout"
         else:
             self.delete()
-            logger.info(f"{agent.hostname} task {self.name} was deleted")
+            DebugLog.info(
+                agent=agent,
+                log_type="agent_issues",
+                message=f"{agent.hostname}({agent.pk}) task {self.name} was deleted",
+            )
 
         return "ok"
 

@@ -1,22 +1,17 @@
 import base64
 import json
 
-from django.conf import settings
 from django.shortcuts import get_object_or_404
-from loguru import logger
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.parsers import FileUploadParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from tacticalrmm.utils import notify_error
 
 from .models import Script
 from .permissions import ManageScriptsPerms
 from .serializers import ScriptSerializer, ScriptTableSerializer
-
-logger.configure(**settings.LOG_CONFIG)
 
 
 class GetAddScripts(APIView):

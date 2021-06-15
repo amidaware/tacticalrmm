@@ -16,14 +16,11 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone as djangotime
-from loguru import logger
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrTimeout
 
 from core.models import TZ_CHOICES, CoreSettings
-from logs.models import BaseAuditModel
-
-logger.configure(**settings.LOG_CONFIG)
+from logs.models import BaseAuditModel, DebugLog
 
 
 class Agent(BaseAuditModel):
@@ -411,6 +408,12 @@ class Agent(BaseAuditModel):
             update.action = "approve"
             update.save(update_fields=["action"])
 
+        DebugLog.info(
+            agent=self,
+            log_type="windows_updates",
+            message=f"Approving windows updates on {self.hostname}",
+        )
+
     # returns agent policy merged with a client or site specific policy
     def get_patch_policy(self):
 
@@ -739,7 +742,7 @@ class Agent(BaseAuditModel):
                 try:
                     ret = msgpack.loads(msg.data)  # type: ignore
                 except Exception as e:
-                    logger.error(e)
+                    DebugLog.error(agent=self, log_type="agent_issues", message=e)
                     ret = str(e)
 
             await nc.close()

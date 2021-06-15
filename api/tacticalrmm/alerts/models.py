@@ -3,19 +3,18 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Union
 
-from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
-from loguru import logger
+
+from logs.models import DebugLog
 
 if TYPE_CHECKING:
     from agents.models import Agent
     from autotasks.models import AutomatedTask
     from checks.models import Check
 
-logger.configure(**settings.LOG_CONFIG)
 
 SEVERITY_CHOICES = [
     ("info", "Informational"),
@@ -314,8 +313,10 @@ class Alert(models.Model):
                 alert.action_run = djangotime.now()
                 alert.save()
             else:
-                logger.error(
-                    f"Failure action: {alert_template.action.name} failed to run on any agent for {agent.hostname} failure alert"
+                DebugLog.error(
+                    agent=agent,
+                    log_type="scripting",
+                    message=f"Failure action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) failure alert",
                 )
 
     @classmethod
@@ -425,8 +426,10 @@ class Alert(models.Model):
                 alert.resolved_action_run = djangotime.now()
                 alert.save()
             else:
-                logger.error(
-                    f"Resolved action: {alert_template.action.name} failed to run on any agent for {agent.hostname} resolved alert"
+                DebugLog.error(
+                    agent=agent,
+                    log_type="scripting",
+                    message=f"Resolved action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) resolved alert",
                 )
 
     def parse_script_args(self, args: list[str]):
@@ -451,7 +454,7 @@ class Alert(models.Model):
                 try:
                     temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))  # type: ignore
                 except Exception as e:
-                    logger.error(e)
+                    DebugLog.error(log_type="scripting", message=e)
                     continue
 
             else:

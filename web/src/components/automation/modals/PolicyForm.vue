@@ -81,6 +81,7 @@ export default {
         ...this.localPolicy,
       };
 
+      console.log(data);
       if (this.editing) {
         this.$axios
           .put(`/automation/policies/${data.id}/`, data)
@@ -126,7 +127,11 @@ export default {
   mounted() {
     // If pk prop is set that means we are editting
     if (this.policy) {
-      Object.assign(this.localPolicy, this.policy);
+      this.localPolicy.id = this.policy.id;
+      this.localPolicy.name = this.policy.name;
+      this.localPolicy.desc = this.policy.desc;
+      this.localPolicy.enforced = this.policy.enforced;
+      this.localPolicy.active = this.policy.active;
     }
   },
 };

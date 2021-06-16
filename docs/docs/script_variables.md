@@ -13,7 +13,8 @@ See below for the available options.
 - **{{agent.public_ip}}** - Public IP address of agent
 - **{{agent.total_ram}}** - Total RAM on agent. Returns an integer - example: *16* 
 - **{{agent.boot_time}}** - Uptime of agent. Returns unix timestamp. example: *1619439603.0*
-- **{{agent.logged_in_user}}** - Username of logged in user
+- **{{agent.logged_in_username}}** - Username of logged in user
+- **{{agent.last_logged_in_user}}** - Username of last logged in user
 - **{{agent.monitoring_type}}** - Returns a string of *workstation* or *server*
 - **{{agent.description}}** - Description of agent in dashboard
 - **{{agent.mesh_node_id}}** - The mesh node id used for linking the tactical agent to mesh.

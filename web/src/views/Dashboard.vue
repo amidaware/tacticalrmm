@@ -122,7 +122,9 @@
                 <template v-slot:default-header="props">
                   <div class="row">
                     <q-icon :name="props.node.icon" :color="props.node.color" class="q-mr-sm" />
-                    <span>{{ props.node.label }}</span>
+                    <span
+                      >{{ props.node.label }} <q-tooltip :delay="600">ID: {{ props.node.id }}</q-tooltip></span
+                    >
 
                     <q-menu context-menu>
                       <q-list dense style="min-width: 200px">

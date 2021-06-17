@@ -274,6 +274,20 @@
     "category": "TRMM (Win):Active Directory"
   },
   {
+    "guid": "5320dfc8-022a-41e7-9e39-11c493545ec9",
+    "filename": "Win_AD_Hudu_ADDS_Documentation.ps1",
+    "submittedBy": "https://github.com/unplugged216",
+    "name": "ADDS - Direcotry documentation in Hudu",
+    "description": "Auto generates ADDS documentation and submits it to your Hudu instance.",
+	"args": [
+      "-ClientName {{client.name}}",
+      "-HuduBaseDomain {{global.HuduBaseDomain}}",
+      "-HuduApiKey {{global.HuduApiKey}}"
+    ],
+    "shell": "powershell",
+    "category": "TRMM (Win):Active Directory"
+  },
+  {
     "guid": "b6b9912f-4274-4162-99cc-9fd47fbcb292",
     "filename": "Win_ADDC_Sync_Start.bat",
     "submittedBy": "https://github.com/silversword411",

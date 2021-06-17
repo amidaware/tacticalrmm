@@ -18,9 +18,8 @@ See below for the available options.
 - **{{agent.used_ram}}** - Used RAM on agent. Returns an integer - example: *16* 
 - **{{agent.total_ram}}** - Total RAM on agent. Returns an integer - example: *16* 
 - **{{agent.boot_time}}** - Uptime of agent. Returns unix timestamp. example: *1619439603.0*
-- **{{agent.logged_in_user}}** - Username of logged in user
+- **{{agent.logged_in_username}}** - Username of logged in user
 - **{{agent.last_logged_in_user}}** - Username of last logged in user
-- **{{agent.antivirus}}** - Primary Antivirus on Agent
 - **{{agent.monitoring_type}}** - Returns a string of *workstation* or *server*
 - **{{agent.description}}** - Description of agent in dashboard
 - **{{agent.mesh_node_id}}** - The mesh node id used for linking the tactical agent to mesh.
@@ -30,8 +29,8 @@ See below for the available options.
 - **{{agent.offline_time}}** - Returns offline time setting for agent in TRMM
 - **{{agent.overdue_time}}** - Returns overdue time setting for agent in TRMM
 - **{{agent.check_interval}}** - Returns check interval time setting for agent in TRMM
-- **{{agent.needs_reboot}}** - Boolean to see if reboot is pending on agent
-- **{{agent.choco_installed}}** - Boolean to see if Chocolatey is installed
+- **{{agent.needs_reboot}}** - Returns true if reboot is pending on agent
+- **{{agent.choco_installed}}** - Returns true if Chocolatey is installed
 - **{{agent.patches_last_installed}}** - The date that patches were last installed by Tactical RMM. 
 - **{{agent.needs_reboot}}** - Returns true if the agent needs a reboot
 - **{{agent.time_zone}}** - Returns timezone configured on agent

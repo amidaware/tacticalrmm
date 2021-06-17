@@ -52,6 +52,7 @@
         <q-card-section class="row">
           <div class="q-gutter-sm">
             <q-checkbox v-model="role.can_manage_notes" label="Manage Notes" />
+            <q-checkbox v-model="role.can_view_core_settings" label="View Global Settings" />
             <q-checkbox v-model="role.can_edit_core_settings" label="Edit Global Settings" />
             <q-checkbox v-model="role.can_do_server_maint" label="Do Server Maintenance" />
             <q-checkbox v-model="role.can_code_sign" label="Manage Code Signing" />
@@ -176,6 +177,7 @@ export default {
         can_run_scripts: false,
         can_run_bulk: false,
         can_manage_notes: false,
+        can_view_core_settings: false,
         can_edit_core_settings: false,
         can_do_server_maint: false,
         can_code_sign: false,

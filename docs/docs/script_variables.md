@@ -9,8 +9,13 @@ See below for the available options.
 - **{{agent.version}}** - Tactical RMM agent version
 - **{{agent.operating_system}}** - Agent operating system example: *Windows 10 Pro, 64 bit (build 19042.928)*
 - **{{agent.plat}}** - Will show the platform example: *windows*
+- **{{agent.plat_release}}** - Will show the platform release
 - **{{agent.hostname}}** - The hostname of the agent
+- **{{agent.local_ip}}** - Local IP address of agent
 - **{{agent.public_ip}}** - Public IP address of agent
+- **{{agent.agent_id}}** - agent ID in database
+- **{{agent.last_seen}}** - Date and Time Agent last seen
+- **{{agent.used_ram}}** - Used RAM on agent. Returns an integer - example: *16* 
 - **{{agent.total_ram}}** - Total RAM on agent. Returns an integer - example: *16* 
 - **{{agent.boot_time}}** - Uptime of agent. Returns unix timestamp. example: *1619439603.0*
 - **{{agent.logged_in_username}}** - Username of logged in user
@@ -18,11 +23,20 @@ See below for the available options.
 - **{{agent.monitoring_type}}** - Returns a string of *workstation* or *server*
 - **{{agent.description}}** - Description of agent in dashboard
 - **{{agent.mesh_node_id}}** - The mesh node id used for linking the tactical agent to mesh.
-- **{{agent.choco_installed}}** - Boolean to see if Chocolatey is installed
+- **{{agent.overdue_email_alert}}** - Returns true if overdue email alerts is enabled in TRMM
+- **{{agent.overdue_text_alert}}** - Returns true if overdue SMS alerts is enabled in TRMM
+- **{{agent.overdue_dashboard_alert}}** - Returns true if overdue agent alerts is enabled in TRMM
+- **{{agent.offline_time}}** - Returns offline time setting for agent in TRMM
+- **{{agent.overdue_time}}** - Returns overdue time setting for agent in TRMM
+- **{{agent.check_interval}}** - Returns check interval time setting for agent in TRMM
+- **{{agent.needs_reboot}}** - Returns true if reboot is pending on agent
+- **{{agent.choco_installed}}** - Returns true if Chocolatey is installed
 - **{{agent.patches_last_installed}}** - The date that patches were last installed by Tactical RMM. 
 - **{{agent.needs_reboot}}** - Returns true if the agent needs a reboot
 - **{{agent.time_zone}}** - Returns timezone configured on agent
 - **{{agent.maintenance_mode}}** - Returns true if agent is in maintenance mode
+- **{{agent.block_policy_inheritance}}** - Returns true if agent has block policy inheritance
+- **{{agent.alert_template}** - Returns true if agent has block policy inheritance
 
 ## Client
 - **{{client.name}}** - Returns name of client

@@ -1,9 +1,9 @@
 <#
     .SYNOPSIS
-    I do this
+    Joins computer to Active Directory
 
     .DESCRIPTION 
-    I really do a lot of this
+    Computer can be joined to AD in a specific OU specified in the parameters or it will join the default location.
 
     .OUTPUTS
     Results are printed to the console. Future releases will support outputting to a log file.
@@ -13,7 +13,9 @@
     V1.0 Initial release
     V1.1 Parameterization; Error Checking with conditionals and exit codes
 
-    Reference Links: www.google.com
+    Reference Links: 
+        www.google.com
+        docs.microsoft.com
 #>
 
 param(

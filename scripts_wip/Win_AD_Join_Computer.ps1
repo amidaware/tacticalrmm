@@ -1,6 +1,6 @@
 <#
     .SYNOPSIS
-    Joins computer to Active Directory
+    Joins computer to Active Directory.
 
     .DESCRIPTION 
     Computer can be joined to AD in a specific OU specified in the parameters or it will join the default location.
@@ -26,7 +26,7 @@ param(
 )
 
 $username = "$domain\$UserAccount"
-$credential = New-Object System.Management.Automation.PSCredential($username, $secpassword)
+$credential = New-Object System.Management.Automation.PSCredential($username, $password)
 
 if ([string]::IsNullOrEmpty($domain)) {
     Write-Output "Domain must be defined. Use -domain <value> to pass it."

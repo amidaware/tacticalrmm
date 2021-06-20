@@ -8,10 +8,16 @@
     .OUTPUTS
     Results are printed to the console. Future releases will support outputting to a log file.
     
+    .EXAMPLE
+    In parameter set desired items
+        -domain DOMAIN -password ADMINpassword -UserAccount ADMINaccount -OUPath OU=testOU,DC=test,DC=local
+
+
     .NOTES
     Change Log
     V1.0 Initial release
     V1.1 Parameterization; Error Checking with conditionals and exit codes
+    V1.2 Variable declarations cleaned up; minor syntax corrections; Output to file added (@jeevis)
 
     Reference Links: 
         www.google.com
@@ -25,8 +31,7 @@ param(
     $OUPath
 )
 
-$username = "$domain\$UserAccount"
-$credential = New-Object System.Management.Automation.PSCredential($username, $password)
+
 
 if ([string]::IsNullOrEmpty($domain)) {
     Write-Output "Domain must be defined. Use -domain <value> to pass it."
@@ -44,21 +49,25 @@ if ([string]::IsNullOrEmpty($password)){
 }
 
 else{
+    $username = "$domain\$UserAccount"
     $password = ConvertTo-SecureString -string $password -asPlainText -Force
-}
+    $credential = New-Object System.Management.Automation.PSCredential($username, $password)
+    }
 
 try{
 
-if ([string]::IsNullOrEmpty($OUPath){
+if ([string]::IsNullOrEmpty($OUPath)){
     Write-Output "OU Path is not defined. Computer object will be created in the default OU."
     Add-Computer -DomainName $domain -Credential $credential -Restart
+    echo "Add-Computer -DomainName $domain -Credential $credential -Restart" >> C:\Temp\ADJoinCommand.log
     EXIT 0
 }
 
 else {
     Add-Computer -DomainName $domain -OUPath $OUPath -Credential $credential -Restart
+    echo "Add-Computer -DomainName $domain -OUPath $OUPath -Credential $credential -Restart" >> C:\Temp\ADJoinCommand.log
     EXIT 0
-}
+    }
 }
 
 catch{

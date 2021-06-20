@@ -6,8 +6,8 @@
     Computer can be joined to AD in a specific OU specified in the parameters or it will join the default location.
 
     .OUTPUTS
-    Results are printed to the console. Future releases will support outputting to a log file.
-    
+    Results are printed to the console and sent to a log file in C:\Temp
+
     .EXAMPLE
     In parameter set desired items
         -domain DOMAIN -password ADMINpassword -UserAccount ADMINaccount -OUPath OU=testOU,DC=test,DC=local

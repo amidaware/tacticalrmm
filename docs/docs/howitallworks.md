@@ -36,16 +36,16 @@ The [MeshCentral](https://meshcentral.com/) system which is accessible from <htt
 `Tactical RMM RPC Service`
 
 * Uses the pub/sub model so anytime you do anything realtime from rmm (like a send command or run script)
-* It maintains a persistent connection to your to the api.example.com rmm server on port **443 CONFIRM** and is listening for events
+* It maintains a persistent connection to your to the api.example.com rmm server on `port:4222` and is listening for events (using [nats](https://nats.io/))
 * It handles your Agent updates (Auto triggers at 35mins past every hour or when run manually from server Agents | Update Agents menu)
 
 ***
 
 ### Agent Installation Process
 
-Adds Defender AV exclusions
-
-Copies
+* Adds Defender AV exclusions
+* Copies temp files to `c:\windows\temp\tacticalxxx` folder.
+* INNO setup installs app into `%ProgramData%\TacticalAgent\` folder
 
 ***
 

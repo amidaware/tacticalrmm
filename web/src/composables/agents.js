@@ -7,8 +7,8 @@ export function useAgentDropdown() {
 
   const agentOptions = ref([])
 
-  const getAgentOptions = async () => {
-    agentOptions.value = formatAgentOptions(await fetchAgents())
+  async function getAgentOptions(flat = false) {
+    agentOptions.value = formatAgentOptions(await fetchAgents(), flat)
   }
 
   return {

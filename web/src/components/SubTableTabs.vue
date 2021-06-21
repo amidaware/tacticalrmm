@@ -48,10 +48,10 @@
       <q-tab-panel name="assets" class="q-pb-xs q-pt-none">
         <AssetsTab />
       </q-tab-panel>
-      <q-tab-panel name="debug" class="q-pb-xs q-pt-none">
+      <q-tab-panel name="debug" class="q-pa-none">
         <DebugTab />
       </q-tab-panel>
-      <q-tab-panel name="audit" class="q-pb-xs q-pt-none">
+      <q-tab-panel name="audit" class="q-pa-none">
         <AuditTab />
       </q-tab-panel>
     </q-tab-panels>
@@ -64,9 +64,9 @@ import ChecksTab from "@/components/ChecksTab";
 import AutomatedTasksTab from "@/components/AutomatedTasksTab";
 import WindowsUpdates from "@/components/WindowsUpdates";
 import SoftwareTab from "@/components/SoftwareTab";
-import HistoryTab from "@/components/HistoryTab";
-import AuditTab from "@/components/AuditTab";
-import DebugTab from "@/components/DebugTab";
+import HistoryTab from "@/components/agents/HistoryTab";
+import AuditTab from "@/components/agents/AuditTab";
+import DebugTab from "@/components/agents/DebugTab";
 import AssetsTab from "@/components/AssetsTab";
 import NotesTab from "@/components/NotesTab";
 

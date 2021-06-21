@@ -63,7 +63,7 @@
     <q-card-section>
       <q-table
         @request="onRequest"
-        title="Audit Logs"
+        :title="modal ? 'Audit Logs' : ''"
         :rows="auditLogs"
         :columns="columns"
         row-key="id"
@@ -76,7 +76,7 @@
         :loading="loading"
       >
         <template v-slot:top-right>
-          <q-btn dense color="primary" icon-right="archive" @click="exportLog" />
+          <export-table-btn :data="auditLogs" :columns="columns" />
         </template>
         <template v-slot:body-cell-action="props">
           <q-td :props="props">
@@ -97,14 +97,23 @@ import { useAuditLog } from "@/composables/logs";
 import { useClientDropdown } from "@/composables/clients";
 import { useAgentDropdown } from "@/composables/agents";
 import { useUserDropdown } from "@/composables/accounts";
-import { exportTableToCSV } from "@/utils/csv";
 
 // ui imported
+import ExportTableBtn from "@/components/ui/ExportTableBtn"
 import TacticalDropdown from "@/components/ui/TacticalDropdown";
+import ExportTableBtn from '../ui/ExportTableBtn.vue';
 
 export default {
   name: "AuditManager",
-  components: { TacticalDropdown },
+  components: { TacticalDropdown, ExportTableBtn },
+  props: {
+    agentpk:
+    ExportTableBtn Number,
+    modal: {
+      type: Boolean,
+      default: false
+    }
+  },
   setup() {
     // setup dropdowns
     const { clientOptions, getClientOptions } = useClientDropdown();
@@ -151,9 +160,6 @@ export default {
       onRequest: AuditLog.onRequest,
       openAuditDetail: AuditLog.openAuditDetail,
       formatActionColor: AuditLog.formatActionColor,
-      exportLog: () => {
-        exportTableToCSV(auditLogs, useAuditLog.tableColumns);
-      },
     };
   },
 };

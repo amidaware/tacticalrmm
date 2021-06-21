@@ -209,7 +209,8 @@
 </template>
 
 <script>
-import DebugLogModal from "@/components/modals/logs/DebugLogModal";
+import DialogWrapper from "@/components/ui/DialogWrapper";
+import DebugLog from "@/components/logs/DebugLog";
 import PendingActions from "@/components/modals/logs/PendingActions";
 import ClientsManager from "@/components/ClientsManager";
 import ClientsForm from "@/components/modals/clients/ClientsForm";
@@ -328,7 +329,19 @@ export default {
     },
     showDebugLog() {
       this.$q.dialog({
-        component: DebugLogModal,
+        component: DialogWrapper,
+        componentProps: {
+          vuecomponent: DebugLog,
+          noCard: true,
+          componentProps: {
+            modal: true,
+          },
+          dialogProps: {
+            maximized: true,
+            ["transition-show"]: "slide-up",
+            ["transition-hide"]: "slide-down",
+          },
+        },
       });
     },
     edited() {

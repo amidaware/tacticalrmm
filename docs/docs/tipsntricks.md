@@ -2,7 +2,7 @@
 
 ## Customize User Interface
 
-Top right click Username, look at preferences pane. Set default tab: Servers|Workstations|Mixed
+At the top right of your web administration interface, click your Username > preferences. Set default tab: Servers|Workstations|Mixed
 
 ![User Preferences](images/trmm_user_preferences.png)
 
@@ -12,7 +12,7 @@ Top right click Username, look at preferences pane. Set default tab: Servers|Wor
 
 ### Install Tactical RMM via Screeconnect commands window
 
-1. Create a Deplopment under Agents | Manage Deployments
+1. Create a Deplopment under Agents > Manage Deployments
 2. Replace `<deployment URL>` below with your Deployment Download Link.
 
 **x64**

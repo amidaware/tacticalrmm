@@ -20,14 +20,16 @@ jobs:
           sudo -u postgres psql -c 'DROP DATABASE IF EXISTS pipeline'
           sudo -u postgres psql -c 'DROP DATABASE IF EXISTS test_pipeline'
           sudo -u postgres psql -c 'CREATE DATABASE pipeline'
-
+          SETTINGS_FILE="/myagent/_work/1/s/api/tacticalrmm/tacticalrmm/settings.py"
           rm -rf /myagent/_work/1/s/api/env
           cd /myagent/_work/1/s/api
           python3.9 -m venv env
           source env/bin/activate
           cd /myagent/_work/1/s/api/tacticalrmm
           pip install --no-cache-dir --upgrade pip
-          pip install --no-cache-dir setuptools==54.2.0 wheel==0.36.2
+          SETUPTOOLS_VER=$(grep "^SETUPTOOLS_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
+          WHEEL_VER=$(grep "^WHEEL_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
+          pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
           pip install --no-cache-dir -r requirements.txt -r requirements-test.txt -r requirements-dev.txt
         displayName: "Install Python Dependencies"
 

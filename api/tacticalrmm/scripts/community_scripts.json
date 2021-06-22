@@ -704,5 +704,15 @@
     "shell": "powershell",
     "category": "TRMM (Win):Misc>Reference",
     "default_timeout": "1"
+  },
+  {
+    "guid": "453c6d22-84b7-4767-8b5f-b825f233cf55",
+    "filename": "Win_AD_Join_Computer.ps1",
+    "submittedBy": "https://github.com/rfost52",
+    "name": "AD - Join Computer to Domain",
+    "description": "Join computer to a domain in Active Directory",
+    "shell": "powershell",
+    "category": "TRMM (Win):Active Directory",
+    "default_timeout": "300"
   }
 ]

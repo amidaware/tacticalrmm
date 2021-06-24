@@ -2,7 +2,7 @@
   <div v-if="!selectedAgentPk">No agent selected</div>
   <div v-else-if="Object.keys(sortedUpdates).length === 0">No Patches</div>
   <div v-else class="q-pa-xs">
-    <q-btn dense flat push @click="refreshUpdates(updates.pk)" icon="refresh" class="q-mr-sm"/>
+    <q-btn dense flat push @click="refreshUpdates(updates.pk)" icon="refresh" class="q-mr-sm" />
     <span v-if="summary.patches_last_installed" class="text-bold">
       Patches last installed: {{ summary.patches_last_installed }}
     </span>
@@ -12,10 +12,10 @@
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       class="tabs-tbl-sticky"
       :style="{ 'max-height': tabsTableHeight }"
-      :data="sortedUpdates"
+      :rows="sortedUpdates"
       :columns="columns"
       :visible-columns="visibleColumns"
-      :pagination.sync="pagination"
+      v-model:pagination="pagination"
       :filter="filter"
       row-key="id"
       binary-state-sort
@@ -23,7 +23,7 @@
       virtual-scroll
       :rows-per-page-options="[0]"
     >
-      <template slot="body" slot-scope="props" :props="props">
+      <template v-slot:body="props">
         <q-tr :props="props">
           <q-menu context-menu>
             <q-list dense style="min-width: 100px">
@@ -73,9 +73,7 @@
           <q-td>{{ formatSeverity(props.row.severity) }}</q-td>
           <q-td>{{ formatMessage(props.row.title) }}</q-td>
           <q-td
-            @click.native="
-              showFullMsg(props.row.title, props.row.description, props.row.more_info_urls, props.row.categories)
-            "
+            @click="showFullMsg(props.row.title, props.row.description, props.row.more_info_urls, props.row.categories)"
           >
             <span style="cursor: pointer; text-decoration: underline" class="text-primary">{{
               formatMessage(props.row.description)

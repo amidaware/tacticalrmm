@@ -8,9 +8,9 @@
     <hr />
     <q-table
       dense
-      :data="keystore"
+      :rows="keystore"
       :columns="columns"
-      :pagination.sync="pagination"
+      v-model:pagination="pagination"
       row-key="id"
       binary-state-sort
       hide-pagination
@@ -109,7 +109,6 @@ export default {
       this.$q
         .dialog({
           component: KeyStoreForm,
-          parent: this,
         })
         .onOk(() => {
           this.getKeyStore();
@@ -119,8 +118,9 @@ export default {
       this.$q
         .dialog({
           component: KeyStoreForm,
-          parent: this,
-          globalKey: key,
+          componentProps: {
+            globalKey: key,
+          },
         })
         .onOk(() => {
           this.getKeyStore();

@@ -5,13 +5,13 @@
         {{ title }}
         <q-space />
         <q-btn dense flat icon="minimize" @click="maximized = false" :disable="!maximized">
-          <q-tooltip v-if="maximized" content-class="bg-white text-primary">Minimize</q-tooltip>
+          <q-tooltip v-if="maximized" class="bg-white text-primary">Minimize</q-tooltip>
         </q-btn>
         <q-btn dense flat icon="crop_square" @click="maximized = true" :disable="maximized">
-          <q-tooltip v-if="!maximized" content-class="bg-white text-primary">Maximize</q-tooltip>
+          <q-tooltip v-if="!maximized" class="bg-white text-primary">Maximize</q-tooltip>
         </q-btn>
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <q-form @submit="submit">
@@ -101,8 +101,9 @@
           v-model="localScript.code"
           :highlight="highlighter"
           :style="heightVar"
-          lineNumbers
-        ></prism-editor>
+          line-numbers
+          @click="focusTextArea"
+        />
         <q-card-actions v-if="!readonly" align="right">
           <q-btn dense flat label="Cancel" v-close-popup />
           <q-btn dense flat label="Save" color="primary" type="submit" />
@@ -125,6 +126,7 @@ import "prismjs/themes/prism-tomorrow.css";
 
 export default {
   name: "ScriptFormModal",
+  emits: ["hide", "ok", "cancel"],
   mixins: [mixins],
   components: {
     PrismEditor,
@@ -226,6 +228,9 @@ export default {
         }
       });
     },
+    focusTextArea() {
+      document.getElementsByClassName("prism-editor__textarea")[0].focus();
+    },
   },
   computed: {
     favoriteIcon() {
@@ -248,7 +253,7 @@ export default {
       return this.maximized ? "--prism-height: 76vh" : "--prism-height: 70vh";
     },
   },
-  created() {
+  mounted() {
     if (!!this.script) {
       this.localScript.id = this.script.id;
       this.localScript.name = this.script.name;
@@ -280,10 +285,6 @@ export default {
   height: var(--prism-height);
 }
 
-.prism-editor__container {
-  height: 30000em;
-}
-
 /* optional class for removing the outline */
 .prism-editor__textarea:focus {
   outline: none;
@@ -291,7 +292,7 @@ export default {
 
 .prism-editor__textarea,
 .prism-editor__container {
-  width: 1000em !important;
+  width: 500em !important;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }

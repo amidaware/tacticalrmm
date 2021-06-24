@@ -40,6 +40,7 @@ import mixins from "@/mixins/mixins";
 
 export default {
   name: "UploadMesh",
+  emits: ["close"],
   mixins: [mixins],
   data() {
     return {

@@ -39,10 +39,10 @@
         dense
         :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
         class="remote-bg-tbl-sticky"
-        :data="actions"
+        :rows="actions"
         :columns="columns"
         :visible-columns="visibleColumns"
-        :pagination.sync="pagination"
+        v-model:pagination="pagination"
         row-key="id"
         binary-state-sort
         hide-bottom
@@ -50,7 +50,7 @@
         flat
         :rows-per-page-options="[0]"
       >
-        <template slot="body" slot-scope="props" :props="props">
+        <template v-slot:body="props">
           <q-tr
             :class="rowClass(props.row.id, props.row.status)"
             @click="rowSelected(props.row.id, props.row.status, props.row.action_type)"
@@ -101,6 +101,7 @@
 import mixins from "@/mixins/mixins";
 export default {
   name: "PendingActions",
+  emits: ["edit"],
   mixins: [mixins],
   props: {
     agentpk: Number,
@@ -190,7 +191,7 @@ export default {
             .then(r => {
               this.$q.loading.hide();
               this.getPendingActions();
-              this.$emit("edited");
+              this.$emit("edit");
               this.notifySuccess(r.data, 3000);
             })
             .catch(e => {
@@ -227,7 +228,7 @@ export default {
       return !!this.agentpk ? `Pending Actions for ${this.hostname}` : "All Pending Actions";
     },
   },
-  created() {
+  mounted() {
     this.getPendingActions();
   },
 };

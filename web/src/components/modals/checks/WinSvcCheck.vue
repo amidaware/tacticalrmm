@@ -15,14 +15,14 @@
           v-model="winsvccheck.svc_policy_mode"
           val="default"
           label="Choose from defaults"
-          @input="clearServiceOptions"
+          @update:model-value="clearServiceOptions"
         />
         <q-radio
           v-if="policypk && this.mode !== 'edit'"
           v-model="winsvccheck.svc_policy_mode"
           val="manual"
           label="Enter manually"
-          @input="clearServiceOptions"
+          @update:model-value="clearServiceOptions"
         />
         <q-select
           v-if="policypk && winsvccheck.svc_policy_mode === 'default' && this.mode !== 'edit'"
@@ -35,7 +35,7 @@
           label="Service"
           map-options
           emit-value
-          @input="getDisplayName"
+          @update:model-value="getDisplayName"
         />
         <!-- disable selection if editing -->
         <q-select
@@ -79,7 +79,7 @@
           label="Service"
           map-options
           emit-value
-          @input="getDisplayName"
+          @update:model-value="getDisplayName"
           :disable="this.mode === 'edit'"
         />
       </q-card-section>
@@ -136,6 +136,7 @@ import mixins from "@/mixins/mixins";
 import { mapGetters } from "vuex";
 export default {
   name: "WinSvcCheck",
+  emits: ["close"],
   props: {
     agentpk: Number,
     policypk: Number,
@@ -188,12 +189,12 @@ export default {
         this.$axios
           .get("/services/defaultservices/")
           .then(r => {
-            this.svcData = Object.freeze(r.data);
+            this.svcData = r.data;
             this.winsvccheck.svc_policy_mode = "default";
           })
           .catch(e => {});
       } else {
-        this.svcData = Object.freeze(this.agentServices);
+        this.svcData = this.agentServices;
       }
     },
     getDisplayName() {
@@ -236,10 +237,8 @@ export default {
       }
     },
   },
-  created() {
-    this.setServices();
-  },
   mounted() {
+    this.setServices();
     if (this.mode === "edit") {
       this.getCheck();
     }

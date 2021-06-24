@@ -6,7 +6,7 @@
       <q-btn color="primary" text-color="white" label="Download log" @click="downloadLog" />
       <q-space />
       <q-btn dense flat icon="close" v-close-popup>
-        <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        <q-tooltip class="bg-white text-primary">Close</q-tooltip>
       </q-btn>
     </q-bar>
     <div class="q-pa-md row">
@@ -19,18 +19,27 @@
           v-model="agent"
           :options="agents"
           label="Filter Agent"
-          @input="getLog"
+          @update:model-value="getLog"
         />
       </div>
       <div class="col-1">
-        <q-select dark dense options-dense outlined v-model="order" :options="orders" label="Order" @input="getLog" />
+        <q-select
+          dark
+          dense
+          options-dense
+          outlined
+          v-model="order"
+          :options="orders"
+          label="Order"
+          @update:model-value="getLog"
+        />
       </div>
     </div>
     <q-card-section>
-      <q-radio dark v-model="loglevel" color="cyan" val="info" label="Info" @input="getLog" />
-      <q-radio dark v-model="loglevel" color="red" val="critical" label="Critical" @input="getLog" />
-      <q-radio dark v-model="loglevel" color="red" val="error" label="Error" @input="getLog" />
-      <q-radio dark v-model="loglevel" color="yellow" val="warning" label="Warning" @input="getLog" />
+      <q-radio dark v-model="loglevel" color="cyan" val="info" label="Info" @update:model-value="getLog" />
+      <q-radio dark v-model="loglevel" color="red" val="critical" label="Critical" @update:model-value="getLog" />
+      <q-radio dark v-model="loglevel" color="red" val="error" label="Error" @update:model-value="getLog" />
+      <q-radio dark v-model="loglevel" color="yellow" val="warning" label="Warning" @update:model-value="getLog" />
     </q-card-section>
     <q-separator />
     <q-card-section class="scroll" style="max-height: 80vh">
@@ -76,7 +85,7 @@ export default {
         .catch(e => {});
     },
   },
-  created() {
+  mounted() {
     this.getLog();
   },
 };

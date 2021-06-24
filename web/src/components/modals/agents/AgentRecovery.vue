@@ -54,6 +54,7 @@ import mixins from "@/mixins/mixins";
 
 export default {
   name: "AgentRecovery",
+  emits: ["close"],
   mixins: [mixins],
   props: {
     pk: Number,

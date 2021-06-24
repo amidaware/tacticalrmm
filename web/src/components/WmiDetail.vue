@@ -1,5 +1,5 @@
 <template>
-  <div class="scroll" :style="{'max-height': tabsTableHeight}">
+  <div class="scroll" :style="{ 'max-height': tabsTableHeight }">
     <div v-for="i in info" :key="i + randomID()">
       <div v-for="j in i" :key="j + randomID()">
         <div v-for="(v, k) in j" :key="v + randomID()">
@@ -13,8 +13,8 @@
 </template>
 
 <script>
-import { uid } from "quasar";
 import { mapGetters } from "vuex";
+import { uid } from "quasar";
 
 export default {
   name: "WmiDetail",

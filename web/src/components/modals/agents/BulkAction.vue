@@ -24,13 +24,13 @@
         <div class="q-pa-none">
           <p>Choose Target</p>
           <div class="q-gutter-sm">
-            <q-radio dense v-model="target" val="client" label="Client" @input="agentMultiple = []" />
+            <q-radio dense v-model="target" val="client" label="Client" @update:model-value="agentMultiple = []" />
             <q-radio
               dense
               v-model="target"
               val="site"
               label="Site"
-              @input="
+              @update:model-value="
                 () => {
                   agentMultiple = [];
                   site = sites[0];
@@ -38,7 +38,7 @@
               "
             />
             <q-radio dense v-model="target" val="agents" label="Selected Agents" />
-            <q-radio dense v-model="target" val="all" label="All Agents" @input="agentMultiple = []" />
+            <q-radio dense v-model="target" val="all" label="All Agents" @update:model-value="agentMultiple = []" />
           </div>
         </div>
       </q-card-section>
@@ -52,7 +52,7 @@
           label="Select client"
           v-model="client"
           :options="client_options"
-          @input="target === 'site' ? (site = sites[0]) : () => {}"
+          @update:model-value="target === 'site' ? (site = sites[0]) : () => {}"
         />
         <q-select
           v-if="target === 'site'"
@@ -92,10 +92,10 @@
           map-options
           emit-value
           options-dense
-          @input="setScriptDefaults"
+          @update:model-value="setScriptDefaults"
         >
           <template v-slot:option="scope">
-            <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+            <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
               <q-item-section>
                 <q-item-label v-html="scope.opt.label"></q-item-label>
               </q-item-section>
@@ -177,6 +177,7 @@ import mixins from "@/mixins/mixins";
 
 export default {
   name: "BulkAction",
+  emits: ["close"],
   mixins: [mixins],
   props: {
     mode: !String,
@@ -277,11 +278,11 @@ export default {
       }
     },
   },
-  created() {
+  mounted() {
     this.setTitles();
     this.getClients();
     this.getAgents();
-    this.scriptOptions = this.getScriptOptions(this.showCommunityScripts);
+    this.getScriptOptions(this.showCommunityScripts).then(options => (this.scriptOptions = Object.freeze(options)));
 
     this.selected_mode = this.mode;
   },

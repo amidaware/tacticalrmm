@@ -5,7 +5,7 @@
         <q-btn @click="getPolicyTree" class="q-mr-sm" dense flat push icon="refresh" />Policy Overview
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <q-splitter v-model="splitterModel" style="height: 600px">
@@ -16,7 +16,7 @@
               :nodes="clientSiteTree"
               node-key="key"
               selected-color="primary"
-              :selected.sync="selectedPolicyId"
+              v-model:selected="selectedPolicyId"
             ></q-tree>
           </div>
         </template>
@@ -63,6 +63,7 @@ import PolicyAutomatedTasksTab from "@/components/automation/PolicyAutomatedTask
 
 export default {
   name: "PolicyOverview",
+  emits: ["hide", "ok", "cancel"],
   components: {
     PolicyAutomatedTasksTab,
     PolicyChecksTab,

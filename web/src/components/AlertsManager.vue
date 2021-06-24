@@ -6,7 +6,7 @@
           <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />Alerts Manager
           <q-space />
           <q-btn dense flat icon="close" v-close-popup>
-            <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+            <q-tooltip class="bg-white text-primary">Close</q-tooltip>
           </q-btn>
         </q-bar>
         <div class="q-pa-sm" style="min-height: 65vh; max-height: 65vh">
@@ -15,9 +15,9 @@
           </div>
           <q-table
             dense
-            :data="templates"
+            :rows="templates"
             :columns="columns"
-            :pagination.sync="pagination"
+            v-model:pagination="pagination"
             row-key="id"
             binary-state-sort
             hide-pagination
@@ -98,7 +98,7 @@
                 </q-menu>
                 <!-- enabled checkbox -->
                 <q-td>
-                  <q-checkbox dense @input="toggleEnabled(props.row)" v-model="props.row.is_active" />
+                  <q-checkbox dense @update:model-value="toggleEnabled(props.row)" v-model="props.row.is_active" />
                 </q-td>
                 <!-- agent settings -->
                 <q-td>
@@ -169,6 +169,7 @@ import AlertTemplateRelated from "@/components/modals/alerts/AlertTemplateRelate
 export default {
   name: "AlertsManager",
   mixins: [mixins],
+  emits: ["hide", "ok", "cancel"],
   data() {
     return {
       selectedTemplate: null,
@@ -256,8 +257,9 @@ export default {
       this.$q
         .dialog({
           component: AlertTemplateForm,
-          parent: this,
-          alertTemplate: template,
+          componentProps: {
+            alertTemplate: template,
+          },
         })
         .onOk(() => {
           this.refresh();
@@ -268,7 +270,6 @@ export default {
       this.$q
         .dialog({
           component: AlertTemplateForm,
-          parent: this,
         })
         .onOk(() => {
           this.refresh();
@@ -278,8 +279,9 @@ export default {
       this.$q
         .dialog({
           component: AlertExclusions,
-          parent: this,
-          template: template,
+          componentProps: {
+            template: template,
+          },
         })
         .onOk(() => {
           this.refresh();
@@ -288,16 +290,17 @@ export default {
     showTemplateApplied(template) {
       this.$q.dialog({
         component: AlertTemplateRelated,
-        parent: this,
-        template: template,
+        componentProps: {
+          template: template,
+        },
       });
     },
     toggleEnabled(template) {
-      let text = template.is_active ? "Template enabled successfully" : "Template disabled successfully";
+      let text = !template.is_active ? "Template enabled successfully" : "Template disabled successfully";
 
       const data = {
         id: template.id,
-        is_active: template.is_active,
+        is_active: !template.is_active,
       };
 
       this.$axios

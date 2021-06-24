@@ -4,6 +4,82 @@ INSERT WIREFRAME GRAPHIC HERE USING <https://www.yworks.com/yed-live/>
 
 ## Server
 
+Has a postgres database located here:
+
+[Django Admin](https://wh1te909.github.io/tacticalrmm/functions/django_admin.html)
+
+!!!description
+    A web interface for the postgres database
+
+### Services
+
+
+nginx
+
+!!!description
+    Web server that handles https traffic
+
+Log located at `/var/log/nginx`
+
+```bash
+tail /var/log/nginx
+```
+
+### Dependencies from [here](https://github.com/wh1te909/tacticalrmm/blob/develop/api/tacticalrmm/requirements.txt)
+
+[nats](https://nats.io/)
+
+How communication between client and server bride NAT (Network Address Translation)
+
+[celery](https://github.com/celery/celery)
+
+!!!description
+    Used to schedule tasks to be sent to Agent
+
+Log located at `/var/log/celery`
+
+```bash
+tail /var/log/celery
+```
+
+[Django](https://www.djangoproject.com/)
+
+!!!description
+    Framework to integrate the server to interact with browser
+
+future==0.18.2
+loguru==0.5.3
+msgpack==1.0.2
+packaging==20.9
+psycopg2-binary==2.9.1
+pycparser==2.20
+pycryptodome==3.10.1
+pyotp==2.6.0
+pyparsing==2.4.7
+pytz==2021.1
+
+[qrcode](https://pypi.org/project/qrcode/)
+
+!!!description
+    For creating QR codes for 2FA
+
+redis==3.5.3
+requests==2.25.1
+six==1.16.0
+sqlparse==0.4.1
+
+[twilio](https://www.twilio.com/)
+
+!!!description
+    Python SMS notification integration
+
+urllib3==1.26.5
+uWSGI==2.0.19.1
+validators==0.18.2
+vine==5.0.0
+websockets==9.1
+zipp==3.4.1
+
 ## Windows Agent
 
 Found in `%programfiles%\TacticalAgent`
@@ -24,7 +100,6 @@ Found in `%programfiles%\TacticalAgent`
 
 The [MeshCentral](https://meshcentral.com/) system which is accessible from <https://mesh.example.com> and is used
 
-`Tactical RMM Agent`
 
 * It runs 2 goroutines
   * one is the checkrunner which runs all the checks and then just sleeps until it's time to run more checks

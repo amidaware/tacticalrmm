@@ -21,7 +21,7 @@
             :options="actions"
             emit-value
             map-options
-            @input="clear"
+            @update:model-value="clear"
           />
         </q-card-section>
 

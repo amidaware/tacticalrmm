@@ -1,41 +1,36 @@
-import Vue from "vue";
-import Vuex from "vuex";
+import { createStore } from 'vuex'
 import axios from "axios";
-import { Notify } from "quasar";
-import adminModule from "./admin.js"
-
-Vue.use(Vuex);
 
 export default function () {
-  const Store = new Vuex.Store({
-    modules: {
-      admin: adminModule
-    },
-    state: {
-      username: localStorage.getItem("user_name") || null,
-      token: localStorage.getItem("access_token") || null,
-      clients: {},
-      tree: [],
-      treeReady: false,
-      selectedRow: null,
-      agentSummary: {},
-      winUpdates: {},
-      agentChecks: null,
-      automatedTasks: {},
-      agentTableLoading: false,
-      treeLoading: false,
-      installedSoftware: [],
-      notes: [],
-      needrefresh: false,
-      tableHeight: "35vh",
-      tabHeight: "35vh",
-      showCommunityScripts: false,
-      agentDblClickAction: "",
-      agentUrlAction: null,
-      defaultAgentTblTab: "server",
-      clientTreeSort: "alphafail",
-      clientTreeSplitter: 11,
-      hosted: false,
+  const Store = new createStore({
+    state() {
+      return {
+        username: localStorage.getItem("user_name") || null,
+        token: localStorage.getItem("access_token") || null,
+        clients: {},
+        tree: [],
+        treeReady: false,
+        selectedRow: null,
+        agentSummary: {},
+        winUpdates: {},
+        agentChecks: null,
+        automatedTasks: {},
+        agentTableLoading: false,
+        treeLoading: false,
+        installedSoftware: [],
+        notes: [],
+        needrefresh: false,
+        tableHeight: "35vh",
+        tabHeight: "35vh",
+        showCommunityScripts: false,
+        agentDblClickAction: "",
+        agentUrlAction: null,
+        defaultAgentTblTab: "server",
+        clientTreeSort: "alphafail",
+        clientTreeSplitter: 11,
+        noCodeSign: false,
+        hosted: false
+      }
     },
     getters: {
       clientTreeSplitterModel(state) {
@@ -268,6 +263,7 @@ export default function () {
                 header: "generic",
                 icon: "apartment",
                 client: client.id,
+                selectable: true,
                 server_policy: site.server_policy,
                 workstation_policy: site.workstation_policy,
                 alert_template: site.alert_template,

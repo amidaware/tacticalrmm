@@ -6,7 +6,7 @@
           <q-btn @click="getSites" class="q-mr-sm" dense flat push icon="refresh" />Sites for {{ client.name }}
           <q-space />
           <q-btn dense flat icon="close" v-close-popup>
-            <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+            <q-tooltip class="bg-white text-primary">Close</q-tooltip>
           </q-btn>
         </q-bar>
         <div class="q-pa-sm" style="min-height: 40vh; max-height: 40vh">
@@ -15,9 +15,9 @@
           </div>
           <q-table
             dense
-            :data="sites"
+            :rows="sites"
             :columns="columns"
-            :pagination.sync="pagination"
+            v-model:pagination="pagination"
             row-key="id"
             binary-state-sort
             hide-pagination
@@ -71,6 +71,7 @@ import DeleteClient from "@/components/modals/clients/DeleteClient";
 
 export default {
   name: "SitesTable",
+  emits: ["hide", "ok", "cancel"],
   mixins: [mixins],
   props: {
     client: !Object,
@@ -103,9 +104,10 @@ export default {
       this.$q
         .dialog({
           component: DeleteClient,
-          parent: this,
-          object: site,
-          type: "site",
+          componentProps: {
+            object: site,
+            type: "site",
+          },
         })
         .onOk(() => {
           this.getSites();
@@ -115,9 +117,10 @@ export default {
       this.$q
         .dialog({
           component: SitesForm,
-          parent: this,
-          site: site,
-          client: site.client,
+          componentProps: {
+            site: site,
+            client: site.client,
+          },
         })
         .onOk(() => {
           this.getSites();
@@ -127,8 +130,9 @@ export default {
       this.$q
         .dialog({
           component: SitesForm,
-          parent: this,
-          client: this.client.id,
+          componentProps: {
+            client: this.client.id,
+          },
         })
         .onOk(() => {
           this.getSites();

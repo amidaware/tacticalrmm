@@ -5,7 +5,7 @@
         {{ title }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <q-card-section>
@@ -52,7 +52,8 @@
 import CustomField from "@/components/CustomField";
 import mixins from "@/mixins/mixins";
 export default {
-  name: "ClientsForm",
+  name: "SitesForm",
+  emits: ["hide", "ok", "cancel"],
   components: {
     CustomField,
   },
@@ -133,26 +134,15 @@ export default {
           for (let field of this.customFields) {
             const value = r.data.custom_fields.find(value => value.field === field.id);
 
-            // Set correct value for custom field
-            if (
-              field.type === "text" ||
-              field.type === "number" ||
-              field.type === "datetime" ||
-              field.type === "single"
-            ) {
-              if (!!value) this.$set(this.custom_fields, field.name, value.value);
-              else if (!!field.default_value) this.$set(this.custom_fields, field.name, field.default_value);
-              else this.$set(this.custom_fields, field.name, "");
-            } else if (field.type === "multiple") {
-              if (!!value) this.$set(this.custom_fields, field.name, value.multiple_value);
-              else if (!!field.multiple_default_value)
-                this.$set(this.custom_fields, field.name, field.multiple_default_value);
-              else this.$set(this.custom_fields, field.name, []);
+            if (field.type === "multiple") {
+              if (value) this.custom_fields[field.name] = value.value;
+              else this.custom_fields[field.name] = [];
             } else if (field.type === "checkbox") {
-              if (!!value) this.$set(this.custom_fields, field.name, value.checkbox_value);
-              else if (!!field.checkbox_default_value)
-                this.$set(this.custom_fields, field.name, field.checkbox_default_value);
-              else this.$set(this.custom_fields, field.name, false);
+              if (value) this.custom_fields[field.name] = value.value;
+              else this.this.custom_fields[field.name] = false;
+            } else {
+              if (value) this.custom_fields[field.name] = value.value;
+              else this.custom_fields[field.name] = "";
             }
           }
         })
@@ -188,7 +178,7 @@ export default {
       this.hide();
     },
   },
-  created() {
+  mounted() {
     this.getClients();
 
     // Get custom fields

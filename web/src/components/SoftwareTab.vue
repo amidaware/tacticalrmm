@@ -24,10 +24,10 @@
       class="tabs-tbl-sticky"
       :style="{ 'max-height': tabsTableHeight }"
       dense
-      :data="software"
+      :rows="software"
       :columns="columns"
       :filter="filter"
-      :pagination.sync="pagination"
+      v-model:pagination="pagination"
       binary-state-sort
       hide-bottom
       row-key="id"

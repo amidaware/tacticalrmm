@@ -83,6 +83,7 @@ class PolicyCheckSerializer(ModelSerializer):
 class AutoTasksFieldSerializer(ModelSerializer):
     assigned_check = PolicyCheckSerializer(read_only=True)
     script = ReadOnlyField(source="script.id")
+    custom_field = ReadOnlyField(source="custom_field.id")
 
     class Meta:
         model = AutomatedTask

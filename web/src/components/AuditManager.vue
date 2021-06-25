@@ -5,13 +5,13 @@
       <q-space />Audit Manager
       <q-space />
       <q-btn dense flat icon="close" v-close-popup>
-        <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        <q-tooltip class="bg-white text-primary">Close</q-tooltip>
       </q-btn>
     </q-bar>
     <div class="text-h6 q-pl-sm q-pt-sm">Filter</div>
     <div class="row">
       <div class="q-pa-sm col-1">
-        <q-option-group v-model="filterType" :options="filterTypeOptions" color="primary" @input="clear" />
+        <q-option-group v-model="filterType" :options="filterTypeOptions" color="primary" @update:model-value="clear" />
       </div>
       <div class="q-pa-sm col-2" v-if="filterType === 'agents'">
         <q-select
@@ -34,6 +34,16 @@
             <q-item>
               <q-item-section class="text-grey">No results</q-item-section>
             </q-item>
+          </template>
+          <template v-slot:option="scope">
+            <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
+              <q-item-section>
+                <q-item-label v-html="scope.opt.label"></q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
+              scope.opt.category
+            }}</q-item-label>
           </template>
         </q-select>
       </div>
@@ -125,10 +135,10 @@
         class="audit-mgr-tbl-sticky"
         binary-state-sort
         title="Audit Logs"
-        :data="auditLogs"
+        :rows="auditLogs"
         :columns="columns"
         row-key="id"
-        :pagination.sync="pagination"
+        v-model:pagination="pagination"
         :rows-per-page-options="[25, 50, 100, 500, 1000]"
         :no-data-label="noDataText"
         @row-click="showDetails"
@@ -158,6 +168,7 @@
 import AuditLogDetail from "@/components/modals/logs/AuditLogDetail";
 import mixins from "@/mixins/mixins";
 import { exportFile } from "quasar";
+import { formatAgentOptions } from "@/utils/format";
 
 function wrapCsvValue(val, formatFn) {
   let formatted = formatFn !== void 0 ? formatFn(val) : val;
@@ -327,7 +338,7 @@ export default {
         this.$axios
           .post(`logs/auditlogs/optionsfilter/`, data)
           .then(r => {
-            this.agentOptions = Object.freeze(r.data.map(agent => agent.hostname));
+            this.agentOptions = Object.freeze(formatAgentOptions(r.data));
             this.$q.loading.hide();
           })
           .catch(e => {
@@ -438,7 +449,7 @@ export default {
       return this.searched ? "No data found. Try to refine you search" : "Click search to find audit logs";
     },
   },
-  created() {
+  mounted() {
     this.getClients();
   },
 };

@@ -5,7 +5,7 @@
         {{ title }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <q-form @submit="submit">
@@ -32,7 +32,7 @@
           <q-select
             label="Field Type"
             :options="typeOptions"
-            @input="clear"
+            @update:model-value="clear"
             map-options
             emit-value
             outlined
@@ -55,7 +55,7 @@
             hide-dropdown-icon
             input-debounce="0"
             new-value-mode="add-unique"
-            @input="
+            @update:model-value="
               localField.default_value_string = '';
               localField.default_values_multiple = [];
             "
@@ -70,7 +70,7 @@
             dense
             label="Default Value"
             v-model="localField.default_value_string"
-            :rules="[...defaultValueRules]"
+            :rules="defaultValueRules"
             reactive-rules
           >
             <template v-slot:append>
@@ -111,7 +111,7 @@
             outlined
             dense
             v-model="localField.default_value_string"
-            :rules="[...defaultValueRules]"
+            :rules="defaultValueRules"
             reactive-rules
           />
 
@@ -124,7 +124,7 @@
             dense
             multiple
             v-model="localField.default_values_multiple"
-            :rules="[...defaultValueRules]"
+            :rules="defaultValueRules"
             reactive-rules
           />
 
@@ -136,7 +136,7 @@
             outlined
             dense
             v-model="localField.default_value_string"
-            :rules="[...defaultValueRules]"
+            :rules="defaultValueRules"
             reactive-rules
             autogrow
           />
@@ -164,6 +164,7 @@ import mixins from "@/mixins/mixins";
 
 export default {
   name: "CustomFieldsForm",
+  emits: ["hide", "ok", "cancel"],
   mixins: [mixins],
   props: { field: Object, model: String },
   data() {
@@ -204,6 +205,8 @@ export default {
     defaultValueRules() {
       if (this.localField.required) {
         return [val => !!val || `Default Value needs to be set for required fields`];
+      } else {
+        return [];
       }
     },
   },

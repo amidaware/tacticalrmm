@@ -1,9 +1,9 @@
 <template>
   <q-table
     dense
-    :data="data"
+    :rows="data"
     :columns="columns"
-    :pagination.sync="pagination"
+    v-model:pagination="pagination"
     row-key="id"
     binary-state-sort
     hide-pagination
@@ -58,7 +58,7 @@
         </q-td>
         <q-td v-else>
           {{ truncateText(props.row.default_value_string) }}
-          <q-tooltip v-if="props.row.default_value_string.length >= 60" content-style="font-size: 12px">{{
+          <q-tooltip v-if="props.row.default_value_string.length >= 60" style="font-size: 12px">{{
             props.row.default_value_string
           }}</q-tooltip>
         </q-td>
@@ -77,6 +77,7 @@ import mixins from "@/mixins/mixins";
 
 export default {
   name: "CustomFieldsTable",
+  emits: ["refresh"],
   mixins: [mixins],
   props: {
     data: !Array,
@@ -114,8 +115,9 @@ export default {
       this.$q
         .dialog({
           component: CustomFieldsForm,
-          parent: this,
-          field: field,
+          componentProps: {
+            field: field,
+          },
         })
         .onOk(() => {
           this.refresh();

@@ -6,7 +6,7 @@
         {{ title }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <div class="row">
@@ -21,7 +21,7 @@
           outlined
           dense
           class="q-pr-md q-pt-md"
-          @input="getChartData"
+          @update:model-value="getChartData"
         />
       </div>
       <apexchart
@@ -36,10 +36,11 @@
   </q-dialog>
 </template>
 <script>
-import VueApexCharts from "vue-apexcharts";
+import VueApexCharts from "vue3-apexcharts";
 
 export default {
   name: "CheckGraph",
+  emits: ["hide", "ok", "cancel"],
   components: {
     apexchart: VueApexCharts,
   },
@@ -152,7 +153,7 @@ export default {
       this.$emit("hide");
     },
   },
-  created() {
+  mounted() {
     // create warning and error annotation on chart for certain check types
     if (
       this.check.check_type === "cpuload" ||

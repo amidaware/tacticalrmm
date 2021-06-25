@@ -69,6 +69,7 @@ import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 export default {
   name: "DiskSpaceCheck",
+  emits: ["close"],
   props: {
     agentpk: Number,
     policypk: Number,
@@ -153,7 +154,7 @@ export default {
   computed: {
     ...mapGetters(["agentDisks"]),
   },
-  created() {
+  mounted() {
     if (this.mode === "add") {
       this.setDiskOptions();
     } else if (this.mode === "edit") {

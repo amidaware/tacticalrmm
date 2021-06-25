@@ -4,8 +4,8 @@
       dense
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       class="agents-tbl-sticky"
-      :style="{ 'max-height': agentTableHeight }"
-      :data="frame"
+      :table-style="{ 'max-height': agentTableHeight }"
+      :rows="frame"
       :filter="search"
       :filter-method="filterTable"
       :columns="columns"
@@ -13,9 +13,10 @@
       row-key="id"
       binary-state-sort
       virtual-scroll
-      :pagination.sync="pagination"
+      v-model:pagination="pagination"
       :rows-per-page-options="[0]"
       no-data-label="No Agents"
+      :loading="agentTableLoading"
     >
       <!-- header slots -->
       <template v-slot:header-cell-smsalert="props">
@@ -75,7 +76,7 @@
         </q-th>
       </template>
       <!-- body slots -->
-      <template slot="body" slot-scope="props" :props="props">
+      <template v-slot:body="props">
         <q-tr
           @contextmenu="agentRowSelected(props.row.id, props.row.agent_id)"
           :props="props"
@@ -288,7 +289,7 @@
             <q-checkbox
               v-else
               dense
-              @input="overdueAlert('text', props.row.id, props.row.overdue_text_alert)"
+              @update:model-value="overdueAlert('text', props.row.id, props.row.overdue_text_alert)"
               v-model="props.row.overdue_text_alert"
             />
           </q-td>
@@ -305,7 +306,7 @@
             <q-checkbox
               v-else
               dense
-              @input="overdueAlert('email', props.row.id, props.row.overdue_email_alert)"
+              @update:model-value="overdueAlert('email', props.row.id, props.row.overdue_email_alert)"
               v-model="props.row.overdue_email_alert"
             />
           </q-td>
@@ -322,7 +323,7 @@
             <q-checkbox
               v-else
               dense
-              @input="overdueAlert('dashboard', props.row.id, props.row.overdue_dashboard_alert)"
+              @update:model-value="overdueAlert('dashboard', props.row.id, props.row.overdue_dashboard_alert)"
               v-model="props.row.overdue_dashboard_alert"
             />
           </q-td>
@@ -391,21 +392,18 @@
         </q-tr>
       </template>
     </q-table>
-    <q-inner-loading :showing="agentTableLoading">
-      <q-spinner size="40px" color="primary" />
-    </q-inner-loading>
     <!-- edit agent modal -->
     <q-dialog v-model="showEditAgentModal">
-      <EditAgent @close="showEditAgentModal = false" @edited="agentEdited" />
+      <EditAgent @close="showEditAgentModal = false" @edit="agentEdited" />
     </q-dialog>
     <!-- reboot later modal -->
     <q-dialog v-model="showRebootLaterModal">
-      <RebootLater @close="showRebootLaterModal = false" @edited="agentEdited" />
+      <RebootLater @close="showRebootLaterModal = false" @edit="agentEdited" />
     </q-dialog>
     <!-- pending actions modal -->
     <div class="q-pa-md q-gutter-sm">
       <q-dialog v-model="showPendingActions" @hide="closePendingActionsModal">
-        <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" @edited="agentEdited" />
+        <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" @edit="agentEdited" />
       </q-dialog>
     </div>
     <!-- send command modal -->
@@ -437,7 +435,8 @@ import RunScript from "@/components/modals/agents/RunScript";
 
 export default {
   name: "AgentTable",
-  props: ["frame", "columns", "tab", "userName", "search", "visibleColumns"],
+  props: ["frame", "columns", "userName", "search", "visibleColumns"],
+  emits: ["edit"],
   components: {
     EditAgent,
     RebootLater,
@@ -594,7 +593,7 @@ export default {
         });
     },
     agentEdited() {
-      this.$emit("refreshEdit");
+      this.$emit("edit");
     },
     showPendingActionsModal(pk) {
       this.showPendingActions = true;
@@ -718,12 +717,12 @@ export default {
       else if (category === "text") db_field = "overdue_text_alert";
       else if (category === "dashboard") db_field = "overdue_dashboard_alert";
 
-      const action = alert_action ? "enabled" : "disabled";
+      const action = !alert_action ? "enabled" : "disabled";
       const data = {
         pk: pk,
-        [db_field]: alert_action,
+        [db_field]: !alert_action,
       };
-      const alertColor = alert_action ? "positive" : "warning";
+      const alertColor = !alert_action ? "positive" : "warning";
       this.$axios
         .post("/agents/overdueaction/", data)
         .then(r => {
@@ -748,12 +747,13 @@ export default {
       this.$q
         .dialog({
           component: PolicyAdd,
-          parent: this,
-          type: "agent",
-          object: agent,
+          componentProps: {
+            type: "agent",
+            object: agent,
+          },
         })
         .onOk(() => {
-          this.$emit("refreshEdit");
+          this.$emit("edit");
         });
     },
     toggleMaintenance(agent) {
@@ -766,7 +766,7 @@ export default {
       const text = agent.maintenance_mode ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
       this.$store.dispatch("toggleMaintenanceMode", data).then(response => {
         this.notifySuccess(text);
-        this.$emit("refreshEdit");
+        this.$emit("edit");
       });
     },
     menuMaintenanceText(mode) {

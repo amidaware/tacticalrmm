@@ -22,14 +22,5 @@ def handle_bulk_command_task(agentpks, cmd, shell, timeout) -> None:
 @app.task
 def handle_bulk_script_task(scriptpk, agentpks, args, timeout) -> None:
     script = Script.objects.get(pk=scriptpk)
-    nats_data = {
-        "func": "runscript",
-        "timeout": timeout,
-        "script_args": args,
-        "payload": {
-            "code": script.code,
-            "shell": script.shell,
-        },
-    }
     for agent in Agent.objects.filter(pk__in=agentpks):
-        asyncio.run(agent.nats_cmd(nats_data, wait=False))
+        agent.run_script(scriptpk=script.pk, args=args, timeout=timeout)

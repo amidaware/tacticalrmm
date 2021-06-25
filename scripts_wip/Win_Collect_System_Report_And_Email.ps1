@@ -14,6 +14,7 @@
     .NOTES
     Change Log
     V1.0 Initial release and parameterization
+    V1.1 Check for C:\Temp path prior to generating report
   
 
     Reference Links: 
@@ -31,8 +32,18 @@ param(
     $file
 )
 
-$destination = "C:\Temp\$file"
+$path = "C:\Temp"
+$destination = "$path\$file"
 
+
+if(!(Test-Path -Path $path)){
+write-host "Path does not exist. Creating path prior to generating report"
+New-Item -Path "C:\" -Name "Temp" -ItemType "directory"
+}
+
+else{
+    Write-host "Path alreaedy exists. Generating Report"
+}
 
 
 #HTML Styling

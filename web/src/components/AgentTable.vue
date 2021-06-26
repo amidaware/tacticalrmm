@@ -773,7 +773,11 @@ export default {
       return mode ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
     },
     rowSelectedClass(id) {
-      if (this.selectedRow === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";
+      if (id === this.selectedRow) {
+        return this.$q.dark.isActive ? "highlight-dark" : "highlight";
+      } else {
+        return "";
+      }
     },
     getURLActions() {
       this.$axios

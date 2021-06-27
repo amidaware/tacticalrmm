@@ -7,6 +7,9 @@
 
 In the dashboard, go to **Settings > Global Settings > Custom Fields** and click **Add Custom Field**.
 
+!!!info
+    Everything between {{}} is CaSe sEnSiTive
+
 The following options are available to configure on custom fields:
 
 - **Model** - This is the object that the custom field will be added to. The available options are:

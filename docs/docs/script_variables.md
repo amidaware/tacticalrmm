@@ -4,6 +4,9 @@ Tactical RMM allows passing dashboard data into script as arguments. This uses t
 
 See below for the available options.
 
+!!!info
+    Everything between {{}} is CaSe sEnSiTive
+
 ## Agent
 
 - **{{agent.version}}** - Tactical RMM agent version

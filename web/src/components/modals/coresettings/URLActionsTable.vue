@@ -8,9 +8,9 @@
     <hr />
     <q-table
       dense
-      :data="actions"
+      :rows="actions"
       :columns="columns"
-      :pagination.sync="pagination"
+      v-model:pagination="pagination"
       row-key="id"
       binary-state-sort
       hide-pagination
@@ -120,7 +120,6 @@ export default {
       this.$q
         .dialog({
           component: URLActionsForm,
-          parent: this,
         })
         .onOk(() => {
           this.getURLActions();
@@ -130,8 +129,9 @@ export default {
       this.$q
         .dialog({
           component: URLActionsForm,
-          parent: this,
-          action: action,
+          componentProps: {
+            action: action,
+          },
         })
         .onOk(() => {
           this.getURLActions();

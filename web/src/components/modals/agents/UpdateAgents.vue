@@ -4,7 +4,7 @@
       Update Agents
       <q-space />
       <q-btn dense flat icon="close" v-close-popup>
-        <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        <q-tooltip class="bg-white text-primary">Close</q-tooltip>
       </q-btn>
     </q-bar>
     <q-separator />
@@ -22,7 +22,7 @@
       Select Agent
       <br />
       <hr />
-      <q-checkbox v-model="selectAll" label="Select All" @input="selectAllAction" />
+      <q-checkbox v-model="selectAll" label="Select All" @update:model-value="selectAllAction" />
       <q-btn v-show="group.length !== 0" label="Update" color="primary" @click="update" class="q-ml-xl" />
       <hr />
       <q-option-group
@@ -41,6 +41,7 @@
 import mixins from "@/mixins/mixins";
 export default {
   name: "UpdateAgents",
+  emits: ["close", "edit"],
   mixins: [mixins],
   data() {
     return {
@@ -75,7 +76,7 @@ export default {
         .post("/agents/updateagents/", data)
         .then(r => {
           this.$emit("close");
-          this.$emit("edited");
+          this.$emit("edit");
           this.notifySuccess("Agents will now be updated");
         })
         .catch(e => {});
@@ -96,7 +97,7 @@ export default {
       return options.sort((a, b) => a.label.localeCompare(b.label));
     },
   },
-  created() {
+  mounted() {
     this.getVersions();
   },
 };

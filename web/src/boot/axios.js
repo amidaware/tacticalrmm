@@ -1,4 +1,3 @@
-import Vue from 'vue';
 import axios from 'axios';
 import { Notify } from "quasar"
 
@@ -14,9 +13,9 @@ export const getBaseUrl = () => {
   }
 };
 
-export default function ({ router, store }) {
+export default function ({ app, router, store }) {
 
-  Vue.prototype.$axios = axios;
+  app.config.globalProperties.$axios = axios;
 
   axios.interceptors.request.use(
     function (config) {

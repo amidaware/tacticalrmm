@@ -64,6 +64,8 @@ class Agent(BaseAuditModel):
     )
     maintenance_mode = models.BooleanField(default=False)
     block_policy_inheritance = models.BooleanField(default=False)
+    pending_actions_count = models.PositiveIntegerField(default=0)
+    has_patches_pending = models.BooleanField(default=False)
     alert_template = models.ForeignKey(
         "alerts.AlertTemplate",
         related_name="agents",
@@ -95,10 +97,12 @@ class Agent(BaseAuditModel):
         # check if new agent has been created
         # or check if policy have changed on agent
         # or if site has changed on agent and if so generate-policies
+        # or if agent was changed from server or workstation
         if (
             not old_agent
             or (old_agent and old_agent.policy != self.policy)
             or (old_agent.site != self.site)
+            or (old_agent.monitoring_type != self.monitoring_type)
             or (old_agent.block_policy_inheritance != self.block_policy_inheritance)
         ):
             self.generate_checks_from_policies()
@@ -160,10 +164,6 @@ class Agent(BaseAuditModel):
                 return "online"
         else:
             return "offline"
-
-    @property
-    def has_patches_pending(self):
-        return self.winupdates.filter(action="approve").filter(installed=False).exists()  # type: ignore
 
     @property
     def checks(self):

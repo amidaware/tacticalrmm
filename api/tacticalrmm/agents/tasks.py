@@ -1,6 +1,9 @@
 import asyncio
 import datetime as dt
 import random
+import tempfile
+import json
+import subprocess
 import urllib.parse
 from time import sleep
 from typing import Union
@@ -322,4 +325,23 @@ def get_wmi_task() -> None:
         "pk", "agent_id", "last_seen", "overdue_time", "offline_time"
     )
     ids = [i.agent_id for i in agents if i.status == "online"]
-    run_nats_api_cmd("wmi", ids)
+    run_nats_api_cmd("wmi", ids, timeout=45)
+
+
+@app.task
+def agent_checkin_task() -> None:
+    db = settings.DATABASES["default"]
+    config = {
+        "key": settings.SECRET_KEY,
+        "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
+        "user": db["USER"],
+        "pass": db["PASSWORD"],
+        "host": db["HOST"],
+        "port": int(db["PORT"]),
+        "dbname": db["NAME"],
+    }
+    with tempfile.NamedTemporaryFile() as fp:
+        with open(fp.name, "w") as f:
+            json.dump(config, f)
+        cmd = ["/usr/local/bin/nats-api", "-c", fp.name, "-m", "checkin"]
+        subprocess.run(cmd, timeout=30)

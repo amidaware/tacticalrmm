@@ -5,7 +5,7 @@
         {{ title }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <q-stepper v-model="step" ref="stepper" alternative-labels header-nav color="primary" animated>
@@ -116,10 +116,10 @@
                 :options="scriptOptions"
                 map-options
                 emit-value
-                @input="setScriptDefaults('failure')"
+                @update:model-value="setScriptDefaults('failure')"
               >
                 <template v-slot:option="scope">
-                  <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+                  <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
                     <q-item-section>
                       <q-item-label v-html="scope.opt.label"></q-item-label>
                     </q-item-section>
@@ -180,10 +180,10 @@
                 :options="scriptOptions"
                 map-options
                 emit-value
-                @input="setScriptDefaults('resolved')"
+                @update:model-value="setScriptDefaults('resolved')"
               >
                 <template v-slot:option="scope">
-                  <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+                  <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
                     <q-item-section>
                       <q-item-label v-html="scope.opt.label"></q-item-label>
                     </q-item-section>
@@ -527,6 +527,7 @@ import { mapGetters } from "vuex";
 
 export default {
   name: "AlertTemplateForm",
+  emits: ["hide", "ok", "cancel"],
   mixins: [mixins],
   props: { alertTemplate: Object },
   data() {
@@ -693,7 +694,7 @@ export default {
     },
   },
   mounted() {
-    this.scriptOptions = this.getScriptOptions();
+    this.getScriptOptions(this.showCommunityScripts).then(options => (this.scriptOptions = Object.freeze(options)));
     // Copy alertTemplate prop locally
     if (this.editing) Object.assign(this.template, this.alertTemplate);
   },

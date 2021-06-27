@@ -90,6 +90,7 @@ class Role(models.Model):
 
     # core
     can_manage_notes = models.BooleanField(default=False)
+    can_view_core_settings = models.BooleanField(default=False)
     can_edit_core_settings = models.BooleanField(default=False)
     can_do_server_maint = models.BooleanField(default=False)
     can_code_sign = models.BooleanField(default=False)
@@ -153,6 +154,7 @@ class Role(models.Model):
             "can_run_scripts",
             "can_run_bulk",
             "can_manage_notes",
+            "can_view_core_settings",
             "can_edit_core_settings",
             "can_do_server_maint",
             "can_code_sign",

@@ -8,7 +8,6 @@
     "shell": "powershell",
     "category": "TRMM (Win):Browsers",
     "default_timeout": "300"
-
   },
   {
     "guid": "3ff6a386-11d1-4f9d-8cca-1b0563bb6443",
@@ -38,7 +37,7 @@
     "description": "This script installs Duplicati 2.0.5.1 as a service.",
     "shell": "powershell",
     "category": "TRMM (Win):3rd Party Software",
-    "default_timeout": "300"   
+    "default_timeout": "300"
   },
   {
     "guid": "81cc5bcb-01bf-4b0c-89b9-0ac0f3fe0c04",
@@ -48,7 +47,7 @@
     "description": "This script will reset all of the Windows Updates components to DEFAULT SETTINGS.",
     "shell": "powershell",
     "category": "TRMM (Win):Updates",
-    "default_timeout": "300"    
+    "default_timeout": "300"
   },
   {
     "guid": "8db87ff0-a9b4-4d9d-bc55-377bbcb85b6d",
@@ -58,7 +57,7 @@
     "description": "Cleans the C: drive's Window Temperary files, Windows SoftwareDistribution folder, the local users Temperary folder, IIS logs (if applicable) and empties the recycling bin. All deleted files will go into a log transcript in $env:TEMP. By default this script leaves files that are newer than 7 days old however this variable can be edited.",
     "shell": "powershell",
     "category": "TRMM (Win):Maintenance",
-    "default_timeout": "25000"    
+    "default_timeout": "25000"
   },
   {
     "guid": "2f28e8c1-ae0f-4b46-a826-f513974526a3",
@@ -271,6 +270,20 @@
     "name": "ADDC - Sync DC Time",
     "description": "Syncs time with domain controller",
     "shell": "cmd",
+    "category": "TRMM (Win):Active Directory"
+  },
+  {
+    "guid": "5320dfc8-022a-41e7-9e39-11c493545ec9",
+    "filename": "Win_AD_Hudu_ADDS_Documentation.ps1",
+    "submittedBy": "https://github.com/unplugged216",
+    "name": "ADDS - Direcotry documentation in Hudu",
+    "description": "Auto generates ADDS documentation and submits it to your Hudu instance.",
+    "args": [
+      "-ClientName {{client.name}}",
+      "-HuduBaseDomain {{global.HuduBaseDomain}}",
+      "-HuduApiKey {{global.HuduApiKey}}"
+    ],
+    "shell": "powershell",
     "category": "TRMM (Win):Active Directory"
   },
   {
@@ -627,8 +640,17 @@
     "category": "TRMM (Win):Storage"
   },
   {
+    "guid": "6a52f495-d43e-40f4-91a9-bbe4f578e6d1",
+    "filename": "Win_User_Create.ps1",
+    "submittedBy": "https://github.com/brodur",
+    "name": "Create Local User",
+    "description": "Create a local user. Parameters are: username, password and optional: description, fullname, group (adds to Users if not specified)",
+    "shell": "powershell",
+    "category": "TRMM (Win):Other"
+  },
+  {
     "guid": "57997ec7-b293-4fd5-9f90-a25426d0eb90",
-    "filename": "Win_Get_Computer_Users.ps1",
+    "filename": "Win_Users_List.ps1",
     "submittedBy": "https://github.com/tremor021",
     "name": "Get Computer Users",
     "description": "Get list of computer users and show which one is enabled",
@@ -682,5 +704,25 @@
     "shell": "powershell",
     "category": "TRMM (Win):Misc>Reference",
     "default_timeout": "1"
+  },
+  {
+    "guid": "453c6d22-84b7-4767-8b5f-b825f233cf55",
+    "filename": "Win_AD_Join_Computer.ps1",
+    "submittedBy": "https://github.com/rfost52",
+    "name": "AD - Join Computer to Domain",
+    "description": "Join computer to a domain in Active Directory",
+    "shell": "powershell",
+    "category": "TRMM (Win):Active Directory",
+    "default_timeout": "300"
+  },
+  {
+    "guid": "962d3cce-49a2-4f3e-a790-36f62a6799a0",
+    "filename": "Win_Collect_System_Report_And_Email.ps1",
+    "submittedBy": "https://github.com/rfost52",
+    "name": "Collect System Report and Email",
+    "description": "Generates a system report in HTML format, then emails it",
+    "shell": "powershell",
+    "category": "TRMM (Win):Other",
+    "default_timeout": "300"
   }
 ]

@@ -15,7 +15,12 @@ from agents.permissions import MeshPerms
 from tacticalrmm.utils import notify_error
 
 from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
-from .permissions import CodeSignPerms, EditCoreSettingsPerms, ServerMaintPerms
+from .permissions import (
+    CodeSignPerms,
+    ViewCoreSettingsPerms,
+    EditCoreSettingsPerms,
+    ServerMaintPerms,
+)
 from .serializers import (
     CodeSignTokenSerializer,
     CoreSettingsSerializer,
@@ -46,6 +51,7 @@ class UploadMeshAgent(APIView):
 
 
 @api_view()
+@permission_classes([IsAuthenticated, ViewCoreSettingsPerms])
 def get_core_settings(request):
     settings = CoreSettings.objects.first()
     return Response(CoreSettingsSerializer(settings).data)

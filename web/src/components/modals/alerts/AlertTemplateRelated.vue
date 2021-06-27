@@ -5,7 +5,7 @@
         Assigned to {{ template.name }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <q-card-section>
@@ -30,7 +30,7 @@
           <q-tab-panels v-model="tab" :animated="false">
             <q-tab-panel name="policies">
               <q-list separator padding>
-                <q-item :key="policy.id" v-for="policy in related.policies">
+                <q-item v-for="policy in related.policies" :key="policy.id">
                   <q-item-section>
                     <q-item-label>{{ policy.name }}</q-item-label>
                   </q-item-section>
@@ -40,7 +40,7 @@
 
             <q-tab-panel name="clients">
               <q-list separator padding>
-                <q-item :key="client.id" v-for="client in related.clients">
+                <q-item v-for="client in related.clients" :key="client.id">
                   <q-item-section>
                     <q-item-label>{{ client.name }}</q-item-label>
                   </q-item-section>
@@ -50,7 +50,7 @@
 
             <q-tab-panel name="sites">
               <q-list separator padding>
-                <q-item :key="site.id" v-for="site in related.sites">
+                <q-item v-for="site in related.sites" :key="site.id">
                   <q-item-section>
                     <q-item-label>{{ site.name }}</q-item-label>
                   </q-item-section>
@@ -67,6 +67,7 @@
 <script>
 export default {
   name: "AlertTemplateRelated",
+  emits: ["hide", "ok", "cancel"],
   props: {
     template: !Object,
   },

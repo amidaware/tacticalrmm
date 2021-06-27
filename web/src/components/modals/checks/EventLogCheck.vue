@@ -49,14 +49,18 @@
         />
       </q-card-section>
       <q-card-section>
-        <q-checkbox v-model="eventSource" label="Event source" @input="eventlogcheck.event_source = null" />
+        <q-checkbox
+          v-model="eventSource"
+          label="Event source"
+          @update:model-value="eventlogcheck.event_source = null"
+        />
         <q-input dense outlined v-model="eventlogcheck.event_source" :disable="!eventSource" />
       </q-card-section>
       <q-card-section>
         <q-checkbox
           v-model="eventMessage"
           label="Message contains string"
-          @input="eventlogcheck.event_message = null"
+          @update:model-value="eventlogcheck.event_message = null"
         />
         <q-input dense outlined v-model="eventlogcheck.event_message" :disable="!eventMessage" />
       </q-card-section>
@@ -137,6 +141,7 @@
 import mixins from "@/mixins/mixins";
 export default {
   name: "EventLogCheck",
+  emits: ["close"],
   props: {
     agentpk: Number,
     policypk: Number,

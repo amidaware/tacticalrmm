@@ -87,12 +87,20 @@ class Client(BaseAuditModel):
                 "offline_time",
             )
             .filter(site__client=self)
-            .prefetch_related("agentchecks")
+            .prefetch_related("agentchecks", "autotasks")
         )
 
         data = {"error": False, "warning": False}
 
         for agent in agents:
+            if agent.maintenance_mode:
+                break
+
+            if agent.overdue_email_alert or agent.overdue_text_alert:
+                if agent.status == "overdue":
+                    data["error"] = True
+                    break
+
             if agent.checks["has_failing_checks"]:
 
                 if agent.checks["warning"]:
@@ -102,10 +110,11 @@ class Client(BaseAuditModel):
                     data["error"] = True
                     break
 
-            if agent.overdue_email_alert or agent.overdue_text_alert:
-                if agent.status == "overdue":
-                    data["error"] = True
-                    break
+            if agent.autotasks.exists():  # type: ignore
+                for i in agent.autotasks.all():  # type: ignore
+                    if i.status == "failing" and i.alert_severity == "error":
+                        data["error"] = True
+                        break
 
         return data
 
@@ -192,12 +201,19 @@ class Site(BaseAuditModel):
                 "offline_time",
             )
             .filter(site=self)
-            .prefetch_related("agentchecks")
+            .prefetch_related("agentchecks", "autotasks")
         )
 
         data = {"error": False, "warning": False}
 
         for agent in agents:
+            if agent.maintenance_mode:
+                break
+
+            if agent.overdue_email_alert or agent.overdue_text_alert:
+                if agent.status == "overdue":
+                    data["error"] = True
+                    break
 
             if agent.checks["has_failing_checks"]:
                 if agent.checks["warning"]:
@@ -207,10 +223,11 @@ class Site(BaseAuditModel):
                     data["error"] = True
                     break
 
-            if agent.overdue_email_alert or agent.overdue_text_alert:
-                if agent.status == "overdue":
-                    data["error"] = True
-                    break
+            if agent.autotasks.exists():  # type: ignore
+                for i in agent.autotasks.all():  # type: ignore
+                    if i.status == "failing" and i.alert_severity == "error":
+                        data["error"] = True
+                        break
 
         return data
 

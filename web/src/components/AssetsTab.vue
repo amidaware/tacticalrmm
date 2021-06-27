@@ -91,7 +91,7 @@ export default {
   computed: {
     ...mapGetters(["selectedAgentPk"]),
     assets() {
-      return Object.freeze(this.$store.state.agentSummary.wmi_detail);
+      return this.$store.state.agentSummary.wmi_detail;
     },
     os() {
       return this.assets.os;

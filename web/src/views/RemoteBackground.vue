@@ -48,8 +48,17 @@ import ProcessManager from "@/components/ProcessManager";
 import Services from "@/components/Services";
 import EventLog from "@/components/EventLog";
 
+import { createMetaMixin } from "quasar";
+
 export default {
   name: "RemoteBackground",
+  mixins: [
+    createMetaMixin(function () {
+      return {
+        title: this.title,
+      };
+    }),
+  ],
   components: {
     Services,
     EventLog,
@@ -83,17 +92,12 @@ export default {
       });
     },
   },
-  meta() {
-    return {
-      title: this.title,
-    };
-  },
   computed: {
     pk() {
       return this.$route.params.pk;
     },
   },
-  created() {
+  mounted() {
     this.getUI();
     this.genURLS();
   },

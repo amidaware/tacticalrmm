@@ -61,6 +61,7 @@
 import mixins from "@/mixins/mixins";
 export default {
   name: "PingCheck",
+  emits: ["close"],
   props: {
     agentpk: Number,
     policypk: Number,
@@ -124,7 +125,7 @@ export default {
       }
     },
   },
-  created() {
+  mounted() {
     if (this.mode === "edit") {
       this.getCheck();
     }

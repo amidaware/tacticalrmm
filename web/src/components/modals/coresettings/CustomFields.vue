@@ -101,8 +101,9 @@ export default {
       this.$q
         .dialog({
           component: CustomFieldsForm,
-          parent: this,
-          model: this.tab,
+          componentProps: {
+            model: this.tab,
+          },
         })
         .onOk(() => {
           this.getCustomFields();

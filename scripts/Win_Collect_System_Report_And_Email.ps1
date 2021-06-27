@@ -5,10 +5,7 @@
     .DESCRIPTION 
     A report comprised of stopped services, running processes, drive space, network adapter settings, and printers is stored locally with a copy sent via e-mail
 
-    .OUTPUTS
-    Results are sent as a HTML file to C:\Temp and e-mailed based on provided parameters
-
-    .EXAMPLE
+    .INPUTS
     Must provide ALL parameter arguments in the following manner (failing to do so will cause the script to exit out prior to creating and sending the report):
 
     -agentname <enter directly or use the Script Variable {{agent.hostname}}>
@@ -18,6 +15,9 @@
     -smtpserver <address of SMTP mail server to be used for sending the report>
     -password <password associated with a valid mail account to access the mail server via SMTP>
     -port <587 is the standard port for sending mail over TLS>
+
+    .OUTPUTS
+    Results are sent as a HTML file to C:\Temp and e-mailed based on provided parameters
 
     .NOTES
     Change Log

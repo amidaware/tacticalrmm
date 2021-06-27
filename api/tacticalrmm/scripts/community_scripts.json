@@ -714,5 +714,15 @@
     "shell": "powershell",
     "category": "TRMM (Win):Active Directory",
     "default_timeout": "300"
+  },
+  {
+    "guid": "962d3cce-49a2-4f3e-a790-36f62a6799a0",
+    "filename": "Win_Collect_System_Report_And_Email.ps1",
+    "submittedBy": "https://github.com/rfost52",
+    "name": "Collect System Report and Email",
+    "description": "Generates a system report in HTML format, then emails it",
+    "shell": "powershell",
+    "category": "TRMM (Win):Other",
+    "default_timeout": "300"
   }
 ]

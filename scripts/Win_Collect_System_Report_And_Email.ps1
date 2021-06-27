@@ -9,12 +9,21 @@
     Results are sent as a HTML file to C:\Temp and e-mailed based on provided parameters
 
     .EXAMPLE
-    Example is forthcoming
+    Must provide ALL parameter arguments in the following manner (failing to do so will cause the script to exit out prior to creating and sending the report):
+
+    -agentname <enter directly or use the Script Variable {{agent.hostname}}>
+    -file <enter file name with the extension .HTM or .HTML>
+    -fromaddress <sender's email address>
+    -toaddress <recipient's email address>
+    -smtpserver <address of SMTP mail server to be used for sending the report>
+    -password <password associated with a valid mail account to access the mail server via SMTP>
+    -port <587 is the standard port for sending mail over TLS>
 
     .NOTES
     Change Log
     V1.0 Initial release and parameterization
     V1.1 Check for C:\Temp path prior to generating report
+    V1.2 Parameter checks with exit codes added
   
 
     Reference Links: 
@@ -24,6 +33,7 @@
 
 
 param(
+    $agentname,
     $fromaddress,
     $toaddress,
     $smtpserver,
@@ -32,17 +42,56 @@ param(
     $file
 )
 
+#Parameter Checks with exit codes
+
+if ([string]::IsNullOrEmpty($agentname)){
+    write-host "You must directly enter a hostname or use the TRMM Script Variable {{agent.hostname}} to pass the hostname from the dashboard."
+    exit 1
+}
+
+if ([string]::IsNullOrEmpty($file)){
+    Write-host "You must provide a file name with a .HTM extension."
+    exit 1
+}
+
+if ([string]::IsNullOrEmpty($fromaddress)){
+    Write-host "You must provide a sender's email address."
+    exit 1
+}
+
+if ([string]::IsNullOrEmpty($toaddress)){
+    write-host "You must provide a recipient's email address."
+    exit 1
+}
+
+if ([string]::IsNullOrEmpty($smtpserver)){
+    write-host "You must provide a SMTP server address."
+    exit 1
+}
+
+if ([string]::IsNullOrEmpty($password)){
+    write-host "You must provide a password for the SMTP server"
+    exit 1
+}
+
+if ([string]::IsNullOrEmpty($port)){
+    write-host "A valid port number is required to send the report."
+    exit 1
+}
+
+else{
+
 $path = "C:\Temp"
 $destination = "$path\$file"
 
 
 if(!(Test-Path -Path $path)){
-write-host "Path does not exist. Creating path prior to generating report"
+write-host "Path does not exist. Creating path prior to generating report."
 New-Item -Path "C:\" -Name "Temp" -ItemType "directory"
 }
 
 else{
-    Write-host "Path alreaedy exists. Generating Report"
+    Write-host "Path alreaedy exists. Attempting to generate report."
 }
 
 
@@ -56,7 +105,7 @@ $a = $a + "</style>"
  
 #Heading
 
-"<H1 style='color:green;'>System Report For Agent</H1>" | Out-File $destination -Append
+"<H1 style='color:green;'>System Report For $agentname</H1>" | Out-File $destination -Append
 
 #Network Information
 
@@ -89,23 +138,34 @@ Get-PSDrive | Where {$_.Used -ne $null} | Select Name, @{n='Used';e={[float]($_.
 
 Get-Printer | Select Name, Type, PortName | ConvertTo-HTML -Head "<H2 style='color:green;'>Printers</H2>" -body $a | Out-file $destination -append
 
-#Send Email
 
-# $fromaddress = "<insert your email address>"
-# $toaddress = "<insert your email address>"
-$Subject = "System Report for Agent"
-$body = Get-Content $destination
-# $smtpserver = "<your smtp address>" #for example, smtp.office365.com
-# $Password = "<insert your email password>"
-# $port = <insert smtp port> #for example, 587
+    
+    try {
+        #Send Email
+
+        $Subject = "System Report for $agentname"
+        $body = Get-Content $destination
  
-$message = new-object System.Net.Mail.MailMessage
-$message.IsBodyHTML = $true
-$message.From = $fromaddress
-$message.To.Add($toaddress)
-$message.Subject = $Subject
-$message.body = $body
-$smtp = new-object Net.Mail.SmtpClient($smtpserver, $port)
-$smtp.EnableSsl = $true
-$smtp.Credentials = New-Object System.Net.NetworkCredential($fromaddress, $Password)
-$smtp.Send($message)
+        $message = new-object System.Net.Mail.MailMessage
+        $message.IsBodyHTML = $true
+        $message.From = $fromaddress
+        $message.To.Add($toaddress)
+        $message.Subject = $Subject
+        $message.body = $body
+        $smtp = new-object Net.Mail.SmtpClient($smtpserver, $port)
+        $smtp.EnableSsl = $true
+        $smtp.Credentials = New-Object System.Net.NetworkCredential($fromaddress, $Password)
+        $smtp.Send($message)
+
+        write-host "System Report successfully sent via email."
+
+        exit 0
+    }
+
+    catch {
+        write-host "An error occurrd. Please check your parameters, SMTP server name, or credentials and try again."
+        exit 1
+    }
+}
+
+exit $LASTEXITCODE

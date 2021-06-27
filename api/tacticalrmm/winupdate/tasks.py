@@ -46,7 +46,13 @@ def auto_approve_updates_task():
 def check_agent_update_schedule_task():
     # scheduled task that installs updates on agents if enabled
     agents = Agent.objects.only(
-        "pk", "agent_id", "version", "last_seen", "overdue_time", "offline_time"
+        "pk",
+        "agent_id",
+        "version",
+        "last_seen",
+        "overdue_time",
+        "offline_time",
+        "has_patches_pending",
     )
     online = [
         i

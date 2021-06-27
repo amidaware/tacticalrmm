@@ -203,7 +203,6 @@ export default {
         });
     },
     toggleEnabled(user) {
-      console.log(user);
       if (user.username === this.logged_in_user) {
         return;
       }

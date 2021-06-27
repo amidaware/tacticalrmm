@@ -82,7 +82,6 @@ export default {
         ...this.localPolicy,
       };
 
-      console.log(data);
       if (this.editing) {
         this.$axios
           .put(`/automation/policies/${data.id}/`, data)

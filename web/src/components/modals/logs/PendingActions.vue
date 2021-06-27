@@ -214,6 +214,8 @@ export default {
         return this.$q.dark.isActive ? "highlight-dark" : "highlight";
       } else if (status === "completed") {
         return "action-completed";
+      } else {
+        return "";
       }
     },
   },

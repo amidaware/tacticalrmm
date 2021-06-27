@@ -90,7 +90,7 @@ module.exports = function () {
           actions: [{ icon: "close", color: "white" }]
         },
         loading: {
-          delay: 100
+          delay: 50
         }
       }
     },

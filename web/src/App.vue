@@ -68,7 +68,7 @@ export default {
   background-color: #c9e6ff
 
 .highlight-dark
-  background-color: #343434
+  background-color: #404040
 
 .action-completed
   background-color: $positive

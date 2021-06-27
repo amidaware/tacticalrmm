@@ -486,13 +486,13 @@ export default {
         },
         {
           name: "patchespending",
-          field: "patches_pending",
+          field: "has_patches_pending",
           align: "left",
           sortable: true,
         },
         {
           name: "pendingactions",
-          field: "pending_actions",
+          field: "pending_actions_count",
           align: "left",
           sortable: true,
         },

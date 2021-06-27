@@ -354,20 +354,20 @@
             <span v-else>{{ props.row.logged_username }}</span>
           </q-td>
           <q-td :props="props" key="patchespending">
-            <q-icon v-if="props.row.patches_pending" name="far fa-clock" color="primary">
+            <q-icon v-if="props.row.has_patches_pending" name="far fa-clock" color="primary">
               <q-tooltip>Patches Pending</q-tooltip>
             </q-icon>
           </q-td>
           <q-td :props="props" key="pendingactions">
             <q-icon
-              v-if="props.row.pending_actions !== 0"
+              v-if="props.row.pending_actions_count !== 0"
               @click="showPendingActionsModal(props.row.id)"
               name="far fa-clock"
               size="1.4em"
               color="warning"
               class="cursor-pointer"
             >
-              <q-tooltip>Pending Action Count: {{ props.row.pending_actions }}</q-tooltip>
+              <q-tooltip>Pending Action Count: {{ props.row.pending_actions_count }}</q-tooltip>
             </q-icon>
           </q-td>
           <!-- needs reboot -->
@@ -494,8 +494,8 @@ export default {
       return rows.filter(row => {
         if (advancedFilter) {
           if (checks && !row.checks.has_failing_checks) return false;
-          if (patches && !row.patches_pending) return false;
-          if (actions && row.pending_actions === 0) return false;
+          if (patches && !row.has_patches_pending) return false;
+          if (actions && row.pending_actions_count === 0) return false;
           if (reboot && !row.needs_reboot) return false;
           if (availability === "online" && row.status !== "online") return false;
           else if (availability === "offline" && row.status !== "overdue") return false;

@@ -302,6 +302,8 @@ class AgentsTableList(APIView):
             "last_logged_in_user",
             "time_zone",
             "maintenance_mode",
+            "pending_actions_count",
+            "has_patches_pending",
         )
         ctx = {"default_tz": get_default_timezone()}
         serializer = AgentTableSerializer(queryset, many=True, context=ctx)

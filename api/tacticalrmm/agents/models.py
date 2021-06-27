@@ -64,6 +64,8 @@ class Agent(BaseAuditModel):
     )
     maintenance_mode = models.BooleanField(default=False)
     block_policy_inheritance = models.BooleanField(default=False)
+    pending_actions_count = models.PositiveIntegerField(default=0)
+    has_patches_pending = models.BooleanField(default=False)
     alert_template = models.ForeignKey(
         "alerts.AlertTemplate",
         related_name="agents",
@@ -162,10 +164,6 @@ class Agent(BaseAuditModel):
                 return "online"
         else:
             return "offline"
-
-    @property
-    def has_patches_pending(self):
-        return self.winupdates.filter(action="approve").filter(installed=False).exists()  # type: ignore
 
     @property
     def checks(self):

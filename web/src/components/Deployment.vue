@@ -5,7 +5,7 @@
       <q-space />Manage Deployments
       <q-space />
       <q-btn dense flat icon="close" v-close-popup>
-        <q-tooltip content-class="bg-white text-primary" />
+        <q-tooltip class="bg-white text-primary" />
       </q-btn>
     </q-bar>
     <div class="row">
@@ -21,14 +21,14 @@
         class="audit-mgr-tbl-sticky"
         binary-state-sort
         virtual-scroll
-        :data="deployments"
+        :rows="deployments"
         :columns="columns"
         :visible-columns="visibleColumns"
         row-key="id"
-        :pagination.sync="pagination"
+        v-model:pagination="pagination"
         no-data-label="No Deployments"
       >
-        <template slot="body" slot-scope="props" :props="props">
+        <template v-slot:body="props">
           <q-tr>
             <q-td key="client" :props="props">{{ props.row.client_name }}</q-td>
             <q-td key="site" :props="props">{{ props.row.site_name }}</q-td>
@@ -40,7 +40,7 @@
             <q-td key="created" :props="props">{{ props.row.created }}</q-td>
             <q-td key="flags" :props="props"
               ><q-badge color="grey-8" label="View Flags" />
-              <q-tooltip content-style="font-size: 12px">{{ props.row.install_flags }}</q-tooltip>
+              <q-tooltip style="font-size: 12px">{{ props.row.install_flags }}</q-tooltip>
             </q-td>
             <q-td key="link" :props="props"
               ><q-btn size="sm" color="primary" icon="content_copy" label="Copy" @click="copyLink(props)"
@@ -53,7 +53,7 @@
       </q-table>
     </q-card-section>
     <q-dialog v-model="showNewDeployment">
-      <NewDeployment @close="showNewDeployment = false" @added="getDeployments" />
+      <NewDeployment @close="showNewDeployment = false" @add="getDeployments" />
     </q-dialog>
   </q-card>
 </template>
@@ -129,7 +129,7 @@ export default {
       });
     },
   },
-  created() {
+  mounted() {
     this.getDeployments();
   },
 };

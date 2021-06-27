@@ -19,7 +19,7 @@
             label="Client"
             v-model="client"
             :options="client_options"
-            @input="site = sites[0].value"
+            @update:model-value="site = sites[0].value"
           />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
@@ -27,7 +27,7 @@
         </q-card-section>
         <q-card-section>
           <div class="q-gutter-sm">
-            <q-radio v-model="agenttype" val="server" label="Server" @input="power = false" />
+            <q-radio v-model="agenttype" val="server" label="Server" @update:model-value="power = false" />
             <q-radio v-model="agenttype" val="workstation" label="Workstation" />
           </div>
         </q-card-section>
@@ -81,6 +81,7 @@ import { date } from "quasar";
 
 export default {
   name: "NewDeployment",
+  emits: ["close", "add"],
   mixins: [mixins],
   data() {
     return {
@@ -111,7 +112,7 @@ export default {
         .post("/clients/deployments/", data)
         .then(r => {
           this.$emit("close");
-          this.$emit("added");
+          this.$emit("add");
           this.notifySuccess("Deployment added");
         })
         .catch(e => {});
@@ -141,7 +142,7 @@ export default {
       return this.client !== null ? this.formatSiteOptions(this.client.sites) : [];
     },
   },
-  created() {
+  mounted() {
     this.getCurrentDate();
     this.getClients();
   },

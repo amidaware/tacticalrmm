@@ -5,7 +5,7 @@
         {{ title }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <q-card-section>
@@ -48,6 +48,7 @@ import CustomField from "@/components/CustomField";
 import mixins from "@/mixins/mixins";
 export default {
   name: "ClientsForm",
+  emits: ["hide", "ok", "cancel"],
   components: {
     CustomField,
   },
@@ -130,14 +131,14 @@ export default {
             const value = r.data.custom_fields.find(value => value.field === field.id);
 
             if (field.type === "multiple") {
-              if (value) this.$set(this.custom_fields, field.name, value.value);
-              else this.$set(this.custom_fields, field.name, []);
+              if (value) this.custom_fields[field.name] = value.value;
+              else this.custom_fields[field.name] = [];
             } else if (field.type === "checkbox") {
-              if (value) this.$set(this.custom_fields, field.name, value.value);
-              else this.$set(this.custom_fields, field.name, false);
+              if (value) this.custom_fields[field.name] = value.value;
+              else this.this.custom_fields[field.name] = false;
             } else {
-              if (value) this.$set(this.custom_fields, field.name, value.value);
-              else this.$set(this.custom_fields, field.name, "");
+              if (value) this.custom_fields[field.name] = value.value;
+              else this.custom_fields[field.name] = "";
             }
           }
         })
@@ -163,7 +164,7 @@ export default {
       this.hide();
     },
   },
-  created() {
+  mounted() {
     // Get custom fields
     this.getCustomFields("client").then(r => {
       this.customFields = r.data.filter(field => !field.hide_in_ui);

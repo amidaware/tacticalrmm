@@ -21,11 +21,11 @@
           :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
           class="tabs-tbl-sticky"
           :style="{ 'max-height': tabsTableHeight }"
-          :data="tasks"
+          :rows="tasks"
           :columns="columns"
           :row-key="row => row.id"
           binary-state-sort
-          :pagination.sync="pagination"
+          v-model:pagination="pagination"
           hide-bottom
         >
           <!-- header slots -->
@@ -72,7 +72,7 @@
             <q-th auto-width :props="props"></q-th>
           </template>
           <!-- body slots -->
-          <template slot="body" slot-scope="props" :props="props">
+          <template v-slot:body="props">
             <q-tr @contextmenu="editTaskPk = props.row.id">
               <!-- context menu -->
               <q-menu context-menu>
@@ -110,7 +110,9 @@
               <q-td>
                 <q-checkbox
                   dense
-                  @input="taskEnableorDisable(props.row.id, props.row.enabled, props.row.managed_by_policy)"
+                  @update:model-value="
+                    taskEnableorDisable(props.row.id, props.row.enabled, props.row.managed_by_policy)
+                  "
                   v-model="props.row.enabled"
                   :disable="props.row.managed_by_policy"
                 />
@@ -129,7 +131,9 @@
                 <q-checkbox
                   v-else
                   dense
-                  @input="taskAlert(props.row.id, 'Text', props.row.text_alert, props.row.managed_by_policy)"
+                  @update:model-value="
+                    taskAlert(props.row.id, 'Text', props.row.text_alert, props.row.managed_by_policy)
+                  "
                   v-model="props.row.text_alert"
                   :disable="props.row.managed_by_policy"
                 />
@@ -148,7 +152,9 @@
                 <q-checkbox
                   v-else
                   dense
-                  @input="taskAlert(props.row.id, 'Email', props.row.email_alert, props.row.managed_by_policy)"
+                  @update:model-value="
+                    taskAlert(props.row.id, 'Email', props.row.email_alert, props.row.managed_by_policy)
+                  "
                   v-model="props.row.email_alert"
                   :disable="props.row.managed_by_policy"
                 />
@@ -167,7 +173,9 @@
                 <q-checkbox
                   v-else
                   dense
-                  @input="taskAlert(props.row.id, 'Dashboard', props.row.dashboard_alert, props.row.managed_by_policy)"
+                  @update:model-value="
+                    taskAlert(props.row.id, 'Dashboard', props.row.dashboard_alert, props.row.managed_by_policy)
+                  "
                   v-model="props.row.dashboard_alert"
                   :disable="props.row.managed_by_policy"
                 />
@@ -330,14 +338,14 @@ export default {
       };
 
       if (alert_type === "Email") {
-        data.email_alert = action;
+        data.email_alert = !action;
       } else if (alert_type === "Text") {
-        data.text_alert = action;
+        data.text_alert = !action;
       } else {
-        data.dashboard_alert = action;
+        data.dashboard_alert = !action;
       }
 
-      const act = action ? "enabled" : "disabled";
+      const act = !action ? "enabled" : "disabled";
       this.$axios
         .put(`/tasks/${pk}/automatedtasks/`, data)
         .then(r => {
@@ -354,16 +362,18 @@ export default {
     showScriptOutput(script) {
       this.$q.dialog({
         component: ScriptOutput,
-        parent: this,
-        scriptInfo: script,
+        componentProps: {
+          scriptInfo: script,
+        },
       });
     },
     showEditTask(task) {
       this.$q
         .dialog({
           component: EditAutomatedTask,
-          parent: this,
-          task: task,
+          componentProps: {
+            task: task,
+          },
         })
         .onOk(() => {
           this.refreshTasks(this.automatedTasks.pk);

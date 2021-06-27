@@ -5,7 +5,7 @@
         <q-btn @click="getScripts" class="q-mr-sm" dense flat push icon="refresh" />Script Manager
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <div class="q-pa-md">
@@ -94,9 +94,9 @@
             :filter="search"
             no-connectors
             node-key="id"
-            :expanded.sync="expanded"
+            v-model:expanded="expanded"
             @update:selected="nodeSelected"
-            :selected.sync="selected"
+            v-model:selected="selected"
             no-results-label="No Scripts Found"
             no-nodes-label="No Scripts Found"
           >
@@ -183,10 +183,10 @@
             dense
             :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
             class="settings-tbl-sticky"
-            :data="visibleScripts"
+            :rows="visibleScripts"
             :columns="columns"
             :visible-columns="visibleColumns"
-            :pagination.sync="pagination"
+            v-model:pagination="pagination"
             :filter="search"
             row-key="id"
             binary-state-sort
@@ -205,7 +205,7 @@
             </template>
 
             <template v-slot:no-data> No Scripts Found </template>
-            <template slot="body" slot-scope="props" :props="props">
+            <template v-slot:body="props">
               <!-- Table View -->
               <q-tr
                 :class="`${rowSelectedClass(props.row.id)} cursor-pointer`"
@@ -289,7 +289,7 @@
                 <q-td>
                   <span v-if="props.row.args.length > 0">
                     {{ truncateText(props.row.args.toString()) }}
-                    <q-tooltip v-if="props.row.args.toString().length >= 60" content-style="font-size: 12px">
+                    <q-tooltip v-if="props.row.args.toString().length >= 60" style="font-size: 12px">
                       {{ props.row.args }}
                     </q-tooltip>
                   </span>
@@ -298,7 +298,7 @@
                 <q-td>{{ props.row.category }}</q-td>
                 <q-td>
                   {{ truncateText(props.row.description) }}
-                  <q-tooltip v-if="props.row.description.length >= 60" content-style="font-size: 12px">{{
+                  <q-tooltip v-if="props.row.description.length >= 60" style="font-size: 12px">{{
                     props.row.description
                   }}</q-tooltip>
                 </q-td>
@@ -314,7 +314,7 @@
         :script="selectedScript"
         :categories="categories"
         @close="showScriptUploadModal = false"
-        @added="getScripts"
+        @add="getScripts"
       />
     </q-dialog>
   </div>
@@ -417,9 +417,10 @@ export default {
     viewCode(script) {
       this.$q.dialog({
         component: ScriptFormModal,
-        parent: this,
-        script: script,
-        readonly: true,
+        componentProps: {
+          script: script,
+          readonly: true,
+        },
       });
     },
     favoriteScript(script) {
@@ -482,9 +483,10 @@ export default {
       this.$q
         .dialog({
           component: ScriptFormModal,
-          parent: this,
-          categories: this.categories,
-          readonly: false,
+          componentProps: {
+            categories: this.categories,
+            readonly: false,
+          },
         })
         .onOk(() => {
           this.getScripts();
@@ -494,10 +496,11 @@ export default {
       this.$q
         .dialog({
           component: ScriptFormModal,
-          parent: this,
-          script: script,
-          categories: this.categories,
-          readonly: false,
+          componentProps: {
+            script: script,
+            categories: this.categories,
+            readonly: false,
+          },
         })
         .onOk(() => {
           this.getScripts();

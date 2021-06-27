@@ -9,7 +9,6 @@ from .models import Agent, AgentCustomField, Note
 
 class AgentSerializer(serializers.ModelSerializer):
     # for vue
-    patches_pending = serializers.ReadOnlyField(source="has_patches_pending")
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
     status = serializers.ReadOnlyField()
     cpu_model = serializers.ReadOnlyField()
@@ -45,8 +44,6 @@ class AgentOverdueActionSerializer(serializers.ModelSerializer):
 
 
 class AgentTableSerializer(serializers.ModelSerializer):
-    patches_pending = serializers.ReadOnlyField(source="has_patches_pending")
-    pending_actions = serializers.SerializerMethodField()
     status = serializers.ReadOnlyField()
     checks = serializers.ReadOnlyField()
     last_seen = serializers.SerializerMethodField()
@@ -68,9 +65,6 @@ class AgentTableSerializer(serializers.ModelSerializer):
                 "always_text": obj.alert_template.agent_always_text,
                 "always_alert": obj.alert_template.agent_always_alert,
             }
-
-    def get_pending_actions(self, obj):
-        return obj.pendingactions.filter(status="pending").count()
 
     def get_last_seen(self, obj) -> str:
         if obj.time_zone is not None:
@@ -103,8 +97,8 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "monitoring_type",
             "description",
             "needs_reboot",
-            "patches_pending",
-            "pending_actions",
+            "has_patches_pending",
+            "pending_actions_count",
             "status",
             "overdue_text_alert",
             "overdue_email_alert",
@@ -173,11 +167,6 @@ class AgentEditSerializer(serializers.ModelSerializer):
 
 
 class WinAgentSerializer(serializers.ModelSerializer):
-    # for the windows agent
-    patches_pending = serializers.ReadOnlyField(source="has_patches_pending")
-    winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
-    status = serializers.ReadOnlyField()
-
     class Meta:
         model = Agent
         fields = "__all__"

@@ -6,7 +6,7 @@
           <q-btn ref="refresh" @click="refresh" class="q-mr-sm" dense flat push icon="refresh" />Automation Manager
           <q-space />
           <q-btn dense flat icon="close" v-close-popup>
-            <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+            <q-tooltip class="bg-white text-primary">Close</q-tooltip>
           </q-btn>
         </q-bar>
         <q-card-section>
@@ -27,9 +27,9 @@
             <q-table
               :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
               class="tabs-tbl-sticky"
-              :data="policies"
+              :rows="policies"
               :columns="columns"
-              :pagination.sync="pagination"
+              v-model:pagination="pagination"
               :rows-per-page-options="[0]"
               dense
               row-key="id"
@@ -135,11 +135,19 @@
                   </q-menu>
                   <!-- enabled checkbox -->
                   <q-td>
-                    <q-checkbox dense @input="toggleCheckbox(props.row, 'Active')" v-model="props.row.active" />
+                    <q-checkbox
+                      dense
+                      @update:model-value="toggleCheckbox(props.row, 'Active')"
+                      v-model="props.row.active"
+                    />
                   </q-td>
                   <!-- enforced checkbox -->
                   <q-td>
-                    <q-checkbox dense @input="toggleCheckbox(props.row, 'Enforced')" v-model="props.row.enforced" />
+                    <q-checkbox
+                      dense
+                      @update:model-value="toggleCheckbox(props.row, 'Enforced')"
+                      v-model="props.row.enforced"
+                    />
                   </q-td>
                   <q-td>
                     {{ props.row.name }}
@@ -248,6 +256,7 @@ import PolicyAutomatedTasksTab from "@/components/automation/PolicyAutomatedTask
 
 export default {
   name: "AutomationManager",
+  emits: ["hide", "ok", "cancel"],
   components: { PolicyChecksTab, PolicyAutomatedTasksTab },
   mixins: [mixins],
   data() {
@@ -353,21 +362,20 @@ export default {
     showRelations(policy) {
       this.$q.dialog({
         component: RelationsView,
-        parent: this,
-        policy: policy,
+        componentProps: {
+          policy: policy,
+        },
       });
     },
     showPolicyOverview() {
       this.$q.dialog({
         component: PolicyOverview,
-        parent: this,
       });
     },
     showAddPolicyForm(policy = undefined) {
       this.$q
         .dialog({
           component: PolicyForm,
-          parent: this,
         })
         .onOk(() => {
           this.refresh();
@@ -377,8 +385,9 @@ export default {
       this.$q
         .dialog({
           component: PolicyForm,
-          parent: this,
-          copyPolicy: policy,
+          componentProps: {
+            copyPolicy: policy,
+          },
         })
         .onOk(() => {
           this.refresh();
@@ -388,8 +397,9 @@ export default {
       this.$q
         .dialog({
           component: PolicyForm,
-          parent: this,
-          policy: policy,
+          componentProps: {
+            policy: policy,
+          },
         })
         .onOk(() => {
           this.refresh();
@@ -399,9 +409,10 @@ export default {
       this.$q
         .dialog({
           component: AlertTemplateAdd,
-          parent: this,
-          type: "policy",
-          object: policy,
+          componentProps: {
+            type: "policy",
+            object: policy,
+          },
         })
         .onOk(() => {
           this.refresh();
@@ -411,11 +422,12 @@ export default {
       this.$q
         .dialog({
           component: DialogWrapper,
-          parent: this,
-          title: policy.winupdatepolicy.length > 0 ? "Edit Patch Policy" : "Add Patch Policy",
-          vuecomponent: PatchPolicyForm,
           componentProps: {
-            policy: policy,
+            title: policy.winupdatepolicy.length > 0 ? "Edit Patch Policy" : "Add Patch Policy",
+            vuecomponent: PatchPolicyForm,
+            componentProps: {
+              policy: policy,
+            },
           },
         })
         .onOk(() => {
@@ -426,8 +438,9 @@ export default {
       this.$q
         .dialog({
           component: PolicyExclusions,
-          parent: this,
-          policy: policy,
+          componentProps: {
+            policy: policy,
+          },
         })
         .onOk(() => {
           this.refresh();
@@ -454,19 +467,19 @@ export default {
       this.$q.loading.show();
       let text = "";
 
-      if (type === "Active") {
-        text = policy.active ? "Policy enabled successfully" : "Policy disabled successfully";
-      } else if (type === "Enforced") {
-        text = policy.enforced ? "Policy enforced successfully" : "Policy enforcement disabled";
-      }
-
       const data = {
         id: policy.id,
         name: policy.name,
         desc: policy.desc,
-        active: policy.active,
-        enforced: policy.enforced,
       };
+
+      if (type === "Active") {
+        text = !policy.active ? "Policy enabled successfully" : "Policy disabled successfully";
+        data["active"] = !policy.active;
+      } else if (type === "Enforced") {
+        text = !policy.enforced ? "Policy enforced successfully" : "Policy enforcement disabled";
+        data["enforced"] = !policy.enforced;
+      }
 
       this.$axios
         .put(`/automation/policies/${data.id}/`, data)

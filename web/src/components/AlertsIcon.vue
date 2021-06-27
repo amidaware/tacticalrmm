@@ -58,24 +58,19 @@ export default {
     },
   },
   methods: {
-    getAlerts(showLoading = true) {
-      if (showLoading) this.$q.loading.show();
+    getAlerts() {
       this.$axios
         .patch("alerts/alerts/", { top: 10 })
         .then(r => {
           this.alertsCount = r.data.alerts_count;
           this.topAlerts = r.data.alerts;
-          this.$q.loading.hide();
         })
-        .catch(e => {
-          this.$q.loading.hide();
-        });
+        .catch(e => {});
     },
     showOverview() {
       this.$q
         .dialog({
           component: AlertsOverview,
-          parent: this,
         })
         .onDismiss(() => {
           this.getAlerts();
@@ -144,15 +139,15 @@ export default {
     },
     pollAlerts() {
       setInterval(() => {
-        this.getAlerts(false);
+        this.getAlerts();
       }, 60 * 1 * 1000);
     },
   },
   mounted() {
-    this.getAlerts(false);
+    this.getAlerts();
     this.pollAlerts();
   },
-  beforeDestroy() {
+  beforeUnmount() {
     clearInterval(this.poll);
   },
 };

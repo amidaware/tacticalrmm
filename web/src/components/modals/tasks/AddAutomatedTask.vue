@@ -1,22 +1,16 @@
 <template>
-  <q-card v-if="scriptOptions.length === 0" class="q-pa-xs" style="min-width: 400px">
+  <q-card class="q-pa-xs" style="min-width: 40vw">
     <q-card-section class="row items-center">
       <div class="text-h6">Add Automated Task</div>
       <q-space />
       <q-btn icon="close" flat round dense v-close-popup />
     </q-card-section>
-    <q-card-section>
+
+    <q-card-section v-if="scriptOptions.length === 0">
       <p>You need to upload a script first</p>
       <p>Settings -> Script Manager</p>
     </q-card-section>
-  </q-card>
-  <q-card v-else class="q-pa-xs" style="min-width: 40vw">
-    <q-card-section class="row items-center">
-      <div class="text-h6">Add Automated Task</div>
-      <q-space />
-      <q-btn icon="close" flat round dense v-close-popup />
-    </q-card-section>
-    <q-stepper v-model="step" ref="stepper" color="primary" animated>
+    <q-stepper v-else v-model="step" ref="stepper" color="primary" animated>
       <q-step :name="1" title="Select Task" :done="step1Done" :error="!step1Done">
         <q-card-section>
           <q-select
@@ -29,10 +23,10 @@
             label="Select script"
             map-options
             emit-value
-            @input="setScriptDefaults"
+            @update:model-value="setScriptDefaults"
           >
             <template v-slot:option="scope">
-              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
                 <q-item-section>
                   <q-item-label v-html="scope.opt.label"></q-item-label>
                 </q-item-section>
@@ -73,7 +67,7 @@
             label="Collector Task"
             v-model="collector"
             class="q-pb-sm"
-            @input="
+            @update:model-value="
               () => {
                 autotask.custom_field = null;
                 autotask.collector_all_ouput = false;
@@ -126,10 +120,10 @@
       </q-step>
 
       <q-step :name="2" title="Choose Schedule" :done="step2Done" :error="!step2Done">
-        <q-radio v-model="autotask.task_type" val="scheduled" label="Scheduled" @input="clear" />
-        <q-radio v-model="autotask.task_type" val="runonce" label="Run Once" @input="clear" />
-        <q-radio v-model="autotask.task_type" val="checkfailure" label="On check failure" @input="clear" />
-        <q-radio v-model="autotask.task_type" val="manual" label="Manual" @input="clear" />
+        <q-radio v-model="autotask.task_type" val="scheduled" label="Scheduled" @update:model-value="clear" />
+        <q-radio v-model="autotask.task_type" val="runonce" label="Run Once" @update:model-value="clear" />
+        <q-radio v-model="autotask.task_type" val="checkfailure" label="On check failure" @update:model-value="clear" />
+        <q-radio v-model="autotask.task_type" val="manual" label="Manual" @update:model-value="clear" />
         <div v-if="autotask.task_type === 'scheduled'" class="row q-pa-lg">
           <div class="col-3">
             Run on Days:
@@ -217,6 +211,7 @@ import mixins from "@/mixins/mixins";
 
 export default {
   name: "AddAutomatedTask",
+  emits: ["close"],
   props: {
     policypk: Number,
   },
@@ -351,8 +346,8 @@ export default {
       }
     },
   },
-  created() {
-    this.scriptOptions = this.getScriptOptions(this.showCommunityScripts);
+  mounted() {
+    this.getScriptOptions(this.showCommunityScripts).then(options => (this.scriptOptions = Object.freeze(options)));
 
     if (this.policypk) {
       this.getPolicyChecks();

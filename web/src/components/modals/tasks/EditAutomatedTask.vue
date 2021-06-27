@@ -5,7 +5,7 @@
         Edit {{ task.name }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <q-form @submit="submit">
@@ -20,10 +20,10 @@
             label="Select script"
             map-options
             emit-value
-            @input="setScriptDefaults"
+            @update:model-value="setScriptDefaults"
           >
             <template v-slot:option="scope">
-              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
                 <q-item-section>
                   <q-item-label v-html="scope.opt.label"></q-item-label>
                 </q-item-section>
@@ -76,7 +76,7 @@
             label="Collector Task"
             v-model="collector"
             class="q-pb-sm"
-            @input="autotask.custom_field = null"
+            @update:model-value="autotask.custom_field = null"
           />
           <q-select
             v-if="collector"
@@ -124,6 +124,7 @@ import { mapGetters } from "vuex";
 
 export default {
   name: "EditAutomatedTask",
+  emits: ["hide", "ok", "cancel"],
   mixins: [mixins],
   props: {
     task: !Object,
@@ -189,7 +190,7 @@ export default {
     },
   },
   mounted() {
-    this.scriptOptions = this.getScriptOptions(this.showCommunityScripts);
+    this.getScriptOptions(this.showCommunityScripts).then(options => (this.scriptOptions = Object.freeze(options)));
 
     this.getCustomFields("agent").then(r => {
       this.customFieldOptions = r.data.map(field => ({ label: field.name, value: field.id }));

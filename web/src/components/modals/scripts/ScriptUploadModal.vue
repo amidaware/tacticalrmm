@@ -4,7 +4,7 @@
       Add Script
       <q-space />
       <q-btn dense flat icon="close" v-close-popup>
-        <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+        <q-tooltip class="bg-white text-primary">Close</q-tooltip>
       </q-btn>
     </q-bar>
     <q-form @submit.prevent="submit">
@@ -109,6 +109,7 @@ import mixins from "@/mixins/mixins";
 
 export default {
   name: "ScriptModal",
+  emits: ["add", "close"],
   mixins: [mixins],
   props: {
     categories: !Array,
@@ -159,7 +160,7 @@ export default {
         .then(r => {
           this.$q.loading.hide();
           this.$emit("close");
-          this.$emit("added");
+          this.$emit("add");
           this.notifySuccess(r.data);
         })
         .catch(e => {

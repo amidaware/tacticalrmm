@@ -5,7 +5,7 @@
         Policy Exclusions for {{ policy.name }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <q-form ref="form" @submit.prevent="onSubmit">
@@ -37,7 +37,7 @@
             emit-value
           >
             <template v-slot:option="scope">
-              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
                 <q-item-section>
                   <q-item-label v-html="scope.opt.label"></q-item-label>
                 </q-item-section>
@@ -62,7 +62,7 @@
             emit-value
           >
             <template v-slot:option="scope">
-              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
                 <q-item-section>
                   <q-item-label v-html="scope.opt.label"></q-item-label>
                 </q-item-section>
@@ -87,6 +87,7 @@
 import mixins from "@/mixins/mixins";
 export default {
   name: "PolicyExclusions",
+  emits: ["hide", "ok", "cancel"],
   props: { policy: !Object },
   mixins: [mixins],
   data() {
@@ -136,7 +137,7 @@ export default {
     getOptions() {
       this.getClients();
       this.getSites();
-      this.agentOptions = this.getAgentOptions();
+      this.getAgentOptions().then(options => (this.agentOptions = Object.freeze(options)));
     },
     show() {
       this.$refs.dialog.show();

@@ -31,10 +31,10 @@
           map-options
           emit-value
           :disable="this.mode === 'edit'"
-          @input="setScriptDefaults"
+          @update:model-value="setScriptDefaults"
         >
           <template v-slot:option="scope">
-            <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" v-on="scope.itemEvents" class="q-pl-lg">
+            <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
               <q-item-section>
                 <q-item-label v-html="scope.opt.label"></q-item-label>
               </q-item-section>
@@ -127,6 +127,7 @@ import { mapGetters } from "vuex";
 
 export default {
   name: "ScriptCheck",
+  emits: ["close"],
   props: {
     agentpk: Number,
     policypk: Number,
@@ -203,12 +204,10 @@ export default {
       /^\d+$/.test(val) ? done(val) : done();
     },
   },
-  created() {
-    if (this.mode === "edit") {
-      this.getCheck();
-    }
+  mounted() {
+    this.getScriptOptions(this.showCommunityScripts).then(options => (this.scriptOptions = Object.freeze(options)));
 
-    this.scriptOptions = this.getScriptOptions(this.showCommunityScripts);
+    if (this.mode === "edit") this.getCheck();
   },
 };
 </script>

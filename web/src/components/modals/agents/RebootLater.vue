@@ -78,7 +78,7 @@ export default {
   computed: {
     ...mapGetters(["selectedAgentPk"]),
   },
-  created() {
+  mounted() {
     this.getCurrentDate();
   },
 };

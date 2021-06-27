@@ -37,3 +37,17 @@ def core_maintenance_tasks():
     # clear faults
     if core.clear_faults_days > 0:
         clear_faults_task.delay(core.clear_faults_days)
+
+
+@app.task
+def cache_db_fields_task():
+    from agents.models import Agent
+
+    for agent in Agent.objects.all():
+        agent.pending_actions_count = agent.pendingactions.filter(
+            status="pending"
+        ).count()
+        agent.has_patches_pending = (
+            agent.winupdates.filter(action="approve").filter(installed=False).exists()
+        )
+        agent.save(update_fields=["pending_actions_count", "has_patches_pending"])

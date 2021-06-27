@@ -25,7 +25,7 @@
         <SummaryTab />
       </q-tab-panel>
       <q-tab-panel name="checks" class="q-pb-xs q-pt-none">
-        <ChecksTab @refreshEdit="$emit('refreshEdit')" />
+        <ChecksTab @edit="$emit('edit')" />
       </q-tab-panel>
       <q-tab-panel name="tasks" class="q-pb-xs q-pt-none">
         <AutomatedTasksTab />
@@ -56,6 +56,7 @@ import AssetsTab from "@/components/AssetsTab";
 import NotesTab from "@/components/NotesTab";
 export default {
   name: "SubTableTabs",
+  emits: ["edit"],
   components: {
     SummaryTab,
     ChecksTab,

@@ -9,7 +9,7 @@ import (
 	"github.com/wh1te909/tacticalrmm/natsapi"
 )
 
-var version = "2.0.0"
+var version = "2.1.0"
 
 func main() {
 	ver := flag.Bool("version", false, "Prints version")
@@ -27,6 +27,9 @@ func main() {
 		api.MonitorAgents(*config)
 	case "wmi":
 		api.GetWMI(*config)
+	case "checkin":
+		api.CheckIn(*config)
+	default:
+		fmt.Println(version)
 	}
-
 }

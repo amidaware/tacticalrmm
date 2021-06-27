@@ -5,7 +5,7 @@
         {{ policy.name }} Relations
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
       <q-card-section
@@ -41,7 +41,7 @@
           <q-tab-panels v-model="tab" :animated="false">
             <q-tab-panel name="clients">
               <q-list separator padding>
-                <q-item :key="item.id + 'servers'" v-for="item in related.server_clients">
+                <q-item v-for="item in related.server_clients" :key="item.id + 'servers'">
                   <q-item-section>
                     <q-item-label>{{ item.name }}</q-item-label>
                   </q-item-section>
@@ -51,7 +51,7 @@
                     </q-item-label>
                   </q-item-section>
                 </q-item>
-                <q-item :key="item.id + 'workstations'" v-for="item in related.workstation_clients">
+                <q-item v-for="item in related.workstation_clients" :key="item.id + 'workstations'">
                   <q-item-section>
                     <q-item-label>{{ item.name }}</q-item-label>
                   </q-item-section>
@@ -66,7 +66,7 @@
 
             <q-tab-panel name="sites">
               <q-list separator padding>
-                <q-item :key="item.id + 'servers'" v-for="item in related.server_sites">
+                <q-item v-for="item in related.server_sites" :key="item.id + 'servers'">
                   <q-item-section>
                     <q-item-label>{{ item.name }}</q-item-label>
                     <q-item-label caption>{{ item.client_name }}</q-item-label>
@@ -77,7 +77,7 @@
                     </q-item-label>
                   </q-item-section>
                 </q-item>
-                <q-item :key="item.id + 'workstations'" v-for="item in related.workstation_sites">
+                <q-item v-for="item in related.workstation_sites" :key="item.id + 'workstations'">
                   <q-item-section>
                     <q-item-label>{{ item.name }}</q-item-label>
                     <q-item-label caption>{{ item.client_name }}</q-item-label>
@@ -93,7 +93,7 @@
 
             <q-tab-panel name="agents">
               <q-list separator padding>
-                <q-item :key="item.pk" v-for="item in related.agents">
+                <q-item v-for="item in related.agents" :key="item.pk">
                   <q-item-section>
                     <q-item-label>{{ item.hostname }}</q-item-label>
                     <q-item-label caption>
@@ -114,6 +114,7 @@
 <script>
 export default {
   name: "RelationsView",
+  emits: ["hide", "ok", "cancel"],
   props: {
     policy: {
       type: Object,

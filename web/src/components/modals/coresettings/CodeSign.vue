@@ -81,7 +81,7 @@ export default {
         });
     },
   },
-  created() {
+  mounted() {
     this.getToken();
   },
 };

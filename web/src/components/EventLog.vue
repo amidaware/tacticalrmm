@@ -9,7 +9,7 @@
           v-model="days"
           :options="lastDays"
           :label="showDays"
-          @input="getEventLog"
+          @update:model-value="getEventLog"
         />
       </div>
       <div class="col-7"></div>
@@ -21,9 +21,9 @@
       dense
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       class="remote-bg-tbl-sticky"
-      :data="events"
+      :rows="events"
       :columns="columns"
-      :pagination.sync="pagination"
+      v-model:pagination="pagination"
       :filter="filter"
       row-key="uid"
       binary-state-sort
@@ -33,9 +33,15 @@
       <template v-slot:top>
         <q-btn dense flat push @click="getEventLog" icon="refresh" />
         <q-space />
-        <q-radio v-model="logType" color="cyan" val="Application" label="Application" @input="getEventLog" />
-        <q-radio v-model="logType" color="cyan" val="System" label="System" @input="getEventLog" />
-        <q-radio v-model="logType" color="cyan" val="Security" label="Security" @input="getEventLog" />
+        <q-radio
+          v-model="logType"
+          color="cyan"
+          val="Application"
+          label="Application"
+          @update:model-value="getEventLog"
+        />
+        <q-radio v-model="logType" color="cyan" val="System" label="System" @update:model-value="getEventLog" />
+        <q-radio v-model="logType" color="cyan" val="Security" label="Security" @update:model-value="getEventLog" />
         <q-space />
         <q-input v-model="filter" outlined label="Search" dense clearable>
           <template v-slot:prepend>
@@ -43,13 +49,13 @@
           </template>
         </q-input>
       </template>
-      <template slot="body" slot-scope="props" :props="props">
+      <template v-slot:body="props">
         <q-tr :props="props">
           <q-td>{{ props.row.eventType }}</q-td>
           <q-td>{{ props.row.source }}</q-td>
           <q-td>{{ props.row.eventID }}</q-td>
           <q-td>{{ props.row.time }}</q-td>
-          <q-td @click.native="showFullMsg(props.row.message)">
+          <q-td @click="showFullMsg(props.row.message)">
             <span style="cursor: pointer; text-decoration: underline" class="text-primary">{{
               formatMessage(props.row.message)
             }}</span>
@@ -121,7 +127,7 @@ export default {
         });
     },
   },
-  created() {
+  mounted() {
     this.getEventLog();
   },
 };

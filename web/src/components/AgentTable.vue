@@ -78,10 +78,10 @@
       <!-- body slots -->
       <template v-slot:body="props">
         <q-tr
-          @contextmenu="agentRowSelected(props.row.id, props.row.agent_id)"
+          @contextmenu="agentRowSelected(props.row.id)"
           :props="props"
           :class="rowSelectedClass(props.row.id)"
-          @click="agentRowSelected(props.row.id, props.row.agent_id)"
+          @click="agentRowSelected(props.row.id)"
           @dblclick="rowDoubleClicked(props.row.id)"
         >
           <!-- context menu -->

@@ -1,4 +1,5 @@
 import os
+import pprint
 import re
 
 from django.conf import settings
@@ -360,3 +361,26 @@ class RunURLAction(APIView):
             url_pattern = re.sub("\\{\\{" + string + "\\}\\}", str(value), url_pattern)
 
         return Response(requote_uri(url_pattern))
+
+
+class TwilioSMSTest(APIView):
+    def get(self, request):
+        from twilio.rest import Client as TwClient
+
+        core = CoreSettings.objects.first()
+        if not core.sms_is_configured:
+            return notify_error(
+                "All fields are required, including at least 1 recipient"
+            )
+
+        try:
+            tw_client = TwClient(core.twilio_account_sid, core.twilio_auth_token)
+            tw_client.messages.create(
+                body="TacticalRMM Test SMS",
+                to=core.sms_alert_recipients[0],
+                from_=core.twilio_number,
+            )
+        except Exception as e:
+            return notify_error(pprint.pformat(e))
+
+        return Response("SMS Test OK!")

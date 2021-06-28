@@ -422,6 +422,7 @@ export default {
       currentTRMMVersion: null,
       latestTRMMVersion: "error",
       showUserPreferencesModal: false,
+      clear_search_when_switching: true,
       columns: [
         {
           name: "smsalert",
@@ -598,7 +599,7 @@ export default {
       }
     },
     loadFrame(activenode, destroySub = true) {
-      this.clearFilter();
+      if (this.clear_search_when_switching) this.clearFilter();
       if (destroySub) this.$store.commit("destroySubTable");
 
       let execute = false;
@@ -634,7 +635,7 @@ export default {
       this.$store.dispatch("loadTree");
     },
     clearTreeSelected() {
-      this.clearFilter();
+      if (this.clear_search_when_switching) this.clearFilter();
       this.selectedTree = "";
       this.getTree();
     },
@@ -734,6 +735,7 @@ export default {
       this.$store.dispatch("getDashInfo").then(r => {
         if (edited) {
           this.$q.loadingBar.setDefaults({ color: r.data.loading_bar_color });
+          this.clear_search_when_switching = r.data.clear_search_when_switching;
           this.$store.commit("SET_DEFAULT_AGENT_TBL_TAB", r.data.default_agent_tbl_tab);
           this.$store.commit("SET_CLIENT_TREE_SORT", r.data.client_tree_sort);
           this.$store.commit("SET_CLIENT_SPLITTER", r.data.client_tree_splitter);

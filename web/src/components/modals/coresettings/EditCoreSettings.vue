@@ -335,11 +335,19 @@
             />
             <q-btn
               v-show="tab === 'emailalerts'"
-              label="Save and Test"
+              label="Save and Test Email"
               color="primary"
               type="submit"
               class="q-ml-md"
               @click="emailTest = true"
+            />
+            <q-btn
+              v-show="tab === 'smsalerts'"
+              label="Save and Test SMS"
+              color="primary"
+              type="submit"
+              class="q-ml-md"
+              @click="smsTest = true"
             />
           </q-card-section>
         </q-form>
@@ -375,6 +383,7 @@ export default {
       isPwd: true,
       allTimezones: [],
       emailTest: false,
+      smsTest: false,
       thumbStyle: {
         right: "2px",
         borderRadius: "5px",
@@ -481,10 +490,23 @@ export default {
                 this.getCoreSettings();
                 this.notifySuccess(r.data, 3000);
               })
-              .catch(e => {
+              .catch(() => {
                 this.emailTest = false;
                 this.$q.loading.hide();
-                this.notifyError(e.response.data, 7000);
+              });
+          } else if (this.smsTest) {
+            this.$q.loading.show({ message: "Sending test SMS..." });
+            this.$axios
+              .get("/core/smstest/")
+              .then(r => {
+                this.smsTest = false;
+                this.$q.loading.hide();
+                this.getCoreSettings();
+                this.notifySuccess(r.data, 3000);
+              })
+              .catch(() => {
+                this.smsTest = false;
+                this.$q.loading.hide();
               });
           } else {
             this.$emit("close");

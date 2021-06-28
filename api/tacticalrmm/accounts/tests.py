@@ -280,6 +280,7 @@ class TestUserAction(TacticalTestCase):
             "client_tree_sort": "alpha",
             "client_tree_splitter": 14,
             "loading_bar_color": "green",
+            "clear_search_when_switching": False,
         }
         r = self.client.patch(url, data, format="json")
         self.assertEqual(r.status_code, 200)

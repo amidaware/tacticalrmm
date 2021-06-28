@@ -87,6 +87,12 @@
                   class="col-8"
                 />
               </q-card-section>
+              <q-card-section class="row">
+                <q-checkbox
+                  v-model="clear_search_when_switching"
+                  label="Clear search field when switching client/site"
+                />
+              </q-card-section>
             </q-tab-panel>
           </q-tab-panels>
 
@@ -118,6 +124,7 @@ export default {
       splitterModel: 20,
       loading_bar_color: "",
       urlActions: [],
+      clear_search_when_switching: true,
       clientTreeSortOptions: [
         {
           label: "Sort alphabetically, moving failing clients to the top",
@@ -191,6 +198,7 @@ export default {
           this.defaultAgentTblTab = r.data.default_agent_tbl_tab;
           this.clientTreeSort = r.data.client_tree_sort;
           this.loading_bar_color = r.data.loading_bar_color;
+          this.clear_search_when_switching = r.data.clear_search_when_switching;
         })
         .catch(e => {});
     },
@@ -205,6 +213,7 @@ export default {
         default_agent_tbl_tab: this.defaultAgentTblTab,
         client_tree_sort: this.clientTreeSort,
         loading_bar_color: this.loading_bar_color,
+        clear_search_when_switching: this.clear_search_when_switching,
       };
       this.$axios
         .patch("/accounts/users/ui/", data)

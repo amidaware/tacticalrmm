@@ -16,6 +16,7 @@ class UserUISerializer(ModelSerializer):
             "client_tree_sort",
             "client_tree_splitter",
             "loading_bar_color",
+            "clear_search_when_switching",
         ]
 
 

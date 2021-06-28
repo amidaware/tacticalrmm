@@ -1,6 +1,6 @@
 <template>
   <q-card>
-    <q-bar>
+    <q-bar v-if="modal">
       <q-btn @click="search" class="q-mr-sm" dense flat push icon="refresh" />
       <q-space />Audit Manager
       <q-space />
@@ -10,13 +10,13 @@
     </q-bar>
     <div class="text-h6 q-pl-sm q-pt-sm">Filter</div>
     <div class="row">
-      <div class="q-pa-sm col-1">
+      <div class="q-pa-sm col-1" v-if="!agentpk">
         <q-option-group v-model="filterType" :options="filterTypeOptions" color="primary" />
       </div>
       <div class="q-pa-sm col-2" v-if="filterType === 'agents'">
         <tactical-dropdown v-model="agentFilter" :options="agentOptions" label="Agent" clearable multiple filled />
       </div>
-      <div class="q-pa-sm col-2" v-if="filterType === 'clients'">
+      <div class="q-pa-sm col-2" v-if="filterType === 'clients' && !agentpk">
         <tactical-dropdown
           v-model="clientFilter"
           :options="clientOptions"
@@ -58,6 +58,8 @@
       <div class="q-pa-sm col-1">
         <q-btn color="primary" label="Search" @click="search" />
       </div>
+      <q-space />
+      <export-table-btn v-if="!modal" :data="auditLogs" :columns="columns" />
     </div>
     <q-separator />
     <q-card-section>
@@ -76,7 +78,7 @@
         :loading="loading"
       >
         <template v-slot:top-right>
-          <export-table-btn :data="auditLogs" :columns="columns" />
+          <export-table-btn v-if="modal" :data="auditLogs" :columns="columns" />
         </template>
         <template v-slot:body-cell-action="props">
           <q-td :props="props">
@@ -99,30 +101,31 @@ import { useAgentDropdown } from "@/composables/agents";
 import { useUserDropdown } from "@/composables/accounts";
 
 // ui imported
-import ExportTableBtn from "@/components/ui/ExportTableBtn"
+import ExportTableBtn from "@/components/ui/ExportTableBtn";
 import TacticalDropdown from "@/components/ui/TacticalDropdown";
-import ExportTableBtn from '../ui/ExportTableBtn.vue';
+import ExportTableBtn from "../ui/ExportTableBtn.vue";
 
 export default {
   name: "AuditManager",
   components: { TacticalDropdown, ExportTableBtn },
   props: {
-    agentpk:
-    ExportTableBtn Number,
+    agentpk: Number,
     modal: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
   setup() {
     // setup dropdowns
     const { clientOptions, getClientOptions } = useClientDropdown();
     const { agentOptions, getAgentOptions } = useAgentDropdown();
-    const { userOptions, userDropdownLoading, getUserOptions } = useUserDropdown();
+    const { userOptions, getUserOptions } = useUserDropdown();
 
     onMounted(() => {
-      getClientOptions();
-      getAgentOptions(true);
+      if (!props.agentpk) {
+        getClientOptions();
+        getAgentOptions();
+      }
       getUserOptions(true);
     });
 
@@ -131,7 +134,7 @@ export default {
     return {
       // data
       auditLogs: AuditLog.auditLogs,
-      agentFilter: AuditLog.agentFilter,
+      agentFilter: agentpk ? [agentpk] : AuditLog.agentFilter,
       userFilter: AuditLog.userFilter,
       actionFilter: AuditLog.actionFilter,
       clientFilter: AuditLog.clientFilter,
@@ -141,7 +144,6 @@ export default {
       loading: AuditLog.loading,
       pagination: AuditLog.pagination,
       userOptions,
-      userDropdownLoading,
 
       // non-reactive data
       clientOptions,

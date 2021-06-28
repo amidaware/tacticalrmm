@@ -51,6 +51,7 @@ STATUS_CHOICES = [
 class AuditLog(models.Model):
     username = models.CharField(max_length=100)
     agent = models.CharField(max_length=255, null=True, blank=True)
+    agent_id = models.PositiveIntegerField(blank=True, null=True)
     entry_time = models.DateTimeField(auto_now_add=True)
     action = models.CharField(max_length=100, choices=AUDIT_ACTION_TYPE_CHOICES)
     object_type = models.CharField(max_length=100, choices=AUDIT_OBJECT_TYPE_CHOICES)
@@ -73,24 +74,25 @@ class AuditLog(models.Model):
         return super(AuditLog, self).save(*args, **kwargs)
 
     @staticmethod
-    def audit_mesh_session(username, hostname, debug_info={}):
+    def audit_mesh_session(username, agent, debug_info={}):
         AuditLog.objects.create(
             username=username,
-            agent=hostname,
+            agent=agent.hostname,
+            agent_id=agent.id,
             object_type="agent",
             action="remote_session",
-            message=f"{username} used Mesh Central to initiate a remote session to {hostname}.",
+            message=f"{username} used Mesh Central to initiate a remote session to {agent.hostname}.",
             debug_info=debug_info,
         )
 
     @staticmethod
-    def audit_raw_command(username, hostname, cmd, shell, debug_info={}):
+    def audit_raw_command(username, agent, cmd, shell, debug_info={}):
         AuditLog.objects.create(
             username=username,
-            agent=hostname,
+            agent=agent.hostname,
             object_type="agent",
             action="execute_command",
-            message=f"{username} issued {shell} command on {hostname}.",
+            message=f"{username} issued {shell} command on {agent.hostname}.",
             after_value=cmd,
             debug_info=debug_info,
         )
@@ -102,6 +104,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
+            agent_id=before.id if object_type == "agent" else None,
             action="modify",
             message=f"{username} modified {object_type} {name}",
             before_value=before,
@@ -114,6 +117,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
+            agent=after.id if object_type == "agent" else None,
             action="add",
             message=f"{username} added {object_type} {name}",
             after_value=after,
@@ -132,13 +136,14 @@ class AuditLog(models.Model):
         )
 
     @staticmethod
-    def audit_script_run(username, hostname, script, debug_info={}):
+    def audit_script_run(username, agent, script, debug_info={}):
         AuditLog.objects.create(
-            agent=hostname,
+            agent=agent.hostname,
+            agent_id=agent.id,
             username=username,
             object_type="agent",
             action="execute_script",
-            message=f'{username} ran script: "{script}" on {hostname}',
+            message=f'{username} ran script: "{script}" on {agent.hostname}',
             debug_info=debug_info,
         )
 

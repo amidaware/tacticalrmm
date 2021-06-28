@@ -167,7 +167,7 @@ def meshcentral(request, pk):
     terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"
     file = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=13&hide=31"
 
-    AuditLog.audit_mesh_session(username=request.user.username, hostname=agent.hostname)
+    AuditLog.audit_mesh_session(username=request.user.username, agent=agent)
 
     ret = {
         "hostname": agent.hostname,
@@ -252,7 +252,7 @@ def send_raw_cmd(request):
 
     AuditLog.audit_raw_command(
         username=request.user.username,
-        hostname=agent.hostname,
+        agent=agent,
         cmd=request.data["cmd"],
         shell=request.data["shell"],
     )
@@ -570,7 +570,7 @@ def run_script(request):
 
     AuditLog.audit_script_run(
         username=request.user.username,
-        hostname=agent.hostname,
+        agent=agent,
         script=script.name,
     )
 

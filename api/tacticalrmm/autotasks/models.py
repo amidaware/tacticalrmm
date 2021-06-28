@@ -413,8 +413,7 @@ class AutomatedTask(BaseAuditModel):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
-
-        #Format of Email sent when Task has email alert
+        # Format of Email sent when Task has email alert
         if self.agent:
             subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Failed"
         else:
@@ -431,8 +430,7 @@ class AutomatedTask(BaseAuditModel):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
-
-        #Format of SMS sent when Task has SMS alert
+        # Format of SMS sent when Task has SMS alert
         if self.agent:
             subject = f"{self.agent.client.name}, {self.agent.site.name}, {self.agent.hostname} - {self} Failed"
         else:

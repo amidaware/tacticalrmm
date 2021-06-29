@@ -6,4 +6,7 @@ To Add/Edit values in the Global Key Store, browse to **Settings > Global Settin
 
 You can reference values from the key store in script arguments by using the {{global.key_name}} syntax.
 
+!!!info
+    Everything between {{}} is CaSe sEnSiTive
+
 See [Scripts](scripting.md) for more information.

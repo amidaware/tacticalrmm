@@ -13,7 +13,6 @@ Has a postgres database located here:
 
 ### Services
 
-
 nginx
 
 !!!description
@@ -100,7 +99,6 @@ Found in `%programfiles%\TacticalAgent`
 
 The [MeshCentral](https://meshcentral.com/) system which is accessible from <https://mesh.example.com> and is used
 
-
 * It runs 2 goroutines
   * one is the checkrunner which runs all the checks and then just sleeps until it's time to run more checks
   * 2nd goroutine periodically sends info about the agent to the rmm and also handles agent recovery
@@ -131,3 +129,17 @@ Downloads latest `winagent-vx.x.x-x86/64.exe` to `%programfiles%`
 Executes the file (INNO setup exe)
 
 Files create `c:\Windows\temp\Tacticalxxxx\` folder for install (and log files)
+
+*****
+
+### Windows Update Management
+
+Tactical RMM Agent sets:
+
+```reg
+HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU
+AUOptions (REG_DWORD):
+1: Keep my computer up to date is disabled in Automatic Updates.
+```
+
+Uses this Microsoft API to handle updates: [https://docs.microsoft.com/en-us/windows/win32/api/_wua/](https://docs.microsoft.com/en-us/windows/win32/api/_wua/)

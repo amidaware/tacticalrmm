@@ -73,7 +73,7 @@ Tactical RMM allows passing in dashboard data to scripts as arguments. The below
 ```
 
 !!!info
-    Script variables are case-sensitive!
+    Everything between {{}} is CaSe sEnSiTive
 
 See a full list of available options [Here](../script_variables.md)
 

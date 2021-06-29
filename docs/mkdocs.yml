@@ -30,6 +30,7 @@ nav:
   - FAQ: faq.md
   - Management Commands: management_cmds.md
   - MeshCentral Integration: mesh_integration.md
+  - Connectwise Control Integration: connectwisecontrol_integration.md
   - Contributing:
       - "Contributing to Docs": contributing.md
       - "Contributing using VSCode": contributing_using_vscode.md

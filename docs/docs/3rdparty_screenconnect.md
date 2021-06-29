@@ -33,7 +33,7 @@ Add a URL Action</br>
 **URL Pattern** =
 
 ```html
-https://<your_screenconnect_fqdn_with_port>/Host#Access/All%20Machines//{{agent.ScreenConnectGuid}}/Join
+https://<your_screenconnect_fqdn_with_port>/Host#Access/All%20Machines//{{agent.ScreenConnectGUID}}/Join
 ```
 
 ![Service Name](images/3rdparty_screenconnect3.png)

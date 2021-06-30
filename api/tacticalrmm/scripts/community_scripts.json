@@ -193,6 +193,18 @@
     "category": "TRMM (Win):Collectors"
   },
   {
+    "guid": "e43081d4-6f71-4ce3-881a-22da749f7a57",
+    "filename": "Win_AnyDesk_Get_Anynet_ID.ps1",
+    "submittedBy": "https://github.com/meuchels",
+    "name": "AnyDesk - Get AnyNetID for client",
+    "description": "Returns AnyNetID for client - Use with Custom Fields for later use. ",
+    "args": [
+      "-serviceName {{client.ScreenConnectService}}"
+    ],
+    "shell": "powershell",
+    "category": "TRMM (Win):Collectors"
+  },
+  {
     "guid": "95a2ee6f-b89b-4551-856e-3081b041caa7",
     "filename": "Win_Power_Profile_Reset_High_Performance_to_Defaults.ps1",
     "submittedBy": "https://github.com/azulskyknight",

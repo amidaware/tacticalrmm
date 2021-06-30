@@ -276,7 +276,7 @@
     "guid": "5320dfc8-022a-41e7-9e39-11c493545ec9",
     "filename": "Win_AD_Hudu_ADDS_Documentation.ps1",
     "submittedBy": "https://github.com/unplugged216",
-    "name": "ADDS - Direcotry documentation in Hudu",
+    "name": "ADDS - Directory documentation in Hudu",
     "description": "Auto generates ADDS documentation and submits it to your Hudu instance.",
     "args": [
       "-ClientName {{client.name}}",

@@ -390,6 +390,7 @@ class Reboot(APIView):
 @permission_classes([IsAuthenticated, InstallAgentPerms])
 def install_agent(request):
     from knox.models import AuthToken
+    from accounts.models import User
 
     from agents.utils import get_winagent_url
 
@@ -415,8 +416,10 @@ def install_agent(request):
     )
     download_url = get_winagent_url(arch)
 
+    installer_user = User.objects.filter(is_installer_user=True).first()
+
     _, token = AuthToken.objects.create(
-        user=request.user, expiry=dt.timedelta(hours=request.data["expires"])
+        user=installer_user, expiry=dt.timedelta(hours=request.data["expires"])
     )
 
     if request.data["installMethod"] == "exe":

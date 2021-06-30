@@ -1,3 +1,4 @@
+import uuid
 from django.test import TestCase, override_settings
 from model_bakery import baker
 from rest_framework.authtoken.models import Token
@@ -19,6 +20,12 @@ class TacticalTestCase(TestCase):
         self.alice.save()
         self.client_setup()
         self.client.force_authenticate(user=self.john)
+
+        User.objects.create_user(  # type: ignore
+            username=uuid.uuid4().hex,
+            is_installer_user=True,
+            password=User.objects.make_random_password(60),  # type: ignore
+        )
 
     def setup_agent_auth(self, agent):
         agent_user = User.objects.create_user(

@@ -105,7 +105,9 @@ class FilterOptionsAuditLog(APIView):
 
         if request.data["type"] == "user":
             users = User.objects.filter(
-                username__icontains=request.data["pattern"], agent=None
+                username__icontains=request.data["pattern"],
+                agent=None,
+                is_installer_user=False,
             )
             return Response(UserSerializer(users, many=True).data)
 

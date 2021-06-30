@@ -2,8 +2,6 @@
 
 ## Connectwise Control Integration
 
-* Creates Custom Field putting sc 
-
 !!!info
      To make this work you will need the name of a the Service from one of your agents running a Screen Connect Guest.
 

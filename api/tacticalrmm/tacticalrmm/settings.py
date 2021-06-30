@@ -28,7 +28,7 @@ MESH_VER = "0.8.60"
 
 # for the update script, bump when need to recreate venv or npm install
 PIP_VER = "19"
-NPM_VER = "18"
+NPM_VER = "19"
 
 SETUPTOOLS_VER = "57.0.0"
 WHEEL_VER = "0.36.2"

@@ -181,6 +181,18 @@
     "category": "TRMM (Win):Collectors"
   },
   {
+    "guid": "9cfdfe8f-82bf-4081-a59f-576d694f4649",
+    "filename": "Win_Teamviewer_Get_ID.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "TeamViewer - Get ClientID for client",
+    "description": "Returns Teamviwer ClientID for client - Use with Custom Fields for later use. ",
+    "args": [
+      "-serviceName {{client.ScreenConnectService}}"
+    ],
+    "shell": "powershell",
+    "category": "TRMM (Win):Collectors"
+  },
+  {
     "guid": "95a2ee6f-b89b-4551-856e-3081b041caa7",
     "filename": "Win_Power_Profile_Reset_High_Performance_to_Defaults.ps1",
     "submittedBy": "https://github.com/azulskyknight",

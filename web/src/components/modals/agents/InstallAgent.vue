@@ -97,7 +97,7 @@ export default {
       client: null,
       site: null,
       agenttype: "server",
-      expires: 720,
+      expires: 24,
       power: false,
       rdp: false,
       ping: false,

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="50"
+SCRIPT_VERSION="51"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -380,6 +380,7 @@ printf >&2 "\n"
 echo -ne "Username: "
 read djangousername
 python manage.py createsuperuser --username ${djangousername} --email ${letsemail}
+python manage.py create_installer_user
 RANDBASE=$(python manage.py generate_totp)
 cls
 python manage.py generate_barcode ${RANDBASE} ${djangousername} ${frontenddomain}

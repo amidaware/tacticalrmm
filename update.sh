@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="123"
+SCRIPT_VERSION="124"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -274,6 +274,7 @@ python manage.py delete_tokens
 python manage.py collectstatic --no-input
 python manage.py reload_nats
 python manage.py load_chocos
+python manage.py create_installer_user
 python manage.py post_update_tasks
 deactivate
 

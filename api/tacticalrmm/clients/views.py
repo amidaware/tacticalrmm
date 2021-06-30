@@ -251,16 +251,19 @@ class AgentDeployment(APIView):
 
     def post(self, request):
         from knox.models import AuthToken
+        from accounts.models import User
 
         client = get_object_or_404(Client, pk=request.data["client"])
         site = get_object_or_404(Site, pk=request.data["site"])
+
+        installer_user = User.objects.filter(is_installer_user=True).first()
 
         expires = dt.datetime.strptime(
             request.data["expires"], "%Y-%m-%d %H:%M"
         ).astimezone(pytz.timezone("UTC"))
         now = djangotime.now()
         delta = expires - now
-        obj, token = AuthToken.objects.create(user=request.user, expiry=delta)
+        obj, token = AuthToken.objects.create(user=installer_user, expiry=delta)
 
         flags = {
             "power": request.data["power"],

@@ -114,6 +114,7 @@ EOF
   "${VIRTUAL_ENV}"/bin/python manage.py load_chocos
   "${VIRTUAL_ENV}"/bin/python manage.py load_community_scripts
   "${VIRTUAL_ENV}"/bin/python manage.py reload_nats
+  "${VIRTUAL_ENV}"/bin/python manage.py create_installer_user
 
   # create super user 
   echo "from accounts.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else 0;" | python manage.py shell

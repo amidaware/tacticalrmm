@@ -32,6 +32,8 @@ nav:
   - MeshCentral Integration: mesh_integration.md
   - 3rd Party Integrations:
       - "Connectwise Control / Screenconnect": 3rdparty_screenconnect.md
+      - "TeamViewer" : 3rdparty_teamviewer.md
+      - "AnyDesk" : 3rdparty_anydesk.md
   - Contributing:
       - "Contributing to Docs": contributing.md
       - "Contributing using VSCode": contributing_using_vscode.md

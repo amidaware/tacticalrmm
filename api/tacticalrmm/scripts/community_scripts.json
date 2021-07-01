@@ -186,9 +186,6 @@
     "submittedBy": "https://github.com/silversword411",
     "name": "TeamViewer - Get ClientID for client",
     "description": "Returns Teamviwer ClientID for client - Use with Custom Fields for later use. ",
-    "args": [
-      "-serviceName {{client.ScreenConnectService}}"
-    ],
     "shell": "powershell",
     "category": "TRMM (Win):Collectors"
   },
@@ -198,9 +195,6 @@
     "submittedBy": "https://github.com/meuchels",
     "name": "AnyDesk - Get AnyNetID for client",
     "description": "Returns AnyNetID for client - Use with Custom Fields for later use. ",
-    "args": [
-      "-serviceName {{client.ScreenConnectService}}"
-    ],
     "shell": "powershell",
     "category": "TRMM (Win):Collectors"
   },

@@ -42,6 +42,7 @@
         :columns="columns"
         :title="modal ? 'Debug Logs' : ''"
         :pagination="{ sortBy: 'entry_time', descending: true }"
+        :loading="loading"
         dense
         binary-state-sort
       >
@@ -55,13 +56,45 @@
 
 <script>
 // composition api
-import { watch, onMounted } from "vue";
-import { useDebugLog } from "@/composables/logs";
+import { ref, watch, onMounted, toRefs } from "vue";
 import { useAgentDropdown } from "@/composables/agents";
+import { fetchDebugLog } from "@/api/logs";
+import { formatDate, formatTableColumnText } from "@/utils/format";
 
 // ui components
 import TacticalDropdown from "@/components/ui/TacticalDropdown";
 import ExportTableBtn from "@/components/ui/ExportTableBtn.vue";
+
+// static data
+const logTypeOptions = [
+  { label: "Agent Update", value: "agent_update" },
+  { label: "Agent Issues", value: "agent_issues" },
+  { label: "Windows Updates", value: "windows_updates" },
+  { label: "System Issues", value: "system_issues" },
+  { label: "Scripting", value: "scripting" },
+];
+
+const columns = [
+  {
+    name: "entry_time",
+    label: "Time",
+    field: "entry_time",
+    align: "left",
+    sortable: true,
+    format: (val, row) => formatDate(val, true),
+  },
+  { name: "log_level", label: "Log Level", field: "log_level", align: "left", sortable: true },
+  { name: "agent", label: "Agent", field: "agent", align: "left", sortable: true },
+  {
+    name: "log_type",
+    label: "Log Type",
+    field: "log_type",
+    align: "left",
+    sortable: true,
+    format: (val, row) => formatTableColumnText(val),
+  },
+  { name: "message", label: "Message", field: "message", align: "left", sortable: true },
+];
 
 export default {
   name: "LogModal",
@@ -77,15 +110,36 @@ export default {
     },
   },
   setup(props) {
-    const { debugLog, logLevelFilter, logTypeFilter, agentFilter, getDebugLog } = useDebugLog();
+    // setup dropdowns
     const { agentOptions, getAgentOptions } = useAgentDropdown();
+
+    // set main debug log functionality
+    const debugLog = ref([]);
+    const agentFilter = ref(null);
+    const logLevelFilter = ref("info");
+    const logTypeFilter = ref(null);
+    const loading = ref(false);
+
+    async function getDebugLog() {
+      loading.value = true;
+      const data = {
+        logLevelFilter: logLevelFilter.value,
+      };
+      if (agentFilter.value) data["agentFilter"] = agentFilter.value;
+      if (logTypeFilter.value) data["logTypeFilter"] = logTypeFilter.value;
+
+      debugLog.value = await fetchDebugLog(data);
+      loading.value = false;
+    }
 
     if (props.agentpk) {
       agentFilter.value = props.agentpk;
     }
 
+    // watchers
     watch([logLevelFilter, agentFilter, logTypeFilter], getDebugLog);
 
+    // vue component hooks
     onMounted(() => {
       if (!props.agentpk) getAgentOptions();
       getDebugLog();
@@ -98,10 +152,11 @@ export default {
       logTypeFilter,
       agentFilter,
       agentOptions,
+      loading,
 
       // non-reactive data
-      columns: useDebugLog.tableColumns,
-      logTypeOptions: useDebugLog.logTypeOptions,
+      columns,
+      logTypeOptions,
 
       // methods
       getDebugLog,

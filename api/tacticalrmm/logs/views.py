@@ -43,7 +43,7 @@ class GetAuditLogs(APIView):
         timeFilter = Q()
 
         if "agentFilter" in request.data:
-            agentFilter = Q(agent__in=request.data["agentFilter"])
+            agentFilter = Q(agent_id__in=request.data["agentFilter"])
 
         elif "clientFilter" in request.data:
             clients = Client.objects.filter(
@@ -88,25 +88,6 @@ class GetAuditLogs(APIView):
                 "total": paginator.count,
             }
         )
-
-
-class FilterOptionsAuditLog(APIView):
-    permission_classes = [IsAuthenticated, AuditLogPerms]
-
-    def post(self, request):
-        if request.data["type"] == "agent":
-            agents = Agent.objects.filter(hostname__icontains=request.data["pattern"])
-            return Response(AgentHostnameSerializer(agents, many=True).data)
-
-        if request.data["type"] == "user":
-            users = User.objects.filter(
-                username__icontains=request.data["pattern"],
-                agent=None,
-                is_installer_user=False,
-            )
-            return Response(UserSerializer(users, many=True).data)
-
-        return Response("error", status=status.HTTP_400_BAD_REQUEST)
 
 
 class PendingActions(APIView):

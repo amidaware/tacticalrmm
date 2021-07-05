@@ -3,6 +3,7 @@ import { ref } from "vue"
 import { fetchAgents } from "@/api/agents"
 import { formatAgentOptions } from "@/utils/format"
 
+// agent dropdown
 export function useAgentDropdown() {
 
   const agentOptions = ref([])

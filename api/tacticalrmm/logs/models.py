@@ -2,8 +2,14 @@ import datetime as dt
 from abc import abstractmethod
 
 from django.db import models
-
 from tacticalrmm.middleware import get_debug_info, get_username
+
+
+def get_debug_level():
+    from core.models import CoreSettings
+
+    return CoreSettings.objects.first().agent_debug_level
+
 
 ACTION_TYPE_CHOICES = [
     ("schedreboot", "Scheduled Reboot"),
@@ -257,19 +263,23 @@ class DebugLog(models.Model):
         agent=None,
         log_type="system_issues",
     ):
-        cls(log_level="info", agent=agent, log_type=log_type, message=message)
+        if get_debug_level() in ["info"]:
+            cls(log_level="info", agent=agent, log_type=log_type, message=message)
 
     @classmethod
     def warning(cls, message, agent=None, log_type="system_issues"):
-        cls(log_level="warning", agent=agent, log_type=log_type, message=message)
+        if get_debug_level() in ["info", "warning"]:
+            cls(log_level="warning", agent=agent, log_type=log_type, message=message)
 
     @classmethod
     def error(cls, message, agent=None, log_type="system_issues"):
-        cls(log_level="error", agent=agent, log_type=log_type, message=message)
+        if get_debug_level() in ["info", "warning", "error"]:
+            cls(log_level="error", agent=agent, log_type=log_type, message=message)
 
     @classmethod
     def critical(cls, message, agent=None, log_type="system_issues"):
-        cls(log_level="critical", agent=agent, log_type=log_type, message=message)
+        if get_debug_level() in ["info", "warning", "error", "critical"]:
+            cls(log_level="critical", agent=agent, log_type=log_type, message=message)
 
 
 class PendingAction(models.Model):

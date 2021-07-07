@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from twilio.rest import Client as TwClient
 
-from logs.models import BaseAuditModel, DebugLog
+from logs.models import BaseAuditModel, DebugLog, LOG_LEVEL_CHOICES
 
 
 TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
@@ -49,6 +49,12 @@ class CoreSettings(BaseAuditModel):
     )
     # removes check history older than days
     check_history_prune_days = models.PositiveIntegerField(default=30)
+    resolved_alerts_prune_days = models.PositiveIntegerField(default=0)
+    agent_history_prune_days = models.PositiveIntegerField(default=60)
+    debug_log_prune_days = models.PositiveIntegerField(default=30)
+    agent_debug_level = models.CharField(
+        max_length=20, choices=LOG_LEVEL_CHOICES, default="info"
+    )
     clear_faults_days = models.IntegerField(default=0)
     mesh_token = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_username = models.CharField(max_length=255, null=True, blank=True, default="")

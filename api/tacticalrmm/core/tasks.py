@@ -4,8 +4,10 @@ from django.utils import timezone as djangotime
 from autotasks.models import AutomatedTask
 from autotasks.tasks import delete_win_task_schedule
 from checks.tasks import prune_check_history
-from agents.tasks import clear_faults_task
+from agents.tasks import clear_faults_task, prune_agent_history
+from alerts.tasks import prune_resolved_alerts
 from core.models import CoreSettings
+from logs.tasks import prune_debug_log
 from tacticalrmm.celery import app
 
 
@@ -30,6 +32,19 @@ def core_maintenance_tasks():
     # remove old CheckHistory data
     if core.check_history_prune_days > 0:
         prune_check_history.delay(core.check_history_prune_days)
+
+    # remove old resolved alerts
+    if core.resolved_alerts_prune_days > 0:
+        prune_resolved_alerts.delay(core.resolved_alert_prune_days)
+
+    # remove old agent history
+    if core.agent_history_prune_days > 0:
+        prune_agent_history.delay(core.agent_history_prune_days)
+
+    # remove old debug logs
+    if core.debug_log_prune_days > 0:
+        prune_debug_log.delay(core.debug_log_prune_days)
+
     # clear faults
     if core.clear_faults_days > 0:
         clear_faults_task.delay(core.clear_faults_days)

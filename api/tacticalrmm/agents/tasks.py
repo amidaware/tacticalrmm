@@ -348,3 +348,15 @@ def agent_checkin_task() -> None:
             json.dump(config, f)
         cmd = ["/usr/local/bin/nats-api", "-c", fp.name, "-m", "checkin"]
         subprocess.run(cmd, timeout=30)
+
+
+@app.task
+def prune_agent_history(older_than_days: int) -> str:
+    from .models import AgentHistory
+
+    AgentHistory.objects.filter(
+        x__lt=djangotime.make_aware(dt.datetime.today())
+        - djangotime.timedelta(days=older_than_days)
+    ).delete()
+
+    return "ok"

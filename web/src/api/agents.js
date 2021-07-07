@@ -8,3 +8,10 @@ export async function fetchAgents() {
     return data
   } catch (e) { }
 }
+
+export async function fetchAgentHistory(pk) {
+  try {
+    const { data } = await axios.get(`${baseUrl}/history/${pk}`)
+    return data
+  } catch (e) { }
+}

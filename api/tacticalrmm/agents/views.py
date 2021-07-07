@@ -23,7 +23,7 @@ from tacticalrmm.utils import get_default_timezone, notify_error, reload_nats
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
-from .models import Agent, AgentCustomField, Note, RecoveryAction
+from .models import Agent, AgentCustomField, Note, RecoveryAction, AgentHistory
 from .permissions import (
     EditAgentPerms,
     EvtLogPerms,
@@ -41,6 +41,7 @@ from .permissions import (
 from .serializers import (
     AgentCustomFieldSerializer,
     AgentEditSerializer,
+    AgentHistorySerializer,
     AgentHostnameSerializer,
     AgentOverdueActionSerializer,
     AgentSerializer,
@@ -743,3 +744,11 @@ class WMI(APIView):
         if r != "ok":
             return notify_error("Unable to contact the agent")
         return Response("ok")
+
+
+class AgentHistoryView(APIView):
+    def get(self, request, pk):
+        agent = get_object_or_404(Agent, pk=pk)
+        history = AgentHistory.objects.filter(agent=agent)
+
+        return Response(AgentHistorySerializer(history, many=True).data)

@@ -1,10 +1,10 @@
 import pytz
-from rest_framework import serializers
-
 from clients.serializers import ClientSerializer
+from rest_framework import serializers
+from tacticalrmm.utils import get_default_timezone
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .models import Agent, AgentCustomField, Note
+from .models import Agent, AgentCustomField, Note, AgentHistory
 
 
 class AgentSerializer(serializers.ModelSerializer):
@@ -200,3 +200,15 @@ class NotesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent
         fields = ["hostname", "pk", "notes"]
+
+
+class AgentHistorySerializer(serializers.ModelSerializer):
+    time = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = AgentHistory
+        fields = "__all__"
+
+    def get_time(self, log):
+        timezone = get_default_timezone()
+        return log.entry_time.astimezone(timezone).strftime("%m %d %Y %H:%M:%S")

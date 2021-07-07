@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!selectedAgent">No agent selected</div>
+  <div v-if="!selectedAgent" class="q-pa-sm">No agent selected</div>
   <div v-else>
     <DebugLog :agentpk="selectedAgent" />
   </div>

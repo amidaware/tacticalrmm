@@ -943,11 +943,18 @@ AGENT_HISTORY_STATUS = (("success", "Success"), ("failure", "Failure"))
 
 
 class AgentHistory(models.Model):
+    agent = models.ForeignKey(
+        Agent,
+        related_name="history",
+        on_delete=models.CASCADE,
+    )
+    time = models.DateTimeField(auto_now_add=True)
     type = models.CharField(
         max_length=50, choices=AGENT_HISTORY_TYPES, default="cmd_run"
     )
+    command = models.TextField(null=True, blank=True)
     status = models.CharField(
-        max_length=50, choices=AGENT_HISTORY_STATUS, default="mesh"
+        max_length=50, choices=AGENT_HISTORY_STATUS, default="success"
     )
-    expires = models.DateTimeField(null=True, blank=True)
+    username = models.CharField(max_length=50, default="system")
     results = models.TextField(null=True, blank=True)

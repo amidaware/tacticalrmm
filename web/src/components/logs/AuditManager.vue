@@ -104,7 +104,7 @@
 
 <script>
 // composition imports
-import { ref, computed, watch, onMounted, toRefs } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useClientDropdown } from "@/composables/clients";
 import { useAgentDropdown } from "@/composables/agents";
 import { useUserDropdown } from "@/composables/accounts";
@@ -252,7 +252,6 @@ export default {
       if (actionFilter.value && actionFilter.value.length > 0) data["actionFilter"] = actionFilter.value;
       if (objectFilter.value && objectFilter.value.length > 0) data["objectFilter"] = objectFilter.value;
 
-      console.log(data);
       const { audit_logs, total } = await fetchAuditLog(data);
       auditLogs.value = audit_logs;
       pagination.value.rowsNumber = total;

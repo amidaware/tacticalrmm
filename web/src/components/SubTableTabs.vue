@@ -39,7 +39,7 @@
       <q-tab-panel name="software" class="q-pb-xs q-pt-none">
         <SoftwareTab />
       </q-tab-panel>
-      <q-tab-panel name="history" class="q-pb-xs q-pt-none">
+      <q-tab-panel name="history" class="q-pa-none">
         <HistoryTab />
       </q-tab-panel>
       <q-tab-panel name="notes" class="q-pb-xs q-pt-none">

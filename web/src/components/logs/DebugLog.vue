@@ -56,7 +56,7 @@
 
 <script>
 // composition api
-import { ref, watch, onMounted, toRefs } from "vue";
+import { ref, watch, onMounted } from "vue";
 import { useAgentDropdown } from "@/composables/agents";
 import { fetchDebugLog } from "@/api/logs";
 import { formatDate, formatTableColumnText } from "@/utils/format";

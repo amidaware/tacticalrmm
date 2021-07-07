@@ -330,6 +330,8 @@ import ScriptOutput from "@/components/modals/checks/ScriptOutput";
 import EventLogCheckOutput from "@/components/modals/checks/EventLogCheckOutput";
 import CheckGraph from "@/components/graphs/CheckGraph";
 
+import { truncateText } from "@/utils/format";
+
 export default {
   name: "ChecksTab",
   emits: ["edit"],

@@ -19,7 +19,13 @@ class GetAddScripts(APIView):
     parser_class = (FileUploadParser,)
 
     def get(self, request):
-        scripts = Script.objects.all()
+
+        showCommunityScripts = request.GET.get("showCommunityScripts", True)
+        if not showCommunityScripts or showCommunityScripts == "false":
+            scripts = Script.objects.filter(script_type="userdefined")
+        else:
+            scripts = Script.objects.all()
+
         return Response(ScriptTableSerializer(scripts, many=True).data)
 
     def post(self, request, format=None):

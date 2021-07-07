@@ -15,3 +15,10 @@ export async function fetchAgentHistory(pk) {
     return data
   } catch (e) { }
 }
+
+export async function runScript(payload) {
+  try {
+    const { data } = await axios.post(`${baseUrl}/runscript/`, payload)
+    return data
+  } catch (e) { }
+}

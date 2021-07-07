@@ -19,6 +19,43 @@ function _formatOptions(data, { label, value = "id", flat = false, allowDuplicat
     }
 }
 
+export function formatScriptOptions(data, flat = false) {
+  if (flat) {
+    // returns just script names in array
+    return _formatOptions(data, { label: "name", value: "pk", flat: true, allowDuplicates: false })
+  } else {
+
+    let options = [];
+    let categories = [];
+    let create_unassigned = false
+    data.forEach(script => {
+      if (!!script.category && !categories.includes(script.category)) {
+        categories.push(script.category);
+      } else if (!script.category) {
+        create_unassigned = true
+      }
+    });
+
+    if (create_unassigned) categories.push("Unassigned")
+
+    categories.sort().forEach(cat => {
+      options.push({ category: cat });
+      let tmp = [];
+      data.forEach(script => {
+        if (script.category === cat) {
+          tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args });
+        } else if (cat === "Unassigned" && !script.category) {
+          tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args });
+        }
+      })
+      const sorted = tmp.sort((a, b) => a.label.localeCompare(b.label));
+      options.push(...sorted);
+    });
+
+    return options;
+  }
+}
+
 export function formatAgentOptions(data, flat = false) {
 
   if (flat) {
@@ -97,6 +134,7 @@ export function formatDate(date, includeSeconds = false) {
 
 
 // string formatting
+
 export function capitalize(string) {
   return string[0].toUpperCase() + string.substring(1);
 }
@@ -109,4 +147,8 @@ export function formatTableColumnText(text) {
   words.forEach(word => string = string + " " + capitalize(word))
 
   return string.trim()
+}
+
+export function truncateText(txt, chars) {
+  return txt.length >= chars ? txt.substring(0, chars) + "..." : txt;
 }

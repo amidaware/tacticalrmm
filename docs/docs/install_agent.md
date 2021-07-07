@@ -9,6 +9,7 @@
     `C:\Program Files\Mesh Agent\*`<br/>
     `C:\Windows\Temp\winagent-v*.exe`<br/>
     `C:\Windows\Temp\trmm\*`<br/>
+    `C:\temp\tacticalrmm*.exe`<br/>
     
 
 

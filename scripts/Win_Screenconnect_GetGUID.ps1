@@ -19,8 +19,9 @@ if (!$serviceName) {
 if (!$ErrorCount -eq 0) {
     exit 1
 }
-    
-$imagePath = Get-Itempropertyvalue "HKLM:\SYSTEM\ControlSet001\Services\$serviceName" -Name "ImagePath"
+
+
+$imagePath = (Get-Item -Path HKLM:\SYSTEM\ControlSet001\Services\$serviceName).GetValue('ImagePath')
 $imagePath2 = ($imagePath -split "&s=")[1]
 $machineGUID = ($imagePath2 -split "&k=")[0]
 Write-Output $machineGUID

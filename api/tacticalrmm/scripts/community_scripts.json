@@ -175,7 +175,7 @@
     "name": "Screenconnect - Get GUID for client",
     "description": "Returns Screenconnect GUID for client - Use with Custom Fields for later use. ",
     "args": [
-      "-serviceName {{client.ScreenConnectService}}"
+      "{{client.ScreenConnectService}}"
     ],
     "shell": "powershell",
     "category": "TRMM (Win):Collectors"

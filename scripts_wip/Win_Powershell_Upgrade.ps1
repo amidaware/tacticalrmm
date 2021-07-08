@@ -1,4 +1,4 @@
-# save the file and self-host:
+# save the file and self-host: https://www.microsoft.com/en-us/download/confirmation.aspx?id=54616
 # Win 2012 x64 https://download.microsoft.com/download/6/F/5/6F5FF66C-6775-42B0-86C4-47D41F2DA187/W2K12-KB3191565-x64.msu
 # Win7 x64 and Svr 2008 R2 x64 https://download.microsoft.com/download/6/F/5/6F5FF66C-6775-42B0-86C4-47D41F2DA187/Win7AndW2K8R2-KB3191566-x64.zip
 # Win7 x32 https://download.microsoft.com/download/6/F/5/6F5FF66C-6775-42B0-86C4-47D41F2DA187/Win7-KB3191566-x86.zip

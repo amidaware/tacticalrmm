@@ -25,8 +25,7 @@
             label="Select script"
             mapOptions
             options-dense
-          >
-          </tactical-dropdown>
+          />
         </q-card-section>
         <q-card-section>
           <q-select

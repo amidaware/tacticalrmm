@@ -32,8 +32,8 @@ nav:
   - MeshCentral Integration: mesh_integration.md
   - 3rd Party Integrations:
       - "Connectwise Control / Screenconnect": 3rdparty_screenconnect.md
-      - "TeamViewer" : 3rdparty_teamviewer.md
-      - "AnyDesk" : 3rdparty_anydesk.md
+      - "TeamViewer": 3rdparty_teamviewer.md
+      - "AnyDesk": 3rdparty_anydesk.md
   - Tips n' Tricks: tipsntricks.md
   - Contributing:
       - "Contributing to Docs": contributing.md
@@ -42,6 +42,7 @@ nav:
   - License: license.md
 site_description: "A remote monitoring and management tool"
 site_author: "wh1te909"
+site_url: "https://wh1te909.github.io/tacticalrmm/"
 
 dev_addr: "0.0.0.0:8005"
 

@@ -12,6 +12,7 @@ from tacticalrmm.utils import notify_error
 
 from .models import Script
 from .permissions import ManageScriptsPerms
+from agents.permissions import RunScriptPerms
 from .serializers import ScriptSerializer, ScriptTableSerializer
 
 
@@ -110,6 +111,8 @@ class GetUpdateDeleteScript(APIView):
 
 
 class TestScript(APIView):
+    permission_classes = [IsAuthenticated, RunScriptPerms]
+
     def post(self, request):
         from .models import Script
         from agents.models import Agent

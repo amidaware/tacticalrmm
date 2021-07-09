@@ -769,6 +769,9 @@ class TestAgentViews(TacticalTestCase):
     @patch("agents.tasks.run_script_email_results_task.delay")
     @patch("agents.models.Agent.run_script")
     def test_run_script(self, run_script, email_task):
+        from .models import AgentCustomField, Note
+        from clients.models import ClientCustomField, SiteCustomField
+
         run_script.return_value = "ok"
         url = "/agents/runscript/"
         script = baker.make_recipe("scripts.script")
@@ -836,6 +839,103 @@ class TestAgentViews(TacticalTestCase):
         run_script.assert_called_with(
             scriptpk=script.pk, args=["hello", "world"], timeout=25
         )
+        run_script.reset_mock()
+
+        # test collector
+
+        # save to agent custom field
+        custom_field = baker.make("core.CustomField", model="agent")
+        data = {
+            "pk": self.agent.pk,
+            "scriptPK": script.pk,
+            "output": "collector",
+            "args": ["hello", "world"],
+            "timeout": 22,
+            "custom_field": custom_field.id,  # type: ignore
+            "save_all_output": True,
+        }
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        run_script.assert_called_with(
+            scriptpk=script.pk, args=["hello", "world"], timeout=25, wait=True
+        )
+        run_script.reset_mock()
+
+        self.assertEqual(
+            AgentCustomField.objects.get(agent=self.agent.pk, field=custom_field).value,
+            "ok",
+        )
+
+        # save to site custom field
+        custom_field = baker.make("core.CustomField", model="site")
+        data = {
+            "pk": self.agent.pk,
+            "scriptPK": script.pk,
+            "output": "collector",
+            "args": ["hello", "world"],
+            "timeout": 22,
+            "custom_field": custom_field.id,  # type: ignore
+            "save_all_output": False,
+        }
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        run_script.assert_called_with(
+            scriptpk=script.pk, args=["hello", "world"], timeout=25, wait=True
+        )
+        run_script.reset_mock()
+
+        self.assertEqual(
+            SiteCustomField.objects.get(
+                site=self.agent.site.pk, field=custom_field
+            ).value,
+            "ok",
+        )
+
+        # save to client custom field
+        custom_field = baker.make("core.CustomField", model="client")
+        data = {
+            "pk": self.agent.pk,
+            "scriptPK": script.pk,
+            "output": "collector",
+            "args": ["hello", "world"],
+            "timeout": 22,
+            "custom_field": custom_field.id,  # type: ignore
+            "save_all_output": False,
+        }
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        run_script.assert_called_with(
+            scriptpk=script.pk, args=["hello", "world"], timeout=25, wait=True
+        )
+        run_script.reset_mock()
+
+        self.assertEqual(
+            ClientCustomField.objects.get(
+                client=self.agent.client.pk, field=custom_field
+            ).value,
+            "ok",
+        )
+
+        # test save to note
+        data = {
+            "pk": self.agent.pk,
+            "scriptPK": script.pk,
+            "output": "note",
+            "args": ["hello", "world"],
+            "timeout": 22,
+        }
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        run_script.assert_called_with(
+            scriptpk=script.pk, args=["hello", "world"], timeout=25, wait=True
+        )
+        run_script.reset_mock()
+
+        self.assertEqual(Note.objects.get(agent=self.agent).note, "ok")
 
     def test_get_agent_history(self):
 

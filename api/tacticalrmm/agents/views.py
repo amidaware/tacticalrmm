@@ -158,15 +158,15 @@ def meshcentral(request, pk):
     core = CoreSettings.objects.first()
 
     token = agent.get_login_token(
-        key=core.mesh_token, user=f"user//{core.mesh_username}"
+        key=core.mesh_token, user=f"user//{core.mesh_username}"  # type:ignore
     )
 
     if token == "err":
         return notify_error("Invalid mesh token")
 
-    control = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=11&hide=31"
-    terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"
-    file = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=13&hide=31"
+    control = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=11&hide=31"  # type:ignore
+    terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"  # type:ignore
+    file = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=13&hide=31"  # type:ignore
 
     AuditLog.audit_mesh_session(username=request.user.username, agent=agent)
 

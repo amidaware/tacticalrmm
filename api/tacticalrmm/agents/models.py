@@ -941,10 +941,10 @@ class AgentCustomField(models.Model):
         ]:
             self.string_value = value
             self.save()
-        elif type == "multiple":
+        elif self.field.type == "multiple":
             self.multiple_value = value.split(",")
             self.save()
-        elif type == "checkbox":
+        elif self.field.type == "checkbox":
             self.bool_value = bool(value)
             self.save()
 

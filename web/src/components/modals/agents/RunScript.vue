@@ -18,13 +18,11 @@
         <q-card-section>
           <tactical-dropdown
             :rules="[val => !!val || '*Required']"
-            dense
             outlined
             v-model="scriptPK"
             :options="scriptOptions"
             label="Select script"
             mapOptions
-            options-dense
           />
         </q-card-section>
         <q-card-section>

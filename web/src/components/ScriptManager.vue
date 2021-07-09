@@ -284,12 +284,17 @@
                   </q-icon>
                 </q-td>
                 <!-- name -->
-                <q-td>{{ props.row.name }}</q-td>
+                <q-td>
+                  {{ truncateText(props.row.name) }}
+                  <q-tooltip v-if="props.row.name.length >= 50" style="font-size: 12px">
+                    {{ props.row.name }}
+                  </q-tooltip>
+                </q-td>
                 <!-- args -->
                 <q-td>
                   <span v-if="props.row.args.length > 0">
                     {{ truncateText(props.row.args.toString()) }}
-                    <q-tooltip v-if="props.row.args.toString().length >= 60" style="font-size: 12px">
+                    <q-tooltip v-if="props.row.args.toString().length >= 50" style="font-size: 12px">
                       {{ props.row.args }}
                     </q-tooltip>
                   </span>
@@ -298,7 +303,7 @@
                 <q-td>{{ props.row.category }}</q-td>
                 <q-td>
                   {{ truncateText(props.row.description) }}
-                  <q-tooltip v-if="props.row.description.length >= 60" style="font-size: 12px">{{
+                  <q-tooltip v-if="props.row.description.length >= 50" style="font-size: 12px">{{
                     props.row.description
                   }}</q-tooltip>
                 </q-td>

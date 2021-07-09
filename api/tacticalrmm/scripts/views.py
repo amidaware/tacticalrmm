@@ -1,5 +1,6 @@
 import base64
 import json
+import asyncio
 
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
@@ -44,7 +45,7 @@ class GetAddScripts(APIView):
 
         # file upload, have to json load it cuz it's formData
         if "args" in request.data.keys() and "file_upload" in request.data.keys():
-            data["args"] = json.loads(request.data["args"])
+            data["args"] = json.loads(request.data["args"])  # type: ignore
 
         if "favorite" in request.data.keys():
             data["favorite"] = request.data["favorite"]
@@ -106,6 +107,34 @@ class GetUpdateDeleteScript(APIView):
 
         script.delete()
         return Response(f"{script.name} was deleted!")
+
+
+class TestScript(APIView):
+    def post(self, request):
+        from .models import Script
+        from agents.models import Agent
+
+        agent = get_object_or_404(Agent, pk=request.data["agent"])
+
+        parsed_args = Script.parse_script_args(
+            self, request.data["shell"], request.data["args"]
+        )
+
+        data = {
+            "func": "runscript",
+            "timeout": request.data["timeout"],
+            "script_args": parsed_args,
+            "payload": {
+                "code": request.data["code"],
+                "shell": request.data["shell"],
+            },
+        }
+
+        r = asyncio.run(
+            agent.nats_cmd(data, timeout=request.data["timeout"], wait=True)
+        )
+
+        return Response(r)
 
 
 @api_view()

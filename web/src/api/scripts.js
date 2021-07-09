@@ -8,3 +8,10 @@ export async function fetchScripts(params = {}) {
     return data
   } catch (e) { }
 }
+
+export async function testScript(payload) {
+  try {
+    const { data } = await axios.post(`${baseUrl}/testscript/`, payload)
+    return data
+  } catch (e) { }
+}

@@ -104,9 +104,10 @@
           line-numbers
           @click="focusTextArea"
         />
-        <q-card-actions v-if="!readonly" align="right">
+        <q-card-actions align="right">
           <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn dense flat label="Save" color="primary" type="submit" />
+          <q-btn dense flat color="primary" label="Test Script" @click="runTestScript" />
+          <q-btn v-if="!readonly" dense flat label="Save" color="primary" type="submit" />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -114,6 +115,7 @@
 </template>
 
 <script>
+import TestScriptModal from "@/components/modals/scripts/TestScriptModal";
 import mixins from "@/mixins/mixins";
 import { PrismEditor } from "vue-prism-editor";
 import "vue-prism-editor/dist/prismeditor.min.css";
@@ -230,6 +232,14 @@ export default {
     },
     focusTextArea() {
       document.getElementsByClassName("prism-editor__textarea")[0].focus();
+    },
+    runTestScript() {
+      this.$q.dialog({
+        component: TestScriptModal,
+        componentProps: {
+          script: this.localScript,
+        },
+      });
     },
   },
   computed: {

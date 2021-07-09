@@ -10,7 +10,6 @@ from twilio.rest import Client as TwClient
 
 from logs.models import BaseAuditModel, DebugLog, LOG_LEVEL_CHOICES
 
-
 TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
 
 
@@ -268,6 +267,26 @@ class CustomField(models.Model):
             return self.default_value_bool
         else:
             return self.default_value_string
+
+    def get_or_create_field_value(self, instance):
+        from agents.models import Agent, AgentCustomField
+        from clients.models import Client, ClientCustomField, Site, SiteCustomField
+
+        if isinstance(instance, Agent):
+            if AgentCustomField.objects.filter(field=self, agent=instance).exists():
+                return AgentCustomField.objects.get(field=self, agent=instance)
+            else:
+                return AgentCustomField.objects.create(field=self, agent=instance)
+        elif isinstance(instance, Client):
+            if ClientCustomField.objects.filter(field=self, client=instance).exists():
+                return ClientCustomField.objects.get(field=self, client=instance)
+            else:
+                return ClientCustomField.objects.create(field=self, client=instance)
+        elif isinstance(instance, Site):
+            if SiteCustomField.objects.filter(field=self, site=instance).exists():
+                return SiteCustomField.objects.get(field=self, site=instance)
+            else:
+                return SiteCustomField.objects.create(field=self, site=instance)
 
 
 class CodeSignToken(models.Model):

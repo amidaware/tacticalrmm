@@ -120,7 +120,7 @@ class Agent(BaseAuditModel):
         else:
             from core.models import CoreSettings
 
-            return CoreSettings.objects.first().default_time_zone
+            return CoreSettings.objects.first().default_time_zone  # type: ignore
 
     @property
     def arch(self):
@@ -448,8 +448,8 @@ class Agent(BaseAuditModel):
 
             # if patch policy still doesn't exist check default policy
             elif (
-                core_settings.server_policy
-                and core_settings.server_policy.winupdatepolicy.exists()
+                core_settings.server_policy  # type: ignore
+                and core_settings.server_policy.winupdatepolicy.exists()  # type: ignore
             ):
                 # make sure agent site and client are not blocking inheritance
                 if (
@@ -457,7 +457,7 @@ class Agent(BaseAuditModel):
                     and not site.block_policy_inheritance
                     and not site.client.block_policy_inheritance
                 ):
-                    patch_policy = core_settings.server_policy.winupdatepolicy.get()
+                    patch_policy = core_settings.server_policy.winupdatepolicy.get()  # type: ignore
 
         elif self.monitoring_type == "workstation":
             # check agent policy first which should override client or site policy
@@ -486,8 +486,8 @@ class Agent(BaseAuditModel):
 
             # if patch policy still doesn't exist check default policy
             elif (
-                core_settings.workstation_policy
-                and core_settings.workstation_policy.winupdatepolicy.exists()
+                core_settings.workstation_policy  # type: ignore
+                and core_settings.workstation_policy.winupdatepolicy.exists()  # type: ignore
             ):
                 # make sure agent site and client are not blocking inheritance
                 if (
@@ -496,7 +496,7 @@ class Agent(BaseAuditModel):
                     and not site.client.block_policy_inheritance
                 ):
                     patch_policy = (
-                        core_settings.workstation_policy.winupdatepolicy.get()
+                        core_settings.workstation_policy.winupdatepolicy.get()  # type: ignore
                     )
 
         # if policy still doesn't exist return the agent patch policy
@@ -611,35 +611,35 @@ class Agent(BaseAuditModel):
 
         # check if alert template is applied globally and return
         if (
-            core.alert_template
-            and core.alert_template.is_active
+            core.alert_template  # type: ignore
+            and core.alert_template.is_active  # type: ignore
             and not self.block_policy_inheritance
             and not site.block_policy_inheritance
             and not client.block_policy_inheritance
         ):
-            templates.append(core.alert_template)
+            templates.append(core.alert_template)  # type: ignore
 
         # if agent is a workstation, check if policy with alert template is assigned to the site, client, or core
         if (
             self.monitoring_type == "server"
-            and core.server_policy
-            and core.server_policy.alert_template
-            and core.server_policy.alert_template.is_active
+            and core.server_policy  # type: ignore
+            and core.server_policy.alert_template  # type: ignore
+            and core.server_policy.alert_template.is_active  # type: ignore
             and not self.block_policy_inheritance
             and not site.block_policy_inheritance
             and not client.block_policy_inheritance
         ):
-            templates.append(core.server_policy.alert_template)
+            templates.append(core.server_policy.alert_template)  # type: ignore
         if (
             self.monitoring_type == "workstation"
-            and core.workstation_policy
-            and core.workstation_policy.alert_template
-            and core.workstation_policy.alert_template.is_active
+            and core.workstation_policy  # type: ignore
+            and core.workstation_policy.alert_template  # type: ignore
+            and core.workstation_policy.alert_template.is_active  # type: ignore
             and not self.block_policy_inheritance
             and not site.block_policy_inheritance
             and not client.block_policy_inheritance
         ):
-            templates.append(core.workstation_policy.alert_template)
+            templates.append(core.workstation_policy.alert_template)  # type: ignore
 
         # go through the templates and return the first one that isn't excluded
         for template in templates:
@@ -775,7 +775,7 @@ class Agent(BaseAuditModel):
                 # skip if no version info is available therefore nothing to parse
                 try:
                     vers = [
-                        re.search(r"\(Version(.*?)\)", i).group(1).strip()
+                        re.search(r"\(Version(.*?)\)", i).group(1).strip()  # type: ignore
                         for i in titles
                     ]
                     sorted_vers = sorted(vers, key=LooseVersion)
@@ -810,7 +810,7 @@ class Agent(BaseAuditModel):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
-        CORE.send_mail(
+        CORE.send_mail(  # type: ignore
             f"{self.client.name}, {self.site.name}, {self.hostname} - data overdue",
             (
                 f"Data has not been received from client {self.client.name}, "
@@ -825,7 +825,7 @@ class Agent(BaseAuditModel):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
-        CORE.send_mail(
+        CORE.send_mail(  # type: ignore
             f"{self.client.name}, {self.site.name}, {self.hostname} - data received",
             (
                 f"Data has been received from client {self.client.name}, "
@@ -840,7 +840,7 @@ class Agent(BaseAuditModel):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
-        CORE.send_sms(
+        CORE.send_sms(  # type: ignore
             f"{self.client.name}, {self.site.name}, {self.hostname} - data overdue",
             alert_template=self.alert_template,
         )
@@ -849,7 +849,7 @@ class Agent(BaseAuditModel):
         from core.models import CoreSettings
 
         CORE = CoreSettings.objects.first()
-        CORE.send_sms(
+        CORE.send_sms(  # type: ignore
             f"{self.client.name}, {self.site.name}, {self.hostname} - data received",
             alert_template=self.alert_template,
         )
@@ -931,6 +931,22 @@ class AgentCustomField(models.Model):
             return self.bool_value
         else:
             return self.string_value
+
+    def save_to_field(self, value):
+        if self.field.type in [
+            "text",
+            "number",
+            "single",
+            "datetime",
+        ]:
+            self.string_value = value
+            self.save()
+        elif type == "multiple":
+            self.multiple_value = value.split(",")
+            self.save()
+        elif type == "checkbox":
+            self.bool_value = bool(value)
+            self.save()
 
 
 AGENT_HISTORY_TYPES = (

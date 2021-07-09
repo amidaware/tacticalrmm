@@ -592,6 +592,35 @@ def run_script(request):
             emails=emails,
             args=args,
         )
+    elif output == "collector":
+        from core.models import CustomField
+
+        r = agent.run_script(
+            scriptpk=script.pk, args=args, timeout=req_timeout, wait=True
+        )
+
+        custom_field = CustomField.objects.get(pk=request.data["custom_field"])
+
+        if custom_field.model == "agent":
+            field = custom_field.get_or_create_field_value(agent)
+        elif custom_field.model == "client":
+            field = custom_field.get_or_create_field_value(agent.client)
+        elif custom_field.model == "site":
+            field = custom_field.get_or_create_field_value(agent.site)
+        else:
+            return notify_error("Custom Field was invalid")
+
+        value = r if request.data["save_all_output"] else r.split("\n")[-1].strip()
+
+        field.save_to_field(value)
+        return Response(r)
+    elif output == "note":
+        r = agent.run_script(
+            scriptpk=script.pk, args=args, timeout=req_timeout, wait=True
+        )
+
+        Note.objects.create(agent=agent, user=request.user, note=r)
+        return Response(r)
     else:
         agent.run_script(scriptpk=script.pk, args=args, timeout=req_timeout)
 

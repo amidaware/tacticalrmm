@@ -372,38 +372,7 @@ class TaskRunner(APIView):
         if task.custom_field:
             if not task.stderr:
 
-                if AgentCustomField.objects.filter(
-                    field=task.custom_field, agent=task.agent
-                ).exists():
-                    agent_field = AgentCustomField.objects.get(
-                        field=task.custom_field, agent=task.agent
-                    )
-                else:
-                    agent_field = AgentCustomField.objects.create(
-                        field=task.custom_field, agent=task.agent
-                    )
-
-                # get last line of stdout
-                value = (
-                    new_task.stdout
-                    if task.collector_all_output
-                    else new_task.stdout.split("\n")[-1].strip()
-                )
-
-                if task.custom_field.type in [
-                    "text",
-                    "number",
-                    "single",
-                    "datetime",
-                ]:
-                    agent_field.string_value = value
-                    agent_field.save()
-                elif task.custom_field.type == "multiple":
-                    agent_field.multiple_value = value.split(",")
-                    agent_field.save()
-                elif task.custom_field.type == "checkbox":
-                    agent_field.bool_value = bool(value)
-                    agent_field.save()
+                task.save_collector_results()
 
                 status = "passing"
             else:

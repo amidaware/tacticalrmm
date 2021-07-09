@@ -94,6 +94,31 @@ export function formatAgentOptions(data, flat = false) {
   }
 }
 
+export function formatCustomFieldOptions(data, flat = false) {
+  if (flat) {
+    return _formatOptions(data, { label: "name", flat: true })
+  }
+  else {
+    const categories = ["Client", "Site", "Agent"]
+    const options = []
+
+    categories.forEach(cat => {
+      options.push({ category: cat });
+      const tmp = [];
+      data.forEach(custom_field => {
+        if (custom_field.model === cat.toLowerCase()) {
+          tmp.push({ label: custom_field.name, value: custom_field.id })
+        }
+      });
+
+      const sorted = tmp.sort((a, b) => a.label.localeCompare(b.label));
+      options.push(...sorted);
+    })
+
+    return options
+  }
+}
+
 export function formatClientOptions(data, flat = false) {
   return _formatOptions(data, { label: "name", flat: flat })
 }

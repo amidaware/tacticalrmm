@@ -308,6 +308,22 @@ class ClientCustomField(models.Model):
         else:
             return self.string_value
 
+    def save_to_field(self, value):
+        if self.field.type in [
+            "text",
+            "number",
+            "single",
+            "datetime",
+        ]:
+            self.string_value = value
+            self.save()
+        elif type == "multiple":
+            self.multiple_value = value.split(",")
+            self.save()
+        elif type == "checkbox":
+            self.bool_value = bool(value)
+            self.save()
+
 
 class SiteCustomField(models.Model):
     site = models.ForeignKey(
@@ -342,3 +358,19 @@ class SiteCustomField(models.Model):
             return self.bool_value
         else:
             return self.string_value
+
+    def save_to_field(self, value):
+        if self.field.type in [
+            "text",
+            "number",
+            "single",
+            "datetime",
+        ]:
+            self.string_value = value
+            self.save()
+        elif type == "multiple":
+            self.multiple_value = value.split(",")
+            self.save()
+        elif type == "checkbox":
+            self.bool_value = bool(value)
+            self.save()

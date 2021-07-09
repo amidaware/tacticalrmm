@@ -18,10 +18,9 @@ from knox.auth import TokenAuthentication
 from rest_framework import status
 from rest_framework.response import Response
 
-from agents.models import Agent
 from core.models import CodeSignToken
 from logs.models import DebugLog
-
+from agents.models import Agent
 
 notify_error = lambda msg: Response(msg, status=status.HTTP_400_BAD_REQUEST)
 
@@ -60,7 +59,7 @@ def generate_winagent_exe(
     )
 
     try:
-        codetoken = CodeSignToken.objects.first().token
+        codetoken = CodeSignToken.objects.first().token  # type:ignore
         base_url = get_exegen_url() + "/api/v1/winagents/?"
         params = {
             "version": settings.LATEST_AGENT_VER,
@@ -122,7 +121,7 @@ def generate_winagent_exe(
 def get_default_timezone():
     from core.models import CoreSettings
 
-    return pytz.timezone(CoreSettings.objects.first().default_time_zone)
+    return pytz.timezone(CoreSettings.objects.first().default_time_zone)  # type:ignore
 
 
 def get_bit_days(days: list[str]) -> int:
@@ -177,7 +176,9 @@ def filter_software(sw: SoftwareList) -> SoftwareList:
 
 def reload_nats():
     users = [{"user": "tacticalrmm", "password": settings.SECRET_KEY}]
-    agents = Agent.objects.prefetch_related("user").only("pk", "agent_id")
+    agents = Agent.objects.prefetch_related("user").only(
+        "pk", "agent_id"
+    )  # type:ignore
     for agent in agents:
         try:
             users.append(
@@ -284,7 +285,7 @@ def get_latest_trmm_ver() -> str:
 
 
 def replace_db_values(
-    string: str, agent: Agent = None, shell: str = None, quotes=True
+    string: str, agent: Agent = None, shell: str = None, quotes=True  # type:ignore
 ) -> Union[str, None]:
     from core.models import CustomField, GlobalKVStore
 
@@ -306,7 +307,7 @@ def replace_db_values(
             DebugLog.error(
                 agent=agent,
                 log_type="scripting",
-                message=f"{agent.hostname} Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store",
+                message=f"{agent.hostname} Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store",  # type:ignore
             )
             return None
 

@@ -1,6 +1,6 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide" :maximized="maximized">
-    <q-card class="dialog-plugin">
+    <q-card class="dialog-plugin" style="min-width: 50vw">
       <q-bar>
         Run a script on {{ agent.hostname }}
         <q-space />
@@ -74,6 +74,19 @@
             new-value-mode="add"
           />
         </q-card-section>
+        <q-card-section v-if="output === 'collector'">
+          <tactical-dropdown
+            :rules="[val => !!val || '*Required']"
+            dense
+            outlined
+            v-model="custom_field"
+            :options="customFieldOptions"
+            label="Select custom field"
+            mapOptions
+            options-dense
+          />
+          <q-checkbox v-model="save_all_output" label="Save all output" />
+        </q-card-section>
         <q-card-section>
           <q-input
             v-model.number="timeout"
@@ -103,6 +116,7 @@ import { ref, watch, computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useDialogPluginComponent } from "quasar";
 import { useScriptDropdown } from "@/composables/scripts";
+import { useCustomFieldDropdown } from "@/composables/core";
 import { runScript } from "@/api/agents";
 
 //ui imports
@@ -125,6 +139,7 @@ export default {
 
     // setup dropdowns
     const { scriptPK, scriptOptions, defaultTimeout, defaultArgs, getScriptOptions } = useScriptDropdown();
+    const { customFieldOptions, getCustomFieldOptions } = useCustomFieldDropdown();
 
     // main run script functionaity
     const loading = ref(false);
@@ -132,6 +147,8 @@ export default {
     const ret = ref(null);
     const emails = ref([]);
     const emailmode = ref("default");
+    const custom_field = ref(null);
+    const save_all_output = ref(false);
     const maximized = ref(false);
 
     async function sendScript() {
@@ -146,6 +163,8 @@ export default {
         args: defaultArgs.value,
         emails: emails.value,
         emailmode: emailmode.value,
+        custom_field: custom_field.value,
+        save_all_output: save_all_output.value,
       };
 
       ret.value = await runScript(data);
@@ -156,7 +175,10 @@ export default {
     watch(output, () => (emails.value = []));
 
     // vue component hooks
-    onMounted(getScriptOptions(showCommunityScripts.value));
+    onMounted(() => {
+      getScriptOptions(showCommunityScripts.value);
+      getCustomFieldOptions();
+    });
 
     return {
       // reactive data
@@ -170,6 +192,9 @@ export default {
       emails,
       emailmode,
       maximized,
+      customFieldOptions,
+      custom_field,
+      save_all_output,
 
       //methods
       sendScript,

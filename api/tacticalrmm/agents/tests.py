@@ -1,19 +1,18 @@
 import json
 import os
-from itertools import cycle
+from django.utils import timezone as djangotime
 from unittest.mock import patch
 
 from django.conf import settings
+from logs.models import PendingAction
 from model_bakery import baker
 from packaging import version as pyver
-
-from logs.models import PendingAction
 from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .models import Agent, AgentCustomField
-from .serializers import AgentSerializer
+from .models import Agent, AgentCustomField, AgentHistory
+from .serializers import AgentHistorySerializer, AgentSerializer
 from .tasks import auto_self_agent_update_task
 
 
@@ -306,7 +305,7 @@ class TestAgentViews(TacticalTestCase):
             "shell": "cmd",
             "timeout": 30,
         }
-        mock_ret.return_value = "nt authority\system"
+        mock_ret.return_value = "nt authority\\system"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertIsInstance(r.data, str)  # type: ignore
@@ -437,7 +436,7 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(RecoveryAction.objects.count(), 1)
         mesh_recovery = RecoveryAction.objects.first()
-        self.assertEqual(mesh_recovery.mode, "mesh")
+        self.assertEqual(mesh_recovery.mode, "mesh")  # type: ignore
         nats_cmd.reset_mock()
         RecoveryAction.objects.all().delete()
 
@@ -472,8 +471,8 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(RecoveryAction.objects.count(), 1)
         cmd_recovery = RecoveryAction.objects.first()
-        self.assertEqual(cmd_recovery.mode, "command")
-        self.assertEqual(cmd_recovery.command, "shutdown /r /t 10 /f")
+        self.assertEqual(cmd_recovery.mode, "command")  # type: ignore
+        self.assertEqual(cmd_recovery.command, "shutdown /r /t 10 /f")  # type: ignore
 
     def test_agents_agent_detail(self):
         url = f"/agents/{self.agent.pk}/agentdetail/"
@@ -838,6 +837,23 @@ class TestAgentViews(TacticalTestCase):
             scriptpk=script.pk, args=["hello", "world"], timeout=25
         )
 
+    def test_get_agent_history(self):
+
+        # setup data
+        agent = baker.make_recipe("agents.agent")
+        history = baker.make("agents.AgentHistory", agent=agent, _quantity=30)
+        url = f"/agents/history/{agent.id}/"
+
+        # test agent not found
+        r = self.client.get("/agents/history/500/", format="json")
+        self.assertEqual(r.status_code, 404)
+
+        # test pulling data
+        r = self.client.get(url, format="json")
+        data = AgentHistorySerializer(history, many=True).data
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data, data)  # type:ignore
+
 
 class TestAgentViewsNew(TacticalTestCase):
     def setUp(self):
@@ -1048,3 +1064,25 @@ class TestAgentTasks(TacticalTestCase):
 
         r = auto_self_agent_update_task.s().apply()
         self.assertEqual(agent_update.call_count, 33)
+
+    def test_agent_history_prune_task(self):
+        from .tasks import prune_agent_history
+
+        # setup data
+        agent = baker.make_recipe("agents.agent")
+        history = baker.make(
+            "agents.AgentHistory",
+            agent=agent,
+            _quantity=50,
+        )
+
+        days = 0
+        for item in history:  # type: ignore
+            item.time = djangotime.now() - djangotime.timedelta(days=days)
+            item.save()
+            days = days + 5
+
+        # delete AgentHistory older than 30 days
+        prune_agent_history(30)
+
+        self.assertEqual(AgentHistory.objects.filter(agent=agent).count(), 6)

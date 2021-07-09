@@ -80,7 +80,7 @@ def agent_update(pk: int, codesigntoken: str = None, force: bool = False) -> str
 @app.task
 def force_code_sign(pks: list[int]) -> None:
     try:
-        token = CodeSignToken.objects.first().token
+        token = CodeSignToken.objects.first().tokenv  # type:ignore
     except:
         return
 
@@ -95,7 +95,7 @@ def force_code_sign(pks: list[int]) -> None:
 @app.task
 def send_agent_update_task(pks: list[int]) -> None:
     try:
-        codesigntoken = CodeSignToken.objects.first().token
+        codesigntoken = CodeSignToken.objects.first().token  # type:ignore
     except:
         codesigntoken = None
 
@@ -110,11 +110,11 @@ def send_agent_update_task(pks: list[int]) -> None:
 @app.task
 def auto_self_agent_update_task() -> None:
     core = CoreSettings.objects.first()
-    if not core.agent_auto_update:
+    if not core.agent_auto_update:  # type:ignore
         return
 
     try:
-        codesigntoken = CodeSignToken.objects.first().token
+        codesigntoken = CodeSignToken.objects.first().token  # type:ignore
     except:
         codesigntoken = None
 
@@ -261,21 +261,25 @@ def run_script_email_results_task(
 
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = CORE.smtp_from_email
+    msg["From"] = CORE.smtp_from_email  # type:ignore
 
     if emails:
         msg["To"] = ", ".join(emails)
     else:
-        msg["To"] = ", ".join(CORE.email_alert_recipients)
+        msg["To"] = ", ".join(CORE.email_alert_recipients)  # type:ignore
 
     msg.set_content(body)
 
     try:
-        with smtplib.SMTP(CORE.smtp_host, CORE.smtp_port, timeout=20) as server:
-            if CORE.smtp_requires_auth:
+        with smtplib.SMTP(
+            CORE.smtp_host, CORE.smtp_port, timeout=20  # type:ignore
+        ) as server:  # type:ignore
+            if CORE.smtp_requires_auth:  # type:ignore
                 server.ehlo()
                 server.starttls()
-                server.login(CORE.smtp_host_user, CORE.smtp_host_password)
+                server.login(
+                    CORE.smtp_host_user, CORE.smtp_host_password  # type:ignore
+                )  # type:ignore
                 server.send_message(msg)
                 server.quit()
             else:
@@ -355,8 +359,7 @@ def prune_agent_history(older_than_days: int) -> str:
     from .models import AgentHistory
 
     AgentHistory.objects.filter(
-        x__lt=djangotime.make_aware(dt.datetime.today())
-        - djangotime.timedelta(days=older_than_days)
+        time__lt=djangotime.now() - djangotime.timedelta(days=older_than_days)
     ).delete()
 
     return "ok"

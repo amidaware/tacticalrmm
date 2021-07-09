@@ -8,7 +8,7 @@ from tacticalrmm.middleware import get_debug_info, get_username
 def get_debug_level():
     from core.models import CoreSettings
 
-    return CoreSettings.objects.first().agent_debug_level
+    return CoreSettings.objects.first().agent_debug_level  # type: ignore
 
 
 ACTION_TYPE_CHOICES = [
@@ -357,14 +357,14 @@ class BaseAuditModel(models.Model):
 
             # capture object properties before edit
             if self.pk:
-                before_value = object_class.objects.get(pk=self.id)
+                before_value = object_class.objects.get(pk=self.id)  # type: ignore
 
             # dont create entry for agent add since that is done in view
             if not self.pk:
                 AuditLog.audit_object_add(
                     username,
                     object_name,
-                    object_class.serialize(self),
+                    object_class.serialize(self),  # type: ignore
                     self.__str__(),
                     debug_info=get_debug_info(),
                 )
@@ -372,8 +372,8 @@ class BaseAuditModel(models.Model):
                 AuditLog.audit_object_changed(
                     username,
                     object_class.__name__.lower(),
-                    object_class.serialize(before_value),
-                    object_class.serialize(self),
+                    object_class.serialize(before_value),  # type: ignore
+                    object_class.serialize(self),  # type: ignore
                     self.__str__(),
                     debug_info=get_debug_info(),
                 )
@@ -388,7 +388,7 @@ class BaseAuditModel(models.Model):
             AuditLog.audit_object_delete(
                 get_username(),
                 object_class.__name__.lower(),
-                object_class.serialize(self),
+                object_class.serialize(self),  # type: ignore
                 self.__str__(),
                 debug_info=get_debug_info(),
             )

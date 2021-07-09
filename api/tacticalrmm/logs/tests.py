@@ -1,10 +1,11 @@
-from datetime import datetime, timedelta
+from itertools import cycle
 from unittest.mock import patch
 
+from django.utils import timezone as djangotime
 from model_bakery import baker, seq
+from tacticalrmm.test import TacticalTestCase
 
 from logs.models import PendingAction
-from tacticalrmm.test import TacticalTestCase
 
 
 class TestAuditViews(TacticalTestCase):
@@ -19,13 +20,13 @@ class TestAuditViews(TacticalTestCase):
         agent1 = baker.make_recipe("agents.agent", site=site, hostname="AgentHostname1")
         agent2 = baker.make_recipe("agents.agent", hostname="AgentHostname2")
         agent0 = baker.make_recipe("agents.agent", hostname="AgentHostname")
+
         # user jim agent logs
         baker.make_recipe(
             "logs.agent_logs",
             username="jim",
             agent="AgentHostname1",
             agent_id=agent1.id,
-            entry_time=seq(datetime.now(), timedelta(days=3)),
             _quantity=15,
         )
         baker.make_recipe(
@@ -33,7 +34,6 @@ class TestAuditViews(TacticalTestCase):
             username="jim",
             agent="AgentHostname2",
             agent_id=agent2.id,
-            entry_time=seq(datetime.now(), timedelta(days=100)),
             _quantity=8,
         )
 
@@ -43,7 +43,6 @@ class TestAuditViews(TacticalTestCase):
             username="james",
             agent="AgentHostname1",
             agent_id=agent1.id,
-            entry_time=seq(datetime.now(), timedelta(days=55)),
             _quantity=7,
         )
         baker.make_recipe(
@@ -51,7 +50,6 @@ class TestAuditViews(TacticalTestCase):
             username="james",
             agent="AgentHostname2",
             agent_id=agent2.id,
-            entry_time=seq(datetime.now(), timedelta(days=20)),
             _quantity=10,
         )
 
@@ -60,7 +58,6 @@ class TestAuditViews(TacticalTestCase):
             "logs.agent_logs",
             agent=seq("AgentHostname"),
             agent_id=seq(agent1.id),
-            entry_time=seq(datetime.now(), timedelta(days=29)),
             _quantity=5,
         )
 
@@ -68,7 +65,6 @@ class TestAuditViews(TacticalTestCase):
         baker.make_recipe(
             "logs.object_logs",
             username="james",
-            entry_time=seq(datetime.now(), timedelta(days=5)),
             _quantity=17,
         )
 
@@ -76,7 +72,6 @@ class TestAuditViews(TacticalTestCase):
         baker.make_recipe(
             "logs.login_logs",
             username="james",
-            entry_time=seq(datetime.now(), timedelta(days=7)),
             _quantity=11,
         )
 
@@ -84,7 +79,6 @@ class TestAuditViews(TacticalTestCase):
         baker.make_recipe(
             "logs.login_logs",
             username="jim",
-            entry_time=seq(datetime.now(), timedelta(days=11)),
             _quantity=13,
         )
 
@@ -259,3 +253,66 @@ class TestAuditViews(TacticalTestCase):
         self.assertEqual(r.data, "error deleting sched task")  # type: ignore
 
         self.check_not_authenticated("delete", url)
+
+    def test_get_debug_log(self):
+        url = "/logs/debuglog/"
+
+        # create data
+        agent = baker.make_recipe("agents.agent")
+        baker.make(
+            "logs.DebugLog",
+            log_level=cycle(["error", "info", "warning", "critical"]),
+            log_type="agent_issues",
+            agent=agent,
+            _quantity=4,
+        )
+
+        logs = baker.make(
+            "logs.DebugLog",
+            log_type="system_issues",
+            log_level=cycle(["error", "info", "warning", "critical"]),
+            _quantity=15,
+        )
+
+        # test agent filter
+        data = {"agentFilter": agent.id}
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data), 4)
+
+        # test log type filter and agent
+        data = {"agentFilter": agent.id, "logLevelFilter": "warning"}
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data), 1)
+
+        # test time filter with other
+        data = {"logTypeFilter": "system_issues", "logLevelFilter": "error"}
+        resp = self.client.patch(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data), 4)
+
+        self.check_not_authenticated("patch", url)
+
+
+class TestLogTasks(TacticalTestCase):
+    def test_prune_debug_log(self):
+        from .models import DebugLog
+        from .tasks import prune_debug_log
+
+        # setup data
+        debug_log = baker.make(
+            "logs.DebugLog",
+            _quantity=50,
+        )
+
+        days = 0
+        for item in debug_log:  # type:ignore
+            item.entry_time = djangotime.now() - djangotime.timedelta(days=days)
+            item.save()
+            days = days + 5
+
+        # delete AgentHistory older than 30 days
+        prune_debug_log(30)
+
+        self.assertEqual(DebugLog.objects.count(), 6)

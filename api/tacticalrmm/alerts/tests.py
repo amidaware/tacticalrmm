@@ -1,14 +1,13 @@
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
+from core.models import CoreSettings
 from django.conf import settings
 from django.utils import timezone as djangotime
 from model_bakery import baker, seq
+from tacticalrmm.test import TacticalTestCase
 
 from alerts.tasks import cache_agents_alert_template
-from autotasks.models import AutomatedTask
-from core.models import CoreSettings
-from tacticalrmm.test import TacticalTestCase
 
 from .models import Alert, AlertTemplate
 from .serializers import (
@@ -330,8 +329,8 @@ class TestAlertsViews(TacticalTestCase):
         baker.make("clients.Site", alert_template=alert_template, _quantity=3)
         baker.make("automation.Policy", alert_template=alert_template)
         core = CoreSettings.objects.first()
-        core.alert_template = alert_template
-        core.save()
+        core.alert_template = alert_template  # type: ignore
+        core.save()  # type: ignore
 
         url = f"/alerts/alerttemplates/{alert_template.pk}/related/"  # type: ignore
 
@@ -403,16 +402,16 @@ class TestAlertTasks(TacticalTestCase):
         # assign first Alert Template as to a policy and apply it as default
         policy.alert_template = alert_templates[0]  # type: ignore
         policy.save()  # type: ignore
-        core.workstation_policy = policy
-        core.server_policy = policy
-        core.save()
+        core.workstation_policy = policy  # type: ignore
+        core.server_policy = policy  # type: ignore
+        core.save()  # type: ignore
 
         self.assertEquals(server.set_alert_template().pk, alert_templates[0].pk)  # type: ignore
         self.assertEquals(workstation.set_alert_template().pk, alert_templates[0].pk)  # type: ignore
 
         # assign second Alert Template to as default alert template
         core.alert_template = alert_templates[1]  # type: ignore
-        core.save()
+        core.save()  # type: ignore
 
         self.assertEquals(workstation.set_alert_template().pk, alert_templates[1].pk)  # type: ignore
         self.assertEquals(server.set_alert_template().pk, alert_templates[1].pk)  # type: ignore
@@ -514,6 +513,7 @@ class TestAlertTasks(TacticalTestCase):
             agent_recovery_email_task,
             agent_recovery_sms_task,
         )
+
         from alerts.models import Alert
 
         agent_dashboard_alert = baker.make_recipe("agents.overdue_agent")
@@ -727,7 +727,6 @@ class TestAlertTasks(TacticalTestCase):
         send_email,
         sleep,
     ):
-        from alerts.tasks import cache_agents_alert_template
         from checks.models import Check
         from checks.tasks import (
             handle_check_email_alert_task,
@@ -735,6 +734,8 @@ class TestAlertTasks(TacticalTestCase):
             handle_resolved_check_email_alert_task,
             handle_resolved_check_sms_alert_task,
         )
+
+        from alerts.tasks import cache_agents_alert_template
 
         # create test data
         agent = baker.make_recipe("agents.agent")
@@ -1011,7 +1012,6 @@ class TestAlertTasks(TacticalTestCase):
         send_email,
         sleep,
     ):
-        from alerts.tasks import cache_agents_alert_template
         from autotasks.models import AutomatedTask
         from autotasks.tasks import (
             handle_resolved_task_email_alert,
@@ -1019,6 +1019,8 @@ class TestAlertTasks(TacticalTestCase):
             handle_task_email_alert,
             handle_task_sms_alert,
         )
+
+        from alerts.tasks import cache_agents_alert_template
 
         # create test data
         agent = baker.make_recipe("agents.agent")
@@ -1272,17 +1274,17 @@ class TestAlertTasks(TacticalTestCase):
         )
 
         core = CoreSettings.objects.first()
-        core.smtp_host = "test.test.com"
-        core.smtp_port = 587
-        core.smtp_recipients = ["recipient@test.com"]
-        core.twilio_account_sid = "test"
-        core.twilio_auth_token = "1234123412341234"
-        core.sms_alert_recipients = ["+1234567890"]
+        core.smtp_host = "test.test.com"  # type: ignore
+        core.smtp_port = 587  # type: ignore
+        core.smtp_recipients = ["recipient@test.com"]  # type: ignore
+        core.twilio_account_sid = "test"  # type: ignore
+        core.twilio_auth_token = "1234123412341234"  # type: ignore
+        core.sms_alert_recipients = ["+1234567890"]  # type: ignore
 
         # test sending email with alert template settings
-        core.send_mail("Test", "Test", alert_template=alert_template)
+        core.send_mail("Test", "Test", alert_template=alert_template)  # type: ignore
 
-        core.send_sms("Test", alert_template=alert_template)
+        core.send_sms("Test", alert_template=alert_template)  # type: ignore
 
     @patch("agents.models.Agent.nats_cmd")
     @patch("agents.tasks.agent_outage_sms_task.delay")
@@ -1398,3 +1400,36 @@ class TestAlertTasks(TacticalTestCase):
             ["-Parameter", f"-Another '{alert.id}'"],  # type: ignore
             alert.parse_script_args(args=args),  # type: ignore
         )
+
+    def test_prune_resolved_alerts(self):
+        from .tasks import prune_resolved_alerts
+
+        # setup data
+        resolved_alerts = baker.make(
+            "alerts.Alert",
+            resolved=True,
+            _quantity=25,
+        )
+
+        alerts = baker.make(
+            "alerts.Alert",
+            resolved=False,
+            _quantity=25,
+        )
+
+        days = 0
+        for alert in resolved_alerts:  # type: ignore
+            alert.alert_time = djangotime.now() - djangotime.timedelta(days=days)
+            alert.save()
+            days = days + 5
+
+        days = 0
+        for alert in alerts:  # type: ignore
+            alert.alert_time = djangotime.now() - djangotime.timedelta(days=days)
+            alert.save()
+            days = days + 5
+
+        # delete AgentHistory older than 30 days
+        prune_resolved_alerts(30)
+
+        self.assertEqual(Alert.objects.count(), 31)

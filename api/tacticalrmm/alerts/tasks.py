@@ -1,6 +1,4 @@
 from django.utils import timezone as djangotime
-import datetime as dt
-
 from tacticalrmm.celery import app
 
 
@@ -30,8 +28,7 @@ def prune_resolved_alerts(older_than_days: int) -> str:
     from .models import Alert
 
     Alert.objects.filter(resolved=True).filter(
-        x__lt=djangotime.make_aware(dt.datetime.today())
-        - djangotime.timedelta(days=older_than_days)
+        alert_time__lt=djangotime.now() - djangotime.timedelta(days=older_than_days)
     ).delete()
 
     return "ok"

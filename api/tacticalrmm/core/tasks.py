@@ -30,24 +30,24 @@ def core_maintenance_tasks():
     core = CoreSettings.objects.first()
 
     # remove old CheckHistory data
-    if core.check_history_prune_days > 0:
-        prune_check_history.delay(core.check_history_prune_days)
+    if core.check_history_prune_days > 0:  # type: ignore
+        prune_check_history.delay(core.check_history_prune_days)  # type: ignore
 
     # remove old resolved alerts
-    if core.resolved_alerts_prune_days > 0:
-        prune_resolved_alerts.delay(core.resolved_alert_prune_days)
+    if core.resolved_alerts_prune_days > 0:  # type: ignore
+        prune_resolved_alerts.delay(core.resolved_alert_prune_days)  # type: ignore
 
     # remove old agent history
-    if core.agent_history_prune_days > 0:
-        prune_agent_history.delay(core.agent_history_prune_days)
+    if core.agent_history_prune_days > 0:  # type: ignore
+        prune_agent_history.delay(core.agent_history_prune_days)  # type: ignore
 
     # remove old debug logs
-    if core.debug_log_prune_days > 0:
-        prune_debug_log.delay(core.debug_log_prune_days)
+    if core.debug_log_prune_days > 0:  # type: ignore
+        prune_debug_log.delay(core.debug_log_prune_days)  # type: ignore
 
     # clear faults
-    if core.clear_faults_days > 0:
-        clear_faults_task.delay(core.clear_faults_days)
+    if core.clear_faults_days > 0:  # type: ignore
+        clear_faults_task.delay(core.clear_faults_days)  # type: ignore
 
 
 @app.task

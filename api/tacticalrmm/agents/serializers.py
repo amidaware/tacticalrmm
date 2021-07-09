@@ -209,6 +209,6 @@ class AgentHistorySerializer(serializers.ModelSerializer):
         model = AgentHistory
         fields = "__all__"
 
-    def get_time(self, log):
+    def get_time(self, history):
         timezone = get_default_timezone()
-        return log.entry_time.astimezone(timezone).strftime("%m %d %Y %H:%M:%S")
+        return history.time.astimezone(timezone).strftime("%m %d %Y %H:%M:%S")

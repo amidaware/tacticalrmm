@@ -136,7 +136,14 @@ export default {
   props: {
     script: Object,
     categories: !Array,
-    readonly: Boolean,
+    readonly: {
+      type: Boolean,
+      default: false,
+    },
+    clone: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -164,7 +171,7 @@ export default {
     submit() {
       this.$q.loading.show();
 
-      if (!!this.script) {
+      if (this.script && !this.clone) {
         this.$axios
           .put(`/scripts/${this.script.id}/script/`, this.localScript)
           .then(r => {
@@ -247,8 +254,12 @@ export default {
       return this.localScript.favorite ? "star" : "star_outline";
     },
     title() {
-      if (!!this.script) {
-        return this.readonly ? `Viewing ${this.script.name}` : `Editing ${this.script.name}`;
+      if (this.script) {
+        return this.readonly
+          ? `Viewing ${this.script.name}`
+          : this.clone
+          ? `Copying ${this.script.name}`
+          : `Editing ${this.script.name}`;
       } else {
         return "Adding new script";
       }
@@ -264,14 +275,14 @@ export default {
     },
   },
   mounted() {
-    if (!!this.script) {
-      this.localScript.id = this.script.id;
-      this.localScript.name = this.script.name;
+    if (this.script) {
+      this.localScript.id = this.clone ? null : this.script.id;
+      this.localScript.name = this.clone ? "Copy of " + this.script.name : this.script.name;
       this.localScript.description = this.script.description;
-      this.localScript.favorite = this.script.favorite;
+      this.localScript.favorite = this.clone ? false : this.script.favorite;
       this.localScript.shell = this.script.shell;
       this.localScript.category = this.script.category;
-      this.localScript.script_type = this.script.script_type;
+      this.localScript.script_type = this.clone ? "userdefined" : this.script.script_type;
       this.localScript.default_timeout = this.script.default_timeout;
       this.localScript.args = this.script.args;
       this.getCode();

@@ -20,7 +20,7 @@
                   <q-item-label>New Script</q-item-label>
                 </q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="showScriptUploadModal = true">
+              <q-item clickable v-close-popup @click="uploadScript">
                 <q-item-section side>
                   <q-icon size="xs" name="cloud_upload" />
                 </q-item-section>
@@ -30,30 +30,6 @@
               </q-item>
             </q-list>
           </q-btn-dropdown>
-          <q-btn
-            label="View Code"
-            :disable="!isRowSelected"
-            dense
-            flat
-            push
-            unelevated
-            no-caps
-            icon="remove_red_eye"
-            @click="viewCode(selectedScript)"
-          />
-          <q-btn
-            label="Download Script"
-            :disable="!isRowSelected"
-            dense
-            flat
-            push
-            unelevated
-            no-caps
-            icon="cloud_download"
-            @click="downloadScript(selectedScript)"
-          />
-        </div>
-        <div class="row">
           <q-btn
             dense
             flat
@@ -95,13 +71,11 @@
             no-connectors
             node-key="id"
             v-model:expanded="expanded"
-            @update:selected="nodeSelected"
-            v-model:selected="selected"
             no-results-label="No Scripts Found"
             no-nodes-label="No Scripts Found"
           >
             <template v-slot:header-script="props">
-              <div :class="props.node.id === props.tree.selected ? 'text-primary' : ''">
+              <div>
                 <q-icon v-if="props.node.favorite" color="yellow-8" name="star" size="sm" class="q-px-sm" />
                 <q-icon v-else color="yellow-8" name="star_outline" size="sm" class="q-px-sm" />
 
@@ -119,9 +93,16 @@
                 <span class="q-pl-xs">{{ props.node.description }}</span>
               </div>
 
-              <!-- Context Menu -->
+              <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
+                  <q-item clickable v-close-popup @click="cloneScript(props.node)">
+                    <q-item-section side>
+                      <q-icon name="content_copy" />
+                    </q-item-section>
+                    <q-item-section>Clone</q-item-section>
+                  </q-item>
+
                   <q-item
                     clickable
                     v-close-popup
@@ -207,14 +188,17 @@
             <template v-slot:no-data> No Scripts Found </template>
             <template v-slot:body="props">
               <!-- Table View -->
-              <q-tr
-                :class="`${rowSelectedClass(props.row.id)} cursor-pointer`"
-                @click="selectedScript = props.row"
-                @contextmenu="selectedScript = props.row"
-              >
+              <q-tr>
                 <!-- Context Menu -->
                 <q-menu context-menu>
                   <q-list dense style="min-width: 200px">
+                    <q-item clickable v-close-popup @click="cloneScript(props.node)">
+                      <q-item-section side>
+                        <q-icon name="content_copy" />
+                      </q-item-section>
+                      <q-item-section>Clone</q-item-section>
+                    </q-item>
+
                     <q-item
                       clickable
                       v-close-popup
@@ -314,14 +298,6 @@
         </div>
       </div>
     </q-card>
-    <q-dialog v-model="showScriptUploadModal">
-      <ScriptUploadModal
-        :script="selectedScript"
-        :categories="categories"
-        @close="showScriptUploadModal = false"
-        @add="getScripts"
-      />
-    </q-dialog>
   </div>
 </template>
 
@@ -333,17 +309,13 @@ import ScriptFormModal from "@/components/modals/scripts/ScriptFormModal";
 
 export default {
   name: "ScriptManager",
-  components: { ScriptUploadModal },
   mixins: [mixins],
   data() {
     return {
       scripts: [],
-      selectedScript: {},
-      showScriptUploadModal: false,
       search: "",
       tableView: true,
       expanded: [],
-      selected: null,
       pagination: {
         rowsPerPage: 0,
         sortBy: "favorite",
@@ -405,7 +377,6 @@ export default {
   },
   methods: {
     getScripts() {
-      this.clearRow();
       this.$axios
         .get("/scripts/scripts/")
         .then(r => {
@@ -415,9 +386,6 @@ export default {
     },
     setShowCommunityScripts(show) {
       this.$store.dispatch("setShowCommunityScripts", show);
-    },
-    clearRow() {
-      this.selectedScript = {};
     },
     viewCode(script) {
       this.$q.dialog({
@@ -478,9 +446,6 @@ export default {
         return false;
       }
     },
-    rowSelectedClass(id) {
-      if (this.selectedScript.id === id) return this.$q.dark.isActive ? "highlight-dark" : "highlight";
-    },
     favoriteText(isFavorite) {
       return isFavorite ? "Remove as Favorite" : "Add as Favorite";
     },
@@ -513,16 +478,34 @@ export default {
     },
     setTableView(view) {
       this.tableView = view;
-      this.selectedScript = {};
-      this.selected = null;
       this.expanded = [];
     },
-    nodeSelected(nodeid) {
-      if (nodeid) {
-        this.selectedScript = this.$refs.folderTree.getNodeByKey(nodeid);
-      } else {
-        this.selectedScript = {};
-      }
+    cloneScript(script) {
+      this.$q
+        .dialog({
+          component: ScriptFormModal,
+          componentProps: {
+            script: script,
+            categories: this.categories,
+            readonly: false,
+            clone: true,
+          },
+        })
+        .onOk(() => {
+          this.getScripts();
+        });
+    },
+    uploadScript() {
+      this.$q
+        .dialog({
+          component: ScriptUploadModal,
+          componentProps: {
+            categories: this.categories,
+          },
+        })
+        .onOk(() => {
+          this.getScripts();
+        });
     },
   },
   computed: {
@@ -538,9 +521,6 @@ export default {
         }
       });
       return list;
-    },
-    isRowSelected() {
-      return this.selectedScript.id !== null && this.selectedScript.id !== undefined;
     },
     tree() {
       if (this.tableView || this.visibleScripts.length === 0) {

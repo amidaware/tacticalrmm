@@ -25,7 +25,6 @@ Add a URL Action</br>
 https://start.teamviewer.com/device/{{agent.TeamViewerClientID}}/authorization/password/mode/control
 ```
 
-
 Navigate to an agent with TeamViewer running (or apply using **Settings > Automation Manager**).</br>
 Go to Tasks.</br>
 Add Task</br>

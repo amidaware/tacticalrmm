@@ -25,7 +25,6 @@ Add a URL Action</br>
 anydesk:{{agent.AnyNetID}}
 ```
 
-
 Navigate to an agent with AnyDesk running (or apply using **Settings > Automation Manager**).</br>
 Go to Tasks.</br>
 Add Task</br>

@@ -1,6 +1,14 @@
 # How It All Works
 
-INSERT WIREFRAME GRAPHIC HERE USING <https://www.yworks.com/yed-live/>
+INSERT WIREFRAME GRAPHICS HERE USING SOMETHING LIKE <https://www.yworks.com/yed-live/>
+
+1) how nats-django-admin web interface work
+
+2) Agent installer steps
+
+3) Agent communication process with server (what ports to which services etc)
+
+4) Agent checks/tasks and how they work on the workstation/interact with server
 
 ## Server
 

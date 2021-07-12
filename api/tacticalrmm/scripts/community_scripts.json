@@ -245,6 +245,20 @@
     "category": "TRMM (Win):3rd Party Software"
   },
   {
+    "guid": "64c3b1a8-c85f-4800-85a3-485f78a2d9ad",
+    "filename": "Win_Bitdefender_GravityZone_Install.ps1",
+    "submittedBy": "https://github.com/jhtechIL/",
+    "name": "BitDefender Gravity Zone Install",
+    "description": "Installs BitDefender Gravity Zone, requires client custom field setup. See script comments for details",
+    "args": [
+      "-url {{client.bdurl}}",
+      "-exe {{client.bdexe}}"
+    ],
+    "default_timeout": "2500",
+    "shell": "powershell",
+    "category": "TRMM (Win):3rd Party Software"
+  },
+  {
     "guid": "da51111c-aff6-4d87-9d76-0608e1f67fe5",
     "filename": "Win_Defender_Enable.ps1",
     "submittedBy": "https://github.com/dinger1986",

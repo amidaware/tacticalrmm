@@ -52,7 +52,7 @@ No, you haven't.
 
 3. You have the option enabled to submit unknown applications for analysis. 
 
-![AV Option1](images/faq_av_option1.png)
+    ![AV Option1](images/faq_av_option1.png)
 
 4. They ran it against their virtualization testing cluster. 
 

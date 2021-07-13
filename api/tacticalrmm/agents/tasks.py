@@ -10,17 +10,14 @@ from typing import Union
 
 from django.conf import settings
 from django.utils import timezone as djangotime
-from loguru import logger
 from packaging import version as pyver
 
 from agents.models import Agent
 from core.models import CodeSignToken, CoreSettings
-from logs.models import PendingAction
+from logs.models import PendingAction, DebugLog
 from scripts.models import Script
 from tacticalrmm.celery import app
 from tacticalrmm.utils import run_nats_api_cmd
-
-logger.configure(**settings.LOG_CONFIG)
 
 
 def agent_update(pk: int, codesigntoken: str = None, force: bool = False) -> str:
@@ -33,8 +30,10 @@ def agent_update(pk: int, codesigntoken: str = None, force: bool = False) -> str
 
     # skip if we can't determine the arch
     if agent.arch is None:
-        logger.warning(
-            f"Unable to determine arch on {agent.hostname}. Skipping agent update."
+        DebugLog.warning(
+            agent=agent,
+            log_type="agent_issues",
+            message=f"Unable to determine arch on {agent.hostname}({agent.pk}). Skipping agent update.",
         )
         return "noarch"
 
@@ -81,7 +80,7 @@ def agent_update(pk: int, codesigntoken: str = None, force: bool = False) -> str
 @app.task
 def force_code_sign(pks: list[int]) -> None:
     try:
-        token = CodeSignToken.objects.first().token
+        token = CodeSignToken.objects.first().tokenv  # type:ignore
     except:
         return
 
@@ -96,7 +95,7 @@ def force_code_sign(pks: list[int]) -> None:
 @app.task
 def send_agent_update_task(pks: list[int]) -> None:
     try:
-        codesigntoken = CodeSignToken.objects.first().token
+        codesigntoken = CodeSignToken.objects.first().token  # type:ignore
     except:
         codesigntoken = None
 
@@ -111,11 +110,11 @@ def send_agent_update_task(pks: list[int]) -> None:
 @app.task
 def auto_self_agent_update_task() -> None:
     core = CoreSettings.objects.first()
-    if not core.agent_auto_update:
+    if not core.agent_auto_update:  # type:ignore
         return
 
     try:
-        codesigntoken = CodeSignToken.objects.first().token
+        codesigntoken = CodeSignToken.objects.first().token  # type:ignore
     except:
         codesigntoken = None
 
@@ -242,7 +241,11 @@ def run_script_email_results_task(
         scriptpk=script.pk, args=args, full=True, timeout=nats_timeout, wait=True
     )
     if r == "timeout":
-        logger.error(f"{agent.hostname} timed out running script.")
+        DebugLog.error(
+            agent=agent,
+            log_type="scripting",
+            message=f"{agent.hostname}({agent.pk}) timed out running script.",
+        )
         return
 
     CORE = CoreSettings.objects.first()
@@ -258,28 +261,32 @@ def run_script_email_results_task(
 
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = CORE.smtp_from_email
+    msg["From"] = CORE.smtp_from_email  # type:ignore
 
     if emails:
         msg["To"] = ", ".join(emails)
     else:
-        msg["To"] = ", ".join(CORE.email_alert_recipients)
+        msg["To"] = ", ".join(CORE.email_alert_recipients)  # type:ignore
 
     msg.set_content(body)
 
     try:
-        with smtplib.SMTP(CORE.smtp_host, CORE.smtp_port, timeout=20) as server:
-            if CORE.smtp_requires_auth:
+        with smtplib.SMTP(
+            CORE.smtp_host, CORE.smtp_port, timeout=20  # type:ignore
+        ) as server:  # type:ignore
+            if CORE.smtp_requires_auth:  # type:ignore
                 server.ehlo()
                 server.starttls()
-                server.login(CORE.smtp_host_user, CORE.smtp_host_password)
+                server.login(
+                    CORE.smtp_host_user, CORE.smtp_host_password  # type:ignore
+                )  # type:ignore
                 server.send_message(msg)
                 server.quit()
             else:
                 server.send_message(msg)
                 server.quit()
     except Exception as e:
-        logger.error(e)
+        DebugLog.error(message=e)
 
 
 @app.task
@@ -345,3 +352,14 @@ def agent_checkin_task() -> None:
             json.dump(config, f)
         cmd = ["/usr/local/bin/nats-api", "-c", fp.name, "-m", "checkin"]
         subprocess.run(cmd, timeout=30)
+
+
+@app.task
+def prune_agent_history(older_than_days: int) -> str:
+    from .models import AgentHistory
+
+    AgentHistory.objects.filter(
+        time__lt=djangotime.now() - djangotime.timedelta(days=older_than_days)
+    ).delete()
+
+    return "ok"

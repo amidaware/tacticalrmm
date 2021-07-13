@@ -87,7 +87,14 @@ class GetAddUsers(APIView):
     permission_classes = [IsAuthenticated, AccountsPerms]
 
     def get(self, request):
-        users = User.objects.filter(agent=None, is_installer_user=False)
+        search = request.GET.get("search", None)
+
+        if search:
+            users = User.objects.filter(agent=None, is_installer_user=False).filter(
+                username__icontains=search
+            )
+        else:
+            users = User.objects.filter(agent=None, is_installer_user=False)
 
         return Response(UserSerializer(users, many=True).data)
 

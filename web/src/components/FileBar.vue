@@ -25,10 +25,10 @@
               <q-item clickable v-close-popup @click="showUploadMesh = true">
                 <q-item-section>Upload MeshAgent</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="showAuditManager = true">
+              <q-item clickable v-close-popup @click="showAuditManager">
                 <q-item-section>Audit Log</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="showDebugLog = true">
+              <q-item clickable v-close-popup @click="showDebugLog">
                 <q-item-section>Debug Log</q-item-section>
               </q-item>
             </q-list>
@@ -148,22 +148,10 @@
       <q-dialog v-model="showEditCoreSettingsModal">
         <EditCoreSettings @close="showEditCoreSettingsModal = false" />
       </q-dialog>
-      <!-- debug log modal -->
-      <div class="q-pa-md q-gutter-sm">
-        <q-dialog v-model="showDebugLog" maximized transition-show="slide-up" transition-hide="slide-down">
-          <LogModal @close="showDebugLog = false" />
-        </q-dialog>
-      </div>
       <!-- pending actions modal -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showPendingActions">
           <PendingActions @close="showPendingActions = false" />
-        </q-dialog>
-      </div>
-      <!-- audit manager -->
-      <div class="q-pa-md q-gutter-sm">
-        <q-dialog v-model="showAuditManager" maximized transition-show="slide-up" transition-hide="slide-down">
-          <AuditManager @close="showAuditManager = false" />
         </q-dialog>
       </div>
       <!-- Install Agents -->
@@ -215,7 +203,8 @@
 </template>
 
 <script>
-import LogModal from "@/components/modals/logs/LogModal";
+import DialogWrapper from "@/components/ui/DialogWrapper";
+import DebugLog from "@/components/logs/DebugLog";
 import PendingActions from "@/components/modals/logs/PendingActions";
 import ClientsManager from "@/components/ClientsManager";
 import ClientsForm from "@/components/modals/clients/ClientsForm";
@@ -228,7 +217,7 @@ import AutomationManager from "@/components/automation/AutomationManager";
 import AdminManager from "@/components/AdminManager";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import UploadMesh from "@/components/modals/core/UploadMesh";
-import AuditManager from "@/components/AuditManager";
+import AuditManager from "@/components/logs/AuditManager";
 import BulkAction from "@/components/modals/agents/BulkAction";
 import Deployment from "@/components/Deployment";
 import ServerMaintenance from "@/components/modals/core/ServerMaintenance";
@@ -239,7 +228,6 @@ export default {
   name: "FileBar",
   emits: ["edit"],
   components: {
-    LogModal,
     PendingActions,
     UpdateAgents,
     ScriptManager,
@@ -247,7 +235,6 @@ export default {
     InstallAgent,
     UploadMesh,
     AdminManager,
-    AuditManager,
     BulkAction,
     Deployment,
     ServerMaintenance,
@@ -262,12 +249,10 @@ export default {
       showAdminManager: false,
       showInstallAgent: false,
       showUploadMesh: false,
-      showAuditManager: false,
       showBulkAction: false,
       showPendingActions: false,
       bulkMode: null,
       showDeployment: false,
-      showDebugLog: false,
       showScriptManager: false,
       showCodeSign: false,
     };
@@ -332,6 +317,40 @@ export default {
     showPermissionsManager() {
       this.$q.dialog({
         component: PermissionsManager,
+      });
+    },
+    showAuditManager() {
+      this.$q.dialog({
+        component: DialogWrapper,
+        componentProps: {
+          vuecomponent: AuditManager,
+          noCard: true,
+          componentProps: {
+            modal: true,
+          },
+          dialogProps: {
+            maximized: true,
+            ["transition-show"]: "slide-up",
+            ["transition-hide"]: "slide-down",
+          },
+        },
+      });
+    },
+    showDebugLog() {
+      this.$q.dialog({
+        component: DialogWrapper,
+        componentProps: {
+          vuecomponent: DebugLog,
+          noCard: true,
+          componentProps: {
+            modal: true,
+          },
+          dialogProps: {
+            maximized: true,
+            ["transition-show"]: "slide-up",
+            ["transition-hide"]: "slide-down",
+          },
+        },
       });
     },
     edited() {

@@ -8,7 +8,6 @@ import time
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from loguru import logger
 from packaging import version as pyver
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -17,14 +16,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.models import CoreSettings
-from logs.models import AuditLog, PendingAction
+from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from tacticalrmm.utils import get_default_timezone, notify_error, reload_nats
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
-from .models import Agent, AgentCustomField, Note, RecoveryAction
+from .models import Agent, AgentCustomField, Note, RecoveryAction, AgentHistory
 from .permissions import (
     EditAgentPerms,
     EvtLogPerms,
@@ -42,6 +41,7 @@ from .permissions import (
 from .serializers import (
     AgentCustomFieldSerializer,
     AgentEditSerializer,
+    AgentHistorySerializer,
     AgentHostnameSerializer,
     AgentOverdueActionSerializer,
     AgentSerializer,
@@ -50,8 +50,6 @@ from .serializers import (
     NotesSerializer,
 )
 from .tasks import run_script_email_results_task, send_agent_update_task
-
-logger.configure(**settings.LOG_CONFIG)
 
 
 @api_view()
@@ -160,17 +158,17 @@ def meshcentral(request, pk):
     core = CoreSettings.objects.first()
 
     token = agent.get_login_token(
-        key=core.mesh_token, user=f"user//{core.mesh_username}"
+        key=core.mesh_token, user=f"user//{core.mesh_username}"  # type:ignore
     )
 
     if token == "err":
         return notify_error("Invalid mesh token")
 
-    control = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=11&hide=31"
-    terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"
-    file = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=13&hide=31"
+    control = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=11&hide=31"  # type:ignore
+    terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"  # type:ignore
+    file = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=13&hide=31"  # type:ignore
 
-    AuditLog.audit_mesh_session(username=request.user.username, hostname=agent.hostname)
+    AuditLog.audit_mesh_session(username=request.user.username, agent=agent)
 
     ret = {
         "hostname": agent.hostname,
@@ -255,7 +253,7 @@ def send_raw_cmd(request):
 
     AuditLog.audit_raw_command(
         username=request.user.username,
-        hostname=agent.hostname,
+        agent=agent,
         cmd=request.data["cmd"],
         shell=request.data["shell"],
     )
@@ -508,7 +506,7 @@ def install_agent(request):
             try:
                 os.remove(ps1)
             except Exception as e:
-                logger.error(str(e))
+                DebugLog.error(message=str(e))
 
         with open(ps1, "w") as f:
             f.write(text)
@@ -573,7 +571,7 @@ def run_script(request):
 
     AuditLog.audit_script_run(
         username=request.user.username,
-        hostname=agent.hostname,
+        agent=agent,
         script=script.name,
     )
 
@@ -594,6 +592,35 @@ def run_script(request):
             emails=emails,
             args=args,
         )
+    elif output == "collector":
+        from core.models import CustomField
+
+        r = agent.run_script(
+            scriptpk=script.pk, args=args, timeout=req_timeout, wait=True
+        )
+
+        custom_field = CustomField.objects.get(pk=request.data["custom_field"])
+
+        if custom_field.model == "agent":
+            field = custom_field.get_or_create_field_value(agent)
+        elif custom_field.model == "client":
+            field = custom_field.get_or_create_field_value(agent.client)
+        elif custom_field.model == "site":
+            field = custom_field.get_or_create_field_value(agent.site)
+        else:
+            return notify_error("Custom Field was invalid")
+
+        value = r if request.data["save_all_output"] else r.split("\n")[-1].strip()
+
+        field.save_to_field(value)
+        return Response(r)
+    elif output == "note":
+        r = agent.run_script(
+            scriptpk=script.pk, args=args, timeout=req_timeout, wait=True
+        )
+
+        Note.objects.create(agent=agent, user=request.user, note=r)
+        return Response(r)
     else:
         agent.run_script(scriptpk=script.pk, args=args, timeout=req_timeout)
 
@@ -746,3 +773,11 @@ class WMI(APIView):
         if r != "ok":
             return notify_error("Unable to contact the agent")
         return Response("ok")
+
+
+class AgentHistoryView(APIView):
+    def get(self, request, pk):
+        agent = get_object_or_404(Agent, pk=pk)
+        history = AgentHistory.objects.filter(agent=agent)
+
+        return Response(AgentHistorySerializer(history, many=True).data)

@@ -141,7 +141,7 @@
                 <q-item-section>Send Command</q-item-section>
               </q-item>
 
-              <q-item clickable v-ripple v-close-popup @click="showRunScript = true">
+              <q-item clickable v-ripple v-close-popup @click="showRunScript(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-terminal" />
                 </q-item-section>
@@ -414,10 +414,6 @@
     <q-dialog v-model="showAgentRecovery">
       <AgentRecovery @close="showAgentRecovery = false" :pk="selectedAgentPk" />
     </q-dialog>
-    <!-- run script modal -->
-    <q-dialog v-model="showRunScript" persistent>
-      <RunScript @close="showRunScript = false" :pk="selectedAgentPk" />
-    </q-dialog>
   </div>
 </template>
 
@@ -443,7 +439,6 @@ export default {
     PendingActions,
     SendCommand,
     AgentRecovery,
-    RunScript,
   },
   mixins: [mixins],
   data() {
@@ -457,7 +452,6 @@ export default {
       showEditAgentModal: false,
       showRebootLaterModal: false,
       showAgentRecovery: false,
-      showRunScript: false,
       showPendingActions: false,
       pendingActionAgentPk: null,
       favoriteScripts: [],
@@ -802,6 +796,14 @@ export default {
           window.open(r.data, "_blank");
         })
         .catch(() => {});
+    },
+    showRunScript(agent) {
+      this.$q.dialog({
+        component: RunScript,
+        componentProps: {
+          agent,
+        },
+      });
     },
   },
   computed: {

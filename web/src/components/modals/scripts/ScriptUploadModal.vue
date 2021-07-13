@@ -1,107 +1,109 @@
 <template>
-  <q-card style="width: 40vw">
-    <q-bar>
-      Add Script
-      <q-space />
-      <q-btn dense flat icon="close" v-close-popup>
-        <q-tooltip class="bg-white text-primary">Close</q-tooltip>
-      </q-btn>
-    </q-bar>
-    <q-form @submit.prevent="submit">
-      <q-card-section class="row">
-        <div class="col-2">Name:</div>
-        <div class="col-10">
-          <q-input outlined dense v-model="script.name" :rules="[val => !!val || '*Required']" />
-        </div>
-      </q-card-section>
-      <q-card-section class="row">
-        <div class="col-2">Description:</div>
-        <div class="col-10">
-          <q-input outlined dense v-model="script.description" type="textarea" />
-        </div>
-      </q-card-section>
-      <q-card-section class="row">
-        <div class="col-2">Category:</div>
-        <q-select
-          hint="Press Enter or Tab when adding a new value"
-          dense
-          options-dense
-          class="col-10"
-          outlined
-          v-model="script.category"
-          :options="filterOptions"
-          use-input
-          clearable
-          new-value-mode="add-unique"
-          debounce="0"
-          @filter="filterFn"
-        />
-      </q-card-section>
-      <q-card-section class="row">
-        <div class="col-2">File Upload:</div>
-        <div class="col-10">
-          <q-file
-            v-model="script.filename"
-            label="Supported file types: .ps1, .bat, .py"
-            stack-label
-            filled
-            counter
-            class="full-width"
-            accept=".ps1, .bat, .py"
-          >
-            <template v-slot:prepend>
-              <q-icon name="attach_file" />
-            </template>
-          </q-file>
-        </div>
-      </q-card-section>
-      <q-card-section class="row">
-        <div class="col-2">Type:</div>
-        <q-select
-          dense
-          options-dense
-          class="col-10"
-          outlined
-          v-model="script.shell"
-          :options="shellOptions"
-          emit-value
-          map-options
-        />
-      </q-card-section>
-      <q-card-section class="row">
-        <div class="col-2">Script Arguments:</div>
-        <q-select
-          label="(press Enter after typing each argument)"
-          class="col-10"
-          filled
-          v-model="script.args"
-          use-input
-          use-chips
-          multiple
-          dense
-          hide-dropdown-icon
-          input-debounce="0"
-          new-value-mode="add"
-        />
-      </q-card-section>
-      <q-card-section class="row">
-        <div class="col-4">Default Timeout (seconds)</div>
-        <q-input
-          type="number"
-          outlined
-          dense
-          class="col-8"
-          v-model.number="script.default_timeout"
-          :rules="[val => val >= 5 || 'Minimum is 5']"
-        />
-      </q-card-section>
-      <q-card-actions>
+  <q-dialog ref="dialog" @hide="onHide">
+    <q-card class="q-dialog-plugin" style="width: 40vw">
+      <q-bar>
+        Add Script
         <q-space />
-        <q-btn dense flat label="Cancel" v-close-popup />
-        <q-btn dense flat label="Add" color="primary" type="submit" />
-      </q-card-actions>
-    </q-form>
-  </q-card>
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+      <q-form @submit.prevent="submit">
+        <q-card-section class="row">
+          <div class="col-2">Name:</div>
+          <div class="col-10">
+            <q-input outlined dense v-model="script.name" :rules="[val => !!val || '*Required']" />
+          </div>
+        </q-card-section>
+        <q-card-section class="row">
+          <div class="col-2">Description:</div>
+          <div class="col-10">
+            <q-input outlined dense v-model="script.description" type="textarea" />
+          </div>
+        </q-card-section>
+        <q-card-section class="row">
+          <div class="col-2">Category:</div>
+          <q-select
+            hint="Press Enter or Tab when adding a new value"
+            dense
+            options-dense
+            class="col-10"
+            outlined
+            v-model="script.category"
+            :options="filterOptions"
+            use-input
+            clearable
+            new-value-mode="add-unique"
+            debounce="0"
+            @filter="filterFn"
+          />
+        </q-card-section>
+        <q-card-section class="row">
+          <div class="col-2">File Upload:</div>
+          <div class="col-10">
+            <q-file
+              v-model="script.filename"
+              label="Supported file types: .ps1, .bat, .py"
+              stack-label
+              filled
+              counter
+              class="full-width"
+              accept=".ps1, .bat, .py"
+            >
+              <template v-slot:prepend>
+                <q-icon name="attach_file" />
+              </template>
+            </q-file>
+          </div>
+        </q-card-section>
+        <q-card-section class="row">
+          <div class="col-2">Type:</div>
+          <q-select
+            dense
+            options-dense
+            class="col-10"
+            outlined
+            v-model="script.shell"
+            :options="shellOptions"
+            emit-value
+            map-options
+          />
+        </q-card-section>
+        <q-card-section class="row">
+          <div class="col-2">Script Arguments:</div>
+          <q-select
+            label="(press Enter after typing each argument)"
+            class="col-10"
+            filled
+            v-model="script.args"
+            use-input
+            use-chips
+            multiple
+            dense
+            hide-dropdown-icon
+            input-debounce="0"
+            new-value-mode="add"
+          />
+        </q-card-section>
+        <q-card-section class="row">
+          <div class="col-4">Default Timeout (seconds)</div>
+          <q-input
+            type="number"
+            outlined
+            dense
+            class="col-8"
+            v-model.number="script.default_timeout"
+            :rules="[val => val >= 5 || 'Minimum is 5']"
+          />
+        </q-card-section>
+        <q-card-actions>
+          <q-space />
+          <q-btn dense flat label="Cancel" v-close-popup />
+          <q-btn dense flat label="Add" color="primary" type="submit" />
+        </q-card-actions>
+      </q-form>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
@@ -109,7 +111,7 @@ import mixins from "@/mixins/mixins";
 
 export default {
   name: "ScriptModal",
-  emits: ["add", "close"],
+  emits: ["ok", "hide", "cancel"],
   mixins: [mixins],
   props: {
     categories: !Array,
@@ -159,8 +161,7 @@ export default {
         .post("/scripts/scripts/", formData)
         .then(r => {
           this.$q.loading.hide();
-          this.$emit("close");
-          this.$emit("add");
+          this.onOk();
           this.notifySuccess(r.data);
         })
         .catch(e => {
@@ -176,6 +177,19 @@ export default {
           this.filterOptions = this.categories.filter(v => v.toLowerCase().indexOf(needle) > -1);
         }
       });
+    },
+    show() {
+      this.$refs.dialog.show();
+    },
+    hide() {
+      this.$refs.dialog.hide();
+    },
+    onHide() {
+      this.$emit("hide");
+    },
+    onOk() {
+      this.$emit("ok");
+      this.hide();
     },
   },
 };

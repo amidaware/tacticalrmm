@@ -2,8 +2,14 @@ import datetime as dt
 from abc import abstractmethod
 
 from django.db import models
-
 from tacticalrmm.middleware import get_debug_info, get_username
+
+
+def get_debug_level():
+    from core.models import CoreSettings
+
+    return CoreSettings.objects.first().agent_debug_level  # type: ignore
+
 
 ACTION_TYPE_CHOICES = [
     ("schedreboot", "Scheduled Reboot"),
@@ -51,6 +57,7 @@ STATUS_CHOICES = [
 class AuditLog(models.Model):
     username = models.CharField(max_length=100)
     agent = models.CharField(max_length=255, null=True, blank=True)
+    agent_id = models.PositiveIntegerField(blank=True, null=True)
     entry_time = models.DateTimeField(auto_now_add=True)
     action = models.CharField(max_length=100, choices=AUDIT_ACTION_TYPE_CHOICES)
     object_type = models.CharField(max_length=100, choices=AUDIT_OBJECT_TYPE_CHOICES)
@@ -73,24 +80,25 @@ class AuditLog(models.Model):
         return super(AuditLog, self).save(*args, **kwargs)
 
     @staticmethod
-    def audit_mesh_session(username, hostname, debug_info={}):
+    def audit_mesh_session(username, agent, debug_info={}):
         AuditLog.objects.create(
             username=username,
-            agent=hostname,
+            agent=agent.hostname,
+            agent_id=agent.id,
             object_type="agent",
             action="remote_session",
-            message=f"{username} used Mesh Central to initiate a remote session to {hostname}.",
+            message=f"{username} used Mesh Central to initiate a remote session to {agent.hostname}.",
             debug_info=debug_info,
         )
 
     @staticmethod
-    def audit_raw_command(username, hostname, cmd, shell, debug_info={}):
+    def audit_raw_command(username, agent, cmd, shell, debug_info={}):
         AuditLog.objects.create(
             username=username,
-            agent=hostname,
+            agent=agent.hostname,
             object_type="agent",
             action="execute_command",
-            message=f"{username} issued {shell} command on {hostname}.",
+            message=f"{username} issued {shell} command on {agent.hostname}.",
             after_value=cmd,
             debug_info=debug_info,
         )
@@ -102,6 +110,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
+            agent_id=before.id if object_type == "agent" else None,
             action="modify",
             message=f"{username} modified {object_type} {name}",
             before_value=before,
@@ -114,6 +123,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
+            agent=after.id if object_type == "agent" else None,
             action="add",
             message=f"{username} added {object_type} {name}",
             after_value=after,
@@ -132,13 +142,14 @@ class AuditLog(models.Model):
         )
 
     @staticmethod
-    def audit_script_run(username, hostname, script, debug_info={}):
+    def audit_script_run(username, agent, script, debug_info={}):
         AuditLog.objects.create(
-            agent=hostname,
+            agent=agent.hostname,
+            agent_id=agent.id,
             username=username,
             object_type="agent",
             action="execute_script",
-            message=f'{username} ran script: "{script}" on {hostname}',
+            message=f'{username} ran script: "{script}" on {agent.hostname}',
             debug_info=debug_info,
         )
 
@@ -212,8 +223,63 @@ class AuditLog(models.Model):
         )
 
 
+LOG_LEVEL_CHOICES = [
+    ("info", "Info"),
+    ("warning", "Warning"),
+    ("error", "Error"),
+    ("critical", "Critical"),
+]
+
+LOG_TYPE_CHOICES = [
+    ("agent_update", "Agent Update"),
+    ("agent_issues", "Agent Issues"),
+    ("win_updates", "Windows Updates"),
+    ("system_issues", "System Issues"),
+    ("scripting", "Scripting"),
+]
+
+
 class DebugLog(models.Model):
-    pass
+    entry_time = models.DateTimeField(auto_now_add=True)
+    agent = models.ForeignKey(
+        "agents.Agent",
+        related_name="debuglogs",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    log_level = models.CharField(
+        max_length=50, choices=LOG_LEVEL_CHOICES, default="info"
+    )
+    log_type = models.CharField(
+        max_length=50, choices=LOG_TYPE_CHOICES, default="system_issues"
+    )
+    message = models.TextField(null=True, blank=True)
+
+    @classmethod
+    def info(
+        cls,
+        message,
+        agent=None,
+        log_type="system_issues",
+    ):
+        if get_debug_level() in ["info"]:
+            cls(log_level="info", agent=agent, log_type=log_type, message=message)
+
+    @classmethod
+    def warning(cls, message, agent=None, log_type="system_issues"):
+        if get_debug_level() in ["info", "warning"]:
+            cls(log_level="warning", agent=agent, log_type=log_type, message=message)
+
+    @classmethod
+    def error(cls, message, agent=None, log_type="system_issues"):
+        if get_debug_level() in ["info", "warning", "error"]:
+            cls(log_level="error", agent=agent, log_type=log_type, message=message)
+
+    @classmethod
+    def critical(cls, message, agent=None, log_type="system_issues"):
+        if get_debug_level() in ["info", "warning", "error", "critical"]:
+            cls(log_level="critical", agent=agent, log_type=log_type, message=message)
 
 
 class PendingAction(models.Model):
@@ -291,14 +357,14 @@ class BaseAuditModel(models.Model):
 
             # capture object properties before edit
             if self.pk:
-                before_value = object_class.objects.get(pk=self.id)
+                before_value = object_class.objects.get(pk=self.id)  # type: ignore
 
             # dont create entry for agent add since that is done in view
             if not self.pk:
                 AuditLog.audit_object_add(
                     username,
                     object_name,
-                    object_class.serialize(self),
+                    object_class.serialize(self),  # type: ignore
                     self.__str__(),
                     debug_info=get_debug_info(),
                 )
@@ -306,8 +372,8 @@ class BaseAuditModel(models.Model):
                 AuditLog.audit_object_changed(
                     username,
                     object_class.__name__.lower(),
-                    object_class.serialize(before_value),
-                    object_class.serialize(self),
+                    object_class.serialize(before_value),  # type: ignore
+                    object_class.serialize(self),  # type: ignore
                     self.__str__(),
                     debug_info=get_debug_info(),
                 )
@@ -322,7 +388,7 @@ class BaseAuditModel(models.Model):
             AuditLog.audit_object_delete(
                 get_username(),
                 object_class.__name__.lower(),
-                object_class.serialize(self),
+                object_class.serialize(self),  # type: ignore
                 self.__str__(),
                 debug_info=get_debug_info(),
             )

@@ -104,9 +104,10 @@
           line-numbers
           @click="focusTextArea"
         />
-        <q-card-actions v-if="!readonly" align="right">
+        <q-card-actions align="right">
           <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn dense flat label="Save" color="primary" type="submit" />
+          <q-btn dense flat color="primary" label="Test Script" @click="runTestScript" />
+          <q-btn v-if="!readonly" dense flat label="Save" color="primary" type="submit" />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -114,6 +115,7 @@
 </template>
 
 <script>
+import TestScriptModal from "@/components/modals/scripts/TestScriptModal";
 import mixins from "@/mixins/mixins";
 import { PrismEditor } from "vue-prism-editor";
 import "vue-prism-editor/dist/prismeditor.min.css";
@@ -134,7 +136,14 @@ export default {
   props: {
     script: Object,
     categories: !Array,
-    readonly: Boolean,
+    readonly: {
+      type: Boolean,
+      default: false,
+    },
+    clone: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -162,7 +171,7 @@ export default {
     submit() {
       this.$q.loading.show();
 
-      if (!!this.script) {
+      if (this.script && !this.clone) {
         this.$axios
           .put(`/scripts/${this.script.id}/script/`, this.localScript)
           .then(r => {
@@ -231,14 +240,26 @@ export default {
     focusTextArea() {
       document.getElementsByClassName("prism-editor__textarea")[0].focus();
     },
+    runTestScript() {
+      this.$q.dialog({
+        component: TestScriptModal,
+        componentProps: {
+          script: this.localScript,
+        },
+      });
+    },
   },
   computed: {
     favoriteIcon() {
       return this.localScript.favorite ? "star" : "star_outline";
     },
     title() {
-      if (!!this.script) {
-        return this.readonly ? `Viewing ${this.script.name}` : `Editing ${this.script.name}`;
+      if (this.script) {
+        return this.readonly
+          ? `Viewing ${this.script.name}`
+          : this.clone
+          ? `Copying ${this.script.name}`
+          : `Editing ${this.script.name}`;
       } else {
         return "Adding new script";
       }
@@ -254,14 +275,14 @@ export default {
     },
   },
   mounted() {
-    if (!!this.script) {
-      this.localScript.id = this.script.id;
-      this.localScript.name = this.script.name;
+    if (this.script) {
+      this.localScript.id = this.clone ? null : this.script.id;
+      this.localScript.name = this.clone ? "Copy of " + this.script.name : this.script.name;
       this.localScript.description = this.script.description;
-      this.localScript.favorite = this.script.favorite;
+      this.localScript.favorite = this.clone ? false : this.script.favorite;
       this.localScript.shell = this.script.shell;
       this.localScript.category = this.script.category;
-      this.localScript.script_type = this.script.script_type;
+      this.localScript.script_type = this.clone ? "userdefined" : this.script.script_type;
       this.localScript.default_timeout = this.script.default_timeout;
       this.localScript.args = this.script.args;
       this.getCode();

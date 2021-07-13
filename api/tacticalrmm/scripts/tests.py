@@ -1,11 +1,11 @@
 import json
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from model_bakery import baker
-
 from tacticalrmm.test import TacticalTestCase
 
 from .models import Script
@@ -69,7 +69,7 @@ class TestScriptViews(TacticalTestCase):
         resp = self.client.post(url, data, format="multipart")
         self.assertEqual(resp.status_code, 200)
         script = Script.objects.filter(name="New Name").first()
-        self.assertEquals(script.code, "Test")
+        self.assertEquals(script.code, "Test")  # type: ignore
 
         self.check_not_authenticated("post", url)
 
@@ -137,6 +137,26 @@ class TestScriptViews(TacticalTestCase):
         self.assertEqual(serializer.data, resp.data)  # type: ignore
 
         self.check_not_authenticated("get", url)
+
+    @patch("agents.models.Agent.nats_cmd")
+    def test_test_script(self, run_script):
+        url = "/scripts/testscript/"
+
+        run_script.return_value = "return value"
+        agent = baker.make_recipe("agents.agent")
+        data = {
+            "agent": agent.pk,
+            "code": "some_code",
+            "timeout": 90,
+            "args": [],
+            "shell": "powershell",
+        }
+
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data, "return value")  # type: ignore
+
+        self.check_not_authenticated("post", url)
 
     def test_delete_script(self):
         # test a call where script doesn't exist

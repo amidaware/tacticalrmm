@@ -10,6 +10,7 @@
           <q-tab name="customfields" label="Custom Fields" />
           <q-tab name="keystore" label="Key Store" />
           <q-tab name="urlactions" label="URL Actions" />
+          <q-tab name="retention" label="Retention" />
         </q-tabs>
       </template>
       <template v-slot:after>
@@ -88,15 +89,17 @@
                   />
                 </q-card-section>
                 <q-card-section class="row">
-                  <div class="col-4">Remove Check Graph History older than (days):</div>
+                  <div class="col-4">Agent Debug Level:</div>
                   <div class="col-2"></div>
-                  <q-input
-                    hint="Setting this value to 0 disables this feature"
+                  <q-select
+                    emit-value
+                    map-options
                     outlined
                     dense
-                    v-model.number="settings.check_history_prune_days"
+                    options-dense
+                    v-model="settings.agent_debug_level"
+                    :options="logLevelOptions"
                     class="col-6"
-                    :rules="[val => val >= 0 || 'Minimum is 0']"
                   />
                 </q-card-section>
                 <q-card-section class="row">
@@ -300,17 +303,17 @@
                 <q-card-section class="row">
                   <div class="col-4">Username:</div>
                   <div class="col-2"></div>
-                  <q-input dense filled v-model="settings.mesh_username" class="col-6" />
+                  <q-input dense outlined v-model="settings.mesh_username" class="col-6" />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Mesh Site:</div>
                   <div class="col-2"></div>
-                  <q-input dense filled v-model="settings.mesh_site" class="col-6" />
+                  <q-input dense outlined v-model="settings.mesh_site" class="col-6" />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Mesh Token:</div>
                   <div class="col-2"></div>
-                  <q-input dense filled v-model="settings.mesh_token" class="col-6" />
+                  <q-input dense outlined v-model="settings.mesh_token" class="col-6" />
                 </q-card-section>
               </q-tab-panel>
               <q-tab-panel name="customfields">
@@ -323,6 +326,52 @@
 
               <q-tab-panel name="urlactions">
                 <URLActionsTable />
+              </q-tab-panel>
+              <q-tab-panel name="retention">
+                <q-card-section class="row">
+                  <div class="col-4">Check History (days):</div>
+                  <div class="col-2"></div>
+                  <q-input
+                    dense
+                    outlined
+                    v-model="settings.check_history_prune_days"
+                    class="col-6"
+                    hint="Setting this value to 0 disables this feature"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4">Resolved Alerts (days):</div>
+                  <div class="col-2"></div>
+                  <q-input
+                    dense
+                    outlined
+                    v-model="settings.resolved_alerts_prune_days"
+                    class="col-6"
+                    hint="Setting this value to 0 disables this feature"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4">Agent History (days):</div>
+                  <div class="col-2"></div>
+                  <q-input
+                    dense
+                    outlined
+                    v-model="settings.agent_history_prune_days"
+                    class="col-6"
+                    hint="Setting this value to 0 disables this feature"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4">Debug Logs (days):</div>
+                  <div class="col-2"></div>
+                  <q-input
+                    dense
+                    outlined
+                    v-model="settings.debug_log_prune_days"
+                    class="col-6"
+                    hint="Setting this value to 0 disables this feature"
+                  />
+                </q-card-section>
               </q-tab-panel>
             </q-tab-panels>
           </q-scroll-area>
@@ -392,6 +441,12 @@ export default {
         opacity: 0.75,
       },
       alertTemplateOptions: [],
+      logLevelOptions: [
+        { label: "Info", value: "info" },
+        { label: "Warning", value: "warning" },
+        { label: "Error", value: "error" },
+        { label: "Critical", value: "critical" },
+      ],
     };
   },
   methods: {

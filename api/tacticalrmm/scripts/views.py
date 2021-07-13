@@ -1,22 +1,19 @@
 import base64
 import json
+import asyncio
 
-from django.conf import settings
 from django.shortcuts import get_object_or_404
-from loguru import logger
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.parsers import FileUploadParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from tacticalrmm.utils import notify_error
 
 from .models import Script
 from .permissions import ManageScriptsPerms
+from agents.permissions import RunScriptPerms
 from .serializers import ScriptSerializer, ScriptTableSerializer
-
-logger.configure(**settings.LOG_CONFIG)
 
 
 class GetAddScripts(APIView):
@@ -24,7 +21,13 @@ class GetAddScripts(APIView):
     parser_class = (FileUploadParser,)
 
     def get(self, request):
-        scripts = Script.objects.all()
+
+        showCommunityScripts = request.GET.get("showCommunityScripts", True)
+        if not showCommunityScripts or showCommunityScripts == "false":
+            scripts = Script.objects.filter(script_type="userdefined")
+        else:
+            scripts = Script.objects.all()
+
         return Response(ScriptTableSerializer(scripts, many=True).data)
 
     def post(self, request, format=None):
@@ -43,7 +46,7 @@ class GetAddScripts(APIView):
 
         # file upload, have to json load it cuz it's formData
         if "args" in request.data.keys() and "file_upload" in request.data.keys():
-            data["args"] = json.loads(request.data["args"])
+            data["args"] = json.loads(request.data["args"])  # type: ignore
 
         if "favorite" in request.data.keys():
             data["favorite"] = request.data["favorite"]
@@ -105,6 +108,36 @@ class GetUpdateDeleteScript(APIView):
 
         script.delete()
         return Response(f"{script.name} was deleted!")
+
+
+class TestScript(APIView):
+    permission_classes = [IsAuthenticated, RunScriptPerms]
+
+    def post(self, request):
+        from .models import Script
+        from agents.models import Agent
+
+        agent = get_object_or_404(Agent, pk=request.data["agent"])
+
+        parsed_args = Script.parse_script_args(
+            self, request.data["shell"], request.data["args"]
+        )
+
+        data = {
+            "func": "runscript",
+            "timeout": request.data["timeout"],
+            "script_args": parsed_args,
+            "payload": {
+                "code": request.data["code"],
+                "shell": request.data["shell"],
+            },
+        }
+
+        r = asyncio.run(
+            agent.nats_cmd(data, timeout=request.data["timeout"], wait=True)
+        )
+
+        return Response(r)
 
 
 @api_view()

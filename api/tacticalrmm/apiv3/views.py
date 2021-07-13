@@ -6,7 +6,6 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
-from loguru import logger
 from packaging import version as pyver
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
@@ -22,12 +21,10 @@ from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
 from checks.models import Check
 from checks.serializers import CheckRunnerGetSerializer
 from checks.utils import bytes2human
-from logs.models import PendingAction
+from logs.models import PendingAction, DebugLog
 from software.models import InstalledSoftware
 from tacticalrmm.utils import SoftwareList, filter_software, notify_error, reload_nats
 from winupdate.models import WinUpdate, WinUpdatePolicy
-
-logger.configure(**settings.LOG_CONFIG)
 
 
 class CheckIn(APIView):
@@ -182,7 +179,11 @@ class WinUpdates(APIView):
 
         if reboot:
             asyncio.run(agent.nats_cmd({"func": "rebootnow"}, wait=False))
-            logger.info(f"{agent.hostname} is rebooting after updates were installed.")
+            DebugLog.info(
+                agent=agent,
+                log_type="windows_updates",
+                message=f"{agent.hostname} is rebooting after updates were installed.",
+            )
 
         agent.delete_superseded_updates()
         return Response("ok")
@@ -371,38 +372,7 @@ class TaskRunner(APIView):
         if task.custom_field:
             if not task.stderr:
 
-                if AgentCustomField.objects.filter(
-                    field=task.custom_field, agent=task.agent
-                ).exists():
-                    agent_field = AgentCustomField.objects.get(
-                        field=task.custom_field, agent=task.agent
-                    )
-                else:
-                    agent_field = AgentCustomField.objects.create(
-                        field=task.custom_field, agent=task.agent
-                    )
-
-                # get last line of stdout
-                value = (
-                    new_task.stdout
-                    if task.collector_all_output
-                    else new_task.stdout.split("\n")[-1].strip()
-                )
-
-                if task.custom_field.type in [
-                    "text",
-                    "number",
-                    "single",
-                    "datetime",
-                ]:
-                    agent_field.string_value = value
-                    agent_field.save()
-                elif task.custom_field.type == "multiple":
-                    agent_field.multiple_value = value.split(",")
-                    agent_field.save()
-                elif task.custom_field.type == "checkbox":
-                    agent_field.bool_value = bool(value)
-                    agent_field.save()
+                task.save_collector_results()
 
                 status = "passing"
             else:

@@ -1,12 +1,9 @@
 import base64
 import re
-from typing import List, Optional
+from typing import List
 
-from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from loguru import logger
-
 from logs.models import BaseAuditModel
 from tacticalrmm.utils import replace_db_values
 
@@ -20,8 +17,6 @@ SCRIPT_TYPES = [
     ("userdefined", "User Defined"),
     ("builtin", "Built In"),
 ]
-
-logger.configure(**settings.LOG_CONFIG)
 
 
 class Script(BaseAuditModel):

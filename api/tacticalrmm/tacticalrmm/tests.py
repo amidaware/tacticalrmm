@@ -4,7 +4,8 @@ from unittest.mock import mock_open, patch
 
 import requests
 from django.conf import settings
-from django.test import TestCase, override_settings
+from django.test import override_settings
+from tacticalrmm.test import TacticalTestCase
 
 from .utils import (
     bitdays_to_string,
@@ -16,7 +17,10 @@ from .utils import (
 )
 
 
-class TestUtils(TestCase):
+class TestUtils(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+
     @patch("requests.post")
     @patch("__main__.__builtins__.open", new_callable=mock_open)
     def test_generate_winagent_exe_success(self, m_open, mock_post):

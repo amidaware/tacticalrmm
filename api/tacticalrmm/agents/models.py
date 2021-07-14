@@ -974,3 +974,11 @@ class AgentHistory(models.Model):
     )
     username = models.CharField(max_length=50, default="system")
     results = models.TextField(null=True, blank=True)
+    script = models.ForeignKey(
+        "scripts.Script",
+        null=True,
+        blank=True,
+        related_name="history",
+        on_delete=models.SET_NULL,
+    )
+    script_results = models.JSONField(null=True, blank=True)

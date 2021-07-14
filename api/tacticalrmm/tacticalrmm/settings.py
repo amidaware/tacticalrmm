@@ -27,10 +27,10 @@ LATEST_AGENT_VER = "1.5.9"
 MESH_VER = "0.8.60"
 
 # for the update script, bump when need to recreate venv or npm install
-PIP_VER = "19"
-NPM_VER = "19"
+PIP_VER = "20"
+NPM_VER = "20"
 
-SETUPTOOLS_VER = "57.0.0"
+SETUPTOOLS_VER = "57.1.0"
 WHEEL_VER = "0.36.2"
 
 DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"

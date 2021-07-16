@@ -19,7 +19,7 @@
 
 <script>
 // composition imports
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useStore } from "vuex";
 import { formatDate, formatTableColumnText } from "@/utils/format";
 import { fetchAgentHistory } from "@/api/agents";
@@ -81,6 +81,11 @@ export default {
       if (newValue) {
         getHistory();
       }
+    });
+
+    // vue component hooks
+    onMounted(() => {
+      getHistory();
     });
 
     return {

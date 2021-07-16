@@ -112,7 +112,7 @@
 // composition imports
 import { ref, watch, computed, onMounted } from "vue";
 import { useStore } from "vuex";
-import { useDialogPluginComponent } from "quasar";
+import { useDialogPluginComponent, useQuasar } from "quasar";
 import { useScriptDropdown } from "@/composables/scripts";
 import { useCustomFieldDropdown } from "@/composables/core";
 import { runScript } from "@/api/agents";
@@ -128,6 +128,7 @@ export default {
     agent: !Object,
   },
   setup(props) {
+    const $q = useQuasar();
     // setup vuex store
     const { state } = useStore();
     const showCommunityScripts = computed(() => state.showCommunityScripts);
@@ -167,6 +168,13 @@ export default {
 
       ret.value = await runScript(data);
       loading.value = false;
+      if (output.value === "forget") {
+        onDialogHide();
+        $q.notify({
+          message: ret.value,
+          color: "positive",
+        });
+      }
     }
 
     // watchers

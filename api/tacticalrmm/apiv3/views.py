@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
-from agents.models import Agent, AgentCustomField
+from agents.models import Agent, AgentHistory
 from agents.serializers import WinAgentSerializer
 from autotasks.models import AutomatedTask
 from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
@@ -351,7 +351,7 @@ class TaskRunner(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk, agentid):
-        agent = get_object_or_404(Agent, agent_id=agentid)
+        _ = get_object_or_404(Agent, agent_id=agentid)
         task = get_object_or_404(AutomatedTask, pk=pk)
         return Response(TaskGOGetSerializer(task).data)
 
@@ -592,3 +592,15 @@ class AgentRecovery(APIView):
             reload_nats()
 
         return Response(ret)
+
+
+class AgentHistoryScriptResult(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, agentid, pk):
+        _ = get_object_or_404(Agent, agent_id=agentid)
+        hist = get_object_or_404(AgentHistory, pk=pk)
+        hist.script_results = request.data["script_results"]
+        hist.save(update_fields=["script_results"])
+        return Response("ok")

@@ -234,11 +234,17 @@ def run_script_email_results_task(
     nats_timeout: int,
     emails: list[str],
     args: list[str] = [],
+    history_pk: int = 0,
 ):
     agent = Agent.objects.get(pk=agentpk)
     script = Script.objects.get(pk=scriptpk)
     r = agent.run_script(
-        scriptpk=script.pk, args=args, full=True, timeout=nats_timeout, wait=True
+        scriptpk=script.pk,
+        args=args,
+        full=True,
+        timeout=nats_timeout,
+        wait=True,
+        history_pk=history_pk,
     )
     if r == "timeout":
         DebugLog.error(

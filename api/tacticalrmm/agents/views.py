@@ -575,9 +575,23 @@ def run_script(request):
         script=script.name,
     )
 
+    history_pk = 0
+    if pyver.parse(agent.version) >= pyver.parse("1.6.0"):
+        hist = AgentHistory.objects.create(
+            agent=agent,
+            type="script_run",
+            script=script,
+            username=request.user.username[:50],
+        )
+        history_pk = hist.pk
+
     if output == "wait":
         r = agent.run_script(
-            scriptpk=script.pk, args=args, timeout=req_timeout, wait=True
+            scriptpk=script.pk,
+            args=args,
+            timeout=req_timeout,
+            wait=True,
+            history_pk=history_pk,
         )
         return Response(r)
 
@@ -596,7 +610,11 @@ def run_script(request):
         from core.models import CustomField
 
         r = agent.run_script(
-            scriptpk=script.pk, args=args, timeout=req_timeout, wait=True
+            scriptpk=script.pk,
+            args=args,
+            timeout=req_timeout,
+            wait=True,
+            history_pk=history_pk,
         )
 
         custom_field = CustomField.objects.get(pk=request.data["custom_field"])
@@ -616,13 +634,19 @@ def run_script(request):
         return Response(r)
     elif output == "note":
         r = agent.run_script(
-            scriptpk=script.pk, args=args, timeout=req_timeout, wait=True
+            scriptpk=script.pk,
+            args=args,
+            timeout=req_timeout,
+            wait=True,
+            history_pk=history_pk,
         )
 
         Note.objects.create(agent=agent, user=request.user, note=r)
         return Response(r)
     else:
-        agent.run_script(scriptpk=script.pk, args=args, timeout=req_timeout)
+        agent.run_script(
+            scriptpk=script.pk, args=args, timeout=req_timeout, history_pk=history_pk
+        )
 
     return Response(f"{script.name} will now be run on {agent.hostname}")
 
@@ -727,7 +751,11 @@ def bulk(request):
     elif request.data["mode"] == "script":
         script = get_object_or_404(Script, pk=request.data["scriptPK"])
         handle_bulk_script_task.delay(
-            script.pk, agents, request.data["args"], request.data["timeout"]
+            script.pk,
+            agents,
+            request.data["args"],
+            request.data["timeout"],
+            request.user.username[:50],
         )
         return Response(f"{script.name} will now be run on {len(agents)} agents")
 

@@ -18,6 +18,7 @@ from django.db import models
 from django.utils import timezone as djangotime
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrTimeout
+from packaging import version as pyver
 
 from core.models import TZ_CHOICES, CoreSettings
 from logs.models import BaseAuditModel, DebugLog
@@ -322,6 +323,7 @@ class Agent(BaseAuditModel):
         full: bool = False,
         wait: bool = False,
         run_on_any: bool = False,
+        history_pk: int = 0,
     ) -> Any:
 
         from scripts.models import Script
@@ -339,6 +341,9 @@ class Agent(BaseAuditModel):
                 "shell": script.shell,
             },
         }
+
+        if history_pk != 0 and pyver.parse(self.version) >= pyver.parse("1.6.0"):
+            data["id"] = history_pk
 
         running_agent = self
         if run_on_any:

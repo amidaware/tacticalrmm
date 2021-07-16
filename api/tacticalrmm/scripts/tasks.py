@@ -8,7 +8,7 @@ from tacticalrmm.celery import app
 
 
 @app.task
-def handle_bulk_command_task(agentpks, cmd, shell, timeout) -> None:
+def handle_bulk_command_task(agentpks, cmd, shell, timeout, username) -> None:
     nats_data = {
         "func": "rawcmd",
         "timeout": timeout,
@@ -18,6 +18,15 @@ def handle_bulk_command_task(agentpks, cmd, shell, timeout) -> None:
         },
     }
     for agent in Agent.objects.filter(pk__in=agentpks):
+        if pyver.parse(agent.version) >= pyver.parse("1.6.0"):
+            hist = AgentHistory.objects.create(
+                agent=agent,
+                type="cmd_run",
+                command=cmd,
+                username=username,
+            )
+            nats_data["id"] = hist.pk
+
         asyncio.run(agent.nats_cmd(nats_data, wait=False))
 
 

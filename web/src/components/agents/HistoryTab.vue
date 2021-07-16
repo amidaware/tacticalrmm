@@ -85,7 +85,7 @@ export default {
 
     // vue component hooks
     onMounted(() => {
-      getHistory();
+      if (!!selectedAgent.value) getHistory();
     });
 
     return {

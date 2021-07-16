@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 
 from accounts.models import User
 from agents.models import Agent, AgentHistory
-from agents.serializers import WinAgentSerializer
+from agents.serializers import WinAgentSerializer, AgentHistorySerializer
 from autotasks.models import AutomatedTask
 from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
 from checks.models import Check
@@ -594,13 +594,14 @@ class AgentRecovery(APIView):
         return Response(ret)
 
 
-class AgentHistoryScriptResult(APIView):
+class AgentHistoryResult(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, agentid, pk):
         _ = get_object_or_404(Agent, agent_id=agentid)
         hist = get_object_or_404(AgentHistory, pk=pk)
-        hist.script_results = request.data["script_results"]
-        hist.save(update_fields=["script_results"])
+        s = AgentHistorySerializer(instance=hist, data=request.data, partial=True)
+        s.is_valid(raise_exception=True)
+        s.save()
         return Response("ok")

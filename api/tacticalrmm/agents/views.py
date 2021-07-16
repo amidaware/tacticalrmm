@@ -246,6 +246,16 @@ def send_raw_cmd(request):
             "shell": request.data["shell"],
         },
     }
+
+    if pyver.parse(agent.version) >= pyver.parse("1.6.0"):
+        hist = AgentHistory.objects.create(
+            agent=agent,
+            type="cmd_run",
+            command=request.data["cmd"],
+            username=request.user.username[:50],
+        )
+        data["id"] = hist.pk
+
     r = asyncio.run(agent.nats_cmd(data, timeout=timeout + 2))
 
     if r == "timeout":
@@ -744,7 +754,11 @@ def bulk(request):
 
     if request.data["mode"] == "command":
         handle_bulk_command_task.delay(
-            agents, request.data["cmd"], request.data["shell"], request.data["timeout"]
+            agents,
+            request.data["cmd"],
+            request.data["shell"],
+            request.data["timeout"],
+            request.user.username[:50],
         )
         return Response(f"Command will now be run on {len(agents)} agents")
 

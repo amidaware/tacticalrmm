@@ -987,3 +987,6 @@ class AgentHistory(models.Model):
         on_delete=models.SET_NULL,
     )
     script_results = models.JSONField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.agent.hostname} - {self.type}"

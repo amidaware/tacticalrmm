@@ -621,7 +621,7 @@
   },
   {
     "guid": "43e65e5f-717a-4b6d-a724-1a86229fcd42",
-    "filename": "Win_Network_Hosts_AddRemove.ps1",
+    "filename": "Win_Activation_Check.ps1",
     "submittedBy": "https://github.com/dinger1986",
     "name": "Windows Activation check",
     "description": "Checks to see if windows is activated and returns status",

@@ -33,6 +33,10 @@ class CheckIn(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request):
+        """
+        !!! DEPRECATED AS OF AGENT 1.6.0 !!!
+        Endpoint be removed in a future release
+        """
         from alerts.models import Alert
 
         updated = False

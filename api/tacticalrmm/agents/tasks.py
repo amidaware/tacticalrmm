@@ -13,6 +13,7 @@ from django.utils import timezone as djangotime
 from packaging import version as pyver
 
 from agents.models import Agent
+from alerts.models import Alert
 from core.models import CodeSignToken, CoreSettings
 from logs.models import PendingAction, DebugLog
 from scripts.models import Script
@@ -360,3 +361,45 @@ def prune_agent_history(older_than_days: int) -> str:
     ).delete()
 
     return "ok"
+
+
+@app.task
+def handle_agents_task() -> None:
+    q = Agent.objects.prefetch_related("pendingactions", "autotasks").only(
+        "pk", "agent_id", "version", "last_seen", "overdue_time", "offline_time"
+    )
+    agents = [
+        i
+        for i in q
+        if pyver.parse(i.version) >= pyver.parse("1.6.0") and i.status == "online"
+    ]
+    for agent in agents:
+        # change agent update pending status to completed if agent has just updated
+        if (
+            pyver.parse(agent.version) == pyver.parse(settings.LATEST_AGENT_VER)
+            and agent.pendingactions.filter(
+                action_type="agentupdate", status="pending"
+            ).exists()
+        ):
+            agent.pendingactions.filter(
+                action_type="agentupdate", status="pending"
+            ).update(status="completed")
+
+        # sync scheduled tasks
+        if agent.autotasks.exclude(sync_status="synced").exists():  # type: ignore
+            tasks = agent.autotasks.exclude(sync_status="synced")  # type: ignore
+
+            for task in tasks:
+                if task.sync_status == "pendingdeletion":
+                    task.delete_task_on_agent()
+                elif task.sync_status == "initial":
+                    task.modify_task_on_agent()
+                elif task.sync_status == "notsynced":
+                    task.create_task_on_agent()
+
+        # handles any alerting actions
+        if Alert.objects.filter(agent=agent, resolved=False).exists():
+            try:
+                Alert.handle_alert_resolve(agent)
+            except:
+                continue

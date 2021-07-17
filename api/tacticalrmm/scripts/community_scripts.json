@@ -620,6 +620,16 @@
     "default_timeout": "90"
   },
   {
+    "guid": "43e65e5f-717a-4b6d-a724-1a86229fcd42",
+    "filename": "Win_Activation_Check.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Windows Activation check",
+    "description": "Checks to see if windows is activated and returns status",
+    "shell": "powershell",
+    "category": "TRMM (Win):Other",
+    "default_timeout": "120"
+  },
+  {
     "guid": "83f6c6ea-6120-4fd3-bec8-d3abc505dcdf",
     "filename": "Win_TRMM_Start_Menu_Delete_Shortcut.ps1",
     "submittedBy": "https://github.com/silversword411",

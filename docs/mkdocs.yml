@@ -31,6 +31,7 @@ nav:
   - Management Commands: management_cmds.md
   - MeshCentral Integration: mesh_integration.md
   - 3rd Party Integrations:
+      - "Grafana": 3rdparty_grafana.md
       - "Connectwise Control / Screenconnect": 3rdparty_screenconnect.md
       - "TeamViewer": 3rdparty_teamviewer.md
       - "AnyDesk": 3rdparty_anydesk.md

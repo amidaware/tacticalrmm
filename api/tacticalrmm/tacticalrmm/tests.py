@@ -81,7 +81,7 @@ class TestUtils(TacticalTestCase):
     @patch("subprocess.run")
     def test_run_nats_api_cmd(self, mock_subprocess):
         ids = ["a", "b", "c"]
-        _ = run_nats_api_cmd("monitor", ids)
+        _ = run_nats_api_cmd("wmi", ids)
         mock_subprocess.assert_called_once()
 
     def test_bitdays_to_string(self):

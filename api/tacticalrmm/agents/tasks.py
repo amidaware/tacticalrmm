@@ -335,21 +335,12 @@ def get_wmi_task() -> None:
 
 @app.task
 def agent_checkin_task() -> None:
-    db = settings.DATABASES["default"]
-    config = {
-        "key": settings.SECRET_KEY,
-        "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
-        "user": db["USER"],
-        "pass": db["PASSWORD"],
-        "host": db["HOST"],
-        "port": int(db["PORT"]),
-        "dbname": db["NAME"],
-    }
-    with tempfile.NamedTemporaryFile() as fp:
-        with open(fp.name, "w") as f:
-            json.dump(config, f)
-        cmd = ["/usr/local/bin/nats-api", "-c", fp.name, "-m", "checkin"]
-        subprocess.run(cmd, timeout=30)
+    run_nats_api_cmd("checkin", timeout=30)
+
+
+@app.task
+def agent_getinfo_task() -> None:
+    run_nats_api_cmd("agentinfo", timeout=30)
 
 
 @app.task

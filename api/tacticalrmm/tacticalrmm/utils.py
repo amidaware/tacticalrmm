@@ -250,19 +250,32 @@ KnoxAuthMiddlewareStack = lambda inner: KnoxAuthMiddlewareInstance(
 )
 
 
-def run_nats_api_cmd(mode: str, ids: list[str], timeout: int = 30) -> None:
-    config = {
-        "key": settings.SECRET_KEY,
-        "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
-        "agents": ids,
-    }
+def run_nats_api_cmd(mode: str, ids: list[str] = [], timeout: int = 30) -> None:
+    if mode == "wmi":
+        config = {
+            "key": settings.SECRET_KEY,
+            "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
+            "agents": ids,
+        }
+    else:
+        db = settings.DATABASES["default"]
+        config = {
+            "key": settings.SECRET_KEY,
+            "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
+            "user": db["USER"],
+            "pass": db["PASSWORD"],
+            "host": db["HOST"],
+            "port": int(db["PORT"]),
+            "dbname": db["NAME"],
+        }
+
     with tempfile.NamedTemporaryFile() as fp:
         with open(fp.name, "w") as f:
             json.dump(config, f)
 
         cmd = ["/usr/local/bin/nats-api", "-c", fp.name, "-m", mode]
         try:
-            subprocess.run(cmd, capture_output=True, timeout=timeout)
+            subprocess.run(cmd, timeout=timeout)
         except Exception as e:
             DebugLog.error(message=e)
 

@@ -324,15 +324,6 @@ def clear_faults_task(older_than_days: int) -> None:
 
 
 @app.task
-def monitor_agents_task() -> None:
-    agents = Agent.objects.only(
-        "pk", "agent_id", "last_seen", "overdue_time", "offline_time"
-    )
-    ids = [i.agent_id for i in agents if i.status != "online"]
-    run_nats_api_cmd("monitor", ids)
-
-
-@app.task
 def get_wmi_task() -> None:
     agents = Agent.objects.only(
         "pk", "agent_id", "last_seen", "overdue_time", "offline_time"

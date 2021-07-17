@@ -23,12 +23,12 @@ func main() {
 	}
 
 	switch *mode {
-	case "monitor":
-		api.MonitorAgents(*config)
 	case "wmi":
 		api.GetWMI(*config)
 	case "checkin":
 		api.CheckIn(*config)
+	case "agentinfo":
+		api.AgentInfo(*config)
 	default:
 		fmt.Println(version)
 	}

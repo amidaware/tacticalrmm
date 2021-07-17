@@ -53,90 +53,10 @@ func setupNatsOptions(key string) []nats.Option {
 	return opts
 }
 
-func MonitorAgents(file string) {
-	var result JsonFile
-	var payload, recPayload []byte
-	var mh codec.MsgpackHandle
-	mh.RawToString = true
-	ret := codec.NewEncoderBytes(&payload, new(codec.MsgpackHandle))
-	ret.Encode(map[string]string{"func": "ping"})
-
-	rec := codec.NewEncoderBytes(&recPayload, new(codec.MsgpackHandle))
-	rec.Encode(Recovery{
-		Func: "recover",
-		Data: map[string]string{"mode": "tacagent"},
-	})
-
-	jret, _ := ioutil.ReadFile(file)
-	err := json.Unmarshal(jret, &result)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	opts := setupNatsOptions(result.Key)
-
-	nc, err := nats.Connect(result.NatsURL, opts...)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer nc.Close()
-
-	var wg sync.WaitGroup
-	var resp string
-	wg.Add(len(result.Agents))
-
-	for _, id := range result.Agents {
-		go func(id string, nc *nats.Conn, wg *sync.WaitGroup) {
-			defer wg.Done()
-			out, err := nc.Request(id, payload, 1*time.Second)
-			if err != nil {
-				return
-			}
-			dec := codec.NewDecoderBytes(out.Data, &mh)
-			if err := dec.Decode(&resp); err == nil {
-				// if the agent is respoding to pong from the rpc service but is not showing as online (handled by tacticalagent service)
-				// then tacticalagent service is hung. forcefully restart it
-				if resp == "pong" {
-					nc.Publish(id, recPayload)
-				}
-			}
-		}(id, nc, &wg)
-	}
-	wg.Wait()
-}
-
 func CheckIn(file string) {
-	var r DjangoConfig
-
-	jret, _ := ioutil.ReadFile(file)
-	err := json.Unmarshal(jret, &r)
+	agents, db, r, err := GetAgents(file)
 	if err != nil {
 		log.Fatalln(err)
-	}
-
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		r.Host, r.Port, r.User, r.Pass, r.DBName)
-
-	db, err := sqlx.Connect("postgres", psqlInfo)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	db.SetMaxOpenConns(15)
-
-	agent := Agent{}
-	agents := make([]Agent, 0)
-	rows, err := db.Queryx("SELECT agents_agent.id, agents_agent.agent_id FROM agents_agent")
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	for rows.Next() {
-		err := rows.StructScan(&agent)
-		if err != nil {
-			continue
-		}
-		agents = append(agents, agent)
 	}
 
 	var payload []byte
@@ -189,6 +109,101 @@ func CheckIn(file string) {
 	db.Close()
 }
 
+func GetAgents(file string) (agents []Agent, db *sqlx.DB, r DjangoConfig, err error) {
+	jret, _ := ioutil.ReadFile(file)
+	err = json.Unmarshal(jret, &r)
+	if err != nil {
+		return
+	}
+
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		r.Host, r.Port, r.User, r.Pass, r.DBName)
+
+	db, err = sqlx.Connect("postgres", psqlInfo)
+	if err != nil {
+		return
+	}
+	db.SetMaxOpenConns(15)
+
+	agent := Agent{}
+	rows, err := db.Queryx("SELECT agents_agent.id, agents_agent.agent_id FROM agents_agent")
+	if err != nil {
+		return
+	}
+
+	for rows.Next() {
+		err := rows.StructScan(&agent)
+		if err != nil {
+			continue
+		}
+		agents = append(agents, agent)
+	}
+	return
+}
+
+func AgentInfo(file string) {
+	agents, db, r, err := GetAgents(file)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var payload []byte
+	ret := codec.NewEncoderBytes(&payload, new(codec.MsgpackHandle))
+	ret.Encode(map[string]string{"func": "agentinfo"})
+
+	opts := setupNatsOptions(r.Key)
+
+	nc, err := nats.Connect(r.NatsURL, opts...)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer nc.Close()
+
+	var wg sync.WaitGroup
+	wg.Add(len(agents))
+
+	for _, a := range agents {
+		go func(id string, pk int, nc *nats.Conn, wg *sync.WaitGroup, db *sqlx.DB) {
+			defer wg.Done()
+
+			var r AgentInfoRet
+			var mh codec.MsgpackHandle
+			mh.RawToString = true
+
+			time.Sleep(time.Duration(randRange(100, 1500)) * time.Millisecond)
+			out, err := nc.Request(id, payload, 1*time.Second)
+			if err != nil {
+				return
+			}
+
+			dec := codec.NewDecoderBytes(out.Data, &mh)
+			if err := dec.Decode(&r); err == nil {
+				stmt := `
+				UPDATE agents_agent
+				SET version=$1, hostname=$2, operating_system=$3,
+				plat=$4, total_ram=$5, boot_time=$6, needs_reboot=$7, logged_in_username=$8
+				WHERE agents_agent.id=$9;`
+
+				_, err = db.Exec(stmt, r.Version, r.Hostname, r.OS, r.Platform, r.TotalRAM, r.BootTime, r.RebootNeeded, r.Username, pk)
+				if err != nil {
+					fmt.Println(err)
+				}
+
+				if r.Username != "None" {
+					stmt = `UPDATE agents_agent SET last_logged_in_user=$1 WHERE agents_agent.id=$2;`
+					_, err = db.Exec(stmt, r.Username, pk)
+					if err != nil {
+						fmt.Println(err)
+					}
+				}
+			}
+		}(a.AgentID, a.ID, nc, &wg, db)
+	}
+	wg.Wait()
+	db.Close()
+}
+
 func GetWMI(file string) {
 	var result JsonFile
 	var payload []byte
@@ -227,4 +242,16 @@ func GetWMI(file string) {
 func randRange(min, max int) int {
 	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(max-min) + min
+}
+
+type AgentInfoRet struct {
+	AgentPK      int     `json:"id"`
+	Version      string  `json:"version"`
+	Username     string  `json:"logged_in_username"`
+	Hostname     string  `json:"hostname"`
+	OS           string  `json:"operating_system"`
+	Platform     string  `json:"plat"`
+	TotalRAM     float64 `json:"total_ram"`
+	BootTime     int64   `json:"boot_time"`
+	RebootNeeded bool    `json:"needs_reboot"`
 }

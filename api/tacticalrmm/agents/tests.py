@@ -788,7 +788,7 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         run_script.assert_called_with(
-            scriptpk=script.pk, args=[], timeout=18, wait=True
+            scriptpk=script.pk, args=[], timeout=18, wait=True, history_pk=0
         )
         run_script.reset_mock()
 
@@ -837,7 +837,7 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         run_script.assert_called_with(
-            scriptpk=script.pk, args=["hello", "world"], timeout=25
+            scriptpk=script.pk, args=["hello", "world"], timeout=25, history_pk=0
         )
         run_script.reset_mock()
 
@@ -858,7 +858,11 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         run_script.assert_called_with(
-            scriptpk=script.pk, args=["hello", "world"], timeout=25, wait=True
+            scriptpk=script.pk,
+            args=["hello", "world"],
+            timeout=25,
+            wait=True,
+            history_pk=0,
         )
         run_script.reset_mock()
 
@@ -882,7 +886,11 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         run_script.assert_called_with(
-            scriptpk=script.pk, args=["hello", "world"], timeout=25, wait=True
+            scriptpk=script.pk,
+            args=["hello", "world"],
+            timeout=25,
+            wait=True,
+            history_pk=0,
         )
         run_script.reset_mock()
 
@@ -908,7 +916,11 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         run_script.assert_called_with(
-            scriptpk=script.pk, args=["hello", "world"], timeout=25, wait=True
+            scriptpk=script.pk,
+            args=["hello", "world"],
+            timeout=25,
+            wait=True,
+            history_pk=0,
         )
         run_script.reset_mock()
 
@@ -931,7 +943,11 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         run_script.assert_called_with(
-            scriptpk=script.pk, args=["hello", "world"], timeout=25, wait=True
+            scriptpk=script.pk,
+            args=["hello", "world"],
+            timeout=25,
+            wait=True,
+            history_pk=0,
         )
         run_script.reset_mock()
 

@@ -9,7 +9,7 @@ Tactical RMM is a remote monitoring & management tool for Windows computers, bui
 It uses an [agent](https://github.com/wh1te909/rmmagent) written in golang and integrates with [MeshCentral](https://github.com/Ylianst/MeshCentral)
 
 # [LIVE DEMO](https://rmm.tacticalrmm.io/)
-Demo database resets every hour. Alot of features are disabled for obvious reasons due to the nature of this app.
+Demo database resets every hour. A lot of features are disabled for obvious reasons due to the nature of this app.
 
 ### [Discord Chat](https://discord.gg/upGTkWp)
 

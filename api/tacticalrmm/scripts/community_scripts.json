@@ -560,6 +560,16 @@
     "default_timeout": "90"
   },
   {
+    "guid": "7c0c7e37-60ff-462f-9c34-b5cd4c4796a7",
+    "filename": "Win_Wifi_SSID_and_Password_Retrieval.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Network Wireless - Retrieve Saved passwords",
+    "description": "Returns all saved wifi passwords stored on the computer",
+    "shell": "powershell",
+    "category": "TRMM (Win):Network",
+    "default_timeout": "90"
+  },
+  {
     "guid": "abe78170-7cf9-435b-9666-c5ef6c11a106",
     "filename": "Win_Network_IPv6_Disable.ps1",
     "submittedBy": "https://github.com/silversword411",

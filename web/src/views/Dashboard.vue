@@ -567,7 +567,7 @@ export default {
       };
       this.ws.onclose = e => {
         console.log(`Closed code: ${e.code}`);
-        if (e.code !== 1000) {
+        if (e.code !== 1000 && this.ws) {
           setTimeout(() => {
             this.setupWS();
           }, 2 * 1000);
@@ -901,6 +901,7 @@ export default {
   },
   beforeUnmount() {
     this.ws.close();
+    this.ws = null;
     clearInterval(this.poll);
   },
 };

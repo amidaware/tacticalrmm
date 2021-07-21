@@ -138,7 +138,7 @@ Executes the file (INNO setup exe)
 
 Files create `c:\Windows\temp\Tacticalxxxx\` folder for install (and log files)
 
-*****
+***
 
 ### Windows Update Management
 
@@ -151,3 +151,13 @@ AUOptions (REG_DWORD):
 ```
 
 Uses this Microsoft API to handle updates: [https://docs.microsoft.com/en-us/windows/win32/api/_wua/](https://docs.microsoft.com/en-us/windows/win32/api/_wua/)
+
+### Log files
+
+You can find 3 sets of detailed logs at `/rmm/api/tacticalrmm/tacticalrmm/private/log`
+
+* `error.log` nginx log for all errors on all TRMM URL's: rmm, api and mesh
+
+* `access.log` nginx log for access auditing on all URL's: rmm, api and mesh (_this is a large file, and should be cleaned periodically_)
+
+* `debug.log` created by django webapp

@@ -8,7 +8,7 @@ from django.db import models
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
 
-from logs.models import DebugLog
+from logs.models import BaseAuditModel, DebugLog
 
 if TYPE_CHECKING:
     from agents.models import Agent
@@ -463,7 +463,7 @@ class Alert(models.Model):
         return temp_args
 
 
-class AlertTemplate(models.Model):
+class AlertTemplate(BaseAuditModel):
     name = models.CharField(max_length=100)
     is_active = models.BooleanField(default=True)
 

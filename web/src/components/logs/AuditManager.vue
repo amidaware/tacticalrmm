@@ -179,6 +179,8 @@ const objectOptions = [
   { value: "script", label: "Script" },
   { value: "user", label: "User" },
   { value: "winupdatepolicy", label: "Patch Policy" },
+  { value: "alert_template", label: "Alert Template" },
+  { value: "role", label: "Role" },
 ];
 
 const timeOptions = [

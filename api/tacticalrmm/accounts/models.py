@@ -74,7 +74,7 @@ class User(AbstractUser, BaseAuditModel):
         return UserSerializer(user).data
 
 
-class Role(models.Model):
+class Role(BaseAuditModel):
     name = models.CharField(max_length=255, unique=True)
     is_superuser = models.BooleanField(default=False)
 

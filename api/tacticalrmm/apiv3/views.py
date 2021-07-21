@@ -393,15 +393,6 @@ class TaskRunner(APIView):
         else:
             Alert.handle_alert_failure(new_task)
 
-        AuditLog.objects.create(
-            username=agent.hostname,
-            agent=agent.hostname,
-            object_type="agent",
-            action="task_run",
-            message=f"Scheduled Task {task.name} was run on {agent.hostname}",
-            after_value=AutomatedTask.serialize(new_task),
-        )
-
         return Response("ok")
 
 
@@ -492,6 +483,7 @@ class NewAgent(APIView):
             action="agent_install",
             message=f"{request.user} installed new agent {agent.hostname}",
             after_value=Agent.serialize(agent),
+            debug_info={"ip": request._client_ip},
         )
 
         return Response(

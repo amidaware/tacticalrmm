@@ -31,6 +31,7 @@ class UserSerializer(ModelSerializer):
             "email",
             "is_active",
             "last_login",
+            "last_login_ip",
             "role",
         ]
 

@@ -48,6 +48,7 @@ class User(AbstractUser, BaseAuditModel):
     loading_bar_color = models.CharField(max_length=255, default="red")
     clear_search_when_switching = models.BooleanField(default=True)
     is_installer_user = models.BooleanField(default=False)
+    last_login_ip = models.GenericIPAddressField(default=None, blank=True, null=True)
 
     agent = models.OneToOneField(
         "agents.Agent",

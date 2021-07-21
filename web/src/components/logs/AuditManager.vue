@@ -146,6 +146,7 @@ const columns = [
     format: (val, row) => formatTableColumnText(val),
   },
   { name: "message", label: "Message", field: "message", align: "left", sortable: true },
+  { name: "client_ip", label: "Client IP", field: "ip_address", align: "left", sortable: true },
 ];
 
 const agentActionOptions = [

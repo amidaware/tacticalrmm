@@ -6,8 +6,8 @@ from .models import AuditLog, DebugLog, PendingAction
 
 
 class AuditLogSerializer(serializers.ModelSerializer):
-
     entry_time = serializers.SerializerMethodField(read_only=True)
+    ip_address = serializers.ReadOnlyField(source="debug_info.ip")
 
     class Meta:
         model = AuditLog
@@ -19,7 +19,6 @@ class AuditLogSerializer(serializers.ModelSerializer):
 
 
 class PendingActionSerializer(serializers.ModelSerializer):
-
     hostname = serializers.ReadOnlyField(source="agent.hostname")
     salt_id = serializers.ReadOnlyField(source="agent.salt_id")
     client = serializers.ReadOnlyField(source="agent.client.name")

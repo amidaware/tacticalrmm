@@ -369,14 +369,16 @@ class BaseAuditModel(models.Model):
                     debug_info=get_debug_info(),
                 )
             else:
-                AuditLog.audit_object_changed(
-                    username,
-                    object_class.__name__.lower(),
-                    object_class.serialize(before_value),  # type: ignore
-                    object_class.serialize(self),  # type: ignore
-                    self.__str__(),
-                    debug_info=get_debug_info(),
-                )
+                # only create an audit entry if the values have changed
+                if object_class.serialize(before_value) != object_class.serialize(self):  # type: ignore
+                    AuditLog.audit_object_changed(
+                        username,
+                        object_class.__name__.lower(),
+                        object_class.serialize(before_value),  # type: ignore
+                        object_class.serialize(self),  # type: ignore
+                        self.__str__(),
+                        debug_info=get_debug_info(),
+                    )
 
         return super(BaseAuditModel, self).save(*args, **kwargs)
 

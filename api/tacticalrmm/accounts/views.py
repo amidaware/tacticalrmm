@@ -3,23 +3,23 @@ from django.conf import settings
 from django.contrib.auth import login
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
+from ipware import get_client_ip
 from knox.views import LoginView as KnoxLoginView
+from logs.models import AuditLog
 from rest_framework import status
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from logs.models import AuditLog
 from tacticalrmm.utils import notify_error
 
-from .models import User, Role
+from .models import Role, User
 from .permissions import AccountsPerms, RolesPerms
 from .serializers import (
+    RoleSerializer,
     TOTPSetupSerializer,
     UserSerializer,
     UserUISerializer,
-    RoleSerializer,
 )
 
 
@@ -40,7 +40,9 @@ class CheckCreds(KnoxLoginView):
         # check credentials
         serializer = AuthTokenSerializer(data=request.data)
         if not serializer.is_valid():
-            AuditLog.audit_user_failed_login(request.data["username"])
+            AuditLog.audit_user_failed_login(
+                request.data["username"], debug_info={"ip": request._client_ip}
+            )
             return Response("bad credentials", status=status.HTTP_400_BAD_REQUEST)
 
         user = serializer.validated_data["user"]
@@ -76,10 +78,20 @@ class LoginView(KnoxLoginView):
 
         if valid:
             login(request, user)
-            AuditLog.audit_user_login_successful(request.data["username"])
+
+            # save ip information
+            client_ip, is_routable = get_client_ip(request)
+            user.last_login_ip = client_ip
+            user.save()
+
+            AuditLog.audit_user_login_successful(
+                request.data["username"], debug_info={"ip": request._client_ip}
+            )
             return super(LoginView, self).post(request, format=None)
         else:
-            AuditLog.audit_user_failed_twofactor(request.data["username"])
+            AuditLog.audit_user_failed_twofactor(
+                request.data["username"], debug_info={"ip": request._client_ip}
+            )
             return Response("bad credentials", status=status.HTTP_400_BAD_REQUEST)
 
 

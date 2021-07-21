@@ -168,7 +168,11 @@ def meshcentral(request, pk):
     terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"  # type:ignore
     file = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=13&hide=31"  # type:ignore
 
-    AuditLog.audit_mesh_session(username=request.user.username, agent=agent)
+    AuditLog.audit_mesh_session(
+        username=request.user.username,
+        agent=agent,
+        debug_info={"ip": request._client_ip},
+    )
 
     ret = {
         "hostname": agent.hostname,
@@ -266,6 +270,7 @@ def send_raw_cmd(request):
         agent=agent,
         cmd=request.data["cmd"],
         shell=request.data["shell"],
+        debug_info={"ip": request._client_ip},
     )
 
     return Response(r)
@@ -583,6 +588,7 @@ def run_script(request):
         username=request.user.username,
         agent=agent,
         script=script.name,
+        debug_info={"ip": request._client_ip},
     )
 
     history_pk = 0
@@ -750,7 +756,12 @@ def bulk(request):
 
     agents: list[int] = [agent.pk for agent in q]
 
-    AuditLog.audit_bulk_action(request.user, request.data["mode"], request.data)
+    AuditLog.audit_bulk_action(
+        request.user,
+        request.data["mode"],
+        request.data,
+        debug_info={"ip": request._client_ip},
+    )
 
     if request.data["mode"] == "command":
         handle_bulk_command_task.delay(

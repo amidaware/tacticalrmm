@@ -89,3 +89,9 @@ class AutoTasksFieldSerializer(ModelSerializer):
         model = AutomatedTask
         fields = "__all__"
         depth = 1
+
+
+class PolicyAuditSerializer(ModelSerializer):
+    class Meta:
+        model = Policy
+        fields = "__all__"

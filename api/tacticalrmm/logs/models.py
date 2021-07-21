@@ -46,6 +46,8 @@ AUDIT_OBJECT_TYPE_CHOICES = [
     ("automatedtask", "Automated Task"),
     ("coresettings", "Core Settings"),
     ("bulk", "Bulk"),
+    ("alerttemplate", "Alert Template"),
+    ("role", "Role"),
 ]
 
 STATUS_CHOICES = [
@@ -110,7 +112,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
-            agent_id=before.id if object_type == "agent" else None,
+            agent_id=before["id"] if object_type == "agent" else None,
             action="modify",
             message=f"{username} modified {object_type} {name}",
             before_value=before,
@@ -123,7 +125,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
-            agent=after.id if object_type == "agent" else None,
+            agent=after["id"] if object_type == "agent" else None,
             action="add",
             message=f"{username} added {object_type} {name}",
             after_value=after,
@@ -135,6 +137,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
+            agent=before["id"] if object_type == "agent" else None,
             action="delete",
             message=f"{username} deleted {object_type} {name}",
             before_value=before,
@@ -341,13 +344,14 @@ class BaseAuditModel(models.Model):
     def serialize():
         pass
 
-    def save(self, *args, **kwargs):
+    def save(self, old_model=None, *args, **kwargs):
+
         if get_username():
 
-            before_value = {}
             object_class = type(self)
             object_name = object_class.__name__.lower()
             username = get_username()
+            after_value = object_class.serialize(self)  # type: ignore
 
             # populate created_by and modified_by fields on instance
             if not getattr(self, "created_by", None):
@@ -355,34 +359,37 @@ class BaseAuditModel(models.Model):
             if hasattr(self, "modified_by"):
                 self.modified_by = username
 
-            # capture object properties before edit
-            if self.pk:
-                before_value = object_class.objects.get(pk=self.id)  # type: ignore
-
             # dont create entry for agent add since that is done in view
             if not self.pk:
                 AuditLog.audit_object_add(
                     username,
                     object_name,
-                    object_class.serialize(self),  # type: ignore
+                    after_value,  # type: ignore
                     self.__str__(),
                     debug_info=get_debug_info(),
                 )
             else:
+
+                if old_model:
+                    before_value = object_class.serialize(old_model)  # type: ignore
+                else:
+                    before_value = object_class.serialize(object_class.objects.get(pk=self.pk))  # type: ignore
                 # only create an audit entry if the values have changed
-                if object_class.serialize(before_value) != object_class.serialize(self):  # type: ignore
+                if before_value != after_value:  # type: ignore
+
                     AuditLog.audit_object_changed(
                         username,
                         object_class.__name__.lower(),
-                        object_class.serialize(before_value),  # type: ignore
-                        object_class.serialize(self),  # type: ignore
+                        before_value,
+                        after_value,  # type: ignore
                         self.__str__(),
                         debug_info=get_debug_info(),
                     )
 
-        return super(BaseAuditModel, self).save(*args, **kwargs)
+        super(BaseAuditModel, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
+        super(BaseAuditModel, self).delete(*args, **kwargs)
 
         if get_username():
 
@@ -394,5 +401,3 @@ class BaseAuditModel(models.Model):
                 self.__str__(),
                 debug_info=get_debug_info(),
             )
-
-        return super(BaseAuditModel, self).delete(*args, **kwargs)

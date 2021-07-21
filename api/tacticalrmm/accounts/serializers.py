@@ -58,3 +58,9 @@ class RoleSerializer(ModelSerializer):
     class Meta:
         model = Role
         fields = "__all__"
+
+
+class RoleAuditSerializer(ModelSerializer):
+    class Meta:
+        model = Role
+        fields = "__all__"

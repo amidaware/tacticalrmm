@@ -113,7 +113,7 @@ def uninstall(request):
 def edit_agent(request):
     agent = get_object_or_404(Agent, pk=request.data["id"])
 
-    a_serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
+    a_serializer = AgentEditSerializer(instance=agent, data=request.data, partial=True)
     a_serializer.is_valid(raise_exception=True)
     a_serializer.save()
 

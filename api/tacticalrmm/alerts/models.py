@@ -584,6 +584,13 @@ class AlertTemplate(BaseAuditModel):
     def __str__(self):
         return self.name
 
+    @staticmethod
+    def serialize(alert_template):
+        # serializes the agent and returns json
+        from .serializers import AlertTemplateAuditSerializer
+
+        return AlertTemplateAuditSerializer(alert_template).data
+
     @property
     def has_agent_settings(self) -> bool:
         return (

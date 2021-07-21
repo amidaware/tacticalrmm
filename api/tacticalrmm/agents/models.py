@@ -89,8 +89,8 @@ class Agent(BaseAuditModel):
     def save(self, *args, **kwargs):
 
         # get old agent if exists
-        old_agent = type(self).objects.get(pk=self.pk) if self.pk else None
-        super(BaseAuditModel, self).save(*args, **kwargs)
+        old_agent = Agent.objects.get(pk=self.pk) if self.pk else None
+        super(Agent, self).save(old_model=old_agent, *args, **kwargs)
 
         # check if new agent has been created
         # or check if policy have changed on agent
@@ -760,12 +760,9 @@ class Agent(BaseAuditModel):
     @staticmethod
     def serialize(agent):
         # serializes the agent and returns json
-        from .serializers import AgentEditSerializer
+        from .serializers import AgentAuditSerializer
 
-        ret = AgentEditSerializer(agent).data
-        del ret["all_timezones"]
-        del ret["client"]
-        return ret
+        return AgentAuditSerializer(agent).data
 
     def delete_superseded_updates(self):
         try:

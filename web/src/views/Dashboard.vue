@@ -567,7 +567,7 @@ export default {
       };
       this.ws.onclose = e => {
         console.log(`Closed code: ${e.code}`);
-        if ((e.code !== 1000 || e.code === 1006) && this.ws) {
+        if ((e.code !== 1000 || e.code !== 1006) && this.ws) {
           setTimeout(() => {
             this.setupWS();
           }, 2 * 1000);

@@ -84,3 +84,9 @@ class TaskRunnerPatchSerializer(serializers.ModelSerializer):
     class Meta:
         model = AutomatedTask
         fields = "__all__"
+
+
+class TaskAuditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AutomatedTask
+        fields = "__all__"

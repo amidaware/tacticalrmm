@@ -191,9 +191,9 @@ class AutomatedTask(BaseAuditModel):
     @staticmethod
     def serialize(task):
         # serializes the task and returns json
-        from .serializers import TaskSerializer
+        from .serializers import TaskAuditSerializer
 
-        return TaskSerializer(task).data
+        return TaskAuditSerializer(task).data
 
     def create_policy_task(self, agent=None, policy=None, assigned_check=None):
 

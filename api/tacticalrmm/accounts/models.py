@@ -142,6 +142,13 @@ class Role(BaseAuditModel):
         return self.name
 
     @staticmethod
+    def serialize(role):
+        # serializes the agent and returns json
+        from .serializers import RoleAuditSerializer
+
+        return RoleAuditSerializer(role).data
+
+    @staticmethod
     def perms():
         return [
             "is_superuser",

@@ -119,3 +119,9 @@ class AlertTemplateRelationSerializer(ModelSerializer):
     class Meta:
         model = AlertTemplate
         fields = "__all__"
+
+
+class AlertTemplateAuditSerializer(ModelSerializer):
+    class Meta:
+        model = AlertTemplate
+        fields = "__all__"

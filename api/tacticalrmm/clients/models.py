@@ -33,13 +33,17 @@ class Client(BaseAuditModel):
         blank=True,
     )
 
-    def save(self, *args, **kw):
+    def save(self, *args, **kwargs):
         from alerts.tasks import cache_agents_alert_template
         from automation.tasks import generate_agent_checks_task
 
         # get old client if exists
-        old_client = type(self).objects.get(pk=self.pk) if self.pk else None
-        super(BaseAuditModel, self).save(*args, **kw)
+        old_client = Client.objects.get(pk=self.pk) if self.pk else None
+        super(Client, self).save(
+            old_model=old_client,
+            *args,
+            **kwargs,
+        )
 
         # check if polcies have changed and initiate task to reapply policies if so
         if old_client:
@@ -50,7 +54,6 @@ class Client(BaseAuditModel):
                     old_client.block_policy_inheritance != self.block_policy_inheritance
                 )
             ):
-
                 generate_agent_checks_task.delay(
                     client=self.pk,
                     create_tasks=True,
@@ -120,10 +123,10 @@ class Client(BaseAuditModel):
 
     @staticmethod
     def serialize(client):
-        # serializes the client and returns json
-        from .serializers import ClientSerializer
+        from .serializers import ClientAuditSerializer
 
-        return ClientSerializer(client).data
+        # serializes the client and returns json
+        return ClientAuditSerializer(client).data
 
 
 class Site(BaseAuditModel):
@@ -153,13 +156,17 @@ class Site(BaseAuditModel):
         blank=True,
     )
 
-    def save(self, *args, **kw):
+    def save(self, *args, **kwargs):
         from alerts.tasks import cache_agents_alert_template
         from automation.tasks import generate_agent_checks_task
 
         # get old client if exists
-        old_site = type(self).objects.get(pk=self.pk) if self.pk else None
-        super(Site, self).save(*args, **kw)
+        old_site = Site.objects.get(pk=self.pk) if self.pk else None
+        super(Site, self).save(
+            old_model=old_site,
+            *args,
+            **kwargs,
+        )
 
         # check if polcies have changed and initiate task to reapply policies if so
         if old_site:
@@ -168,11 +175,10 @@ class Site(BaseAuditModel):
                 or (old_site.workstation_policy != self.workstation_policy)
                 or (old_site.block_policy_inheritance != self.block_policy_inheritance)
             ):
-
                 generate_agent_checks_task.delay(site=self.pk, create_tasks=True)
 
-                if old_site.alert_template != self.alert_template:
-                    cache_agents_alert_template.delay()
+            if old_site.alert_template != self.alert_template:
+                cache_agents_alert_template.delay()
 
     class Meta:
         ordering = ("name",)
@@ -233,10 +239,10 @@ class Site(BaseAuditModel):
 
     @staticmethod
     def serialize(site):
-        # serializes the site and returns json
-        from .serializers import SiteSerializer
+        from .serializers import SiteAuditSerializer
 
-        return SiteSerializer(site).data
+        # serializes the site and returns json
+        return SiteAuditSerializer(site).data
 
 
 MON_TYPE_CHOICES = [

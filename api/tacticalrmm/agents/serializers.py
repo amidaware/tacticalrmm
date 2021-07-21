@@ -159,6 +159,7 @@ class AgentEditSerializer(serializers.ModelSerializer):
             "offline_time",
             "overdue_text_alert",
             "overdue_email_alert",
+            "overdue_dashboard_alert",
             "all_timezones",
             "winupdatepolicy",
             "policy",
@@ -212,3 +213,9 @@ class AgentHistorySerializer(serializers.ModelSerializer):
     def get_time(self, history):
         timezone = get_default_timezone()
         return history.time.astimezone(timezone).strftime("%m %d %Y %H:%M:%S")
+
+
+class AgentAuditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Agent
+        exclude = ["disks", "services", "wmi_detail"]

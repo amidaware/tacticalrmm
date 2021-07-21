@@ -1,8 +1,8 @@
 <template>
-  <q-dialog ref="dialogRef" @hide="onDialogHide" maximized transition-show="slide-up" transition-hide="slide-down">
+  <q-dialog ref="dialogRef" @hide="onDialogHide">
     <q-card class="q-dialog-plugin" style="width: 70vw; max-width: 90vw">
       <q-bar>
-        <span class="text-caption">{{ log.message }}</span>
+        {{ log.message }}
         <q-space />
         <q-btn dense flat icon="close" v-close-popup />
       </q-bar>

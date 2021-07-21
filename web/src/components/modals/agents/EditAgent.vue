@@ -122,6 +122,7 @@
                 <q-card-section class="row">
                   <q-checkbox v-model="agent.overdue_email_alert" label="Get overdue email alerts" />
                   <q-checkbox v-model="agent.overdue_text_alert" label="Get overdue sms alerts" />
+                  <q-checkbox v-model="agent.overdue_dashboard_alert" label="Get overdue dashboard alerts" />
                 </q-card-section>
                 <div class="text-h6">Custom Fields</div>
                 <q-card-section v-for="field in customFields" :key="field.id">

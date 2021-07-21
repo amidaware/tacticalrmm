@@ -33,7 +33,7 @@ class Policy(BaseAuditModel):
 
         # get old policy if exists
         old_policy = type(self).objects.get(pk=self.pk) if self.pk else None
-        super(BaseAuditModel, self).save(*args, **kwargs)
+        super(Policy, self).save(old_model=old_policy, *args, **kwargs)
 
         # generate agent checks only if active and enforced were changed
         if old_policy:
@@ -50,7 +50,7 @@ class Policy(BaseAuditModel):
         from automation.tasks import generate_agent_checks_task
 
         agents = list(self.related_agents().only("pk").values_list("pk", flat=True))
-        super(BaseAuditModel, self).delete(*args, **kwargs)
+        super(Policy, self).delete(*args, **kwargs)
 
         generate_agent_checks_task.delay(agents=agents, create_tasks=True)
 
@@ -126,9 +126,9 @@ class Policy(BaseAuditModel):
     @staticmethod
     def serialize(policy):
         # serializes the policy and returns json
-        from .serializers import PolicySerializer
+        from .serializers import PolicyAuditSerializer
 
-        return PolicySerializer(policy).data
+        return PolicyAuditSerializer(policy).data
 
     @staticmethod
     def cascade_policy_tasks(agent):

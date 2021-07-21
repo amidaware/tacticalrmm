@@ -220,3 +220,9 @@ class CheckHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = CheckHistory
         fields = ("x", "y", "results")
+
+
+class CheckAuditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Check
+        fields = "__all__"

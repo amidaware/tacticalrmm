@@ -471,9 +471,9 @@ class Check(BaseAuditModel):
     @staticmethod
     def serialize(check):
         # serializes the check and returns json
-        from .serializers import CheckSerializer
+        from .serializers import CheckAuditSerializer
 
-        return CheckSerializer(check).data
+        return CheckAuditSerializer(check).data
 
     # for policy diskchecks
     @staticmethod

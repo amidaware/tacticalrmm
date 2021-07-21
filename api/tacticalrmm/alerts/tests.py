@@ -1317,6 +1317,7 @@ class TestAlertTasks(TacticalTestCase):
             "alerts.AlertTemplate",
             is_active=True,
             agent_always_alert=True,
+            agent_script_actions=False,
             action=failure_action,
             action_timeout=30,
             resolved_action=resolved_action,
@@ -1327,6 +1328,14 @@ class TestAlertTasks(TacticalTestCase):
         agent.client.save()
 
         agent.set_alert_template()
+
+        agent_outages_task()
+
+        # should not have been called since agent_script_actions is set to False
+        nats_cmd.assert_not_called()
+
+        alert_template.agent_script_actions = True  # type: ignore
+        alert_template.save()  # type: ignore
 
         agent_outages_task()
 
@@ -1341,14 +1350,6 @@ class TestAlertTasks(TacticalTestCase):
         nats_cmd.assert_called_with(data, timeout=30, wait=True)
 
         nats_cmd.reset_mock()
-
-        # Setup cmd mock
-        success = {
-            "retcode": 0,
-            "stdout": "success!",
-            "stderr": "",
-            "execution_time": 5.0000,
-        }
 
         nats_cmd.side_effect = ["pong", success]
 

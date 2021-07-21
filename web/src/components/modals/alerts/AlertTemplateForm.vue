@@ -222,6 +222,21 @@
                 ]"
               />
             </q-card-section>
+
+            <div class="q-pl-md text-subtitle1">
+              <span style="text-decoration: underline; cursor: help"
+                >Run actions only on
+                <q-tooltip> The selected script will only run on the following types of alerts </q-tooltip>
+              </span>
+            </div>
+
+            <q-card-section>
+              <q-toggle v-model="template.agent_script_actions" label="Agents" color="green" left-label />
+
+              <q-toggle v-model="template.check_script_actions" label="Checks" color="green" left-label />
+
+              <q-toggle v-model="template.task_script_actions" label="Tasks" color="green" left-label />
+            </q-card-section>
           </q-card>
         </q-step>
 
@@ -551,6 +566,7 @@ export default {
         agent_always_text: null,
         agent_always_alert: null,
         agent_periodic_alert_days: 0,
+        agent_script_actions: true,
         check_email_alert_severity: [],
         check_text_alert_severity: [],
         check_dashboard_alert_severity: [],
@@ -560,6 +576,7 @@ export default {
         check_always_text: null,
         check_always_alert: null,
         check_periodic_alert_days: 0,
+        check_script_actions: true,
         task_email_alert_severity: [],
         task_text_alert_severity: [],
         task_dashboard_alert_severity: [],
@@ -569,6 +586,7 @@ export default {
         task_always_text: null,
         task_always_alert: null,
         task_periodic_alert_days: 0,
+        task_script_actions: true,
       },
       scriptOptions: [],
       severityOptions: [

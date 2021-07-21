@@ -172,6 +172,7 @@ class Alert(models.Model):
                 always_email = alert_template.agent_always_email
                 always_text = alert_template.agent_always_text
                 alert_interval = alert_template.agent_periodic_alert_days
+                run_script_action = alert_template.agent_script_actions
 
             if instance.should_create_alert(alert_template):
                 alert = cls.create_or_return_availability_alert(instance)
@@ -208,6 +209,7 @@ class Alert(models.Model):
                 always_email = alert_template.check_always_email
                 always_text = alert_template.check_always_text
                 alert_interval = alert_template.check_periodic_alert_days
+                run_script_action = alert_template.check_script_actions
 
             if instance.should_create_alert(alert_template):
                 alert = cls.create_or_return_check_alert(instance)
@@ -241,6 +243,7 @@ class Alert(models.Model):
                 always_email = alert_template.task_always_email
                 always_text = alert_template.task_always_text
                 alert_interval = alert_template.task_periodic_alert_days
+                run_script_action = alert_template.task_script_actions
 
             if instance.should_create_alert(alert_template):
                 alert = cls.create_or_return_task_alert(instance)
@@ -294,7 +297,7 @@ class Alert(models.Model):
                 text_task.delay(pk=alert.pk, alert_interval=alert_interval)
 
         # check if any scripts should be run
-        if alert_template and alert_template.action and not alert.action_run:
+        if alert_template and alert_template.action and run_script_action and not alert.action_run:  # type: ignore
             r = agent.run_script(
                 scriptpk=alert_template.action.pk,
                 args=alert.parse_script_args(alert_template.action_args),
@@ -346,6 +349,7 @@ class Alert(models.Model):
             if alert_template:
                 email_on_resolved = alert_template.agent_email_on_resolved
                 text_on_resolved = alert_template.agent_text_on_resolved
+                run_script_action = alert_template.agent_script_actions
 
         elif isinstance(instance, Check):
             from checks.tasks import (
@@ -364,6 +368,7 @@ class Alert(models.Model):
             if alert_template:
                 email_on_resolved = alert_template.check_email_on_resolved
                 text_on_resolved = alert_template.check_text_on_resolved
+                run_script_action = alert_template.check_script_actions
 
         elif isinstance(instance, AutomatedTask):
             from autotasks.tasks import (
@@ -382,6 +387,7 @@ class Alert(models.Model):
             if alert_template:
                 email_on_resolved = alert_template.task_email_on_resolved
                 text_on_resolved = alert_template.task_text_on_resolved
+                run_script_action = alert_template.task_script_actions
 
         else:
             return
@@ -404,6 +410,7 @@ class Alert(models.Model):
         if (
             alert_template
             and alert_template.resolved_action
+            and run_script_action  # type: ignore
             and not alert.resolved_action_run
         ):
             r = agent.run_script(
@@ -520,6 +527,7 @@ class AlertTemplate(BaseAuditModel):
     agent_always_text = BooleanField(null=True, blank=True, default=None)
     agent_always_alert = BooleanField(null=True, blank=True, default=None)
     agent_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
+    agent_script_actions = BooleanField(null=True, blank=True, default=True)
 
     # check alert settings
     check_email_alert_severity = ArrayField(
@@ -543,6 +551,7 @@ class AlertTemplate(BaseAuditModel):
     check_always_text = BooleanField(null=True, blank=True, default=None)
     check_always_alert = BooleanField(null=True, blank=True, default=None)
     check_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
+    check_script_actions = BooleanField(null=True, blank=True, default=True)
 
     # task alert settings
     task_email_alert_severity = ArrayField(
@@ -566,6 +575,7 @@ class AlertTemplate(BaseAuditModel):
     task_always_text = BooleanField(null=True, blank=True, default=None)
     task_always_alert = BooleanField(null=True, blank=True, default=None)
     task_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
+    task_script_actions = BooleanField(null=True, blank=True, default=True)
 
     # exclusion settings
     exclude_workstations = BooleanField(null=True, blank=True, default=False)

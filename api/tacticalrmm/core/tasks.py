@@ -7,7 +7,7 @@ from checks.tasks import prune_check_history
 from agents.tasks import clear_faults_task, prune_agent_history
 from alerts.tasks import prune_resolved_alerts
 from core.models import CoreSettings
-from logs.tasks import prune_debug_log
+from logs.tasks import prune_debug_log, prune_audit_log
 from tacticalrmm.celery import app
 
 
@@ -44,6 +44,10 @@ def core_maintenance_tasks():
     # remove old debug logs
     if core.debug_log_prune_days > 0:  # type: ignore
         prune_debug_log.delay(core.debug_log_prune_days)  # type: ignore
+
+    # remove old audit logs
+    if core.audit_log_prune_days > 0:  # type: ignore
+        prune_audit_log.delay(core.audit_log_prune_days)  # type: ignore
 
     # clear faults
     if core.clear_faults_days > 0:  # type: ignore

@@ -278,19 +278,19 @@ class TestAuditViews(TacticalTestCase):
         data = {"agentFilter": agent.id}
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 4)
+        self.assertEqual(len(resp.data), 4)  # type: ignore
 
         # test log type filter and agent
         data = {"agentFilter": agent.id, "logLevelFilter": "warning"}
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 1)
+        self.assertEqual(len(resp.data), 1)  # type: ignore
 
         # test time filter with other
         data = {"logTypeFilter": "system_issues", "logLevelFilter": "error"}
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data), 4)
+        self.assertEqual(len(resp.data), 4)  # type: ignore
 
         self.check_not_authenticated("patch", url)
 
@@ -316,3 +316,24 @@ class TestLogTasks(TacticalTestCase):
         prune_debug_log(30)
 
         self.assertEqual(DebugLog.objects.count(), 6)
+
+    def test_prune_audit_log(self):
+        from .models import AuditLog
+        from .tasks import prune_audit_log
+
+        # setup data
+        audit_log = baker.make(
+            "logs.AuditLog",
+            _quantity=50,
+        )
+
+        days = 0
+        for item in audit_log:  # type:ignore
+            item.entry_time = djangotime.now() - djangotime.timedelta(days=days)
+            item.save()
+            days = days + 5
+
+        # delete AgentHistory older than 30 days
+        prune_audit_log(30)
+
+        self.assertEqual(AuditLog.objects.count(), 6)

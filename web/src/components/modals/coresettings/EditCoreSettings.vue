@@ -372,6 +372,17 @@
                     hint="Setting this value to 0 disables this feature"
                   />
                 </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4">Audit Logs (days):</div>
+                  <div class="col-2"></div>
+                  <q-input
+                    dense
+                    outlined
+                    v-model="settings.audit_log_prune_days"
+                    class="col-6"
+                    hint="Setting this value to 0 disables this feature"
+                  />
+                </q-card-section>
               </q-tab-panel>
             </q-tab-panels>
           </q-scroll-area>

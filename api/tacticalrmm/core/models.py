@@ -51,6 +51,7 @@ class CoreSettings(BaseAuditModel):
     resolved_alerts_prune_days = models.PositiveIntegerField(default=0)
     agent_history_prune_days = models.PositiveIntegerField(default=60)
     debug_log_prune_days = models.PositiveIntegerField(default=30)
+    audit_log_prune_days = models.PositiveIntegerField(default=0)
     agent_debug_level = models.CharField(
         max_length=20, choices=LOG_LEVEL_CHOICES, default="info"
     )

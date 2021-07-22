@@ -3,6 +3,7 @@ asyncio-nats-client
 celery
 channels
 channels_redis
+django-ipware
 Django
 django-cors-headers
 django-rest-knox

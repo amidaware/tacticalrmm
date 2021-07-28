@@ -1,3 +1,12 @@
+<# 
+Note on line 97 this: 
+	if ((cscript "$($env:windir)\system32\\slmgr.vbs" /dli) -match "Licensed") { $returnVal = $true }
+will fail for non-english installs of windows. 
+Removing the: -match "Licensed"
+will allow it to run. So the line should read for non-english:
+	if ((cscript "$($env:windir)\system32\\slmgr.vbs" /dli)) { $returnVal = $true }
+#>
+
 Function Write-LogMessage {
 	param(
 		[Parameter(Mandatory)]

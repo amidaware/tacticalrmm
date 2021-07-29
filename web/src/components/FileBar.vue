@@ -70,7 +70,7 @@
                 <q-item-section>Clients Manager</q-item-section>
               </q-item>
               <!-- script manager -->
-              <q-item clickable v-close-popup @click="showScriptManager = true">
+              <q-item clickable v-close-popup @click="showScriptManager">
                 <q-item-section>Script Manager</q-item-section>
               </q-item>
               <!-- automation manager -->
@@ -166,12 +166,6 @@
           <UpdateAgents @close="showUpdateAgentsModal = false" @edit="edited" />
         </q-dialog>
       </div>
-      <!-- Script Manager -->
-      <div class="q-pa-md q-gutter-sm">
-        <q-dialog v-model="showScriptManager">
-          <ScriptManager @close="showScriptManager = false" />
-        </q-dialog>
-      </div>
       <!-- Admin Manager -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showAdminManager">
@@ -210,7 +204,7 @@ import ClientsManager from "@/components/ClientsManager";
 import ClientsForm from "@/components/modals/clients/ClientsForm";
 import SitesForm from "@/components/modals/clients/SitesForm";
 import UpdateAgents from "@/components/modals/agents/UpdateAgents";
-import ScriptManager from "@/components/ScriptManager";
+import ScriptManager from "@/components/scripts/ScriptManager";
 import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
 import AlertsManager from "@/components/AlertsManager";
 import AutomationManager from "@/components/automation/AutomationManager";
@@ -230,7 +224,6 @@ export default {
   components: {
     PendingActions,
     UpdateAgents,
-    ScriptManager,
     EditCoreSettings,
     InstallAgent,
     UploadMesh,
@@ -253,7 +246,6 @@ export default {
       showPendingActions: false,
       bulkMode: null,
       showDeployment: false,
-      showScriptManager: false,
       showCodeSign: false,
     };
   },
@@ -334,6 +326,11 @@ export default {
             ["transition-hide"]: "slide-down",
           },
         },
+      });
+    },
+    showScriptManager() {
+      this.$q.dialog({
+        component: ScriptManager,
       });
     },
     showDebugLog() {

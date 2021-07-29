@@ -148,7 +148,7 @@
 import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import PatchPolicyForm from "@/components/modals/agents/PatchPolicyForm";
-import CustomField from "@/components/CustomField";
+import CustomField from "@/components/ui/CustomField";
 
 export default {
   name: "EditAgent",

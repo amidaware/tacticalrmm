@@ -15,6 +15,7 @@
             label="Select Agent to run script on"
             v-model="agent"
             :options="agentOptions"
+            filterable
             mapOptions
             outlined
           />

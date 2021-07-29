@@ -44,7 +44,7 @@
 </template>
 
 <script>
-import CustomField from "@/components/CustomField";
+import CustomField from "@/components/ui/CustomField";
 import mixins from "@/mixins/mixins";
 export default {
   name: "ClientsForm",

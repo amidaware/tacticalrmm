@@ -175,5 +175,7 @@ export function formatTableColumnText(text) {
 }
 
 export function truncateText(txt, chars) {
+  if (!txt) return
+
   return txt.length >= chars ? txt.substring(0, chars) + "..." : txt;
 }

@@ -159,7 +159,7 @@ export default {
     },
     async getScriptOptions(showCommunityScripts = false) {
       let options = [];
-      const { data } = await axios.get("/scripts/scripts/")
+      const { data } = await axios.get("/scripts/")
       let scripts;
       if (showCommunityScripts) {
         scripts = data;
@@ -215,7 +215,9 @@ export default {
       return `${a} at ${b}`;
     },
     truncateText(txt) {
-      return txt.length >= 60 ? txt.substring(0, 60) + "..." : txt;
+      if (txt)
+        return txt.length >= 60 ? txt.substring(0, 60) + "..." : txt;
+      else return ""
     },
   }
 }

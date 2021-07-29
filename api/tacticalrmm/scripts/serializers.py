@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer, ReadOnlyField
 
-from .models import Script
+from .models import Script, ScriptSnippet
 
 
 class ScriptTableSerializer(ModelSerializer):
@@ -41,3 +41,9 @@ class ScriptCheckSerializer(ModelSerializer):
     class Meta:
         model = Script
         fields = ["code", "shell"]
+
+
+class ScriptSnippetSerializer(ModelSerializer):
+    class Meta:
+        model = ScriptSnippet
+        fields = "__all__"

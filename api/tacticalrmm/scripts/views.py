@@ -1,24 +1,25 @@
 import base64
-import json
 import asyncio
 
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.parsers import FileUploadParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from tacticalrmm.utils import notify_error
 
-from .models import Script
+from .models import Script, ScriptSnippet
 from .permissions import ManageScriptsPerms
 from agents.permissions import RunScriptPerms
-from .serializers import ScriptSerializer, ScriptTableSerializer
+from .serializers import (
+    ScriptSerializer,
+    ScriptTableSerializer,
+    ScriptSnippetSerializer,
+)
 
 
 class GetAddScripts(APIView):
     permission_classes = [IsAuthenticated, ManageScriptsPerms]
-    parser_class = (FileUploadParser,)
 
     def get(self, request):
 
@@ -30,38 +31,9 @@ class GetAddScripts(APIView):
 
         return Response(ScriptTableSerializer(scripts, many=True).data)
 
-    def post(self, request, format=None):
-        data = {
-            "name": request.data["name"],
-            "category": request.data["category"],
-            "description": request.data["description"],
-            "shell": request.data["shell"],
-            "default_timeout": request.data["default_timeout"],
-            "script_type": "userdefined",  # force all uploads to be userdefined. built in scripts cannot be edited by user
-        }
+    def post(self, request):
 
-        # code editor upload
-        if "args" in request.data.keys() and isinstance(request.data["args"], list):
-            data["args"] = request.data["args"]
-
-        # file upload, have to json load it cuz it's formData
-        if "args" in request.data.keys() and "file_upload" in request.data.keys():
-            data["args"] = json.loads(request.data["args"])  # type: ignore
-
-        if "favorite" in request.data.keys():
-            data["favorite"] = request.data["favorite"]
-
-        if "filename" in request.data.keys():
-            message_bytes = request.data["filename"].read()
-            data["code_base64"] = base64.b64encode(message_bytes).decode(
-                "ascii", "ignore"
-            )
-
-        elif "code" in request.data.keys():
-            message_bytes = request.data["code"].encode("ascii", "ignore")
-            data["code_base64"] = base64.b64encode(message_bytes).decode("ascii")
-
-        serializer = ScriptSerializer(data=data, partial=True)
+        serializer = ScriptSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()
 
@@ -108,6 +80,41 @@ class GetUpdateDeleteScript(APIView):
 
         script.delete()
         return Response(f"{script.name} was deleted!")
+
+
+class GetAddScriptSnippets(APIView):
+    permission_classes = [IsAuthenticated, ManageScriptsPerms]
+
+    def get(self, request):
+        snippets = ScriptSnippet.objects.all()
+        return Response(ScriptSnippetSerializer(snippets, many=True).data)
+
+    def post(self, request):
+
+        serializer = ScriptSnippetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response("ok")
+
+
+class GetUpdateDeleteScriptSnippet(APIView):
+    permission_classes = [IsAuthenticated, ManageScriptsPerms]
+
+    def get(self, request, pk):
+        snippet = get_object_or_404(ScriptSnippet, pk=pk)
+        return Response(ScriptSnippetSerializer(snippet).data)
+
+    def put(self, request, pk):
+        snippet = get_object_or_404(ScriptSnippet, pk=pk)
+
+        serializer = ScriptSnippetSerializer(instance=snippet, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+    def delete(self, request, pk):
+        snippet = get_object_or_404(ScriptSnippet, pk=pk)
+        snippet.delete()
 
 
 class TestScript(APIView):

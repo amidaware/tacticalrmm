@@ -901,7 +901,6 @@ export default {
   },
   beforeUnmount() {
     this.ws.close();
-    this.ws = null;
     clearInterval(this.poll);
   },
 };

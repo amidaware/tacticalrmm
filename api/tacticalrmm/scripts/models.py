@@ -4,6 +4,7 @@ from typing import List
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+from django.db.models.fields import CharField, TextField
 from logs.models import BaseAuditModel
 from tacticalrmm.utils import replace_db_values
 
@@ -20,9 +21,9 @@ SCRIPT_TYPES = [
 
 
 class Script(BaseAuditModel):
-    guid = name = models.CharField(max_length=64, null=True, blank=True)
+    guid = models.CharField(max_length=64, null=True, blank=True)
     name = models.CharField(max_length=255)
-    description = models.TextField(null=True, blank=True)
+    description = models.TextField(null=True, blank=True, default="")
     filename = models.CharField(max_length=255)  # deprecated
     shell = models.CharField(
         max_length=100, choices=SCRIPT_SHELLS, default="powershell"
@@ -38,7 +39,7 @@ class Script(BaseAuditModel):
     )
     favorite = models.BooleanField(default=False)
     category = models.CharField(max_length=100, null=True, blank=True)
-    code_base64 = models.TextField(null=True, blank=True)
+    code_base64 = models.TextField(null=True, blank=True, default="")
     default_timeout = models.PositiveIntegerField(default=90)
 
     def __str__(self):
@@ -92,20 +93,20 @@ class Script(BaseAuditModel):
 
                 if s.exists():
                     i = s.first()
-                    i.name = script["name"]
-                    i.description = script["description"]
-                    i.category = category
-                    i.shell = script["shell"]
-                    i.default_timeout = default_timeout
-                    i.args = args
+                    i.name = script["name"]  # type: ignore
+                    i.description = script["description"]  # type: ignore
+                    i.category = category  # type: ignore
+                    i.shell = script["shell"]  # type: ignore
+                    i.default_timeout = default_timeout  # type: ignore
+                    i.args = args  # type: ignore
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
                         script_bytes = (
                             f.read().decode("utf-8").encode("ascii", "ignore")
                         )
-                        i.code_base64 = base64.b64encode(script_bytes).decode("ascii")
+                        i.code_base64 = base64.b64encode(script_bytes).decode("ascii")  # type: ignore
 
-                    i.save(
+                    i.save(  # type: ignore
                         update_fields=[
                             "name",
                             "description",
@@ -170,7 +171,6 @@ class Script(BaseAuditModel):
                             guid=script["guid"],
                             name=script["name"],
                             description=script["description"],
-                            filename=script["filename"],
                             shell=script["shell"],
                             script_type="builtin",
                             category=category,
@@ -216,3 +216,13 @@ class Script(BaseAuditModel):
                 temp_args.append(arg)
 
         return temp_args
+
+
+class ScriptSnippet(models.Model):
+    name = CharField(max_length=40, unique=True)
+    desc = CharField(max_length=50, null=True, blank=True)
+    code = TextField()
+    shell = CharField(max_length=15, choices=SCRIPT_SHELLS)
+
+    def __str__(self):
+        return self.name

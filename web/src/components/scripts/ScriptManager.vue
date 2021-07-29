@@ -1,6 +1,6 @@
 <template>
-  <div style="width: 90vw; max-width: 90vw">
-    <q-card>
+  <q-dialog ref="dialogRef" @hide="onDialogHide">
+    <q-card class="q-dialog-plugin" style="width: 90vw; max-width: 90vw">
       <q-bar>
         <q-btn @click="getScripts" class="q-mr-sm" dense flat push icon="refresh" />Script Manager
         <q-space />
@@ -12,7 +12,7 @@
         <div class="q-gutter-sm row">
           <q-btn-dropdown icon="add" label="New" no-caps dense flat>
             <q-list dense>
-              <q-item clickable v-close-popup @click="newScript">
+              <q-item clickable v-close-popup @click="newScriptModal">
                 <q-item-section side>
                   <q-icon size="xs" name="add" />
                 </q-item-section>
@@ -20,7 +20,7 @@
                   <q-item-label>New Script</q-item-label>
                 </q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="uploadScript">
+              <q-item clickable v-close-popup @click="uploadScriptModal">
                 <q-item-section side>
                   <q-icon size="xs" name="cloud_upload" />
                 </q-item-section>
@@ -36,7 +36,7 @@
             class="q-ml-sm"
             :label="tableView ? 'Folder View' : 'Table View'"
             :icon="tableView ? 'folder' : 'list'"
-            @click="setTableView(!tableView)"
+            @click="tableView = !tableView"
           />
           <q-btn
             dense
@@ -75,7 +75,12 @@
             no-nodes-label="No Scripts Found"
           >
             <template v-slot:header-script="props">
-              <div>
+              <div
+                class="cursor-pointer"
+                @dblclick="
+                  props.node.script_type === 'builtin' ? viewCodeModal(props.node) : editScriptModal(props.node)
+                "
+              >
                 <q-icon v-if="props.node.favorite" color="yellow-8" name="star" size="sm" class="q-px-sm" />
                 <q-icon v-else color="yellow-8" name="star_outline" size="sm" class="q-px-sm" />
 
@@ -96,7 +101,14 @@
               <!-- context menu -->
               <q-menu context-menu>
                 <q-list dense style="min-width: 200px">
-                  <q-item clickable v-close-popup @click="cloneScript(props.node)">
+                  <q-item clickable v-close-popup @click="viewCodeModal(props.node)">
+                    <q-item-section side>
+                      <q-icon name="remove_red_eye" />
+                    </q-item-section>
+                    <q-item-section>View Code</q-item-section>
+                  </q-item>
+
+                  <q-item clickable v-close-popup @click="cloneScriptModal(props.node)">
                     <q-item-section side>
                       <q-icon name="content_copy" />
                     </q-item-section>
@@ -106,7 +118,7 @@
                   <q-item
                     clickable
                     v-close-popup
-                    @click="editScript(props.node)"
+                    @click="editScriptModal(props.node)"
                     :disable="props.node.script_type === 'builtin'"
                   >
                     <q-item-section side>
@@ -118,7 +130,7 @@
                   <q-item
                     clickable
                     v-close-popup
-                    @click="deleteScript(props.node.id)"
+                    @click="deleteScript(props.node)"
                     :disable="props.node.script_type === 'builtin'"
                   >
                     <q-item-section side>
@@ -127,23 +139,18 @@
                     <q-item-section>Delete</q-item-section>
                   </q-item>
 
+                  <q-separator></q-separator>
+
                   <q-item clickable v-close-popup @click="favoriteScript(props.node)">
                     <q-item-section side>
                       <q-icon name="star" />
                     </q-item-section>
-                    <q-item-section>{{ favoriteText(props.node.favorite) }}</q-item-section>
+                    <q-item-section>{{
+                      props.node.favorite ? "Remove as Favorite" : "Add as Favorite"
+                    }}</q-item-section>
                   </q-item>
 
-                  <q-separator></q-separator>
-
-                  <q-item clickable v-close-popup @click="viewCode(props.node)">
-                    <q-item-section side>
-                      <q-icon name="remove_red_eye" />
-                    </q-item-section>
-                    <q-item-section>View Code</q-item-section>
-                  </q-item>
-
-                  <q-item clickable v-close-popup @click="downloadScript(props.node)">
+                  <q-item clickable v-close-popup @click="exportScript(props.node)">
                     <q-item-section side>
                       <q-icon name="cloud_download" />
                     </q-item-section>
@@ -166,7 +173,7 @@
             class="settings-tbl-sticky"
             :rows="visibleScripts"
             :columns="columns"
-            :visible-columns="visibleColumns"
+            :loading="loading"
             v-model:pagination="pagination"
             :filter="search"
             row-key="id"
@@ -188,11 +195,22 @@
             <template v-slot:no-data> No Scripts Found </template>
             <template v-slot:body="props">
               <!-- Table View -->
-              <q-tr>
+              <q-tr
+                :props="props"
+                @dblclick="props.row.script_type === 'builtin' ? viewCodeModal(props.row) : editScriptModal(props.row)"
+                class="cursor-pointer"
+              >
                 <!-- Context Menu -->
                 <q-menu context-menu>
                   <q-list dense style="min-width: 200px">
-                    <q-item clickable v-close-popup @click="cloneScript(props.node)">
+                    <q-item clickable v-close-popup @click="viewCodeModal(props.row)">
+                      <q-item-section side>
+                        <q-icon name="remove_red_eye" />
+                      </q-item-section>
+                      <q-item-section>View Code</q-item-section>
+                    </q-item>
+
+                    <q-item clickable v-close-popup @click="cloneScriptModal(props.row)">
                       <q-item-section side>
                         <q-icon name="content_copy" />
                       </q-item-section>
@@ -202,7 +220,7 @@
                     <q-item
                       clickable
                       v-close-popup
-                      @click="editScript(props.row)"
+                      @click="editScriptModal(props.row)"
                       :disable="props.row.script_type === 'builtin'"
                     >
                       <q-item-section side>
@@ -214,7 +232,7 @@
                     <q-item
                       clickable
                       v-close-popup
-                      @click="deleteScript(props.row.id)"
+                      @click="deleteScriptModal(props.row)"
                       :disable="props.row.script_type === 'builtin'"
                     >
                       <q-item-section side>
@@ -223,23 +241,18 @@
                       <q-item-section>Delete</q-item-section>
                     </q-item>
 
+                    <q-separator></q-separator>
+
                     <q-item clickable v-close-popup @click="favoriteScript(props.row)">
                       <q-item-section side>
                         <q-icon name="star" />
                       </q-item-section>
-                      <q-item-section>{{ favoriteText(props.row.favorite) }}</q-item-section>
+                      <q-item-section>{{
+                        props.row.favorite ? "Remove as Favorite" : "Add as Favorite"
+                      }}</q-item-section>
                     </q-item>
 
-                    <q-separator></q-separator>
-
-                    <q-item clickable v-close-popup @click="viewCode(props.row)">
-                      <q-item-section side>
-                        <q-icon name="remove_red_eye" />
-                      </q-item-section>
-                      <q-item-section>View Code</q-item-section>
-                    </q-item>
-
-                    <q-item clickable v-close-popup @click="downloadScript(props.row)">
+                    <q-item clickable v-close-popup @click="exportScript(props.row)">
                       <q-item-section side>
                         <q-icon name="cloud_download" />
                       </q-item-section>
@@ -269,7 +282,7 @@
                 </q-td>
                 <!-- name -->
                 <q-td>
-                  {{ truncateText(props.row.name) }}
+                  {{ truncateText(props.row.name, 50) }}
                   <q-tooltip v-if="props.row.name.length >= 50" style="font-size: 12px">
                     {{ props.row.name }}
                   </q-tooltip>
@@ -277,8 +290,8 @@
                 <!-- args -->
                 <q-td>
                   <span v-if="props.row.args.length > 0">
-                    {{ truncateText(props.row.args.toString()) }}
-                    <q-tooltip v-if="props.row.args.toString().length >= 50" style="font-size: 12px">
+                    {{ truncateText(props.row.args.toString(), 30) }}
+                    <q-tooltip v-if="props.row.args.toString().length >= 30" style="font-size: 12px">
                       {{ props.row.args }}
                     </q-tooltip>
                   </span>
@@ -286,8 +299,8 @@
 
                 <q-td>{{ props.row.category }}</q-td>
                 <q-td>
-                  {{ truncateText(props.row.description) }}
-                  <q-tooltip v-if="props.row.description.length >= 50" style="font-size: 12px">{{
+                  {{ truncateText(props.row.description, 30) }}
+                  <q-tooltip v-if="props.row.description.length >= 30" style="font-size: 12px">{{
                     props.row.description
                   }}</q-tooltip>
                 </q-td>
@@ -298,239 +311,167 @@
         </div>
       </div>
     </q-card>
-  </div>
+  </q-dialog>
 </template>
 
 <script>
-import { mapState } from "vuex";
-import mixins from "@/mixins/mixins";
-import ScriptUploadModal from "@/components/modals/scripts/ScriptUploadModal";
-import ScriptFormModal from "@/components/modals/scripts/ScriptFormModal";
+// composition imports
+import { ref, computed, watch, onMounted } from "vue";
+import { useStore } from "vuex";
+import { useQuasar, useDialogPluginComponent, exportFile } from "quasar";
+import { fetchScripts, editScript, downloadScript, removeScript } from "@/api/scripts";
+import { truncateText } from "@/utils/format";
+import { notifySuccess } from "@/utils/notify";
+
+// ui imports
+import ScriptUploadModal from "@/components/scripts/ScriptUploadModal";
+import ScriptFormModal from "@/components/scripts/ScriptFormModal";
+
+// static data
+const columns = [
+  {
+    name: "favorite",
+    label: "",
+    field: "favorite",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "shell",
+    label: "Shell",
+    field: "shell",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "name",
+    label: "Name",
+    field: "name",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "args",
+    label: "Default Args",
+    field: "args",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "category",
+    label: "Category",
+    field: "category",
+    align: "left",
+    sortable: true,
+  },
+  {
+    name: "desc",
+    label: "Description",
+    field: "description",
+    align: "left",
+    sortable: false,
+  },
+  {
+    name: "default_timeout",
+    label: "Default Timeout (seconds)",
+    field: "default_timeout",
+    align: "left",
+    sortable: true,
+  },
+];
 
 export default {
   name: "ScriptManager",
-  mixins: [mixins],
-  data() {
-    return {
-      scripts: [],
-      search: "",
-      tableView: true,
-      expanded: [],
-      pagination: {
-        rowsPerPage: 0,
-        sortBy: "favorite",
-        descending: true,
-      },
-      columns: [
-        {
-          name: "favorite",
-          label: "",
-          field: "favorite",
-          align: "left",
-          sortable: true,
-        },
-        {
-          name: "shell",
-          label: "Shell",
-          field: "shell",
-          align: "left",
-          sortable: true,
-        },
-        {
-          name: "name",
-          label: "Name",
-          field: "name",
-          align: "left",
-          sortable: true,
-        },
-        {
-          name: "args",
-          label: "Default Args",
-          field: "args",
-          align: "left",
-          sortable: true,
-        },
-        {
-          name: "category",
-          label: "Category",
-          field: "category",
-          align: "left",
-          sortable: true,
-        },
-        {
-          name: "desc",
-          label: "Description",
-          field: "description",
-          align: "left",
-          sortable: false,
-        },
-        {
-          name: "default_timeout",
-          label: "Default Timeout (seconds)",
-          field: "default_timeout",
-          align: "left",
-          sortable: true,
-        },
-      ],
-      visibleColumns: ["favorite", "name", "args", "category", "desc", "shell", "default_timeout"],
-    };
-  },
-  methods: {
-    getScripts() {
-      this.$axios
-        .get("/scripts/scripts/")
-        .then(r => {
-          this.scripts = r.data;
-        })
-        .catch(e => {});
-    },
-    setShowCommunityScripts(show) {
-      this.$store.dispatch("setShowCommunityScripts", show);
-    },
-    viewCode(script) {
-      this.$q.dialog({
-        component: ScriptFormModal,
-        componentProps: {
-          script: script,
-          readonly: true,
-        },
-      });
-    },
-    favoriteScript(script) {
-      this.$q.loading.show();
+  emits: [...useDialogPluginComponent.emits],
+  setup() {
+    // setup vuex store
+    const store = useStore();
+    const showCommunityScripts = computed(() => store.state.showCommunityScripts);
+
+    // setup quasar plugins
+    const { dialogRef, onDialogHide } = useDialogPluginComponent();
+    const $q = useQuasar();
+
+    // script manager logic
+    const scripts = ref([]);
+
+    async function getScripts() {
+      loading.value = true;
+      scripts.value = await fetchScripts();
+      loading.value = false;
+    }
+
+    function favoriteScript(script) {
+      loading.value = true;
       const notifyText = !script.favorite ? "Script was favorited!" : "Script was removed as a favorite!";
-      this.$axios
-        .put(`/scripts/${script.id}/script/`, { favorite: !script.favorite })
-        .then(() => {
-          this.getScripts();
-          this.$q.loading.hide();
-          this.notifySuccess(notifyText);
-        })
-        .catch(() => {
-          this.$q.loading.hide();
-        });
-    },
-    deleteScript(scriptpk) {
-      this.$q
-        .dialog({
-          title: "Delete script?",
-          cancel: true,
-          ok: { label: "Delete", color: "negative" },
-        })
-        .onOk(() => {
-          this.$axios
-            .delete(`/scripts/${scriptpk}/script/`)
-            .then(r => {
-              this.getScripts();
-              this.notifySuccess(r.data);
-            })
-            .catch(e => {});
-        });
-    },
-    downloadScript(script) {
-      this.$axios
-        .get(`/scripts/${script.id}/download/`)
-        .then(({ data }) => {
-          const blob = new Blob([data.code], { type: "text/plain;charset=utf-8" });
-          let link = document.createElement("a");
-          link.href = window.URL.createObjectURL(blob);
-          link.download = data.filename;
-          link.click();
-        })
-        .catch(e => {});
-    },
-    isBuiltInScript(pk) {
       try {
-        return this.scripts.find(i => i.id === pk).script_type === "builtin" ? true : false;
-      } catch (e) {
-        return false;
-      }
-    },
-    favoriteText(isFavorite) {
-      return isFavorite ? "Remove as Favorite" : "Add as Favorite";
-    },
-    newScript() {
-      this.$q
-        .dialog({
-          component: ScriptFormModal,
-          componentProps: {
-            categories: this.categories,
-            readonly: false,
-          },
-        })
-        .onOk(() => {
-          this.getScripts();
-        });
-    },
-    editScript(script) {
-      this.$q
-        .dialog({
-          component: ScriptFormModal,
-          componentProps: {
-            script: script,
-            categories: this.categories,
-            readonly: false,
-          },
-        })
-        .onOk(() => {
-          this.getScripts();
-        });
-    },
-    setTableView(view) {
-      this.tableView = view;
-      this.expanded = [];
-    },
-    cloneScript(script) {
-      this.$q
-        .dialog({
-          component: ScriptFormModal,
-          componentProps: {
-            script: script,
-            categories: this.categories,
-            readonly: false,
-            clone: true,
-          },
-        })
-        .onOk(() => {
-          this.getScripts();
-        });
-    },
-    uploadScript() {
-      this.$q
-        .dialog({
-          component: ScriptUploadModal,
-          componentProps: {
-            categories: this.categories,
-          },
-        })
-        .onOk(() => {
-          this.getScripts();
-        });
-    },
-  },
-  computed: {
-    ...mapState(["showCommunityScripts"]),
-    visibleScripts() {
-      return this.showCommunityScripts ? this.scripts : this.scripts.filter(i => i.script_type !== "builtin");
-    },
-    categories() {
+        editScript({ id: script.id, favorite: !script.favorite });
+        getScripts();
+        notifySuccess(notifyText);
+      } catch (e) {}
+
+      loading.value = false;
+    }
+
+    function deleteScript(script) {
+      $q.dialog({
+        title: `Delete script: ${script.name}?`,
+        cancel: true,
+        ok: { label: "Delete", color: "negative" },
+      }).onOk(async () => {
+        loading.value = true;
+        try {
+          const data = await removeScript(script.id);
+          notifySuccess(data);
+          getScripts();
+        } catch (e) {}
+
+        loading.value = false;
+      });
+    }
+
+    async function exportScript(script) {
+      loading.value = true;
+
+      const { code, filename } = await downloadScript(script.id);
+      exportFile(filename, new Blob([code]), { mimeType: "text/plain;charset=utf-8" });
+      loading.value = false;
+    }
+
+    // table and tree view setup
+    const search = ref("");
+    const tableView = ref(true);
+    const expanded = ref([]);
+    const loading = ref(false);
+    const pagination = ref({
+      rowsPerPage: 0,
+      sortBy: "favorite",
+      descending: true,
+    });
+
+    const visibleScripts = computed(() =>
+      showCommunityScripts.value ? scripts.value : scripts.value.filter(i => i.script_type !== "builtin")
+    );
+
+    const categories = computed(() => {
       let list = [];
-      this.visibleScripts.forEach(script => {
+      visibleScripts.value.forEach(script => {
         if (!!script.category && !list.includes(script.category)) {
           list.push(script.category);
         }
       });
       return list;
-    },
-    tree() {
-      if (this.tableView || this.visibleScripts.length === 0) {
+    });
+
+    const tree = computed(() => {
+      if (tableView.value || visibleScripts.value.length === 0) {
         return [];
       } else {
         let nodes = [];
 
         // copy scripts and categories to new array
-        let scriptsTemp = Object.assign([], this.visibleScripts);
-        let categoriesTemp = Object.assign([], this.categories);
+        let scriptsTemp = Object.assign([], visibleScripts.value);
+        let categoriesTemp = Object.assign([], categories.value);
 
         // add Unassigned category
         categoriesTemp.push("Unassigned");
@@ -561,10 +502,115 @@ export default {
 
         return nodes;
       }
-    },
-  },
-  mounted() {
-    this.getScripts();
+    });
+
+    watch(tableView, () => {
+      expanded.value = [];
+    });
+
+    // dialog open functions
+    function viewCodeModal(script) {
+      $q.dialog({
+        component: ScriptFormModal,
+        componentProps: {
+          script: script,
+          readonly: true,
+        },
+      });
+    }
+
+    function newScriptModal() {
+      $q.dialog({
+        component: ScriptFormModal,
+        componentProps: {
+          categories: categories.value,
+          readonly: false,
+        },
+      }).onOk(() => {
+        getScripts();
+      });
+    }
+
+    function editScriptModal(script) {
+      $q.dialog({
+        component: ScriptFormModal,
+        componentProps: {
+          script: script,
+          categories: categories.value,
+          readonly: false,
+        },
+      }).onOk(() => {
+        getScripts();
+      });
+    }
+
+    function cloneScriptModal(script) {
+      $q.dialog({
+        component: ScriptFormModal,
+        componentProps: {
+          script: script,
+          categories: categories.value,
+          readonly: false,
+          clone: true,
+        },
+      }).onOk(() => {
+        getScripts();
+      });
+    }
+
+    function uploadScriptModal() {
+      $q.dialog({
+        component: ScriptUploadModal,
+        componentProps: {
+          categories: categories.value,
+        },
+      }).onOk(() => {
+        getScripts();
+      });
+    }
+
+    // component life cycle hooks
+    onMounted(getScripts());
+
+    return {
+      // reactive data
+      search,
+      tableView,
+      expanded,
+      pagination,
+      loading,
+      showCommunityScripts,
+
+      // computed
+      visibleScripts,
+
+      // non-reactive data
+      columns,
+
+      // api methods
+      getScripts,
+      deleteScript,
+      favoriteScript,
+      exportScript,
+
+      // dialog methods
+      viewCodeModal,
+      newScriptModal,
+      editScriptModal,
+      cloneScriptModal,
+      uploadScriptModal,
+
+      // table and tree view methods
+      tree,
+      setShowCommunityScripts: show => store.dispatch("setShowCommunityScripts", show),
+
+      // helper methods
+      truncateText,
+
+      // quasar dialog plugin
+      dialogRef,
+      onDialogHide,
+    };
   },
 };
 </script>

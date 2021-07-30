@@ -567,15 +567,15 @@ export default {
       };
       this.ws.onclose = e => {
         console.log(`Closed code: ${e.code}`);
-        if ((e.code !== 1000 || e.code !== 1006) && this.ws) {
+        if (e.code !== 1000 && e.code !== 1006) {
           setTimeout(() => {
             this.setupWS();
           }, 2 * 1000);
         }
       };
       this.ws.onerror = err => {
-        console.log(`ERROR! Code: ${err.code}`);
-        this.ws.close();
+        console.log("There was an error");
+        this.ws.onclose();
       };
     },
     refreshEntireSite() {

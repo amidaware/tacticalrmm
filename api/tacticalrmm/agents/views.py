@@ -735,7 +735,7 @@ class GetEditDeleteNote(APIView):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, RunBulkPerms])
 def bulk(request):
-    if request.data["target"] == "agents" and not request.data["agentPKs"]:
+    if request.data["target"] == "agents" and not request.data["agents"]:
         return notify_error("Must select at least 1 agent")
 
     if request.data["target"] == "client":
@@ -743,7 +743,7 @@ def bulk(request):
     elif request.data["target"] == "site":
         q = Agent.objects.filter(site_id=request.data["site"])
     elif request.data["target"] == "agents":
-        q = Agent.objects.filter(pk__in=request.data["agentPKs"])
+        q = Agent.objects.filter(pk__in=request.data["agents"])
     elif request.data["target"] == "all":
         q = Agent.objects.only("pk", "monitoring_type")
     else:
@@ -755,6 +755,9 @@ def bulk(request):
         q = q.filter(monitoring_type="workstation")
 
     agents: list[int] = [agent.pk for agent in q]
+
+    if not agents:
+        return notify_error("No agents where found meeting the selected criteria")
 
     AuditLog.audit_bulk_action(
         request.user,
@@ -770,11 +773,12 @@ def bulk(request):
             request.data["shell"],
             request.data["timeout"],
             request.user.username[:50],
+            run_on_offline=request.data["offlineAgents"]
         )
         return Response(f"Command will now be run on {len(agents)} agents")
 
     elif request.data["mode"] == "script":
-        script = get_object_or_404(Script, pk=request.data["scriptPK"])
+        script = get_object_or_404(Script, pk=request.data["script"])
         handle_bulk_script_task.delay(
             script.pk,
             agents,
@@ -784,14 +788,16 @@ def bulk(request):
         )
         return Response(f"{script.name} will now be run on {len(agents)} agents")
 
-    elif request.data["mode"] == "install":
-        bulk_install_updates_task.delay(agents)
-        return Response(
-            f"Pending updates will now be installed on {len(agents)} agents"
-        )
-    elif request.data["mode"] == "scan":
-        bulk_check_for_updates_task.delay(agents)
-        return Response(f"Patch status scan will now run on {len(agents)} agents")
+    elif request.data["mode"] == "patch":
+
+        if request.data["patchMode"] == "install":
+            bulk_install_updates_task.delay(agents)
+            return Response(
+                f"Pending updates will now be installed on {len(agents)} agents"
+            )
+        elif request.data["patchMode"] == "scan":
+            bulk_check_for_updates_task.delay(agents)
+            return Response(f"Patch status scan will now run on {len(agents)} agents")
 
     return notify_error("Something went wrong")
 

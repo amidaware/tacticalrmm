@@ -8,7 +8,9 @@ from tacticalrmm.celery import app
 
 
 @app.task
-def handle_bulk_command_task(agentpks, cmd, shell, timeout, username) -> None:
+def handle_bulk_command_task(
+    agentpks, cmd, shell, timeout, username, run_on_offline=False
+) -> None:
     nats_data = {
         "func": "rawcmd",
         "timeout": timeout,

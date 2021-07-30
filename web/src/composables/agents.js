@@ -5,7 +5,8 @@ import { formatAgentOptions } from "@/utils/format"
 
 // agent dropdown
 export function useAgentDropdown() {
-
+  const agent = ref(null)
+  const agents = ref([])
   const agentOptions = ref([])
 
   // specifing flat returns an array of hostnames versus {value:id, label: hostname}
@@ -15,6 +16,8 @@ export function useAgentDropdown() {
 
   return {
     //data
+    agent,
+    agents,
     agentOptions,
 
     //methods

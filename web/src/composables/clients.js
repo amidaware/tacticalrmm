@@ -4,7 +4,8 @@ import { fetchClients } from "@/api/clients"
 import { formatClientOptions, formatSiteOptions } from "@/utils/format"
 
 export function useClientDropdown() {
-
+  const client = ref(null)
+  const clients = ref([])
   const clientOptions = ref([])
 
   async function getClientOptions(flat = false) {
@@ -13,6 +14,8 @@ export function useClientDropdown() {
 
   return {
     //data
+    client,
+    clients,
     clientOptions,
 
     //methods
@@ -21,14 +24,18 @@ export function useClientDropdown() {
 }
 
 export function useSiteDropdown() {
+  const site = ref(null)
+  const sites = ref([])
   const siteOptions = ref([])
 
   async function getSiteOptions() {
-    siteOptions.value = formatSiteOptions(await fetchSites())
+    siteOptions.value = formatSiteOptions(await fetchClients())
   }
 
   return {
     //data
+    site,
+    sites,
     siteOptions,
 
     //methods

@@ -16,6 +16,10 @@ ACTION_TYPE_CHOICES = [
     ("taskaction", "Scheduled Task Action"),  # deprecated
     ("agentupdate", "Agent Update"),
     ("chocoinstall", "Chocolatey Software Install"),
+    ("runcmd", "Run Command"),
+    ("runscript", "Run Script"),
+    ("runpatchscan", "Run Patch Scan"),
+    ("runpatchinstall", "Run Patch Install"),
 ]
 
 AUDIT_ACTION_TYPE_CHOICES = [
@@ -301,6 +305,7 @@ class PendingAction(models.Model):
         choices=STATUS_CHOICES,
         default="pending",
     )
+    cancelable = models.BooleanField(blank=True, default=False)
     celery_id = models.CharField(null=True, blank=True, max_length=255)
     details = models.JSONField(null=True, blank=True)
 
@@ -316,6 +321,8 @@ class PendingAction(models.Model):
             return "Next update cycle"
         elif self.action_type == "chocoinstall":
             return "ASAP"
+        else:
+            return "On next checkin"
 
     @property
     def description(self):
@@ -327,6 +334,9 @@ class PendingAction(models.Model):
 
         elif self.action_type == "chocoinstall":
             return f"{self.details['name']} software install"
+
+        elif self.action_type in ["runcmd", "runscript", "runpatchscan", "runpatchinstall"]:
+            return f"{self.action_type}"
 
 
 class BaseAuditModel(models.Model):

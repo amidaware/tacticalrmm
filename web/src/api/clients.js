@@ -8,3 +8,10 @@ export async function fetchClients() {
     return data
   } catch (e) { }
 }
+
+export async function fetchSites() {
+  try {
+    const { data } = await axios.get(`${baseUrl}/sites/`)
+    return data
+  } catch (e) { }
+}

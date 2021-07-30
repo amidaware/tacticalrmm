@@ -7,7 +7,7 @@ export function useScriptDropdown() {
   const scriptOptions = ref([])
   const defaultTimeout = ref(30)
   const defaultArgs = ref([])
-  const scriptPK = ref(null)
+  const script = ref(null)
 
   // specifing flat returns an array of script names versus {value:id, label: hostname}
   async function getScriptOptions(showCommunityScripts = false, flat = false) {
@@ -15,17 +15,17 @@ export function useScriptDropdown() {
   }
 
   // watch scriptPk for changes and update the default timeout and args
-  watch(scriptPK, (newValue, oldValue) => {
+  watch(script, (newValue, oldValue) => {
     if (newValue) {
-      const script = scriptOptions.value.find(i => i.value === newValue);
-      defaultTimeout.value = script.timeout;
-      defaultArgs.value = script.args;
+      const tmpScript = scriptOptions.value.find(i => i.value === newValue);
+      defaultTimeout.value = tmpScript.timeout;
+      defaultArgs.value = tmpScript.args;
     }
   })
 
   return {
     //data
-    scriptPK,
+    script,
     scriptOptions,
     defaultTimeout,
     defaultArgs,

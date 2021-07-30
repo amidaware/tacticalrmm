@@ -1,24 +1,21 @@
 import asyncio
 import datetime as dt
 import random
-import tempfile
-import json
-import subprocess
 import urllib.parse
 from time import sleep
 from typing import Union
 
-from django.conf import settings
-from django.utils import timezone as djangotime
-from packaging import version as pyver
-
-from agents.models import Agent
 from alerts.models import Alert
 from core.models import CodeSignToken, CoreSettings
-from logs.models import PendingAction, DebugLog
+from django.conf import settings
+from django.utils import timezone as djangotime
+from logs.models import DebugLog, PendingAction
+from packaging import version as pyver
 from scripts.models import Script
 from tacticalrmm.celery import app
 from tacticalrmm.utils import run_nats_api_cmd
+
+from agents.models import Agent
 
 
 def agent_update(pk: int, codesigntoken: str = None, force: bool = False) -> str:

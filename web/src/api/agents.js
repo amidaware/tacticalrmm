@@ -22,3 +22,10 @@ export async function runScript(payload) {
     return data
   } catch (e) { }
 }
+
+export async function runBulkAction(payload) {
+
+  const { data } = await axios.post("/agents/bulk/", payload)
+  return data
+
+}

@@ -105,15 +105,15 @@
           <q-menu auto-close>
             <q-list dense style="min-width: 100px">
               <!-- bulk command -->
-              <q-item clickable v-close-popup @click="showBulkActionModal('command')">
+              <q-item clickable v-close-popup @click="showBulkAction('command')">
                 <q-item-section>Bulk Command</q-item-section>
               </q-item>
               <!-- bulk script -->
-              <q-item clickable v-close-popup @click="showBulkActionModal('script')">
+              <q-item clickable v-close-popup @click="showBulkAction('script')">
                 <q-item-section>Bulk Script</q-item-section>
               </q-item>
               <!-- bulk patch management -->
-              <q-item clickable v-close-popup @click="showBulkActionModal('scan')">
+              <q-item clickable v-close-popup @click="showBulkAction('patch')">
                 <q-item-section>Bulk Patch Management</q-item-section>
               </q-item>
               <!-- server maintenance -->
@@ -176,10 +176,6 @@
       <q-dialog v-model="showUploadMesh">
         <UploadMesh @close="showUploadMesh = false" />
       </q-dialog>
-      <!-- Bulk action modal -->
-      <q-dialog v-model="showBulkAction" @hide="closeBulkActionModal" position="top">
-        <BulkAction :mode="bulkMode" @close="closeBulkActionModal" />
-      </q-dialog>
       <!-- Agent Deployment -->
       <q-dialog v-model="showDeployment">
         <Deployment @close="showDeployment = false" />
@@ -228,7 +224,6 @@ export default {
     InstallAgent,
     UploadMesh,
     AdminManager,
-    BulkAction,
     Deployment,
     ServerMaintenance,
     CodeSign,
@@ -242,9 +237,7 @@ export default {
       showAdminManager: false,
       showInstallAgent: false,
       showUploadMesh: false,
-      showBulkAction: false,
       showPendingActions: false,
-      bulkMode: null,
       showDeployment: false,
       showCodeSign: false,
     };
@@ -331,6 +324,14 @@ export default {
     showScriptManager() {
       this.$q.dialog({
         component: ScriptManager,
+      });
+    },
+    showBulkAction(mode) {
+      this.$q.dialog({
+        component: BulkAction,
+        componentProps: {
+          mode: mode,
+        },
       });
     },
     showDebugLog() {

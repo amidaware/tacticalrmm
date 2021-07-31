@@ -407,7 +407,7 @@
       </q-dialog>
     </div>
     <!-- send command modal -->
-    <q-dialog v-model="showSendCommand" persistent>
+    <q-dialog v-model="showSendCommand" persistent @keydown.esc="showSendCommand = false">
       <SendCommand @close="showSendCommand = false" :pk="selectedAgentPk" />
     </q-dialog>
     <!-- agent recovery modal -->

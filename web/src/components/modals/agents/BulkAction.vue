@@ -10,19 +10,22 @@
       </q-bar>
       <q-form @submit.prevent="submit">
         <q-card-section>
-          <p>Agent Type</p>
-          <q-option-group v-model="monType" :options="monTypeOptions" color="primary" dense inline class="q-pl-sm" />
-        </q-card-section>
-        <q-card-section>
           <p>Choose Target</p>
-          <q-option-group v-model="target" :options="targetOptions" color="primary" dense inline class="q-pl-sm" />
+          <q-option-group
+            v-model="state.target"
+            :options="targetOptions"
+            color="primary"
+            dense
+            inline
+            class="q-pl-sm"
+          />
         </q-card-section>
 
         <q-card-section>
           <tactical-dropdown
-            v-if="target === 'client'"
+            v-if="state.target === 'client'"
             :rules="[val => !!val || '*Required']"
-            v-model="client"
+            v-model="state.client"
             :options="clientOptions"
             label="Select Client"
             outlined
@@ -30,9 +33,9 @@
             filterable
           />
           <tactical-dropdown
-            v-else-if="target === 'site'"
+            v-else-if="state.target === 'site'"
             :rules="[val => !!val || '*Required']"
-            v-model="site"
+            v-model="state.site"
             :options="siteOptions"
             label="Select Site"
             outlined
@@ -40,8 +43,9 @@
             filterable
           />
           <tactical-dropdown
-            v-else-if="target === 'agents'"
-            v-model="agents"
+            v-else-if="state.target === 'agents'"
+            :rules="[val => !!val || '*Required']"
+            v-model="state.agents"
             :options="agentOptions"
             label="Select Agents"
             filled
@@ -51,10 +55,22 @@
           />
         </q-card-section>
 
+        <q-card-section v-show="state.target !== 'agents'">
+          <p>Agent Type</p>
+          <q-option-group
+            v-model="state.monType"
+            :options="monTypeOptions"
+            color="primary"
+            dense
+            inline
+            class="q-pl-sm"
+          />
+        </q-card-section>
+
         <q-card-section v-if="mode === 'script'" class="q-pt-none">
           <tactical-dropdown
             :rules="[val => !!val || '*Required']"
-            v-model="script"
+            v-model="state.script"
             :options="scriptOptions"
             label="Select Script"
             outlined
@@ -63,13 +79,11 @@
           />
         </q-card-section>
         <q-card-section v-if="mode === 'script'" class="q-pt-none">
-          <q-select
+          <tactical-dropdown
+            v-model="state.args"
             label="Script Arguments (press Enter after typing each argument)"
             filled
-            dense
-            v-model="args"
             use-input
-            use-chips
             multiple
             hide-dropdown-icon
             input-debounce="0"
@@ -79,11 +93,11 @@
 
         <q-card-section v-if="mode === 'command'">
           <p>Shell</p>
-          <q-option-group v-model="shell" :options="shellOptions" color="primary" dense inline class="q-pl-sm" />
+          <q-option-group v-model="state.shell" :options="shellOptions" color="primary" dense inline class="q-pl-sm" />
         </q-card-section>
         <q-card-section v-if="mode === 'command'">
           <q-input
-            v-model="cmd"
+            v-model="state.cmd"
             outlined
             label="Command"
             stack-label
@@ -98,7 +112,7 @@
 
         <q-card-section v-if="mode === 'script' || mode === 'command'">
           <q-input
-            v-model.number="timeout"
+            v-model.number="state.timeout"
             dense
             outlined
             type="number"
@@ -112,7 +126,7 @@
         <q-card-section v-if="mode === 'patch'">
           <p>Action</p>
           <q-option-group
-            v-model="patchMode"
+            v-model="state.patchMode"
             :options="patchModeOptions"
             color="primary"
             dense
@@ -122,7 +136,7 @@
         </q-card-section>
 
         <q-card-section v-show="false">
-          <q-checkbox v-model="offlineAgents" label="Offline Agents (Run on next checkin)">
+          <q-checkbox v-model="state.offlineAgents" label="Offline Agents (Run on next checkin)">
             <q-tooltip>If the agent is offline, a pending action will be created to run on agent checkin</q-tooltip>
           </q-checkbox>
         </q-card-section>
@@ -196,37 +210,37 @@ export default {
     const { client, clientOptions, getClientOptions } = useClientDropdown();
 
     // bulk action logic
-    const target = ref("client");
-    const monType = ref("all");
-    const cmd = ref("");
-    const shell = ref("cmd");
-    const patchMode = ref("scan");
-    const offlineAgents = ref(false);
+    const state = ref({
+      mode: props.mode,
+      target: "client",
+      monType: "all",
+      cmd: "",
+      shell: "cmd",
+      patchMode: "scan",
+      offlineAgents: false,
+      client,
+      site,
+      agents,
+      script,
+      timeout: defaultTimeout,
+      args: defaultArgs,
+    });
     const loading = ref(false);
 
-    watch(target, () => (agents.value = []));
+    watch(
+      () => state.value.target,
+      (newValue, oldValue) => {
+        client.value = null;
+        site.value = null;
+        agents.value = [];
+      }
+    );
 
     async function submit() {
       loading.value = true;
 
-      const payload = {
-        mode: props.mode,
-        monType: monType.value,
-        target: target.value,
-        site: site.value,
-        client: client.value,
-        agents: agents.value,
-        script: script.value,
-        timeout: defaultTimeout.value,
-        args: defaultArgs.value,
-        shell: shell.value,
-        cmd: cmd.value,
-        patchMode: patchMode.value,
-        offlineAgents: offlineAgents.value,
-      };
-
       try {
-        const data = await runBulkAction(payload);
+        const data = await runBulkAction(state.value);
         notifySuccess(data);
       } catch (e) {}
 
@@ -249,27 +263,16 @@ export default {
       getAgentOptions();
       getSiteOptions();
       getClientOptions();
-      if (props.mode === "script") getScriptOptions(showCommunityScripts);
+      if (props.mode === "script") getScriptOptions(showCommunityScripts.value);
     });
 
     return {
       // reactive data
-      target,
-      monType,
-      client,
-      site,
-      agents,
-      cmd,
-      shell,
-      patchMode,
-      script,
-      scriptOptions,
-      timeout: defaultTimeout.value,
-      args: defaultArgs.value,
+      state,
       agentOptions,
       clientOptions,
       siteOptions,
-      offlineAgents,
+      scriptOptions,
       loading,
 
       // non-reactive data

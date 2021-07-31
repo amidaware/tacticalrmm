@@ -21,27 +21,7 @@
                 <q-card-section class="row">
                   <div class="col-2">Site:</div>
                   <div class="col-2"></div>
-                  <q-select
-                    dense
-                    options-dense
-                    outlined
-                    v-model="agent.site"
-                    :options="siteOptions"
-                    map-options
-                    emit-value
-                    class="col-8"
-                  >
-                    <template v-slot:option="scope">
-                      <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
-                        <q-item-section>
-                          <q-item-label v-html="scope.opt.label"></q-item-label>
-                        </q-item-section>
-                      </q-item>
-                      <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
-                        scope.opt.category
-                      }}</q-item-label>
-                    </template>
-                  </q-select>
+                  <tactical-dropdown class="col-8" v-model="agent.site" :options="siteOptions" outlined mapOptions />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Type:</div>
@@ -149,11 +129,12 @@ import { mapGetters } from "vuex";
 import mixins from "@/mixins/mixins";
 import PatchPolicyForm from "@/components/modals/agents/PatchPolicyForm";
 import CustomField from "@/components/ui/CustomField";
+import TacticalDropdown from "@/components/ui/TacticalDropdown";
 
 export default {
   name: "EditAgent",
   emits: ["edit", "close"],
-  components: { PatchPolicyForm, CustomField },
+  components: { PatchPolicyForm, CustomField, TacticalDropdown },
   mixins: [mixins],
   data() {
     return {

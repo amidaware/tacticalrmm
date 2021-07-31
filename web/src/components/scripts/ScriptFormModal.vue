@@ -1,5 +1,5 @@
 <template>
-  <q-dialog ref="dialogRef" @hide="onDialogHide" persistent :maximized="maximized">
+  <q-dialog ref="dialogRef" @hide="onDialogHide" persistent @keydown.esc="onDialogHide" :maximized="maximized">
     <q-card class="q-dialog-plugin" :style="maximized ? '' : 'width: 70vw; max-width: 90vw'">
       <q-bar>
         {{ title }}
@@ -79,15 +79,16 @@
         </q-card-section>
         <div class="q-px-sm q-pt-none q-pb-sm q-mt-none row">
           <tactical-dropdown
-            label="Script Arguments (press Enter after typing each argument)"
-            filled
-            class="col-12"
             v-model="formScript.args"
+            label="Script Arguments (press Enter after typing each argument)"
+            class="col-12"
+            filled
             use-input
             multiple
             hide-dropdown-icon
             input-debounce="0"
             new-value-mode="add"
+            :readonly="readonly"
           />
         </div>
 

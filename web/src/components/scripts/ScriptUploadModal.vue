@@ -19,11 +19,11 @@
 
         <q-card-section>
           <tactical-dropdown
+            v-model="script.category"
+            :options="categories"
             label="Category"
             hint="Press Enter or Tab when adding a new value"
             outlined
-            v-model="script.category"
-            :options="categories"
             filterable
             clearable
             new-value-mode="add-unique"
@@ -47,28 +47,17 @@
         </q-card-section>
 
         <q-card-section>
-          <q-select
-            label="Type"
-            dense
-            options-dense
-            outlined
-            v-model="script.shell"
-            :options="shellOptions"
-            emit-value
-            map-options
-          />
+          <tactical-dropdown v-model="script.shell" :options="shellOptions" label="Type" outlined mapOptions />
         </q-card-section>
 
         <q-card-section>
-          <q-select
+          <tactical-dropdown
+            v-model="script.args"
             label="Script Arguments"
             placeholder="(press Enter after typing each argument)"
             filled
-            v-model="script.args"
             use-input
-            use-chips
             multiple
-            dense
             hide-dropdown-icon
             input-debounce="0"
             new-value-mode="add"

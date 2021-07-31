@@ -21,17 +21,15 @@
           />
         </q-card-section>
         <q-card-section>
-          <q-select
+          <tactical-dropdown
+            v-model="args"
             label="Script Arguments (press Enter after typing each argument)"
             filled
-            v-model="args"
             use-input
-            use-chips
             multiple
             hide-dropdown-icon
             input-debounce="0"
             new-value-mode="add"
-            dense
           />
         </q-card-section>
         <q-card-section>
@@ -47,6 +45,7 @@
           />
         </q-card-section>
         <q-card-actions align="right">
+          <q-btn label="Cancel" v-close-popup />
           <q-btn :loading="loading" label="Run" color="primary" type="submit" />
         </q-card-actions>
         <q-card-section v-if="ret" class="q-pl-md q-pr-md q-pt-none q-ma-none scroll" style="max-height: 50vh">

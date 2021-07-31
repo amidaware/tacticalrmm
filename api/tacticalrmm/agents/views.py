@@ -579,7 +579,7 @@ def recover(request):
 @permission_classes([IsAuthenticated, RunScriptPerms])
 def run_script(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
-    script = get_object_or_404(Script, pk=request.data["scriptPK"])
+    script = get_object_or_404(Script, pk=request.data["script"])
     output = request.data["output"]
     args = request.data["args"]
     req_timeout = int(request.data["timeout"]) + 3
@@ -613,7 +613,7 @@ def run_script(request):
 
     elif output == "email":
         emails = (
-            [] if request.data["emailmode"] == "default" else request.data["emails"]
+            [] if request.data["emailMode"] == "default" else request.data["emails"]
         )
         run_script_email_results_task.delay(
             agentpk=agent.pk,
@@ -773,7 +773,7 @@ def bulk(request):
             request.data["shell"],
             request.data["timeout"],
             request.user.username[:50],
-            run_on_offline=request.data["offlineAgents"]
+            run_on_offline=request.data["offlineAgents"],
         )
         return Response(f"Command will now be run on {len(agents)} agents")
 

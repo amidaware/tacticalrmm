@@ -17,7 +17,7 @@
         v-if="!scope.opt.category"
         v-bind="scope.itemProps"
         class="q-pl-lg"
-        :key="mapOptions ? scope.opt.value : null"
+        :key="mapOptions ? scope.opt.value : scope.opt"
       >
         <q-item-section>
           <q-item-label v-html="mapOptions ? scope.opt.label : scope.opt"></q-item-label>
@@ -61,8 +61,8 @@ export default {
     });
 
     return {
-      filterFn,
       filteredOptions,
+      filterFn,
       filterEvent,
     };
   },

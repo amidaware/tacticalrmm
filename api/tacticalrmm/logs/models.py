@@ -208,13 +208,13 @@ class AuditLog(models.Model):
             site = Site.objects.get(pk=affected["site"])
             target = f"on all agents within site: {site.client.name}\\{site.name}"
         elif affected["target"] == "agents":
-            agents = Agent.objects.filter(pk__in=affected["agentPKs"]).values_list(
+            agents = Agent.objects.filter(pk__in=affected["agents"]).values_list(
                 "hostname", flat=True
             )
             target = "on multiple agents"
 
         if action == "script":
-            script = Script.objects.get(pk=affected["scriptPK"])
+            script = Script.objects.get(pk=affected["script"])
             action = f"script: {script.name}"
 
         if agents:
@@ -335,7 +335,12 @@ class PendingAction(models.Model):
         elif self.action_type == "chocoinstall":
             return f"{self.details['name']} software install"
 
-        elif self.action_type in ["runcmd", "runscript", "runpatchscan", "runpatchinstall"]:
+        elif self.action_type in [
+            "runcmd",
+            "runscript",
+            "runpatchscan",
+            "runpatchinstall",
+        ]:
             return f"{self.action_type}"
 
 

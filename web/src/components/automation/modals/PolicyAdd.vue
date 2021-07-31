@@ -10,46 +10,34 @@
       </q-bar>
       <q-form @submit="submit">
         <q-card-section v-if="options.length > 0">
-          <q-select
+          <tactical-dropdown
             v-if="type === 'client' || type === 'site'"
             class="q-mb-md"
             v-model="selectedServerPolicy"
             :options="options"
-            outlined
-            dense
-            options-dense
-            clearable
-            map-options
-            emit-value
             label="Server Policy"
-          >
-          </q-select>
-          <q-select
+            outlined
+            clearable
+            mapOptions
+          />
+          <tactical-dropdown
             v-if="type === 'client' || type === 'site'"
             v-model="selectedWorkstationPolicy"
             :options="options"
-            outlined
-            options-dense
-            dense
-            clearable
-            map-options
-            emit-value
             label="Workstation Policy"
-          >
-          </q-select>
-          <q-select
+            outlined
+            clearable
+            mapOptions
+          />
+          <tactical-dropdown
             v-if="type === 'agent'"
             v-model="selectedAgentPolicy"
             :options="options"
-            outlined
-            options-dense
-            dense
-            clearable
-            map-options
-            emit-value
             label="Policy"
-          >
-          </q-select>
+            outlined
+            clearable
+            mapOptions
+          />
 
           <q-checkbox label="Block policy inheritance" v-model="blockInheritance">
             <q-tooltip>This {{ type }} will not inherit from higher policies</q-tooltip>
@@ -69,9 +57,11 @@
 
 <script>
 import mixins from "@/mixins/mixins";
+import TacticalDropdown from "@/components/ui/TacticalDropdown";
 
 export default {
   name: "PolicyAdd",
+  components: { TacticalDropdown },
   emits: ["hide", "ok", "cancel"],
   props: {
     object: !Object,

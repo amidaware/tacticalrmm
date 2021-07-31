@@ -566,11 +566,16 @@ export default {
         this.workstationOfflineCount = data.total_workstation_offline_count;
       };
       this.ws.onclose = e => {
-        console.log(`Closed code: ${e.code}`);
-        if (e.code !== 1000 && e.code !== 1006) {
-          setTimeout(() => {
-            this.setupWS();
-          }, 2 * 1000);
+        try {
+          console.log(`Closed code: ${e.code}`);
+          if (e.code !== 1000 && e.code !== 1006 && e.code) {
+            console.log("Retrying websocket connection...");
+            setTimeout(() => {
+              this.setupWS();
+            }, 2 * 1000);
+          }
+        } catch (e) {
+          console.log("Websocket connection closed");
         }
       };
       this.ws.onerror = err => {

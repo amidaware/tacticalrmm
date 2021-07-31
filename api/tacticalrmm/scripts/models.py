@@ -46,12 +46,36 @@ class Script(BaseAuditModel):
         return self.name
 
     @property
-    def code(self):
+    def code_no_snippets(self):
         if self.code_base64:
-            base64_bytes = self.code_base64.encode("ascii", "ignore")
-            return base64.b64decode(base64_bytes).decode("ascii", "ignore")
+            return base64.b64decode(self.code_base64.encode("ascii", "ignore")).decode(
+                "ascii", "ignore"
+            )
         else:
             return ""
+
+    @property
+    def code(self):
+        return self.replace_with_snippets(self.code_no_snippets)
+
+    @classmethod
+    def replace_with_snippets(cls, code):
+        # check if snippet has been added to script body
+        matches = re.finditer(r"{{(.*)}}", code)
+        if matches:
+            replaced_code = code
+            for snippet in matches:
+                snippet_name = snippet.group(1).strip()
+                if ScriptSnippet.objects.filter(name=snippet_name).exists():
+                    value = ScriptSnippet.objects.get(name=snippet_name).code
+                else:
+                    value = ""
+
+                replaced_code = re.sub(snippet.group(), value, replaced_code)
+
+            return replaced_code
+        else:
+            return code
 
     @classmethod
     def load_community_scripts(cls):
@@ -220,9 +244,9 @@ class Script(BaseAuditModel):
 
 class ScriptSnippet(models.Model):
     name = CharField(max_length=40, unique=True)
-    desc = CharField(max_length=50, null=True, blank=True)
-    code = TextField()
-    shell = CharField(max_length=15, choices=SCRIPT_SHELLS)
+    desc = CharField(max_length=50, blank=True, default="")
+    code = TextField(default="")
+    shell = CharField(max_length=15, choices=SCRIPT_SHELLS, default="powershell")
 
     def __str__(self):
         return self.name

@@ -31,8 +31,18 @@
             </q-list>
           </q-btn-dropdown>
           <q-btn
+            no-caps
             dense
             flat
+            class="q-ml-sm"
+            label="Script Snippets"
+            icon="mdi-script"
+            @click="ScriptSnippetModal"
+          />
+          <q-btn
+            dense
+            flat
+            no-caps
             class="q-ml-sm"
             :label="tableView ? 'Folder View' : 'Table View'"
             :icon="tableView ? 'folder' : 'list'"
@@ -41,11 +51,13 @@
           <q-btn
             dense
             flat
+            no-caps
             class="q-ml-sm"
             :label="showCommunityScripts ? 'Hide Community Scripts' : 'Show Community Scripts'"
             :icon="showCommunityScripts ? 'visibility_off' : 'visibility'"
             @click="setShowCommunityScripts(!showCommunityScripts)"
           />
+
           <q-space />
           <q-input
             v-model="search"
@@ -326,6 +338,7 @@ import { notifySuccess } from "@/utils/notify";
 // ui imports
 import ScriptUploadModal from "@/components/scripts/ScriptUploadModal";
 import ScriptFormModal from "@/components/scripts/ScriptFormModal";
+import ScriptSnippets from "@/components/scripts/ScriptSnippets";
 
 // static data
 const columns = [
@@ -569,6 +582,12 @@ export default {
       });
     }
 
+    function ScriptSnippetModal() {
+      $q.dialog({
+        component: ScriptSnippets,
+      });
+    }
+
     // component life cycle hooks
     onMounted(getScripts());
 
@@ -599,6 +618,7 @@ export default {
       editScriptModal,
       cloneScriptModal,
       uploadScriptModal,
+      ScriptSnippetModal,
 
       // table and tree view methods
       tree,

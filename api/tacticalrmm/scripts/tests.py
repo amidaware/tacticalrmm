@@ -4,12 +4,15 @@ from pathlib import Path
 from unittest.mock import patch
 
 from django.conf import settings
-from django.core.files.uploadedfile import SimpleUploadedFile
 from model_bakery import baker
 from tacticalrmm.test import TacticalTestCase
 
-from .models import Script
-from .serializers import ScriptSerializer, ScriptTableSerializer
+from .models import Script, ScriptSnippet
+from .serializers import (
+    ScriptSerializer,
+    ScriptTableSerializer,
+    ScriptSnippetSerializer,
+)
 
 
 class TestScriptViews(TacticalTestCase):
@@ -494,3 +497,106 @@ class TestScriptViews(TacticalTestCase):
             ["-Parameter", "-Another $True"],
             Script.parse_script_args(agent=agent, shell="powershell", args=args),
         )
+
+
+class TestScriptSnippetViews(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+        self.authenticate()
+
+    def test_get_script_snippets(self):
+        url = "/scripts/snippets/"
+        snippets = baker.make("scripts.ScriptSnippet", _quantity=3)
+
+        serializer = ScriptSnippetSerializer(snippets, many=True)
+        resp = self.client.get(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(serializer.data, resp.data)  # type: ignore
+
+        self.check_not_authenticated("get", url)
+
+    def test_add_script_snippet(self):
+        url = f"/scripts/snippets/"
+
+        data = {
+            "name": "Name",
+            "description": "Description",
+            "shell": "powershell",
+            "code": "Test",
+        }
+
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(ScriptSnippet.objects.filter(name="Name").exists())
+
+        self.check_not_authenticated("post", url)
+
+    def test_modify_script_snippet(self):
+        # test a call where script doesn't exist
+        resp = self.client.put("/scripts/snippets/500/", format="json")
+        self.assertEqual(resp.status_code, 404)
+
+        # make a userdefined script
+        snippet = baker.make("scripts.ScriptSnippet", name="Test")
+        url = f"/scripts/snippets/{snippet.pk}/"  # type: ignore
+
+        data = {"name": "New Name"}  # type: ignore
+
+        resp = self.client.put(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        snippet = ScriptSnippet.objects.get(pk=snippet.pk)  # type: ignore
+        self.assertEquals(snippet.name, "New Name")
+
+        self.check_not_authenticated("put", url)
+
+    def test_get_script_snippet(self):
+        # test a call where script doesn't exist
+        resp = self.client.get("/scripts/snippets/500/", format="json")
+        self.assertEqual(resp.status_code, 404)
+
+        snippet = baker.make("scripts.ScriptSnippet")
+        url = f"/scripts/snippets/{snippet.pk}/"  # type: ignore
+        serializer = ScriptSnippetSerializer(snippet)
+        resp = self.client.get(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(serializer.data, resp.data)  # type: ignore
+
+        self.check_not_authenticated("get", url)
+
+    def test_delete_script_snippet(self):
+        # test a call where script doesn't exist
+        resp = self.client.delete("/scripts/snippets/500/", format="json")
+        self.assertEqual(resp.status_code, 404)
+
+        # test delete script snippet
+        snippet = baker.make("scripts.ScriptSnippet")
+        url = f"/scripts/snippets/{snippet.pk}/"  # type: ignore
+        resp = self.client.delete(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        self.assertFalse(ScriptSnippet.objects.filter(pk=snippet.pk).exists())  # type: ignore
+
+        self.check_not_authenticated("delete", url)
+
+    def test_snippet_replacement(self):
+
+        snippet1 = baker.make(
+            "scripts.ScriptSnippet", name="snippet1", code="Snippet 1 Code"
+        )
+        snippet2 = baker.make(
+            "scripts.ScriptSnippet", name="snippet2", code="Snippet 2 Code"
+        )
+
+        test_no_snippet = "No Snippets Here"
+        test_with_snippet = "Snippet 1: {{snippet1}}\nSnippet 2: {{snippet2}}"
+
+        # test putting snippet in text
+        result = Script.replace_with_snippets(test_with_snippet)
+        self.assertEqual(
+            result,
+            f"Snippet 1: {snippet1.code}\nSnippet 2: {snippet2.code}",  # type:ignore
+        )
+
+        # test text with no snippets
+        result = Script.replace_with_snippets(test_no_snippet)
+        self.assertEqual(result, test_no_snippet)

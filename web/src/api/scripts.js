@@ -48,7 +48,7 @@ export async function fetchScriptSnippets(params = {}) {
   } catch (e) { }
 }
 
-export async function addScriptSnippet(payload) {
+export async function saveScriptSnippet(payload) {
   try {
     const { data } = await axios.post(`${baseUrl}/snippets/`, payload)
     return data
@@ -69,9 +69,9 @@ export async function editScriptSnippet(payload) {
   } catch (e) { }
 }
 
-export async function deleteScriptSnippet(payload) {
+export async function removeScriptSnippet(id) {
   try {
-    const { data } = await axios.delete(`${baseUrl}/snippets/${payload.id}/`)
+    const { data } = await axios.delete(`${baseUrl}/snippets/${id}/`)
     return data
   } catch (e) { }
 }

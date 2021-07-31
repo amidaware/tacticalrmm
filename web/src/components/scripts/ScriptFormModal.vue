@@ -148,7 +148,7 @@ export default {
     const $q = useQuasar();
 
     // script form logic
-    const script = props.script ? ref(Object.assign({}, props.script)) : ref({});
+    const script = props.script ? ref(Object.assign({}, props.script)) : ref({ shell: "powershell", timeout: 90 });
 
     if (props.clone) script.value.name = `(Copy) ${script.value.name}`;
     const code = ref("");
@@ -169,7 +169,8 @@ export default {
     });
 
     // get code if editing or cloning script
-    if (props.script) downloadScript(script.value.id).then(r => (code.value = r.code));
+    if (props.script)
+      downloadScript(script.value.id, { with_snippets: props.readonly }).then(r => (code.value = r.code));
 
     async function submitForm() {
       loading.value = true;

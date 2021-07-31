@@ -60,11 +60,6 @@ class GetUpdateDeleteScript(APIView):
             else:
                 return notify_error("Community scripts cannot be edited.")
 
-        elif "code" in data:
-            message_bytes = data["code"].encode("ascii")
-            data["code_base64"] = base64.b64encode(message_bytes).decode("ascii")
-            data.pop("code")
-
         serializer = ScriptSerializer(data=data, instance=script, partial=True)
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()
@@ -95,7 +90,7 @@ class GetAddScriptSnippets(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response("ok")
+        return Response("Script snippet was saved successfully")
 
 
 class GetUpdateDeleteScriptSnippet(APIView):
@@ -108,13 +103,19 @@ class GetUpdateDeleteScriptSnippet(APIView):
     def put(self, request, pk):
         snippet = get_object_or_404(ScriptSnippet, pk=pk)
 
-        serializer = ScriptSnippetSerializer(instance=snippet, data=request.data)
+        serializer = ScriptSnippetSerializer(
+            instance=snippet, data=request.data, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+
+        return Response("Script snippet was saved successfully")
 
     def delete(self, request, pk):
         snippet = get_object_or_404(ScriptSnippet, pk=pk)
         snippet.delete()
+
+        return Response("Script snippet was deleted successfully")
 
 
 class TestScript(APIView):
@@ -135,7 +136,7 @@ class TestScript(APIView):
             "timeout": request.data["timeout"],
             "script_args": parsed_args,
             "payload": {
-                "code": request.data["code"],
+                "code": Script.replace_with_snippets(request.data["code"]),
                 "shell": request.data["shell"],
             },
         }
@@ -152,6 +153,11 @@ class TestScript(APIView):
 def download(request, pk):
     script = get_object_or_404(Script, pk=pk)
 
+    with_snippets = request.GET.get("with_snippets", True)
+
+    if with_snippets == "false":
+        with_snippets = False
+
     if script.shell == "powershell":
         filename = f"{script.name}.ps1"
     elif script.shell == "cmd":
@@ -159,4 +165,9 @@ def download(request, pk):
     else:
         filename = f"{script.name}.py"
 
-    return Response({"filename": filename, "code": script.code})
+    return Response(
+        {
+            "filename": filename,
+            "code": script.code if with_snippets else script.code_no_snippets,
+        }
+    )

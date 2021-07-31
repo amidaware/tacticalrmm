@@ -779,7 +779,7 @@ class TestAgentViews(TacticalTestCase):
         # test wait
         data = {
             "pk": self.agent.pk,
-            "scriptPK": script.pk,
+            "script": script.pk,
             "output": "wait",
             "args": [],
             "timeout": 15,
@@ -795,11 +795,11 @@ class TestAgentViews(TacticalTestCase):
         # test email default
         data = {
             "pk": self.agent.pk,
-            "scriptPK": script.pk,
+            "script": script.pk,
             "output": "email",
             "args": ["abc", "123"],
             "timeout": 15,
-            "emailmode": "default",
+            "emailMode": "default",
             "emails": ["admin@example.com", "bob@example.com"],
         }
         r = self.client.post(url, data, format="json")
@@ -814,7 +814,7 @@ class TestAgentViews(TacticalTestCase):
         email_task.reset_mock()
 
         # test email overrides
-        data["emailmode"] = "custom"
+        data["emailMode"] = "custom"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         email_task.assert_called_with(
@@ -828,7 +828,7 @@ class TestAgentViews(TacticalTestCase):
         # test fire and forget
         data = {
             "pk": self.agent.pk,
-            "scriptPK": script.pk,
+            "script": script.pk,
             "output": "forget",
             "args": ["hello", "world"],
             "timeout": 22,
@@ -847,7 +847,7 @@ class TestAgentViews(TacticalTestCase):
         custom_field = baker.make("core.CustomField", model="agent")
         data = {
             "pk": self.agent.pk,
-            "scriptPK": script.pk,
+            "script": script.pk,
             "output": "collector",
             "args": ["hello", "world"],
             "timeout": 22,
@@ -875,7 +875,7 @@ class TestAgentViews(TacticalTestCase):
         custom_field = baker.make("core.CustomField", model="site")
         data = {
             "pk": self.agent.pk,
-            "scriptPK": script.pk,
+            "script": script.pk,
             "output": "collector",
             "args": ["hello", "world"],
             "timeout": 22,
@@ -905,7 +905,7 @@ class TestAgentViews(TacticalTestCase):
         custom_field = baker.make("core.CustomField", model="client")
         data = {
             "pk": self.agent.pk,
-            "scriptPK": script.pk,
+            "script": script.pk,
             "output": "collector",
             "args": ["hello", "world"],
             "timeout": 22,
@@ -934,7 +934,7 @@ class TestAgentViews(TacticalTestCase):
         # test save to note
         data = {
             "pk": self.agent.pk,
-            "scriptPK": script.pk,
+            "script": script.pk,
             "output": "note",
             "args": ["hello", "world"],
             "timeout": 22,

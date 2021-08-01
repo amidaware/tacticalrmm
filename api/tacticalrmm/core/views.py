@@ -346,9 +346,18 @@ class RunURLAction(APIView):
         from requests.utils import requote_uri
 
         from agents.models import Agent
+        from clients.models import Client, Site
         from tacticalrmm.utils import replace_db_values
 
-        agent = get_object_or_404(Agent, pk=request.data["agent"])
+        if "agent" in request.data.keys():
+            instance = get_object_or_404(Agent, pk=request.data["agent"])
+        elif "site" in request.data.keys():
+            instance = get_object_or_404(Site, pk=request.data["site"])
+        elif "client" in request.data.keys():
+            instance = get_object_or_404(Client, pk=request.data["client"])
+        else:
+            return notify_error("received an incorrect request")
+
         action = get_object_or_404(URLAction, pk=request.data["action"])
 
         pattern = re.compile("\\{\\{([\\w\\s]+\\.[\\w\\s]+)\\}\\}")
@@ -356,7 +365,7 @@ class RunURLAction(APIView):
         url_pattern = action.pattern
 
         for string in re.findall(pattern, action.pattern):
-            value = replace_db_values(string=string, agent=agent, quotes=False)
+            value = replace_db_values(string=string, instance=instance, quotes=False)
 
             url_pattern = re.sub("\\{\\{" + string + "\\}\\}", str(value), url_pattern)
 

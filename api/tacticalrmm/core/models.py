@@ -1,5 +1,6 @@
 import smtplib
 from email.message import EmailMessage
+from django.db.models.enums import Choices
 
 import pytz
 from django.conf import settings
@@ -309,6 +310,9 @@ class GlobalKVStore(models.Model):
 
     def __str__(self):
         return self.name
+
+
+OPEN_ACTIONS = (("window", "New Window"), ("tab", "New Tab"))
 
 
 class URLAction(models.Model):

@@ -298,9 +298,10 @@ def get_latest_trmm_ver() -> str:
 
 
 def replace_db_values(
-    string: str, agent: Agent = None, shell: str = None, quotes=True  # type:ignore
+    string: str, instance=None, shell: str = None, quotes=True  # type:ignore
 ) -> Union[str, None]:
     from core.models import CustomField, GlobalKVStore
+    from clients.models import Client, Site
 
     # split by period if exists. First should be model and second should be property i.e {{client.name}}
     temp = string.split(".")
@@ -308,7 +309,7 @@ def replace_db_values(
     # check for model and property
     if len(temp) < 2:
         # ignore arg since it is invalid
-        return None
+        return ""
 
     # value is in the global keystore and replace value
     if temp[0] == "global":
@@ -318,33 +319,47 @@ def replace_db_values(
             return f"'{value}'" if quotes else value
         else:
             DebugLog.error(
-                agent=agent,
                 log_type="scripting",
                 message=f"{agent.hostname} Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store",  # type:ignore
             )
-            return None
+            return ""
 
-    if not agent:
-        # agent must be set if not global property
-        return f"There was an error finding the agent: {agent}"
+    if not instance:
+        # instance must be set if not global property
+        return ""
 
     if temp[0] == "client":
         model = "client"
-        obj = agent.client
+        if isinstance(instance, Client):
+            obj = instance
+        elif hasattr(instance, "client"):
+            obj = instance.client
+        else:
+            obj = None
     elif temp[0] == "site":
         model = "site"
-        obj = agent.site
+        if isinstance(instance, Site):
+            obj = instance
+        elif hasattr(instance, "site"):
+            obj = instance.site
+        else:
+            obj = None
     elif temp[0] == "agent":
         model = "agent"
-        obj = agent
+        if isinstance(instance, Agent):
+            obj = instance
+        else:
+            obj = None
     else:
         # ignore arg since it is invalid
         DebugLog.error(
-            agent=agent,
             log_type="scripting",
-            message=f"{agent.hostname} Not enough information to find value for: {string}. Only agent, site, client, and global are supported.",
+            message=f"{instance} Not enough information to find value for: {string}. Only agent, site, client, and global are supported.",
         )
-        return None
+        return ""
+
+    if not obj:
+        return ""
 
     if hasattr(obj, temp[1]):
         value = f"'{getattr(obj, temp[1])}'" if quotes else getattr(obj, temp[1])
@@ -379,22 +394,20 @@ def replace_db_values(
     else:
         # ignore arg since property is invalid
         DebugLog.error(
-            agent=agent,
             log_type="scripting",
-            message=f"{agent.hostname} Couldn't find property on supplied variable: {string}. Make sure it exists as a custom field or a valid agent property",
+            message=f"{instance} Couldn't find property on supplied variable: {string}. Make sure it exists as a custom field or a valid agent property",
         )
-        return None
+        return ""
 
     # log any unhashable type errors
     if value != None:
         return value  # type: ignore
     else:
         DebugLog.error(
-            agent=agent,
             log_type="scripting",
-            message=f" {agent.hostname}({agent.pk}) Couldn't lookup value for: {string}. Make sure it exists as a custom field or a valid agent property",
+            message=f" {instance}({instance.pk}) Couldn't lookup value for: {string}. Make sure it exists as a custom field or a valid agent property",
         )
-        return None
+        return ""
 
 
 def format_shell_array(value: list) -> str:

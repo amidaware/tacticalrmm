@@ -420,7 +420,7 @@
 <script>
 import mixins from "@/mixins/mixins";
 import { mapGetters } from "vuex";
-import { date } from "quasar";
+import { date, openURL } from "quasar";
 import EditAgent from "@/components/modals/agents/EditAgent";
 import RebootLater from "@/components/modals/agents/RebootLater";
 import PendingActions from "@/components/modals/logs/PendingActions";
@@ -793,7 +793,7 @@ export default {
       this.$axios
         .patch("/core/urlaction/run/", data)
         .then(r => {
-          window.open(r.data, "_blank");
+          openURL(r.data);
         })
         .catch(() => {});
     },

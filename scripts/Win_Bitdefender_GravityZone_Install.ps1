@@ -86,7 +86,6 @@ $tmpExe = Join-Path -Path $tmpDir -ChildPath $exe
 if ($log) {
     Write-Output "$(Get-Timestamp) Bitdefender is not installed"
     Write-Output "$(Get-Timestamp) Downloading installer..."
-    Write-Output "$(Get-Timestamp) Filename: ${tmpExe}"
 }
 if ([Environment]::OSVersion.Version -le (new-object 'Version' 7,0)) {
     # This is required for Windows 7, 8.1

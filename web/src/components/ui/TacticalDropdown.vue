@@ -3,7 +3,7 @@
     dense
     options-dense
     @update:model-value="value => $emit('update:modelValue', value)"
-    :options="filterable ? filteredOptions : options"
+    :options="filtered ? filteredOptions : options"
     :model-value="modelValue"
     :map-options="mapOptions"
     :emit-value="mapOptions"
@@ -31,8 +31,7 @@
 </template>
 <script>
 // composition imports
-import { toRefs, computed } from "vue";
-import { useDropdownFilter } from "@/composables/quasar";
+import { ref, toRefs, computed } from "vue";
 
 export default {
   name: "tactical-dropdown",
@@ -53,14 +52,33 @@ export default {
     options: !Array,
   },
   setup(props) {
-    const { options } = toRefs(props);
-    const { filterFn, filteredOptions } = useDropdownFilter(options, !props.mapOptions);
+    const filtered = ref(false);
+    const filteredOptions = ref(props.options);
+
+    function filterFn(val, update, abort) {
+      update(() => {
+        if (val === "") {
+          filtered.value = false;
+        } else {
+          filtered.value = true;
+          const needle = val.toLowerCase();
+
+          if (!props.mapOptions)
+            filteredOptions.value = props.options.filter(v => v.toLowerCase().indexOf(needle) > -1);
+          else
+            filteredOptions.value = props.options.filter(v => {
+              return !v.category ? v.label.toLowerCase().indexOf(needle) > -1 : false;
+            });
+        }
+      });
+    }
 
     const filterEvent = computed(() => {
       return props.filterable ? "filter" : null;
     });
 
     return {
+      filtered,
       filteredOptions,
       filterFn,
       filterEvent,

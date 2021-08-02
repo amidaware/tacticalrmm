@@ -228,7 +228,7 @@ class Script(BaseAuditModel):
             if match:
                 # only get the match between the () in regex
                 string = match.group(1)
-                value = replace_db_values(string=string, agent=agent, shell=shell)
+                value = replace_db_values(string=string, instance=agent, shell=shell)
 
                 if value:
                     temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))

@@ -174,9 +174,19 @@ STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "tacticalrmm/static/")]
 
-
-LOG_CONFIG = {
-    "handlers": [{"sink": os.path.join(LOG_DIR, "debug.log"), "serialize": False}]
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "file": {
+            "level": "ERROR",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "django_debug.log"),
+        }
+    },
+    "loggers": {
+        "django.request": {"handlers": ["file"], "level": "ERROR", "propagate": True}
+    },
 }
 
 if "AZPIPELINE" in os.environ:

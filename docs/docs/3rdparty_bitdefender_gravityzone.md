@@ -4,16 +4,11 @@
 
 From the UI go to **Settings > Global Settings > CUSTOM FIELDS > Clients**
 
-Add 2 Custom Field</br>
+Add a Custom Field</br>
 
 First: </br>
 **Target** = `CLIENTS`</br>
 **Name** = `bdurl`</br>
-**Field Type** = `Text`</br>
-
-Second: </br>
-**Target** = `CLIENTS`</br>
-**Name** = `bdexe`</br>
 **Field Type** = `Text`</br>
 
 ![Service Name](images/3rdparty_bdg_RmmCustField.png)
@@ -33,8 +28,6 @@ Copy the appropriate download link
 Paste download link into the `bdurl` when you right click your target clients name in the RMM.
 
 ![Service Name](images/3rdparty_bdg_CustFieldLink.png)
-
-Now copy the `setupdownloader_[randomstring].exe` into the `bdexe` field.
 
 Right click the Agent you want to deploy to and **Run Script**. Select **BitDefender GravityZone Install** and set timeout for 1800 seconds.
 

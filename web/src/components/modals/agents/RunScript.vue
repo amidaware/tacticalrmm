@@ -122,6 +122,7 @@ export default {
   components: { TacticalDropdown },
   props: {
     agent: !Object,
+    script: Number,
   },
   setup(props) {
     // setup vuex store
@@ -132,7 +133,7 @@ export default {
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
 
     // setup dropdowns
-    const { script, scriptOptions, defaultTimeout, defaultArgs, getScriptOptions } = useScriptDropdown();
+    const { script, scriptOptions, defaultTimeout, defaultArgs, getScriptOptions } = useScriptDropdown(props.script);
     const { customFieldOptions, getCustomFieldOptions } = useCustomFieldDropdown();
 
     // main run script functionaity

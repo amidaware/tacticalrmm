@@ -156,30 +156,6 @@
                           <q-item-section>{{ menuMaintenanceText(props.node) }}</q-item-section>
                         </q-item>
 
-                        <q-item clickable v-ripple @click="getURLActions">
-                          <q-item-section side>
-                            <q-icon size="xs" name="mdi-open-in-new" />
-                          </q-item-section>
-                          <q-item-section>Run URL Action</q-item-section>
-                          <q-item-section side>
-                            <q-icon name="keyboard_arrow_right" />
-                          </q-item-section>
-                          <q-menu auto-close anchor="top end" self="top start">
-                            <q-list>
-                              <q-item
-                                v-for="action in urlActions"
-                                :key="action.id"
-                                dense
-                                clickable
-                                v-close-popup
-                                @click="runURLAction(props.node.id, action.id, props.node.children ? 'client' : 'site')"
-                              >
-                                {{ action.name }}
-                              </q-item>
-                            </q-list>
-                          </q-menu>
-                        </q-item>
-
                         <q-item
                           v-if="props.node.children === undefined"
                           clickable
@@ -204,6 +180,30 @@
                             <q-icon name="error" />
                           </q-item-section>
                           <q-item-section>Assign Alert Template</q-item-section>
+                        </q-item>
+
+                        <q-item clickable v-ripple @click="getURLActions">
+                          <q-item-section side>
+                            <q-icon name="open_in_new" />
+                          </q-item-section>
+                          <q-item-section>Run URL Action</q-item-section>
+                          <q-item-section side>
+                            <q-icon name="keyboard_arrow_right" />
+                          </q-item-section>
+                          <q-menu auto-close anchor="top end" self="top start">
+                            <q-list>
+                              <q-item
+                                v-for="action in urlActions"
+                                :key="action.id"
+                                dense
+                                clickable
+                                v-close-popup
+                                @click="runURLAction(props.node.id, action.id, props.node.children ? 'client' : 'site')"
+                              >
+                                {{ action.name }}
+                              </q-item>
+                            </q-list>
+                          </q-menu>
                         </q-item>
 
                         <q-separator></q-separator>

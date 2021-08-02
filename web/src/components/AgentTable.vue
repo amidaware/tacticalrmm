@@ -112,7 +112,7 @@
 
               <q-item clickable v-ripple @click="getURLActions">
                 <q-item-section side>
-                  <q-icon size="xs" name="mdi-open-in-new" />
+                  <q-icon size="xs" name="open_in_new" />
                 </q-item-section>
                 <q-item-section>Run URL Action</q-item-section>
                 <q-item-section side>
@@ -164,7 +164,7 @@
                       dense
                       clickable
                       v-close-popup
-                      @click="runFavScript(script.value, props.row.id)"
+                      @click="showRunScript(props.row, script.value)"
                     >
                       {{ script.label }}
                     </q-item>
@@ -531,24 +531,10 @@ export default {
         }
       }, 500);
     },
-    runFavScript(scriptpk, agentpk) {
-      const script = this.favoriteScripts.find(i => i.value === scriptpk);
-      const data = {
-        pk: agentpk,
-        timeout: script.timeout,
-        scriptPK: scriptpk,
-        output: "forget",
-        args: script.args,
-      };
-      this.$axios
-        .post("/agents/runscript/", data)
-        .then(r => this.notifySuccess(r.data))
-        .catch(e => {});
-    },
     getFavoriteScripts() {
       this.favoriteScripts = [];
       this.$axios
-        .get("/scripts/scripts/")
+        .get("/scripts/")
         .then(r => {
           if (r.data.filter(k => k.favorite === true).length === 0) {
             this.notifyWarning("You don't have any scripts favorited!");
@@ -797,11 +783,12 @@ export default {
         })
         .catch(() => {});
     },
-    showRunScript(agent) {
+    showRunScript(agent, script = undefined) {
       this.$q.dialog({
         component: RunScript,
         componentProps: {
           agent,
+          script,
         },
       });
     },

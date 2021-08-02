@@ -534,7 +534,7 @@ export default {
     getFavoriteScripts() {
       this.favoriteScripts = [];
       this.$axios
-        .get("/scripts/")
+        .get("/scripts/", { params: { showCommunityScripts: this.showCommunityScripts } })
         .then(r => {
           if (r.data.filter(k => k.favorite === true).length === 0) {
             this.notifyWarning("You don't have any scripts favorited!");
@@ -794,7 +794,7 @@ export default {
     },
   },
   computed: {
-    ...mapGetters(["selectedAgentPk", "agentTableHeight"]),
+    ...mapGetters(["selectedAgentPk", "agentTableHeight", "showCommunityScripts"]),
     agentDblClickAction() {
       return this.$store.state.agentDblClickAction;
     },

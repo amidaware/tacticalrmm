@@ -244,7 +244,7 @@
                     <q-item
                       clickable
                       v-close-popup
-                      @click="deleteScriptModal(props.row)"
+                      @click="deleteScript(props.row)"
                       :disable="props.row.script_type === 'builtin'"
                     >
                       <q-item-section side>

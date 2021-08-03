@@ -2,11 +2,11 @@
       .SYNOPSIS
       This will install software using the chocolatey, with rate limiting when run with Hosts parameter
       .DESCRIPTION
-      For installing packages using chocolatey. If you're running against more than 10, includ the Hosts parameter to limit the speed 
+      For installing packages using chocolatey. If you're running against more than 10, include the Hosts parameter to limit the speed. If running on more than 30 agents at a time make sure you also change the script timeout setting.
       .PARAMETER Mode
       3 options: install (default), uninstall, or upgrade.
       .PARAMETER Hosts
-      Use this to specify the computer(s) you're running the command on: Hosts 20
+      Use this to specify the number of computer(s) you're running the command on. This will dynamically introduce waits to try and minimize the chance of hitting rate limits (20/min) on the chocolatey.org site: Hosts 20
       .PARAMETER PackageName
       Use this to specify which software to install eg: PackageName googlechrome
       .EXAMPLE

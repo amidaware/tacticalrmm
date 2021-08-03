@@ -410,14 +410,14 @@
     "category": "TRMM (Win):Other"
   },
   {
-    "guid": "5615aa90-0272-427b-8acf-0ca019612501",
-    "filename": "Win_Chocolatey_Update_Installed.bat",
+    "guid": "6c78eb04-57ae-43b0-98ed-cbd3ef9e2f80",
+    "filename": "Win_Chocolatey_Manage_Apps_Bulk.ps1",
     "submittedBy": "https://github.com/silversword411",
-    "name": "Update Installed Apps",
-    "description": "Update all apps that were installed using Chocolatey.",
-    "shell": "cmd",
+    "name": "Chocolatey - Install, Uninstall and Upgrade Software",
+    "description": "This script installs, uninstalls and updates software using Chocolatey with logic to slow tasks to minimize hitting community limits. Mode install/uninstall/upgrade Hosts x",
+    "shell": "powershell",
     "category": "TRMM (Win):3rd Party Software>Chocolatey",
-    "default_timeout": "3600"
+    "default_timeout": "600"
   },
   {
     "guid": "fff8024d-d72e-4457-84fa-6c780f69a16f",

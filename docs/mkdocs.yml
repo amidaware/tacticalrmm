@@ -12,17 +12,17 @@ nav:
       - "Updating the RMM (Docker)": update_docker.md
       - "Updating Agents": update_agents.md
   - Functionality:
-      - "Automated Tasks": functions/automated_tasks.md
-      - "Scripting": functions/scripting.md
-      - "Global Keystore": functions/keystore.md
-      - "Custom Fields": functions/custom_fields.md
-      - "Remote Background": functions/remote_bg.md
-      - "URL Actions": functions/url_actions.md
-      - "Maintenance Mode": functions/maintenance_mode.md
       - "Alerting": functions/alerting.md
-      - "User Interface Preferences": functions/user_ui.md
+      - "Automated Tasks": functions/automated_tasks.md
+      - "Custom Fields": functions/custom_fields.md
       - "Django Admin": functions/django_admin.md
+      - "Global Keystore": functions/keystore.md
+      - "Maintenance Mode": functions/maintenance_mode.md
+      - "Remote Background": functions/remote_bg.md
       - "Settings Override": functions/settings_override.md
+      - "Scripting": functions/scripting.md
+      - "URL Actions": functions/url_actions.md
+      - "User Interface Preferences": functions/user_ui.md
       - "Examples": functions/examples.md
   - Backup: backup.md
   - Restore: restore.md
@@ -31,11 +31,11 @@ nav:
   - Management Commands: management_cmds.md
   - MeshCentral Integration: mesh_integration.md
   - 3rd Party Integrations:
-      - "Grafana": 3rdparty_grafana.md
-      - "Connectwise Control / Screenconnect": 3rdparty_screenconnect.md
-      - "TeamViewer": 3rdparty_teamviewer.md
       - "AnyDesk": 3rdparty_anydesk.md
       - "BitDefender GravityZone": 3rdparty_bitdefender_gravityzone.md
+      - "Connectwise Control / Screenconnect": 3rdparty_screenconnect.md
+      - "Grafana": 3rdparty_grafana.md
+      - "TeamViewer": 3rdparty_teamviewer.md
   - Tips n' Tricks: tipsntricks.md
   - Contributing:
       - "Contributing to Docs": contributing.md

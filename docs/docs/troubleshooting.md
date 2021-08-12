@@ -89,6 +89,20 @@ Read through the log files in the following folders and check for errors:
 /var/log/celery
 ```
 
+#### Using Cloudflare DNS
 
+- rmm.example.com can be proxied.
 
+- api.example.com can NOT be proxied.
 
+- mesh.example.com can be proxied with the caveat that Mesh checks the cert presented to the agent is the same one on the server. I.e. no MITM. You'll need to copy Cloudflare's edge cert to your server if you want to proxy this domain.
+
+#### Testing Network Connectivity between agent and server
+
+Use powershell, make sure you can connect to 443 and 4222 from agent to server:
+
+```powershell
+Test-NetConnection -ComputerName api.example.com -Port 4222
+```
+
+Are you trying to use a proxy to share your single home public IP with multiple services on 443? This is complicated, test your setup.

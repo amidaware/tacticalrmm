@@ -806,5 +806,15 @@
     "shell": "powershell",
     "category": "TRMM (Win):Other",
     "default_timeout": "300"
+  },
+  {
+    "guid": "0dd826cd-3a52-4e28-acd6-ce5edcbf9a10",
+    "filename": "Win_Check_Running_Process.ps1",
+    "submittedBy": "https://github.com/tremor021",
+    "name": "Check if process is running",
+    "description": "Checks if specific executable is running, if not then runs it",
+    "shell": "powershell",
+    "category": "TRMM (Win):Other",
+    "default_timeout": "300"
   }
 ]

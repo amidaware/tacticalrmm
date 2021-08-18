@@ -245,6 +245,16 @@
     "category": "TRMM (Win):3rd Party Software"
   },
   {
+    "guid": "907652a5-9ec1-4759-9871-a7743f805ff2",
+    "filename": "Win_Software_Uninstall.ps1",
+    "submittedBy": "https://github.com/subzdev",
+    "name": "Software Uninstaller - list, find, and uninstall most software",
+    "description": "Allows listing, finding and uninstalling most software on Windows. There will be a best effort to uninstall silently if the silent uninstall string is not provided.",
+    "shell": "powershell",
+    "category": "TRMM (Win):3rd Party Software",
+    "default_timeout": "600"
+  },
+  {
     "guid": "64c3b1a8-c85f-4800-85a3-485f78a2d9ad",
     "filename": "Win_Bitdefender_GravityZone_Install.ps1",
     "submittedBy": "https://github.com/jhtechIL/",

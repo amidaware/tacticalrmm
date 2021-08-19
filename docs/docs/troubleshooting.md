@@ -105,4 +105,12 @@ Use powershell, make sure you can connect to 443 and 4222 from agent to server:
 Test-NetConnection -ComputerName api.example.com -Port 4222
 ```
 
-Are you trying to use a proxy to share your single home public IP with multiple services on 443? This is complicated, test your setup.
+```powershell
+Test-NetConnection -ComputerName api.example.com -Port 443
+```
+
+```powershell
+Test-NetConnection -ComputerName rmm.example.com -Port 443
+```
+
+Are you trying to use a proxy to share your single public IP with multiple services on 443? This is complicated and [unsupported by Tactical RMM](unsupported_scripts.md), test your setup.

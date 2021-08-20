@@ -20,6 +20,7 @@ jobs:
           sudo -u postgres psql -c 'DROP DATABASE IF EXISTS pipeline'
           sudo -u postgres psql -c 'DROP DATABASE IF EXISTS test_pipeline'
           sudo -u postgres psql -c 'CREATE DATABASE pipeline'
+          sudo -u postgres psql -c "SET client_encoding = 'UTF8'" pipeline
           SETTINGS_FILE="/myagent/_work/1/s/api/tacticalrmm/tacticalrmm/settings.py"
           rm -rf /myagent/_work/1/s/api/env
           cd /myagent/_work/1/s/api

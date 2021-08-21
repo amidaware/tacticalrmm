@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         Debian10:
-          AGENT_NAME: "azpipeline-fran"
+          AGENT_NAME: "az-pipeline-fran"
 
     pool:
       name: linux-vms

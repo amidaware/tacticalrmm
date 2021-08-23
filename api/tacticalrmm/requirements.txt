@@ -8,8 +8,8 @@ channels_redis==3.3.0
 chardet==4.0.0
 cryptography==3.4.7
 daphne==3.0.2
-Django==3.2.5
-django-cors-headers==3.7.0
+Django==3.2.6
+django-cors-headers==3.8.0
 django-ipware==3.0.2
 django-rest-knox==4.1.0
 djangorestframework==3.12.4
@@ -28,7 +28,7 @@ redis==3.5.3
 requests==2.26.0
 six==1.16.0
 sqlparse==0.4.1
-twilio==6.61.0
+twilio==6.63.0
 urllib3==1.26.6
 uWSGI==2.0.19.1
 validators==0.18.2

@@ -24,6 +24,18 @@ This is better
 
 ![img](images/wls2_upgrade_and_set_default.png)
 
+## Install VSCode Extensions
+
+[Remote - Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+
+[Docker](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-docker)
+
+## Connect to WSL and clone your Github fork
+
+![Connect to WSL](images/vscode_wsl_docker_setup1.png)
+
+![Clone Repo](images/vscode_wsl_docker_setup2.png)
+
 ## Create .env file
 
 Under .devcontainer duplicate
@@ -46,7 +58,20 @@ Customize to your tastes (it doesn't need to be internet configured, just add re
 127.0.0.1    mesh.example.com
 ```
 
-## View mkdocks live edits in browser
+## Launch your Dev VM in Docker
+
+Right-click `docker-compose.yml` and choose `Compose Up`
+
+Wait, it'll take a while as docker downloads all the modules and gets running.
+
+## Develop!
+
+You're operational!
+
+!!!note
+    Self-signed certs are in your dev environment. Navigate to https://api.example.com and https://rmm.example.com and accept the self signed certs to get rid of errors.
+
+### View mkdocks live edits in browser
 
 Change stuff in `/docs/docs/`
 
@@ -54,6 +79,7 @@ mkdocs is Exposed on Port: 8005
 
 Open: [http://rmm.example.com:8005/](http://rmm.example.com:8005/)
 
-## View django administration
+### View django administration
 
 Open: [http://rmm.example.com:8000/admin/](http://rmm.example.com:8000/admin/)
+

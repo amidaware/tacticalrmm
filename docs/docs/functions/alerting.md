@@ -84,7 +84,7 @@ You can also **Exclude Desktops** from the alert template. This is useful if you
 
 ## Alert Template inheritance
 
-Alerts are applied in the following over. The agent picks the closest matching alert template.
+Alerts are applied in the following order. The agent picks the closest matching alert template.
 
 1. Policy w/ Alert Template applied to Site
 2. Site

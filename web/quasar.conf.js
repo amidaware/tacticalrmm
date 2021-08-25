@@ -62,7 +62,6 @@ module.exports = function () {
       https: false,
       host: process.env.DEV_HOST,
       port: process.env.DEV_PORT,
-      public: process.env.APP_URL,
       open: false
     },
 

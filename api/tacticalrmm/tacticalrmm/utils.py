@@ -192,16 +192,12 @@ def reload_nats():
             )
 
     domain = settings.ALLOWED_HOSTS[0].split(".", 1)[1]
+    cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
+    key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
     if hasattr(settings, "CERT_FILE") and hasattr(settings, "KEY_FILE"):
         if os.path.exists(settings.CERT_FILE) and os.path.exists(settings.KEY_FILE):
             cert_file = settings.CERT_FILE
             key_file = settings.KEY_FILE
-        else:
-            cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
-            key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
-    else:
-        cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
-        key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
 
     config = {
         "tls": {
@@ -209,7 +205,7 @@ def reload_nats():
             "key_file": key_file,
         },
         "authorization": {"users": users},
-        "max_payload": 2048576005,
+        "max_payload": 67108864,
     }
 
     conf = os.path.join(settings.BASE_DIR, "nats-rmm.conf")

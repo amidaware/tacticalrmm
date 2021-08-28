@@ -170,7 +170,10 @@ export default {
 
     // get code if editing or cloning script
     if (props.script)
-      downloadScript(script.value.id, { with_snippets: props.readonly }).then(r => (code.value = r.code));
+      downloadScript(script.value.id, { with_snippets: props.readonly }).then(r => {
+        code.value = r.code;
+        script.value.code = r.code;
+      });
 
     async function submitForm() {
       loading.value = true;

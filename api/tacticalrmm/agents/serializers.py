@@ -205,6 +205,7 @@ class NotesSerializer(serializers.ModelSerializer):
 
 class AgentHistorySerializer(serializers.ModelSerializer):
     time = serializers.SerializerMethodField(read_only=True)
+    script_name = serializers.ReadOnlyField(source="script.name")
 
     class Meta:
         model = AgentHistory

@@ -110,7 +110,7 @@
 
 <script>
 // composable imports
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { useQuasar, useDialogPluginComponent } from "quasar";
 import { saveScript, editScript, downloadScript } from "@/api/scripts";
 import { notifySuccess } from "@/utils/notify";
@@ -174,6 +174,12 @@ export default {
         code.value = r.code;
         script.value.code = r.code;
       });
+
+    watch(code, (newValue, oldValue) => {
+      if (newValue) {
+        script.value.code = code.value;
+      }
+    });
 
     async function submitForm() {
       loading.value = true;

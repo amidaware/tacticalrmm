@@ -58,7 +58,7 @@
 
 <script>
 // composition imports
-import { ref, toRefs, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useAgentDropdown } from "@/composables/agents";
 import { testScript } from "@/api/scripts";
 import { useDialogPluginComponent } from "quasar";
@@ -82,11 +82,10 @@ export default {
     // setup quasar dialog plugin
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
 
-    // make script object props single reactive properties
-    const { code, default_timeout, args, shell } = toRefs(props.script);
-
     // main run script functionality
     const agent = ref(null);
+    const timeout = ref(props.script.default_timeout);
+    const args = ref(props.script.args);
     const ret = ref(null);
     const loading = ref(false);
 
@@ -94,10 +93,10 @@ export default {
       loading.value = true;
       const data = {
         agent: agent.value,
-        code: code.value,
-        timeout: default_timeout.value,
+        code: props.script.code,
+        timeout: timeout.value,
         args: args.value,
-        shell: shell.value,
+        shell: props.script.shell,
       };
 
       ret.value = await testScript(data);
@@ -109,7 +108,7 @@ export default {
     return {
       // reactive data
       agent,
-      timeout: default_timeout,
+      timeout,
       args,
       ret,
       loading,

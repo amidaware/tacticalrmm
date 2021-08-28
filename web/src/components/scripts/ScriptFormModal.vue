@@ -110,7 +110,7 @@
 
 <script>
 // composable imports
-import { ref, computed, watch } from "vue";
+import { ref, computed } from "vue";
 import { useQuasar, useDialogPluginComponent } from "quasar";
 import { saveScript, editScript, downloadScript } from "@/api/scripts";
 import { notifySuccess } from "@/utils/notify";
@@ -148,7 +148,9 @@ export default {
     const $q = useQuasar();
 
     // script form logic
-    const script = props.script ? ref(Object.assign({}, props.script)) : ref({ shell: "powershell", timeout: 90 });
+    const script = props.script
+      ? ref(Object.assign({}, props.script))
+      : ref({ shell: "powershell", default_timeout: 90 });
 
     if (props.clone) script.value.name = `(Copy) ${script.value.name}`;
     const code = ref("");
@@ -172,14 +174,7 @@ export default {
     if (props.script)
       downloadScript(script.value.id, { with_snippets: props.readonly }).then(r => {
         code.value = r.code;
-        script.value.code = r.code;
       });
-
-    watch(code, (newValue, oldValue) => {
-      if (newValue) {
-        script.value.code = code.value;
-      }
-    });
 
     async function submitForm() {
       loading.value = true;
@@ -208,7 +203,7 @@ export default {
       $q.dialog({
         component: TestScriptModal,
         componentProps: {
-          script: script.value,
+          script: { ...script.value, code: code.value },
         },
       });
     }

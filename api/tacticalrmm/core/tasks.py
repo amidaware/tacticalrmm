@@ -35,7 +35,7 @@ def core_maintenance_tasks():
 
     # remove old resolved alerts
     if core.resolved_alerts_prune_days > 0:  # type: ignore
-        prune_resolved_alerts.delay(core.resolved_alert_prune_days)  # type: ignore
+        prune_resolved_alerts.delay(core.resolved_alerts_prune_days)  # type: ignore
 
     # remove old agent history
     if core.agent_history_prune_days > 0:  # type: ignore

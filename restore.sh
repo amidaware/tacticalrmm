@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="29"
+SCRIPT_VERSION="30"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -104,18 +104,6 @@ fi
 sudo systemctl restart systemd-journald.service
 
 sudo apt update
-
-print_green 'Downloading NATS'
-
-nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-wget https://github.com/nats-io/nats-server/releases/download/v2.2.6/nats-server-v2.2.6-linux-amd64.tar.gz -P ${nats_tmp}
-
-tar -xzf ${nats_tmp}/nats-server-v2.2.6-linux-amd64.tar.gz -C ${nats_tmp}
-
-sudo mv ${nats_tmp}/nats-server-v2.2.6-linux-amd64/nats-server /usr/local/bin/
-sudo chmod +x /usr/local/bin/nats-server
-sudo chown ${USER}:${USER} /usr/local/bin/nats-server
-rm -rf ${nats_tmp}
 
 print_green 'Installing NodeJS'
 
@@ -227,6 +215,17 @@ cd /rmm
 git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout master
+
+print_green 'Restoring NATS'
+
+NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" /rmm/api/tacticalrmm/tacticalrmm/settings.py | awk -F'[= "]' '{print $5}')
+nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
+wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -P ${nats_tmp}
+tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -C ${nats_tmp}
+sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server /usr/local/bin/
+sudo chmod +x /usr/local/bin/nats-server
+sudo chown ${USER}:${USER} /usr/local/bin/nats-server
+rm -rf ${nats_tmp}
 
 print_green 'Restoring MeshCentral'
 

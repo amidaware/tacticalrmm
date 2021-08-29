@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="124"
+SCRIPT_VERSION="125"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -63,6 +63,7 @@ fi
 LATEST_MESH_VER=$(grep "^MESH_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 LATEST_PIP_VER=$(grep "^PIP_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 LATEST_NPM_VER=$(grep "^NPM_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
+NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" "$TMP_SETTINGS" | awk -F'[= "]' '{print $5}')
 
 CURRENT_PIP_VER=$(grep "^PIP_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
 CURRENT_NPM_VER=$(grep "^NPM_VER" "$SETTINGS_FILE" | awk -F'[= "]' '{print $5}')
@@ -184,14 +185,14 @@ if ! [[ $HAS_PY39 ]]; then
   sudo rm -rf Python-3.9.2 Python-3.9.2.tgz
 fi
 
-HAS_NATS220=$(/usr/local/bin/nats-server -version | grep v2.2.6)
-if ! [[ $HAS_NATS220 ]]; then
-  printf >&2 "${GREEN}Updating nats to v2.2.6${NC}\n"
+HAS_LATEST_NATS=$(/usr/local/bin/nats-server -version | grep "${NATS_SERVER_VER}")
+if ! [[ $HAS_LATEST_NATS ]]; then
+  printf >&2 "${GREEN}Updating nats to v${NATS_SERVER_VER}${NC}\n"
   nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-  wget https://github.com/nats-io/nats-server/releases/download/v2.2.6/nats-server-v2.2.6-linux-amd64.tar.gz -P ${nats_tmp}
-  tar -xzf ${nats_tmp}/nats-server-v2.2.6-linux-amd64.tar.gz -C ${nats_tmp}
+  wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -P ${nats_tmp}
+  tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -C ${nats_tmp}
   sudo rm -f /usr/local/bin/nats-server
-  sudo mv ${nats_tmp}/nats-server-v2.2.6-linux-amd64/nats-server /usr/local/bin/
+  sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server /usr/local/bin/
   sudo chmod +x /usr/local/bin/nats-server
   sudo chown ${USER}:${USER} /usr/local/bin/nats-server
   rm -rf ${nats_tmp}

@@ -192,14 +192,14 @@ print_green 'Installing Python 3.9'
 sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
 numprocs=$(nproc)
 cd ~
-wget https://www.python.org/ftp/python/3.9.2/Python-3.9.2.tgz
-tar -xf Python-3.9.2.tgz
-cd Python-3.9.2
+wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz
+tar -xf Python-3.9.6.tgz
+cd Python-3.9.6
 ./configure --enable-optimizations
 make -j $numprocs
 sudo make altinstall
 cd ~
-sudo rm -rf Python-3.9.2 Python-3.9.2.tgz
+sudo rm -rf Python-3.9.6 Python-3.9.6.tgz
 
 
 print_green 'Installing redis and git'

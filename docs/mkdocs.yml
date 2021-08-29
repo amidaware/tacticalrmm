@@ -24,6 +24,7 @@ nav:
       - "URL Actions": functions/url_actions.md
       - "User Interface Preferences": functions/user_ui.md
       - "Examples": functions/examples.md
+      - "Database Maintenace": functions/database_maintenance.md
   - Backup: backup.md
   - Restore: restore.md
   - Troubleshooting: troubleshooting.md

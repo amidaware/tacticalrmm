@@ -36,11 +36,12 @@ You can choose to hide community script throughout the dashboard by opening **Sc
 ### Manual run on agent
 
 In the **Agent Table**, you can right-click on an agent and select **Run Script**. You have the options of:
-    - **Wait for Output** - Runs the script and waits for the script to finish running and displays the output.
-    - **Fire and Forget** - Starts the script and does not wait for output.
-    - **Email Output** - Starts the script and will email the output. Allows for using the default email address in the global settings or adding a new email address.
-    - **Save as Note** - Saves the output as a Note that can be views in the agent Notes tab
-    - **Collector** - Saves to output to the specified custom field.
+
+- **Wait for Output** - Runs the script and waits for the script to finish running and displays the output.
+- **Fire and Forget** - Starts the script and does not wait for output.
+- **Email Output** - Starts the script and will email the output. Allows for using the default email address in the global settings or adding a new email address.
+- **Save as Note** - Saves the output as a Note that can be views in the agent Notes tab
+- **Collector** - Saves to output to the specified custom field.
 
 There is also an option on the agent context menu called **Run Favorited Script**. This will essentially Fire and Forget the script with default args and timeout.
 

@@ -49,6 +49,12 @@ The available options are:
 - **Resolved Action Args** - Optionally pass in arguments to the resolved script.
 - **Resolved Action Timeout** - Sets the timeout for the script.
 
+#### Run actions only on:
+- **Agents** - If Enabled, will run script failure/resolved actions on agent overdue alerts else no alert actions will be triggered for agent overdue alerts
+- **Checks** - If Enabled, will run script failure/resolved actions on check alerts else no alert actions will be triggered check alerts
+- **Tasks** - If Enabled, will run script failure/resolved actions on automated task alerts else no alert actions will be triggered automated task alerts
+
+
 ### Agent/Check/Task Failure Settings
 
 - **Email** - When **Enabled**, will send an email notification and override the Email Alert checkbox on the Agent/Check/Task. When **Not Configured**, the Email Alert checkbox on the Agent/Check/Task will take effect. If **Disabled**, no email notifications will be sent and will override any Email alert checkbox on the Agent/Check/Task

@@ -5,7 +5,7 @@
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       :rows="history"
       :columns="columns"
-      :pagination="{ sortBy: 'entry_time', descending: true }"
+      :pagination="{ sortBy: 'time', descending: true, rowsPerPage: 10 }"
       :loading="loading"
       dense
       binary-state-sort

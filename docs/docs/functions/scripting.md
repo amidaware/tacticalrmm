@@ -24,7 +24,7 @@ In the dashboard, browse to **Settings > Scripts Manager**. Click the **New** bu
 
 To download a Tactical RMM Script, click on the script in the Script Manager to select it. Then click the **Download Script** button on the top. You can also right-click on the script and select download
 
-## Community Script
+## Community Scripts
 
 These are script that are built into Tactical RMM. They are provided and mantained by the Tactical RMM community. These scripts are updated whenever Tactical RMM is updated and can't be modified or deleted in the dashboard.
 
@@ -39,6 +39,8 @@ In the **Agent Table**, you can right-click on an agent and select **Run Script*
     - **Wait for Output** - Runs the script and waits for the script to finish running and displays the output.
     - **Fire and Forget** - Starts the script and does not wait for output.
     - **Email Output** - Starts the script and will email the output. Allows for using the default email address in the global settings or adding a new email address.
+    - **Save as Note** - Saves the output as a Note that can be views in the agent Notes tab
+    - **Collector** - Saves to output to the specified custom field.
 
 There is also an option on the agent context menu called **Run Favorited Script**. This will essentially Fire and Forget the script with default args and timeout.
 
@@ -108,3 +110,27 @@ Write-Output "Public IP: $PublicIp"
 Write-Output "Custom Fields: $CustomField"
 Write-Output "Global: $Global"
 ```
+
+## Script Snippets
+
+Script Snippets allow you to create common code blocks or comments and apply them to all of your scripts. This could be initialization code, common error checking, or even code comments. 
+
+### Adding Script Snippets
+
+In the dashboard, browse to **Settings > Scripts Manager**. Click the **Script Snippets** button.
+
+- **Name** - This identifies the script snippet in the dashboard
+- **Description** - Optional description for the script snippet
+- **Shell** - This sets the language of the script. Available options are:
+    - Powershell
+    - Windows Batch
+    - Python
+
+### Using Script Snippets
+
+When editing a script, you can add template tags to the script body that contains the script snippet name. For example, if a script snippet exists with the name "Check WMF", you would put {{Check WMF}} in the script body and the snippet code will be replaced.
+
+!!!info
+    Everything between {{}} is CaSe sEnSiTive
+
+The template tags will only be visible when Editing the script. When downloading or viewing the script code the template tags will be replaced with the script snippet code.

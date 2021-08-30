@@ -160,4 +160,4 @@ You can find 3 sets of detailed logs at `/rmm/api/tacticalrmm/tacticalrmm/privat
 
 * `access.log` nginx log for access auditing on all URL's: rmm, api and mesh (_this is a large file, and should be cleaned periodically_)
 
-* `debug.log` created by django webapp
+* `django_debug.log` created by django webapp

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="14"
+SCRIPT_VERSION="15"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/backup.sh'
 
 GREEN='\033[0;32m'
@@ -80,7 +80,7 @@ if [ -f "${sysd}/daphne.service" ]; then
     sudo cp ${sysd}/daphne.service ${tmp_dir}/systemd/
 fi
 
-cat /rmm/api/tacticalrmm/tacticalrmm/private/log/debug.log | gzip -9 > ${tmp_dir}/rmm/debug.log.gz
+cat /rmm/api/tacticalrmm/tacticalrmm/private/log/django_debug.log | gzip -9 > ${tmp_dir}/rmm/debug.log.gz
 cp /rmm/api/tacticalrmm/tacticalrmm/local_settings.py /rmm/api/tacticalrmm/app.ini ${tmp_dir}/rmm/
 cp /rmm/web/.env ${tmp_dir}/rmm/env
 cp /rmm/api/tacticalrmm/tacticalrmm/private/exe/mesh*.exe ${tmp_dir}/rmm/

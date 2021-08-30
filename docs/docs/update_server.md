@@ -17,6 +17,7 @@ Other than this, you should avoid making any changes to your server and let the 
 SSH into your server as the linux user you created during install.<br/><br/>
 __Never__ run any update scripts or commands as the `root` user.<br/>This will mess up permissions and break your installation.<br/><br/>
 Download the update script and run it:<br/>
+
 ```bash
 wget -N https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh
 chmod +x update.sh
@@ -27,18 +28,19 @@ chmod +x update.sh
 
 If you are already on the latest version, the update script will notify you of this and return immediately.<br/><br/>
 You can pass the optional `--force` flag to the update script to forcefully run through an update, which will bypass the check for latest version.<br/>
+
 ```bash
 ./update.sh --force
 ```
+
 This is usefull for a botched update that might have not completed fully.<br/><br/>
 The update script will also fix any permissions that might have gotten messed up during a botched update, or if you accidentally ran the update script as the `root` user.
 
 <br/>
 
-
 !!!warning
     Do __not__ attempt to manually update MeshCentral to a newer version.
-    
+
     You should let the `update.sh` script handle this for you. 
     
     The developers will test MeshCentral and make sure integration does not break before bumping the mesh version.
@@ -60,4 +62,17 @@ After this you have renewed the cert, simply run the `update.sh` script, passing
 
 ```bash
 ./update.sh --force
+```
+
+#### Keep an eye on your disk space
+
+If you're running low, shrink you database
+
+1. Choose *Tools menu > Server Maintenance > Prune DB Tables*
+
+2. At server command prompt run
+
+```bash
+sudo -u postgres psql -d tacticalrmm -c "vacuum full logs_auditlog"
+sudo -u postgres psql -d tacticalrmm -c "vacuum full logs_auditlog"
 ```

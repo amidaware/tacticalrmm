@@ -1,4 +1,10 @@
-from rest_framework.serializers import ModelSerializer, ReadOnlyField, ValidationError
+from django.db.models.base import Model
+from rest_framework.serializers import (
+    ModelSerializer,
+    ReadOnlyField,
+    Serializer,
+    ValidationError,
+)
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 
@@ -134,3 +140,15 @@ class DeploymentSerializer(ModelSerializer):
             "install_flags",
             "created",
         ]
+
+
+class SiteAuditSerializer(ModelSerializer):
+    class Meta:
+        model = Site
+        fields = "__all__"
+
+
+class ClientAuditSerializer(ModelSerializer):
+    class Meta:
+        model = Client
+        fields = "__all__"

@@ -182,6 +182,30 @@
                           <q-item-section>Assign Alert Template</q-item-section>
                         </q-item>
 
+                        <q-item clickable v-ripple @click="getURLActions">
+                          <q-item-section side>
+                            <q-icon name="open_in_new" />
+                          </q-item-section>
+                          <q-item-section>Run URL Action</q-item-section>
+                          <q-item-section side>
+                            <q-icon name="keyboard_arrow_right" />
+                          </q-item-section>
+                          <q-menu auto-close anchor="top end" self="top start">
+                            <q-list>
+                              <q-item
+                                v-for="action in urlActions"
+                                :key="action.id"
+                                dense
+                                clickable
+                                v-close-popup
+                                @click="runURLAction(props.node.id, action.id, props.node.children ? 'client' : 'site')"
+                              >
+                                {{ action.name }}
+                              </q-item>
+                            </q-list>
+                          </q-menu>
+                        </q-item>
+
                         <q-separator></q-separator>
 
                         <q-item clickable v-close-popup>
@@ -371,6 +395,7 @@
 
 <script>
 import mixins from "@/mixins/mixins";
+import { openURL } from "quasar";
 import { mapState, mapGetters } from "vuex";
 import { getBaseUrl } from "@/boot/axios";
 import FileBar from "@/components/FileBar";
@@ -423,6 +448,7 @@ export default {
       latestTRMMVersion: "error",
       showUserPreferencesModal: false,
       clear_search_when_switching: true,
+      urlActions: [],
       columns: [
         {
           name: "smsalert",
@@ -566,16 +592,21 @@ export default {
         this.workstationOfflineCount = data.total_workstation_offline_count;
       };
       this.ws.onclose = e => {
-        console.log(`Closed code: ${e.code}`);
-        if (e.code !== 1000) {
-          setTimeout(() => {
-            this.setupWS();
-          }, 2 * 1000);
+        try {
+          console.log(`Closed code: ${e.code}`);
+          if (e.code !== 1000 && e.code !== 1006 && e.code) {
+            console.log("Retrying websocket connection...");
+            setTimeout(() => {
+              this.setupWS();
+            }, 2 * 1000);
+          }
+        } catch (e) {
+          console.log("Websocket connection closed");
         }
       };
       this.ws.onerror = err => {
-        console.log(`ERROR! Code: ${err.code}`);
-        this.ws.close();
+        console.log("There was an error");
+        this.ws.onclose();
       };
     },
     refreshEntireSite() {
@@ -815,6 +846,30 @@ export default {
 
       this.search = filterText;
       this.filterTextLength = filterText.length - 1;
+    },
+    getURLActions() {
+      this.$axios
+        .get("/core/urlaction/")
+        .then(r => {
+          if (r.data.length === 0) {
+            this.notifyWarning("No URL Actions configured. Go to Settings > Global Settings > URL Actions");
+            return;
+          }
+          this.urlActions = r.data;
+        })
+        .catch(() => {});
+    },
+    runURLAction(id, action, model) {
+      const data = {
+        [model]: id,
+        action: action,
+      };
+      this.$axios
+        .patch("/core/urlaction/run/", data)
+        .then(r => {
+          openURL(r.data);
+        })
+        .catch(() => {});
     },
   },
   computed: {

@@ -4,7 +4,8 @@ from unittest.mock import mock_open, patch
 
 import requests
 from django.conf import settings
-from django.test import TestCase, override_settings
+from django.test import override_settings
+from tacticalrmm.test import TacticalTestCase
 
 from .utils import (
     bitdays_to_string,
@@ -16,7 +17,10 @@ from .utils import (
 )
 
 
-class TestUtils(TestCase):
+class TestUtils(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+
     @patch("requests.post")
     @patch("__main__.__builtins__.open", new_callable=mock_open)
     def test_generate_winagent_exe_success(self, m_open, mock_post):
@@ -77,7 +81,7 @@ class TestUtils(TestCase):
     @patch("subprocess.run")
     def test_run_nats_api_cmd(self, mock_subprocess):
         ids = ["a", "b", "c"]
-        _ = run_nats_api_cmd("monitor", ids)
+        _ = run_nats_api_cmd("wmi", ids)
         mock_subprocess.assert_called_once()
 
     def test_bitdays_to_string(self):

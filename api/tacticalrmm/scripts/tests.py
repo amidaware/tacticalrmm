@@ -1,15 +1,18 @@
 import json
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 from django.conf import settings
-from django.core.files.uploadedfile import SimpleUploadedFile
 from model_bakery import baker
-
 from tacticalrmm.test import TacticalTestCase
 
-from .models import Script
-from .serializers import ScriptSerializer, ScriptTableSerializer
+from .models import Script, ScriptSnippet
+from .serializers import (
+    ScriptSerializer,
+    ScriptTableSerializer,
+    ScriptSnippetSerializer,
+)
 
 
 class TestScriptViews(TacticalTestCase):
@@ -18,7 +21,7 @@ class TestScriptViews(TacticalTestCase):
         self.authenticate()
 
     def test_get_scripts(self):
-        url = "/scripts/scripts/"
+        url = "/scripts/"
         scripts = baker.make("scripts.Script", _quantity=3)
 
         serializer = ScriptTableSerializer(scripts, many=True)
@@ -29,14 +32,14 @@ class TestScriptViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     def test_add_script(self):
-        url = f"/scripts/scripts/"
+        url = f"/scripts/"
 
         data = {
             "name": "Name",
             "description": "Description",
             "shell": "powershell",
             "category": "New",
-            "code": "Some Test Code\nnew Line",
+            "code_base64": "VGVzdA==",  # Test
             "default_timeout": 99,
             "args": ["hello", "world", r"{{agent.public_ip}}"],
             "favorite": False,
@@ -46,47 +49,24 @@ class TestScriptViews(TacticalTestCase):
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(Script.objects.filter(name="Name").exists())
-        self.assertEqual(Script.objects.get(name="Name").code, data["code"])
-
-        # test with file upload
-        # file with 'Test' as content
-        file = SimpleUploadedFile(
-            "test_script.bat", b"\x54\x65\x73\x74", content_type="text/plain"
-        )
-        data = {
-            "name": "New Name",
-            "description": "Description",
-            "shell": "cmd",
-            "category": "New",
-            "filename": file,
-            "default_timeout": 4455,
-            "args": json.dumps(
-                ["hello", "world", r"{{agent.public_ip}}"]
-            ),  # simulate javascript's JSON.stringify() for formData
-        }
-
-        # test with file upload
-        resp = self.client.post(url, data, format="multipart")
-        self.assertEqual(resp.status_code, 200)
-        script = Script.objects.filter(name="New Name").first()
-        self.assertEquals(script.code, "Test")
+        self.assertEqual(Script.objects.get(name="Name").code, "Test")
 
         self.check_not_authenticated("post", url)
 
     def test_modify_script(self):
         # test a call where script doesn't exist
-        resp = self.client.put("/scripts/500/script/", format="json")
+        resp = self.client.put("/scripts/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         # make a userdefined script
         script = baker.make_recipe("scripts.script")
-        url = f"/scripts/{script.pk}/script/"
+        url = f"/scripts/{script.pk}/"
 
         data = {
             "name": script.name,
             "description": "Description Change",
             "shell": script.shell,
-            "code": "Test Code\nAnother Line",
+            "code_base64": "VGVzdA==",  # Test
             "default_timeout": 13344556,
         }
 
@@ -95,16 +75,18 @@ class TestScriptViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 200)
         script = Script.objects.get(pk=script.pk)
         self.assertEquals(script.description, "Description Change")
-        self.assertEquals(script.code, "Test Code\nAnother Line")
+        self.assertEquals(script.code, "Test")
 
         # test edit a builtin script
 
-        data = {"name": "New Name", "description": "New Desc", "code": "Some New Code"}
+        data = {
+            "name": "New Name",
+            "description": "New Desc",
+            "code_base64": "VGVzdA==",
+        }  # Test
         builtin_script = baker.make_recipe("scripts.script", script_type="builtin")
 
-        resp = self.client.put(
-            f"/scripts/{builtin_script.pk}/script/", data, format="json"
-        )
+        resp = self.client.put(f"/scripts/{builtin_script.pk}/", data, format="json")
         self.assertEqual(resp.status_code, 400)
 
         data = {
@@ -112,13 +94,11 @@ class TestScriptViews(TacticalTestCase):
             "description": "Description Change",
             "shell": script.shell,
             "favorite": True,
-            "code": "Test Code\nAnother Line",
+            "code_base64": "VGVzdA==",  # Test
             "default_timeout": 54345,
         }
         # test marking a builtin script as favorite
-        resp = self.client.put(
-            f"/scripts/{builtin_script.pk}/script/", data, format="json"
-        )
+        resp = self.client.put(f"/scripts/{builtin_script.pk}/", data, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(Script.objects.get(pk=builtin_script.pk).favorite)
 
@@ -126,11 +106,11 @@ class TestScriptViews(TacticalTestCase):
 
     def test_get_script(self):
         # test a call where script doesn't exist
-        resp = self.client.get("/scripts/500/script/", format="json")
+        resp = self.client.get("/scripts/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         script = baker.make("scripts.Script")
-        url = f"/scripts/{script.pk}/script/"  # type: ignore
+        url = f"/scripts/{script.pk}/"  # type: ignore
         serializer = ScriptSerializer(script)
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -138,14 +118,34 @@ class TestScriptViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
+    @patch("agents.models.Agent.nats_cmd")
+    def test_test_script(self, run_script):
+        url = "/scripts/testscript/"
+
+        run_script.return_value = "return value"
+        agent = baker.make_recipe("agents.agent")
+        data = {
+            "agent": agent.pk,
+            "code": "some_code",
+            "timeout": 90,
+            "args": [],
+            "shell": "powershell",
+        }
+
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data, "return value")  # type: ignore
+
+        self.check_not_authenticated("post", url)
+
     def test_delete_script(self):
         # test a call where script doesn't exist
-        resp = self.client.delete("/scripts/500/script/", format="json")
+        resp = self.client.delete("/scripts/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         # test delete script
         script = baker.make_recipe("scripts.script")
-        url = f"/scripts/{script.pk}/script/"
+        url = f"/scripts/{script.pk}/"
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
 
@@ -153,7 +153,7 @@ class TestScriptViews(TacticalTestCase):
 
         # test delete community script
         script = baker.make_recipe("scripts.script", script_type="builtin")
-        url = f"/scripts/{script.pk}/script/"
+        url = f"/scripts/{script.pk}/"
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 400)
 
@@ -161,7 +161,7 @@ class TestScriptViews(TacticalTestCase):
 
     def test_download_script(self):
         # test a call where script doesn't exist
-        resp = self.client.get("/scripts/500/download/", format="json")
+        resp = self.client.get("/scripts/download/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         # return script code property should be "Test"
@@ -170,7 +170,7 @@ class TestScriptViews(TacticalTestCase):
         script = baker.make(
             "scripts.Script", code_base64="VGVzdA==", shell="powershell"
         )
-        url = f"/scripts/{script.pk}/download/"  # type: ignore
+        url = f"/scripts/download/{script.pk}/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -178,7 +178,7 @@ class TestScriptViews(TacticalTestCase):
 
         # test batch file
         script = baker.make("scripts.Script", code_base64="VGVzdA==", shell="cmd")
-        url = f"/scripts/{script.pk}/download/"  # type: ignore
+        url = f"/scripts/download/{script.pk}/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -186,7 +186,7 @@ class TestScriptViews(TacticalTestCase):
 
         # test python file
         script = baker.make("scripts.Script", code_base64="VGVzdA==", shell="python")
-        url = f"/scripts/{script.pk}/download/"  # type: ignore
+        url = f"/scripts/download/{script.pk}/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -497,3 +497,106 @@ class TestScriptViews(TacticalTestCase):
             ["-Parameter", "-Another $True"],
             Script.parse_script_args(agent=agent, shell="powershell", args=args),
         )
+
+
+class TestScriptSnippetViews(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+        self.authenticate()
+
+    def test_get_script_snippets(self):
+        url = "/scripts/snippets/"
+        snippets = baker.make("scripts.ScriptSnippet", _quantity=3)
+
+        serializer = ScriptSnippetSerializer(snippets, many=True)
+        resp = self.client.get(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(serializer.data, resp.data)  # type: ignore
+
+        self.check_not_authenticated("get", url)
+
+    def test_add_script_snippet(self):
+        url = f"/scripts/snippets/"
+
+        data = {
+            "name": "Name",
+            "description": "Description",
+            "shell": "powershell",
+            "code": "Test",
+        }
+
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(ScriptSnippet.objects.filter(name="Name").exists())
+
+        self.check_not_authenticated("post", url)
+
+    def test_modify_script_snippet(self):
+        # test a call where script doesn't exist
+        resp = self.client.put("/scripts/snippets/500/", format="json")
+        self.assertEqual(resp.status_code, 404)
+
+        # make a userdefined script
+        snippet = baker.make("scripts.ScriptSnippet", name="Test")
+        url = f"/scripts/snippets/{snippet.pk}/"  # type: ignore
+
+        data = {"name": "New Name"}  # type: ignore
+
+        resp = self.client.put(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        snippet = ScriptSnippet.objects.get(pk=snippet.pk)  # type: ignore
+        self.assertEquals(snippet.name, "New Name")
+
+        self.check_not_authenticated("put", url)
+
+    def test_get_script_snippet(self):
+        # test a call where script doesn't exist
+        resp = self.client.get("/scripts/snippets/500/", format="json")
+        self.assertEqual(resp.status_code, 404)
+
+        snippet = baker.make("scripts.ScriptSnippet")
+        url = f"/scripts/snippets/{snippet.pk}/"  # type: ignore
+        serializer = ScriptSnippetSerializer(snippet)
+        resp = self.client.get(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(serializer.data, resp.data)  # type: ignore
+
+        self.check_not_authenticated("get", url)
+
+    def test_delete_script_snippet(self):
+        # test a call where script doesn't exist
+        resp = self.client.delete("/scripts/snippets/500/", format="json")
+        self.assertEqual(resp.status_code, 404)
+
+        # test delete script snippet
+        snippet = baker.make("scripts.ScriptSnippet")
+        url = f"/scripts/snippets/{snippet.pk}/"  # type: ignore
+        resp = self.client.delete(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        self.assertFalse(ScriptSnippet.objects.filter(pk=snippet.pk).exists())  # type: ignore
+
+        self.check_not_authenticated("delete", url)
+
+    def test_snippet_replacement(self):
+
+        snippet1 = baker.make(
+            "scripts.ScriptSnippet", name="snippet1", code="Snippet 1 Code"
+        )
+        snippet2 = baker.make(
+            "scripts.ScriptSnippet", name="snippet2", code="Snippet 2 Code"
+        )
+
+        test_no_snippet = "No Snippets Here"
+        test_with_snippet = "Snippet 1: {{snippet1}}\nSnippet 2: {{snippet2}}"
+
+        # test putting snippet in text
+        result = Script.replace_with_snippets(test_with_snippet)
+        self.assertEqual(
+            result,
+            f"Snippet 1: {snippet1.code}\nSnippet 2: {snippet2.code}",  # type:ignore
+        )
+
+        # test text with no snippets
+        result = Script.replace_with_snippets(test_no_snippet)
+        self.assertEqual(result, test_no_snippet)

@@ -1,17 +1,15 @@
 import asyncio
 import datetime as dt
+from logging import log
 import random
 from time import sleep
 from typing import Union
 
-from django.conf import settings
 from django.utils import timezone as djangotime
-from loguru import logger
 
 from autotasks.models import AutomatedTask
+from logs.models import DebugLog
 from tacticalrmm.celery import app
-
-logger.configure(**settings.LOG_CONFIG)
 
 
 @app.task
@@ -53,12 +51,20 @@ def remove_orphaned_win_tasks(agentpk):
 
     agent = Agent.objects.get(pk=agentpk)
 
-    logger.info(f"Orphaned task cleanup initiated on {agent.hostname}.")
+    DebugLog.info(
+        agent=agent,
+        log_type="agent_issues",
+        message=f"Orphaned task cleanup initiated on {agent.hostname}.",
+    )
 
     r = asyncio.run(agent.nats_cmd({"func": "listschedtasks"}, timeout=10))
 
     if not isinstance(r, list) and not r:  # empty list
-        logger.error(f"Unable to clean up scheduled tasks on {agent.hostname}: {r}")
+        DebugLog.error(
+            agent=agent,
+            log_type="agent_issues",
+            message=f"Unable to clean up scheduled tasks on {agent.hostname}: {r}",
+        )
         return "notlist"
 
     agent_task_names = list(agent.autotasks.values_list("win_task_name", flat=True))
@@ -83,13 +89,23 @@ def remove_orphaned_win_tasks(agentpk):
             }
             ret = asyncio.run(agent.nats_cmd(nats_data, timeout=10))
             if ret != "ok":
-                logger.error(
-                    f"Unable to clean up orphaned task {task} on {agent.hostname}: {ret}"
+                DebugLog.error(
+                    agent=agent,
+                    log_type="agent_issues",
+                    message=f"Unable to clean up orphaned task {task} on {agent.hostname}: {ret}",
                 )
             else:
-                logger.info(f"Removed orphaned task {task} from {agent.hostname}")
+                DebugLog.info(
+                    agent=agent,
+                    log_type="agent_issues",
+                    message=f"Removed orphaned task {task} from {agent.hostname}",
+                )
 
-    logger.info(f"Orphaned task cleanup finished on {agent.hostname}")
+    DebugLog.info(
+        agent=agent,
+        log_type="agent_issues",
+        message=f"Orphaned task cleanup finished on {agent.hostname}",
+    )
 
 
 @app.task

@@ -3,19 +3,18 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Union
 
-from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
-from loguru import logger
+
+from logs.models import BaseAuditModel, DebugLog
 
 if TYPE_CHECKING:
     from agents.models import Agent
     from autotasks.models import AutomatedTask
     from checks.models import Check
 
-logger.configure(**settings.LOG_CONFIG)
 
 SEVERITY_CHOICES = [
     ("info", "Informational"),
@@ -173,6 +172,7 @@ class Alert(models.Model):
                 always_email = alert_template.agent_always_email
                 always_text = alert_template.agent_always_text
                 alert_interval = alert_template.agent_periodic_alert_days
+                run_script_action = alert_template.agent_script_actions
 
             if instance.should_create_alert(alert_template):
                 alert = cls.create_or_return_availability_alert(instance)
@@ -209,6 +209,7 @@ class Alert(models.Model):
                 always_email = alert_template.check_always_email
                 always_text = alert_template.check_always_text
                 alert_interval = alert_template.check_periodic_alert_days
+                run_script_action = alert_template.check_script_actions
 
             if instance.should_create_alert(alert_template):
                 alert = cls.create_or_return_check_alert(instance)
@@ -242,6 +243,7 @@ class Alert(models.Model):
                 always_email = alert_template.task_always_email
                 always_text = alert_template.task_always_text
                 alert_interval = alert_template.task_periodic_alert_days
+                run_script_action = alert_template.task_script_actions
 
             if instance.should_create_alert(alert_template):
                 alert = cls.create_or_return_task_alert(instance)
@@ -295,7 +297,7 @@ class Alert(models.Model):
                 text_task.delay(pk=alert.pk, alert_interval=alert_interval)
 
         # check if any scripts should be run
-        if alert_template and alert_template.action and not alert.action_run:
+        if alert_template and alert_template.action and run_script_action and not alert.action_run:  # type: ignore
             r = agent.run_script(
                 scriptpk=alert_template.action.pk,
                 args=alert.parse_script_args(alert_template.action_args),
@@ -314,8 +316,10 @@ class Alert(models.Model):
                 alert.action_run = djangotime.now()
                 alert.save()
             else:
-                logger.error(
-                    f"Failure action: {alert_template.action.name} failed to run on any agent for {agent.hostname} failure alert"
+                DebugLog.error(
+                    agent=agent,
+                    log_type="scripting",
+                    message=f"Failure action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) failure alert",
                 )
 
     @classmethod
@@ -345,6 +349,7 @@ class Alert(models.Model):
             if alert_template:
                 email_on_resolved = alert_template.agent_email_on_resolved
                 text_on_resolved = alert_template.agent_text_on_resolved
+                run_script_action = alert_template.agent_script_actions
 
         elif isinstance(instance, Check):
             from checks.tasks import (
@@ -363,6 +368,7 @@ class Alert(models.Model):
             if alert_template:
                 email_on_resolved = alert_template.check_email_on_resolved
                 text_on_resolved = alert_template.check_text_on_resolved
+                run_script_action = alert_template.check_script_actions
 
         elif isinstance(instance, AutomatedTask):
             from autotasks.tasks import (
@@ -381,6 +387,7 @@ class Alert(models.Model):
             if alert_template:
                 email_on_resolved = alert_template.task_email_on_resolved
                 text_on_resolved = alert_template.task_text_on_resolved
+                run_script_action = alert_template.task_script_actions
 
         else:
             return
@@ -403,6 +410,7 @@ class Alert(models.Model):
         if (
             alert_template
             and alert_template.resolved_action
+            and run_script_action  # type: ignore
             and not alert.resolved_action_run
         ):
             r = agent.run_script(
@@ -425,8 +433,10 @@ class Alert(models.Model):
                 alert.resolved_action_run = djangotime.now()
                 alert.save()
             else:
-                logger.error(
-                    f"Resolved action: {alert_template.action.name} failed to run on any agent for {agent.hostname} resolved alert"
+                DebugLog.error(
+                    agent=agent,
+                    log_type="scripting",
+                    message=f"Resolved action: {alert_template.action.name} failed to run on any agent for {agent.hostname}({agent.pk}) resolved alert",
                 )
 
     def parse_script_args(self, args: list[str]):
@@ -451,7 +461,7 @@ class Alert(models.Model):
                 try:
                     temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))  # type: ignore
                 except Exception as e:
-                    logger.error(e)
+                    DebugLog.error(log_type="scripting", message=e)
                     continue
 
             else:
@@ -460,7 +470,7 @@ class Alert(models.Model):
         return temp_args
 
 
-class AlertTemplate(models.Model):
+class AlertTemplate(BaseAuditModel):
     name = models.CharField(max_length=100)
     is_active = models.BooleanField(default=True)
 
@@ -517,6 +527,7 @@ class AlertTemplate(models.Model):
     agent_always_text = BooleanField(null=True, blank=True, default=None)
     agent_always_alert = BooleanField(null=True, blank=True, default=None)
     agent_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
+    agent_script_actions = BooleanField(null=True, blank=True, default=True)
 
     # check alert settings
     check_email_alert_severity = ArrayField(
@@ -540,6 +551,7 @@ class AlertTemplate(models.Model):
     check_always_text = BooleanField(null=True, blank=True, default=None)
     check_always_alert = BooleanField(null=True, blank=True, default=None)
     check_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
+    check_script_actions = BooleanField(null=True, blank=True, default=True)
 
     # task alert settings
     task_email_alert_severity = ArrayField(
@@ -563,6 +575,7 @@ class AlertTemplate(models.Model):
     task_always_text = BooleanField(null=True, blank=True, default=None)
     task_always_alert = BooleanField(null=True, blank=True, default=None)
     task_periodic_alert_days = PositiveIntegerField(blank=True, null=True, default=0)
+    task_script_actions = BooleanField(null=True, blank=True, default=True)
 
     # exclusion settings
     exclude_workstations = BooleanField(null=True, blank=True, default=False)
@@ -580,6 +593,13 @@ class AlertTemplate(models.Model):
 
     def __str__(self):
         return self.name
+
+    @staticmethod
+    def serialize(alert_template):
+        # serializes the agent and returns json
+        from .serializers import AlertTemplateAuditSerializer
+
+        return AlertTemplateAuditSerializer(alert_template).data
 
     @property
     def has_agent_settings(self) -> bool:

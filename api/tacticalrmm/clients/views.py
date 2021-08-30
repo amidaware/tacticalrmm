@@ -3,10 +3,8 @@ import re
 import uuid
 
 import pytz
-from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
-from loguru import logger
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -25,8 +23,6 @@ from .serializers import (
     SiteCustomFieldSerializer,
     SiteSerializer,
 )
-
-logger.configure(**settings.LOG_CONFIG)
 
 
 class GetAddClients(APIView):

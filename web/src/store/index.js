@@ -363,7 +363,6 @@ export default function () {
                 localStorage.removeItem("access_token");
                 localStorage.removeItem("user_name");
                 context.commit("destroyCommit");
-                reject(error);
               });
           });
         }

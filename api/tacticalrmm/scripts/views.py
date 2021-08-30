@@ -1,64 +1,39 @@
 import base64
-import json
+import asyncio
 
-from django.conf import settings
 from django.shortcuts import get_object_or_404
-from loguru import logger
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.parsers import FileUploadParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from tacticalrmm.utils import notify_error
 
-from .models import Script
+from .models import Script, ScriptSnippet
 from .permissions import ManageScriptsPerms
-from .serializers import ScriptSerializer, ScriptTableSerializer
-
-logger.configure(**settings.LOG_CONFIG)
+from agents.permissions import RunScriptPerms
+from .serializers import (
+    ScriptSerializer,
+    ScriptTableSerializer,
+    ScriptSnippetSerializer,
+)
 
 
 class GetAddScripts(APIView):
     permission_classes = [IsAuthenticated, ManageScriptsPerms]
-    parser_class = (FileUploadParser,)
 
     def get(self, request):
-        scripts = Script.objects.all()
+
+        showCommunityScripts = request.GET.get("showCommunityScripts", True)
+        if not showCommunityScripts or showCommunityScripts == "false":
+            scripts = Script.objects.filter(script_type="userdefined")
+        else:
+            scripts = Script.objects.all()
+
         return Response(ScriptTableSerializer(scripts, many=True).data)
 
-    def post(self, request, format=None):
-        data = {
-            "name": request.data["name"],
-            "category": request.data["category"],
-            "description": request.data["description"],
-            "shell": request.data["shell"],
-            "default_timeout": request.data["default_timeout"],
-            "script_type": "userdefined",  # force all uploads to be userdefined. built in scripts cannot be edited by user
-        }
+    def post(self, request):
 
-        # code editor upload
-        if "args" in request.data.keys() and isinstance(request.data["args"], list):
-            data["args"] = request.data["args"]
-
-        # file upload, have to json load it cuz it's formData
-        if "args" in request.data.keys() and "file_upload" in request.data.keys():
-            data["args"] = json.loads(request.data["args"])
-
-        if "favorite" in request.data.keys():
-            data["favorite"] = request.data["favorite"]
-
-        if "filename" in request.data.keys():
-            message_bytes = request.data["filename"].read()
-            data["code_base64"] = base64.b64encode(message_bytes).decode(
-                "ascii", "ignore"
-            )
-
-        elif "code" in request.data.keys():
-            message_bytes = request.data["code"].encode("ascii", "ignore")
-            data["code_base64"] = base64.b64encode(message_bytes).decode("ascii")
-
-        serializer = ScriptSerializer(data=data, partial=True)
+        serializer = ScriptSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()
 
@@ -85,11 +60,6 @@ class GetUpdateDeleteScript(APIView):
             else:
                 return notify_error("Community scripts cannot be edited.")
 
-        elif "code" in data:
-            message_bytes = data["code"].encode("ascii")
-            data["code_base64"] = base64.b64encode(message_bytes).decode("ascii")
-            data.pop("code")
-
         serializer = ScriptSerializer(data=data, instance=script, partial=True)
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()
@@ -107,10 +77,86 @@ class GetUpdateDeleteScript(APIView):
         return Response(f"{script.name} was deleted!")
 
 
+class GetAddScriptSnippets(APIView):
+    permission_classes = [IsAuthenticated, ManageScriptsPerms]
+
+    def get(self, request):
+        snippets = ScriptSnippet.objects.all()
+        return Response(ScriptSnippetSerializer(snippets, many=True).data)
+
+    def post(self, request):
+
+        serializer = ScriptSnippetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response("Script snippet was saved successfully")
+
+
+class GetUpdateDeleteScriptSnippet(APIView):
+    permission_classes = [IsAuthenticated, ManageScriptsPerms]
+
+    def get(self, request, pk):
+        snippet = get_object_or_404(ScriptSnippet, pk=pk)
+        return Response(ScriptSnippetSerializer(snippet).data)
+
+    def put(self, request, pk):
+        snippet = get_object_or_404(ScriptSnippet, pk=pk)
+
+        serializer = ScriptSnippetSerializer(
+            instance=snippet, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response("Script snippet was saved successfully")
+
+    def delete(self, request, pk):
+        snippet = get_object_or_404(ScriptSnippet, pk=pk)
+        snippet.delete()
+
+        return Response("Script snippet was deleted successfully")
+
+
+class TestScript(APIView):
+    permission_classes = [IsAuthenticated, RunScriptPerms]
+
+    def post(self, request):
+        from .models import Script
+        from agents.models import Agent
+
+        agent = get_object_or_404(Agent, pk=request.data["agent"])
+
+        parsed_args = Script.parse_script_args(
+            self, request.data["shell"], request.data["args"]
+        )
+
+        data = {
+            "func": "runscript",
+            "timeout": request.data["timeout"],
+            "script_args": parsed_args,
+            "payload": {
+                "code": Script.replace_with_snippets(request.data["code"]),
+                "shell": request.data["shell"],
+            },
+        }
+
+        r = asyncio.run(
+            agent.nats_cmd(data, timeout=request.data["timeout"], wait=True)
+        )
+
+        return Response(r)
+
+
 @api_view()
 @permission_classes([IsAuthenticated, ManageScriptsPerms])
 def download(request, pk):
     script = get_object_or_404(Script, pk=pk)
+
+    with_snippets = request.GET.get("with_snippets", True)
+
+    if with_snippets == "false":
+        with_snippets = False
 
     if script.shell == "powershell":
         filename = f"{script.name}.ps1"
@@ -119,4 +165,9 @@ def download(request, pk):
     else:
         filename = f"{script.name}.py"
 
-    return Response({"filename": filename, "code": script.code})
+    return Response(
+        {
+            "filename": filename,
+            "code": script.code if with_snippets else script.code_no_snippets,
+        }
+    )

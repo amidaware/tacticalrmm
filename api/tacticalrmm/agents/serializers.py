@@ -1,10 +1,10 @@
 import pytz
-from rest_framework import serializers
-
 from clients.serializers import ClientSerializer
+from rest_framework import serializers
+from tacticalrmm.utils import get_default_timezone
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .models import Agent, AgentCustomField, Note
+from .models import Agent, AgentCustomField, Note, AgentHistory
 
 
 class AgentSerializer(serializers.ModelSerializer):
@@ -159,6 +159,7 @@ class AgentEditSerializer(serializers.ModelSerializer):
             "offline_time",
             "overdue_text_alert",
             "overdue_email_alert",
+            "overdue_dashboard_alert",
             "all_timezones",
             "winupdatepolicy",
             "policy",
@@ -200,3 +201,22 @@ class NotesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent
         fields = ["hostname", "pk", "notes"]
+
+
+class AgentHistorySerializer(serializers.ModelSerializer):
+    time = serializers.SerializerMethodField(read_only=True)
+    script_name = serializers.ReadOnlyField(source="script.name")
+
+    class Meta:
+        model = AgentHistory
+        fields = "__all__"
+
+    def get_time(self, history):
+        timezone = get_default_timezone()
+        return history.time.astimezone(timezone).strftime("%m %d %Y %H:%M:%S")
+
+
+class AgentAuditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Agent
+        exclude = ["disks", "services", "wmi_detail"]

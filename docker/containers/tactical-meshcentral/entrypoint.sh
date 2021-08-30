@@ -9,14 +9,19 @@ set -e
 : "${MONGODB_HOST:=tactical-mongodb}"
 : "${MONGODB_PORT:=27017}"
 : "${NGINX_HOST_IP:=172.20.0.20}"
+: "${MESH_PERSISTENT_CONFIG:=0}"
 
 mkdir -p /home/node/app/meshcentral-data
 mkdir -p ${TACTICAL_DIR}/tmp
 
+if [ ! -f "/home/node/app/meshcentral-data/config.json" ] || [[ "${MESH_PERSISTENT_CONFIG}" -eq 0 ]]; then
+
+encoded_uri=$(node -p "encodeURI('mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}')")
+
 mesh_config="$(cat << EOF
 {
   "settings": {
-    "mongodb": "mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_HOST}:${MONGODB_PORT}",
+    "mongodb": "${encoded_uri}",
     "Cert": "${MESH_HOST}",
     "TLSOffload": "${NGINX_HOST_IP}",
     "RedirPort": 80,
@@ -54,11 +59,19 @@ EOF
 
 echo "${mesh_config}" > /home/node/app/meshcentral-data/config.json
 
+fi
+
 node node_modules/meshcentral --createaccount ${MESH_USER} --pass ${MESH_PASS} --email example@example.com
 node node_modules/meshcentral --adminaccount ${MESH_USER}
 
 if [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ]; then
-    node node_modules/meshcentral --logintokenkey > ${TACTICAL_DIR}/tmp/mesh_token
+    mesh_token=$(node node_modules/meshcentral --logintokenkey)
+
+    if [[ ${#mesh_token} -eq 160 ]]; then
+      echo ${mesh_token} > /opt/tactical/tmp/mesh_token
+    else
+      echo "Failed to generate mesh token. Fix the error and restart the mesh container"
+    fi
 fi
 
 # wait for nginx container

@@ -1,3 +1,4 @@
+
 Function Write-LogMessage {
 	param(
 		[Parameter(Mandatory)]
@@ -82,12 +83,7 @@ Function Test-FreeSpace {
 	}
 	return $true
 }
-Function Test-License {
-	#Not a big fan of Doing it this way, but it's a lot easier/faster than the alternatives
-	$returnVal = $false
-	if ((cscript "$($env:windir)\system32\\slmgr.vbs" /dli) -match "Licensed") { $returnVal = $true }
-	return $returnVal
-}
+
 Function New-Windows10Install {
 	$ErrorActionPreference = "SilentlyContinue"
 	$dir = "$($env:SystemDrive)\_Windows_FU\packages"

@@ -10,68 +10,34 @@
       </q-bar>
       <q-form ref="form" @submit.prevent="onSubmit">
         <q-card-section>
-          <q-select
-            label="Excluded Clients"
-            dense
-            options-dense
-            outlined
-            multiple
+          <tactical-dropdown
             v-model="localPolicy.excluded_clients"
             :options="clientOptions"
-            use-chips
-            map-options
-            emit-value
+            label="Excluded Clients"
+            outlined
+            multiple
+            mapOptions
           />
         </q-card-section>
         <q-card-section>
-          <q-select
-            label="Excluded Sites"
-            dense
-            options-dense
-            outlined
-            multiple
+          <tactical-dropdown
             v-model="localPolicy.excluded_sites"
             :options="siteOptions"
-            use-chips
-            map-options
-            emit-value
-          >
-            <template v-slot:option="scope">
-              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
-                <q-item-section>
-                  <q-item-label v-html="scope.opt.label"></q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
-                scope.opt.category
-              }}</q-item-label>
-            </template>
-          </q-select>
-        </q-card-section>
-        <q-card-section>
-          <q-select
-            label="Excluded Agents"
-            dense
-            options-dense
+            label="Excluded Sites"
             outlined
             multiple
+            mapOptions
+          />
+        </q-card-section>
+        <q-card-section>
+          <tactical-dropdown
             v-model="localPolicy.excluded_agents"
             :options="agentOptions"
-            use-chips
-            map-options
-            emit-value
-          >
-            <template v-slot:option="scope">
-              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
-                <q-item-section>
-                  <q-item-label v-html="scope.opt.label"></q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
-                scope.opt.category
-              }}</q-item-label>
-            </template>
-          </q-select>
+            label="Excluded Agents"
+            outlined
+            multiple
+            mapOptions
+          />
         </q-card-section>
 
         <q-card-actions align="right">
@@ -84,9 +50,11 @@
 </template>
 
 <script>
+import TacticalDropdown from "@/components/ui/TacticalDropdown";
 import mixins from "@/mixins/mixins";
 export default {
   name: "PolicyExclusions",
+  components: { TacticalDropdown },
   emits: ["hide", "ok", "cancel"],
   props: { policy: !Object },
   mixins: [mixins],

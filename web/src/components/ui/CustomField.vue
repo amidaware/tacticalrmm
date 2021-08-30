@@ -84,6 +84,7 @@
 </template>
 
 <script>
+import { truncateText } from "@/utils/format";
 export default {
   name: "CustomField",
   props: ["field", "modelValue"],
@@ -92,11 +93,14 @@ export default {
       return this.$refs.input.validate(...args);
     },
     hintText(field) {
+      let value = "";
       if (field.type === "multiple")
-        return field.default_values_multiple.length > 0 ? `Default value: ${field.default_values_multiple}` : "";
+        value = field.default_values_multiple.length > 0 ? `Default value: ${field.default_values_multiple}` : "";
       else if (field.type === "checkbox")
-        return field.default_value_bool ? `Default value: ${field.default_value_bool}` : "";
-      else return field.default_value_string ? `Default value: ${field.default_value_string}` : "";
+        value = field.default_value_bool ? `Default value: ${field.default_value_bool}` : "";
+      else value = field.default_value_string ? `Default value: ${field.default_value_string}` : "";
+
+      return value.length > 100 ? truncateText(value, 100) : value;
     },
     longTextClass(field) {
       return field.hasOwnProperty("default_value_string") && field.default_value_string.length >= 130

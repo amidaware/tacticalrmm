@@ -97,6 +97,7 @@ services:
       MESH_PASS: ${MESH_PASS}
       MONGODB_USER: ${MONGODB_USER}
       MONGODB_PASSWORD: ${MONGODB_PASSWORD}
+      MESH_PERSISTENT_CONFIG: ${MESH_PERSISTENT_CONFIG}
     networks:
       proxy:
         aliases:

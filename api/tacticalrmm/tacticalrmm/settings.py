@@ -15,23 +15,25 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.7.2"
+TRMM_VERSION = "0.8.0"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.141"
+APP_VER = "0.0.142"
 
 # https://github.com/wh1te909/rmmagent
-LATEST_AGENT_VER = "1.5.9"
+LATEST_AGENT_VER = "1.6.0"
 
-MESH_VER = "0.8.60"
+MESH_VER = "0.9.15"
+
+NATS_SERVER_VER = "2.3.3"
 
 # for the update script, bump when need to recreate venv or npm install
-PIP_VER = "19"
-NPM_VER = "19"
+PIP_VER = "21"
+NPM_VER = "21"
 
-SETUPTOOLS_VER = "57.0.0"
-WHEEL_VER = "0.36.2"
+SETUPTOOLS_VER = "57.4.0"
+WHEEL_VER = "0.37.0"
 
 DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
 DL_32 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"
@@ -109,6 +111,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",  ##
+    "tacticalrmm.middleware.LogIPMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -173,12 +176,23 @@ STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "tacticalrmm/static/")]
 
-
-LOG_CONFIG = {
-    "handlers": [{"sink": os.path.join(LOG_DIR, "debug.log"), "serialize": False}]
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "file": {
+            "level": "ERROR",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "django_debug.log"),
+        }
+    },
+    "loggers": {
+        "django.request": {"handlers": ["file"], "level": "ERROR", "propagate": True}
+    },
 }
 
 if "AZPIPELINE" in os.environ:
+    print("PIPELINE")
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",

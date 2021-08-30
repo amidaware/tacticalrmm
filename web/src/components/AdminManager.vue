@@ -99,6 +99,7 @@
               <q-td>{{ props.row.email }}</q-td>
               <q-td v-if="props.row.last_login">{{ props.row.last_login }}</q-td>
               <q-td v-else>Never</q-td>
+              <q-td>{{ props.row.last_login_ip }}</q-td>
             </q-tr>
           </template>
         </q-table>
@@ -140,6 +141,13 @@ export default {
           name: "last_login",
           label: "Last Login",
           field: "last_login",
+          align: "left",
+          sortable: true,
+        },
+        {
+          name: "last_login_ip",
+          label: "Last Logon From",
+          field: "last_login_ip",
           align: "left",
           sortable: true,
         },

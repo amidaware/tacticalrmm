@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="29"
+SCRIPT_VERSION="30"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -105,18 +105,6 @@ sudo systemctl restart systemd-journald.service
 
 sudo apt update
 
-print_green 'Downloading NATS'
-
-nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
-wget https://github.com/nats-io/nats-server/releases/download/v2.2.6/nats-server-v2.2.6-linux-amd64.tar.gz -P ${nats_tmp}
-
-tar -xzf ${nats_tmp}/nats-server-v2.2.6-linux-amd64.tar.gz -C ${nats_tmp}
-
-sudo mv ${nats_tmp}/nats-server-v2.2.6-linux-amd64/nats-server /usr/local/bin/
-sudo chmod +x /usr/local/bin/nats-server
-sudo chown ${USER}:${USER} /usr/local/bin/nats-server
-rm -rf ${nats_tmp}
-
 print_green 'Installing NodeJS'
 
 curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
@@ -176,14 +164,14 @@ print_green 'Installing Python 3.9'
 sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
 numprocs=$(nproc)
 cd ~
-wget https://www.python.org/ftp/python/3.9.2/Python-3.9.2.tgz
-tar -xf Python-3.9.2.tgz
-cd Python-3.9.2
+wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz
+tar -xf Python-3.9.6.tgz
+cd Python-3.9.6
 ./configure --enable-optimizations
 make -j $numprocs
 sudo make altinstall
 cd ~
-sudo rm -rf Python-3.9.2 Python-3.9.2.tgz
+sudo rm -rf Python-3.9.6 Python-3.9.6.tgz
 
 
 print_green 'Installing redis and git'
@@ -228,6 +216,17 @@ git config user.email "admin@example.com"
 git config user.name "Bob"
 git checkout master
 
+print_green 'Restoring NATS'
+
+NATS_SERVER_VER=$(grep "^NATS_SERVER_VER" /rmm/api/tacticalrmm/tacticalrmm/settings.py | awk -F'[= "]' '{print $5}')
+nats_tmp=$(mktemp -d -t nats-XXXXXXXXXX)
+wget https://github.com/nats-io/nats-server/releases/download/v${NATS_SERVER_VER}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -P ${nats_tmp}
+tar -xzf ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64.tar.gz -C ${nats_tmp}
+sudo mv ${nats_tmp}/nats-server-v${NATS_SERVER_VER}-linux-amd64/nats-server /usr/local/bin/
+sudo chmod +x /usr/local/bin/nats-server
+sudo chown ${USER}:${USER} /usr/local/bin/nats-server
+rm -rf ${nats_tmp}
+
 print_green 'Restoring MeshCentral'
 
 MESH_VER=$(grep "^MESH_VER" /rmm/api/tacticalrmm/tacticalrmm/settings.py | awk -F'[= "]' '{print $5}')
@@ -270,7 +269,7 @@ echo "${uwsgini}" > /rmm/api/tacticalrmm/app.ini
 cp $tmp_dir/rmm/local_settings.py /rmm/api/tacticalrmm/tacticalrmm/
 cp $tmp_dir/rmm/env /rmm/web/.env
 gzip -d $tmp_dir/rmm/debug.log.gz
-cp $tmp_dir/rmm/debug.log /rmm/api/tacticalrmm/tacticalrmm/private/log/
+cp $tmp_dir/rmm/django_debug.log /rmm/api/tacticalrmm/tacticalrmm/private/log/
 cp $tmp_dir/rmm/mesh*.exe /rmm/api/tacticalrmm/tacticalrmm/private/exe/
 
 sudo cp /rmm/natsapi/bin/nats-api /usr/local/bin

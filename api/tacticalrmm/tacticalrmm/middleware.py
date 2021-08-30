@@ -2,6 +2,7 @@ import threading
 
 from django.conf import settings
 from rest_framework.exceptions import AuthenticationFailed
+from ipware import get_client_ip
 
 request_local = threading.local()
 
@@ -67,6 +68,7 @@ class AuditMiddleware:
                     debug_info["view_func"] = view_func.__name__
                     debug_info["view_args"] = view_args
                     debug_info["view_kwargs"] = view_kwargs
+                    debug_info["ip"] = request._client_ip
 
                     request_local.debug_info = debug_info
 
@@ -82,4 +84,16 @@ class AuditMiddleware:
     def process_template_response(self, request, response):
         request_local.debug_info = None
         request_local.username = None
+        return response
+
+
+class LogIPMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        client_ip, is_routable = get_client_ip(request)
+
+        request._client_ip = client_ip
+        response = self.get_response(request)
         return response

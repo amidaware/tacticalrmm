@@ -1,17 +1,15 @@
 import smtplib
 from email.message import EmailMessage
+from django.db.models.enums import Choices
 
 import pytz
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.db import models
-from loguru import logger
 from twilio.rest import Client as TwClient
 
-from logs.models import BaseAuditModel
-
-logger.configure(**settings.LOG_CONFIG)
+from logs.models import BaseAuditModel, DebugLog, LOG_LEVEL_CHOICES
 
 TZ_CHOICES = [(_, _) for _ in pytz.all_timezones]
 
@@ -51,6 +49,13 @@ class CoreSettings(BaseAuditModel):
     )
     # removes check history older than days
     check_history_prune_days = models.PositiveIntegerField(default=30)
+    resolved_alerts_prune_days = models.PositiveIntegerField(default=0)
+    agent_history_prune_days = models.PositiveIntegerField(default=60)
+    debug_log_prune_days = models.PositiveIntegerField(default=30)
+    audit_log_prune_days = models.PositiveIntegerField(default=0)
+    agent_debug_level = models.CharField(
+        max_length=20, choices=LOG_LEVEL_CHOICES, default="info"
+    )
     clear_faults_days = models.IntegerField(default=0)
     mesh_token = models.CharField(max_length=255, null=True, blank=True, default="")
     mesh_username = models.CharField(max_length=255, null=True, blank=True, default="")
@@ -184,14 +189,14 @@ class CoreSettings(BaseAuditModel):
                     server.quit()
 
         except Exception as e:
-            logger.error(f"Sending email failed with error: {e}")
+            DebugLog.error(message=f"Sending email failed with error: {e}")
             if test:
                 return str(e)
         else:
             return True
 
     def send_sms(self, body, alert_template=None):
-        if not alert_template and not self.sms_is_configured:
+        if not alert_template or not self.sms_is_configured:
             return
 
         # override email recipients if alert_template is passed and is set
@@ -205,7 +210,7 @@ class CoreSettings(BaseAuditModel):
             try:
                 tw_client.messages.create(body=body, to=num, from_=self.twilio_number)
             except Exception as e:
-                logger.error(f"SMS failed to send: {e}")
+                DebugLog.error(message=f"SMS failed to send: {e}")
 
     @staticmethod
     def serialize(core):
@@ -265,6 +270,26 @@ class CustomField(models.Model):
         else:
             return self.default_value_string
 
+    def get_or_create_field_value(self, instance):
+        from agents.models import Agent, AgentCustomField
+        from clients.models import Client, ClientCustomField, Site, SiteCustomField
+
+        if isinstance(instance, Agent):
+            if AgentCustomField.objects.filter(field=self, agent=instance).exists():
+                return AgentCustomField.objects.get(field=self, agent=instance)
+            else:
+                return AgentCustomField.objects.create(field=self, agent=instance)
+        elif isinstance(instance, Client):
+            if ClientCustomField.objects.filter(field=self, client=instance).exists():
+                return ClientCustomField.objects.get(field=self, client=instance)
+            else:
+                return ClientCustomField.objects.create(field=self, client=instance)
+        elif isinstance(instance, Site):
+            if SiteCustomField.objects.filter(field=self, site=instance).exists():
+                return SiteCustomField.objects.get(field=self, site=instance)
+            else:
+                return SiteCustomField.objects.create(field=self, site=instance)
+
 
 class CodeSignToken(models.Model):
     token = models.CharField(max_length=255, null=True, blank=True)
@@ -285,6 +310,9 @@ class GlobalKVStore(models.Model):
 
     def __str__(self):
         return self.name
+
+
+OPEN_ACTIONS = (("window", "New Window"), ("tab", "New Tab"))
 
 
 class URLAction(models.Model):

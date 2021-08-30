@@ -1,19 +1,18 @@
 import json
 import os
-from itertools import cycle
+from django.utils import timezone as djangotime
 from unittest.mock import patch
 
 from django.conf import settings
+from logs.models import PendingAction
 from model_bakery import baker
 from packaging import version as pyver
-
-from logs.models import PendingAction
 from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
 
-from .models import Agent, AgentCustomField
-from .serializers import AgentSerializer
+from .models import Agent, AgentCustomField, AgentHistory
+from .serializers import AgentHistorySerializer, AgentSerializer
 from .tasks import auto_self_agent_update_task
 
 
@@ -306,7 +305,7 @@ class TestAgentViews(TacticalTestCase):
             "shell": "cmd",
             "timeout": 30,
         }
-        mock_ret.return_value = "nt authority\system"
+        mock_ret.return_value = "nt authority\\system"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertIsInstance(r.data, str)  # type: ignore
@@ -437,7 +436,7 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(RecoveryAction.objects.count(), 1)
         mesh_recovery = RecoveryAction.objects.first()
-        self.assertEqual(mesh_recovery.mode, "mesh")
+        self.assertEqual(mesh_recovery.mode, "mesh")  # type: ignore
         nats_cmd.reset_mock()
         RecoveryAction.objects.all().delete()
 
@@ -472,8 +471,8 @@ class TestAgentViews(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(RecoveryAction.objects.count(), 1)
         cmd_recovery = RecoveryAction.objects.first()
-        self.assertEqual(cmd_recovery.mode, "command")
-        self.assertEqual(cmd_recovery.command, "shutdown /r /t 10 /f")
+        self.assertEqual(cmd_recovery.mode, "command")  # type: ignore
+        self.assertEqual(cmd_recovery.command, "shutdown /r /t 10 /f")  # type: ignore
 
     def test_agents_agent_detail(self):
         url = f"/agents/{self.agent.pk}/agentdetail/"
@@ -770,6 +769,9 @@ class TestAgentViews(TacticalTestCase):
     @patch("agents.tasks.run_script_email_results_task.delay")
     @patch("agents.models.Agent.run_script")
     def test_run_script(self, run_script, email_task):
+        from .models import AgentCustomField, Note
+        from clients.models import ClientCustomField, SiteCustomField
+
         run_script.return_value = "ok"
         url = "/agents/runscript/"
         script = baker.make_recipe("scripts.script")
@@ -777,7 +779,7 @@ class TestAgentViews(TacticalTestCase):
         # test wait
         data = {
             "pk": self.agent.pk,
-            "scriptPK": script.pk,
+            "script": script.pk,
             "output": "wait",
             "args": [],
             "timeout": 15,
@@ -786,18 +788,18 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         run_script.assert_called_with(
-            scriptpk=script.pk, args=[], timeout=18, wait=True
+            scriptpk=script.pk, args=[], timeout=18, wait=True, history_pk=0
         )
         run_script.reset_mock()
 
         # test email default
         data = {
             "pk": self.agent.pk,
-            "scriptPK": script.pk,
+            "script": script.pk,
             "output": "email",
             "args": ["abc", "123"],
             "timeout": 15,
-            "emailmode": "default",
+            "emailMode": "default",
             "emails": ["admin@example.com", "bob@example.com"],
         }
         r = self.client.post(url, data, format="json")
@@ -812,7 +814,7 @@ class TestAgentViews(TacticalTestCase):
         email_task.reset_mock()
 
         # test email overrides
-        data["emailmode"] = "custom"
+        data["emailMode"] = "custom"
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         email_task.assert_called_with(
@@ -826,7 +828,7 @@ class TestAgentViews(TacticalTestCase):
         # test fire and forget
         data = {
             "pk": self.agent.pk,
-            "scriptPK": script.pk,
+            "script": script.pk,
             "output": "forget",
             "args": ["hello", "world"],
             "timeout": 22,
@@ -835,8 +837,138 @@ class TestAgentViews(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         run_script.assert_called_with(
-            scriptpk=script.pk, args=["hello", "world"], timeout=25
+            scriptpk=script.pk, args=["hello", "world"], timeout=25, history_pk=0
         )
+        run_script.reset_mock()
+
+        # test collector
+
+        # save to agent custom field
+        custom_field = baker.make("core.CustomField", model="agent")
+        data = {
+            "pk": self.agent.pk,
+            "script": script.pk,
+            "output": "collector",
+            "args": ["hello", "world"],
+            "timeout": 22,
+            "custom_field": custom_field.id,  # type: ignore
+            "save_all_output": True,
+        }
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        run_script.assert_called_with(
+            scriptpk=script.pk,
+            args=["hello", "world"],
+            timeout=25,
+            wait=True,
+            history_pk=0,
+        )
+        run_script.reset_mock()
+
+        self.assertEqual(
+            AgentCustomField.objects.get(agent=self.agent.pk, field=custom_field).value,
+            "ok",
+        )
+
+        # save to site custom field
+        custom_field = baker.make("core.CustomField", model="site")
+        data = {
+            "pk": self.agent.pk,
+            "script": script.pk,
+            "output": "collector",
+            "args": ["hello", "world"],
+            "timeout": 22,
+            "custom_field": custom_field.id,  # type: ignore
+            "save_all_output": False,
+        }
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        run_script.assert_called_with(
+            scriptpk=script.pk,
+            args=["hello", "world"],
+            timeout=25,
+            wait=True,
+            history_pk=0,
+        )
+        run_script.reset_mock()
+
+        self.assertEqual(
+            SiteCustomField.objects.get(
+                site=self.agent.site.pk, field=custom_field
+            ).value,
+            "ok",
+        )
+
+        # save to client custom field
+        custom_field = baker.make("core.CustomField", model="client")
+        data = {
+            "pk": self.agent.pk,
+            "script": script.pk,
+            "output": "collector",
+            "args": ["hello", "world"],
+            "timeout": 22,
+            "custom_field": custom_field.id,  # type: ignore
+            "save_all_output": False,
+        }
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        run_script.assert_called_with(
+            scriptpk=script.pk,
+            args=["hello", "world"],
+            timeout=25,
+            wait=True,
+            history_pk=0,
+        )
+        run_script.reset_mock()
+
+        self.assertEqual(
+            ClientCustomField.objects.get(
+                client=self.agent.client.pk, field=custom_field
+            ).value,
+            "ok",
+        )
+
+        # test save to note
+        data = {
+            "pk": self.agent.pk,
+            "script": script.pk,
+            "output": "note",
+            "args": ["hello", "world"],
+            "timeout": 22,
+        }
+
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 200)
+        run_script.assert_called_with(
+            scriptpk=script.pk,
+            args=["hello", "world"],
+            timeout=25,
+            wait=True,
+            history_pk=0,
+        )
+        run_script.reset_mock()
+
+        self.assertEqual(Note.objects.get(agent=self.agent).note, "ok")
+
+    def test_get_agent_history(self):
+
+        # setup data
+        agent = baker.make_recipe("agents.agent")
+        history = baker.make("agents.AgentHistory", agent=agent, _quantity=30)
+        url = f"/agents/history/{agent.id}/"
+
+        # test agent not found
+        r = self.client.get("/agents/history/500/", format="json")
+        self.assertEqual(r.status_code, 404)
+
+        # test pulling data
+        r = self.client.get(url, format="json")
+        data = AgentHistorySerializer(history, many=True).data
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data, data)  # type:ignore
 
 
 class TestAgentViewsNew(TacticalTestCase):
@@ -1048,3 +1180,25 @@ class TestAgentTasks(TacticalTestCase):
 
         r = auto_self_agent_update_task.s().apply()
         self.assertEqual(agent_update.call_count, 33)
+
+    def test_agent_history_prune_task(self):
+        from .tasks import prune_agent_history
+
+        # setup data
+        agent = baker.make_recipe("agents.agent")
+        history = baker.make(
+            "agents.AgentHistory",
+            agent=agent,
+            _quantity=50,
+        )
+
+        days = 0
+        for item in history:  # type: ignore
+            item.time = djangotime.now() - djangotime.timedelta(days=days)
+            item.save()
+            days = days + 5
+
+        # delete AgentHistory older than 30 days
+        prune_agent_history(30)
+
+        self.assertEqual(AgentHistory.objects.filter(agent=agent).count(), 6)

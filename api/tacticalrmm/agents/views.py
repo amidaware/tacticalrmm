@@ -8,7 +8,6 @@ import time
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from loguru import logger
 from packaging import version as pyver
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -17,14 +16,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.models import CoreSettings
-from logs.models import AuditLog, PendingAction
+from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from tacticalrmm.utils import get_default_timezone, notify_error, reload_nats
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 
-from .models import Agent, AgentCustomField, Note, RecoveryAction
+from .models import Agent, AgentCustomField, Note, RecoveryAction, AgentHistory
 from .permissions import (
     EditAgentPerms,
     EvtLogPerms,
@@ -42,6 +41,7 @@ from .permissions import (
 from .serializers import (
     AgentCustomFieldSerializer,
     AgentEditSerializer,
+    AgentHistorySerializer,
     AgentHostnameSerializer,
     AgentOverdueActionSerializer,
     AgentSerializer,
@@ -50,8 +50,6 @@ from .serializers import (
     NotesSerializer,
 )
 from .tasks import run_script_email_results_task, send_agent_update_task
-
-logger.configure(**settings.LOG_CONFIG)
 
 
 @api_view()
@@ -115,7 +113,7 @@ def uninstall(request):
 def edit_agent(request):
     agent = get_object_or_404(Agent, pk=request.data["id"])
 
-    a_serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
+    a_serializer = AgentEditSerializer(instance=agent, data=request.data, partial=True)
     a_serializer.is_valid(raise_exception=True)
     a_serializer.save()
 
@@ -160,17 +158,21 @@ def meshcentral(request, pk):
     core = CoreSettings.objects.first()
 
     token = agent.get_login_token(
-        key=core.mesh_token, user=f"user//{core.mesh_username}"
+        key=core.mesh_token, user=f"user//{core.mesh_username}"  # type:ignore
     )
 
     if token == "err":
         return notify_error("Invalid mesh token")
 
-    control = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=11&hide=31"
-    terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"
-    file = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=13&hide=31"
+    control = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=11&hide=31"  # type:ignore
+    terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"  # type:ignore
+    file = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=13&hide=31"  # type:ignore
 
-    AuditLog.audit_mesh_session(username=request.user.username, hostname=agent.hostname)
+    AuditLog.audit_mesh_session(
+        username=request.user.username,
+        agent=agent,
+        debug_info={"ip": request._client_ip},
+    )
 
     ret = {
         "hostname": agent.hostname,
@@ -248,6 +250,16 @@ def send_raw_cmd(request):
             "shell": request.data["shell"],
         },
     }
+
+    if pyver.parse(agent.version) >= pyver.parse("1.6.0"):
+        hist = AgentHistory.objects.create(
+            agent=agent,
+            type="cmd_run",
+            command=request.data["cmd"],
+            username=request.user.username[:50],
+        )
+        data["id"] = hist.pk
+
     r = asyncio.run(agent.nats_cmd(data, timeout=timeout + 2))
 
     if r == "timeout":
@@ -255,9 +267,10 @@ def send_raw_cmd(request):
 
     AuditLog.audit_raw_command(
         username=request.user.username,
-        hostname=agent.hostname,
+        agent=agent,
         cmd=request.data["cmd"],
         shell=request.data["shell"],
+        debug_info={"ip": request._client_ip},
     )
 
     return Response(r)
@@ -508,7 +521,7 @@ def install_agent(request):
             try:
                 os.remove(ps1)
             except Exception as e:
-                logger.error(str(e))
+                DebugLog.error(message=str(e))
 
         with open(ps1, "w") as f:
             f.write(text)
@@ -566,26 +579,41 @@ def recover(request):
 @permission_classes([IsAuthenticated, RunScriptPerms])
 def run_script(request):
     agent = get_object_or_404(Agent, pk=request.data["pk"])
-    script = get_object_or_404(Script, pk=request.data["scriptPK"])
+    script = get_object_or_404(Script, pk=request.data["script"])
     output = request.data["output"]
     args = request.data["args"]
     req_timeout = int(request.data["timeout"]) + 3
 
     AuditLog.audit_script_run(
         username=request.user.username,
-        hostname=agent.hostname,
+        agent=agent,
         script=script.name,
+        debug_info={"ip": request._client_ip},
     )
+
+    history_pk = 0
+    if pyver.parse(agent.version) >= pyver.parse("1.6.0"):
+        hist = AgentHistory.objects.create(
+            agent=agent,
+            type="script_run",
+            script=script,
+            username=request.user.username[:50],
+        )
+        history_pk = hist.pk
 
     if output == "wait":
         r = agent.run_script(
-            scriptpk=script.pk, args=args, timeout=req_timeout, wait=True
+            scriptpk=script.pk,
+            args=args,
+            timeout=req_timeout,
+            wait=True,
+            history_pk=history_pk,
         )
         return Response(r)
 
     elif output == "email":
         emails = (
-            [] if request.data["emailmode"] == "default" else request.data["emails"]
+            [] if request.data["emailMode"] == "default" else request.data["emails"]
         )
         run_script_email_results_task.delay(
             agentpk=agent.pk,
@@ -594,8 +622,47 @@ def run_script(request):
             emails=emails,
             args=args,
         )
+    elif output == "collector":
+        from core.models import CustomField
+
+        r = agent.run_script(
+            scriptpk=script.pk,
+            args=args,
+            timeout=req_timeout,
+            wait=True,
+            history_pk=history_pk,
+        )
+
+        custom_field = CustomField.objects.get(pk=request.data["custom_field"])
+
+        if custom_field.model == "agent":
+            field = custom_field.get_or_create_field_value(agent)
+        elif custom_field.model == "client":
+            field = custom_field.get_or_create_field_value(agent.client)
+        elif custom_field.model == "site":
+            field = custom_field.get_or_create_field_value(agent.site)
+        else:
+            return notify_error("Custom Field was invalid")
+
+        value = r if request.data["save_all_output"] else r.split("\n")[-1].strip()
+
+        field.save_to_field(value)
+        return Response(r)
+    elif output == "note":
+        r = agent.run_script(
+            scriptpk=script.pk,
+            args=args,
+            timeout=req_timeout,
+            wait=True,
+            history_pk=history_pk,
+        )
+
+        Note.objects.create(agent=agent, user=request.user, note=r)
+        return Response(r)
     else:
-        agent.run_script(scriptpk=script.pk, args=args, timeout=req_timeout)
+        agent.run_script(
+            scriptpk=script.pk, args=args, timeout=req_timeout, history_pk=history_pk
+        )
 
     return Response(f"{script.name} will now be run on {agent.hostname}")
 
@@ -668,7 +735,7 @@ class GetEditDeleteNote(APIView):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, RunBulkPerms])
 def bulk(request):
-    if request.data["target"] == "agents" and not request.data["agentPKs"]:
+    if request.data["target"] == "agents" and not request.data["agents"]:
         return notify_error("Must select at least 1 agent")
 
     if request.data["target"] == "client":
@@ -676,7 +743,7 @@ def bulk(request):
     elif request.data["target"] == "site":
         q = Agent.objects.filter(site_id=request.data["site"])
     elif request.data["target"] == "agents":
-        q = Agent.objects.filter(pk__in=request.data["agentPKs"])
+        q = Agent.objects.filter(pk__in=request.data["agents"])
     elif request.data["target"] == "all":
         q = Agent.objects.only("pk", "monitoring_type")
     else:
@@ -689,29 +756,48 @@ def bulk(request):
 
     agents: list[int] = [agent.pk for agent in q]
 
-    AuditLog.audit_bulk_action(request.user, request.data["mode"], request.data)
+    if not agents:
+        return notify_error("No agents where found meeting the selected criteria")
+
+    AuditLog.audit_bulk_action(
+        request.user,
+        request.data["mode"],
+        request.data,
+        debug_info={"ip": request._client_ip},
+    )
 
     if request.data["mode"] == "command":
         handle_bulk_command_task.delay(
-            agents, request.data["cmd"], request.data["shell"], request.data["timeout"]
+            agents,
+            request.data["cmd"],
+            request.data["shell"],
+            request.data["timeout"],
+            request.user.username[:50],
+            run_on_offline=request.data["offlineAgents"],
         )
         return Response(f"Command will now be run on {len(agents)} agents")
 
     elif request.data["mode"] == "script":
-        script = get_object_or_404(Script, pk=request.data["scriptPK"])
+        script = get_object_or_404(Script, pk=request.data["script"])
         handle_bulk_script_task.delay(
-            script.pk, agents, request.data["args"], request.data["timeout"]
+            script.pk,
+            agents,
+            request.data["args"],
+            request.data["timeout"],
+            request.user.username[:50],
         )
         return Response(f"{script.name} will now be run on {len(agents)} agents")
 
-    elif request.data["mode"] == "install":
-        bulk_install_updates_task.delay(agents)
-        return Response(
-            f"Pending updates will now be installed on {len(agents)} agents"
-        )
-    elif request.data["mode"] == "scan":
-        bulk_check_for_updates_task.delay(agents)
-        return Response(f"Patch status scan will now run on {len(agents)} agents")
+    elif request.data["mode"] == "patch":
+
+        if request.data["patchMode"] == "install":
+            bulk_install_updates_task.delay(agents)
+            return Response(
+                f"Pending updates will now be installed on {len(agents)} agents"
+            )
+        elif request.data["patchMode"] == "scan":
+            bulk_check_for_updates_task.delay(agents)
+            return Response(f"Patch status scan will now run on {len(agents)} agents")
 
     return notify_error("Something went wrong")
 
@@ -746,3 +832,11 @@ class WMI(APIView):
         if r != "ok":
             return notify_error("Unable to contact the agent")
         return Response("ok")
+
+
+class AgentHistoryView(APIView):
+    def get(self, request, pk):
+        agent = get_object_or_404(Agent, pk=pk)
+        history = AgentHistory.objects.filter(agent=agent)
+
+        return Response(AgentHistorySerializer(history, many=True).data)

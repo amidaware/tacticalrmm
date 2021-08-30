@@ -6,7 +6,6 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
-from loguru import logger
 from packaging import version as pyver
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
@@ -15,19 +14,17 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
-from agents.models import Agent, AgentCustomField
-from agents.serializers import WinAgentSerializer
+from agents.models import Agent, AgentHistory
+from agents.serializers import WinAgentSerializer, AgentHistorySerializer
 from autotasks.models import AutomatedTask
 from autotasks.serializers import TaskGOGetSerializer, TaskRunnerPatchSerializer
 from checks.models import Check
 from checks.serializers import CheckRunnerGetSerializer
 from checks.utils import bytes2human
-from logs.models import PendingAction
+from logs.models import PendingAction, DebugLog
 from software.models import InstalledSoftware
 from tacticalrmm.utils import SoftwareList, filter_software, notify_error, reload_nats
 from winupdate.models import WinUpdate, WinUpdatePolicy
-
-logger.configure(**settings.LOG_CONFIG)
 
 
 class CheckIn(APIView):
@@ -36,6 +33,10 @@ class CheckIn(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request):
+        """
+        !!! DEPRECATED AS OF AGENT 1.6.0 !!!
+        Endpoint be removed in a future release
+        """
         from alerts.models import Alert
 
         updated = False
@@ -182,7 +183,11 @@ class WinUpdates(APIView):
 
         if reboot:
             asyncio.run(agent.nats_cmd({"func": "rebootnow"}, wait=False))
-            logger.info(f"{agent.hostname} is rebooting after updates were installed.")
+            DebugLog.info(
+                agent=agent,
+                log_type="windows_updates",
+                message=f"{agent.hostname} is rebooting after updates were installed.",
+            )
 
         agent.delete_superseded_updates()
         return Response("ok")
@@ -350,7 +355,7 @@ class TaskRunner(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk, agentid):
-        agent = get_object_or_404(Agent, agent_id=agentid)
+        _ = get_object_or_404(Agent, agent_id=agentid)
         task = get_object_or_404(AutomatedTask, pk=pk)
         return Response(TaskGOGetSerializer(task).data)
 
@@ -371,38 +376,7 @@ class TaskRunner(APIView):
         if task.custom_field:
             if not task.stderr:
 
-                if AgentCustomField.objects.filter(
-                    field=task.custom_field, agent=task.agent
-                ).exists():
-                    agent_field = AgentCustomField.objects.get(
-                        field=task.custom_field, agent=task.agent
-                    )
-                else:
-                    agent_field = AgentCustomField.objects.create(
-                        field=task.custom_field, agent=task.agent
-                    )
-
-                # get last line of stdout
-                value = (
-                    new_task.stdout
-                    if task.collector_all_output
-                    else new_task.stdout.split("\n")[-1].strip()
-                )
-
-                if task.custom_field.type in [
-                    "text",
-                    "number",
-                    "single",
-                    "datetime",
-                ]:
-                    agent_field.string_value = value
-                    agent_field.save()
-                elif task.custom_field.type == "multiple":
-                    agent_field.multiple_value = value.split(",")
-                    agent_field.save()
-                elif task.custom_field.type == "checkbox":
-                    agent_field.bool_value = bool(value)
-                    agent_field.save()
+                task.save_collector_results()
 
                 status = "passing"
             else:
@@ -418,15 +392,6 @@ class TaskRunner(APIView):
                 Alert.handle_alert_resolve(new_task)
         else:
             Alert.handle_alert_failure(new_task)
-
-        AuditLog.objects.create(
-            username=agent.hostname,
-            agent=agent.hostname,
-            object_type="agent",
-            action="task_run",
-            message=f"Scheduled Task {task.name} was run on {agent.hostname}",
-            after_value=AutomatedTask.serialize(new_task),
-        )
 
         return Response("ok")
 
@@ -518,6 +483,7 @@ class NewAgent(APIView):
             action="agent_install",
             message=f"{request.user} installed new agent {agent.hostname}",
             after_value=Agent.serialize(agent),
+            debug_info={"ip": request._client_ip},
         )
 
         return Response(
@@ -622,3 +588,16 @@ class AgentRecovery(APIView):
             reload_nats()
 
         return Response(ret)
+
+
+class AgentHistoryResult(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, agentid, pk):
+        _ = get_object_or_404(Agent, agent_id=agentid)
+        hist = get_object_or_404(AgentHistory, pk=pk)
+        s = AgentHistorySerializer(instance=hist, data=request.data, partial=True)
+        s.is_valid(raise_exception=True)
+        s.save()
+        return Response("ok")

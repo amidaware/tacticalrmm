@@ -48,6 +48,7 @@ class User(AbstractUser, BaseAuditModel):
     loading_bar_color = models.CharField(max_length=255, default="red")
     clear_search_when_switching = models.BooleanField(default=True)
     is_installer_user = models.BooleanField(default=False)
+    last_login_ip = models.GenericIPAddressField(default=None, blank=True, null=True)
 
     agent = models.OneToOneField(
         "agents.Agent",
@@ -73,7 +74,7 @@ class User(AbstractUser, BaseAuditModel):
         return UserSerializer(user).data
 
 
-class Role(models.Model):
+class Role(BaseAuditModel):
     name = models.CharField(max_length=255, unique=True)
     is_superuser = models.BooleanField(default=False)
 
@@ -139,6 +140,13 @@ class Role(models.Model):
 
     def __str__(self):
         return self.name
+
+    @staticmethod
+    def serialize(role):
+        # serializes the agent and returns json
+        from .serializers import RoleAuditSerializer
+
+        return RoleAuditSerializer(role).data
 
     @staticmethod
     def perms():

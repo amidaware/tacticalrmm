@@ -6,18 +6,14 @@ from typing import List
 
 import pytz
 from alerts.models import SEVERITY_CHOICES
-from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models.fields import DateTimeField
 from django.db.utils import DatabaseError
 from django.utils import timezone as djangotime
-from logs.models import BaseAuditModel
-from loguru import logger
+from logs.models import BaseAuditModel, DebugLog
 from packaging import version as pyver
 from tacticalrmm.utils import bitdays_to_string
-
-logger.configure(**settings.LOG_CONFIG)
 
 RUN_TIME_DAY_CHOICES = [
     (0, "Monday"),
@@ -195,9 +191,9 @@ class AutomatedTask(BaseAuditModel):
     @staticmethod
     def serialize(task):
         # serializes the task and returns json
-        from .serializers import TaskSerializer
+        from .serializers import TaskAuditSerializer
 
-        return TaskSerializer(task).data
+        return TaskAuditSerializer(task).data
 
     def create_policy_task(self, agent=None, policy=None, assigned_check=None):
 
@@ -254,7 +250,7 @@ class AutomatedTask(BaseAuditModel):
 
         elif self.task_type == "runonce":
             # check if scheduled time is in the past
-            agent_tz = pytz.timezone(agent.timezone)
+            agent_tz = pytz.timezone(agent.timezone)  # type: ignore
             task_time_utc = self.run_time_date.replace(tzinfo=agent_tz).astimezone(
                 pytz.utc
             )
@@ -280,7 +276,7 @@ class AutomatedTask(BaseAuditModel):
                 },
             }
 
-            if self.run_asap_after_missed and pyver.parse(agent.version) >= pyver.parse(
+            if self.run_asap_after_missed and pyver.parse(agent.version) >= pyver.parse(  # type: ignore
                 "1.4.7"
             ):
                 nats_data["schedtaskpayload"]["run_asap_after_missed"] = True
@@ -301,19 +297,25 @@ class AutomatedTask(BaseAuditModel):
         else:
             return "error"
 
-        r = asyncio.run(agent.nats_cmd(nats_data, timeout=5))
+        r = asyncio.run(agent.nats_cmd(nats_data, timeout=5))  # type: ignore
 
         if r != "ok":
             self.sync_status = "initial"
             self.save(update_fields=["sync_status"])
-            logger.warning(
-                f"Unable to create scheduled task {self.name} on {agent.hostname}. It will be created when the agent checks in."
+            DebugLog.warning(
+                agent=agent,
+                log_type="agent_issues",
+                message=f"Unable to create scheduled task {self.name} on {agent.hostname}. It will be created when the agent checks in.",  # type: ignore
             )
             return "timeout"
         else:
             self.sync_status = "synced"
             self.save(update_fields=["sync_status"])
-            logger.info(f"{agent.hostname} task {self.name} was successfully created")
+            DebugLog.info(
+                agent=agent,
+                log_type="agent_issues",
+                message=f"{agent.hostname} task {self.name} was successfully created",  # type: ignore
+            )
 
         return "ok"
 
@@ -333,19 +335,25 @@ class AutomatedTask(BaseAuditModel):
                 "enabled": self.enabled,
             },
         }
-        r = asyncio.run(agent.nats_cmd(nats_data, timeout=5))
+        r = asyncio.run(agent.nats_cmd(nats_data, timeout=5))  # type: ignore
 
         if r != "ok":
             self.sync_status = "notsynced"
             self.save(update_fields=["sync_status"])
-            logger.warning(
-                f"Unable to modify scheduled task {self.name} on {agent.hostname}. It will try again on next agent checkin"
+            DebugLog.warning(
+                agent=agent,
+                log_type="agent_issues",
+                message=f"Unable to modify scheduled task {self.name} on {agent.hostname}({agent.pk}). It will try again on next agent checkin",  # type: ignore
             )
             return "timeout"
         else:
             self.sync_status = "synced"
             self.save(update_fields=["sync_status"])
-            logger.info(f"{agent.hostname} task {self.name} was successfully modified")
+            DebugLog.info(
+                agent=agent,
+                log_type="agent_issues",
+                message=f"{agent.hostname} task {self.name} was successfully modified",  # type: ignore
+            )
 
         return "ok"
 
@@ -362,7 +370,7 @@ class AutomatedTask(BaseAuditModel):
             "func": "delschedtask",
             "schedtaskpayload": {"name": self.win_task_name},
         }
-        r = asyncio.run(agent.nats_cmd(nats_data, timeout=10))
+        r = asyncio.run(agent.nats_cmd(nats_data, timeout=10))  # type: ignore
 
         if r != "ok" and "The system cannot find the file specified" not in r:
             self.sync_status = "pendingdeletion"
@@ -372,13 +380,19 @@ class AutomatedTask(BaseAuditModel):
             except DatabaseError:
                 pass
 
-            logger.warning(
-                f"{agent.hostname} task {self.name} will be deleted on next checkin"
+            DebugLog.warning(
+                agent=agent,
+                log_type="agent_issues",
+                message=f"{agent.hostname} task {self.name} will be deleted on next checkin",  # type: ignore
             )
             return "timeout"
         else:
             self.delete()
-            logger.info(f"{agent.hostname} task {self.name} was deleted")
+            DebugLog.info(
+                agent=agent,
+                log_type="agent_issues",
+                message=f"{agent.hostname}({agent.pk}) task {self.name} was deleted",  # type: ignore
+            )
 
         return "ok"
 
@@ -391,8 +405,19 @@ class AutomatedTask(BaseAuditModel):
             .first()
         )
 
-        asyncio.run(agent.nats_cmd({"func": "runtask", "taskpk": self.pk}, wait=False))
+        asyncio.run(agent.nats_cmd({"func": "runtask", "taskpk": self.pk}, wait=False))  # type: ignore
         return "ok"
+
+    def save_collector_results(self):
+
+        agent_field = self.custom_field.get_or_create_field_value(self.agent)
+
+        value = (
+            self.stdout
+            if self.collector_all_output
+            else self.stdout.split("\n")[-1].strip()
+        )
+        agent_field.save_to_field(value)
 
     def should_create_alert(self, alert_template=None):
         return (
@@ -424,7 +449,7 @@ class AutomatedTask(BaseAuditModel):
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
 
-        CORE.send_mail(subject, body, self.agent.alert_template)
+        CORE.send_mail(subject, body, self.agent.alert_template)  # type: ignore
 
     def send_sms(self):
         from core.models import CoreSettings
@@ -441,7 +466,7 @@ class AutomatedTask(BaseAuditModel):
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
 
-        CORE.send_sms(body, alert_template=self.agent.alert_template)
+        CORE.send_sms(body, alert_template=self.agent.alert_template)  # type: ignore
 
     def send_resolved_email(self):
         from core.models import CoreSettings
@@ -453,7 +478,7 @@ class AutomatedTask(BaseAuditModel):
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
 
-        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)
+        CORE.send_mail(subject, body, alert_template=self.agent.alert_template)  # type: ignore
 
     def send_resolved_sms(self):
         from core.models import CoreSettings
@@ -464,4 +489,4 @@ class AutomatedTask(BaseAuditModel):
             subject
             + f" - Return code: {self.retcode}\nStdout:{self.stdout}\nStderr: {self.stderr}"
         )
-        CORE.send_sms(body, alert_template=self.agent.alert_template)
+        CORE.send_sms(body, alert_template=self.agent.alert_template)  # type: ignore

@@ -35,9 +35,13 @@ app.conf.beat_schedule = {
         "task": "agents.tasks.auto_self_agent_update_task",
         "schedule": crontab(minute=35, hour="*"),
     },
-    "monitor-agents": {
-        "task": "agents.tasks.monitor_agents_task",
-        "schedule": crontab(minute="*/7"),
+    "handle-agents": {
+        "task": "agents.tasks.handle_agents_task",
+        "schedule": crontab(minute="*"),
+    },
+    "get-agentinfo": {
+        "task": "agents.tasks.agent_getinfo_task",
+        "schedule": crontab(minute="*"),
     },
     "get-wmi": {
         "task": "agents.tasks.get_wmi_task",

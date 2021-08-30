@@ -25,10 +25,10 @@
               <q-item clickable v-close-popup @click="showUploadMesh = true">
                 <q-item-section>Upload MeshAgent</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="showAuditManager = true">
+              <q-item clickable v-close-popup @click="showAuditManager">
                 <q-item-section>Audit Log</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="showDebugLog = true">
+              <q-item clickable v-close-popup @click="showDebugLog">
                 <q-item-section>Debug Log</q-item-section>
               </q-item>
             </q-list>
@@ -70,7 +70,7 @@
                 <q-item-section>Clients Manager</q-item-section>
               </q-item>
               <!-- script manager -->
-              <q-item clickable v-close-popup @click="showScriptManager = true">
+              <q-item clickable v-close-popup @click="showScriptManager">
                 <q-item-section>Script Manager</q-item-section>
               </q-item>
               <!-- automation manager -->
@@ -105,15 +105,15 @@
           <q-menu auto-close>
             <q-list dense style="min-width: 100px">
               <!-- bulk command -->
-              <q-item clickable v-close-popup @click="showBulkActionModal('command')">
+              <q-item clickable v-close-popup @click="showBulkAction('command')">
                 <q-item-section>Bulk Command</q-item-section>
               </q-item>
               <!-- bulk script -->
-              <q-item clickable v-close-popup @click="showBulkActionModal('script')">
+              <q-item clickable v-close-popup @click="showBulkAction('script')">
                 <q-item-section>Bulk Script</q-item-section>
               </q-item>
               <!-- bulk patch management -->
-              <q-item clickable v-close-popup @click="showBulkActionModal('scan')">
+              <q-item clickable v-close-popup @click="showBulkAction('patch')">
                 <q-item-section>Bulk Patch Management</q-item-section>
               </q-item>
               <!-- server maintenance -->
@@ -148,22 +148,10 @@
       <q-dialog v-model="showEditCoreSettingsModal">
         <EditCoreSettings @close="showEditCoreSettingsModal = false" />
       </q-dialog>
-      <!-- debug log modal -->
-      <div class="q-pa-md q-gutter-sm">
-        <q-dialog v-model="showDebugLog" maximized transition-show="slide-up" transition-hide="slide-down">
-          <LogModal @close="showDebugLog = false" />
-        </q-dialog>
-      </div>
       <!-- pending actions modal -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showPendingActions">
           <PendingActions @close="showPendingActions = false" />
-        </q-dialog>
-      </div>
-      <!-- audit manager -->
-      <div class="q-pa-md q-gutter-sm">
-        <q-dialog v-model="showAuditManager" maximized transition-show="slide-up" transition-hide="slide-down">
-          <AuditManager @close="showAuditManager = false" />
         </q-dialog>
       </div>
       <!-- Install Agents -->
@@ -178,12 +166,6 @@
           <UpdateAgents @close="showUpdateAgentsModal = false" @edit="edited" />
         </q-dialog>
       </div>
-      <!-- Script Manager -->
-      <div class="q-pa-md q-gutter-sm">
-        <q-dialog v-model="showScriptManager">
-          <ScriptManager @close="showScriptManager = false" />
-        </q-dialog>
-      </div>
       <!-- Admin Manager -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showAdminManager">
@@ -193,10 +175,6 @@
       <!-- Upload new mesh agent -->
       <q-dialog v-model="showUploadMesh">
         <UploadMesh @close="showUploadMesh = false" />
-      </q-dialog>
-      <!-- Bulk action modal -->
-      <q-dialog v-model="showBulkAction" @hide="closeBulkActionModal" position="top">
-        <BulkAction :mode="bulkMode" @close="closeBulkActionModal" />
       </q-dialog>
       <!-- Agent Deployment -->
       <q-dialog v-model="showDeployment">
@@ -215,20 +193,21 @@
 </template>
 
 <script>
-import LogModal from "@/components/modals/logs/LogModal";
+import DialogWrapper from "@/components/ui/DialogWrapper";
+import DebugLog from "@/components/logs/DebugLog";
 import PendingActions from "@/components/modals/logs/PendingActions";
 import ClientsManager from "@/components/ClientsManager";
 import ClientsForm from "@/components/modals/clients/ClientsForm";
 import SitesForm from "@/components/modals/clients/SitesForm";
 import UpdateAgents from "@/components/modals/agents/UpdateAgents";
-import ScriptManager from "@/components/ScriptManager";
+import ScriptManager from "@/components/scripts/ScriptManager";
 import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
 import AlertsManager from "@/components/AlertsManager";
 import AutomationManager from "@/components/automation/AutomationManager";
 import AdminManager from "@/components/AdminManager";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import UploadMesh from "@/components/modals/core/UploadMesh";
-import AuditManager from "@/components/AuditManager";
+import AuditManager from "@/components/logs/AuditManager";
 import BulkAction from "@/components/modals/agents/BulkAction";
 import Deployment from "@/components/Deployment";
 import ServerMaintenance from "@/components/modals/core/ServerMaintenance";
@@ -239,16 +218,12 @@ export default {
   name: "FileBar",
   emits: ["edit"],
   components: {
-    LogModal,
     PendingActions,
     UpdateAgents,
-    ScriptManager,
     EditCoreSettings,
     InstallAgent,
     UploadMesh,
     AdminManager,
-    AuditManager,
-    BulkAction,
     Deployment,
     ServerMaintenance,
     CodeSign,
@@ -262,13 +237,8 @@ export default {
       showAdminManager: false,
       showInstallAgent: false,
       showUploadMesh: false,
-      showAuditManager: false,
-      showBulkAction: false,
       showPendingActions: false,
-      bulkMode: null,
       showDeployment: false,
-      showDebugLog: false,
-      showScriptManager: false,
       showCodeSign: false,
     };
   },
@@ -332,6 +302,53 @@ export default {
     showPermissionsManager() {
       this.$q.dialog({
         component: PermissionsManager,
+      });
+    },
+    showAuditManager() {
+      this.$q.dialog({
+        component: DialogWrapper,
+        componentProps: {
+          vuecomponent: AuditManager,
+          noCard: true,
+          componentProps: {
+            modal: true,
+          },
+          dialogProps: {
+            maximized: true,
+            ["transition-show"]: "slide-up",
+            ["transition-hide"]: "slide-down",
+          },
+        },
+      });
+    },
+    showScriptManager() {
+      this.$q.dialog({
+        component: ScriptManager,
+      });
+    },
+    showBulkAction(mode) {
+      this.$q.dialog({
+        component: BulkAction,
+        componentProps: {
+          mode: mode,
+        },
+      });
+    },
+    showDebugLog() {
+      this.$q.dialog({
+        component: DialogWrapper,
+        componentProps: {
+          vuecomponent: DebugLog,
+          noCard: true,
+          componentProps: {
+            modal: true,
+          },
+          dialogProps: {
+            maximized: true,
+            ["transition-show"]: "slide-up",
+            ["transition-hide"]: "slide-down",
+          },
+        },
       });
     },
     edited() {

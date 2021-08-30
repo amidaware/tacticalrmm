@@ -112,7 +112,7 @@
 
               <q-item clickable v-ripple @click="getURLActions">
                 <q-item-section side>
-                  <q-icon size="xs" name="mdi-open-in-new" />
+                  <q-icon size="xs" name="open_in_new" />
                 </q-item-section>
                 <q-item-section>Run URL Action</q-item-section>
                 <q-item-section side>
@@ -141,7 +141,7 @@
                 <q-item-section>Send Command</q-item-section>
               </q-item>
 
-              <q-item clickable v-ripple v-close-popup @click="showRunScript = true">
+              <q-item clickable v-ripple v-close-popup @click="showRunScript(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-terminal" />
                 </q-item-section>
@@ -164,7 +164,7 @@
                       dense
                       clickable
                       v-close-popup
-                      @click="runFavScript(script.value, props.row.id)"
+                      @click="showRunScript(props.row, script.value)"
                     >
                       {{ script.label }}
                     </q-item>
@@ -407,16 +407,12 @@
       </q-dialog>
     </div>
     <!-- send command modal -->
-    <q-dialog v-model="showSendCommand" persistent>
+    <q-dialog v-model="showSendCommand" persistent @keydown.esc="showSendCommand = false">
       <SendCommand @close="showSendCommand = false" :pk="selectedAgentPk" />
     </q-dialog>
     <!-- agent recovery modal -->
     <q-dialog v-model="showAgentRecovery">
       <AgentRecovery @close="showAgentRecovery = false" :pk="selectedAgentPk" />
-    </q-dialog>
-    <!-- run script modal -->
-    <q-dialog v-model="showRunScript" persistent>
-      <RunScript @close="showRunScript = false" :pk="selectedAgentPk" />
     </q-dialog>
   </div>
 </template>
@@ -424,7 +420,7 @@
 <script>
 import mixins from "@/mixins/mixins";
 import { mapGetters } from "vuex";
-import { date } from "quasar";
+import { date, openURL } from "quasar";
 import EditAgent from "@/components/modals/agents/EditAgent";
 import RebootLater from "@/components/modals/agents/RebootLater";
 import PendingActions from "@/components/modals/logs/PendingActions";
@@ -443,7 +439,6 @@ export default {
     PendingActions,
     SendCommand,
     AgentRecovery,
-    RunScript,
   },
   mixins: [mixins],
   data() {
@@ -457,7 +452,6 @@ export default {
       showEditAgentModal: false,
       showRebootLaterModal: false,
       showAgentRecovery: false,
-      showRunScript: false,
       showPendingActions: false,
       pendingActionAgentPk: null,
       favoriteScripts: [],
@@ -537,24 +531,10 @@ export default {
         }
       }, 500);
     },
-    runFavScript(scriptpk, agentpk) {
-      const script = this.favoriteScripts.find(i => i.value === scriptpk);
-      const data = {
-        pk: agentpk,
-        timeout: script.timeout,
-        scriptPK: scriptpk,
-        output: "forget",
-        args: script.args,
-      };
-      this.$axios
-        .post("/agents/runscript/", data)
-        .then(r => this.notifySuccess(r.data))
-        .catch(e => {});
-    },
     getFavoriteScripts() {
       this.favoriteScripts = [];
       this.$axios
-        .get("/scripts/scripts/")
+        .get("/scripts/", { params: { showCommunityScripts: this.showCommunityScripts } })
         .then(r => {
           if (r.data.filter(k => k.favorite === true).length === 0) {
             this.notifyWarning("You don't have any scripts favorited!");
@@ -799,13 +779,22 @@ export default {
       this.$axios
         .patch("/core/urlaction/run/", data)
         .then(r => {
-          window.open(r.data, "_blank");
+          openURL(r.data);
         })
         .catch(() => {});
     },
+    showRunScript(agent, script = undefined) {
+      this.$q.dialog({
+        component: RunScript,
+        componentProps: {
+          agent,
+          script,
+        },
+      });
+    },
   },
   computed: {
-    ...mapGetters(["selectedAgentPk", "agentTableHeight"]),
+    ...mapGetters(["selectedAgentPk", "agentTableHeight", "showCommunityScripts"]),
     agentDblClickAction() {
       return this.$store.state.agentDblClickAction;
     },

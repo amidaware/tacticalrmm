@@ -15,14 +15,12 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.http import FileResponse
 from knox.auth import TokenAuthentication
-from loguru import logger
 from rest_framework import status
 from rest_framework.response import Response
 
-from agents.models import Agent
 from core.models import CodeSignToken
-
-logger.configure(**settings.LOG_CONFIG)
+from logs.models import DebugLog
+from agents.models import Agent
 
 notify_error = lambda msg: Response(msg, status=status.HTTP_400_BAD_REQUEST)
 
@@ -61,7 +59,7 @@ def generate_winagent_exe(
     )
 
     try:
-        codetoken = CodeSignToken.objects.first().token
+        codetoken = CodeSignToken.objects.first().token  # type:ignore
         base_url = get_exegen_url() + "/api/v1/winagents/?"
         params = {
             "version": settings.LATEST_AGENT_VER,
@@ -107,7 +105,7 @@ def generate_winagent_exe(
                 break
 
         if errors:
-            logger.error(errors)
+            DebugLog.error(message=errors)
             return notify_error(
                 "Something went wrong. Check debug error log for exact error message"
             )
@@ -123,7 +121,7 @@ def generate_winagent_exe(
 def get_default_timezone():
     from core.models import CoreSettings
 
-    return pytz.timezone(CoreSettings.objects.first().default_time_zone)
+    return pytz.timezone(CoreSettings.objects.first().default_time_zone)  # type:ignore
 
 
 def get_bit_days(days: list[str]) -> int:
@@ -178,28 +176,28 @@ def filter_software(sw: SoftwareList) -> SoftwareList:
 
 def reload_nats():
     users = [{"user": "tacticalrmm", "password": settings.SECRET_KEY}]
-    agents = Agent.objects.prefetch_related("user").only("pk", "agent_id")
+    agents = Agent.objects.prefetch_related("user").only(
+        "pk", "agent_id"
+    )  # type:ignore
     for agent in agents:
         try:
             users.append(
                 {"user": agent.agent_id, "password": agent.user.auth_token.key}
             )
         except:
-            logger.critical(
-                f"{agent.hostname} does not have a user account, NATS will not work"
+            DebugLog.critical(
+                agent=agent,
+                log_type="agent_issues",
+                message=f"{agent.hostname} does not have a user account, NATS will not work",
             )
 
     domain = settings.ALLOWED_HOSTS[0].split(".", 1)[1]
+    cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
+    key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
     if hasattr(settings, "CERT_FILE") and hasattr(settings, "KEY_FILE"):
         if os.path.exists(settings.CERT_FILE) and os.path.exists(settings.KEY_FILE):
             cert_file = settings.CERT_FILE
             key_file = settings.KEY_FILE
-        else:
-            cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
-            key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
-    else:
-        cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
-        key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
 
     config = {
         "tls": {
@@ -207,7 +205,7 @@ def reload_nats():
             "key_file": key_file,
         },
         "authorization": {"users": users},
-        "max_payload": 2048576005,
+        "max_payload": 67108864,
     }
 
     conf = os.path.join(settings.BASE_DIR, "nats-rmm.conf")
@@ -248,21 +246,34 @@ KnoxAuthMiddlewareStack = lambda inner: KnoxAuthMiddlewareInstance(
 )
 
 
-def run_nats_api_cmd(mode: str, ids: list[str], timeout: int = 30) -> None:
-    config = {
-        "key": settings.SECRET_KEY,
-        "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
-        "agents": ids,
-    }
+def run_nats_api_cmd(mode: str, ids: list[str] = [], timeout: int = 30) -> None:
+    if mode == "wmi":
+        config = {
+            "key": settings.SECRET_KEY,
+            "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
+            "agents": ids,
+        }
+    else:
+        db = settings.DATABASES["default"]
+        config = {
+            "key": settings.SECRET_KEY,
+            "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
+            "user": db["USER"],
+            "pass": db["PASSWORD"],
+            "host": db["HOST"],
+            "port": int(db["PORT"]),
+            "dbname": db["NAME"],
+        }
+
     with tempfile.NamedTemporaryFile() as fp:
         with open(fp.name, "w") as f:
             json.dump(config, f)
 
         cmd = ["/usr/local/bin/nats-api", "-c", fp.name, "-m", mode]
         try:
-            subprocess.run(cmd, capture_output=True, timeout=timeout)
+            subprocess.run(cmd, timeout=timeout)
         except Exception as e:
-            logger.error(e)
+            DebugLog.error(message=e)
 
 
 def get_latest_trmm_ver() -> str:
@@ -277,15 +288,16 @@ def get_latest_trmm_ver() -> str:
             if "TRMM_VERSION" in line:
                 return line.split(" ")[2].strip('"')
     except Exception as e:
-        logger.error(e)
+        DebugLog.error(message=e)
 
     return "error"
 
 
 def replace_db_values(
-    string: str, agent: Agent = None, shell: str = None, quotes=True
+    string: str, instance=None, shell: str = None, quotes=True  # type:ignore
 ) -> Union[str, None]:
     from core.models import CustomField, GlobalKVStore
+    from clients.models import Client, Site
 
     # split by period if exists. First should be model and second should be property i.e {{client.name}}
     temp = string.split(".")
@@ -293,7 +305,7 @@ def replace_db_values(
     # check for model and property
     if len(temp) < 2:
         # ignore arg since it is invalid
-        return None
+        return ""
 
     # value is in the global keystore and replace value
     if temp[0] == "global":
@@ -302,30 +314,48 @@ def replace_db_values(
 
             return f"'{value}'" if quotes else value
         else:
-            logger.error(
-                f"Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store"
+            DebugLog.error(
+                log_type="scripting",
+                message=f"{agent.hostname} Couldn't lookup value for: {string}. Make sure it exists in CoreSettings > Key Store",  # type:ignore
             )
-            return None
+            return ""
 
-    if not agent:
-        # agent must be set if not global property
-        return f"There was an error finding the agent: {agent}"
+    if not instance:
+        # instance must be set if not global property
+        return ""
 
     if temp[0] == "client":
         model = "client"
-        obj = agent.client
+        if isinstance(instance, Client):
+            obj = instance
+        elif hasattr(instance, "client"):
+            obj = instance.client
+        else:
+            obj = None
     elif temp[0] == "site":
         model = "site"
-        obj = agent.site
+        if isinstance(instance, Site):
+            obj = instance
+        elif hasattr(instance, "site"):
+            obj = instance.site
+        else:
+            obj = None
     elif temp[0] == "agent":
         model = "agent"
-        obj = agent
+        if isinstance(instance, Agent):
+            obj = instance
+        else:
+            obj = None
     else:
         # ignore arg since it is invalid
-        logger.error(
-            f"Not enough information to find value for: {string}. Only agent, site, client, and global are supported."
+        DebugLog.error(
+            log_type="scripting",
+            message=f"{instance} Not enough information to find value for: {string}. Only agent, site, client, and global are supported.",
         )
-        return None
+        return ""
+
+    if not obj:
+        return ""
 
     if hasattr(obj, temp[1]):
         value = f"'{getattr(obj, temp[1])}'" if quotes else getattr(obj, temp[1])
@@ -359,19 +389,21 @@ def replace_db_values(
 
     else:
         # ignore arg since property is invalid
-        logger.error(
-            f"Couldn't find property on supplied variable: {string}. Make sure it exists as a custom field or a valid agent property"
+        DebugLog.error(
+            log_type="scripting",
+            message=f"{instance} Couldn't find property on supplied variable: {string}. Make sure it exists as a custom field or a valid agent property",
         )
-        return None
+        return ""
 
     # log any unhashable type errors
     if value != None:
         return value  # type: ignore
     else:
-        logger.error(
-            f"Couldn't lookup value for: {string}. Make sure it exists as a custom field or a valid agent property"
+        DebugLog.error(
+            log_type="scripting",
+            message=f" {instance}({instance.pk}) Couldn't lookup value for: {string}. Make sure it exists as a custom field or a valid agent property",
         )
-        return None
+        return ""
 
 
 def format_shell_array(value: list) -> str:

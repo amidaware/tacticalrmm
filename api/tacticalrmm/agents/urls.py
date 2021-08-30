@@ -29,4 +29,5 @@ urlpatterns = [
     path("bulk/", views.bulk),
     path("maintenance/", views.agent_maintenance),
     path("<int:pk>/wmi/", views.WMI.as_view()),
+    path("history/<int:pk>/", views.AgentHistoryView.as_view()),
 ]

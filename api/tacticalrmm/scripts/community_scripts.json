@@ -175,8 +175,26 @@
     "name": "Screenconnect - Get GUID for client",
     "description": "Returns Screenconnect GUID for client - Use with Custom Fields for later use. ",
     "args": [
-      "-serviceName {{client.ScreenConnectService}}"
+      "{{client.ScreenConnectService}}"
     ],
+    "shell": "powershell",
+    "category": "TRMM (Win):Collectors"
+  },
+  {
+    "guid": "9cfdfe8f-82bf-4081-a59f-576d694f4649",
+    "filename": "Win_Teamviewer_Get_ID.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "TeamViewer - Get ClientID for client",
+    "description": "Returns Teamviwer ClientID for client - Use with Custom Fields for later use. ",
+    "shell": "powershell",
+    "category": "TRMM (Win):Collectors"
+  },
+  {
+    "guid": "e43081d4-6f71-4ce3-881a-22da749f7a57",
+    "filename": "Win_AnyDesk_Get_Anynet_ID.ps1",
+    "submittedBy": "https://github.com/meuchels",
+    "name": "AnyDesk - Get AnyNetID for client",
+    "description": "Returns AnyNetID for client - Use with Custom Fields for later use. ",
     "shell": "powershell",
     "category": "TRMM (Win):Collectors"
   },
@@ -227,6 +245,30 @@
     "category": "TRMM (Win):3rd Party Software"
   },
   {
+    "guid": "907652a5-9ec1-4759-9871-a7743f805ff2",
+    "filename": "Win_Software_Uninstall.ps1",
+    "submittedBy": "https://github.com/subzdev",
+    "name": "Software Uninstaller - list, find, and uninstall most software",
+    "description": "Allows listing, finding and uninstalling most software on Windows. There will be a best effort to uninstall silently if the silent uninstall string is not provided.",
+    "shell": "powershell",
+    "category": "TRMM (Win):3rd Party Software",
+    "default_timeout": "600"
+  },
+  {
+    "guid": "64c3b1a8-c85f-4800-85a3-485f78a2d9ad",
+    "filename": "Win_Bitdefender_GravityZone_Install.ps1",
+    "submittedBy": "https://github.com/jhtechIL/",
+    "name": "BitDefender Gravity Zone Install",
+    "description": "Installs BitDefender Gravity Zone, requires client custom field setup. See script comments for details",
+    "args": [
+      "-url {{client.bdurl}}",
+      "-exe {{client.bdexe}}"
+    ],
+    "default_timeout": "2500",
+    "shell": "powershell",
+    "category": "TRMM (Win):3rd Party Software"
+  },
+  {
     "guid": "da51111c-aff6-4d87-9d76-0608e1f67fe5",
     "filename": "Win_Defender_Enable.ps1",
     "submittedBy": "https://github.com/dinger1986",
@@ -252,6 +294,16 @@
     "name": "RDP - Enable",
     "description": "Enables RDP",
     "shell": "cmd",
+    "category": "TRMM (Win):Windows Features"
+  },
+  {
+    "guid": "0afd8d00-b95b-4318-8d07-0b9bc4424287",
+    "filename": "Win_Feature_NET35_Enable.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Windows Feature - Enable .NET 3.5",
+    "description": "Enables the Windows .NET 3.5 Framework in Turn Features on and off",
+    "shell": "powershell",
+    "default_timeout": "300",
     "category": "TRMM (Win):Windows Features"
   },
   {
@@ -368,14 +420,14 @@
     "category": "TRMM (Win):Other"
   },
   {
-    "guid": "5615aa90-0272-427b-8acf-0ca019612501",
-    "filename": "Win_Chocolatey_Update_Installed.bat",
+    "guid": "6c78eb04-57ae-43b0-98ed-cbd3ef9e2f80",
+    "filename": "Win_Chocolatey_Manage_Apps_Bulk.ps1",
     "submittedBy": "https://github.com/silversword411",
-    "name": "Update Installed Apps",
-    "description": "Update all apps that were installed using Chocolatey.",
-    "shell": "cmd",
+    "name": "Chocolatey - Install, Uninstall and Upgrade Software",
+    "description": "This script installs, uninstalls and updates software using Chocolatey with logic to slow tasks to minimize hitting community limits. Mode install/uninstall/upgrade Hosts x",
+    "shell": "powershell",
     "category": "TRMM (Win):3rd Party Software>Chocolatey",
-    "default_timeout": "3600"
+    "default_timeout": "600"
   },
   {
     "guid": "fff8024d-d72e-4457-84fa-6c780f69a16f",
@@ -451,6 +503,16 @@
     "category": "TRMM (Win):Updates"
   },
   {
+    "guid": "93038ae0-58ce-433e-a3b9-bc99ad1ea79a",
+    "filename": "Win_Services_AutomaticStartup_Running.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Ensure all services with startup type Automatic are running",
+    "description": "Gets a list of all service with startup type of Automatic but aren't running and tries to start them",
+    "shell": "powershell",
+    "default_timeout": "300",
+    "category": "TRMM (Win):Updates"
+  },
+  {
     "guid": "e09895d5-ca13-44a2-a38c-6e77c740f0e8",
     "filename": "Win_ScreenConnectAIO.ps1",
     "submittedBy": "https://github.com/bradhawkins85",
@@ -508,6 +570,16 @@
     "default_timeout": "90"
   },
   {
+    "guid": "7c0c7e37-60ff-462f-9c34-b5cd4c4796a7",
+    "filename": "Win_Wifi_SSID_and_Password_Retrieval.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Network Wireless - Retrieve Saved passwords",
+    "description": "Returns all saved wifi passwords stored on the computer",
+    "shell": "powershell",
+    "category": "TRMM (Win):Network",
+    "default_timeout": "90"
+  },
+  {
     "guid": "abe78170-7cf9-435b-9666-c5ef6c11a106",
     "filename": "Win_Network_IPv6_Disable.ps1",
     "submittedBy": "https://github.com/silversword411",
@@ -523,6 +595,16 @@
     "submittedBy": "https://github.com/silversword411",
     "name": "Network - Set Primary NIC to DHCP",
     "description": "Enable DHCP on primary adapter",
+    "shell": "cmd",
+    "category": "TRMM (Win):Network",
+    "default_timeout": "90"
+  },
+  {
+    "guid": "5676acca-44e5-46c8-af61-ae795ecb3ef1",
+    "filename": "Win_Network_IP_DHCP_Renew.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Network - Release and Renew IP",
+    "description": "Trigger and release and renew of IP address on all network adapters",
     "shell": "cmd",
     "category": "TRMM (Win):Network",
     "default_timeout": "90"
@@ -556,6 +638,16 @@
     "shell": "powershell",
     "category": "TRMM (Win):Other",
     "default_timeout": "90"
+  },
+  {
+    "guid": "43e65e5f-717a-4b6d-a724-1a86229fcd42",
+    "filename": "Win_Activation_Check.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Windows Activation check",
+    "description": "Checks to see if windows is activated and returns status",
+    "shell": "powershell",
+    "category": "TRMM (Win):Other",
+    "default_timeout": "120"
   },
   {
     "guid": "83f6c6ea-6120-4fd3-bec8-d3abc505dcdf",

@@ -31,6 +31,7 @@ class UserSerializer(ModelSerializer):
             "email",
             "is_active",
             "last_login",
+            "last_login_ip",
             "role",
         ]
 
@@ -54,6 +55,12 @@ class TOTPSetupSerializer(ModelSerializer):
 
 
 class RoleSerializer(ModelSerializer):
+    class Meta:
+        model = Role
+        fields = "__all__"
+
+
+class RoleAuditSerializer(ModelSerializer):
     class Meta:
         model = Role
         fields = "__all__"

@@ -1,26 +1,21 @@
 import asyncio
 import datetime as dt
 import random
-import tempfile
-import json
-import subprocess
 import urllib.parse
 from time import sleep
 from typing import Union
 
+from alerts.models import Alert
+from core.models import CodeSignToken, CoreSettings
 from django.conf import settings
 from django.utils import timezone as djangotime
-from loguru import logger
+from logs.models import DebugLog, PendingAction
 from packaging import version as pyver
-
-from agents.models import Agent
-from core.models import CodeSignToken, CoreSettings
-from logs.models import PendingAction
 from scripts.models import Script
 from tacticalrmm.celery import app
 from tacticalrmm.utils import run_nats_api_cmd
 
-logger.configure(**settings.LOG_CONFIG)
+from agents.models import Agent
 
 
 def agent_update(pk: int, codesigntoken: str = None, force: bool = False) -> str:
@@ -33,8 +28,10 @@ def agent_update(pk: int, codesigntoken: str = None, force: bool = False) -> str
 
     # skip if we can't determine the arch
     if agent.arch is None:
-        logger.warning(
-            f"Unable to determine arch on {agent.hostname}. Skipping agent update."
+        DebugLog.warning(
+            agent=agent,
+            log_type="agent_issues",
+            message=f"Unable to determine arch on {agent.hostname}({agent.pk}). Skipping agent update.",
         )
         return "noarch"
 
@@ -81,7 +78,7 @@ def agent_update(pk: int, codesigntoken: str = None, force: bool = False) -> str
 @app.task
 def force_code_sign(pks: list[int]) -> None:
     try:
-        token = CodeSignToken.objects.first().token
+        token = CodeSignToken.objects.first().tokenv  # type:ignore
     except:
         return
 
@@ -96,7 +93,7 @@ def force_code_sign(pks: list[int]) -> None:
 @app.task
 def send_agent_update_task(pks: list[int]) -> None:
     try:
-        codesigntoken = CodeSignToken.objects.first().token
+        codesigntoken = CodeSignToken.objects.first().token  # type:ignore
     except:
         codesigntoken = None
 
@@ -111,11 +108,11 @@ def send_agent_update_task(pks: list[int]) -> None:
 @app.task
 def auto_self_agent_update_task() -> None:
     core = CoreSettings.objects.first()
-    if not core.agent_auto_update:
+    if not core.agent_auto_update:  # type:ignore
         return
 
     try:
-        codesigntoken = CodeSignToken.objects.first().token
+        codesigntoken = CodeSignToken.objects.first().token  # type:ignore
     except:
         codesigntoken = None
 
@@ -235,14 +232,24 @@ def run_script_email_results_task(
     nats_timeout: int,
     emails: list[str],
     args: list[str] = [],
+    history_pk: int = 0,
 ):
     agent = Agent.objects.get(pk=agentpk)
     script = Script.objects.get(pk=scriptpk)
     r = agent.run_script(
-        scriptpk=script.pk, args=args, full=True, timeout=nats_timeout, wait=True
+        scriptpk=script.pk,
+        args=args,
+        full=True,
+        timeout=nats_timeout,
+        wait=True,
+        history_pk=history_pk,
     )
     if r == "timeout":
-        logger.error(f"{agent.hostname} timed out running script.")
+        DebugLog.error(
+            agent=agent,
+            log_type="scripting",
+            message=f"{agent.hostname}({agent.pk}) timed out running script.",
+        )
         return
 
     CORE = CoreSettings.objects.first()
@@ -258,28 +265,32 @@ def run_script_email_results_task(
 
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = CORE.smtp_from_email
+    msg["From"] = CORE.smtp_from_email  # type:ignore
 
     if emails:
         msg["To"] = ", ".join(emails)
     else:
-        msg["To"] = ", ".join(CORE.email_alert_recipients)
+        msg["To"] = ", ".join(CORE.email_alert_recipients)  # type:ignore
 
     msg.set_content(body)
 
     try:
-        with smtplib.SMTP(CORE.smtp_host, CORE.smtp_port, timeout=20) as server:
-            if CORE.smtp_requires_auth:
+        with smtplib.SMTP(
+            CORE.smtp_host, CORE.smtp_port, timeout=20  # type:ignore
+        ) as server:  # type:ignore
+            if CORE.smtp_requires_auth:  # type:ignore
                 server.ehlo()
                 server.starttls()
-                server.login(CORE.smtp_host_user, CORE.smtp_host_password)
+                server.login(
+                    CORE.smtp_host_user, CORE.smtp_host_password  # type:ignore
+                )  # type:ignore
                 server.send_message(msg)
                 server.quit()
             else:
                 server.send_message(msg)
                 server.quit()
     except Exception as e:
-        logger.error(e)
+        DebugLog.error(message=e)
 
 
 @app.task
@@ -311,15 +322,6 @@ def clear_faults_task(older_than_days: int) -> None:
 
 
 @app.task
-def monitor_agents_task() -> None:
-    agents = Agent.objects.only(
-        "pk", "agent_id", "last_seen", "overdue_time", "offline_time"
-    )
-    ids = [i.agent_id for i in agents if i.status != "online"]
-    run_nats_api_cmd("monitor", ids)
-
-
-@app.task
 def get_wmi_task() -> None:
     agents = Agent.objects.only(
         "pk", "agent_id", "last_seen", "overdue_time", "offline_time"
@@ -330,18 +332,62 @@ def get_wmi_task() -> None:
 
 @app.task
 def agent_checkin_task() -> None:
-    db = settings.DATABASES["default"]
-    config = {
-        "key": settings.SECRET_KEY,
-        "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
-        "user": db["USER"],
-        "pass": db["PASSWORD"],
-        "host": db["HOST"],
-        "port": int(db["PORT"]),
-        "dbname": db["NAME"],
-    }
-    with tempfile.NamedTemporaryFile() as fp:
-        with open(fp.name, "w") as f:
-            json.dump(config, f)
-        cmd = ["/usr/local/bin/nats-api", "-c", fp.name, "-m", "checkin"]
-        subprocess.run(cmd, timeout=30)
+    run_nats_api_cmd("checkin", timeout=30)
+
+
+@app.task
+def agent_getinfo_task() -> None:
+    run_nats_api_cmd("agentinfo", timeout=30)
+
+
+@app.task
+def prune_agent_history(older_than_days: int) -> str:
+    from .models import AgentHistory
+
+    AgentHistory.objects.filter(
+        time__lt=djangotime.now() - djangotime.timedelta(days=older_than_days)
+    ).delete()
+
+    return "ok"
+
+
+@app.task
+def handle_agents_task() -> None:
+    q = Agent.objects.prefetch_related("pendingactions", "autotasks").only(
+        "pk", "agent_id", "version", "last_seen", "overdue_time", "offline_time"
+    )
+    agents = [
+        i
+        for i in q
+        if pyver.parse(i.version) >= pyver.parse("1.6.0") and i.status == "online"
+    ]
+    for agent in agents:
+        # change agent update pending status to completed if agent has just updated
+        if (
+            pyver.parse(agent.version) == pyver.parse(settings.LATEST_AGENT_VER)
+            and agent.pendingactions.filter(
+                action_type="agentupdate", status="pending"
+            ).exists()
+        ):
+            agent.pendingactions.filter(
+                action_type="agentupdate", status="pending"
+            ).update(status="completed")
+
+        # sync scheduled tasks
+        if agent.autotasks.exclude(sync_status="synced").exists():  # type: ignore
+            tasks = agent.autotasks.exclude(sync_status="synced")  # type: ignore
+
+            for task in tasks:
+                if task.sync_status == "pendingdeletion":
+                    task.delete_task_on_agent()
+                elif task.sync_status == "initial":
+                    task.modify_task_on_agent()
+                elif task.sync_status == "notsynced":
+                    task.create_task_on_agent()
+
+        # handles any alerting actions
+        if Alert.objects.filter(agent=agent, resolved=False).exists():
+            try:
+                Alert.handle_alert_resolve(agent)
+            except:
+                continue

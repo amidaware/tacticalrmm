@@ -1,12 +1,10 @@
 import base64
 import re
-from typing import List, Optional
+from typing import List
 
-from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from loguru import logger
-
+from django.db.models.fields import CharField, TextField
 from logs.models import BaseAuditModel
 from tacticalrmm.utils import replace_db_values
 
@@ -21,13 +19,11 @@ SCRIPT_TYPES = [
     ("builtin", "Built In"),
 ]
 
-logger.configure(**settings.LOG_CONFIG)
-
 
 class Script(BaseAuditModel):
-    guid = name = models.CharField(max_length=64, null=True, blank=True)
+    guid = models.CharField(max_length=64, null=True, blank=True)
     name = models.CharField(max_length=255)
-    description = models.TextField(null=True, blank=True)
+    description = models.TextField(null=True, blank=True, default="")
     filename = models.CharField(max_length=255)  # deprecated
     shell = models.CharField(
         max_length=100, choices=SCRIPT_SHELLS, default="powershell"
@@ -43,19 +39,43 @@ class Script(BaseAuditModel):
     )
     favorite = models.BooleanField(default=False)
     category = models.CharField(max_length=100, null=True, blank=True)
-    code_base64 = models.TextField(null=True, blank=True)
+    code_base64 = models.TextField(null=True, blank=True, default="")
     default_timeout = models.PositiveIntegerField(default=90)
 
     def __str__(self):
         return self.name
 
     @property
-    def code(self):
+    def code_no_snippets(self):
         if self.code_base64:
-            base64_bytes = self.code_base64.encode("ascii", "ignore")
-            return base64.b64decode(base64_bytes).decode("ascii", "ignore")
+            return base64.b64decode(self.code_base64.encode("ascii", "ignore")).decode(
+                "ascii", "ignore"
+            )
         else:
             return ""
+
+    @property
+    def code(self):
+        return self.replace_with_snippets(self.code_no_snippets)
+
+    @classmethod
+    def replace_with_snippets(cls, code):
+        # check if snippet has been added to script body
+        matches = re.finditer(r"{{(.*)}}", code)
+        if matches:
+            replaced_code = code
+            for snippet in matches:
+                snippet_name = snippet.group(1).strip()
+                if ScriptSnippet.objects.filter(name=snippet_name).exists():
+                    value = ScriptSnippet.objects.get(name=snippet_name).code
+                else:
+                    value = ""
+
+                replaced_code = re.sub(snippet.group(), value, replaced_code)
+
+            return replaced_code
+        else:
+            return code
 
     @classmethod
     def load_community_scripts(cls):
@@ -97,20 +117,20 @@ class Script(BaseAuditModel):
 
                 if s.exists():
                     i = s.first()
-                    i.name = script["name"]
-                    i.description = script["description"]
-                    i.category = category
-                    i.shell = script["shell"]
-                    i.default_timeout = default_timeout
-                    i.args = args
+                    i.name = script["name"]  # type: ignore
+                    i.description = script["description"]  # type: ignore
+                    i.category = category  # type: ignore
+                    i.shell = script["shell"]  # type: ignore
+                    i.default_timeout = default_timeout  # type: ignore
+                    i.args = args  # type: ignore
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
                         script_bytes = (
                             f.read().decode("utf-8").encode("ascii", "ignore")
                         )
-                        i.code_base64 = base64.b64encode(script_bytes).decode("ascii")
+                        i.code_base64 = base64.b64encode(script_bytes).decode("ascii")  # type: ignore
 
-                    i.save(
+                    i.save(  # type: ignore
                         update_fields=[
                             "name",
                             "description",
@@ -175,7 +195,6 @@ class Script(BaseAuditModel):
                             guid=script["guid"],
                             name=script["name"],
                             description=script["description"],
-                            filename=script["filename"],
                             shell=script["shell"],
                             script_type="builtin",
                             category=category,
@@ -209,7 +228,7 @@ class Script(BaseAuditModel):
             if match:
                 # only get the match between the () in regex
                 string = match.group(1)
-                value = replace_db_values(string=string, agent=agent, shell=shell)
+                value = replace_db_values(string=string, instance=agent, shell=shell)
 
                 if value:
                     temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))
@@ -221,3 +240,13 @@ class Script(BaseAuditModel):
                 temp_args.append(arg)
 
         return temp_args
+
+
+class ScriptSnippet(models.Model):
+    name = CharField(max_length=40, unique=True)
+    desc = CharField(max_length=50, blank=True, default="")
+    code = TextField(default="")
+    shell = CharField(max_length=15, choices=SCRIPT_SHELLS, default="powershell")
+
+    def __str__(self):
+        return self.name

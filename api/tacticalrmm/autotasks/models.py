@@ -413,9 +413,9 @@ class AutomatedTask(BaseAuditModel):
         agent_field = self.custom_field.get_or_create_field_value(self.agent)
 
         value = (
-            self.stdout
+            self.stdout.strip()
             if self.collector_all_output
-            else self.stdout.split("\n")[-1].strip()
+            else self.stdout.strip().split("\n")[-1].strip()
         )
         agent_field.save_to_field(value)
 

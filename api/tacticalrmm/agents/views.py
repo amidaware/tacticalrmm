@@ -644,7 +644,7 @@ def run_script(request):
         else:
             return notify_error("Custom Field was invalid")
 
-        value = r if request.data["save_all_output"] else r.split("\n")[-1].strip()
+        value = r.strip() if request.data["save_all_output"] else r.strip().split("\n")[-1].strip()
 
         field.save_to_field(value)
         return Response(r)

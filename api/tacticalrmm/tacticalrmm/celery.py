@@ -37,7 +37,7 @@ app.conf.beat_schedule = {
     },
     "handle-agents": {
         "task": "agents.tasks.handle_agents_task",
-        "schedule": crontab(minute="*/3"),
+        "schedule": crontab(minute="*"),
     },
     "get-agentinfo": {
         "task": "agents.tasks.agent_getinfo_task",

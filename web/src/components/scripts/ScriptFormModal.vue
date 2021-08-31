@@ -150,7 +150,7 @@ export default {
     // script form logic
     const script = props.script
       ? ref(Object.assign({}, props.script))
-      : ref({ shell: "powershell", default_timeout: 90 });
+      : ref({ shell: "powershell", default_timeout: 90, args: [] });
 
     if (props.clone) script.value.name = `(Copy) ${script.value.name}`;
     const code = ref("");

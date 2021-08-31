@@ -265,7 +265,7 @@ def run_nats_api_cmd(mode: str, ids: list[str] = [], timeout: int = 30) -> None:
             "dbname": db["NAME"],
         }
 
-    with tempfile.NamedTemporaryFile() as fp:
+    with tempfile.NamedTemporaryFile(dir="/opt/tactical/tmp" if settings.DOCKER_BUILD else None) as fp:
         with open(fp.name, "w") as f:
             json.dump(config, f)
 

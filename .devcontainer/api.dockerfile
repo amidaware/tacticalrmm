@@ -13,12 +13,17 @@ EXPOSE 8000 8383 8005
 RUN groupadd -g 1000 tactical && \
     useradd -u 1000 -g 1000 tactical
 
-# Copy Dev python reqs
-COPY ./requirements.txt /
+# Copy nats-api file
+COPY natsapi/bin/nats-api /usr/local/bin/
+RUN chmod +x /usr/local/bin/nats-api
 
-# Copy Docker Entrypoint
-COPY ./entrypoint.sh /
+# Copy dev python reqs
+COPY .devcontainer/requirements.txt  /
+
+# Copy docker entrypoint.sh
+COPY .devcontainer/entrypoint.sh /
 RUN chmod +x /entrypoint.sh
+
 ENTRYPOINT ["/entrypoint.sh"]
 
 WORKDIR ${WORKSPACE_DIR}/api/tacticalrmm

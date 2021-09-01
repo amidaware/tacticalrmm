@@ -479,7 +479,8 @@ export default {
           if (filter === "actionspending") actions = true;
           else if (filter === "checksfailing") checks = true;
           else if (filter === "rebootneeded") reboot = true;
-          else if (filter === "online" || filter === "offline" || filter === "expired") availability = filter;
+          else if (filter === "online" || filter === "offline" || filter === "expired" || filter === "overdue")
+            availability = filter;
         } else {
           search = param + "";
         }
@@ -492,7 +493,8 @@ export default {
           if (actions && row.pending_actions_count === 0) return false;
           if (reboot && !row.needs_reboot) return false;
           if (availability === "online" && row.status !== "online") return false;
-          else if (availability === "offline" && row.status !== "overdue") return false;
+          else if (availability === "offline" && row.status !== "offline") return false;
+          else if (availability === "overdue" && row.status !== "overdue") return false;
           else if (availability === "expired") {
             let now = new Date();
             let lastSeen = date.extractDate(row.last_seen, "MM DD YYYY HH:mm");

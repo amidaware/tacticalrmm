@@ -339,6 +339,16 @@
 
                           <q-item>
                             <q-item-section side>
+                              <q-radio val="overdue" v-model="filterAvailability" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label>Show Overdue Only</q-item-label>
+                            </q-item-section>
+                          </q-item>
+
+                          <q-item>
+                            <q-item-section side>
                               <q-radio val="offline_30days" v-model="filterAvailability" />
                             </q-item-section>
 
@@ -809,7 +819,10 @@ export default {
       // clear search if availability changes to all
       if (
         this.filterAvailability === "all" &&
-        (this.search.includes("is:online") || this.search.includes("is:offline") || this.search.includes("is:expired"))
+        (this.search.includes("is:online") ||
+          this.search.includes("is:offline") ||
+          this.search.includes("is:expired") ||
+          this.search.includes("is:overdue"))
       )
         this.clearFilter();
 
@@ -841,6 +854,8 @@ export default {
           filterText += "is:offline ";
         } else if (this.filterAvailability === "offline_30days") {
           filterText += "is:expired ";
+        } else if (this.filterAvailability === "overdue") {
+          filterText += "is:overdue ";
         }
       }
 

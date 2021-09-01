@@ -128,7 +128,7 @@ class TestScript(APIView):
         agent = get_object_or_404(Agent, pk=request.data["agent"])
 
         parsed_args = Script.parse_script_args(
-            self, request.data["shell"], request.data["args"]
+            agent, request.data["shell"], request.data["args"]
         )
 
         data = {

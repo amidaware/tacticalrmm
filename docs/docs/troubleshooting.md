@@ -1,5 +1,16 @@
 # Troubleshooting
 
+#### Problems after new install
+
+In the very unlikely event you have issues after install please wipe the box and install again (following all the steps including downloading the install script but not running it) use the following command which will log the install progress and if you continue to have issues will assist with support of the installation.
+
+```bash
+bash -x install.sh 2>&1 | tee install.logt
+```
+
+!!!note
+    Logging of installs isn’t desirable as it logs extremely sensitive information which is why this isn’t done by default! **Do not** post the raw log publicly only provide it if requested and then by dm only. 
+
 #### "Bad credentials" error when trying to login to the Web UI
 
 If you are sure you are using the correct credentials and still getting a "bad credentials" error, open your browser's dev tools (ctrl + shift + j on chrome) and check the Console tab to see the real error.

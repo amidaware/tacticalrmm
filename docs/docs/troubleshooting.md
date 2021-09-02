@@ -9,7 +9,7 @@ bash -x install.sh 2>&1 | tee install.log
 ```
 
 !!!note
-    Logging of installs isn’t desirable as it logs extremely sensitive information which is why this isn’t done by default! **Do not** post the raw log publicly only provide it if requested and then by dm only. 
+    Logging of installs isn’t desirable as it logs extremely sensitive information which is why this isn’t done by default! **Do not** post the raw log publicly only provide it if requested and then by dm only. Authorized users in Discord are: @BurningTimes#1938 @sadnub#6992 @dinger1986#1734 @silversword#9652
 
 #### "Bad credentials" error when trying to login to the Web UI
 

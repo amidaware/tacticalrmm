@@ -83,14 +83,14 @@ const columns = [
     sortable: true,
     format: (val, row) => formatTableColumnText(val),
   },
-  {
+  /* {
     name: "status",
     label: "Status",
     field: "status",
     align: "left",
     sortable: true,
     format: (val, row) => formatTableColumnText(val),
-  },
+  }, */
   { name: "command", label: "Script/Command", field: "command", align: "left", sortable: true },
   { name: "username", label: "Initiated By", field: "username", align: "left", sortable: true },
   { name: "output", label: "Output", field: "output", align: "left", sortable: true },

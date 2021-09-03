@@ -13,9 +13,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from tacticalrmm.utils import notify_error
 
-from .models import Role, User
-from .permissions import AccountsPerms, RolesPerms
+from .models import APIKey, Role, User
+from .permissions import APIKeyPerms, AccountsPerms, RolesPerms
 from .serializers import (
+    APIKeySerializer,
     RoleSerializer,
     TOTPSetupSerializer,
     UserSerializer,
@@ -252,3 +253,42 @@ class GetUpdateDeleteRole(APIView):
         role = get_object_or_404(Role, pk=pk)
         role.delete()
         return Response("ok")
+
+class GetAddAPIKeys(APIView):
+    permission_classes = [IsAuthenticated, APIKeyPerms]
+
+    def get(self, request):
+        apikeys = APIKey.objects.all()
+        return Response(APIKeySerializer(apikeys, many=True).data)
+
+    def post(self, request):
+        # generate a random API Key
+        # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits/23728630#23728630
+        import random
+        import string
+        request.data["key"] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(32))
+
+        serializer = APIKeySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        obj = serializer.save()
+        return Response("The API Key was added")        
+
+class GetUpdateDeleteAPIKey(APIView):
+    permission_classes = [IsAuthenticated, APIKeyPerms]
+
+    def put(self, request, pk):
+        apikey = get_object_or_404(APIKey, pk=pk)
+
+        # remove API key is present in request data
+        if "key" in request.data.keys():
+            request.data.pop("key") 
+
+        serializer = APIKeySerializer(instance=apikey, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response("The API Key was edited")
+
+    def delete(self, request, pk):
+        apikey = get_object_or_404(APIKey, pk=pk)
+        apikey.delete()
+        return Response("The API Key was deleted")                

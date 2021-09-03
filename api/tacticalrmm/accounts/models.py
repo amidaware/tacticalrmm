@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models.fields import CharField, DateTimeField
 
 from logs.models import BaseAuditModel
 
@@ -24,6 +25,7 @@ CLIENT_TREE_SORT_CHOICES = [
 
 class User(AbstractUser, BaseAuditModel):
     is_active = models.BooleanField(default=True)
+    block_dashboard_login = models.BooleanField(default=False)
     totp_key = models.CharField(max_length=50, null=True, blank=True)
     dark_mode = models.BooleanField(default=True)
     show_community_scripts = models.BooleanField(default=True)
@@ -138,6 +140,9 @@ class Role(BaseAuditModel):
     can_manage_accounts = models.BooleanField(default=False)
     can_manage_roles = models.BooleanField(default=False)
 
+    # authentication
+    can_manage_api_keys = models.BooleanField(default=False)
+
     def __str__(self):
         return self.name
 
@@ -186,4 +191,20 @@ class Role(BaseAuditModel):
             "can_manage_winupdates",
             "can_manage_accounts",
             "can_manage_roles",
+            "can_manage_api_keys"
         ]
+
+class APIKey(BaseAuditModel):
+    name = CharField(unique=True, max_length=25)
+    key = CharField(unique=True, blank=True, max_length=48)
+    expiration = DateTimeField(blank=True, null=True, default=None)
+    user = models.ForeignKey(
+        "accounts.User",
+        related_name="api_key",
+        on_delete=models.CASCADE,
+    )
+
+    @staticmethod
+    def serialize(apikey):
+        from .serializers import APIKeyAuditSerializer
+        return APIKeyAuditSerializer(apikey).data

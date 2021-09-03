@@ -1,7 +1,7 @@
 import pyotp
-from rest_framework.serializers import ModelSerializer, SerializerMethodField
+from rest_framework.serializers import ModelSerializer, SerializerMethodField, ReadOnlyField
 
-from .models import User, Role
+from .models import APIKey, User, Role
 
 
 class UserUISerializer(ModelSerializer):
@@ -64,3 +64,17 @@ class RoleAuditSerializer(ModelSerializer):
     class Meta:
         model = Role
         fields = "__all__"
+
+class APIKeySerializer(ModelSerializer):
+    class Meta:
+        model = APIKey
+        fields = "__all__"  
+class APIKeyAuditSerializer(ModelSerializer):
+
+    user = ReadOnlyField(source="user.username")
+    class Meta:
+        model = APIKey
+        fields = [
+            "name",
+            "expiration"
+        ]

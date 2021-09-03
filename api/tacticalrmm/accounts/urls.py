@@ -12,4 +12,6 @@ urlpatterns = [
     path("permslist/", views.PermsList.as_view()),
     path("roles/", views.GetAddRoles.as_view()),
     path("<int:pk>/role/", views.GetUpdateDeleteRole.as_view()),
+    path("apikeys/", views.GetAddAPIKeys.as_view()),
+    path("apikeys/<int:pk>/", views.GetUpdateDeleteAPIKey.as_view()),
 ]

@@ -68,7 +68,7 @@
         <q-card-section class="row">
           <div class="col-2">Active:</div>
           <div class="col-10">
-            <q-toggle v-model="localUser.is_active" color="green" :disable="localUser.username === logged_in_user" />
+            <q-checkbox v-model="localUser.is_active" :disable="localUser.username === logged_in_user" />
           </div>
         </q-card-section>
         <q-card-section class="row">
@@ -87,6 +87,14 @@
               :options="roles"
               class="col-10"
           /></template>
+        </q-card-section>
+        <q-card-section>
+          <q-checkbox
+            label="Deny Dashboard Logins"
+            left-label
+            v-model="localUser.deny_dashboard_login"
+            :disable="localUser.username === logged_in_user"
+          />
         </q-card-section>
         <q-card-section class="row items-center">
           <q-btn :disable="!disableSave" label="Save" color="primary" type="submit" />
@@ -109,6 +117,7 @@ export default {
     return {
       localUser: {
         is_active: true,
+        deny_dashboard_login: false,
       },
       roles: [],
       isPwd: true,
@@ -146,6 +155,7 @@ export default {
         // dont allow updating is_active if username is same as logged in user
         if (this.localUser.username === this.logged_in_user) {
           delete this.localUser.is_active;
+          delete this.localUser.deny_dashboard_login;
         }
 
         this.$axios

@@ -106,6 +106,10 @@ class Agent(BaseAuditModel):
             self.generate_checks_from_policies()
             self.generate_tasks_from_policies()
 
+        # calculate alert template for new agents
+        if not old_agent:
+            self.set_alert_template()
+
     def __str__(self):
         return self.hostname
 

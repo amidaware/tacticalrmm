@@ -127,8 +127,10 @@ class GetAddUsers(APIView):
                 f"ERROR: User {request.data['username']} already exists!"
             )
 
-        user.first_name = request.data["first_name"]
-        user.last_name = request.data["last_name"]
+        if "first_name" in request.data.keys():
+            user.first_name = request.data["first_name"]
+        if "last_name" in request.data.keys():
+            user.last_name = request.data["last_name"]
         if "role" in request.data.keys() and isinstance(request.data["role"], int):
             role = get_object_or_404(Role, pk=request.data["role"])
             user.role = role

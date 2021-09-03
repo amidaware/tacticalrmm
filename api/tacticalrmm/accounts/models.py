@@ -191,8 +191,9 @@ class Role(BaseAuditModel):
             "can_manage_winupdates",
             "can_manage_accounts",
             "can_manage_roles",
-            "can_manage_api_keys"
+            "can_manage_api_keys",
         ]
+
 
 class APIKey(BaseAuditModel):
     name = CharField(unique=True, max_length=25)
@@ -207,4 +208,5 @@ class APIKey(BaseAuditModel):
     @staticmethod
     def serialize(apikey):
         from .serializers import APIKeyAuditSerializer
+
         return APIKeyAuditSerializer(apikey).data

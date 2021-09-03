@@ -1,6 +1,7 @@
 from rest_framework import permissions
 from tacticalrmm.auth import APIAuthentication
 
+
 def _has_perm(request, perm):
     if request.user.is_superuser or (
         request.user.role and getattr(request.user.role, "is_superuser")

@@ -295,6 +295,7 @@ class TestUserAction(TacticalTestCase):
 
         self.check_not_authenticated("patch", url)
 
+
 class TestAPIKeyViews(TacticalTestCase):
     def setUp(self):
         self.setup_coresettings()
@@ -315,11 +316,7 @@ class TestAPIKeyViews(TacticalTestCase):
         url = "/accounts/apikeys/"
 
         user = baker.make("accounts.User")
-        data = {
-            "name": "Name",
-            "user": user.id,
-            "expiration": None
-        }
+        data = {"name": "Name", "user": user.id, "expiration": None}
 
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -387,11 +384,14 @@ class TestTOTPSetup(TacticalTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data, "totp token already set")
 
+
 class TestAPIAuthentication(TacticalTestCase):
     def setUp(self):
         # create User and associate to API Key
         self.user = User.objects.create(username="api_user", is_superuser=True)
-        self.api_key = APIKey.objects.create(name="Test Token", key="123456", user=self.user)
+        self.api_key = APIKey.objects.create(
+            name="Test Token", key="123456", user=self.user
+        )
 
         self.client_setup()
 
@@ -401,11 +401,11 @@ class TestAPIAuthentication(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
         # invalid api key in header should return code 400
-        self.client.credentials(HTTP_X_API_KEY='000000')
+        self.client.credentials(HTTP_X_API_KEY="000000")
         r = self.client.get(url, format="json")
         self.assertEqual(r.status_code, 401)
 
         # valid api key in header should return code 200
-        self.client.credentials(HTTP_X_API_KEY='123456')
+        self.client.credentials(HTTP_X_API_KEY="123456")
         r = self.client.get(url, format="json")
         self.assertEqual(r.status_code, 200)

@@ -18,6 +18,7 @@ class RolesPerms(permissions.BasePermission):
 
         return _has_perm(r, "can_manage_roles")
 
+
 class APIKeyPerms(permissions.BasePermission):
     def has_permission(self, r, view):
 

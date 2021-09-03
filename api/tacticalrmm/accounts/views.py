@@ -257,6 +257,7 @@ class GetUpdateDeleteRole(APIView):
         role.delete()
         return Response("ok")
 
+
 class GetAddAPIKeys(APIView):
     permission_classes = [IsAuthenticated, APIKeyPerms]
 
@@ -269,12 +270,17 @@ class GetAddAPIKeys(APIView):
         # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits/23728630#23728630
         import random
         import string
-        request.data["key"] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(32))
+
+        request.data["key"] = "".join(
+            random.SystemRandom().choice(string.ascii_uppercase + string.digits)
+            for _ in range(32)
+        )
 
         serializer = APIKeySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()
-        return Response("The API Key was added")        
+        return Response("The API Key was added")
+
 
 class GetUpdateDeleteAPIKey(APIView):
     permission_classes = [IsAuthenticated, APIKeyPerms]
@@ -284,7 +290,7 @@ class GetUpdateDeleteAPIKey(APIView):
 
         # remove API key is present in request data
         if "key" in request.data.keys():
-            request.data.pop("key") 
+            request.data.pop("key")
 
         serializer = APIKeySerializer(instance=apikey, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -294,4 +300,4 @@ class GetUpdateDeleteAPIKey(APIView):
     def delete(self, request, pk):
         apikey = get_object_or_404(APIKey, pk=pk)
         apikey.delete()
-        return Response("The API Key was deleted")                
+        return Response("The API Key was deleted")

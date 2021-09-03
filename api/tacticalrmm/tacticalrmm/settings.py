@@ -67,10 +67,11 @@ REST_FRAMEWORK = {
     ),
 }
 
-if not DEBUG:  # type: ignore
-    REST_FRAMEWORK.update(
-        {"DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",)}
-    )
+if not "AZPIPELINE" in os.environ:
+    if not DEBUG:  # type: ignore
+        REST_FRAMEWORK.update(
+            {"DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",)}
+        )
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -221,7 +222,10 @@ if "AZPIPELINE" in os.environ:
     REST_FRAMEWORK = {
         "DATETIME_FORMAT": "%b-%d-%Y - %H:%M",
         "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-        "DEFAULT_AUTHENTICATION_CLASSES": ("knox.auth.TokenAuthentication",),
+        "DEFAULT_AUTHENTICATION_CLASSES": (
+            "knox.auth.TokenAuthentication",
+            "tacticalrmm.auth.APIAuthentication",
+        ),
         "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
     }
 

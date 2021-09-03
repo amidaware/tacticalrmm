@@ -78,24 +78,6 @@ DATABASES = {
     }
 }
 
-REST_FRAMEWORK = {
-    'DATETIME_FORMAT': '%b-%d-%Y - %H:%M',
-
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'knox.auth.TokenAuthentication',
-    ),
-}
-
-if not DEBUG:
-    REST_FRAMEWORK.update({
-        'DEFAULT_RENDERER_CLASSES': (
-            'rest_framework.renderers.JSONRenderer',
-        )
-    })
-
 MESH_USERNAME = '${MESH_USER}'
 MESH_SITE = 'https://${MESH_HOST}'
 MESH_TOKEN_KEY = '${MESH_TOKEN}'

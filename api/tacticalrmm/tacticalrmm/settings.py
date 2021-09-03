@@ -58,6 +58,20 @@ try:
 except ImportError:
     pass
 
+REST_FRAMEWORK = {
+    "DATETIME_FORMAT": "%b-%d-%Y - %H:%M",
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "knox.auth.TokenAuthentication",
+        "tacticalrmm.auth.APIAuthentication",
+    ),
+}
+
+if not DEBUG:  # type: ignore
+    REST_FRAMEWORK.update(
+        {"DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",)}
+    )
+
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",

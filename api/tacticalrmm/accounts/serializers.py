@@ -69,16 +69,16 @@ class RoleAuditSerializer(ModelSerializer):
 
 class APIKeySerializer(ModelSerializer):
 
-    user = ReadOnlyField(source="user.username")
+    username = ReadOnlyField(source="user.username")
     class Meta:
         model = APIKey
         fields = "__all__"  
 class APIKeyAuditSerializer(ModelSerializer):
-    user = ReadOnlyField(source="user.username")
+    username = ReadOnlyField(source="user.username")
     class Meta:
         model = APIKey
         fields = [
             "name",
-            "user",
+            "username",
             "expiration",
         ]

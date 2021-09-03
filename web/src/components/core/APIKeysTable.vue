@@ -54,7 +54,7 @@
             {{ props.row.name }}
           </q-td>
           <q-td>
-            {{ props.row.user }}
+            {{ props.row.username }}
           </q-td>
           <!-- expiration -->
           <q-td>
@@ -92,9 +92,9 @@ const columns = [
     sortable: true,
   },
   {
-    name: "user",
+    name: "username",
     label: "User",
-    field: "user",
+    field: "username",
     align: "left",
     sortable: true,
   },

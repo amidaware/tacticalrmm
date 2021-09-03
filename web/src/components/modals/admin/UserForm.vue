@@ -92,7 +92,7 @@
           <q-checkbox
             label="Deny Dashboard Logins"
             left-label
-            v-model="localUser.deny_dashboard_login"
+            v-model="localUser.block_dashboard_login"
             :disable="localUser.username === logged_in_user"
           />
         </q-card-section>
@@ -117,7 +117,7 @@ export default {
     return {
       localUser: {
         is_active: true,
-        deny_dashboard_login: false,
+        block_dashboard_login: false,
       },
       roles: [],
       isPwd: true,

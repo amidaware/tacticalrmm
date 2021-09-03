@@ -48,6 +48,9 @@ class CheckCreds(KnoxLoginView):
 
         user = serializer.validated_data["user"]
 
+        if user.block_dashboard_login:
+            return Response("bad credentials", status=status.HTTP_400_BAD_REQUEST)
+
         # if totp token not set modify response to notify frontend
         if not user.totp_key:
             login(request, user)

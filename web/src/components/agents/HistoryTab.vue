@@ -43,7 +43,7 @@
           </span>
           <span v-else-if="props.row.type === 'cmd_run'"
             >{{ truncateText(props.row.results, 30) }}
-            <q-tooltip v-if="props.row.results.length >= 30" style="font-size: 12px">
+            <q-tooltip v-if="props.row.results !== null && props.row.results.length >= 30" style="font-size: 12px">
               {{ props.row.results }}
             </q-tooltip>
           </span>

@@ -14,7 +14,15 @@ class Command(BaseCommand):
 
         agents = Agent.objects.all()
         for agent in agents:
-            sw = agent.installedsoftware_set.first().software
+            try:
+                sw = agent.installedsoftware_set.first().software
+            except:
+                self.stdout.write(
+                    self.style.ERROR(
+                        f"Agent {agent.hostname} missing software list. Try manually refreshing it from the web UI from the software tab."
+                    )
+                )
+                continue
             for i in sw:
                 if search in i["name"].lower():
                     self.stdout.write(

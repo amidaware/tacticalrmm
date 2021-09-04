@@ -5,6 +5,8 @@
 # Win 8.1 x64 and Svr 2012 R2 x64 https://download.microsoft.com/download/6/F/5/6F5FF66C-6775-42B0-86C4-47D41F2DA187/Win8.1AndW2K12R2-KB3191564-x64.msu
 # Win 81 x32 https://download.microsoft.com/download/6/F/5/6F5FF66C-6775-42B0-86C4-47D41F2DA187/Win8.1-KB3191564-x86.msu
 
+# See https://github.com/wh1te909/tacticalrmm/blob/develop/scripts_wip/Win_Powershell_Version_Check.ps1 for alert script to warn when this is needed
+
 if ($PSVersionTable.PSVersion.Major -lt 5) {
     Write-Output "Old Version - Need to Upgrade"
     # Download MSU file - EDIT THIS URL

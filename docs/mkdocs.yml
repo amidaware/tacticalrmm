@@ -38,6 +38,7 @@ nav:
       - "Grafana": 3rdparty_grafana.md
       - "TeamViewer": 3rdparty_teamviewer.md
   - Tips n' Tricks: tipsntricks.md
+  - Securing NGINX: securing_nginx.md  
   - Contributing:
       - "Contributing to Docs": contributing.md
       - "Contributing using VSCode": contributing_using_vscode.md

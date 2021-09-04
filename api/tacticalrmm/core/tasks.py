@@ -58,7 +58,9 @@ def core_maintenance_tasks():
 def cache_db_fields_task():
     from agents.models import Agent
 
-    for agent in Agent.objects.all():
+    for agent in Agent.objects.prefetch_related("winupdates", "pendingactions").only(
+        "pending_actions_count", "has_patches_pending", "pk"
+    ):
         agent.pending_actions_count = agent.pendingactions.filter(
             status="pending"
         ).count()

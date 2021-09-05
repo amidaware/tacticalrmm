@@ -36,6 +36,7 @@ AUDIT_ACTION_TYPE_CHOICES = [
     ("execute_script", "Execute Script"),
     ("execute_command", "Execute Command"),
     ("bulk_action", "Bulk Action"),
+    ("url_action", "URL Action"),
 ]
 
 AUDIT_OBJECT_TYPE_CHOICES = [
@@ -52,6 +53,9 @@ AUDIT_OBJECT_TYPE_CHOICES = [
     ("bulk", "Bulk"),
     ("alerttemplate", "Alert Template"),
     ("role", "Role"),
+    ("urlaction", "URL Action"),
+    ("keystore", "Global Key Store"),
+    ("customfield", "Custom Field"),
 ]
 
 STATUS_CHOICES = [
@@ -187,6 +191,21 @@ class AuditLog(models.Model):
             object_type="user",
             action="login",
             message=f"{username} logged in successfully",
+            debug_info=debug_info,
+        )
+
+    @staticmethod
+    def audit_url_action(username, urlaction, instance, debug_info={}):
+
+        name = instance.hostname if hasattr(instance, "hostname") else instance.name
+        classname = type(instance).__name__
+        AuditLog.objects.create(
+            username=username,
+            agent=instance.hostname if classname == "Agent" else None,
+            agent_id=instance.id if classname == "Agent" else None,
+            object_type=classname.lower(),
+            action="url_action",
+            message=f"{username} ran url action: {urlaction.pattern} on {classname}: {name}",
             debug_info=debug_info,
         )
 

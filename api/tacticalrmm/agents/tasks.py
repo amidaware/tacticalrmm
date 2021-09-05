@@ -78,7 +78,7 @@ def agent_update(pk: int, codesigntoken: str = None, force: bool = False) -> str
 @app.task
 def force_code_sign(pks: list[int]) -> None:
     try:
-        token = CodeSignToken.objects.first().tokenv  # type:ignore
+        token = CodeSignToken.objects.first().token  # type:ignore
     except:
         return
 

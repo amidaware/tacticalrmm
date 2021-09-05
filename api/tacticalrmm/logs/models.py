@@ -271,22 +271,30 @@ class DebugLog(models.Model):
         log_type="system_issues",
     ):
         if get_debug_level() in ["info"]:
-            cls(log_level="info", agent=agent, log_type=log_type, message=message)
+            cls.objects.create(
+                log_level="info", agent=agent, log_type=log_type, message=message
+            )
 
     @classmethod
     def warning(cls, message, agent=None, log_type="system_issues"):
         if get_debug_level() in ["info", "warning"]:
-            cls(log_level="warning", agent=agent, log_type=log_type, message=message)
+            cls.objects.create(
+                log_level="warning", agent=agent, log_type=log_type, message=message
+            )
 
     @classmethod
     def error(cls, message, agent=None, log_type="system_issues"):
         if get_debug_level() in ["info", "warning", "error"]:
-            cls(log_level="error", agent=agent, log_type=log_type, message=message)
+            cls.objects.create(
+                log_level="error", agent=agent, log_type=log_type, message=message
+            )
 
     @classmethod
     def critical(cls, message, agent=None, log_type="system_issues"):
         if get_debug_level() in ["info", "warning", "error", "critical"]:
-            cls(log_level="critical", agent=agent, log_type=log_type, message=message)
+            cls.objects.create(
+                log_level="critical", agent=agent, log_type=log_type, message=message
+            )
 
 
 class PendingAction(models.Model):

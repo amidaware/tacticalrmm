@@ -10,9 +10,9 @@
     "test:e2e:ci": "cross-env E2E_TEST=true start-test \"quasar dev\" http-get://localhost:8080 \"cypress run\""
   },
   "dependencies": {
-    "@quasar/extras": "^1.10.11",
+    "@quasar/extras": "^1.10.12",
     "apexcharts": "^3.27.1",
-    "axios": "^0.21.1",
+    "axios": "^0.21.3",
     "dotenv": "^8.6.0",
     "prismjs": "^1.23.0",
     "qrcode.vue": "^3.2.2",

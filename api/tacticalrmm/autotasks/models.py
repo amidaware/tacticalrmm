@@ -197,6 +197,10 @@ class AutomatedTask(BaseAuditModel):
 
     def create_policy_task(self, agent=None, policy=None, assigned_check=None):
 
+        # added to allow new policy tasks to be assigned to check only when the agent check exists already
+        if (self.assigned_check and agent and agent.agentchecks.filter(parent_check=self.assigned_check.id).exists()):
+            assigned_check = agent.agentchecks.get(parent_check=self.assigned_check.id)
+
         # if policy is present, then this task is being copied to another policy
         # if agent is present, then this task is being created on an agent from a policy
         # exit if neither are set or if both are set

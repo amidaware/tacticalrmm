@@ -232,7 +232,7 @@ FIELD_TYPE_CHOICES = (
 MODEL_CHOICES = (("client", "Client"), ("site", "Site"), ("agent", "Agent"))
 
 
-class CustomField(models.Model):
+class CustomField(BaseAuditModel):
 
     order = models.PositiveIntegerField(default=0)
     model = models.CharField(max_length=25, choices=MODEL_CHOICES)
@@ -260,6 +260,12 @@ class CustomField(models.Model):
 
     def __str__(self):
         return self.name
+
+    @staticmethod
+    def serialize(field):
+        from .serializers import CustomFieldSerializer
+
+        return CustomFieldSerializer(field).data
 
     @property
     def default_value(self):
@@ -304,21 +310,33 @@ class CodeSignToken(models.Model):
         return "Code signing token"
 
 
-class GlobalKVStore(models.Model):
+class GlobalKVStore(BaseAuditModel):
     name = models.CharField(max_length=25)
     value = models.TextField()
 
     def __str__(self):
         return self.name
 
+    @staticmethod
+    def serialize(store):
+        from .serializers import KeyStoreSerializer
 
-OPEN_ACTIONS = (("window", "New Window"), ("tab", "New Tab"))
+        return KeyStoreSerializer(store).data
 
 
-class URLAction(models.Model):
+class URLAction(BaseAuditModel):
     name = models.CharField(max_length=25)
     desc = models.CharField(max_length=100, null=True, blank=True)
     pattern = models.TextField()
+
+    def __str__(self):
+        return self.name
+
+    @staticmethod
+    def serialize(action):
+        from .serializers import URLActionSerializer
+
+        return URLActionSerializer(action).data
 
 
 RUN_ON_CHOICES = (

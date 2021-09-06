@@ -15,14 +15,14 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.8.2"
+TRMM_VERSION = "0.8.3"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.144"
+APP_VER = "0.0.145"
 
 # https://github.com/wh1te909/rmmagent
-LATEST_AGENT_VER = "1.6.1"
+LATEST_AGENT_VER = "1.6.2"
 
 MESH_VER = "0.9.16"
 
@@ -30,9 +30,9 @@ NATS_SERVER_VER = "2.3.3"
 
 # for the update script, bump when need to recreate venv or npm install
 PIP_VER = "21"
-NPM_VER = "21"
+NPM_VER = "22"
 
-SETUPTOOLS_VER = "57.4.0"
+SETUPTOOLS_VER = "57.5.0"
 WHEEL_VER = "0.37.0"
 
 DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
@@ -57,6 +57,21 @@ try:
     from .local_settings import *
 except ImportError:
     pass
+
+REST_FRAMEWORK = {
+    "DATETIME_FORMAT": "%b-%d-%Y - %H:%M",
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "knox.auth.TokenAuthentication",
+        "tacticalrmm.auth.APIAuthentication",
+    ),
+}
+
+if not "AZPIPELINE" in os.environ:
+    if not DEBUG:  # type: ignore
+        REST_FRAMEWORK.update(
+            {"DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",)}
+        )
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -207,7 +222,10 @@ if "AZPIPELINE" in os.environ:
     REST_FRAMEWORK = {
         "DATETIME_FORMAT": "%b-%d-%Y - %H:%M",
         "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-        "DEFAULT_AUTHENTICATION_CLASSES": ("knox.auth.TokenAuthentication",),
+        "DEFAULT_AUTHENTICATION_CLASSES": (
+            "knox.auth.TokenAuthentication",
+            "tacticalrmm.auth.APIAuthentication",
+        ),
         "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
     }
 

@@ -1,9 +1,9 @@
 
-import { ref } from "vue"
+import { ref, onMounted } from "vue"
 import { fetchUsers } from "@/api/accounts"
 import { formatUserOptions } from "@/utils/format"
 
-export function useUserDropdown() {
+export function useUserDropdown(onMount = false) {
 
   const userOptions = ref([])
   const userDropdownLoading = ref(false)
@@ -30,6 +30,10 @@ export function useUserDropdown() {
       userOptions.value = options.map(user => user.username)
       userDropdownLoading.value = false
     })
+  }
+
+  if (onMount) {
+    onMounted(getUserOptions())
   }
 
   return {

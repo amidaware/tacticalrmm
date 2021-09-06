@@ -36,6 +36,7 @@ AUDIT_ACTION_TYPE_CHOICES = [
     ("execute_script", "Execute Script"),
     ("execute_command", "Execute Command"),
     ("bulk_action", "Bulk Action"),
+    ("url_action", "URL Action"),
 ]
 
 AUDIT_OBJECT_TYPE_CHOICES = [
@@ -52,6 +53,9 @@ AUDIT_OBJECT_TYPE_CHOICES = [
     ("bulk", "Bulk"),
     ("alerttemplate", "Alert Template"),
     ("role", "Role"),
+    ("urlaction", "URL Action"),
+    ("keystore", "Global Key Store"),
+    ("customfield", "Custom Field"),
 ]
 
 STATUS_CHOICES = [
@@ -191,6 +195,21 @@ class AuditLog(models.Model):
         )
 
     @staticmethod
+    def audit_url_action(username, urlaction, instance, debug_info={}):
+
+        name = instance.hostname if hasattr(instance, "hostname") else instance.name
+        classname = type(instance).__name__
+        AuditLog.objects.create(
+            username=username,
+            agent=instance.hostname if classname == "Agent" else None,
+            agent_id=instance.id if classname == "Agent" else None,
+            object_type=classname.lower(),
+            action="url_action",
+            message=f"{username} ran url action: {urlaction.pattern} on {classname}: {name}",
+            debug_info=debug_info,
+        )
+
+    @staticmethod
     def audit_bulk_action(username, action, affected, debug_info={}):
         from agents.models import Agent
         from clients.models import Client, Site
@@ -271,22 +290,30 @@ class DebugLog(models.Model):
         log_type="system_issues",
     ):
         if get_debug_level() in ["info"]:
-            cls(log_level="info", agent=agent, log_type=log_type, message=message)
+            cls.objects.create(
+                log_level="info", agent=agent, log_type=log_type, message=message
+            )
 
     @classmethod
     def warning(cls, message, agent=None, log_type="system_issues"):
         if get_debug_level() in ["info", "warning"]:
-            cls(log_level="warning", agent=agent, log_type=log_type, message=message)
+            cls.objects.create(
+                log_level="warning", agent=agent, log_type=log_type, message=message
+            )
 
     @classmethod
     def error(cls, message, agent=None, log_type="system_issues"):
         if get_debug_level() in ["info", "warning", "error"]:
-            cls(log_level="error", agent=agent, log_type=log_type, message=message)
+            cls.objects.create(
+                log_level="error", agent=agent, log_type=log_type, message=message
+            )
 
     @classmethod
     def critical(cls, message, agent=None, log_type="system_issues"):
         if get_debug_level() in ["info", "warning", "error", "critical"]:
-            cls(log_level="critical", agent=agent, log_type=log_type, message=message)
+            cls.objects.create(
+                log_level="critical", agent=agent, log_type=log_type, message=message
+            )
 
 
 class PendingAction(models.Model):

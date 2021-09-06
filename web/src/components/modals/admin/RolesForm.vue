@@ -56,6 +56,7 @@
             <q-checkbox v-model="role.can_edit_core_settings" label="Edit Global Settings" />
             <q-checkbox v-model="role.can_do_server_maint" label="Do Server Maintenance" />
             <q-checkbox v-model="role.can_code_sign" label="Manage Code Signing" />
+            <q-checkbox v-model="role.can_manage_api_keys" label="Manage API Keys" />
           </div>
         </q-card-section>
 
@@ -180,6 +181,7 @@ export default {
         can_manage_notes: false,
         can_view_core_settings: false,
         can_edit_core_settings: false,
+        can_manage_api_keys: false,
         can_do_server_maint: false,
         can_code_sign: false,
         can_manage_checks: false,

@@ -11,6 +11,7 @@
           <q-tab name="keystore" label="Key Store" />
           <q-tab name="urlactions" label="URL Actions" />
           <q-tab name="retention" label="Retention" />
+          <q-tab name="apikeys" label="API Keys" />
         </q-tabs>
       </template>
       <template v-slot:after>
@@ -384,6 +385,10 @@
                   />
                 </q-card-section>
               </q-tab-panel>
+
+              <q-tab-panel name="apikeys">
+                <APIKeysTable />
+              </q-tab-panel>
             </q-tab-panels>
           </q-scroll-area>
           <q-card-section class="row items-center">
@@ -422,6 +427,7 @@ import ResetPatchPolicy from "@/components/modals/coresettings/ResetPatchPolicy"
 import CustomFields from "@/components/modals/coresettings/CustomFields";
 import KeyStoreTable from "@/components/modals/coresettings/KeyStoreTable";
 import URLActionsTable from "@/components/modals/coresettings/URLActionsTable";
+import APIKeysTable from "@/components/core/APIKeysTable";
 
 export default {
   name: "EditCoreSettings",
@@ -430,6 +436,7 @@ export default {
     CustomFields,
     KeyStoreTable,
     URLActionsTable,
+    APIKeysTable,
   },
   mixins: [mixins],
   data() {

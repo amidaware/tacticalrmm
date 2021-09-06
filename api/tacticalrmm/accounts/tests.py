@@ -1,9 +1,11 @@
 from unittest.mock import patch
 
 from django.test import override_settings
-
-from accounts.models import User
+from model_bakery import baker, seq
+from accounts.models import User, APIKey
 from tacticalrmm.test import TacticalTestCase
+
+from accounts.serializers import APIKeySerializer
 
 
 class TestAccounts(TacticalTestCase):
@@ -38,6 +40,12 @@ class TestAccounts(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data, "ok")
+
+        # test user set to block dashboard logins
+        self.bob.block_dashboard_login = True
+        self.bob.save()
+        r = self.client.post(url, data, format="json")
+        self.assertEqual(r.status_code, 400)
 
     @patch("pyotp.TOTP.verify")
     def test_login_view(self, mock_verify):
@@ -288,6 +296,68 @@ class TestUserAction(TacticalTestCase):
         self.check_not_authenticated("patch", url)
 
 
+class TestAPIKeyViews(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+        self.authenticate()
+
+    def test_get_api_keys(self):
+        url = "/accounts/apikeys/"
+        apikeys = baker.make("accounts.APIKey", key=seq("APIKEY"), _quantity=3)
+
+        serializer = APIKeySerializer(apikeys, many=True)
+        resp = self.client.get(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(serializer.data, resp.data)  # type: ignore
+
+        self.check_not_authenticated("get", url)
+
+    def test_add_api_keys(self):
+        url = "/accounts/apikeys/"
+
+        user = baker.make("accounts.User")
+        data = {"name": "Name", "user": user.id, "expiration": None}
+
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(APIKey.objects.filter(name="Name").exists())
+        self.assertTrue(APIKey.objects.get(name="Name").key)
+
+        self.check_not_authenticated("post", url)
+
+    def test_modify_api_key(self):
+        # test a call where api key doesn't exist
+        resp = self.client.put("/accounts/apikeys/500/", format="json")
+        self.assertEqual(resp.status_code, 404)
+
+        apikey = baker.make("accounts.APIKey", name="Test")
+        url = f"/accounts/apikeys/{apikey.pk}/"  # type: ignore
+
+        data = {"name": "New Name"}  # type: ignore
+
+        resp = self.client.put(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        apikey = APIKey.objects.get(pk=apikey.pk)  # type: ignore
+        self.assertEquals(apikey.name, "New Name")
+
+        self.check_not_authenticated("put", url)
+
+    def test_delete_api_key(self):
+        # test a call where api key doesn't exist
+        resp = self.client.delete("/accounts/apikeys/500/", format="json")
+        self.assertEqual(resp.status_code, 404)
+
+        # test delete api key
+        apikey = baker.make("accounts.APIKey")
+        url = f"/accounts/apikeys/{apikey.pk}/"  # type: ignore
+        resp = self.client.delete(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        self.assertFalse(APIKey.objects.filter(pk=apikey.pk).exists())  # type: ignore
+
+        self.check_not_authenticated("delete", url)
+
+
 class TestTOTPSetup(TacticalTestCase):
     def setUp(self):
         self.authenticate()
@@ -313,3 +383,29 @@ class TestTOTPSetup(TacticalTestCase):
         r = self.client.post(url)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data, "totp token already set")
+
+
+class TestAPIAuthentication(TacticalTestCase):
+    def setUp(self):
+        # create User and associate to API Key
+        self.user = User.objects.create(username="api_user", is_superuser=True)
+        self.api_key = APIKey.objects.create(
+            name="Test Token", key="123456", user=self.user
+        )
+
+        self.client_setup()
+
+    def test_api_auth(self):
+        url = "/clients/clients/"
+        # auth should fail if no header set
+        self.check_not_authenticated("get", url)
+
+        # invalid api key in header should return code 400
+        self.client.credentials(HTTP_X_API_KEY="000000")
+        r = self.client.get(url, format="json")
+        self.assertEqual(r.status_code, 401)
+
+        # valid api key in header should return code 200
+        self.client.credentials(HTTP_X_API_KEY="123456")
+        r = self.client.get(url, format="json")
+        self.assertEqual(r.status_code, 200)

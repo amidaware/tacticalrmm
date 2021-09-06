@@ -155,6 +155,7 @@ const agentActionOptions = [
   { value: "execute_command", label: "Execute Command" },
   { value: "execute_script", label: "Execute Script" },
   { value: "remote_session", label: "Remote Session" },
+  { value: "url_action", label: "URL Action" },
 ];
 
 const actionOptions = [
@@ -181,6 +182,9 @@ const objectOptions = [
   { value: "winupdatepolicy", label: "Patch Policy" },
   { value: "alerttemplate", label: "Alert Template" },
   { value: "role", label: "Role" },
+  { value: "urlaction", label: "URL Action" },
+  { value: "keystore", label: "Global Key Store" },
+  { value: "customfield", label: "Custom Field" },
 ];
 
 const timeOptions = [

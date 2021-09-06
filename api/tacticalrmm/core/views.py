@@ -3,7 +3,9 @@ import pprint
 import re
 
 from django.conf import settings
+from django.db.models.fields import IPAddressField
 from django.shortcuts import get_object_or_404
+from logs.models import AuditLog
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ParseError
@@ -368,6 +370,13 @@ class RunURLAction(APIView):
             value = replace_db_values(string=string, instance=instance, quotes=False)
 
             url_pattern = re.sub("\\{\\{" + string + "\\}\\}", str(value), url_pattern)
+
+        AuditLog.audit_url_action(
+            username=request.user.username,
+            urlaction=action,
+            instance=instance,
+            debug_info={"ip": request._client_ip},
+        )
 
         return Response(requote_uri(url_pattern))
 

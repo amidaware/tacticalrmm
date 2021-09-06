@@ -210,6 +210,7 @@ services:
       APP_PORT: ${APP_PORT}
       API_PORT: ${API_PORT}
       API_PROTOCOL: ${API_PROTOCOL}
+      DEV: 1
     networks:
       dev:
         ipv4_address: ${DOCKER_NGINX_IP}

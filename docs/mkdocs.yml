@@ -23,6 +23,7 @@ nav:
       - "Scripting": functions/scripting.md
       - "URL Actions": functions/url_actions.md
       - "User Interface Preferences": functions/user_ui.md
+      - "API Access": functions/api.md
       - "Examples": functions/examples.md
       - "Database Maintenace": functions/database_maintenance.md
   - Backup: backup.md
@@ -38,7 +39,7 @@ nav:
       - "Grafana": 3rdparty_grafana.md
       - "TeamViewer": 3rdparty_teamviewer.md
   - Tips n' Tricks: tipsntricks.md
-  - Securing NGINX: securing_nginx.md  
+  - Securing NGINX: securing_nginx.md
   - Contributing:
       - "Contributing to Docs": contributing.md
       - "Contributing to Community Scripts": contributing_community_scripts.md

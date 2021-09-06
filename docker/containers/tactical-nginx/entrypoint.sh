@@ -5,6 +5,7 @@ set -e
 : "${WORKER_CONNECTIONS:=2048}"
 : "${APP_PORT:=80}"
 : "${API_PORT:=80}"
+: "${API_PROTOCOL:=}" # blank for uwgsi
 
 CERT_PRIV_PATH=${TACTICAL_DIR}/certs/privkey.pem
 CERT_PUB_PATH=${TACTICAL_DIR}/certs/fullchain.pem
@@ -37,20 +38,10 @@ server  {
 
     location / {
         #Using variable to disable start checks
-        set \$api http://tactical-backend:${API_PORT};
+        set \$api ${API_PROTOCOL}tactical-backend:${API_PORT};
 
-        proxy_pass \$api;
-        proxy_http_version  1.1;
-        proxy_cache_bypass  \$http_upgrade;
-        
-        proxy_set_header Upgrade           \$http_upgrade;
-        proxy_set_header Connection        "upgrade";
-        proxy_set_header Host              \$host;
-        proxy_set_header X-Real-IP         \$remote_addr;
-        proxy_set_header X-Forwarded-For   \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header X-Forwarded-Host  \$host;
-        proxy_set_header X-Forwarded-Port  \$server_port;
+        include         uwsgi_params;
+        uwsgi_pass      \$api;
     }
 
     location /static/ {

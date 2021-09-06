@@ -36,7 +36,8 @@ if [ "$1" = 'tactical-init' ]; then
 
   mkdir -p ${TACTICAL_DIR}/tmp
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/exe
-  mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/logs
+  mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/log
+  touch ${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log
   
   until (echo > /dev/tcp/"${POSTGRES_HOST}"/"${POSTGRES_PORT}") &> /dev/null; do
     echo "waiting for postgresql container to be ready..."
@@ -98,6 +99,28 @@ EOF
 
   echo "${localvars}" > ${TACTICAL_DIR}/api/tacticalrmm/local_settings.py
 
+
+uwsgiconf="$(cat << EOF
+[uwsgi]
+chdir = /opt/tactical/api
+module = tacticalrmm.wsgi
+home = /opt/venv
+master = true
+processes = 8
+threads = 2
+enable-threads = true
+socket = 0.0.0.0:80
+chmod-socket = 660
+buffer-size = 65535
+vacuum = true
+die-on-term = true
+max-requests = 2000
+EOF
+)"
+
+  echo "${uwsgiconf}" > ${TACTICAL_DIR}/api/uwsgi.ini
+
+
   # run migrations and init scripts
   python manage.py migrate --no-input
   python manage.py collectstatic --no-input
@@ -123,22 +146,7 @@ fi
 if [ "$1" = 'tactical-backend' ]; then
   check_tactical_ready
 
-  # Prepare log files and start outputting logs to stdout
-  mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/logs
-  touch ${TACTICAL_DIR}/api/tacticalrmm/logs/gunicorn.log
-  touch ${TACTICAL_DIR}/api/tacticalrmm/logs/gunicorn-access.log
-  tail -n 0 -f ${TACTICAL_DIR}/api/tacticalrmm/logs/gunicorn*.log &
-
-  export DJANGO_SETTINGS_MODULE=tacticalrmm.settings
-
-  exec gunicorn tacticalrmm.wsgi:application \
-    --name tactical-backend \
-    --bind 0.0.0.0:80 \
-    --workers 5 \
-    --log-level=info \
-    --log-file=${TACTICAL_DIR}/api/tacticalrmm/logs/gunicorn.log \
-    --access-logfile=${TACTICAL_DIR}/api/tacticalrmm/logs/gunicorn-access.log \
-
+  uwsgi ${TACTICAL_DIR}/api/uwsgi.ini
 fi
 
 if [ "$1" = 'tactical-celery' ]; then
@@ -152,7 +160,7 @@ if [ "$1" = 'tactical-celerybeat' ]; then
   celery -A tacticalrmm beat -l info
 fi
 
-# backend container
+# websocket container
 if [ "$1" = 'tactical-websockets' ]; then
   check_tactical_ready
 

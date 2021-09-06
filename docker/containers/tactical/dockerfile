@@ -18,8 +18,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends gcc libc6-dev && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --upgrade pip && \
-    pip install --no-cache-dir setuptools wheel gunicorn && \
-    sed -i '/uWSGI/d' ${TACTICAL_TMP_DIR}/api/requirements.txt && \
+    pip install --no-cache-dir setuptools wheel && \
     pip install --no-cache-dir -r ${TACTICAL_TMP_DIR}/api/requirements.txt
 
 

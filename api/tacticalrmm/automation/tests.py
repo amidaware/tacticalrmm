@@ -918,11 +918,13 @@ class TestPolicyTasks(TacticalTestCase):
     @patch("autotasks.models.AutomatedTask.create_task_on_agent")
     @patch("autotasks.models.AutomatedTask.delete_task_on_agent")
     def test_delete_policy_tasks(self, delete_task_on_agent, create_task):
-        from .tasks import delete_policy_autotasks_task
+        from .tasks import delete_policy_autotasks_task, generate_agent_checks_task
 
         policy = baker.make("automation.Policy", active=True)
         tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
-        baker.make_recipe("agents.server_agent", policy=policy)
+        agent = baker.make_recipe("agents.server_agent", policy=policy)
+
+        generate_agent_checks_task(agents=[agent.pk], create_tasks=True)
 
         delete_policy_autotasks_task(task=tasks[0].id)  # type: ignore
 
@@ -931,11 +933,13 @@ class TestPolicyTasks(TacticalTestCase):
     @patch("autotasks.models.AutomatedTask.create_task_on_agent")
     @patch("autotasks.models.AutomatedTask.run_win_task")
     def test_run_policy_task(self, run_win_task, create_task):
-        from .tasks import run_win_policy_autotasks_task
+        from .tasks import run_win_policy_autotasks_task, generate_agent_checks_task
 
         policy = baker.make("automation.Policy", active=True)
         tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
-        baker.make_recipe("agents.server_agent", policy=policy)
+        agent = baker.make_recipe("agents.server_agent", policy=policy)
+
+        generate_agent_checks_task(agents=[agent.pk], create_tasks=True)
 
         run_win_policy_autotasks_task(task=tasks[0].id)  # type: ignore
 
@@ -944,7 +948,7 @@ class TestPolicyTasks(TacticalTestCase):
     @patch("autotasks.models.AutomatedTask.create_task_on_agent")
     @patch("autotasks.models.AutomatedTask.modify_task_on_agent")
     def test_update_policy_tasks(self, modify_task_on_agent, create_task):
-        from .tasks import update_policy_autotasks_fields_task
+        from .tasks import update_policy_autotasks_fields_task, generate_agent_checks_task
 
         # setup data
         policy = baker.make("automation.Policy", active=True)
@@ -955,6 +959,8 @@ class TestPolicyTasks(TacticalTestCase):
             _quantity=3,
         )
         agent = baker.make_recipe("agents.server_agent", policy=policy)
+
+        generate_agent_checks_task(agents=[agent.pk], create_tasks=True)
 
         tasks[0].enabled = False  # type: ignore
         tasks[0].save()  # type: ignore
@@ -995,6 +1001,7 @@ class TestPolicyTasks(TacticalTestCase):
 
     @patch("autotasks.models.AutomatedTask.create_task_on_agent")
     def test_policy_exclusions(self, create_task):
+        from .tasks import generate_agent_checks_task
         # setup data
         policy = baker.make("automation.Policy", active=True)
         baker.make_recipe("checks.memory_check", policy=policy)
@@ -1002,6 +1009,8 @@ class TestPolicyTasks(TacticalTestCase):
         agent = baker.make_recipe(
             "agents.agent", policy=policy, monitoring_type="server"
         )
+
+        generate_agent_checks_task(agents=[agent.pk], create_tasks=True)
 
         # make sure related agents on policy returns correctly
         self.assertEqual(policy.related_agents().count(), 1)  # type: ignore

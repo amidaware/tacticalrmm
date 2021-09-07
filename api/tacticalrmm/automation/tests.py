@@ -948,7 +948,10 @@ class TestPolicyTasks(TacticalTestCase):
     @patch("autotasks.models.AutomatedTask.create_task_on_agent")
     @patch("autotasks.models.AutomatedTask.modify_task_on_agent")
     def test_update_policy_tasks(self, modify_task_on_agent, create_task):
-        from .tasks import update_policy_autotasks_fields_task, generate_agent_checks_task
+        from .tasks import (
+            update_policy_autotasks_fields_task,
+            generate_agent_checks_task,
+        )
 
         # setup data
         policy = baker.make("automation.Policy", active=True)
@@ -1002,6 +1005,7 @@ class TestPolicyTasks(TacticalTestCase):
     @patch("autotasks.models.AutomatedTask.create_task_on_agent")
     def test_policy_exclusions(self, create_task):
         from .tasks import generate_agent_checks_task
+
         # setup data
         policy = baker.make("automation.Policy", active=True)
         baker.make_recipe("checks.memory_check", policy=policy)

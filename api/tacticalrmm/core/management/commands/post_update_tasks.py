@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand
 
 from logs.models import PendingAction
 from scripts.models import Script
+from accounts.models import User
 
 
 class Command(BaseCommand):
@@ -13,3 +14,9 @@ class Command(BaseCommand):
 
         # load community scripts into the db
         Script.load_community_scripts()
+
+        # make sure installer user is set to block_dashboard_logins
+        if User.objects.filter(is_installer_user=True).exists():
+            for user in User.objects.filter(is_installer_user=True):
+                user.block_dashboard_login = True
+                user.save()

@@ -8,8 +8,8 @@
         <q-tooltip class="bg-white text-primary">Close</q-tooltip>
       </q-btn>
     </q-bar>
-    <div class="text-h6 q-pl-sm q-pt-sm">Filter</div>
     <div class="row">
+      <q-btn v-if="agentpk" class="q-pa-sm" dense flat push @click="search" icon="refresh" />
       <div class="q-pa-sm col-1" v-if="!agentpk">
         <q-option-group v-model="filterType" :options="filterTypeOptions" color="primary" />
       </div>
@@ -306,6 +306,15 @@ export default {
     if (props.agentpk) {
       agentFilter.value = [props.agentpk];
       watch([userFilter, actionFilter, timeFilter], search);
+      watch(
+        () => props.agentpk,
+        (newValue, oldValue) => {
+          if (newValue) {
+            agentFilter.value = [props.agentpk];
+            search();
+          }
+        }
+      );
     }
 
     // vue component hooks

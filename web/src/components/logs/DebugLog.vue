@@ -8,6 +8,7 @@
       </q-btn>
     </q-bar>
     <q-card-section class="row">
+      <q-btn v-if="agentpk" dense flat push @click="getDebugLog" icon="refresh" />
       <tactical-dropdown
         v-if="!agentpk"
         class="col-2 q-pr-sm"
@@ -134,6 +135,15 @@ export default {
 
     if (props.agentpk) {
       agentFilter.value = props.agentpk;
+      watch(
+        () => props.agentpk,
+        (newValue, oldValue) => {
+          if (newValue) {
+            agentFilter.value = props.agentpk;
+            getDebugLog();
+          }
+        }
+      );
     }
 
     // watchers

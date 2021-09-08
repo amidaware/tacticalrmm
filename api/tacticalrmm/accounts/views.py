@@ -72,6 +72,9 @@ class LoginView(KnoxLoginView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
 
+        if user.block_dashboard_login:
+            return Response("bad credentials", status=status.HTTP_400_BAD_REQUEST)
+
         token = request.data["twofactor"]
         totp = pyotp.TOTP(user.totp_key)
 

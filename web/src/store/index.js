@@ -184,7 +184,7 @@ export default function () {
           .catch(e => { })
       },
       loadInstalledSoftware(context, pk) {
-        axios.get(`/software/installed/${pk}`).then(r => {
+        axios.get(`/software/installed/${pk}/`).then(r => {
           context.commit("SET_INSTALLED_SOFTWARE", r.data.software);
         })
           .catch(e => { });

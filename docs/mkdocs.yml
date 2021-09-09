@@ -38,8 +38,11 @@ nav:
       - "Connectwise Control / Screenconnect": 3rdparty_screenconnect.md
       - "Grafana": 3rdparty_grafana.md
       - "TeamViewer": 3rdparty_teamviewer.md
+  - Unsupported Scripts & Security:
+      - "Unsupported Guidelines": unsupported_guidelines.md
+      - "Unsupported Scripts": unsupported_scripts.md
+      - "Securing nginx": securing_nginx.md
   - Tips n' Tricks: tipsntricks.md
-  - Securing NGINX: securing_nginx.md
   - Contributing:
       - "Contributing to Docs": contributing.md
       - "Contributing to Community Scripts": contributing_community_scripts.md

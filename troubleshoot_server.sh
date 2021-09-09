@@ -68,6 +68,12 @@ else
   exit
 fi
 
+while [[ $domain != *[.]* ]]
+do
+echo -ne "${YELLOW}Enter yourdomain used for letsencrypt (e.g. example.com)${NC}: "
+read domain
+done
+
 	echo -ne ${YELLOW} Checking IPs | tee -a checklog.log 
 	printf >&2 "\n\n"
 
@@ -242,6 +248,22 @@ else
     echo -ne ${GREEN} No Proxy detected in front of $frontenddomain | tee -a checklog.log
 	printf >&2 "\n\n"
 fi
+
+	echo -ne ${YELLOW} Checking SSL Certificate is up to date | tee -a checklog.log 
+	printf >&2 "\n\n"
+
+#SSL Certificate check
+cert=$(openssl verify -CAfile /etc/letsencrypt/live/$domain/chain.pem /etc/letsencrypt/live/$domain/cert.pem)
+
+if [[ "$cert" == *"OK"* ]]; then
+    echo -ne ${GREEN} SSL Certificate for $domain is fine  | tee -a checklog.log
+	printf >&2 "\n\n"
+
+else
+    echo -ne ${RED} SSL Certificate has expired or doesnt exist for $domain  | tee -a checklog.log
+	printf >&2 "\n\n"
+fi
+
 
 printf >&2 "\n\n"
 echo -ne ${YELLOW} 

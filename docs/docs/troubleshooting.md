@@ -1,5 +1,16 @@
 # Troubleshooting
 
+#### Server Troubleshooting Script
+
+If you've asked for help in [#support](https://discord.com/channels/736478043522072608/744282073870630912) please run this, and send a screenshot at the top of the thread created for troubleshooting your issue. 
+
+Blur your domains if you desire privacy.
+```bash
+wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/troubleshoot_server.sh
+chmod +x troubleshoot_server.sh
+./troubleshoot_server.sh
+```
+
 #### Problems after new install
 
 In the very unlikely event you have issues after install please wipe the box and install again (following all the steps including downloading the install script but not running it) use the following command which will log the install progress and if you continue to have issues will assist with support of the installation.

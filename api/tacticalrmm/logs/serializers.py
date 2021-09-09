@@ -1,6 +1,5 @@
 from rest_framework import serializers
 
-from tacticalrmm.utils import get_default_timezone
 
 from .models import AuditLog, DebugLog, PendingAction
 
@@ -14,8 +13,8 @@ class AuditLogSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_entry_time(self, log):
-        timezone = get_default_timezone()
-        return log.entry_time.astimezone(timezone).strftime("%m %d %Y %H:%M:%S")
+        tz = self.context["default_tz"]
+        return log.entry_time.astimezone(tz).strftime("%m %d %Y %H:%M:%S")
 
 
 class PendingActionSerializer(serializers.ModelSerializer):
@@ -40,5 +39,5 @@ class DebugLogSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_entry_time(self, log):
-        timezone = get_default_timezone()
-        return log.entry_time.astimezone(timezone).strftime("%m %d %Y %H:%M:%S")
+        tz = self.context["default_tz"]
+        return log.entry_time.astimezone(tz).strftime("%m %d %Y %H:%M:%S")

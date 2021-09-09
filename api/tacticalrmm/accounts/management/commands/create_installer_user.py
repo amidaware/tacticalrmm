@@ -15,4 +15,5 @@ class Command(BaseCommand):
             username=uuid.uuid4().hex,
             is_installer_user=True,
             password=User.objects.make_random_password(60),  # type: ignore
+            block_dashboard_login=True,
         )

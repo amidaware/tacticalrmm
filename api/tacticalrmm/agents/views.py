@@ -842,5 +842,5 @@ class AgentHistoryView(APIView):
     def get(self, request, pk):
         agent = get_object_or_404(Agent, pk=pk)
         history = AgentHistory.objects.filter(agent=agent)
-
-        return Response(AgentHistorySerializer(history, many=True).data)
+        ctx = {"default_tz": get_default_timezone()}
+        return Response(AgentHistorySerializer(history, many=True, context=ctx).data)

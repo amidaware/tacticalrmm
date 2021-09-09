@@ -112,7 +112,7 @@ export default {
       const pk = this.selectedAgentPk;
       this.loading = true;
       this.$axios
-        .get(`/software/refresh/${pk}`)
+        .get(`/software/refresh/${pk}/`)
         .then(r => {
           this.$store.dispatch("loadInstalledSoftware", pk);
           this.loading = false;

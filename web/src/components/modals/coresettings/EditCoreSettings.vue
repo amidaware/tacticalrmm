@@ -492,7 +492,7 @@ export default {
     },
     getAlertTemplates() {
       this.$axios
-        .get("alerts/alerttemplates")
+        .get("alerts/alerttemplates/")
         .then(r => {
           this.alertTemplateOptions = r.data.map(template => ({ label: template.name, value: template.id }));
         })

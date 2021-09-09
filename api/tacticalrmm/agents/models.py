@@ -87,6 +87,7 @@ class Agent(BaseAuditModel):
     )
 
     def save(self, *args, **kwargs):
+        from automation.tasks import generate_agent_checks_task
 
         # get old agent if exists
         old_agent = Agent.objects.get(pk=self.pk) if self.pk else None
@@ -103,8 +104,7 @@ class Agent(BaseAuditModel):
             or (old_agent.monitoring_type != self.monitoring_type)
             or (old_agent.block_policy_inheritance != self.block_policy_inheritance)
         ):
-            self.generate_checks_from_policies()
-            self.generate_tasks_from_policies()
+            generate_agent_checks_task.delay(agents=[self.pk], create_tasks=True)
 
         # calculate alert template for new agents
         if not old_agent:
@@ -417,11 +417,12 @@ class Agent(BaseAuditModel):
             update.action = "approve"
             update.save(update_fields=["action"])
 
-        DebugLog.info(
-            agent=self,
-            log_type="windows_updates",
-            message=f"Approving windows updates on {self.hostname}",
-        )
+        if updates:
+            DebugLog.info(
+                agent=self,
+                log_type="windows_updates",
+                message=f"Approving windows updates on {self.hostname}",
+            )
 
     # returns agent policy merged with a client or site specific policy
     def get_patch_policy(self):

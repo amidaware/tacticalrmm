@@ -1,5 +1,6 @@
 import json
 import os
+import pytz
 from django.utils import timezone as djangotime
 from unittest.mock import patch
 
@@ -966,7 +967,8 @@ class TestAgentViews(TacticalTestCase):
 
         # test pulling data
         r = self.client.get(url, format="json")
-        data = AgentHistorySerializer(history, many=True).data
+        ctx = {"default_tz": pytz.timezone("America/Los_Angeles")}
+        data = AgentHistorySerializer(history, many=True, context=ctx).data
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data, data)  # type:ignore
 

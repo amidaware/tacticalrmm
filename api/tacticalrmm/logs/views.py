@@ -13,7 +13,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from tacticalrmm.utils import notify_error
+from tacticalrmm.utils import notify_error, get_default_timezone
 
 from .models import AuditLog, PendingAction, DebugLog
 from .permissions import AuditLogPerms, DebugLogPerms, ManagePendingActionPerms
@@ -79,11 +79,12 @@ class GetAuditLogs(APIView):
         ).order_by(order_by)
 
         paginator = Paginator(audit_logs, pagination["rowsPerPage"])
+        ctx = {"default_tz": get_default_timezone()}
 
         return Response(
             {
                 "audit_logs": AuditLogSerializer(
-                    paginator.get_page(pagination["page"]), many=True
+                    paginator.get_page(pagination["page"]), many=True, context=ctx
                 ).data,
                 "total": paginator.count,
             }
@@ -138,7 +139,6 @@ class GetDebugLog(APIView):
     permission_classes = [IsAuthenticated, DebugLogPerms]
 
     def patch(self, request):
-
         agentFilter = Q()
         logTypeFilter = Q()
         logLevelFilter = Q()
@@ -153,9 +153,12 @@ class GetDebugLog(APIView):
             agentFilter = Q(agent=request.data["agentFilter"])
 
         debug_logs = (
-            DebugLog.objects.filter(logLevelFilter)
+            DebugLog.objects.prefetch_related("agent")
+            .filter(logLevelFilter)
             .filter(agentFilter)
             .filter(logTypeFilter)
         )
 
-        return Response(DebugLogSerializer(debug_logs, many=True).data)
+        ctx = {"default_tz": get_default_timezone()}
+        ret = DebugLogSerializer(debug_logs, many=True, context=ctx).data
+        return Response(ret)

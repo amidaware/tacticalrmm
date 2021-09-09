@@ -212,8 +212,8 @@ class AgentHistorySerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_time(self, history):
-        timezone = get_default_timezone()
-        return history.time.astimezone(timezone).strftime("%m %d %Y %H:%M:%S")
+        tz = self.context["default_tz"]
+        return history.time.astimezone(tz).strftime("%m %d %Y %H:%M:%S")
 
 
 class AgentAuditSerializer(serializers.ModelSerializer):

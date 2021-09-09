@@ -604,7 +604,7 @@ export default {
       this.ws.onclose = e => {
         try {
           console.log(`Closed code: ${e.code}`);
-          if (e.code !== 1000 && e.code !== 1006 && e.code) {
+          if (e.code !== 1000 && e.code) {
             console.log("Retrying websocket connection...");
             setTimeout(() => {
               this.setupWS();

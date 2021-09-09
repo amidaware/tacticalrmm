@@ -1,7 +1,7 @@
 # Installation
 
 ## Minimum requirements
-- A fresh linux VM running either Ubuntu 20.04 or Debian 10, with a minimum of 2GB RAM.<br/>
+- A fresh linux VM running either Ubuntu 20.04 or Debian 10, with a minimum of 3GB RAM (4GB Recommended).<br/>
 
 !!!warning
     The provided install script assumes a fresh server with no software installed on it. Attempting to run it on an existing server with other services **will** break things and the install will fail.<br/><br/>

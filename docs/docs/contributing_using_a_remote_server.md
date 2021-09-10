@@ -23,7 +23,7 @@ Do a [Traditional Install](https://wh1te909.github.io/tacticalrmm/install_server
 
 After the extension pack is installed you will have a new button at the bottom-left of VSCode. You can select it and add your remote SSH host information.
 
-![RemoteSSH](images/Remote_SSH_connection.PNG)
+![RemoteSSH](images/Remote_SSH_connection.png)
 
 ### 4. Configure remote server
 
@@ -71,7 +71,7 @@ pip install -r requirements-dev.txt -r requirements-test.txt
 python manage.py runserver 0:8000
 ```
 
-- Compile quasar frontend
+- Open a new terminal and compile quasar frontend
 
 ```bash
 cd /rmm/web

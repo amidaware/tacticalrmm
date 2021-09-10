@@ -33,3 +33,7 @@ Right-click the connect button in *Take Control* for connect options
 4. Next to User Consent click edit (the wee pencil)
 5. Tick whatever boxes you want in there (Features: Sync server device name to hostname, Automatically remove inactive devices, Notify/Prompt for Consent/Connection Toolbar settings)
 6. Click ok
+
+![Features](images/mesh_features.png)
+
+![Features](images/mesh_userconsent.png)

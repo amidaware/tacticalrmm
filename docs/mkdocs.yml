@@ -13,8 +13,10 @@ nav:
       - "Updating Agents": update_agents.md
   - Functionality:
       - "Alerting": functions/alerting.md
+      - "API Access": functions/api.md
       - "Automated Tasks": functions/automated_tasks.md
       - "Custom Fields": functions/custom_fields.md
+      - "Database Maintenance": functions/database_maintenance.md
       - "Django Admin": functions/django_admin.md
       - "Global Keystore": functions/keystore.md
       - "Maintenance Mode": functions/maintenance_mode.md
@@ -23,9 +25,7 @@ nav:
       - "Scripting": functions/scripting.md
       - "URL Actions": functions/url_actions.md
       - "User Interface Preferences": functions/user_ui.md
-      - "API Access": functions/api.md
       - "Examples": functions/examples.md
-      - "Database Maintenace": functions/database_maintenance.md
   - Backup: backup.md
   - Restore: restore.md
   - Troubleshooting: troubleshooting.md
@@ -33,12 +33,12 @@ nav:
   - Management Commands: management_cmds.md
   - MeshCentral Integration: mesh_integration.md
   - 3rd Party Integrations:
-      - "AnyDesk": 3rdparty_anydesk.md
-      - "BitDefender GravityZone": 3rdparty_bitdefender_gravityzone.md
-      - "Connectwise Control / Screenconnect": 3rdparty_screenconnect.md
       - "Grafana": 3rdparty_grafana.md
+      - "AnyDesk": 3rdparty_anydesk.md
+      - "Connectwise Control / Screenconnect": 3rdparty_screenconnect.md
       - "TeamViewer": 3rdparty_teamviewer.md
-  - Unsupported Scripts & Security:
+      - "BitDefender GravityZone": 3rdparty_bitdefender_gravityzone.md
+  - Unsupported Extras:
       - "Unsupported Guidelines": unsupported_guidelines.md
       - "Unsupported Scripts": unsupported_scripts.md
       - "Securing nginx": securing_nginx.md

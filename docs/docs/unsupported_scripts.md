@@ -1,10 +1,9 @@
 # Unsupported Reference Scripts
 
-!!!note 
-    These are not supported scripts/configurations by Tactical RMM, but it's provided here for your reference. 
+!!!note
+    These are not supported scripts/configurations by Tactical RMM, but it's provided here for your reference.
 
 ## HAProxy
-
 
 Check/Change the mesh central config.json, some of the values may be set already, CertUrl must be changed to point to the HAProxy server.
 
@@ -20,7 +19,7 @@ nano /meshcentral/meshcentral-data/config.json
 
 Insert this (modify `HAProxyIP` to your network)
 
-```
+```conf
 {
   "settings": {
     "Port": 4430,
@@ -45,9 +44,9 @@ service meshcentral restart
 ### HAProxy Config
 
 The order of use_backend is important `Tactical-Mesh-WebSocket_ipvANY` must be before `Tactical-Mesh_ipvANY`
-The values of `timeout connect`, `timeout server`, `timeout tunnel` in `Tactical-Mesh-WebSocket` have been configured to maintain a stable agent connection, however you may need to adjust these values to suit your environment. 
+The values of `timeout connect`, `timeout server`, `timeout tunnel` in `Tactical-Mesh-WebSocket` have been configured to maintain a stable agent connection, however you may need to adjust these values to suit your environment.
 
-```
+```conf
 frontend HTTPS-merged
 	bind			0.0.0.0:443 name 0.0.0.0:443   ssl crt-list /var/etc/haproxy/HTTPS.crt_list  #ADJUST THIS TO YOUR OWN SSL CERTIFICATES
 	mode			http
@@ -131,8 +130,7 @@ sudo apt install -y fail2ban
 
 ### Set Tactical fail2ban filter conf File
 
-
-```
+```bash
 tacticalfail2banfilter="$(cat << EOF
 [Definition]
 failregex = ^<HOST>.*400.17.*$
@@ -144,7 +142,7 @@ sudo echo "${tacticalfail2banfilter}" > /etc/fail2ban/filter.d/tacticalrmm.conf
 
 ### Set Tactical fail2ban jail conf File
 
-```
+```bash
 tacticalfail2banjail="$(cat << EOF
 [tacticalrmm]
 enabled = true
@@ -210,7 +208,7 @@ You need to add the certificate private key and public keys to the following fil
         
     but change api. to: mesh. and rmm. respectively.
 
-7. Add the following to the last lines of `/rmm/api/tacticalrmm/tacticalrmm/local_settings.py`
+5. Add the following to the last lines of `/rmm/api/tacticalrmm/tacticalrmm/local_settings.py`
 
         nano /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 

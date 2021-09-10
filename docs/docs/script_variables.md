@@ -18,8 +18,8 @@ See below for the available options.
 - **{{agent.public_ip}}** - Public IP address of agent
 - **{{agent.agent_id}}** - agent ID in database
 - **{{agent.last_seen}}** - Date and Time Agent last seen
-- **{{agent.used_ram}}** - Used RAM on agent. Returns an integer - example: *16* 
-- **{{agent.total_ram}}** - Total RAM on agent. Returns an integer - example: *16* 
+- **{{agent.used_ram}}** - Used RAM on agent. Returns an integer - example: *16*
+- **{{agent.total_ram}}** - Total RAM on agent. Returns an integer - example: *16*
 - **{{agent.boot_time}}** - Uptime of agent. Returns unix timestamp. example: *1619439603.0*
 - **{{agent.logged_in_username}}** - Username of logged in user
 - **{{agent.last_logged_in_user}}** - Username of last logged in user
@@ -34,7 +34,7 @@ See below for the available options.
 - **{{agent.check_interval}}** - Returns check interval time setting for agent in TRMM
 - **{{agent.needs_reboot}}** - Returns true if reboot is pending on agent
 - **{{agent.choco_installed}}** - Returns true if Chocolatey is installed
-- **{{agent.patches_last_installed}}** - The date that patches were last installed by Tactical RMM. 
+- **{{agent.patches_last_installed}}** - The date that patches were last installed by Tactical RMM.
 - **{{agent.needs_reboot}}** - Returns true if the agent needs a reboot
 - **{{agent.time_zone}}** - Returns timezone configured on agent
 - **{{agent.maintenance_mode}}** - Returns true if agent is in maintenance mode
@@ -42,16 +42,18 @@ See below for the available options.
 - **{{agent.alert_template}** - Returns true if agent has block policy inheritance
 
 ## Client
+
 - **{{client.name}}** - Returns name of client
 
 ## Site
+
 - **{{site.name}}** - Returns name of Site
 
 ## Alert
 
 !!!info
     Only available in failure and resolve actions on alert templates!
-    
+
 - **{{alert.alert_time}}** - Time of the alert
 - **{{alert.message}}** - Alert message
 - **{{alert.severity}}** - Severity of the alert *info, warning, or error*

@@ -1,17 +1,18 @@
 # Troubleshooting
 
-#### Server Troubleshooting Script
+## Server Troubleshooting Script
 
-If you've asked for help in [#support](https://discord.com/channels/736478043522072608/744282073870630912) please run this, and send a screenshot at the top of the thread created for troubleshooting your issue. 
+If you've asked for help in [#support](https://discord.com/channels/736478043522072608/744282073870630912) please run this, and send a screenshot at the top of the thread created for troubleshooting your issue.
 
 Blur your domains if you desire privacy.
+
 ```bash
 wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/troubleshoot_server.sh
 chmod +x troubleshoot_server.sh
 ./troubleshoot_server.sh
 ```
 
-#### Problems after new install
+## Problems after new install
 
 In the very unlikely event you have issues after install please wipe the box and install again (following all the steps including downloading the install script but not running it) use the following command which will log the install progress and if you continue to have issues will assist with support of the installation.
 
@@ -22,7 +23,7 @@ bash -x install.sh 2>&1 | tee install.log
 !!!note
     Logging of installs isn’t desirable as it logs extremely sensitive information which is why this isn’t done by default! **Do not** post the raw log publicly only provide it if requested and then by dm only. Authorized users in Discord are: @BurningTimes#1938 @sadnub#6992 @dinger1986#1734 @silversword#9652
 
-#### "Bad credentials" error when trying to login to the Web UI
+## "Bad credentials" error when trying to login to the Web UI
 
 If you are sure you are using the correct credentials and still getting a "bad credentials" error, open your browser's dev tools (ctrl + shift + j on chrome) and check the Console tab to see the real error.
 
@@ -32,9 +33,7 @@ If you see an error about SSL or certificate expired, then your Let's Encrypt ce
 
 Refer to the Let's Encrypt cert renewal instructions [here](update_server.md#keeping-your-lets-encrypt-certificate-up-to-date)
 
-<br/>
-
-#### Agents not updating
+## Agents not updating
 
 The most common problem we've seen of agents not updating is due to Antivirus blocking the updater executable.
 
@@ -48,11 +47,9 @@ Since Tactical RMM is still in alpha and the developers makes breaking changes p
 
 If you have agents that are relatively old, you will need to uninstall them manually and reinstall using the latest version.
 
-<br/>
+## Agents not checking in or showing up / General agent issues
 
-#### Agents not checking in or showing up / General agent issues
-
-First, reload NATS from tactical's web UI:<br />
+First, reload NATS from tactical's web UI:<br>
 *Tools > Server Maintenance > Reload Nats Configuration*
 
 Open CMD as admin on the problem computer and stop the agent services:
@@ -63,11 +60,13 @@ net stop tacticalrpc
 ```
 
 Run the tacticalagent service manually with debug logging:
+
 ```cmd
 "C:\Program Files\TacticalAgent\tacticalrmm.exe" -m winagentsvc -log debug -logto stdout
 ```
 
 Run the tacticalrpc service manually with debug logging:
+
 ```cmd
 "C:\Program Files\TacticalAgent\tacticalrmm.exe" -m rpc -log debug -logto stdout
 ```
@@ -78,9 +77,11 @@ Please then copy/paste the logs and post them either in our [Discord support cha
 
 If all else fails, simply uninstall the agent either from control panel or silently with `"C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT` and then reinstall the agent.
 
-#### All other errors
+## All other errors
 
-First, run the [update script](update_server.md#updating-to-the-latest-rmm-version) with the `--force` flag. <br/>This will fix permissions and reinstall python/node packages that might have gotten corrupted.
+First, run the [update script](update_server.md#updating-to-the-latest-rmm-version) with the `--force` flag.
+
+This will fix permissions and reinstall python/node packages that might have gotten corrupted.
 
 ```bash
 ./update.sh --force
@@ -106,12 +107,13 @@ sudo systemctl status redis
 ```
 
 Read through the log files in the following folders and check for errors:
+
 ```bash
 /rmm/api/tacticalrmm/tacticalrmm/private/log
 /var/log/celery
 ```
 
-#### Using Cloudflare DNS
+## Using Cloudflare DNS
 
 - rmm.example.com can be proxied.
 
@@ -119,7 +121,7 @@ Read through the log files in the following folders and check for errors:
 
 - mesh.example.com can be proxied with the caveat that Mesh checks the cert presented to the agent is the same one on the server. I.e. no MITM. You'll need to copy Cloudflare's edge cert to your server if you want to proxy this domain.
 
-#### Testing Network Connectivity between agent and server
+## Testing Network Connectivity between agent and server
 
 Use powershell, make sure you can connect to 443 and 4222 from agent to server:
 

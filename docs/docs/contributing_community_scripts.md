@@ -1,10 +1,12 @@
+# Community Scripts
+
 ## Script Library Naming Conventions
 
-### File names 
+### File names
 
 Under `/scripts` the file name should generally follow this format:
 
-```
+```text
 (Platform)_(Category or Function)_(What It Does).xxx
 ```
 
@@ -13,7 +15,7 @@ Under `/scripts` the file name should generally follow this format:
 
 Platform for now are:
 
-```
+```text
 Win
 OSX
 Linux
@@ -21,10 +23,9 @@ iOS
 Android
 ```
 
-
 Good filename examples include:
 
-```
+```text
 Win_Azure_Mars_Cloud_Backup_Status.ps1
 Win_AzureAD_Check_Connection_Status.ps1
 Win_Network_DHCP_Set.bat
@@ -44,7 +45,7 @@ Script Manager
 
 - Folder View (Grouped by Categories)
 
-Run or Add script 
+Run or Add script
 
 - Running scripts manually or adding tasks (or adding in Automation Manager)
 
@@ -53,7 +54,7 @@ Run or Add script
 
 Make sure your Name roughly follows the order of file naming as above
 
-```
+```text
 Category or Function - What It Does
 ```
 
@@ -67,12 +68,13 @@ Category or Function - What It Does
 
 ### Good Habits
 
-- Try and make them fully self-contained. 
+- Try and make them fully self-contained.
 
 - If they pull data from elsewhere, create comment notes at the top with references for others to audit/validate
 
 - Good folder locations to use for standardized things:
-```
+
+```text
 c:\ProgramData\TacticalRMM\
 c:\ProgramData\TacticalRMM\scripts
 c:\ProgramData\TacticalRMM\toolbox
@@ -81,9 +83,10 @@ c:\ProgramData\TacticalRMM\temp
 c:\ProgramData\TacticalRMM\
 ```
 
-- Command Parameters are good. Optional command parameters for extra functions are better. 
+- Command Parameters are good. Optional command parameters for extra functions are better.
 
 - Add standardized Comment headers to scripts (include the first 2, more if appropriate):
+
 ```powershell
 <#
 .Synopsis
@@ -118,7 +121,6 @@ c:\ProgramData\TacticalRMM\
 
 - Doesn't play well with other community scripts (reused names etc.)
 
-
 *****
 
 ## Useful Reference Script Examples
@@ -142,8 +144,7 @@ Discuss/ask questions in the Discord group [here](https://discord.com/channels/7
 
 What you can add is:
 
-   - Add standardized Comment headers per above
-   - Parameterize scripts where appropriate
-   - Add $ExitCode and error conditions as appropriate
-   - Contact @silversword in Discord if you need help doing Github additions/edits/adding to the community Library and have questions about [Script Library Naming Conventions](#script-library-naming-conventions)
-
+- Add standardized Comment headers per above
+- Parameterize scripts where appropriate
+- Add $ExitCode and error conditions as appropriate
+- Contact @silversword in Discord if you need help doing Github additions/edits/adding to the community Library and have questions about [Script Library Naming Conventions](#script-library-naming-conventions)

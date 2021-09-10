@@ -209,7 +209,6 @@ services:
       CERT_PRIV_KEY: ${CERT_PRIV_KEY}
       APP_PORT: ${APP_PORT}
       API_PORT: ${API_PORT}
-      API_PROTOCOL: ${API_PROTOCOL}
       DEV: 1
     networks:
       dev:

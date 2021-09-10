@@ -30,7 +30,7 @@ fi
 /bin/bash -c "sed -i 's/worker_connections.*/worker_connections ${WORKER_CONNECTIONS};/g' /etc/nginx/nginx.conf"
 
 
-if [ $DEV -eq 1 ]; then
+if [[ $DEV -eq 1 ]]; then
     API_NGINX="
         #Using variable to disable start checks
         set \$api http://tactical-backend:${API_PORT};

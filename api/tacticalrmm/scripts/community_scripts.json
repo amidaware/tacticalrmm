@@ -31,13 +31,32 @@
   },
   {
     "guid": "2ee134d5-76aa-4160-b334-a1efbc62079f",
-    "filename": "Win_Install_Duplicati.ps1",
+    "filename": "Win_Duplicati_Install.ps1",
     "submittedBy": "https://github.com/Omnicef",
-    "name": "Duplicati - Install",
+    "name": "Duplicati - Install 2.0.5.1",
     "description": "This script installs Duplicati 2.0.5.1 as a service.",
     "shell": "powershell",
     "category": "TRMM (Win):3rd Party Software",
     "default_timeout": "300"
+  },
+  {
+    "guid": "7b1d90a1-3eda-48ab-9c49-20e714c9e82a",
+    "filename": "Win_Duplicati_Install.bat",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Duplicati - Install 2.0.6.100 to work with Community Check Status",
+    "description": "This script installs Duplicati 2.0.6.100 as a service and creates status files to be used with commuity check",
+    "shell": "powershell",
+    "category": "TRMM (Win):3rd Party Software",
+    "default_timeout": "300"
+  },
+  {
+    "guid": "7c14beb4-d1c3-41aa-8e70-92a267d6e080",
+    "filename": "Win_Duplicati_Status.ps1",
+    "submittedBy": "https://github.com/dinger1986",
+    "name": "Duplicati - Check Status",
+    "description": "Checks Duplicati Backup is running properly over the last 24 hours",
+    "shell": "powershell",
+    "category": "TRMM (Win):3rd Party Software>Monitoring"
   },
   {
     "guid": "81cc5bcb-01bf-4b0c-89b9-0ac0f3fe0c04",
@@ -234,15 +253,6 @@
     "description": "Checks local disks for errors reported in event viewer within the last 24 hours",
     "shell": "powershell",
     "category": "TRMM (Win):Hardware"
-  },
-  {
-    "guid": "7c14beb4-d1c3-41aa-8e70-92a267d6e080",
-    "filename": "Win_Duplicati_Status.ps1",
-    "submittedBy": "https://github.com/dinger1986",
-    "name": "Duplicati - Check Status",
-    "description": "Checks Duplicati Backup is running properly over the last 24 hours",
-    "shell": "powershell",
-    "category": "TRMM (Win):3rd Party Software"
   },
   {
     "guid": "907652a5-9ec1-4759-9871-a7743f805ff2",

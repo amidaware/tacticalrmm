@@ -138,7 +138,7 @@ Optional Command Parameters and testing for errors
 
 ## Volunteers Needed
 
-If you want to contribute back to the project there are a lot of scripts that need some TLC (Tender Loving Care) please paruse thru them here: [https://github.com/wh1te909/tacticalrmm/tree/develop/scripts_wip](https://github.com/wh1te909/tacticalrmm/tree/develop/scripts_wip)
+If you want to contribute back to the project there are a lot of scripts that need some TLC (Tender Loving Care) please paruse thru them in The Script WIP (Work In Progress): [https://github.com/wh1te909/tacticalrmm/tree/develop/scripts_wip](https://github.com/wh1te909/tacticalrmm/tree/develop/scripts_wip)
 
 Discuss/ask questions in the Discord group [here](https://discord.com/channels/736478043522072608/744281869499105290)
 

@@ -1,135 +1,115 @@
 # Contributing Using a Remote Server
 
-The below instructions are for a development server that has Tactical RMM installed and configured with a real domain. You can then use your own GitHub to push changes to and then submit a PR request to the TRMM `develop` branch (<https://github.com/wh1te909/tacticalrmm>).
+The below instructions are for a non-production server that has Tactical RMM installed and configured with a real domain. You can then use your own GitHub to push changes to and then submit a PR request to the TRMM `develop` branch (<https://github.com/wh1te909/tacticalrmm>).
 
 !!!warning
-    Please do not attempt development of this kind on your production server.
+    Do not attempt development of this kind on your production server.
 
-## Getting Started
+## Install Tacticall RMM
 
-### 1. Install Tactical RMM per instructions
+### 1. Traditional install
 
-Do a [Traditional Install](https://wh1te909.github.io/tacticalrmm/install_server/)
+This guide assumes you have done a [Traditional Install](https://wh1te909.github.io/tacticalrmm/install_server/).
 
-### 2. Install VSCode
+### 2. Install VSCode and Extensions
+Download VSCode [here](https://code.visualstudio.com/download)
 
-<https://code.visualstudio.com/download>
+Download the Remote SSH Development Pack [here](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
 
-#### 2a. Install VSCode Remote SSH Development Pack
+## Configure the Remote Development Server
+### 1. Connect
 
-<https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack>
+The remote development server should already have Tactical RMM installed via the traditional install method.
 
-### 3. Connect to your remote development server
-
-After the extension pack is installed you will have a new button at the bottom-left of VSCode. You can select it and add your remote SSH host information.
+After the extension pack is installed in VSCode you will have a new button at the bottom-left of VSCode. You can select it and add your remote SSH host information.
 
 ![RemoteSSH](images/Remote_SSH_connection.png)
 
-### 4. Configure remote server
+### 2. Configure
 
-Configuring a remote server for development work is necessary so that as you make changes to the code base you can refresh your browse anr and thest htem them out before pushing to your GitHBUub fork to then submit a PR.
+Configuring a remote server for development work is necessary so that as you make changes to the code base it will automatically refresh and you can see the changes. It may be necessary to do a full browser refresh if changing styles.
 
-- Disable rmm and daphne services
+Disable RMM and Daphne services
 
 ```bash
 sudo systemctl disable --now rmm.service && sudo systemctl disable --now daphne.service
 ```
 
-- Open /rmm/web/.env and make it look like the following
+Open /rmm/web/.env and make it look like the following
 
 ```bash
 DEV_URL = "http://api.domain.com:8000"
 APP_URL = "http://rmm.domain.com:8080"
 ```
 
-- Open /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
-
-```bash
-remove CORS_ORIGIN_WHITELIST list
-add CORS_ORIGIN_ALLOW_ALL = True
-```
+Open /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
 ```bash
 change DEBUG = True
 ```
+Remove
+```bash
+CORS_ORIGIN_WHITELIST list
+```
+Add
+```bash
+CORS_ORIGIN_ALLOW_ALL = True
+```
 
-- cd /rmm/api/tacticalrmm/
+Add the following to the ALLOWED HOSTS
+```bash
+rmm.doamin.com
+```
+cd /rmm/api/tacticalrmm/
 
 ```bash
 source ../env/bin/activate
 ```
 
-- Install requirements
+Install requirements
 
 ```bash
 pip install -r requirements-dev.txt -r requirements-test.txt
 ```
 
-- Start Django backend
+Start Django backend
 
 ```bash
 python manage.py runserver 0:8000
 ```
 
-- Open a new terminal and compile quasar frontend
+Open a new terminal and compile quasar frontend
 
 ```bash
 cd /rmm/web
 npm install
+npm install -g @quasar/cli
 quasar dev
 ```
 
-- If you get quasar command not found
-
-```bash
-npm install -g @quasar/cli
-```
-
-- If you receive a CORS error when trying to log into your server via localhost or IP
-
+!!!info If you receive a CORS error when trying to log into your server via localhost or IP, try the following
 ```bash
 rm -rf node_modules .quasar
 npm install
 quasar dev
 ```
+You should now have a localhost and IP based URL to view that has a live reload feature.
 
-- Make sure u are on develop branch
+## Configure GitHub with VSCode
+!!!info Make sure you are submitting Pull Requests to the develop branch.
+Follow this guide for a good introduction to GitHub: <https://www.digitalocean.com/community/tutorials/how-to-create-a-pull-request-on-github>
 
+Make sure u are on develop branch
 ```bash
 git checkout develop
 ```
-
-### 5. Fork Project in Github
-
-This is making a duplicate of the code under your Github that you can edit
-
-<https://github.com/wh1te909/tacticalrmm>
-
-![ForkIt](images/vscode-forkit.png)
-
-### 6. Add your (forked) repo to vscode
-
-Clone repository
-
-Login to your Github
-
-Remote - SSH
-
-### 7. Configure a remote for your fork (in vscode)
-
-<https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork>
-
-Configure your local fork and tell it where the original code repo is so you can compare and merge updates later when official repo is updated
-
-Add upstream repo
-
+git remote -v should look like the following
 ```bash
-git remote add upstream https://github.com/your username/tacticalrmm
+origin  https://github.com/yourusername/tacticalrmm.git (fetch)
+origin  https://github.com/yourusername/tacticalrmm.git (push)
+upstream https://github.com/wh1te909/tacticalrmm.git (fetch)
+upstream https://github.com/wh1te909/tacticalrmm.git (push)
 ```
+You will commit the change to your GitHub and from within GitHub you can then submit a PR to the develop branch of wh1te909 Tactical RMM.
 
-git remove -v should look like the following
-
-```bash
-tacticalrmm     https://github.com/yourusername/tacticalrmm (fetch)
-tacticalrmm     https://github.com/yourusername/tacticalrmm (push)es
-```
+More to come...

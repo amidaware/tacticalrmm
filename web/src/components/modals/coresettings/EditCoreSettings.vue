@@ -316,6 +316,11 @@
                   <div class="col-2"></div>
                   <q-input dense outlined v-model="settings.mesh_token" class="col-6" />
                 </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4"></div>
+                  <div class="col-2"></div>
+                  <q-btn label="Upload Mesh Agents" color="primary" @click="uploadMeshAgentModal" />
+                </q-card-section>
               </q-tab-panel>
               <q-tab-panel name="customfields">
                 <CustomFields />
@@ -428,6 +433,7 @@ import CustomFields from "@/components/modals/coresettings/CustomFields";
 import KeyStoreTable from "@/components/modals/coresettings/KeyStoreTable";
 import URLActionsTable from "@/components/modals/coresettings/URLActionsTable";
 import APIKeysTable from "@/components/core/APIKeysTable";
+import UploadMesh from "@/components/core/UploadMesh";
 
 export default {
   name: "EditCoreSettings",
@@ -589,6 +595,11 @@ export default {
         .catch(() => {
           this.$q.loading.hide();
         });
+    },
+    uploadMeshAgentModal() {
+      this.$q.dialog({
+        component: UploadMesh,
+      });
     },
   },
   mounted() {

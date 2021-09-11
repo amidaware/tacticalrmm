@@ -34,7 +34,7 @@ from .serializers import (
 
 
 class UploadMeshAgent(APIView):
-    permission_classes = [IsAuthenticated, MeshPerms]
+    permission_classes = [IsAuthenticated, EditCoreSettingsPerms]
     parser_class = (FileUploadParser,)
 
     def put(self, request, format=None):
@@ -50,7 +50,7 @@ class UploadMeshAgent(APIView):
             for chunk in f.chunks():
                 j.write(chunk)
 
-        return Response(status=status.HTTP_201_CREATED)
+        return Response("Mesh Agent uploaded successfully", status=status.HTTP_201_CREATED)
 
 
 @api_view()

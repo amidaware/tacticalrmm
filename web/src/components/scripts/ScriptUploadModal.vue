@@ -131,7 +131,6 @@ export default {
       loading.value = true;
       let result = "";
       try {
-        console.log(script.value);
         result = await saveScript(script.value);
         onDialogOK();
         notifySuccess(result);

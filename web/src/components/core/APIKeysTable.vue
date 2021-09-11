@@ -165,7 +165,7 @@ export default {
           getAPIKeys();
           loading.value = false;
         } catch (e) {
-          console.log(e);
+          console.error(e);
           loading.value = false;
         }
       });

@@ -17,16 +17,22 @@
                 lazy-rules
                 :rules="[val => (val && val.length > 0) || 'This field is required']"
               />
-
               <q-input
-                type="password"
-                filled
                 v-model="credentials.password"
+                filled
+                :type="isPwd ? 'password' : 'text'"
                 label="Password"
                 lazy-rules
                 :rules="[val => (val && val.length > 0) || 'This field is required']"
-              />
-
+              >
+                <template v-slot:append>
+                  <q-icon
+                    :name="isPwd ? 'visibility_off' : 'visibility'"
+                    class="cursor-pointer"
+                    @click="isPwd = !isPwd"
+                  />
+                </template>
+              </q-input>
               <div>
                 <q-btn label="Login" type="submit" color="primary" class="full-width" />
               </div>
@@ -70,6 +76,7 @@ export default {
     return {
       credentials: {},
       prompt: false,
+      isPwd: true,
     };
   },
 

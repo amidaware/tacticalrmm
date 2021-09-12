@@ -1,6 +1,6 @@
 # Contributing
 
-### Contributing to the docs
+## Contributing to the docs
 
 Docs are built with [MKDocs for Material](https://squidfunk.github.io/mkdocs-material/)
 

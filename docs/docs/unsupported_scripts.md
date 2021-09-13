@@ -3,6 +3,20 @@
 !!!note
     These are not supported scripts/configurations by Tactical RMM, but it's provided here for your reference.
 
+## General Notes on Proxies and Tactical RMM
+
+### Port 443
+
+Make sure websockets option is enabled.
+
+All 3 URL's will need to be configured: `rmm`, `api`, `mesh`
+
+For `mesh` see the Section 10. TLS Offloading of the [MeshCentral 2 User Guide](https://info.meshcentral.com/downloads/MeshCentral2/MeshCentral2UserGuide.pdf)
+
+### Port 4222
+
+Is NATS (<https://nats.io>). You'll need a TCP forwarder as NATS only talks TCP not HTTP.
+
 ## HAProxy
 
 Check/Change the mesh central config.json, some of the values may be set already, CertUrl must be changed to point to the HAProxy server.

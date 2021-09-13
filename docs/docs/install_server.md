@@ -198,7 +198,7 @@ Use the scripts above.
 ### Requirements
 
 1. TLD domain name which is internet resolvable (this is for a LetsEncrypt DNS wildcard request during the install script [validated by DNS txt record](https://letsencrypt.org/docs/challenge-types/#dns-01-challenge)).
-    - Test using: <https://viewdns.info/dnsrecord/>. Enter: `_acme-challenge.example.com`
+    - Test using: <https://viewdns.info/dnsrecord/> or <https://dnschecker.org/>. Enter: `_acme-challenge.example.com` as `TXT`
 2. Agents need to be able to connect to your server via DNS lookup (hosts file, local DNS, smoke signals etc.).
     - Test from agent: `ping rmm.example.com`. Should result in the IP of your Tactical RMM server
     - Test from agent: `ping api.example.com`. Should result in the IP of your Tactical RMM server

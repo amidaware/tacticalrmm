@@ -2,7 +2,7 @@
 
 ## I want to use xyz Proxy Manager
 
-This is an [Unsupported Installation](../unsupported_guidelines) because then we are troubleshooting **your** environment, not Tactical RMM. You need to have knowledge about how things work if you're going to stray from the [easy path](../install_server/#option-1-easy-install) of the standard install in a VPS.
+This is an [Unsupported Installation](../unsupported_guidelines) because then we are troubleshooting **your** environment, not Tactical RMM. If you wish to stray from the [easy install](../install_server/#option-1-easy-install) of the standard install in a VPS, you need to have the knowledge on how to troubleshoot your own custom environment.
 
 The most common reasons you're running a proxy is:
 

@@ -7,10 +7,24 @@ If you've asked for help in [#support](https://discord.com/channels/736478043522
 Blur your domains if you desire privacy.
 
 ```bash
-wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/troubleshoot_server.sh
+wget -N https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/troubleshoot_server.sh
 chmod +x troubleshoot_server.sh
 ./troubleshoot_server.sh
 ```
+
+## Make sure DNS (name resolution) was setup properly
+
+### From the agent
+
+Open command prompt
+
+```cmd
+ping rmm.example.com
+ping api.example.com
+ping mesh.example.com
+```
+
+The IP address for all 3 should reflect your Tactical RMM server
 
 ## Problems after new install
 

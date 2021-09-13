@@ -1,25 +1,36 @@
 # Installation
 
-## Minimum requirements
+## General Information
+
+### Minimum requirements
+
+#### Hardware / OS
 
 - A fresh linux VM running either Ubuntu 20.04 or Debian 10, with a minimum of 3GB RAM (4GB Recommended).
 
 !!!warning
-    The provided install script assumes a fresh server with no software installed on it. Attempting to run it on an existing server with other services **will** break things and the install will fail.<br/><br/>
-    The install script has been tested on the following public cloud providers: DigitalOcean, Linode, Vultr, BuyVM (highly recommended), Hetzner, AWS, Google Cloud and Azure, as well as behind NAT on Hyper-V, Proxmox and ESXi.
+    The provided install script assumes a fresh server with no software installed on it. Attempting to run it on an existing server with other services **will** break things and the install will fail.
 
 !!!note
-    We highly recommend staying current with updates (at least every 3 months when you update your SSL certs is a good minimum) while Tactical RMM is still working towards its 1.0 release.
+    The install script has been tested on the following public cloud providers: DigitalOcean, Linode, Vultr, BuyVM (highly recommended), Hetzner, AWS, Google Cloud and Azure, as well as behind NAT on Hyper-V, Proxmox and ESXi.
+
+#### Network Requirements
 
 - A real (internet resolvable) domain is needed to generate a Let's Encrypt wildcard cert. _If you cannot afford to purchase a domain ($12 a year) then you can get one for free at [freenom.com](https://www.freenom.com/)_
-- example.local is __NOT__ a real domain. No you [don't have to expose your server](faq.md#can-i-run-tactical-rmm-locally-behind-nat-without-exposing-anything-to-the-internet) to the internet
+    - example.local is __NOT__ a real domain. No you [don't have to expose your server](faq.md#can-i-run-tactical-rmm-locally-behind-nat-without-exposing-anything-to-the-internet) to the internet
 - A TOTP based authenticator app. Some popular ones are Google Authenticator, Authy and Microsoft Authenticator.
 
-## Install
+#### Update Recommendations
 
-!!!info
-    It is recommended that you keep your server updated regularly (monthly). SSL wildcard certs will expire every 3 months and need manual updating as well. <br/><br/>
+!!!note
+    We highly recommend staying current with updates (at least every 3 months when you update your SSL certs is a good minimum) while Tactical RMM is still working towards its 1.0 release.<br/><br/>
     Until we reach production release, there may be architectural changes that may be made to Tactical RMM and only a regular patching schedule is supported by developers.
+
+## Option 1: Easy Install
+
+Install on a VPS: DigitalOcean, Linode, Vultr, BuyVM (highly recommended), Hetzner, AWS, Google Cloud and Azure to name a few
+
+Use something that meets [minimum specs](install_server.md#hardware-os)
 
 ### Run updates and setup the linux user
 
@@ -125,7 +136,8 @@ Answer the initial questions when prompted. Replace `example.com` with your doma
 !!!warning
     TXT records can take anywhere from 1 minute to a few hours to propogate depending on your DNS provider.<br/>
     You should verify the TXT record has been deployed first before pressing Enter.<br/>
-    A quick way to check is with the following command:<br/> `dig -t txt _acme-challenge.example.com`
+    A quick way to check is with the following command:<br/> `dig -t txt _acme-challenge.example.com`<br/>
+    or test using: <https://viewdns.info/dnsrecord/> Enter: `_acme-challenge.example.com`
 
 ![txtrecord](images/txtrecord.png)
 
@@ -147,9 +159,59 @@ Once logged in, you will be redirected to the initial setup page.
 
 Create your first client/site, choose the default timezone and then upload the mesh agent you just downloaded.
 
+### You're Done
+
+[Update Regularly](install_server.md#update-regularly)
+
+## Option 2: Install behind NAT Router
+
+Install in your local network using: Dedicated hardware, Hyper-V, Proxmox or ESXi. All been tested and work fine.
+
+Do everything from [Option 1: Easy Install](install_server.md#run-updates-and-setup-the-linux-user)
+
+### If you only have agents on the private network/subnet
+
+Make sure your local DNS server (or agents hosts file) have your Tactical RMM server IP addresses for the 3 domain names: `rmm`, `api` and `mesh`
+
+### Agents exist outside the private network/subnet - Setup Port Forwarding
+
+If you have agents outside your local network: Make sure the public DNS servers have A records for the 3 Tactical RMM server domain names: `rmm`, `api` and `mesh`
+
+Login to your router/NAT device.
+
+1. Set your TRMM server as a static IP (Use a DHCP reservation is usually safer)
+2. Create 2 port forwarding rules. `TCP Port 443` and `TCP Port 4222` to your private IP address.
+
+### You're Done
+
+[Update Regularly](install_server.md#update-regularly)
+
+## Option 3: Installs by Network Wizards
+
+Use the scripts above.
+
+### Requirements
+
+1. TLD domain name which is internet resolvable (this is for a LetsEncrypt DNS wildcard request during the install script [validated by DNS txt record](https://letsencrypt.org/docs/challenge-types/#dns-01-challenge)).
+    - Test using: <https://viewdns.info/dnsrecord/>. Enter: `_acme-challenge.example.com`
+2. Agents need to be able to connect to your server via DNS lookup (hosts file, local DNS, smoke signals etc.).
+    - Test from agent: `ping rmm.example.com`. Should result in the IP of your Tactical RMM server
+    - Test from agent: `ping api.example.com`. Should result in the IP of your Tactical RMM server
+    - Test from agent: `ping mesh.example.com`. Should result in the IP of your Tactical RMM server
+
 !!!note
-    Though it is an unsupported configuration, if you are using HAProxy or wish to configure fail2ban this might be of use to you [Unsupported Configuration Notes](unsupported_scripts.md)
+    Did you notice #2 doesn't need to be something publicly available?
+
+That's it. You're a wizard, you know how to satisfy these 2 items.
+
+You'll probably enjoy browsing thru the [Unsupported section](unsupported_guidelines.md) of the docs.
 
 ## Update Regularly
 
-We've said it before, we'll say it again. We recommend regular updates. Every 3 months.
+We've said it before, we'll say it again.
+
+- We recommend regular updates.
+
+    - Every 3 months.
+
+        - Do it when you update your SSL certs.

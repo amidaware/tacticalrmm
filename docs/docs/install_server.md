@@ -6,7 +6,12 @@
 
 #### Hardware / OS
 
-- A fresh linux VM running either Ubuntu 20.04 or Debian 10, with a minimum of 3GB RAM (4GB Recommended).
+A fresh linux VM running either Ubuntu 20.04 or Debian 10
+
+- `0-100 agents`: 3GB RAM, 1vCPU, 40GB storage (SSD recommended)
+- `101-400 agents`: 4GB RAM,  2vCPU, 60GB storage (SSD recommended)
+- `401-1000 agents`: 6GB RAM, 2vCPU, 80GB storage (SSD recommended)
+- `1000+ agents`: 6GB RAM, 4vCPU, 100GB+ storage (SSD recommended)
 
 !!!warning
     The provided install script assumes a fresh server with no software installed on it. Attempting to run it on an existing server with other services **will** break things and the install will fail.
@@ -26,7 +31,7 @@
     We highly recommend staying current with updates (at least every 3 months when you update your SSL certs is a good minimum) while Tactical RMM is still working towards its 1.0 release.<br/><br/>
     Until we reach production release, there may be architectural changes that may be made to Tactical RMM and only a regular patching schedule is supported by developers.
 
-## Option 1: Easy Install
+## Option 1: Easy Install on a VPS
 
 Install on a VPS: DigitalOcean, Linode, Vultr, BuyVM (highly recommended), Hetzner, AWS, Google Cloud and Azure to name a few
 

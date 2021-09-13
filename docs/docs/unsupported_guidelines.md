@@ -32,6 +32,10 @@ Should you employ any one or several of these unsupported technologies:
 * Did anything other than follow the installation instructions exactly
 * and any/all other magical ABC thru XYZ technologies
 
-Please let us know **BEFORE** we start troubleshooting and looking for software bugs that you are...in fact...a 🧙...and using something non-standard 😉 Help us maximize keeping developer time and resources focused on new releases...not support goosechases.
+Please let us know **BEFORE** we start troubleshooting and looking for software bugs that you are...in fact...a 🧙...and using something non-standard 😉 
+
+These are "unsupported" because then we are troubleshooting **your** environment, not Tactical RMM. You need to have knowledge about how things work if you're going to stray from the [easy path](../install_server/#option-1-easy-install) of the standard install. 
+
+Help us maximize keeping developer time and resources focused on new releases...not support goosechases.
 
 Thank you and #KeepDeploying

@@ -1,110 +1,127 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide" persistent @keydown.esc="onDialogHide" :maximized="maximized">
-    <q-card class="q-dialog-plugin" :style="maximized ? '' : 'width: 70vw; max-width: 90vw'">
-      <q-bar>
-        {{ title }}
-        <q-space />
-        <q-btn dense flat icon="minimize" @click="maximized = false" :disable="!maximized">
-          <q-tooltip v-if="maximized" class="bg-white text-primary">Minimize</q-tooltip>
-        </q-btn>
-        <q-btn dense flat icon="crop_square" @click="maximized = true" :disable="maximized">
-          <q-tooltip v-if="!maximized" class="bg-white text-primary">Maximize</q-tooltip>
-        </q-btn>
-        <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
-        </q-btn>
-      </q-bar>
+    <q-layout
+      view="Lhh lpR fff"
+      container
+      class="bg-white q-dialog-plugin"
+      :style="maximized ? '' : 'width: 70vw; max-width: 90vw'"
+    >
       <q-form @submit="submitForm">
-        <q-card-section class="row">
-          <div class="q-pa-sm col-1" style="width: auto">
-            <q-icon
-              class="cursor-pointer"
-              :name="formScript.favorite ? 'star' : 'star_outline'"
-              size="md"
-              color="yellow-8"
-              @[clickEvent]="formScript.favorite = !formScript.favorite"
-            />
-          </div>
-          <div class="q-pa-sm col-2">
-            <q-input
-              filled
-              dense
-              :readonly="readonly"
-              v-model="formScript.name"
-              label="Name"
-              :rules="[val => !!val || '*Required']"
-            />
-          </div>
-          <div class="q-pa-sm col-2">
-            <q-select
-              :readonly="readonly"
-              options-dense
-              filled
-              dense
-              v-model="formScript.shell"
-              :options="shellOptions"
-              emit-value
-              map-options
-              label="Shell Type"
-            />
-          </div>
-          <div class="q-pa-sm col-2">
-            <q-input
-              type="number"
-              filled
-              dense
-              :readonly="readonly"
-              v-model.number="formScript.default_timeout"
-              label="Timeout (seconds)"
-              :rules="[val => val >= 5 || 'Minimum is 5']"
-            />
-          </div>
-          <div class="q-pa-sm col-3">
-            <tactical-dropdown
-              hint="Press Enter or Tab when adding a new value"
-              filled
-              v-model="formScript.category"
-              :options="categories"
-              use-input
-              clearable
-              new-value-mode="add-unique"
-              filterable
-              label="Category"
-              :readonly="readonly"
-            />
-          </div>
-          <div class="q-pa-sm col-2">
-            <q-input filled dense :readonly="readonly" v-model="formScript.description" label="Description" />
-          </div>
-        </q-card-section>
-        <div class="q-px-sm q-pt-none q-pb-sm q-mt-none row">
-          <tactical-dropdown
-            v-model="formScript.args"
-            label="Script Arguments (press Enter after typing each argument)"
-            class="col-12"
-            filled
-            use-input
-            multiple
-            hide-dropdown-icon
-            input-debounce="0"
-            new-value-mode="add"
-            :readonly="readonly"
-          />
-        </div>
+        <q-header class="bg-white text-black">
+          <q-bar>
+            {{ title }}
+            <q-space />
+            <q-btn dense flat icon="minimize" @click="maximized = false" :disable="!maximized">
+              <q-tooltip v-if="maximized" class="bg-white text-primary">Minimize</q-tooltip>
+            </q-btn>
+            <q-btn dense flat icon="crop_square" @click="maximized = true" :disable="maximized">
+              <q-tooltip v-if="!maximized" class="bg-white text-primary">Maximize</q-tooltip>
+            </q-btn>
+            <q-btn dense flat icon="close" v-close-popup>
+              <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+            </q-btn>
+          </q-bar>
+          <q-separator class="bg-grey-3" />
+        </q-header>
 
-        <CodeEditor
-          v-model="code"
-          :style="maximized ? '--prism-height: 76vh' : '--prism-height: 70vh'"
-          :readonly="readonly"
-          :shell="formScript.shell"
-        />
-        <q-card-actions align="right">
-          <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn dense flat color="primary" label="Test Script" @click="openTestScriptModal" />
-          <q-btn v-if="!readonly" :loading="loading" dense flat label="Save" color="primary" type="submit" />
-        </q-card-actions>
+        <q-page-container>
+          <q-page>
+            <q-card-section class="row">
+              <div class="q-pa-sm col-1" style="width: auto">
+                <q-icon
+                  class="cursor-pointer"
+                  :name="formScript.favorite ? 'star' : 'star_outline'"
+                  size="md"
+                  color="yellow-8"
+                  @[clickEvent]="formScript.favorite = !formScript.favorite"
+                />
+              </div>
+              <div class="q-pa-sm col-2">
+                <q-input
+                  filled
+                  dense
+                  :readonly="readonly"
+                  v-model="formScript.name"
+                  label="Name"
+                  :rules="[val => !!val || '*Required']"
+                />
+              </div>
+              <div class="q-pa-sm col-2">
+                <q-select
+                  :readonly="readonly"
+                  options-dense
+                  filled
+                  dense
+                  v-model="formScript.shell"
+                  :options="shellOptions"
+                  emit-value
+                  map-options
+                  label="Shell Type"
+                />
+              </div>
+              <div class="q-pa-sm col-2">
+                <q-input
+                  type="number"
+                  filled
+                  dense
+                  :readonly="readonly"
+                  v-model.number="formScript.default_timeout"
+                  label="Timeout (seconds)"
+                  :rules="[val => val >= 5 || 'Minimum is 5']"
+                />
+              </div>
+              <div class="q-pa-sm col-3">
+                <tactical-dropdown
+                  hint="Press Enter or Tab when adding a new value"
+                  filled
+                  v-model="formScript.category"
+                  :options="categories"
+                  use-input
+                  clearable
+                  new-value-mode="add-unique"
+                  filterable
+                  label="Category"
+                  :readonly="readonly"
+                />
+              </div>
+              <div class="q-pa-sm col-2">
+                <q-input filled dense :readonly="readonly" v-model="formScript.description" label="Description" />
+              </div>
+            </q-card-section>
+            <div class="q-px-sm q-pt-none q-pb-sm q-mt-none row">
+              <tactical-dropdown
+                v-model="formScript.args"
+                label="Script Arguments (press Enter after typing each argument)"
+                class="col-12"
+                filled
+                use-input
+                multiple
+                hide-dropdown-icon
+                input-debounce="0"
+                new-value-mode="add"
+                :readonly="readonly"
+              />
+            </div>
+
+            <CodeEditor
+              v-model="code"
+              :style="maximized ? '--prism-height: 76vh' : '--prism-height: 70vh'"
+              :readonly="readonly"
+              :shell="formScript.shell"
+            />
+          </q-page>
+        </q-page-container>
+
+        <q-footer class="bg-white text-black">
+          <q-separator class="bg-grey-3" />
+          <q-card-actions align="right">
+            <q-btn dense flat label="Cancel" v-close-popup />
+            <q-btn dense flat color="primary" label="Test Script" @click="openTestScriptModal" />
+            <q-btn v-if="!readonly" :loading="loading" dense flat label="Save" color="primary" type="submit" />
+          </q-card-actions>
+        </q-footer>
       </q-form>
-    </q-card>
+    </q-layout>
   </q-dialog>
 </template>
 

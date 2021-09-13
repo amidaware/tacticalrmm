@@ -1,13 +1,19 @@
 # FAQ
 
-## I want to use xyz Proxy Manager
+## Is it possible to use XXX with Tactical RMM
 
-This is an [Unsupported Installation](../unsupported_guidelines) because then we are troubleshooting **your** environment, not Tactical RMM. If you wish to stray from the [easy install](../install_server/#option-1-easy-install) of the standard install in a VPS, you need to have the knowledge on how to troubleshoot your own custom environment.
+While it _may be possible_ to use XXX, we have not configured it and therefore it is [Unsupported](../unsupported_guidelines). We cannot help you configure XXX as it pertains to **your environment**. 
+
+## Is it possible to use XXX proxy server with Tactical RMM
+
+If you wish to stray from the [easy install](../install_server/#option-1-easy-install) of a standard install in a VPS, you need to have the knowledge on how to troubleshoot your own custom environment.
 
 The most common reasons you're running a proxy is:
 
-1. Because you only have a single public IP and you already have something on Port 443: Get another public IP from your ISP
-2. Because you want to monitor traffic for security reasons: You're a [Networking Wizard](../unsupported_guidelines)
+1. Because you only have a single public IP and you already have something on Port 443. **Workaround**: Get another public IP from your ISP
+2. Because you want to monitor traffic for security reasons: You're a [Networking Wizard](../unsupported_guidelines).
+
+There are some [implementations](../unsupported_scripts) that others have done, but be aware it is [Unsupported](../unsupported_guidelines) and if you're requesting help in Discord please let us know in advance.
 
 ## How do I do X feature in the web UI?
 

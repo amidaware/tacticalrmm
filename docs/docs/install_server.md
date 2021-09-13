@@ -6,7 +6,7 @@
 
 #### Hardware / OS
 
-A fresh linux VM running either Ubuntu 20.04 or Debian 10
+A fresh linux VM running either Ubuntu 20.04 LTS or Debian 10
 
 - `0-100 agents`: 3GB RAM, 1vCPU, 40GB storage (SSD recommended)
 - `101-400 agents`: 4GB RAM,  2vCPU, 60GB storage (SSD recommended)

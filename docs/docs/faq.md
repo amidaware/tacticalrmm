@@ -1,5 +1,14 @@
 # FAQ
 
+## I want to use xyz Proxy Manager
+
+This is an [Unsupported Installation](../unsupported_guidelines) because then we are troubleshooting **your** environment, not Tactical RMM. You need to have knowledge about how things work if you're going to stray from the [easy path](../install_server/#option-1-easy-install) of the standard install in a VPS.
+
+The most common reasons you're running a proxy is:
+
+1. Because you only have a single public IP and you already have something on Port 443: Get another public IP from your ISP
+2. Because you want to monitor traffic for security reasons: You're a [Networking Wizard](../unsupported_guidelines)
+
 ## How do I do X feature in the web UI?
 
 Alot of features in the web UI are hidden behind right-click menus; almost everything has a right click menu so if you don't see something, try right clicking on it.

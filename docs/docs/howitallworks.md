@@ -1,14 +1,10 @@
 # How It All Works
 
-INSERT WIREFRAME GRAPHICS HERE USING SOMETHING LIKE <https://www.yworks.com/yed-live/>
+![Network Design](images/TacticalRMM-Network.png)
 
-1) how nats-django-admin web interface work
+1. Agent installer steps
 
-2) Agent installer steps
-
-3) Agent communication process with server (what ports to which services etc)
-
-4) Agent checks/tasks and how they work on the workstation/interact with server
+2. Agent checks/tasks and how they work on the workstation/interact with server
 
 ## Server
 

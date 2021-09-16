@@ -169,6 +169,7 @@ print_green 'Installing Nginx'
 sudo apt install -y nginx
 sudo systemctl stop nginx
 sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
+sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
 
 print_green 'Installing NodeJS'
 

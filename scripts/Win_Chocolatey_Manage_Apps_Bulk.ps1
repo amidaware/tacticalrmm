@@ -15,6 +15,8 @@
       Mode upgrade Hosts 50
       .EXAMPLE
       Mode uninstall PackageName googlechrome
+      .NOTES
+      9/2021 v1 Initial release by @silversword411 and @bradhawkins 
   #>
 
 param (

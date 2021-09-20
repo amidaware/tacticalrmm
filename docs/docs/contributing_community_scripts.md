@@ -123,6 +123,10 @@ c:\ProgramData\TacticalRMM\
 
 *****
 
+## Script Parameters
+
+
+
 ## Useful Reference Script Examples
 
 RunAsUser (since Tactical RMM runs as system)

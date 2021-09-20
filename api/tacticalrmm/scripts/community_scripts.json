@@ -102,15 +102,21 @@
     "submittedBy": "https://github.com/bradhawkins85",
     "name": "TacticalRMM - Agent Rename",
     "description": "Updates the DisplayName registry entry for the Tactical RMM windows agent to your desired name. This script takes 1 required argument: the name you wish to set.",
+    "args": [
+      "<string>"
+    ],
     "shell": "powershell",
     "category": "TRMM (Win):TacticalRMM Related"
   },
   {
     "guid": "525ae965-1dcf-4c17-92b3-5da3cf6819f5",
-    "filename": "Win_Bitlocker_Encrypted_Drive_c.ps1",
-    "submittedBy": "https://github.com/ThatsNASt",
-    "name": "Bitlocker - Check C Drive for Status",
-    "description": "Runs a check on drive C for Bitlocker status.",
+    "filename": "Win_Bitlocker_Drive_Check_Status.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Bitlocker - Check Drive for Status",
+    "description": "Runs a check on drive for Bitlocker status. Returns 0 if Bitlocker is not enabled, 1 if Bitlocker is enabled",
+    "args": [
+      "[Drive <string>]"
+    ],
     "shell": "powershell",
     "category": "TRMM (Win):Storage"
   },
@@ -425,6 +431,11 @@
     "submittedBy": "https://github.com/silversword411",
     "name": "Chocolatey - Install, Uninstall and Upgrade Software",
     "description": "This script installs, uninstalls and updates software using Chocolatey with logic to slow tasks to minimize hitting community limits. Mode install/uninstall/upgrade Hosts x",
+    "args": [
+      "-$PackageName <string>",
+      "[-Hosts <string>]",
+      "[-mode {(install) | update | uninstall}]"
+    ],
     "shell": "powershell",
     "category": "TRMM (Win):3rd Party Software>Chocolatey",
     "default_timeout": "600"
@@ -485,10 +496,16 @@
   },
   {
     "guid": "5d905886-9eb1-4129-8b81-a013f842eb24",
-    "filename": "Win_Rename_Computer.ps1",
+    "filename": "Win_Computer_Rename.ps1",
     "submittedBy": "https://github.com/silversword411",
     "name": "Rename Computer",
     "description": "Rename computer. First parameter will be new PC name. 2nd parameter if yes will auto-reboot machine",
+    "args": [
+      "-NewName <string>",
+      "[-Username <string>]",
+      "[-Password <string>]",
+      "[-Restart]"
+    ],
     "shell": "powershell",
     "category": "TRMM (Win):Other",
     "default_timeout": 30
@@ -499,6 +516,9 @@
     "submittedBy": "https://github.com/tremor021",
     "name": "Power - Restart or Shutdown PC",
     "description": "Restart PC. Add parameter: shutdown if you want to shutdown computer",
+    "args": [
+      "-exe {{client.bdexe}}"
+    ],
     "shell": "powershell",
     "category": "TRMM (Win):Updates"
   },
@@ -523,7 +543,7 @@
       "-url {{client.ScreenConnectInstaller}}",
       "-clientname {{client.name}}",
       "-sitename {{site.name}}",
-      "-action install"
+      "-action {(install) | uninstall | start | stop}"
     ],
     "default_timeout": "90",
     "shell": "powershell",
@@ -737,6 +757,13 @@
     "submittedBy": "https://github.com/brodur",
     "name": "User - Create Local",
     "description": "Create a local user. Parameters are: username, password and optional: description, fullname, group (adds to Users if not specified)",
+    "args": [
+      "-username <string>",
+      "-password <string>",
+      "[-description <string>]",
+      "[-fullname <string>]",
+      "[-group <string>]"
+    ],
     "shell": "powershell",
     "category": "TRMM (Win):User Management"
   },

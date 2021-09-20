@@ -6,12 +6,7 @@
 
 #### Hardware / OS
 
-A fresh linux VM running either Ubuntu 20.04 LTS or Debian 10
-
-- `0-100 agents`: 3GB RAM, 1vCPU, 40GB storage (SSD recommended)
-- `101-400 agents`: 4GB RAM,  2vCPU, 60GB storage (SSD recommended)
-- `401-1000 agents`: 6GB RAM, 2vCPU, 80GB storage (SSD recommended)
-- `1000+ agents`: 6GB RAM, 4vCPU, 100GB+ storage (SSD recommended)
+A fresh linux VM running either Ubuntu 20.04 LTS or Debian 10 with 3GB RAM
 
 !!!warning
     The provided install script assumes a fresh server with no software installed on it. Attempting to run it on an existing server with other services **will** break things and the install will fail.

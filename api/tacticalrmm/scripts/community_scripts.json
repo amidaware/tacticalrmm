@@ -517,7 +517,7 @@
     "name": "Power - Restart or Shutdown PC",
     "description": "Restart PC. Add parameter: shutdown if you want to shutdown computer",
     "args": [
-      "-exe {{client.bdexe}}"
+      "[shutdown]"
     ],
     "shell": "powershell",
     "category": "TRMM (Win):Updates"

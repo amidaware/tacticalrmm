@@ -152,3 +152,12 @@ Test-NetConnection -ComputerName rmm.example.com -Port 443
 ```
 
 Are you trying to use a proxy to share your single public IP with multiple services on 443? This is complicated and [unsupported by Tactical RMM](unsupported_scripts.md), test your setup.
+
+## Mesh Agent x86 x64 integration with TRMM
+
+1. Log into Mesh (you can right-click any agent, choose remote control or Remote Background)
+2. Goto your mesh interface (eg `https://mesh.domain.com`) 
+3. Find your TacticalRMM group
+4. Click the add link
+5. Download both agents
+6. In Tactical RMM, go **File > Upload MeshAgent** upload them both into the appropriate places.

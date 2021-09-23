@@ -137,11 +137,11 @@ class GetUpdateDeleteCheck(APIView):
 
             # Re-evaluate agent checks is policy was enforced
             if check.policy.enforced:
-                generate_agent_checks_task.delay(policy=check.policy)
+                generate_agent_checks_task.delay(policy=check.policy.pk)
 
         # Agent check deleted
         elif check.agent:
-            check.agent.generate_checks_from_policies()
+            generate_agent_checks_task.delay(agents=[check.agent.pk])
 
         return Response(f"{check.readable_desc} was deleted!")
 

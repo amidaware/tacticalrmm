@@ -457,7 +457,7 @@ class Check(BaseAuditModel):
 
         elif self.status == "passing":
             self.fail_count = 0
-            self.save(update_fields=["status", "fail_count", "alert_severity"])
+            self.save()
             if Alert.objects.filter(assigned_check=self, resolved=False).exists():
                 Alert.handle_alert_resolve(self)
 

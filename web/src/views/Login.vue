@@ -40,7 +40,7 @@
           </q-card-section>
         </q-card>
         <!-- 2 factor modal -->
-        <q-dialog v-model="prompt">
+        <q-dialog persistent v-model="prompt">
           <q-card style="min-width: 400px">
             <q-form @submit.prevent="onSubmit">
               <q-card-section class="text-center text-h6">Two-Factor Token</q-card-section>

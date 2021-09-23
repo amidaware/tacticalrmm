@@ -50,7 +50,9 @@ class UploadMeshAgent(APIView):
             for chunk in f.chunks():
                 j.write(chunk)
 
-        return Response("Mesh Agent uploaded successfully", status=status.HTTP_201_CREATED)
+        return Response(
+            "Mesh Agent uploaded successfully", status=status.HTTP_201_CREATED
+        )
 
 
 @api_view()

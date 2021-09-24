@@ -1,6 +1,5 @@
 import smtplib
 from email.message import EmailMessage
-from django.db.models.enums import Choices
 
 import pytz
 from django.conf import settings
@@ -8,6 +7,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.db import models
 from twilio.rest import Client as TwClient
+from twilio.base.exceptions import TwilioRestException
 
 from logs.models import BaseAuditModel, DebugLog, LOG_LEVEL_CHOICES
 
@@ -195,22 +195,30 @@ class CoreSettings(BaseAuditModel):
         else:
             return True
 
-    def send_sms(self, body, alert_template=None):
-        if not alert_template or not self.sms_is_configured:
-            return
+    def send_sms(self, body, alert_template=None, test=False):
+        if not alert_template and not self.sms_is_configured:
+            return "Sms alerting is not setup correctly."
 
         # override email recipients if alert_template is passed and is set
         if alert_template and alert_template.text_recipients:
-            text_recipients = alert_template.email_recipients
+            text_recipients = alert_template.text_recipients
         else:
             text_recipients = self.sms_alert_recipients
+
+        if not text_recipients:
+            return "No sms recipients found"
 
         tw_client = TwClient(self.twilio_account_sid, self.twilio_auth_token)
         for num in text_recipients:
             try:
                 tw_client.messages.create(body=body, to=num, from_=self.twilio_number)
-            except Exception as e:
+            except TwilioRestException as e:
                 DebugLog.error(message=f"SMS failed to send: {e}")
+                if test:
+                    return str(e)
+
+        return True
+
 
     @staticmethod
     def serialize(core):

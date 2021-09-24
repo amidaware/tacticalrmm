@@ -219,7 +219,6 @@ class CoreSettings(BaseAuditModel):
 
         return True
 
-
     @staticmethod
     def serialize(core):
         # serializes the core and returns json

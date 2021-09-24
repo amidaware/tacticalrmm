@@ -45,9 +45,24 @@ In the **Agent Table**, you can right-click on an agent and select **Run Script*
 
 There is also an option on the agent context menu called **Run Favorited Script**. This will essentially Fire and Forget the script with default args and timeout.
 
+### Script Arguments
+
+The `Script Arguments` field should be pre-filled with information for any script that can accept or requires parameters.
+
+<p style="background-color:#1e1e1e;">
+&nbsp;<span style=color:#d4d4d4><</span><span style="color:#358cd6">Required Parameter Name</span><span style=color:#d4d4d4>></span> <span style=color:#d4d4d4><</span><span style="color:#358cd6">string</span><span style=color:#d4d4d4>></span><br>
+&nbsp;<span style="color:#ffd70a">[</span><span style=color:#d4d4d4>-<</span><span style="color:#358cd6">Optional Parameter Name</span><span style=color:#d4d4d4>></span> <span style=color:#d4d4d4><</span><span style="color:#358cd6">string</span><span style=color:#d4d4d4>></span><span style="color:#ffd70a">]</span><br>
+&nbsp;<span style="color:#ffd70a">[</span><span style=color:#d4d4d4>-<</span><span style="color:#358cd6">string</span><span style=color:#d4d4d4>></span> <span style="color:#c586b6">{</span><span style=color:#87cefa>(</span><span style=color:#d4d4d4><</span><span style="color:#358cd6">default string if not specified</span><span style=color:#d4d4d4>></span><span style=color:#87cefa>)</span> <span style=color:#d4d4d4>|</span> <span style=color:#d4d4d4><</span><span style="color:#358cd6">string2</span><span style=color:#d4d4d4>></span> <span style=color:#d4d4d4>|</span> <span style=color:#d4d4d4><</span><span style="color:#358cd6">string3</span><span style=color:#d4d4d4>></span><span style="color:#c586b6">}</span><span style="color:#ffd70a">]</span></p>
+
+Where `[]` indicates an optional parameter
+
+and `{}` indicates a parameter with several preconfigured parameter
+
+and `()` indicates a default parameter if none is specified
+
 ### Bulk Run on agents
 
-Tactical RMM offers a way to run a script on multiple agents at once. Browse to **Tools > Bulk Script** and select the target for the script to run.
+There is also an option on the agent context menu called **Run Favorited Script**.
 
 ### Automated Tasks
 

@@ -4,13 +4,13 @@
 
 ### 1. Install vscode
 
-[https://code.visualstudio.com/download](https://code.visualstudio.com/download)
+<https://code.visualstudio.com/download>
 
 ### 2. Fork Project in Github
 
 This is making a duplicate of the code under your Github that you can edit
 
-[https://github.com/wh1te909/tacticalrmm](https://github.com/wh1te909/tacticalrmm)
+<https://github.com/wh1te909/tacticalrmm>
 
 ![ForkIt](images/vscode-forkit.png)
 
@@ -30,7 +30,7 @@ Remote - SSH
 
 ### 4. Open Terminal
 
-[https://code.visualstudio.com/docs/editor/integrated-terminal](https://code.visualstudio.com/docs/editor/integrated-terminal)
+<https://code.visualstudio.com/docs/editor/integrated-terminal>
 
 ```text
 Ctrl+`
@@ -38,7 +38,7 @@ Ctrl+`
 
 ### 5. Configure a remote for your fork (in vscode)
 
-[https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork)
+<https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/configuring-a-remote-for-a-fork>
 
 Configure your local fork and tell it where the original code repo is so you can compare and merge updates later when official repo is updated
 
@@ -78,7 +78,7 @@ In browser create pull request
 
 ### 7. Sync your local fork
 
-[https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork)
+<https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork>
 
 Bring changes from original repo to your local vscode copy so you're current with changes made in original Github repo
 

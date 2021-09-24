@@ -9,7 +9,7 @@ The below instructions are for a non-production server that has Tactical RMM ins
 
 ### 1. Traditional install
 
-This guide assumes you have done a [Traditional Install](https://wh1te909.github.io/tacticalrmm/install_server/).
+This guide assumes you have done a [Traditional Install](install_server.md).
 
 ### 2. Install VSCode and Extensions
 Download VSCode [here](https://code.visualstudio.com/download)

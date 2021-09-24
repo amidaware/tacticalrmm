@@ -7,10 +7,24 @@ If you've asked for help in [#support](https://discord.com/channels/736478043522
 Blur your domains if you desire privacy.
 
 ```bash
-wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/troubleshoot_server.sh
+wget -N https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/troubleshoot_server.sh
 chmod +x troubleshoot_server.sh
 ./troubleshoot_server.sh
 ```
+
+## Make sure DNS (name resolution) was setup properly
+
+### From the agent
+
+Open command prompt
+
+```cmd
+ping rmm.example.com
+ping api.example.com
+ping mesh.example.com
+```
+
+The IP address for all 3 should reflect your Tactical RMM server
 
 ## Problems after new install
 
@@ -138,3 +152,12 @@ Test-NetConnection -ComputerName rmm.example.com -Port 443
 ```
 
 Are you trying to use a proxy to share your single public IP with multiple services on 443? This is complicated and [unsupported by Tactical RMM](unsupported_scripts.md), test your setup.
+
+## Mesh Agent x86 x64 integration with TRMM
+
+1. Log into Mesh (you can right-click any agent, choose remote control or Remote Background)
+2. Goto your mesh interface (eg `https://mesh.domain.com`) 
+3. Find your TacticalRMM group
+4. Click the add link
+5. Download both agents
+6. In Tactical RMM, go **File > Upload MeshAgent** upload them both into the appropriate places.

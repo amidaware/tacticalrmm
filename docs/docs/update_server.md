@@ -9,16 +9,22 @@ Other than this, you should avoid making any changes to your server and let the 
 ## Updating to the latest RMM version
 
 !!!danger
-    Do __not__ attempt to manually edit the update script or any configuration files unless specifically told to by one of the developers.<br/><br/>
-    Since this software is completely self hosted and we have no access to your server, we have to assume you have not made any config changes to any of the files or services on your server, and the update script will assume this.<br/><br/>
-    You should also **never** attempt to automate running the update script via cron.<br/><br/>
-    The update script will update itself if needed to the latest version when you run it, and then prompt you to run it again.<br/><br/>
+    Do __not__ attempt to manually edit the update script or any configuration files unless specifically told to by one of the developers.
+    
+    Since this software is completely self hosted and we have no access to your server, we have to assume you have not made any config changes to any of the files or services on your server, and the update script will assume this.
+    
+    You should also **never** attempt to automate running the update script via cron.
+    
+    The update script will update itself if needed to the latest version when you run it, and then prompt you to run it again.
+    
     Sometimes, manual intervention will be required during an update in the form of yes/no prompts, so attempting to automate this will ignore these prompts and cause your installation to break.
 
 SSH into your server as the linux user you created during install.
 
 !!!danger
-    __Never__ run any update scripts or commands as the `root` user.<br/>This will mess up permissions and break your installation.
+    __Never__ run any update scripts or commands as the `root` user.
+    
+    This will mess up permissions and break your installation.
 
 Download the update script and run it:
 

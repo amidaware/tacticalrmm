@@ -1,9 +1,29 @@
 <template>
   <div>
     <div class="row">
-      <div class="text-subtitle2">URL Actions</div>
+      <div class="text-subtitle2">URL Actions
+        <q-btn
+          type="a"
+          href="https://wh1te909.github.io/tacticalrmm/functions/url_actions/"
+          target="_blank"
+          push
+          flat
+          size="sm"
+          rounded
+          class="q-pa-xs"
+        >
+          <q-icon name="help_outline" />
+        </q-btn>
+      </div>
       <q-space />
-      <q-btn size="sm" color="grey-5" icon="fas fa-plus" text-color="black" label="Add URL Action" @click="addAction" />
+      <q-btn
+        size="sm"
+        color="grey-5"
+        icon="fas fa-plus"
+        text-color="black"
+        label="Add URL Action"
+        @click="addAction"
+      />
     </div>
     <hr />
     <q-table
@@ -20,17 +40,32 @@
     >
       <!-- body slots -->
       <template v-slot:body="props">
-        <q-tr :props="props" class="cursor-pointer" @dblclick="editAction(props.row)">
+        <q-tr
+          :props="props"
+          class="cursor-pointer"
+          @dblclick="editAction(props.row)"
+        >
           <!-- context menu -->
           <q-menu context-menu>
-            <q-list dense style="min-width: 200px">
-              <q-item clickable v-close-popup @click="editAction(props.row)">
+            <q-list
+              dense
+              style="min-width: 200px"
+            >
+              <q-item
+                clickable
+                v-close-popup
+                @click="editAction(props.row)"
+              >
                 <q-item-section side>
                   <q-icon name="edit" />
                 </q-item-section>
                 <q-item-section>Edit</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="deleteAction(props.row)">
+              <q-item
+                clickable
+                v-close-popup
+                @click="deleteAction(props.row)"
+              >
                 <q-item-section side>
                   <q-icon name="delete" />
                 </q-item-section>
@@ -39,7 +74,10 @@
 
               <q-separator></q-separator>
 
-              <q-item clickable v-close-popup>
+              <q-item
+                clickable
+                v-close-popup
+              >
                 <q-item-section>Close</q-item-section>
               </q-item>
             </q-list>

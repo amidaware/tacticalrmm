@@ -1,9 +1,28 @@
 <template>
   <q-card style="min-width: 85vh">
     <q-card-section class="row items-center">
-      <div class="text-h6">Code Signing</div>
+      <div class="text-h6">Code Signing
+        <q-btn
+          type="a"
+          href="https://wh1te909.github.io/tacticalrmm/code_signing/"
+          target="_blank"
+          push
+          flat
+          size="sm"
+          rounded
+          class="q-pa-xs"
+        >
+          <q-icon name="help_outline" />
+        </q-btn>
+      </div>
       <q-space />
-      <q-btn icon="close" flat round dense v-close-popup />
+      <q-btn
+        icon="close"
+        flat
+        round
+        dense
+        v-close-popup
+      />
     </q-card-section>
     <q-card-section class="row">
       <q-btn
@@ -29,7 +48,11 @@
         />
       </q-card-section>
       <q-card-section class="row items-center">
-        <q-btn label="Save" color="primary" type="submit" />
+        <q-btn
+          label="Save"
+          color="primary"
+          type="submit"
+        />
       </q-card-section>
     </q-form>
   </q-card>

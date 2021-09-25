@@ -1,9 +1,29 @@
 <template>
   <div>
     <div class="row">
-      <div class="text-subtitle2">API Keys</div>
+      <div class="text-subtitle2">API Keys
+        <q-btn
+          type="a"
+          href="https://wh1te909.github.io/tacticalrmm/functions/api/"
+          target="_blank"
+          push
+          flat
+          size="sm"
+          rounded
+          class="q-pa-xs"
+        >
+          <q-icon name="help_outline" />
+        </q-btn>
+      </div>
       <q-space />
-      <q-btn size="sm" color="grey-5" icon="fas fa-plus" text-color="black" label="Add key" @click="addAPIKey" />
+      <q-btn
+        size="sm"
+        color="grey-5"
+        icon="fas fa-plus"
+        text-color="black"
+        label="Add key"
+        @click="addAPIKey"
+      />
     </div>
     <hr />
     <q-table
@@ -20,22 +40,40 @@
     >
       <!-- header slots -->
       <template v-slot:header-cell-actions="props">
-        <q-th :props="props" auto-width> </q-th>
+        <q-th
+          :props="props"
+          auto-width
+        > </q-th>
       </template>
 
       <!-- body slots -->
       <template v-slot:body="props">
-        <q-tr :props="props" class="cursor-pointer" @dblclick="editAPIKey(props.row)">
+        <q-tr
+          :props="props"
+          class="cursor-pointer"
+          @dblclick="editAPIKey(props.row)"
+        >
           <!-- context menu -->
           <q-menu context-menu>
-            <q-list dense style="min-width: 200px">
-              <q-item clickable v-close-popup @click="editAPIKey(props.row)">
+            <q-list
+              dense
+              style="min-width: 200px"
+            >
+              <q-item
+                clickable
+                v-close-popup
+                @click="editAPIKey(props.row)"
+              >
                 <q-item-section side>
                   <q-icon name="edit" />
                 </q-item-section>
                 <q-item-section>Edit</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="deleteAPIKey(props.row)">
+              <q-item
+                clickable
+                v-close-popup
+                @click="deleteAPIKey(props.row)"
+              >
                 <q-item-section side>
                   <q-icon name="delete" />
                 </q-item-section>
@@ -44,7 +82,10 @@
 
               <q-separator></q-separator>
 
-              <q-item clickable v-close-popup>
+              <q-item
+                clickable
+                v-close-popup
+              >
                 <q-item-section>Close</q-item-section>
               </q-item>
             </q-list>
@@ -65,7 +106,11 @@
             {{ props.row.created_time }}
           </q-td>
           <q-td>
-            <q-icon size="sm" name="content_copy" @click="copyKeyToClipboard(props.row.key)">
+            <q-icon
+              size="sm"
+              name="content_copy"
+              @click="copyKeyToClipboard(props.row.key)"
+            >
               <q-tooltip>Copy API Key to clipboard</q-tooltip>
             </q-icon>
           </q-td>

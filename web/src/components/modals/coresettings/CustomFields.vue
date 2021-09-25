@@ -1,7 +1,21 @@
 <template>
   <div>
     <div class="row">
-      <div class="text-subtitle2">Custom Fields</div>
+      <div class="text-subtitle2">Custom Fields
+        <q-btn
+          type="a"
+          href="https://wh1te909.github.io/tacticalrmm/functions/custom_fields/"
+          target="_blank"
+          push
+          flat
+          size="sm"
+          rounded
+          class="q-pa-xs"
+        >
+          <q-icon name="help_outline" />
+        </q-btn>
+      </div>
+
       <q-space />
       <q-btn
         size="sm"
@@ -25,24 +39,48 @@
         narrow-indicator
         no-caps
       >
-        <q-tab name="client" label="Clients" />
-        <q-tab name="site" label="Sites" />
-        <q-tab name="agent" label="Agents" />
+        <q-tab
+          name="client"
+          label="Clients"
+        />
+        <q-tab
+          name="site"
+          label="Sites"
+        />
+        <q-tab
+          name="agent"
+          label="Agents"
+        />
       </q-tabs>
 
       <q-separator />
-      <q-scroll-area :thumb-style="thumbStyle" style="height: 50vh">
-        <q-tab-panels v-model="tab" :animated="false">
+      <q-scroll-area
+        :thumb-style="thumbStyle"
+        style="height: 50vh"
+      >
+        <q-tab-panels
+          v-model="tab"
+          :animated="false"
+        >
           <q-tab-panel name="client">
-            <CustomFieldsTable @refresh="getCustomFields" :data="clientFields" />
+            <CustomFieldsTable
+              @refresh="getCustomFields"
+              :data="clientFields"
+            />
           </q-tab-panel>
 
           <q-tab-panel name="site">
-            <CustomFieldsTable @refresh="getCustomFields" :data="siteFields" />
+            <CustomFieldsTable
+              @refresh="getCustomFields"
+              :data="siteFields"
+            />
           </q-tab-panel>
 
           <q-tab-panel name="agent">
-            <CustomFieldsTable @refresh="getCustomFields" :data="agentFields" />
+            <CustomFieldsTable
+              @refresh="getCustomFields"
+              :data="agentFields"
+            />
           </q-tab-panel>
         </q-tab-panels>
       </q-scroll-area>

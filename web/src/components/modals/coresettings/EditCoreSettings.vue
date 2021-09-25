@@ -2,33 +2,83 @@
   <q-card style="min-width: 60vw">
     <q-splitter v-model="splitterModel">
       <template v-slot:before>
-        <q-tabs dense v-model="tab" vertical class="text-primary">
-          <q-tab name="general" label="General" />
-          <q-tab name="emailalerts" label="Email Alerts" />
-          <q-tab name="smsalerts" label="SMS Alerts" />
-          <q-tab name="meshcentral" label="MeshCentral" />
-          <q-tab name="customfields" label="Custom Fields" />
-          <q-tab name="keystore" label="Key Store" />
-          <q-tab name="urlactions" label="URL Actions" />
-          <q-tab name="retention" label="Retention" />
-          <q-tab name="apikeys" label="API Keys" />
+        <q-tabs
+          dense
+          v-model="tab"
+          vertical
+          class="text-primary"
+        >
+          <q-tab
+            name="general"
+            label="General"
+          />
+          <q-tab
+            name="emailalerts"
+            label="Email Alerts"
+          />
+          <q-tab
+            name="smsalerts"
+            label="SMS Alerts"
+          />
+          <q-tab
+            name="meshcentral"
+            label="MeshCentral"
+          />
+          <q-tab
+            name="customfields"
+            label="Custom Fields"
+          />
+          <q-tab
+            name="keystore"
+            label="Key Store"
+          />
+          <q-tab
+            name="urlactions"
+            label="URL Actions"
+          />
+          <q-tab
+            name="retention"
+            label="Retention"
+          />
+          <q-tab
+            name="apikeys"
+            label="API Keys"
+          />
         </q-tabs>
       </template>
       <template v-slot:after>
         <q-form @submit.prevent="editSettings">
           <q-card-section class="row items-center">
             <div class="text-h6">Global Settings</div>
+
             <q-space />
-            <q-btn icon="close" flat round dense v-close-popup />
+            <q-btn
+              icon="close"
+              flat
+              round
+              dense
+              v-close-popup
+            />
           </q-card-section>
-          <q-scroll-area :thumb-style="thumbStyle" style="height: 60vh">
-            <q-tab-panels v-model="tab" animated transition-prev="jump-up" transition-next="jump-up">
+          <q-scroll-area
+            :thumb-style="thumbStyle"
+            style="height: 60vh"
+          >
+            <q-tab-panels
+              v-model="tab"
+              animated
+              transition-prev="jump-up"
+              transition-next="jump-up"
+            >
               <!-- general -->
               <q-tab-panel name="general">
                 <div class="text-subtitle2">General</div>
                 <hr />
                 <q-card-section class="row">
-                  <q-checkbox v-model="settings.agent_auto_update" label="Enable agent automatic self update">
+                  <q-checkbox
+                    v-model="settings.agent_auto_update"
+                    label="Enable agent automatic self update"
+                  >
                     <q-tooltip> Runs at 35mins past every hour </q-tooltip>
                   </q-checkbox>
                 </q-card-section>
@@ -118,7 +168,11 @@
                 <q-card-section class="row">
                   <div class="col-4">Reset Patch Policy on Agents:</div>
                   <div class="col-2"></div>
-                  <q-btn color="negative" label="Reset" @click="showResetPatchPolicy" />
+                  <q-btn
+                    color="negative"
+                    label="Reset"
+                    @click="showResetPatchPolicy"
+                  />
                 </q-card-section>
               </q-tab-panel>
               <!-- email alerts -->
@@ -142,7 +196,10 @@
                   <div class="col-3">Recipients</div>
                   <div class="col-4"></div>
                   <div class="col-5">
-                    <q-list dense v-if="ready && settings.email_alert_recipients.length !== 0">
+                    <q-list
+                      dense
+                      v-if="ready && settings.email_alert_recipients.length !== 0"
+                    >
                       <q-item
                         v-for="email in settings.email_alert_recipients"
                         :key="email"
@@ -154,7 +211,10 @@
                           <q-item-label>{{ email }}</q-item-label>
                         </q-item-section>
                         <q-item-section side>
-                          <q-icon name="delete" color="red" />
+                          <q-icon
+                            name="delete"
+                            color="red"
+                          />
                         </q-item-section>
                       </q-item>
                     </q-list>
@@ -182,7 +242,12 @@
                 <q-card-section class="row">
                   <div class="col-2">Host:</div>
                   <div class="col-4"></div>
-                  <q-input outlined dense v-model="settings.smtp_host" class="col-6 q-pa-none" />
+                  <q-input
+                    outlined
+                    dense
+                    v-model="settings.smtp_host"
+                    class="col-6 q-pa-none"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-2">Port:</div>
@@ -203,12 +268,23 @@
                     class="q-pa-none"
                   />
                 </q-card-section>
-                <q-card-section class="row" v-show="settings.smtp_requires_auth">
+                <q-card-section
+                  class="row"
+                  v-show="settings.smtp_requires_auth"
+                >
                   <div class="col-2">Username:</div>
                   <div class="col-4"></div>
-                  <q-input outlined dense v-model="settings.smtp_host_user" class="col-6 q-pa-none" />
+                  <q-input
+                    outlined
+                    dense
+                    v-model="settings.smtp_host_user"
+                    class="col-6 q-pa-none"
+                  />
                 </q-card-section>
-                <q-card-section class="row" v-show="settings.smtp_requires_auth">
+                <q-card-section
+                  class="row"
+                  v-show="settings.smtp_requires_auth"
+                >
                   <div class="col-2">Password:</div>
                   <div class="col-4"></div>
                   <q-input
@@ -249,7 +325,10 @@
                   <div class="col-3">Recipients</div>
                   <div class="col-4"></div>
                   <div class="col-5">
-                    <q-list dense v-if="ready && settings.sms_alert_recipients.length !== 0">
+                    <q-list
+                      dense
+                      v-if="ready && settings.sms_alert_recipients.length !== 0"
+                    >
                       <q-item
                         v-for="num in settings.sms_alert_recipients"
                         :key="num"
@@ -261,7 +340,10 @@
                           <q-item-label>{{ num }}</q-item-label>
                         </q-item-section>
                         <q-item-section side>
-                          <q-icon name="delete" color="red" />
+                          <q-icon
+                            name="delete"
+                            color="red"
+                          />
                         </q-item-section>
                       </q-item>
                     </q-list>
@@ -289,37 +371,80 @@
                 <q-card-section class="row">
                   <div class="col-3">Twilio Account SID:</div>
                   <div class="col-3"></div>
-                  <q-input outlined dense v-model="settings.twilio_account_sid" class="col-6 q-pa-none" />
+                  <q-input
+                    outlined
+                    dense
+                    v-model="settings.twilio_account_sid"
+                    class="col-6 q-pa-none"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-3">Twilio Auth Token:</div>
                   <div class="col-3"></div>
-                  <q-input outlined dense v-model="settings.twilio_auth_token" class="col-6 q-pa-none" />
+                  <q-input
+                    outlined
+                    dense
+                    v-model="settings.twilio_auth_token"
+                    class="col-6 q-pa-none"
+                  />
                 </q-card-section>
               </q-tab-panel>
               <!-- meshcentral -->
               <q-tab-panel name="meshcentral">
-                <div class="text-subtitle2">MeshCentral Settings</div>
+                <div class="text-subtitle2">MeshCentral Settings
+                  <q-btn
+                    type="a"
+                    href="https://wh1te909.github.io/tacticalrmm/mesh_integration/"
+                    target="_blank"
+                    push
+                    flat
+                    size="sm"
+                    rounded
+                    class="q-pa-xs"
+                  >
+                    <q-icon name="help_outline" />
+                  </q-btn>
+
+                </div>
                 <hr />
                 <q-card-section class="row">
                   <div class="col-4">Username:</div>
                   <div class="col-2"></div>
-                  <q-input dense outlined v-model="settings.mesh_username" class="col-6" />
+                  <q-input
+                    dense
+                    outlined
+                    v-model="settings.mesh_username"
+                    class="col-6"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Mesh Site:</div>
                   <div class="col-2"></div>
-                  <q-input dense outlined v-model="settings.mesh_site" class="col-6" />
+                  <q-input
+                    dense
+                    outlined
+                    v-model="settings.mesh_site"
+                    class="col-6"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4">Mesh Token:</div>
                   <div class="col-2"></div>
-                  <q-input dense outlined v-model="settings.mesh_token" class="col-6" />
+                  <q-input
+                    dense
+                    outlined
+                    v-model="settings.mesh_token"
+                    class="col-6"
+                  />
                 </q-card-section>
                 <q-card-section class="row">
                   <div class="col-4"></div>
                   <div class="col-2"></div>
-                  <q-btn label="Upload Mesh Agents" color="primary" @click="uploadMeshAgentModal" />
+                  <q-btn
+                    label="Upload Mesh Agents"
+                    color="primary"
+                    @click="uploadMeshAgentModal"
+                  />
                 </q-card-section>
               </q-tab-panel>
               <q-tab-panel name="customfields">
@@ -334,7 +459,23 @@
                 <URLActionsTable />
               </q-tab-panel>
               <q-tab-panel name="retention">
+                <div class="text-subtitle2">Retention
+                  <q-btn
+                    type="a"
+                    href="https://wh1te909.github.io/tacticalrmm/functions/database_maintenance/"
+                    target="_blank"
+                    push
+                    flat
+                    size="sm"
+                    rounded
+                    class="q-pa-xs"
+                  >
+                    <q-icon name="help_outline" />
+                  </q-btn>
+                </div>
+                <hr />
                 <q-card-section class="row">
+
                   <div class="col-4">Check History (days):</div>
                   <div class="col-2"></div>
                   <q-input

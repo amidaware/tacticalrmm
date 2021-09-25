@@ -189,23 +189,8 @@ export default {
             link.click();
             this.showDLMessage();
           })
-          .catch(e => {
+          .catch(() => {
             this.$q.loading.hide();
-            let err;
-            switch (e.response.status) {
-              case 406:
-                err = "Missing 64 bit meshagent.exe. Upload it from File > Upload Mesh Agent";
-                break;
-              case 415:
-                err = "Missing 32 bit meshagent-x86.exe. Upload it from File > Upload Mesh Agent";
-                break;
-              case 403:
-                err = "You do not have permissions to perform this action";
-                break;
-              default:
-                err = "Something went wrong";
-            }
-            this.notifyError(err, 4000);
           });
       } else if (this.installMethod === "powershell") {
         const psName = `rmm-${clientStripped}-${siteStripped}-${this.agenttype}.ps1`;

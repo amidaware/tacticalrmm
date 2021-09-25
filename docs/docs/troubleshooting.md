@@ -160,4 +160,4 @@ Are you trying to use a proxy to share your single public IP with multiple servi
 3. Find your TacticalRMM group
 4. Click the add link
 5. Download both agents
-6. In Tactical RMM, go **File > Upload MeshAgent** upload them both into the appropriate places.
+6. In Tactical RMM, go **Settings > Global Settings > MeshCentral > Upload Mesh Agents** upload them both into the appropriate places.

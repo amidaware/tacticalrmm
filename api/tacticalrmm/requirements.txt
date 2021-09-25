@@ -10,7 +10,7 @@ cryptography==3.4.8
 daphne==3.0.2
 Django==3.2.7
 django-cors-headers==3.8.0
-django-ipware==3.0.2
+django-ipware==4.0.0
 django-rest-knox==4.1.0
 djangorestframework==3.12.4
 future==0.18.2
@@ -19,7 +19,7 @@ msgpack==1.0.2
 packaging==21.0
 psycopg2-binary==2.9.1
 pycparser==2.20
-pycryptodome==3.10.1
+pycryptodome==3.10.4
 pyotp==2.6.0
 pyparsing==2.4.7
 pytz==2021.1
@@ -27,9 +27,9 @@ qrcode==6.1
 redis==3.5.3
 requests==2.26.0
 six==1.16.0
-sqlparse==0.4.1
-twilio==6.63.1
-urllib3==1.26.6
+sqlparse==0.4.2
+twilio==7.0.0
+urllib3==1.26.7
 uWSGI==2.0.19.1
 validators==0.18.2
 vine==5.0.0

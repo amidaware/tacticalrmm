@@ -136,6 +136,16 @@ Files create `c:\Windows\temp\Tacticalxxxx\` folder for install (and log files)
 
 ***
 
+### Agent Recovery
+
+#### Mesh Agent Recovery
+
+Tactical Agent just runs `mesh_agent.exe -something` to get the mesh agent id and saves it to the django database.
+
+#### Tactical RPC Recovery
+
+#### Tactical Agent Recovery
+
 ### Windows Update Management
 
 Tactical RMM Agent sets:

@@ -4,20 +4,34 @@
 
 Install docker
 
-## 2. Acquire Lets Encrypt Wildcard certs with certbot
+### 2. Create the A records
+
+We'll be using `example.com` as our domain for this example.
+
+!!!info
+    The RMM uses 3 different sites. The Vue frontend e.g. `rmm.example.com` which is where you'll be accesing your RMM from the browser, the REST backend e.g. `api.example.com` and Meshcentral e.g. `mesh.example.com`
+
+1. Get the public IP of your server with `curl https://icanhazip.tacticalrmm.io`
+2. Open the DNS manager of wherever the domain you purchased is hosted.
+3. Create 3 A records: `rmm`, `api` and `mesh` and point them to the public IP of your server:
+
+![arecords](images/arecords.png)
+
+## 3. Acquire Let's Encrypt Wildcard certs with certbot
 
 !!!warning
-  If the Lets Encrypt wildcard certificates are not provided, a self-signed certificate will be generated and most agent functions won't work. 
+  If the Let's Encrypt wildcard certificates are not provided, a self-signed certificate will be generated and most agent functions won't work. 
 
-### 2a. Install Certbot
+### A. Install Certbot
 
 ```bash
 sudo apt-get install certbot
 ```
 
-### 2b. Generate the wildcard Lets Encrypt certificates
+### B. Generate the wildcard Let's Encrypt certificates
 
-#### Deploy the TXT record in your DNS manager
+We're using the [DNS-01 challenge method](https://letsencrypt.org/docs/challenge-types/#dns-01-challenge)
+#### a. Deploy the TXT record in your DNS manager
 
 !!!warning
     TXT records can take anywhere from 1 minute to a few hours to propogate depending on your DNS provider.<br/>
@@ -29,7 +43,7 @@ sudo apt-get install certbot
 
 ![dnstxt](images/dnstxt.png)
 
-#### Request Lets Encrypt Wildcard cert
+#### b. Request Let's Encrypt Wildcard cert
 
 ```bash
 sudo certbot certonly --manual -d *.example.com --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns
@@ -38,11 +52,11 @@ sudo certbot certonly --manual -d *.example.com --agree-tos --no-bootstrap --man
 !!!note
     Replace `example.com` with your root domain
 
-## 3. Configure DNS and firewall
+## 4. Configure DNS and firewall
 
 You will need to add DNS entries so that the three subdomains resolve to the IP of the docker host. There is a reverse proxy running that will route the hostnames to the correct container. On the host, you will need to ensure the firewall is open on tcp ports 80, 443 and 4222.
 
-## 4. Setting up the environment
+## 5. Setting up the environment
 
 Get the docker-compose and .env.example file on the host you which to install on
 
@@ -54,9 +68,9 @@ mv .env.example .env
 
 Change the values in .env to match your environment.
 
-If you are supplying certificates through Let's Encrypt or another source, see the section below about base64 encoding the certificate files.
+When supplying certificates through Let's Encrypt, see the section below about base64 encoding the certificate files.
 
-### 4a. Base64 encoding certificates to pass as env variables
+### A. Base64 encoding certificates to pass as env variables
 
 Use the below command to add the the correct values to the .env.
 
@@ -75,7 +89,7 @@ echo "CERT_PUB_KEY=$(sudo base64 -w 0 /path/to/pub/key)" >> .env
 echo "CERT_PRIV_KEY=$(sudo base64 -w 0 /path/to/priv/key)" >> .env
 ```
 
-## 5. Starting the environment
+## 6. Starting the environment
 
 Run the below command to start the environment.
 
@@ -85,13 +99,23 @@ sudo docker-compose up -d
 
 Removing the -d will start the containers in the foreground and is useful for debugging.
 
-## 6. Get MeshCentral EXE download link
+## 7. Get MeshCentral EXE download link
 
 Run the below command to get the download link for the mesh central exe. This needs to be uploaded on first successful signin.
 
 ```bash
 sudo docker-compose exec tactical-backend python manage.py get_mesh_exe_url
 ```
+
+Download the mesh agent:
+
+![meshagentdl](images/meshagentdl.png)
+
+Navigate to `https://rmm.example.com` and login with the username/password you created during install.
+
+Once logged in, you will be redirected to the initial setup page.
+
+Create your first client/site, choose the default timezone and then upload the mesh agent you just downloaded.
 
 ## Note about Backups
 

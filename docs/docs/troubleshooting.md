@@ -26,7 +26,7 @@ ping mesh.example.com
 
 The IP address for all 3 should reflect your Tactical RMM server
 
-## Problems after new install
+## Problems after new server install
 
 In the very unlikely event you have issues after install please wipe the box and install again (following all the steps including downloading the install script but not running it) use the following command which will log the install progress and if you continue to have issues will assist with support of the installation.
 
@@ -47,9 +47,9 @@ If you see an error about SSL or certificate expired, then your Let's Encrypt ce
 
 Refer to the Let's Encrypt cert renewal instructions [here](update_server.md#keeping-your-lets-encrypt-certificate-up-to-date)
 
-## Agents not updating
+## Agents not installing or updating
 
-The most common problem we've seen of agents not updating is due to Antivirus blocking the updater executable.
+The most common problem we've seen of agents not installing or updating is due to Antivirus blocking the updater executable.
 
 Windows Defender will 100% of the time block the updater from running unless an exclusion is set.
 

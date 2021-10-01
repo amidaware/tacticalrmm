@@ -29,3 +29,11 @@ Lenovo  Support Page
 ```
 https://pcsupport.lenovo.com/us/en/products/{{agent.SerialNumber}}
 ```
+
+HP Support Page
+
+It gives an errors because the product model doesn't match the serial number. If you figure out a better link please let us know! :)
+
+```
+https://support.hp.com/us-en/product/hp-pro-3500-microtower-pc/5270849/model/5270850?serialnumber={{agent.SerialNumber}}
+```

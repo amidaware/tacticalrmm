@@ -27,5 +27,5 @@ https://www.dell.com/support/home/en-us/product-support/servicetag/{{agent.Seria
 Lenovo  Support Page
 
 ```
-https://www.dell.com/support/home/en-us/product-support/servicetag/{{agent.SerialNumber}}/overview
+https://pcsupport.lenovo.com/us/en/products/{{agent.SerialNumber}}
 ```

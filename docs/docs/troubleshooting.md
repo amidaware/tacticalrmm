@@ -28,7 +28,7 @@ The IP address for all 3 should reflect your Tactical RMM server
 
 ## Problems after new server install
 
-In the very unlikely event you have issues after install please wipe the box and install again (following all the steps including downloading the install script but not running it) use the following command which will log the install progress and if you continue to have issues will assist with support of the installation.
+In the very unlikely event you have issues after install please wipe the box and install again (following all the steps including downloading the install script _but not running it yet_) use the following command which will log the install progress and if you continue to have issues will assist with support of the installation.
 
 ```bash
 bash -x install.sh 2>&1 | tee install.log

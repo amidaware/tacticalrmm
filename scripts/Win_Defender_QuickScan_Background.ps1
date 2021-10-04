@@ -1,2 +1,2 @@
-﻿Write-Host "Running Windows Defender Full Scan in Background" -ForegroundColor Green
-Start-MpScan -ScanPath C:\ -ScanType QuickScan -AsJob
+﻿Write-Host "Running Windows Defender Quick Scan in Background" -ForegroundColor Green
+Start-MpScan -ScanType QuickScan -AsJob

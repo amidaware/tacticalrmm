@@ -131,7 +131,7 @@ Answer the initial questions when prompted. Replace `example.com` with your doma
 
 ![questions](images/install_questions.png)
 
-### Deploy the TXT record in your DNS manager
+### Deploy the TXT record in your DNS manager for Lets Encrypt wildcard certs
 
 !!!warning
     TXT records can take anywhere from 1 minute to a few hours to propogate depending on your DNS provider.<br/>
@@ -148,6 +148,8 @@ Create a login for the RMM web UI:
 ![rmmlogin](images/rmmlogin.png)
 
 A bunch of URLS / usernames / passwords will be printed out at the end of the install script. **Save these somewhere safe.** [Recover them if you didn't](faq.md#how-do-i-recover-my-meshcentral-login-credentials)
+
+### Upload mesh agents
 
 Copy the url for the meshagent exe (`https://mesh.example.com/agentinvite?c=......`), paste it in your browser and download the mesh agent:
 
@@ -181,6 +183,9 @@ Login to your router/NAT device.
 
 1. Set your TRMM server as a static IP (Use a DHCP reservation is usually safer)
 2. Create 2 port forwarding rules. `TCP Port 443` and `TCP Port 4222` to your TRMM servers private IP address.
+   
+!!!note
+    <https://portforward.com/> can help with Port Forwarding setup
 
 ### You're Done
 

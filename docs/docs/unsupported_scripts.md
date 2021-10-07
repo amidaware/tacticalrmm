@@ -539,3 +539,9 @@ done
 
 ###Renew certs can be done by sudo letsencrypt renew (this should automatically be in /etc/cron.d/certbot)
 ```
+
+### Using your own certs with Docker
+
+Let's Encrypt is the only officially supported method of obtaining wildcard certificates. Publicly signed certificates should work but have not been fully tested.
+
+If you are providing your own publicly signed certificates, ensure you download the **full chain** (combined CA/Root + Intermediary) certificate in pem format. If certificates are not provided, a self-signed certificate will be generated and most agent functions won't work.

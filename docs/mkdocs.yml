@@ -50,6 +50,7 @@ nav:
       - "Contributing using VSCode": contributing_using_vscode.md
       - "Contributing using Docker": contributing_using_docker.md
       - "Contributing using a Remote Server": contributing_using_a_remote_server.md
+  - Security: security.md
   - License: license.md
 site_description: "A remote monitoring and management tool"
 site_author: "wh1te909"

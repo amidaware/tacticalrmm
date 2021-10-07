@@ -1,4 +1,5 @@
 # gretsky https://discord.com/channels/736478043522072608/744281869499105290/890996626716508180
+# remove non domain joined device from trmm and unjoin them from Azure Ad
 
 $domain = (Get-WmiObject -Class win32_computersystem -ComputerName localhost).domain
 if ($domain.toupper().contains('DOMAIN')) {

@@ -10,13 +10,13 @@
     "test:e2e:ci": "cross-env E2E_TEST=true start-test \"quasar dev\" http-get://localhost:8080 \"cypress run\""
   },
   "dependencies": {
-    "@quasar/extras": "^1.10.12",
+    "@quasar/extras": "^1.11.1",
     "apexcharts": "^3.27.1",
-    "axios": "^0.21.3",
+    "axios": "^0.21.4",
     "dotenv": "^8.6.0",
     "prismjs": "^1.23.0",
     "qrcode.vue": "^3.2.2",
-    "quasar": "^2.0.4",
+    "quasar": "^2.1.0",
     "vue-prism-editor": "^2.0.0-alpha.2",
     "vue3-apexcharts": "^1.4.0",
     "vuex": "^4.0.2"
@@ -26,8 +26,9 @@
     "@quasar/cli": "^1.2.1"
   },
   "browserslist": [
-    "last 3 Chrome versions",
-    "last 3 Firefox versions",
-    "last 2 Edge versions"
+    "last 2 Chrome versions",
+    "last 2 Firefox versions",
+    "last 2 Edge versions",
+    "last 1 Safari versions"
   ]
 }

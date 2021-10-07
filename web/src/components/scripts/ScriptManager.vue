@@ -489,9 +489,24 @@ export default {
         // add Unassigned category
         categoriesTemp.push("Unassigned");
 
-        const sorted = categoriesTemp.sort();
+        const sortedCategories = categoriesTemp.sort();
 
-        sorted.forEach(category => {
+        // sort by name property
+        const sortedScripts = scriptsTemp.sort(function (a, b) {
+          const nameA = a.name.toUpperCase();
+          const nameB = b.name.toUpperCase(); 
+
+          if (nameA < nameB) {
+            return -1;
+          }
+          if (nameA > nameB) {
+            return 1;
+          }
+          // names must be equal
+          return 0;
+        });
+
+        sortedCategories.forEach(category => {
           let temp = {
             icon: "folder",
             iconColor: "yellow-9",
@@ -500,13 +515,12 @@ export default {
             id: category,
             children: [],
           };
-          for (var i = scriptsTemp.length - 1; i >= 0; i--) {
-            if (scriptsTemp[i].category === category) {
-              temp.children.push({ label: scriptsTemp[i].name, header: "script", ...scriptsTemp[i] });
-              scriptsTemp.splice(i, 1);
-            } else if (category === "Unassigned" && !scriptsTemp[i].category) {
-              temp.children.push({ label: scriptsTemp[i].name, header: "script", ...scriptsTemp[i] });
-              scriptsTemp.splice(i, 1);
+        
+          for (let x = 0; x < sortedScripts.length; x++) {
+            if (sortedScripts[x].category === category) {
+              temp.children.push({ label: sortedScripts[x].name, header: "script", ...sortedScripts[x] });
+            } else if (category === "Unassigned" && !sortedScripts[x].category) {
+              temp.children.push({ label: sortedScripts[x].name, header: "script", ...sortedScripts[x] });
             }
           }
 
@@ -633,4 +647,4 @@ export default {
     };
   },
 };
-</script>
+</script> 

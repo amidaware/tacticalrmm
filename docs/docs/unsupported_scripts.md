@@ -545,3 +545,134 @@ done
 Let's Encrypt is the only officially supported method of obtaining wildcard certificates. Publicly signed certificates should work but have not been fully tested.
 
 If you are providing your own publicly signed certificates, ensure you download the **full chain** (combined CA/Root + Intermediary) certificate in pem format. If certificates are not provided, a self-signed certificate will be generated and most agent functions won't work.
+
+## Restricting Access to rmm.yourdomain.com
+
+### Using DNS
+
+1. Create a file allowed-domain.list which contains the DNS names you want to grant access to your rmm:
+
+    Edit `/etc/nginx/allowed-domain.list` and add
+
+        nom1.dyndns.tv
+        nom2.dyndns.tv
+
+2. Create a bash script domain-resolver.sh which do the DNS lookups for you:
+
+    Edit `/etc/nginx/domain-resolver.sh`
+
+        #!/usr/bin/env bash
+        filename="$1"
+        while read -r line
+        do
+                ddns_record="$line"
+                if [[ !  -z  $ddns_record ]]; then
+                        resolved_ip=getent ahosts $line | awk '{ print $1 ; exit }'
+                        if [[ !  -z  $resolved_ip ]]; then
+                                echo "allow $resolved_ip;# from $ddns_record"
+                        fi
+                fi
+        done < "$filename"
+
+3. Give the right permission to this script `chmod +x /etc/nginx/domain-resolver.sh`
+
+4. Add a cron job which produces a valid nginx configuration and restarts nginx:
+
+    `/etc/cron.hourly/domain-resolver`
+
+        #!/usr/bin/env bash
+        /etc/nginx/domain-resolver.sh /etc/nginx/allowed-domain.list > /etc/nginx//allowed-ips-from-domains.conf
+        service nginx reload > /dev/null 2>&1
+
+    This can be a hourly, daily or monthly job or you can have it run at a specific time. 
+
+5. Give the right permission to this script chmod +x /etc/cron.hourly/domain-resolver
+
+6. When run it will give something like this
+
+    Edit `/etc/nginx//allowed-ips-from-domains.conf`
+
+        allow xxx.xxx.xxx.xxx;# from maison.nom1.dyndns.tv
+        allow xxx.xxx.xxx.xxx;# from maison.nom2.dyndns.tv
+
+7. Update your nginx configuration to take this output into account:
+
+    Edit `/etc/nginx/sites-enabled/frontend.conf`
+
+        server {
+            server_name rmm.example.com;
+            charset utf-8;
+            location / {
+                root /var/www/rmm/dist;
+                try_files $uri $uri/ /index.html;
+                add_header Cache-Control "no-store, no-cache, must-revalidate";
+                add_header Pragma "no-cache";
+            }
+            error_log  /var/log/nginx/frontend-error.log;
+            access_log /var/log/nginx/frontend-access.log;
+            include /etc/nginx/allowed-ips-from-domains.conf;
+            deny all;
+            listen 443 ssl;
+            listen [::]:443 ssl;
+            ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+            ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+            ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+        }
+
+        server {
+            if ($host = rmm.example.com) {
+                return 301 https://$host$request_uri;
+            }
+
+            listen 80;
+            listen [::]:80;
+            server_name rmm.example.com;
+            return 404;
+        }
+
+### Using a fixed IP
+
+1. Create a file containg the fixed IP address (where xxx.xxx.xxx.xxx must be replaced by your real IP address)
+
+    Edit `/etc/nginx//allowed-ips.conf`
+        # Private IP address
+        allow 192.168.0.0/16;
+        allow 172.16.0.0/12;
+        allow 10.0.0.0/8;
+        # Public fixed IP address
+        allow xxx.xxx.xxx.xxx
+
+2. Update your nginx configuration to take this output into account:
+
+    Edit `/etc/nginx/sites-enabled/frontend.conf`
+    
+        server {
+            server_name rmm.example.com;
+            charset utf-8;
+            location / {
+                root /var/www/rmm/dist;
+                try_files $uri $uri/ /index.html;
+                add_header Cache-Control "no-store, no-cache, must-revalidate";
+                add_header Pragma "no-cache";
+            }
+            error_log  /var/log/nginx/frontend-error.log;
+            access_log /var/log/nginx/frontend-access.log;
+        include /etc/nginx/allowed-ips;
+            deny all;
+            listen 443 ssl;
+            listen [::]:443 ssl;
+            ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+            ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+            ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+        }
+
+        server {
+            if ($host = rmm.example.com) {
+                return 301 https://$host$request_uri;
+            }
+
+            listen 80;
+            listen [::]:80;
+            server_name rmm.example.com;
+            return 404;
+        } 

@@ -1,0 +1,19 @@
+Note: If you don't want to share any specific info publicly on discord you can DM me that data
+1. Install type? (Standard/Docker)
+  If standard install did you deviate IN ANY WAY from these instructions? https://wh1te909.github.io/tacticalrmm/install_server/
+  If docker install did you deviate IN ANY WAY from these instructions? https://wh1te909.github.io/tacticalrmm/install_docker/
+2. Where is the server? (VPS/onprem)
+3. New install, or established? Rough age of TRMM server (days/weeks/months)?
+
+Server Install Specific questions:
+4. What version of Ubuntu/Debian, is it a Desktop or Server
+5. Are you using a real domain
+6. Did letsencrypt finalise and work
+7. Have you looked at the troubleshooting steps on github? https://wh1te909.github.io/tacticalrmm/troubleshooting/
+8. What kind of ssl certs? Let's Encrypt, or purchased (you're not trying to make self-signed work right?)
+9. Check Expiry date of your certificates in the browser (at https://rmm.example.com )
+
+Network Troubleshooting
+10. Are you using a proxy?
+11. Are you a wizard? See https://wh1te909.github.io/tacticalrmm/unsupported_guidelines/
+  If so, what's in the network between agent and server?

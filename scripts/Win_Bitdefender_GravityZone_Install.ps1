@@ -9,7 +9,7 @@
     $log if provided will output verbose logs with timestamps. This can be used to determine how long the installer took.
 
     TacticalRMM: Need to add Custom Fields to the Client or Site and invoke them in the Script Arguments; example shown.
-     Name the url "bdurl" in the client custom field.
+    Name the url "bdurl" in the client custom field.
         -url {{client.bdurl}
 
     SuperOps.ai: Add url and exe run time variables.
@@ -45,24 +45,23 @@ if ($log) {
     Write-Output ""
 }
 
-
-if (($exe -ne $null) -and ($exe.Length -gt 0)) {
+if (($null -ne $exe) -and ($exe.Length -gt 0)) {
     Write-Output "$(Get-Timestamp) The -exe parameter is deprecated (not needed)"
 }
 
-if (($url -eq $null) -or ($url.Length -eq 0)) {
+if (($null -eq $url) -or ($url.Length -eq 0)) {
     Write-Output "$(Get-Timestamp) Url parameter is not specified"
     Exit(1)
 }
 
 $exe = [uri]::UnescapeDataString($([uri]$url).segments[-1])
-if ($exe -eq $null) {
+if ($null -eq $exe) {
     Write-Output "$(Get-Timestamp) Exe could not be extracted from the URL"
     Write-Output "$(Get-Timestamp) Make sure the URL is not modified from the original URL"
     Exit(1)
 }
 
-#Check if software is installed. If folder is present, terminate script
+# Check if software is installed. If key is present, terminate script
 if ($log) {
     Write-Output "$(Get-Timestamp) Checking if Bitdefender is installed..."
 }
@@ -125,7 +124,6 @@ if ($log) {
     Write-Output "$(Get-Timestamp) Installed"
     Write-Output "$(Get-Timestamp) Cleaning up temp file..."
 }
-
 
 # Cleanup
 if (Test-Path -PathType Leaf -Path $tmpExe) {

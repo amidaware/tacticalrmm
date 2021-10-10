@@ -175,8 +175,8 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import AddAutomatedTask from "@/components/modals/tasks/AddAutomatedTask";
-import EditAutomatedTask from "@/components/modals/tasks/EditAutomatedTask";
+import AddAutomatedTask from "@/components/tasks/AddAutomatedTask";
+import EditAutomatedTask from "@/components/tasks/EditAutomatedTask";
 import PolicyStatus from "@/components/automation/modals/PolicyStatus";
 
 export default {

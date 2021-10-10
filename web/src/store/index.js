@@ -1,4 +1,5 @@
 import { createStore } from 'vuex'
+import { Screen } from 'quasar'
 import axios from "axios";
 
 export default function () {
@@ -11,17 +12,11 @@ export default function () {
         tree: [],
         treeReady: false,
         selectedRow: null,
-        agentSummary: {},
-        winUpdates: {},
-        agentChecks: null,
-        automatedTasks: {},
         agentTableLoading: false,
         treeLoading: false,
-        installedSoftware: [],
-        notes: [],
         needrefresh: false,
-        tableHeight: "35vh",
-        tabHeight: "35vh",
+        tableHeight: "300px",
+        tabHeight: "300px",
         showCommunityScripts: false,
         agentDblClickAction: "",
         agentUrlAction: null,
@@ -39,36 +34,11 @@ export default function () {
       loggedIn(state) {
         return state.token !== null;
       },
-      selectedAgentPk(state) {
-        return state.agentSummary.id;
-      },
-      agentDisks(state) {
-        return state.agentSummary.disks;
-      },
-      agentServices(state) {
-        return state.agentSummary.services;
-      },
-      checks(state) {
-        return state.agentChecks;
+      selectedAgentId(state) {
+        return state.selectedRow.agent_id;
       },
       showCommunityScripts(state) {
         return state.showCommunityScripts;
-      },
-      sortedUpdates(state) {
-        // sort patches by latest then not installed
-        if (!state.winUpdates.winupdates) {
-          return [];
-        }
-        const sortedByID = state.winUpdates.winupdates.sort((a, b) =>
-          a.id > b.id ? 1 : -1
-        );
-        const sortedByInstall = sortedByID.sort(a =>
-          a.installed === false ? -1 : 1
-        );
-        return sortedByInstall;
-      },
-      agentHostname(state) {
-        return state.agentSummary.hostname;
       },
       needRefresh(state) {
         return state.needrefresh;
@@ -84,8 +54,8 @@ export default function () {
       AGENT_TABLE_LOADING(state, visible) {
         state.agentTableLoading = visible;
       },
-      setActiveRow(state, pk) {
-        state.selectedRow = pk;
+      setActiveRow(state, agent_id) {
+        state.selectedRow = agent_id;
       },
       retrieveToken(state, { token, username }) {
         state.token = token;
@@ -102,42 +72,21 @@ export default function () {
         state.tree = treebar;
         state.treeReady = true;
       },
-      setSummary(state, summary) {
-        state.agentSummary = summary;
-      },
-      SET_WIN_UPDATE(state, updates) {
-        state.winUpdates = updates;
-      },
-      SET_INSTALLED_SOFTWARE(state, software) {
-        state.installedSoftware = software;
-      },
-      setChecks(state, checks) {
-        state.agentChecks = checks;
-      },
-      SET_AUTOMATED_TASKS(state, tasks) {
-        state.automatedTasks = tasks;
-      },
       destroySubTable(state) {
-        (state.agentSummary = {}),
-          (state.agentChecks = null),
-          (state.winUpdates = {});
-        (state.installedSoftware = []);
         state.selectedRow = "";
       },
       SET_REFRESH_NEEDED(state, action) {
         state.needrefresh = action;
       },
       SET_SPLITTER(state, val) {
-        const agentHeight = Math.abs(100 - val - 15);
-        const tabsHeight = Math.abs(val - 10);
-        agentHeight <= 15.0 ? state.tableHeight = "15vh" : state.tableHeight = `${agentHeight}vh`;
-        tabsHeight <= 15.0 ? state.tabHeight = "15vh" : state.tabHeight = `${tabsHeight}vh`;
+        // top toolbar is 50px. Filebar is 40px and agent filter tabs are 44px 
+        state.tableHeight = `${Screen.height - 50 - 40 - 78 - val}px`;
+
+        // q-tabs are 37px
+        state.tabHeight = `${val - 37}px`;
       },
       SET_CLIENT_SPLITTER(state, val) {
         state.clientTreeSplitter = val;
-      },
-      SET_NOTES(state, notes) {
-        state.notes = notes;
       },
       setShowCommunityScripts(state, show) {
         state.showCommunityScripts = show
@@ -177,60 +126,6 @@ export default function () {
       getDashInfo(context) {
         return axios.get("/core/dashinfo/");
       },
-      loadAutomatedTasks(context, pk) {
-        axios.get(`/tasks/${pk}/automatedtasks/`).then(r => {
-          context.commit("SET_AUTOMATED_TASKS", r.data);
-        })
-          .catch(e => { })
-      },
-      loadInstalledSoftware(context, pk) {
-        axios.get(`/software/installed/${pk}/`).then(r => {
-          context.commit("SET_INSTALLED_SOFTWARE", r.data.software);
-        })
-          .catch(e => { });
-      },
-      loadWinUpdates(context, pk) {
-        axios.get(`/winupdate/${pk}/getwinupdates/`).then(r => {
-          context.commit("SET_WIN_UPDATE", r.data);
-        })
-          .catch(e => { });
-      },
-      loadSummary(context, pk) {
-        axios.get(`/agents/${pk}/agentdetail/`).then(r => {
-          context.commit("setSummary", r.data);
-        })
-          .catch(e => { });
-      },
-      loadChecks(context, pk) {
-        axios.get(`/checks/${pk}/loadchecks/`).then(r => {
-          context.commit("setChecks", r.data);
-        })
-          .catch(e => { });
-      },
-      loadNotes(context, pk) {
-        axios.get(`/agents/${pk}/notes/`).then(r => {
-          context.commit("SET_NOTES", r.data.notes);
-        })
-          .catch(e => { });
-      },
-      loadDefaultServices(context) {
-        return axios.get("/services/getdefaultservices/");
-      },
-      loadAgentServices(context, agentpk) {
-        return axios.get(`/services/${agentpk}/services/`);
-      },
-      editCheckAlert(context, { pk, data }) {
-        return axios.patch(`/checks/${pk}/check/`, data);
-      },
-      deleteCheck(context, pk) {
-        return axios.delete(`/checks/${pk}/check/`);
-      },
-      editAutoTask(context, data) {
-        return axios.patch(`/tasks/${data.id}/automatedtasks/`, data);
-      },
-      deleteAutoTask(context, pk) {
-        return axios.delete(`/tasks/${pk}/automatedtasks/`);
-      },
       getUpdatedSites(context) {
         axios.get("/clients/clients/").then(r => {
           context.commit("getUpdatedSites", r.data);
@@ -259,7 +154,7 @@ export default function () {
               let siteNode = {
                 label: site.name,
                 id: site.id,
-                raw: `Site|${site.id}`,
+                raw: `Site | ${site.id} `,
                 header: "generic",
                 icon: "apartment",
                 client: client.id,
@@ -280,7 +175,7 @@ export default function () {
             let clientNode = {
               label: client.name,
               id: client.id,
-              raw: `Client|${client.id}`,
+              raw: `Client | ${client.id} `,
               header: "root",
               icon: "business",
               server_policy: client.server_policy,

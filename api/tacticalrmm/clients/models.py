@@ -5,9 +5,13 @@ from django.db import models
 
 from agents.models import Agent
 from logs.models import BaseAuditModel
+from tacticalrmm.models import PermissionManager
 
 
 class Client(BaseAuditModel):
+    objects = models.Manager()
+    permissions = PermissionManager()
+
     name = models.CharField(max_length=255, unique=True)
     block_policy_inheritance = models.BooleanField(default=False)
     workstation_policy = models.ForeignKey(
@@ -130,6 +134,9 @@ class Client(BaseAuditModel):
 
 
 class Site(BaseAuditModel):
+    objects = models.Manager()
+    permissions = PermissionManager()
+
     client = models.ForeignKey(Client, related_name="sites", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     block_policy_inheritance = models.BooleanField(default=False)

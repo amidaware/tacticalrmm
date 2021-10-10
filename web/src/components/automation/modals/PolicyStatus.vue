@@ -113,8 +113,8 @@
 </template>
 
 <script>
-import ScriptOutput from "@/components/modals/checks/ScriptOutput";
-import EventLogCheckOutput from "@/components/modals/checks/EventLogCheckOutput";
+import ScriptOutput from "@/components/checks/ScriptOutput";
+import EventLogCheckOutput from "@/components/checks/EventLogCheckOutput";
 
 export default {
   name: "PolicyStatus",

@@ -1,6 +1,6 @@
 import uuid
 from django.test import TestCase, override_settings
-from model_bakery import baker
+from model_bakery import baker, seq
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
@@ -46,14 +46,8 @@ class TacticalTestCase(TestCase):
 
     def check_not_authenticated(self, method, url):
         self.client.logout()
-        switch = {
-            "get": self.client.get(url),
-            "post": self.client.post(url),
-            "put": self.client.put(url),
-            "patch": self.client.patch(url),
-            "delete": self.client.delete(url),
-        }
-        r = switch.get(method)
+
+        r = getattr(self.client, method)(url)
         self.assertEqual(r.status_code, 401)
 
     def create_checks(self, policy=None, agent=None, script=None):
@@ -81,3 +75,49 @@ class TacticalTestCase(TestCase):
                     baker.make_recipe(recipe, policy=policy, agent=agent, script=script)
                 )
         return checks
+
+    def check_not_authorized(self, method: str, url: str, data: dict = {}):
+        try:
+            r = getattr(self.client, method)(url, data)
+            self.assertEqual(r.status_code, 403)
+        except KeyError:
+            pass
+
+    def check_authorized(self, method: str, url: str, data: dict = {}):
+        try:
+            r = getattr(self.client, method)(url, data)
+            self.assertNotEqual(r.status_code, 403)
+            return r
+        except KeyError:
+            pass
+
+    def check_authorized_superuser(self, method: str, url: str, data: dict = {}):
+
+        try:
+            # create django superuser and test authorized
+            user = baker.make("accounts.User", is_active=True, is_superuser=True)
+            self.client.force_authenticate(user=user)
+            r = getattr(self.client, method)(url, data)
+
+            self.assertNotEqual(r.status_code, 403)
+
+            # test role superuser
+            user = self.create_user_with_roles(["is_superuser"])
+            self.client.force_authenticate(user=user)
+            r = getattr(self.client, method)(url, data)
+
+            self.assertNotEqual(r.status_code, 403)
+            self.client.logout()
+            return r
+
+        # bypasses any data issues in the view since we just want to see if user is authorized
+        except KeyError:
+            pass
+
+    def create_user_with_roles(self, roles: list[str]) -> User:
+        new_role = baker.make("accounts.Role")
+        for role in roles:
+            setattr(new_role, role, True)
+
+        new_role.save()
+        return baker.make("accounts.User", role=new_role, is_active=True)

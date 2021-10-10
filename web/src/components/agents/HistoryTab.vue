@@ -6,16 +6,19 @@
       :rows="history"
       :columns="columns"
       :pagination="{ sortBy: 'time', descending: true, rowsPerPage: 10 }"
+      :style="{ 'max-height': tabHeight }"
       :loading="loading"
       dense
       binary-state-sort
     >
-      <template v-slot:top-left>
+      <template v-slot:top>
         <q-btn dense flat push @click="getHistory" icon="refresh" />
+        <q-space />
+        <export-table-btn :data="history" :columns="columns" />
       </template>
 
-      <template v-slot:top-right>
-        <export-table-btn :data="history" :columns="columns" />
+      <template v-slot:loading>
+        <q-inner-loading showing color="primary" />
       </template>
 
       <template v-slot:body-cell-command="props">
@@ -62,7 +65,7 @@ import { formatDate, formatTableColumnText, truncateText } from "@/utils/format"
 import { fetchAgentHistory } from "@/api/agents";
 
 // ui imports
-import ScriptOutput from "@/components/modals/checks/ScriptOutput";
+import ScriptOutput from "@/components/checks/ScriptOutput";
 import ExportTableBtn from "@/components/ui/ExportTableBtn";
 
 // static data
@@ -106,6 +109,7 @@ export default {
 
     const store = useStore();
     const selectedAgent = computed(() => store.state.selectedRow);
+    const tabHeight = computed(() => store.state.tabHeight);
 
     // setup main history functionality
     const history = ref([]);
@@ -135,13 +139,14 @@ export default {
 
     // vue component hooks
     onMounted(() => {
-      if (!!selectedAgent.value) getHistory();
+      if (selectedAgent.value) getHistory();
     });
 
     return {
       // reactive
       history,
       loading,
+      tabHeight,
 
       // non-reactive data
       columns,

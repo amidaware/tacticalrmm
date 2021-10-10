@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from checks.views import GetAddChecks
 
 urlpatterns = [
     path("policies/", views.GetAddPolicies.as_view()),
@@ -8,7 +9,7 @@ urlpatterns = [
     path("policies/overview/", views.OverviewPolicy.as_view()),
     path("policies/<int:pk>/", views.GetUpdateDeletePolicy.as_view()),
     path("sync/", views.PolicySync.as_view()),
-    path("<int:pk>/policychecks/", views.PolicyCheck.as_view()),
+    path("policies/<int:policy>/checks/", GetAddChecks.as_view()),
     path("<int:pk>/policyautomatedtasks/", views.PolicyAutoTask.as_view()),
     path("policycheckstatus/<int:check>/check/", views.PolicyCheck.as_view()),
     path("policyautomatedtaskstatus/<int:task>/task/", views.PolicyAutoTask.as_view()),

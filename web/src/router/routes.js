@@ -24,7 +24,7 @@ const routes = [
     }
   },
   {
-    path: "/takecontrol/:pk",
+    path: "/takecontrol/:agent_id",
     name: "TakeControl",
     component: () => import("@/views/TakeControl"),
     meta: {
@@ -32,7 +32,7 @@ const routes = [
     }
   },
   {
-    path: "/remotebackground/:pk",
+    path: "/remotebackground/:agent_id",
     name: "RemoteBackground",
     component: () => import("@/views/RemoteBackground"),
     meta: {

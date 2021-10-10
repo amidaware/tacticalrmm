@@ -141,20 +141,10 @@ export function formatUserOptions(data, flat = false) {
 
 // date formatting
 
-function _appendLeadingZeroes(n) {
-  if (n <= 9) {
-    return "0" + n;
-  }
-  return n
-}
-
-export function formatDate(date, includeSeconds = false) {
-  if (!date) return
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  let dt = new Date(date)
-  let formatted = months[dt.getMonth()] + "-" + _appendLeadingZeroes(dt.getDate()) + "-" + _appendLeadingZeroes(dt.getFullYear()) + " - " + _appendLeadingZeroes(dt.getHours()) + ":" + _appendLeadingZeroes(dt.getMinutes())
-
-  return includeSeconds ? formatted + ":" + _appendLeadingZeroes(dt.getSeconds()) : formatted
+export function formatDate(dateString) {
+  if (!dateString) return "";
+  const d = date.extractDate(dateString, "MM DD YYYY HH:mm");
+  return date.formatDate(d, "MMM-DD-YYYY - HH:mm");
 }
 
 
@@ -178,4 +168,17 @@ export function truncateText(txt, chars) {
   if (!txt) return
 
   return txt.length >= chars ? txt.substring(0, chars) + "..." : txt;
+}
+
+export function bytes2Human(bytes) {
+  if (bytes == 0) return "0B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}
+
+export function convertMemoryToPercent(percent, memory) {
+  const mb = memory * 1024;
+  return Math.ceil((percent * mb) / 100).toLocaleString();
 }

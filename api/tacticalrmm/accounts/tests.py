@@ -27,12 +27,12 @@ class TestAccounts(TacticalTestCase):
         data = {"username": "bob", "password": "a3asdsa2314"}
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
-        self.assertEqual(r.data, "bad credentials")
+        self.assertEqual(r.data, "Bad credentials")
 
         data = {"username": "billy", "password": "hunter2"}
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
-        self.assertEqual(r.data, "bad credentials")
+        self.assertEqual(r.data, "Bad credentials")
 
         self.bob.totp_key = "AB5RI6YPFTZAS52G"
         self.bob.save()
@@ -61,7 +61,7 @@ class TestAccounts(TacticalTestCase):
         mock_verify.return_value = False
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 400)
-        self.assertEqual(r.data, "bad credentials")
+        self.assertEqual(r.data, "Bad credentials")
 
         mock_verify.return_value = True
         data = {"username": "bob", "password": "asd234234asd", "twofactor": "123456"}

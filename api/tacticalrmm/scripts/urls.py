@@ -7,6 +7,6 @@ urlpatterns = [
     path("<int:pk>/", views.GetUpdateDeleteScript.as_view()),
     path("snippets/", views.GetAddScriptSnippets.as_view()),
     path("snippets/<int:pk>/", views.GetUpdateDeleteScriptSnippet.as_view()),
-    path("testscript/", views.TestScript.as_view()),
-    path("download/<int:pk>/", views.download),
+    path("<agent:agent_id>/test/", views.TestScript.as_view()),
+    path("<int:pk>/download/", views.download),
 ]

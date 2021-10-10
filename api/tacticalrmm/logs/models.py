@@ -65,7 +65,7 @@ STATUS_CHOICES = [
 
 
 class AuditLog(models.Model):
-    username = models.CharField(max_length=100)
+    username = models.CharField(max_length=255)
     agent = models.CharField(max_length=255, null=True, blank=True)
     agent_id = models.PositiveIntegerField(blank=True, null=True)
     entry_time = models.DateTimeField(auto_now_add=True)
@@ -380,9 +380,9 @@ class BaseAuditModel(models.Model):
         abstract = True
 
     # create audit fields
-    created_by = models.CharField(max_length=100, null=True, blank=True)
+    created_by = models.CharField(max_length=255, null=True, blank=True)
     created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    modified_by = models.CharField(max_length=100, null=True, blank=True)
+    modified_by = models.CharField(max_length=255, null=True, blank=True)
     modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     @abstractmethod

@@ -35,14 +35,11 @@ export default function ({ app, router, store }) {
     function (response) {
       return response;
     },
-    function (error) {
+    async function (error) {
       let text
 
       if (!error.response) {
         text = error.message
-      }
-      else if (error.config.url === "/checkcreds/") {
-        text = "Bad credentials"
       }
       // unauthorized
       else if (error.response.status === 401) {
@@ -52,9 +49,14 @@ export default function ({ app, router, store }) {
       else if (error.response.status === 403) {
         text = error.response.data.detail;
       }
-      else if (error.response.status === 400) {
+      // catch all for other 400 error messages
+      else if (error.response.status >= 400 && error.response.status < 500) {
 
-        if (error.response.data.non_field_errors) {
+        if (error.config.responseType === "blob") {
+          text = (await error.response.data.text()).replace(/^"|"$/g, '')
+        }
+
+        else if (error.response.data.non_field_errors) {
           text = error.response.data.non_field_errors[0]
 
         } else {
@@ -65,13 +67,6 @@ export default function ({ app, router, store }) {
             text = key + ": " + value[0]
           }
         }
-
-      }
-      else if (error.response.status === 406) {
-        text = "Missing 64 bit meshagent.exe. Upload it from Settings > Global Settings > MeshCentral"
-      }
-      else if (error.response.status === 415) {
-        text = "Missing 32 bit meshagent-x86.exe. Upload it from Settings > Global Settings > MeshCentral"
       }
 
       if (text || error.response) {

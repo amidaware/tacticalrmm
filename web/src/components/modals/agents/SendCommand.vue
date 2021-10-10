@@ -58,7 +58,7 @@ export default {
   name: "SendCommand",
   mixins: [mixins],
   props: {
-    pk: Number,
+    agent_id: !String,
   },
   data() {
     return {
@@ -82,13 +82,12 @@ export default {
       this.ret = null;
       this.loading = true;
       const data = {
-        pk: this.pk,
         cmd: this.cmd,
         shell: this.shell,
         timeout: this.timeout,
       };
       this.$axios
-        .post("/agents/sendrawcmd/", data)
+        .post(`/agents/${this.agent_id}/cmd/`, data)
         .then(r => {
           this.loading = false;
           this.ret = r.data;

@@ -10,6 +10,7 @@ from checks.models import Check
 from clients.models import Client
 from clients.serializers import ClientSerializer, SiteSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
+from checks.serializers import CheckSerializer
 
 from .models import Policy
 
@@ -65,23 +66,8 @@ class PolicyTaskStatusSerializer(ModelSerializer):
         fields = "__all__"
 
 
-class PolicyCheckSerializer(ModelSerializer):
-    class Meta:
-        model = Check
-        fields = (
-            "id",
-            "check_type",
-            "readable_desc",
-            "assignedtask",
-            "text_alert",
-            "email_alert",
-            "dashboard_alert",
-        )
-        depth = 1
-
-
 class AutoTasksFieldSerializer(ModelSerializer):
-    assigned_check = PolicyCheckSerializer(read_only=True)
+    assigned_check = CheckSerializer(read_only=True)
     script = ReadOnlyField(source="script.id")
     custom_field = ReadOnlyField(source="custom_field.id")
 

@@ -48,7 +48,7 @@
         </q-card-section>
         <q-card-actions align="right">
           <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn v-if="options.length > 0" flat label="Submit" color="primary" type="submit" />
+          <q-btn v-if="options.length > 0" dense flat label="Submit" color="primary" type="submit" />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -132,9 +132,8 @@ export default {
           },
         };
       } else if (this.type === "agent") {
-        url = "/agents/editagent/";
+        url = `/agents/${this.object.agent_id}/`;
         data = {
-          id: this.object.id,
           policy: this.selectedAgentPolicy,
           block_policy_inheritance: this.blockInheritance,
         };

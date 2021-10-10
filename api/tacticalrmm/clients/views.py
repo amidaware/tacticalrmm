@@ -14,7 +14,14 @@ from core.models import CoreSettings
 from tacticalrmm.utils import notify_error
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
-from .permissions import ManageClientsPerms, ManageDeploymentPerms, ManageSitesPerms
+from .permissions import (
+    ListClientsPerms,
+    ListDeploymentsPerms,
+    ListSitesPerms,
+    ManageClientsPerms,
+    ManageDeploymentPerms,
+    ManageSitesPerms,
+)
 from .serializers import (
     ClientCustomFieldSerializer,
     ClientSerializer,
@@ -26,10 +33,10 @@ from .serializers import (
 
 
 class GetAddClients(APIView):
-    permission_classes = [IsAuthenticated, ManageClientsPerms]
+    permission_classes = [IsAuthenticated, ManageClientsPerms, ListClientsPerms]
 
     def get(self, request):
-        clients = Client.objects.all()
+        clients = Client.permissions.filter_by_role(request.user)
         return Response(ClientSerializer(clients, many=True).data)
 
     def post(self, request):
@@ -134,16 +141,21 @@ class DeleteClient(APIView):
 
 
 class GetClientTree(APIView):
+    permission_classes = [IsAuthenticated, ListClientsPerms]
+
     def get(self, request):
-        clients = Client.objects.all()
+        clients = Client.permissions.filter_by_role(request.user)
+
         return Response(ClientTreeSerializer(clients, many=True).data)
 
 
 class GetAddSites(APIView):
-    permission_classes = [IsAuthenticated, ManageSitesPerms]
+    permission_classes = [IsAuthenticated, ManageSitesPerms, ListSitesPerms]
 
     def get(self, request):
-        sites = Site.objects.all()
+
+        sites = Site.permissions.filter_by_role(request.user)
+
         return Response(SiteSerializer(sites, many=True).data)
 
     def post(self, request):
@@ -239,7 +251,7 @@ class DeleteSite(APIView):
 
 
 class AgentDeployment(APIView):
-    permission_classes = [IsAuthenticated, ManageDeploymentPerms]
+    permission_classes = [IsAuthenticated, ManageDeploymentPerms, ListDeploymentsPerms]
 
     def get(self, request):
         deps = Deployment.objects.all()

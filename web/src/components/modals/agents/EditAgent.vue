@@ -155,7 +155,7 @@ export default {
   methods: {
     getAgentInfo() {
       this.$axios
-        .get(`/agents/${this.selectedAgentPk}/agenteditdetails/`)
+        .get(`/agents/${this.selectedAgentId}/`)
         .then(r => {
           this.agent = r.data;
           this.allTimezones = Object.freeze(r.data.all_timezones);
@@ -218,7 +218,7 @@ export default {
       }
 
       this.$axios
-        .patch("/agents/editagent/", {
+        .put(`/agents/${this.selectedAgentId}/`, {
           ...this.agent,
           custom_fields: this.formatCustomFields(this.customFields, this.custom_fields),
         })
@@ -231,7 +231,7 @@ export default {
     },
   },
   computed: {
-    ...mapGetters(["selectedAgentPk"]),
+    ...mapGetters(["selectedAgentId"]),
   },
   mounted() {
     // Get custom fields

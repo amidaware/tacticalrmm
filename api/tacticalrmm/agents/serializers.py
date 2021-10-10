@@ -1,7 +1,6 @@
 import pytz
 from clients.serializers import ClientSerializer
 from rest_framework import serializers
-from tacticalrmm.utils import get_default_timezone
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .models import Agent, AgentCustomField, Note, AgentHistory
@@ -29,17 +28,6 @@ class AgentSerializer(serializers.ModelSerializer):
         model = Agent
         exclude = [
             "last_seen",
-        ]
-
-
-class AgentOverdueActionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Agent
-        fields = [
-            "pk",
-            "overdue_email_alert",
-            "overdue_text_alert",
-            "overdue_dashboard_alert",
         ]
 
 
@@ -88,10 +76,9 @@ class AgentTableSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent
         fields = [
-            "id",
+            "agent_id",
             "alert_template",
             "hostname",
-            "agent_id",
             "site_name",
             "client_name",
             "monitoring_type",
@@ -146,7 +133,7 @@ class AgentEditSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent
         fields = [
-            "id",
+            "agent_id",
             "hostname",
             "block_policy_inheritance",
             "client",
@@ -182,26 +169,20 @@ class AgentHostnameSerializer(serializers.ModelSerializer):
         model = Agent
         fields = (
             "hostname",
-            "pk",
+            "agent_id",
             "client",
             "site",
         )
 
 
-class NoteSerializer(serializers.ModelSerializer):
+class AgentNoteSerializer(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source="user.username")
+    agent_id = serializers.ReadOnlyField(source="agent.agent_id")
 
     class Meta:
         model = Note
-        fields = "__all__"
-
-
-class NotesSerializer(serializers.ModelSerializer):
-    notes = NoteSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Agent
-        fields = ["hostname", "pk", "notes"]
+        fields = ("pk", "entry_time", "agent", "user", "note", "username", "agent_id")
+        extra_kwargs = {"agent": {"write_only": True}, "user": {"write_only": True}}
 
 
 class AgentHistorySerializer(serializers.ModelSerializer):

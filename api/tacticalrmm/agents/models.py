@@ -22,9 +22,13 @@ from packaging import version as pyver
 
 from core.models import TZ_CHOICES, CoreSettings
 from logs.models import BaseAuditModel, DebugLog
+from tacticalrmm.models import PermissionManager
 
 
 class Agent(BaseAuditModel):
+    objects = models.Manager()
+    permissions = PermissionManager()
+
     version = models.CharField(default="0.1.0", max_length=255)
     salt_ver = models.CharField(default="1.0.3", max_length=255)
     operating_system = models.CharField(null=True, blank=True, max_length=255)
@@ -33,7 +37,7 @@ class Agent(BaseAuditModel):
     hostname = models.CharField(max_length=255)
     salt_id = models.CharField(null=True, blank=True, max_length=255)
     local_ip = models.TextField(null=True, blank=True)  # deprecated
-    agent_id = models.CharField(max_length=200)
+    agent_id = models.CharField(max_length=200, unique=True)
     last_seen = models.DateTimeField(null=True, blank=True)
     services = models.JSONField(null=True, blank=True)
     public_ip = models.CharField(null=True, max_length=255)
@@ -872,6 +876,9 @@ RECOVERY_CHOICES = [
 
 
 class RecoveryAction(models.Model):
+    objects = models.Manager()
+    permissions = PermissionManager()
+
     agent = models.ForeignKey(
         Agent,
         related_name="recoveryactions",
@@ -886,6 +893,9 @@ class RecoveryAction(models.Model):
 
 
 class Note(models.Model):
+    objects = models.Manager()
+    permissions = PermissionManager()
+
     agent = models.ForeignKey(
         Agent,
         related_name="notes",
@@ -966,6 +976,9 @@ AGENT_HISTORY_STATUS = (("success", "Success"), ("failure", "Failure"))
 
 
 class AgentHistory(models.Model):
+    objects = models.Manager()
+    permissions = PermissionManager()
+
     agent = models.ForeignKey(
         Agent,
         related_name="history",

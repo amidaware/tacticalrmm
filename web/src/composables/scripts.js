@@ -11,7 +11,7 @@ export function useScriptDropdown(setScript = null) {
 
   // specifing flat returns an array of script names versus {value:id, label: hostname}
   async function getScriptOptions(showCommunityScripts = false, flat = false) {
-    scriptOptions.value = formatScriptOptions(await fetchScripts({ showCommunityScripts }), flat)
+    scriptOptions.value = Object.freeze(formatScriptOptions(await fetchScripts({ showCommunityScripts }), flat))
   }
 
   // watch scriptPk for changes and update the default timeout and args

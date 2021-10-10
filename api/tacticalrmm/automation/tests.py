@@ -9,7 +9,6 @@ from winupdate.models import WinUpdatePolicy
 
 from .serializers import (
     AutoTasksFieldSerializer,
-    PolicyCheckSerializer,
     PolicyCheckStatusSerializer,
     PolicyOverviewSerializer,
     PolicySerializer,
@@ -193,23 +192,6 @@ class TestPolicyViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data, serializer.data)  # type: ignore
         self.assertEqual(len(resp.data), 3)  # type: ignore
-
-        self.check_not_authenticated("get", url)
-
-    def test_get_all_policy_checks(self):
-
-        # setup data
-        policy = baker.make("automation.Policy")
-        checks = self.create_checks(policy=policy)
-
-        url = f"/automation/{policy.pk}/policychecks/"  # type: ignore
-
-        resp = self.client.get(url, format="json")
-        serializer = PolicyCheckSerializer(checks, many=True)
-
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)  # type: ignore
-        self.assertEqual(len(resp.data), 7)  # type: ignore
 
         self.check_not_authenticated("get", url)
 

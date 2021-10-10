@@ -10,6 +10,8 @@ from tacticalrmm.test import TacticalTestCase
 from .models import ChocoSoftware
 from .serializers import InstalledSoftwareSerializer
 
+base_url = "/software"
+
 
 class TestSoftwareViews(TacticalTestCase):
     def setUp(self):
@@ -17,7 +19,7 @@ class TestSoftwareViews(TacticalTestCase):
         self.setup_coresettings()
 
     def test_chocos_get(self):
-        url = "/software/chocos/"
+        url = f"{base_url}/chocos/"
         with open(os.path.join(settings.BASE_DIR, "software/chocos.json")) as f:
             chocos = json.load(f)
 
@@ -29,13 +31,13 @@ class TestSoftwareViews(TacticalTestCase):
         self.assertEqual(resp.status_code, 200)
         self.check_not_authenticated("get", url)
 
-    def test_chocos_installed(self):
+    def test_get_installed_software(self):
         # test a call where agent doesn't exist
-        resp = self.client.get("/software/installed/500/", format="json")
+        resp = self.client.get("/software/dytthgc/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         agent = baker.make_recipe("agents.agent")
-        url = f"/software/installed/{agent.pk}/"
+        url = f"{base_url}/{agent.agent_id}/"
 
         # test without agent software
         resp = self.client.get(url, format="json")
@@ -52,14 +54,26 @@ class TestSoftwareViews(TacticalTestCase):
         serializer = InstalledSoftwareSerializer(software)
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data, serializer.data)  # type: ignore
+
+        # test checking all software (multiple agents)
+        serializer = InstalledSoftwareSerializer([software], many=True)
+        resp = self.client.get(f"{base_url}/", format="json")
+        self.assertEqual(resp.status_code, 200)
         self.assertEquals(resp.data, serializer.data)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
     @patch("agents.models.Agent.nats_cmd")
-    def test_install(self, nats_cmd):
-        url = "/software/install/"
+    def test_install_softare(self, nats_cmd):
+        # test agent doesn't exist
+        r = self.client.post(f"{base_url}/kjh34kj5hj45hj4/", format="json")
+        self.assertEqual(r.status_code, 404)
+
+        # test old agent version
         old_agent = baker.make_recipe("agents.online_agent", version="1.4.7")
+        url = f"{base_url}/{old_agent.agent_id}/"
+
         data = {
             "pk": old_agent.pk,
             "name": "duplicati",
@@ -71,6 +85,7 @@ class TestSoftwareViews(TacticalTestCase):
         agent = baker.make_recipe(
             "agents.online_agent", version=settings.LATEST_AGENT_VER
         )
+        url = f"{base_url}/{agent.agent_id}/"
         data = {
             "pk": agent.pk,
             "name": "duplicati",
@@ -87,9 +102,9 @@ class TestSoftwareViews(TacticalTestCase):
         self.check_not_authenticated("post", url)
 
     @patch("agents.models.Agent.nats_cmd")
-    def test_refresh_installed(self, nats_cmd):
-        url = "/software/refresh/4827342/"
-        r = self.client.get(url, format="json")
+    def test_refresh_installed_software(self, nats_cmd):
+        url = f"{base_url}/76fytfuytff66565f65/"
+        r = self.client.put(url, format="json")
         self.assertEqual(r.status_code, 404)
 
         nats_cmd.return_value = "timeout"
@@ -99,8 +114,8 @@ class TestSoftwareViews(TacticalTestCase):
             agent=agent,
             software={},
         )
-        url = f"/software/refresh/{agent.pk}/"
-        r = self.client.get(url, format="json")
+        url = f"{base_url}/{agent.agent_id}/"
+        r = self.client.put(url, format="json")
         self.assertEqual(r.status_code, 400)
 
         with open(
@@ -110,12 +125,98 @@ class TestSoftwareViews(TacticalTestCase):
 
         nats_cmd.reset_mock()
         nats_cmd.return_value = sw
-        r = self.client.get(url, format="json")
+        r = self.client.put(url, format="json")
         self.assertEqual(r.status_code, 200)
 
         s = agent.installedsoftware_set.first()
         s.delete()
-        r = self.client.get(url, format="json")
+        r = self.client.put(url, format="json")
         self.assertEqual(r.status_code, 200)
 
-        self.check_not_authenticated("get", url)
+        self.check_not_authenticated("put", url)
+
+
+class TestSoftwarePermissions(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+        self.client_setup()
+
+    def test_list_software_permissions(self):
+        agent = baker.make_recipe("agents.agent")
+        unauthorized_agent = baker.make_recipe("agents.agent")
+        software = baker.make("software.InstalledSoftware", software={}, agent=agent)
+        unauthorized_software = baker.make(
+            "software.InstalledSoftware", software={}, agent=unauthorized_agent
+        )
+
+        # test super user access
+        self.check_authorized_superuser("get", f"{base_url}/")
+        self.check_authorized_superuser("get", f"{base_url}/{agent.agent_id}/")
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+
+        self.check_not_authorized("get", f"{base_url}/")
+        self.check_not_authorized("get", f"{base_url}/{agent.agent_id}/")
+
+        # add list software role to user
+        user.role.can_list_software = True
+        user.role.save()
+
+        r = self.check_authorized("get", f"{base_url}/")
+        self.assertEqual(len(r.data), 2)
+        self.check_authorized("get", f"{base_url}/{agent.agent_id}/")
+
+        # test limiting to client
+        user.role.can_view_clients.set([software.agent.client])
+        self.check_not_authorized("get", f"{base_url}/{unauthorized_agent.agent_id}/")
+        self.check_authorized("get", f"{base_url}/{agent.agent_id}/")
+
+        # make sure queryset is limited too
+        r = self.client.get(f"{base_url}/")
+        self.assertEqual(len(r.data), 1)
+
+    @patch("agents.models.Agent.nats_cmd")
+    def test_install_refresh_software_permissions(self, nats_cmd):
+        agent = baker.make_recipe("agents.agent")
+        unauthorized_agent = baker.make_recipe("agents.agent")
+        software = baker.make("software.InstalledSoftware", software={}, agent=agent)
+        unauthorized_software = baker.make(
+            "software.InstalledSoftware", software={}, agent=unauthorized_agent
+        )
+
+        for method in ["post", "put"]:
+            if method == "post":
+                nats_cmd.return_value = "ok"
+            else:
+                nats_cmd.return_value = []
+
+            # test superuser access
+            self.check_authorized_superuser(method, f"{base_url}/{agent.agent_id}/")
+            self.check_authorized_superuser(
+                method, f"{base_url}/{unauthorized_agent.agent_id}/"
+            )
+
+            # test user with no roles
+            user = self.create_user_with_roles([])
+            self.client.force_authenticate(user=user)
+
+            self.check_not_authorized(method, f"{base_url}/{agent.agent_id}/")
+            self.check_not_authorized(
+                method, f"{base_url}/{unauthorized_agent.agent_id}/"
+            )
+
+            # add manage software role
+            user.role.can_manage_software = True
+            user.role.save()
+
+            self.check_authorized(method, f"{base_url}/{agent.agent_id}/")
+            self.check_authorized(method, f"{base_url}/{unauthorized_agent.agent_id}/")
+
+            # limit to specific site
+            user.role.can_view_sites.set([agent.site])
+
+            self.check_authorized(method, f"{base_url}/{agent.agent_id}/")
+            self.check_not_authorized(
+                method, f"{base_url}/{unauthorized_agent.agent_id}/"
+            )

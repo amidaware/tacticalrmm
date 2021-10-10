@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-xs q-ma-xs">
+  <div class="q-pb-sm">
     <q-bar>
       <q-btn-group flat>
         <q-btn size="md" dense no-caps flat label="File">
@@ -204,7 +204,7 @@ import BulkAction from "@/components/modals/agents/BulkAction";
 import Deployment from "@/components/Deployment";
 import ServerMaintenance from "@/components/modals/core/ServerMaintenance";
 import CodeSign from "@/components/modals/coresettings/CodeSign";
-import PermissionsManager from "@/components/PermissionsManager";
+import PermissionsManager from "@/components/accounts/PermissionsManager";
 
 export default {
   name: "FileBar",

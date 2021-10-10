@@ -57,7 +57,7 @@ export default {
   emits: ["close"],
   mixins: [mixins],
   props: {
-    pk: Number,
+    agent_id: !String,
   },
   data() {
     return {
@@ -82,12 +82,11 @@ export default {
     recover() {
       this.$q.loading.show();
       const data = {
-        pk: this.pk,
         cmd: this.cmd,
         mode: this.mode,
       };
       this.$axios
-        .post("/agents/recover/", data)
+        .post(`/agents/${this.agent_id}/recover/`, data)
         .then(r => {
           this.$q.loading.hide();
           this.$emit("close");

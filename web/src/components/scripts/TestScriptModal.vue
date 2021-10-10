@@ -92,14 +92,13 @@ export default {
     async function runTestScript() {
       loading.value = true;
       const data = {
-        agent: agent.value,
         code: props.script.code,
         timeout: timeout.value,
         args: args.value,
         shell: props.script.shell,
       };
 
-      ret.value = await testScript(data);
+      ret.value = await testScript(agent.value, data);
       loading.value = false;
     }
 

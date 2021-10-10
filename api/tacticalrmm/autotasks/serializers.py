@@ -10,7 +10,7 @@ from .models import AutomatedTask
 
 class TaskSerializer(serializers.ModelSerializer):
 
-    assigned_check = CheckSerializer(read_only=True)
+    assigned_check = CheckSerializer()
     schedule = serializers.ReadOnlyField()
     last_run = serializers.ReadOnlyField(source="last_run_as_timezone")
     alert_template = serializers.SerializerMethodField()
@@ -35,19 +35,6 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = AutomatedTask
         fields = "__all__"
-
-
-class AutoTaskSerializer(serializers.ModelSerializer):
-
-    autotasks = TaskSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Agent
-        fields = (
-            "pk",
-            "hostname",
-            "autotasks",
-        )
 
 
 # below is for the windows agent

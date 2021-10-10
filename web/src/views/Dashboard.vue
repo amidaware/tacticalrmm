@@ -91,7 +91,7 @@
 
     <q-page-container>
       <FileBar />
-      <q-splitter v-model="clientTreeSplitter">
+      <q-splitter v-model="clientTreeSplitter" :style="{ height: `${$q.screen.height - 50 - 40}px` }">
         <template v-slot:before>
           <div v-if="!treeReady" class="q-pa-sm q-gutter-sm text-center" style="height: 30vh">
             <q-spinner size="40px" color="primary" />
@@ -224,9 +224,12 @@
           <q-splitter
             v-model="innerModel"
             reverse
+            unit="px"
             horizontal
-            style="height: 87vh"
             @update:model-value="setSplitter(innerModel)"
+            after-class="hide-scrollbar"
+            before-class="hide-scrollbar"
+            emit-immediately
           >
             <template v-slot:before>
               <div class="row">
@@ -385,7 +388,7 @@
               <q-avatar color="primary" text-color="white" size="30px" icon="drag_indicator" />
             </template>
             <template v-slot:after>
-              <SubTableTabs @edit="refreshEntireSite" />
+              <SubTableTabs />
             </template>
           </q-splitter>
         </template>
@@ -442,7 +445,7 @@ export default {
       workstationCount: 0,
       workstationOfflineCount: 0,
       selectedTree: "",
-      innerModel: 50,
+      innerModel: (this.$q.screen.height - 82) / 2,
       clientActive: "",
       siteActive: "",
       frame: [],
@@ -629,14 +632,14 @@ export default {
         this.loadFrame(this.selectedTree, false);
       }
 
-      if (this.selectedAgentPk) {
-        const pk = this.selectedAgentPk;
-        this.$store.dispatch("loadSummary", pk);
-        this.$store.dispatch("loadChecks", pk);
-        this.$store.dispatch("loadAutomatedTasks", pk);
-        this.$store.dispatch("loadWinUpdates", pk);
-        this.$store.dispatch("loadInstalledSoftware", pk);
-        this.$store.dispatch("loadNotes", pk);
+      if (this.selectedAgentId) {
+        const agent_id = this.selectedAgentId;
+        this.$store.dispatch("loadSummary", agent_id);
+        this.$store.dispatch("loadChecks", agent_id);
+        this.$store.dispatch("loadAutomatedTasks", agent_id);
+        this.$store.dispatch("loadWinUpdates", agent_id);
+        this.$store.dispatch("loadInstalledSoftware", agent_id);
+        this.$store.dispatch("loadNotes", agent_id);
       }
     },
     loadFrame(activenode, destroySub = true) {
@@ -652,17 +655,17 @@ export default {
         id = activenode.split("|")[1];
 
         if (urlType === "Client") {
-          data.clientPK = id;
+          data.client = id;
           execute = true;
         } else if (urlType === "Site") {
-          data.sitePK = id;
+          data.site = id;
           execute = true;
         }
 
         if (execute) {
           this.$store.commit("AGENT_TABLE_LOADING", true);
           this.$axios
-            .patch("/agents/listagents/", data)
+            .get("/agents/", data)
             .then(r => {
               this.frame = r.data;
               this.$store.commit("AGENT_TABLE_LOADING", false);
@@ -687,7 +690,7 @@ export default {
     loadAllClients() {
       this.$store.commit("AGENT_TABLE_LOADING", true);
       this.$axios
-        .patch("/agents/listagents/")
+        .get("/agents/")
         .then(r => {
           this.frame = r.data;
           this.$store.commit("AGENT_TABLE_LOADING", false);
@@ -894,7 +897,7 @@ export default {
       treeReady: state => state.treeReady,
       clients: state => state.clients,
     }),
-    ...mapGetters(["selectedAgentPk", "needRefresh"]),
+    ...mapGetters(["selectedAgentId", "needRefresh"]),
     latestReleaseURL() {
       return this.latestTRMMVersion !== "error"
         ? `https://github.com/wh1te909/tacticalrmm/releases/tag/v${this.latestTRMMVersion}`
@@ -966,6 +969,9 @@ export default {
     this.$store.dispatch("getUpdatedSites");
     this.$store.dispatch("checkVer");
     this.getTree();
+
+    // set initial value for agent table and agent tabs
+    this.setSplitter(this.innerModel);
 
     this.livePoll();
   },

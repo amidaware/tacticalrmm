@@ -165,7 +165,7 @@ export default {
 
       if (this.installMethod === "manual") {
         this.$axios
-          .post("/agents/installagent/", data)
+          .post("/agents/installer/", data)
           .then(r => {
             this.info = {
               expires: this.expires,
@@ -179,7 +179,7 @@ export default {
         this.$q.loading.show({ message: "Generating executable..." });
 
         this.$axios
-          .post("/agents/installagent/", data, { responseType: "blob" })
+          .post("/agents/installer/", data, { responseType: "blob" })
           .then(r => {
             this.$q.loading.hide();
             const blob = new Blob([r.data], { type: "application/vnd.microsoft.portable-executable" });
@@ -195,7 +195,7 @@ export default {
       } else if (this.installMethod === "powershell") {
         const psName = `rmm-${clientStripped}-${siteStripped}-${this.agenttype}.ps1`;
         this.$axios
-          .post("/agents/installagent/", data, { responseType: "blob" })
+          .post("/agents/installer/", data, { responseType: "blob" })
           .then(({ data }) => {
             const blob = new Blob([data], { type: "text/plain" });
             let link = document.createElement("a");

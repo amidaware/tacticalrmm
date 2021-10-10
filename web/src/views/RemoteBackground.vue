@@ -28,13 +28,13 @@
         ></iframe>
       </q-tab-panel>
       <q-tab-panel name="processes">
-        <ProcessManager :pk="pk" />
+        <ProcessManager :agent_id="agent_id" />
       </q-tab-panel>
       <q-tab-panel name="services">
-        <Services :pk="pk" />
+        <ServicesManager :agent_id="agent_id" />
       </q-tab-panel>
       <q-tab-panel name="eventlog">
-        <EventLog :pk="pk" />
+        <EventLogManager :agent_id="agent_id" />
       </q-tab-panel>
       <q-tab-panel name="filebrowser">
         <iframe style="overflow: hidden; height: 715px" :src="file" width="100%" height="100%" scrolling="no"></iframe>
@@ -44,62 +44,65 @@
 </template>
 
 <script>
-import ProcessManager from "@/components/ProcessManager";
-import Services from "@/components/Services";
-import EventLog from "@/components/EventLog";
+// composition imports
+import { ref, computed, onMounted } from "vue";
+import { useRoute } from "vue-router";
+import { useQuasar, useMeta } from "quasar";
+import { fetchAgentMeshCentralURLs } from "@/api/agents";
+import { fetchDashboardInfo } from "@/api/core";
 
-import { createMetaMixin } from "quasar";
+// ui imports
+import ProcessManager from "@/components/agents/remotebg/ProcessManager";
+import ServicesManager from "@/components/agents/remotebg/ServicesManager";
+import EventLogManager from "@/components/agents/remotebg/EventLogManager";
 
 export default {
   name: "RemoteBackground",
-  mixins: [
-    createMetaMixin(function () {
-      return {
-        title: this.title,
-      };
-    }),
-  ],
   components: {
-    Services,
-    EventLog,
+    ServicesManager,
+    EventLogManager,
     ProcessManager,
   },
-  data() {
+  setup(props) {
+    // setup quasar
+    const $q = useQuasar();
+
+    // vue router
+    const { params } = useRoute();
+
+    // meshcentral tabs
+    const terminal = ref("");
+    const file = ref("");
+    const tab = ref("terminal");
+
+    const agent_id = computed(() => params.agent_id);
+
+    async function getMeshURLs() {
+      const data = await fetchAgentMeshCentralURLs(params.agent_id);
+      terminal.value = data.terminal;
+      file.value = data.file;
+      useMeta({ title: `${data.hostname} - ${data.client} - ${data.site} | Remote Background` });
+    }
+
+    async function getDashInfo() {
+      const { dark_mode, loading_bar_color } = await fetchDashboardInfo();
+      $q.dark.set(dark_mode);
+      $q.loadingBar.setDefaults({ color: loading_bar_color });
+    }
+
+    // vue lifecycle hooks
+    onMounted(() => {
+      getDashInfo();
+      getMeshURLs();
+    });
+
     return {
-      terminal: "",
-      file: "",
-      tab: "terminal",
-      title: "",
-      darkMode: true,
+      // reactive data
+      terminal,
+      file,
+      tab,
+      agent_id,
     };
-  },
-  methods: {
-    genURLS() {
-      this.$axios
-        .get(`/agents/${this.pk}/meshcentral/`)
-        .then(r => {
-          this.terminal = r.data.terminal;
-          this.file = r.data.file;
-          this.title = `${r.data.hostname} - ${r.data.client} - ${r.data.site} | Remote Background`;
-        })
-        .catch(e => {});
-    },
-    getUI() {
-      this.$store.dispatch("getDashInfo").then(r => {
-        this.darkMode = r.data.dark_mode;
-        this.$q.dark.set(this.darkMode);
-        this.$q.loadingBar.setDefaults({ color: r.data.loading_bar_color });
-      });
-    },
-  },
-  computed: {
-    pk() {
-      return this.$route.params.pk;
-    },
-  },
-  mounted() {
-    this.getUI();
-    this.genURLS();
   },
 };
 </script>

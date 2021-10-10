@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pt-none q-pb-none q-pr-xs q-pl-xs">
+  <div class="q-pa-none">
     <q-table
       dense
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
@@ -78,11 +78,11 @@
       <!-- body slots -->
       <template v-slot:body="props">
         <q-tr
-          @contextmenu="agentRowSelected(props.row.id)"
+          @contextmenu="agentRowSelected(props.row.agent_id)"
           :props="props"
-          :class="rowSelectedClass(props.row.id)"
-          @click="agentRowSelected(props.row.id)"
-          @dblclick="rowDoubleClicked(props.row.id)"
+          :class="rowSelectedClass(props.row.agent_id)"
+          @click="agentRowSelected(props.row.agent_id)"
+          @dblclick="rowDoubleClicked(props.row.agent_id)"
         >
           <!-- context menu -->
           <q-menu context-menu>
@@ -102,7 +102,7 @@
                 <q-item-section>Pending Agent Actions</q-item-section>
               </q-item>
               <!-- take control -->
-              <q-item clickable v-ripple v-close-popup @click.stop.prevent="takeControl(props.row.id)">
+              <q-item clickable v-ripple v-close-popup @click.stop.prevent="takeControl(props.row.agent_id)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-desktop" />
                 </q-item-section>
@@ -172,7 +172,7 @@
                 </q-menu>
               </q-item>
 
-              <q-item clickable v-close-popup @click.stop.prevent="remoteBG(props.row.id)">
+              <q-item clickable v-close-popup @click.stop.prevent="remoteBG(props.row.agent_id)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-cogs" />
                 </q-item-section>
@@ -401,18 +401,16 @@
       <RebootLater @close="showRebootLaterModal = false" @edit="agentEdited" />
     </q-dialog>
     <!-- pending actions modal -->
-    <div class="q-pa-md q-gutter-sm">
-      <q-dialog v-model="showPendingActions" @hide="closePendingActionsModal">
-        <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" @edit="agentEdited" />
-      </q-dialog>
-    </div>
+    <q-dialog v-model="showPendingActions" @hide="closePendingActionsModal">
+      <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" @edit="agentEdited" />
+    </q-dialog>
     <!-- send command modal -->
     <q-dialog v-model="showSendCommand" persistent @keydown.esc="showSendCommand = false">
-      <SendCommand @close="showSendCommand = false" :pk="selectedAgentPk" />
+      <SendCommand @close="showSendCommand = false" :pk="selectedAgentId" />
     </q-dialog>
     <!-- agent recovery modal -->
     <q-dialog v-model="showAgentRecovery">
-      <AgentRecovery @close="showAgentRecovery = false" :pk="selectedAgentPk" />
+      <AgentRecovery @close="showAgentRecovery = false" :pk="selectedAgentId" />
     </q-dialog>
   </div>
 </template>
@@ -511,8 +509,8 @@ export default {
         });
       });
     },
-    rowDoubleClicked(pk) {
-      this.$store.commit("setActiveRow", pk);
+    rowDoubleClicked(agent_id) {
+      this.$store.commit("setActiveRow", agent);
       this.$q.loading.show();
       // give time for store to change active row
       setTimeout(() => {
@@ -522,13 +520,13 @@ export default {
             this.showEditAgentModal = true;
             break;
           case "takecontrol":
-            this.takeControl(pk);
+            this.takeControl(agent.agent_id);
             break;
           case "remotebg":
-            this.remoteBG(pk);
+            this.remoteBG(agent.agent_id);
             break;
           case "urlaction":
-            this.runURLAction(pk, this.agentUrlAction);
+            this.runURLAction(agent.pk, this.agentUrlAction);
             break;
         }
       }, 500);
@@ -554,18 +552,18 @@ export default {
         })
         .catch(e => {});
     },
-    runPatchStatusScan(pk, hostname) {
+    runPatchStatusScan(agent_id, hostname) {
       this.$axios
-        .get(`/winupdate/${pk}/runupdatescan/`)
+        .get(`/winupdate/${agent_id}/scan/`)
         .then(r => {
           this.notifySuccess(`Scan will be run shortly on ${hostname}`);
         })
         .catch(e => {});
     },
-    installPatches(pk) {
+    installPatches(agent_id) {
       this.$q.loading.show();
       this.$axios
-        .get(`/winupdate/${pk}/installnow/`)
+        .get(`/winupdate/${agent_id}/install/`)
         .then(r => {
           this.$q.loading.hide();
           this.notifySuccess(r.data);
@@ -585,12 +583,12 @@ export default {
       this.showPendingActions = false;
       this.pendingActionAgentPk = null;
     },
-    takeControl(pk) {
-      const url = this.$router.resolve(`/takecontrol/${pk}`).href;
+    takeControl(agent_id) {
+      const url = this.$router.resolve(`/takecontrol/${agent_id}`).href;
       window.open(url, "", "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1600,height=900");
     },
-    remoteBG(pk) {
-      const url = this.$router.resolve(`/remotebackground/${pk}`).href;
+    remoteBG(agent_id) {
+      const url = this.$router.resolve(`/remotebackground/${agent_id}`).href;
       window.open(url, "", "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1280,height=826");
     },
     runChecks(pk) {
@@ -605,7 +603,7 @@ export default {
           this.$q.loading.hide();
         });
     },
-    removeAgent(pk, name) {
+    removeAgent(agent_id, name) {
       this.$q
         .dialog({
           title: `Please type <code style="color:red">${name}</code> to confirm deletion.`,
@@ -620,9 +618,8 @@ export default {
           html: true,
         })
         .onOk(val => {
-          const data = { pk: pk };
           this.$axios
-            .delete("/agents/uninstall/", { data: data })
+            .delete(`/agents/${agent_id}/`)
             .then(r => {
               this.notifySuccess(r.data);
               setTimeout(() => {
@@ -632,10 +629,10 @@ export default {
             .catch(e => {});
         });
     },
-    pingAgent(pk) {
+    pingAgent(agent_id) {
       this.$q.loading.show();
       this.$axios
-        .get(`/agents/${pk}/ping/`)
+        .get(`/agents/${agent_id}/ping/`)
         .then(r => {
           this.$q.loading.hide();
           if (r.data.status === "offline") {
@@ -663,7 +660,7 @@ export default {
           this.$q.loading.hide();
         });
     },
-    rebootNow(pk, hostname) {
+    rebootNow(agent_id, hostname) {
       this.$q
         .dialog({
           title: "Are you sure?",
@@ -674,7 +671,7 @@ export default {
         .onOk(() => {
           this.$q.loading.show();
           this.$axios
-            .post("/agents/reboot/", { pk: pk })
+            .post(`/agents/${agent_id}/reboot/`)
             .then(r => {
               this.$q.loading.hide();
               this.notifySuccess(`${hostname} will now be restarted`);
@@ -684,16 +681,10 @@ export default {
             });
         });
     },
-    agentRowSelected(pk) {
-      this.$store.commit("setActiveRow", pk);
-      this.$store.dispatch("loadSummary", pk);
-      this.$store.dispatch("loadChecks", pk);
-      this.$store.dispatch("loadAutomatedTasks", pk);
-      this.$store.dispatch("loadWinUpdates", pk);
-      this.$store.dispatch("loadInstalledSoftware", pk);
-      this.$store.dispatch("loadNotes", pk);
+    agentRowSelected(agent_id) {
+      this.$store.commit("setActiveRow", agent_id);
     },
-    overdueAlert(category, pk, alert_action) {
+    overdueAlert(category, agent_id, alert_action) {
       let db_field = "";
       if (category === "email") db_field = "overdue_email_alert";
       else if (category === "text") db_field = "overdue_text_alert";
@@ -701,12 +692,11 @@ export default {
 
       const action = !alert_action ? "enabled" : "disabled";
       const data = {
-        pk: pk,
         [db_field]: !alert_action,
       };
       const alertColor = !alert_action ? "positive" : "warning";
       this.$axios
-        .post("/agents/overdueaction/", data)
+        .put(`/agents/${agent_id}/`, data)
         .then(r => {
           this.$q.notify({
             color: alertColor,
@@ -754,8 +744,8 @@ export default {
     menuMaintenanceText(mode) {
       return mode ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
     },
-    rowSelectedClass(id) {
-      if (id === this.selectedRow) {
+    rowSelectedClass(agent_id) {
+      if (agent_id === this.selectedRow) {
         return this.$q.dark.isActive ? "highlight-dark" : "highlight";
       } else {
         return "";
@@ -796,7 +786,7 @@ export default {
     },
   },
   computed: {
-    ...mapGetters(["selectedAgentPk", "agentTableHeight", "showCommunityScripts"]),
+    ...mapGetters(["selectedAgentId", "agentTableHeight", "showCommunityScripts"]),
     agentDblClickAction() {
       return this.$store.state.agentDblClickAction;
     },

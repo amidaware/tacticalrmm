@@ -188,13 +188,13 @@
 <script>
 import mixins from "@/mixins/mixins";
 import PolicyStatus from "@/components/automation/modals/PolicyStatus";
-import DiskSpaceCheck from "@/components/modals/checks/DiskSpaceCheck";
-import PingCheck from "@/components/modals/checks/PingCheck";
-import CpuLoadCheck from "@/components/modals/checks/CpuLoadCheck";
-import MemCheck from "@/components/modals/checks/MemCheck";
-import WinSvcCheck from "@/components/modals/checks/WinSvcCheck";
-import ScriptCheck from "@/components/modals/checks/ScriptCheck";
-import EventLogCheck from "@/components/modals/checks/EventLogCheck";
+import DiskSpaceCheck from "@/components/checks/DiskSpaceCheck";
+import PingCheck from "@/components/checks/PingCheck";
+import CpuLoadCheck from "@/components/checks/CpuLoadCheck";
+import MemCheck from "@/components/checks/MemCheck";
+import WinSvcCheck from "@/components/checks/WinSvcCheck";
+import ScriptCheck from "@/components/checks/ScriptCheck";
+import EventLogCheck from "@/components/checks/EventLogCheck";
 
 export default {
   name: "PolicyChecksTab",
@@ -216,7 +216,7 @@ export default {
       checks: [],
       dialogComponent: null,
       showDialog: false,
-      editCheckPK: null,
+      editCheck: null,
       columns: [
         { name: "smsalert", field: "text_alert", align: "left" },
         { name: "emailalert", field: "email_alert", align: "left" },
@@ -309,7 +309,7 @@ export default {
         default:
           return null;
       }
-      this.editCheckPK = check.id;
+      this.editCheck = check;
       this.showDialog = true;
     },
     hideDialog() {

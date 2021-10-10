@@ -121,11 +121,11 @@ class GetUpdateDeleteScriptSnippet(APIView):
 class TestScript(APIView):
     permission_classes = [IsAuthenticated, RunScriptPerms]
 
-    def post(self, request):
+    def post(self, request, agent_id):
         from .models import Script
         from agents.models import Agent
 
-        agent = get_object_or_404(Agent, pk=request.data["agent"])
+        agent = get_object_or_404(Agent, agent_id=agent_id)
 
         parsed_args = Script.parse_script_args(
             agent, request.data["shell"], request.data["args"]

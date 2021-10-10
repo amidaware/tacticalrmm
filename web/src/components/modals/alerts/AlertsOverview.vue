@@ -158,7 +158,7 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import ScriptOutput from "@/components/modals/checks/ScriptOutput";
+import ScriptOutput from "@/components/checks/ScriptOutput";
 
 export default {
   name: "AlertsOverview",

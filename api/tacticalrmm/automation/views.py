@@ -16,7 +16,6 @@ from .models import Policy
 from .permissions import AutomationPolicyPerms
 from .serializers import (
     AutoTasksFieldSerializer,
-    PolicyCheckSerializer,
     PolicyCheckStatusSerializer,
     PolicyOverviewSerializer,
     PolicySerializer,
@@ -123,10 +122,6 @@ class PolicyAutoTask(APIView):
 
 class PolicyCheck(APIView):
     permission_classes = [IsAuthenticated, AutomationPolicyPerms]
-
-    def get(self, request, pk):
-        checks = Check.objects.filter(policy__pk=pk, agent=None)
-        return Response(PolicyCheckSerializer(checks, many=True).data)
 
     def patch(self, request, check):
         checks = Check.objects.filter(parent_check=check)

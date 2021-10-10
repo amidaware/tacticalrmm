@@ -48,9 +48,9 @@ export default {
   methods: {
     scheduleReboot() {
       this.$q.loading.show({ message: "Contacting agent..." });
-      const data = { pk: this.selectedAgentPk, datetime: this.datetime };
+      const data = { pk: this.selectedAgentId, datetime: this.datetime };
       this.$axios
-        .patch("/agents/reboot/", data)
+        .patch(`/agents/${this.selectedAgentId}reboot/`, data)
         .then(r => {
           this.$q.loading.hide();
           this.$emit("close");
@@ -76,7 +76,7 @@ export default {
     },
   },
   computed: {
-    ...mapGetters(["selectedAgentPk"]),
+    ...mapGetters(["selectedAgentId"]),
   },
   mounted() {
     this.getCurrentDate();

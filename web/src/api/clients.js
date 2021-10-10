@@ -6,12 +6,12 @@ export async function fetchClients() {
   try {
     const { data } = await axios.get(`${baseUrl}/clients/`)
     return data
-  } catch (e) { }
+  } catch (e) { console.error(e) }
 }
 
 export async function fetchSites() {
   try {
     const { data } = await axios.get(`${baseUrl}/sites/`)
     return data
-  } catch (e) { }
+  } catch (e) { console.error(e) }
 }

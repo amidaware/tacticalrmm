@@ -197,7 +197,7 @@ export default {
     },
     async getAgentOptions() {
 
-      const { data } = await axios.get("/agents/listagentsnodetail/")
+      const { data } = await axios.get("/agents/?detail=false")
 
       return formatAgentOptions(data)
     },

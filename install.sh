@@ -40,11 +40,11 @@ fi
 
 
 # determine system
-if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]) || ([ "$osname" = "debian" ] && [ $relno -ge 10 ]); then
+if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]) || ([ "$osname" = "debian" ] && [ $relno -eq 10 ]); then
   echo $fullrel
 else
  echo $fullrel
- echo -ne "${RED}Only Ubuntu release 20.04 and Debian 10 and later, are supported\n"
+ echo -ne "${RED}Only Ubuntu release 20.04 and Debian 10 are supported\n"
  echo -ne "Your system does not appear to be supported${NC}\n"
  exit 1
 fi

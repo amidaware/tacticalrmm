@@ -148,6 +148,7 @@ class AgentEditSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "hostname",
+            "block_policy_inheritance",
             "client",
             "site",
             "monitoring_type",

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="53"
+SCRIPT_VERSION="54"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -40,11 +40,11 @@ fi
 
 
 # determine system
-if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]) || ([ "$osname" = "debian" ] && [ $relno -ge 10 ]); then
+if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]) || ([ "$osname" = "debian" ] && [ $relno -eq 10 ]); then
   echo $fullrel
 else
  echo $fullrel
- echo -ne "${RED}Only Ubuntu release 20.04 and Debian 10 and later, are supported\n"
+ echo -ne "${RED}Only Ubuntu release 20.04 and Debian 10 are supported\n"
  echo -ne "Your system does not appear to be supported${NC}\n"
  exit 1
 fi
@@ -169,6 +169,7 @@ print_green 'Installing Nginx'
 sudo apt install -y nginx
 sudo systemctl stop nginx
 sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
+sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
 
 print_green 'Installing NodeJS'
 

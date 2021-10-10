@@ -1,0 +1,9 @@
+1. Standard/Docker
+2. VPS/onprem
+3. Are you using a proxy?
+4. What version of Ubuntu/Debian, is it a Desktop or Server
+5. Specs of machine including hard drive spec is it ssd or mechanical?
+6. have you looked at the troubleshooting on github?
+7. are you using a real domain
+8. did letsencrypt finalise and work
+9. are you using the standard ssl certs or something else?

@@ -8,3 +8,8 @@ export async function fetchCustomFields(params) {
     return data
   } catch (e) { }
 }
+
+export async function uploadMeshAgent(payload) {
+  const { data } = await axios.put(`${baseUrl}/uploadmesh/`, payload)
+  return data
+}

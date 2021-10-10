@@ -1,9 +1,7 @@
 import os
-import pprint
 import re
 
 from django.conf import settings
-from django.db.models.fields import IPAddressField
 from django.shortcuts import get_object_or_404
 from logs.models import AuditLog
 from rest_framework import status
@@ -14,7 +12,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from agents.permissions import MeshPerms
 from tacticalrmm.utils import notify_error
 
 from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
@@ -34,7 +31,7 @@ from .serializers import (
 
 
 class UploadMeshAgent(APIView):
-    permission_classes = [IsAuthenticated, MeshPerms]
+    permission_classes = [IsAuthenticated, EditCoreSettingsPerms]
     parser_class = (FileUploadParser,)
 
     def put(self, request, format=None):
@@ -50,7 +47,9 @@ class UploadMeshAgent(APIView):
             for chunk in f.chunks():
                 j.write(chunk)
 
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(
+            "Mesh Agent uploaded successfully", status=status.HTTP_201_CREATED
+        )
 
 
 @api_view()
@@ -383,7 +382,6 @@ class RunURLAction(APIView):
 
 class TwilioSMSTest(APIView):
     def get(self, request):
-        from twilio.rest import Client as TwClient
 
         core = CoreSettings.objects.first()
         if not core.sms_is_configured:
@@ -391,14 +389,9 @@ class TwilioSMSTest(APIView):
                 "All fields are required, including at least 1 recipient"
             )
 
-        try:
-            tw_client = TwClient(core.twilio_account_sid, core.twilio_auth_token)
-            tw_client.messages.create(
-                body="TacticalRMM Test SMS",
-                to=core.sms_alert_recipients[0],
-                from_=core.twilio_number,
-            )
-        except Exception as e:
-            return notify_error(pprint.pformat(e))
+        r = core.send_sms("TacticalRMM Test SMS", test=True)
 
-        return Response("SMS Test OK!")
+        if not isinstance(r, bool) and isinstance(r, str):
+            return notify_error(r)
+
+        return Response("SMS Test sent successfully!")

@@ -68,10 +68,10 @@ export default function ({ app, router, store }) {
 
       }
       else if (error.response.status === 406) {
-        text = "Missing 64 bit meshagent.exe. Upload it from File > Upload Mesh Agent"
+        text = "Missing 64 bit meshagent.exe. Upload it from Settings > Global Settings > MeshCentral"
       }
       else if (error.response.status === 415) {
-        text = "Missing 32 bit meshagent-x86.exe. Upload it from File > Upload Mesh Agent"
+        text = "Missing 32 bit meshagent-x86.exe. Upload it from Settings > Global Settings > MeshCentral"
       }
 
       if (text || error.response) {

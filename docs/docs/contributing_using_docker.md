@@ -1,13 +1,12 @@
-
+# Contributing using Docker
 
 ## Install WSL2
 
-https://docs.microsoft.com/en-us/windows/wsl/install-win10
-
+<https://docs.microsoft.com/en-us/windows/wsl/install-win10>
 
 ## Install Docker Desktop
 
-https://www.docker.com/products/docker-desktop
+<https://www.docker.com/products/docker-desktop>
 
 ### Configure Docker
 
@@ -40,19 +39,19 @@ This is better
 
 Under .devcontainer duplicate
 
-```
+```text
 .env.example
 ```
 
-as 
+as
 
-```
+```text
 .env
 ```
 
 Customize to your tastes (it doesn't need to be internet configured, just add records in your `hosts` file) eg
 
-```
+```conf
 127.0.0.1    rmm.example.com
 127.0.0.1    api.example.com
 127.0.0.1    mesh.example.com
@@ -64,12 +63,12 @@ Right-click `docker-compose.yml` and choose `Compose Up`
 
 Wait, it'll take a while as docker downloads all the modules and gets running.
 
-## Develop!
+## Develop
 
 You're operational!
 
 !!!note
-    Self-signed certs are in your dev environment. Navigate to https://api.example.com and https://rmm.example.com and accept the self signed certs to get rid of errors.
+    Self-signed certs are in your dev environment. Navigate to <https://api.example.com> and <https://rmm.example.com> and accept the self signed certs to get rid of errors.
 
 ### View mkdocks live edits in browser
 
@@ -82,4 +81,3 @@ Open: [http://rmm.example.com:8005/](http://rmm.example.com:8005/)
 ### View django administration
 
 Open: [http://rmm.example.com:8000/admin/](http://rmm.example.com:8000/admin/)
-

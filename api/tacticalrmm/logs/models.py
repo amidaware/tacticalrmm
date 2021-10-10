@@ -106,6 +106,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             agent=agent.hostname,
+            agent_id=agent.id,
             object_type="agent",
             action="execute_command",
             message=f"{username} issued {shell} command on {agent.hostname}.",
@@ -120,6 +121,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
+            agent=before["hostname"] if object_type == "agent" else None,
             agent_id=before["id"] if object_type == "agent" else None,
             action="modify",
             message=f"{username} modified {object_type} {name}",
@@ -133,7 +135,8 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
-            agent=after["id"] if object_type == "agent" else None,
+            agent=after["hostname"] if object_type == "agent" else None,
+            agent_id=after["id"] if object_type == "agent" else None,
             action="add",
             message=f"{username} added {object_type} {name}",
             after_value=after,
@@ -145,7 +148,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             object_type=object_type,
-            agent=before["id"] if object_type == "agent" else None,
+            agent=before["hostname"] if object_type == "agent" else None,
             action="delete",
             message=f"{username} deleted {object_type} {name}",
             before_value=before,

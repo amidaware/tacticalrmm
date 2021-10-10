@@ -1,14 +1,10 @@
 # How It All Works
 
-INSERT WIREFRAME GRAPHICS HERE USING SOMETHING LIKE <https://www.yworks.com/yed-live/>
+![Network Design](images/TacticalRMM-Network.png)
 
-1) how nats-django-admin web interface work
+1. Agent installer steps
 
-2) Agent installer steps
-
-3) Agent communication process with server (what ports to which services etc)
-
-4) Agent checks/tasks and how they work on the workstation/interact with server
+2. Agent checks/tasks and how they work on the workstation/interact with server
 
 ## Server
 
@@ -139,6 +135,16 @@ Executes the file (INNO setup exe)
 Files create `c:\Windows\temp\Tacticalxxxx\` folder for install (and log files)
 
 ***
+
+### Agent Recovery
+
+#### Mesh Agent Recovery
+
+Tactical Agent just runs `mesh_agent.exe -something` to get the mesh agent id and saves it to the django database.
+
+#### Tactical RPC Recovery
+
+#### Tactical Agent Recovery
 
 ### Windows Update Management
 

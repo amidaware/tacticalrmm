@@ -1,12 +1,11 @@
 import asyncio
 import datetime as dt
 import random
-import urllib.parse
 from time import sleep
 from typing import Union
 
 from alerts.models import Alert
-from core.models import CodeSignToken, CoreSettings
+from core.models import CoreSettings
 from django.conf import settings
 from django.utils import timezone as djangotime
 from logs.models import DebugLog, PendingAction
@@ -16,10 +15,10 @@ from tacticalrmm.celery import app
 from tacticalrmm.utils import run_nats_api_cmd
 
 from agents.models import Agent
+from agents.utils import get_winagent_url
 
 
-def agent_update(pk: int, codesigntoken: str = None, force: bool = False) -> str:
-    from agents.utils import get_exegen_url
+def agent_update(pk: int, force: bool = False) -> str:
 
     agent = Agent.objects.get(pk=pk)
 
@@ -37,13 +36,7 @@ def agent_update(pk: int, codesigntoken: str = None, force: bool = False) -> str
 
     version = settings.LATEST_AGENT_VER
     inno = agent.win_inno_exe
-
-    if codesigntoken is not None and pyver.parse(version) >= pyver.parse("1.5.0"):
-        base_url = get_exegen_url() + "/api/v1/winagents/?"
-        params = {"version": version, "arch": agent.arch, "token": codesigntoken}
-        url = base_url + urllib.parse.urlencode(params)
-    else:
-        url = agent.winagent_dl
+    url = get_winagent_url(agent.arch)
 
     if not force:
         if agent.pendingactions.filter(
@@ -77,30 +70,20 @@ def agent_update(pk: int, codesigntoken: str = None, force: bool = False) -> str
 
 @app.task
 def force_code_sign(pks: list[int]) -> None:
-    try:
-        token = CodeSignToken.objects.first().token  # type:ignore
-    except:
-        return
-
     chunks = (pks[i : i + 50] for i in range(0, len(pks), 50))
     for chunk in chunks:
         for pk in chunk:
-            agent_update(pk=pk, codesigntoken=token, force=True)
+            agent_update(pk=pk, force=True)
             sleep(0.05)
         sleep(4)
 
 
 @app.task
 def send_agent_update_task(pks: list[int]) -> None:
-    try:
-        codesigntoken = CodeSignToken.objects.first().token  # type:ignore
-    except:
-        codesigntoken = None
-
     chunks = (pks[i : i + 30] for i in range(0, len(pks), 30))
     for chunk in chunks:
         for pk in chunk:
-            agent_update(pk, codesigntoken)
+            agent_update(pk)
             sleep(0.05)
         sleep(4)
 
@@ -110,11 +93,6 @@ def auto_self_agent_update_task() -> None:
     core = CoreSettings.objects.first()
     if not core.agent_auto_update:  # type:ignore
         return
-
-    try:
-        codesigntoken = CodeSignToken.objects.first().token  # type:ignore
-    except:
-        codesigntoken = None
 
     q = Agent.objects.only("pk", "version")
     pks: list[int] = [
@@ -126,7 +104,7 @@ def auto_self_agent_update_task() -> None:
     chunks = (pks[i : i + 30] for i in range(0, len(pks), 30))
     for chunk in chunks:
         for pk in chunk:
-            agent_update(pk, codesigntoken)
+            agent_update(pk)
             sleep(0.05)
         sleep(4)
 

@@ -22,9 +22,6 @@
                 </q-menu>
               </q-item>
 
-              <q-item clickable v-close-popup @click="showUploadMesh = true">
-                <q-item-section>Upload MeshAgent</q-item-section>
-              </q-item>
               <q-item clickable v-close-popup @click="showAuditManager">
                 <q-item-section>Audit Log</q-item-section>
               </q-item>
@@ -172,10 +169,6 @@
           <AdminManager @close="showAdminManager = false" />
         </q-dialog>
       </div>
-      <!-- Upload new mesh agent -->
-      <q-dialog v-model="showUploadMesh">
-        <UploadMesh @close="showUploadMesh = false" />
-      </q-dialog>
       <!-- Agent Deployment -->
       <q-dialog v-model="showDeployment">
         <Deployment @close="showDeployment = false" />
@@ -206,7 +199,6 @@ import AlertsManager from "@/components/AlertsManager";
 import AutomationManager from "@/components/automation/AutomationManager";
 import AdminManager from "@/components/AdminManager";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
-import UploadMesh from "@/components/modals/core/UploadMesh";
 import AuditManager from "@/components/logs/AuditManager";
 import BulkAction from "@/components/modals/agents/BulkAction";
 import Deployment from "@/components/Deployment";
@@ -222,7 +214,6 @@ export default {
     UpdateAgents,
     EditCoreSettings,
     InstallAgent,
-    UploadMesh,
     AdminManager,
     Deployment,
     ServerMaintenance,
@@ -236,7 +227,6 @@ export default {
       showEditCoreSettingsModal: false,
       showAdminManager: false,
       showInstallAgent: false,
-      showUploadMesh: false,
       showPendingActions: false,
       showDeployment: false,
       showCodeSign: false,

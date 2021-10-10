@@ -1,8 +1,12 @@
 # Backing up the RMM
 
+!!!note
+        This is only applicable for the standard install, not Docker installs.
+
 A backup script is provided for quick and easy way to backup all settings into one file to move to another server.
 
 Download the backup script:
+
 ```bash
 wget -N https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/backup.sh
 ```
@@ -23,4 +27,3 @@ chmod +x backup.sh
 The backup tar file will be saved in `/rmmbackups` with the following format:
 
 `rmm-backup-CURRENTDATETIME.tar`
-

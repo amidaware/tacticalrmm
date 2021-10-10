@@ -1,10 +1,23 @@
 # Unsupported Reference Scripts
 
-!!!note 
-    These are not supported scripts/configurations by Tactical RMM, but it's provided here for your reference. 
+!!!note
+    These are not supported scripts/configurations by Tactical RMM, but it's provided here for your reference.
+
+## General Notes on Proxies and Tactical RMM
+
+### Port 443
+
+Make sure websockets option is enabled.
+
+All 3 URL's will need to be configured: `rmm`, `api`, `mesh`
+
+For `mesh` see the Section 10. TLS Offloading of the [MeshCentral 2 User Guide](https://info.meshcentral.com/downloads/MeshCentral2/MeshCentral2UserGuide.pdf)
+
+### Port 4222
+
+Is NATS (<https://nats.io>). You'll need a TCP forwarder as NATS only talks TCP not HTTP.
 
 ## HAProxy
-
 
 Check/Change the mesh central config.json, some of the values may be set already, CertUrl must be changed to point to the HAProxy server.
 
@@ -20,7 +33,7 @@ nano /meshcentral/meshcentral-data/config.json
 
 Insert this (modify `HAProxyIP` to your network)
 
-```
+```conf
 {
   "settings": {
     "Port": 4430,
@@ -45,9 +58,9 @@ service meshcentral restart
 ### HAProxy Config
 
 The order of use_backend is important `Tactical-Mesh-WebSocket_ipvANY` must be before `Tactical-Mesh_ipvANY`
-The values of `timeout connect`, `timeout server`, `timeout tunnel` in `Tactical-Mesh-WebSocket` have been configured to maintain a stable agent connection, however you may need to adjust these values to suit your environment. 
+The values of `timeout connect`, `timeout server`, `timeout tunnel` in `Tactical-Mesh-WebSocket` have been configured to maintain a stable agent connection, however you may need to adjust these values to suit your environment.
 
-```
+```conf
 frontend HTTPS-merged
 	bind			0.0.0.0:443 name 0.0.0.0:443   ssl crt-list /var/etc/haproxy/HTTPS.crt_list  #ADJUST THIS TO YOUR OWN SSL CERTIFICATES
 	mode			http
@@ -131,8 +144,7 @@ sudo apt install -y fail2ban
 
 ### Set Tactical fail2ban filter conf File
 
-
-```
+```bash
 tacticalfail2banfilter="$(cat << EOF
 [Definition]
 failregex = ^<HOST>.*400.17.*$
@@ -144,7 +156,7 @@ sudo echo "${tacticalfail2banfilter}" > /etc/fail2ban/filter.d/tacticalrmm.conf
 
 ### Set Tactical fail2ban jail conf File
 
-```
+```bash
 tacticalfail2banjail="$(cat << EOF
 [tacticalrmm]
 enabled = true
@@ -210,7 +222,7 @@ You need to add the certificate private key and public keys to the following fil
         
     but change api. to: mesh. and rmm. respectively.
 
-7. Add the following to the last lines of `/rmm/api/tacticalrmm/tacticalrmm/local_settings.py`
+5. Add the following to the last lines of `/rmm/api/tacticalrmm/tacticalrmm/local_settings.py`
 
         nano /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
 
@@ -527,3 +539,140 @@ done
 
 ###Renew certs can be done by sudo letsencrypt renew (this should automatically be in /etc/cron.d/certbot)
 ```
+
+### Using your own certs with Docker
+
+Let's Encrypt is the only officially supported method of obtaining wildcard certificates. Publicly signed certificates should work but have not been fully tested.
+
+If you are providing your own publicly signed certificates, ensure you download the **full chain** (combined CA/Root + Intermediary) certificate in pem format. If certificates are not provided, a self-signed certificate will be generated and most agent functions won't work.
+
+## Restricting Access to rmm.yourdomain.com
+
+### Using DNS
+
+1. Create a file allowed-domain.list which contains the DNS names you want to grant access to your rmm:
+
+    Edit `/etc/nginx/allowed-domain.list` and add
+
+        nom1.dyndns.tv
+        nom2.dyndns.tv
+
+2. Create a bash script domain-resolver.sh which do the DNS lookups for you:
+
+    Edit `/etc/nginx/domain-resolver.sh`
+
+        #!/usr/bin/env bash
+        filename="$1"
+        while read -r line
+        do
+                ddns_record="$line"
+                if [[ !  -z  $ddns_record ]]; then
+                        resolved_ip=getent ahosts $line | awk '{ print $1 ; exit }'
+                        if [[ !  -z  $resolved_ip ]]; then
+                                echo "allow $resolved_ip;# from $ddns_record"
+                        fi
+                fi
+        done < "$filename"
+
+3. Give the right permission to this script `chmod +x /etc/nginx/domain-resolver.sh`
+
+4. Add a cron job which produces a valid nginx configuration and restarts nginx:
+
+    `/etc/cron.hourly/domain-resolver`
+
+        #!/usr/bin/env bash
+        /etc/nginx/domain-resolver.sh /etc/nginx/allowed-domain.list > /etc/nginx//allowed-ips-from-domains.conf
+        service nginx reload > /dev/null 2>&1
+
+    This can be a hourly, daily or monthly job or you can have it run at a specific time. 
+
+5. Give the right permission to this script chmod +x /etc/cron.hourly/domain-resolver
+
+6. When run it will give something like this
+
+    Edit `/etc/nginx//allowed-ips-from-domains.conf`
+
+        allow xxx.xxx.xxx.xxx;# from maison.nom1.dyndns.tv
+        allow xxx.xxx.xxx.xxx;# from maison.nom2.dyndns.tv
+
+7. Update your nginx configuration to take this output into account:
+
+    Edit `/etc/nginx/sites-enabled/frontend.conf`
+
+        server {
+            server_name rmm.example.com;
+            charset utf-8;
+            location / {
+                root /var/www/rmm/dist;
+                try_files $uri $uri/ /index.html;
+                add_header Cache-Control "no-store, no-cache, must-revalidate";
+                add_header Pragma "no-cache";
+            }
+            error_log  /var/log/nginx/frontend-error.log;
+            access_log /var/log/nginx/frontend-access.log;
+            include /etc/nginx/allowed-ips-from-domains.conf;
+            deny all;
+            listen 443 ssl;
+            listen [::]:443 ssl;
+            ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+            ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+            ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+        }
+
+        server {
+            if ($host = rmm.example.com) {
+                return 301 https://$host$request_uri;
+            }
+
+            listen 80;
+            listen [::]:80;
+            server_name rmm.example.com;
+            return 404;
+        }
+
+### Using a fixed IP
+
+1. Create a file containg the fixed IP address (where xxx.xxx.xxx.xxx must be replaced by your real IP address)
+
+    Edit `/etc/nginx//allowed-ips.conf`
+        # Private IP address
+        allow 192.168.0.0/16;
+        allow 172.16.0.0/12;
+        allow 10.0.0.0/8;
+        # Public fixed IP address
+        allow xxx.xxx.xxx.xxx
+
+2. Update your nginx configuration to take this output into account:
+
+    Edit `/etc/nginx/sites-enabled/frontend.conf`
+    
+        server {
+            server_name rmm.example.com;
+            charset utf-8;
+            location / {
+                root /var/www/rmm/dist;
+                try_files $uri $uri/ /index.html;
+                add_header Cache-Control "no-store, no-cache, must-revalidate";
+                add_header Pragma "no-cache";
+            }
+            error_log  /var/log/nginx/frontend-error.log;
+            access_log /var/log/nginx/frontend-access.log;
+        include /etc/nginx/allowed-ips;
+            deny all;
+            listen 443 ssl;
+            listen [::]:443 ssl;
+            ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+            ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+            ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+        }
+
+        server {
+            if ($host = rmm.example.com) {
+                return 301 https://$host$request_uri;
+            }
+
+            listen 80;
+            listen [::]:80;
+            server_name rmm.example.com;
+            return 404;
+        } 

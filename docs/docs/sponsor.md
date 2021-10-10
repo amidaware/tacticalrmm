@@ -13,4 +13,3 @@ We are always looking for feedback and ways to improve Tactical RMM to better ad
 [Sponsor with Github](https://github.com/wh1te909)
 
 [Sponsor with Ko-fi](https://ko-fi.com/tacticalrmm)
-

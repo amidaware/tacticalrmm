@@ -12,7 +12,6 @@ Please allow up to 24 hours for a response
 
 You will then be sent a code signing auth token, which you should enter into Tactical's web UI from *Settings > Code Signing*
 
-
 ## How does it work?
 
 Everytime you generate an agent or an agent does a self-update, your self-hosted instance sends a request to Tactical's code signing servers with your auth token.

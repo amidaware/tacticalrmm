@@ -24,7 +24,10 @@
     Results are printed to the console.
 
 .EXAMPLE
-    PS C:\> .\Win_Rename_Computer.ps1 -Username myuser -Password mypassword -NewName mynewname -Restart
+    -NewName mynewname
+    
+.EXAMPLE
+    -Username myuser -Password mypassword -NewName mynewname -Restart
 
 .NOTES
     Change Log
@@ -39,7 +42,7 @@ param(
     [string] $NewName
 )
 
-if (!$NewName){
+if (!$NewName) {
     Write-Host "-NewName parameter required."
     Exit 1
 }
@@ -49,7 +52,8 @@ if ((Get-WmiObject win32_computersystem).partofdomain -eq $false) {
 
     if ($Restart) {
         Rename-computer -NewName $NewName -Force -Restart
-    } else {
+    }
+    else {
         Rename-computer -NewName $NewName -Force
     }
     Write-Host "Attempted rename of computer to $NewName."
@@ -58,12 +62,12 @@ if ((Get-WmiObject win32_computersystem).partofdomain -eq $false) {
 else {
     # Rename Domain Joined Computer
 
-    if (!$Username){
+    if (!$Username) {
         Write-Host "-Username parameter required on domain joined computers."
         Exit 1
     }
     
-    if (!$Password){
+    if (!$Password) {
         Write-Host "-Password parameter required on domain joined computers."
         Exit 1
     }
@@ -76,7 +80,8 @@ else {
     
     if ($Restart) {
         Rename-computer -NewName $NewName -DomainCredential $credential -Force -Restart
-    } else {
+    }
+    else {
         Rename-computer -NewName $NewName -DomainCredential $credential -Force
     }
     Write-Host "Attempted rename of domain computer to $NewName."

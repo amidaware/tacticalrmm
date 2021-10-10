@@ -1,8 +1,9 @@
 import random
 import urllib.parse
-
 import requests
+
 from django.conf import settings
+from core.models import CodeSignToken
 
 
 def get_exegen_url() -> str:
@@ -20,18 +21,20 @@ def get_exegen_url() -> str:
 
 
 def get_winagent_url(arch: str) -> str:
-    from core.models import CodeSignToken
+
+    dl_url = settings.DL_32 if arch == "32" else settings.DL_64
 
     try:
-        codetoken = CodeSignToken.objects.first().token
-        base_url = get_exegen_url() + "/api/v1/winagents/?"
-        params = {
-            "version": settings.LATEST_AGENT_VER,
-            "arch": arch,
-            "token": codetoken,
-        }
-        dl_url = base_url + urllib.parse.urlencode(params)
+        t: CodeSignToken = CodeSignToken.objects.first()  # type: ignore
+        if t.is_valid:
+            base_url = get_exegen_url() + "/api/v1/winagents/?"
+            params = {
+                "version": settings.LATEST_AGENT_VER,
+                "arch": arch,
+                "token": t.token,
+            }
+            dl_url = base_url + urllib.parse.urlencode(params)
     except:
-        dl_url = settings.DL_64 if arch == "64" else settings.DL_32
+        pass
 
     return dl_url

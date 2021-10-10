@@ -1049,9 +1049,11 @@ class TestAgentTasks(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
-    @patch("agents.utils.get_exegen_url")
+    @patch("agents.utils.get_winagent_url")
     @patch("agents.models.Agent.nats_cmd")
-    def test_agent_update(self, nats_cmd, get_exe):
+    def test_agent_update(self, nats_cmd, get_url):
+        get_url.return_value = "https://exe.tacticalrmm.io"
+
         from agents.tasks import agent_update
 
         agent_noarch = baker.make_recipe(
@@ -1077,7 +1079,7 @@ class TestAgentTasks(TacticalTestCase):
             version="1.4.14",
         )
 
-        r = agent_update(agent64_nosign.pk, None)
+        r = agent_update(agent64_nosign.pk)
         self.assertEqual(r, "created")
         action = PendingAction.objects.get(agent__pk=agent64_nosign.pk)
         self.assertEqual(action.action_type, "agentupdate")
@@ -1103,7 +1105,7 @@ class TestAgentTasks(TacticalTestCase):
         )
 
         # test __with__ code signing (64 bit)
-        codesign = baker.make("core.CodeSignToken", token="testtoken123")
+        """ codesign = baker.make("core.CodeSignToken", token="testtoken123")
         agent64_sign = baker.make_recipe(
             "agents.agent",
             operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
@@ -1153,7 +1155,7 @@ class TestAgentTasks(TacticalTestCase):
         )
         action = PendingAction.objects.get(agent__pk=agent32_sign.pk)
         self.assertEqual(action.action_type, "agentupdate")
-        self.assertEqual(action.status, "pending")
+        self.assertEqual(action.status, "pending") """
 
     @patch("agents.tasks.agent_update")
     @patch("agents.tasks.sleep", return_value=None)

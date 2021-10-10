@@ -1,3 +1,4 @@
+import requests
 import smtplib
 from email.message import EmailMessage
 
@@ -312,6 +313,31 @@ class CodeSignToken(models.Model):
             raise ValidationError("There can only be one CodeSignToken instance")
 
         super(CodeSignToken, self).save(*args, **kwargs)
+
+    @property
+    def is_valid(self) -> bool:
+        if not self.token:
+            return False
+
+        errors = []
+        for url in settings.EXE_GEN_URLS:
+            try:
+                r = requests.post(
+                    f"{url}/api/v1/checktoken",
+                    json={"token": self.token},
+                    headers={"Content-type": "application/json"},
+                    timeout=15,
+                )
+            except Exception as e:
+                errors.append(str(e))
+            else:
+                errors = []
+                break
+
+        if errors:
+            return False
+
+        return r.status_code == 200
 
     def __str__(self):
         return "Code signing token"

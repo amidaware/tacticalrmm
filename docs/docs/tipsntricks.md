@@ -27,7 +27,7 @@ Right-click the connect button in *Take Control* for connect options
 !!!note
     These settings are independant of Tactical RMM. Enable features (like auto remove inactive devices) with caution
 
-1. Remote background a machine then go to mesh.yourdomain.com
+1. Remote background a machine then go to mesh.EXAMPLE.COM
 2. Click on My Account
 3. Click on the device group you want to enable notifications or accept connection etc on (probably TacticalRMM)
 4. Next to User Consent click edit (the wee pencil)

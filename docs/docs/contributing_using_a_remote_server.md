@@ -38,8 +38,8 @@ sudo systemctl disable --now rmm.service && sudo systemctl disable --now daphne.
 Open /rmm/web/.env and make it look like the following
 
 ```bash
-DEV_URL = "http://api.domain.com:8000"
-APP_URL = "http://rmm.domain.com:8080"
+DEV_URL = "http://api.EXAMPLE.COM:8000"
+APP_URL = "http://rmm.EXAMPLE.COM:8080"
 ```
 
 Open /rmm/api/tacticalrmm/tacticalrmm/local_settings.py
@@ -58,7 +58,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 Add the following to the ALLOWED HOSTS
 ```bash
-rmm.doamin.com
+rmm.EXAMPLE.COM
 ```
 cd /rmm/api/tacticalrmm/
 

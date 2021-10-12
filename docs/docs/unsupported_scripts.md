@@ -550,6 +550,8 @@ If you are providing your own publicly signed certificates, ensure you download 
 
 ## Restricting Access to rmm.EXAMPLE.COM
 
+Limit access to Tactical RMM's administration panel in nginx to specific locations
+
 ### Using DNS
 
 1. Create a file allowed-domain.list which contains the DNS names you want to grant access to your rmm:
@@ -637,6 +639,7 @@ If you are providing your own publicly signed certificates, ensure you download 
 1. Create a file containg the fixed IP address (where xxx.xxx.xxx.xxx must be replaced by your real IP address)
 
     Edit `/etc/nginx//allowed-ips.conf`
+    
         # Private IP address
         allow 192.168.0.0/16;
         allow 172.16.0.0/12;

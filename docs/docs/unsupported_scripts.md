@@ -131,7 +131,7 @@ echo "CERT_PUB_KEY=$(sudo base64 -w 0 $USERDIR/docker/rmm/certs/certs/**yourdoma
 echo "CERT_PRIV_KEY=$(sudo base64 -w 0 $USERDIR/docker/rmm/certs/private/**yourdomaine.com.key**)" >> .env
 ```
 
-Next we can create 2 rules to tell traefik to correctly route the https and agent
+Next we can create 3 rules to tell traefik to correctly route the https and agent
 For that we will create 2 rules into traefik directory as per it configuration. folder/traefik/rules
 
 create 
@@ -143,7 +143,7 @@ and inside it we add
 [http.routers]
   [http.routers.mesh-rtr]
       entryPoints = ["https"]
-      rule = "Host(`mesh.**yourdomaine.com**`)"
+      rule = "Host(`mesh.**yourdomain.com**`)"
       service = "mesh-svc"
 ##middleware with 2fa
 [http.services]
@@ -165,7 +165,7 @@ and inside it we add
 [http.routers]
   [http.routers.mesh-rtr1]
       entryPoints = ["https"]
-      rule = """Host(`mesh.**yourdomaine.com**`) &&
+      rule = """Host(`mesh.**yourdomain.com**`) &&
         PathPrefix( `/agent.ashx`, `/meshrelay.ashx`, ) &&
         Headers(`X-Forwarded-Proto`, `wss`) """
     ##Don't add middle where, the agent wont work.    
@@ -176,6 +176,28 @@ and inside it we add
       [[http.services.mesh-svc1.loadBalancer.servers]]
         url = "https://**xxx.xxx.xxx.xxx**:4430" # or whatever your external host's IP is
 
+```
+create
+```bash
+nano app-rmm.toml
+```
+and inside it we add
+
+```bash
+[http.routers]
+  [http.routers.rmm-rtr]
+      entryPoints = ["https"]
+      rule = "Host(`rmm.**yourdomain.com**`)"
+      service = "rmm-svc"
+
+      ##middleware with 2fa
+
+[http.services]
+  [http.services.rmm-svc]
+    [http.services.rmm-svc.loadBalancer]
+      passHostHeader = true
+      [[http.services.rmm-svc.loadBalancer.servers]]
+        url = "https://xxx.xxx.xxx.xxx:4430" # or whatever your external host's IP:port is
 ```
 
 That it, you can now restart Tactical rmm and mesh.yourdomain.com should work, same for the agent.

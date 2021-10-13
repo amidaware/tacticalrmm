@@ -10,7 +10,7 @@ from .models import AutomatedTask
 
 class TaskSerializer(serializers.ModelSerializer):
 
-    assigned_check = CheckSerializer()
+    check_name = serializers.ReadOnlyField(source="assigned_check.readable_desc")
     schedule = serializers.ReadOnlyField()
     last_run = serializers.ReadOnlyField(source="last_run_as_timezone")
     alert_template = serializers.SerializerMethodField()

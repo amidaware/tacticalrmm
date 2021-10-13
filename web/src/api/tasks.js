@@ -11,7 +11,7 @@ export async function fetchTasks(params = {}) {
     }
 }
 
-export async function saveTasks(payload) {
+export async function saveTask(payload) {
     const { data } = await axios.post(`${baseUrl}/`, payload)
     return data
 }

@@ -1,5 +1,5 @@
 <template>
-  <q-dialog ref="dialog" @hide="onHide">
+  <q-dialog ref="dialogRef" @hide="onDialogHide">
     <q-card class="q-dialog-plugin" style="width: 60vw">
       <q-bar>
         Edit {{ task.name }}
@@ -10,36 +10,22 @@
       </q-bar>
       <q-form @submit="submit">
         <q-card-section>
-          <q-select
+          <tactical-dropdown
             :rules="[val => !!val || '*Required']"
-            dense
-            options-dense
-            outlined
-            v-model="autotask.script"
-            :options="scriptOptions"
+            v-model="state.script"
             label="Select script"
-            map-options
-            emit-value
-            @update:model-value="setScriptDefaults"
-          >
-            <template v-slot:option="scope">
-              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
-                <q-item-section>
-                  <q-item-label v-html="scope.opt.label"></q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
-                scope.opt.category
-              }}</q-item-label>
-            </template>
-          </q-select>
+            :options="scriptOptions"
+            outlined
+            mapOptions
+            disable
+          />
         </q-card-section>
         <q-card-section>
           <q-select
             dense
             label="Script Arguments (press Enter after typing each argument)"
             filled
-            v-model="autotask.script_args"
+            v-model="state.script_args"
             use-input
             use-chips
             multiple
@@ -53,48 +39,41 @@
             :rules="[val => !!val || '*Required']"
             outlined
             dense
-            v-model="autotask.name"
+            v-model="state.name"
             label="Descriptive name of task"
             class="q-pb-none"
           />
         </q-card-section>
         <q-card-section>
-          <q-select
-            v-model="autotask.alert_severity"
+          <tactical-dropdown
+            v-model="state.alert_severity"
             :options="severityOptions"
-            dense
             label="Alert Severity"
             outlined
-            map-options
-            emit-value
-            options-dense
+            mapOptions
           />
         </q-card-section>
         <q-card-section>
-          <q-checkbox
-            dense
-            label="Collector Task"
-            v-model="collector"
-            class="q-pb-sm"
-            @update:model-value="autotask.custom_field = null"
-          />
-          <q-select
+          <q-checkbox dense label="Collector Task" v-model="collector" class="q-pb-sm" />
+          <tactical-dropdown
             v-if="collector"
-            v-model="autotask.custom_field"
+            :rules="[val => (collector && !!val) || '*Required']"
+            v-model="state.custom_field"
             :options="customFieldOptions"
-            dense
             label="Custom Field to update"
             outlined
-            map-options
-            emit-value
-            options-dense
-            hint="The return value of script will be saved to custom field selected"
+            mapOptions
+            :hint="
+              state.collector_all_output
+                ? 'All script output will be saved to custom field selected'
+                : 'The last line of script output will be saved to custom field selected'
+            "
           />
           <q-checkbox
             v-if="collector"
             dense
-            label="Save all output (Only for text area)"
-            v-model="autotask.collector_all_output"
+            label="Save all output"
+            v-model="state.collector_all_output"
             class="q-py-sm"
           />
         </q-card-section>
@@ -103,15 +82,15 @@
             :rules="[val => !!val || '*Required']"
             outlined
             dense
-            v-model.number="autotask.timeout"
+            v-model.number="state.timeout"
             type="number"
             label="Maximum permitted execution time (seconds)"
             class="q-pb-none"
           />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn flat label="Submit" color="primary" type="submit" />
+          <q-btn dense flat push label="Cancel" v-close-popup />
+          <q-btn flat dense push label="Submit" color="primary" type="submit" />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -119,94 +98,84 @@
 </template>
 
 <script>
-import mixins from "@/mixins/mixins";
-import { mapGetters } from "vuex";
+// composition imports
+import { ref, watch } from "vue";
+import { useDialogPluginComponent } from "quasar";
+import { updateTask } from "@/api/tasks";
+import { useScriptDropdown } from "@/composables/scripts";
+import { useCustomFieldDropdown } from "@/composables/core";
+import { notifySuccess } from "@/utils/notify";
+
+// ui imports
+import TacticalDropdown from "@/components/ui/TacticalDropdown.vue";
+
+// static data
+const severityOptions = [
+  { label: "Informational", value: "info" },
+  { label: "Warning", value: "warning" },
+  { label: "Error", value: "error" },
+];
 
 export default {
   name: "EditAutomatedTask",
-  emits: ["hide", "ok", "cancel"],
-  mixins: [mixins],
+  emits: [...useDialogPluginComponent.emits],
+  components: { TacticalDropdown },
   props: {
     task: !Object,
   },
-  data() {
-    return {
-      autotask: {
-        id: null,
-        name: "",
-        script: null,
-        script_args: [],
-        alert_severity: null,
-        timeout: 120,
-        custom_field: null,
-        collector_all_output: false,
-      },
-      collector: false,
-      customFieldOptions: [],
-      scriptOptions: [],
-      severityOptions: [
-        { label: "Informational", value: "info" },
-        { label: "Warning", value: "warning" },
-        { label: "Error", value: "error" },
-      ],
-    };
-  },
-  computed: {
-    ...mapGetters(["showCommunityScripts"]),
-  },
-  methods: {
-    setScriptDefaults() {
-      const script = this.scriptOptions.find(i => i.value === this.autotask.script);
+  setup(props) {
+    // setup quasar dialog
+    const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
 
-      this.autotask.timeout = script.timeout;
-      this.autotask.script_args = script.args;
-    },
-    submit() {
-      this.$q.loading.show();
+    // setup dropdowns
+    const { scriptOptions } = useScriptDropdown(null, {
+      onMount: true,
+    });
+    const { customFieldOptions } = useCustomFieldDropdown({ onMount: true });
 
-      this.$axios
-        .put(`/tasks/${this.autotask.id}/automatedtasks/`, this.autotask)
-        .then(r => {
-          this.$q.loading.hide();
-          this.onOk();
-          this.notifySuccess("Task was edited successfully");
-        })
-        .catch(e => {
-          this.$q.loading.hide();
-        });
-    },
-    show() {
-      this.$refs.dialog.show();
-    },
-    hide() {
-      this.$refs.dialog.hide();
-    },
-    onHide() {
-      this.$emit("hide");
-    },
-    onOk() {
-      this.$emit("ok");
-      this.hide();
-    },
-  },
-  mounted() {
-    this.getScriptOptions(this.showCommunityScripts).then(options => (this.scriptOptions = Object.freeze(options)));
+    // edit automated task logic
+    const task = ref(Object.assign({}, props.task));
+    const collector = ref(!!task.value.custom_field);
+    const loading = ref(false);
 
-    this.getCustomFields("agent").then(r => {
-      this.customFieldOptions = r.data.map(field => ({ label: field.name, value: field.id }));
+    watch(collector, (newValue, oldValue) => {
+      task.value.custom_field = null;
+      task.value.collector_all_output = false;
     });
 
-    this.collector = !!this.task.custom_field;
+    async function submit() {
+      loading.value = true;
 
-    // copy only certain task props locally
-    this.autotask.id = this.task.id;
-    this.autotask.name = this.task.name;
-    this.autotask.script = this.task.script;
-    this.autotask.script_args = this.task.script_args;
-    this.autotask.alert_severity = this.task.alert_severity;
-    this.autotask.timeout = this.task.timeout;
-    this.autotask.custom_field = this.task.custom_field;
-    this.autotask.collector_all_output = this.task.collector_all_output;
+      try {
+        // remove run_date_time
+        delete task.value.run_date_time;
+        const result = await updateTask(task.value.id, task.value);
+        notifySuccess(result);
+        onDialogOK();
+      } catch (e) {
+        console.error(e);
+      }
+
+      loading.value = false;
+    }
+
+    return {
+      // reactive data
+      state: task,
+      collector,
+      scriptOptions,
+      customFieldOptions,
+
+      // non reactive data
+      severityOptions,
+
+      // methods
+      submit,
+
+      // quasar dialog
+      dialogRef,
+      onDialogHide,
+    };
   },
 };
 </script>

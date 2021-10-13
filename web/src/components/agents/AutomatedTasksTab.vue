@@ -27,7 +27,9 @@
       <!-- header slots -->
       <template v-slot:header-cell-enabled="props">
         <q-th auto-width :props="props">
-          <small>Enabled</small>
+          <q-icon name="power_settings_new" size="1.5em">
+            <q-tooltip>Enabled</q-tooltip>
+          </q-icon>
         </q-th>
       </template>
 
@@ -73,7 +75,7 @@
 
       <!-- body slots -->
       <template v-slot:body="props">
-        <q-tr :props="props">
+        <q-tr :props="props" class="cursor-pointer" @dblclick="showEditTask(props.row)">
           <!-- context menu -->
           <q-menu context-menu>
             <q-list dense style="min-width: 200px">
@@ -113,7 +115,7 @@
           <!-- text alert -->
           <q-td>
             <q-checkbox
-              v-if="props.row.alert_template && props.row.alert_template.always_text !== null"
+              v-if="props.row.alert_template && !!props.row.alert_template.always_text"
               :value="props.row.alert_template.always_text"
               disable
               dense
@@ -124,7 +126,7 @@
             <q-checkbox
               v-else
               dense
-              @update:model-value="editTask(props.row, { text_alert: props.row.text_alert })"
+              @update:model-value="editTask(props.row, { text_alert: !props.row.text_alert })"
               v-model="props.row.text_alert"
               :disable="props.row.managed_by_policy"
             />
@@ -132,7 +134,7 @@
           <!-- email alert -->
           <q-td>
             <q-checkbox
-              v-if="props.row.alert_template && props.row.alert_template.always_email !== null"
+              v-if="props.row.alert_template && !!props.row.alert_template.always_email"
               :value="props.row.alert_template.always_email"
               disable
               dense
@@ -143,7 +145,7 @@
             <q-checkbox
               v-else
               dense
-              @update:model-value="editTask(props.row, { email_alert: props.row.email_alert })"
+              @update:model-value="editTask(props.row, { email_alert: !props.row.email_alert })"
               v-model="props.row.email_alert"
               :disable="props.row.managed_by_policy"
             />
@@ -151,7 +153,7 @@
           <!-- dashboard alert -->
           <q-td>
             <q-checkbox
-              v-if="props.row.alert_template && props.row.alert_template.always_alert !== null"
+              v-if="props.row.alert_template && !!props.row.alert_template.always_alert"
               :value="props.row.alert_template.always_alert"
               disable
               dense
@@ -162,7 +164,7 @@
             <q-checkbox
               v-else
               dense
-              @update:model-value="editTask(props.row, { dashboard_alert: props.row.dashboard_alert })"
+              @update:model-value="editTask(props.row, { dashboard_alert: !props.row.dashboard_alert })"
               v-model="props.row.dashboard_alert"
               :disable="props.row.managed_by_policy"
             />
@@ -223,8 +225,12 @@
           <q-td v-if="props.row.last_run">{{ props.row.last_run }}</q-td>
           <q-td v-else>Has not run yet</q-td>
           <q-td>{{ props.row.schedule }}</q-td>
-          <q-td v-if="props.row.assigned_check">{{ props.row.assigned_check.readable_desc }}</q-td>
-          <q-td v-else></q-td>
+          <q-td>
+            <span v-if="props.row.check_name">
+              {{ truncateText(props.row.check_name, 40) }}
+              <q-tooltip v-if="props.row.check_name.length > 40">{{ props.row.check_name }}</q-tooltip>
+            </span>
+          </q-td>
         </q-tr>
       </template>
     </q-table>
@@ -239,6 +245,7 @@ import { useQuasar } from "quasar";
 import { updateTask, removeTask, runTask } from "@/api/tasks";
 import { fetchAgentTasks } from "@/api/agents";
 import { notifySuccess, notifyError } from "@/utils/notify";
+import { truncateText } from "@/utils/format";
 
 // ui imports
 import AddAutomatedTask from "@/components/tasks/AddAutomatedTask";
@@ -340,7 +347,7 @@ export default {
       }).onOk(async () => {
         loading.value = true;
         try {
-          const result = await removeTask(task.pk);
+          const result = await removeTask(task.id);
           notifySuccess(result);
           getTasks();
         } catch (e) {
@@ -358,7 +365,7 @@ export default {
 
       loading.value = true;
       try {
-        const result = await runTask(task.pk);
+        const result = await runTask(task.id);
         notifySuccess(result);
       } catch (e) {
         console.error(e);
@@ -428,6 +435,8 @@ export default {
       showAddTask,
       showEditTask,
       showScriptOutput,
+
+      truncateText,
     };
   },
 };

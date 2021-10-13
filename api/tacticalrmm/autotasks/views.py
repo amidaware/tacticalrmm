@@ -37,9 +37,9 @@ class GetAddAutoTasks(APIView):
 
         # Determine if adding to an agent and replace agent_id with pk
         if "agent" in data.keys():
-            agent = get_object_or_404(Agent, pk=data["agent"])
+            agent = get_object_or_404(Agent, agent_id=data["agent"])
 
-            if _has_perm_on_agent(request.user, agent.agent_id):
+            if not _has_perm_on_agent(request.user, agent.agent_id):
                 raise PermissionDenied()
 
             data["agent"] = agent.pk

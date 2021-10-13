@@ -1,9 +1,10 @@
-import { ref, watch } from "vue"
+import { ref, watch, computed, onMounted } from "vue"
+import { useStore } from "vuex"
 import { fetchScripts } from "@/api/scripts"
 import { formatScriptOptions } from "@/utils/format"
 
 // script dropdown
-export function useScriptDropdown(setScript = null) {
+export function useScriptDropdown(setScript = null, { onMount = false }) {
   const scriptOptions = ref([])
   const defaultTimeout = ref(30)
   const defaultArgs = ref([])
@@ -22,6 +23,12 @@ export function useScriptDropdown(setScript = null) {
       defaultArgs.value = tmpScript.args;
     }
   })
+
+  // vuex show community scripts
+  const store = useStore()
+  const showCommunityScripts = computed(() => store.state.showCommunityScripts)
+
+  if (onMount) onMounted(() => getScriptOptions(showCommunityScripts.value))
 
   return {
     //data

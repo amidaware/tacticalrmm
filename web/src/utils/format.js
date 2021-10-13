@@ -138,6 +138,10 @@ export function formatUserOptions(data, flat = false) {
   return _formatOptions(data, { label: "username", flat: flat })
 }
 
+export function formatCheckOptions(data, flat = false) {
+  return _formatOptions(data, { label: "readable_desc", flat: flat })
+}
+
 
 // date formatting
 

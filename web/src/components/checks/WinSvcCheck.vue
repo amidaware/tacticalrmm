@@ -9,29 +9,24 @@
         </q-btn>
       </q-bar>
 
-      <q-form @submit.prevent="submit">
+      <q-form @submit.prevent="submit(onDialogOK)">
         <div style="max-height: 70vh" class="scroll">
           <q-card-section>
             <!-- policy check, either choose from a list of default services or enter manually -->
             <q-radio
               v-if="isPolicy && !check"
-              v-model="localCheck.svc_policy_mode"
+              v-model="state.svc_policy_mode"
               val="default"
               label="Choose from defaults"
             />
-            <q-radio
-              v-if="isPolicy && !check"
-              v-model="localCheck.svc_policy_mode"
-              val="manual"
-              label="Enter manually"
-            />
+            <q-radio v-if="isPolicy && !check" v-model="state.svc_policy_mode" val="manual" label="Enter manually" />
             <q-select
-              v-if="isPolicy && localCheck.svc_policy_mode === 'default' && !check"
+              v-if="isPolicy && state.svc_policy_mode === 'default' && !check"
               :rules="[val => !!val || '*Required']"
               dense
               options-dense
               outlined
-              v-model="localCheck.svc_name"
+              v-model="state.svc_name"
               :options="serviceOptions"
               label="Service"
               map-options
@@ -39,19 +34,19 @@
               :disable="!!check"
             />
             <q-input
-              v-if="isPolicy && localCheck.svc_policy_mode === 'manual'"
+              v-if="isPolicy && state.svc_policy_mode === 'manual'"
               :rules="[val => !!val || '*Required']"
               outlined
               dense
-              v-model="localCheck.svc_name"
+              v-model="state.svc_name"
               label="Service Name"
             />
             <q-input
-              v-if="isPolicy && localCheck.svc_policy_mode === 'manual'"
+              v-if="isPolicy && state.svc_policy_mode === 'manual'"
               :rules="[val => !!val || '*Required']"
               outlined
               dense
-              v-model="localCheck.svc_display_name"
+              v-model="state.svc_display_name"
               label="Display Name"
             />
             <!-- agent check -->
@@ -62,7 +57,7 @@
               dense
               options-dense
               outlined
-              v-model="localCheck.svc_name"
+              v-model="state.svc_name"
               :options="serviceOptions"
               label="Service"
               map-options
@@ -71,11 +66,11 @@
             />
           </q-card-section>
           <q-card-section>
-            <q-checkbox v-model="localCheck.pass_if_start_pending" label="PASS if service is in 'Start Pending' mode" />
+            <q-checkbox v-model="state.pass_if_start_pending" label="PASS if service is in 'Start Pending' mode" />
             <br />
-            <q-checkbox v-model="localCheck.pass_if_svc_not_exist" label="PASS if service doesn't exist" />
+            <q-checkbox v-model="state.pass_if_svc_not_exist" label="PASS if service doesn't exist" />
             <br />
-            <q-checkbox v-model="localCheck.restart_if_stopped" label="Restart service if it's stopped" />
+            <q-checkbox v-model="state.restart_if_stopped" label="Restart service if it's stopped" />
           </q-card-section>
           <q-card-section>
             <q-select
@@ -84,7 +79,7 @@
               options-dense
               map-options
               emit-value
-              v-model="localCheck.alert_severity"
+              v-model="state.alert_severity"
               :options="severityOptions"
               label="Alert Severity"
             />
@@ -94,7 +89,7 @@
               outlined
               dense
               options-dense
-              v-model="localCheck.fails_b4_alert"
+              v-model="state.fails_b4_alert"
               :options="failOptions"
               label="Number of consecutive failures before alert"
             />
@@ -104,7 +99,7 @@
               dense
               outlined
               type="number"
-              v-model.number="localCheck.run_interval"
+              v-model.number="state.run_interval"
               label="Run this check every (seconds)"
               hint="Setting this value to anything other than 0 will override the 'Run checks every' setting on the agent"
             />
@@ -137,7 +132,7 @@ export default {
     const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
 
     // check logic
-    const { check, loading, submit, failOptions, severityOptions, serviceOptions } = useCheckModal({
+    const { state, loading, submit, failOptions, severityOptions, serviceOptions } = useCheckModal({
       editCheck: props.check,
       initialState: {
         ...props.parent,
@@ -152,21 +147,20 @@ export default {
         alert_severity: "warning",
         run_interval: 0,
       },
-      onDialogOK,
     });
 
     watch(
-      () => check.value.svc_name,
+      () => state.value.svc_name,
       (newvalue, oldValue) => {
-        check.value.svc_display_name = serviceOptions.value.find(i => i.value === check.value.svc_name).label;
+        state.value.svc_display_name = serviceOptions.value.find(i => i.value === state.value.svc_name).label;
       }
     );
 
     watch(
-      () => check.value.svc_policy_mode,
+      () => state.value.svc_policy_mode,
       (newValue, oldValue) => {
-        check.value.svc_name = null;
-        check.value.svc_display_name = null;
+        state.value.svc_name = null;
+        state.value.svc_display_name = null;
       }
     );
 
@@ -182,7 +176,7 @@ export default {
 
     return {
       // reactive data
-      localCheck: check,
+      state,
       loading,
       isPolicy,
       isAgent,
@@ -198,6 +192,7 @@ export default {
       // quasar dialog
       dialogRef,
       onDialogHide,
+      onDialogOK,
     };
   },
 };

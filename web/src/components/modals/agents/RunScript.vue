@@ -96,8 +96,7 @@
 
 <script>
 // composition imports
-import { ref, watch, computed, onMounted } from "vue";
-import { useStore } from "vuex";
+import { ref, watch } from "vue";
 import { useDialogPluginComponent } from "quasar";
 import { useScriptDropdown } from "@/composables/scripts";
 import { useCustomFieldDropdown } from "@/composables/core";
@@ -125,16 +124,12 @@ export default {
     script: Number,
   },
   setup(props) {
-    // setup vuex store
-    const store = useStore();
-    const showCommunityScripts = computed(() => store.state.showCommunityScripts);
-
     // setup quasar dialog plugin
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
 
     // setup dropdowns
-    const { script, scriptOptions, defaultTimeout, defaultArgs, getScriptOptions } = useScriptDropdown(props.script);
-    const { customFieldOptions, getCustomFieldOptions } = useCustomFieldDropdown();
+    const { script, scriptOptions, defaultTimeout, defaultArgs } = useScriptDropdown(props.script, { onMount: true });
+    const { customFieldOptions } = useCustomFieldDropdown({ onMount: true });
 
     // main run script functionaity
     const state = ref({
@@ -167,12 +162,6 @@ export default {
 
     // watchers
     watch([() => state.value.output, () => state.value.emailMode], () => (state.value.emails = []));
-
-    // vue component hooks
-    onMounted(() => {
-      getScriptOptions(showCommunityScripts.value);
-      getCustomFieldOptions();
-    });
 
     return {
       // reactive data

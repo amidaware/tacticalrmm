@@ -1,13 +1,16 @@
 
 import { ref, onMounted } from "vue"
 import { updateCheck, saveCheck } from "@/api/checks"
+import { fetchAgentChecks } from "@/api/agents";
+//import { fetchPolicyChecks } from "@/api/automation";
+import { formatCheckOptions } from "@/utils/format";
 import { fetchAgent } from "@/api/agents"
 import { isValidThreshold } from "@/utils/validation";
 import { notifySuccess } from "@/utils/notify"
 
 // for check add/edit modals
-// pass as an object {editCheck: props.check, initialState: {default form values for adding check}, onDialogOK: callback for submit function }
-export function useCheckModal({ editCheck, initialState, onDialogOK }) {
+// pass as an object {editCheck: props.check, initialState: {default form values for adding check} }
+export function useCheckModal({ editCheck, initialState }) {
 
   const check = editCheck
     ? ref(Object.assign({}, editCheck))
@@ -16,7 +19,7 @@ export function useCheckModal({ editCheck, initialState, onDialogOK }) {
   const loading = ref(false)
 
   // save check function
-  async function submit() {
+  async function submit(onOk) {
     if (check.value.check_type === "cpuload" || check.value.check_type === "memory") {
       if (!isValidThreshold(check.value.warning_threshold, check.value.error_threshold)) return;
     }
@@ -28,7 +31,7 @@ export function useCheckModal({ editCheck, initialState, onDialogOK }) {
     try {
       const result = editCheck ? await updateCheck(check.value.id, check.value) : await saveCheck(check.value);
       notifySuccess(result);
-      onDialogOK();
+      onOk();
     } catch (e) {
       console.error(e);
     }
@@ -79,7 +82,7 @@ export function useCheckModal({ editCheck, initialState, onDialogOK }) {
 
   return {
     //data
-    check,
+    state: check,
     loading,
     failOptions,
     diskOptions,
@@ -90,6 +93,26 @@ export function useCheckModal({ editCheck, initialState, onDialogOK }) {
 
     // methods
     submit
+  }
+}
+
+export function useCheckDropdown() {
+  const check = ref(null)
+  const checks = ref([])
+  const checkOptions = ref([])
+
+  async function getCheckOptions({ agent, policy }, flat = false) {
+    checkOptions.value = formatCheckOptions(agent ? await fetchAgentChecks(agent) : await fetchPolicyChecks(policy), flat)
+  }
+
+  return {
+    //data
+    check,
+    checks,
+    checkOptions,
+
+    //methods
+    getCheckOptions
   }
 }
 

@@ -9,17 +9,17 @@
         </q-btn>
       </q-bar>
 
-      <q-form @submit.prevent="submit">
+      <q-form @submit.prevent="submit(onDialogOK)">
         <div style="max-height: 70vh" class="scroll">
           <q-card-section>
-            <q-select dense :disable="!!check" outlined v-model="localCheck.disk" :options="diskOptions" label="Disk" />
+            <q-select dense :disable="!!check" outlined v-model="state.disk" :options="diskOptions" label="Disk" />
           </q-card-section>
           <q-card-section>
             <q-input
               dense
               outlined
               type="number"
-              v-model.number="localCheck.warning_threshold"
+              v-model.number="state.warning_threshold"
               label="Warning Threshold Remaining (%)"
               :rules="[val => val >= 0 || 'Minimum threshold is 0', val => val < 100 || 'Maximum threshold is 99']"
             />
@@ -29,7 +29,7 @@
               dense
               outlined
               type="number"
-              v-model.number="localCheck.error_threshold"
+              v-model.number="state.error_threshold"
               label="Error Threshold Remaining (%)"
               :rules="[val => val >= 0 || 'Minimum threshold is 0', val => val < 100 || 'Maximum threshold is 99']"
             />
@@ -39,7 +39,7 @@
               outlined
               dense
               options-dense
-              v-model="localCheck.fails_b4_alert"
+              v-model="state.fails_b4_alert"
               :options="failOptions"
               label="Number of consecutive failures before alert"
             />
@@ -49,7 +49,7 @@
               dense
               outlined
               type="number"
-              v-model.number="localCheck.run_interval"
+              v-model.number="state.run_interval"
               label="Run this check every (seconds)"
               hint="Setting this value to anything other than 0 will override the 'Run checks every' setting on the agent"
             />
@@ -81,7 +81,7 @@ export default {
     const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
 
     // check logic
-    const { check, loading, submit, failOptions, diskOptions } = useCheckModal({
+    const { state, loading, submit, failOptions, diskOptions } = useCheckModal({
       editCheck: props.check,
       initialState: {
         ...props.parent,
@@ -92,12 +92,11 @@ export default {
         fails_b4_alert: 1,
         run_interval: 0,
       },
-      onDialogOK,
     });
 
     return {
       // reactive data
-      localCheck: check,
+      state,
       loading,
 
       // non-reactive data
@@ -110,6 +109,7 @@ export default {
       // quasar dialog
       dialogRef,
       onDialogHide,
+      onDialogOK,
     };
   },
 };

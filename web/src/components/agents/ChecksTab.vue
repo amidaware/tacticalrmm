@@ -134,7 +134,7 @@
           <!-- text alert -->
           <q-td>
             <q-checkbox
-              v-if="props.row.alert_template && props.row.alert_template.always_text !== null"
+              v-if="props.row.alert_template && !!props.row.alert_template.always_text"
               :value="props.row.alert_template.always_text"
               disable
               dense
@@ -145,7 +145,7 @@
             <q-checkbox
               v-else
               dense
-              @update:model-value="editCheck(props.row, { text_alert: props.row.text_alert })"
+              @update:model-value="editCheck(props.row, { text_alert: !props.row.text_alert })"
               v-model="props.row.text_alert"
               :disable="props.row.managed_by_policy"
             />
@@ -153,7 +153,7 @@
           <!-- email alert -->
           <q-td>
             <q-checkbox
-              v-if="props.row.alert_template && props.row.alert_template.always_email !== null"
+              v-if="props.row.alert_template && !!props.row.alert_template.always_email"
               :value="props.row.alert_template.always_email"
               disable
               dense
@@ -164,7 +164,7 @@
             <q-checkbox
               v-else
               dense
-              @update:model-value="editCheck(props.row, { email_alert: props.row.email_alert })"
+              @update:model-value="editCheck(props.row, { email_alert: !props.row.email_alert })"
               v-model="props.row.email_alert"
               :disable="props.row.managed_by_policy"
             />
@@ -172,7 +172,7 @@
           <!-- dashboard alert -->
           <q-td>
             <q-checkbox
-              v-if="props.row.alert_template && props.row.alert_template.always_alert !== null"
+              v-if="props.row.alert_template && !!props.row.alert_template.always_alert"
               :value="props.row.alert_template.always_alert"
               disable
               dense
@@ -183,7 +183,7 @@
             <q-checkbox
               v-else
               dense
-              @update:model-value="editCheck(props.row, { dashboard_alert: props.row.dashboard_alert })"
+              @update:model-value="editCheck(props.row, { dashboard_alert: !props.row.dashboard_alert })"
               v-model="props.row.dashboard_alert"
               :disable="props.row.managed_by_policy"
             />
@@ -350,9 +350,7 @@ export default {
     }
 
     async function editCheck(check, data) {
-      if (check.managed_by_policy) {
-        return;
-      }
+      if (check.managed_by_policy) return;
 
       loading.value = false;
       try {
@@ -434,6 +432,8 @@ export default {
     }
 
     function showCheckModal(type, check) {
+      if (check && check.managed_by_policy) return;
+
       let component;
 
       if (type === "diskspace") component = DiskSpaceCheck;

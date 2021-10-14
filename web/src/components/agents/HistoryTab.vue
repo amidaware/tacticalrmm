@@ -5,15 +5,23 @@
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       :rows="history"
       :columns="columns"
-      :pagination="{ sortBy: 'time', descending: true, rowsPerPage: 10 }"
+      :pagination="{ sortBy: 'time', descending: true, rowsPerPage: 0 }"
       :style="{ 'max-height': tabHeight }"
       :loading="loading"
+      :rows-per-page-options="[0]"
+      :filter="filter"
+      virtual-scroll
       dense
       binary-state-sort
     >
       <template v-slot:top>
         <q-btn dense flat push @click="getHistory" icon="refresh" />
         <q-space />
+        <q-input v-model="filter" outlined label="Search" dense clearable class="q-pr-sm">
+          <template v-slot:prepend>
+            <q-icon name="search" color="primary" />
+          </template>
+        </q-input>
         <export-table-btn :data="history" :columns="columns" />
       </template>
 
@@ -114,6 +122,7 @@ export default {
     // setup main history functionality
     const history = ref([]);
     const loading = ref(false);
+    const filter = ref("");
 
     async function getHistory() {
       loading.value = true;
@@ -147,6 +156,7 @@ export default {
       history,
       loading,
       tabHeight,
+      filter,
 
       // non-reactive data
       columns,

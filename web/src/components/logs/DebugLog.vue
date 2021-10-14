@@ -7,51 +7,67 @@
         <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
       </q-btn>
     </q-bar>
-    <q-card-section class="row">
-      <q-btn v-if="agentpk" dense flat push @click="getDebugLog" icon="refresh" />
-      <tactical-dropdown
-        v-if="!agentpk"
-        class="col-2 q-pr-sm"
-        v-model="agentFilter"
-        label="Agents Filter"
-        :options="agentOptions"
-        mapOptions
-        outlined
-        clearable
-      />
-      <tactical-dropdown
-        class="col-2 q-pr-sm"
-        v-model="logTypeFilter"
-        label="Log Type Filter"
-        :options="logTypeOptions"
-        mapOptions
-        outlined
-        clearable
-      />
-      <q-radio v-model="logLevelFilter" color="cyan" val="info" label="Info" />
-      <q-radio v-model="logLevelFilter" color="red" val="critical" label="Critical" />
-      <q-radio v-model="logLevelFilter" color="red" val="error" label="Error" />
-      <q-radio v-model="logLevelFilter" color="yellow" val="warning" label="Warning" />
-      <q-space />
-      <export-table-btn v-if="!modal" :data="debugLog" :columns="columns" />
-    </q-card-section>
-    <q-separator />
-    <q-card-section>
-      <q-table
-        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
-        :rows="debugLog"
-        :columns="columns"
-        :title="modal ? 'Debug Logs' : ''"
-        :pagination="{ sortBy: 'entry_time', descending: true }"
-        :loading="loading"
-        dense
-        binary-state-sort
-      >
-        <template v-slot:top-right>
-          <export-table-btn v-if="modal" :data="debugLog" :columns="columns" />
-        </template>
-      </q-table>
-    </q-card-section>
+    <q-table
+      :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+      class="tabs-tbl-sticky"
+      :style="{ 'max-height': tabHeight ? tabHeight : `${$q.screen.height - 32}px` }"
+      :rows="debugLog"
+      :columns="columns"
+      :title="modal ? 'Debug Logs' : ''"
+      :pagination="{ sortBy: 'entry_time', descending: true, rowsPerPage: 0 }"
+      :loading="loading"
+      :filter="filter"
+      virtual-scroll
+      dense
+      binary-state-sort
+      :rows-per-page-options="[0]"
+    >
+      <template v-slot:top>
+        <q-btn v-if="agent" class="q-pr-sm" dense flat push @click="getDebugLog" icon="refresh" />
+        <tactical-dropdown
+          v-if="!agent"
+          class="q-pr-sm"
+          style="width: 250px"
+          v-model="agentFilter"
+          label="Agents Filter"
+          :options="agentOptions"
+          mapOptions
+          outlined
+          clearable
+          filterable
+        />
+        <tactical-dropdown
+          class="q-pr-sm"
+          style="width: 250px"
+          v-model="logTypeFilter"
+          label="Log Type Filter"
+          :options="logTypeOptions"
+          mapOptions
+          outlined
+          clearable
+        />
+        <q-radio v-model="logLevelFilter" color="cyan" val="info" label="Info" />
+        <q-radio v-model="logLevelFilter" color="red" val="critical" label="Critical" />
+        <q-radio v-model="logLevelFilter" color="red" val="error" label="Error" />
+        <q-radio v-model="logLevelFilter" color="yellow" val="warning" label="Warning" />
+        <q-space />
+        <q-input v-model="filter" outlined label="Search" dense clearable class="q-pr-sm">
+          <template v-slot:prepend>
+            <q-icon name="search" color="primary" />
+          </template>
+        </q-input>
+        <export-table-btn :data="debugLog" :columns="columns" />
+      </template>
+
+      <template v-slot:top-row>
+        <q-tr v-if="debugLog.length === 1000">
+          <q-td colspan="100%">
+            <q-icon name="warning" color="warning" />
+            Results are limited to 1000 rows.
+          </q-td>
+        </q-tr>
+      </template>
+    </q-table>
   </q-card>
 </template>
 
@@ -104,7 +120,8 @@ export default {
     ExportTableBtn,
   },
   props: {
-    agentpk: Number,
+    agent: String,
+    tabHeight: String,
     modal: {
       type: Boolean,
       default: false,
@@ -120,6 +137,7 @@ export default {
     const logLevelFilter = ref("info");
     const logTypeFilter = ref(null);
     const loading = ref(false);
+    const filter = ref("");
 
     async function getDebugLog() {
       loading.value = true;
@@ -133,13 +151,13 @@ export default {
       loading.value = false;
     }
 
-    if (props.agentpk) {
-      agentFilter.value = props.agentpk;
+    if (props.agent) {
+      agentFilter.value = props.agent;
       watch(
-        () => props.agentpk,
+        () => props.agent,
         (newValue, oldValue) => {
           if (newValue) {
-            agentFilter.value = props.agentpk;
+            agentFilter.value = props.agent;
             getDebugLog();
           }
         }
@@ -151,7 +169,7 @@ export default {
 
     // vue component hooks
     onMounted(() => {
-      if (!props.agentpk) getAgentOptions();
+      if (!props.agent) getAgentOptions();
       getDebugLog();
     });
 
@@ -163,6 +181,7 @@ export default {
       agentFilter,
       agentOptions,
       loading,
+      filter,
 
       // non-reactive data
       columns,

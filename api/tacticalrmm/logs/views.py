@@ -150,7 +150,7 @@ class GetDebugLog(APIView):
             logLevelFilter = Q(log_level=request.data["logLevelFilter"])
 
         if "agentFilter" in request.data:
-            agentFilter = Q(agent=request.data["agentFilter"])
+            agentFilter = Q(agent__agent_id=request.data["agentFilter"])
 
         debug_logs = (
             DebugLog.objects.prefetch_related("agent")
@@ -160,5 +160,5 @@ class GetDebugLog(APIView):
         )
 
         ctx = {"default_tz": get_default_timezone()}
-        ret = DebugLogSerializer(debug_logs, many=True, context=ctx).data
+        ret = DebugLogSerializer(debug_logs.order_by("-entry_time")[0:1000], many=True, context=ctx).data
         return Response(ret)

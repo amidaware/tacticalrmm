@@ -1,3 +1,4 @@
+import { date } from "quasar";
 
 // dropdown options formatting
 
@@ -60,13 +61,13 @@ export function formatAgentOptions(data, flat = false) {
 
   if (flat) {
     // returns just agent hostnames in array
-    return _formatOptions(data, { label: "hostname", value: "pk", flat: true, allowDuplicates: false })
+    return _formatOptions(data, { label: "hostname", value: "agent_id", flat: true, allowDuplicates: false })
   } else {
     // returns options with categories in object format
     let options = []
     const agents = data.map(agent => ({
       label: agent.hostname,
-      value: agent.pk,
+      value: agent.agent_id,
       cat: `${agent.client} > ${agent.site}`,
     }));
 

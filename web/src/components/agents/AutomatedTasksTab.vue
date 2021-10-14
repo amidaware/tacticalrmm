@@ -10,6 +10,7 @@
       :columns="columns"
       row-key="id"
       binary-state-sort
+      virtual-scroll
       v-model:pagination="pagination"
       :loading="loading"
       :rows-per-page-options="[0]"

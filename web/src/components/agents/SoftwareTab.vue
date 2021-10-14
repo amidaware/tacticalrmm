@@ -12,6 +12,7 @@
       v-model:pagination="pagination"
       binary-state-sort
       row-key="id"
+      virtual-scroll
       :rows-per-page-options="[0]"
       :loading="loading"
     >

@@ -13,6 +13,7 @@
       v-model:pagination="pagination"
       :loading="loading"
       :rows-per-page-options="[0]"
+      virtual-scroll
       no-data-label="No checks"
     >
       <!-- table top slot -->

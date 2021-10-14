@@ -12,6 +12,7 @@
       :rows-per-page-options="[0]"
       :loading="loading"
       hide-bottom
+      virtual-scroll
       no-data-label="No notes"
     >
       <template v-slot:top>

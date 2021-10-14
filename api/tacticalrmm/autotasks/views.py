@@ -18,7 +18,7 @@ class GetAddAutoTasks(APIView):
     permission_classes = [IsAuthenticated, AutoTaskPerms]
 
     def get(self, request, agent_id=None, policy=None):
-        
+
         if agent_id:
             agent = get_object_or_404(Agent, agent_id=agent_id)
             tasks = AutomatedTask.objects.filter(agent=agent)
@@ -63,7 +63,9 @@ class GetAddAutoTasks(APIView):
         elif task.policy:
             generate_agent_autotasks_task.delay(policy=task.policy.pk)
 
-        return Response("The task has been created. It will show up on the agent on next checkin")
+        return Response(
+            "The task has been created. It will show up on the agent on next checkin"
+        )
 
 
 class GetEditDeleteAutoTask(APIView):
@@ -79,7 +81,6 @@ class GetEditDeleteAutoTask(APIView):
         return Response(TaskSerializer(task).data)
 
     def put(self, request, pk):
-        from automation.tasks import update_policy_autotasks_fields_task
 
         task = get_object_or_404(AutomatedTask, pk=pk)
 
@@ -89,9 +90,6 @@ class GetEditDeleteAutoTask(APIView):
         serializer = TaskSerializer(instance=task, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
-        if task.policy:
-            update_policy_autotasks_fields_task.delay(task=task.pk)
 
         return Response("The task was updated")
 
@@ -111,6 +109,7 @@ class GetEditDeleteAutoTask(APIView):
             task.delete()
 
         return Response(f"{task.name} will be deleted shortly")
+
 
 class RunAutoTask(APIView):
     permission_classes = [IsAuthenticated, RunAutoTaskPerms]

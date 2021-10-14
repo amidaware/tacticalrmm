@@ -78,14 +78,14 @@ class TacticalTestCase(TestCase):
 
     def check_not_authorized(self, method: str, url: str, data: dict = {}):
         try:
-            r = getattr(self.client, method)(url, data)
+            r = getattr(self.client, method)(url, data, format="json")
             self.assertEqual(r.status_code, 403)
         except KeyError:
             pass
 
     def check_authorized(self, method: str, url: str, data: dict = {}):
         try:
-            r = getattr(self.client, method)(url, data)
+            r = getattr(self.client, method)(url, data, format="json")
             self.assertNotEqual(r.status_code, 403)
             return r
         except KeyError:
@@ -97,14 +97,14 @@ class TacticalTestCase(TestCase):
             # create django superuser and test authorized
             user = baker.make("accounts.User", is_active=True, is_superuser=True)
             self.client.force_authenticate(user=user)
-            r = getattr(self.client, method)(url, data)
+            r = getattr(self.client, method)(url, data, format="json")
 
             self.assertNotEqual(r.status_code, 403)
 
             # test role superuser
             user = self.create_user_with_roles(["is_superuser"])
             self.client.force_authenticate(user=user)
-            r = getattr(self.client, method)(url, data)
+            r = getattr(self.client, method)(url, data, format="json")
 
             self.assertNotEqual(r.status_code, 403)
             self.client.logout()

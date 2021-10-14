@@ -7,8 +7,10 @@ from model_bakery import baker
 from tacticalrmm.test import TacticalTestCase
 
 from .models import AutomatedTask
-from .serializers import AutoTaskSerializer
+from .serializers import TaskSerializer
 from .tasks import create_win_task_schedule, remove_orphaned_win_tasks, run_win_task
+
+base_url = "/tasks"
 
 
 class TestAutotaskViews(TacticalTestCase):
@@ -16,12 +18,38 @@ class TestAutotaskViews(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
+    def test_get_autotasks(self):
+        # setup data
+        agent = baker.make_recipe("agents.agent")
+        baker.make("autotasks.AutomatedTask", agent=agent, _quantity=3)
+        policy = baker.make("automation.Policy")
+        baker.make("autotasks.AutomatedTask", policy=policy, _quantity=4)
+        baker.make("autotasks.AutomatedTask", _quantity=7)
+
+        # test returning all tasks
+        url = f"{base_url}/"
+        resp = self.client.get(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data), 14)
+
+        # test returning tasks for a specific agent
+        url = f"/agents/{agent.agent_id}/tasks/"
+        resp = self.client.get(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data), 3)
+
+        # test returning tasks for a specific policy
+        url = f"/automation/policies/{policy.id}/tasks/"
+        resp = self.client.get(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data), 4)
+
     @patch("automation.tasks.generate_agent_autotasks_task.delay")
     @patch("autotasks.tasks.create_win_task_schedule.delay")
     def test_add_autotask(
         self, create_win_task_schedule, generate_agent_autotasks_task
     ):
-        url = "/tasks/automatedtasks/"
+        url = f"{base_url}/"
 
         # setup data
         script = baker.make_recipe("scripts.script")
@@ -29,22 +57,9 @@ class TestAutotaskViews(TacticalTestCase):
         policy = baker.make("automation.Policy")
         check = baker.make_recipe("checks.diskspace_check", agent=agent)
 
-        # test script set to invalid pk
-        data = {"autotask": {"script": 500}}
-
-        resp = self.client.post(url, data, format="json")
-        self.assertEqual(resp.status_code, 404)
-
-        # test invalid policy
-        data = {"autotask": {"script": script.id}, "policy": 500}
-
-        resp = self.client.post(url, data, format="json")
-        self.assertEqual(resp.status_code, 404)
-
         # test invalid agent
         data = {
-            "autotask": {"script": script.id},
-            "agent": 500,
+            "agent": "13kfs89as9d89asd8f98df8df8dfhdf",
         }
 
         resp = self.client.post(url, data, format="json")
@@ -52,18 +67,16 @@ class TestAutotaskViews(TacticalTestCase):
 
         # test add task to agent
         data = {
-            "autotask": {
-                "name": "Test Task Scheduled with Assigned Check",
-                "run_time_days": ["Sunday", "Monday", "Friday"],
-                "run_time_minute": "10:00",
-                "timeout": 120,
-                "enabled": True,
-                "script": script.id,
-                "script_args": None,
-                "task_type": "scheduled",
-                "assigned_check": check.id,
-            },
-            "agent": agent.id,
+            "agent": agent.agent_id,
+            "name": "Test Task Scheduled with Assigned Check",
+            "run_time_days": ["Sunday", "Monday", "Friday"],
+            "run_time_minute": "10:00",
+            "timeout": 120,
+            "enabled": True,
+            "script": script.id,
+            "script_args": None,
+            "task_type": "scheduled",
+            "assigned_check": check.id,
         }
 
         resp = self.client.post(url, data, format="json")
@@ -73,17 +86,15 @@ class TestAutotaskViews(TacticalTestCase):
 
         # test add task to policy
         data = {
-            "autotask": {
-                "name": "Test Task Manual",
-                "run_time_days": [],
-                "timeout": 120,
-                "enabled": True,
-                "script": script.id,
-                "script_args": None,
-                "task_type": "manual",
-                "assigned_check": None,
-            },
             "policy": policy.id,  # type: ignore
+            "name": "Test Task Manual",
+            "run_time_days": [],
+            "timeout": 120,
+            "enabled": True,
+            "script": script.id,
+            "script_args": None,
+            "task_type": "manual",
+            "assigned_check": None,
         }
 
         resp = self.client.post(url, data, format="json")
@@ -97,12 +108,12 @@ class TestAutotaskViews(TacticalTestCase):
 
         # setup data
         agent = baker.make_recipe("agents.agent")
-        baker.make("autotasks.AutomatedTask", agent=agent, _quantity=3)
+        task = baker.make("autotasks.AutomatedTask", agent=agent)
 
-        url = f"/tasks/{agent.id}/automatedtasks/"
+        url = f"{base_url}/{task.id}/"
 
         resp = self.client.get(url, format="json")
-        serializer = AutoTaskSerializer(agent)
+        serializer = TaskSerializer(task)
 
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data, serializer.data)  # type: ignore
@@ -118,33 +129,48 @@ class TestAutotaskViews(TacticalTestCase):
         agent = baker.make_recipe("agents.agent")
         agent_task = baker.make("autotasks.AutomatedTask", agent=agent)
         policy = baker.make("automation.Policy")
-        policy_task = baker.make("autotasks.AutomatedTask", policy=policy)
+        policy_task = baker.make("autotasks.AutomatedTask", enabled=True, policy=policy)
 
         # test invalid url
-        resp = self.client.patch("/tasks/500/automatedtasks/", format="json")
+        resp = self.client.put(f"{base_url}/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
-        url = f"/tasks/{agent_task.id}/automatedtasks/"  # type: ignore
+        url = f"{base_url}/{agent_task.id}/"  # type: ignore
 
-        # test editing agent task
-        data = {"enableordisable": False}
+        # test editing task with no task called
+        data = {"name": "New Name"}
 
-        resp = self.client.patch(url, data, format="json")
+        resp = self.client.put(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        enable_or_disable_win_task.not_called()  # type: ignore
+
+        # test editing task
+        data = {"enabled": False}
+
+        resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         enable_or_disable_win_task.assert_called_with(pk=agent_task.id)  # type: ignore
 
-        url = f"/tasks/{policy_task.id}/automatedtasks/"  # type: ignore
+        url = f"{base_url}/{policy_task.id}/"  # type: ignore
 
         # test editing policy task
-        data = {"enableordisable": True}
+        data = {"enabled": False}
 
-        resp = self.client.patch(url, data, format="json")
+        resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         update_policy_autotasks_fields_task.assert_called_with(
             task=policy_task.id, update_agent=True  # type: ignore
         )
+        update_policy_autotasks_fields_task.reset_mock()
 
-        self.check_not_authenticated("patch", url)
+        # test editing policy task with no agent update
+        data = {"name": "New Name"}
+
+        resp = self.client.put(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+        update_policy_autotasks_fields_task.assert_called_with(task=policy_task.id)
+
+        self.check_not_authenticated("put", url)
 
     @patch("autotasks.tasks.delete_win_task_schedule.delay")
     @patch("automation.tasks.delete_policy_autotasks_task.delay")
@@ -158,17 +184,17 @@ class TestAutotaskViews(TacticalTestCase):
         policy_task = baker.make("autotasks.AutomatedTask", policy=policy)
 
         # test invalid url
-        resp = self.client.delete("/tasks/500/automatedtasks/", format="json")
+        resp = self.client.delete(f"{base_url}/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         # test delete agent task
-        url = f"/tasks/{agent_task.id}/automatedtasks/"  # type: ignore
+        url = f"{base_url}/{agent_task.id}/"  # type: ignore
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
         delete_win_task_schedule.assert_called_with(pk=agent_task.id)  # type: ignore
 
         # test delete policy task
-        url = f"/tasks/{policy_task.id}/automatedtasks/"  # type: ignore
+        url = f"{base_url}/{policy_task.id}/"  # type: ignore
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(AutomatedTask.objects.filter(pk=policy_task.id))  # type: ignore
@@ -183,16 +209,16 @@ class TestAutotaskViews(TacticalTestCase):
         task = baker.make("autotasks.AutomatedTask", agent=agent)
 
         # test invalid url
-        resp = self.client.get("/tasks/runwintask/500/", format="json")
+        resp = self.client.post(f"{base_url}/500/run/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         # test run agent task
-        url = f"/tasks/runwintask/{task.id}/"  # type: ignore
-        resp = self.client.get(url, format="json")
+        url = f"{base_url}/{task.id}/run/"  # type: ignore
+        resp = self.client.post(url, format="json")
         self.assertEqual(resp.status_code, 200)
         run_win_task.assert_called()
 
-        self.check_not_authenticated("get", url)
+        self.check_not_authenticated("post", url)
 
 
 class TestAutoTaskCeleryTasks(TacticalTestCase):
@@ -410,3 +436,221 @@ class TestAutoTaskCeleryTasks(TacticalTestCase):
             timeout=5,
         )
         self.assertEqual(ret.status, "SUCCESS")
+
+
+class TestTaskPermissions(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+        self.client_setup()
+
+    def test_get_tasks_permissions(self):
+        agent = baker.make_recipe("agents.agent")
+        policy = baker.make("automation.Policy")
+        unauthorized_agent = baker.make_recipe("agents.agent")
+        task = baker.make("autotasks.AutomatedTask", agent=agent, _quantity=5)
+        unauthorized_task = baker.make(
+            "autotasks.AutomatedTask", agent=unauthorized_agent, _quantity=7
+        )
+
+        policy_tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=2)
+
+        # test super user access
+        self.check_authorized_superuser("get", f"{base_url}/")
+        self.check_authorized_superuser("get", f"/agents/{agent.agent_id}/tasks/")
+        self.check_authorized_superuser(
+            "get", f"/agents/{unauthorized_agent.agent_id}/tasks/"
+        )
+        self.check_authorized_superuser(
+            "get", f"/automation/policies/{policy.id}/tasks/"
+        )
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+
+        self.check_not_authorized("get", f"{base_url}/")
+        self.check_not_authorized("get", f"/agents/{agent.agent_id}/tasks/")
+        self.check_not_authorized(
+            "get", f"/agents/{unauthorized_agent.agent_id}/tasks/"
+        )
+        self.check_not_authorized("get", f"/automation/policies/{policy.id}/tasks/")
+
+        # add list software role to user
+        user.role.can_list_autotasks = True
+        user.role.save()
+
+        r = self.check_authorized("get", f"{base_url}/")
+        self.assertEqual(len(r.data), 14)
+        r = self.check_authorized("get", f"/agents/{agent.agent_id}/tasks/")
+        self.assertEqual(len(r.data), 5)
+        r = self.check_authorized(
+            "get", f"/agents/{unauthorized_agent.agent_id}/tasks/"
+        )
+        self.assertEqual(len(r.data), 7)
+        r = self.check_authorized("get", f"/automation/policies/{policy.id}/tasks/")
+        self.assertEqual(len(r.data), 2)
+
+        # test limiting to client
+        user.role.can_view_clients.set([agent.client])
+        self.check_not_authorized(
+            "get", f"/agents/{unauthorized_agent.agent_id}/tasks/"
+        )
+        self.check_authorized("get", f"/agents/{agent.agent_id}/tasks/")
+        self.check_authorized("get", f"/automation/policies/{policy.id}/tasks/")
+
+        # make sure queryset is limited too
+        r = self.client.get(f"{base_url}/")
+        self.assertEqual(len(r.data), 7)
+
+    def test_add_task_permissions(self):
+        agent = baker.make_recipe("agents.agent")
+        unauthorized_agent = baker.make_recipe("agents.agent")
+        policy = baker.make("automation.Policy")
+        script = baker.make("scripts.Script")
+
+        policy_data = {
+            "policy": policy.id,  # type: ignore
+            "name": "Test Task Manual",
+            "run_time_days": [],
+            "timeout": 120,
+            "enabled": True,
+            "script": script.id,
+            "script_args": [],
+            "task_type": "manual",
+            "assigned_check": None,
+        }
+
+        agent_data = {
+            "agent": agent.agent_id,
+            "name": "Test Task Manual",
+            "run_time_days": [],
+            "timeout": 120,
+            "enabled": True,
+            "script": script.id,
+            "script_args": [],
+            "task_type": "manual",
+            "assigned_check": None,
+        }
+
+        unauthorized_agent_data = {
+            "agent": unauthorized_agent.agent_id,
+            "name": "Test Task Manual",
+            "run_time_days": [],
+            "timeout": 120,
+            "enabled": True,
+            "script": script.id,
+            "script_args": [],
+            "task_type": "manual",
+            "assigned_check": None,
+        }
+
+        url = f"{base_url}/"
+
+        for data in [policy_data, agent_data]:
+            # test superuser access
+            self.check_authorized_superuser("post", url, data)
+
+            user = self.create_user_with_roles([])
+            self.client.force_authenticate(user=user)
+
+            # test user without role
+            self.check_not_authorized("post", url, data)
+
+            # add user to role and test
+            setattr(user.role, "can_manage_autotasks", True)
+            user.role.save()
+
+            self.check_authorized("post", url, data)
+
+            # limit user to client
+            user.role.can_view_clients.set([agent.client])
+            if "agent" in data.keys():
+                self.check_authorized("post", url, data)
+                self.check_not_authorized("post", url, unauthorized_agent_data)
+            else:
+                self.check_authorized("post", url, data)
+
+    # mock the task delete method so it actually isn't deleted
+    @patch("autotasks.models.AutomatedTask.delete")
+    def test_task_get_edit_delete_permissions(self, delete_task):
+        agent = baker.make_recipe("agents.agent")
+        unauthorized_agent = baker.make_recipe("agents.agent")
+        policy = baker.make("automation.Policy")
+        task = baker.make("autotasks.AutomatedTask", agent=agent)
+        unauthorized_task = baker.make(
+            "autotasks.AutomatedTask", agent=unauthorized_agent
+        )
+        policy_task = baker.make("autotasks.AutomatedTask", policy=policy)
+
+        for method in ["get", "put", "delete"]:
+
+            url = f"{base_url}/{task.id}/"
+            unauthorized_url = f"{base_url}/{unauthorized_task.id}/"
+            policy_url = f"{base_url}/{policy_task.id}/"
+
+            # test superuser access
+            self.check_authorized_superuser(method, url)
+            self.check_authorized_superuser(method, unauthorized_url)
+            self.check_authorized_superuser(method, policy_url)
+
+            user = self.create_user_with_roles([])
+            self.client.force_authenticate(user=user)
+
+            # test user without role
+            self.check_not_authorized(method, url)
+            self.check_not_authorized(method, unauthorized_url)
+            self.check_not_authorized(method, policy_url)
+
+            # add user to role and test
+            setattr(
+                user.role,
+                "can_list_autotasks" if method == "get" else "can_manage_autotasks",
+                True,
+            )
+            user.role.save()
+
+            self.check_authorized(method, url)
+            self.check_authorized(method, unauthorized_url)
+            self.check_authorized(method, policy_url)
+
+            # limit user to client if agent task
+            user.role.can_view_clients.set([agent.client])
+
+            self.check_authorized(method, url)
+            self.check_not_authorized(method, unauthorized_url)
+            self.check_authorized(method, policy_url)
+
+    def test_task_action_permissions(self):
+
+        agent = baker.make_recipe("agents.agent")
+        unauthorized_agent = baker.make_recipe("agents.agent")
+        task = baker.make("autotasks.AutomatedTask", agent=agent)
+        unauthorized_task = baker.make(
+            "autotasks.AutomatedTask", agent=unauthorized_agent
+        )
+
+        url = f"{base_url}/{task.id}/run/"
+        unauthorized_url = f"{base_url}/{unauthorized_task.id}/run/"
+
+        # test superuser access
+        self.check_authorized_superuser("post", url)
+        self.check_authorized_superuser("post", unauthorized_url)
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+
+        # test user without role
+        self.check_not_authorized("post", url)
+        self.check_not_authorized("post", unauthorized_url)
+
+        # add user to role and test
+        user.role.can_run_autotasks = True
+        user.role.save()
+
+        self.check_authorized("post", url)
+        self.check_authorized("post", unauthorized_url)
+
+        # limit user to client if agent task
+        user.role.can_view_sites.set([agent.site])
+
+        self.check_authorized("post", url)
+        self.check_not_authorized("post", unauthorized_url)

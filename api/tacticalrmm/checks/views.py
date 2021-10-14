@@ -169,6 +169,7 @@ class ResetCheck(APIView):
 
 class GetCheckHistory(APIView):
     permission_classes = [IsAuthenticated, ChecksPerms]
+
     def patch(self, request, pk):
         check = get_object_or_404(Check, pk=pk)
 

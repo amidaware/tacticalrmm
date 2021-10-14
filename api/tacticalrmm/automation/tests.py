@@ -180,21 +180,6 @@ class TestPolicyViews(TacticalTestCase):
 
         self.check_not_authenticated("delete", url)
 
-    def test_get_all_policy_tasks(self):
-        # create policy with tasks
-        policy = baker.make("automation.Policy")
-        tasks = baker.make("autotasks.AutomatedTask", policy=policy, _quantity=3)
-        url = f"/automation/{policy.pk}/policyautomatedtasks/"  # type: ignore
-
-        resp = self.client.get(url, format="json")
-        serializer = AutoTasksFieldSerializer(tasks, many=True)
-
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)  # type: ignore
-        self.assertEqual(len(resp.data), 3)  # type: ignore
-
-        self.check_not_authenticated("get", url)
-
     def test_get_policy_check_status(self):
         # setup data
         site = baker.make("clients.Site")

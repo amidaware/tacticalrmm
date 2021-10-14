@@ -50,9 +50,9 @@ class GetAuditLogs(APIView):
                 pk__in=request.data["clientFilter"]
             ).values_list("id")
             agents = Agent.objects.filter(site__client_id__in=clients).values_list(
-                "hostname"
+                "agent_id"
             )
-            clientFilter = Q(agent__in=agents)
+            clientFilter = Q(agent_id__in=agents)
 
         if "userFilter" in request.data:
             userFilter = Q(username__in=request.data["userFilter"])
@@ -153,7 +153,8 @@ class GetDebugLog(APIView):
             agentFilter = Q(agent__agent_id=request.data["agentFilter"])
 
         debug_logs = (
-            DebugLog.objects.prefetch_related("agent")
+            DebugLog.permissions.filter_by_role(request.user)
+            .prefetch_related("agent")
             .filter(logLevelFilter)
             .filter(agentFilter)
             .filter(logTypeFilter)

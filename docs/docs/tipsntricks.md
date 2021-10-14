@@ -30,10 +30,10 @@ Right-click the connect button in *Take Control* for connect options
 1. Remote background a machine then go to mesh.EXAMPLE.COM
 2. Click on My Account
 3. Click on the device group you want to enable notifications or accept connection etc on (probably TacticalRMM)
-4. Next to User Consent click edit (the wee pencil)
-5. Tick whatever boxes you want in there (Features: Sync server device name to hostname, Automatically remove inactive devices, Notify/Prompt for Consent/Connection Toolbar settings)
-6. Click ok
-
+4. Next to User Consent click edit (the wee pencil)<br>
+![Features](images/mesh_userconsent.png)
+5. Then check Tick whatever boxes you want in there (Features: Sync server device name to hostname, Automatically remove inactive devices, Notify/Prompt for Consent/Connection Toolbar settings)<br>
 ![Features](images/mesh_features.png)
 
-![Features](images/mesh_userconsent.png)
+6. Ok your way out
+

@@ -631,16 +631,6 @@ export default {
       } else {
         this.loadFrame(this.selectedTree, false);
       }
-
-      if (this.selectedAgentId) {
-        const agent_id = this.selectedAgentId;
-        this.$store.dispatch("loadSummary", agent_id);
-        this.$store.dispatch("loadChecks", agent_id);
-        this.$store.dispatch("loadAutomatedTasks", agent_id);
-        this.$store.dispatch("loadWinUpdates", agent_id);
-        this.$store.dispatch("loadInstalledSoftware", agent_id);
-        this.$store.dispatch("loadNotes", agent_id);
-      }
     },
     loadFrame(activenode, destroySub = true) {
       if (this.clear_search_when_switching) this.clearFilter();
@@ -648,24 +638,24 @@ export default {
 
       let execute = false;
       let urlType, id;
-      let data = {};
+      let param = "";
 
       if (typeof activenode === "string") {
         urlType = activenode.split("|")[0];
         id = activenode.split("|")[1];
 
         if (urlType === "Client") {
-          data.client = id;
+          param = `client=${id}`;
           execute = true;
         } else if (urlType === "Site") {
-          data.site = id;
+          param = `site=${id}`;
           execute = true;
         }
 
         if (execute) {
           this.$store.commit("AGENT_TABLE_LOADING", true);
           this.$axios
-            .get("/agents/", data)
+            .get(`/agents/?${param}`)
             .then(r => {
               this.frame = r.data;
               this.$store.commit("AGENT_TABLE_LOADING", false);
@@ -703,7 +693,7 @@ export default {
           component: PolicyAdd,
           componentProps: {
             type: node.children ? "client" : "site",
-            object: node,
+            object: node.children ? node.client : node.site,
           },
         })
         .onOk(() => {
@@ -728,16 +718,14 @@ export default {
 
       this.$q.dialog({
         component: node.children ? ClientsForm : SitesForm,
-        componentProps: {
-          ...props,
-        },
+        componentProps: node.children ? { client: node.client } : { site: node.site },
       });
     },
     showDeleteModal(node) {
       this.$q.dialog({
         component: DeleteClient,
         componentProps: {
-          object: { id: node.id, name: node.label },
+          object: node.children ? node.client : node.site,
           type: node.children ? "client" : "site",
         },
       });
@@ -756,7 +744,7 @@ export default {
           component: AlertTemplateAdd,
           componentProps: {
             type: node.children ? "client" : "site",
-            object: node,
+            object: node.children ? node.client : node.site,
           },
         })
         .onOk(() => {

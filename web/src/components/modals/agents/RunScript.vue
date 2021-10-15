@@ -133,7 +133,6 @@ export default {
 
     // main run script functionaity
     const state = ref({
-      pk: props.agent.id,
       output: "wait",
       email: [],
       emailMode: "default",
@@ -152,7 +151,7 @@ export default {
       ret.value = null;
       loading.value = true;
 
-      ret.value = await runScript(state.value);
+      ret.value = await runScript(props.agent.agent_id, state.value);
       loading.value = false;
       if (state.value.output === "forget") {
         onDialogHide();

@@ -112,7 +112,7 @@ export default {
     },
     getSites() {
       this.$axios
-        .get("/clients/clients/")
+        .get("/clients/")
         .then(r => {
           this.agentCount = this.getAgentCount(r.data, this.type, this.object.id);
           r.data.forEach(client => {

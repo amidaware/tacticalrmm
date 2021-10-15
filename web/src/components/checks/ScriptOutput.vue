@@ -2,7 +2,7 @@
   <q-dialog ref="dialogRef" @hide="onDialogHide">
     <q-card class="q-dialog-plugin" style="min-width: 70vw">
       <q-bar>
-        {{ scriptInfo.readable_desc }}
+        Script Output
         <q-space />
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>

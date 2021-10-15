@@ -91,7 +91,7 @@ export default {
     getSites() {
       this.$q.loading.show();
       this.$axios
-        .get(`clients/${this.client.id}/client/`)
+        .get(`clients/${this.client.id}/`)
         .then(r => {
           this.sites = r.data.sites;
           this.$q.loading.hide();

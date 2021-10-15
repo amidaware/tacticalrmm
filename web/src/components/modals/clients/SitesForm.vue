@@ -156,7 +156,7 @@ export default {
     },
     getClients() {
       this.$axios
-        .get("/clients/clients/")
+        .get("/clients/")
         .then(r => {
           r.data.forEach(client => {
             this.clientOptions.push({ label: client.name, value: client.id });

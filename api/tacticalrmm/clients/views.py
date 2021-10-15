@@ -15,12 +15,9 @@ from tacticalrmm.utils import notify_error
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 from .permissions import (
-    ListClientsPerms,
-    ListDeploymentsPerms,
-    ListSitesPerms,
-    ManageClientsPerms,
-    ManageDeploymentPerms,
-    ManageSitesPerms,
+    ClientsPerms,
+    DeploymentPerms,
+    SitesPerms,
 )
 from .serializers import (
     ClientCustomFieldSerializer,
@@ -33,7 +30,7 @@ from .serializers import (
 
 
 class GetAddClients(APIView):
-    permission_classes = [IsAuthenticated, ManageClientsPerms, ListClientsPerms]
+    permission_classes = [IsAuthenticated, ClientsPerms]
 
     def get(self, request):
         clients = Client.permissions.filter_by_role(request.user)
@@ -77,8 +74,8 @@ class GetAddClients(APIView):
         return Response(f"{client} was added!")
 
 
-class GetUpdateClient(APIView):
-    permission_classes = [IsAuthenticated, ManageClientsPerms]
+class GetUpdateDeleteClient(APIView):
+    permission_classes = [IsAuthenticated, ClientsPerms]
 
     def get(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
@@ -116,32 +113,28 @@ class GetUpdateClient(APIView):
 
         return Response("The Client was updated")
 
-
-class DeleteClient(APIView):
-    permission_classes = [IsAuthenticated, ManageClientsPerms]
-
-    def delete(self, request, pk, sitepk):
+    def delete(self, request, pk):
         from automation.tasks import generate_agent_checks_task
 
         client = get_object_or_404(Client, pk=pk)
-        agents = Agent.objects.filter(site__client=client)
 
-        if not sitepk:
+        # only run tasks if it affects clients
+        if client.agent_count > 0 and "move_to_site" in request.query_params.keys():
+            agents = Agent.objects.filter(site__client=client)
+            site = get_object_or_404(Site, pk=request.query_params["move_to_site"])
+            agents.update(site=site)
+            generate_agent_checks_task.delay(all=True, create_tasks=True)
+
+        elif client.agent_count > 0:
             return notify_error(
-                "There needs to be a site specified to move existing agents to"
+                "Agents exist under this client. There needs to be a site specified to move existing agents to"
             )
-
-        site = get_object_or_404(Site, pk=sitepk)
-        agents.update(site=site)
-
-        generate_agent_checks_task.delay(all=True, create_tasks=True)
 
         client.delete()
         return Response(f"{client.name} was deleted!")
 
-
 class GetClientTree(APIView):
-    permission_classes = [IsAuthenticated, ListClientsPerms]
+    permission_classes = [IsAuthenticated, ClientsPerms]
 
     def get(self, request):
         clients = Client.permissions.filter_by_role(request.user)
@@ -150,12 +143,10 @@ class GetClientTree(APIView):
 
 
 class GetAddSites(APIView):
-    permission_classes = [IsAuthenticated, ManageSitesPerms, ListSitesPerms]
+    permission_classes = [IsAuthenticated, SitesPerms]
 
     def get(self, request):
-
         sites = Site.permissions.filter_by_role(request.user)
-
         return Response(SiteSerializer(sites, many=True).data)
 
     def post(self, request):
@@ -178,8 +169,8 @@ class GetAddSites(APIView):
         return Response(f"Site {site.name} was added!")
 
 
-class GetUpdateSite(APIView):
-    permission_classes = [IsAuthenticated, ManageSitesPerms]
+class GetUpdateDeleteSite(APIView):
+    permission_classes = [IsAuthenticated, SitesPerms]
 
     def get(self, request, pk):
         site = get_object_or_404(Site, pk=pk)
@@ -222,36 +213,30 @@ class GetUpdateSite(APIView):
 
         return Response("Site was edited!")
 
-
-class DeleteSite(APIView):
-    permission_classes = [IsAuthenticated, ManageSitesPerms]
-
-    def delete(self, request, pk, sitepk):
+    def delete(self, request, pk):
         from automation.tasks import generate_agent_checks_task
 
         site = get_object_or_404(Site, pk=pk)
         if site.client.sites.count() == 1:
             return notify_error("A client must have at least 1 site.")
 
-        agents = Agent.objects.filter(site=site)
+        # only run tasks if it affects clients
+        if site.agent_count > 0 and "move_to_site" in request.query_params.keys():
+            agents = Agent.objects.filter(site=site)
+            site = get_object_or_404(Site, pk=request.query_params["move_to_site"])
+            agents.update(site=site)
+            generate_agent_checks_task.delay(all=True, create_tasks=True)
 
-        if not sitepk:
+        elif site.agent_count > 0:
             return notify_error(
                 "There needs to be a site specified to move the agents to"
             )
 
-        agent_site = get_object_or_404(Site, pk=sitepk)
-
-        agents.update(site=agent_site)
-
-        generate_agent_checks_task.delay(all=True, create_tasks=True)
-
         site.delete()
         return Response(f"{site.name} was deleted!")
 
-
 class AgentDeployment(APIView):
-    permission_classes = [IsAuthenticated, ManageDeploymentPerms, ListDeploymentsPerms]
+    permission_classes = [IsAuthenticated, DeploymentPerms]
 
     def get(self, request):
         deps = Deployment.objects.all()

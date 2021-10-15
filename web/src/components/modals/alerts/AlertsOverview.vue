@@ -253,7 +253,7 @@ export default {
   methods: {
     getClients() {
       this.$axios
-        .get("/clients/clients/")
+        .get("/clients/")
         .then(r => {
           this.clientsOptions = Object.freeze(r.data.map(client => ({ label: client.name, value: client.id })));
         })

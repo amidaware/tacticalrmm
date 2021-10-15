@@ -89,7 +89,7 @@ export default {
         custom_fields: this.formatCustomFields(this.customFields, this.custom_fields),
       };
       this.$axios
-        .post("/clients/clients/", data)
+        .post("/clients/", data)
         .then(r => {
           this.refreshDashboardTree();
           this.$q.loading.hide();
@@ -108,7 +108,7 @@ export default {
       };
 
       this.$axios
-        .put(`/clients/${this.client.id}/client/`, data)
+        .put(`/clients/${this.client.id}/`, data)
         .then(r => {
           this.refreshDashboardTree();
           this.onOk();
@@ -122,7 +122,7 @@ export default {
     getClient() {
       this.$q.loading.show();
       this.$axios
-        .get(`/clients/${this.client.id}/client/`)
+        .get(`/clients/${this.client.id}/`)
         .then(r => {
           this.$q.loading.hide();
           this.localClient.name = r.data.name;

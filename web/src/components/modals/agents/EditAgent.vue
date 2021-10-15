@@ -192,7 +192,7 @@ export default {
     },
     getSiteOptions() {
       this.$axios
-        .get("/clients/clients/")
+        .get("/clients/")
         .then(r => {
           r.data.forEach(client => {
             this.siteOptions.push({ category: client.name });

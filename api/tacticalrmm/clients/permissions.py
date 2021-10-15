@@ -3,49 +3,26 @@ from rest_framework import permissions
 from tacticalrmm.permissions import _has_perm
 
 
-class ManageClientsPerms(permissions.BasePermission):
+class ClientsPerms(permissions.BasePermission):
     def has_permission(self, r, view):
         if r.method == "GET":
-            return True
-
-        return _has_perm(r, "can_manage_clients")
-
-
-class ListClientsPerms(permissions.BasePermission):
-    def has_permission(self, r, view):
-        if r.method != "GET":
-            return True
-
-        return _has_perm(r, "can_list_clients")
+            return _has_perm(r, "can_list_clients")
+        
+        else:
+            return _has_perm(r, "can_manage_clients")
 
 
-class ManageSitesPerms(permissions.BasePermission):
+class SitesPerms(permissions.BasePermission):
     def has_permission(self, r, view):
         if r.method == "GET":
-            return True
-
-        return _has_perm(r, "can_manage_sites")
-
-
-class ListSitesPerms(permissions.BasePermission):
-    def has_permission(self, r, view):
-        if r.method != "GET":
-            return True
-
-        return _has_perm(r, "can_list_sites")
+            return _has_perm(r, "can_list_sites")
+        else:
+            return _has_perm(r, "can_manage_sites")
 
 
-class ManageDeploymentPerms(permissions.BasePermission):
+class DeploymentPerms(permissions.BasePermission):
     def has_permission(self, r, view):
         if r.method == "GET":
-            return True
-
-        return _has_perm(r, "can_manage_deployments")
-
-
-class ListDeploymentsPerms(permissions.BasePermission):
-    def has_permission(self, r, view):
-        if r.method != "GET":
-            return True
-
-        return _has_perm(r, "can_list_deployments")
+            return _has_perm(r, "can_list_deployments")
+        else:
+            return _has_perm(r, "can_manage_deployments")

@@ -125,7 +125,7 @@ export default {
     getClients() {
       this.$q.loading.show();
       this.$axios
-        .get("/clients/clients/")
+        .get("/clients/")
         .then(r => {
           this.client_options = this.formatClientOptions(r.data);
           this.client = this.client_options[0];

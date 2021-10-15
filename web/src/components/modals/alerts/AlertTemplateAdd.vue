@@ -69,7 +69,7 @@ export default {
       let url = "";
       let data = {};
       if (this.type === "client") {
-        url = `/clients/${this.object.id}/client/`;
+        url = `/clients/${this.object.id}/`;
         data = {
           client: { id: this.object.id, alert_template: this.selectedTemplate },
         };

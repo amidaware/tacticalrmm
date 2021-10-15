@@ -127,13 +127,13 @@ export default function () {
         return axios.get("/core/dashinfo/");
       },
       getUpdatedSites(context) {
-        axios.get("/clients/clients/").then(r => {
+        axios.get("/clients/").then(r => {
           context.commit("getUpdatedSites", r.data);
         })
           .catch(e => { });
       },
       loadClients(context) {
-        return axios.get("/clients/clients/");
+        return axios.get("/clients/");
       },
       loadSites(context) {
         return axios.get("/clients/sites/");

@@ -114,7 +114,7 @@ export default {
         })
         .onOk(() => {
           this.$axios
-            .delete(`/clients/${pk}/deployment/`)
+            .delete(`/clients/deployments/${pk}/`)
             .then(r => {
               this.getDeployments();
               this.notifySuccess("Deployment deleted");

@@ -112,7 +112,7 @@ export default {
       let data = {};
       let url = "";
       if (this.type === "client") {
-        url = `/clients/${this.object.id}/client/`;
+        url = `/clients/${this.object.id}/`;
         data = {
           client: {
             pk: this.object.id,

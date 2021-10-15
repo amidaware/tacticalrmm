@@ -4,7 +4,7 @@ const baseUrl = "/clients"
 
 export async function fetchClients() {
   try {
-    const { data } = await axios.get(`${baseUrl}/clients/`)
+    const { data } = await axios.get(`${baseUrl}/`)
     return data
   } catch (e) { console.error(e) }
 }

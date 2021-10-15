@@ -112,7 +112,7 @@ export default {
     getClients() {
       this.$q.loading.show();
       this.$axios
-        .get("clients/clients/")
+        .get("clients/")
         .then(r => {
           this.clients = r.data;
           this.$q.loading.hide();

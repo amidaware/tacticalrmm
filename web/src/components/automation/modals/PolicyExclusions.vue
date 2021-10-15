@@ -85,7 +85,7 @@ export default {
     },
     getClients() {
       this.$axios
-        .get("/clients/clients/")
+        .get("/clients/")
         .then(r => {
           this.clientOptions = r.data.map(client => ({ label: client.name, value: client.id }));
         })
@@ -93,7 +93,7 @@ export default {
     },
     getSites() {
       this.$axios
-        .get("/clients/clients/")
+        .get("/clients/")
         .then(r => {
           r.data.forEach(client => {
             this.siteOptions.push({ category: client.name });

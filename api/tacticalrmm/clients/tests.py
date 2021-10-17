@@ -14,7 +14,7 @@ from .serializers import (
     SiteSerializer,
 )
 
-
+base_url = "/clients"
 class TestClientViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()
@@ -25,7 +25,7 @@ class TestClientViews(TacticalTestCase):
         baker.make("clients.Client", _quantity=5)
         clients = Client.objects.all()
 
-        url = "/clients/clients/"
+        url = f"{base_url}/"
         r = self.client.get(url, format="json")
         serializer = ClientSerializer(clients, many=True)
         self.assertEqual(r.status_code, 200)
@@ -34,7 +34,7 @@ class TestClientViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     def test_add_client(self):
-        url = "/clients/clients/"
+        url = f"{base_url}/"
 
         # test successfull add client
         payload = {
@@ -115,7 +115,7 @@ class TestClientViews(TacticalTestCase):
         # setup data
         client = baker.make("clients.Client")
 
-        url = f"/clients/{client.id}/client/"  # type: ignore
+        url = f"{base_url}/{client.id}/"  # type: ignore
         r = self.client.get(url, format="json")
         serializer = ClientSerializer(client)
         self.assertEqual(r.status_code, 200)
@@ -128,12 +128,12 @@ class TestClientViews(TacticalTestCase):
         client = baker.make("clients.Client", name="OldClientName")
 
         # test invalid id
-        r = self.client.put("/clients/500/client/", format="json")
+        r = self.client.put(f"{base_url}/500/", format="json")
         self.assertEqual(r.status_code, 404)
 
         # test successfull edit client
         data = {"client": {"name": "NewClientName"}, "custom_fields": []}
-        url = f"/clients/{client.id}/client/"  # type: ignore
+        url = f"{base_url}/{client.id}/"  # type: ignore
         r = self.client.put(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(Client.objects.filter(name="NewClientName").exists())
@@ -141,7 +141,6 @@ class TestClientViews(TacticalTestCase):
 
         # test edit client with | in name
         data = {"client": {"name": "NewClie|ntName"}, "custom_fields": []}
-        url = f"/clients/{client.id}/client/"  # type: ignore
         r = self.client.put(url, data, format="json")
         self.assertEqual(r.status_code, 400)
 
@@ -189,10 +188,10 @@ class TestClientViews(TacticalTestCase):
         agent = baker.make_recipe("agents.agent", site=site_to_move)
 
         # test invalid id
-        r = self.client.delete("/clients/334/953/", format="json")
+        r = self.client.delete(f"{base_url}/334/", format="json")
         self.assertEqual(r.status_code, 404)
 
-        url = f"/clients/{client_to_delete.id}/{site_to_move.id}/"  # type: ignore
+        url = f"/clients/{client_to_delete.id}/?site_to_move={site_to_move.id}"  # type: ignore
 
         # test successful deletion
         r = self.client.delete(url, format="json")
@@ -208,7 +207,7 @@ class TestClientViews(TacticalTestCase):
         baker.make("clients.Site", _quantity=5)
         sites = Site.objects.all()
 
-        url = "/clients/sites/"
+        url = f"{base_url}/sites/"
         r = self.client.get(url, format="json")
         serializer = SiteSerializer(sites, many=True)
         self.assertEqual(r.status_code, 200)
@@ -221,7 +220,7 @@ class TestClientViews(TacticalTestCase):
         client = baker.make("clients.Client")
         site = baker.make("clients.Site", client=client)
 
-        url = "/clients/sites/"
+        url = f"{base_url}/sites/"
 
         # test success add
         payload = {
@@ -279,7 +278,7 @@ class TestClientViews(TacticalTestCase):
         # setup data
         site = baker.make("clients.Site")
 
-        url = f"/clients/sites/{site.id}/"  # type: ignore
+        url = f"{base_url}/sites/{site.id}/"  # type: ignore
         r = self.client.get(url, format="json")
         serializer = SiteSerializer(site)
         self.assertEqual(r.status_code, 200)
@@ -293,7 +292,7 @@ class TestClientViews(TacticalTestCase):
         site = baker.make("clients.Site", client=client)
 
         # test invalid id
-        r = self.client.put("/clients/sites/688/", format="json")
+        r = self.client.put(f"{base_url}/sites/688/", format="json")
         self.assertEqual(r.status_code, 404)
 
         data = {
@@ -301,7 +300,7 @@ class TestClientViews(TacticalTestCase):
             "custom_fields": [],
         }
 
-        url = f"/clients/sites/{site.id}/"  # type: ignore
+        url = f"{base_url}/sites/{site.id}/"  # type: ignore
         r = self.client.put(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(
@@ -358,10 +357,10 @@ class TestClientViews(TacticalTestCase):
         agent = baker.make_recipe("agents.agent", site=site_to_delete)
 
         # test invalid id
-        r = self.client.delete("/clients/500/445/", format="json")
+        r = self.client.delete("{base_url}/500/", format="json")
         self.assertEqual(r.status_code, 404)
 
-        url = f"/clients/sites/{site_to_delete.id}/{site_to_move.id}/"  # type: ignore
+        url = f"/clients/sites/{site_to_delete.id}/?move_to_site={site_to_move.id}"  # type: ignore
 
         # test deleting with last site under client
         r = self.client.delete(url, format="json")
@@ -372,6 +371,7 @@ class TestClientViews(TacticalTestCase):
         site_to_move.client = client  # type: ignore
         site_to_move.save(update_fields=["client"])  # type: ignore
         r = self.client.delete(url, format="json")
+        print(r.data)
         self.assertEqual(r.status_code, 200)
         agent_moved = Agent.objects.get(pk=agent.pk)
         self.assertEqual(agent_moved.site.id, site_to_move.id)  # type: ignore
@@ -396,7 +396,7 @@ class TestClientViews(TacticalTestCase):
         # setup data
         deployments = baker.make("clients.Deployment", _quantity=5)
 
-        url = "/clients/deployments/"
+        url = f"{base_url}/deployments/"
         r = self.client.get(url)
         serializer = DeploymentSerializer(deployments, many=True)
         self.assertEqual(r.status_code, 200)
@@ -408,7 +408,7 @@ class TestClientViews(TacticalTestCase):
         # setup data
         site = baker.make("clients.Site")
 
-        url = "/clients/deployments/"
+        url = f"{base_url}/deployments/"
         payload = {
             "client": site.client.id,  # type: ignore
             "site": site.id,  # type: ignore
@@ -437,14 +437,12 @@ class TestClientViews(TacticalTestCase):
         # setup data
         deployment = baker.make("clients.Deployment")
 
-        url = "/clients/deployments/"
-
-        url = f"/clients/{deployment.id}/deployment/"  # type: ignore
+        url = f"{base_url}/deployments/{deployment.id}/"  # type: ignore
         r = self.client.delete(url)
         self.assertEqual(r.status_code, 200)
         self.assertFalse(Deployment.objects.filter(pk=deployment.id).exists())  # type: ignore
 
-        url = "/clients/32348/deployment/"
+        url = f"{base_url}/deployments/32348/"
         r = self.client.delete(url)
         self.assertEqual(r.status_code, 404)
 

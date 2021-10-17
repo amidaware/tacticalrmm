@@ -416,12 +416,14 @@ import AgentTable from "@/components/AgentTable";
 import SubTableTabs from "@/components/SubTableTabs";
 import AlertsIcon from "@/components/AlertsIcon";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
-import ClientsForm from "@/components/modals/clients/ClientsForm";
-import SitesForm from "@/components/modals/clients/SitesForm";
-import DeleteClient from "@/components/modals/clients/DeleteClient";
+import ClientsForm from "@/components/clients/ClientsForm";
+import SitesForm from "@/components/clients/SitesForm";
+import DeleteClient from "@/components/clients/DeleteClient";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import UserPreferences from "@/components/modals/coresettings/UserPreferences";
 import AlertTemplateAdd from "@/components/modals/alerts/AlertTemplateAdd";
+
+import { removeClient, removeSite } from "@/api/clients";
 
 export default {
   name: "Dashboard",
@@ -722,13 +724,34 @@ export default {
       });
     },
     showDeleteModal(node) {
-      this.$q.dialog({
-        component: DeleteClient,
-        componentProps: {
-          object: node.children ? node.client : node.site,
-          type: node.children ? "client" : "site",
-        },
-      });
+      if ((node.children && node.client.agent_count > 0) || (!node.children && node.site.agent_count > 0)) {
+        this.$q.dialog({
+          component: DeleteClient,
+          componentProps: {
+            object: node.children ? node.client : node.site,
+            type: node.children ? "client" : "site",
+          },
+        });
+      } else {
+        this.$q
+          .dialog({
+            title: "Are you sure?",
+            message: `Delete site: ${node.label}.`,
+            cancel: true,
+            ok: { label: "Delete", color: "negative" },
+          })
+          .onOk(async () => {
+            this.$q.loading.show();
+            try {
+              const result = node.children ? await removeClient(node.id) : await removeSite(node.id);
+              this.notifySuccess(result);
+              this.$store.dispatch("loadTree");
+            } catch (e) {
+              console.error(e);
+            }
+            this.$q.loading.hide();
+          });
+      }
     },
     showInstallAgent(node) {
       this.sitePk = node.id;

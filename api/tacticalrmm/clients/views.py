@@ -223,8 +223,8 @@ class GetUpdateDeleteSite(APIView):
         # only run tasks if it affects clients
         if site.agent_count > 0 and "move_to_site" in request.query_params.keys():
             agents = Agent.objects.filter(site=site)
-            site = get_object_or_404(Site, pk=request.query_params["move_to_site"])
-            agents.update(site=site)
+            new_site = get_object_or_404(Site, pk=request.query_params["move_to_site"])
+            agents.update(site=new_site)
             generate_agent_checks_task.delay(all=True, create_tasks=True)
 
         elif site.agent_count > 0:

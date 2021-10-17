@@ -154,15 +154,11 @@ export default function () {
               let siteNode = {
                 label: site.name,
                 id: site.id,
-                raw: `Site | ${site.id} `,
+                raw: `Site|${site.id}`,
                 header: "generic",
                 icon: "apartment",
-                client: client.id,
                 selectable: true,
-                server_policy: site.server_policy,
-                workstation_policy: site.workstation_policy,
-                alert_template: site.alert_template,
-                blockInheritance: site.block_policy_inheritance
+                site: site
               }
 
               if (site.maintenance_mode) { siteNode["color"] = "green" }
@@ -175,14 +171,11 @@ export default function () {
             let clientNode = {
               label: client.name,
               id: client.id,
-              raw: `Client | ${client.id} `,
+              raw: `Client|${client.id}`,
               header: "root",
               icon: "business",
-              server_policy: client.server_policy,
-              workstation_policy: client.workstation_policy,
-              alert_template: client.alert_template,
-              blockInheritance: client.block_policy_inheritance,
-              children: childSites
+              children: childSites,
+              client: client
             }
 
             if (client.maintenance_mode) clientNode["color"] = "green"

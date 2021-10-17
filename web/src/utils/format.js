@@ -144,6 +144,21 @@ export function formatCheckOptions(data, flat = false) {
 }
 
 
+export function formatCustomFields(fields, values) {
+  let tempArray = [];
+
+  for (let field of fields) {
+    if (field.type === "multiple") {
+      tempArray.push({ multiple_value: values[field.name], field: field.id });
+    } else if (field.type === "checkbox") {
+      tempArray.push({ bool_value: values[field.name], field: field.id });
+    } else {
+      tempArray.push({ string_value: values[field.name], field: field.id });
+    }
+  }
+  return tempArray
+}
+
 // date formatting
 
 export function formatDate(dateString) {

@@ -103,6 +103,7 @@ class ClientSerializer(ModelSerializer):
 class SiteTreeSerializer(ModelSerializer):
     maintenance_mode = ReadOnlyField(source="has_maintenanace_mode_agents")
     failing_checks = ReadOnlyField(source="has_failing_checks")
+    agent_count = ReadOnlyField()
 
     class Meta:
         model = Site
@@ -113,6 +114,7 @@ class ClientTreeSerializer(ModelSerializer):
     sites = SiteTreeSerializer(many=True, read_only=True)
     maintenance_mode = ReadOnlyField(source="has_maintenanace_mode_agents")
     failing_checks = ReadOnlyField(source="has_failing_checks")
+    agent_count = ReadOnlyField()
 
     class Meta:
         model = Client

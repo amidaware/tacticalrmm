@@ -19,9 +19,8 @@
           row-key="id"
           v-model:pagination="pagination"
           no-data-label="No Roles"
-          hide-bottom
         >
-          <template v-slot:top-left="props">
+          <template v-slot:top="props">
             <q-btn color="primary" icon="add" label="New Role" @click="showAddRoleModal" />
           </template>
           <template v-slot:body="props">
@@ -64,6 +63,7 @@
 </template>
 
 <script>
+// composition imports
 import { ref, onMounted } from "vue";
 import { useQuasar, useDialogPluginComponent } from "quasar";
 import { fetchRoles, removeRole } from "@/api/accounts";
@@ -86,6 +86,8 @@ export default {
     // setup quasar
     const $q = useQuasar();
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
+
+    // permission manager logic
     const roles = ref([]);
     const pagination = ref({
       rowsPerPage: 50,

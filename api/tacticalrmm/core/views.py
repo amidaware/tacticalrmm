@@ -171,7 +171,10 @@ class GetAddCustomFields(APIView):
     permission_classes = [IsAuthenticated, EditCoreSettingsPerms]
 
     def get(self, request):
-        fields = CustomField.objects.all()
+        if "model" in request.query_params.keys():
+            fields = CustomField.objects.filter(model=request.query_params["model"])
+        else:
+            fields = CustomField.objects.all()
         return Response(CustomFieldSerializer(fields, many=True).data)
 
     def patch(self, request):

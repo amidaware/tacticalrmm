@@ -16,6 +16,10 @@
       virtual-scroll
       no-data-label="No checks"
     >
+      <template v-slot:loading>
+        <q-inner-loading showing color="primary" />
+      </template>
+
       <!-- table top slot -->
       <template v-slot:top>
         <q-btn class="q-mr-sm" dense flat push @click="getChecks" icon="refresh" />
@@ -95,6 +99,7 @@
       <template v-slot:header-cell-policystatus="props">
         <q-th auto-width :props="props"></q-th>
       </template>
+
       <!-- body slots -->
       <template v-slot:body="props">
         <q-tr :props="props" class="cursor-pointer" @dblclick="showCheckModal(props.row.check_type, props.row)">
@@ -394,6 +399,7 @@ export default {
       } catch (e) {
         console.error(e);
       }
+      loading.value = false;
     }
 
     function showEventInfo(data) {

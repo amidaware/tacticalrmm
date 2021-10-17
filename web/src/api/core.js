@@ -6,7 +6,7 @@ export async function fetchCustomFields(params = {}) {
   try {
     const { data } = await axios.get(`${baseUrl}/customfields/`, { params: params })
     return data
-  } catch (e) { }
+  } catch (e) { console.error(e) }
 }
 
 export async function uploadMeshAgent(payload) {

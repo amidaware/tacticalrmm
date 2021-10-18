@@ -23,9 +23,9 @@ if ((Get-BitLockerVolume -MountPoint $Drive).ProtectionStatus -eq 'On') {
 		Start-Sleep -Seconds 5
 	} until ($EncryptionPercentage -match 100)
 	Write-Output "Bitlocker is enabled and Encryption completed"
-	Exit 1
+	Exit 0
 }
 else {
 	Write-Output "BitLocker is not turned on for this volume!"
-	Exit 0
+	Exit 1
 }

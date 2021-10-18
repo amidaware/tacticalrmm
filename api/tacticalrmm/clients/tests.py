@@ -9,7 +9,6 @@ from tacticalrmm.test import TacticalTestCase
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 from .serializers import (
     ClientSerializer,
-    ClientTreeSerializer,
     DeploymentSerializer,
     SiteSerializer,
 )
@@ -27,9 +26,8 @@ class TestClientViews(TacticalTestCase):
 
         url = f"{base_url}/"
         r = self.client.get(url, format="json")
-        serializer = ClientSerializer(clients, many=True)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, serializer.data)  # type: ignore
+        self.assertEqual(len(r.data), 5)
 
         self.check_not_authenticated("get", url)
 
@@ -117,9 +115,7 @@ class TestClientViews(TacticalTestCase):
 
         url = f"{base_url}/{client.id}/"  # type: ignore
         r = self.client.get(url, format="json")
-        serializer = ClientSerializer(client)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, serializer.data)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
@@ -378,20 +374,6 @@ class TestClientViews(TacticalTestCase):
 
         self.check_not_authenticated("delete", url)
 
-    def test_get_tree(self):
-        # setup data
-        baker.make("clients.Site", _quantity=10)
-        clients = Client.objects.all()
-
-        url = "/clients/tree/"
-
-        r = self.client.get(url, format="json")
-        serializer = ClientTreeSerializer(clients, many=True)
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, serializer.data)  # type: ignore
-
-        self.check_not_authenticated("get", url)
-
     def test_get_deployments(self):
         # setup data
         deployments = baker.make("clients.Deployment", _quantity=5)
@@ -460,3 +442,27 @@ class TestClientViews(TacticalTestCase):
         url = f"/clients/{uid}/deploy/"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 404)
+
+
+class TestClientPermissions(TacticalTestCase):
+    def setUp(self):
+        self.client_setup()
+        self.setup_coresettings()
+    
+    def test_get_clients_permissions(self):
+        pass
+    
+    def test_add_clients_permissions(self):
+        pass
+
+    def test_get_edit_delete_clients_permissions(self):
+        pass
+
+    def test_get_sites_permissions(self):
+        pass
+
+    def test_add_sites_permissions(self):
+        pass
+
+    def test_get_edit_delete_sites_permissions(self):
+        pass

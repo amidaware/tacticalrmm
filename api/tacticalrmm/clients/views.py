@@ -78,7 +78,7 @@ class GetUpdateDeleteClient(APIView):
 
     def get(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
-        return Response(ClientSerializer(client).data)
+        return Response(ClientSerializer(client, context={"user": request.user}).data)
 
     def put(self, request, pk):
         client = get_object_or_404(Client, pk=pk)

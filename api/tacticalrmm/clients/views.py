@@ -33,7 +33,9 @@ class GetAddClients(APIView):
 
     def get(self, request):
         clients = Client.permissions.filter_by_role(request.user)
-        return Response(ClientSerializer(clients, context={"user": request.user}, many=True).data)
+        return Response(
+            ClientSerializer(clients, context={"user": request.user}, many=True).data
+        )
 
     def post(self, request):
         # create client
@@ -225,6 +227,7 @@ class GetUpdateDeleteSite(APIView):
 
         site.delete()
         return Response(f"{site.name} was deleted")
+
 
 class AgentDeployment(APIView):
     permission_classes = [IsAuthenticated, DeploymentPerms]

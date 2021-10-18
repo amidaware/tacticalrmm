@@ -7,11 +7,15 @@ class ClientsPerms(permissions.BasePermission):
     def has_permission(self, r, view):
         if r.method == "GET":
             if "pk" in view.kwargs.keys():
-                return _has_perm(r, "can_list_clients") and _has_perm_on_client(r.user, view.kwargs["pk"])
+                return _has_perm(r, "can_list_clients") and _has_perm_on_client(
+                    r.user, view.kwargs["pk"]
+                )
             else:
                 return _has_perm(r, "can_list_clients")
         elif r.method == "PUT" or r.method == "DELETE":
-            return _has_perm(r, "can_manage_clients") and _has_perm_on_client(r.user, view.kwargs["pk"])
+            return _has_perm(r, "can_manage_clients") and _has_perm_on_client(
+                r.user, view.kwargs["pk"]
+            )
         else:
             return _has_perm(r, "can_manage_clients")
 
@@ -20,11 +24,15 @@ class SitesPerms(permissions.BasePermission):
     def has_permission(self, r, view):
         if r.method == "GET":
             if "pk" in view.kwargs.keys():
-                return _has_perm(r, "can_list_sites") and _has_perm_on_site(r.user, view.kwargs["pk"])
+                return _has_perm(r, "can_list_sites") and _has_perm_on_site(
+                    r.user, view.kwargs["pk"]
+                )
             else:
                 return _has_perm(r, "can_list_sites")
         elif r.method == "PUT" or r.method == "DELETE":
-            return _has_perm(r, "can_manage_sites") and _has_perm_on_site(r.user, view.kwargs["pk"])
+            return _has_perm(r, "can_manage_sites") and _has_perm_on_site(
+                r.user, view.kwargs["pk"]
+            )
         else:
             return _has_perm(r, "can_manage_sites")
 

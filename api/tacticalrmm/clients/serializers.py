@@ -1,9 +1,8 @@
-
 from rest_framework.serializers import (
     ModelSerializer,
     ReadOnlyField,
     ValidationError,
-    SerializerMethodField
+    SerializerMethodField,
 )
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
@@ -49,7 +48,7 @@ class SiteSerializer(ModelSerializer):
             "agent_count",
             "block_policy_inheritance",
             "maintenance_mode",
-            "failing_checks"
+            "failing_checks",
         )
 
     def validate(self, val):
@@ -86,7 +85,9 @@ class ClientSerializer(ModelSerializer):
     failing_checks = ReadOnlyField(source="has_failing_checks")
 
     def get_sites(self, obj):
-        return SiteSerializer(obj.filter_sites_by_perm(user=self.context["user"]), many=True).data
+        return SiteSerializer(
+            obj.filter_sites_by_perm(user=self.context["user"]), many=True
+        ).data
 
     class Meta:
         model = Client
@@ -101,7 +102,7 @@ class ClientSerializer(ModelSerializer):
             "custom_fields",
             "agent_count",
             "maintenance_mode",
-            "failing_checks"
+            "failing_checks",
         )
 
     def validate(self, val):

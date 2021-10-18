@@ -14,6 +14,8 @@ from .serializers import (
 )
 
 base_url = "/clients"
+
+
 class TestClientViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()
@@ -448,10 +450,10 @@ class TestClientPermissions(TacticalTestCase):
     def setUp(self):
         self.client_setup()
         self.setup_coresettings()
-    
+
     def test_get_clients_permissions(self):
         pass
-    
+
     def test_add_clients_permissions(self):
         pass
 

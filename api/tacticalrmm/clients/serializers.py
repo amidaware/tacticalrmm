@@ -1,9 +1,9 @@
-from django.db.models.base import Model
+
 from rest_framework.serializers import (
     ModelSerializer,
     ReadOnlyField,
-    Serializer,
     ValidationError,
+    SerializerMethodField
 )
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
@@ -32,6 +32,8 @@ class SiteSerializer(ModelSerializer):
     client_name = ReadOnlyField(source="client.name")
     custom_fields = SiteCustomFieldSerializer(many=True, read_only=True)
     agent_count = ReadOnlyField()
+    maintenance_mode = ReadOnlyField(source="has_maintenanace_mode_agents")
+    failing_checks = ReadOnlyField(source="has_failing_checks")
 
     class Meta:
         model = Site
@@ -46,6 +48,8 @@ class SiteSerializer(ModelSerializer):
             "custom_fields",
             "agent_count",
             "block_policy_inheritance",
+            "maintenance_mode",
+            "failing_checks"
         )
 
     def validate(self, val):
@@ -75,9 +79,14 @@ class ClientCustomFieldSerializer(ModelSerializer):
 
 
 class ClientSerializer(ModelSerializer):
-    sites = SiteSerializer(many=True, read_only=True)
+    sites = SerializerMethodField()
     custom_fields = ClientCustomFieldSerializer(many=True, read_only=True)
     agent_count = ReadOnlyField()
+    maintenance_mode = ReadOnlyField(source="has_maintenanace_mode_agents")
+    failing_checks = ReadOnlyField(source="has_failing_checks")
+
+    def get_sites(self, obj):
+        return SiteSerializer(obj.filter_sites_by_perm(user=self.context["user"]), many=True).data
 
     class Meta:
         model = Client
@@ -91,6 +100,8 @@ class ClientSerializer(ModelSerializer):
             "sites",
             "custom_fields",
             "agent_count",
+            "maintenance_mode",
+            "failing_checks"
         )
 
     def validate(self, val):
@@ -98,27 +109,6 @@ class ClientSerializer(ModelSerializer):
             raise ValidationError("Client name cannot contain the | character")
 
         return val
-
-
-class SiteTreeSerializer(ModelSerializer):
-    maintenance_mode = ReadOnlyField(source="has_maintenanace_mode_agents")
-    failing_checks = ReadOnlyField(source="has_failing_checks")
-    agent_count = ReadOnlyField()
-
-    class Meta:
-        model = Site
-        fields = "__all__"
-
-
-class ClientTreeSerializer(ModelSerializer):
-    sites = SiteTreeSerializer(many=True, read_only=True)
-    maintenance_mode = ReadOnlyField(source="has_maintenanace_mode_agents")
-    failing_checks = ReadOnlyField(source="has_failing_checks")
-    agent_count = ReadOnlyField()
-
-    class Meta:
-        model = Client
-        fields = "__all__"
 
 
 class DeploymentSerializer(ModelSerializer):

@@ -22,7 +22,6 @@ from .permissions import (
 from .serializers import (
     ClientCustomFieldSerializer,
     ClientSerializer,
-    ClientTreeSerializer,
     DeploymentSerializer,
     SiteCustomFieldSerializer,
     SiteSerializer,
@@ -34,7 +33,7 @@ class GetAddClients(APIView):
 
     def get(self, request):
         clients = Client.permissions.filter_by_role(request.user)
-        return Response(ClientSerializer(clients, many=True).data)
+        return Response(ClientSerializer(clients, context={"user": request.user}, many=True).data)
 
     def post(self, request):
         # create client
@@ -71,7 +70,7 @@ class GetAddClients(APIView):
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
 
-        return Response(f"{client} was added!")
+        return Response(f"{client} was added")
 
 
 class GetUpdateDeleteClient(APIView):
@@ -111,7 +110,7 @@ class GetUpdateDeleteClient(APIView):
                     serializer.is_valid(raise_exception=True)
                     serializer.save()
 
-        return Response("The Client was updated")
+        return Response("{client} was updated")
 
     def delete(self, request, pk):
         from automation.tasks import generate_agent_checks_task
@@ -131,15 +130,7 @@ class GetUpdateDeleteClient(APIView):
             )
 
         client.delete()
-        return Response(f"{client.name} was deleted!")
-
-class GetClientTree(APIView):
-    permission_classes = [IsAuthenticated, ClientsPerms]
-
-    def get(self, request):
-        clients = Client.permissions.filter_by_role(request.user)
-
-        return Response(ClientTreeSerializer(clients, many=True).data)
+        return Response(f"{client.name} was deleted")
 
 
 class GetAddSites(APIView):
@@ -211,7 +202,7 @@ class GetUpdateDeleteSite(APIView):
                     serializer.is_valid(raise_exception=True)
                     serializer.save()
 
-        return Response("Site was edited!")
+        return Response("Site was edited")
 
     def delete(self, request, pk):
         from automation.tasks import generate_agent_checks_task
@@ -233,7 +224,7 @@ class GetUpdateDeleteSite(APIView):
             )
 
         site.delete()
-        return Response(f"{site.name} was deleted!")
+        return Response(f"{site.name} was deleted")
 
 class AgentDeployment(APIView):
     permission_classes = [IsAuthenticated, DeploymentPerms]

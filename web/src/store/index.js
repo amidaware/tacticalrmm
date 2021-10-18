@@ -139,7 +139,7 @@ export default function () {
         return axios.get("/clients/sites/");
       },
       loadTree({ commit, state }) {
-        axios.get("/clients/tree/").then(r => {
+        axios.get("/clients/").then(r => {
 
           if (r.data.length === 0) {
             this.$router.push({ name: "InitialSetup" });

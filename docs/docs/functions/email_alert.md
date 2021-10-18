@@ -10,8 +10,8 @@ MS 365 in this example
 2. Go to Settings
 3. Go to Global Settings
 4. Click on Alerts
-5. Enter the email address (or addresses) you want to receive alerts to eg info@mydomain.com
-6. Enter the from email address (this will need to be part of your domain on 365, however it doesn’t need a license) eg rmm@mydomain.com
+5. Enter the email address (or addresses) you want to receive alerts to eg info@EXAMPLE.COM
+6. Enter the from email address (this will need to be part of your domain on 365, however it doesn’t need a license) eg rmm@EXAMPLE.COM
 7. Go to MXToolbox.com and enter your domain name in, copy the hostname from there and paste into Host
 8. Change the port to 25
 9. Click Save
@@ -37,7 +37,7 @@ Gmail in this example
 2. Go to Settings
 3. Go to Global Settings
 4. Click on Alerts
-5. Enter the email address (or addresses) you want to receive alerts to eg info@mydomain.com
+5. Enter the email address (or addresses) you want to receive alerts to eg info@EXAMPLE.COM
 6. Enter the from email address myrmm@gmail.com
 7. Tick the box “My server requires Authentication”  
 8. Enter your username e.g. myrmm@gmail.com

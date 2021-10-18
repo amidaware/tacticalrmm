@@ -362,7 +362,7 @@ Create a .conf file under “/etc/nginx/modsec/coreruleset/rules” named “RMM
 
 ```conf
 #ADMIN UI/FRONTEND ACCESS - DENY BY DEFAULT, ALLOW BY EXCEPTION
-SecRule SERVER_NAME "rmm.yourdomain.com" "id:1001,phase:1,nolog,msg:'Remote IP Not allowed',deny,chain"
+SecRule SERVER_NAME "rmm.EXAMPLE.COM" "id:1001,phase:1,nolog,msg:'Remote IP Not allowed',deny,chain"
 ###  ALLOWED PUBLIC IP 1 #########
 SecRule REMOTE_ADDR "!@eq IP1" chain
 ###  ALLOWED PUBLIC IP 2 #########
@@ -383,7 +383,7 @@ SecRule REQUEST_URI "@beginsWith /api/v3/winupdates" "chain,id:'1007',phase:1,t:
 SecRule REQUEST_METHOD "POST"
 
 ##REQUIRED FOR MANAGEMENT ACTIONS FROM ADMIN/FRONT-END UI. WHITELIST BY REFERRER's URL
-SecRule REQUEST_HEADERS:REFERER "https://rmm.yourdomain.com/" "id:1008,phase:1,nolog,ctl:ruleRemoveById=920170,allow"
+SecRule REQUEST_HEADERS:REFERER "https://rmm.EXAMPLE.COM/" "id:1008,phase:1,nolog,ctl:ruleRemoveById=920170,allow"
 
 #REQUIRED FOR NEW CLIENTS TO CONNECT TO MESH SERVICE WHILE INSTALLING THE AGENT
 SecRule REQUEST_URI "@beginsWith /api/v3/meshexe" "id:1009,phase:1,nolog,ctl:ruleRemoveById=920170,allow"

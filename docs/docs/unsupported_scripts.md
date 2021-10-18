@@ -3,6 +3,8 @@
 !!!note
     These are not supported scripts/configurations by Tactical RMM, but it's provided here for your reference.
 
+    Although these aren't officially supported configurations, we generally will help point you in the right direction. Please use the Discord [#unsupported channel](https://discord.com/channels/736478043522072608/888474319750066177) to discuss issues replated to these complex installations
+
 ## General Notes on Proxies and Tactical RMM
 
 ### Port 443
@@ -387,19 +389,19 @@ You need to add the certificate private key and public keys to the following fil
 
 2. Now move your certs into that folder.
 
-3. Open the api file and add the api certificate or if its a wildcard the directory should be `/certs/yourdomain.com/`
+3. Open the api file and add the api certificate or if its a wildcard the directory should be `/certs/EXAMPLE.COM/`
 
 		sudo nano /etc/nginx/sites-available/rmm.conf
 
     replace   
 
-        ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+        ssl_certificate /etc/letsencrypt/live/EXAMPLE.COM/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/EXAMPLE.COM/privkey.pem;
 
     with
 
-        ssl_certificate /certs/api.yourdomain.com/fullchain.pem;
-        ssl_certificate_key /certs/api.yourdomain.com/privkey.pem;
+        ssl_certificate /certs/api.EXAMPLE.COM/fullchain.pem;
+        ssl_certificate_key /certs/api.EXAMPLE.COM/privkey.pem;
 
 4. Repeat the process for 
 
@@ -414,8 +416,8 @@ You need to add the certificate private key and public keys to the following fil
 
     add
 
-        CERT_FILE = "/certs/api.yourdomain.com/fullchain.pem"
-        KEY_FILE = "/certs/api.yourdomain.com/privkey.pem"
+        CERT_FILE = "/certs/api.EXAMPLE.COM/fullchain.pem"
+        KEY_FILE = "/certs/api.EXAMPLE.COM/privkey.pem"
 	
     
 6. Regenerate Nats Conf
@@ -430,7 +432,7 @@ You need to add the certificate private key and public keys to the following fil
 
 ## Use certbot to do acme challenge over http
 
-The standard SSL cert process in Tactical uses a [DNS challenge](https://letsencrypt.org/docs/challenge-types/#dns-01-challenge) that requires dns txt files to be updated with every run.
+The standard SSL cert process in Tactical uses a [DNS challenge](https://letsencrypt.org/docs/challenge-types/#dns-01-challenge) that requires dns txt files to be updated in your public DNS with every cert renewal.
 
 The below script uses [http challenge](https://letsencrypt.org/docs/challenge-types/#http-01-challenge) on the 3 separate ssl certs, one for each subdomain: rmm, api, mesh. They still have the same 3 month expiry. Restart the Tactical RMM server about every 2.5 months (80 days) for auto-renewed certs to become active.
 
@@ -732,7 +734,9 @@ Let's Encrypt is the only officially supported method of obtaining wildcard cert
 
 If you are providing your own publicly signed certificates, ensure you download the **full chain** (combined CA/Root + Intermediary) certificate in pem format. If certificates are not provided, a self-signed certificate will be generated and most agent functions won't work.
 
-## Restricting Access to rmm.yourdomain.com
+## Restricting Access to rmm.EXAMPLE.COM
+
+Limit access to Tactical RMM's administration panel in nginx to specific locations
 
 ### Using DNS
 
@@ -821,6 +825,7 @@ If you are providing your own publicly signed certificates, ensure you download 
 1. Create a file containg the fixed IP address (where xxx.xxx.xxx.xxx must be replaced by your real IP address)
 
     Edit `/etc/nginx//allowed-ips.conf`
+    
         # Private IP address
         allow 192.168.0.0/16;
         allow 172.16.0.0/12;

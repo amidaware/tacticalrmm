@@ -28,11 +28,11 @@ For the entries related to the mesh, add some custom headers and adjust the prox
 In regards to the certificate, I followed this [tutorial](https://www.nas-forum.com/forum/topic/68046-tuto-certificat-lets-encrypt-avec-acmesh-api-ovh-en-docker-dsm67-update-180621) (in french but still clear after translation) to automatically update it and manually updating it on the NAS and in TRMM
 
 ```bash
-docker exec Acme sh -c "acme.sh --issue --keylength 4096 -d '*.mydomain.com' --dns dns_provider"
+docker exec Acme sh -c "acme.sh --issue --keylength 4096 -d '*.EXAMPLE.COM' --dns dns_provider"
 sed -i '/CERT_PUB_KEY/d' /path/to/tactical/.env
 sed -i '/CERT_PRIV_KEY/d' /path/to/tactical/.env
-echo "CERT_PUB_KEY=$(sudo base64 -w 0 /volume1/docker/acme/\*.mydomain.com/fullchain.cer)" >> /path/to/tactical/.env
-echo "CERT_PRIV_KEY=$(sudo base64 -w 0 /volume1/docker/acme/\*.mydomain.com/*.whitesnew.com.key)" >> /path/to/tactical/.env
-docker exec Acme sh -c "acme.sh --deploy -d '*.mydomain.com' --deploy-hook synology_provider"
+echo "CERT_PUB_KEY=$(sudo base64 -w 0 /volume1/docker/acme/\*.EXAMPLE.COM/fullchain.cer)" >> /path/to/tactical/.env
+echo "CERT_PRIV_KEY=$(sudo base64 -w 0 /volume1/docker/acme/\*.EXAMPLE.COM/*.whitesnew.com.key)" >> /path/to/tactical/.env
+docker exec Acme sh -c "acme.sh --deploy -d '*.EXAMPLE.COM' --deploy-hook synology_provider"
 docker-compose -f /path/to/tactical/docker-compose.yml restart
 ```

@@ -156,7 +156,7 @@ Are you trying to use a proxy to share your single public IP with multiple servi
 ## Mesh Agent x86 x64 integration with TRMM
 
 1. Log into Mesh (you can right-click any agent, choose remote control or Remote Background)
-2. Goto your mesh interface (eg `https://mesh.domain.com`) 
+2. Goto your mesh interface (eg `https://mesh.EXAMPLE.COM`) 
 3. Find your TacticalRMM group
 4. Click the add link
 5. Download both agents

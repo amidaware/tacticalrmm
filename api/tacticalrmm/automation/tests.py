@@ -25,12 +25,10 @@ class TestPolicyViews(TacticalTestCase):
     def test_get_all_policies(self):
         url = "/automation/policies/"
 
-        policies = baker.make("automation.Policy", _quantity=3)
+        baker.make("automation.Policy", _quantity=3)
         resp = self.client.get(url, format="json")
-        serializer = PolicyTableSerializer(policies, many=True)
-
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)  # type: ignore
+        self.assertEqual(len(resp.data), 3)
 
         self.check_not_authenticated("get", url)
 
@@ -470,7 +468,7 @@ class TestPolicyTasks(TacticalTestCase):
 
         # Add Client to Policy
         policy.server_clients.add(server_agents[13].client)  # type: ignore
-        policy.workstation_clients.add(workstation_agents[15].client)  # type: ignore
+        policy.workstation_clients.add(workstation_agents[13].client)  # type: ignore
 
         resp = self.client.get(
             f"/automation/policies/{policy.pk}/related/", format="json"  # type: ignore
@@ -478,22 +476,28 @@ class TestPolicyTasks(TacticalTestCase):
 
         self.assertEqual(resp.status_code, 200)
         self.assertEquals(len(resp.data["server_clients"]), 1)  # type: ignore
-        self.assertEquals(len(resp.data["server_sites"]), 5)  # type: ignore
+        self.assertEquals(len(resp.data["server_sites"]), 0)  # type: ignore
         self.assertEquals(len(resp.data["workstation_clients"]), 1)  # type: ignore
-        self.assertEquals(len(resp.data["workstation_sites"]), 5)  # type: ignore
+        self.assertEquals(len(resp.data["workstation_sites"]), 0)  # type: ignore
         self.assertEquals(len(resp.data["agents"]), 10)  # type: ignore
 
-        # Add Site to Policy and the agents and sites length shouldn't change
-        policy.server_sites.add(server_agents[13].site)  # type: ignore
-        policy.workstation_sites.add(workstation_agents[15].site)  # type: ignore
-        self.assertEquals(len(resp.data["server_sites"]), 5)  # type: ignore
-        self.assertEquals(len(resp.data["workstation_sites"]), 5)  # type: ignore
-        self.assertEquals(len(resp.data["agents"]), 10)  # type: ignore
+        # Add Site to Policy
+        policy.server_sites.add(server_agents[10].site)  # type: ignore
+        policy.workstation_sites.add(workstation_agents[10].site)  # type: ignore
+        resp = self.client.get(
+            f"/automation/policies/{policy.pk}/related/", format="json"  # type: ignore
+        )
+        self.assertEquals(len(resp.data["server_sites"]), 1)  # type: ignore
+        self.assertEquals(len(resp.data["workstation_sites"]), 1)  # type: ignore
+        self.assertEquals(len(resp.data["agents"]), 12)  # type: ignore
 
         # Add Agent to Policy and the agents length shouldn't change
-        policy.agents.add(server_agents[13])  # type: ignore
-        policy.agents.add(workstation_agents[15])  # type: ignore
-        self.assertEquals(len(resp.data["agents"]), 10)  # type: ignore
+        policy.agents.add(server_agents[2])  # type: ignore
+        policy.agents.add(workstation_agents[2])  # type: ignore
+        resp = self.client.get(
+            f"/automation/policies/{policy.pk}/related/", format="json"  # type: ignore
+        )
+        self.assertEquals(len(resp.data["agents"]), 14)  # type: ignore
 
     def test_generating_agent_policy_checks(self):
         from .tasks import generate_agent_checks_task

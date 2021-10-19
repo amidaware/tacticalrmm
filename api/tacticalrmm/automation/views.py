@@ -17,6 +17,7 @@ from .permissions import AutomationPolicyPerms
 from .serializers import (
     AutoTasksFieldSerializer,
     PolicyCheckStatusSerializer,
+    PolicyRelatedSerializer,
     PolicyOverviewSerializer,
     PolicySerializer,
     PolicyTableSerializer,
@@ -30,7 +31,7 @@ class GetAddPolicies(APIView):
     def get(self, request):
         policies = Policy.objects.all()
 
-        return Response(PolicyTableSerializer(policies, many=True).data)
+        return Response(PolicyTableSerializer(policies, context={"user": request.user}, many=True).data)
 
     def post(self, request):
         serializer = PolicySerializer(data=request.data, partial=True)
@@ -138,8 +139,6 @@ class OverviewPolicy(APIView):
 class GetRelated(APIView):
     def get(self, request, pk):
 
-        response = {}
-
         policy = (
             Policy.objects.filter(pk=pk)
             .prefetch_related(
@@ -151,43 +150,7 @@ class GetRelated(APIView):
             .first()
         )
 
-        response["default_server_policy"] = policy.is_default_server_policy
-        response["default_workstation_policy"] = policy.is_default_workstation_policy
-
-        response["server_clients"] = ClientSerializer(
-            policy.server_clients.all(), many=True
-        ).data
-        response["workstation_clients"] = ClientSerializer(
-            policy.workstation_clients.all(), many=True
-        ).data
-
-        filtered_server_sites = list()
-        filtered_workstation_sites = list()
-
-        for client in policy.server_clients.all():
-            for site in client.sites.all():
-                if site not in policy.server_sites.all():
-                    filtered_server_sites.append(site)
-
-        response["server_sites"] = SiteSerializer(
-            filtered_server_sites + list(policy.server_sites.all()), many=True
-        ).data
-
-        for client in policy.workstation_clients.all():
-            for site in client.sites.all():
-                if site not in policy.workstation_sites.all():
-                    filtered_workstation_sites.append(site)
-
-        response["workstation_sites"] = SiteSerializer(
-            filtered_workstation_sites + list(policy.workstation_sites.all()), many=True
-        ).data
-
-        response["agents"] = AgentHostnameSerializer(
-            policy.related_agents().only("pk", "hostname"),
-            many=True,
-        ).data
-
-        return Response(response)
+        return Response(PolicyRelatedSerializer(policy, context={"user": request.user}).data)
 
 
 class UpdatePatchPolicy(APIView):

@@ -58,6 +58,19 @@ class SiteSerializer(ModelSerializer):
         return val
 
 
+class SiteMinimumSerializer(ModelSerializer):
+    client_name = ReadOnlyField(source="client.name")
+    class Meta:
+        model = Site
+        fields = "__all__"
+
+
+class ClientMinimumSerializer(ModelSerializer):
+    class Meta:
+        model = Client
+        fields = "__all__"
+
+
 class ClientCustomFieldSerializer(ModelSerializer):
     class Meta:
         model = ClientCustomField

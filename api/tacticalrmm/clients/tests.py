@@ -369,7 +369,6 @@ class TestClientViews(TacticalTestCase):
         site_to_move.client = client  # type: ignore
         site_to_move.save(update_fields=["client"])  # type: ignore
         r = self.client.delete(url, format="json")
-        print(r.data)
         self.assertEqual(r.status_code, 200)
         agent_moved = Agent.objects.get(pk=agent.pk)
         self.assertEqual(agent_moved.site.id, site_to_move.id)  # type: ignore

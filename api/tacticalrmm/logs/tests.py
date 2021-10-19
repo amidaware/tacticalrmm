@@ -26,14 +26,14 @@ class TestAuditViews(TacticalTestCase):
             "logs.agent_logs",
             username="jim",
             agent="AgentHostname1",
-            agent_id=agent1.id,
+            agent_id=agent1.agent_id,
             _quantity=15,
         )
         baker.make_recipe(
             "logs.agent_logs",
             username="jim",
             agent="AgentHostname2",
-            agent_id=agent2.id,
+            agent_id=agent2.agent_id,
             _quantity=8,
         )
 
@@ -42,14 +42,14 @@ class TestAuditViews(TacticalTestCase):
             "logs.agent_logs",
             username="james",
             agent="AgentHostname1",
-            agent_id=agent1.id,
+            agent_id=agent1.agent_id,
             _quantity=7,
         )
         baker.make_recipe(
             "logs.agent_logs",
             username="james",
             agent="AgentHostname2",
-            agent_id=agent2.id,
+            agent_id=agent2.agent_id,
             _quantity=10,
         )
 
@@ -57,7 +57,7 @@ class TestAuditViews(TacticalTestCase):
         baker.make_recipe(
             "logs.agent_logs",
             agent=seq("AgentHostname"),
-            agent_id=seq(agent1.id),
+            agent_id=seq(agent1.agent_id),
             _quantity=5,
         )
 
@@ -85,7 +85,7 @@ class TestAuditViews(TacticalTestCase):
         return {"site": site, "agents": [agent0, agent1, agent2]}
 
     def test_get_audit_logs(self):
-        url = "/logs/auditlogs/"
+        url = "/logs/audit/"
 
         # create data
         data = self.create_audit_records()
@@ -96,14 +96,14 @@ class TestAuditViews(TacticalTestCase):
             {
                 "filter": {
                     "timeFilter": 45,
-                    "agentFilter": [data["agents"][2].id],
+                    "agentFilter": [data["agents"][2].agent_id],
                 },
-                "count": 19,
+                "count": 18,
             },
             {
                 "filter": {
                     "userFilter": ["jim"],
-                    "agentFilter": [data["agents"][1].id],
+                    "agentFilter": [data["agents"][1].agent_id],
                 },
                 "count": 15,
             },
@@ -111,7 +111,7 @@ class TestAuditViews(TacticalTestCase):
                 "filter": {
                     "timeFilter": 180,
                     "userFilter": ["james"],
-                    "agentFilter": [data["agents"][1].id],
+                    "agentFilter": [data["agents"][1].agent_id],
                 },
                 "count": 7,
             },
@@ -122,8 +122,8 @@ class TestAuditViews(TacticalTestCase):
                     "timeFilter": 35,
                     "userFilter": ["james", "jim"],
                     "agentFilter": [
-                        data["agents"][1].id,
-                        data["agents"][2].id,
+                        data["agents"][1].agent_id,
+                        data["agents"][2].agent_id,
                     ],
                 },
                 "count": 40,
@@ -133,7 +133,7 @@ class TestAuditViews(TacticalTestCase):
             {"filter": {"actionFilter": ["login"]}, "count": 12},
             {
                 "filter": {"clientFilter": [data["site"].client.id]},
-                "count": 23,
+                "count": 22,
             },
         ]
 
@@ -255,7 +255,7 @@ class TestAuditViews(TacticalTestCase):
         self.check_not_authenticated("delete", url)
 
     def test_get_debug_log(self):
-        url = "/logs/debuglog/"
+        url = "/logs/debug/"
 
         # create data
         agent = baker.make_recipe("agents.agent")
@@ -275,13 +275,13 @@ class TestAuditViews(TacticalTestCase):
         )
 
         # test agent filter
-        data = {"agentFilter": agent.id}
+        data = {"agentFilter": agent.agent_id}
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.data), 4)  # type: ignore
 
         # test log type filter and agent
-        data = {"agentFilter": agent.id, "logLevelFilter": "warning"}
+        data = {"agentFilter": agent.agent_id, "logLevelFilter": "warning"}
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.data), 1)  # type: ignore

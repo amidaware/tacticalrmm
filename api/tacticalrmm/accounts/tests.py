@@ -396,7 +396,7 @@ class TestAPIAuthentication(TacticalTestCase):
         self.client_setup()
 
     def test_api_auth(self):
-        url = "/clients/clients/"
+        url = "/clients/"
         # auth should fail if no header set
         self.check_not_authenticated("get", url)
 

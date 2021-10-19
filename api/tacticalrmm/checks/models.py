@@ -12,7 +12,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from logs.models import BaseAuditModel
-from tacticalrmm.models import PermissionManager
+from tacticalrmm.models import PermissionQuerySet
 
 CHECK_TYPE_CHOICES = [
     ("diskspace", "Disk Space Check"),
@@ -51,8 +51,7 @@ EVT_LOG_FAIL_WHEN_CHOICES = [
 
 
 class Check(BaseAuditModel):
-    objects = models.Manager()
-    permissions = PermissionManager()
+    objects = PermissionQuerySet.as_manager()
 
     # common fields
 
@@ -672,6 +671,8 @@ class Check(BaseAuditModel):
 
 
 class CheckHistory(models.Model):
+    objects = PermissionQuerySet.as_manager()
+    
     check_id = models.PositiveIntegerField(default=0)
     x = models.DateTimeField(auto_now_add=True)
     y = models.PositiveIntegerField(null=True, blank=True, default=None)

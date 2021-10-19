@@ -32,7 +32,7 @@ class GetAddClients(APIView):
     permission_classes = [IsAuthenticated, ClientsPerms]
 
     def get(self, request):
-        clients = Client.permissions.filter_by_role(request.user)
+        clients = Client.objects.filter_by_role(request.user)
         return Response(
             ClientSerializer(clients, context={"user": request.user}, many=True).data
         )
@@ -139,7 +139,7 @@ class GetAddSites(APIView):
     permission_classes = [IsAuthenticated, SitesPerms]
 
     def get(self, request):
-        sites = Site.permissions.filter_by_role(request.user)
+        sites = Site.objects.filter_by_role(request.user)
         return Response(SiteSerializer(sites, many=True).data)
 
     def post(self, request):

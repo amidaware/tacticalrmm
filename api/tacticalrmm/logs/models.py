@@ -3,7 +3,7 @@ from abc import abstractmethod
 
 from django.db import models
 from tacticalrmm.middleware import get_debug_info, get_username
-from tacticalrmm.models import PermissionManager
+from tacticalrmm.models import PermissionQuerySet
 
 
 def get_debug_level():
@@ -66,12 +66,11 @@ STATUS_CHOICES = [
 
 
 class AuditLog(models.Model):
-    objects = models.Manager()
-    permissions = PermissionManager()
+    objects = PermissionQuerySet.as_manager()
 
     username = models.CharField(max_length=255)
     agent = models.CharField(max_length=255, null=True, blank=True)
-    agent_id = models.CharField(max_length=50, blank=True, null=True)
+    agent_id = models.CharField(max_length=255, blank=True, null=True)
     entry_time = models.DateTimeField(auto_now_add=True)
     action = models.CharField(max_length=100, choices=AUDIT_ACTION_TYPE_CHOICES)
     object_type = models.CharField(max_length=100, choices=AUDIT_OBJECT_TYPE_CHOICES)
@@ -274,8 +273,7 @@ LOG_TYPE_CHOICES = [
 
 
 class DebugLog(models.Model):
-    objects = models.Manager()
-    permissions = PermissionManager()
+    objects = PermissionQuerySet.as_manager()
 
     entry_time = models.DateTimeField(auto_now_add=True)
     agent = models.ForeignKey(

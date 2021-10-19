@@ -12,7 +12,7 @@ from django.db.models.fields import DateTimeField
 from django.db.utils import DatabaseError
 from django.utils import timezone as djangotime
 from logs.models import BaseAuditModel, DebugLog
-from tacticalrmm.models import PermissionManager
+from tacticalrmm.models import PermissionQuerySet
 from packaging import version as pyver
 from tacticalrmm.utils import bitdays_to_string
 
@@ -48,8 +48,7 @@ TASK_STATUS_CHOICES = [
 
 
 class AutomatedTask(BaseAuditModel):
-    objects = models.Manager()
-    permissions = PermissionManager()
+    objects = PermissionQuerySet.as_manager()
 
     agent = models.ForeignKey(
         "agents.Agent",

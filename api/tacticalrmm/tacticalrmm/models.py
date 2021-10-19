@@ -1,7 +1,6 @@
 from django.db import models
 
-
-class PermissionManager(models.Manager):
+class PermissionQuerySet(models.QuerySet):
 
     # filters queryset based on permissions. Works different for Agent, Client, and Site
     def filter_by_role(self, user):
@@ -13,7 +12,7 @@ class PermissionManager(models.Manager):
         can_view_sites = (
             role.can_view_sites.all().values_list("pk", flat=True) if role else None
         )
-        queryset = super(PermissionManager, self).get_queryset()
+
         clients_queryset = models.Q()
         sites_queryset = models.Q()
         policy_queryset = models.Q()
@@ -21,7 +20,7 @@ class PermissionManager(models.Manager):
 
         # returns normal queryset if user is superuser
         if user.is_superuser or (role and getattr(role, "is_superuser")):
-            return queryset
+            return self
 
         # checks which sites and clients the user has access to and filters agents
         if model_name == "Agent":
@@ -31,18 +30,18 @@ class PermissionManager(models.Manager):
             if can_view_sites:
                 sites_queryset = models.Q(site_id__in=can_view_sites)
 
-            queryset = queryset.filter(clients_queryset | sites_queryset)
+            return self.filter(clients_queryset | sites_queryset)
 
         # checks which sites and clients the user has access to and filters clients and sites
         elif model_name == "Client" and can_view_clients:
-            queryset = queryset.filter(pk__in=can_view_clients)
+            return self.filter(id__in=can_view_clients)
         elif model_name == "Site" and can_view_sites:
-            queryset = queryset.filter(pk__in=can_view_sites)
+            return self.filter(id__in=can_view_sites)
 
         # anything else just checks the agent_id field and if it has it will filter matched agents from the queryset
         else:
             if not hasattr(self.model, "agent"):
-                return queryset
+                return self
 
             # if model that is being filtered is a Check or Automated task we need to allow checks/tasks that are associated with policies
             if model_name in ["Check", "AutomatedTask"] and (
@@ -55,8 +54,6 @@ class PermissionManager(models.Manager):
             if can_view_sites:
                 sites_queryset = models.Q(agent__site_id__in=can_view_sites)
 
-            queryset = queryset.filter(
+            return self.filter(
                 clients_queryset | sites_queryset | policy_queryset
             )
-
-        return queryset

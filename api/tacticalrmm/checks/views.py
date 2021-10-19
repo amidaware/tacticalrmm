@@ -32,7 +32,7 @@ class GetAddChecks(APIView):
             policy = get_object_or_404(Policy, id=policy)
             checks = Check.objects.filter(policy=policy)
         else:
-            checks = Check.permissions.filter_by_role(request.user)
+            checks = Check.objects.filter_by_role(request.user)
         return Response(CheckSerializer(checks, many=True).data)
 
     def post(self, request):

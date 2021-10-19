@@ -36,7 +36,7 @@ class GetSoftware(APIView):
             except Exception:
                 return Response([])
         else:
-            software = InstalledSoftware.permissions.filter_by_role(request.user)
+            software = InstalledSoftware.objects.filter_by_role(request.user)
             return Response(InstalledSoftwareSerializer(software, many=True).data)
 
     # software install

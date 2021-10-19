@@ -1,6 +1,6 @@
 from django.db import models
 
-from tacticalrmm.models import PermissionManager
+from tacticalrmm.models import PermissionQuerySet
 from agents.models import Agent
 
 
@@ -13,8 +13,7 @@ class ChocoSoftware(models.Model):
 
 
 class InstalledSoftware(models.Model):
-    objects = models.Manager()
-    permissions = PermissionManager()
+    objects = PermissionQuerySet.as_manager()
 
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE)
     software = models.JSONField()

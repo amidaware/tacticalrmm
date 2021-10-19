@@ -22,12 +22,11 @@ from packaging import version as pyver
 
 from core.models import TZ_CHOICES, CoreSettings
 from logs.models import BaseAuditModel, DebugLog
-from tacticalrmm.models import PermissionManager
+from tacticalrmm.models import PermissionQuerySet
 
 
 class Agent(BaseAuditModel):
-    objects = models.Manager()
-    permissions = PermissionManager()
+    objects = PermissionQuerySet.as_manager()
 
     version = models.CharField(default="0.1.0", max_length=255)
     salt_ver = models.CharField(default="1.0.3", max_length=255)
@@ -876,8 +875,7 @@ RECOVERY_CHOICES = [
 
 
 class RecoveryAction(models.Model):
-    objects = models.Manager()
-    permissions = PermissionManager()
+    objects = PermissionQuerySet.as_manager()
 
     agent = models.ForeignKey(
         Agent,
@@ -893,8 +891,7 @@ class RecoveryAction(models.Model):
 
 
 class Note(models.Model):
-    objects = models.Manager()
-    permissions = PermissionManager()
+    objects = PermissionQuerySet.as_manager()
 
     agent = models.ForeignKey(
         Agent,
@@ -916,6 +913,8 @@ class Note(models.Model):
 
 
 class AgentCustomField(models.Model):
+    objects = PermissionQuerySet.as_manager()
+
     agent = models.ForeignKey(
         Agent,
         related_name="custom_fields",
@@ -976,8 +975,7 @@ AGENT_HISTORY_STATUS = (("success", "Success"), ("failure", "Failure"))
 
 
 class AgentHistory(models.Model):
-    objects = models.Manager()
-    permissions = PermissionManager()
+    objects = PermissionQuerySet.as_manager()
 
     agent = models.ForeignKey(
         Agent,
@@ -992,7 +990,7 @@ class AgentHistory(models.Model):
     status = models.CharField(
         max_length=50, choices=AGENT_HISTORY_STATUS, default="success"
     )
-    username = models.CharField(max_length=50, default="system")
+    username = models.CharField(max_length=255, default="system")
     results = models.TextField(null=True, blank=True)
     script = models.ForeignKey(
         "scripts.Script",

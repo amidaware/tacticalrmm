@@ -73,7 +73,7 @@ class GetAgents(APIView):
             and request.query_params["detail"] == "true"
         ):
             agents = (
-                Agent.permissions.filter_by_role(request.user)
+                Agent.objects.filter_by_role(request.user)
                 .select_related("site", "policy", "alert_template")
                 .prefetch_related("agentchecks")
                 .filter(filter)
@@ -107,7 +107,7 @@ class GetAgents(APIView):
         # if detail=false
         else:
             agents = (
-                Agent.permissions.filter_by_role(request.user)
+                Agent.objects.filter_by_role(request.user)
                 .select_related("site")
                 .filter(filter)
                 .only("agent_id", "hostname", "site")
@@ -716,7 +716,7 @@ class GetAddNotes(APIView):
             agent = get_object_or_404(Agent, agent_id=agent_id)
             notes = Note.objects.filter(agent=agent)
         else:
-            notes = Note.permissions.filter_by_role(request.user)
+            notes = Note.objects.filter_by_role(request.user)
 
         return Response(AgentNoteSerializer(notes, many=True).data)
 
@@ -844,20 +844,20 @@ def bulk(request):
 def agent_maintenance(request):
     if request.data["type"] == "Client":
         count = (
-            Agent.permissions.filter_by_role(request.user)
+            Agent.objects.filter_by_role(request.user)
             .filter(site__client_id=request.data["id"])
             .update(maintenance_mode=request.data["action"])
         )
 
     elif request.data["type"] == "Site":
         count = (
-            Agent.permissions.filter_by_role(request.user)
+            Agent.objects.filter_by_role(request.user)
             .filter(site_id=request.data["id"])
             .update(maintenance_mode=request.data["action"])
         )
 
     elif request.data["type"] == "Agent":
-        agent = Agent.permissions.filter_by_role(request.user).get(
+        agent = Agent.objects.filter_by_role(request.user).get(
             agent_id=request.data["agent_id"]
         )
         if agent:
@@ -897,6 +897,6 @@ class AgentHistoryView(APIView):
             agent = get_object_or_404(Agent, agent_id=agent_id)
             history = AgentHistory.objects.filter(agent=agent)
         else:
-            history = AgentHistory.permissions.filter_by_role(request.user)
+            history = AgentHistory.objects.filter_by_role(request.user)
         ctx = {"default_tz": get_default_timezone()}
         return Response(AgentHistorySerializer(history, many=True, context=ctx).data)

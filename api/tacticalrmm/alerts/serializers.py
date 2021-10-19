@@ -2,7 +2,7 @@ from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer, ReadOnlyField
 
 from automation.serializers import PolicySerializer
-from clients.serializers import ClientSerializer, SiteSerializer
+from clients.serializers import ClientMinimumSerializer, SiteMinimumSerializer
 from tacticalrmm.utils import get_default_timezone
 
 from .models import Alert, AlertTemplate
@@ -113,8 +113,8 @@ class AlertTemplateSerializer(ModelSerializer):
 
 class AlertTemplateRelationSerializer(ModelSerializer):
     policies = PolicySerializer(read_only=True, many=True)
-    clients = ClientSerializer(read_only=True, many=True)
-    sites = SiteSerializer(read_only=True, many=True)
+    clients = ClientMinimumSerializer(read_only=True, many=True)
+    sites = SiteMinimumSerializer(read_only=True, many=True)
 
     class Meta:
         model = AlertTemplate

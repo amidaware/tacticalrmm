@@ -598,21 +598,24 @@ export default {
           html: true,
         })
         .onOk(val => {
+          this.$q.loading.show();
           this.$axios
-            .delete(`/agents/${agent_id}/`)
+            .delete(`/agents/${agent.agent_id}/`)
             .then(r => {
               this.notifySuccess(r.data);
               setTimeout(() => {
                 location.reload();
               }, 2000);
             })
-            .catch(e => {});
+            .catch(e => {
+              this.$q.loading.hide();
+            });
         });
     },
     pingAgent(agent) {
       this.$q.loading.show();
       this.$axios
-        .get(`/agents/${agent_id}/ping/`)
+        .get(`/agents/${agent.agent_id}/ping/`)
         .then(r => {
           this.$q.loading.hide();
           if (r.data.status === "offline") {

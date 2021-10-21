@@ -120,9 +120,6 @@ export default function () {
         })
           .catch(e => { })
       },
-      toggleMaintenanceMode(context, data) {
-        return axios.post("/agents/maintenance/", data)
-      },
       getDashInfo(context) {
         return axios.get("/core/dashinfo/");
       },

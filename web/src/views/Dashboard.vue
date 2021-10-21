@@ -153,7 +153,9 @@
                           <q-item-section side>
                             <q-icon name="construction" />
                           </q-item-section>
-                          <q-item-section>{{ menuMaintenanceText(props.node) }}</q-item-section>
+                          <q-item-section>{{
+                            props.node.color === "green" ? "Disable Maintenance Mode" : "Enable Maintenance Mode"
+                          }}</q-item-section>
                         </q-item>
 
                         <q-item
@@ -811,14 +813,15 @@ export default {
         action: node.color === "green" ? false : true,
       };
 
-      const text = node.color === "green" ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
-      this.$store.dispatch("toggleMaintenanceMode", data).then(response => {
-        this.notifySuccess(text);
-        this.getTree();
-      });
-    },
-    menuMaintenanceText(node) {
-      return node.color === "green" ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
+      this.$axios
+        .post("/agents/maintenance/bulk/", data)
+        .then(r => {
+          this.notifySuccess(r.data);
+          this.getTree();
+        })
+        .catch(e => {
+          console.error(e);
+        });
     },
     clearFilter() {
       this.filterTextLength = 0;

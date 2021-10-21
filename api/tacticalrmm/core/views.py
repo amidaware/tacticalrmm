@@ -354,7 +354,7 @@ class RunURLAction(APIView):
         from tacticalrmm.utils import replace_db_values
 
         if "agent" in request.data.keys():
-            instance = get_object_or_404(Agent, pk=request.data["agent"])
+            instance = get_object_or_404(Agent, agent_id=request.data["agent_id"])
         elif "site" in request.data.keys():
             instance = get_object_or_404(Site, pk=request.data["site"])
         elif "client" in request.data.keys():

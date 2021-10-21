@@ -24,7 +24,7 @@ from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from tacticalrmm.utils import get_default_timezone, notify_error, reload_nats
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
-from tacticalrmm.permissions import _has_perm_on_agent
+from tacticalrmm.permissions import _has_perm_on_agent, _has_perm_on_client, _has_perm_on_site
 
 from .models import Agent, AgentCustomField, Note, RecoveryAction, AgentHistory
 from .permissions import (
@@ -266,7 +266,7 @@ def get_agent_versions(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, UpdateAgentPerms])
 def update_agents(request):
-    q = Agent.objects.filter(pk__in=request.data["pks"]).only("pk", "version")
+    q = Agent.objects.filter(pk__in=request.data["agent_ids"]).only("pk", "version")
     pks: list[int] = [
         i.pk
         for i in q
@@ -842,7 +842,11 @@ def bulk(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, RunBulkPerms])
 def agent_maintenance(request):
+
     if request.data["type"] == "Client":
+        if not _has_perm_on_client(request.user, request.data["id"]):
+            raise PermissionDenied()
+
         count = (
             Agent.objects.filter_by_role(request.user)
             .filter(site__client_id=request.data["id"])
@@ -850,28 +854,21 @@ def agent_maintenance(request):
         )
 
     elif request.data["type"] == "Site":
+        if not _has_perm_on_site(request.user, request.data["id"]):
+            raise PermissionDenied()
+
         count = (
             Agent.objects.filter_by_role(request.user)
             .filter(site_id=request.data["id"])
             .update(maintenance_mode=request.data["action"])
         )
 
-    elif request.data["type"] == "Agent":
-        agent = Agent.objects.filter_by_role(request.user).get(
-            agent_id=request.data["agent_id"]
-        )
-        if agent:
-            count = 1
-        else:
-            count = 0
-        agent.maintenance_mode = request.data["action"]
-        agent.save(update_fields=["maintenance_mode"])
-
     else:
         return notify_error("Invalid data")
 
     if count:
-        return Response(f"{count} agents have been put in maintenance mode.")
+        action = 'disabled' if not request.data["action"] else 'enabled'
+        return Response(f"Maintenance mode has been {action} on {count} agents")
     else:
         return Response(
             f"No agents have been put in maintenance mode. You might not have permissions to the resources."

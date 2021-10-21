@@ -1,101 +1,113 @@
 <template>
-  <q-card :style="{ 'min-width': width }">
-    <q-card-section class="row items-center">
-      <div class="text-h6">Send command on {{ hostname }}</div>
-      <q-space />
-      <q-btn icon="close" flat round dense v-close-popup />
-    </q-card-section>
-    <q-form @submit.prevent="send">
-      <q-card-section>
-        <p>Shell</p>
-        <div class="q-gutter-sm">
-          <q-radio dense v-model="shell" val="cmd" label="CMD" />
-          <q-radio dense v-model="shell" val="powershell" label="Powershell" />
-        </div>
-      </q-card-section>
-      <q-card-section>
-        <q-input
-          v-model.number="timeout"
-          dense
-          outlined
-          type="number"
-          style="max-width: 150px"
-          label="Timeout (seconds)"
-          stack-label
-          :rules="[
-            val => !!val || '*Required',
-            val => val >= 10 || 'Minimum is 10 seconds',
-            val => val <= 3600 || 'Maximum is 3600 seconds',
-          ]"
-        />
-      </q-card-section>
-      <q-card-section>
-        <q-input
-          v-model="cmd"
-          outlined
-          label="Command"
-          stack-label
-          :placeholder="
-            shell === 'cmd' ? 'rmdir /S /Q C:\\Windows\\System32' : 'Remove-Item -Recurse -Force C:\\Windows\\System32'
-          "
-          :rules="[val => !!val || '*Required']"
-        />
-      </q-card-section>
-      <q-card-actions align="center">
-        <q-btn :loading="loading" label="Send" color="primary" class="full-width" type="submit" />
-      </q-card-actions>
-      <q-card-section v-if="ret !== null" class="q-pl-md q-pr-md q-pt-none q-ma-none scroll" style="max-height: 50vh">
-        <pre>{{ ret }}</pre>
-      </q-card-section>
-    </q-form>
-  </q-card>
+  <q-dialog ref="dialogRef" @hide="onDialogHide" persistent @keydown.esc="onDialogHide">
+    <q-card class="q-dialog-plugin" :style="{ 'min-width': !ret ? '40vw' : '70vw' }">
+      <q-bar>
+        Send command on {{ agent.hostname }}
+        <q-space />
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+      <q-form @submit="submit">
+        <q-card-section>
+          <p>Shell</p>
+          <div class="q-gutter-sm">
+            <q-radio dense v-model="state.shell" val="cmd" label="CMD" />
+            <q-radio dense v-model="state.shell" val="powershell" label="Powershell" />
+          </div>
+        </q-card-section>
+        <q-card-section>
+          <q-input
+            v-model.number="state.timeout"
+            dense
+            outlined
+            type="number"
+            style="max-width: 150px"
+            label="Timeout (seconds)"
+            stack-label
+            :rules="[
+              val => !!val || '*Required',
+              val => val >= 10 || 'Minimum is 10 seconds',
+              val => val <= 3600 || 'Maximum is 3600 seconds',
+            ]"
+          />
+        </q-card-section>
+        <q-card-section>
+          <q-input
+            v-model="state.cmd"
+            outlined
+            label="Command"
+            stack-label
+            :placeholder="
+              state.shell === 'cmd'
+                ? 'rmdir /S /Q C:\\Windows\\System32'
+                : 'Remove-Item -Recurse -Force C:\\Windows\\System32'
+            "
+            :rules="[val => !!val || '*Required']"
+          />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat dense push label="Cancel" v-close-popup />
+          <q-btn :loading="loading" flat dense push label="Send" color="primary" type="submit" />
+        </q-card-actions>
+        <q-card-section v-if="ret !== null" class="q-pl-md q-pr-md q-pt-none q-ma-none scroll" style="max-height: 50vh">
+          <pre>{{ ret }}</pre>
+        </q-card-section>
+      </q-form>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
-import mixins from "@/mixins/mixins";
+// composition imports
+import { ref } from "vue";
+import { useDialogPluginComponent } from "quasar";
+import { sendAgentCommand } from "@/api/agents";
 
 export default {
   name: "SendCommand",
-  mixins: [mixins],
+  emits: [...useDialogPluginComponent.emits],
   props: {
-    agent_id: !String,
+    agent: !Object,
   },
-  data() {
-    return {
-      loading: false,
+  setup(props) {
+    // setup quasar dialog plugin
+    const { dialogRef, onDialogHide } = useDialogPluginComponent();
+
+    // run command logic
+    const state = ref({
       shell: "cmd",
       cmd: null,
       timeout: 30,
-      ret: null,
+    });
+
+    const loading = ref(false);
+    const ret = ref(null);
+
+    async function submit() {
+      loading.value = true;
+      ret.value = null;
+      try {
+        ret.value = await sendAgentCommand(props.agent.agent_id, state.value);
+      } catch (e) {
+        console.error(e);
+      }
+      loading.value = false;
+    }
+
+    return {
+      // reactive data
+      state,
+      loading,
+      ret,
+
+      // methods
+      submit,
+
+      // quasar dialog
+      dialogRef,
+      onDialogHide,
     };
-  },
-  computed: {
-    hostname() {
-      return this.$store.state.agentSummary.hostname;
-    },
-    width() {
-      return this.ret === null ? "40vw" : "70vw";
-    },
-  },
-  methods: {
-    send() {
-      this.ret = null;
-      this.loading = true;
-      const data = {
-        cmd: this.cmd,
-        shell: this.shell,
-        timeout: this.timeout,
-      };
-      this.$axios
-        .post(`/agents/${this.agent_id}/cmd/`, data)
-        .then(r => {
-          this.loading = false;
-          this.ret = r.data;
-        })
-        .catch(e => {
-          this.loading = false;
-        });
-    },
   },
 };
 </script>

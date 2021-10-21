@@ -39,6 +39,10 @@ export async function fetchAgentTasks(agent_id, params = {}) {
   } catch (e) { console.error(e) }
 }
 
+export async function sendAgentCommand(agent_id, payload) {
+  const { data } = await axios.post(`${baseUrl}/${agent_id}/cmd/`, payload)
+  return data
+}
 
 export async function refreshAgentWMI(agent_id) {
   const { data } = await axios.post(`${baseUrl}/${agent_id}/wmi/`)

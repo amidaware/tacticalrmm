@@ -152,6 +152,7 @@ class AgentEditSerializer(serializers.ModelSerializer):
             "winupdatepolicy",
             "policy",
             "custom_fields",
+            "maintenance_mode"
         ]
 
 

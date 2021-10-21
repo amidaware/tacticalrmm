@@ -134,7 +134,7 @@
                 </q-menu>
               </q-item>
 
-              <q-item clickable v-ripple v-close-popup @click="showSendCommand = true">
+              <q-item clickable v-ripple v-close-popup @click="showSendCommand(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-terminal" />
                 </q-item-section>
@@ -180,11 +180,13 @@
               </q-item>
 
               <!-- maintenance mode -->
-              <q-item clickable @click="toggleMaintenance(props.row)">
+              <q-item clickable v-close-popup @click="toggleMaintenance(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="construction" />
                 </q-item-section>
-                <q-item-section>{{ menuMaintenanceText(props.row.maintenance_mode) }}</q-item-section>
+                <q-item-section>
+                  {{ props.row.maintenance_mode ? "Disable Maintenance Mode" : "Enable Maintenance Mode" }}
+                </q-item-section>
               </q-item>
 
               <!-- patch management -->
@@ -199,22 +201,17 @@
 
                 <q-menu anchor="top right" self="top left">
                   <q-list dense style="min-width: 100px">
-                    <q-item
-                      clickable
-                      v-ripple
-                      v-close-popup
-                      @click.stop.prevent="runPatchStatusScan(props.row.id, props.row.hostname)"
-                    >
+                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="runPatchStatusScan(props.row)">
                       <q-item-section>Run Patch Status Scan</q-item-section>
                     </q-item>
-                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="installPatches(props.row.id)">
+                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="installPatches(props)">
                       <q-item-section>Install Patches Now</q-item-section>
                     </q-item>
                   </q-list>
                 </q-menu>
               </q-item>
 
-              <q-item clickable v-close-popup @click.stop.prevent="runChecks(props.row.id)">
+              <q-item clickable v-close-popup @click.stop.prevent="runChecks(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-check-double" />
                 </q-item-section>
@@ -263,7 +260,7 @@
                 <q-item-section>Agent Recovery</q-item-section>
               </q-item>
 
-              <q-item clickable v-close-popup @click.stop.prevent="pingAgent(props.row.id)">
+              <q-item clickable v-close-popup @click.stop.prevent="pingAgent(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="delete" />
                 </q-item-section>
@@ -404,10 +401,6 @@
     <q-dialog v-model="showPendingActions" @hide="closePendingActionsModal">
       <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" @edit="agentEdited" />
     </q-dialog>
-    <!-- send command modal -->
-    <q-dialog v-model="showSendCommand" persistent @keydown.esc="showSendCommand = false">
-      <SendCommand @close="showSendCommand = false" :pk="selectedAgentId" />
-    </q-dialog>
     <!-- agent recovery modal -->
     <q-dialog v-model="showAgentRecovery">
       <AgentRecovery @close="showAgentRecovery = false" :pk="selectedAgentId" />
@@ -435,7 +428,6 @@ export default {
     EditAgent,
     RebootLater,
     PendingActions,
-    SendCommand,
     AgentRecovery,
   },
   mixins: [mixins],
@@ -446,7 +438,6 @@ export default {
         sortBy: "hostname",
         descending: false,
       },
-      showSendCommand: false,
       showEditAgentModal: false,
       showRebootLaterModal: false,
       showAgentRecovery: false,
@@ -526,7 +517,7 @@ export default {
             this.remoteBG(agent.agent_id);
             break;
           case "urlaction":
-            this.runURLAction(agent.pk, this.agentUrlAction);
+            this.runURLAction(agent.agent_id, this.agentUrlAction);
             break;
         }
       }, 500);
@@ -552,18 +543,18 @@ export default {
         })
         .catch(e => {});
     },
-    runPatchStatusScan(agent_id, hostname) {
+    runPatchStatusScan(agent) {
       this.$axios
-        .get(`/winupdate/${agent_id}/scan/`)
+        .get(`/winupdate/${agent.agent_id}/scan/`)
         .then(r => {
-          this.notifySuccess(`Scan will be run shortly on ${hostname}`);
+          this.notifySuccess(`Scan will be run shortly on ${agent.hostname}`);
         })
         .catch(e => {});
     },
-    installPatches(agent_id) {
+    installPatches(agent) {
       this.$q.loading.show();
       this.$axios
-        .get(`/winupdate/${agent_id}/install/`)
+        .get(`/winupdate/${agent.agent_id}/install/`)
         .then(r => {
           this.$q.loading.hide();
           this.notifySuccess(r.data);
@@ -591,10 +582,10 @@ export default {
       const url = this.$router.resolve(`/remotebackground/${agent_id}`).href;
       window.open(url, "", "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1280,height=826");
     },
-    runChecks(pk) {
+    runChecks(agent) {
       this.$q.loading.show();
       this.$axios
-        .get(`/checks/runchecks/${pk}/`)
+        .get(`/checks/${agent.agent_id}/run/`)
         .then(r => {
           this.$q.loading.hide();
           this.notifySuccess(r.data);
@@ -603,14 +594,14 @@ export default {
           this.$q.loading.hide();
         });
     },
-    removeAgent(agent_id, name) {
+    removeAgent(agent) {
       this.$q
         .dialog({
-          title: `Please type <code style="color:red">${name}</code> to confirm deletion.`,
+          title: `Please type <code style="color:red">${agent.hostname}</code> to confirm deletion.`,
           prompt: {
             model: "",
             type: "text",
-            isValid: val => val === name,
+            isValid: val => val === agent.hostname,
           },
           cancel: true,
           ok: { label: "Uninstall", color: "negative" },
@@ -629,7 +620,7 @@ export default {
             .catch(e => {});
         });
     },
-    pingAgent(agent_id) {
+    pingAgent(agent) {
       this.$q.loading.show();
       this.$axios
         .get(`/agents/${agent_id}/ping/`)
@@ -639,19 +630,19 @@ export default {
             this.$q
               .dialog({
                 title: "Agent offline",
-                message: `${r.data.name} cannot be contacted. 
+                message: `${agent.hostname} cannot be contacted. 
                   Would you like to continue with the uninstall? 
                   If so, the agent will need to be manually uninstalled from the computer.`,
                 cancel: { label: "No", color: "negative" },
                 ok: { label: "Yes", color: "positive" },
                 persistent: true,
               })
-              .onOk(() => this.removeAgent(pk, r.data.name))
+              .onOk(() => this.removeAgent(agent))
               .onCancel(() => {
                 return;
               });
           } else if (r.data.status === "online") {
-            this.removeAgent(pk, r.data.name);
+            this.removeAgent(agent);
           } else {
             this.notifyError("Something went wrong");
           }
@@ -730,19 +721,20 @@ export default {
     },
     toggleMaintenance(agent) {
       let data = {
-        id: agent.id,
-        type: "Agent",
-        action: !agent.maintenance_mode,
+        maintenance_mode: !agent.maintenance_mode,
       };
 
-      const text = agent.maintenance_mode ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
-      this.$store.dispatch("toggleMaintenanceMode", data).then(response => {
-        this.notifySuccess(text);
-        this.$emit("edit");
-      });
-    },
-    menuMaintenanceText(mode) {
-      return mode ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
+      this.$axios
+        .put(`/agents/${agent.agent_id}/`, data)
+        .then(r => {
+          this.notifySuccess(
+            `Maintenance mode was ${agent.maintenance_mode ? "disabled" : "enabled"} on ${agent.hostname}`
+          );
+          this.$emit("edit");
+        })
+        .catch(e => {
+          console.log(e);
+        });
     },
     rowSelectedClass(agent_id) {
       if (agent_id === this.selectedRow) {
@@ -763,9 +755,9 @@ export default {
         })
         .catch(() => {});
     },
-    runURLAction(agentid, action) {
+    runURLAction(agent_id, action) {
       const data = {
-        agent: agentid,
+        agent_id: agent_id,
         action: action,
       };
       this.$axios
@@ -781,6 +773,14 @@ export default {
         componentProps: {
           agent,
           script,
+        },
+      });
+    },
+    showSendCommand(agent) {
+      this.$q.dialog({
+        component: SendCommand,
+        componentProps: {
+          agent: agent,
         },
       });
     },

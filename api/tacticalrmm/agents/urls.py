@@ -31,10 +31,13 @@ urlpatterns = [
     path("notes/", views.GetAddNotes.as_view()),
     path("notes/<int:pk>/", views.GetEditDeleteNote.as_view()),
     path("<agent:agent_id>/notes/", views.GetAddNotes.as_view()),
-    path("maintenance/", views.agent_maintenance),
+
+    # bulk actions
+    path("maintenance/bulk/", views.agent_maintenance),
+    path("actions/bulk/", views.bulk),
+
     path("versions/", views.get_agent_versions),
     path("update/", views.update_agents),
     path("installer/", views.install_agent),
-    path("bulk/", views.bulk),
     path("<str:arch>/getmeshexe/", views.get_mesh_exe),
 ]

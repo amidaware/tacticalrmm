@@ -91,6 +91,11 @@ export async function fetchAgentMeshCentralURLs(agent_id, params = {}) {
   }
 }
 
+export async function scheduleAgentReboot(agent_id, payload) {
+  const { data } = await axios.patch(`${baseUrl}/${agent_id}/reboot/`, payload)
+  return data
+}
+
 export async function sendAgentRecoverMesh(agent_id, params = {}) {
   const { data } = await axios.post(`${baseUrl}/${agent_id}/meshcentral/recover/`, { params: params })
   return data

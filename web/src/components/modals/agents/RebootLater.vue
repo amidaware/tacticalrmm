@@ -1,85 +1,94 @@
 <template>
-  <q-card style="min-width: 400px" class="q-pa-xs">
-    <q-card-section>
-      <div class="row items-center">
-        <div class="text-h6">Schedule a reboot</div>
+  <q-dialog ref="dialogRef" @hide="onDialogHide">
+    <q-card class="dialog-plugin" style="min-width: 30vw">
+      <q-bar>
+        Schedule reboot on {{ agent.hostname }}
         <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
-      </div>
-    </q-card-section>
-    <q-card-section>
-      <q-input filled v-model="datetime">
-        <template v-slot:prepend>
-          <q-icon name="event" class="cursor-pointer">
-            <q-popup-proxy transition-show="scale" transition-hide="scale">
-              <q-date v-model="datetime" mask="YYYY-MM-DD HH:mm" />
-            </q-popup-proxy>
-          </q-icon>
-        </template>
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+      <q-card-section>
+        <q-input dense filled v-model="state.datetime">
+          <template v-slot:prepend>
+            <q-icon name="event" class="cursor-pointer">
+              <q-popup-proxy transition-show="scale" transition-hide="scale">
+                <q-date v-model="state.datetime" mask="YYYY-MM-DD HH:mm" />
+              </q-popup-proxy>
+            </q-icon>
+          </template>
 
-        <template v-slot:append>
-          <q-icon name="access_time" class="cursor-pointer">
-            <q-popup-proxy transition-show="scale" transition-hide="scale">
-              <q-time v-model="datetime" mask="YYYY-MM-DD HH:mm" />
-            </q-popup-proxy>
-          </q-icon>
-        </template>
-      </q-input>
-    </q-card-section>
-    <q-card-actions align="left">
-      <q-btn dense label="Schedule Reboot" color="primary" @click="scheduleReboot" />
-    </q-card-actions>
-  </q-card>
+          <template v-slot:append>
+            <q-icon name="access_time" class="cursor-pointer">
+              <q-popup-proxy transition-show="scale" transition-hide="scale">
+                <q-time v-model="state.datetime" mask="YYYY-MM-DD HH:mm" />
+              </q-popup-proxy>
+            </q-icon>
+          </template>
+        </q-input>
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn dense flat push label="Cancel" v-close-popup />
+        <q-btn dense flat push label="Schedule Reboot" color="primary" @click="scheduleReboot" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-import mixins from "@/mixins/mixins";
+// composition imports
+import { ref } from "vue";
+import { useDialogPluginComponent } from "quasar";
+import { scheduleAgentReboot } from "@/api/agents";
 import { date } from "quasar";
 
 export default {
   name: "RebootLater",
-  mixins: [mixins],
-  data() {
-    return {
-      datetime: null,
-    };
+  emits: [...useDialogPluginComponent.emits],
+  props: {
+    agent: !Object,
   },
-  methods: {
-    scheduleReboot() {
-      this.$q.loading.show({ message: "Contacting agent..." });
-      const data = { pk: this.selectedAgentId, datetime: this.datetime };
-      this.$axios
-        .patch(`/agents/${this.selectedAgentId}reboot/`, data)
-        .then(r => {
-          this.$q.loading.hide();
-          this.$emit("close");
-          this.$emit("edited");
-          this.confirmReboot(r.data);
-        })
-        .catch(e => {
-          this.$q.loading.hide();
+  setup(props) {
+    // setup quasar dialog plugin
+    const { dialogRef, onDialogHide } = useDialogPluginComponent();
+
+    // setup reboot later logic
+    const state = ref({
+      datetime: date.formatDate(Date.now(), "YYYY-MM-DD HH:mm"),
+    });
+    const loading = ref(false);
+
+    async function scheduleReboot() {
+      loading.value = true;
+
+      try {
+        const result = await scheduleAgentReboot(props.agent.agent_id, { datetime: state.value.datetime });
+
+        this.$q.dialog({
+          title: "Reboot pending",
+          style: "width: 40vw",
+          message: `A reboot has been scheduled for <strong>${state.value.datetime}</strong> on ${props.agent.agent_id}.
+            <br />It can be cancelled from the Pending Actions menu until the scheduled time.`,
+          html: true,
         });
-    },
-    getCurrentDate() {
-      let timeStamp = Date.now();
-      this.datetime = date.formatDate(timeStamp, "YYYY-MM-DD HH:mm");
-    },
-    confirmReboot(data) {
-      this.$q.dialog({
-        title: "Reboot pending",
-        style: "width: 40vw",
-        message: `A reboot has been scheduled for <strong>${data.time}</strong> on ${data.agent}.
-          <br />It can be cancelled from the Pending Actions menu until the scheduled time.`,
-        html: true,
-      });
-    },
-  },
-  computed: {
-    ...mapGetters(["selectedAgentId"]),
-  },
-  mounted() {
-    this.getCurrentDate();
+      } catch (e) {
+        console.error(e);
+      }
+      loading.value = false;
+    }
+
+    return {
+      // reactive data
+      state,
+      loading,
+
+      // methods
+      scheduleReboot,
+
+      // quasar dialog
+      dialogRef,
+      onDialogHide,
+    };
   },
 };
 </script>

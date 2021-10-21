@@ -230,16 +230,11 @@
                 <q-menu anchor="top right" self="top left">
                   <q-list dense style="min-width: 100px">
                     <!-- reboot now -->
-                    <q-item
-                      clickable
-                      v-ripple
-                      v-close-popup
-                      @click.stop.prevent="rebootNow(props.row.id, props.row.hostname)"
-                    >
+                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="rebootNow(props.row)">
                       <q-item-section>Now</q-item-section>
                     </q-item>
                     <!-- reboot later -->
-                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="showRebootLaterModal = true">
+                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="showRebootLaterModal(props.row)">
                       <q-item-section>Later</q-item-section>
                     </q-item>
                   </q-list>
@@ -393,10 +388,6 @@
     <q-dialog v-model="showEditAgentModal">
       <EditAgent @close="showEditAgentModal = false" @edit="agentEdited" />
     </q-dialog>
-    <!-- reboot later modal -->
-    <q-dialog v-model="showRebootLaterModal">
-      <RebootLater @close="showRebootLaterModal = false" @edit="agentEdited" />
-    </q-dialog>
     <!-- pending actions modal -->
     <q-dialog v-model="showPendingActions" @hide="closePendingActionsModal">
       <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" @edit="agentEdited" />
@@ -426,7 +417,6 @@ export default {
   emits: ["edit"],
   components: {
     EditAgent,
-    RebootLater,
     PendingActions,
     AgentRecovery,
   },
@@ -439,7 +429,6 @@ export default {
         descending: false,
       },
       showEditAgentModal: false,
-      showRebootLaterModal: false,
       showAgentRecovery: false,
       showPendingActions: false,
       pendingActionAgentPk: null,
@@ -651,21 +640,21 @@ export default {
           this.$q.loading.hide();
         });
     },
-    rebootNow(agent_id, hostname) {
+    rebootNow(agent) {
       this.$q
         .dialog({
           title: "Are you sure?",
-          message: `Reboot ${hostname} now`,
+          message: `Reboot ${agent.hostname} now`,
           cancel: true,
           persistent: true,
         })
         .onOk(() => {
           this.$q.loading.show();
           this.$axios
-            .post(`/agents/${agent_id}/reboot/`)
+            .post(`/agents/${agent.agent_id}/reboot/`)
             .then(r => {
               this.$q.loading.hide();
-              this.notifySuccess(`${hostname} will now be restarted`);
+              this.notifySuccess(`${agent.hostname} will now be restarted`);
             })
             .catch(e => {
               this.$q.loading.hide();
@@ -779,6 +768,14 @@ export default {
     showSendCommand(agent) {
       this.$q.dialog({
         component: SendCommand,
+        componentProps: {
+          agent: agent,
+        },
+      });
+    },
+    showRebootLaterModal(agent) {
+      this.$q.dialog({
+        component: RebootLater,
         componentProps: {
           agent: agent,
         },

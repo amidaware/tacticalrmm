@@ -10,7 +10,6 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from packaging import version as pyver
-from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -253,8 +252,9 @@ class AgentMeshCentral(APIView):
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated, AgentPerms])
 def get_agent_versions(request):
-    agents = Agent.objects.prefetch_related("site").only("pk", "hostname")
+    agents = Agent.objects.filter_by_role(request.user).prefetch_related("site").only("pk", "hostname")
     return Response(
         {
             "versions": [settings.LATEST_AGENT_VER],
@@ -266,13 +266,13 @@ def get_agent_versions(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, UpdateAgentPerms])
 def update_agents(request):
-    q = Agent.objects.filter(pk__in=request.data["agent_ids"]).only("pk", "version")
-    pks: list[int] = [
-        i.pk
+    q = Agent.objects.filter_by_role(request.user).filter(agent_id__in=request.data["agent_ids"]).only("agent_id", "version")
+    agent_ids: list[str] = [
+        i.agent_id
         for i in q
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
     ]
-    send_agent_update_task.delay(pks=pks)
+    send_agent_update_task.delay(agent_ids=agent_ids)
     return Response("ok")
 
 
@@ -422,6 +422,9 @@ def install_agent(request):
     site_id = request.data["site"]
     version = settings.LATEST_AGENT_VER
     arch = request.data["arch"]
+
+    if not _has_perm_on_site(request.user, site_id):
+        raise PermissionDenied()
 
     # response type is blob so we have to use
     # status codes and render error message on the frontend
@@ -776,13 +779,21 @@ def bulk(request):
         return notify_error("Must select at least 1 agent")
 
     if request.data["target"] == "client":
-        q = Agent.objects.filter(site__client_id=request.data["client"])
+        if not _has_perm_on_client(request.user, request.data["client"]):
+            raise PermissionDenied()
+        q = Agent.objects.filter_by_role(request.user).filter(site__client_id=request.data["client"])
+
     elif request.data["target"] == "site":
-        q = Agent.objects.filter(site_id=request.data["site"])
+        if not _has_perm_on_site(request.user, request.data["site"]):
+            raise PermissionDenied()
+        q = Agent.objects.filter_by_role(request.user).filter(site_id=request.data["site"])
+
     elif request.data["target"] == "agents":
-        q = Agent.objects.filter(pk__in=request.data["agents"])
+        q = Agent.objects.filter_by_role(request.user).filter(pk__in=request.data["agents"])
+
     elif request.data["target"] == "all":
-        q = Agent.objects.only("pk", "monitoring_type")
+        q = Agent.objects.filter_by_role(request.user).only("pk", "monitoring_type")
+        
     else:
         return notify_error("Something went wrong")
 
@@ -840,7 +851,7 @@ def bulk(request):
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated, RunBulkPerms])
+@permission_classes([IsAuthenticated, AgentPerms])
 def agent_maintenance(request):
 
     if request.data["type"] == "Client":

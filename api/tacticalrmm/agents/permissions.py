@@ -17,9 +17,12 @@ class AgentPerms(permissions.BasePermission):
                 r.user, view.kwargs["agent_id"]
             )
         else:
-            return _has_perm(r, "can_edit_agent") and _has_perm_on_agent(
-                r.user, view.kwargs["agent_id"]
-            )
+            if r.path == "/agents/maintenance/bulk/":
+                return _has_perm(r, "can_edit_agent")
+            else:
+                return _has_perm(r, "can_edit_agent") and _has_perm_on_agent(
+                    r.user, view.kwargs["agent_id"]
+                )
 
 
 class RecoverAgentPerms(permissions.BasePermission):

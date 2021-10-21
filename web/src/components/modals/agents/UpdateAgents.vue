@@ -54,12 +54,12 @@ export default {
   },
   methods: {
     selectAllAction() {
-      this.selectAll ? (this.group = this.agentPKs) : (this.group = []);
+      this.selectAll ? (this.group = this.agentIds) : (this.group = []);
     },
     getVersions() {
       this.$q.loading.show();
       this.$axios
-        .get("/agents/getagentversions/")
+        .get("/agents/versions/")
         .then(r => {
           this.versions = r.data.versions;
           this.version = r.data.versions[0];
@@ -71,9 +71,9 @@ export default {
         });
     },
     update() {
-      const data = { pks: this.group };
+      const data = { agent_ids: this.group };
       this.$axios
-        .post("/agents/updateagents/", data)
+        .post("/agents/update/", data)
         .then(r => {
           this.$emit("close");
           this.$emit("edit");
@@ -83,15 +83,15 @@ export default {
     },
   },
   computed: {
-    agentPKs() {
-      return this.agents.map(k => k.pk);
+    agentIds() {
+      return this.agents.map(k => k.agent_id);
     },
     agentOptions() {
       const options = [];
       for (let i of Object.values(this.agents)) {
         let opt = {};
         opt["label"] = `${i.hostname} (${i.client} > ${i.site})`;
-        opt["value"] = i.pk;
+        opt["value"] = i.agent_id;
         options.push(opt);
       }
       return options.sort((a, b) => a.label.localeCompare(b.label));

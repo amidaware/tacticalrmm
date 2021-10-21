@@ -245,21 +245,21 @@ class TestAgentViews(TacticalTestCase):
             _quantity=15,
         )
 
-        pks: list[int] = list(
-            Agent.objects.only("pk", "version").values_list("pk", flat=True)
+        agent_ids: list[str] = list(
+            Agent.objects.only("agent_id", "version").values_list("agent_id", flat=True)
         )
 
-        data = {"pks": pks}
-        expected: list[int] = [
-            i.pk
-            for i in Agent.objects.only("pk", "version")
+        data = {"agent_ids": agent_ids}
+        expected: list[str] = [
+            i.agent_id
+            for i in Agent.objects.only("agent_id", "version")
             if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
         ]
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
 
-        mock_task.assert_called_with(pks=expected)
+        mock_task.assert_called_with(agent_ids=expected)
 
         self.check_not_authenticated("post", url)
 
@@ -602,122 +602,6 @@ class TestAgentViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    """ @patch("winupdate.tasks.bulk_check_for_updates_task.delay")
-    @patch("scripts.tasks.handle_bulk_script_task.delay")
-    @patch("scripts.tasks.handle_bulk_command_task.delay")
-    @patch("agents.models.Agent.salt_batch_async")
-    def test_bulk_cmd_script(
-        self, salt_batch_async, bulk_command, bulk_script, mock_update
-    ):
-        url = "/agents/bulk/"
-
-        payload = {
-            "mode": "command",
-            "monType": "all",
-            "target": "agents",
-            "client": None,
-            "site": None,
-            "agentPKs": [
-                self.agent.pk,
-            ],
-            "cmd": "gpupdate /force",
-            "timeout": 300,
-            "shell": "cmd",
-        }
-
-        r = self.client.post(url, payload, format="json")
-        bulk_command.assert_called_with([self.agent.pk], "gpupdate /force", "cmd", 300)
-        self.assertEqual(r.status_code, 200)
-
-        payload = {
-            "mode": "command",
-            "monType": "servers",
-            "target": "agents",
-            "client": None,
-            "site": None,
-            "agentPKs": [],
-            "cmd": "gpupdate /force",
-            "timeout": 300,
-            "shell": "cmd",
-        }
-
-        r = self.client.post(url, payload, format="json")
-        self.assertEqual(r.status_code, 400)
-
-        payload = {
-            "mode": "command",
-            "monType": "workstations",
-            "target": "client",
-            "client": self.agent.client.id,
-            "site": None,
-            "agentPKs": [],
-            "cmd": "gpupdate /force",
-            "timeout": 300,
-            "shell": "cmd",
-        }
-
-        r = self.client.post(url, payload, format="json")
-        self.assertEqual(r.status_code, 200)
-        bulk_command.assert_called_with([self.agent.pk], "gpupdate /force", "cmd", 300)
-
-        payload = {
-            "mode": "command",
-            "monType": "all",
-            "target": "client",
-            "client": self.agent.client.id,
-            "site": self.agent.site.id,
-            "agentPKs": [
-                self.agent.pk,
-            ],
-            "cmd": "gpupdate /force",
-            "timeout": 300,
-            "shell": "cmd",
-        }
-
-        r = self.client.post(url, payload, format="json")
-        self.assertEqual(r.status_code, 200)
-        bulk_command.assert_called_with([self.agent.pk], "gpupdate /force", "cmd", 300)
-
-        payload = {
-            "mode": "scan",
-            "monType": "all",
-            "target": "agents",
-            "client": None,
-            "site": None,
-            "agentPKs": [
-                self.agent.pk,
-            ],
-        }
-        r = self.client.post(url, payload, format="json")
-        mock_update.assert_called_with(minions=[self.agent.salt_id])
-        self.assertEqual(r.status_code, 200)
-
-        payload = {
-            "mode": "install",
-            "monType": "all",
-            "target": "client",
-            "client": self.agent.client.id,
-            "site": None,
-            "agentPKs": [
-                self.agent.pk,
-            ],
-        }
-        salt_batch_async.return_value = "ok"
-        r = self.client.post(url, payload, format="json")
-        self.assertEqual(r.status_code, 200)
-
-        payload["target"] = "all"
-        r = self.client.post(url, payload, format="json")
-        self.assertEqual(r.status_code, 200)
-
-        payload["target"] = "asdasdsd"
-        r = self.client.post(url, payload, format="json")
-        self.assertEqual(r.status_code, 400)
-
-        # TODO mock the script
-
-        self.check_not_authenticated("post", url) """
-
     @patch("agents.models.Agent.nats_cmd")
     def test_recover_mesh(self, nats_cmd):
         url = f"{base_url}/{self.agent.agent_id}/meshcentral/recover/"
@@ -1029,37 +913,8 @@ class TestAgentViewsNew(TacticalTestCase):
         self.authenticate()
         self.setup_coresettings()
 
-    """ def test_agent_counts(self):
-        url = "/agents/agent_counts/"
-
-        # create some data
-        baker.make_recipe(
-            "agents.online_agent",
-            monitoring_type=cycle(["server", "workstation"]),
-            _quantity=6,
-        )
-        baker.make_recipe(
-            "agents.overdue_agent",
-            monitoring_type=cycle(["server", "workstation"]),
-            _quantity=6,
-        )
-
-        # returned data should be this
-        data = {
-            "total_server_count": 6,
-            "total_server_offline_count": 3,
-            "total_workstation_count": 6,
-            "total_workstation_offline_count": 3,
-        }
-
-        r = self.client.post(url, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, data)  # type: ignore
-
-        self.check_not_authenticated("post", url) """
-
     def test_agent_maintenance_mode(self):
-        url = f"{base_url}/maintenance/"
+        url = f"{base_url}/maintenance/bulk/"
 
         # setup data
         agent = baker.make_recipe("agents.agent")
@@ -1077,13 +932,6 @@ class TestAgentViewsNew(TacticalTestCase):
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertFalse(Agent.objects.get(pk=agent.pk).maintenance_mode)
-
-        # Test agent toggle maintenance mode
-        data = {"type": "Agent", "agent_id": agent.agent_id, "action": True}
-
-        r = self.client.post(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(Agent.objects.get(pk=agent.pk).maintenance_mode)
 
         # Test invalid payload
         data = {"type": "Invalid", "id": agent.id, "action": True}
@@ -1245,6 +1093,200 @@ class TestAgentPermissions(TacticalTestCase):
                 f"{base_url}/{unauthorized_agent.agent_id}/{test['action']}/",
             )
 
+    def test_agent_maintenance_permissions(self):
+        site = baker.make("clients.Site")
+        client = baker.make("clients.Client")
+        
+        site_data = {
+            "id": site.id,
+            "type": "Site",
+            "action": True
+        }
+
+        client_data = {
+            "id": client.id,
+            "type": "Client",
+            "action": True
+        }
+        
+        url = f"{base_url}/maintenance/bulk/"
+
+        # test superuser access
+        self.check_authorized_superuser("post", url, site_data)
+        self.check_authorized_superuser("post", url, client_data)
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+
+        # test user without role
+        self.check_not_authorized("post", url, site_data)
+        self.check_not_authorized("post", url, client_data)
+
+        # add user to role and test
+        user.role.can_edit_agent = True
+        user.role.save()
+
+        self.check_authorized("post", url, site_data)
+        self.check_authorized("post", url, client_data)
+
+        # limit user to client
+        user.role.can_view_clients.set([client])
+        self.check_not_authorized("post", url, site_data)
+        self.check_authorized("post", url, client_data) 
+
+        # also limit to site
+        user.role.can_view_sites.set([site])
+        self.check_authorized("post", url, site_data)
+        self.check_authorized("post", url, client_data) 
+
+    @patch("agents.tasks.send_agent_update_task.delay")
+    def test_agent_update_permissions(self, update_task):
+        agents = baker.make_recipe("agents.agent", _quantity=5)
+        other_agents = baker.make_recipe("agents.agent", _quantity=7)
+
+        url = f"{base_url}/update/"
+
+        data = {
+            "agent_ids": [agent.agent_id for agent in agents] + [agent.agent_id for agent in other_agents]
+        }
+
+        # test superuser access
+        self.check_authorized_superuser("post", url, data)
+        update_task.assert_called_with(agent_ids=data["agent_ids"])
+        update_task.reset_mock()
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)  
+
+        self.check_not_authorized("post", url, data)
+        update_task.assert_not_called()
+
+        user.role.can_update_agents = True  
+        user.role.save()
+
+        self.check_authorized("post", url, data)
+        update_task.assert_called_with(agent_ids=data["agent_ids"])
+        update_task.reset_mock()
+
+        # limit to client
+        user.role.can_view_clients.set([agents[0].client])
+        self.check_authorized("post", url, data)
+        update_task.assert_called_with(agent_ids=[agent.agent_id for agent in agents])
+        update_task.reset_mock()  
+
+        # add site
+        user.role.can_view_sites.set([other_agents[0].site])
+        self.check_authorized("post", url, data)
+        update_task.assert_called_with(agent_ids=data["agent_ids"])
+        update_task.reset_mock()
+
+        # remove client permissions
+        user.role.can_view_clients.clear()
+        self.check_authorized("post", url, data)
+        update_task.assert_called_with(agent_ids=[agent.agent_id for agent in other_agents])   
+
+    def test_get_agent_version_permissions(self):
+        agents = baker.make_recipe("agents.agent", _quantity=5)
+        other_agents = baker.make_recipe("agents.agent", _quantity=7)
+
+        url = f"{base_url}/versions/"
+
+        # test superuser access
+        response = self.check_authorized_superuser("get", url)
+        self.assertEqual(len(response.data["agents"]), 12)
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)  
+
+        self.check_not_authorized("get", url)
+
+        user.role.can_list_agents = True  
+        user.role.save()
+
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data["agents"]), 12)
+
+        # limit to client
+        user.role.can_view_clients.set([agents[0].client])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data["agents"]), 5) 
+
+        # add site
+        user.role.can_view_sites.set([other_agents[0].site])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data["agents"]), 12)
+
+        # remove client permissions
+        user.role.can_view_clients.clear()
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data["agents"]), 7)
+
+    def test_agent_bulk_permissions(self):
+        self.assertTrue(False)
+
+    def test_generating_agent_installer_permissions(self):
+
+        client = baker.make("clients.Client")
+        client_site = baker.make("clients.Site", client=client)
+        site = baker.make("clients.Site")
+
+        url = f"{base_url}/installer/"
+
+        # test superuser access
+        self.check_authorized_superuser("post", url)
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)  
+
+        self.check_not_authorized("post", url)
+
+        user.role.can_install_agents = True
+        user.role.save()   
+
+        self.check_authorized("post", url)  
+
+        # limit user to client
+        user.role.can_view_clients.set([client])
+
+        data = {
+            "client": client.id,
+            "site": client_site.id,
+            "version": settings.LATEST_AGENT_VER,
+            "arch": "64"
+        }
+
+        self.check_authorized("post", url, data) 
+
+        data = {
+            "client": site.client.id,
+            "site": site.id,
+            "version": settings.LATEST_AGENT_VER,
+            "arch": "64"
+        }
+
+        self.check_not_authorized("post", url, data) 
+
+        # assign site
+        user.role.can_view_clients.clear()
+        user.role.can_view_sites.set([site])
+        data = {
+            "client": site.client.id,
+            "site": site.id,
+            "version": settings.LATEST_AGENT_VER,
+            "arch": "64"
+        }
+
+        self.check_authorized("post", url, data)
+
+        data = {
+            "client": client.id,
+            "site": client_site.id,
+            "version": settings.LATEST_AGENT_VER,
+            "arch": "64"
+        }
+
+        self.check_not_authorized("post", url, data)
+
     def test_agent_notes_permissions(self):
 
         agent = baker.make_recipe("agents.agent")
@@ -1392,7 +1434,7 @@ class TestAgentTasks(TacticalTestCase):
             operating_system="Error getting OS",
             version=settings.LATEST_AGENT_VER,
         )
-        r = agent_update(agent_noarch.pk)
+        r = agent_update(agent_noarch.agent_id)
         self.assertEqual(r, "noarch")
 
         agent_130 = baker.make_recipe(
@@ -1400,7 +1442,7 @@ class TestAgentTasks(TacticalTestCase):
             operating_system="Windows 10 Pro, 64 bit (build 19041.450)",
             version="1.3.0",
         )
-        r = agent_update(agent_130.pk)
+        r = agent_update(agent_130.agent_id)
         self.assertEqual(r, "not supported")
 
         # test __without__ code signing
@@ -1410,9 +1452,9 @@ class TestAgentTasks(TacticalTestCase):
             version="1.4.14",
         )
 
-        r = agent_update(agent64_nosign.pk)
+        r = agent_update(agent64_nosign.agent_id)
         self.assertEqual(r, "created")
-        action = PendingAction.objects.get(agent__pk=agent64_nosign.pk)
+        action = PendingAction.objects.get(agent__agent_id=agent64_nosign.agent_id)
         self.assertEqual(action.action_type, "agentupdate")
         self.assertEqual(action.status, "pending")
         self.assertEqual(

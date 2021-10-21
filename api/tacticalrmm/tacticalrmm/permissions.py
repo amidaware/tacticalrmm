@@ -11,7 +11,6 @@ def _has_perm(request, perm):
     elif not request.user.role:
         return False
 
-
     return request.user.role and getattr(request.user.role, perm)
 
 
@@ -33,13 +32,13 @@ def _has_perm_on_agent(user, agent_id):
     if not can_view_clients and not can_view_sites:
         return True
 
-    if can_view_clients and agent.client in can_view_clients:
+    elif can_view_clients and agent.client in can_view_clients:
         return True
 
-    if can_view_sites and agent.site in can_view_sites:
+    elif can_view_sites and agent.site in can_view_sites:
         return True
-
-    return False
+    else:
+        return False
 
 def _has_perm_on_client(user, client_id: int):
     from clients.models import Client
@@ -59,8 +58,8 @@ def _has_perm_on_client(user, client_id: int):
 
     elif can_view_clients and client in can_view_clients:
         return True
-
-    return False
+    else:
+        return False
 
 def _has_perm_on_site(user, site_id: int):
     from clients.models import Site
@@ -79,10 +78,11 @@ def _has_perm_on_site(user, site_id: int):
     if not can_view_clients and not can_view_sites:
         return True
 
-    elif can_view_clients and site.client in can_view_clients:
-        return True
-
     elif can_view_sites and site in can_view_sites:
         return True
 
-    return False
+    elif can_view_clients and site.client in can_view_clients:
+        return True
+
+    else:
+        return False

@@ -124,19 +124,6 @@ class Client(BaseAuditModel):
 
         return data
 
-    def filter_sites_by_perm(self, user):
-        role = user.role
-        if user.is_superuser or (role and getattr(role, "is_superuser")):
-            return self.sites.all()
-        elif not role:
-            return Client.objects.none()
-
-        elif role and not role.can_view_sites:
-            return self.sites.all()
-        else:
-            sites_list = role.can_view_sites.all().values_list("pk", flat=True)
-            return self.sites.filter(pk__in=sites_list)
-
     @staticmethod
     def serialize(client):
         from .serializers import ClientAuditSerializer

@@ -99,7 +99,7 @@ class ClientSerializer(ModelSerializer):
 
     def get_sites(self, obj):
         return SiteSerializer(
-            obj.filter_sites_by_perm(user=self.context["user"]), many=True
+            obj.sites.filter_by_role(self.context["user"]), many=True
         ).data
 
     class Meta:

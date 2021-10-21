@@ -1185,6 +1185,10 @@ class TestAgentPermissions(TacticalTestCase):
             self.check_not_authorized(method, f"{base_url}/{agents[9].agent_id}/")
             self.check_authorized(method, f"{base_url}/{agents[0].agent_id}/")
 
+        # make sure superusers work
+        for method in methods:
+            self.check_authorized_superuser(method, f"{base_url}/{agents[9].agent_id}/")
+
     @patch("time.sleep")
     @patch("agents.models.Agent.nats_cmd", return_value="ok")
     def test_agent_actions_permissions(self, nats_cmd, sleep):

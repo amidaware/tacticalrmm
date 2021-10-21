@@ -1,5 +1,6 @@
 import uuid
 from unittest.mock import patch
+from itertools import cycle
 
 from model_bakery import baker
 from rest_framework.serializers import ValidationError
@@ -451,19 +452,249 @@ class TestClientPermissions(TacticalTestCase):
         self.setup_coresettings()
 
     def test_get_clients_permissions(self):
-        pass
+        # create user with empty role
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
 
-    def test_add_clients_permissions(self):
-        pass
+        url = f"{base_url}/"
 
-    def test_get_edit_delete_clients_permissions(self):
-        pass
+        clients = baker.make("clients.Client", _quantity=5)
+
+        # test getting all clients
+
+        # user with empty role should fail
+        self.check_not_authorized("get", url)
+
+        # add can_list_agents roles and should succeed
+        user.role.can_list_clients = True
+        user.role.save()
+
+        # all agents should be returned
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 5)
+
+        # limit user to specific client. only 1 client should be returned
+        user.role.can_view_clients.set([clients[3]])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 1)
+
+        # 2 should be returned now
+        user.role.can_view_clients.set([clients[0], clients[1]])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 2)
+
+        # limit to a specific site. The site shouldn't be in client returned sites
+        sites = baker.make("clients.Site", client=clients[4], _quantity=3)
+        baker.make("clients.Site", client=clients[0], _quantity=4)
+        baker.make("clients.Site", client=clients[1], _quantity=5)
+
+        user.role.can_view_sites.set([sites[0]])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 3)
+        for client in response.data:
+            if client["id"] == clients[0].id:
+                self.assertEqual(len(client["sites"]), 4)
+            elif client["id"] == clients[1].id:
+                self.assertEqual(len(client["sites"]), 5)
+            elif client["id"] == clients[4].id:
+                self.assertEqual(len(client["sites"]), 1)  
+
+        # make sure superusers work
+        self.check_authorized_superuser("get", url)
+
+    @patch("clients.models.Client.save")
+    @patch("clients.models.Client.delete")
+    def test_add_clients_permissions(self, save, delete):
+
+        data = {
+            "client": {
+                "name": "Client Name"
+            },
+            "site": {
+                "name": "Site Name"
+            }
+        }
+
+        url = f"{base_url}/"
+
+        # test superuser access
+        self.check_authorized_superuser("post", url, data)
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+
+        # test user without role
+        self.check_not_authorized("post", url, data)
+
+        # add user to role and test
+        user.role.can_manage_clients = True
+        user.role.save()
+
+        self.check_authorized("post", url, data)
+
+    @patch("clients.models.Client.delete")
+    def test_get_edit_delete_clients_permissions(self, delete):
+        # create user with empty role
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+
+        client = baker.make("clients.Client")
+        unauthorized_client = baker.make("clients.Client")
+
+        methods = ["get", "put", "delete"]
+        url = f"{base_url}/{client.id}/"
+
+        # test user with no roles
+        for method in methods:
+            self.check_not_authorized(method, url)
+
+        # add correct roles for view edit and delete
+        user.role.can_list_clients = True
+        user.role.can_manage_clients = True
+        user.role.save()
+
+        for method in methods:
+            self.check_authorized(method, url)
+
+        # test limiting users to clients and sites
+
+        # limit to client
+        user.role.can_view_clients.set([client])
+
+        for method in methods:
+            self.check_not_authorized(method, f"{base_url}/{unauthorized_client.id}/")
+            self.check_authorized(method, url)
+
+        # make sure superusers work
+        for method in methods:
+            self.check_authorized_superuser(method, f"{base_url}/{unauthorized_client.id}/")
 
     def test_get_sites_permissions(self):
-        pass
+        # create user with empty role
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
 
-    def test_add_sites_permissions(self):
-        pass
+        url = f"{base_url}/sites/"
 
-    def test_get_edit_delete_sites_permissions(self):
-        pass
+        clients = baker.make("clients.Client", _quantity=3)
+        sites = baker.make("clients.Site", client=cycle(clients), _quantity=10)
+
+        # test getting all sites
+
+        # user with empty role should fail
+        self.check_not_authorized("get", url)
+
+        # add can_list_sites roles and should succeed
+        user.role.can_list_sites = True
+        user.role.save()
+
+        # all sites should be returned
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 10)
+
+        # limit user to specific site. only 1 site should be returned
+        user.role.can_view_sites.set([sites[3]])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 1)
+
+        # 2 should be returned now
+        user.role.can_view_sites.set([sites[0], sites[1]])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 2)
+
+        # check if limiting user to client works
+        user.role.can_view_sites.clear()
+        user.role.can_view_clients.set([clients[0]])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 4)
+
+        # add a site to see if the results still work
+        user.role.can_view_sites.set([sites[1], sites[0]])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 5)
+
+        # make sure superusers work
+        self.check_authorized_superuser("get", url)
+
+    @patch("clients.models.Site.save")
+    @patch("clients.models.Site.delete")
+    def test_add_sites_permissions(self, delete, save):
+        client = baker.make("clients.Client")
+        unauthorized_client = baker.make("clients.Client")
+        data = {
+            "client": client.id,
+            "name": "Site Name"
+        }
+
+        url = f"{base_url}/sites/"
+
+        # test superuser access
+        self.check_authorized_superuser("post", url, data)
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+
+        # test user without role
+        self.check_not_authorized("post", url, data)
+
+        # add user to role and test
+        user.role.can_manage_sites = True
+        user.role.save()
+
+        self.check_authorized("post", url, data)
+
+        # limit to client and test
+        user.role.can_view_clients.set([client])
+        self.check_authorized("post", url, data)
+
+        # test adding to unauthorized client
+        data = {
+            "client": unauthorized_client.id,
+            "name": "Site Name"
+        }
+        self.check_not_authorized("post", url, data)
+
+    @patch("clients.models.Site.delete")
+    def test_get_edit_delete_sites_permissions(self, delete):
+        # create user with empty role
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+
+        site = baker.make("clients.Site")
+        unauthorized_site = baker.make("clients.Site")
+
+        methods = ["get", "put", "delete"]
+        url = f"{base_url}/sites/{site.id}/"
+
+        # test user with no roles
+        for method in methods:
+            self.check_not_authorized(method, url)
+
+        # add correct roles for view edit and delete
+        user.role.can_list_sites = True
+        user.role.can_manage_sites = True
+        user.role.save()
+
+        for method in methods:
+            self.check_authorized(method, url)
+
+        # test limiting users to clients and sites
+
+        # limit to site
+        user.role.can_view_sites.set([site])
+
+        for method in methods:
+            self.check_not_authorized(method, f"{base_url}/{unauthorized_site.id}/")
+            self.check_authorized(method, url)
+
+        # test limit to only client
+        user.role.can_view_sites.clear()
+        user.role.can_view_clients.set([site.client])
+
+        for method in methods:
+            self.check_not_authorized(method, f"{base_url}/{unauthorized_site.id}/")
+            self.check_authorized(method, url)
+
+        # make sure superusers work
+        for method in methods:
+            self.check_authorized_superuser(method, f"{base_url}/{unauthorized_site.id}/")

@@ -55,7 +55,7 @@ export async function runScript(agent_id, payload) {
 }
 
 export async function runBulkAction(payload) {
-  const { data } = await axios.post(`${baseUrl}/bulk/`, payload)
+  const { data } = await axios.post(`${baseUrl}/actions/bulk/`, payload)
   return data
 }
 

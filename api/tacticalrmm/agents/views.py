@@ -789,7 +789,7 @@ def bulk(request):
         q = Agent.objects.filter_by_role(request.user).filter(site_id=request.data["site"])
 
     elif request.data["target"] == "agents":
-        q = Agent.objects.filter_by_role(request.user).filter(pk__in=request.data["agents"])
+        q = Agent.objects.filter_by_role(request.user).filter(agent_id__in=request.data["agents"])
 
     elif request.data["target"] == "all":
         q = Agent.objects.filter_by_role(request.user).only("pk", "monitoring_type")

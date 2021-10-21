@@ -102,7 +102,7 @@
             label="Command"
             stack-label
             :placeholder="
-              shell === 'cmd'
+              state.shell === 'cmd'
                 ? 'rmdir /S /Q C:\\Windows\\System32'
                 : 'Remove-Item -Recurse -Force C:\\Windows\\System32'
             "
@@ -242,6 +242,7 @@ export default {
       try {
         const data = await runBulkAction(state.value);
         notifySuccess(data);
+        onDialogHide();
       } catch (e) {}
 
       loading.value = false;

@@ -112,7 +112,7 @@ export default {
   methods: {
     onSubmit() {
       this.$axios
-        .put(`alerts/alerttemplates/${this.template.id}/`, this.localTemplate)
+        .put(`alerts/templates/${this.template.id}/`, this.localTemplate)
         .then(r => {
           this.$q.loading.hide();
           this.onOk();

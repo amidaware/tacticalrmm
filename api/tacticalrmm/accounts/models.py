@@ -104,6 +104,7 @@ class Role(BaseAuditModel):
     can_edit_core_settings = models.BooleanField(default=False)
     can_do_server_maint = models.BooleanField(default=False)
     can_code_sign = models.BooleanField(default=False)
+    can_run_urlactions = models.BooleanField(default=False)
 
     # checks
     can_list_checks = models.BooleanField(default=False)
@@ -146,6 +147,8 @@ class Role(BaseAuditModel):
     # alerts
     can_list_alerts = models.BooleanField(default=False)
     can_manage_alerts = models.BooleanField(default=False)
+    can_list_alerttemplates = models.BooleanField(default=False)
+    can_manage_alerttemplates = models.BooleanField(default=False)
 
     # win services
     can_manage_winsvcs = models.BooleanField(default=False)

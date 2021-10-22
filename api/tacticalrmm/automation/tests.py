@@ -8,11 +8,9 @@ from tacticalrmm.test import TacticalTestCase
 from winupdate.models import WinUpdatePolicy
 
 from .serializers import (
-    AutoTasksFieldSerializer,
     PolicyCheckStatusSerializer,
     PolicyOverviewSerializer,
     PolicySerializer,
-    PolicyTableSerializer,
     PolicyTaskStatusSerializer,
 )
 
@@ -342,7 +340,7 @@ class TestPolicyViews(TacticalTestCase):
         self.check_not_authenticated("put", url)
 
     def test_reset_patch_policy(self):
-        url = "/automation/winupdatepolicy/reset/"
+        url = "/automation/patchpolicy/reset/"
 
         inherit_fields = {
             "critical": "inherit",
@@ -1157,4 +1155,3 @@ class TestAutomationPermission(TacticalTestCase):
 
     def test_patch_policy_reset_permissions(self):
         self.assertTrue(False)
-        

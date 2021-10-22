@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from tacticalrmm.utils import notify_error
 
 from .models import Alert, AlertTemplate
-from .permissions import ManageAlertsPerms
+from .permissions import AlertPerms, AlertTemplatePerms
 from .serializers import (
     AlertSerializer,
     AlertTemplateRelationSerializer,
@@ -20,7 +20,7 @@ from .tasks import cache_agents_alert_template
 
 
 class GetAddAlerts(APIView):
-    permission_classes = [IsAuthenticated, ManageAlertsPerms]
+    permission_classes = [IsAuthenticated, AlertPerms]
 
     def patch(self, request):
 
@@ -113,7 +113,7 @@ class GetAddAlerts(APIView):
 
 
 class GetUpdateDeleteAlert(APIView):
-    permission_classes = [IsAuthenticated, ManageAlertsPerms]
+    permission_classes = [IsAuthenticated, AlertPerms]
 
     def get(self, request, pk):
         alert = get_object_or_404(Alert, pk=pk)
@@ -169,7 +169,7 @@ class GetUpdateDeleteAlert(APIView):
 
 
 class BulkAlerts(APIView):
-    permission_classes = [IsAuthenticated, ManageAlertsPerms]
+    permission_classes = [IsAuthenticated, AlertPerms]
 
     def post(self, request):
         if request.data["bulk_action"] == "resolve":
@@ -193,7 +193,7 @@ class BulkAlerts(APIView):
 
 
 class GetAddAlertTemplates(APIView):
-    permission_classes = [IsAuthenticated, ManageAlertsPerms]
+    permission_classes = [IsAuthenticated, AlertTemplatePerms]
 
     def get(self, request):
         alert_templates = AlertTemplate.objects.all()
@@ -212,7 +212,7 @@ class GetAddAlertTemplates(APIView):
 
 
 class GetUpdateDeleteAlertTemplate(APIView):
-    permission_classes = [IsAuthenticated, ManageAlertsPerms]
+    permission_classes = [IsAuthenticated, AlertTemplatePerms]
 
     def get(self, request, pk):
         alert_template = get_object_or_404(AlertTemplate, pk=pk)
@@ -243,6 +243,8 @@ class GetUpdateDeleteAlertTemplate(APIView):
 
 
 class RelatedAlertTemplate(APIView):
+    permission_classes = [IsAuthenticated, AlertTemplatePerms]
+    
     def get(self, request, pk):
         alert_template = get_object_or_404(AlertTemplate, pk=pk)
         return Response(AlertTemplateRelationSerializer(alert_template).data)

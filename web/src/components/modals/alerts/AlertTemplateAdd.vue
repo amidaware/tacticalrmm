@@ -98,7 +98,7 @@ export default {
     getAlertTemplates() {
       this.$q.loading.show();
       this.$axios
-        .get("/alerts/alerttemplates/")
+        .get("/alerts/templates/")
         .then(r => {
           this.options = r.data.map(template => ({
             label: template.name,

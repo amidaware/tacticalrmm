@@ -216,7 +216,7 @@ export default {
     getTemplates() {
       this.$q.loading.show();
       this.$axios
-        .get("alerts/alerttemplates/")
+        .get("alerts/templates/")
         .then(r => {
           this.templates = r.data;
           this.$q.loading.hide();
@@ -242,7 +242,7 @@ export default {
         .onOk(() => {
           this.$q.loading.show();
           this.$axios
-            .delete(`alerts/alerttemplates/${template.id}/`)
+            .delete(`alerts/templates/${template.id}/`)
             .then(r => {
               this.getTemplates();
               this.$q.loading.hide();
@@ -304,7 +304,7 @@ export default {
       };
 
       this.$axios
-        .put(`alerts/alerttemplates/${template.id}/`, data)
+        .put(`alerts/templates/${template.id}/`, data)
         .then(r => {
           this.notifySuccess(text);
         })

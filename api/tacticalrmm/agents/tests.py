@@ -803,6 +803,15 @@ class TestAgentViews(TacticalTestCase):
 
         self.assertEqual(Note.objects.get(agent=self.agent).note, "ok")
 
+    def test_bulk_command(self):
+        self.assertTrue(False)
+
+    def test_bulk_script(self):
+        self.assertTrue(False)
+
+    def test_bulk_updates(self):
+        self.assertTrue(False)
+        
     def test_get_notes(self):
         url = f"{base_url}/notes/"
 

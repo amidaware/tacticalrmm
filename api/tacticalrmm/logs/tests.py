@@ -337,3 +337,14 @@ class TestLogTasks(TacticalTestCase):
         prune_audit_log(30)
 
         self.assertEqual(AuditLog.objects.count(), 6)
+
+class TestLogPermissions(TacticalTestCase):
+    def setUp(self):
+        self.client_setup()
+        self.setup_coresettings()
+
+    def test_auditlog_permissions(self):
+        self.assertTrue(False)
+
+    def test_debuglog_permissions(self):
+        self.assertTrue(False)

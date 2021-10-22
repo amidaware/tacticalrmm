@@ -275,7 +275,7 @@ export default {
       if (this.severityFilter.length > 0) data["severityFilter"] = this.severityFilter;
 
       this.$axios
-        .patch("/alerts/alerts/", data)
+        .patch("/alerts/", data)
         .then(r => {
           this.$q.loading.hide();
           this.alerts = Object.freeze(r.data);
@@ -306,7 +306,7 @@ export default {
           };
 
           this.$axios
-            .put(`alerts/alerts/${alert.id}/`, data)
+            .put(`alerts/${alert.id}/`, data)
             .then(r => {
               this.search();
               this.$q.loading.hide();
@@ -326,7 +326,7 @@ export default {
       };
 
       this.$axios
-        .put(`alerts/alerts/${alert.id}/`, data)
+        .put(`alerts/${alert.id}/`, data)
         .then(r => {
           this.search();
           this.$q.loading.hide();
@@ -345,7 +345,7 @@ export default {
       };
 
       this.$axios
-        .put(`alerts/alerts/${alert.id}/`, data)
+        .put(`alerts/${alert.id}/`, data)
         .then(r => {
           this.search();
           this.$q.loading.hide();

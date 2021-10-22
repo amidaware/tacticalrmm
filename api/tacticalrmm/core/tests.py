@@ -407,7 +407,7 @@ class TestCoreTasks(TacticalTestCase):
         r = self.client.patch(url, {"agent": 500, "action": 500})
         self.assertEqual(r.status_code, 404)
 
-        data = {"agent": agent.id, "action": action.id}  # type: ignore
+        data = {"agent": agent.agent_id, "action": action.id}  # type: ignore
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
 
@@ -417,3 +417,11 @@ class TestCoreTasks(TacticalTestCase):
         )
 
         self.check_not_authenticated("patch", url)
+
+class TestCorePermissions(TacticalTestCase):
+    def setUp(self):
+        self.client_setup()
+        self.setup_coresettings()
+
+    def test_run_url_action_permissions(self):
+        self.assertTrue(False)

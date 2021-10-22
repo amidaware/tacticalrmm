@@ -1,14 +1,14 @@
 from agents.models import Agent
-from agents.serializers import AgentHostnameSerializer
 from autotasks.models import AutomatedTask
 from checks.models import Check
 from clients.models import Client
-from clients.serializers import ClientSerializer, SiteSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
 from tacticalrmm.utils import notify_error
+from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_site
 from winupdate.models import WinUpdatePolicy
 from winupdate.serializers import WinUpdatePolicySerializer
 
@@ -178,20 +178,32 @@ class UpdatePatchPolicy(APIView):
 
         return Response("ok")
 
-    # bulk reset agent patch policy
-    def patch(self, request):
+    # delete patch policy
+    def delete(self, request, patchpolicy):
+        get_object_or_404(WinUpdatePolicy, pk=patchpolicy).delete()
 
-        agents = None
+        return Response("ok")
+
+class ResetPatchPolicy(APIView):
+    # bulk reset agent patch policy
+    def post(self, request):
+
         if "client" in request.data:
-            agents = Agent.objects.prefetch_related("winupdatepolicy").filter(
+            if not _has_perm_on_client(request.user, request.data["client"]):
+                raise PermissionDenied()
+
+            agents = Agent.objects.filter_by_role(request.user).prefetch_related("winupdatepolicy").filter(
                 site__client_id=request.data["client"]
             )
         elif "site" in request.data:
-            agents = Agent.objects.prefetch_related("winupdatepolicy").filter(
+            if not _has_perm_on_site(request.user, request.data["site"]):
+                raise PermissionDenied()
+
+            agents = Agent.objects.filter_by_role(request.user).prefetch_related("winupdatepolicy").filter(
                 site_id=request.data["site"]
             )
         else:
-            agents = Agent.objects.prefetch_related("winupdatepolicy").only("pk")
+            agents = Agent.objects.filter_by_role(request.user).prefetch_related("winupdatepolicy").only("pk")
 
         for agent in agents:
             winupdatepolicy = agent.winupdatepolicy.get()
@@ -216,10 +228,4 @@ class UpdatePatchPolicy(APIView):
                 ]
             )
 
-        return Response("ok")
-
-    # delete patch policy
-    def delete(self, request, patchpolicy):
-        get_object_or_404(WinUpdatePolicy, pk=patchpolicy).delete()
-
-        return Response("ok")
+        return Response("The patch policy on the affected agents has been reset.")

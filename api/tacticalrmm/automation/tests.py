@@ -1148,3 +1148,13 @@ class TestPolicyTasks(TacticalTestCase):
         # should get policies from agent policy
         self.assertTrue(agent.autotasks.all())
         self.assertTrue(agent.agentchecks.all())
+
+
+class TestAutomationPermission(TacticalTestCase):
+    def setUp(self):
+        self.client_setup()
+        self.setup_coresettings()
+
+    def test_patch_policy_reset_permissions(self):
+        self.assertTrue(False)
+        

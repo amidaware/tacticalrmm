@@ -88,7 +88,7 @@
           <q-menu context-menu>
             <q-list dense style="min-width: 200px">
               <!-- edit agent -->
-              <q-item clickable v-close-popup @click="showEditAgentModal = true">
+              <q-item clickable v-close-popup @click="showEditAgent(props.row.agent_id)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-edit" />
                 </q-item-section>
@@ -384,10 +384,6 @@
         </q-tr>
       </template>
     </q-table>
-    <!-- edit agent modal -->
-    <q-dialog v-model="showEditAgentModal">
-      <EditAgent @close="showEditAgentModal = false" @edit="agentEdited" />
-    </q-dialog>
     <!-- pending actions modal -->
     <q-dialog v-model="showPendingActions" @hide="closePendingActionsModal">
       <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" @edit="agentEdited" />
@@ -416,7 +412,6 @@ export default {
   props: ["frame", "columns", "userName", "search", "visibleColumns"],
   emits: ["edit"],
   components: {
-    EditAgent,
     PendingActions,
     AgentRecovery,
   },
@@ -428,7 +423,6 @@ export default {
         sortBy: "hostname",
         descending: false,
       },
-      showEditAgentModal: false,
       showAgentRecovery: false,
       showPendingActions: false,
       pendingActionAgentPk: null,
@@ -497,7 +491,7 @@ export default {
         this.$q.loading.hide();
         switch (this.agentDblClickAction) {
           case "editagent":
-            this.showEditAgentModal = true;
+            this.showEditAgent(agent_id);
             break;
           case "takecontrol":
             this.takeControl(agent.agent_id);
@@ -783,6 +777,16 @@ export default {
           agent: agent,
         },
       });
+    },
+    showEditAgent(agent_id) {
+      this.$q
+        .dialog({
+          component: EditAgent,
+          componentProps: {
+            agent_id: agent_id,
+          },
+        })
+        .onOk(() => this.$emit("edit"));
     },
   },
   computed: {

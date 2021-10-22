@@ -271,7 +271,7 @@
             }}</span>
           </q-td>
           <q-td>{{ props.row.last_run || "Never" }}</q-td>
-          <q-td v-if="props.row.assigned_task !== null && props.row.assigned_task.length > 1"
+          <q-td v-if="!!props.row.assigned_task && props.row.assigned_task.length > 1"
             >{{ props.row.assigned_task.length }} Tasks</q-td
           >
           <q-td v-else-if="props.row.assigned_task">{{ props.row.assigned_task.name }}</q-td>

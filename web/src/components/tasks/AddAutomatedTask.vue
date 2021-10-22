@@ -252,6 +252,7 @@ export default {
     const loading = ref(false);
 
     async function submit() {
+      console.log(task.value);
       if (!step1Done.value || !step2Done.value) {
         notifyError("Some steps are incomplete");
         return;
@@ -289,7 +290,7 @@ export default {
     const step1Done = computed(() => {
       return (
         (!!script.value && !!task.value.name && !!defaultTimeout.value && !collector.value) ||
-        (!!script.value && !!task.value.name && !!defaultTimeout.value && collector.value && task.value.custom_field)
+        (!!script.value && !!task.value.name && !!defaultTimeout.value && collector.value && !!task.value.custom_field)
       );
     });
 

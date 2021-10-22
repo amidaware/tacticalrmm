@@ -154,8 +154,7 @@
                 >See Status</span
               >
             </q-td>
-            <q-td v-if="props.row.assigned_check">{{ props.row.assigned_check.readable_desc }}</q-td>
-            <q-td v-else></q-td>
+            <q-td>{{ props.row.check_name }}</q-td>
           </q-tr>
         </template>
       </q-table>
@@ -200,9 +199,9 @@ export default {
           sortable: true,
         },
         {
-          name: "assignedcheck",
+          name: "check_name",
           label: "Assigned Check",
-          field: "assigned_check",
+          field: "check_name",
           align: "left",
           sortable: true,
         },

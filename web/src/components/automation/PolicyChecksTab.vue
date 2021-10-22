@@ -161,10 +161,10 @@
                 >See Status</span
               >
             </q-td>
-            <q-td v-if="!!props.row.assignedtask && props.row.assignedtask.length === 1">{{
-              props.row.assignedtask[0].name
-            }}</q-td>
-            <q-td v-else-if="!!props.row.assignedtask">{{ props.row.assignedtask.length }} Tasks</q-td>
+            <q-td v-if="!!props.row.assigned_task && props.row.assigned_task.length > 1"
+              >{{ props.row.assigned_task.length }} Tasks</q-td
+            >
+            <q-td v-else-if="!!props.row.assigned_task">{{ props.row.assigned_task.name }}</q-td>
             <q-td v-else></q-td>
           </q-tr>
         </template>

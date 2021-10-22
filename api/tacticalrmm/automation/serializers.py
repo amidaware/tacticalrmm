@@ -51,7 +51,7 @@ class PolicyRelatedSerializer(ModelSerializer):
     agents = SerializerMethodField()
 
     def get_agents(self, policy):
-        return AgentHostnameSerializer(policy.related_agents().filter_by_role(self.context["user"]).only("agent_id", "hostname"), many=True).data
+        return AgentHostnameSerializer(policy.agents.filter_by_role(self.context["user"]).only("agent_id", "hostname"), many=True).data
 
     def get_workstation_clients(self, policy):
         return ClientMinimumSerializer(policy.workstation_clients.filter_by_role(self.context["user"]), many=True).data
@@ -91,17 +91,6 @@ class PolicyTaskStatusSerializer(ModelSerializer):
     class Meta:
         model = AutomatedTask
         fields = "__all__"
-
-
-class AutoTasksFieldSerializer(ModelSerializer):
-    assigned_check = CheckSerializer(read_only=True)
-    script = ReadOnlyField(source="script.id")
-    custom_field = ReadOnlyField(source="custom_field.id")
-
-    class Meta:
-        model = AutomatedTask
-        fields = "__all__"
-        depth = 1
 
 
 class PolicyAuditSerializer(ModelSerializer):

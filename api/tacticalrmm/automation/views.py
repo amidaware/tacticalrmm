@@ -15,7 +15,6 @@ from winupdate.serializers import WinUpdatePolicySerializer
 from .models import Policy
 from .permissions import AutomationPolicyPerms
 from .serializers import (
-    AutoTasksFieldSerializer,
     PolicyCheckStatusSerializer,
     PolicyRelatedSerializer,
     PolicyOverviewSerializer,
@@ -102,19 +101,14 @@ class PolicySync(APIView):
 
 
 class PolicyAutoTask(APIView):
-    permission_classes = [IsAuthenticated, AutomationPolicyPerms]
-    # tasks associated with policy
-    def get(self, request, pk):
-        tasks = AutomatedTask.objects.filter(policy=pk)
-        return Response(AutoTasksFieldSerializer(tasks, many=True).data)
 
     # get status of all tasks
-    def patch(self, request, task):
+    def get(self, request, task):
         tasks = AutomatedTask.objects.filter(parent_task=task)
         return Response(PolicyTaskStatusSerializer(tasks, many=True).data)
 
     # bulk run win tasks associated with policy
-    def put(self, request, task):
+    def post(self, request, task):
         from .tasks import run_win_policy_autotasks_task
 
         run_win_policy_autotasks_task.delay(task=task)
@@ -124,7 +118,7 @@ class PolicyAutoTask(APIView):
 class PolicyCheck(APIView):
     permission_classes = [IsAuthenticated, AutomationPolicyPerms]
 
-    def patch(self, request, check):
+    def get(self, request, check):
         checks = Check.objects.filter(parent_check=check)
         return Response(PolicyCheckStatusSerializer(checks, many=True).data)
 
@@ -167,8 +161,8 @@ class UpdatePatchPolicy(APIView):
         return Response("ok")
 
     # update patch policy
-    def put(self, request, patchpolicy):
-        policy = get_object_or_404(WinUpdatePolicy, pk=patchpolicy)
+    def put(self, request, pk):
+        policy = get_object_or_404(WinUpdatePolicy, pk=pk)
 
         serializer = WinUpdatePolicySerializer(
             instance=policy, data=request.data, partial=True
@@ -179,8 +173,8 @@ class UpdatePatchPolicy(APIView):
         return Response("ok")
 
     # delete patch policy
-    def delete(self, request, patchpolicy):
-        get_object_or_404(WinUpdatePolicy, pk=patchpolicy).delete()
+    def delete(self, request, pk):
+        get_object_or_404(WinUpdatePolicy, pk=pk).delete()
 
         return Response("ok")
 

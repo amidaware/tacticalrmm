@@ -240,7 +240,7 @@ export default {
         // editing patch policy
         if (this.editing) {
           this.$axios
-            .put(`/automation/winupdatepolicy/${this.winupdatepolicy.id}/`, this.winupdatepolicy)
+            .put(`/automation/patchpolicy/${this.winupdatepolicy.id}/`, this.winupdatepolicy)
             .then(response => {
               this.$q.loading.hide();
               this.$emit("close");
@@ -252,7 +252,7 @@ export default {
         } else {
           // adding patch policy
           this.$axios
-            .post("/automation/winupdatepolicy/", this.winupdatepolicy)
+            .post("/automation/patchpolicy/", this.winupdatepolicy)
             .then(response => {
               this.$q.loading.hide();
               this.$emit("close");
@@ -274,7 +274,7 @@ export default {
         .onOk(() => {
           this.$q.loading.show();
           this.$axios
-            .delete(`/automation/winupdatepolicy/${policy.id}/`)
+            .delete(`/automation/patchpolicy/${policy.id}/`)
             .then(r => {
               this.$q.loading.hide();
               this.$emit("close");

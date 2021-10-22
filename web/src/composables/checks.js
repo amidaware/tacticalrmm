@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue"
 import { updateCheck, saveCheck } from "@/api/checks"
 import { fetchAgentChecks } from "@/api/agents";
-//import { fetchPolicyChecks } from "@/api/automation";
+import { fetchPolicyChecks } from "@/api/automation";
 import { formatCheckOptions } from "@/utils/format";
 import { fetchAgent } from "@/api/agents"
 import { isValidThreshold } from "@/utils/validation";

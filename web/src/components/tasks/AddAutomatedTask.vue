@@ -184,7 +184,6 @@
 <script>
 // composition imports
 import { ref, computed, watch, onMounted } from "vue";
-import { useStore } from "vuex";
 import { useDialogPluginComponent } from "quasar";
 import { saveTask } from "@/api/tasks";
 import { useScriptDropdown } from "@/composables/scripts";

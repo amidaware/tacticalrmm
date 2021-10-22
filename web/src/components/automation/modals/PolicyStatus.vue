@@ -33,6 +33,7 @@
           <template v-slot:body="props" :props="props">
             <q-tr>
               <!-- tds -->
+              <!-- agent hostname -->
               <q-td>{{ props.row.hostname }}</q-td>
               <!-- status icon -->
               <q-td v-if="props.row.status === 'passing'">
@@ -88,7 +89,7 @@
               <q-td v-else-if="props.row.check_type === 'eventlog'">
                 <span
                   style="cursor: pointer; text-decoration: underline"
-                  @click="eventLogMoreInfo(props.row)"
+                  @click="showEventInfo(props.row)"
                   class="eventlog-cell text-primary"
                   >output</span
                 >
@@ -104,10 +105,6 @@
           </template>
         </q-table>
       </q-card-section>
-
-      <q-dialog v-model="showEventLogOutput" @hide="closeEventLogOutput">
-        <EventLogCheckOutput @close="closeEventLogOutput" :evtlogdata="evtLogData" />
-      </q-dialog>
     </q-card>
   </q-dialog>
 </template>
@@ -119,9 +116,6 @@ import EventLogCheckOutput from "@/components/checks/EventLogCheckOutput";
 export default {
   name: "PolicyStatus",
   emits: ["hide", "ok", "cancel"],
-  components: {
-    EventLogCheckOutput,
-  },
   props: {
     item: {
       required: true,
@@ -138,8 +132,6 @@ export default {
   },
   data() {
     return {
-      showEventLogOutput: false,
-      evtLogData: {},
       data: [],
       columns: [
         { name: "agent", label: "Hostname", field: "agent", align: "left", sortable: true },
@@ -183,7 +175,7 @@ export default {
     getCheckData() {
       this.$q.loading.show();
       this.$axios
-        .patch(`/automation/policycheckstatus/${this.item.id}/check/`)
+        .get(`/automation/checks/${this.item.id}/status/`)
         .then(r => {
           this.$q.loading.hide();
           this.data = r.data;
@@ -195,7 +187,7 @@ export default {
     getTaskData() {
       this.$q.loading.show();
       this.$axios
-        .patch(`/automation/policyautomatedtaskstatus/${this.item.id}/task/`)
+        .get(`/automation/tasks/${this.item.id}/status/`)
         .then(r => {
           this.$q.loading.hide();
           this.data = r.data;
@@ -203,14 +195,6 @@ export default {
         .catch(e => {
           this.$q.loading.hide();
         });
-    },
-    closeEventLogOutput() {
-      this.showEventLogOutput = false;
-      this.evtLogdata = {};
-    },
-    closeScriptOutput() {
-      this.showScriptOutput = false;
-      this.scriptInfo = {};
     },
     pingInfo(check) {
       this.$q.dialog({
@@ -220,9 +204,13 @@ export default {
         html: true,
       });
     },
-    eventLogMoreInfo(check) {
-      this.evtLogData = check;
-      this.showEventLogOutput = true;
+    showEventInfo(data) {
+      this.$q.dialog({
+        component: EventLogCheckOutput,
+        componentProps: {
+          evtLogData: data,
+        },
+      });
     },
     showScriptOutput(script) {
       this.$q.dialog({

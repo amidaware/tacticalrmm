@@ -14,10 +14,10 @@ urlpatterns = [
     path("policies/<int:policy>/checks/", GetAddChecks.as_view()),
     # alias to get policy tasks
     path("policies/<int:policy>/tasks/", GetAddAutoTasks.as_view()),
-    path("policycheckstatus/<int:check>/check/", views.PolicyCheck.as_view()),
-    path("policyautomatedtaskstatus/<int:task>/task/", views.PolicyAutoTask.as_view()),
-    path("runwintask/<int:task>/", views.PolicyAutoTask.as_view()),
-    path("winupdatepolicy/", views.UpdatePatchPolicy.as_view()),
-    path("winupdatepolicy/<int:patchpolicy>/", views.UpdatePatchPolicy.as_view()),
+    path("checks/<int:check>/status/", views.PolicyCheck.as_view()),
+    path("tasks/<int:task>/status/", views.PolicyAutoTask.as_view()),
+    path("tasks/<int:task>/run/", views.PolicyAutoTask.as_view()),
+    path("patchpolicy/", views.UpdatePatchPolicy.as_view()),
+    path("patchpolicy/<int:pk>/", views.UpdatePatchPolicy.as_view()),
     path("patchpolicy/reset/", views.ResetPatchPolicy.as_view()),
 ]

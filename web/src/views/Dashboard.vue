@@ -661,6 +661,7 @@ export default {
           this.$axios
             .get(`/agents/?${param}`)
             .then(r => {
+              console.log(r.data);
               this.frame = r.data;
               this.$store.commit("AGENT_TABLE_LOADING", false);
             })

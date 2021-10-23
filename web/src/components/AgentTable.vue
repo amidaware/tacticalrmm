@@ -271,7 +271,7 @@
           <q-td>
             <q-checkbox
               v-if="props.row.alert_template && props.row.alert_template.always_text !== null"
-              :value="props.row.alert_template.always_text"
+              v-model="props.row.alert_template.always_text"
               disable
               dense
             >
@@ -281,14 +281,14 @@
             <q-checkbox
               v-else
               dense
-              @update:model-value="overdueAlert('text', props.row.id, props.row.overdue_text_alert)"
+              @update:model-value="overdueAlert('text', props.row, props.row.overdue_text_alert)"
               v-model="props.row.overdue_text_alert"
             />
           </q-td>
           <q-td>
             <q-checkbox
               v-if="props.row.alert_template && props.row.alert_template.always_email !== null"
-              :value="props.row.alert_template.always_email"
+              v-model="props.row.alert_template.always_email"
               disable
               dense
             >
@@ -298,14 +298,14 @@
             <q-checkbox
               v-else
               dense
-              @update:model-value="overdueAlert('email', props.row.id, props.row.overdue_email_alert)"
+              @update:model-value="overdueAlert('email', props.row, props.row.overdue_email_alert)"
               v-model="props.row.overdue_email_alert"
             />
           </q-td>
           <q-td>
             <q-checkbox
               v-if="props.row.alert_template && props.row.alert_template.always_alert !== null"
-              :value="props.row.alert_template.always_alert"
+              v-model="props.row.alert_template.always_alert"
               disable
               dense
             >
@@ -315,7 +315,7 @@
             <q-checkbox
               v-else
               dense
-              @update:model-value="overdueAlert('dashboard', props.row.id, props.row.overdue_dashboard_alert)"
+              @update:model-value="overdueAlert('dashboard', props.row, props.row.overdue_dashboard_alert)"
               v-model="props.row.overdue_dashboard_alert"
             />
           </q-td>
@@ -661,7 +661,7 @@ export default {
     agentRowSelected(agent_id) {
       this.$store.commit("setActiveRow", agent_id);
     },
-    overdueAlert(category, agent_id, alert_action) {
+    overdueAlert(category, agent, alert_action) {
       let db_field = "";
       if (category === "email") db_field = "overdue_email_alert";
       else if (category === "text") db_field = "overdue_text_alert";
@@ -673,12 +673,12 @@ export default {
       };
       const alertColor = !alert_action ? "positive" : "warning";
       this.$axios
-        .put(`/agents/${agent_id}/`, data)
+        .put(`/agents/${agent.agent_id}/`, data)
         .then(r => {
           this.$q.notify({
             color: alertColor,
             icon: "fas fa-check-circle",
-            message: `Overdue ${category} alerts ${action} on ${r.data}`,
+            message: `Overdue ${category} alerts ${action} on ${agent.hostname}`,
           });
         })
         .catch(e => {});

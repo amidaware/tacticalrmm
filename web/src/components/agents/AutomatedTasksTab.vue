@@ -116,8 +116,8 @@
           <!-- text alert -->
           <q-td>
             <q-checkbox
-              v-if="props.row.alert_template && !!props.row.alert_template.always_text"
-              :value="props.row.alert_template.always_text"
+              v-if="props.row.alert_template && props.row.alert_template.always_text !== null"
+              v-model="props.row.alert_template.always_text"
               disable
               dense
             >
@@ -135,8 +135,8 @@
           <!-- email alert -->
           <q-td>
             <q-checkbox
-              v-if="props.row.alert_template && !!props.row.alert_template.always_email"
-              :value="props.row.alert_template.always_email"
+              v-if="props.row.alert_template && props.row.alert_template.always_email !== null"
+              v-model="props.row.alert_template.always_email"
               disable
               dense
             >
@@ -154,8 +154,8 @@
           <!-- dashboard alert -->
           <q-td>
             <q-checkbox
-              v-if="props.row.alert_template && !!props.row.alert_template.always_alert"
-              :value="props.row.alert_template.always_alert"
+              v-if="props.row.alert_template && props.row.alert_template.always_alert !== null"
+              v-model="props.row.alert_template.always_alert"
               disable
               dense
             >

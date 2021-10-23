@@ -20,6 +20,7 @@
       <template v-slot:top>
         <q-btn dense flat push @click="getUpdates" icon="refresh" class="q-mr-sm" />
         <q-btn label="Run Update Scan" dense flat push no-caps @click="updateScan" class="q-mr-sm" />
+        <q-btn label="Install Approved Updates" dense flat push no-caps @click="installUpdates" class="q-mr-sm" />
         <q-space />
 
         <q-input v-model="filter" outlined label="Search" dense clearable class="q-pr-sm">
@@ -120,7 +121,7 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useQuasar } from "quasar";
-import { fetchAgentUpdates, editAgentUpdate, runAgentUpdateScan } from "@/api/winupdates";
+import { fetchAgentUpdates, editAgentUpdate, runAgentUpdateScan, runAgentUpdateInstall } from "@/api/winupdates";
 import { notifySuccess } from "@/utils/notify";
 import { truncateText, formatDate } from "@/utils/format";
 
@@ -221,6 +222,17 @@ export default {
       loading.value = false;
     }
 
+    async function installUpdates() {
+      loading.value = true;
+      try {
+        const result = await runAgentUpdateInstall(selectedAgent.value);
+        notifySuccess(result);
+      } catch (e) {
+        console.error(e);
+      }
+      loading.value = false;
+    }
+
     function showUpdateDetails(update) {
       let support_urls = "";
       update.more_info_urls.forEach(u => {
@@ -266,6 +278,7 @@ export default {
       getUpdates,
       editWinUpdate,
       updateScan,
+      installUpdates,
       showUpdateDetails,
       notifySuccess,
       truncateText,

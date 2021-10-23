@@ -13,7 +13,11 @@ export async function fetchAgentUpdates(agent_id, params = {}) {
 export async function runAgentUpdateScan(agent_id) {
   const { data } = await axios.post(`${baseUrl}/${agent_id}/scan/`)
   return data
+}
 
+export async function runAgentUpdateInstall(agent_id) {
+  const { data } = await axios.post(`${baseUrl}/${agent_id}/install/`)
+  return data
 }
 
 export async function editAgentUpdate(id, payload) {

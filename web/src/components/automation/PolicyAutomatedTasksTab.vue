@@ -87,7 +87,7 @@
                   </q-item-section>
                   <q-item-section>Edit</q-item-section>
                 </q-item>
-                <q-item clickable v-close-popup @click="deleteTask(props.row.name, props.row.id)">
+                <q-item clickable v-close-popup @click="deleteTask(props.row)">
                   <q-item-section side>
                     <q-icon name="delete" />
                   </q-item-section>
@@ -233,7 +233,7 @@ export default {
     },
     editTask(task, data) {
       this.$axios
-        .put(`/tasks/${task.pk}/`, data)
+        .put(`/tasks/${task.id}/`, data)
         .then(r => {
           this.$q.loading.hide();
           this.notifySuccess(r.data);
@@ -272,15 +272,15 @@ export default {
         },
       });
     },
-    runTask(pk, enabled) {
-      if (!enabled) {
+    runTask(task) {
+      if (!task.enabled) {
         this.notifyError("Task cannot be run when it's disabled. Enable it first.");
         return;
       }
 
       this.$q.loading.show();
       this.$axios
-        .post(`/automation/tasks/${pk}/run/`)
+        .post(`/automation/tasks/${task.id}/run/`)
         .then(r => {
           this.$q.loading.hide();
           this.notifySuccess("The task was initated on all affected agents");
@@ -289,18 +289,18 @@ export default {
           this.$q.loading.hide();
         });
     },
-    deleteTask(name, pk) {
+    deleteTask(task) {
       this.$q
         .dialog({
           title: "Are you sure?",
-          message: `Delete ${name} task`,
+          message: `Delete ${task.name} task`,
           cancel: true,
           persistent: true,
         })
         .onOk(() => {
           this.$q.loading.show();
           this.$axios
-            .delete(`/tasks/${pk}/`)
+            .delete(`/tasks/${task.pk}/`)
             .then(r => {
               this.getTasks();
               this.$q.loading.hide();

@@ -17,7 +17,6 @@
           :columns="columns"
           v-model:pagination="pagination"
           :rows-per-page-options="[0]"
-          :visibleColumns="visibleColumns"
           row-key="id"
           binary-state-sort
           dense
@@ -30,8 +29,8 @@
             <q-th auto-width :props="props"></q-th>
           </template>
           <!-- body slots -->
-          <template v-slot:body="props" :props="props">
-            <q-tr>
+          <template v-slot:body="props">
+            <q-tr :props="props">
               <!-- tds -->
               <!-- agent hostname -->
               <q-td>{{ props.row.hostname }}</q-td>
@@ -162,13 +161,6 @@ export default {
   computed: {
     title() {
       return !!this.item.readable_desc ? this.item.readable_desc + " Status" : this.item.name + " Status";
-    },
-    visibleColumns() {
-      if (this.type === "check") {
-        return ["agent", "statusicon", "moreinfo", "datetime"];
-      } else {
-        return ["agent", "statusicon", "status", "moreinfo", "datetime"];
-      }
     },
   },
   methods: {

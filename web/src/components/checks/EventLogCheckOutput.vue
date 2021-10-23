@@ -8,36 +8,34 @@
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
-      <q-card-section style="max-height: 70vh" class="scroll">
-        <div v-if="evtLogData.extra_details !== null">
-          <q-table
-            dense
-            style="height: 65vh"
-            :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
-            class="tabs-tbl-sticky"
-            :filter="filter"
-            :rows="evtLogData.extra_details.log"
-            :columns="columns"
-            v-model:pagination="pagination"
-            row-key="uid"
-            binary-state-sort
-            virtual-scroll
-            :rows-per-page-options="[0]"
-            no-data-label="No event logs"
-          >
-            <template v-slot:top>
-              <q-space />
-              <q-input v-model="filter" outlined label="Search" dense clearable class="q-pr-sm">
-                <template v-slot:prepend>
-                  <q-icon name="search" color="primary" />
-                </template>
-              </q-input>
-              <export-table-btn :data="evtLogData.extra_details.log" :columns="columns" />
-            </template>
-          </q-table>
-        </div>
-        <div v-else>Check has not run yet</div>
-      </q-card-section>
+      <div v-if="evtLogData.extra_details !== null">
+        <q-table
+          dense
+          style="height: 65vh"
+          :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+          class="tabs-tbl-sticky"
+          :filter="filter"
+          :rows="evtLogData.extra_details.log"
+          :columns="columns"
+          v-model:pagination="pagination"
+          row-key="uid"
+          binary-state-sort
+          virtual-scroll
+          :rows-per-page-options="[0]"
+          no-data-label="No event logs"
+        >
+          <template v-slot:top>
+            <q-space />
+            <q-input v-model="filter" outlined label="Search" dense clearable class="q-pr-sm">
+              <template v-slot:prepend>
+                <q-icon name="search" color="primary" />
+              </template>
+            </q-input>
+            <export-table-btn :data="evtLogData.extra_details.log" :columns="columns" />
+          </template>
+        </q-table>
+      </div>
+      <div v-else>Check has not run yet</div>
     </q-card>
   </q-dialog>
 </template>

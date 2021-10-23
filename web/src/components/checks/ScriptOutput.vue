@@ -8,7 +8,7 @@
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
-      <q-card-section>
+      <q-card-section style="height: 70vh" class="scroll">
         <div>
           Last Run:
           <code>{{ scriptInfo.last_run }}</code>
@@ -22,17 +22,17 @@
         <div v-if="scriptInfo.stdout">
           Standard Output
           <q-separator />
-          <q-scroll-area style="height: 50vh; max-height: 70vh">
-            <pre>{{ scriptInfo.stdout }}</pre>
-          </q-scroll-area>
+          <pre>{{ scriptInfo.stdout }}</pre>
         </div>
         <div v-if="scriptInfo.stderr">
-          Standard Error:
-          <q-scroll-area style="height: 50vh; max-height: 70vh">
-            <pre>{{ scriptInfo.stderr }}</pre>
-          </q-scroll-area>
+          Standard Error
+          <q-separator />
+          <pre>{{ scriptInfo.stderr }}</pre>
         </div>
       </q-card-section>
+      <q-card-actions align="right">
+        <q-btn flat dense push label="Cancel" v-close-popup />
+      </q-card-actions>
     </q-card>
   </q-dialog>
 </template>

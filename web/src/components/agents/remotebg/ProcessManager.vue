@@ -47,13 +47,17 @@
     </template>
     <template v-slot:body="props">
       <q-tr :props="props" class="cursor-pointer">
-        <q-menu context-menu>
+        <q-menu context-menu auto-close>
           <q-list dense style="min-width: 200px">
-            <q-item clickable v-close-popup @click="killProcess(props.row.pid, props.row.name)">
-              <q-item-section thumbnail>
+            <q-item clickable @click="killProcess(props.row.pid, props.row.name)">
+              <q-item-section side>
                 <q-icon name="fas fa-trash-alt" size="xs" />
               </q-item-section>
               <q-item-section>End Process</q-item-section>
+            </q-item>
+            <q-separator />
+            <q-item clickable>
+              <q-item-section>Close</q-item-section>
             </q-item>
           </q-list>
         </q-menu>

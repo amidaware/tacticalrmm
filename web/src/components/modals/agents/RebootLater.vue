@@ -38,7 +38,7 @@
 <script>
 // composition imports
 import { ref } from "vue";
-import { useDialogPluginComponent } from "quasar";
+import { useQuasar, useDialogPluginComponent } from "quasar";
 import { scheduleAgentReboot } from "@/api/agents";
 import { date } from "quasar";
 
@@ -51,6 +51,7 @@ export default {
   setup(props) {
     // setup quasar dialog plugin
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
+    const $q = useQuasar();
 
     // setup reboot later logic
     const state = ref({
@@ -64,7 +65,7 @@ export default {
       try {
         const result = await scheduleAgentReboot(props.agent.agent_id, { datetime: state.value.datetime });
 
-        this.$q.dialog({
+        $q.dialog({
           title: "Reboot pending",
           style: "width: 40vw",
           message: `A reboot has been scheduled for <strong>${state.value.datetime}</strong> on ${props.agent.agent_id}.

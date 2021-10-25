@@ -26,20 +26,24 @@
     </template>
     <template v-slot:body="props">
       <q-tr :props="props" class="cursor-pointer" @dblclick="showServiceDetail(props.row)">
-        <q-menu context-menu>
+        <q-menu context-menu auto-close>
           <q-list dense style="min-width: 200px">
-            <q-item clickable v-close-popup @click="sendServiceAction(props.row, 'start')">
+            <q-item clickable @click="sendServiceAction(props.row, 'start')">
               <q-item-section>Start</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="sendServiceAction(props.row, 'stop')">
+            <q-item clickable @click="sendServiceAction(props.row, 'stop')">
               <q-item-section>Stop</q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="sendServiceAction(props.row, 'restart')">
+            <q-item clickable @click="sendServiceAction(props.row, 'restart')">
               <q-item-section>Restart</q-item-section>
             </q-item>
             <q-separator />
-            <q-item clickable v-close-popup @click="showServiceDetail(props.row)">
+            <q-item clickable @click="showServiceDetail(props.row)">
               <q-item-section>Service Details</q-item-section>
+            </q-item>
+            <q-separator />
+            <q-item clickable>
+              <q-item-section>Close</q-item-section>
             </q-item>
           </q-list>
         </q-menu>

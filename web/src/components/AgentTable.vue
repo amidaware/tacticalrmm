@@ -346,7 +346,7 @@
             <span v-else>{{ props.row.logged_username }}</span>
           </q-td>
           <q-td :props="props" key="patchespending">
-            <q-icon v-if="props.row.has_patches_pending" name="far fa-clock" color="primary">
+            <q-icon v-if="props.row.has_patches_pending" name="verified_user" size="1.5em" color="primary">
               <q-tooltip>Patches Pending</q-tooltip>
             </q-icon>
           </q-td>

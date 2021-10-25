@@ -39,6 +39,24 @@
 
         <template v-slot:body="props">
           <q-tr class="cursor-pointer">
+            <q-menu context-menu auto-close>
+              <q-list dense>
+                <q-item
+                  :disable="props.row.status === 'completed' || props.row.action_type !== 'schedreboot'"
+                  clickable
+                  @click="cancelPendingAction(props.row)"
+                >
+                  <q-item-section side>
+                    <q-icon name="fas fa-trash-alt" size="xs" />
+                  </q-item-section>
+                  <q-item-section>Cancel Action</q-item-section>
+                </q-item>
+                <q-separator />
+                <q-item clickable v-close-popup>
+                  <q-item-section>Close</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
             <q-td v-if="props.row.action_type === 'schedreboot'">
               <q-icon name="power_settings_new" size="sm" />
             </q-td>
@@ -150,7 +168,7 @@ export default {
       }).onOk(async () => {
         loading.value = true;
         try {
-          const result = await deletePendingAction(action.pk);
+          const result = await deletePendingAction(action.id);
           notifySuccess(result);
           await getPendingActions();
         } catch (e) {

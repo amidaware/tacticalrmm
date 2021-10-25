@@ -46,7 +46,7 @@
         <export-table-btn v-show="false" class="q-ml-sm" :columns="columns" :data="events" />
       </template>
       <template v-slot:body="props">
-        <q-tr :props="props" class="cursor-pointer">
+        <q-tr :props="props">
           <q-td>{{ props.row.eventType }}</q-td>
           <q-td>{{ props.row.source }}</q-td>
           <q-td>{{ props.row.eventID }}</q-td>

@@ -188,14 +188,14 @@ class TestPolicyViews(TacticalTestCase):
             managed_by_policy=True,
             parent_check=policy_diskcheck.pk,
         )
-        url = f"/automation/policycheckstatus/{policy_diskcheck.pk}/check/"
+        url = f"/automation/checks/{policy_diskcheck.pk}/status/"
 
-        resp = self.client.patch(url, format="json")
+        resp = self.client.get(url, format="json")
         serializer = PolicyCheckStatusSerializer([managed_check], many=True)
 
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data, serializer.data)  # type: ignore
-        self.check_not_authenticated("patch", url)
+        self.check_not_authenticated("get", url)
 
     def test_policy_overview(self):
         from clients.models import Client
@@ -255,15 +255,15 @@ class TestPolicyViews(TacticalTestCase):
             "autotasks.AutomatedTask", parent_task=task.id, _quantity=5  # type: ignore
         )
 
-        url = f"/automation/policyautomatedtaskstatus/{task.id}/task/"  # type: ignore
+        url = f"/automation/tasks/{task.id}/status/"  # type: ignore
 
         serializer = PolicyTaskStatusSerializer(policy_tasks, many=True)
-        resp = self.client.patch(url, format="json")
+        resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data, serializer.data)  # type: ignore
         self.assertEqual(len(resp.data), 5)  # type: ignore
 
-        self.check_not_authenticated("patch", url)
+        self.check_not_authenticated("get", url)
 
     @patch("automation.tasks.run_win_policy_autotasks_task.delay")
     def test_run_win_task(self, mock_task):
@@ -276,16 +276,16 @@ class TestPolicyViews(TacticalTestCase):
             _quantity=6,
         )
 
-        url = "/automation/runwintask/1/"
-        resp = self.client.put(url, format="json")
+        url = "/automation/tasks/1/run/"
+        resp = self.client.post(url, format="json")
         self.assertEqual(resp.status_code, 200)
 
         mock_task.assert_called()  # type: ignore
 
-        self.check_not_authenticated("put", url)
+        self.check_not_authenticated("post", url)
 
     def test_create_new_patch_policy(self):
-        url = "/automation/winupdatepolicy/"
+        url = "/automation/patchpolicy/"
 
         # test policy doesn't exist
         data = {"policy": 500}
@@ -316,15 +316,14 @@ class TestPolicyViews(TacticalTestCase):
     def test_update_patch_policy(self):
 
         # test policy doesn't exist
-        resp = self.client.put("/automation/winupdatepolicy/500/", format="json")
+        resp = self.client.put("/automation/patchpolicy/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         policy = baker.make("automation.Policy")
         patch_policy = baker.make("winupdate.WinUpdatePolicy", policy=policy)
-        url = f"/automation/winupdatepolicy/{patch_policy.pk}/"  # type: ignore
+        url = f"/automation/patchpolicy/{patch_policy.pk}/"  # type: ignore
 
         data = {
-            "id": patch_policy.pk,  # type: ignore
             "policy": policy.pk,  # type: ignore
             "critical": "approve",
             "important": "approve",
@@ -369,7 +368,7 @@ class TestPolicyViews(TacticalTestCase):
         # test reset agents in site
         data = {"site": sites[0].id}  # type: ignore
 
-        resp = self.client.patch(url, data, format="json")
+        resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
         agents = Agent.objects.filter(site=sites[0])  # type: ignore
@@ -381,7 +380,7 @@ class TestPolicyViews(TacticalTestCase):
         # test reset agents in client
         data = {"client": clients[1].id}  # type: ignore
 
-        resp = self.client.patch(url, data, format="json")
+        resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
         agents = Agent.objects.filter(site__client=clients[1])  # type: ignore
@@ -393,7 +392,7 @@ class TestPolicyViews(TacticalTestCase):
         # test reset all agents
         data = {}
 
-        resp = self.client.patch(url, data, format="json")
+        resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
         agents = Agent.objects.all()
@@ -401,17 +400,17 @@ class TestPolicyViews(TacticalTestCase):
             for k, v in inherit_fields.items():
                 self.assertEqual(getattr(agent.winupdatepolicy.get(), k), v)
 
-        self.check_not_authenticated("patch", url)
+        self.check_not_authenticated("post", url)
 
     def test_delete_patch_policy(self):
         # test patch policy doesn't exist
-        resp = self.client.delete("/automation/winupdatepolicy/500/", format="json")
+        resp = self.client.delete("/automation/patchpolicy/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         winupdate_policy = baker.make_recipe(
             "winupdate.winupdate_policy", policy__name="Test Policy"
         )
-        url = f"/automation/winupdatepolicy/{winupdate_policy.pk}/"
+        url = f"/automation/patchpolicy/{winupdate_policy.pk}/"
 
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -477,7 +476,7 @@ class TestPolicyTasks(TacticalTestCase):
         self.assertEquals(len(resp.data["server_sites"]), 0)  # type: ignore
         self.assertEquals(len(resp.data["workstation_clients"]), 1)  # type: ignore
         self.assertEquals(len(resp.data["workstation_sites"]), 0)  # type: ignore
-        self.assertEquals(len(resp.data["agents"]), 10)  # type: ignore
+        self.assertEquals(len(resp.data["agents"]), 0)  # type: ignore
 
         # Add Site to Policy
         policy.server_sites.add(server_agents[10].site)  # type: ignore
@@ -487,15 +486,15 @@ class TestPolicyTasks(TacticalTestCase):
         )
         self.assertEquals(len(resp.data["server_sites"]), 1)  # type: ignore
         self.assertEquals(len(resp.data["workstation_sites"]), 1)  # type: ignore
-        self.assertEquals(len(resp.data["agents"]), 12)  # type: ignore
+        self.assertEquals(len(resp.data["agents"]), 0)  # type: ignore
 
-        # Add Agent to Policy and the agents length shouldn't change
+        # Add Agent to Policy
         policy.agents.add(server_agents[2])  # type: ignore
         policy.agents.add(workstation_agents[2])  # type: ignore
         resp = self.client.get(
             f"/automation/policies/{policy.pk}/related/", format="json"  # type: ignore
         )
-        self.assertEquals(len(resp.data["agents"]), 14)  # type: ignore
+        self.assertEquals(len(resp.data["agents"]), 2)  # type: ignore
 
     def test_generating_agent_policy_checks(self):
         from .tasks import generate_agent_checks_task

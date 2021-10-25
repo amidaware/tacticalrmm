@@ -53,7 +53,7 @@
 
 <script>
 // composition imports
-import { ref, computed, watch } from "vue";
+import { ref, computed } from "vue";
 import { useDialogPluginComponent } from "quasar";
 import { sendAgentRecovery } from "@/api/agents";
 import { notifySuccess } from "@/utils/notify";

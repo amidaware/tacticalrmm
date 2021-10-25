@@ -358,7 +358,7 @@ class RunURLAction(APIView):
         from clients.models import Client, Site
         from tacticalrmm.utils import replace_db_values
 
-        if "agent" in request.data.keys():
+        if "agent_id" in request.data.keys():
             if not _has_perm_on_agent(request.user, request.data["agent_id"]):
                 raise PermissionDenied()
 

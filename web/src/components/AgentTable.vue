@@ -204,7 +204,7 @@
                     <q-item clickable v-ripple v-close-popup @click.stop.prevent="runPatchStatusScan(props.row)">
                       <q-item-section>Run Patch Status Scan</q-item-section>
                     </q-item>
-                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="installPatches(props)">
+                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="installPatches(props.row)">
                       <q-item-section>Install Patches Now</q-item-section>
                     </q-item>
                   </q-list>
@@ -521,7 +521,7 @@ export default {
     },
     runPatchStatusScan(agent) {
       this.$axios
-        .get(`/winupdate/${agent.agent_id}/scan/`)
+        .post(`/winupdate/${agent.agent_id}/scan/`)
         .then(r => {
           this.notifySuccess(`Scan will be run shortly on ${agent.hostname}`);
         })
@@ -530,7 +530,7 @@ export default {
     installPatches(agent) {
       this.$q.loading.show();
       this.$axios
-        .get(`/winupdate/${agent.agent_id}/install/`)
+        .post(`/winupdate/${agent.agent_id}/install/`)
         .then(r => {
           this.$q.loading.hide();
           this.notifySuccess(r.data);

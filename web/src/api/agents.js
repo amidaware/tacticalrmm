@@ -39,6 +39,11 @@ export async function fetchAgentTasks(agent_id, params = {}) {
   } catch (e) { console.error(e) }
 }
 
+export async function sendAgentRecovery(agent_id, payload) {
+  const { data } = await axios.post(`${baseUrl}/${agent_id}/recover/`, payload)
+  return data
+}
+
 export async function sendAgentCommand(agent_id, payload) {
   const { data } = await axios.post(`${baseUrl}/${agent_id}/cmd/`, payload)
   return data

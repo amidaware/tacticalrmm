@@ -248,7 +248,7 @@
                 <q-item-section>Assign Automation Policy</q-item-section>
               </q-item>
 
-              <q-item clickable v-close-popup @click.stop.prevent="showAgentRecovery = true">
+              <q-item clickable v-close-popup @click.stop.prevent="showAgentRecovery(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-first-aid" />
                 </q-item-section>
@@ -384,10 +384,6 @@
         </q-tr>
       </template>
     </q-table>
-    <!-- agent recovery modal -->
-    <q-dialog v-model="showAgentRecovery">
-      <AgentRecovery @close="showAgentRecovery = false" :pk="selectedAgentId" />
-    </q-dialog>
   </div>
 </template>
 
@@ -407,9 +403,6 @@ export default {
   name: "AgentTable",
   props: ["frame", "columns", "userName", "search", "visibleColumns"],
   emits: ["edit"],
-  components: {
-    AgentRecovery,
-  },
   mixins: [mixins],
   data() {
     return {
@@ -418,7 +411,6 @@ export default {
         sortBy: "hostname",
         descending: false,
       },
-      showAgentRecovery: false,
       favoriteScripts: [],
       urlActions: [],
     };
@@ -780,6 +772,14 @@ export default {
           },
         })
         .onOk(() => this.$emit("edit"));
+    },
+    showAgentRecovery(agent) {
+      this.$q.dialog({
+        component: AgentRecovery,
+        componentProps: {
+          agent: agent,
+        },
+      });
     },
   },
   computed: {

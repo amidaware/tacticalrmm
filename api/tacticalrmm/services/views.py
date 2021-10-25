@@ -18,7 +18,7 @@ class GetServices(APIView):
         agent = get_object_or_404(Agent, agent_id=agent_id)
         r = asyncio.run(agent.nats_cmd(data={"func": "winservices"}, timeout=10))
 
-        if r == "timeout":
+        if r == "timeout" or r == "natsdown":
             return notify_error("Unable to contact the agent")
 
         agent.services = r
@@ -53,7 +53,7 @@ class GetEditActionService(APIView):
         if action == "restart":
             data["payload"]["action"] = "stop"
             r = asyncio.run(agent.nats_cmd(data, timeout=32))
-            if r == "timeout":
+            if r == "timeout" or r == "natsdown":
                 return notify_error("Unable to contact the agent")
             elif not r["success"] and r["errormsg"]:
                 return notify_error(r["errormsg"])
@@ -65,16 +65,16 @@ class GetEditActionService(APIView):
                 elif not r["success"] and r["errormsg"]:
                     return notify_error(r["errormsg"])
                 elif r["success"]:
-                    return Response("ok")
+                    return Response("The service was restarted successfully")
         else:
             data["payload"]["action"] = action
             r = asyncio.run(agent.nats_cmd(data, timeout=32))
-            if r == "timeout":
+            if r == "timeout" or r == "natsdown":
                 return notify_error("Unable to contact the agent")
             elif not r["success"] and r["errormsg"]:
                 return notify_error(r["errormsg"])
             elif r["success"]:
-                return Response("ok")
+                return Response(f"The service was {'started' if action == 'start' else 'stopped'} successfully")
 
         return notify_error("Something went wrong")
 
@@ -91,11 +91,11 @@ class GetEditActionService(APIView):
 
         r = asyncio.run(agent.nats_cmd(data, timeout=10))
         # response struct from agent: {success: bool, errormsg: string}
-        if r == "timeout":
+        if r == "timeout" or r == "natsdown":
             return notify_error("Unable to contact the agent")
         elif not r["success"] and r["errormsg"]:
             return notify_error(r["errormsg"])
         elif r["success"]:
-            return Response("ok")
+            return Response("The service start type was updated successfully")
 
         return notify_error("Something went wrong")

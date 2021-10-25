@@ -85,9 +85,9 @@ export default {
     }
 
     async function getDashInfo() {
-      const { dark_mode, loading_bar_color } = await fetchDashboardInfo();
+      const { dark_mode } = await fetchDashboardInfo();
       $q.dark.set(dark_mode);
-      $q.loadingBar.setDefaults({ color: loading_bar_color });
+      $q.loadingBar.setDefaults({ size: "0px" });
     }
 
     // vue lifecycle hooks

@@ -184,7 +184,7 @@ class AgentProcesses(APIView):
     def get(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
         r = asyncio.run(agent.nats_cmd(data={"func": "procs"}, timeout=5))
-        if r == "timeout":
+        if r == "timeout" or r == "natsdown":
             return notify_error("Unable to contact the agent")
         return Response(r)
 
@@ -195,7 +195,7 @@ class AgentProcesses(APIView):
             agent.nats_cmd({"func": "killproc", "procpid": int(pid)}, timeout=15)
         )
 
-        if r == "timeout":
+        if r == "timeout" or r == "natsdown":
             return notify_error("Unable to contact the agent")
         elif r != "ok":
             return notify_error(r)
@@ -312,7 +312,7 @@ def get_event_log(request, agent_id, logtype, days):
         },
     }
     r = asyncio.run(agent.nats_cmd(data, timeout=timeout + 2))
-    if r == "timeout":
+    if r == "timeout" or r == "natsdown":
         return notify_error("Unable to contact the agent")
 
     return Response(r)

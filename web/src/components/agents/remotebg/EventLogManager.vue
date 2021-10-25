@@ -1,12 +1,12 @@
 <template>
-  <div class="q-pa-md">
+  <div>
     <div class="row">
       <div class="col-2">
         <q-select dense options-dense outlined v-model="days" :options="lastDaysOptions" :label="showDays" />
       </div>
       <div class="col-7"></div>
       <div class="col-3">
-        <code>{{ logType }} log total records: {{ events.length }}</code>
+        <code v-if="events">{{ logType }} log total records: {{ events.length }}</code>
       </div>
     </div>
     <q-table
@@ -15,12 +15,14 @@
       class="remote-bg-tbl-sticky"
       :rows="events"
       :columns="columns"
-      v-model:pagination="pagination"
+      style="max-height: 85vh"
+      :pagination="{ rowsPerPage: 0, sortBy: 'record', descending: true }"
       :filter="filter"
       row-key="uid"
       binary-state-sort
-      hide-bottom
       virtual-scroll
+      :rows-per-page-options="[0]"
+      :loading="loading"
     >
       <template v-slot:top>
         <q-btn dense flat push @click="getEventLog" icon="refresh" />
@@ -40,9 +42,11 @@
             <q-icon name="search" />
           </template>
         </q-input>
+        <!-- file download doesn't work so disabling -->
+        <export-table-btn v-show="false" class="q-ml-sm" :columns="columns" :data="events" />
       </template>
       <template v-slot:body="props">
-        <q-tr :props="props">
+        <q-tr :props="props" class="cursor-pointer">
           <q-td>{{ props.row.eventType }}</q-td>
           <q-td>{{ props.row.source }}</q-td>
           <q-td>{{ props.row.eventID }}</q-td>
@@ -59,11 +63,14 @@
 </template>
 
 <script>
-// compisition imports
+// composition imports
 import { ref, computed, watch, onMounted } from "vue";
 import { useQuasar } from "quasar";
 import { fetchAgentEventLog } from "@/api/agents";
 import { truncateText } from "@/utils/format";
+
+// ui imports
+import ExportTableBtn from "@/components/ui/ExportTableBtn";
 
 // static data
 const columns = [
@@ -78,6 +85,9 @@ const lastDaysOptions = [1, 2, 3, 4, 5, 10, 30, 60, 90, 180, 360, 9999];
 
 export default {
   name: "EventLogManager",
+  components: {
+    ExportTableBtn,
+  },
   props: {
     agent_id: !String,
   },
@@ -90,20 +100,16 @@ export default {
     const logType = ref("Application");
     const days = ref(1);
     const filter = ref("");
-    const pagination = ref({
-      rowsPerPage: 0,
-      sortBy: "record",
-      descending: true,
-    });
+    const loading = ref(false);
 
     const showDays = computed(() => `Show last ${days.value} days`);
 
     watch([logType, days], getEventLog);
 
     async function getEventLog() {
-      $q.loading.show({ message: `Loading ${logType.value} event log...please wait` });
+      loading.value = true;
       events.value = await fetchAgentEventLog(props.agent_id, logType.value, days.value);
-      $q.loading.hide();
+      loading.value = false;
     }
 
     function showEventMessage(message) {
@@ -123,8 +129,8 @@ export default {
       logType,
       days,
       filter,
-      pagination,
       showDays,
+      loading,
 
       // non-reactive data
       columns,

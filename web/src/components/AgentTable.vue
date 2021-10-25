@@ -95,7 +95,7 @@
                 <q-item-section>Edit {{ props.row.hostname }}</q-item-section>
               </q-item>
               <!-- agent pending actions -->
-              <q-item clickable v-close-popup @click="showPendingActionsModal(props.row.id)">
+              <q-item clickable v-close-popup @click="showPendingActionsModal(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="far fa-clock" />
                 </q-item-section>
@@ -353,7 +353,7 @@
           <q-td :props="props" key="pendingactions">
             <q-icon
               v-if="props.row.pending_actions_count !== 0"
-              @click="showPendingActionsModal(props.row.id)"
+              @click="showPendingActionsModal(props.row)"
               name="far fa-clock"
               size="1.4em"
               color="warning"
@@ -384,10 +384,6 @@
         </q-tr>
       </template>
     </q-table>
-    <!-- pending actions modal -->
-    <q-dialog v-model="showPendingActions" @hide="closePendingActionsModal">
-      <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" @edit="agentEdited" />
-    </q-dialog>
     <!-- agent recovery modal -->
     <q-dialog v-model="showAgentRecovery">
       <AgentRecovery @close="showAgentRecovery = false" :pk="selectedAgentId" />
@@ -401,7 +397,7 @@ import { mapGetters } from "vuex";
 import { date, openURL } from "quasar";
 import EditAgent from "@/components/modals/agents/EditAgent";
 import RebootLater from "@/components/modals/agents/RebootLater";
-import PendingActions from "@/components/modals/logs/PendingActions";
+import PendingActions from "@/components/logs/PendingActions";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
 import SendCommand from "@/components/modals/agents/SendCommand";
 import AgentRecovery from "@/components/modals/agents/AgentRecovery";
@@ -412,7 +408,6 @@ export default {
   props: ["frame", "columns", "userName", "search", "visibleColumns"],
   emits: ["edit"],
   components: {
-    PendingActions,
     AgentRecovery,
   },
   mixins: [mixins],
@@ -424,8 +419,6 @@ export default {
         descending: false,
       },
       showAgentRecovery: false,
-      showPendingActions: false,
-      pendingActionAgentPk: null,
       favoriteScripts: [],
       urlActions: [],
     };
@@ -549,13 +542,13 @@ export default {
     agentEdited() {
       this.$emit("edit");
     },
-    showPendingActionsModal(pk) {
-      this.showPendingActions = true;
-      this.pendingActionAgentPk = pk;
-    },
-    closePendingActionsModal() {
-      this.showPendingActions = false;
-      this.pendingActionAgentPk = null;
+    showPendingActionsModal(agent) {
+      this.$q.dialog({
+        component: PendingActions,
+        componentProps: {
+          agent: agent,
+        },
+      });
     },
     takeControl(agent_id) {
       const url = this.$router.resolve(`/takecontrol/${agent_id}`).href;

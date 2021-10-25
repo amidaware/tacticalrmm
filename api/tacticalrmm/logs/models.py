@@ -66,8 +66,6 @@ STATUS_CHOICES = [
 
 
 class AuditLog(models.Model):
-    objects = PermissionQuerySet.as_manager()
-
     username = models.CharField(max_length=255)
     agent = models.CharField(max_length=255, null=True, blank=True)
     agent_id = models.CharField(max_length=255, blank=True, null=True)
@@ -326,7 +324,8 @@ class DebugLog(models.Model):
 
 
 class PendingAction(models.Model):
-
+    objects = PermissionQuerySet.as_manager()
+    
     agent = models.ForeignKey(
         "agents.Agent",
         related_name="pendingactions",

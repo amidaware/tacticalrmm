@@ -427,8 +427,9 @@ export default {
 
       this.$q.dialog({
         component: ScriptOutput,
-        parent: this,
-        scriptInfo: results,
+        componentProps: {
+          scriptInfo: results,
+        },
       });
     },
     alertColor(severity) {

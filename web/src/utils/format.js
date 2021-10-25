@@ -167,6 +167,20 @@ export function formatDate(dateString) {
   return date.formatDate(d, "MMM-DD-YYYY - HH:mm");
 }
 
+export function getNextAgentUpdateTime() {
+  const d = new Date();
+  let ret;
+  if (d.getMinutes() <= 35) {
+    ret = d.setMinutes(35);
+  } else {
+    ret = date.addToDate(d, { hours: 1 });
+    ret.setMinutes(35);
+  }
+  const a = date.formatDate(ret, "MMM D, YYYY");
+  const b = date.formatDate(ret, "h:mm A");
+  return `${a} at ${b}`;
+}
+
 
 // string formatting
 

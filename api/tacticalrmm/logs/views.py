@@ -1,22 +1,20 @@
 import asyncio
 from datetime import datetime as dt
 
-from accounts.models import User
-from accounts.serializers import UserSerializer
-from agents.models import Agent
-from agents.serializers import AgentHostnameSerializer
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
-from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
 from tacticalrmm.utils import notify_error, get_default_timezone
+from tacticalrmm.permissions import _audit_log_filter, _has_perm_on_agent
 
 from .models import AuditLog, PendingAction, DebugLog
-from .permissions import AuditLogPerms, DebugLogPerms, ManagePendingActionPerms
+from agents.models import Agent
+from .permissions import AuditLogPerms, DebugLogPerms, PendingActionPerms
 from .serializers import AuditLogSerializer, DebugLogSerializer, PendingActionSerializer
 
 
@@ -48,8 +46,8 @@ class GetAuditLogs(APIView):
         elif "clientFilter" in request.data:
             clients = Client.objects.filter(
                 pk__in=request.data["clientFilter"]
-            ).values_list("id")
-            agents = Agent.objects.filter(site__client_id__in=clients).values_list(
+            )
+            agents = Agent.objects.filter(site__client__in=clients).values_list(
                 "agent_id"
             )
             clientFilter = Q(agent_id__in=agents)
@@ -76,6 +74,7 @@ class GetAuditLogs(APIView):
             .filter(actionFilter)
             .filter(objectFilter)
             .filter(timeFilter)
+            .filter(_audit_log_filter(request.user))
         ).order_by(order_by)
 
         paginator = Paginator(audit_logs, pagination["rowsPerPage"])
@@ -92,37 +91,23 @@ class GetAuditLogs(APIView):
 
 
 class PendingActions(APIView):
-    permission_classes = [IsAuthenticated, ManagePendingActionPerms]
+    permission_classes = [IsAuthenticated, PendingActionPerms]
 
-    def patch(self, request):
-        status_filter = "completed" if request.data["showCompleted"] else "pending"
-        if "agentPK" in request.data.keys():
-            actions = PendingAction.objects.filter(
-                agent__pk=request.data["agentPK"], status=status_filter
-            )
-            total = PendingAction.objects.filter(
-                agent__pk=request.data["agentPK"]
-            ).count()
-            completed = PendingAction.objects.filter(
-                agent__pk=request.data["agentPK"], status="completed"
-            ).count()
-
+    def get(self, request, agent_id=None):
+        if agent_id:
+            agent = get_object_or_404(Agent, agent_id=agent_id)
+            actions = PendingAction.objects.filter(agent=agent)
         else:
-            actions = PendingAction.objects.filter(status=status_filter).select_related(
-                "agent"
-            )
-            total = PendingAction.objects.count()
-            completed = PendingAction.objects.filter(status="completed").count()
+            actions = PendingAction.objects.filter_by_role(request.user)
 
-        ret = {
-            "actions": PendingActionSerializer(actions, many=True).data,
-            "completed_count": completed,
-            "total": total,
-        }
-        return Response(ret)
+        return Response(PendingActionSerializer(actions, many=True).data)
 
-    def delete(self, request):
-        action = get_object_or_404(PendingAction, pk=request.data["pk"])
+    def delete(self, request, pk):
+        action = get_object_or_404(PendingAction, pk=pk)
+
+        if not _has_perm_on_agent(request.user, action.agent.agent_id):
+            raise PermissionDenied()
+
         nats_data = {
             "func": "delschedtask",
             "schedtaskpayload": {"name": action.details["taskname"]},

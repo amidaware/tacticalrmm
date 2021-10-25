@@ -11,7 +11,7 @@ class PermissionQuerySet(models.QuerySet):
 
         clients_queryset = models.Q()
         sites_queryset = models.Q()
-        policy_queryset = models.Q()
+        agent_queryset = models.Q()
         model_name = self.model._meta.label.split(".")[1]
 
         # returns normal queryset if user is superuser
@@ -46,16 +46,16 @@ class PermissionQuerySet(models.QuerySet):
 
             return self.filter(clients_queryset | sites_queryset)
 
-        # anything else just checks the agent_id field and if it has it will filter matched agents from the queryset
+        # anything else just checks the agent field and if it has it will filter matched agents from the queryset
         else:
             if not hasattr(self.model, "agent"):
                 return self
 
             # if model that is being filtered is a Check or Automated task we need to allow checks/tasks that are associated with policies
-            if model_name in ["Check", "AutomatedTask"] and (
+            if model_name in ["Check", "AutomatedTask", "DebugLog"] and (
                 can_view_clients or can_view_sites
             ):
-                policy_queryset = models.Q(agent=None)  # dont filter if agent is None
+                agent_queryset = models.Q(agent=None)  # dont filter if agent is None
 
             if can_view_clients:
                 clients_queryset = models.Q(agent__site__client__in=can_view_clients)
@@ -63,5 +63,5 @@ class PermissionQuerySet(models.QuerySet):
                 sites_queryset = models.Q(agent__site__in=can_view_sites)
 
             return self.filter(
-                clients_queryset | sites_queryset | policy_queryset
+                clients_queryset | sites_queryset | agent_queryset
             )

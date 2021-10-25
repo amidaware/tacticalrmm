@@ -7,6 +7,7 @@ from tacticalrmm.test import TacticalTestCase
 
 from logs.models import PendingAction
 
+base_url = "/logs"
 
 class TestAuditViews(TacticalTestCase):
     def setUp(self):
@@ -180,36 +181,15 @@ class TestAuditViews(TacticalTestCase):
             _quantity=14,
         )
 
-        data = {"showCompleted": False}
-        r = self.client.patch(url, data, format="json")
+        r = self.client.get(url, format="json")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data["actions"]), 12)  # type: ignore
-        self.assertEqual(r.data["completed_count"], 14)  # type: ignore
-        self.assertEqual(r.data["total"], 26)  # type: ignore
+        self.assertEqual(len(r.data), 26)  # type: ignore
 
-        PendingAction.objects.filter(action_type="chocoinstall").update(
-            status="completed"
-        )
-        data = {"showCompleted": True}
-        r = self.client.patch(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data["actions"]), 26)  # type: ignore
-        self.assertEqual(r.data["completed_count"], 26)  # type: ignore
-        self.assertEqual(r.data["total"], 26)  # type: ignore
-
-        data = {"showCompleted": True, "agentPK": agent1.pk}
-        r = self.client.patch(url, data, format="json")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data["actions"]), 12)  # type: ignore
-        self.assertEqual(r.data["completed_count"], 12)  # type: ignore
-        self.assertEqual(r.data["total"], 12)  # type: ignore
-
-        self.check_not_authenticated("patch", url)
+        self.check_not_authenticated("get", url)
 
     @patch("agents.models.Agent.nats_cmd")
     def test_cancel_pending_action(self, nats_cmd):
         nats_cmd.return_value = "ok"
-        url = "/logs/pendingactions/"
         agent = baker.make_recipe("agents.online_agent")
         action = baker.make(
             "logs.PendingAction",
@@ -221,8 +201,9 @@ class TestAuditViews(TacticalTestCase):
             },
         )
 
-        data = {"pk": action.pk}  # type: ignore
-        r = self.client.delete(url, data, format="json")
+        url = f"{base_url}/pendingactions/{action.id}/"
+
+        r = self.client.delete(url, format="json")
         self.assertEqual(r.status_code, 200)
         nats_data = {
             "func": "delschedtask",
@@ -231,7 +212,7 @@ class TestAuditViews(TacticalTestCase):
         nats_cmd.assert_called_with(nats_data, timeout=10)
 
         # try request again and it should 404 since pending action doesn't exist
-        r = self.client.delete(url, data, format="json")
+        r = self.client.delete(url, format="json")
         self.assertEqual(r.status_code, 404)
 
         nats_cmd.reset_mock()
@@ -246,9 +227,8 @@ class TestAuditViews(TacticalTestCase):
             },
         )
 
-        data = {"pk": action2.pk}  # type: ignore
         nats_cmd.return_value = "error deleting sched task"
-        r = self.client.delete(url, data, format="json")
+        r = self.client.delete(f"{base_url}/pendingactions/{action2.id}/", format="json")
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.data, "error deleting sched task")  # type: ignore
 
@@ -294,6 +274,195 @@ class TestAuditViews(TacticalTestCase):
 
         self.check_not_authenticated("patch", url)
 
+    def test_auditlog_permissions(self):
+        site = self.create_audit_records()["site"]
+
+        url = f"{base_url}/audit/"
+
+        data = {
+            "pagination": {
+                "rowsPerPage": 100,
+                "page": 1,
+                "sortBy": "entry_time",
+                "descending": True,
+            }
+        }
+
+        # test superuser access
+        self.check_authorized_superuser("patch", url, data)
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+
+        # test user without role
+        self.check_not_authorized("patch", url, data)
+
+        # add user to role and test
+        user.role.can_view_auditlogs = True
+        user.role.save()
+
+        response = self.check_authorized("patch", url, data)
+        self.assertEqual(len(response.data["audit_logs"]), 86)
+
+        # limit user to client if agent check
+        user.role.can_view_sites.set([site])
+
+        response = self.check_authorized("patch", url, data)
+        self.assertEqual(len(response.data["audit_logs"]), 63)
+
+        # limit user to client if agent check
+        user.role.can_view_clients.set([site.client])
+        response = self.check_authorized("patch", url, data)
+        self.assertEqual(len(response.data["audit_logs"]), 63)
+
+    def test_debuglog_permissions(self):
+
+        # create data
+        agent = baker.make_recipe("agents.agent")
+        agent2 = baker.make_recipe("agents.agent")
+        baker.make(
+            "logs.DebugLog",
+            log_level=cycle(["error", "info", "warning", "critical"]),
+            log_type="agent_issues",
+            agent=agent,
+            _quantity=4,
+        )
+
+        baker.make(
+            "logs.DebugLog",
+            log_level=cycle(["error", "info", "warning", "critical"]),
+            log_type="agent_issues",
+            agent=agent2,
+            _quantity=8,
+        )
+
+        baker.make(
+            "logs.DebugLog",
+            log_type="system_issues",
+            log_level=cycle(["error", "info", "warning", "critical"]),
+            _quantity=15,
+        )
+
+        url = f"{base_url}/debug/"
+
+        # test superuser access
+        self.check_authorized_superuser("patch", url, )
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+
+        # test user without role
+        self.check_not_authorized("patch", url)
+
+        # add user to role and test
+        user.role.can_view_debuglogs = True
+        user.role.save()
+
+        response = self.check_authorized("patch", url)
+        self.assertEqual(len(response.data), 27)
+
+        # limit user to site
+        user.role.can_view_sites.set([agent.site])
+
+        response = self.check_authorized("patch", url)
+        self.assertEqual(len(response.data), 19)
+
+        # limit user to client
+        user.role.can_view_sites.clear()
+        user.role.can_view_clients.set([agent2.site.client])
+        response = self.check_authorized("patch", url)
+        self.assertEqual(len(response.data), 23)
+
+        # limit user to client and site
+        user.role.can_view_sites.set([agent.site])
+        user.role.can_view_clients.set([agent2.site.client])
+        response = self.check_authorized("patch", url)
+        self.assertEqual(len(response.data), 27)
+
+
+    def test_get_pendingaction_permissions(self):
+        agent = baker.make_recipe("agents.agent")
+        unauthorized_agent = baker.make_recipe("agents.agent")
+        actions = baker.make("logs.PendingAction", agent=agent, _quantity=5)
+        unauthorized_actions = baker.make(
+            "logs.PendingAction", agent=unauthorized_agent, _quantity=7
+        )
+
+        # test super user access
+        self.check_authorized_superuser("get", f"{base_url}/pendingactions/")
+        self.check_authorized_superuser("get", f"/agents/{agent.agent_id}/pendingactions/")
+        self.check_authorized_superuser(
+            "get", f"/agents/{unauthorized_agent.agent_id}/pendingactions/"
+        )
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+
+        self.check_not_authorized("get", f"{base_url}/pendingactions/")
+        self.check_not_authorized("get", f"/agents/{agent.agent_id}/pendingactions/")
+        self.check_not_authorized(
+            "get", f"/agents/{unauthorized_agent.agent_id}/pendingactions/"
+        )
+
+        # add list software role to user
+        user.role.can_list_pendingactions = True
+        user.role.save()
+
+        r = self.check_authorized("get", f"{base_url}/pendingactions/")
+        self.assertEqual(len(r.data), 12)
+        r = self.check_authorized("get", f"/agents/{agent.agent_id}/pendingactions/")
+        self.assertEqual(len(r.data), 5)
+        r = self.check_authorized(
+            "get", f"/agents/{unauthorized_agent.agent_id}/pendingactions/"
+        )
+        self.assertEqual(len(r.data), 7)
+
+        # test limiting to client
+        user.role.can_view_clients.set([agent.client])
+        self.check_not_authorized(
+            "get", f"/agents/{unauthorized_agent.agent_id}/pendingactions/"
+        )
+        self.check_authorized("get", f"/agents/{agent.agent_id}/pendingactions/")
+
+        # make sure queryset is limited too
+        r = self.client.get(f"{base_url}/pendingactions/")
+        self.assertEqual(len(r.data), 5)
+
+    @patch("agents.models.Agent.nats_cmd", return_value="ok")
+    @patch("logs.models.PendingAction.delete")
+    def test_delete_pendingaction_permissions(self, delete, nats_cmd):
+        agent = baker.make_recipe("agents.agent")
+        unauthorized_agent = baker.make_recipe("agents.agent")
+        action = baker.make("logs.PendingAction", agent=agent, details={"taskname": "Task"})
+        unauthorized_action = baker.make("logs.PendingAction", agent=unauthorized_agent, details={"taskname": "Task"})
+
+        url = f"{base_url}/pendingactions/{action.id}/"
+        unauthorized_url = f"{base_url}/pendingactions/{unauthorized_action.id}/"
+
+        # test superuser access
+        self.check_authorized_superuser("delete", url)
+        self.check_authorized_superuser("delete", unauthorized_url)
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+
+        # test user without role
+        self.check_not_authorized("delete", url)
+        self.check_not_authorized("delete", unauthorized_url)
+
+        # add user to role and test
+        user.role.can_manage_pendingactions = True
+        user.role.save()
+
+        self.check_authorized("delete", url)
+        self.check_authorized("delete", unauthorized_url)
+
+        # limit user to site
+        user.role.can_view_sites.set([agent.site])
+
+        self.check_authorized("delete", url)
+        self.check_not_authorized("delete", unauthorized_url)
+
 
 class TestLogTasks(TacticalTestCase):
     def test_prune_debug_log(self):
@@ -337,14 +506,3 @@ class TestLogTasks(TacticalTestCase):
         prune_audit_log(30)
 
         self.assertEqual(AuditLog.objects.count(), 6)
-
-class TestLogPermissions(TacticalTestCase):
-    def setUp(self):
-        self.client_setup()
-        self.setup_coresettings()
-
-    def test_auditlog_permissions(self):
-        self.assertTrue(False)
-
-    def test_debuglog_permissions(self):
-        self.assertTrue(False)

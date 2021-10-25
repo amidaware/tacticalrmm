@@ -3,6 +3,7 @@ from django.urls import path
 from . import views
 from checks.views import GetAddChecks
 from autotasks.views import GetAddAutoTasks
+from logs.views import PendingActions
 
 urlpatterns = [
     # agent views
@@ -18,6 +19,8 @@ urlpatterns = [
     path("<agent:agent_id>/checks/", GetAddChecks.as_view()),
     # alias for autotasks get view
     path("<agent:agent_id>/tasks/", GetAddAutoTasks.as_view()),
+    # alias for pending actions get view
+    path("<agent:agent_id>/pendingactions/", PendingActions.as_view()),
     # agent remote background
     path("<agent:agent_id>/meshcentral/", views.AgentMeshCentral.as_view()),
     path("<agent:agent_id>/meshcentral/recover/", views.AgentMeshCentral.as_view()),

@@ -35,7 +35,7 @@
         <q-btn size="md" dense no-caps flat label="View">
           <q-menu auto-close>
             <q-list dense style="min-width: 100px">
-              <q-item clickable v-close-popup @click="showPendingActions = true">
+              <q-item clickable v-close-popup @click="showPendingActions">
                 <q-item-section>Pending Actions</q-item-section>
               </q-item>
             </q-list>
@@ -145,12 +145,6 @@
       <q-dialog v-model="showEditCoreSettingsModal">
         <EditCoreSettings @close="showEditCoreSettingsModal = false" />
       </q-dialog>
-      <!-- pending actions modal -->
-      <div class="q-pa-md q-gutter-sm">
-        <q-dialog v-model="showPendingActions">
-          <PendingActions @close="showPendingActions = false" />
-        </q-dialog>
-      </div>
       <!-- Install Agents -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showInstallAgent">
@@ -188,7 +182,7 @@
 <script>
 import DialogWrapper from "@/components/ui/DialogWrapper";
 import DebugLog from "@/components/logs/DebugLog";
-import PendingActions from "@/components/modals/logs/PendingActions";
+import PendingActions from "@/components/logs/PendingActions";
 import ClientsManager from "@/components/clients/ClientsManager";
 import ClientsForm from "@/components/clients/ClientsForm";
 import SitesForm from "@/components/clients/SitesForm";
@@ -210,7 +204,6 @@ export default {
   name: "FileBar",
   emits: ["edit"],
   components: {
-    PendingActions,
     UpdateAgents,
     EditCoreSettings,
     InstallAgent,
@@ -227,7 +220,6 @@ export default {
       showEditCoreSettingsModal: false,
       showAdminManager: false,
       showInstallAgent: false,
-      showPendingActions: false,
       showDeployment: false,
       showCodeSign: false,
     };
@@ -339,6 +331,11 @@ export default {
             ["transition-hide"]: "slide-down",
           },
         },
+      });
+    },
+    showPendingActions() {
+      this.$q.dialog({
+        component: PendingActions,
       });
     },
     edited() {

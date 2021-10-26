@@ -1,63 +1,63 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide">
-    <q-card style="min-width: 60vw">
+    <q-card style="min-width: 60vw; height: 75vh">
       <q-bar>
-        <q-btn @click="getRoles" class="q-mr-sm" dense flat push icon="refresh" />
+        <q-btn @click="getRoles" class="q-mr-sm" dense flat icon="refresh" />
         <q-space />Manage Roles
         <q-space />
         <q-btn dense flat icon="close" v-close-popup />
       </q-bar>
-      <q-card-section>
-        <q-table
-          dense
-          :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
-          class="tabs-tbl-sticky"
-          binary-state-sort
-          virtual-scroll
-          :rows="roles"
-          :columns="columns"
-          row-key="id"
-          v-model:pagination="pagination"
-          no-data-label="No Roles"
-        >
-          <template v-slot:top="props">
-            <q-btn color="primary" icon="add" label="New Role" @click="showAddRoleModal" />
-          </template>
-          <template v-slot:body="props">
-            <q-tr>
-              <q-menu context-menu>
-                <q-list dense style="min-width: 200px">
-                  <q-item clickable v-close-popup @click="showEditRoleModal(props.row)">
-                    <q-item-section side>
-                      <q-icon name="edit" />
-                    </q-item-section>
-                    <q-item-section>Edit</q-item-section>
-                  </q-item>
-                  <q-item clickable v-close-popup @click="deleteRole(props.row)" :disable="props.row.user_count > 0">
-                    <q-item-section side>
-                      <q-icon name="delete" />
-                    </q-item-section>
-                    <q-item-section>Delete</q-item-section>
-                  </q-item>
+      <q-table
+        dense
+        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+        class="tabs-tbl-sticky"
+        style="max-height: 70vh"
+        binary-state-sort
+        virtual-scroll
+        :rows="roles"
+        :columns="columns"
+        row-key="id"
+        :pagination="{ rowsPerPage: 0, sortBy: 'name', descending: false }"
+        no-data-label="No Roles"
+        :rows-per-page-options="[0]"
+      >
+        <template v-slot:top>
+          <q-btn flat dense icon="add" label="New Role" @click="showAddRoleModal" />
+        </template>
+        <template v-slot:body="props">
+          <q-tr :props="props" @dblclick="showEditRoleModal(props.row)" class="cursor-pointer">
+            <q-menu context-menu auto-close>
+              <q-list dense style="min-width: 200px">
+                <q-item clickable @click="showEditRoleModal(props.row)">
+                  <q-item-section side>
+                    <q-icon name="edit" />
+                  </q-item-section>
+                  <q-item-section>Edit</q-item-section>
+                </q-item>
+                <q-item clickable @click="deleteRole(props.row)" :disable="props.row.user_count > 0">
+                  <q-item-section side>
+                    <q-icon name="delete" />
+                  </q-item-section>
+                  <q-item-section>Delete</q-item-section>
+                </q-item>
 
-                  <q-separator></q-separator>
+                <q-separator></q-separator>
 
-                  <q-item clickable v-close-popup>
-                    <q-item-section>Close</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-menu>
-              <q-td key="name" :props="props">{{ props.row.name }}</q-td>
-              <q-td key="is_superuser" :props="props">
-                <q-icon v-if="props.row.is_superuser" name="done" color="primary" size="sm" />
-              </q-td>
-              <q-td key="user_count" :props="props">
-                {{ props.row.user_count }}
-              </q-td>
-            </q-tr>
-          </template>
-        </q-table>
-      </q-card-section>
+                <q-item clickable>
+                  <q-item-section>Close</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+            <q-td key="name" :props="props">{{ props.row.name }}</q-td>
+            <q-td key="is_superuser" :props="props">
+              <q-icon v-if="props.row.is_superuser" name="done" color="primary" size="sm" />
+            </q-td>
+            <q-td key="user_count" :props="props">
+              {{ props.row.user_count }}
+            </q-td>
+          </q-tr>
+        </template>
+      </q-table>
     </q-card>
   </q-dialog>
 </template>
@@ -89,11 +89,6 @@ export default {
 
     // permission manager logic
     const roles = ref([]);
-    const pagination = ref({
-      rowsPerPage: 50,
-      sortBy: "name",
-      descending: false,
-    });
     const loading = ref(false);
 
     function showEditRoleModal(role) {
@@ -141,7 +136,6 @@ export default {
     return {
       // reactive data
       roles,
-      pagination,
       loading,
 
       // non-reactive data

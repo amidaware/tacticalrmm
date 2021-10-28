@@ -265,9 +265,6 @@ class Deployment(models.Model):
     objects = PermissionQuerySet.as_manager()
     
     uid = models.UUIDField(primary_key=False, default=uuid.uuid4, editable=False)
-    client = models.ForeignKey(
-        "clients.Client", related_name="deployclients", on_delete=models.CASCADE
-    )
     site = models.ForeignKey(
         "clients.Site", related_name="deploysites", on_delete=models.CASCADE
     )
@@ -285,6 +282,10 @@ class Deployment(models.Model):
 
     def __str__(self):
         return f"{self.client} - {self.site} - {self.mon_type}"
+
+    @property
+    def client(self):
+        return self.site.client
 
 
 class ClientCustomField(models.Model):

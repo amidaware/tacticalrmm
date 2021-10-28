@@ -8,10 +8,12 @@ from django.utils import timezone as djangotime
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
 
 from agents.models import Agent
 from core.models import CoreSettings
 from tacticalrmm.utils import notify_error
+from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_site
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 from .permissions import (
@@ -143,6 +145,10 @@ class GetAddSites(APIView):
         return Response(SiteSerializer(sites, many=True).data)
 
     def post(self, request):
+
+        if not _has_perm_on_client(request.user, request.data["site"]["client"]):
+            raise PermissionDenied()
+
         serializer = SiteSerializer(data=request.data["site"])
         serializer.is_valid(raise_exception=True)
         site = serializer.save()
@@ -233,15 +239,17 @@ class AgentDeployment(APIView):
     permission_classes = [IsAuthenticated, DeploymentPerms]
 
     def get(self, request):
-        deps = Deployment.objects.all()
+        deps = Deployment.objects.filter_by_role(request.user)
         return Response(DeploymentSerializer(deps, many=True).data)
 
     def post(self, request):
         from knox.models import AuthToken
         from accounts.models import User
 
-        client = get_object_or_404(Client, pk=request.data["client"])
         site = get_object_or_404(Site, pk=request.data["site"])
+
+        if not _has_perm_on_site(request.user, site.pk):
+            raise PermissionDenied()
 
         installer_user = User.objects.filter(is_installer_user=True).first()
 
@@ -259,7 +267,6 @@ class AgentDeployment(APIView):
         }
 
         Deployment(
-            client=client,
             site=site,
             expiry=expires,
             mon_type=request.data["agenttype"],
@@ -268,17 +275,21 @@ class AgentDeployment(APIView):
             token_key=token,
             install_flags=flags,
         ).save()
-        return Response("ok")
+        return Response("The deployment was added successfully")
 
     def delete(self, request, pk):
         d = get_object_or_404(Deployment, pk=pk)
+
+        if not _has_perm_on_site(request.user, d.site.pk):
+            raise PermissionDenied()
+
         try:
             d.auth_token.delete()
         except:
             pass
 
         d.delete()
-        return Response("ok")
+        return Response("The deployment was deleted")
 
 
 class GenerateAgent(APIView):

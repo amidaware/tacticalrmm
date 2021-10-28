@@ -48,7 +48,7 @@
               <q-item clickable v-close-popup @click="showInstallAgent = true">
                 <q-item-section>Install Agent</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="showDeployment = true">
+              <q-item clickable v-close-popup @click="showDeployments">
                 <q-item-section>Manage Deployments</q-item-section>
               </q-item>
               <q-item clickable v-close-popup @click="showUpdateAgentsModal = true">
@@ -163,10 +163,6 @@
           <AdminManager @close="showAdminManager = false" />
         </q-dialog>
       </div>
-      <!-- Agent Deployment -->
-      <q-dialog v-model="showDeployment">
-        <Deployment @close="showDeployment = false" />
-      </q-dialog>
       <!-- Server Maintenance -->
       <q-dialog v-model="showServerMaintenance">
         <ServerMaintenance @close="showMaintenance = false" />
@@ -195,7 +191,7 @@ import AdminManager from "@/components/AdminManager";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import AuditManager from "@/components/logs/AuditManager";
 import BulkAction from "@/components/modals/agents/BulkAction";
-import Deployment from "@/components/Deployment";
+import Deployment from "@/components/clients/Deployment";
 import ServerMaintenance from "@/components/modals/core/ServerMaintenance";
 import CodeSign from "@/components/modals/coresettings/CodeSign";
 import PermissionsManager from "@/components/accounts/PermissionsManager";
@@ -208,7 +204,6 @@ export default {
     EditCoreSettings,
     InstallAgent,
     AdminManager,
-    Deployment,
     ServerMaintenance,
     CodeSign,
     PermissionsManager,
@@ -220,7 +215,6 @@ export default {
       showEditCoreSettingsModal: false,
       showAdminManager: false,
       showInstallAgent: false,
-      showDeployment: false,
       showCodeSign: false,
     };
   },
@@ -247,14 +241,6 @@ export default {
           break;
       }
       window.open(url, "_blank");
-    },
-    showBulkActionModal(mode) {
-      this.bulkMode = mode;
-      this.showBulkAction = true;
-    },
-    closeBulkActionModal() {
-      this.bulkMode = null;
-      this.showBulkAction = false;
     },
     showAutomationManager() {
       this.$q.dialog({
@@ -336,6 +322,11 @@ export default {
     showPendingActions() {
       this.$q.dialog({
         component: PendingActions,
+      });
+    },
+    showDeployments() {
+      this.$q.dialog({
+        component: Deployment,
       });
     },
     edited() {

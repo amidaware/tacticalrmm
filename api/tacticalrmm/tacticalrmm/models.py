@@ -19,7 +19,7 @@ class PermissionQuerySet(models.QuerySet):
             return self
 
         # checks which sites and clients the user has access to and filters agents
-        if model_name == "Agent":
+        if model_name in ["Agent", "Deployment"]:
             if can_view_clients:
                 clients_queryset = models.Q(site__client__in=can_view_clients)
 

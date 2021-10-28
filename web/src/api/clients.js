@@ -2,6 +2,7 @@ import axios from "axios"
 
 const baseUrl = "/clients"
 
+// client endpoints
 export async function fetchClients() {
   try {
     const { data } = await axios.get(`${baseUrl}/`)
@@ -31,6 +32,7 @@ export async function removeClient(id, params = {}) {
   return data
 }
 
+// site endpoints
 export async function fetchSites() {
   try {
     const { data } = await axios.get(`${baseUrl}/sites/`)
@@ -57,5 +59,23 @@ export async function editSite(id, payload) {
 
 export async function removeSite(id, params = {}) {
   const { data } = await axios.delete(`${baseUrl}/sites/${id}/`, { params: params })
+  return data
+}
+
+// deployment endpoints
+export async function fetchDeployments() {
+  try {
+    const { data } = await axios.get(`${baseUrl}/deployments/`)
+    return data
+  } catch (e) { console.error(e) }
+}
+
+export async function saveDeployment(payload) {
+  const { data } = await axios.post(`${baseUrl}/deployments/`, payload)
+  return data
+}
+
+export async function removeDeployment(id, params = {}) {
+  const { data } = await axios.delete(`${baseUrl}/deployments/${id}/`, { params: params })
   return data
 }

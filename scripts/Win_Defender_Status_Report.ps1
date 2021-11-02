@@ -1,11 +1,14 @@
 <#
 .Synopsis
-   Defender - Status Report
+    Defender - Status Report
 .DESCRIPTION
-   This will check Event Log for Windows Defender Malware and Antispyware reports, otherwise will report as Healthy. By default if no command parameter is provided it will check the last 1 day (good for a scheduled daily task). 
-   If a number is provided as a command parameter it will search back that number of days back provided (good for collecting all AV alerts on the computer).
+    This will check Event Log for Windows Defender Malware and Antispyware reports, otherwise will report as Healthy. By default if no command parameter is provided it will check the last 1 day (good for a scheduled daily task). 
+    If a number is provided as a command parameter it will search back that number of days back provided (good for collecting all AV alerts on the computer).
 .EXAMPLE
-   Win_Defender_Status_reports.ps1 365
+    Win_Defender_Status_reports.ps1 365
+.NOTES
+    v1 dinger initial release 2021
+    v1.1 bdrayer Adding full message output if items found
 #>
 
 $param1 = $args[0]
@@ -20,7 +23,7 @@ else {
 
 if (Get-WinEvent -FilterHashtable @{LogName = 'Microsoft-Windows-Windows Defender/Operational'; ID = '1116', '1118', '1015', '1006', '5010', '5012', '5001', '1123'; StartTime = $TimeSpan }) {
     Write-Output "Virus Found or Issue with Defender"
-    Get-WinEvent -FilterHashtable @{LogName = 'Microsoft-Windows-Windows Defender/Operational'; ID = '1116', '1118', '1015', '1006', '5010', '5012', '5001', '1123'; StartTime = $TimeSpan }
+    Get-WinEvent -FilterHashtable @{LogName = 'Microsoft-Windows-Windows Defender/Operational'; ID = '1116', '1118', '1015', '1006', '5010', '5012', '5001', '1123'; StartTime = $TimeSpan } | Format-List TimeCreated, Id, LevelDisplayName, Message
     exit 1
 }
 

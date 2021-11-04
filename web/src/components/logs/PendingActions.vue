@@ -70,7 +70,7 @@
               <q-icon name="download" size="sm" />
             </q-td>
             <q-td v-if="props.row.status !== 'completed'">
-              <span v-if="props.row.action_type === 'agentupdate'">{{ getNextAgentUpdateTime }}</span>
+              <span v-if="props.row.action_type === 'agentupdate'">{{ getNextAgentUpdateTime() }}</span>
               <span v-else>{{ props.row.due }}</span>
             </q-td>
             <q-td v-else>Completed</q-td>

@@ -153,7 +153,7 @@ class CoreSettings(BaseAuditModel):
 
     def send_mail(self, subject, body, alert_template=None, test=False):
 
-        if not alert_template and not self.email_is_configured:
+        if not alert_template or not self.email_is_configured:
             if test:
                 return "Missing required fields (need at least 1 recipient)"
             return False

@@ -2,7 +2,7 @@
   <div class="q-pa-md">
     <!-- Auto Approval -->
     <div class="text-subtitle2">Auto Approval</div>
-    <hr />
+    <q-separator />
     <q-card-section class="row">
       <div class="col-3">Severity</div>
       <div class="col-4"></div>
@@ -75,7 +75,7 @@
     </q-card-section>
     <!-- Installation Schedule -->
     <div class="text-subtitle2">Installation Schedule</div>
-    <hr />
+    <q-separator />
     <q-card-section class="row">
       <div class="col-3">Schedule Frequency:</div>
       <div class="col-4"></div>
@@ -132,7 +132,7 @@
     </q-card-section>
     <!-- Reboot After Installation -->
     <div class="text-subtitle2">Reboot After Installation</div>
-    <hr />
+    <q-separator />
     <q-card-section class="row">
       <div class="col-3"></div>
       <div class="col-4"></div>
@@ -148,7 +148,7 @@
     </q-card-section>
     <!-- Failed Patches -->
     <div class="text-subtitle2">Failed Patches</div>
-    <hr />
+    <q-separator />
     <q-card-section class="row" v-if="!policy">
       <div class="col-5">
         <q-checkbox v-model="winupdatepolicy.reprocess_failed_inherit" label="Inherit failed patch settings" />

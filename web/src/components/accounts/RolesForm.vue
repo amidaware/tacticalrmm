@@ -20,7 +20,7 @@
         <q-card-section class="scroll" style="height: 70vh">
           <!-- Permissions -->
           <div class="text-subtitle2">Super User</div>
-          <hr />
+          <q-separator />
           <q-card-section class="row">
             <div class="q-gutter-sm">
               <q-checkbox v-model="localRole.is_superuser" label="Super User" />
@@ -28,7 +28,7 @@
           </q-card-section>
 
           <div class="text-subtitle2">Accounts</div>
-          <hr />
+          <q-separator />
           <q-card-section class="row">
             <div class="q-gutter-sm">
               <q-checkbox v-model="localRole.can_list_accounts" label="List User Accounts" />
@@ -39,7 +39,7 @@
           </q-card-section>
 
           <div class="text-subtitle2">Agents</div>
-          <hr />
+          <q-separator />
           <q-card-section class="row">
             <div class="q-gutter-sm">
               <q-checkbox v-model="localRole.can_list_agents" label="List Agents" />
@@ -60,7 +60,7 @@
             </div>
           </q-card-section>
           <div class="text-subtitle2">Core</div>
-          <hr />
+          <q-separator />
           <q-card-section class="row">
             <div class="q-gutter-sm">
               <q-checkbox v-model="localRole.can_list_notes" label="List Notes" />
@@ -72,11 +72,13 @@
               <q-checkbox v-model="localRole.can_list_api_keys" label="List API Keys" />
               <q-checkbox v-model="localRole.can_manage_api_keys" label="Manage API Keys" />
               <q-checkbox v-model="localRole.can_run_urlactions" label="Run URL Actions" />
+              <q-checkbox v-model="localRole.can_view_customfields" label="View Custom Fields" />
+              <q-checkbox v-model="localRole.can_manage_customfields" label="Edit Custom Fields" />
             </div>
           </q-card-section>
 
           <div class="text-subtitle2">Checks</div>
-          <hr />
+          <q-separator />
           <q-card-section class="row">
             <div class="q-gutter-sm">
               <q-checkbox v-model="localRole.can_list_checks" label="List Checks" />
@@ -86,7 +88,7 @@
           </q-card-section>
 
           <div class="text-subtitle2">Clients</div>
-          <hr />
+          <q-separator />
           <q-card-section class="row">
             <div class="q-gutter-sm">
               <q-checkbox v-model="localRole.can_list_clients" label="List Clients" />
@@ -124,7 +126,7 @@
           </q-card-section>
 
           <div class="text-subtitle2">Automation Policies</div>
-          <hr />
+          <q-separator />
           <q-card-section class="row">
             <div class="q-gutter-sm">
               <q-checkbox v-model="localRole.can_list_automation_policies" label="List Automation Policies" />
@@ -133,7 +135,7 @@
           </q-card-section>
 
           <div class="text-subtitle2">Tasks</div>
-          <hr />
+          <q-separator />
           <q-card-section class="row">
             <div class="q-gutter-sm">
               <q-checkbox v-model="localRole.can_list_autotasks" label="List Tasks" />
@@ -143,7 +145,7 @@
           </q-card-section>
 
           <div class="text-subtitle2">Logs</div>
-          <hr />
+          <q-separator />
           <q-card-section class="row">
             <div class="q-gutter-sm">
               <q-checkbox v-model="localRole.can_view_auditlogs" label="View Audit Logs" />
@@ -154,7 +156,7 @@
           </q-card-section>
 
           <div class="text-subtitle2">Scripts</div>
-          <hr />
+          <q-separator />
           <q-card-section class="row">
             <div class="q-gutter-sm">
               <q-checkbox v-model="localRole.can_list_scripts" label="List Scripts" />
@@ -163,7 +165,7 @@
           </q-card-section>
 
           <div class="text-subtitle2">Alerts</div>
-          <hr />
+          <q-separator />
           <q-card-section class="row">
             <div class="q-gutter-sm">
               <q-checkbox v-model="localRole.can_list_alerts" label="List Alerts" />
@@ -174,7 +176,7 @@
           </q-card-section>
 
           <div class="text-subtitle2">Windows Services</div>
-          <hr />
+          <q-separator />
           <q-card-section class="row">
             <div class="q-gutter-sm">
               <q-checkbox v-model="localRole.can_manage_winsvcs" label="Manage Windows Services" />
@@ -182,7 +184,7 @@
           </q-card-section>
 
           <div class="text-subtitle2">Software</div>
-          <hr />
+          <q-separator />
           <q-card-section class="row">
             <div class="q-gutter-sm">
               <q-checkbox v-model="localRole.can_list_software" label="List Software" />
@@ -191,7 +193,7 @@
           </q-card-section>
 
           <div class="text-subtitle2">Windows Updates</div>
-          <hr />
+          <q-separator />
           <q-card-section class="row">
             <div class="q-gutter-sm">
               <q-checkbox v-model="localRole.can_manage_winupdates" label="Manage Windows Updates" />
@@ -266,6 +268,8 @@ export default {
           can_do_server_maint: false,
           can_code_sign: false,
           can_run_urlactions: false,
+          can_view_customfields: false,
+          can_manage_customfields: false,
           // api key perms
           can_list_api_keys: false,
           can_manage_api_keys: false,

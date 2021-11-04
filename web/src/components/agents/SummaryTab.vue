@@ -10,7 +10,7 @@
       <span v-if="summary.maintenance_mode"> &bull; <q-badge color="green"> Maintenance Mode </q-badge> </span>
       &bull; {{ summary.operating_system }} &bull; Agent v{{ summary.version }}
     </span>
-    <hr />
+    <q-separator />
     <div class="row">
       <div class="col-4">
         <!-- left -->
@@ -104,7 +104,7 @@
           <span>{{ disk.device }} ({{ disk.fstype }})</span>
           <q-linear-progress rounded size="15px" :value="disk.percent / 100" color="green" class="q-mt-sm" />
           <span>{{ disk.free }} free of {{ disk.total }}</span>
-          <hr />
+          <q-separator />
         </div>
       </div>
       <div class="col-2"></div>

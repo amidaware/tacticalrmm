@@ -50,7 +50,7 @@
           </div>
         </div>
       </q-card-section>
-      <hr />
+      <q-separator />
       <q-card-section>
         <div class="row">
           <div class="col-3">Service status:</div>
@@ -65,7 +65,7 @@
           </q-btn-group>
         </div>
       </q-card-section>
-      <hr />
+      <q-separator />
       <q-card-actions align="right">
         <q-btn flat dense label="Cancel" v-close-popup />
         <q-btn

@@ -21,10 +21,10 @@
     <q-card-section v-show="version !== null">
       Select Agent
       <br />
-      <hr />
+      <q-separator />
       <q-checkbox v-model="selectAll" label="Select All" @update:model-value="selectAllAction" />
       <q-btn v-show="group.length !== 0" label="Update" color="primary" @click="update" class="q-ml-xl" />
-      <hr />
+      <q-separator />
       <q-option-group
         v-model="group"
         :options="agentOptions"
@@ -41,7 +41,7 @@
 import mixins from "@/mixins/mixins";
 export default {
   name: "UpdateAgents",
-  emits: ["close", "edit"],
+  emits: ["close"],
   mixins: [mixins],
   data() {
     return {
@@ -76,7 +76,6 @@ export default {
         .post("/agents/update/", data)
         .then(r => {
           this.$emit("close");
-          this.$emit("edit");
           this.notifySuccess("Agents will now be updated");
         })
         .catch(e => {});

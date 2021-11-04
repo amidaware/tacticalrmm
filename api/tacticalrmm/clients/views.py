@@ -74,7 +74,7 @@ class GetAddClients(APIView):
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
 
-        return Response(f"{client} was added")
+        return Response(f"{client.name} was added")
 
 
 class GetUpdateDeleteClient(APIView):

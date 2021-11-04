@@ -20,7 +20,8 @@ from .permissions import (
     CodeSignPerms,
     CoreSettingsPerms,
     ServerMaintPerms,
-    URLActionPerms
+    URLActionPerms,
+    CustomFieldPerms
 )
 from .serializers import (
     CodeSignTokenSerializer,
@@ -168,7 +169,7 @@ def server_maintenance(request):
 
 
 class GetAddCustomFields(APIView):
-    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+    permission_classes = [IsAuthenticated, CustomFieldPerms]
 
     def get(self, request):
         if "model" in request.query_params.keys():
@@ -193,7 +194,7 @@ class GetAddCustomFields(APIView):
 
 
 class GetUpdateDeleteCustomFields(APIView):
-    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+    permission_classes = [IsAuthenticated, CustomFieldPerms]
 
     def get(self, request, pk):
         custom_field = get_object_or_404(CustomField, pk=pk)

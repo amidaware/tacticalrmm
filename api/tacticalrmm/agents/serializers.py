@@ -1,13 +1,30 @@
 import pytz
-from clients.serializers import ClientSerializer
 from rest_framework import serializers
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .models import Agent, AgentCustomField, Note, AgentHistory
 
 
+class AgentCustomFieldSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AgentCustomField
+        fields = (
+            "id",
+            "field",
+            "agent",
+            "value",
+            "string_value",
+            "bool_value",
+            "multiple_value",
+        )
+        extra_kwargs = {
+            "string_value": {"write_only": True},
+            "bool_value": {"write_only": True},
+            "multiple_value": {"write_only": True},
+        }
+
+        
 class AgentSerializer(serializers.ModelSerializer):
-    # for vue
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
     status = serializers.ReadOnlyField()
     cpu_model = serializers.ReadOnlyField()
@@ -18,8 +35,9 @@ class AgentSerializer(serializers.ModelSerializer):
     checks = serializers.ReadOnlyField()
     timezone = serializers.ReadOnlyField()
     all_timezones = serializers.SerializerMethodField()
-    client_name = serializers.ReadOnlyField(source="client.name")
+    client = serializers.ReadOnlyField(source="client.name")
     site_name = serializers.ReadOnlyField(source="site.name")
+    custom_fields = AgentCustomFieldSerializer(many=True, read_only=True)
 
     def get_all_timezones(self, obj):
         return pytz.all_timezones
@@ -28,6 +46,7 @@ class AgentSerializer(serializers.ModelSerializer):
         model = Agent
         exclude = [
             "last_seen",
+            "id"
         ]
 
 
@@ -100,60 +119,6 @@ class AgentTableSerializer(serializers.ModelSerializer):
             "block_policy_inheritance",
         ]
         depth = 2
-
-
-class AgentCustomFieldSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AgentCustomField
-        fields = (
-            "id",
-            "field",
-            "agent",
-            "value",
-            "string_value",
-            "bool_value",
-            "multiple_value",
-        )
-        extra_kwargs = {
-            "string_value": {"write_only": True},
-            "bool_value": {"write_only": True},
-            "multiple_value": {"write_only": True},
-        }
-
-
-class AgentEditSerializer(serializers.ModelSerializer):
-    winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
-    all_timezones = serializers.SerializerMethodField()
-    client = ClientSerializer(read_only=True)
-    custom_fields = AgentCustomFieldSerializer(many=True, read_only=True)
-
-    def get_all_timezones(self, obj):
-        return pytz.all_timezones
-
-    class Meta:
-        model = Agent
-        fields = [
-            "agent_id",
-            "hostname",
-            "block_policy_inheritance",
-            "client",
-            "site",
-            "monitoring_type",
-            "description",
-            "time_zone",
-            "timezone",
-            "check_interval",
-            "overdue_time",
-            "offline_time",
-            "overdue_text_alert",
-            "overdue_email_alert",
-            "overdue_dashboard_alert",
-            "all_timezones",
-            "winupdatepolicy",
-            "policy",
-            "custom_fields",
-            "maintenance_mode"
-        ]
 
 
 class WinAgentSerializer(serializers.ModelSerializer):

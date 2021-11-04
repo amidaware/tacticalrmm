@@ -44,7 +44,6 @@ from .permissions import (
 )
 from .serializers import (
     AgentCustomFieldSerializer,
-    AgentEditSerializer,
     AgentHistorySerializer,
     AgentHostnameSerializer,
     AgentSerializer,
@@ -122,13 +121,13 @@ class GetUpdateDeleteAgent(APIView):
     # get agent details
     def get(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
-        return Response(AgentSerializer(agent).data)
+        return Response(AgentSerializer(agent, context={"default_tz": get_default_timezone()}).data)
 
     # edit agent
     def put(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
 
-        a_serializer = AgentEditSerializer(
+        a_serializer = AgentSerializer(
             instance=agent, data=request.data, partial=True
         )
         a_serializer.is_valid(raise_exception=True)
@@ -165,7 +164,7 @@ class GetUpdateDeleteAgent(APIView):
                     serializer.is_valid(raise_exception=True)
                     serializer.save()
 
-        return Response("ok")
+        return Response("The agent was updated successfully")
 
     # uninstall agent
     def delete(self, request, agent_id):

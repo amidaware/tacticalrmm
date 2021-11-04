@@ -7,7 +7,7 @@ from core.consumers import DashInfo
 
 
 class AgentIDConverter:
-    regex = "[\\w-]{20}[\\w-]+"
+    regex = "[^/]{20}[^/]+"
 
     def to_python(self, value):
         return value

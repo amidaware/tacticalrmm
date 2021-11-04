@@ -383,7 +383,6 @@
                 :userName="user"
                 :search="search"
                 :visibleColumns="visibleColumns"
-                @edit="refreshEntireSite"
               />
             </template>
             <template v-slot:separator>
@@ -437,6 +436,12 @@ export default {
     AlertsIcon,
     InstallAgent,
     UserPreferences,
+  },
+  // allow child components to refresh table
+  provide() {
+    return {
+      refreshDashboard: this.getTree,
+    };
   },
   mixins: [mixins],
   data() {
@@ -661,7 +666,6 @@ export default {
           this.$axios
             .get(`/agents/?${param}`)
             .then(r => {
-              console.log(r.data);
               this.frame = r.data;
               this.$store.commit("AGENT_TABLE_LOADING", false);
             })
@@ -706,12 +710,14 @@ export default {
         });
     },
     showAddSiteModal(node) {
-      this.$q.dialog({
-        component: SitesForm,
-        componentProps: {
-          client: node.id,
-        },
-      });
+      this.$q
+        .dialog({
+          component: SitesForm,
+          componentProps: {
+            client: node.id,
+          },
+        })
+        .onOk(this.getTree);
     },
     showEditModal(node) {
       let props = {};
@@ -721,20 +727,24 @@ export default {
         props.site = { id: node.id, name: node.label, client: node.client };
       }
 
-      this.$q.dialog({
-        component: node.children ? ClientsForm : SitesForm,
-        componentProps: node.children ? { client: node.client } : { site: node.site },
-      });
+      this.$q
+        .dialog({
+          component: node.children ? ClientsForm : SitesForm,
+          componentProps: node.children ? { client: node.client } : { site: node.site },
+        })
+        .onOk(this.getTree);
     },
     showDeleteModal(node) {
       if ((node.children && node.client.agent_count > 0) || (!node.children && node.site.agent_count > 0)) {
-        this.$q.dialog({
-          component: DeleteClient,
-          componentProps: {
-            object: node.children ? node.client : node.site,
-            type: node.children ? "client" : "site",
-          },
-        });
+        this.$q
+          .dialog({
+            component: DeleteClient,
+            componentProps: {
+              object: node.children ? node.client : node.site,
+              type: node.children ? "client" : "site",
+            },
+          })
+          .onOk(this.getTree);
       } else {
         this.$q
           .dialog({
@@ -748,7 +758,7 @@ export default {
             try {
               const result = node.children ? await removeClient(node.id) : await removeSite(node.id);
               this.notifySuccess(result);
-              this.$store.dispatch("loadTree");
+              this.getTree();
             } catch (e) {
               console.error(e);
             }
@@ -773,9 +783,7 @@ export default {
             object: node.children ? node.client : node.site,
           },
         })
-        .onOk(() => {
-          this.clearTreeSelected();
-        });
+        .onOk(this.getTree);
     },
     reload() {
       this.$store.dispatch("reload");

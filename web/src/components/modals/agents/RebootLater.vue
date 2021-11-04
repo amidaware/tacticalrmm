@@ -50,7 +50,7 @@ export default {
   },
   setup(props) {
     // setup quasar dialog plugin
-    const { dialogRef, onDialogHide } = useDialogPluginComponent();
+    const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
     const $q = useQuasar();
 
     // setup reboot later logic
@@ -64,14 +64,13 @@ export default {
 
       try {
         const result = await scheduleAgentReboot(props.agent.agent_id, { datetime: state.value.datetime });
-
         $q.dialog({
           title: "Reboot pending",
           style: "width: 40vw",
           message: `A reboot has been scheduled for <strong>${state.value.datetime}</strong> on ${props.agent.agent_id}.
             <br />It can be cancelled from the Pending Actions menu until the scheduled time.`,
           html: true,
-        });
+        }).onDismiss(onDialogOK);
       } catch (e) {
         console.error(e);
       }

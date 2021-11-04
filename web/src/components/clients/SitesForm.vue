@@ -40,7 +40,6 @@
 <script>
 // composition imports
 import { ref, onMounted } from "vue";
-import { useStore } from "vuex";
 import { useDialogPluginComponent } from "quasar";
 import { useClientDropdown } from "@/composables/clients";
 import { fetchSite, saveSite, editSite } from "@/api/clients";
@@ -64,9 +63,6 @@ export default {
     client: Number,
   },
   setup(props) {
-    // setup vuex
-    const store = useStore();
-
     // setup quasar dialog
     const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
 
@@ -89,7 +85,6 @@ export default {
         const result = !!props.site ? await editSite(props.site.id, data) : await saveSite(data);
         notifySuccess(result);
         onDialogOK();
-        store.dispatch("loadTree");
       } catch (e) {
         console.error(e);
       }

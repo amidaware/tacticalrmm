@@ -154,7 +154,7 @@
       <!-- Update Agents Modal -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showUpdateAgentsModal" maximized transition-show="slide-up" transition-hide="slide-down">
-          <UpdateAgents @close="showUpdateAgentsModal = false" @edit="edited" />
+          <UpdateAgents @close="showUpdateAgentsModal = false" />
         </q-dialog>
       </div>
       <!-- Admin Manager -->
@@ -198,7 +198,7 @@ import PermissionsManager from "@/components/accounts/PermissionsManager";
 
 export default {
   name: "FileBar",
-  emits: ["edit"],
+  inject: ["refreshDashboard"],
   components: {
     UpdateAgents,
     EditCoreSettings,
@@ -248,24 +248,32 @@ export default {
       });
     },
     showAlertsManager() {
-      this.$q.dialog({
-        component: AlertsManager,
-      });
+      this.$q
+        .dialog({
+          component: AlertsManager,
+        })
+        .onDismiss(this.refreshDashboard);
     },
     showClientsManager() {
-      this.$q.dialog({
-        component: ClientsManager,
-      });
+      this.$q
+        .dialog({
+          component: ClientsManager,
+        })
+        .onDismiss(this.refreshDashboard);
     },
     showAddClientModal() {
-      this.$q.dialog({
-        component: ClientsForm,
-      });
+      this.$q
+        .dialog({
+          component: ClientsForm,
+        })
+        .onOk(this.refreshDashboard);
     },
     showAddSiteModal() {
-      this.$q.dialog({
-        component: SitesForm,
-      });
+      this.$q
+        .dialog({
+          component: SitesForm,
+        })
+        .onOk(this.refreshDashboard);
     },
     showPermissionsManager() {
       this.$q.dialog({
@@ -320,17 +328,16 @@ export default {
       });
     },
     showPendingActions() {
-      this.$q.dialog({
-        component: PendingActions,
-      });
+      this.$q
+        .dialog({
+          component: PendingActions,
+        })
+        .onDismiss(this.refreshDashboard);
     },
     showDeployments() {
       this.$q.dialog({
         component: Deployment,
       });
-    },
-    edited() {
-      this.$emit("edit");
     },
   },
 };

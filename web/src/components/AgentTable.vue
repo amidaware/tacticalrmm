@@ -402,7 +402,7 @@ import RunScript from "@/components/modals/agents/RunScript";
 export default {
   name: "AgentTable",
   props: ["frame", "columns", "userName", "search", "visibleColumns"],
-  emits: ["edit"],
+  inject: ["refreshDashboard"],
   mixins: [mixins],
   data() {
     return {
@@ -531,16 +531,15 @@ export default {
           this.$q.loading.hide();
         });
     },
-    agentEdited() {
-      this.$emit("edit");
-    },
     showPendingActionsModal(agent) {
-      this.$q.dialog({
-        component: PendingActions,
-        componentProps: {
-          agent: agent,
-        },
-      });
+      this.$q
+        .dialog({
+          component: PendingActions,
+          componentProps: {
+            agent: agent,
+          },
+        })
+        .onDismiss(this.refreshDashboard);
     },
     takeControl(agent_id) {
       const url = this.$router.resolve(`/takecontrol/${agent_id}`).href;
@@ -582,9 +581,7 @@ export default {
             .delete(`/agents/${agent.agent_id}/`)
             .then(r => {
               this.notifySuccess(r.data);
-              setTimeout(() => {
-                location.reload();
-              }, 2000);
+              this.refreshDashboard();
             })
             .catch(e => {
               this.$q.loading.hide();
@@ -686,9 +683,7 @@ export default {
             object: agent,
           },
         })
-        .onOk(() => {
-          this.$emit("edit");
-        });
+        .onOk(this.refreshDashboard);
     },
     toggleMaintenance(agent) {
       let data = {
@@ -701,7 +696,7 @@ export default {
           this.notifySuccess(
             `Maintenance mode was ${agent.maintenance_mode ? "disabled" : "enabled"} on ${agent.hostname}`
           );
-          this.$emit("edit");
+          this.refreshDashboard();
         })
         .catch(e => {
           console.log(e);
@@ -756,12 +751,14 @@ export default {
       });
     },
     showRebootLaterModal(agent) {
-      this.$q.dialog({
-        component: RebootLater,
-        componentProps: {
-          agent: agent,
-        },
-      });
+      this.$q
+        .dialog({
+          component: RebootLater,
+          componentProps: {
+            agent: agent,
+          },
+        })
+        .onOk(this.refreshDashboard);
     },
     showEditAgent(agent_id) {
       this.$q
@@ -771,7 +768,7 @@ export default {
             agent_id: agent_id,
           },
         })
-        .onOk(() => this.$emit("edit"));
+        .onOk(this.refreshDashboard);
     },
     showAgentRecovery(agent) {
       this.$q.dialog({

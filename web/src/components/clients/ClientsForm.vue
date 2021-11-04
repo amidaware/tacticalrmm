@@ -44,7 +44,6 @@
 <script>
 // composition imports
 import { ref, onMounted } from "vue";
-import { useStore } from "vuex";
 import { useDialogPluginComponent } from "quasar";
 import { fetchClient, saveClient, editClient } from "@/api/clients";
 import { fetchCustomFields } from "@/api/core";
@@ -64,9 +63,6 @@ export default {
     client: Object,
   },
   setup(props) {
-    // setup vuex
-    const store = useStore();
-
     // setup quasar dialog
     const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
 
@@ -88,7 +84,6 @@ export default {
         const result = !!props.client ? await editClient(props.client.id, data) : await saveClient(data);
         notifySuccess(result);
         onDialogOK();
-        store.dispatch("loadTree");
       } catch (e) {
         console.error(e);
       }

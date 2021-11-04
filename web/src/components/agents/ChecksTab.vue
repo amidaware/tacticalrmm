@@ -284,7 +284,7 @@
 
 <script>
 // composition imports
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, inject, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useQuasar } from "quasar";
 import { updateCheck, removeCheck, resetCheck } from "@/api/checks";
@@ -339,6 +339,9 @@ export default {
 
     // setup quasar
     const $q = useQuasar();
+
+    // inject function to refresh dashboard
+    const refreshDashboard = inject("refreshDashboard");
 
     // setup checks tab logic
     const checks = ref([]);
@@ -396,6 +399,7 @@ export default {
         const result = await resetCheck(check.id);
         await getChecks();
         notifySuccess(result);
+        refreshDashboard();
       } catch (e) {
         console.error(e);
       }

@@ -118,7 +118,7 @@
 
 <script>
 // composition imports
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, inject, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useQuasar } from "quasar";
 import { fetchAgentUpdates, editAgentUpdate, runAgentUpdateScan, runAgentUpdateInstall } from "@/api/winupdates";
@@ -183,6 +183,9 @@ export default {
     // setup quasar
     const $q = useQuasar();
 
+    // inject function to refresh dashboard
+    const refreshDashboard = inject("refreshDashboard");
+
     // setup win update tab component
     const updates = ref([]);
     const filter = ref("");
@@ -205,6 +208,7 @@ export default {
         const result = await editAgentUpdate(pk, { action: action });
         await getUpdates(selectedAgent.value);
         notifySuccess(result);
+        refreshDashboard();
       } catch (e) {
         console.error(e);
       }

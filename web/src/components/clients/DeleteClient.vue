@@ -44,7 +44,6 @@
 <script>
 // composition imports
 import { ref, onMounted } from "vue";
-import { useStore } from "vuex";
 import { useQuasar, useDialogPluginComponent } from "quasar";
 import { notifySuccess } from "@/utils/notify";
 import { fetchClients, removeClient, removeSite } from "@/api/clients";
@@ -64,9 +63,6 @@ export default {
     type: !String,
   },
   setup(props) {
-    // setup vuex
-    const store = useStore();
-
     // setup quasar dialog
     const $q = useQuasar();
     const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
@@ -91,7 +87,6 @@ export default {
               : await removeSite(props.object.id, { move_to_site: site.value });
           notifySuccess(result);
           onDialogOK();
-          store.dispatch("loadTree");
         } catch (e) {
           console.error(e);
         }

@@ -195,7 +195,7 @@ export default {
               else this.custom_fields[field.name] = [];
             } else if (field.type === "checkbox") {
               if (value) this.custom_fields[field.name] = value.value;
-              else this.this.custom_fields[field.name] = false;
+              else this.custom_fields[field.name] = false;
             } else {
               if (value) this.custom_fields[field.name] = value.value;
               else this.custom_fields[field.name] = "";
@@ -237,6 +237,7 @@ export default {
           custom_fields: this.formatCustomFields(this.customFields, this.custom_fields),
         })
         .then(r => {
+          this.$refs.dialogRef.hide();
           this.$emit("ok");
           this.notifySuccess("Agent was edited!");
         })

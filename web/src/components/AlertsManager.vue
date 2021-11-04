@@ -244,8 +244,9 @@ export default {
           this.$axios
             .delete(`alerts/templates/${template.id}/`)
             .then(r => {
-              this.getTemplates();
+              this.refresh();
               this.$q.loading.hide();
+
               this.notifySuccess(`Alert template ${template.name} was deleted!`);
             })
             .catch(error => {

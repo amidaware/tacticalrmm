@@ -91,7 +91,6 @@
 <script>
 // composition imports
 import { ref, onMounted } from "vue";
-import { useStore } from "vuex";
 import { useQuasar, useDialogPluginComponent } from "quasar";
 import { fetchClients, removeClient } from "@/api/clients";
 import { notifySuccess } from "@/utils/notify";
@@ -113,9 +112,6 @@ export default {
   name: "ClientsManager",
   emits: [...useDialogPluginComponent.emits],
   setup(props) {
-    // setup vuex
-    const store = useStore();
-
     // setup quasar dialog
     const $q = useQuasar();
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
@@ -154,7 +150,6 @@ export default {
             const result = await removeClient(client.id);
             notifySuccess(result);
             await getClients();
-            store.dispatch("loadTree");
           } catch (e) {
             console.error(e);
           }

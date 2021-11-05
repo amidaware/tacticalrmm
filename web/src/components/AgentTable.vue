@@ -126,7 +126,7 @@
                       dense
                       clickable
                       v-close-popup
-                      @click="runURLAction(props.row.id, action.id)"
+                      @click="runURLAction(props.row.agent_id, action.id)"
                     >
                       {{ action.name }}
                     </q-item>

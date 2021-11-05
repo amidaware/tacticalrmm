@@ -437,7 +437,7 @@ export default {
       $q.dialog({
         title: check.readable_desc,
         style: "width: 50vw; max-width: 60vw",
-        message: `<pre>${check.output}</pre>`,
+        message: `<pre>${check.more_info}</pre>`,
         html: true,
       });
     }

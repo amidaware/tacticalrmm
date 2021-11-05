@@ -580,6 +580,7 @@ export default {
           this.$axios
             .delete(`/agents/${agent.agent_id}/`)
             .then(r => {
+              this.$q.loading.hide();
               this.notifySuccess(r.data);
               this.refreshDashboard();
             })

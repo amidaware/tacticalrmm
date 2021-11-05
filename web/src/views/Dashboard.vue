@@ -440,7 +440,7 @@ export default {
   // allow child components to refresh table
   provide() {
     return {
-      refreshDashboard: this.getTree,
+      refreshDashboard: this.refreshEntireSite,
     };
   },
   mixins: [mixins],

@@ -6,6 +6,11 @@ class PermissionQuerySet(models.QuerySet):
     def filter_by_role(self, user):
 
         role = user.role
+
+        # returns normal queryset if user is superuser
+        if user.is_superuser or (role and getattr(role, "is_superuser")):
+            return self
+
         can_view_clients = role.can_view_clients.all() if role else None
         can_view_sites = role.can_view_sites.all() if role else None
 
@@ -13,10 +18,6 @@ class PermissionQuerySet(models.QuerySet):
         sites_queryset = models.Q()
         agent_queryset = models.Q()
         model_name = self.model._meta.label.split(".")[1]
-
-        # returns normal queryset if user is superuser
-        if user.is_superuser or (role and getattr(role, "is_superuser")):
-            return self
 
         # checks which sites and clients the user has access to and filters agents
         if model_name in ["Agent", "Deployment"]:

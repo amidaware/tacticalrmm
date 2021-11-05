@@ -47,6 +47,8 @@ export default function ({ app, router, store }) {
       }
       // perms
       else if (error.response.status === 403) {
+        // don't notify user if method is GET
+        if (error.config.method === "get" || error.config.method === "patch") return Promise.reject({ ...error });
         text = error.response.data.detail;
       }
       // catch all for other 400 error messages

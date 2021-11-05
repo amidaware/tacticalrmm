@@ -669,7 +669,9 @@ export default {
               this.frame = r.data;
               this.$store.commit("AGENT_TABLE_LOADING", false);
             })
-            .catch(e => {});
+            .catch(e => {
+              this.$store.commit("AGENT_TABLE_LOADING", false);
+            });
         }
       }
     },
@@ -694,7 +696,9 @@ export default {
           this.frame = r.data;
           this.$store.commit("AGENT_TABLE_LOADING", false);
         })
-        .catch(e => {});
+        .catch(e => {
+          this.$store.commit("AGENT_TABLE_LOADING", false);
+        });
     },
     showPolicyAdd(node) {
       this.$q

@@ -13,7 +13,6 @@ export default function () {
         treeReady: false,
         selectedRow: null,
         agentTableLoading: false,
-        treeLoading: false,
         needrefresh: false,
         tableHeight: "300px",
         tabHeight: "300px",
@@ -194,7 +193,9 @@ export default function () {
           }
 
         })
-          .catch(e => { });
+          .catch(e => {
+            state.treeReady = true
+          });
       },
       checkVer(context) {
         axios.get("/core/version/").then(r => {

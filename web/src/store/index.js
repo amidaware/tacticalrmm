@@ -34,7 +34,7 @@ export default function () {
         return state.token !== null;
       },
       selectedAgentId(state) {
-        return state.selectedRow.agent_id;
+        return state.selectedRow;
       },
       showCommunityScripts(state) {
         return state.showCommunityScripts;
@@ -72,7 +72,7 @@ export default function () {
         state.treeReady = true;
       },
       destroySubTable(state) {
-        state.selectedRow = "";
+        state.selectedRow = null;
       },
       SET_REFRESH_NEEDED(state, action) {
         state.needrefresh = action;

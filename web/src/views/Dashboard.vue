@@ -631,11 +631,15 @@ export default {
         this.ws.onclose();
       };
     },
-    refreshEntireSite() {
+    refreshEntireSite(selectAllClients = false) {
       this.$store.dispatch("loadTree");
       this.getDashInfo(false);
 
-      if (this.allClientsActive) {
+      if (selectAllClients) {
+        this.clearTreeSelected();
+        this.$store.commit("destroySubTable");
+        this.allClientsActive = true;
+      } else if (this.allClientsActive) {
         this.loadAllClients();
       } else {
         this.loadFrame(this.selectedTree, false);
@@ -721,7 +725,7 @@ export default {
             client: node.id,
           },
         })
-        .onOk(this.getTree);
+        .onOk(this.refreshEntireSite);
     },
     showEditModal(node) {
       let props = {};
@@ -736,7 +740,7 @@ export default {
           component: node.children ? ClientsForm : SitesForm,
           componentProps: node.children ? { client: node.client } : { site: node.site },
         })
-        .onOk(this.getTree);
+        .onOk(this.refreshEntireSite);
     },
     showDeleteModal(node) {
       if ((node.children && node.client.agent_count > 0) || (!node.children && node.site.agent_count > 0)) {
@@ -748,7 +752,7 @@ export default {
               type: node.children ? "client" : "site",
             },
           })
-          .onOk(this.getTree);
+          .onOk(this.clearTreeSelected);
       } else {
         this.$q
           .dialog({
@@ -762,7 +766,7 @@ export default {
             try {
               const result = node.children ? await removeClient(node.id) : await removeSite(node.id);
               this.notifySuccess(result);
-              this.getTree();
+              this.clearTreeSelected();
             } catch (e) {
               console.error(e);
             }
@@ -787,7 +791,7 @@ export default {
             object: node.children ? node.client : node.site,
           },
         })
-        .onOk(this.getTree);
+        .onOk(this.refreshEntireSite);
     },
     reload() {
       this.$store.dispatch("reload");
@@ -830,7 +834,7 @@ export default {
         .post("/agents/maintenance/bulk/", data)
         .then(r => {
           this.notifySuccess(r.data);
-          this.getTree();
+          this.refreshEntireSite();
         })
         .catch(e => {
           console.error(e);

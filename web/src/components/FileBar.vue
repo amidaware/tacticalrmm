@@ -259,7 +259,7 @@ export default {
         .dialog({
           component: ClientsManager,
         })
-        .onDismiss(this.refreshDashboard);
+        .onDismiss(() => this.refreshDashboard(true));
     },
     showAddClientModal() {
       this.$q

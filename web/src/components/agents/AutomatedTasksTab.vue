@@ -80,7 +80,7 @@
           <!-- context menu -->
           <q-menu context-menu>
             <q-list dense style="min-width: 200px">
-              <q-item clickable v-close-popup @click="runTask(props.row)">
+              <q-item clickable v-close-popup @click="runWinTask(props.row)">
                 <q-item-section side>
                   <q-icon name="play_arrow" />
                 </q-item-section>

@@ -469,7 +469,7 @@ export default {
       });
     },
     rowDoubleClicked(agent_id) {
-      this.$store.commit("setActiveRow", agent);
+      this.$store.commit("setActiveRow", agent_id);
       this.$q.loading.show();
       // give time for store to change active row
       setTimeout(() => {
@@ -479,13 +479,13 @@ export default {
             this.showEditAgent(agent_id);
             break;
           case "takecontrol":
-            this.takeControl(agent.agent_id);
+            this.takeControl(agent_id);
             break;
           case "remotebg":
-            this.remoteBG(agent.agent_id);
+            this.remoteBG(agent_id);
             break;
           case "urlaction":
-            this.runURLAction(agent.agent_id, this.agentUrlAction);
+            this.runURLAction(agent_id, this.agentUrlAction);
             break;
         }
       }, 500);

@@ -157,7 +157,6 @@ export default {
         ok: { label: "Save" },
         cancel: true,
       }).onOk(async data => {
-        console.log(data);
         loading.value = true;
         try {
           const result = await editAgentNote(note.pk, { note: data });

@@ -46,17 +46,14 @@
       <template v-slot:body-cell-output="props">
         <q-td :props="props">
           <span
-            v-if="props.row.type === 'script_run' || props.row.type === 'task_run'"
             style="cursor: pointer; text-decoration: underline"
             class="text-primary"
-            @click="showScriptOutput(props.row.script_results)"
+            @click="
+              props.row.type === 'cmd_run'
+                ? showCommandOutput(props.row.results)
+                : showScriptOutput(props.row.script_results)
+            "
             >Output
-          </span>
-          <span v-else-if="props.row.type === 'cmd_run'"
-            >{{ truncateText(props.row.results, 30) }}
-            <q-tooltip v-if="props.row.results !== null && props.row.results.length >= 30" style="font-size: 12px">
-              {{ props.row.results }}
-            </q-tooltip>
           </span>
         </q-td>
       </template>
@@ -146,6 +143,14 @@ export default {
       });
     }
 
+    function showCommandOutput(output) {
+      $q.dialog({
+        style: "width: 70vw; max-width: 80vw",
+        message: `<pre>${output}</pre>`,
+        html: true,
+      });
+    }
+
     // vue component hooks
     onMounted(() => {
       if (selectedAgent.value) getHistory();
@@ -163,6 +168,7 @@ export default {
 
       // methods
       showScriptOutput,
+      showCommandOutput,
       getHistory,
       truncateText,
 

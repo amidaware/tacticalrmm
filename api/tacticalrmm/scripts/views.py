@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from tacticalrmm.utils import notify_error
 
 from .models import Script, ScriptSnippet
-from .permissions import ManageScriptsPerms
+from .permissions import ScriptsPerms
 from agents.permissions import RunScriptPerms
 from .serializers import (
     ScriptSerializer,
@@ -19,7 +19,7 @@ from .serializers import (
 
 
 class GetAddScripts(APIView):
-    permission_classes = [IsAuthenticated, ManageScriptsPerms]
+    permission_classes = [IsAuthenticated, ScriptsPerms]
 
     def get(self, request):
 
@@ -41,7 +41,7 @@ class GetAddScripts(APIView):
 
 
 class GetUpdateDeleteScript(APIView):
-    permission_classes = [IsAuthenticated, ManageScriptsPerms]
+    permission_classes = [IsAuthenticated, ScriptsPerms]
 
     def get(self, request, pk):
         script = get_object_or_404(Script, pk=pk)
@@ -78,7 +78,7 @@ class GetUpdateDeleteScript(APIView):
 
 
 class GetAddScriptSnippets(APIView):
-    permission_classes = [IsAuthenticated, ManageScriptsPerms]
+    permission_classes = [IsAuthenticated, ScriptsPerms]
 
     def get(self, request):
         snippets = ScriptSnippet.objects.all()
@@ -94,7 +94,7 @@ class GetAddScriptSnippets(APIView):
 
 
 class GetUpdateDeleteScriptSnippet(APIView):
-    permission_classes = [IsAuthenticated, ManageScriptsPerms]
+    permission_classes = [IsAuthenticated, ScriptsPerms]
 
     def get(self, request, pk):
         snippet = get_object_or_404(ScriptSnippet, pk=pk)
@@ -148,8 +148,8 @@ class TestScript(APIView):
         return Response(r)
 
 
-@api_view()
-@permission_classes([IsAuthenticated, ManageScriptsPerms])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, ScriptsPerms])
 def download(request, pk):
     script = get_object_or_404(Script, pk=pk)
 

@@ -46,6 +46,19 @@ class PermissionQuerySet(models.QuerySet):
 
             return self.filter(clients_queryset | sites_queryset)
 
+        elif model_name == "Alert":
+
+            if can_view_clients:
+                clients_queryset = models.Q(agent__site__client__in=can_view_clients) | models.Q(assigned_check__agent__site__client__in=can_view_clients) | models.Q(assigned_task__agent__site__client__in=can_view_clients)
+            if can_view_sites:
+                sites_queryset = models.Q(agent__site__in=can_view_sites) | models.Q(assigned_check__agent__site__in=can_view_sites) | models.Q(assigned_task__agent__site__in=can_view_sites)
+
+            agent_queryset = models.Q(agent=None, assigned_check=None, assigned_task=None)
+
+            return self.filter(
+                clients_queryset | sites_queryset | agent_queryset
+            )            
+
         # anything else just checks the agent field and if it has it will filter matched agents from the queryset
         else:
             if not hasattr(self.model, "agent"):

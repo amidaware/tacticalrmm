@@ -92,7 +92,8 @@ class GetAddAlerts(APIView):
                 )
 
             alerts = (
-                Alert.objects.filter(clientFilter)
+                Alert.objects.filter_by_role(request.user)
+                .filter(clientFilter)
                 .filter(severityFilter)
                 .filter(resolvedFilter)
                 .filter(snoozedFilter)
@@ -117,7 +118,6 @@ class GetUpdateDeleteAlert(APIView):
 
     def get(self, request, pk):
         alert = get_object_or_404(Alert, pk=pk)
-
         return Response(AlertSerializer(alert).data)
 
     def put(self, request, pk):

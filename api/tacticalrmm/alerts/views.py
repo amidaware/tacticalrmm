@@ -197,7 +197,6 @@ class GetAddAlertTemplates(APIView):
 
     def get(self, request):
         alert_templates = AlertTemplate.objects.all()
-
         return Response(AlertTemplateSerializer(alert_templates, many=True).data)
 
     def post(self, request):

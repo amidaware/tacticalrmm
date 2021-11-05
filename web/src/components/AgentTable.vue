@@ -780,7 +780,7 @@ export default {
     },
   },
   computed: {
-    ...mapGetters(["selectedAgentId", "agentTableHeight", "showCommunityScripts"]),
+    ...mapGetters(["agentTableHeight", "showCommunityScripts"]),
     agentDblClickAction() {
       return this.$store.state.agentDblClickAction;
     },

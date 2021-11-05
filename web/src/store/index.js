@@ -128,12 +128,6 @@ export default function () {
         })
           .catch(e => { });
       },
-      loadClients(context) {
-        return axios.get("/clients/");
-      },
-      loadSites(context) {
-        return axios.get("/clients/sites/");
-      },
       loadTree({ commit, state }) {
         axios.get("/clients/").then(r => {
 

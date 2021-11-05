@@ -10,7 +10,6 @@ from checks.models import Check
 from clients.models import Client
 from clients.serializers import ClientMinimumSerializer, SiteMinimumSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
-from checks.serializers import CheckSerializer
 
 from .models import Policy
 
@@ -27,20 +26,14 @@ class PolicyTableSerializer(ModelSerializer):
     agents_count = SerializerMethodField(read_only=True)
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
     alert_template = ReadOnlyField(source="alert_template.id")
-    excluded_clients = SerializerMethodField()
-    excluded_sites = SiteMinimumSerializer(many=True)
-    excluded_agents = AgentHostnameSerializer(many=True)
 
     class Meta:
         model = Policy
         fields = "__all__"
-        depth = 1
+        
 
     def get_agents_count(self, policy):
         return policy.related_agents().count()
-
-    def get_excluded_clients(self, policy):
-        return ClientMinimumSerializer(policy.excluded_clients.filter_by_role(self.context["user"]), context={"user": self.context["user"]}, many=True).data
 
 
 class PolicyRelatedSerializer(ModelSerializer):

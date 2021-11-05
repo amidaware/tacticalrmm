@@ -105,7 +105,7 @@ export default {
     getOptions() {
       this.getClients();
       this.getSites();
-      this.getAgentOptions().then(options => (this.agentOptions = Object.freeze(options)));
+      this.getAgentOptions("id").then(options => (this.agentOptions = Object.freeze(options)));
     },
     show() {
       this.$refs.dialog.show();
@@ -126,9 +126,9 @@ export default {
 
     // copy prop data locally
     this.localPolicy.id = this.policy.id;
-    this.localPolicy.excluded_clients = this.policy.excluded_clients.map(client => client.id);
-    this.localPolicy.excluded_sites = this.policy.excluded_sites.map(site => site.id);
-    this.localPolicy.excluded_agents = this.policy.excluded_agents.map(agent => agent.pk);
+    this.localPolicy.excluded_clients = this.policy.excluded_clients;
+    this.localPolicy.excluded_sites = this.policy.excluded_sites;
+    this.localPolicy.excluded_agents = this.policy.excluded_agents;
   },
 };
 </script>

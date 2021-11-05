@@ -134,6 +134,7 @@ class AgentHostnameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent
         fields = (
+            "id",
             "hostname",
             "agent_id",
             "client",

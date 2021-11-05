@@ -57,17 +57,17 @@ export function formatScriptOptions(data, flat = false) {
   }
 }
 
-export function formatAgentOptions(data, flat = false) {
+export function formatAgentOptions(data, flat = false, value_field = "agent_id") {
 
   if (flat) {
     // returns just agent hostnames in array
-    return _formatOptions(data, { label: "hostname", value: "agent_id", flat: true, allowDuplicates: false })
+    return _formatOptions(data, { label: "hostname", value: value_field, flat: true, allowDuplicates: false })
   } else {
     // returns options with categories in object format
     let options = []
     const agents = data.map(agent => ({
       label: agent.hostname,
-      value: agent.agent_id,
+      value: agent[value_field],
       cat: `${agent.client} > ${agent.site}`,
     }));
 

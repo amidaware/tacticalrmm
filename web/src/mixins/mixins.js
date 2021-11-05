@@ -195,11 +195,11 @@ export default {
 
       return options;
     },
-    async getAgentOptions() {
+    async getAgentOptions(value_field = "agent_id") {
 
       const { data } = await axios.get("/agents/?detail=false")
 
-      return formatAgentOptions(data)
+      return formatAgentOptions(data, false, value_field)
     },
     getNextAgentUpdateTime() {
       const d = new Date();

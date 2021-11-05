@@ -104,7 +104,7 @@ export default {
     },
     getSettings() {
       this.$axios
-        .get("/core/getcoresettings/")
+        .get("/core/settings/")
         .then(r => {
           this.allTimezones = Object.freeze(r.data.all_timezones);
           this.timezone = r.data.default_time_zone;

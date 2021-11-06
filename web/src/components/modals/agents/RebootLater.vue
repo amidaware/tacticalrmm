@@ -29,7 +29,7 @@
       </q-card-section>
       <q-card-actions align="right">
         <q-btn dense flat push label="Cancel" v-close-popup />
-        <q-btn dense flat push label="Schedule Reboot" color="primary" @click="scheduleReboot" />
+        <q-btn :loading="loading" dense flat push label="Schedule Reboot" color="primary" @click="scheduleReboot" />
       </q-card-actions>
     </q-card>
   </q-dialog>

@@ -22,10 +22,6 @@
         no-data-label="No Pending Actions"
         :loading="loading"
       >
-        <template v-slot:loading>
-          <q-inner-loading showing color="primary" />
-        </template>
-
         <template v-slot:top>
           <q-space />
           <q-btn
@@ -75,9 +71,9 @@
             </q-td>
             <q-td v-else>Completed</q-td>
             <q-td>{{ props.row.description }}</q-td>
-            <q-td>{{ props.row.hostname }}</q-td>
-            <q-td>{{ props.row.client }}</q-td>
-            <q-td>{{ props.row.site }}</q-td>
+            <q-td v-if="!agent">{{ props.row.hostname }}</q-td>
+            <q-td v-if="!agent">{{ props.row.client }}</q-td>
+            <q-td v-if="!agent">{{ props.row.site }}</q-td>
             <q-td v-if="props.row.action_type === 'chocoinstall' && props.row.status === 'completed'">
               <q-btn
                 color="primary"

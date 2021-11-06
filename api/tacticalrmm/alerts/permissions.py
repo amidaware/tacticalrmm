@@ -3,7 +3,6 @@ from rest_framework import permissions
 
 from tacticalrmm.permissions import _has_perm, _has_perm_on_agent
 
-
 def _has_perm_on_alert(user, id: int):
     from alerts.models import Alert
 
@@ -18,15 +17,15 @@ def _has_perm_on_alert(user, id: int):
     alert = get_object_or_404(Alert, id=id)
 
     if alert.agent:
-        agent = alert.agent
+        agent_id = alert.agent.agent_id
     elif alert.assigned_check:
-        agent = alert.assigned_check.agent
+        agent_id = alert.assigned_check.agent.agent_id
     elif alert.assigned_task:
-        agent = alert.assigned_task.agent
+        agent_id = alert.assigned_task.agent.agent_id
     else:
         return True
 
-    return _has_perm_on_agent(user, agent)
+    return _has_perm_on_agent(user, agent_id)
 
 
 class AlertPerms(permissions.BasePermission):

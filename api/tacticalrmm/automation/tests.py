@@ -1151,6 +1151,3 @@ class TestAutomationPermission(TacticalTestCase):
     def setUp(self):
         self.client_setup()
         self.setup_coresettings()
-
-    def test_patch_policy_reset_permissions(self):
-        self.assertTrue(False)

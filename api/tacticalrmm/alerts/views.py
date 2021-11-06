@@ -102,7 +102,7 @@ class GetAddAlerts(APIView):
             return Response(AlertSerializer(alerts, many=True).data)
 
         else:
-            alerts = Alert.objects.all()
+            alerts = Alert.objects.filter_by_role(request.user)
             return Response(AlertSerializer(alerts, many=True).data)
 
     def post(self, request):

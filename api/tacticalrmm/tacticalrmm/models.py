@@ -55,7 +55,8 @@ class PermissionQuerySet(models.QuerySet):
             return self.filter(clients_queryset | sites_queryset)
 
         elif model_name == "Alert":
-
+            
+            custom_alert_queryset = models.Q()
             if can_view_clients:
                 clients_queryset = (
                     models.Q(agent__site__client__in=can_view_clients)
@@ -63,17 +64,11 @@ class PermissionQuerySet(models.QuerySet):
                     | models.Q(assigned_task__agent__site__client__in=can_view_clients)
                 )
             if can_view_sites:
-                sites_queryset = (
-                    models.Q(agent__site__in=can_view_sites)
-                    | models.Q(assigned_check__agent__site__in=can_view_sites)
-                    | models.Q(assigned_task__agent__site__in=can_view_sites)
-                )
+                sites_queryset = models.Q(agent__site__in=can_view_sites) | models.Q(assigned_check__agent__site__in=can_view_sites) | models.Q(assigned_task__agent__site__in=can_view_sites)
+            if can_view_clients or can_view_sites:
+                custom_alert_queryset = models.Q(agent=None, assigned_check=None, assigned_task=None)
 
-            agent_queryset = models.Q(
-                agent=None, assigned_check=None, assigned_task=None
-            )
-
-            return self.filter(clients_queryset | sites_queryset | agent_queryset)
+            return self.filter(clients_queryset | sites_queryset | custom_alert_queryset)
 
         # anything else just checks the agent field and if it has it will filter matched agents from the queryset
         else:

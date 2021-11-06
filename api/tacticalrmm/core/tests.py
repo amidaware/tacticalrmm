@@ -423,6 +423,3 @@ class TestCorePermissions(TacticalTestCase):
     def setUp(self):
         self.client_setup()
         self.setup_coresettings()
-
-    def test_run_url_action_permissions(self):
-        self.assertTrue(False)

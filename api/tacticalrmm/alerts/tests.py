@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from unittest.mock import patch
+from itertools import cycle
 
 from core.models import CoreSettings
 from django.conf import settings
@@ -16,6 +17,7 @@ from .serializers import (
     AlertTemplateSerializer,
 )
 
+base_url = "/alerts"
 
 class TestAlertsViews(TacticalTestCase):
     def setUp(self):
@@ -1432,3 +1434,134 @@ class TestAlertTasks(TacticalTestCase):
         prune_resolved_alerts(30)
 
         self.assertEqual(Alert.objects.count(), 31)
+
+
+class TestAlertPermissions(TacticalTestCase):
+
+    def setUp(self):
+        self.setup_coresettings()
+        self.client_setup()
+
+    def test_get_alerts_permissions(self):
+        agent = baker.make_recipe("agents.agent")
+        agent1 = baker.make_recipe("agents.agent")
+        agent2 = baker.make_recipe("agents.agent")
+        agents = [agent, agent1, agent2]
+        checks = baker.make("checks.Check", agent=cycle(agents), _quantity=3)
+        tasks = baker.make("autotasks.AutomatedTask", agent=cycle(agents), _quantity=3)
+        baker.make("alerts.Alert", alert_type="task", assigned_task=cycle(tasks), _quantity=3)
+        baker.make("alerts.Alert", alert_type="check", assigned_check=cycle(checks), _quantity=3)
+        baker.make("alerts.Alert", alert_type="availability", agent=cycle(agents), _quantity=3)
+        baker.make("alerts.Alert", alert_type="custom", _quantity=4)
+
+        # test super user access
+        r = self.check_authorized_superuser("patch", f"{base_url}/")
+        self.assertEqual(len(r.data), 13) # type: ignore
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user) # type: ignore
+
+        self.check_not_authorized("patch", f"{base_url}/")
+
+        # add list software role to user
+        user.role.can_list_alerts = True
+        user.role.save()
+
+        r = self.check_authorized("patch", f"{base_url}/")
+        self.assertEqual(len(r.data), 13) # type: ignore
+
+        # test limiting to client
+        user.role.can_view_clients.set([agent.client])
+        r = self.check_authorized("patch", f"{base_url}/")
+        self.assertEqual(len(r.data), 7) # type: ignore
+
+        # test limiting to site
+        user.role.can_view_clients.clear()
+        user.role.can_view_sites.set([agent1.site])
+        r = self.client.patch(f"{base_url}/")
+        self.assertEqual(len(r.data), 7) # type: ignore
+
+        # test limiting to site and client
+        user.role.can_view_clients.set([agent2.client])
+        r = self.client.patch(f"{base_url}/")
+        self.assertEqual(len(r.data), 10) # type: ignore
+
+    @patch("alerts.models.Alert.delete", return_value=1)
+    def test_edit_delete_get_alert_permissions(self, delete):
+        agent = baker.make_recipe("agents.agent")
+        agent1 = baker.make_recipe("agents.agent")
+        agent2 = baker.make_recipe("agents.agent")
+        agents = [agent, agent1, agent2]
+        checks = baker.make("checks.Check", agent=cycle(agents), _quantity=3)
+        tasks = baker.make("autotasks.AutomatedTask", agent=cycle(agents), _quantity=3)
+        alert_tasks = baker.make("alerts.Alert", alert_type="task", assigned_task=cycle(tasks), _quantity=3)
+        alert_checks = baker.make("alerts.Alert", alert_type="check", assigned_check=cycle(checks), _quantity=3)
+        alert_agents = baker.make("alerts.Alert", alert_type="availability", agent=cycle(agents), _quantity=3)
+        alert_custom = baker.make("alerts.Alert", alert_type="custom", _quantity=4)
+
+        # alert task url
+        task_url = f"{base_url}/{alert_tasks[0].id}/" # for agent
+        unauthorized_task_url = f"{base_url}/{alert_tasks[1].id}/" # for agent1
+        # alert check url
+        check_url = f"{base_url}/{alert_checks[0].id}/" # for agent
+        unauthorized_check_url = f"{base_url}/{alert_checks[1].id}/" # for agent1
+        # alert agent url
+        agent_url = f"{base_url}/{alert_agents[0].id}/" # for agent
+        unauthorized_agent_url = f"{base_url}/{alert_agents[1].id}/" # for agent1
+        # custom alert url
+        custom_url = f"{base_url}/{alert_custom[0].id}/" # no agent associated
+
+        authorized_urls = [task_url, check_url, agent_url, custom_url]
+        unauthorized_urls = [unauthorized_agent_url, unauthorized_check_url, unauthorized_task_url]
+
+        for method in ["get", "put", "delete"]:
+
+            # test superuser access
+            for url in authorized_urls:
+                self.check_authorized_superuser(method, url)
+
+            for url in unauthorized_urls:
+                self.check_authorized_superuser(method, url)            
+
+            user = self.create_user_with_roles([])
+            self.client.force_authenticate(user=user) # type: ignore
+
+            # test user without role
+            for url in authorized_urls:
+                self.check_not_authorized(method, url)
+
+            for url in unauthorized_urls:
+                self.check_not_authorized(method, url)  
+
+            # add user to role and test
+            setattr(
+                user.role,
+                "can_list_alerts" if method == "get" else "can_manage_alerts",
+                True,
+            )
+            user.role.save()
+
+            # test user with role
+            for url in authorized_urls:
+                self.check_authorized(method, url)
+
+            for url in unauthorized_urls:
+                self.check_authorized(method, url) 
+
+            # limit user to client if agent check
+            user.role.can_view_clients.set([agent.client])
+
+            for url in authorized_urls:
+                self.check_authorized(method, url)
+
+            for url in unauthorized_urls:
+                self.check_not_authorized(method, url) 
+
+            # limit user to client if agent check
+            user.role.can_view_sites.set([agent1.site])
+
+            for url in authorized_urls:
+                self.check_authorized(method, url)
+
+            for url in unauthorized_urls:
+                self.check_authorized(method, url) 

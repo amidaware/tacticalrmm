@@ -267,15 +267,9 @@ class GetAddAPIKeys(APIView):
 
     def post(self, request):
         # generate a random API Key
-        # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits/23728630#23728630
-        import random
-        import string
+        from django.utils.crypto import get_random_string
 
-        request.data["key"] = "".join(
-            random.SystemRandom().choice(string.ascii_uppercase + string.digits)
-            for _ in range(32)
-        )
-
+        request.data["key"] = get_random_string(length=32).upper()
         serializer = APIKeySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()

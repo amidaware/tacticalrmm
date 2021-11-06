@@ -39,5 +39,6 @@ class APIKeyPerms(permissions.BasePermission):
     def has_permission(self, r, view):
         if r.method == "GET":
             return _has_perm(r, "can_list_api_keys")
-        else:
-            return _has_perm(r, "can_manage_api_keys")
+
+        return _has_perm(r, "can_manage_api_keys")
+

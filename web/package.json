@@ -14,7 +14,7 @@
     "apexcharts": "^3.27.1",
     "axios": "^0.22.0",
     "dotenv": "^8.6.0",
-    "prismjs": "^1.23.0",
+    "prismjs": "^1.25.0",
     "qrcode.vue": "^3.2.2",
     "quasar": "^2.1.9",
     "vue-prism-editor": "^2.0.0-alpha.2",

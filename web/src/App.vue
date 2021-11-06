@@ -9,6 +9,9 @@ export default {
 </script>
 
 <style lang="sass">
+body
+  overflow-y: hidden
+
 .tabs-tbl-sticky
 
   thead tr th
@@ -45,7 +48,6 @@ export default {
     top: 0
 
 .agents-tbl-sticky
-
   thead tr th
     position: sticky
     z-index: 1
@@ -64,6 +66,12 @@ export default {
   thead tr:first-child th
     background-color: #1d1d1d
 
+.bg-dark
+  background-color: --q-page-dark
+
+.bg-light
+  background-color: #ffffff
+
 .highlight
   background-color: #c9e6ff
 
@@ -78,4 +86,7 @@ export default {
 
 .agent-overdue
   background: red !important
+
+.min-width
+  min-width: 0px !important
 </style>

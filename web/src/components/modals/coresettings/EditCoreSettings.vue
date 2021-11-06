@@ -26,7 +26,7 @@
               <!-- general -->
               <q-tab-panel name="general">
                 <div class="text-subtitle2">General</div>
-                <hr />
+                <q-separator />
                 <q-card-section class="row">
                   <q-checkbox v-model="settings.agent_auto_update" label="Enable agent automatic self update">
                     <q-tooltip> Runs at 35mins past every hour </q-tooltip>
@@ -137,7 +137,7 @@
                     />
                   </div>
                 </div>
-                <hr />
+                <q-separator />
                 <q-card-section class="row">
                   <div class="col-3">Recipients</div>
                   <div class="col-4"></div>
@@ -167,7 +167,7 @@
                 </q-card-section>
                 <!-- smtp -->
                 <div class="text-subtitle2">SMTP Settings</div>
-                <hr />
+                <q-separator />
                 <q-card-section class="row">
                   <div class="col-2">From:</div>
                   <div class="col-4"></div>
@@ -244,7 +244,7 @@
                     />
                   </div>
                 </div>
-                <hr />
+                <q-separator />
                 <q-card-section class="row">
                   <div class="col-3">Recipients</div>
                   <div class="col-4"></div>
@@ -274,7 +274,7 @@
                 </q-card-section>
                 <!-- smtp -->
                 <div class="text-subtitle2">Twilio Settings</div>
-                <hr />
+                <q-separator />
                 <q-card-section class="row">
                   <div class="col-3">Twilio Number:</div>
                   <div class="col-3"></div>
@@ -300,7 +300,7 @@
               <!-- meshcentral -->
               <q-tab-panel name="meshcentral">
                 <div class="text-subtitle2">MeshCentral Settings</div>
-                <hr />
+                <q-separator />
                 <q-card-section class="row">
                   <div class="col-4">Username:</div>
                   <div class="col-2"></div>
@@ -476,7 +476,7 @@ export default {
   methods: {
     getCoreSettings() {
       this.$axios
-        .get("/core/getcoresettings/")
+        .get("/core/settings/")
         .then(r => {
           this.settings = r.data;
           this.allTimezones = Object.freeze(r.data.all_timezones);
@@ -498,7 +498,7 @@ export default {
     },
     getAlertTemplates() {
       this.$axios
-        .get("alerts/alerttemplates/")
+        .get("alerts/templates/")
         .then(r => {
           this.alertTemplateOptions = r.data.map(template => ({ label: template.name, value: template.id }));
         })
@@ -556,13 +556,13 @@ export default {
       this.$q.loading.show();
       delete this.settings.all_timezones;
       this.$axios
-        .patch("/core/editsettings/", this.settings)
+        .put("/core/settings/", this.settings)
         .then(r => {
           this.$q.loading.hide();
           if (this.emailTest) {
             this.$q.loading.show({ message: "Sending test email..." });
             this.$axios
-              .get("/core/emailtest/")
+              .post("/core/emailtest/")
               .then(r => {
                 this.emailTest = false;
                 this.$q.loading.hide();
@@ -576,7 +576,7 @@ export default {
           } else if (this.smsTest) {
             this.$q.loading.show({ message: "Sending test SMS..." });
             this.$axios
-              .get("/core/smstest/")
+              .post("/core/smstest/")
               .then(r => {
                 this.smsTest = false;
                 this.$q.loading.hide();

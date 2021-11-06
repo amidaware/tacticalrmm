@@ -6,7 +6,9 @@ from model_bakery import baker
 from tacticalrmm.test import TacticalTestCase
 
 from .models import WinUpdate
-from .serializers import UpdateSerializer
+from .serializers import WinUpdateSerializer
+
+base_url = "/winupdate"
 
 
 class TestWinUpdateViews(TacticalTestCase):
@@ -17,115 +19,137 @@ class TestWinUpdateViews(TacticalTestCase):
     @patch("agents.models.Agent.nats_cmd")
     def test_run_update_scan(self, nats_cmd):
         agent = baker.make_recipe("agents.agent")
-        url = f"/winupdate/{agent.pk}/runupdatescan/"
-        r = self.client.get(url)
+        url = f"{base_url}/{agent.agent_id}/scan/"
+        r = self.client.post(url)
         self.assertEqual(r.status_code, 200)
         nats_cmd.assert_called_with({"func": "getwinupdates"}, wait=False)
 
-        self.check_not_authenticated("get", url)
+        self.check_not_authenticated("post", url)
 
     @patch("agents.models.Agent.nats_cmd")
     def test_install_updates(self, nats_cmd):
         agent = baker.make_recipe("agents.agent")
         baker.make("winupdate.WinUpdate", agent=agent, _quantity=4)
         baker.make("winupdate.WinUpdatePolicy", agent=agent)
-        url = f"/winupdate/{agent.pk}/installnow/"
-        r = self.client.get(url)
+        url = f"{base_url}/{agent.agent_id}/install/"
+        r = self.client.post(url)
         self.assertEqual(r.status_code, 200)
         nats_cmd.assert_called_once()
 
-        self.check_not_authenticated("get", url)
+        self.check_not_authenticated("post", url)
 
     def test_get_winupdates(self):
         agent = baker.make_recipe("agents.agent")
         baker.make("winupdate.WinUpdate", agent=agent, _quantity=4)
 
         # test a call where agent doesn't exist
-        resp = self.client.get("/winupdate/500/getwinupdates/", format="json")
+        resp = self.client.get(f"{base_url}/234kj34lk/", format="json")
         self.assertEqual(resp.status_code, 404)
 
-        url = f"/winupdate/{agent.pk}/getwinupdates/"
+        url = f"{base_url}/{agent.agent_id}/"
         resp = self.client.get(url, format="json")
-        serializer = UpdateSerializer(agent)
+        updates = WinUpdate.objects.filter(agent=agent).order_by("-id", "installed")
+        serializer = WinUpdateSerializer(updates, many=True)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.data["winupdates"]), 4)  # type: ignore
+        self.assertEqual(len(resp.data), 4)  # type: ignore
         self.assertEqual(resp.data, serializer.data)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
-    """ @patch("winupdate.tasks.check_for_updates_task.apply_async")
-    def test_run_update_scan(self, mock_task):
-
-        # test a call where agent doesn't exist
-        resp = self.client.get("/winupdate/500/runupdatescan/", format="json")
-        self.assertEqual(resp.status_code, 404)
-
-        agent = baker.make_recipe("agents.agent")
-        url = f"/winupdate/{agent.pk}/runupdatescan/"
-
-        resp = self.client.get(url, format="json")
-        self.assertEqual(resp.status_code, 200)
-        mock_task.assert_called_with(
-            queue="wupdate",
-            kwargs={"pk": agent.pk, "wait": False, "auto_approve": True},
-        )
-
-        self.check_not_authenticated("get", url) """
-
-    """ @patch("agents.models.Agent.salt_api_cmd")
-    def test_install_updates(self, mock_cmd):
-
-        # test a call where agent doesn't exist
-        resp = self.client.get("/winupdate/500/installnow/", format="json")
-        self.assertEqual(resp.status_code, 404)
-
-        agent = baker.make_recipe("agents.agent")
-        url = f"/winupdate/{agent.pk}/installnow/"
-
-        # test agent command timeout
-        mock_cmd.return_value = "timeout"
-        resp = self.client.get(url, format="json")
-        self.assertEqual(resp.status_code, 400)
-
-        # test agent command error
-        mock_cmd.return_value = "error"
-        resp = self.client.get(url, format="json")
-        self.assertEqual(resp.status_code, 400)
-
-        # test agent command running
-        mock_cmd.return_value = "running"
-        resp = self.client.get(url, format="json")
-        self.assertEqual(resp.status_code, 400)
-
-        # can't get this to work right
-        # test agent command no pid field
-        mock_cmd.return_value = {}
-        resp = self.client.get(url, format="json")
-        self.assertEqual(resp.status_code, 400)
-
-        # test agent command success
-        mock_cmd.return_value = {"pid": 3316}
-        resp = self.client.get(url, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        self.check_not_authenticated("get", url) """
-
-    def test_edit_policy(self):
-        url = "/winupdate/editpolicy/"
+    def test_edit_winupdate(self):
         agent = baker.make_recipe("agents.agent")
         winupdate = baker.make("winupdate.WinUpdate", agent=agent)
+        url = f"{base_url}/{winupdate.pk}/"
 
-        invalid_data = {"pk": 500, "policy": "inherit"}
+        data = {"policy": "inherit"}
         # test a call where winupdate doesn't exist
-        resp = self.client.patch(url, invalid_data, format="json")
+        resp = self.client.put(f"{base_url}/500/", data, format="json")
         self.assertEqual(resp.status_code, 404)
 
-        data = {"pk": winupdate.pk, "policy": "inherit"}  # type: ignore
-
-        resp = self.client.patch(url, data, format="json")
+        resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        self.check_not_authenticated("patch", url)
+        self.check_not_authenticated("put", url)
+
+
+class TestWinUpdatePermissions(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+        self.client_setup()
+
+    @patch("agents.models.Agent.nats_cmd", return_value="ok")
+    def test_get_scan_install_permissions(self, nats_cmd):
+
+        agent = baker.make_recipe("agents.agent")
+        baker.make("winupdate.WinUpdatePolicy", agent=agent)
+        unauthorized_agent = baker.make_recipe("agents.agent")
+        baker.make("winupdate.WinUpdatePolicy", agent=unauthorized_agent)
+        baker.make("winupdate.WinUpdate", agent=agent)
+        baker.make("winupdate.WinUpdate", agent=unauthorized_agent)
+
+        test_data = [
+            {"url": f"{base_url}/{agent.agent_id}/", "method": "get"},
+            {"url": f"{base_url}/{agent.agent_id}/scan/", "method": "post"},
+            {"url": f"{base_url}/{agent.agent_id}/install/", "method": "post"},
+        ]
+
+        for data in test_data:
+            # test superuser
+            self.check_authorized_superuser(data["method"], data["url"])
+
+            # test user with no roles
+            user = self.create_user_with_roles([])
+            self.client.force_authenticate(user=user)
+
+            self.check_not_authorized(data["method"], data["url"])
+
+            # test with correct role
+            user.role.can_manage_winupdates = True
+            user.role.save()
+
+            self.check_authorized(data["method"], data["url"])
+
+            # test limiting user to site
+            user.role.can_view_sites.set([agent.site])
+            self.check_authorized(data["method"], data["url"])
+
+            user.role.can_view_sites.set([unauthorized_agent.site])
+            self.check_not_authorized(data["method"], data["url"])
+
+            self.client.logout()
+
+    def test_edit_winupdate_permissions(self):
+        agent = baker.make_recipe("agents.agent")
+        baker.make("winupdate.WinUpdatePolicy", agent=agent)
+        update = baker.make("winupdate.WinUpdate", agent=agent)
+
+        unauthorized_agent = baker.make_recipe("agents.agent")
+        baker.make("winupdate.WinUpdatePolicy", agent=unauthorized_agent)
+        baker.make("winupdate.WinUpdate", agent=unauthorized_agent)
+
+        url = f"{base_url}/{update.pk}/"
+
+        # test superuser
+        self.check_authorized_superuser("put", url)
+
+        # test user with no roles
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)
+
+        self.check_not_authorized("put", url)
+
+        # test with correct role
+        user.role.can_manage_winupdates = True
+        user.role.save()
+
+        self.check_authorized("put", url)
+
+        # test limiting user to site
+        user.role.can_view_sites.set([agent.site])
+        self.check_authorized("put", url)
+
+        user.role.can_view_sites.set([unauthorized_agent.site])
+        self.check_not_authorized("put", url)
 
 
 class WinupdateTasks(TacticalTestCase):
@@ -169,65 +193,3 @@ class WinupdateTasks(TacticalTestCase):
         winupdates = WinUpdate.objects.all()
         for update in winupdates:
             self.assertEqual(update.action, "approve")
-
-    """ @patch("agents.models.Agent.salt_api_async")
-    def test_check_agent_update_daily_schedule(self, agent_salt_cmd):
-        from .tasks import check_agent_update_schedule_task
-
-        # Setup data
-        # create an online agent with auto approval turned off
-        agent = baker.make_recipe("agents.online_agent")
-        baker.make("winupdate.WinUpdatePolicy", agent=agent)
-
-        # create approved winupdates
-        baker.make_recipe(
-            "winupdate.approved_winupdate",
-            agent=cycle(
-                [self.online_agents[0], self.online_agents[1], self.offline_agent]
-            ),
-            _quantity=20,
-        )
-
-        # create daily patch policy schedules for the agents
-        winupdate_policy = baker.make_recipe(
-            "winupdate.winupdate_approve",
-            agent=cycle(
-                [self.online_agents[0], self.online_agents[1], self.offline_agent]
-            ),
-            _quantity=3,
-        )
-
-        check_agent_update_schedule_task()
-        agent_salt_cmd.assert_called_with(func="win_agent.install_updates")
-        self.assertEquals(agent_salt_cmd.call_count, 2) """
-
-    """ @patch("agents.models.Agent.salt_api_async")
-    def test_check_agent_update_monthly_schedule(self, agent_salt_cmd):
-        from .tasks import check_agent_update_schedule_task
-
-        # Setup data
-        # create an online agent with auto approval turned off
-        agent = baker.make_recipe("agents.online_agent")
-        baker.make("winupdate.WinUpdatePolicy", agent=agent)
-
-        # create approved winupdates
-        baker.make_recipe(
-            "winupdate.approved_winupdate",
-            agent=cycle(
-                [self.online_agents[0], self.online_agents[1], self.offline_agent]
-            ),
-            _quantity=20,
-        )
-
-        # create monthly patch policy schedules for the agents
-        winupdate_policy = baker.make_recipe(
-            "winupdate.winupdate_approve_monthly",
-            agent=cycle(
-                [self.online_agents[0], self.online_agents[1], self.offline_agent]
-            ),
-            _quantity=3,
-        )
-
-        check_agent_update_schedule_task()
-        agent_salt_cmd.assert_called_with(func="win_agent.install_updates")
-        self.assertEquals(agent_salt_cmd.call_count, 2) """

@@ -126,5 +126,5 @@ Function New-Windows10Install {
 New-Windows10EventSource
 Remove-BuildNotificationRestrictions | Out-Null
 Remove-OldUpgrades | Out-Null
-if (!$(Test-FreeSpace) -or !$(Test-License)) { Exit 1 }
+if (!$(Test-FreeSpace)) { Exit 1 }
 New-Windows10Install

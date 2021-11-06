@@ -1,18 +1,21 @@
 import uuid
 from unittest.mock import patch
+from itertools import cycle
 
 from model_bakery import baker
 from rest_framework.serializers import ValidationError
+from rest_framework.response import Response
 
 from tacticalrmm.test import TacticalTestCase
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
 from .serializers import (
     ClientSerializer,
-    ClientTreeSerializer,
     DeploymentSerializer,
     SiteSerializer,
 )
+
+base_url = "/clients"
 
 
 class TestClientViews(TacticalTestCase):
@@ -25,16 +28,15 @@ class TestClientViews(TacticalTestCase):
         baker.make("clients.Client", _quantity=5)
         clients = Client.objects.all()
 
-        url = "/clients/clients/"
+        url = f"{base_url}/"
         r = self.client.get(url, format="json")
-        serializer = ClientSerializer(clients, many=True)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, serializer.data)  # type: ignore
+        self.assertEqual(len(r.data), 5)
 
         self.check_not_authenticated("get", url)
 
     def test_add_client(self):
-        url = "/clients/clients/"
+        url = f"{base_url}/"
 
         # test successfull add client
         payload = {
@@ -115,11 +117,9 @@ class TestClientViews(TacticalTestCase):
         # setup data
         client = baker.make("clients.Client")
 
-        url = f"/clients/{client.id}/client/"  # type: ignore
+        url = f"{base_url}/{client.id}/"  # type: ignore
         r = self.client.get(url, format="json")
-        serializer = ClientSerializer(client)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, serializer.data)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
@@ -128,12 +128,12 @@ class TestClientViews(TacticalTestCase):
         client = baker.make("clients.Client", name="OldClientName")
 
         # test invalid id
-        r = self.client.put("/clients/500/client/", format="json")
+        r = self.client.put(f"{base_url}/500/", format="json")
         self.assertEqual(r.status_code, 404)
 
         # test successfull edit client
         data = {"client": {"name": "NewClientName"}, "custom_fields": []}
-        url = f"/clients/{client.id}/client/"  # type: ignore
+        url = f"{base_url}/{client.id}/"  # type: ignore
         r = self.client.put(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(Client.objects.filter(name="NewClientName").exists())
@@ -141,7 +141,6 @@ class TestClientViews(TacticalTestCase):
 
         # test edit client with | in name
         data = {"client": {"name": "NewClie|ntName"}, "custom_fields": []}
-        url = f"/clients/{client.id}/client/"  # type: ignore
         r = self.client.put(url, data, format="json")
         self.assertEqual(r.status_code, 400)
 
@@ -189,10 +188,10 @@ class TestClientViews(TacticalTestCase):
         agent = baker.make_recipe("agents.agent", site=site_to_move)
 
         # test invalid id
-        r = self.client.delete("/clients/334/953/", format="json")
+        r = self.client.delete(f"{base_url}/334/", format="json")
         self.assertEqual(r.status_code, 404)
 
-        url = f"/clients/{client_to_delete.id}/{site_to_move.id}/"  # type: ignore
+        url = f"/clients/{client_to_delete.id}/?site_to_move={site_to_move.id}"  # type: ignore
 
         # test successful deletion
         r = self.client.delete(url, format="json")
@@ -208,7 +207,7 @@ class TestClientViews(TacticalTestCase):
         baker.make("clients.Site", _quantity=5)
         sites = Site.objects.all()
 
-        url = "/clients/sites/"
+        url = f"{base_url}/sites/"
         r = self.client.get(url, format="json")
         serializer = SiteSerializer(sites, many=True)
         self.assertEqual(r.status_code, 200)
@@ -221,7 +220,7 @@ class TestClientViews(TacticalTestCase):
         client = baker.make("clients.Client")
         site = baker.make("clients.Site", client=client)
 
-        url = "/clients/sites/"
+        url = f"{base_url}/sites/"
 
         # test success add
         payload = {
@@ -279,7 +278,7 @@ class TestClientViews(TacticalTestCase):
         # setup data
         site = baker.make("clients.Site")
 
-        url = f"/clients/sites/{site.id}/"  # type: ignore
+        url = f"{base_url}/sites/{site.id}/"  # type: ignore
         r = self.client.get(url, format="json")
         serializer = SiteSerializer(site)
         self.assertEqual(r.status_code, 200)
@@ -293,7 +292,7 @@ class TestClientViews(TacticalTestCase):
         site = baker.make("clients.Site", client=client)
 
         # test invalid id
-        r = self.client.put("/clients/sites/688/", format="json")
+        r = self.client.put(f"{base_url}/sites/688/", format="json")
         self.assertEqual(r.status_code, 404)
 
         data = {
@@ -301,7 +300,7 @@ class TestClientViews(TacticalTestCase):
             "custom_fields": [],
         }
 
-        url = f"/clients/sites/{site.id}/"  # type: ignore
+        url = f"{base_url}/sites/{site.id}/"  # type: ignore
         r = self.client.put(url, data, format="json")
         self.assertEqual(r.status_code, 200)
         self.assertTrue(
@@ -358,10 +357,10 @@ class TestClientViews(TacticalTestCase):
         agent = baker.make_recipe("agents.agent", site=site_to_delete)
 
         # test invalid id
-        r = self.client.delete("/clients/500/445/", format="json")
+        r = self.client.delete("{base_url}/500/", format="json")
         self.assertEqual(r.status_code, 404)
 
-        url = f"/clients/sites/{site_to_delete.id}/{site_to_move.id}/"  # type: ignore
+        url = f"/clients/sites/{site_to_delete.id}/?move_to_site={site_to_move.id}"  # type: ignore
 
         # test deleting with last site under client
         r = self.client.delete(url, format="json")
@@ -378,25 +377,11 @@ class TestClientViews(TacticalTestCase):
 
         self.check_not_authenticated("delete", url)
 
-    def test_get_tree(self):
-        # setup data
-        baker.make("clients.Site", _quantity=10)
-        clients = Client.objects.all()
-
-        url = "/clients/tree/"
-
-        r = self.client.get(url, format="json")
-        serializer = ClientTreeSerializer(clients, many=True)
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, serializer.data)  # type: ignore
-
-        self.check_not_authenticated("get", url)
-
     def test_get_deployments(self):
         # setup data
         deployments = baker.make("clients.Deployment", _quantity=5)
 
-        url = "/clients/deployments/"
+        url = f"{base_url}/deployments/"
         r = self.client.get(url)
         serializer = DeploymentSerializer(deployments, many=True)
         self.assertEqual(r.status_code, 200)
@@ -408,7 +393,7 @@ class TestClientViews(TacticalTestCase):
         # setup data
         site = baker.make("clients.Site")
 
-        url = "/clients/deployments/"
+        url = f"{base_url}/deployments/"
         payload = {
             "client": site.client.id,  # type: ignore
             "site": site.id,  # type: ignore
@@ -437,21 +422,19 @@ class TestClientViews(TacticalTestCase):
         # setup data
         deployment = baker.make("clients.Deployment")
 
-        url = "/clients/deployments/"
-
-        url = f"/clients/{deployment.id}/deployment/"  # type: ignore
+        url = f"{base_url}/deployments/{deployment.id}/"  # type: ignore
         r = self.client.delete(url)
         self.assertEqual(r.status_code, 200)
         self.assertFalse(Deployment.objects.filter(pk=deployment.id).exists())  # type: ignore
 
-        url = "/clients/32348/deployment/"
+        url = f"{base_url}/deployments/32348/"
         r = self.client.delete(url)
         self.assertEqual(r.status_code, 404)
 
         self.check_not_authenticated("delete", url)
 
-    def test_generate_deployment(self):
-        # TODO complete this
+    @patch("tacticalrmm.utils.generate_winagent_exe", return_value=Response("ok"))
+    def test_generate_deployment(self, post):
         url = "/clients/asdkj234kasdasjd-asdkj234-asdk34-sad/deploy/"
 
         r = self.client.get(url)
@@ -462,3 +445,397 @@ class TestClientViews(TacticalTestCase):
         url = f"/clients/{uid}/deploy/"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 404)
+
+        # test valid download
+        deployment = baker.make(
+            "clients.Deployment",
+            install_flags={"rdp": True, "ping": False, "power": False},
+        )
+
+        url = f"/clients/{deployment.uid}/deploy/"
+
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+
+
+class TestClientPermissions(TacticalTestCase):
+    def setUp(self):
+        self.client_setup()
+        self.setup_coresettings()
+
+    def test_get_clients_permissions(self):
+        # create user with empty role
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)  # type: ignore
+
+        url = f"{base_url}/"
+
+        clients = baker.make("clients.Client", _quantity=5)
+
+        # test getting all clients
+
+        # user with empty role should fail
+        self.check_not_authorized("get", url)
+
+        # add can_list_agents roles and should succeed
+        user.role.can_list_clients = True
+        user.role.save()
+
+        # all agents should be returned
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 5)  # type: ignore
+
+        # limit user to specific client. only 1 client should be returned
+        user.role.can_view_clients.set([clients[3]])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 1)  # type: ignore
+
+        # 2 should be returned now
+        user.role.can_view_clients.set([clients[0], clients[1]])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 2)  # type: ignore
+
+        # limit to a specific site. The site shouldn't be in client returned sites
+        sites = baker.make("clients.Site", client=clients[4], _quantity=3)
+        baker.make("clients.Site", client=clients[0], _quantity=4)
+        baker.make("clients.Site", client=clients[1], _quantity=5)
+
+        user.role.can_view_sites.set([sites[0]])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 3)  # type: ignore
+        for client in response.data:  # type: ignore
+            if client["id"] == clients[0].id:
+                self.assertEqual(len(client["sites"]), 4)
+            elif client["id"] == clients[1].id:
+                self.assertEqual(len(client["sites"]), 5)
+            elif client["id"] == clients[4].id:
+                self.assertEqual(len(client["sites"]), 1)
+
+        # make sure superusers work
+        self.check_authorized_superuser("get", url)
+
+    @patch("clients.models.Client.save")
+    @patch("clients.models.Client.delete")
+    def test_add_clients_permissions(self, save, delete):
+
+        data = {"client": {"name": "Client Name"}, "site": {"name": "Site Name"}}
+
+        url = f"{base_url}/"
+
+        # test superuser access
+        self.check_authorized_superuser("post", url, data)
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)  # type: ignore
+
+        # test user without role
+        self.check_not_authorized("post", url, data)
+
+        # add user to role and test
+        user.role.can_manage_clients = True
+        user.role.save()
+
+        self.check_authorized("post", url, data)
+
+    @patch("clients.models.Client.delete")
+    def test_get_edit_delete_clients_permissions(self, delete):
+        # create user with empty role
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)  # type: ignore
+
+        client = baker.make("clients.Client")
+        unauthorized_client = baker.make("clients.Client")
+
+        methods = ["get", "put", "delete"]
+        url = f"{base_url}/{client.id}/"
+
+        # test user with no roles
+        for method in methods:
+            self.check_not_authorized(method, url)
+
+        # add correct roles for view edit and delete
+        user.role.can_list_clients = True
+        user.role.can_manage_clients = True
+        user.role.save()
+
+        for method in methods:
+            self.check_authorized(method, url)
+
+        # test limiting users to clients and sites
+
+        # limit to client
+        user.role.can_view_clients.set([client])
+
+        for method in methods:
+            self.check_not_authorized(method, f"{base_url}/{unauthorized_client.id}/")
+            self.check_authorized(method, url)
+
+        # make sure superusers work
+        for method in methods:
+            self.check_authorized_superuser(
+                method, f"{base_url}/{unauthorized_client.id}/"
+            )
+
+    def test_get_sites_permissions(self):
+        # create user with empty role
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)  # type: ignore
+
+        url = f"{base_url}/sites/"
+
+        clients = baker.make("clients.Client", _quantity=3)
+        sites = baker.make("clients.Site", client=cycle(clients), _quantity=10)
+
+        # test getting all sites
+
+        # user with empty role should fail
+        self.check_not_authorized("get", url)
+
+        # add can_list_sites roles and should succeed
+        user.role.can_list_sites = True
+        user.role.save()
+
+        # all sites should be returned
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 10)  # type: ignore
+
+        # limit user to specific site. only 1 site should be returned
+        user.role.can_view_sites.set([sites[3]])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 1)  # type: ignore
+
+        # 2 should be returned now
+        user.role.can_view_sites.set([sites[0], sites[1]])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 2)  # type: ignore
+
+        # check if limiting user to client works
+        user.role.can_view_sites.clear()
+        user.role.can_view_clients.set([clients[0]])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 4)  # type: ignore
+
+        # add a site to see if the results still work
+        user.role.can_view_sites.set([sites[1], sites[0]])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 5)  # type: ignore
+
+        # make sure superusers work
+        self.check_authorized_superuser("get", url)
+
+    @patch("clients.models.Site.save")
+    @patch("clients.models.Site.delete")
+    def test_add_sites_permissions(self, delete, save):
+        client = baker.make("clients.Client")
+        unauthorized_client = baker.make("clients.Client")
+        data = {"client": client.id, "name": "Site Name"}
+
+        url = f"{base_url}/sites/"
+
+        # test superuser access
+        self.check_authorized_superuser("post", url, data)
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)  # type: ignore
+
+        # test user without role
+        self.check_not_authorized("post", url, data)
+
+        # add user to role and test
+        user.role.can_manage_sites = True
+        user.role.save()
+
+        self.check_authorized("post", url, data)
+
+        # limit to client and test
+        user.role.can_view_clients.set([client])
+        self.check_authorized("post", url, data)
+
+        # test adding to unauthorized client
+        data = {"client": unauthorized_client.id, "name": "Site Name"}
+        self.check_not_authorized("post", url, data)
+
+    @patch("clients.models.Site.delete")
+    def test_get_edit_delete_sites_permissions(self, delete):
+        # create user with empty role
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)  # type: ignore
+
+        site = baker.make("clients.Site")
+        unauthorized_site = baker.make("clients.Site")
+
+        methods = ["get", "put", "delete"]
+        url = f"{base_url}/sites/{site.id}/"
+
+        # test user with no roles
+        for method in methods:
+            self.check_not_authorized(method, url)
+
+        # add correct roles for view edit and delete
+        user.role.can_list_sites = True
+        user.role.can_manage_sites = True
+        user.role.save()
+
+        for method in methods:
+            self.check_authorized(method, url)
+
+        # test limiting users to clients and sites
+
+        # limit to site
+        user.role.can_view_sites.set([site])
+
+        for method in methods:
+            self.check_not_authorized(method, f"{base_url}/{unauthorized_site.id}/")
+            self.check_authorized(method, url)
+
+        # test limit to only client
+        user.role.can_view_sites.clear()
+        user.role.can_view_clients.set([site.client])
+
+        for method in methods:
+            self.check_not_authorized(method, f"{base_url}/{unauthorized_site.id}/")
+            self.check_authorized(method, url)
+
+        # make sure superusers work
+        for method in methods:
+            self.check_authorized_superuser(
+                method, f"{base_url}/{unauthorized_site.id}/"
+            )
+
+    def test_get_pendingactions_permissions(self):
+        url = f"{base_url}/deployments/"
+
+        site = baker.make("clients.Site")
+        other_site = baker.make("clients.Site")
+        deployments = baker.make("clients.Deployment", site=site, _quantity=5)
+        other_deployments = baker.make(
+            "clients.Deployment", site=other_site, _quantity=7
+        )
+
+        # test getting all deployments
+        # make sure superusers work
+        self.check_authorized_superuser("get", url)
+
+        # create user with empty role
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)  # type: ignore
+
+        # user with empty role should fail
+        self.check_not_authorized("get", url)
+
+        # add can_list_sites roles and should succeed
+        user.role.can_list_deployments = True
+        user.role.save()
+
+        # all sites should be returned
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 12)  # type: ignore
+
+        # limit user to specific site. only 1 site should be returned
+        user.role.can_view_sites.set([site])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 5)  # type: ignore
+
+        # all should be returned now
+        user.role.can_view_clients.set([other_site.client])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 12)  # type: ignore
+
+        # check if limiting user to client works
+        user.role.can_view_sites.clear()
+        user.role.can_view_clients.set([other_site.client])
+        response = self.check_authorized("get", url)
+        self.assertEqual(len(response.data), 7)  # type: ignore
+
+    @patch("clients.models.Deployment.save")
+    def test_add_deployments_permissions(self, save):
+        site = baker.make("clients.Site")
+        unauthorized_site = baker.make("clients.Site")
+        data = {
+            "site": site.id,
+        }
+
+        # test adding to unauthorized client
+        unauthorized_data = {
+            "site": unauthorized_site.id,
+        }
+
+        url = f"{base_url}/deployments/"
+
+        # test superuser access
+        self.check_authorized_superuser("post", url, data)
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)  # type: ignore
+
+        # test user without role
+        self.check_not_authorized("post", url, data)
+
+        # add user to role and test
+        user.role.can_manage_deployments = True
+        user.role.save()
+
+        self.check_authorized("post", url, data)
+
+        # limit to client and test
+        user.role.can_view_clients.set([site.client])
+        self.check_authorized("post", url, data)
+        self.check_not_authorized("post", url, unauthorized_data)
+
+        # limit to site and test
+        user.role.can_view_clients.clear()
+        user.role.can_view_sites.set([site])
+        self.check_authorized("post", url, data)
+        self.check_not_authorized("post", url, unauthorized_data)
+
+    @patch("clients.models.Deployment.delete")
+    def test_delete_deployments_permissions(self, delete):
+        site = baker.make("clients.Site")
+        unauthorized_site = baker.make("clients.Site")
+        deployment = baker.make("clients.Deployment", site=site)
+        unauthorized_deployment = baker.make(
+            "clients.Deployment", site=unauthorized_site
+        )
+
+        url = f"{base_url}/deployments/{deployment.id}/"
+        unauthorized_url = f"{base_url}/deployments/{unauthorized_deployment.id}/"
+
+        # make sure superusers work
+        self.check_authorized_superuser("delete", url)
+        self.check_authorized_superuser("delete", unauthorized_url)
+
+        # create user with empty role
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)  # type: ignore
+
+        # make sure user with empty role is unauthorized
+        self.check_not_authorized("delete", url)
+        self.check_not_authorized("delete", unauthorized_url)
+
+        # add correct roles for view edit and delete
+        user.role.can_manage_deployments = True
+        user.role.save()
+
+        self.check_authorized("delete", url)
+        self.check_authorized("delete", unauthorized_url)
+
+        # test limiting users to clients and sites
+
+        # limit to site
+        user.role.can_view_sites.set([site])
+
+        # recreate deployment since it is being deleted even though I am mocking delete on Deployment model???
+        unauthorized_deployment = baker.make(
+            "clients.Deployment", site=unauthorized_site
+        )
+        unauthorized_url = f"{base_url}/deployments/{unauthorized_deployment.id}/"
+
+        self.check_authorized("delete", url)
+        self.check_not_authorized("delete", unauthorized_url)
+
+        # test limit to only client
+        user.role.can_view_sites.clear()
+        user.role.can_view_clients.set([site.client])
+
+        self.check_authorized("delete", url)
+        self.check_not_authorized("delete", unauthorized_url)

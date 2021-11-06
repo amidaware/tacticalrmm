@@ -3,14 +3,17 @@ from rest_framework import permissions
 from tacticalrmm.permissions import _has_perm
 
 
-class ViewCoreSettingsPerms(permissions.BasePermission):
+class CoreSettingsPerms(permissions.BasePermission):
     def has_permission(self, r, view):
-        return _has_perm(r, "can_view_core_settings")
+        if r.method == "GET":
+            return _has_perm(r, "can_view_core_settings")
+        else:
+            return _has_perm(r, "can_edit_core_settings")
 
 
-class EditCoreSettingsPerms(permissions.BasePermission):
+class URLActionPerms(permissions.BasePermission):
     def has_permission(self, r, view):
-        return _has_perm(r, "can_edit_core_settings")
+        return _has_perm(r, "can_run_urlactions")
 
 
 class ServerMaintPerms(permissions.BasePermission):
@@ -21,3 +24,11 @@ class ServerMaintPerms(permissions.BasePermission):
 class CodeSignPerms(permissions.BasePermission):
     def has_permission(self, r, view):
         return _has_perm(r, "can_code_sign")
+
+
+class CustomFieldPerms(permissions.BasePermission):
+    def has_permission(self, r, view):
+        if r.method == "GET":
+            return _has_perm(r, "can_view_customfields")
+        else:
+            return _has_perm(r, "can_manage_customfields")

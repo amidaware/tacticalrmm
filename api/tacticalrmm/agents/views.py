@@ -8,12 +8,13 @@ import time
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from packaging import version as pyver
-from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
 
 from core.models import CoreSettings
 from logs.models import AuditLog, DebugLog, PendingAction
@@ -22,39 +23,245 @@ from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from tacticalrmm.utils import get_default_timezone, notify_error, reload_nats
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
+from tacticalrmm.permissions import (
+    _has_perm_on_agent,
+    _has_perm_on_client,
+    _has_perm_on_site,
+)
 
 from .models import Agent, AgentCustomField, Note, RecoveryAction, AgentHistory
 from .permissions import (
-    EditAgentPerms,
+    AgentHistoryPerms,
+    AgentPerms,
     EvtLogPerms,
     InstallAgentPerms,
-    ManageNotesPerms,
+    RecoverAgentPerms,
+    AgentNotesPerms,
     ManageProcPerms,
     MeshPerms,
     RebootAgentPerms,
     RunBulkPerms,
     RunScriptPerms,
     SendCMDPerms,
-    UninstallPerms,
+    PingAgentPerms,
     UpdateAgentPerms,
 )
 from .serializers import (
     AgentCustomFieldSerializer,
-    AgentEditSerializer,
     AgentHistorySerializer,
     AgentHostnameSerializer,
-    AgentOverdueActionSerializer,
     AgentSerializer,
     AgentTableSerializer,
-    NoteSerializer,
-    NotesSerializer,
+    AgentNoteSerializer,
 )
 from .tasks import run_script_email_results_task, send_agent_update_task
 
 
-@api_view()
+class GetAgents(APIView):
+    permission_classes = [IsAuthenticated, AgentPerms]
+
+    def get(self, request):
+        if "site" in request.query_params.keys():
+            filter = Q(site_id=request.query_params["site"])
+        elif "client" in request.query_params.keys():
+            filter = Q(site__client_id=request.query_params["client"])
+        else:
+            filter = Q()
+
+        # by default detail=true
+        if (
+            "detail" not in request.query_params.keys()
+            or "detail" in request.query_params.keys()
+            and request.query_params["detail"] == "true"
+        ):
+            agents = (
+                Agent.objects.filter_by_role(request.user)
+                .select_related("site", "policy", "alert_template")
+                .prefetch_related("agentchecks")
+                .filter(filter)
+                .only(
+                    "pk",
+                    "hostname",
+                    "agent_id",
+                    "site",
+                    "policy",
+                    "alert_template",
+                    "monitoring_type",
+                    "description",
+                    "needs_reboot",
+                    "overdue_text_alert",
+                    "overdue_email_alert",
+                    "overdue_time",
+                    "offline_time",
+                    "last_seen",
+                    "boot_time",
+                    "logged_in_username",
+                    "last_logged_in_user",
+                    "time_zone",
+                    "maintenance_mode",
+                    "pending_actions_count",
+                    "has_patches_pending",
+                )
+            )
+            ctx = {"default_tz": get_default_timezone()}
+            serializer = AgentTableSerializer(agents, many=True, context=ctx)
+
+        # if detail=false
+        else:
+            agents = (
+                Agent.objects.filter_by_role(request.user)
+                .select_related("site")
+                .filter(filter)
+                .only("agent_id", "hostname", "site")
+            )
+            serializer = AgentHostnameSerializer(agents, many=True)
+
+        return Response(serializer.data)
+
+
+class GetUpdateDeleteAgent(APIView):
+    permission_classes = [IsAuthenticated, AgentPerms]
+
+    # get agent details
+    def get(self, request, agent_id):
+        agent = get_object_or_404(Agent, agent_id=agent_id)
+        return Response(
+            AgentSerializer(agent, context={"default_tz": get_default_timezone()}).data
+        )
+
+    # edit agent
+    def put(self, request, agent_id):
+        agent = get_object_or_404(Agent, agent_id=agent_id)
+
+        a_serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
+        a_serializer.is_valid(raise_exception=True)
+        a_serializer.save()
+
+        if "winupdatepolicy" in request.data.keys():
+            policy = agent.winupdatepolicy.get()  # type: ignore
+            p_serializer = WinUpdatePolicySerializer(
+                instance=policy, data=request.data["winupdatepolicy"][0]
+            )
+            p_serializer.is_valid(raise_exception=True)
+            p_serializer.save()
+
+        if "custom_fields" in request.data.keys():
+
+            for field in request.data["custom_fields"]:
+
+                custom_field = field
+                custom_field["agent"] = agent.id  # type: ignore
+
+                if AgentCustomField.objects.filter(
+                    field=field["field"], agent=agent.id  # type: ignore
+                ):
+                    value = AgentCustomField.objects.get(
+                        field=field["field"], agent=agent.id  # type: ignore
+                    )
+                    serializer = AgentCustomFieldSerializer(
+                        instance=value, data=custom_field
+                    )
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+                else:
+                    serializer = AgentCustomFieldSerializer(data=custom_field)
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+
+        return Response("The agent was updated successfully")
+
+    # uninstall agent
+    def delete(self, request, agent_id):
+        agent = get_object_or_404(Agent, agent_id=agent_id)
+        asyncio.run(agent.nats_cmd({"func": "uninstall"}, wait=False))
+        name = agent.hostname
+        agent.delete()
+        reload_nats()
+        return Response(f"{name} will now be uninstalled.")
+
+
+class AgentProcesses(APIView):
+    permission_classes = [IsAuthenticated, ManageProcPerms]
+
+    # list agent processes
+    def get(self, request, agent_id):
+        agent = get_object_or_404(Agent, agent_id=agent_id)
+        r = asyncio.run(agent.nats_cmd(data={"func": "procs"}, timeout=5))
+        if r == "timeout" or r == "natsdown":
+            return notify_error("Unable to contact the agent")
+        return Response(r)
+
+    # kill agent process
+    def delete(self, request, agent_id, pid):
+        agent = get_object_or_404(Agent, agent_id=agent_id)
+        r = asyncio.run(
+            agent.nats_cmd({"func": "killproc", "procpid": int(pid)}, timeout=15)
+        )
+
+        if r == "timeout" or r == "natsdown":
+            return notify_error("Unable to contact the agent")
+        elif r != "ok":
+            return notify_error(r)
+
+        return Response(f"Process with PID: {pid} was ended successfully")
+
+
+class AgentMeshCentral(APIView):
+    permission_classes = [IsAuthenticated, MeshPerms]
+
+    # get mesh urls
+    def get(self, request, agent_id):
+        agent = get_object_or_404(Agent, agent_id=agent_id)
+        core = CoreSettings.objects.first()
+
+        token = agent.get_login_token(
+            key=core.mesh_token,
+            user=f"user//{core.mesh_username.lower()}",  # type:ignore
+        )
+
+        if token == "err":
+            return notify_error("Invalid mesh token")
+
+        control = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=11&hide=31"  # type:ignore
+        terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"  # type:ignore
+        file = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=13&hide=31"  # type:ignore
+
+        AuditLog.audit_mesh_session(
+            username=request.user.username,
+            agent=agent,
+            debug_info={"ip": request._client_ip},
+        )
+
+        ret = {
+            "hostname": agent.hostname,
+            "control": control,
+            "terminal": terminal,
+            "file": file,
+            "status": agent.status,
+            "client": agent.client.name,
+            "site": agent.site.name,
+        }
+        return Response(ret)
+
+    # start mesh recovery
+    def post(self, request, agent_id):
+        agent = get_object_or_404(Agent, agent_id=agent_id)
+        data = {"func": "recover", "payload": {"mode": "mesh"}}
+        r = asyncio.run(agent.nats_cmd(data, timeout=90))
+        if r != "ok":
+            return notify_error("Unable to contact the agent")
+
+        return Response(f"Repaired mesh agent on {agent.hostname}")
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, AgentPerms])
 def get_agent_versions(request):
-    agents = Agent.objects.prefetch_related("site").only("pk", "hostname")
+    agents = (
+        Agent.objects.filter_by_role(request.user)
+        .prefetch_related("site")
+        .only("pk", "hostname")
+    )
     return Response(
         {
             "versions": [settings.LATEST_AGENT_VER],
@@ -66,20 +273,24 @@ def get_agent_versions(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, UpdateAgentPerms])
 def update_agents(request):
-    q = Agent.objects.filter(pk__in=request.data["pks"]).only("pk", "version")
-    pks: list[int] = [
-        i.pk
+    q = (
+        Agent.objects.filter_by_role(request.user)
+        .filter(agent_id__in=request.data["agent_ids"])
+        .only("agent_id", "version")
+    )
+    agent_ids: list[str] = [
+        i.agent_id
         for i in q
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
     ]
-    send_agent_update_task.delay(pks=pks)
+    send_agent_update_task.delay(agent_ids=agent_ids)
     return Response("ok")
 
 
-@api_view()
-@permission_classes([IsAuthenticated, UninstallPerms])
-def ping(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, PingAgentPerms])
+def ping(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
     status = "offline"
     attempts = 0
     while 1:
@@ -97,131 +308,12 @@ def ping(request, pk):
     return Response({"name": agent.hostname, "status": status})
 
 
-@api_view(["DELETE"])
-@permission_classes([IsAuthenticated, UninstallPerms])
-def uninstall(request):
-    agent = get_object_or_404(Agent, pk=request.data["pk"])
-    asyncio.run(agent.nats_cmd({"func": "uninstall"}, wait=False))
-    name = agent.hostname
-    agent.delete()
-    reload_nats()
-    return Response(f"{name} will now be uninstalled.")
-
-
-@api_view(["PATCH", "PUT"])
-@permission_classes([IsAuthenticated, EditAgentPerms])
-def edit_agent(request):
-    agent = get_object_or_404(Agent, pk=request.data["id"])
-
-    a_serializer = AgentEditSerializer(instance=agent, data=request.data, partial=True)
-    a_serializer.is_valid(raise_exception=True)
-    a_serializer.save()
-
-    if "winupdatepolicy" in request.data.keys():
-        policy = agent.winupdatepolicy.get()  # type: ignore
-        p_serializer = WinUpdatePolicySerializer(
-            instance=policy, data=request.data["winupdatepolicy"][0]
-        )
-        p_serializer.is_valid(raise_exception=True)
-        p_serializer.save()
-
-    if "custom_fields" in request.data.keys():
-
-        for field in request.data["custom_fields"]:
-
-            custom_field = field
-            custom_field["agent"] = agent.id  # type: ignore
-
-            if AgentCustomField.objects.filter(
-                field=field["field"], agent=agent.id  # type: ignore
-            ):
-                value = AgentCustomField.objects.get(
-                    field=field["field"], agent=agent.id  # type: ignore
-                )
-                serializer = AgentCustomFieldSerializer(
-                    instance=value, data=custom_field
-                )
-                serializer.is_valid(raise_exception=True)
-                serializer.save()
-            else:
-                serializer = AgentCustomFieldSerializer(data=custom_field)
-                serializer.is_valid(raise_exception=True)
-                serializer.save()
-
-    return Response("ok")
-
-
-@api_view()
-@permission_classes([IsAuthenticated, MeshPerms])
-def meshcentral(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
-    core = CoreSettings.objects.first()
-
-    token = agent.get_login_token(
-        key=core.mesh_token, user=f"user//{core.mesh_username}"  # type:ignore
-    )
-
-    if token == "err":
-        return notify_error("Invalid mesh token")
-
-    control = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=11&hide=31"  # type:ignore
-    terminal = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=12&hide=31"  # type:ignore
-    file = f"{core.mesh_site}/?login={token}&gotonode={agent.mesh_node_id}&viewmode=13&hide=31"  # type:ignore
-
-    AuditLog.audit_mesh_session(
-        username=request.user.username,
-        agent=agent,
-        debug_info={"ip": request._client_ip},
-    )
-
-    ret = {
-        "hostname": agent.hostname,
-        "control": control,
-        "terminal": terminal,
-        "file": file,
-        "status": agent.status,
-        "client": agent.client.name,
-        "site": agent.site.name,
-    }
-    return Response(ret)
-
-
-@api_view()
-def agent_detail(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
-    return Response(AgentSerializer(agent).data)
-
-
-@api_view()
-def get_processes(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
-    r = asyncio.run(agent.nats_cmd(data={"func": "procs"}, timeout=5))
-    if r == "timeout":
-        return notify_error("Unable to contact the agent")
-    return Response(r)
-
-
-@api_view()
-@permission_classes([IsAuthenticated, ManageProcPerms])
-def kill_proc(request, pk, pid):
-    agent = get_object_or_404(Agent, pk=pk)
-    r = asyncio.run(
-        agent.nats_cmd({"func": "killproc", "procpid": int(pid)}, timeout=15)
-    )
-
-    if r == "timeout":
-        return notify_error("Unable to contact the agent")
-    elif r != "ok":
-        return notify_error(r)
-
-    return Response("ok")
-
-
-@api_view()
+@api_view(["GET"])
 @permission_classes([IsAuthenticated, EvtLogPerms])
-def get_event_log(request, pk, logtype, days):
-    agent = get_object_or_404(Agent, pk=pk)
+def get_event_log(request, agent_id, logtype, days):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
     timeout = 180 if logtype == "Security" else 30
+
     data = {
         "func": "eventlog",
         "timeout": timeout,
@@ -231,7 +323,7 @@ def get_event_log(request, pk, logtype, days):
         },
     }
     r = asyncio.run(agent.nats_cmd(data, timeout=timeout + 2))
-    if r == "timeout":
+    if r == "timeout" or r == "natsdown":
         return notify_error("Unable to contact the agent")
 
     return Response(r)
@@ -239,8 +331,8 @@ def get_event_log(request, pk, logtype, days):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, SendCMDPerms])
-def send_raw_cmd(request):
-    agent = get_object_or_404(Agent, pk=request.data["pk"])
+def send_raw_cmd(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
     timeout = int(request.data["timeout"])
     data = {
         "func": "rawcmd",
@@ -276,81 +368,11 @@ def send_raw_cmd(request):
     return Response(r)
 
 
-class AgentsTableList(APIView):
-    def patch(self, request):
-        if "sitePK" in request.data.keys():
-            queryset = (
-                Agent.objects.select_related("site", "policy", "alert_template")
-                .prefetch_related("agentchecks")
-                .filter(site_id=request.data["sitePK"])
-            )
-        elif "clientPK" in request.data.keys():
-            queryset = (
-                Agent.objects.select_related("site", "policy", "alert_template")
-                .prefetch_related("agentchecks")
-                .filter(site__client_id=request.data["clientPK"])
-            )
-        else:
-            queryset = Agent.objects.select_related(
-                "site", "policy", "alert_template"
-            ).prefetch_related("agentchecks")
-
-        queryset = queryset.only(
-            "pk",
-            "hostname",
-            "agent_id",
-            "site",
-            "policy",
-            "alert_template",
-            "monitoring_type",
-            "description",
-            "needs_reboot",
-            "overdue_text_alert",
-            "overdue_email_alert",
-            "overdue_time",
-            "offline_time",
-            "last_seen",
-            "boot_time",
-            "logged_in_username",
-            "last_logged_in_user",
-            "time_zone",
-            "maintenance_mode",
-            "pending_actions_count",
-            "has_patches_pending",
-        )
-        ctx = {"default_tz": get_default_timezone()}
-        serializer = AgentTableSerializer(queryset, many=True, context=ctx)
-        return Response(serializer.data)
-
-
-@api_view()
-def list_agents_no_detail(request):
-    agents = Agent.objects.select_related("site").only("pk", "hostname", "site")
-    return Response(AgentHostnameSerializer(agents, many=True).data)
-
-
-@api_view()
-def agent_edit_details(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
-    return Response(AgentEditSerializer(agent).data)
-
-
-@api_view(["POST"])
-def overdue_action(request):
-    agent = get_object_or_404(Agent, pk=request.data["pk"])
-    serializer = AgentOverdueActionSerializer(
-        instance=agent, data=request.data, partial=True
-    )
-    serializer.is_valid(raise_exception=True)
-    serializer.save()
-    return Response(agent.hostname)
-
-
 class Reboot(APIView):
     permission_classes = [IsAuthenticated, RebootAgentPerms]
     # reboot now
-    def post(self, request):
-        agent = get_object_or_404(Agent, pk=request.data["pk"])
+    def post(self, request, agent_id):
+        agent = get_object_or_404(Agent, agent_id=agent_id)
         r = asyncio.run(agent.nats_cmd({"func": "rebootnow"}, timeout=10))
         if r != "ok":
             return notify_error("Unable to contact the agent")
@@ -358,8 +380,8 @@ class Reboot(APIView):
         return Response("ok")
 
     # reboot later
-    def patch(self, request):
-        agent = get_object_or_404(Agent, pk=request.data["pk"])
+    def patch(self, request, agent_id):
+        agent = get_object_or_404(Agent, agent_id=agent_id)
 
         try:
             obj = dt.datetime.strptime(request.data["datetime"], "%Y-%m-%d %H:%M")
@@ -412,17 +434,24 @@ def install_agent(request):
     version = settings.LATEST_AGENT_VER
     arch = request.data["arch"]
 
+    if not _has_perm_on_site(request.user, site_id):
+        raise PermissionDenied()
+
     # response type is blob so we have to use
     # status codes and render error message on the frontend
     if arch == "64" and not os.path.exists(
         os.path.join(settings.EXE_DIR, "meshagent.exe")
     ):
-        return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
+        return notify_error(
+            "Missing 64 bit meshagent.exe. Upload it from Settings > Global Settings > MeshCentral"
+        )
 
     if arch == "32" and not os.path.exists(
         os.path.join(settings.EXE_DIR, "meshagent-x86.exe")
     ):
-        return Response(status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+        return notify_error(
+            "Missing 32 bit meshagent.exe. Upload it from Settings > Global Settings > MeshCentral"
+        )
 
     inno = (
         f"winagent-v{version}.exe" if arch == "64" else f"winagent-v{version}-x86.exe"
@@ -539,8 +568,9 @@ def install_agent(request):
 
 
 @api_view(["POST"])
-def recover(request):
-    agent = get_object_or_404(Agent, pk=request.data["pk"])
+@permission_classes([IsAuthenticated, RecoverAgentPerms])
+def recover(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
     mode = request.data["mode"]
 
     # attempt a realtime recovery, otherwise fall back to old recovery method
@@ -577,8 +607,8 @@ def recover(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, RunScriptPerms])
-def run_script(request):
-    agent = get_object_or_404(Agent, pk=request.data["pk"])
+def run_script(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
     script = get_object_or_404(Script, pk=request.data["script"])
     output = request.data["output"]
     args = request.data["args"]
@@ -671,17 +701,6 @@ def run_script(request):
     return Response(f"{script.name} will now be run on {agent.hostname}")
 
 
-@api_view()
-def recover_mesh(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
-    data = {"func": "recover", "payload": {"mode": "mesh"}}
-    r = asyncio.run(agent.nats_cmd(data, timeout=90))
-    if r != "ok":
-        return notify_error("Unable to contact the agent")
-
-    return Response(f"Repaired mesh agent on {agent.hostname}")
-
-
 @api_view(["POST"])
 def get_mesh_exe(request, arch):
     filename = "meshagent.exe" if arch == "64" else "meshagent-x86.exe"
@@ -704,34 +723,62 @@ def get_mesh_exe(request, arch):
 
 
 class GetAddNotes(APIView):
-    def get(self, request, pk):
-        agent = get_object_or_404(Agent, pk=pk)
-        return Response(NotesSerializer(agent).data)
+    permission_classes = [IsAuthenticated, AgentNotesPerms]
 
-    def post(self, request, pk):
-        agent = get_object_or_404(Agent, pk=pk)
-        serializer = NoteSerializer(data=request.data, partial=True)
+    def get(self, request, agent_id=None):
+        if agent_id:
+            agent = get_object_or_404(Agent, agent_id=agent_id)
+            notes = Note.objects.filter(agent=agent)
+        else:
+            notes = Note.objects.filter_by_role(request.user)
+
+        return Response(AgentNoteSerializer(notes, many=True).data)
+
+    def post(self, request):
+        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+        if not _has_perm_on_agent(request.user, agent.agent_id):
+            raise PermissionDenied()
+
+        data = {
+            "note": request.data["note"],
+            "agent": agent.pk,
+            "user": request.user.pk,
+        }
+
+        serializer = AgentNoteSerializer(data=data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(agent=agent, user=request.user)
+        serializer.save()
         return Response("Note added!")
 
 
 class GetEditDeleteNote(APIView):
-    permission_classes = [IsAuthenticated, ManageNotesPerms]
+    permission_classes = [IsAuthenticated, AgentNotesPerms]
 
     def get(self, request, pk):
         note = get_object_or_404(Note, pk=pk)
-        return Response(NoteSerializer(note).data)
 
-    def patch(self, request, pk):
+        if not _has_perm_on_agent(request.user, note.agent.agent_id):
+            raise PermissionDenied()
+
+        return Response(AgentNoteSerializer(note).data)
+
+    def put(self, request, pk):
         note = get_object_or_404(Note, pk=pk)
-        serializer = NoteSerializer(instance=note, data=request.data, partial=True)
+
+        if not _has_perm_on_agent(request.user, note.agent.agent_id):
+            raise PermissionDenied()
+
+        serializer = AgentNoteSerializer(instance=note, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response("Note edited!")
 
     def delete(self, request, pk):
         note = get_object_or_404(Note, pk=pk)
+
+        if not _has_perm_on_agent(request.user, note.agent.agent_id):
+            raise PermissionDenied()
+
         note.delete()
         return Response("Note was deleted!")
 
@@ -743,13 +790,27 @@ def bulk(request):
         return notify_error("Must select at least 1 agent")
 
     if request.data["target"] == "client":
-        q = Agent.objects.filter(site__client_id=request.data["client"])
+        if not _has_perm_on_client(request.user, request.data["client"]):
+            raise PermissionDenied()
+        q = Agent.objects.filter_by_role(request.user).filter(
+            site__client_id=request.data["client"]
+        )
+
     elif request.data["target"] == "site":
-        q = Agent.objects.filter(site_id=request.data["site"])
+        if not _has_perm_on_site(request.user, request.data["site"]):
+            raise PermissionDenied()
+        q = Agent.objects.filter_by_role(request.user).filter(
+            site_id=request.data["site"]
+        )
+
     elif request.data["target"] == "agents":
-        q = Agent.objects.filter(pk__in=request.data["agents"])
+        q = Agent.objects.filter_by_role(request.user).filter(
+            agent_id__in=request.data["agents"]
+        )
+
     elif request.data["target"] == "all":
-        q = Agent.objects.only("pk", "monitoring_type")
+        q = Agent.objects.filter_by_role(request.user).only("pk", "monitoring_type")
+
     else:
         return notify_error("Something went wrong")
 
@@ -807,40 +868,60 @@ def bulk(request):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated, AgentPerms])
 def agent_maintenance(request):
+
     if request.data["type"] == "Client":
-        Agent.objects.filter(site__client_id=request.data["id"]).update(
-            maintenance_mode=request.data["action"]
+        if not _has_perm_on_client(request.user, request.data["id"]):
+            raise PermissionDenied()
+
+        count = (
+            Agent.objects.filter_by_role(request.user)
+            .filter(site__client_id=request.data["id"])
+            .update(maintenance_mode=request.data["action"])
         )
 
     elif request.data["type"] == "Site":
-        Agent.objects.filter(site_id=request.data["id"]).update(
-            maintenance_mode=request.data["action"]
-        )
+        if not _has_perm_on_site(request.user, request.data["id"]):
+            raise PermissionDenied()
 
-    elif request.data["type"] == "Agent":
-        agent = Agent.objects.get(pk=request.data["id"])
-        agent.maintenance_mode = request.data["action"]
-        agent.save(update_fields=["maintenance_mode"])
+        count = (
+            Agent.objects.filter_by_role(request.user)
+            .filter(site_id=request.data["id"])
+            .update(maintenance_mode=request.data["action"])
+        )
 
     else:
         return notify_error("Invalid data")
 
-    return Response("ok")
+    if count:
+        action = "disabled" if not request.data["action"] else "enabled"
+        return Response(f"Maintenance mode has been {action} on {count} agents")
+    else:
+        return Response(
+            f"No agents have been put in maintenance mode. You might not have permissions to the resources."
+        )
 
 
 class WMI(APIView):
-    def get(self, request, pk):
-        agent = get_object_or_404(Agent, pk=pk)
+    permission_classes = [IsAuthenticated, AgentPerms]
+
+    def post(self, request, agent_id):
+        agent = get_object_or_404(Agent, agent_id=agent_id)
         r = asyncio.run(agent.nats_cmd({"func": "sysinfo"}, timeout=20))
         if r != "ok":
             return notify_error("Unable to contact the agent")
-        return Response("ok")
+        return Response("Agent WMI data refreshed successfully")
 
 
 class AgentHistoryView(APIView):
-    def get(self, request, pk):
-        agent = get_object_or_404(Agent, pk=pk)
-        history = AgentHistory.objects.filter(agent=agent)
+    permission_classes = [IsAuthenticated, AgentHistoryPerms]
+
+    def get(self, request, agent_id=None):
+        if agent_id:
+            agent = get_object_or_404(Agent, agent_id=agent_id)
+            history = AgentHistory.objects.filter(agent=agent)
+        else:
+            history = AgentHistory.objects.filter_by_role(request.user)
         ctx = {"default_tz": get_default_timezone()}
         return Response(AgentHistorySerializer(history, many=True, context=ctx).data)

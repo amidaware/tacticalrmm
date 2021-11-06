@@ -8,13 +8,37 @@
         <q-tooltip class="bg-white text-primary">Close</q-tooltip>
       </q-btn>
     </q-bar>
-    <div class="row">
-      <q-btn v-if="agentpk" class="q-pa-sm" dense flat push @click="search" icon="refresh" />
-      <div class="q-pa-sm col-1" v-if="!agentpk">
-        <q-option-group v-model="filterType" :options="filterTypeOptions" color="primary" />
-      </div>
-      <div class="q-pa-sm col-2" v-if="filterType === 'agents' && !agentpk">
+    <q-table
+      @request="onRequest"
+      :title="modal ? 'Audit Logs' : ''"
+      :rows="auditLogs"
+      :columns="columns"
+      class="tabs-tbl-sticky"
+      :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+      :style="{ 'max-height': tabHeight ? tabHeight : `${$q.screen.height - 33}px` }"
+      row-key="id"
+      dense
+      binary-state-sort
+      v-model:pagination="pagination"
+      :rows-per-page-options="[25, 50, 100, 500, 1000]"
+      :no-data-label="tableNoDataText"
+      @row-click="openAuditDetail"
+      virtual-scroll
+      :loading="loading"
+    >
+      <template v-slot:top>
+        <q-btn v-if="agent" class="q-pr-sm" dense flat push @click="search" icon="refresh" />
+        <q-option-group
+          v-if="!agent"
+          class="q-pr-sm"
+          v-model="filterType"
+          :options="filterTypeOptions"
+          color="primary"
+        />
         <tactical-dropdown
+          v-if="filterType === 'agents' && !agent"
+          class="q-pr-sm"
+          style="width: 200px"
           v-model="agentFilter"
           :options="agentOptions"
           label="Agent"
@@ -23,9 +47,10 @@
           multiple
           filled
         />
-      </div>
-      <div class="q-pa-sm col-2" v-if="filterType === 'clients' && !agentpk">
         <tactical-dropdown
+          v-if="filterType === 'clients' && !agent"
+          class="q-pr-sm"
+          style="width: 200px"
           v-model="clientFilter"
           :options="clientOptions"
           label="Clients"
@@ -34,12 +59,19 @@
           filled
           mapOptions
         />
-      </div>
-      <div class="q-pa-sm col-2">
-        <tactical-dropdown v-model="userFilter" :options="userOptions" label="Users" clearable filled multiple />
-      </div>
-      <div class="q-pa-sm col-2">
         <tactical-dropdown
+          class="q-pr-sm"
+          style="width: 200px"
+          v-model="userFilter"
+          :options="userOptions"
+          label="Users"
+          clearable
+          filled
+          multiple
+        />
+        <tactical-dropdown
+          class="q-pr-sm"
+          style="width: 200px"
           v-model="actionFilter"
           :options="actionOptions"
           label="Action"
@@ -48,9 +80,10 @@
           multiple
           mapOptions
         />
-      </div>
-      <div class="q-pa-sm col-2" v-if="!agentpk">
         <tactical-dropdown
+          class="q-pr-sm"
+          style="width: 200px"
+          v-if="!agent"
           v-model="objectFilter"
           :options="objectOptions"
           label="Object"
@@ -59,46 +92,28 @@
           multiple
           mapOptions
         />
-      </div>
-      <div class="q-pa-sm col-2">
-        <tactical-dropdown v-model="timeFilter" :options="timeOptions" label="Time" filled mapOptions />
-      </div>
-      <div class="q-pa-sm col-1" v-if="!agentpk">
-        <q-btn color="primary" label="Search" @click="search" />
-      </div>
-      <q-space />
-      <div class="q-pa-sm" v-if="!modal">
+        <tactical-dropdown
+          class="q-pr-sm"
+          style="width: 200px"
+          v-model="timeFilter"
+          :options="timeOptions"
+          label="Time"
+          filled
+          mapOptions
+        />
+        <q-btn v-if="!agent" color="primary" label="Search" @click="search" />
+
+        <q-space />
         <export-table-btn :data="auditLogs" :columns="columns" />
-      </div>
-    </div>
-    <q-separator />
-    <q-card-section>
-      <q-table
-        @request="onRequest"
-        :title="modal ? 'Audit Logs' : ''"
-        :rows="auditLogs"
-        :columns="columns"
-        row-key="id"
-        dense
-        binary-state-sort
-        v-model:pagination="pagination"
-        :rows-per-page-options="[25, 50, 100, 500, 1000]"
-        :no-data-label="tableNoDataText"
-        @row-click="openAuditDetail"
-        :loading="loading"
-      >
-        <template v-slot:top-right>
-          <export-table-btn v-if="modal" :data="auditLogs" :columns="columns" />
-        </template>
-        <template v-slot:body-cell-action="props">
-          <q-td :props="props">
-            <div>
-              <q-badge :color="formatActionColor(props.value)" :label="props.value" />
-            </div>
-          </q-td>
-        </template>
-      </q-table>
-    </q-card-section>
+      </template>
+      <template v-slot:body-cell-action="props">
+        <q-td :props="props">
+          <div>
+            <q-badge :color="formatActionColor(props.value)" :label="props.value" />
+          </div>
+        </q-td>
+      </template>
+    </q-table>
   </q-card>
 </template>
 
@@ -212,7 +227,8 @@ export default {
   name: "AuditManager",
   components: { TacticalDropdown, ExportTableBtn },
   props: {
-    agentpk: Number,
+    agent: String,
+    tabHeight: String,
     modal: {
       type: Boolean,
       default: false,
@@ -303,14 +319,14 @@ export default {
       clientFilter.value = null;
     });
 
-    if (props.agentpk) {
-      agentFilter.value = [props.agentpk];
+    if (props.agent) {
+      agentFilter.value = [props.agent];
       watch([userFilter, actionFilter, timeFilter], search);
       watch(
-        () => props.agentpk,
+        () => props.agent,
         (newValue, oldValue) => {
           if (newValue) {
-            agentFilter.value = [props.agentpk];
+            agentFilter.value = [props.agent];
             search();
           }
         }
@@ -319,7 +335,7 @@ export default {
 
     // vue component hooks
     onMounted(() => {
-      if (!props.agentpk) {
+      if (!props.agent) {
         getClientOptions();
         getAgentOptions();
       } else {
@@ -348,7 +364,7 @@ export default {
       clientOptions,
       agentOptions,
       columns,
-      actionOptions: props.agentpk ? [...agentActionOptions] : [...agentActionOptions, ...actionOptions],
+      actionOptions: props.agent ? [...agentActionOptions] : [...agentActionOptions, ...actionOptions],
       objectOptions,
       timeOptions,
       filterTypeOptions,

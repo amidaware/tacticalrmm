@@ -21,6 +21,8 @@ Is NATS (<https://nats.io>). You'll need a TCP forwarder as NATS only talks TCP 
 
 ## Traefikv2
 
+Offsite Resource: <https://gitlab.com/NiceGuyIT/tactical-goodies/-/tree/main/traefik>
+
 This section will assume that by default Traefik will reverse proxy everything on port 443.
 
 Here is a basic Traefik config with docker-composer note the file.directory and file.watch are important.

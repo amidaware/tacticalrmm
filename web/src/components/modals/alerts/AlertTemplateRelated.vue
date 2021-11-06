@@ -99,7 +99,7 @@ export default {
     this.$q.loading.show();
 
     this.$axios
-      .get(`/alerts/alerttemplates/${this.template.id}/related/`)
+      .get(`/alerts/templates/${this.template.id}/related/`)
       .then(r => {
         this.$q.loading.hide();
         this.related = r.data;

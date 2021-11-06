@@ -61,9 +61,14 @@ class TOTPSetupSerializer(ModelSerializer):
 
 
 class RoleSerializer(ModelSerializer):
+    user_count = SerializerMethodField()
+
     class Meta:
         model = Role
         fields = "__all__"
+
+    def get_user_count(self, obj):
+        return obj.users.count()
 
 
 class RoleAuditSerializer(ModelSerializer):

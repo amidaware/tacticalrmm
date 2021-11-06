@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-xs q-ma-xs">
+  <div class="q-pb-sm">
     <q-bar>
       <q-btn-group flat>
         <q-btn size="md" dense no-caps flat label="File">
@@ -35,7 +35,7 @@
         <q-btn size="md" dense no-caps flat label="View">
           <q-menu auto-close>
             <q-list dense style="min-width: 100px">
-              <q-item clickable v-close-popup @click="showPendingActions = true">
+              <q-item clickable v-close-popup @click="showPendingActions">
                 <q-item-section>Pending Actions</q-item-section>
               </q-item>
             </q-list>
@@ -48,7 +48,7 @@
               <q-item clickable v-close-popup @click="showInstallAgent = true">
                 <q-item-section>Install Agent</q-item-section>
               </q-item>
-              <q-item clickable v-close-popup @click="showDeployment = true">
+              <q-item clickable v-close-popup @click="showDeployments">
                 <q-item-section>Manage Deployments</q-item-section>
               </q-item>
               <q-item clickable v-close-popup @click="showUpdateAgentsModal = true">
@@ -145,12 +145,6 @@
       <q-dialog v-model="showEditCoreSettingsModal">
         <EditCoreSettings @close="showEditCoreSettingsModal = false" />
       </q-dialog>
-      <!-- pending actions modal -->
-      <div class="q-pa-md q-gutter-sm">
-        <q-dialog v-model="showPendingActions">
-          <PendingActions @close="showPendingActions = false" />
-        </q-dialog>
-      </div>
       <!-- Install Agents -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showInstallAgent">
@@ -160,7 +154,7 @@
       <!-- Update Agents Modal -->
       <div class="q-pa-md q-gutter-sm">
         <q-dialog v-model="showUpdateAgentsModal" maximized transition-show="slide-up" transition-hide="slide-down">
-          <UpdateAgents @close="showUpdateAgentsModal = false" @edit="edited" />
+          <UpdateAgents @close="showUpdateAgentsModal = false" />
         </q-dialog>
       </div>
       <!-- Admin Manager -->
@@ -169,10 +163,6 @@
           <AdminManager @close="showAdminManager = false" />
         </q-dialog>
       </div>
-      <!-- Agent Deployment -->
-      <q-dialog v-model="showDeployment">
-        <Deployment @close="showDeployment = false" />
-      </q-dialog>
       <!-- Server Maintenance -->
       <q-dialog v-model="showServerMaintenance">
         <ServerMaintenance @close="showMaintenance = false" />
@@ -188,10 +178,10 @@
 <script>
 import DialogWrapper from "@/components/ui/DialogWrapper";
 import DebugLog from "@/components/logs/DebugLog";
-import PendingActions from "@/components/modals/logs/PendingActions";
-import ClientsManager from "@/components/ClientsManager";
-import ClientsForm from "@/components/modals/clients/ClientsForm";
-import SitesForm from "@/components/modals/clients/SitesForm";
+import PendingActions from "@/components/logs/PendingActions";
+import ClientsManager from "@/components/clients/ClientsManager";
+import ClientsForm from "@/components/clients/ClientsForm";
+import SitesForm from "@/components/clients/SitesForm";
 import UpdateAgents from "@/components/modals/agents/UpdateAgents";
 import ScriptManager from "@/components/scripts/ScriptManager";
 import EditCoreSettings from "@/components/modals/coresettings/EditCoreSettings";
@@ -201,21 +191,19 @@ import AdminManager from "@/components/AdminManager";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import AuditManager from "@/components/logs/AuditManager";
 import BulkAction from "@/components/modals/agents/BulkAction";
-import Deployment from "@/components/Deployment";
+import Deployment from "@/components/clients/Deployment";
 import ServerMaintenance from "@/components/modals/core/ServerMaintenance";
 import CodeSign from "@/components/modals/coresettings/CodeSign";
-import PermissionsManager from "@/components/PermissionsManager";
+import PermissionsManager from "@/components/accounts/PermissionsManager";
 
 export default {
   name: "FileBar",
-  emits: ["edit"],
+  inject: ["refreshDashboard"],
   components: {
-    PendingActions,
     UpdateAgents,
     EditCoreSettings,
     InstallAgent,
     AdminManager,
-    Deployment,
     ServerMaintenance,
     CodeSign,
     PermissionsManager,
@@ -227,8 +215,6 @@ export default {
       showEditCoreSettingsModal: false,
       showAdminManager: false,
       showInstallAgent: false,
-      showPendingActions: false,
-      showDeployment: false,
       showCodeSign: false,
     };
   },
@@ -256,38 +242,38 @@ export default {
       }
       window.open(url, "_blank");
     },
-    showBulkActionModal(mode) {
-      this.bulkMode = mode;
-      this.showBulkAction = true;
-    },
-    closeBulkActionModal() {
-      this.bulkMode = null;
-      this.showBulkAction = false;
-    },
     showAutomationManager() {
       this.$q.dialog({
         component: AutomationManager,
       });
     },
     showAlertsManager() {
-      this.$q.dialog({
-        component: AlertsManager,
-      });
+      this.$q
+        .dialog({
+          component: AlertsManager,
+        })
+        .onDismiss(this.refreshDashboard);
     },
     showClientsManager() {
-      this.$q.dialog({
-        component: ClientsManager,
-      });
+      this.$q
+        .dialog({
+          component: ClientsManager,
+        })
+        .onDismiss(() => this.refreshDashboard(false));
     },
     showAddClientModal() {
-      this.$q.dialog({
-        component: ClientsForm,
-      });
+      this.$q
+        .dialog({
+          component: ClientsForm,
+        })
+        .onOk(this.refreshDashboard);
     },
     showAddSiteModal() {
-      this.$q.dialog({
-        component: SitesForm,
-      });
+      this.$q
+        .dialog({
+          component: SitesForm,
+        })
+        .onOk(this.refreshDashboard);
     },
     showPermissionsManager() {
       this.$q.dialog({
@@ -341,8 +327,17 @@ export default {
         },
       });
     },
-    edited() {
-      this.$emit("edit");
+    showPendingActions() {
+      this.$q
+        .dialog({
+          component: PendingActions,
+        })
+        .onDismiss(this.refreshDashboard);
+    },
+    showDeployments() {
+      this.$q.dialog({
+        component: Deployment,
+      });
     },
   },
 };

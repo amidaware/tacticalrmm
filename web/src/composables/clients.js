@@ -1,9 +1,9 @@
 
-import { ref } from "vue"
+import { ref, onMounted } from "vue"
 import { fetchClients } from "@/api/clients"
 import { formatClientOptions, formatSiteOptions } from "@/utils/format"
 
-export function useClientDropdown() {
+export function useClientDropdown(onMount = false) {
   const client = ref(null)
   const clients = ref([])
   const clientOptions = ref([])
@@ -11,6 +11,8 @@ export function useClientDropdown() {
   async function getClientOptions(flat = false) {
     clientOptions.value = formatClientOptions(await fetchClients(), flat)
   }
+
+  if (onMount) onMounted(getClientOptions)
 
   return {
     //data
@@ -23,7 +25,7 @@ export function useClientDropdown() {
   }
 }
 
-export function useSiteDropdown() {
+export function useSiteDropdown(onMount = false) {
   const site = ref(null)
   const sites = ref([])
   const siteOptions = ref([])
@@ -31,6 +33,8 @@ export function useSiteDropdown() {
   async function getSiteOptions() {
     siteOptions.value = formatSiteOptions(await fetchClients())
   }
+
+  if (onMount) onMounted(getSiteOptions)
 
   return {
     //data

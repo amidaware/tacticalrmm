@@ -5,17 +5,28 @@
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       :rows="history"
       :columns="columns"
-      :pagination="{ sortBy: 'time', descending: true, rowsPerPage: 10 }"
+      :pagination="{ sortBy: 'time', descending: true, rowsPerPage: 0 }"
+      :style="{ 'max-height': tabHeight }"
       :loading="loading"
+      :rows-per-page-options="[0]"
+      :filter="filter"
+      virtual-scroll
       dense
       binary-state-sort
     >
-      <template v-slot:top-left>
+      <template v-slot:top>
         <q-btn dense flat push @click="getHistory" icon="refresh" />
+        <q-space />
+        <q-input v-model="filter" outlined label="Search" dense clearable class="q-pr-sm">
+          <template v-slot:prepend>
+            <q-icon name="search" color="primary" />
+          </template>
+        </q-input>
+        <export-table-btn :data="history" :columns="columns" />
       </template>
 
-      <template v-slot:top-right>
-        <export-table-btn :data="history" :columns="columns" />
+      <template v-slot:loading>
+        <q-inner-loading showing color="primary" />
       </template>
 
       <template v-slot:body-cell-command="props">
@@ -35,17 +46,14 @@
       <template v-slot:body-cell-output="props">
         <q-td :props="props">
           <span
-            v-if="props.row.type === 'script_run' || props.row.type === 'task_run'"
             style="cursor: pointer; text-decoration: underline"
             class="text-primary"
-            @click="showScriptOutput(props.row.script_results)"
+            @click="
+              props.row.type === 'cmd_run'
+                ? showCommandOutput(props.row.results)
+                : showScriptOutput(props.row.script_results)
+            "
             >Output
-          </span>
-          <span v-else-if="props.row.type === 'cmd_run'"
-            >{{ truncateText(props.row.results, 30) }}
-            <q-tooltip v-if="props.row.results !== null && props.row.results.length >= 30" style="font-size: 12px">
-              {{ props.row.results }}
-            </q-tooltip>
           </span>
         </q-td>
       </template>
@@ -62,7 +70,7 @@ import { formatDate, formatTableColumnText, truncateText } from "@/utils/format"
 import { fetchAgentHistory } from "@/api/agents";
 
 // ui imports
-import ScriptOutput from "@/components/modals/checks/ScriptOutput";
+import ScriptOutput from "@/components/checks/ScriptOutput";
 import ExportTableBtn from "@/components/ui/ExportTableBtn";
 
 // static data
@@ -106,10 +114,12 @@ export default {
 
     const store = useStore();
     const selectedAgent = computed(() => store.state.selectedRow);
+    const tabHeight = computed(() => store.state.tabHeight);
 
     // setup main history functionality
     const history = ref([]);
     const loading = ref(false);
+    const filter = ref("");
 
     async function getHistory() {
       loading.value = true;
@@ -133,21 +143,32 @@ export default {
       });
     }
 
+    function showCommandOutput(output) {
+      $q.dialog({
+        style: "width: 70vw; max-width: 80vw",
+        message: `<pre>${output}</pre>`,
+        html: true,
+      });
+    }
+
     // vue component hooks
     onMounted(() => {
-      if (!!selectedAgent.value) getHistory();
+      if (selectedAgent.value) getHistory();
     });
 
     return {
       // reactive
       history,
       loading,
+      tabHeight,
+      filter,
 
       // non-reactive data
       columns,
 
       // methods
       showScriptOutput,
+      showCommandOutput,
       getHistory,
       truncateText,
 

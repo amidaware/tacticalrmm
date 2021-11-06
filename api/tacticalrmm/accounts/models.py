@@ -64,7 +64,7 @@ class User(AbstractUser, BaseAuditModel):
         "accounts.Role",
         null=True,
         blank=True,
-        related_name="roles",
+        related_name="users",
         on_delete=models.SET_NULL,
     )
 
@@ -81,6 +81,8 @@ class Role(BaseAuditModel):
     is_superuser = models.BooleanField(default=False)
 
     # agents
+    can_list_agents = models.BooleanField(default=False)
+    can_ping_agents = models.BooleanField(default=False)
     can_use_mesh = models.BooleanField(default=False)
     can_uninstall_agents = models.BooleanField(default=False)
     can_update_agents = models.BooleanField(default=False)
@@ -92,55 +94,82 @@ class Role(BaseAuditModel):
     can_install_agents = models.BooleanField(default=False)
     can_run_scripts = models.BooleanField(default=False)
     can_run_bulk = models.BooleanField(default=False)
+    can_recover_agents = models.BooleanField(default=False)
+    can_list_agent_history = models.BooleanField(default=False)
 
     # core
+    can_list_notes = models.BooleanField(default=False)
     can_manage_notes = models.BooleanField(default=False)
     can_view_core_settings = models.BooleanField(default=False)
     can_edit_core_settings = models.BooleanField(default=False)
     can_do_server_maint = models.BooleanField(default=False)
     can_code_sign = models.BooleanField(default=False)
+    can_run_urlactions = models.BooleanField(default=False)
+    can_view_customfields = models.BooleanField(default=False)
+    can_manage_customfields = models.BooleanField(default=False)
 
     # checks
+    can_list_checks = models.BooleanField(default=False)
     can_manage_checks = models.BooleanField(default=False)
     can_run_checks = models.BooleanField(default=False)
 
     # clients
+    can_list_clients = models.BooleanField(default=False)
     can_manage_clients = models.BooleanField(default=False)
+    can_list_sites = models.BooleanField(default=False)
     can_manage_sites = models.BooleanField(default=False)
+    can_list_deployments = models.BooleanField(default=False)
     can_manage_deployments = models.BooleanField(default=False)
+    can_view_clients = models.ManyToManyField(
+        "clients.Client", related_name="role_clients", blank=True
+    )
+    can_view_sites = models.ManyToManyField(
+        "clients.Site", related_name="role_sites", blank=True
+    )
 
     # automation
+    can_list_automation_policies = models.BooleanField(default=False)
     can_manage_automation_policies = models.BooleanField(default=False)
 
     # automated tasks
+    can_list_autotasks = models.BooleanField(default=False)
     can_manage_autotasks = models.BooleanField(default=False)
     can_run_autotasks = models.BooleanField(default=False)
 
     # logs
     can_view_auditlogs = models.BooleanField(default=False)
+    can_list_pendingactions = models.BooleanField(default=False)
     can_manage_pendingactions = models.BooleanField(default=False)
     can_view_debuglogs = models.BooleanField(default=False)
 
     # scripts
+    can_list_scripts = models.BooleanField(default=False)
     can_manage_scripts = models.BooleanField(default=False)
 
     # alerts
+    can_list_alerts = models.BooleanField(default=False)
     can_manage_alerts = models.BooleanField(default=False)
+    can_list_alerttemplates = models.BooleanField(default=False)
+    can_manage_alerttemplates = models.BooleanField(default=False)
 
     # win services
     can_manage_winsvcs = models.BooleanField(default=False)
 
     # software
+    can_list_software = models.BooleanField(default=False)
     can_manage_software = models.BooleanField(default=False)
 
     # windows updates
     can_manage_winupdates = models.BooleanField(default=False)
 
     # accounts
+    can_list_accounts = models.BooleanField(default=False)
     can_manage_accounts = models.BooleanField(default=False)
+    can_list_roles = models.BooleanField(default=False)
     can_manage_roles = models.BooleanField(default=False)
 
     # authentication
+    can_list_api_keys = models.BooleanField(default=False)
     can_manage_api_keys = models.BooleanField(default=False)
 
     def __str__(self):
@@ -152,47 +181,6 @@ class Role(BaseAuditModel):
         from .serializers import RoleAuditSerializer
 
         return RoleAuditSerializer(role).data
-
-    @staticmethod
-    def perms():
-        return [
-            "is_superuser",
-            "can_use_mesh",
-            "can_uninstall_agents",
-            "can_update_agents",
-            "can_edit_agent",
-            "can_manage_procs",
-            "can_view_eventlogs",
-            "can_send_cmd",
-            "can_reboot_agents",
-            "can_install_agents",
-            "can_run_scripts",
-            "can_run_bulk",
-            "can_manage_notes",
-            "can_view_core_settings",
-            "can_edit_core_settings",
-            "can_do_server_maint",
-            "can_code_sign",
-            "can_manage_checks",
-            "can_run_checks",
-            "can_manage_clients",
-            "can_manage_sites",
-            "can_manage_deployments",
-            "can_manage_automation_policies",
-            "can_manage_autotasks",
-            "can_run_autotasks",
-            "can_view_auditlogs",
-            "can_manage_pendingactions",
-            "can_view_debuglogs",
-            "can_manage_scripts",
-            "can_manage_alerts",
-            "can_manage_winsvcs",
-            "can_manage_software",
-            "can_manage_winupdates",
-            "can_manage_accounts",
-            "can_manage_roles",
-            "can_manage_api_keys",
-        ]
 
 
 class APIKey(BaseAuditModel):

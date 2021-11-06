@@ -263,7 +263,7 @@ ARCH_CHOICES = [
 
 class Deployment(models.Model):
     objects = PermissionQuerySet.as_manager()
-    
+
     uid = models.UUIDField(primary_key=False, default=uuid.uuid4, editable=False)
     site = models.ForeignKey(
         "clients.Site", related_name="deploysites", on_delete=models.CASCADE

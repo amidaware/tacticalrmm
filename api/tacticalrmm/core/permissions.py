@@ -25,9 +25,10 @@ class CodeSignPerms(permissions.BasePermission):
     def has_permission(self, r, view):
         return _has_perm(r, "can_code_sign")
 
+
 class CustomFieldPerms(permissions.BasePermission):
     def has_permission(self, r, view):
         if r.method == "GET":
             return _has_perm(r, "can_view_customfields")
         else:
-            return _has_perm(r, "can_manage_customfields")  
+            return _has_perm(r, "can_manage_customfields")

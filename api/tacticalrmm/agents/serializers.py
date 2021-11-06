@@ -23,7 +23,7 @@ class AgentCustomFieldSerializer(serializers.ModelSerializer):
             "multiple_value": {"write_only": True},
         }
 
-        
+
 class AgentSerializer(serializers.ModelSerializer):
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
     status = serializers.ReadOnlyField()
@@ -44,10 +44,7 @@ class AgentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Agent
-        exclude = [
-            "last_seen",
-            "id"
-        ]
+        exclude = ["last_seen", "id"]
 
 
 class AgentTableSerializer(serializers.ModelSerializer):

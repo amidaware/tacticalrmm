@@ -243,7 +243,7 @@ class GetUpdateDeleteAlertTemplate(APIView):
 
 class RelatedAlertTemplate(APIView):
     permission_classes = [IsAuthenticated, AlertTemplatePerms]
-    
+
     def get(self, request, pk):
         alert_template = get_object_or_404(AlertTemplate, pk=pk)
         return Response(AlertTemplateRelationSerializer(alert_template).data)

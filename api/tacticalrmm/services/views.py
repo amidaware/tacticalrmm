@@ -74,7 +74,9 @@ class GetEditActionService(APIView):
             elif not r["success"] and r["errormsg"]:
                 return notify_error(r["errormsg"])
             elif r["success"]:
-                return Response(f"The service was {'started' if action == 'start' else 'stopped'} successfully")
+                return Response(
+                    f"The service was {'started' if action == 'start' else 'stopped'} successfully"
+                )
 
         return notify_error("Something went wrong")
 

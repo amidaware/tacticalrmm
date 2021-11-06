@@ -447,7 +447,10 @@ class TestClientViews(TacticalTestCase):
         self.assertEqual(r.status_code, 404)
 
         # test valid download
-        deployment = baker.make("clients.Deployment", install_flags={"rdp": True, "ping": False, "power": False})
+        deployment = baker.make(
+            "clients.Deployment",
+            install_flags={"rdp": True, "ping": False, "power": False},
+        )
 
         url = f"/clients/{deployment.uid}/deploy/"
 
@@ -463,7 +466,7 @@ class TestClientPermissions(TacticalTestCase):
     def test_get_clients_permissions(self):
         # create user with empty role
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         url = f"{base_url}/"
 
@@ -480,17 +483,17 @@ class TestClientPermissions(TacticalTestCase):
 
         # all agents should be returned
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 5) # type: ignore
+        self.assertEqual(len(response.data), 5)  # type: ignore
 
         # limit user to specific client. only 1 client should be returned
         user.role.can_view_clients.set([clients[3]])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 1) # type: ignore
+        self.assertEqual(len(response.data), 1)  # type: ignore
 
         # 2 should be returned now
         user.role.can_view_clients.set([clients[0], clients[1]])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 2) # type: ignore
+        self.assertEqual(len(response.data), 2)  # type: ignore
 
         # limit to a specific site. The site shouldn't be in client returned sites
         sites = baker.make("clients.Site", client=clients[4], _quantity=3)
@@ -499,14 +502,14 @@ class TestClientPermissions(TacticalTestCase):
 
         user.role.can_view_sites.set([sites[0]])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 3) # type: ignore
-        for client in response.data: # type: ignore
+        self.assertEqual(len(response.data), 3)  # type: ignore
+        for client in response.data:  # type: ignore
             if client["id"] == clients[0].id:
                 self.assertEqual(len(client["sites"]), 4)
             elif client["id"] == clients[1].id:
                 self.assertEqual(len(client["sites"]), 5)
             elif client["id"] == clients[4].id:
-                self.assertEqual(len(client["sites"]), 1)  
+                self.assertEqual(len(client["sites"]), 1)
 
         # make sure superusers work
         self.check_authorized_superuser("get", url)
@@ -515,14 +518,7 @@ class TestClientPermissions(TacticalTestCase):
     @patch("clients.models.Client.delete")
     def test_add_clients_permissions(self, save, delete):
 
-        data = {
-            "client": {
-                "name": "Client Name"
-            },
-            "site": {
-                "name": "Site Name"
-            }
-        }
+        data = {"client": {"name": "Client Name"}, "site": {"name": "Site Name"}}
 
         url = f"{base_url}/"
 
@@ -530,7 +526,7 @@ class TestClientPermissions(TacticalTestCase):
         self.check_authorized_superuser("post", url, data)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         # test user without role
         self.check_not_authorized("post", url, data)
@@ -545,7 +541,7 @@ class TestClientPermissions(TacticalTestCase):
     def test_get_edit_delete_clients_permissions(self, delete):
         # create user with empty role
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         client = baker.make("clients.Client")
         unauthorized_client = baker.make("clients.Client")
@@ -576,12 +572,14 @@ class TestClientPermissions(TacticalTestCase):
 
         # make sure superusers work
         for method in methods:
-            self.check_authorized_superuser(method, f"{base_url}/{unauthorized_client.id}/")
+            self.check_authorized_superuser(
+                method, f"{base_url}/{unauthorized_client.id}/"
+            )
 
     def test_get_sites_permissions(self):
         # create user with empty role
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         url = f"{base_url}/sites/"
 
@@ -599,28 +597,28 @@ class TestClientPermissions(TacticalTestCase):
 
         # all sites should be returned
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 10) # type: ignore
+        self.assertEqual(len(response.data), 10)  # type: ignore
 
         # limit user to specific site. only 1 site should be returned
         user.role.can_view_sites.set([sites[3]])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 1) # type: ignore
+        self.assertEqual(len(response.data), 1)  # type: ignore
 
         # 2 should be returned now
         user.role.can_view_sites.set([sites[0], sites[1]])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 2) # type: ignore
+        self.assertEqual(len(response.data), 2)  # type: ignore
 
         # check if limiting user to client works
         user.role.can_view_sites.clear()
         user.role.can_view_clients.set([clients[0]])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 4) # type: ignore
+        self.assertEqual(len(response.data), 4)  # type: ignore
 
         # add a site to see if the results still work
         user.role.can_view_sites.set([sites[1], sites[0]])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 5) # type: ignore
+        self.assertEqual(len(response.data), 5)  # type: ignore
 
         # make sure superusers work
         self.check_authorized_superuser("get", url)
@@ -630,10 +628,7 @@ class TestClientPermissions(TacticalTestCase):
     def test_add_sites_permissions(self, delete, save):
         client = baker.make("clients.Client")
         unauthorized_client = baker.make("clients.Client")
-        data = {
-            "client": client.id,
-            "name": "Site Name"
-        }
+        data = {"client": client.id, "name": "Site Name"}
 
         url = f"{base_url}/sites/"
 
@@ -641,7 +636,7 @@ class TestClientPermissions(TacticalTestCase):
         self.check_authorized_superuser("post", url, data)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         # test user without role
         self.check_not_authorized("post", url, data)
@@ -657,17 +652,14 @@ class TestClientPermissions(TacticalTestCase):
         self.check_authorized("post", url, data)
 
         # test adding to unauthorized client
-        data = {
-            "client": unauthorized_client.id,
-            "name": "Site Name"
-        }
+        data = {"client": unauthorized_client.id, "name": "Site Name"}
         self.check_not_authorized("post", url, data)
 
     @patch("clients.models.Site.delete")
     def test_get_edit_delete_sites_permissions(self, delete):
         # create user with empty role
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         site = baker.make("clients.Site")
         unauthorized_site = baker.make("clients.Site")
@@ -706,7 +698,9 @@ class TestClientPermissions(TacticalTestCase):
 
         # make sure superusers work
         for method in methods:
-            self.check_authorized_superuser(method, f"{base_url}/{unauthorized_site.id}/")
+            self.check_authorized_superuser(
+                method, f"{base_url}/{unauthorized_site.id}/"
+            )
 
     def test_get_pendingactions_permissions(self):
         url = f"{base_url}/deployments/"
@@ -714,15 +708,17 @@ class TestClientPermissions(TacticalTestCase):
         site = baker.make("clients.Site")
         other_site = baker.make("clients.Site")
         deployments = baker.make("clients.Deployment", site=site, _quantity=5)
-        other_deployments = baker.make("clients.Deployment", site=other_site, _quantity=7)
+        other_deployments = baker.make(
+            "clients.Deployment", site=other_site, _quantity=7
+        )
 
         # test getting all deployments
         # make sure superusers work
         self.check_authorized_superuser("get", url)
-        
+
         # create user with empty role
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         # user with empty role should fail
         self.check_not_authorized("get", url)
@@ -733,23 +729,23 @@ class TestClientPermissions(TacticalTestCase):
 
         # all sites should be returned
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 12) # type: ignore
+        self.assertEqual(len(response.data), 12)  # type: ignore
 
         # limit user to specific site. only 1 site should be returned
         user.role.can_view_sites.set([site])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 5) # type: ignore
+        self.assertEqual(len(response.data), 5)  # type: ignore
 
         # all should be returned now
         user.role.can_view_clients.set([other_site.client])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 12) # type: ignore
+        self.assertEqual(len(response.data), 12)  # type: ignore
 
         # check if limiting user to client works
         user.role.can_view_sites.clear()
         user.role.can_view_clients.set([other_site.client])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 7) # type: ignore
+        self.assertEqual(len(response.data), 7)  # type: ignore
 
     @patch("clients.models.Deployment.save")
     def test_add_deployments_permissions(self, save):
@@ -770,7 +766,7 @@ class TestClientPermissions(TacticalTestCase):
         self.check_authorized_superuser("post", url, data)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         # test user without role
         self.check_not_authorized("post", url, data)
@@ -797,7 +793,9 @@ class TestClientPermissions(TacticalTestCase):
         site = baker.make("clients.Site")
         unauthorized_site = baker.make("clients.Site")
         deployment = baker.make("clients.Deployment", site=site)
-        unauthorized_deployment = baker.make("clients.Deployment", site=unauthorized_site)
+        unauthorized_deployment = baker.make(
+            "clients.Deployment", site=unauthorized_site
+        )
 
         url = f"{base_url}/deployments/{deployment.id}/"
         unauthorized_url = f"{base_url}/deployments/{unauthorized_deployment.id}/"
@@ -808,7 +806,7 @@ class TestClientPermissions(TacticalTestCase):
 
         # create user with empty role
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         # make sure user with empty role is unauthorized
         self.check_not_authorized("delete", url)
@@ -820,14 +818,16 @@ class TestClientPermissions(TacticalTestCase):
 
         self.check_authorized("delete", url)
         self.check_authorized("delete", unauthorized_url)
-        
+
         # test limiting users to clients and sites
 
         # limit to site
         user.role.can_view_sites.set([site])
 
         # recreate deployment since it is being deleted even though I am mocking delete on Deployment model???
-        unauthorized_deployment = baker.make("clients.Deployment", site=unauthorized_site)
+        unauthorized_deployment = baker.make(
+            "clients.Deployment", site=unauthorized_site
+        )
         unauthorized_url = f"{base_url}/deployments/{unauthorized_deployment.id}/"
 
         self.check_authorized("delete", url)

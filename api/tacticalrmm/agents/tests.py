@@ -811,7 +811,7 @@ class TestAgentViews(TacticalTestCase):
 
     def test_bulk_updates(self):
         self.assertTrue(False)
-        
+
     def test_get_notes(self):
         url = f"{base_url}/notes/"
 
@@ -1105,19 +1105,11 @@ class TestAgentPermissions(TacticalTestCase):
     def test_agent_maintenance_permissions(self):
         site = baker.make("clients.Site")
         client = baker.make("clients.Client")
-        
-        site_data = {
-            "id": site.id,
-            "type": "Site",
-            "action": True
-        }
 
-        client_data = {
-            "id": client.id,
-            "type": "Client",
-            "action": True
-        }
-        
+        site_data = {"id": site.id, "type": "Site", "action": True}
+
+        client_data = {"id": client.id, "type": "Client", "action": True}
+
         url = f"{base_url}/maintenance/bulk/"
 
         # test superuser access
@@ -1141,12 +1133,12 @@ class TestAgentPermissions(TacticalTestCase):
         # limit user to client
         user.role.can_view_clients.set([client])
         self.check_not_authorized("post", url, site_data)
-        self.check_authorized("post", url, client_data) 
+        self.check_authorized("post", url, client_data)
 
         # also limit to site
         user.role.can_view_sites.set([site])
         self.check_authorized("post", url, site_data)
-        self.check_authorized("post", url, client_data) 
+        self.check_authorized("post", url, client_data)
 
     @patch("agents.tasks.send_agent_update_task.delay")
     def test_agent_update_permissions(self, update_task):
@@ -1156,7 +1148,8 @@ class TestAgentPermissions(TacticalTestCase):
         url = f"{base_url}/update/"
 
         data = {
-            "agent_ids": [agent.agent_id for agent in agents] + [agent.agent_id for agent in other_agents]
+            "agent_ids": [agent.agent_id for agent in agents]
+            + [agent.agent_id for agent in other_agents]
         }
 
         # test superuser access
@@ -1165,12 +1158,12 @@ class TestAgentPermissions(TacticalTestCase):
         update_task.reset_mock()
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)  
+        self.client.force_authenticate(user=user)
 
         self.check_not_authorized("post", url, data)
         update_task.assert_not_called()
 
-        user.role.can_update_agents = True  
+        user.role.can_update_agents = True
         user.role.save()
 
         self.check_authorized("post", url, data)
@@ -1181,7 +1174,7 @@ class TestAgentPermissions(TacticalTestCase):
         user.role.can_view_clients.set([agents[0].client])
         self.check_authorized("post", url, data)
         update_task.assert_called_with(agent_ids=[agent.agent_id for agent in agents])
-        update_task.reset_mock()  
+        update_task.reset_mock()
 
         # add site
         user.role.can_view_sites.set([other_agents[0].site])
@@ -1192,7 +1185,9 @@ class TestAgentPermissions(TacticalTestCase):
         # remove client permissions
         user.role.can_view_clients.clear()
         self.check_authorized("post", url, data)
-        update_task.assert_called_with(agent_ids=[agent.agent_id for agent in other_agents])   
+        update_task.assert_called_with(
+            agent_ids=[agent.agent_id for agent in other_agents]
+        )
 
     def test_get_agent_version_permissions(self):
         agents = baker.make_recipe("agents.agent", _quantity=5)
@@ -1205,11 +1200,11 @@ class TestAgentPermissions(TacticalTestCase):
         self.assertEqual(len(response.data["agents"]), 12)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)  
+        self.client.force_authenticate(user=user)
 
         self.check_not_authorized("get", url)
 
-        user.role.can_list_agents = True  
+        user.role.can_list_agents = True
         user.role.save()
 
         response = self.check_authorized("get", url)
@@ -1218,7 +1213,7 @@ class TestAgentPermissions(TacticalTestCase):
         # limit to client
         user.role.can_view_clients.set([agents[0].client])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data["agents"]), 5) 
+        self.assertEqual(len(response.data["agents"]), 5)
 
         # add site
         user.role.can_view_sites.set([other_agents[0].site])
@@ -1245,14 +1240,14 @@ class TestAgentPermissions(TacticalTestCase):
         self.check_authorized_superuser("post", url)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user)  
+        self.client.force_authenticate(user=user)
 
         self.check_not_authorized("post", url)
 
         user.role.can_install_agents = True
-        user.role.save()   
+        user.role.save()
 
-        self.check_authorized("post", url)  
+        self.check_authorized("post", url)
 
         # limit user to client
         user.role.can_view_clients.set([client])
@@ -1261,19 +1256,19 @@ class TestAgentPermissions(TacticalTestCase):
             "client": client.id,
             "site": client_site.id,
             "version": settings.LATEST_AGENT_VER,
-            "arch": "64"
+            "arch": "64",
         }
 
-        self.check_authorized("post", url, data) 
+        self.check_authorized("post", url, data)
 
         data = {
             "client": site.client.id,
             "site": site.id,
             "version": settings.LATEST_AGENT_VER,
-            "arch": "64"
+            "arch": "64",
         }
 
-        self.check_not_authorized("post", url, data) 
+        self.check_not_authorized("post", url, data)
 
         # assign site
         user.role.can_view_clients.clear()
@@ -1282,7 +1277,7 @@ class TestAgentPermissions(TacticalTestCase):
             "client": site.client.id,
             "site": site.id,
             "version": settings.LATEST_AGENT_VER,
-            "arch": "64"
+            "arch": "64",
         }
 
         self.check_authorized("post", url, data)
@@ -1291,7 +1286,7 @@ class TestAgentPermissions(TacticalTestCase):
             "client": client.id,
             "site": client_site.id,
             "version": settings.LATEST_AGENT_VER,
-            "arch": "64"
+            "arch": "64",
         }
 
         self.check_not_authorized("post", url, data)

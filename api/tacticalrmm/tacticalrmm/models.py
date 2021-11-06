@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class PermissionQuerySet(models.QuerySet):
 
     # filters queryset based on permissions. Works different for Agent, Client, and Site
@@ -32,10 +33,14 @@ class PermissionQuerySet(models.QuerySet):
         # checks which sites and clients the user has access to and filters clients and sites
         elif model_name == "Client" and (can_view_clients or can_view_sites):
             if can_view_sites:
-                sites_queryset = models.Q(pk__in=[site.client.pk for site in can_view_sites])
+                sites_queryset = models.Q(
+                    pk__in=[site.client.pk for site in can_view_sites]
+                )
 
             if can_view_clients:
-                clients_queryset = models.Q(pk__in=can_view_clients.values_list("pk", flat=True))
+                clients_queryset = models.Q(
+                    pk__in=can_view_clients.values_list("pk", flat=True)
+                )
 
             return self.filter(sites_queryset | clients_queryset)
 
@@ -43,22 +48,32 @@ class PermissionQuerySet(models.QuerySet):
             if can_view_clients:
                 clients_queryset = models.Q(client__in=can_view_clients)
             if can_view_sites:
-                sites_queryset = models.Q(pk__in=can_view_sites.values_list("pk", flat=True))
+                sites_queryset = models.Q(
+                    pk__in=can_view_sites.values_list("pk", flat=True)
+                )
 
             return self.filter(clients_queryset | sites_queryset)
 
         elif model_name == "Alert":
 
             if can_view_clients:
-                clients_queryset = models.Q(agent__site__client__in=can_view_clients) | models.Q(assigned_check__agent__site__client__in=can_view_clients) | models.Q(assigned_task__agent__site__client__in=can_view_clients)
+                clients_queryset = (
+                    models.Q(agent__site__client__in=can_view_clients)
+                    | models.Q(assigned_check__agent__site__client__in=can_view_clients)
+                    | models.Q(assigned_task__agent__site__client__in=can_view_clients)
+                )
             if can_view_sites:
-                sites_queryset = models.Q(agent__site__in=can_view_sites) | models.Q(assigned_check__agent__site__in=can_view_sites) | models.Q(assigned_task__agent__site__in=can_view_sites)
+                sites_queryset = (
+                    models.Q(agent__site__in=can_view_sites)
+                    | models.Q(assigned_check__agent__site__in=can_view_sites)
+                    | models.Q(assigned_task__agent__site__in=can_view_sites)
+                )
 
-            agent_queryset = models.Q(agent=None, assigned_check=None, assigned_task=None)
+            agent_queryset = models.Q(
+                agent=None, assigned_check=None, assigned_task=None
+            )
 
-            return self.filter(
-                clients_queryset | sites_queryset | agent_queryset
-            )            
+            return self.filter(clients_queryset | sites_queryset | agent_queryset)
 
         # anything else just checks the agent field and if it has it will filter matched agents from the queryset
         else:
@@ -76,6 +91,4 @@ class PermissionQuerySet(models.QuerySet):
             if can_view_sites:
                 sites_queryset = models.Q(agent__site__in=can_view_sites)
 
-            return self.filter(
-                clients_queryset | sites_queryset | agent_queryset
-            )
+            return self.filter(clients_queryset | sites_queryset | agent_queryset)

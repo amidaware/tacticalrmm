@@ -418,6 +418,7 @@ class TestCoreTasks(TacticalTestCase):
 
         self.check_not_authenticated("patch", url)
 
+
 class TestCorePermissions(TacticalTestCase):
     def setUp(self):
         self.client_setup()

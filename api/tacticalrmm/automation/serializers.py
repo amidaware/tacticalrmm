@@ -30,7 +30,6 @@ class PolicyTableSerializer(ModelSerializer):
     class Meta:
         model = Policy
         fields = "__all__"
-        
 
     def get_agents_count(self, policy):
         return policy.related_agents().count()
@@ -44,23 +43,46 @@ class PolicyRelatedSerializer(ModelSerializer):
     agents = SerializerMethodField()
 
     def get_agents(self, policy):
-        return AgentHostnameSerializer(policy.agents.filter_by_role(self.context["user"]).only("agent_id", "hostname"), many=True).data
+        return AgentHostnameSerializer(
+            policy.agents.filter_by_role(self.context["user"]).only(
+                "agent_id", "hostname"
+            ),
+            many=True,
+        ).data
 
     def get_workstation_clients(self, policy):
-        return ClientMinimumSerializer(policy.workstation_clients.filter_by_role(self.context["user"]), many=True).data
+        return ClientMinimumSerializer(
+            policy.workstation_clients.filter_by_role(self.context["user"]), many=True
+        ).data
 
     def get_server_clients(self, policy):
-        return ClientMinimumSerializer(policy.server_clients.filter_by_role(self.context["user"]), many=True).data
+        return ClientMinimumSerializer(
+            policy.server_clients.filter_by_role(self.context["user"]), many=True
+        ).data
 
     def get_workstation_sites(self, policy):
-        return SiteMinimumSerializer(policy.workstation_sites.filter_by_role(self.context["user"]), many=True).data
+        return SiteMinimumSerializer(
+            policy.workstation_sites.filter_by_role(self.context["user"]), many=True
+        ).data
 
     def get_server_sites(self, policy):
-        return SiteMinimumSerializer(policy.server_sites.filter_by_role(self.context["user"]), many=True).data
+        return SiteMinimumSerializer(
+            policy.server_sites.filter_by_role(self.context["user"]), many=True
+        ).data
 
     class Meta:
         model = Policy
-        fields = ("pk", "name", "workstation_clients", "workstation_sites", "server_clients", "server_sites", "agents", "is_default_server_policy", "is_default_workstation_policy")
+        fields = (
+            "pk",
+            "name",
+            "workstation_clients",
+            "workstation_sites",
+            "server_clients",
+            "server_sites",
+            "agents",
+            "is_default_server_policy",
+            "is_default_workstation_policy",
+        )
 
 
 class PolicyOverviewSerializer(ModelSerializer):

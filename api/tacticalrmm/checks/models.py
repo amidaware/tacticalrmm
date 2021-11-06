@@ -672,7 +672,7 @@ class Check(BaseAuditModel):
 
 class CheckHistory(models.Model):
     objects = PermissionQuerySet.as_manager()
-    
+
     check_id = models.PositiveIntegerField(default=0)
     x = models.DateTimeField(auto_now_add=True)
     y = models.PositiveIntegerField(null=True, blank=True, default=None)

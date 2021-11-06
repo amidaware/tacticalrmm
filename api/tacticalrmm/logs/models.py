@@ -325,7 +325,7 @@ class DebugLog(models.Model):
 
 class PendingAction(models.Model):
     objects = PermissionQuerySet.as_manager()
-    
+
     agent = models.ForeignKey(
         "agents.Agent",
         related_name="pendingactions",

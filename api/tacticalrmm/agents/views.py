@@ -23,7 +23,11 @@ from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
 from tacticalrmm.utils import get_default_timezone, notify_error, reload_nats
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
-from tacticalrmm.permissions import _has_perm_on_agent, _has_perm_on_client, _has_perm_on_site
+from tacticalrmm.permissions import (
+    _has_perm_on_agent,
+    _has_perm_on_client,
+    _has_perm_on_site,
+)
 
 from .models import Agent, AgentCustomField, Note, RecoveryAction, AgentHistory
 from .permissions import (
@@ -121,15 +125,15 @@ class GetUpdateDeleteAgent(APIView):
     # get agent details
     def get(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
-        return Response(AgentSerializer(agent, context={"default_tz": get_default_timezone()}).data)
+        return Response(
+            AgentSerializer(agent, context={"default_tz": get_default_timezone()}).data
+        )
 
     # edit agent
     def put(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
 
-        a_serializer = AgentSerializer(
-            instance=agent, data=request.data, partial=True
-        )
+        a_serializer = AgentSerializer(instance=agent, data=request.data, partial=True)
         a_serializer.is_valid(raise_exception=True)
         a_serializer.save()
 
@@ -253,7 +257,11 @@ class AgentMeshCentral(APIView):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, AgentPerms])
 def get_agent_versions(request):
-    agents = Agent.objects.filter_by_role(request.user).prefetch_related("site").only("pk", "hostname")
+    agents = (
+        Agent.objects.filter_by_role(request.user)
+        .prefetch_related("site")
+        .only("pk", "hostname")
+    )
     return Response(
         {
             "versions": [settings.LATEST_AGENT_VER],
@@ -265,7 +273,11 @@ def get_agent_versions(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, UpdateAgentPerms])
 def update_agents(request):
-    q = Agent.objects.filter_by_role(request.user).filter(agent_id__in=request.data["agent_ids"]).only("agent_id", "version")
+    q = (
+        Agent.objects.filter_by_role(request.user)
+        .filter(agent_id__in=request.data["agent_ids"])
+        .only("agent_id", "version")
+    )
     agent_ids: list[str] = [
         i.agent_id
         for i in q
@@ -780,19 +792,25 @@ def bulk(request):
     if request.data["target"] == "client":
         if not _has_perm_on_client(request.user, request.data["client"]):
             raise PermissionDenied()
-        q = Agent.objects.filter_by_role(request.user).filter(site__client_id=request.data["client"])
+        q = Agent.objects.filter_by_role(request.user).filter(
+            site__client_id=request.data["client"]
+        )
 
     elif request.data["target"] == "site":
         if not _has_perm_on_site(request.user, request.data["site"]):
             raise PermissionDenied()
-        q = Agent.objects.filter_by_role(request.user).filter(site_id=request.data["site"])
+        q = Agent.objects.filter_by_role(request.user).filter(
+            site_id=request.data["site"]
+        )
 
     elif request.data["target"] == "agents":
-        q = Agent.objects.filter_by_role(request.user).filter(agent_id__in=request.data["agents"])
+        q = Agent.objects.filter_by_role(request.user).filter(
+            agent_id__in=request.data["agents"]
+        )
 
     elif request.data["target"] == "all":
         q = Agent.objects.filter_by_role(request.user).only("pk", "monitoring_type")
-        
+
     else:
         return notify_error("Something went wrong")
 
@@ -877,7 +895,7 @@ def agent_maintenance(request):
         return notify_error("Invalid data")
 
     if count:
-        action = 'disabled' if not request.data["action"] else 'enabled'
+        action = "disabled" if not request.data["action"] else "enabled"
         return Response(f"Maintenance mode has been {action} on {count} agents")
     else:
         return Response(

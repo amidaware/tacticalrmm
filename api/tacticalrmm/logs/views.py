@@ -44,9 +44,7 @@ class GetAuditLogs(APIView):
             agentFilter = Q(agent_id__in=request.data["agentFilter"])
 
         elif "clientFilter" in request.data:
-            clients = Client.objects.filter(
-                pk__in=request.data["clientFilter"]
-            )
+            clients = Client.objects.filter(pk__in=request.data["clientFilter"])
             agents = Agent.objects.filter(site__client__in=clients).values_list(
                 "agent_id"
             )
@@ -146,5 +144,7 @@ class GetDebugLog(APIView):
         )
 
         ctx = {"default_tz": get_default_timezone()}
-        ret = DebugLogSerializer(debug_logs.order_by("-entry_time")[0:1000], many=True, context=ctx).data
+        ret = DebugLogSerializer(
+            debug_logs.order_by("-entry_time")[0:1000], many=True, context=ctx
+        ).data
         return Response(ret)

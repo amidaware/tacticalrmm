@@ -9,6 +9,7 @@ from logs.models import PendingAction
 
 base_url = "/logs"
 
+
 class TestAuditViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()
@@ -228,7 +229,9 @@ class TestAuditViews(TacticalTestCase):
         )
 
         nats_cmd.return_value = "error deleting sched task"
-        r = self.client.delete(f"{base_url}/pendingactions/{action2.id}/", format="json")
+        r = self.client.delete(
+            f"{base_url}/pendingactions/{action2.id}/", format="json"
+        )
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.data, "error deleting sched task")  # type: ignore
 
@@ -346,7 +349,10 @@ class TestAuditViews(TacticalTestCase):
         url = f"{base_url}/debug/"
 
         # test superuser access
-        self.check_authorized_superuser("patch", url, )
+        self.check_authorized_superuser(
+            "patch",
+            url,
+        )
 
         user = self.create_user_with_roles([])
         self.client.force_authenticate(user=user)
@@ -379,7 +385,6 @@ class TestAuditViews(TacticalTestCase):
         response = self.check_authorized("patch", url)
         self.assertEqual(len(response.data), 27)
 
-
     def test_get_pendingaction_permissions(self):
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")
@@ -390,7 +395,9 @@ class TestAuditViews(TacticalTestCase):
 
         # test super user access
         self.check_authorized_superuser("get", f"{base_url}/pendingactions/")
-        self.check_authorized_superuser("get", f"/agents/{agent.agent_id}/pendingactions/")
+        self.check_authorized_superuser(
+            "get", f"/agents/{agent.agent_id}/pendingactions/"
+        )
         self.check_authorized_superuser(
             "get", f"/agents/{unauthorized_agent.agent_id}/pendingactions/"
         )
@@ -433,8 +440,12 @@ class TestAuditViews(TacticalTestCase):
     def test_delete_pendingaction_permissions(self, delete, nats_cmd):
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")
-        action = baker.make("logs.PendingAction", agent=agent, details={"taskname": "Task"})
-        unauthorized_action = baker.make("logs.PendingAction", agent=unauthorized_agent, details={"taskname": "Task"})
+        action = baker.make(
+            "logs.PendingAction", agent=agent, details={"taskname": "Task"}
+        )
+        unauthorized_action = baker.make(
+            "logs.PendingAction", agent=unauthorized_agent, details={"taskname": "Task"}
+        )
 
         url = f"{base_url}/pendingactions/{action.id}/"
         unauthorized_url = f"{base_url}/pendingactions/{unauthorized_action.id}/"

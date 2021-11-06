@@ -30,7 +30,11 @@ class GetAddPolicies(APIView):
     def get(self, request):
         policies = Policy.objects.all()
 
-        return Response(PolicyTableSerializer(policies, context={"user": request.user}, many=True).data)
+        return Response(
+            PolicyTableSerializer(
+                policies, context={"user": request.user}, many=True
+            ).data
+        )
 
     def post(self, request):
         serializer = PolicySerializer(data=request.data, partial=True)
@@ -144,7 +148,9 @@ class GetRelated(APIView):
             .first()
         )
 
-        return Response(PolicyRelatedSerializer(policy, context={"user": request.user}).data)
+        return Response(
+            PolicyRelatedSerializer(policy, context={"user": request.user}).data
+        )
 
 
 class UpdatePatchPolicy(APIView):
@@ -178,6 +184,7 @@ class UpdatePatchPolicy(APIView):
 
         return Response("ok")
 
+
 class ResetPatchPolicy(APIView):
     # bulk reset agent patch policy
     def post(self, request):
@@ -186,18 +193,26 @@ class ResetPatchPolicy(APIView):
             if not _has_perm_on_client(request.user, request.data["client"]):
                 raise PermissionDenied()
 
-            agents = Agent.objects.filter_by_role(request.user).prefetch_related("winupdatepolicy").filter(
-                site__client_id=request.data["client"]
+            agents = (
+                Agent.objects.filter_by_role(request.user)
+                .prefetch_related("winupdatepolicy")
+                .filter(site__client_id=request.data["client"])
             )
         elif "site" in request.data:
             if not _has_perm_on_site(request.user, request.data["site"]):
                 raise PermissionDenied()
 
-            agents = Agent.objects.filter_by_role(request.user).prefetch_related("winupdatepolicy").filter(
-                site_id=request.data["site"]
+            agents = (
+                Agent.objects.filter_by_role(request.user)
+                .prefetch_related("winupdatepolicy")
+                .filter(site_id=request.data["site"])
             )
         else:
-            agents = Agent.objects.filter_by_role(request.user).prefetch_related("winupdatepolicy").only("pk")
+            agents = (
+                Agent.objects.filter_by_role(request.user)
+                .prefetch_related("winupdatepolicy")
+                .only("pk")
+            )
 
         for agent in agents:
             winupdatepolicy = agent.winupdatepolicy.get()

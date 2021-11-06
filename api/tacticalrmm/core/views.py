@@ -13,7 +13,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from tacticalrmm.utils import notify_error
-from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_agent, _has_perm_on_site
+from tacticalrmm.permissions import (
+    _has_perm_on_client,
+    _has_perm_on_agent,
+    _has_perm_on_site,
+)
 
 from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
 from .permissions import (
@@ -21,7 +25,7 @@ from .permissions import (
     CoreSettingsPerms,
     ServerMaintPerms,
     URLActionPerms,
-    CustomFieldPerms
+    CustomFieldPerms,
 )
 from .serializers import (
     CodeSignTokenSerializer,
@@ -56,18 +60,17 @@ class UploadMeshAgent(APIView):
 
 class GetEditCoreSettings(APIView):
     @permission_classes([IsAuthenticated, CoreSettingsPerms])
-    
     def get(self, request):
         settings = CoreSettings.objects.first()
         return Response(CoreSettingsSerializer(settings).data)
 
-    def put(self, request): 
+    def put(self, request):
         coresettings = CoreSettings.objects.first()
         serializer = CoreSettingsSerializer(instance=coresettings, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response("ok") 
+        return Response("ok")
 
 
 @api_view()
@@ -332,6 +335,7 @@ class GetAddURLAction(APIView):
 
 class UpdateDeleteURLAction(APIView):
     permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
     def put(self, request, pk):
         action = get_object_or_404(URLAction, pk=pk)
 
@@ -400,6 +404,7 @@ class RunURLAction(APIView):
 
 class TwilioSMSTest(APIView):
     permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
     def post(self, request):
 
         core = CoreSettings.objects.first()

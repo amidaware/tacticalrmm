@@ -95,7 +95,9 @@ export default {
     }
 
     async function getSiteOptions() {
+      $q.loading.show();
       const clients = await fetchClients();
+      $q.loading.hide();
 
       if (props.type === "client") {
         // filter out client that is being deleted

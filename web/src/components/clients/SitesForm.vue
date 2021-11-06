@@ -40,7 +40,7 @@
 <script>
 // composition imports
 import { ref, onMounted } from "vue";
-import { useDialogPluginComponent } from "quasar";
+import { useQuasar, useDialogPluginComponent } from "quasar";
 import { useClientDropdown } from "@/composables/clients";
 import { fetchSite, saveSite, editSite } from "@/api/clients";
 import { fetchCustomFields } from "@/api/core";
@@ -64,6 +64,7 @@ export default {
   },
   setup(props) {
     // setup quasar dialog
+    const $q = useQuasar();
     const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
 
     // setup dropdowns
@@ -113,9 +114,11 @@ export default {
     }
 
     onMounted(async () => {
+      $q.loading.show();
       const fields = await fetchCustomFields({ model: "site" });
       customFields.value = fields.filter(field => !field.hide_in_ui);
       if (props.site) getSiteCustomFieldValues();
+      $q.loading.hide();
     });
 
     return {

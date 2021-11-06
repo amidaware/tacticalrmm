@@ -254,7 +254,7 @@ export default {
         ? "Run Bulk Command"
         : props.mode === "script"
         ? "Run Bulk Script"
-        : props.mode === "scan"
+        : props.mode === "patch"
         ? "Bulk Patch Management"
         : "";
     });

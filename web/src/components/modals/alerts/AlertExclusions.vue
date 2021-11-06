@@ -84,6 +84,7 @@ export default {
   },
   methods: {
     onSubmit() {
+      this.$q.loading.show();
       this.$axios
         .put(`alerts/templates/${this.template.id}/`, this.localTemplate)
         .then(r => {
@@ -95,29 +96,26 @@ export default {
           this.$q.loading.hide();
         });
     },
-    getClients() {
+    getClientsandSites() {
+      this.$q.loading.show();
       this.$axios
         .get("/clients/")
         .then(r => {
           this.clientOptions = r.data.map(client => ({ label: client.name, value: client.id }));
-        })
-        .catch(e => {});
-    },
-    getSites() {
-      this.$axios
-        .get("/clients/")
-        .then(r => {
+
           r.data.forEach(client => {
             this.siteOptions.push({ category: client.name });
             client.sites.forEach(site => this.siteOptions.push({ label: site.name, value: site.id }));
           });
+          this.$q.loading.hide();
         })
-        .catch(e => {});
+        .catch(() => {
+          this.$q.loading.hide();
+        });
     },
     getOptions() {
-      this.getClients();
-      this.getSites();
       this.getAgentOptions("id").then(options => (this.agentOptions = Object.freeze(options)));
+      this.getClientsandSites();
     },
     show() {
       this.$refs.dialog.show();
@@ -134,8 +132,6 @@ export default {
     },
   },
   created() {
-    this.getOptions();
-
     // copy prop data locally
     this.localTemplate.id = this.template.id;
     this.localTemplate.excluded_clients = this.template.excluded_clients;
@@ -143,6 +139,7 @@ export default {
     this.localTemplate.excluded_agents = this.template.excluded_agents;
     this.localTemplate.exclude_servers = this.template.exclude_servers;
     this.localTemplate.exclude_workstations = this.template.exclude_workstations;
+    this.getOptions();
   },
 };
 </script>

@@ -60,6 +60,7 @@ class SiteSerializer(ModelSerializer):
 
 class SiteMinimumSerializer(ModelSerializer):
     client_name = ReadOnlyField(source="client.name")
+
     class Meta:
         model = Site
         fields = "__all__"
@@ -99,7 +100,8 @@ class ClientSerializer(ModelSerializer):
 
     def get_sites(self, obj):
         return SiteSerializer(
-            obj.sites.filter_by_role(self.context["user"]), many=True
+            obj.sites.select_related("client").filter_by_role(self.context["user"]),
+            many=True,
         ).data
 
     class Meta:

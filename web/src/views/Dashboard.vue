@@ -386,7 +386,7 @@
               />
             </template>
             <template v-slot:separator>
-              <q-avatar color="primary" text-color="white" size="30px" icon="drag_indicator" />
+              <q-avatar color="primary" text-color="white" size="20px" icon="drag_indicator" />
             </template>
             <template v-slot:after>
               <SubTableTabs />
@@ -713,9 +713,7 @@ export default {
             object: node.children ? node.client : node.site,
           },
         })
-        .onOk(() => {
-          this.clearTreeSelected();
-        });
+        .onOk(this.refreshEntireSite);
     },
     showAddSiteModal(node) {
       this.$q

@@ -91,7 +91,7 @@
 
     <q-page-container>
       <FileBar />
-      <q-splitter v-model="clientTreeSplitter">
+      <q-splitter v-model="clientTreeSplitter" :style="{ height: `${$q.screen.height - 50 - 40}px` }">
         <template v-slot:before>
           <div v-if="!treeReady" class="q-pa-sm q-gutter-sm text-center" style="height: 30vh">
             <q-spinner size="40px" color="primary" />
@@ -153,7 +153,9 @@
                           <q-item-section side>
                             <q-icon name="construction" />
                           </q-item-section>
-                          <q-item-section>{{ menuMaintenanceText(props.node) }}</q-item-section>
+                          <q-item-section>{{
+                            props.node.color === "green" ? "Disable Maintenance Mode" : "Enable Maintenance Mode"
+                          }}</q-item-section>
                         </q-item>
 
                         <q-item
@@ -224,9 +226,12 @@
           <q-splitter
             v-model="innerModel"
             reverse
+            unit="px"
             horizontal
-            style="height: 87vh"
             @update:model-value="setSplitter(innerModel)"
+            after-class="hide-scrollbar"
+            before-class="hide-scrollbar"
+            emit-immediately
           >
             <template v-slot:before>
               <div class="row">
@@ -378,14 +383,13 @@
                 :userName="user"
                 :search="search"
                 :visibleColumns="visibleColumns"
-                @edit="refreshEntireSite"
               />
             </template>
             <template v-slot:separator>
-              <q-avatar color="primary" text-color="white" size="30px" icon="drag_indicator" />
+              <q-avatar color="primary" text-color="white" size="20px" icon="drag_indicator" />
             </template>
             <template v-slot:after>
-              <SubTableTabs @edit="refreshEntireSite" />
+              <SubTableTabs />
             </template>
           </q-splitter>
         </template>
@@ -413,12 +417,14 @@ import AgentTable from "@/components/AgentTable";
 import SubTableTabs from "@/components/SubTableTabs";
 import AlertsIcon from "@/components/AlertsIcon";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
-import ClientsForm from "@/components/modals/clients/ClientsForm";
-import SitesForm from "@/components/modals/clients/SitesForm";
-import DeleteClient from "@/components/modals/clients/DeleteClient";
+import ClientsForm from "@/components/clients/ClientsForm";
+import SitesForm from "@/components/clients/SitesForm";
+import DeleteClient from "@/components/clients/DeleteClient";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import UserPreferences from "@/components/modals/coresettings/UserPreferences";
 import AlertTemplateAdd from "@/components/modals/alerts/AlertTemplateAdd";
+
+import { removeClient, removeSite } from "@/api/clients";
 
 export default {
   name: "Dashboard",
@@ -431,6 +437,12 @@ export default {
     InstallAgent,
     UserPreferences,
   },
+  // allow child components to refresh table
+  provide() {
+    return {
+      refreshDashboard: this.refreshEntireSite,
+    };
+  },
   mixins: [mixins],
   data() {
     return {
@@ -442,7 +454,7 @@ export default {
       workstationCount: 0,
       workstationOfflineCount: 0,
       selectedTree: "",
-      innerModel: 50,
+      innerModel: (this.$q.screen.height - 82) / 2,
       clientActive: "",
       siteActive: "",
       frame: [],
@@ -619,24 +631,18 @@ export default {
         this.ws.onclose();
       };
     },
-    refreshEntireSite() {
+    refreshEntireSite(selectAllClients = false) {
       this.$store.dispatch("loadTree");
       this.getDashInfo(false);
 
-      if (this.allClientsActive) {
+      if (selectAllClients) {
+        this.clearTreeSelected();
+        this.$store.commit("destroySubTable");
+        this.allClientsActive = true;
+      } else if (this.allClientsActive) {
         this.loadAllClients();
       } else {
         this.loadFrame(this.selectedTree, false);
-      }
-
-      if (this.selectedAgentPk) {
-        const pk = this.selectedAgentPk;
-        this.$store.dispatch("loadSummary", pk);
-        this.$store.dispatch("loadChecks", pk);
-        this.$store.dispatch("loadAutomatedTasks", pk);
-        this.$store.dispatch("loadWinUpdates", pk);
-        this.$store.dispatch("loadInstalledSoftware", pk);
-        this.$store.dispatch("loadNotes", pk);
       }
     },
     loadFrame(activenode, destroySub = true) {
@@ -645,29 +651,31 @@ export default {
 
       let execute = false;
       let urlType, id;
-      let data = {};
+      let param = "";
 
       if (typeof activenode === "string") {
         urlType = activenode.split("|")[0];
         id = activenode.split("|")[1];
 
         if (urlType === "Client") {
-          data.clientPK = id;
+          param = `client=${id}`;
           execute = true;
         } else if (urlType === "Site") {
-          data.sitePK = id;
+          param = `site=${id}`;
           execute = true;
         }
 
         if (execute) {
           this.$store.commit("AGENT_TABLE_LOADING", true);
           this.$axios
-            .patch("/agents/listagents/", data)
+            .get(`/agents/?${param}`)
             .then(r => {
               this.frame = r.data;
               this.$store.commit("AGENT_TABLE_LOADING", false);
             })
-            .catch(e => {});
+            .catch(e => {
+              this.$store.commit("AGENT_TABLE_LOADING", false);
+            });
         }
       }
     },
@@ -687,12 +695,14 @@ export default {
     loadAllClients() {
       this.$store.commit("AGENT_TABLE_LOADING", true);
       this.$axios
-        .patch("/agents/listagents/")
+        .get("/agents/")
         .then(r => {
           this.frame = r.data;
           this.$store.commit("AGENT_TABLE_LOADING", false);
         })
-        .catch(e => {});
+        .catch(e => {
+          this.$store.commit("AGENT_TABLE_LOADING", false);
+        });
     },
     showPolicyAdd(node) {
       this.$q
@@ -700,20 +710,20 @@ export default {
           component: PolicyAdd,
           componentProps: {
             type: node.children ? "client" : "site",
-            object: node,
+            object: node.children ? node.client : node.site,
           },
         })
-        .onOk(() => {
-          this.clearTreeSelected();
-        });
+        .onOk(this.refreshEntireSite);
     },
     showAddSiteModal(node) {
-      this.$q.dialog({
-        component: SitesForm,
-        componentProps: {
-          client: node.id,
-        },
-      });
+      this.$q
+        .dialog({
+          component: SitesForm,
+          componentProps: {
+            client: node.id,
+          },
+        })
+        .onOk(this.refreshEntireSite);
     },
     showEditModal(node) {
       let props = {};
@@ -723,21 +733,44 @@ export default {
         props.site = { id: node.id, name: node.label, client: node.client };
       }
 
-      this.$q.dialog({
-        component: node.children ? ClientsForm : SitesForm,
-        componentProps: {
-          ...props,
-        },
-      });
+      this.$q
+        .dialog({
+          component: node.children ? ClientsForm : SitesForm,
+          componentProps: node.children ? { client: node.client } : { site: node.site },
+        })
+        .onOk(this.refreshEntireSite);
     },
     showDeleteModal(node) {
-      this.$q.dialog({
-        component: DeleteClient,
-        componentProps: {
-          object: { id: node.id, name: node.label },
-          type: node.children ? "client" : "site",
-        },
-      });
+      if ((node.children && node.client.agent_count > 0) || (!node.children && node.site.agent_count > 0)) {
+        this.$q
+          .dialog({
+            component: DeleteClient,
+            componentProps: {
+              object: node.children ? node.client : node.site,
+              type: node.children ? "client" : "site",
+            },
+          })
+          .onOk(this.clearTreeSelected);
+      } else {
+        this.$q
+          .dialog({
+            title: "Are you sure?",
+            message: `Delete site: ${node.label}.`,
+            cancel: true,
+            ok: { label: "Delete", color: "negative" },
+          })
+          .onOk(async () => {
+            this.$q.loading.show();
+            try {
+              const result = node.children ? await removeClient(node.id) : await removeSite(node.id);
+              this.notifySuccess(result);
+              this.clearTreeSelected();
+            } catch (e) {
+              console.error(e);
+            }
+            this.$q.loading.hide();
+          });
+      }
     },
     showInstallAgent(node) {
       this.sitePk = node.id;
@@ -753,12 +786,10 @@ export default {
           component: AlertTemplateAdd,
           componentProps: {
             type: node.children ? "client" : "site",
-            object: node,
+            object: node.children ? node.client : node.site,
           },
         })
-        .onOk(() => {
-          this.clearTreeSelected();
-        });
+        .onOk(this.refreshEntireSite);
     },
     reload() {
       this.$store.dispatch("reload");
@@ -797,14 +828,15 @@ export default {
         action: node.color === "green" ? false : true,
       };
 
-      const text = node.color === "green" ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
-      this.$store.dispatch("toggleMaintenanceMode", data).then(response => {
-        this.notifySuccess(text);
-        this.getTree();
-      });
-    },
-    menuMaintenanceText(node) {
-      return node.color === "green" ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
+      this.$axios
+        .post("/agents/maintenance/bulk/", data)
+        .then(r => {
+          this.notifySuccess(r.data);
+          this.refreshEntireSite();
+        })
+        .catch(e => {
+          console.error(e);
+        });
     },
     clearFilter() {
       this.filterTextLength = 0;
@@ -894,7 +926,7 @@ export default {
       treeReady: state => state.treeReady,
       clients: state => state.clients,
     }),
-    ...mapGetters(["selectedAgentPk", "needRefresh"]),
+    ...mapGetters(["selectedAgentId", "needRefresh"]),
     latestReleaseURL() {
       return this.latestTRMMVersion !== "error"
         ? `https://github.com/wh1te909/tacticalrmm/releases/tag/v${this.latestTRMMVersion}`
@@ -966,6 +998,9 @@ export default {
     this.$store.dispatch("getUpdatedSites");
     this.$store.dispatch("checkVer");
     this.getTree();
+
+    // set initial value for agent table and agent tabs
+    this.setSplitter(this.innerModel);
 
     this.livePoll();
   },

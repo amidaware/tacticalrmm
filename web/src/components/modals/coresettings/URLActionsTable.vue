@@ -5,7 +5,7 @@
       <q-space />
       <q-btn size="sm" color="grey-5" icon="fas fa-plus" text-color="black" label="Add URL Action" @click="addAction" />
     </div>
-    <hr />
+    <q-separator />
     <q-table
       dense
       :rows="actions"

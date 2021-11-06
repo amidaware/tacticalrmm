@@ -60,7 +60,7 @@ export default {
   methods: {
     getAlerts() {
       this.$axios
-        .patch("alerts/alerts/", { top: 10 })
+        .patch("alerts/", { top: 10 })
         .then(r => {
           this.alertsCount = r.data.alerts_count;
           this.topAlerts = r.data.alerts;
@@ -98,7 +98,7 @@ export default {
           };
 
           this.$axios
-            .put(`alerts/alerts/${alert.id}/`, data)
+            .put(`alerts/${alert.id}/`, data)
             .then(r => {
               this.getAlerts();
               this.$q.loading.hide();
@@ -118,7 +118,7 @@ export default {
       };
 
       this.$axios
-        .put(`alerts/alerts/${alert.id}/`, data)
+        .put(`alerts/${alert.id}/`, data)
         .then(r => {
           this.getAlerts();
           this.$q.loading.hide();

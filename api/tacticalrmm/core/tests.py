@@ -82,7 +82,7 @@ class TestCoreTasks(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     def test_get_core_settings(self):
-        url = "/core/getcoresettings/"
+        url = "/core/settings/"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
 
@@ -90,7 +90,7 @@ class TestCoreTasks(TacticalTestCase):
 
     @patch("automation.tasks.generate_agent_checks_task.delay")
     def test_edit_coresettings(self, generate_agent_checks_task):
-        url = "/core/editsettings/"
+        url = "/core/settings/"
 
         # setup
         policies = baker.make("automation.Policy", _quantity=2)
@@ -99,7 +99,7 @@ class TestCoreTasks(TacticalTestCase):
             "smtp_from_email": "newexample@example.com",
             "mesh_token": "New_Mesh_Token",
         }
-        r = self.client.patch(url, data)
+        r = self.client.put(url, data)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(
             CoreSettings.objects.first().smtp_from_email, data["smtp_from_email"]
@@ -113,7 +113,7 @@ class TestCoreTasks(TacticalTestCase):
             "workstation_policy": policies[0].id,  # type: ignore
             "server_policy": policies[1].id,  # type: ignore
         }
-        r = self.client.patch(url, data)
+        r = self.client.put(url, data)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(CoreSettings.objects.first().server_policy.id, policies[1].id)  # type: ignore
         self.assertEqual(
@@ -128,13 +128,13 @@ class TestCoreTasks(TacticalTestCase):
         data = {
             "workstation_policy": "",
         }
-        r = self.client.patch(url, data)
+        r = self.client.put(url, data)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(CoreSettings.objects.first().workstation_policy, None)
 
         self.assertEqual(generate_agent_checks_task.call_count, 1)
 
-        self.check_not_authenticated("patch", url)
+        self.check_not_authenticated("put", url)
 
     @patch("tacticalrmm.utils.reload_nats")
     @patch("autotasks.tasks.remove_orphaned_win_tasks.delay")
@@ -404,10 +404,10 @@ class TestCoreTasks(TacticalTestCase):
 
         url = "/core/urlaction/run/"
         # test not found
-        r = self.client.patch(url, {"agent": 500, "action": 500})
+        r = self.client.patch(url, {"agent_id": 500, "action": 500})
         self.assertEqual(r.status_code, 404)
 
-        data = {"agent": agent.id, "action": action.id}  # type: ignore
+        data = {"agent_id": agent.agent_id, "action": action.id}  # type: ignore
         r = self.client.patch(url, data)
         self.assertEqual(r.status_code, 200)
 
@@ -417,3 +417,12 @@ class TestCoreTasks(TacticalTestCase):
         )
 
         self.check_not_authenticated("patch", url)
+
+
+class TestCorePermissions(TacticalTestCase):
+    def setUp(self):
+        self.client_setup()
+        self.setup_coresettings()
+
+    def test_run_url_action_permissions(self):
+        self.assertTrue(False)

@@ -1,55 +1,59 @@
 from django.shortcuts import get_object_or_404
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
 
 from agents.models import Agent
-from checks.models import Check
-from scripts.models import Script
-from tacticalrmm.utils import get_bit_days, get_default_timezone, notify_error
+from automation.models import Policy
+from tacticalrmm.utils import get_bit_days
+from tacticalrmm.permissions import _has_perm_on_agent
 
 from .models import AutomatedTask
-from .permissions import ManageAutoTaskPerms, RunAutoTaskPerms
-from .serializers import AutoTaskSerializer, TaskSerializer
+from .permissions import AutoTaskPerms, RunAutoTaskPerms
+from .serializers import TaskSerializer
 
 
-class AddAutoTask(APIView):
-    permission_classes = [IsAuthenticated, ManageAutoTaskPerms]
+class GetAddAutoTasks(APIView):
+    permission_classes = [IsAuthenticated, AutoTaskPerms]
+
+    def get(self, request, agent_id=None, policy=None):
+
+        if agent_id:
+            agent = get_object_or_404(Agent, agent_id=agent_id)
+            tasks = AutomatedTask.objects.filter(agent=agent)
+        elif policy:
+            policy = get_object_or_404(Policy, id=policy)
+            tasks = AutomatedTask.objects.filter(policy=policy)
+        else:
+            tasks = AutomatedTask.objects.filter_by_role(request.user)
+        return Response(TaskSerializer(tasks, many=True).data)
 
     def post(self, request):
-        from automation.models import Policy
         from automation.tasks import generate_agent_autotasks_task
         from autotasks.tasks import create_win_task_schedule
 
-        data = request.data
-        script = get_object_or_404(Script, pk=data["autotask"]["script"])
+        data = request.data.copy()
 
-        # Determine if adding check to Policy or Agent
-        if "policy" in data:
-            policy = get_object_or_404(Policy, id=data["policy"])
-            # Object used for filter and save
-            parent = {"policy": policy}
-        else:
-            agent = get_object_or_404(Agent, pk=data["agent"])
-            parent = {"agent": agent}
+        # Determine if adding to an agent and replace agent_id with pk
+        if "agent" in data.keys():
+            agent = get_object_or_404(Agent, agent_id=data["agent"])
 
-        check = None
-        if data["autotask"]["assigned_check"]:
-            check = get_object_or_404(Check, pk=data["autotask"]["assigned_check"])
+            if not _has_perm_on_agent(request.user, agent.agent_id):
+                raise PermissionDenied()
+
+            data["agent"] = agent.pk
 
         bit_weekdays = None
-        if data["autotask"]["run_time_days"]:
-            bit_weekdays = get_bit_days(data["autotask"]["run_time_days"])
+        if "run_time_days" in data.keys():
+            if data["run_time_days"]:
+                bit_weekdays = get_bit_days(data["run_time_days"])
+            data.pop("run_time_days")
 
-        del data["autotask"]["run_time_days"]
-        serializer = TaskSerializer(data=data["autotask"], partial=True, context=parent)
+        serializer = TaskSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         task = serializer.save(
-            **parent,
-            script=script,
             win_task_name=AutomatedTask.generate_task_name(),
-            assigned_check=check,
             run_time_bit_weekdays=bit_weekdays,
         )
 
@@ -59,64 +63,44 @@ class AddAutoTask(APIView):
         elif task.policy:
             generate_agent_autotasks_task.delay(policy=task.policy.pk)
 
-        return Response("Task will be created shortly!")
+        return Response(
+            "The task has been created. It will show up on the agent on next checkin"
+        )
 
 
-class AutoTask(APIView):
-    permission_classes = [IsAuthenticated, ManageAutoTaskPerms]
+class GetEditDeleteAutoTask(APIView):
+    permission_classes = [IsAuthenticated, AutoTaskPerms]
 
     def get(self, request, pk):
 
-        agent = get_object_or_404(Agent, pk=pk)
-        ctx = {
-            "default_tz": get_default_timezone(),
-            "agent_tz": agent.time_zone,
-        }
-        return Response(AutoTaskSerializer(agent, context=ctx).data)
+        task = get_object_or_404(AutomatedTask, pk=pk)
+
+        if task.agent and not _has_perm_on_agent(request.user, task.agent.agent_id):
+            raise PermissionDenied()
+
+        return Response(TaskSerializer(task).data)
 
     def put(self, request, pk):
-        from automation.tasks import update_policy_autotasks_fields_task
 
         task = get_object_or_404(AutomatedTask, pk=pk)
+
+        if task.agent and not _has_perm_on_agent(request.user, task.agent.agent_id):
+            raise PermissionDenied()
 
         serializer = TaskSerializer(instance=task, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        if task.policy:
-            update_policy_autotasks_fields_task.delay(task=task.pk)
-
-        return Response("ok")
-
-    def patch(self, request, pk):
-        from automation.tasks import update_policy_autotasks_fields_task
-        from autotasks.tasks import enable_or_disable_win_task
-
-        task = get_object_or_404(AutomatedTask, pk=pk)
-
-        if "enableordisable" in request.data:
-            action = request.data["enableordisable"]
-            task.enabled = action
-            task.save(update_fields=["enabled"])
-            action = "enabled" if action else "disabled"
-
-            if task.policy:
-                update_policy_autotasks_fields_task.delay(
-                    task=task.pk, update_agent=True
-                )
-            elif task.agent:
-                enable_or_disable_win_task.delay(pk=task.pk)
-
-            return Response(f"Task will be {action} shortly")
-
-        else:
-            return notify_error("The request was invalid")
+        return Response("The task was updated")
 
     def delete(self, request, pk):
         from automation.tasks import delete_policy_autotasks_task
         from autotasks.tasks import delete_win_task_schedule
 
         task = get_object_or_404(AutomatedTask, pk=pk)
+
+        if task.agent and not _has_perm_on_agent(request.user, task.agent.agent_id):
+            raise PermissionDenied()
 
         if task.agent:
             delete_win_task_schedule.delay(pk=task.pk)
@@ -127,11 +111,16 @@ class AutoTask(APIView):
         return Response(f"{task.name} will be deleted shortly")
 
 
-@api_view()
-@permission_classes([IsAuthenticated, RunAutoTaskPerms])
-def run_task(request, pk):
-    from autotasks.tasks import run_win_task
+class RunAutoTask(APIView):
+    permission_classes = [IsAuthenticated, RunAutoTaskPerms]
 
-    task = get_object_or_404(AutomatedTask, pk=pk)
-    run_win_task.delay(pk=pk)
-    return Response(f"{task.name} will now be run on {task.agent.hostname}")
+    def post(self, request, pk):
+        from autotasks.tasks import run_win_task
+
+        task = get_object_or_404(AutomatedTask, pk=pk)
+
+        if task.agent and not _has_perm_on_agent(request.user, task.agent.agent_id):
+            raise PermissionDenied()
+
+        run_win_task.delay(pk=pk)
+        return Response(f"{task.name} will now be run on {task.agent.hostname}")

@@ -8,7 +8,7 @@
         icon="fas fa-plus"
         label="Add Task"
         text-color="black"
-        @click="showAddTask = true"
+        @click="showAddTask"
       />
       <q-btn v-if="!!selectedPolicy" dense flat push @click="getTasks" icon="refresh" />
       <q-table
@@ -75,7 +75,7 @@
             <!-- context menu -->
             <q-menu context-menu>
               <q-list dense style="min-width: 200px">
-                <q-item clickable v-close-popup @click="runTask(props.row.id, props.row.enabled)">
+                <q-item clickable v-close-popup @click="runTask(props.row)">
                   <q-item-section side>
                     <q-icon name="play_arrow" />
                   </q-item-section>
@@ -87,7 +87,7 @@
                   </q-item-section>
                   <q-item-section>Edit</q-item-section>
                 </q-item>
-                <q-item clickable v-close-popup @click="deleteTask(props.row.name, props.row.id)">
+                <q-item clickable v-close-popup @click="deleteTask(props.row)">
                   <q-item-section side>
                     <q-icon name="delete" />
                   </q-item-section>
@@ -110,7 +110,7 @@
             <q-td>
               <q-checkbox
                 dense
-                @update:model-value="taskEnableorDisable(props.row.id, props.row.enabled)"
+                @update:model-value="editTask(props.row, { enabled: !props.row.enabled })"
                 v-model="props.row.enabled"
               />
             </q-td>
@@ -118,7 +118,7 @@
             <q-td>
               <q-checkbox
                 dense
-                @update:model-value="taskAlert(props.row.id, 'Text', props.row.text_alert)"
+                @update:model-value="editTask(props.row, { text_alert: !props.row.text_alert })"
                 v-model="props.row.text_alert"
               />
             </q-td>
@@ -126,7 +126,7 @@
             <q-td>
               <q-checkbox
                 dense
-                @update:model-value="taskAlert(props.row.id, 'Email', props.row.email_alert)"
+                @update:model-value="editTask(props.row, { email_alert: !props.row.email_alert })"
                 v-model="props.row.email_alert"
               />
             </q-td>
@@ -134,7 +134,7 @@
             <q-td>
               <q-checkbox
                 dense
-                @update:model-value="taskAlert(props.row.id, 'Dashboard', props.row.dashboard_alert)"
+                @update:model-value="editTask(props.row, { dashboard_alert: !props.row.dashboard_alert })"
                 v-model="props.row.dashboard_alert"
               />
             </q-td>
@@ -154,42 +154,29 @@
                 >See Status</span
               >
             </q-td>
-            <q-td v-if="props.row.assigned_check">{{ props.row.assigned_check.readable_desc }}</q-td>
-            <q-td v-else></q-td>
+            <q-td>{{ props.row.check_name }}</q-td>
           </q-tr>
         </template>
       </q-table>
     </div>
-    <!-- modals -->
-    <q-dialog v-model="showAddTask" position="top">
-      <AddAutomatedTask
-        :policypk="selectedPolicy"
-        @close="
-          getTasks();
-          showAddTask = false;
-        "
-      />
-    </q-dialog>
   </div>
 </template>
 
 <script>
 import mixins from "@/mixins/mixins";
-import AddAutomatedTask from "@/components/modals/tasks/AddAutomatedTask";
-import EditAutomatedTask from "@/components/modals/tasks/EditAutomatedTask";
+import AddAutomatedTask from "@/components/tasks/AddAutomatedTask";
+import EditAutomatedTask from "@/components/tasks/EditAutomatedTask";
 import PolicyStatus from "@/components/automation/modals/PolicyStatus";
 
 export default {
   name: "PolicyAutomatedTasksTab",
   mixins: [mixins],
-  components: { AddAutomatedTask },
   props: {
     selectedPolicy: !Number,
   },
   data() {
     return {
       tasks: [],
-      showAddTask: false,
       columns: [
         { name: "enabled", align: "left", field: "enabled" },
         { name: "smsalert", field: "text_alert", align: "left" },
@@ -212,9 +199,9 @@ export default {
           sortable: true,
         },
         {
-          name: "assignedcheck",
+          name: "check_name",
           label: "Assigned Check",
-          field: "assigned_check",
+          field: "check_name",
           align: "left",
           sortable: true,
         },
@@ -235,7 +222,7 @@ export default {
     getTasks() {
       this.$q.loading.show();
       this.$axios
-        .get(`/automation/${this.selectedPolicy}/policyautomatedtasks/`)
+        .get(`/automation/policies/${this.selectedPolicy}/tasks/`)
         .then(r => {
           this.tasks = r.data;
           this.$q.loading.hide();
@@ -244,45 +231,27 @@ export default {
           this.$q.loading.hide();
         });
     },
-    taskEnableorDisable(pk, action) {
-      this.$q.loading.show();
-      const data = { id: pk, enableordisable: !action };
+    editTask(task, data) {
       this.$axios
-        .patch(`/tasks/${pk}/automatedtasks/`, data)
+        .put(`/tasks/${task.id}/`, data)
         .then(r => {
-          this.getTasks();
           this.$q.loading.hide();
-          this.notifySuccess("Task has edited successfully");
+          this.notifySuccess(r.data);
+          this.getTasks();
         })
         .catch(e => {
           this.$q.loading.hide();
         });
     },
-    taskAlert(pk, alert_type, action) {
-      this.$q.loading.show();
-
-      const data = {
-        id: pk,
-      };
-
-      if (alert_type === "Email") {
-        data.email_alert = !action;
-      } else if (alert_type === "Text") {
-        data.text_alert = !action;
-      } else {
-        data.dashboard_alert = !action;
-      }
-
-      const act = !action ? "enabled" : "disabled";
-      this.$axios
-        .put(`/tasks/${pk}/automatedtasks/`, data)
-        .then(r => {
-          this.$q.loading.hide();
-          this.notifySuccess(`${alert_type} alerts ${act}`);
+    showAddTask() {
+      this.$q
+        .dialog({
+          component: AddAutomatedTask,
+          componentProps: {
+            parent: { policy: this.selectedPolicy },
+          },
         })
-        .catch(e => {
-          this.$q.loading.hide();
-        });
+        .onOk(this.getTasks);
     },
     showEditTask(task) {
       this.$q
@@ -292,9 +261,7 @@ export default {
             task: task,
           },
         })
-        .onOk(() => {
-          this.getTasks();
-        });
+        .onOk(this.getTasks);
     },
     showStatus(task) {
       this.$q.dialog({
@@ -305,15 +272,15 @@ export default {
         },
       });
     },
-    runTask(pk, enabled) {
-      if (!enabled) {
+    runTask(task) {
+      if (!task.enabled) {
         this.notifyError("Task cannot be run when it's disabled. Enable it first.");
         return;
       }
 
       this.$q.loading.show();
       this.$axios
-        .put(`/automation/runwintask/${pk}/`)
+        .post(`/automation/tasks/${task.id}/run/`)
         .then(r => {
           this.$q.loading.hide();
           this.notifySuccess("The task was initated on all affected agents");
@@ -322,18 +289,18 @@ export default {
           this.$q.loading.hide();
         });
     },
-    deleteTask(name, pk) {
+    deleteTask(task) {
       this.$q
         .dialog({
           title: "Are you sure?",
-          message: `Delete ${name} task`,
+          message: `Delete ${task.name} task`,
           cancel: true,
           persistent: true,
         })
         .onOk(() => {
           this.$q.loading.show();
           this.$axios
-            .delete(`/tasks/${pk}/automatedtasks/`)
+            .delete(`/tasks/${task.pk}/`)
             .then(r => {
               this.getTasks();
               this.$q.loading.hide();

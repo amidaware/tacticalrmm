@@ -16,13 +16,13 @@
     "dotenv": "^8.6.0",
     "prismjs": "^1.23.0",
     "qrcode.vue": "^3.2.2",
-    "quasar": "^2.1.0",
+    "quasar": "^2.1.9",
     "vue-prism-editor": "^2.0.0-alpha.2",
     "vue3-apexcharts": "^1.4.0",
     "vuex": "^4.0.2"
   },
   "devDependencies": {
-    "@quasar/app": "^3.1.2",
+    "@quasar/app": "^3.1.5",
     "@quasar/cli": "^1.2.1"
   },
   "browserslist": [

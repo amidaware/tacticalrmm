@@ -675,7 +675,7 @@ export default {
 
       if (this.editing) {
         this.$axios
-          .put(`alerts/alerttemplates/${this.template.id}/`, this.template)
+          .put(`alerts/templates/${this.template.id}/`, this.template)
           .then(r => {
             this.$q.loading.hide();
             this.onOk();
@@ -686,7 +686,7 @@ export default {
           });
       } else {
         this.$axios
-          .post("alerts/alerttemplates/", this.template)
+          .post("alerts/templates/", this.template)
           .then(r => {
             this.$q.loading.hide();
             this.onOk();

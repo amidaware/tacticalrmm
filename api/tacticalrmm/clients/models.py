@@ -5,9 +5,12 @@ from django.db import models
 
 from agents.models import Agent
 from logs.models import BaseAuditModel
+from tacticalrmm.models import PermissionQuerySet
 
 
 class Client(BaseAuditModel):
+    objects = PermissionQuerySet.as_manager()
+
     name = models.CharField(max_length=255, unique=True)
     block_policy_inheritance = models.BooleanField(default=False)
     workstation_policy = models.ForeignKey(
@@ -130,6 +133,8 @@ class Client(BaseAuditModel):
 
 
 class Site(BaseAuditModel):
+    objects = PermissionQuerySet.as_manager()
+
     client = models.ForeignKey(Client, related_name="sites", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     block_policy_inheritance = models.BooleanField(default=False)
@@ -257,10 +262,9 @@ ARCH_CHOICES = [
 
 
 class Deployment(models.Model):
+    objects = PermissionQuerySet.as_manager()
+
     uid = models.UUIDField(primary_key=False, default=uuid.uuid4, editable=False)
-    client = models.ForeignKey(
-        "clients.Client", related_name="deployclients", on_delete=models.CASCADE
-    )
     site = models.ForeignKey(
         "clients.Site", related_name="deploysites", on_delete=models.CASCADE
     )
@@ -278,6 +282,10 @@ class Deployment(models.Model):
 
     def __str__(self):
         return f"{self.client} - {self.site} - {self.mon_type}"
+
+    @property
+    def client(self):
+        return self.site.client
 
 
 class ClientCustomField(models.Model):

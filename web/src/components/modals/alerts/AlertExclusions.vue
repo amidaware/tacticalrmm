@@ -10,68 +10,37 @@
       </q-bar>
       <q-form ref="form" @submit.prevent="onSubmit">
         <q-card-section>
-          <q-select
+          <tactical-dropdown
             label="Excluded Clients"
-            dense
-            options-dense
             outlined
             multiple
             v-model="localTemplate.excluded_clients"
             :options="clientOptions"
             use-chips
-            map-options
-            emit-value
+            mapOptions
           />
         </q-card-section>
         <q-card-section>
-          <q-select
+          <tactical-dropdown
             label="Excluded Sites"
-            dense
-            options-dense
             outlined
             multiple
             v-model="localTemplate.excluded_sites"
             :options="siteOptions"
             use-chips
-            map-options
-            emit-value
-          >
-            <template v-slot:option="scope">
-              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
-                <q-item-section>
-                  <q-item-label v-html="scope.opt.label"></q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
-                scope.opt.category
-              }}</q-item-label>
-            </template>
-          </q-select>
+            mapOptions
+          />
         </q-card-section>
         <q-card-section>
-          <q-select
+          <tactical-dropdown
             label="Excluded Agents"
-            dense
-            options-dense
             outlined
             multiple
             v-model="localTemplate.excluded_agents"
             :options="agentOptions"
             use-chips
-            map-options
-            emit-value
-          >
-            <template v-slot:option="scope">
-              <q-item v-if="!scope.opt.category" v-bind="scope.itemProps" class="q-pl-lg">
-                <q-item-section>
-                  <q-item-label v-html="scope.opt.label"></q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item-label v-if="scope.opt.category" v-bind="scope.itemProps" header class="q-pa-sm">{{
-                scope.opt.category
-              }}</q-item-label>
-            </template>
-          </q-select>
+            mapOptions
+          />
         </q-card-section>
 
         <q-card-section>
@@ -90,8 +59,12 @@
 
 <script>
 import mixins from "@/mixins/mixins";
+import TacticalDropdown from "@/components/ui/TacticalDropdown";
 export default {
   name: "AlertExclusions",
+  components: {
+    TacticalDropdown,
+  },
   emits: ["hide", "ok"],
   props: { template: !Object },
   mixins: [mixins],
@@ -111,8 +84,9 @@ export default {
   },
   methods: {
     onSubmit() {
+      this.$q.loading.show();
       this.$axios
-        .put(`alerts/alerttemplates/${this.template.id}/`, this.localTemplate)
+        .put(`alerts/templates/${this.template.id}/`, this.localTemplate)
         .then(r => {
           this.$q.loading.hide();
           this.onOk();
@@ -122,29 +96,26 @@ export default {
           this.$q.loading.hide();
         });
     },
-    getClients() {
+    getClientsandSites() {
+      this.$q.loading.show();
       this.$axios
-        .get("/clients/clients/")
+        .get("/clients/")
         .then(r => {
           this.clientOptions = r.data.map(client => ({ label: client.name, value: client.id }));
-        })
-        .catch(e => {});
-    },
-    getSites() {
-      this.$axios
-        .get("/clients/clients/")
-        .then(r => {
+
           r.data.forEach(client => {
             this.siteOptions.push({ category: client.name });
             client.sites.forEach(site => this.siteOptions.push({ label: site.name, value: site.id }));
           });
+          this.$q.loading.hide();
         })
-        .catch(e => {});
+        .catch(() => {
+          this.$q.loading.hide();
+        });
     },
     getOptions() {
-      this.getClients();
-      this.getSites();
-      this.getAgentOptions().then(options => (this.agentOptions = Object.freeze(options)));
+      this.getAgentOptions("id").then(options => (this.agentOptions = Object.freeze(options)));
+      this.getClientsandSites();
     },
     show() {
       this.$refs.dialog.show();
@@ -161,13 +132,14 @@ export default {
     },
   },
   created() {
-    this.getOptions();
-
     // copy prop data locally
     this.localTemplate.id = this.template.id;
     this.localTemplate.excluded_clients = this.template.excluded_clients;
     this.localTemplate.excluded_sites = this.template.excluded_sites;
     this.localTemplate.excluded_agents = this.template.excluded_agents;
+    this.localTemplate.exclude_servers = this.template.exclude_servers;
+    this.localTemplate.exclude_workstations = this.template.exclude_workstations;
+    this.getOptions();
   },
 };
 </script>

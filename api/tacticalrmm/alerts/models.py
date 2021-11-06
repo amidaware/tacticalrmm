@@ -9,6 +9,7 @@ from django.db.models.fields import BooleanField, PositiveIntegerField
 from django.utils import timezone as djangotime
 
 from logs.models import BaseAuditModel, DebugLog
+from tacticalrmm.models import PermissionQuerySet
 
 if TYPE_CHECKING:
     from agents.models import Agent
@@ -31,6 +32,8 @@ ALERT_TYPE_CHOICES = [
 
 
 class Alert(models.Model):
+    objects = PermissionQuerySet.as_manager()
+
     agent = models.ForeignKey(
         "agents.Agent",
         related_name="agent",

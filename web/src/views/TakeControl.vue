@@ -6,126 +6,122 @@
         <q-badge :color="statusColor" :label="status" />
       </span>
       <q-space />
-      <q-btn class="q-mr-md" color="primary" size="sm" label="Restart Connection" icon="refresh" @click="restart" />
-      <q-btn color="negative" size="sm" label="Recover Connection" icon="fas fa-first-aid" @click="repair" />
+      <q-btn
+        class="q-mr-md"
+        color="primary"
+        size="sm"
+        label="Restart Connection"
+        icon="refresh"
+        @click="restartMeshService"
+      />
+      <q-btn color="negative" size="sm" label="Recover Connection" icon="fas fa-first-aid" @click="repairMeshCentral" />
       <q-space />
     </div>
 
-    <q-video v-show="visible" :ratio="16 / 9" :src="control" style="padding-bottom: 51%"></q-video>
+    <q-video v-show="control" :ratio="16 / 9" :src="control" style="padding-bottom: 51%"></q-video>
   </div>
 </template>
 
 <script>
-import mixins from "@/mixins/mixins";
-
-import { createMetaMixin } from "quasar";
+// composition imports
+import { ref, computed, onMounted } from "vue";
+import { useRoute } from "vue-router";
+import { useMeta, useQuasar } from "quasar";
+import { fetchAgentMeshCentralURLs, sendAgentRecoverMesh } from "@/api/agents";
+import { fetchDashboardInfo } from "@/api/core";
+import { sendAgentServiceAction } from "@/api/services";
+import { notifySuccess } from "@/utils/notify";
 
 export default {
   name: "TakeControl",
-  mixins: [
-    mixins,
-    createMetaMixin(function () {
-      return {
-        title: this.title,
-      };
-    }),
-  ],
-  data() {
-    return {
-      control: "",
-      visible: true,
-      status: null,
-      title: "",
-    };
-  },
-  computed: {
-    statusColor() {
-      if (this.status !== null) {
-        let color;
-        switch (this.status) {
+  setup(props) {
+    // vue lifecycle hooks
+    onMounted(() => {
+      getDashInfo();
+      getMeshURLs();
+    });
+
+    // quasar setup
+    const $q = useQuasar();
+
+    // vue router
+    const { params } = useRoute();
+
+    // take control setup
+    const control = ref("");
+    const status = ref(null);
+
+    const statusColor = computed(() => {
+      if (status.value) {
+        switch (status.value) {
           case "online":
-            color = "positive";
-            break;
+            return "positive";
           case "offline":
-            color = "warning";
-            break;
+            return "warning";
           case "overdue":
-            color = "negative";
-            break;
+            return "negative";
         }
-        return color;
+      } else return "negative";
+    });
+
+    async function getMeshURLs() {
+      $q.loading.show();
+      const data = await fetchAgentMeshCentralURLs(params.agent_id);
+      control.value = data.control;
+      status.value = data.status;
+      useMeta({ title: `${data.hostname} - ${data.client} - ${data.site} | Remote Background` });
+      $q.loading.hide();
+    }
+
+    async function getDashInfo() {
+      const { dark_mode, loading_bar_color } = await fetchDashboardInfo();
+      $q.dark.set(dark_mode);
+      $q.loadingBar.setDefaults({ color: loading_bar_color });
+    }
+
+    async function repairMeshCentral() {
+      control.value = "";
+      $q.loading.show({ message: "Attempting to repair Mesh Agent" });
+      try {
+        const data = await sendAgentRecoverMesh(params.agent_id);
+        await getMeshURLs();
+        setTimeout(() => {
+          notifySuccess(data);
+        }, 500);
+      } catch (e) {
+        console.error(e);
       }
-    },
-  },
-  methods: {
-    getUI() {
-      this.$store.dispatch("getDashInfo").then(r => {
-        this.$q.dark.set(r.data.dark_mode);
-        this.$q.loadingBar.setDefaults({ color: r.data.loading_bar_color });
-      });
-    },
-    genURL() {
-      this.$q.loading.show();
-      this.visible = false;
-      this.$axios
-        .get(`/agents/${this.$route.params.pk}/meshcentral/`)
-        .then(r => {
-          this.title = `${r.data.hostname} - ${r.data.client} - ${r.data.site} | Take Control`;
-          this.control = r.data.control;
-          this.status = r.data.status;
-          this.$q.loading.hide();
-          this.visible = true;
-        })
-        .catch(e => {
-          this.visible = true;
-          this.$q.loading.hide();
-        });
-    },
-    restart() {
-      this.visible = false;
-      this.$q.loading.show({ message: "Restarting Mesh Agent" });
+      $q.loading.hide();
+    }
+
+    async function restartMeshService() {
+      $q.loading.show({ message: "Restarting Mesh Agent" });
       const data = {
-        pk: this.$route.params.pk,
-        sv_name: "mesh agent",
         sv_action: "restart",
       };
 
-      this.$axios
-        .post("/services/serviceaction/", data)
-        .then(r => {
-          setTimeout(() => {
-            this.visible = true;
-            this.$q.loading.hide();
-            this.notifySuccess("Mesh agent service was restarted");
-          }, 500);
-        })
-        .catch(e => {
-          this.visible = true;
-          this.$q.loading.hide();
-        });
-    },
-    repair() {
-      this.visible = false;
-      this.$q.loading.show({ message: "Attempting to repair Mesh Agent" });
-      this.$axios
-        .get(`/agents/${this.$route.params.pk}/recovermesh/`)
-        .then(r => {
-          setTimeout(() => {
-            this.visible = true;
-            this.$q.loading.hide();
-            this.notifySuccess(r.data);
-            this.genURL();
-          }, 500);
-        })
-        .catch(e => {
-          this.visible = true;
-          this.$q.loading.hide();
-        });
-    },
-  },
-  mounted() {
-    this.getUI();
-    this.genURL();
+      try {
+        await sendAgentServiceAction(params.agent_id, "mesh agent", data);
+        setTimeout(() => {
+          notifySuccess("Mesh agent service was restarted");
+        }, 500);
+      } catch (e) {
+        console.error(e);
+      }
+
+      $q.loading.hide();
+    }
+
+    return {
+      // reactive data
+      control,
+      status,
+      statusColor,
+
+      // methods
+      repairMeshCentral,
+      restartMeshService,
+    };
   },
 };
 </script>

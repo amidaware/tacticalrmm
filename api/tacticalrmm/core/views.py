@@ -6,20 +6,26 @@ from django.shortcuts import get_object_or_404
 from logs.models import AuditLog
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import ParseError
+from rest_framework.exceptions import ParseError, PermissionDenied
 from rest_framework.parsers import FileUploadParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from tacticalrmm.utils import notify_error
+from tacticalrmm.permissions import (
+    _has_perm_on_client,
+    _has_perm_on_agent,
+    _has_perm_on_site,
+)
 
 from .models import CodeSignToken, CoreSettings, CustomField, GlobalKVStore, URLAction
 from .permissions import (
     CodeSignPerms,
-    ViewCoreSettingsPerms,
-    EditCoreSettingsPerms,
+    CoreSettingsPerms,
     ServerMaintPerms,
+    URLActionPerms,
+    CustomFieldPerms,
 )
 from .serializers import (
     CodeSignTokenSerializer,
@@ -31,7 +37,7 @@ from .serializers import (
 
 
 class UploadMeshAgent(APIView):
-    permission_classes = [IsAuthenticated, EditCoreSettingsPerms]
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
     parser_class = (FileUploadParser,)
 
     def put(self, request, format=None):
@@ -52,22 +58,19 @@ class UploadMeshAgent(APIView):
         )
 
 
-@api_view()
-@permission_classes([IsAuthenticated, ViewCoreSettingsPerms])
-def get_core_settings(request):
-    settings = CoreSettings.objects.first()
-    return Response(CoreSettingsSerializer(settings).data)
+class GetEditCoreSettings(APIView):
+    @permission_classes([IsAuthenticated, CoreSettingsPerms])
+    def get(self, request):
+        settings = CoreSettings.objects.first()
+        return Response(CoreSettingsSerializer(settings).data)
 
+    def put(self, request):
+        coresettings = CoreSettings.objects.first()
+        serializer = CoreSettingsSerializer(instance=coresettings, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-@api_view(["PATCH"])
-@permission_classes([IsAuthenticated, EditCoreSettingsPerms])
-def edit_settings(request):
-    coresettings = CoreSettings.objects.first()
-    serializer = CoreSettingsSerializer(instance=coresettings, data=request.data)
-    serializer.is_valid(raise_exception=True)
-    serializer.save()
-
-    return Response("ok")
+        return Response("ok")
 
 
 @api_view()
@@ -99,7 +102,8 @@ def dashboard_info(request):
     )
 
 
-@api_view()
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, CoreSettingsPerms])
 def email_test(request):
     core = CoreSettings.objects.first()
     r = core.send_mail(
@@ -168,10 +172,13 @@ def server_maintenance(request):
 
 
 class GetAddCustomFields(APIView):
-    permission_classes = [IsAuthenticated, EditCoreSettingsPerms]
+    permission_classes = [IsAuthenticated, CustomFieldPerms]
 
     def get(self, request):
-        fields = CustomField.objects.all()
+        if "model" in request.query_params.keys():
+            fields = CustomField.objects.filter(model=request.query_params["model"])
+        else:
+            fields = CustomField.objects.all()
         return Response(CustomFieldSerializer(fields, many=True).data)
 
     def patch(self, request):
@@ -190,7 +197,7 @@ class GetAddCustomFields(APIView):
 
 
 class GetUpdateDeleteCustomFields(APIView):
-    permission_classes = [IsAuthenticated, EditCoreSettingsPerms]
+    permission_classes = [IsAuthenticated, CustomFieldPerms]
 
     def get(self, request, pk):
         custom_field = get_object_or_404(CustomField, pk=pk)
@@ -279,7 +286,7 @@ class CodeSign(APIView):
 
 
 class GetAddKeyStore(APIView):
-    permission_classes = [IsAuthenticated, EditCoreSettingsPerms]
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
 
     def get(self, request):
         keys = GlobalKVStore.objects.all()
@@ -294,7 +301,7 @@ class GetAddKeyStore(APIView):
 
 
 class UpdateDeleteKeyStore(APIView):
-    permission_classes = [IsAuthenticated, EditCoreSettingsPerms]
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
 
     def put(self, request, pk):
         key = get_object_or_404(GlobalKVStore, pk=pk)
@@ -312,6 +319,8 @@ class UpdateDeleteKeyStore(APIView):
 
 
 class GetAddURLAction(APIView):
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
     def get(self, request):
         actions = URLAction.objects.all()
         return Response(URLActionSerializer(actions, many=True).data)
@@ -325,6 +334,8 @@ class GetAddURLAction(APIView):
 
 
 class UpdateDeleteURLAction(APIView):
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
     def put(self, request, pk):
         action = get_object_or_404(URLAction, pk=pk)
 
@@ -343,6 +354,8 @@ class UpdateDeleteURLAction(APIView):
 
 
 class RunURLAction(APIView):
+    permission_classes = [IsAuthenticated, URLActionPerms]
+
     def patch(self, request):
         from requests.utils import requote_uri
 
@@ -350,11 +363,20 @@ class RunURLAction(APIView):
         from clients.models import Client, Site
         from tacticalrmm.utils import replace_db_values
 
-        if "agent" in request.data.keys():
-            instance = get_object_or_404(Agent, pk=request.data["agent"])
+        if "agent_id" in request.data.keys():
+            if not _has_perm_on_agent(request.user, request.data["agent_id"]):
+                raise PermissionDenied()
+
+            instance = get_object_or_404(Agent, agent_id=request.data["agent_id"])
         elif "site" in request.data.keys():
+            if not _has_perm_on_site(request.user, request.data["site"]):
+                raise PermissionDenied()
+
             instance = get_object_or_404(Site, pk=request.data["site"])
         elif "client" in request.data.keys():
+            if not _has_perm_on_client(request.user, request.data["client"]):
+                raise PermissionDenied()
+
             instance = get_object_or_404(Client, pk=request.data["client"])
         else:
             return notify_error("received an incorrect request")
@@ -381,7 +403,9 @@ class RunURLAction(APIView):
 
 
 class TwilioSMSTest(APIView):
-    def get(self, request):
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
+    def post(self, request):
 
         core = CoreSettings.objects.first()
         if not core.sms_is_configured:

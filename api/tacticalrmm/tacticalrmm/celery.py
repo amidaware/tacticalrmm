@@ -21,6 +21,7 @@ app.result_serializer = "json"  # type: ignore
 app.task_serializer = "json"  # type: ignore
 app.conf.task_track_started = True
 app.autodiscover_tasks()
+app.conf.worker_proc_alive_timeout = 30
 
 app.conf.beat_schedule = {
     "auto-approve-win-updates": {

@@ -8,7 +8,7 @@ from agents.serializers import AgentHostnameSerializer
 from autotasks.models import AutomatedTask
 from checks.models import Check
 from clients.models import Client
-from clients.serializers import ClientSerializer, SiteSerializer
+from clients.serializers import ClientMinimumSerializer, SiteMinimumSerializer
 from winupdate.serializers import WinUpdatePolicySerializer
 
 from .models import Policy
@@ -21,23 +21,68 @@ class PolicySerializer(ModelSerializer):
 
 
 class PolicyTableSerializer(ModelSerializer):
-
     default_server_policy = ReadOnlyField(source="is_default_server_policy")
     default_workstation_policy = ReadOnlyField(source="is_default_workstation_policy")
     agents_count = SerializerMethodField(read_only=True)
     winupdatepolicy = WinUpdatePolicySerializer(many=True, read_only=True)
     alert_template = ReadOnlyField(source="alert_template.id")
-    excluded_clients = ClientSerializer(many=True)
-    excluded_sites = SiteSerializer(many=True)
-    excluded_agents = AgentHostnameSerializer(many=True)
 
     class Meta:
         model = Policy
         fields = "__all__"
-        depth = 1
 
     def get_agents_count(self, policy):
         return policy.related_agents().count()
+
+
+class PolicyRelatedSerializer(ModelSerializer):
+    workstation_clients = SerializerMethodField()
+    server_clients = SerializerMethodField()
+    workstation_sites = SerializerMethodField()
+    server_sites = SerializerMethodField()
+    agents = SerializerMethodField()
+
+    def get_agents(self, policy):
+        return AgentHostnameSerializer(
+            policy.agents.filter_by_role(self.context["user"]).only(
+                "agent_id", "hostname"
+            ),
+            many=True,
+        ).data
+
+    def get_workstation_clients(self, policy):
+        return ClientMinimumSerializer(
+            policy.workstation_clients.filter_by_role(self.context["user"]), many=True
+        ).data
+
+    def get_server_clients(self, policy):
+        return ClientMinimumSerializer(
+            policy.server_clients.filter_by_role(self.context["user"]), many=True
+        ).data
+
+    def get_workstation_sites(self, policy):
+        return SiteMinimumSerializer(
+            policy.workstation_sites.filter_by_role(self.context["user"]), many=True
+        ).data
+
+    def get_server_sites(self, policy):
+        return SiteMinimumSerializer(
+            policy.server_sites.filter_by_role(self.context["user"]), many=True
+        ).data
+
+    class Meta:
+        model = Policy
+        fields = (
+            "pk",
+            "name",
+            "workstation_clients",
+            "workstation_sites",
+            "server_clients",
+            "server_sites",
+            "agents",
+            "is_default_server_policy",
+            "is_default_workstation_policy",
+        )
 
 
 class PolicyOverviewSerializer(ModelSerializer):
@@ -48,7 +93,6 @@ class PolicyOverviewSerializer(ModelSerializer):
 
 
 class PolicyCheckStatusSerializer(ModelSerializer):
-
     hostname = ReadOnlyField(source="agent.hostname")
 
     class Meta:
@@ -57,38 +101,11 @@ class PolicyCheckStatusSerializer(ModelSerializer):
 
 
 class PolicyTaskStatusSerializer(ModelSerializer):
-
     hostname = ReadOnlyField(source="agent.hostname")
 
     class Meta:
         model = AutomatedTask
         fields = "__all__"
-
-
-class PolicyCheckSerializer(ModelSerializer):
-    class Meta:
-        model = Check
-        fields = (
-            "id",
-            "check_type",
-            "readable_desc",
-            "assignedtask",
-            "text_alert",
-            "email_alert",
-            "dashboard_alert",
-        )
-        depth = 1
-
-
-class AutoTasksFieldSerializer(ModelSerializer):
-    assigned_check = PolicyCheckSerializer(read_only=True)
-    script = ReadOnlyField(source="script.id")
-    custom_field = ReadOnlyField(source="custom_field.id")
-
-    class Meta:
-        model = AutomatedTask
-        fields = "__all__"
-        depth = 1
 
 
 class PolicyAuditSerializer(ModelSerializer):

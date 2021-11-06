@@ -10,9 +10,9 @@ export async function fetchScripts(params = {}) {
   } catch (e) { }
 }
 
-export async function testScript(payload) {
+export async function testScript(agent_id, payload) {
   try {
-    const { data } = await axios.post(`${baseUrl}/testscript/`, payload)
+    const { data } = await axios.post(`${baseUrl}/${agent_id}/test/`, payload)
     return data
   } catch (e) { }
 }
@@ -34,7 +34,7 @@ export async function removeScript(id) {
 
 export async function downloadScript(id, params = {}) {
   try {
-    const { data } = await axios.get(`${baseUrl}/download/${id}/`, { params: params })
+    const { data } = await axios.get(`${baseUrl}/${id}/download/`, { params: params })
     return data
   } catch (e) { }
 }

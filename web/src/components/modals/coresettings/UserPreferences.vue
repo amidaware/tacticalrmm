@@ -17,7 +17,7 @@
             <!-- UI -->
             <q-tab-panel name="ui">
               <div class="text-subtitle2">User Interface</div>
-              <hr />
+              <q-separator />
               <q-card-section class="row">
                 <div class="col-6">Agent double-click action:</div>
                 <div class="col-2"></div>

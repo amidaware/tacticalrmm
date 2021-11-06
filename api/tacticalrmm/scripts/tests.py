@@ -118,14 +118,12 @@ class TestScriptViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @patch("agents.models.Agent.nats_cmd")
+    @patch("agents.models.Agent.nats_cmd", return_value="return value")
     def test_test_script(self, run_script):
-        url = "/scripts/testscript/"
-
-        run_script.return_value = "return value"
         agent = baker.make_recipe("agents.agent")
+        url = f"/scripts/{agent.agent_id}/test/"
+
         data = {
-            "agent": agent.pk,
             "code": "some_code",
             "timeout": 90,
             "args": [],
@@ -161,7 +159,7 @@ class TestScriptViews(TacticalTestCase):
 
     def test_download_script(self):
         # test a call where script doesn't exist
-        resp = self.client.get("/scripts/download/500/", format="json")
+        resp = self.client.get("/scripts/500/download/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         # return script code property should be "Test"
@@ -170,7 +168,7 @@ class TestScriptViews(TacticalTestCase):
         script = baker.make(
             "scripts.Script", code_base64="VGVzdA==", shell="powershell"
         )
-        url = f"/scripts/download/{script.pk}/"  # type: ignore
+        url = f"/scripts/{script.pk}/download/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -178,7 +176,7 @@ class TestScriptViews(TacticalTestCase):
 
         # test batch file
         script = baker.make("scripts.Script", code_base64="VGVzdA==", shell="cmd")
-        url = f"/scripts/download/{script.pk}/"  # type: ignore
+        url = f"/scripts/{script.pk}/download/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -186,7 +184,7 @@ class TestScriptViews(TacticalTestCase):
 
         # test python file
         script = baker.make("scripts.Script", code_base64="VGVzdA==", shell="python")
-        url = f"/scripts/download/{script.pk}/"  # type: ignore
+        url = f"/scripts/{script.pk}/download/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         self.assertEqual(resp.status_code, 200)

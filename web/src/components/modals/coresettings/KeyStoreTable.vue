@@ -5,7 +5,7 @@
       <q-space />
       <q-btn size="sm" color="grey-5" icon="fas fa-plus" text-color="black" label="Add key" @click="addKey" />
     </div>
-    <hr />
+    <q-separator />
     <q-table
       dense
       :rows="keystore"

@@ -875,7 +875,7 @@ class TestCheckPermissions(TacticalTestCase):
         )
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         self.check_not_authorized("get", f"{base_url}/")
         self.check_not_authorized("get", f"/agents/{agent.agent_id}/checks/")
@@ -891,13 +891,13 @@ class TestCheckPermissions(TacticalTestCase):
         r = self.check_authorized("get", f"{base_url}/")
         self.assertEqual(len(r.data), 14)  # type: ignore
         r = self.check_authorized("get", f"/agents/{agent.agent_id}/checks/")
-        self.assertEqual(len(r.data), 5) # type: ignore
+        self.assertEqual(len(r.data), 5)  # type: ignore
         r = self.check_authorized(
             "get", f"/agents/{unauthorized_agent.agent_id}/checks/"
         )
-        self.assertEqual(len(r.data), 7) # type: ignore
+        self.assertEqual(len(r.data), 7)  # type: ignore
         r = self.check_authorized("get", f"/automation/policies/{policy.id}/checks/")
-        self.assertEqual(len(r.data), 2) # type: ignore
+        self.assertEqual(len(r.data), 2)  # type: ignore
 
         # test limiting to client
         user.role.can_view_clients.set([agent.client])
@@ -909,7 +909,7 @@ class TestCheckPermissions(TacticalTestCase):
 
         # make sure queryset is limited too
         r = self.client.get(f"{base_url}/")
-        self.assertEqual(len(r.data), 7) # type: ignore
+        self.assertEqual(len(r.data), 7)  # type: ignore
 
     def test_add_check_permissions(self):
         agent = baker.make_recipe("agents.agent")
@@ -950,7 +950,7 @@ class TestCheckPermissions(TacticalTestCase):
             self.check_authorized_superuser("post", url, data)
 
             user = self.create_user_with_roles([])
-            self.client.force_authenticate(user=user) # type: ignore
+            self.client.force_authenticate(user=user)  # type: ignore
 
             # test user without role
             self.check_not_authorized("post", url, data)
@@ -991,7 +991,7 @@ class TestCheckPermissions(TacticalTestCase):
             self.check_authorized_superuser(method, policy_url)
 
             user = self.create_user_with_roles([])
-            self.client.force_authenticate(user=user) # type: ignore
+            self.client.force_authenticate(user=user)  # type: ignore
 
             # test user without role
             self.check_not_authorized(method, url)
@@ -1037,7 +1037,7 @@ class TestCheckPermissions(TacticalTestCase):
             self.check_authorized_superuser("post", unauthorized_url)
 
             user = self.create_user_with_roles([])
-            self.client.force_authenticate(user=user) # type: ignore
+            self.client.force_authenticate(user=user)  # type: ignore
 
             # test user without role
             self.check_not_authorized("post", url)
@@ -1074,7 +1074,7 @@ class TestCheckPermissions(TacticalTestCase):
         self.check_authorized_superuser("patch", unauthorized_url)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         # test user without role
         self.check_not_authorized("patch", url)

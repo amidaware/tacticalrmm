@@ -86,7 +86,7 @@ class TestAgentsList(TacticalTestCase):
         # make sure data is returned with the AgentHostnameSerializer
         agents = Agent.objects.filter(site=site3)
         serializer = AgentHostnameSerializer(agents, many=True)
-        self.assertEqual(r.data, serializer.data) # type: ignore
+        self.assertEqual(r.data, serializer.data)  # type: ignore
 
         self.check_not_authenticated("get", url)
 
@@ -950,7 +950,7 @@ class TestAgentPermissions(TacticalTestCase):
     def test_list_agents_permissions(self):
         # create user with empty role
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         url = f"{base_url}/"
 
@@ -968,17 +968,17 @@ class TestAgentPermissions(TacticalTestCase):
 
         # all agents should be returned
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 10) # type: ignore
+        self.assertEqual(len(response.data), 10)  # type: ignore
 
         # limit user to specific client. only 1 agent should be returned
         user.role.can_view_clients.set([agents[4].client])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 2) # type: ignore
+        self.assertEqual(len(response.data), 2)  # type: ignore
 
         # limit agent to specific site. 2 should be returned now
         user.role.can_view_sites.set([agents[6].site])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data), 4) # type: ignore
+        self.assertEqual(len(response.data), 4)  # type: ignore
 
         # make sure superusers work
         self.check_authorized_superuser("get", url)
@@ -988,7 +988,7 @@ class TestAgentPermissions(TacticalTestCase):
     def test_get_edit_uninstall_permissions(self, reload_nats, nats_cmd):
         # create user with empty role
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         agent = baker.make_recipe("agents.agent")
         methods = ["get", "put", "delete"]
@@ -1070,7 +1070,7 @@ class TestAgentPermissions(TacticalTestCase):
             self.check_authorized_superuser(test["method"], url)
 
             user = self.create_user_with_roles([])
-            self.client.force_authenticate(user=user) # type: ignore
+            self.client.force_authenticate(user=user)  # type: ignore
 
             # test user without role
             self.check_not_authorized(test["method"], url)
@@ -1108,7 +1108,7 @@ class TestAgentPermissions(TacticalTestCase):
         self.check_authorized_superuser("post", url, client_data)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         # test user without role
         self.check_not_authorized("post", url, site_data)
@@ -1149,7 +1149,7 @@ class TestAgentPermissions(TacticalTestCase):
         update_task.reset_mock()
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         self.check_not_authorized("post", url, data)
         update_task.assert_not_called()
@@ -1188,10 +1188,10 @@ class TestAgentPermissions(TacticalTestCase):
 
         # test superuser access
         response = self.check_authorized_superuser("get", url)
-        self.assertEqual(len(response.data["agents"]), 12) # type: ignore
+        self.assertEqual(len(response.data["agents"]), 12)  # type: ignore
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         self.check_not_authorized("get", url)
 
@@ -1199,22 +1199,22 @@ class TestAgentPermissions(TacticalTestCase):
         user.role.save()
 
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data["agents"]), 12) # type: ignore
+        self.assertEqual(len(response.data["agents"]), 12)  # type: ignore
 
         # limit to client
         user.role.can_view_clients.set([agents[0].client])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data["agents"]), 5) # type: ignore
+        self.assertEqual(len(response.data["agents"]), 5)  # type: ignore
 
         # add site
         user.role.can_view_sites.set([other_agents[0].site])
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data["agents"]), 12) # type: ignore
+        self.assertEqual(len(response.data["agents"]), 12)  # type: ignore
 
         # remove client permissions
         user.role.can_view_clients.clear()
         response = self.check_authorized("get", url)
-        self.assertEqual(len(response.data["agents"]), 7) # type: ignore
+        self.assertEqual(len(response.data["agents"]), 7)  # type: ignore
 
     def test_generating_agent_installer_permissions(self):
 
@@ -1228,7 +1228,7 @@ class TestAgentPermissions(TacticalTestCase):
         self.check_authorized_superuser("post", url)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         self.check_not_authorized("post", url)
 
@@ -1314,7 +1314,7 @@ class TestAgentPermissions(TacticalTestCase):
             self.check_authorized_superuser(test["method"], test["url"])
 
             user = self.create_user_with_roles([])
-            self.client.force_authenticate(user=user) # type: ignore
+            self.client.force_authenticate(user=user)  # type: ignore
             self.check_not_authorized(test["method"], test["url"])
 
             setattr(user.role, test["role"], True)
@@ -1325,7 +1325,7 @@ class TestAgentPermissions(TacticalTestCase):
         user = self.create_user_with_roles(["can_list_notes", "can_manage_notes"])
         user.role.can_view_sites.set([agent.site])
         user.role.save()
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         authorized_data = {"note": "Test not here", "agent_id": agent.agent_id}
 
@@ -1336,7 +1336,7 @@ class TestAgentPermissions(TacticalTestCase):
 
         # should only return the 4 allowed agent notes (one got deleted above in loop)
         r = self.client.get(f"{base_url}/notes/")
-        self.assertEqual(len(r.data), 4) # type: ignore
+        self.assertEqual(len(r.data), 4)  # type: ignore
 
         # test with agent_id in url
         self.check_authorized("get", f"{base_url}/{agent.agent_id}/notes/")
@@ -1365,7 +1365,7 @@ class TestAgentPermissions(TacticalTestCase):
     def test_get_agent_history_permissions(self):
         # create user with empty role
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         sites = baker.make("clients.Site", _quantity=2)
         agent = baker.make_recipe("agents.agent", site=sites[0])
@@ -1394,14 +1394,14 @@ class TestAgentPermissions(TacticalTestCase):
         r = self.check_authorized("get", url)
         self.check_authorized("get", authorized_url)
         self.check_authorized("get", unauthorized_url)
-        self.assertEqual(len(r.data), 11) # type: ignore
+        self.assertEqual(len(r.data), 11)  # type: ignore
 
         # limit user to specific client.
         user.role.can_view_clients.set([agent.client])
         self.check_authorized("get", authorized_url)
         self.check_not_authorized("get", unauthorized_url)
         r = self.check_authorized("get", url)
-        self.assertEqual(len(r.data), 5) # type: ignore
+        self.assertEqual(len(r.data), 5)  # type: ignore
 
         # make sure superusers work
         self.check_authorized_superuser("get", url)

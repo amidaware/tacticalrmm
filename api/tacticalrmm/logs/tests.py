@@ -293,7 +293,7 @@ class TestAuditViews(TacticalTestCase):
         self.check_authorized_superuser("patch", url, data)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         # test user without role
         self.check_not_authorized("patch", url, data)
@@ -303,18 +303,18 @@ class TestAuditViews(TacticalTestCase):
         user.role.save()
 
         response = self.check_authorized("patch", url, data)
-        self.assertEqual(len(response.data["audit_logs"]), 86) # type: ignore
+        self.assertEqual(len(response.data["audit_logs"]), 86)  # type: ignore
 
         # limit user to client if agent check
         user.role.can_view_sites.set([site])
 
         response = self.check_authorized("patch", url, data)
-        self.assertEqual(len(response.data["audit_logs"]), 63) # type: ignore
+        self.assertEqual(len(response.data["audit_logs"]), 63)  # type: ignore
 
         # limit user to client if agent check
         user.role.can_view_clients.set([site.client])
         response = self.check_authorized("patch", url, data)
-        self.assertEqual(len(response.data["audit_logs"]), 63) # type: ignore
+        self.assertEqual(len(response.data["audit_logs"]), 63)  # type: ignore
 
     def test_debuglog_permissions(self):
 
@@ -353,7 +353,7 @@ class TestAuditViews(TacticalTestCase):
         )
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         # test user without role
         self.check_not_authorized("patch", url)
@@ -363,25 +363,25 @@ class TestAuditViews(TacticalTestCase):
         user.role.save()
 
         response = self.check_authorized("patch", url)
-        self.assertEqual(len(response.data), 27) # type: ignore
+        self.assertEqual(len(response.data), 27)  # type: ignore
 
         # limit user to site
         user.role.can_view_sites.set([agent.site])
 
         response = self.check_authorized("patch", url)
-        self.assertEqual(len(response.data), 19) # type: ignore
+        self.assertEqual(len(response.data), 19)  # type: ignore
 
         # limit user to client
         user.role.can_view_sites.clear()
         user.role.can_view_clients.set([agent2.site.client])
         response = self.check_authorized("patch", url)
-        self.assertEqual(len(response.data), 23) # type: ignore
+        self.assertEqual(len(response.data), 23)  # type: ignore
 
         # limit user to client and site
         user.role.can_view_sites.set([agent.site])
         user.role.can_view_clients.set([agent2.site.client])
         response = self.check_authorized("patch", url)
-        self.assertEqual(len(response.data), 27) # type: ignore
+        self.assertEqual(len(response.data), 27)  # type: ignore
 
     def test_get_pendingaction_permissions(self):
         agent = baker.make_recipe("agents.agent")
@@ -401,7 +401,7 @@ class TestAuditViews(TacticalTestCase):
         )
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         self.check_not_authorized("get", f"{base_url}/pendingactions/")
         self.check_not_authorized("get", f"/agents/{agent.agent_id}/pendingactions/")
@@ -414,13 +414,13 @@ class TestAuditViews(TacticalTestCase):
         user.role.save()
 
         r = self.check_authorized("get", f"{base_url}/pendingactions/")
-        self.assertEqual(len(r.data), 12) # type: ignore
+        self.assertEqual(len(r.data), 12)  # type: ignore
         r = self.check_authorized("get", f"/agents/{agent.agent_id}/pendingactions/")
-        self.assertEqual(len(r.data), 5) # type: ignore
+        self.assertEqual(len(r.data), 5)  # type: ignore
         r = self.check_authorized(
             "get", f"/agents/{unauthorized_agent.agent_id}/pendingactions/"
         )
-        self.assertEqual(len(r.data), 7) # type: ignore
+        self.assertEqual(len(r.data), 7)  # type: ignore
 
         # test limiting to client
         user.role.can_view_clients.set([agent.client])
@@ -431,7 +431,7 @@ class TestAuditViews(TacticalTestCase):
 
         # make sure queryset is limited too
         r = self.client.get(f"{base_url}/pendingactions/")
-        self.assertEqual(len(r.data), 5) # type: ignore
+        self.assertEqual(len(r.data), 5)  # type: ignore
 
     @patch("agents.models.Agent.nats_cmd", return_value="ok")
     @patch("logs.models.PendingAction.delete")
@@ -453,7 +453,7 @@ class TestAuditViews(TacticalTestCase):
         self.check_authorized_superuser("delete", unauthorized_url)
 
         user = self.create_user_with_roles([])
-        self.client.force_authenticate(user=user) # type: ignore
+        self.client.force_authenticate(user=user)  # type: ignore
 
         # test user without role
         self.check_not_authorized("delete", url)

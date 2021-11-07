@@ -41,4 +41,3 @@ class APIKeyPerms(permissions.BasePermission):
             return _has_perm(r, "can_list_api_keys")
 
         return _has_perm(r, "can_manage_api_keys")
-

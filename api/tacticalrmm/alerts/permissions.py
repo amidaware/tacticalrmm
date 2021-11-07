@@ -3,6 +3,7 @@ from rest_framework import permissions
 
 from tacticalrmm.permissions import _has_perm, _has_perm_on_agent
 
+
 def _has_perm_on_alert(user, id: int):
     from alerts.models import Alert
 

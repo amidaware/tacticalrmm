@@ -6,7 +6,7 @@
         <q-btn color="dark" icon="refresh" label="Refresh" @click="reload" />
       </q-banner>
       <q-toolbar>
-        <q-btn dense flat push @click="refreshEntireSite" icon="refresh" />
+        <q-btn dense flat push @click="refreshEntireSite(false)" icon="refresh" />
         <q-toolbar-title>
           Tactical RMM<span class="text-overline q-ml-sm">v{{ currentTRMMVersion }}</span>
           <span
@@ -632,18 +632,17 @@ export default {
       };
     },
     refreshEntireSite(selectAllClients = false) {
-      this.$store.dispatch("loadTree");
-      this.getDashInfo(false);
-
       if (selectAllClients) {
         this.clearTreeSelected();
         this.$store.commit("destroySubTable");
-        this.allClientsActive = true;
       } else if (this.allClientsActive) {
         this.loadAllClients();
       } else {
         this.loadFrame(this.selectedTree, false);
       }
+
+      this.$store.dispatch("loadTree");
+      this.getDashInfo(false);
     },
     loadFrame(activenode, destroySub = true) {
       if (this.clear_search_when_switching) this.clearFilter();

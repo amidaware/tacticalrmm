@@ -76,6 +76,10 @@ class GetAddClients(APIView):
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
 
+        # add user to allowed clients in role if restricted user created the client
+        if request.user.role and request.user.role.can_view_clients.exists():
+            request.user.role.can_view_clients.add(client)
+
         return Response(f"{client.name} was added")
 
 
@@ -166,6 +170,10 @@ class GetAddSites(APIView):
                 serializer = SiteCustomFieldSerializer(data=custom_field)
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
+
+        # add user to allowed sites in role if restricted user created the client
+        if request.user.role and request.user.role.can_view_sites.exists():
+            request.user.role.can_view_sites.add(site)
 
         return Response(f"Site {site.name} was added!")
 

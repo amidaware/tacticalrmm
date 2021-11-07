@@ -181,6 +181,11 @@ export function getNextAgentUpdateTime() {
   return `${a} at ${b}`;
 }
 
+export function dateStringToUnix(drfString) {
+  if (!drfString) return 0;
+  const d = date.extractDate(drfString, "MM DD YYYY HH:mm");
+  return parseInt(date.formatDate(d, "X"));
+}
 
 // string formatting
 

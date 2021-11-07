@@ -152,10 +152,10 @@ class CoreSettings(BaseAuditModel):
         return False
 
     def send_mail(self, subject, body, alert_template=None, test=False):
-
-        if not alert_template or not self.email_is_configured:
-            if test:
-                return "Missing required fields (need at least 1 recipient)"
+        if test and not self.email_is_configured:
+            return "There needs to be at least one email recipient configured"
+        # return since email must be configured to continue
+        elif not self.email_is_configured:
             return False
 
         # override email from if alert_template is passed and is set
@@ -169,6 +169,9 @@ class CoreSettings(BaseAuditModel):
             email_recipients = ", ".join(alert_template.email_recipients)
         else:
             email_recipients = ", ".join(self.email_alert_recipients)
+
+        if not email_recipients:
+            return "There needs to be at least one email recipient configured"
 
         try:
             msg = EmailMessage()
@@ -197,7 +200,7 @@ class CoreSettings(BaseAuditModel):
             return True
 
     def send_sms(self, body, alert_template=None, test=False):
-        if not alert_template or not self.sms_is_configured:
+        if not self.sms_is_configured:
             return "Sms alerting is not setup correctly."
 
         # override email recipients if alert_template is passed and is set

@@ -839,3 +839,35 @@ class TestClientPermissions(TacticalTestCase):
 
         self.check_authorized("delete", url)
         self.check_not_authorized("delete", unauthorized_url)
+
+    def test_restricted_user_creating_clients(self):
+        from accounts.models import User
+
+        # when a user that is limited to a specific subset of clients creates a client. It should allow access to that client
+        client = baker.make("clients.Client")
+        user = self.create_user_with_roles(["can_manage_clients"])
+        self.client.force_authenticate(user=user)  # type: ignore
+        user.role.can_view_clients.set([client])
+
+        data = {"client": {"name": "New Client"}, "site": {"name": "New Site"}}
+
+        self.client.post(f"{base_url}/", data, format="json")
+
+        # make sure two clients are allowed now
+        self.assertEqual(User.objects.get(id=user.id).role.can_view_clients.count(), 2)
+
+    def test_restricted_user_creating_sites(self):
+        from accounts.models import User
+
+        # when a user that is limited to a specific subset of clients creates a client. It should allow access to that client
+        site = baker.make("clients.Site")
+        user = self.create_user_with_roles(["can_manage_sites"])
+        self.client.force_authenticate(user=user)  # type: ignore
+        user.role.can_view_sites.set([site])
+
+        data = {"site": {"client": site.client.id, "name": "New Site"}}
+
+        self.client.post(f"{base_url}/sites/", data, format="json")
+
+        # make sure two sites are allowed now
+        self.assertEqual(User.objects.get(id=user.id).role.can_view_sites.count(), 2)

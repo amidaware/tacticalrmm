@@ -138,7 +138,7 @@ export default {
       else return this.alertsCount;
     },
     pollAlerts() {
-      setInterval(() => {
+      this.poll = setInterval(() => {
         this.getAlerts();
       }, 60 * 1 * 1000);
     },

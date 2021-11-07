@@ -59,7 +59,8 @@ class UploadMeshAgent(APIView):
 
 
 class GetEditCoreSettings(APIView):
-    @permission_classes([IsAuthenticated, CoreSettingsPerms])
+    permission_classes = [IsAuthenticated, CoreSettingsPerms]
+
     def get(self, request):
         settings = CoreSettings.objects.first()
         return Response(CoreSettingsSerializer(settings).data)

@@ -274,10 +274,11 @@ export default {
       if (timeFilter.value) data["timeFilter"] = timeFilter.value;
       if (actionFilter.value && actionFilter.value.length > 0) data["actionFilter"] = actionFilter.value;
       if (objectFilter.value && objectFilter.value.length > 0) data["objectFilter"] = objectFilter.value;
-
-      const { audit_logs, total } = await fetchAuditLog(data);
-      auditLogs.value = audit_logs;
-      pagination.value.rowsNumber = total;
+      try {
+        const { audit_logs, total } = await fetchAuditLog(data);
+        auditLogs.value = audit_logs;
+        pagination.value.rowsNumber = total;
+      } catch (e) {}
 
       loading.value = false;
     }

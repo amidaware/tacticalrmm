@@ -280,8 +280,8 @@ class CodeSign(APIView):
         if t is None or t == "":
             return notify_error(err)
 
-        pks: list[int] = list(Agent.objects.only("pk").values_list("pk", flat=True))
-        force_code_sign.delay(pks=pks)
+        agent_ids: list[str] = list(Agent.objects.only("pk", "agent_id").values_list("agent_id", flat=True))
+        force_code_sign.delay(agent_ids=agent_ids)
         return Response("Agents will be code signed shortly")
 
 

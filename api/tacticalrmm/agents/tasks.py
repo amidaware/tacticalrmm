@@ -96,7 +96,7 @@ def auto_self_agent_update_task() -> None:
 
     q = Agent.objects.only("agent_id", "version")
     agent_ids: list[str] = [
-        i.pk
+        i.agent_id
         for i in q
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
     ]

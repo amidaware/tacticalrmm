@@ -328,7 +328,6 @@ DATABASES = {
 MESH_USERNAME = "${meshusername}"
 MESH_SITE = "https://${meshdomain}"
 REDIS_HOST    = "localhost"
-KEEP_SALT = False
 ADMIN_ENABLED = True
 EOF
 )"

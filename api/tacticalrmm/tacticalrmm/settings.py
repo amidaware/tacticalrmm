@@ -240,4 +240,3 @@ if "AZPIPELINE" in os.environ:
     MESH_SITE = "https://example.com"
     MESH_TOKEN_KEY = "bd65e957a1e70c622d32523f61508400d6cd0937001a7ac12042227eba0b9ed625233851a316d4f489f02994145f74537a331415d00047dbbf13d940f556806dffe7a8ce1de216dc49edbad0c1a7399c"
     REDIS_HOST = "localhost"
-    KEEP_SALT = False

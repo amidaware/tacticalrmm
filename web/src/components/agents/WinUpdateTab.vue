@@ -123,7 +123,7 @@ import { useStore } from "vuex";
 import { useQuasar } from "quasar";
 import { fetchAgentUpdates, editAgentUpdate, runAgentUpdateScan, runAgentUpdateInstall } from "@/api/winupdates";
 import { notifySuccess } from "@/utils/notify";
-import { truncateText, formatDate } from "@/utils/format";
+import { truncateText, formatDate, dateStringToUnix } from "@/utils/format";
 
 // ui imports
 import ExportTableBtn from "@/components/ui/ExportTableBtn";
@@ -167,7 +167,7 @@ const columns = [
     field: "date_installed",
     align: "left",
     sortable: true,
-    sort: (a, b) => this.dateStringToUnix(a) - this.dateStringToUnix(b),
+    sort: (a, b) => dateStringToUnix(a) - dateStringToUnix(b),
   },
 ];
 

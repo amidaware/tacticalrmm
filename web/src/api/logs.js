@@ -10,10 +10,8 @@ export async function fetchDebugLog(payload) {
 }
 
 export async function fetchAuditLog(payload) {
-  try {
-    const { data } = await axios.patch(`${baseUrl}/audit/`, payload)
-    return data
-  } catch (e) { }
+  const { data } = await axios.patch(`${baseUrl}/audit/`, payload)
+  return data
 }
 
 // pending actions

@@ -24,7 +24,7 @@ APP_VER = "0.0.147"
 # https://github.com/wh1te909/rmmagent
 LATEST_AGENT_VER = "1.6.2"
 
-MESH_VER = "0.9.16"
+MESH_VER = "0.9.45"
 
 NATS_SERVER_VER = "2.3.3"
 

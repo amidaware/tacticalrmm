@@ -12,7 +12,7 @@
         @click="addCustomField"
       />
     </div>
-    <hr />
+    <q-separator />
     <div>
       <q-tabs
         v-model="tab"

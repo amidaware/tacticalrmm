@@ -52,18 +52,18 @@ map $http_user_agent $ignore_ua {
 
 server {
     listen 80;
-    server_name api.EXAMPLE.com;
+    server_name api.EXAMPLE.COM;
     return 301 https://$server_name$request_uri;
 }
 
 server {
     listen 443 ssl;
-    server_name api.yourdomain.com;
+    server_name api.EXAMPLE.COM;
     client_max_body_size 300M;
     access_log /rmm/api/tacticalrmm/tacticalrmm/private/log/access.log combined if=$ignore_ua;
     error_log /rmm/api/tacticalrmm/tacticalrmm/private/log/error.log;
-    ssl_certificate /etc/letsencrypt/live/EXAMPLE.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/EXAMPLE.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/EXAMPLE.COM/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/EXAMPLE.COM/privkey.pem;
     ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
 
     location /static/ {
@@ -72,19 +72,19 @@ server {
 
     location /private/ {
         internal;
-        add_header "Access-Control-Allow-Origin" "https://rmm.EXAMPLE.com";
+        add_header "Access-Control-Allow-Origin" "https://rmm.EXAMPLE.COM";
         alias /rmm/api/tacticalrmm/tacticalrmm/private/;
     }
 
     location /saltscripts/ {
         internal;
-        add_header "Access-Control-Allow-Origin" "https://rmm.EXAMPLE.com";
+        add_header "Access-Control-Allow-Origin" "https://rmm.EXAMPLE.COM";
         alias /srv/salt/scripts/userdefined/;
     }
 
     location /builtin/ {
         internal;
-        add_header "Access-Control-Allow-Origin" "https://rmm.EXAMPLE.com";
+        add_header "Access-Control-Allow-Origin" "https://rmm.EXAMPLE.COM";
         alias /srv/salt/scripts/;
     }
 
@@ -110,7 +110,7 @@ server {
 ```bash
 server {
   listen 80;
-  server_name mesh.EXAMPLE.com;
+  server_name mesh.EXAMPLE.COM;
   return 301 https://$server_name$request_uri;
 }
 
@@ -118,9 +118,9 @@ server {
     listen 443 ssl;
     proxy_send_timeout 330s;
     proxy_read_timeout 330s;
-    server_name mesh.example.com;
-    ssl_certificate /etc/letsencrypt/live/EXAMPLE.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/EXAMPLE.com/privkey.pem;
+    server_name mesh.EXAMPLE.COM;
+    ssl_certificate /etc/letsencrypt/live/EXAMPLE.COM/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/EXAMPLE.COM/privkey.pem;
     ssl_session_cache shared:WEBSSL:10m;
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
@@ -139,11 +139,11 @@ server {
 }
 ```
 
-4. Edit `/meshcentral/meshcentral-data/config.json` and change to match the example below. Replace `mesh.example.com` with your mesh domain. After editing, use a json linter like `https://jsonlint.com/` to verify no syntax errors, otherwise meshcentral will fail to start.
+4. Edit `/meshcentral/meshcentral-data/config.json` and change to match the example below. Replace `mesh.EXAMPLE.COM` with your mesh domain. After editing, use a json linter like `https://jsonlint.com/` to verify no syntax errors, otherwise meshcentral will fail to start.
 ```
 {
   "settings": {
-    "Cert": "mesh.example.com",
+    "Cert": "mesh.EXAMPLE.COM",
     "MongoDb": "mongodb://127.0.0.1:27017",
     "MongoDbName": "meshcentral",
     "WANonly": true,
@@ -168,7 +168,7 @@ server {
       "Title": "Tactical RMM",
       "Title2": "Tactical RMM",
       "NewAccounts": false,
-      "CertUrl": "https://mesh.example.com:443/",
+      "CertUrl": "https://mesh.EXAMPLE.COM:443/",
       "GeoLocation": true,
       "CookieIpCheck": false,
       "mstsc": true
@@ -241,7 +241,7 @@ sudo nginx -t
 10. Edit `/etc/hosts` and make sure the line starting with 127.0.1.1 or 127.0.0.1 has your 3 subdomains in it like this:
 ```bash
 127.0.0.1 localhost
-127.0.1.1 yourservername api.example.com rmm.example.com mesh.example.com
+127.0.1.1 yourservername api.EXAMPLE.COM rmm.EXAMPLE.COM mesh.EXAMPLE.COM
 ```
 
 11. Start services

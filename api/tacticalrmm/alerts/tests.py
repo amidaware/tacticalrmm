@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from unittest.mock import patch
+from itertools import cycle
 
 from core.models import CoreSettings
 from django.conf import settings
@@ -16,6 +17,8 @@ from .serializers import (
     AlertTemplateSerializer,
 )
 
+base_url = "/alerts"
+
 
 class TestAlertsViews(TacticalTestCase):
     def setUp(self):
@@ -23,7 +26,7 @@ class TestAlertsViews(TacticalTestCase):
         self.setup_coresettings()
 
     def test_get_alerts(self):
-        url = "/alerts/alerts/"
+        url = "/alerts/"
 
         # create check, task, and agent to test each serializer function
         check = baker.make_recipe("checks.diskspace_check")
@@ -116,7 +119,7 @@ class TestAlertsViews(TacticalTestCase):
         self.check_not_authenticated("patch", url)
 
     def test_add_alert(self):
-        url = "/alerts/alerts/"
+        url = "/alerts/"
 
         agent = baker.make_recipe("agents.agent")
         data = {
@@ -133,11 +136,11 @@ class TestAlertsViews(TacticalTestCase):
 
     def test_get_alert(self):
         # returns 404 for invalid alert pk
-        resp = self.client.get("/alerts/alerts/500/", format="json")
+        resp = self.client.get("/alerts/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         alert = baker.make("alerts.Alert")
-        url = f"/alerts/alerts/{alert.pk}/"  # type: ignore
+        url = f"/alerts/{alert.pk}/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         serializer = AlertSerializer(alert)
@@ -149,16 +152,15 @@ class TestAlertsViews(TacticalTestCase):
 
     def test_update_alert(self):
         # returns 404 for invalid alert pk
-        resp = self.client.put("/alerts/alerts/500/", format="json")
+        resp = self.client.put("/alerts/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         alert = baker.make("alerts.Alert", resolved=False, snoozed=False)
 
-        url = f"/alerts/alerts/{alert.pk}/"  # type: ignore
+        url = f"/alerts/{alert.pk}/"  # type: ignore
 
         # test resolving alert
         data = {
-            "id": alert.pk,  # type: ignore
             "type": "resolve",
         }
         resp = self.client.put(url, data, format="json")
@@ -167,26 +169,26 @@ class TestAlertsViews(TacticalTestCase):
         self.assertTrue(Alert.objects.get(pk=alert.pk).resolved_on)  # type: ignore
 
         # test snoozing alert
-        data = {"id": alert.pk, "type": "snooze", "snooze_days": "30"}  # type: ignore
+        data = {"type": "snooze", "snooze_days": "30"}  # type: ignore
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(Alert.objects.get(pk=alert.pk).snoozed)  # type: ignore
         self.assertTrue(Alert.objects.get(pk=alert.pk).snooze_until)  # type: ignore
 
         # test snoozing alert without snooze_days
-        data = {"id": alert.pk, "type": "snooze"}  # type: ignore
+        data = {"type": "snooze"}  # type: ignore
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 400)
 
         # test unsnoozing alert
-        data = {"id": alert.pk, "type": "unsnooze"}  # type: ignore
+        data = {"type": "unsnooze"}  # type: ignore
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(Alert.objects.get(pk=alert.pk).snoozed)  # type: ignore
         self.assertFalse(Alert.objects.get(pk=alert.pk).snooze_until)  # type: ignore
 
         # test invalid type
-        data = {"id": alert.pk, "type": "invalid"}  # type: ignore
+        data = {"type": "invalid"}  # type: ignore
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 400)
 
@@ -194,13 +196,13 @@ class TestAlertsViews(TacticalTestCase):
 
     def test_delete_alert(self):
         # returns 404 for invalid alert pk
-        resp = self.client.put("/alerts/alerts/500/", format="json")
+        resp = self.client.put("/alerts/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         alert = baker.make("alerts.Alert")
 
         # test delete alert
-        url = f"/alerts/alerts/{alert.pk}/"  # type: ignore
+        url = f"/alerts/{alert.pk}/"  # type: ignore
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
 
@@ -242,7 +244,7 @@ class TestAlertsViews(TacticalTestCase):
         self.assertTrue(Alert.objects.filter(snoozed=False).exists())
 
     def test_get_alert_templates(self):
-        url = "/alerts/alerttemplates/"
+        url = "/alerts/templates/"
 
         alert_templates = baker.make("alerts.AlertTemplate", _quantity=3)
         resp = self.client.get(url, format="json")
@@ -254,7 +256,7 @@ class TestAlertsViews(TacticalTestCase):
         self.check_not_authenticated("get", url)
 
     def test_add_alert_template(self):
-        url = "/alerts/alerttemplates/"
+        url = "/alerts/templates/"
 
         data = {
             "name": "Test Template",
@@ -267,11 +269,11 @@ class TestAlertsViews(TacticalTestCase):
 
     def test_get_alert_template(self):
         # returns 404 for invalid alert template pk
-        resp = self.client.get("/alerts/alerttemplates/500/", format="json")
+        resp = self.client.get("/alerts/templates/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         alert_template = baker.make("alerts.AlertTemplate")
-        url = f"/alerts/alerttemplates/{alert_template.pk}/"  # type: ignore
+        url = f"/alerts/templates/{alert_template.pk}/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         serializer = AlertTemplateSerializer(alert_template)
@@ -283,16 +285,15 @@ class TestAlertsViews(TacticalTestCase):
 
     def test_update_alert_template(self):
         # returns 404 for invalid alert pk
-        resp = self.client.put("/alerts/alerttemplates/500/", format="json")
+        resp = self.client.put("/alerts/templates/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         alert_template = baker.make("alerts.AlertTemplate")
 
-        url = f"/alerts/alerttemplates/{alert_template.pk}/"  # type: ignore
+        url = f"/alerts/templates/{alert_template.pk}/"  # type: ignore
 
         # test data
         data = {
-            "id": alert_template.pk,  # type: ignore
             "agent_email_on_resolved": True,
             "agent_text_on_resolved": True,
             "agent_include_desktops": True,
@@ -308,13 +309,13 @@ class TestAlertsViews(TacticalTestCase):
 
     def test_delete_alert_template(self):
         # returns 404 for invalid alert pk
-        resp = self.client.put("/alerts/alerttemplates/500/", format="json")
+        resp = self.client.put("/alerts/templates/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
         alert_template = baker.make("alerts.AlertTemplate")
 
         # test delete alert
-        url = f"/alerts/alerttemplates/{alert_template.pk}/"  # type: ignore
+        url = f"/alerts/templates/{alert_template.pk}/"  # type: ignore
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
 
@@ -332,7 +333,7 @@ class TestAlertsViews(TacticalTestCase):
         core.alert_template = alert_template  # type: ignore
         core.save()  # type: ignore
 
-        url = f"/alerts/alerttemplates/{alert_template.pk}/related/"  # type: ignore
+        url = f"/alerts/templates/{alert_template.pk}/related/"  # type: ignore
 
         resp = self.client.get(url, format="json")
         serializer = AlertTemplateRelationSerializer(alert_template)
@@ -1434,3 +1435,155 @@ class TestAlertTasks(TacticalTestCase):
         prune_resolved_alerts(30)
 
         self.assertEqual(Alert.objects.count(), 31)
+
+
+class TestAlertPermissions(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+        self.client_setup()
+
+    def test_get_alerts_permissions(self):
+        agent = baker.make_recipe("agents.agent")
+        agent1 = baker.make_recipe("agents.agent")
+        agent2 = baker.make_recipe("agents.agent")
+        agents = [agent, agent1, agent2]
+        checks = baker.make("checks.Check", agent=cycle(agents), _quantity=3)
+        tasks = baker.make("autotasks.AutomatedTask", agent=cycle(agents), _quantity=3)
+        baker.make(
+            "alerts.Alert", alert_type="task", assigned_task=cycle(tasks), _quantity=3
+        )
+        baker.make(
+            "alerts.Alert",
+            alert_type="check",
+            assigned_check=cycle(checks),
+            _quantity=3,
+        )
+        baker.make(
+            "alerts.Alert", alert_type="availability", agent=cycle(agents), _quantity=3
+        )
+        baker.make("alerts.Alert", alert_type="custom", _quantity=4)
+
+        # test super user access
+        r = self.check_authorized_superuser("patch", f"{base_url}/")
+        self.assertEqual(len(r.data), 13)  # type: ignore
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)  # type: ignore
+
+        self.check_not_authorized("patch", f"{base_url}/")
+
+        # add list software role to user
+        user.role.can_list_alerts = True
+        user.role.save()
+
+        r = self.check_authorized("patch", f"{base_url}/")
+        self.assertEqual(len(r.data), 13)  # type: ignore
+
+        # test limiting to client
+        user.role.can_view_clients.set([agent.client])
+        r = self.check_authorized("patch", f"{base_url}/")
+        self.assertEqual(len(r.data), 7)  # type: ignore
+
+        # test limiting to site
+        user.role.can_view_clients.clear()
+        user.role.can_view_sites.set([agent1.site])
+        r = self.client.patch(f"{base_url}/")
+        self.assertEqual(len(r.data), 7)  # type: ignore
+
+        # test limiting to site and client
+        user.role.can_view_clients.set([agent2.client])
+        r = self.client.patch(f"{base_url}/")
+        self.assertEqual(len(r.data), 10)  # type: ignore
+
+    @patch("alerts.models.Alert.delete", return_value=1)
+    def test_edit_delete_get_alert_permissions(self, delete):
+        agent = baker.make_recipe("agents.agent")
+        agent1 = baker.make_recipe("agents.agent")
+        agent2 = baker.make_recipe("agents.agent")
+        agents = [agent, agent1, agent2]
+        checks = baker.make("checks.Check", agent=cycle(agents), _quantity=3)
+        tasks = baker.make("autotasks.AutomatedTask", agent=cycle(agents), _quantity=3)
+        alert_tasks = baker.make(
+            "alerts.Alert", alert_type="task", assigned_task=cycle(tasks), _quantity=3
+        )
+        alert_checks = baker.make(
+            "alerts.Alert",
+            alert_type="check",
+            assigned_check=cycle(checks),
+            _quantity=3,
+        )
+        alert_agents = baker.make(
+            "alerts.Alert", alert_type="availability", agent=cycle(agents), _quantity=3
+        )
+        alert_custom = baker.make("alerts.Alert", alert_type="custom", _quantity=4)
+
+        # alert task url
+        task_url = f"{base_url}/{alert_tasks[0].id}/"  # for agent
+        unauthorized_task_url = f"{base_url}/{alert_tasks[1].id}/"  # for agent1
+        # alert check url
+        check_url = f"{base_url}/{alert_checks[0].id}/"  # for agent
+        unauthorized_check_url = f"{base_url}/{alert_checks[1].id}/"  # for agent1
+        # alert agent url
+        agent_url = f"{base_url}/{alert_agents[0].id}/"  # for agent
+        unauthorized_agent_url = f"{base_url}/{alert_agents[1].id}/"  # for agent1
+        # custom alert url
+        custom_url = f"{base_url}/{alert_custom[0].id}/"  # no agent associated
+
+        authorized_urls = [task_url, check_url, agent_url, custom_url]
+        unauthorized_urls = [
+            unauthorized_agent_url,
+            unauthorized_check_url,
+            unauthorized_task_url,
+        ]
+
+        for method in ["get", "put", "delete"]:
+
+            # test superuser access
+            for url in authorized_urls:
+                self.check_authorized_superuser(method, url)
+
+            for url in unauthorized_urls:
+                self.check_authorized_superuser(method, url)
+
+            user = self.create_user_with_roles([])
+            self.client.force_authenticate(user=user)  # type: ignore
+
+            # test user without role
+            for url in authorized_urls:
+                self.check_not_authorized(method, url)
+
+            for url in unauthorized_urls:
+                self.check_not_authorized(method, url)
+
+            # add user to role and test
+            setattr(
+                user.role,
+                "can_list_alerts" if method == "get" else "can_manage_alerts",
+                True,
+            )
+            user.role.save()
+
+            # test user with role
+            for url in authorized_urls:
+                self.check_authorized(method, url)
+
+            for url in unauthorized_urls:
+                self.check_authorized(method, url)
+
+            # limit user to client if agent check
+            user.role.can_view_clients.set([agent.client])
+
+            for url in authorized_urls:
+                self.check_authorized(method, url)
+
+            for url in unauthorized_urls:
+                self.check_not_authorized(method, url)
+
+            # limit user to client if agent check
+            user.role.can_view_sites.set([agent1.site])
+
+            for url in authorized_urls:
+                self.check_authorized(method, url)
+
+            for url in unauthorized_urls:
+                self.check_authorized(method, url)

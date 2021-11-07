@@ -11,7 +11,7 @@ To enable it, edit `/rmm/api/tacticalrmm/tacticalrmm/local_settings.py` and chan
 
 Login to the django admin using the same credentials as your normal web ui login.
 
-If you did not save the django admin url (which was printed out at the end of the install script), check the `local_settings.py` file referenced above for the `ADMIN_URL` variable. Then simply append the value of this variable to your api domain (`https://api.yourdomain.com/`) to get the full url.
+If you did not save the django admin url (which was printed out at the end of the install script), check the `local_settings.py` file referenced above for the `ADMIN_URL` variable. Then simply append the value of this variable to your api domain (`https://api.EXAMPLE.COM/`) to get the full url.
 
 Example of a full django admin url:
 ```

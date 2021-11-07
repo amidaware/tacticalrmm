@@ -1,7 +1,7 @@
 <template>
   <div v-if="!selectedAgent" class="q-pa-sm">No agent selected</div>
   <div v-else>
-    <DebugLog :agentpk="selectedAgent" />
+    <DebugLog :agent="selectedAgent" :tabHeight="tabHeight" />
   </div>
 </template>
 
@@ -21,10 +21,12 @@ export default {
   setup() {
     const store = useStore();
     const selectedAgent = computed(() => store.state.selectedRow);
+    const tabHeight = computed(() => store.state.tabHeight);
 
     return {
       // computed
       selectedAgent,
+      tabHeight,
     };
   },
 };

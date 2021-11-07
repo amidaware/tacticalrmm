@@ -8,21 +8,46 @@ from tacticalrmm.test import TacticalTestCase
 
 from .serializers import CheckSerializer
 
+base_url = "/checks"
+
 
 class TestCheckViews(TacticalTestCase):
     def setUp(self):
         self.authenticate()
         self.setup_coresettings()
 
+    def test_get_checks(self):
+        url = f"{base_url}/"
+        agent = baker.make_recipe("agents.agent")
+        baker.make("checks.Check", agent=agent, _quantity=4)
+        baker.make("checks.Check", _quantity=4)
+
+        resp = self.client.get(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data), 8)  # type: ignore
+
+        # test checks agent url
+        url = f"/agents/{agent.agent_id}/checks/"
+        resp = self.client.get(url, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data), 4)  # type: ignore
+
+        # test agent doesn't exist
+        url = f"/agents/jh3498uf8fkh4ro8hfd8df98/checks/"
+        resp = self.client.get(url, format="json")
+        self.assertEqual(resp.status_code, 404)
+
+        self.check_not_authenticated("get", url)
+
     def test_delete_agent_check(self):
         # setup data
         agent = baker.make_recipe("agents.agent")
         check = baker.make_recipe("checks.diskspace_check", agent=agent)
 
-        resp = self.client.delete("/checks/500/check/", format="json")
+        resp = self.client.delete(f"{base_url}/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
-        url = f"/checks/{check.pk}/check/"
+        url = f"{base_url}/{check.pk}/"
 
         resp = self.client.delete(url, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -30,11 +55,11 @@ class TestCheckViews(TacticalTestCase):
 
         self.check_not_authenticated("delete", url)
 
-    def test_get_disk_check(self):
+    def test_get_check(self):
         # setup data
         disk_check = baker.make_recipe("checks.diskspace_check")
 
-        url = f"/checks/{disk_check.pk}/check/"
+        url = f"{base_url}/{disk_check.pk}/"
 
         resp = self.client.get(url, format="json")
         serializer = CheckSerializer(disk_check)
@@ -46,296 +71,161 @@ class TestCheckViews(TacticalTestCase):
     def test_add_disk_check(self):
         # setup data
         agent = baker.make_recipe("agents.agent")
+        policy = baker.make("automation.Policy")
 
-        url = "/checks/checks/"
+        url = f"{base_url}/"
 
-        valid_payload = {
-            "pk": agent.pk,
-            "check": {
-                "check_type": "diskspace",
-                "disk": "C:",
-                "error_threshold": 55,
-                "warning_threshold": 0,
-                "fails_b4_alert": 3,
-            },
+        agent_payload = {
+            "agent": agent.agent_id,
+            "check_type": "diskspace",
+            "disk": "C:",
+            "error_threshold": 55,
+            "warning_threshold": 0,
+            "fails_b4_alert": 3,
         }
 
-        resp = self.client.post(url, valid_payload, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        # this should fail because we already have a check for drive C: in setup
-        invalid_payload = {
-            "pk": agent.pk,
-            "check": {
-                "check_type": "diskspace",
-                "disk": "C:",
-                "error_threshold": 55,
-                "warning_threshold": 0,
-                "fails_b4_alert": 3,
-            },
+        policy_payload = {
+            "policy": policy.id,
+            "check_type": "diskspace",
+            "disk": "C:",
+            "error_threshold": 55,
+            "warning_threshold": 0,
+            "fails_b4_alert": 3,
         }
 
-        resp = self.client.post(url, invalid_payload, format="json")
-        self.assertEqual(resp.status_code, 400)
+        for payload in [agent_payload, policy_payload]:
 
-        # this should fail because both error and warning threshold are 0
-        invalid_payload = {
-            "pk": agent.pk,
-            "check": {
-                "check_type": "diskspace",
-                "disk": "C:",
-                "error_threshold": 0,
-                "warning_threshold": 0,
-                "fails_b4_alert": 3,
-            },
-        }
+            # add valid check
+            resp = self.client.post(url, payload, format="json")
+            self.assertEqual(resp.status_code, 200)
 
-        resp = self.client.post(url, invalid_payload, format="json")
-        self.assertEqual(resp.status_code, 400)
+            # this should fail since we just added it
+            resp = self.client.post(url, payload, format="json")
+            self.assertEqual(resp.status_code, 400)
 
-        # this should fail because both error is greater than warning threshold
-        invalid_payload = {
-            "pk": agent.pk,
-            "check": {
-                "check_type": "diskspace",
-                "disk": "C:",
-                "error_threshold": 50,
-                "warning_threshold": 30,
-                "fails_b4_alert": 3,
-            },
-        }
+            # this should fail because both error and warning threshold are 0
+            payload["error_threshold"] = 0
+            payload["warning_threshold"] = 0
 
-        resp = self.client.post(url, invalid_payload, format="json")
-        self.assertEqual(resp.status_code, 400)
+            resp = self.client.post(url, payload, format="json")
+            self.assertEqual(resp.status_code, 400)
+
+            # this should fail because error threshold is greater than warning threshold
+            payload["error_threshold"] = 50
+            payload["warning_threshold"] = 30
+
+            resp = self.client.post(url, payload, format="json")
+            self.assertEqual(resp.status_code, 400)
 
         self.check_not_authenticated("post", url)
 
     def test_add_cpuload_check(self):
-        url = "/checks/checks/"
+        url = f"{base_url}/"
         agent = baker.make_recipe("agents.agent")
-        payload = {
-            "pk": agent.pk,
-            "check": {
-                "check_type": "cpuload",
-                "error_threshold": 66,
-                "warning_threshold": 0,
-                "fails_b4_alert": 9,
-            },
+        policy = baker.make("automation.Policy")
+
+        agent_payload = {
+            "agent": agent.agent_id,
+            "check_type": "cpuload",
+            "error_threshold": 66,
+            "warning_threshold": 0,
+            "fails_b4_alert": 9,
         }
 
-        resp = self.client.post(url, payload, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        payload["error_threshold"] = 87
-        resp = self.client.post(url, payload, format="json")
-        self.assertEqual(resp.status_code, 400)
-        self.assertEqual(
-            resp.json()["non_field_errors"][0],
-            "A cpuload check for this agent already exists",
-        )
-
-        # should fail because both error and warning thresholds are 0
-        invalid_payload = {
-            "pk": agent.pk,
-            "check": {
-                "check_type": "cpuload",
-                "error_threshold": 0,
-                "warning_threshold": 0,
-                "fails_b4_alert": 9,
-            },
+        policy_payload = {
+            "policy": policy.id,
+            "check_type": "cpuload",
+            "error_threshold": 66,
+            "warning_threshold": 0,
+            "fails_b4_alert": 9,
         }
 
-        resp = self.client.post(url, invalid_payload, format="json")
-        self.assertEqual(resp.status_code, 400)
+        for payload in [agent_payload, policy_payload]:
 
-        # should fail because error is less than warning
-        invalid_payload = {
-            "pk": agent.pk,
-            "check": {
-                "check_type": "cpuload",
-                "error_threshold": 10,
-                "warning_threshold": 50,
-                "fails_b4_alert": 9,
-            },
-        }
+            # add cpu check
+            resp = self.client.post(url, payload, format="json")
+            self.assertEqual(resp.status_code, 200)
 
-        resp = self.client.post(url, invalid_payload, format="json")
-        self.assertEqual(resp.status_code, 400)
+            # should fail since cpu check already exists
+            resp = self.client.post(url, payload, format="json")
+            self.assertEqual(resp.status_code, 400)
+
+            # this should fail because both error and warning threshold are 0
+            payload["error_threshold"] = 0
+            payload["warning_threshold"] = 0
+
+            resp = self.client.post(url, payload, format="json")
+            self.assertEqual(resp.status_code, 400)
+
+            # this should fail because error threshold is less than warning threshold
+            payload["error_threshold"] = 20
+            payload["warning_threshold"] = 30
+
+            resp = self.client.post(url, payload, format="json")
+            self.assertEqual(resp.status_code, 400)
 
         self.check_not_authenticated("post", url)
 
     def test_add_memory_check(self):
-        url = "/checks/checks/"
+        url = f"{base_url}/"
         agent = baker.make_recipe("agents.agent")
-        payload = {
-            "pk": agent.pk,
-            "check": {
-                "check_type": "memory",
-                "error_threshold": 78,
-                "warning_threshold": 0,
-                "fails_b4_alert": 1,
-            },
-        }
-
-        resp = self.client.post(url, payload, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        payload["error_threshold"] = 55
-        resp = self.client.post(url, payload, format="json")
-        self.assertEqual(resp.status_code, 400)
-        self.assertEqual(
-            resp.json()["non_field_errors"][0],
-            "A memory check for this agent already exists",
-        )
-
-        # should fail because both error and warning thresholds are 0
-        invalid_payload = {
-            "pk": agent.pk,
-            "check": {
-                "check_type": "memory",
-                "error_threshold": 0,
-                "warning_threshold": 0,
-                "fails_b4_alert": 9,
-            },
-        }
-
-        resp = self.client.post(url, invalid_payload, format="json")
-        self.assertEqual(resp.status_code, 400)
-
-        # should fail because error is less than warning
-        invalid_payload = {
-            "pk": agent.pk,
-            "check": {
-                "check_type": "memory",
-                "error_threshold": 10,
-                "warning_threshold": 50,
-                "fails_b4_alert": 9,
-            },
-        }
-
-        resp = self.client.post(url, invalid_payload, format="json")
-        self.assertEqual(resp.status_code, 400)
-
-    def test_get_policy_disk_check(self):
-        # setup data
         policy = baker.make("automation.Policy")
-        disk_check = baker.make_recipe("checks.diskspace_check", policy=policy)
 
-        url = f"/checks/{disk_check.pk}/check/"
+        agent_payload = {
+            "agent": agent.agent_id,
+            "check_type": "memory",
+            "error_threshold": 78,
+            "warning_threshold": 0,
+            "fails_b4_alert": 1,
+        }
 
-        resp = self.client.get(url, format="json")
-        serializer = CheckSerializer(disk_check)
+        policy_payload = {
+            "policy": policy.id,
+            "check_type": "memory",
+            "error_threshold": 78,
+            "warning_threshold": 0,
+            "fails_b4_alert": 1,
+        }
 
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, serializer.data)  # type: ignore
+        for payload in [agent_payload, policy_payload]:
+
+            # add memory check
+            resp = self.client.post(url, payload, format="json")
+            self.assertEqual(resp.status_code, 200)
+
+            # should fail since cpu check already exists
+            resp = self.client.post(url, payload, format="json")
+            self.assertEqual(resp.status_code, 400)
+
+            # this should fail because both error and warning threshold are 0
+            payload["error_threshold"] = 0
+            payload["warning_threshold"] = 0
+
+            resp = self.client.post(url, payload, format="json")
+            self.assertEqual(resp.status_code, 400)
+
+            # this should fail because error threshold is less than warning threshold
+            payload["error_threshold"] = 20
+            payload["warning_threshold"] = 30
+
+            resp = self.client.post(url, payload, format="json")
+            self.assertEqual(resp.status_code, 400)
+
         self.check_not_authenticated("post", url)
-
-    def test_add_policy_disk_check(self):
-        # setup data
-        policy = baker.make("automation.Policy")
-
-        url = "/checks/checks/"
-
-        valid_payload = {
-            "policy": policy.pk,  # type: ignore
-            "check": {
-                "check_type": "diskspace",
-                "disk": "M:",
-                "error_threshold": 86,
-                "warning_threshold": 0,
-                "fails_b4_alert": 2,
-            },
-        }
-
-        # should fail because both error and warning thresholds are 0
-        invalid_payload = {
-            "policy": policy.pk,  # type: ignore
-            "check": {
-                "check_type": "diskspace",
-                "error_threshold": 0,
-                "warning_threshold": 0,
-                "fails_b4_alert": 9,
-            },
-        }
-
-        resp = self.client.post(url, invalid_payload, format="json")
-        self.assertEqual(resp.status_code, 400)
-
-        # should fail because warning is less than error
-        invalid_payload = {
-            "policy": policy.pk,  # type: ignore
-            "check": {
-                "check_type": "diskspace",
-                "error_threshold": 80,
-                "warning_threshold": 50,
-                "fails_b4_alert": 9,
-            },
-        }
-
-        resp = self.client.post(url, valid_payload, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        # this should fail because we already have a check for drive M: in setup
-        invalid_payload = {
-            "policy": policy.pk,  # type: ignore
-            "check": {
-                "check_type": "diskspace",
-                "disk": "M:",
-                "error_threshold": 34,
-                "warning_threshold": 0,
-                "fails_b4_alert": 9,
-            },
-        }
-
-        resp = self.client.post(url, invalid_payload, format="json")
-        self.assertEqual(resp.status_code, 400)
-
-    def test_get_disks_for_policies(self):
-        url = "/checks/getalldisks/"
-        r = self.client.get(url)
-        self.assertIsInstance(r.data, list)  # type: ignore
-        self.assertEqual(26, len(r.data))  # type: ignore
-
-    def test_edit_check_alert(self):
-        # setup data
-        policy = baker.make("automation.Policy")
-        agent = baker.make_recipe("agents.agent")
-
-        policy_disk_check = baker.make_recipe("checks.diskspace_check", policy=policy)
-        agent_disk_check = baker.make_recipe("checks.diskspace_check", agent=agent)
-        url_a = f"/checks/{agent_disk_check.pk}/check/"
-        url_p = f"/checks/{policy_disk_check.pk}/check/"
-
-        valid_payload = {"email_alert": False, "check_alert": True}
-        invalid_payload = {"email_alert": False}
-
-        with self.assertRaises(KeyError) as err:
-            resp = self.client.patch(url_a, invalid_payload, format="json")
-
-        with self.assertRaises(KeyError) as err:
-            resp = self.client.patch(url_p, invalid_payload, format="json")
-
-        resp = self.client.patch(url_a, valid_payload, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        resp = self.client.patch(url_p, valid_payload, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        self.check_not_authenticated("patch", url_a)
 
     @patch("agents.models.Agent.nats_cmd")
     def test_run_checks(self, nats_cmd):
         agent = baker.make_recipe("agents.agent", version="1.4.1")
         agent_b4_141 = baker.make_recipe("agents.agent", version="1.4.0")
 
-        url = f"/checks/runchecks/{agent_b4_141.pk}/"
+        url = f"{base_url}/{agent_b4_141.agent_id}/run/"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         nats_cmd.assert_called_with({"func": "runchecks"}, wait=False)
 
         nats_cmd.reset_mock()
         nats_cmd.return_value = "busy"
-        url = f"/checks/runchecks/{agent.pk}/"
+        url = f"{base_url}/{agent.agent_id}/run/"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
         nats_cmd.assert_called_with({"func": "runchecks"}, timeout=15)
@@ -343,7 +233,7 @@ class TestCheckViews(TacticalTestCase):
 
         nats_cmd.reset_mock()
         nats_cmd.return_value = "ok"
-        url = f"/checks/runchecks/{agent.pk}/"
+        url = f"{base_url}/{agent.agent_id}/run/"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         nats_cmd.assert_called_with({"func": "runchecks"}, timeout=15)
@@ -351,7 +241,7 @@ class TestCheckViews(TacticalTestCase):
 
         nats_cmd.reset_mock()
         nats_cmd.return_value = "timeout"
-        url = f"/checks/runchecks/{agent.pk}/"
+        url = f"{base_url}/{agent.agent_id}/run/"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 400)
         nats_cmd.assert_called_with({"func": "runchecks"}, timeout=15)
@@ -379,7 +269,7 @@ class TestCheckViews(TacticalTestCase):
         resp = self.client.patch("/checks/history/500/", format="json")
         self.assertEqual(resp.status_code, 404)
 
-        url = f"/checks/history/{check.id}/"
+        url = f"/checks/{check.id}/history/"
 
         # test with timeFilter last 30 days
         data = {"timeFilter": 30}
@@ -873,74 +763,7 @@ class TestCheckTasks(TacticalTestCase):
         self.assertEqual(new_check.status, "failing")
         self.assertEqual(new_check.alert_severity, "info")
 
-        """ # test failing and attempt start
-        winsvc.restart_if_stopped = True
-        winsvc.alert_severity = "warning"
-        winsvc.save()
-
-        nats_cmd.return_value = "timeout"
-
-        data = {"id": winsvc.id, "exists": True, "status": "not running"}
-
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        new_check = Check.objects.get(pk=winsvc.id)
-        self.assertEqual(new_check.status, "failing")
-        self.assertEqual(new_check.alert_severity, "warning")
-        nats_cmd.assert_called()
-        nats_cmd.reset_mock()
-
-        # test failing and attempt start
-        winsvc.alert_severity = "error"
-        winsvc.save()
-        nats_cmd.return_value = {"success": False, "errormsg": "Some Error"}
-
-        data = {"id": winsvc.id, "exists": True, "status": "not running"}
-
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        new_check = Check.objects.get(pk=winsvc.id)
-        self.assertEqual(new_check.status, "failing")
-        self.assertEqual(new_check.alert_severity, "error")
-        nats_cmd.assert_called()
-        nats_cmd.reset_mock()
-
-        # test success and attempt start
-        nats_cmd.return_value = {"success": True}
-
-        data = {"id": winsvc.id, "exists": True, "status": "not running"}
-
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        new_check = Check.objects.get(pk=winsvc.id)
-        self.assertEqual(new_check.status, "passing")
-        nats_cmd.assert_called()
-        nats_cmd.reset_mock()
-
-        # test failing and service not exist
-        data = {"id": winsvc.id, "exists": False, "status": ""}
-
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        new_check = Check.objects.get(pk=winsvc.id)
-        self.assertEqual(new_check.status, "failing")
-
-        # test success and service not exist
-        winsvc.pass_if_svc_not_exist = True
-        winsvc.save()
-        data = {"id": winsvc.id, "exists": False, "status": ""}
-
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        new_check = Check.objects.get(pk=winsvc.id)
-        self.assertEqual(new_check.status, "passing") """
-
-    """ def test_handle_eventlog_check(self):
+    def test_handle_eventlog_check(self):
         from checks.models import Check
 
         url = "/api/v3/checkrunner/"
@@ -984,6 +807,8 @@ class TestCheckTasks(TacticalTestCase):
             ],
         }
 
+        no_logs_data = {"id": eventlog.id, "log": []}
+
         # test failing when contains
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
@@ -993,11 +818,8 @@ class TestCheckTasks(TacticalTestCase):
         self.assertEquals(new_check.alert_severity, "warning")
         self.assertEquals(new_check.status, "failing")
 
-        # test passing when not contains and message
-        eventlog.event_message = "doesnt exist"
-        eventlog.save()
-
-        resp = self.client.patch(url, data, format="json")
+        # test passing when contains
+        resp = self.client.patch(url, no_logs_data, format="json")
         self.assertEqual(resp.status_code, 200)
 
         new_check = Check.objects.get(pk=eventlog.id)
@@ -1007,11 +829,9 @@ class TestCheckTasks(TacticalTestCase):
         # test failing when not contains and message and source
         eventlog.fail_when = "not_contains"
         eventlog.alert_severity = "error"
-        eventlog.event_message = "doesnt exist"
-        eventlog.event_source = "doesnt exist"
         eventlog.save()
 
-        resp = self.client.patch(url, data, format="json")
+        resp = self.client.patch(url, no_logs_data, format="json")
         self.assertEqual(resp.status_code, 200)
 
         new_check = Check.objects.get(pk=eventlog.id)
@@ -1020,10 +840,6 @@ class TestCheckTasks(TacticalTestCase):
         self.assertEquals(new_check.alert_severity, "error")
 
         # test passing when contains with source and message
-        eventlog.event_message = "test"
-        eventlog.event_source = "source"
-        eventlog.save()
-
         resp = self.client.patch(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
@@ -1031,115 +847,252 @@ class TestCheckTasks(TacticalTestCase):
 
         self.assertEquals(new_check.status, "passing")
 
-        # test failing with wildcard not contains and source
-        eventlog.event_id_is_wildcard = True
-        eventlog.event_source = "doesn't exist"
-        eventlog.event_message = ""
-        eventlog.event_id = 0
-        eventlog.save()
 
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
+class TestCheckPermissions(TacticalTestCase):
+    def setUp(self):
+        self.setup_coresettings()
+        self.client_setup()
 
-        new_check = Check.objects.get(pk=eventlog.id)
+    def test_get_checks_permissions(self):
+        agent = baker.make_recipe("agents.agent")
+        policy = baker.make("automation.Policy")
+        unauthorized_agent = baker.make_recipe("agents.agent")
+        check = baker.make("checks.Check", agent=agent, _quantity=5)
+        unauthorized_check = baker.make(
+            "checks.Check", agent=unauthorized_agent, _quantity=7
+        )
 
-        self.assertEquals(new_check.status, "failing")
-        self.assertEquals(new_check.alert_severity, "error")
+        policy_checks = baker.make("checks.Check", policy=policy, _quantity=2)
 
-        # test passing with wildcard contains
-        eventlog.event_source = ""
-        eventlog.event_message = ""
-        eventlog.save()
+        # test super user access
+        self.check_authorized_superuser("get", f"{base_url}/")
+        self.check_authorized_superuser("get", f"/agents/{agent.agent_id}/checks/")
+        self.check_authorized_superuser(
+            "get", f"/agents/{unauthorized_agent.agent_id}/checks/"
+        )
+        self.check_authorized_superuser(
+            "get", f"/automation/policies/{policy.id}/checks/"
+        )
 
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)  # type: ignore
 
-        new_check = Check.objects.get(pk=eventlog.id)
+        self.check_not_authorized("get", f"{base_url}/")
+        self.check_not_authorized("get", f"/agents/{agent.agent_id}/checks/")
+        self.check_not_authorized(
+            "get", f"/agents/{unauthorized_agent.agent_id}/checks/"
+        )
+        self.check_not_authorized("get", f"/automation/policies/{policy.id}/checks/")
 
-        self.assertEquals(new_check.status, "passing")
+        # add list software role to user
+        user.role.can_list_checks = True
+        user.role.save()
 
-        # test failing with wildcard contains and message
-        eventlog.fail_when = "contains"
-        eventlog.event_type = "error"
-        eventlog.alert_severity = "info"
-        eventlog.event_message = "test"
-        eventlog.event_source = ""
-        eventlog.save()
+        r = self.check_authorized("get", f"{base_url}/")
+        self.assertEqual(len(r.data), 14)  # type: ignore
+        r = self.check_authorized("get", f"/agents/{agent.agent_id}/checks/")
+        self.assertEqual(len(r.data), 5)  # type: ignore
+        r = self.check_authorized(
+            "get", f"/agents/{unauthorized_agent.agent_id}/checks/"
+        )
+        self.assertEqual(len(r.data), 7)  # type: ignore
+        r = self.check_authorized("get", f"/automation/policies/{policy.id}/checks/")
+        self.assertEqual(len(r.data), 2)  # type: ignore
 
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
+        # test limiting to client
+        user.role.can_view_clients.set([agent.client])
+        self.check_not_authorized(
+            "get", f"/agents/{unauthorized_agent.agent_id}/checks/"
+        )
+        self.check_authorized("get", f"/agents/{agent.agent_id}/checks/")
+        self.check_authorized("get", f"/automation/policies/{policy.id}/checks/")
 
-        new_check = Check.objects.get(pk=eventlog.id)
+        # make sure queryset is limited too
+        r = self.client.get(f"{base_url}/")
+        self.assertEqual(len(r.data), 7)  # type: ignore
 
-        self.assertEquals(new_check.status, "failing")
-        self.assertEquals(new_check.alert_severity, "info")
+    def test_add_check_permissions(self):
+        agent = baker.make_recipe("agents.agent")
+        unauthorized_agent = baker.make_recipe("agents.agent")
+        policy = baker.make("automation.Policy")
 
-        # test passing with wildcard not contains message and source
-        eventlog.event_message = "doesnt exist"
-        eventlog.event_source = "doesnt exist"
-        eventlog.save()
+        policy_data = {
+            "policy": policy.id,
+            "check_type": "diskspace",
+            "disk": "C:",
+            "error_threshold": 55,
+            "warning_threshold": 0,
+            "fails_b4_alert": 3,
+        }
 
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
+        agent_data = {
+            "agent": agent.agent_id,
+            "check_type": "diskspace",
+            "disk": "C:",
+            "error_threshold": 55,
+            "warning_threshold": 0,
+            "fails_b4_alert": 3,
+        }
 
-        new_check = Check.objects.get(pk=eventlog.id)
+        unauthorized_agent_data = {
+            "agent": unauthorized_agent.agent_id,
+            "check_type": "diskspace",
+            "disk": "C:",
+            "error_threshold": 55,
+            "warning_threshold": 0,
+            "fails_b4_alert": 3,
+        }
 
-        self.assertEquals(new_check.status, "passing")
+        url = f"{base_url}/"
 
-        # test multiple events found and contains
-        # this should pass since only two events are found
-        eventlog.number_of_events_b4_alert = 3
-        eventlog.event_id_is_wildcard = False
-        eventlog.event_source = None
-        eventlog.event_message = None
-        eventlog.event_id = 123
-        eventlog.event_type = "error"
-        eventlog.fail_when = "contains"
-        eventlog.save()
+        for data in [policy_data, agent_data]:
+            # test superuser access
+            self.check_authorized_superuser("post", url, data)
 
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
+            user = self.create_user_with_roles([])
+            self.client.force_authenticate(user=user)  # type: ignore
 
-        new_check = Check.objects.get(pk=eventlog.id)
+            # test user without role
+            self.check_not_authorized("post", url, data)
 
-        self.assertEquals(new_check.status, "passing")
+            # add user to role and test
+            setattr(user.role, "can_manage_checks", True)
+            user.role.save()
 
-        # this should pass since there are two events returned
-        eventlog.number_of_events_b4_alert = 2
-        eventlog.save()
+            self.check_authorized("post", url, data)
 
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
+            # limit user to client
+            user.role.can_view_clients.set([agent.client])
+            if "agent" in data.keys():
+                self.check_authorized("post", url, data)
+                self.check_not_authorized("post", url, unauthorized_agent_data)
+            else:
+                self.check_authorized("post", url, data)
 
-        new_check = Check.objects.get(pk=eventlog.id)
+    # mock the check delete method so it actually isn't deleted
+    @patch("checks.models.Check.delete")
+    def test_check_get_edit_delete_permissions(self, delete_check):
+        agent = baker.make_recipe("agents.agent")
+        unauthorized_agent = baker.make_recipe("agents.agent")
+        policy = baker.make("automation.Policy")
+        check = baker.make("checks.Check", agent=agent)
+        unauthorized_check = baker.make("checks.Check", agent=unauthorized_agent)
+        policy_check = baker.make("checks.Check", policy=policy)
 
-        self.assertEquals(new_check.status, "failing")
+        for method in ["get", "put", "delete"]:
 
-        # test not contains
-        # this should fail since only two events are found
-        eventlog.number_of_events_b4_alert = 3
-        eventlog.event_id_is_wildcard = False
-        eventlog.event_source = None
-        eventlog.event_message = None
-        eventlog.event_id = 123
-        eventlog.event_type = "error"
-        eventlog.fail_when = "not_contains"
-        eventlog.save()
+            url = f"{base_url}/{check.id}/"
+            unauthorized_url = f"{base_url}/{unauthorized_check.id}/"
+            policy_url = f"{base_url}/{policy_check.id}/"
 
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
+            # test superuser access
+            self.check_authorized_superuser(method, url)
+            self.check_authorized_superuser(method, unauthorized_url)
+            self.check_authorized_superuser(method, policy_url)
 
-        new_check = Check.objects.get(pk=eventlog.id)
+            user = self.create_user_with_roles([])
+            self.client.force_authenticate(user=user)  # type: ignore
 
-        self.assertEquals(new_check.status, "failing")
+            # test user without role
+            self.check_not_authorized(method, url)
+            self.check_not_authorized(method, unauthorized_url)
+            self.check_not_authorized(method, policy_url)
 
-        # this should pass since there are two events returned
-        eventlog.number_of_events_b4_alert = 2
-        eventlog.save()
+            # add user to role and test
+            setattr(
+                user.role,
+                "can_list_checks" if method == "get" else "can_manage_checks",
+                True,
+            )
+            user.role.save()
 
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
+            self.check_authorized(method, url)
+            self.check_authorized(method, unauthorized_url)
+            self.check_authorized(method, policy_url)
 
-        new_check = Check.objects.get(pk=eventlog.id)
+            # limit user to client if agent check
+            user.role.can_view_clients.set([agent.client])
 
-        self.assertEquals(new_check.status, "passing") """
+            self.check_authorized(method, url)
+            self.check_not_authorized(method, unauthorized_url)
+            self.check_authorized(method, policy_url)
+
+    def test_check_action_permissions(self):
+
+        agent = baker.make_recipe("agents.agent")
+        unauthorized_agent = baker.make_recipe("agents.agent")
+        check = baker.make("checks.Check", agent=agent)
+        unauthorized_check = baker.make("checks.Check", agent=unauthorized_agent)
+
+        for action in ["reset", "run"]:
+            if action == "reset":
+                url = f"{base_url}/{check.id}/{action}/"
+                unauthorized_url = f"{base_url}/{unauthorized_check.id}/{action}/"
+            else:
+                url = f"{base_url}/{agent.agent_id}/{action}/"
+                unauthorized_url = f"{base_url}/{unauthorized_agent.agent_id}/{action}/"
+
+            # test superuser access
+            self.check_authorized_superuser("post", url)
+            self.check_authorized_superuser("post", unauthorized_url)
+
+            user = self.create_user_with_roles([])
+            self.client.force_authenticate(user=user)  # type: ignore
+
+            # test user without role
+            self.check_not_authorized("post", url)
+            self.check_not_authorized("post", unauthorized_url)
+
+            # add user to role and test
+            setattr(
+                user.role,
+                "can_manage_checks" if action == "reset" else "can_run_checks",
+                True,
+            )
+            user.role.save()
+
+            self.check_authorized("post", url)
+            self.check_authorized("post", unauthorized_url)
+
+            # limit user to client if agent check
+            user.role.can_view_sites.set([agent.site])
+
+            self.check_authorized("post", url)
+            self.check_not_authorized("post", unauthorized_url)
+
+    def test_check_history_permissions(self):
+        agent = baker.make_recipe("agents.agent")
+        unauthorized_agent = baker.make_recipe("agents.agent")
+        check = baker.make("checks.Check", agent=agent)
+        unauthorized_check = baker.make("checks.Check", agent=unauthorized_agent)
+
+        url = f"{base_url}/{check.id}/history/"
+        unauthorized_url = f"{base_url}/{unauthorized_check.id}/history/"
+
+        # test superuser access
+        self.check_authorized_superuser("patch", url)
+        self.check_authorized_superuser("patch", unauthorized_url)
+
+        user = self.create_user_with_roles([])
+        self.client.force_authenticate(user=user)  # type: ignore
+
+        # test user without role
+        self.check_not_authorized("patch", url)
+        self.check_not_authorized("patch", unauthorized_url)
+
+        # add user to role and test
+        setattr(
+            user.role,
+            "can_list_checks",
+            True,
+        )
+        user.role.save()
+
+        self.check_authorized("patch", url)
+        self.check_authorized("patch", unauthorized_url)
+
+        # limit user to client if agent check
+        user.role.can_view_sites.set([agent.site])
+
+        self.check_authorized("patch", url)
+        self.check_not_authorized("patch", unauthorized_url)

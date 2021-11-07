@@ -1,3 +1,4 @@
+import { date } from "quasar";
 
 // dropdown options formatting
 
@@ -56,17 +57,17 @@ export function formatScriptOptions(data, flat = false) {
   }
 }
 
-export function formatAgentOptions(data, flat = false) {
+export function formatAgentOptions(data, flat = false, value_field = "agent_id") {
 
   if (flat) {
     // returns just agent hostnames in array
-    return _formatOptions(data, { label: "hostname", value: "pk", flat: true, allowDuplicates: false })
+    return _formatOptions(data, { label: "hostname", value: value_field, flat: true, allowDuplicates: false })
   } else {
     // returns options with categories in object format
     let options = []
     const agents = data.map(agent => ({
       label: agent.hostname,
-      value: agent.pk,
+      value: agent[value_field],
       cat: `${agent.client} > ${agent.site}`,
     }));
 
@@ -138,23 +139,46 @@ export function formatUserOptions(data, flat = false) {
   return _formatOptions(data, { label: "username", flat: flat })
 }
 
+export function formatCheckOptions(data, flat = false) {
+  return _formatOptions(data, { label: "readable_desc", flat: flat })
+}
+
+
+export function formatCustomFields(fields, values) {
+  let tempArray = [];
+
+  for (let field of fields) {
+    if (field.type === "multiple") {
+      tempArray.push({ multiple_value: values[field.name], field: field.id });
+    } else if (field.type === "checkbox") {
+      tempArray.push({ bool_value: values[field.name], field: field.id });
+    } else {
+      tempArray.push({ string_value: values[field.name], field: field.id });
+    }
+  }
+  return tempArray
+}
 
 // date formatting
 
-function _appendLeadingZeroes(n) {
-  if (n <= 9) {
-    return "0" + n;
-  }
-  return n
+export function formatDate(dateString) {
+  if (!dateString) return "";
+  const d = date.extractDate(dateString, "MM DD YYYY HH:mm");
+  return date.formatDate(d, "MMM-DD-YYYY - HH:mm");
 }
 
-export function formatDate(date, includeSeconds = false) {
-  if (!date) return
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  let dt = new Date(date)
-  let formatted = months[dt.getMonth()] + "-" + _appendLeadingZeroes(dt.getDate()) + "-" + _appendLeadingZeroes(dt.getFullYear()) + " - " + _appendLeadingZeroes(dt.getHours()) + ":" + _appendLeadingZeroes(dt.getMinutes())
-
-  return includeSeconds ? formatted + ":" + _appendLeadingZeroes(dt.getSeconds()) : formatted
+export function getNextAgentUpdateTime() {
+  const d = new Date();
+  let ret;
+  if (d.getMinutes() <= 35) {
+    ret = d.setMinutes(35);
+  } else {
+    ret = date.addToDate(d, { hours: 1 });
+    ret.setMinutes(35);
+  }
+  const a = date.formatDate(ret, "MMM D, YYYY");
+  const b = date.formatDate(ret, "h:mm A");
+  return `${a} at ${b}`;
 }
 
 
@@ -178,4 +202,17 @@ export function truncateText(txt, chars) {
   if (!txt) return
 
   return txt.length >= chars ? txt.substring(0, chars) + "..." : txt;
+}
+
+export function bytes2Human(bytes) {
+  if (bytes == 0) return "0B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}
+
+export function convertMemoryToPercent(percent, memory) {
+  const mb = memory * 1024;
+  return Math.ceil((percent * mb) / 100).toLocaleString();
 }

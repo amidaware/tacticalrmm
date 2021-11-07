@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="54"
+SCRIPT_VERSION="55"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -328,7 +328,6 @@ DATABASES = {
 MESH_USERNAME = "${meshusername}"
 MESH_SITE = "https://${meshdomain}"
 REDIS_HOST    = "localhost"
-KEEP_SALT = False
 ADMIN_ENABLED = True
 EOF
 )"

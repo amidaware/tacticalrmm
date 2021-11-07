@@ -3,7 +3,7 @@ import validators as _v
 from rest_framework import serializers
 
 from autotasks.models import AutomatedTask
-from scripts.serializers import ScriptCheckSerializer, ScriptSerializer
+from scripts.serializers import ScriptCheckSerializer
 
 from .models import Check, CheckHistory
 from scripts.models import Script
@@ -18,7 +18,6 @@ class AssignedTaskField(serializers.ModelSerializer):
 class CheckSerializer(serializers.ModelSerializer):
 
     readable_desc = serializers.ReadOnlyField()
-    script = ScriptSerializer(read_only=True)
     assigned_task = serializers.SerializerMethodField()
     last_run = serializers.ReadOnlyField(source="last_run_as_timezone")
     history_info = serializers.ReadOnlyField()
@@ -57,6 +56,11 @@ class CheckSerializer(serializers.ModelSerializer):
     def validate(self, val):
         try:
             check_type = val["check_type"]
+            filter = (
+                {"agent": val["agent"]}
+                if "agent" in val.keys()
+                else {"policy": val["policy"]}
+            )
         except KeyError:
             return val
 
@@ -65,7 +69,7 @@ class CheckSerializer(serializers.ModelSerializer):
         if check_type == "diskspace":
             if not self.instance:  # only on create
                 checks = (
-                    Check.objects.filter(**self.context)
+                    Check.objects.filter(**filter)
                     .filter(check_type="diskspace")
                     .exclude(managed_by_policy=True)
                 )
@@ -102,7 +106,7 @@ class CheckSerializer(serializers.ModelSerializer):
 
         if check_type == "cpuload" and not self.instance:
             if (
-                Check.objects.filter(**self.context, check_type="cpuload")
+                Check.objects.filter(**filter, check_type="cpuload")
                 .exclude(managed_by_policy=True)
                 .exists()
             ):
@@ -126,7 +130,7 @@ class CheckSerializer(serializers.ModelSerializer):
 
         if check_type == "memory" and not self.instance:
             if (
-                Check.objects.filter(**self.context, check_type="memory")
+                Check.objects.filter(**filter, check_type="memory")
                 .exclude(managed_by_policy=True)
                 .exists()
             ):

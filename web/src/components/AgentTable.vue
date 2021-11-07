@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pt-none q-pb-none q-pr-xs q-pl-xs">
+  <div class="q-pa-none">
     <q-table
       dense
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
@@ -78,31 +78,31 @@
       <!-- body slots -->
       <template v-slot:body="props">
         <q-tr
-          @contextmenu="agentRowSelected(props.row.id)"
+          @contextmenu="agentRowSelected(props.row.agent_id)"
           :props="props"
-          :class="rowSelectedClass(props.row.id)"
-          @click="agentRowSelected(props.row.id)"
-          @dblclick="rowDoubleClicked(props.row.id)"
+          :class="rowSelectedClass(props.row.agent_id)"
+          @click="agentRowSelected(props.row.agent_id)"
+          @dblclick="rowDoubleClicked(props.row.agent_id)"
         >
           <!-- context menu -->
           <q-menu context-menu>
             <q-list dense style="min-width: 200px">
               <!-- edit agent -->
-              <q-item clickable v-close-popup @click="showEditAgentModal = true">
+              <q-item clickable v-close-popup @click="showEditAgent(props.row.agent_id)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-edit" />
                 </q-item-section>
                 <q-item-section>Edit {{ props.row.hostname }}</q-item-section>
               </q-item>
               <!-- agent pending actions -->
-              <q-item clickable v-close-popup @click="showPendingActionsModal(props.row.id)">
+              <q-item clickable v-close-popup @click="showPendingActionsModal(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="far fa-clock" />
                 </q-item-section>
                 <q-item-section>Pending Agent Actions</q-item-section>
               </q-item>
               <!-- take control -->
-              <q-item clickable v-ripple v-close-popup @click.stop.prevent="takeControl(props.row.id)">
+              <q-item clickable v-ripple v-close-popup @click.stop.prevent="takeControl(props.row.agent_id)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-desktop" />
                 </q-item-section>
@@ -126,7 +126,7 @@
                       dense
                       clickable
                       v-close-popup
-                      @click="runURLAction(props.row.id, action.id)"
+                      @click="runURLAction(props.row.agent_id, action.id)"
                     >
                       {{ action.name }}
                     </q-item>
@@ -134,7 +134,7 @@
                 </q-menu>
               </q-item>
 
-              <q-item clickable v-ripple v-close-popup @click="showSendCommand = true">
+              <q-item clickable v-ripple v-close-popup @click="showSendCommand(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-terminal" />
                 </q-item-section>
@@ -172,7 +172,7 @@
                 </q-menu>
               </q-item>
 
-              <q-item clickable v-close-popup @click.stop.prevent="remoteBG(props.row.id)">
+              <q-item clickable v-close-popup @click.stop.prevent="remoteBG(props.row.agent_id)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-cogs" />
                 </q-item-section>
@@ -180,11 +180,13 @@
               </q-item>
 
               <!-- maintenance mode -->
-              <q-item clickable @click="toggleMaintenance(props.row)">
+              <q-item clickable v-close-popup @click="toggleMaintenance(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="construction" />
                 </q-item-section>
-                <q-item-section>{{ menuMaintenanceText(props.row.maintenance_mode) }}</q-item-section>
+                <q-item-section>
+                  {{ props.row.maintenance_mode ? "Disable Maintenance Mode" : "Enable Maintenance Mode" }}
+                </q-item-section>
               </q-item>
 
               <!-- patch management -->
@@ -199,22 +201,17 @@
 
                 <q-menu anchor="top right" self="top left">
                   <q-list dense style="min-width: 100px">
-                    <q-item
-                      clickable
-                      v-ripple
-                      v-close-popup
-                      @click.stop.prevent="runPatchStatusScan(props.row.id, props.row.hostname)"
-                    >
+                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="runPatchStatusScan(props.row)">
                       <q-item-section>Run Patch Status Scan</q-item-section>
                     </q-item>
-                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="installPatches(props.row.id)">
+                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="installPatches(props.row)">
                       <q-item-section>Install Patches Now</q-item-section>
                     </q-item>
                   </q-list>
                 </q-menu>
               </q-item>
 
-              <q-item clickable v-close-popup @click.stop.prevent="runChecks(props.row.id)">
+              <q-item clickable v-close-popup @click.stop.prevent="runChecks(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-check-double" />
                 </q-item-section>
@@ -233,16 +230,11 @@
                 <q-menu anchor="top right" self="top left">
                   <q-list dense style="min-width: 100px">
                     <!-- reboot now -->
-                    <q-item
-                      clickable
-                      v-ripple
-                      v-close-popup
-                      @click.stop.prevent="rebootNow(props.row.id, props.row.hostname)"
-                    >
+                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="rebootNow(props.row)">
                       <q-item-section>Now</q-item-section>
                     </q-item>
                     <!-- reboot later -->
-                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="showRebootLaterModal = true">
+                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="showRebootLaterModal(props.row)">
                       <q-item-section>Later</q-item-section>
                     </q-item>
                   </q-list>
@@ -256,14 +248,14 @@
                 <q-item-section>Assign Automation Policy</q-item-section>
               </q-item>
 
-              <q-item clickable v-close-popup @click.stop.prevent="showAgentRecovery = true">
+              <q-item clickable v-close-popup @click.stop.prevent="showAgentRecovery(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="fas fa-first-aid" />
                 </q-item-section>
                 <q-item-section>Agent Recovery</q-item-section>
               </q-item>
 
-              <q-item clickable v-close-popup @click.stop.prevent="pingAgent(props.row.id)">
+              <q-item clickable v-close-popup @click.stop.prevent="pingAgent(props.row)">
                 <q-item-section side>
                   <q-icon size="xs" name="delete" />
                 </q-item-section>
@@ -279,7 +271,7 @@
           <q-td>
             <q-checkbox
               v-if="props.row.alert_template && props.row.alert_template.always_text !== null"
-              :value="props.row.alert_template.always_text"
+              v-model="props.row.alert_template.always_text"
               disable
               dense
             >
@@ -289,14 +281,14 @@
             <q-checkbox
               v-else
               dense
-              @update:model-value="overdueAlert('text', props.row.id, props.row.overdue_text_alert)"
+              @update:model-value="overdueAlert('text', props.row, props.row.overdue_text_alert)"
               v-model="props.row.overdue_text_alert"
             />
           </q-td>
           <q-td>
             <q-checkbox
               v-if="props.row.alert_template && props.row.alert_template.always_email !== null"
-              :value="props.row.alert_template.always_email"
+              v-model="props.row.alert_template.always_email"
               disable
               dense
             >
@@ -306,14 +298,14 @@
             <q-checkbox
               v-else
               dense
-              @update:model-value="overdueAlert('email', props.row.id, props.row.overdue_email_alert)"
+              @update:model-value="overdueAlert('email', props.row, props.row.overdue_email_alert)"
               v-model="props.row.overdue_email_alert"
             />
           </q-td>
           <q-td>
             <q-checkbox
               v-if="props.row.alert_template && props.row.alert_template.always_alert !== null"
-              :value="props.row.alert_template.always_alert"
+              v-model="props.row.alert_template.always_alert"
               disable
               dense
             >
@@ -323,7 +315,7 @@
             <q-checkbox
               v-else
               dense
-              @update:model-value="overdueAlert('dashboard', props.row.id, props.row.overdue_dashboard_alert)"
+              @update:model-value="overdueAlert('dashboard', props.row, props.row.overdue_dashboard_alert)"
               v-model="props.row.overdue_dashboard_alert"
             />
           </q-td>
@@ -354,14 +346,14 @@
             <span v-else>{{ props.row.logged_username }}</span>
           </q-td>
           <q-td :props="props" key="patchespending">
-            <q-icon v-if="props.row.has_patches_pending" name="far fa-clock" color="primary">
+            <q-icon v-if="props.row.has_patches_pending" name="verified_user" size="1.5em" color="primary">
               <q-tooltip>Patches Pending</q-tooltip>
             </q-icon>
           </q-td>
           <q-td :props="props" key="pendingactions">
             <q-icon
               v-if="props.row.pending_actions_count !== 0"
-              @click="showPendingActionsModal(props.row.id)"
+              @click="showPendingActionsModal(props.row)"
               name="far fa-clock"
               size="1.4em"
               color="warning"
@@ -392,28 +384,6 @@
         </q-tr>
       </template>
     </q-table>
-    <!-- edit agent modal -->
-    <q-dialog v-model="showEditAgentModal">
-      <EditAgent @close="showEditAgentModal = false" @edit="agentEdited" />
-    </q-dialog>
-    <!-- reboot later modal -->
-    <q-dialog v-model="showRebootLaterModal">
-      <RebootLater @close="showRebootLaterModal = false" @edit="agentEdited" />
-    </q-dialog>
-    <!-- pending actions modal -->
-    <div class="q-pa-md q-gutter-sm">
-      <q-dialog v-model="showPendingActions" @hide="closePendingActionsModal">
-        <PendingActions :agentpk="pendingActionAgentPk" @close="closePendingActionsModal" @edit="agentEdited" />
-      </q-dialog>
-    </div>
-    <!-- send command modal -->
-    <q-dialog v-model="showSendCommand" persistent @keydown.esc="showSendCommand = false">
-      <SendCommand @close="showSendCommand = false" :pk="selectedAgentPk" />
-    </q-dialog>
-    <!-- agent recovery modal -->
-    <q-dialog v-model="showAgentRecovery">
-      <AgentRecovery @close="showAgentRecovery = false" :pk="selectedAgentPk" />
-    </q-dialog>
   </div>
 </template>
 
@@ -423,7 +393,7 @@ import { mapGetters } from "vuex";
 import { date, openURL } from "quasar";
 import EditAgent from "@/components/modals/agents/EditAgent";
 import RebootLater from "@/components/modals/agents/RebootLater";
-import PendingActions from "@/components/modals/logs/PendingActions";
+import PendingActions from "@/components/logs/PendingActions";
 import PolicyAdd from "@/components/automation/modals/PolicyAdd";
 import SendCommand from "@/components/modals/agents/SendCommand";
 import AgentRecovery from "@/components/modals/agents/AgentRecovery";
@@ -432,14 +402,7 @@ import RunScript from "@/components/modals/agents/RunScript";
 export default {
   name: "AgentTable",
   props: ["frame", "columns", "userName", "search", "visibleColumns"],
-  emits: ["edit"],
-  components: {
-    EditAgent,
-    RebootLater,
-    PendingActions,
-    SendCommand,
-    AgentRecovery,
-  },
+  inject: ["refreshDashboard"],
   mixins: [mixins],
   data() {
     return {
@@ -448,12 +411,6 @@ export default {
         sortBy: "hostname",
         descending: false,
       },
-      showSendCommand: false,
-      showEditAgentModal: false,
-      showRebootLaterModal: false,
-      showAgentRecovery: false,
-      showPendingActions: false,
-      pendingActionAgentPk: null,
       favoriteScripts: [],
       urlActions: [],
     };
@@ -511,24 +468,24 @@ export default {
         });
       });
     },
-    rowDoubleClicked(pk) {
-      this.$store.commit("setActiveRow", pk);
+    rowDoubleClicked(agent_id) {
+      this.$store.commit("setActiveRow", agent_id);
       this.$q.loading.show();
       // give time for store to change active row
       setTimeout(() => {
         this.$q.loading.hide();
         switch (this.agentDblClickAction) {
           case "editagent":
-            this.showEditAgentModal = true;
+            this.showEditAgent(agent_id);
             break;
           case "takecontrol":
-            this.takeControl(pk);
+            this.takeControl(agent_id);
             break;
           case "remotebg":
-            this.remoteBG(pk);
+            this.remoteBG(agent_id);
             break;
           case "urlaction":
-            this.runURLAction(pk, this.agentUrlAction);
+            this.runURLAction(agent_id, this.agentUrlAction);
             break;
         }
       }, 500);
@@ -554,18 +511,18 @@ export default {
         })
         .catch(e => {});
     },
-    runPatchStatusScan(pk, hostname) {
+    runPatchStatusScan(agent) {
       this.$axios
-        .get(`/winupdate/${pk}/runupdatescan/`)
+        .post(`/winupdate/${agent.agent_id}/scan/`)
         .then(r => {
-          this.notifySuccess(`Scan will be run shortly on ${hostname}`);
+          this.notifySuccess(`Scan will be run shortly on ${agent.hostname}`);
         })
         .catch(e => {});
     },
-    installPatches(pk) {
+    installPatches(agent) {
       this.$q.loading.show();
       this.$axios
-        .get(`/winupdate/${pk}/installnow/`)
+        .post(`/winupdate/${agent.agent_id}/install/`)
         .then(r => {
           this.$q.loading.hide();
           this.notifySuccess(r.data);
@@ -574,45 +531,44 @@ export default {
           this.$q.loading.hide();
         });
     },
-    agentEdited() {
-      this.$emit("edit");
-    },
-    showPendingActionsModal(pk) {
-      this.showPendingActions = true;
-      this.pendingActionAgentPk = pk;
-    },
-    closePendingActionsModal() {
-      this.showPendingActions = false;
-      this.pendingActionAgentPk = null;
-    },
-    takeControl(pk) {
-      const url = this.$router.resolve(`/takecontrol/${pk}`).href;
-      window.open(url, "", "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1600,height=900");
-    },
-    remoteBG(pk) {
-      const url = this.$router.resolve(`/remotebackground/${pk}`).href;
-      window.open(url, "", "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1280,height=826");
-    },
-    runChecks(pk) {
-      this.$q.loading.show();
-      this.$axios
-        .get(`/checks/runchecks/${pk}/`)
-        .then(r => {
-          this.$q.loading.hide();
-          this.notifySuccess(r.data);
-        })
-        .catch(e => {
-          this.$q.loading.hide();
-        });
-    },
-    removeAgent(pk, name) {
+    showPendingActionsModal(agent) {
       this.$q
         .dialog({
-          title: `Please type <code style="color:red">${name}</code> to confirm deletion.`,
+          component: PendingActions,
+          componentProps: {
+            agent: agent,
+          },
+        })
+        .onDismiss(this.refreshDashboard);
+    },
+    takeControl(agent_id) {
+      const url = this.$router.resolve(`/takecontrol/${agent_id}`).href;
+      window.open(url, "", "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1600,height=900");
+    },
+    remoteBG(agent_id) {
+      const url = this.$router.resolve(`/remotebackground/${agent_id}`).href;
+      window.open(url, "", "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1280,height=826");
+    },
+    runChecks(agent) {
+      this.$q.loading.show();
+      this.$axios
+        .get(`/checks/${agent.agent_id}/run/`)
+        .then(r => {
+          this.$q.loading.hide();
+          this.notifySuccess(r.data);
+        })
+        .catch(e => {
+          this.$q.loading.hide();
+        });
+    },
+    removeAgent(agent) {
+      this.$q
+        .dialog({
+          title: `Please type <code style="color:red">${agent.hostname}</code> to confirm deletion.`,
           prompt: {
             model: "",
             type: "text",
-            isValid: val => val === name,
+            isValid: val => val === agent.hostname,
           },
           cancel: true,
           ok: { label: "Uninstall", color: "negative" },
@@ -620,41 +576,42 @@ export default {
           html: true,
         })
         .onOk(val => {
-          const data = { pk: pk };
+          this.$q.loading.show();
           this.$axios
-            .delete("/agents/uninstall/", { data: data })
+            .delete(`/agents/${agent.agent_id}/`)
             .then(r => {
+              this.$q.loading.hide();
               this.notifySuccess(r.data);
-              setTimeout(() => {
-                location.reload();
-              }, 2000);
+              this.refreshDashboard();
             })
-            .catch(e => {});
+            .catch(e => {
+              this.$q.loading.hide();
+            });
         });
     },
-    pingAgent(pk) {
+    pingAgent(agent) {
       this.$q.loading.show();
       this.$axios
-        .get(`/agents/${pk}/ping/`)
+        .get(`/agents/${agent.agent_id}/ping/`)
         .then(r => {
           this.$q.loading.hide();
           if (r.data.status === "offline") {
             this.$q
               .dialog({
                 title: "Agent offline",
-                message: `${r.data.name} cannot be contacted. 
+                message: `${agent.hostname} cannot be contacted. 
                   Would you like to continue with the uninstall? 
                   If so, the agent will need to be manually uninstalled from the computer.`,
                 cancel: { label: "No", color: "negative" },
                 ok: { label: "Yes", color: "positive" },
                 persistent: true,
               })
-              .onOk(() => this.removeAgent(pk, r.data.name))
+              .onOk(() => this.removeAgent(agent))
               .onCancel(() => {
                 return;
               });
           } else if (r.data.status === "online") {
-            this.removeAgent(pk, r.data.name);
+            this.removeAgent(agent);
           } else {
             this.notifyError("Something went wrong");
           }
@@ -663,37 +620,31 @@ export default {
           this.$q.loading.hide();
         });
     },
-    rebootNow(pk, hostname) {
+    rebootNow(agent) {
       this.$q
         .dialog({
           title: "Are you sure?",
-          message: `Reboot ${hostname} now`,
+          message: `Reboot ${agent.hostname} now`,
           cancel: true,
           persistent: true,
         })
         .onOk(() => {
           this.$q.loading.show();
           this.$axios
-            .post("/agents/reboot/", { pk: pk })
+            .post(`/agents/${agent.agent_id}/reboot/`)
             .then(r => {
               this.$q.loading.hide();
-              this.notifySuccess(`${hostname} will now be restarted`);
+              this.notifySuccess(`${agent.hostname} will now be restarted`);
             })
             .catch(e => {
               this.$q.loading.hide();
             });
         });
     },
-    agentRowSelected(pk) {
-      this.$store.commit("setActiveRow", pk);
-      this.$store.dispatch("loadSummary", pk);
-      this.$store.dispatch("loadChecks", pk);
-      this.$store.dispatch("loadAutomatedTasks", pk);
-      this.$store.dispatch("loadWinUpdates", pk);
-      this.$store.dispatch("loadInstalledSoftware", pk);
-      this.$store.dispatch("loadNotes", pk);
+    agentRowSelected(agent_id) {
+      this.$store.commit("setActiveRow", agent_id);
     },
-    overdueAlert(category, pk, alert_action) {
+    overdueAlert(category, agent, alert_action) {
       let db_field = "";
       if (category === "email") db_field = "overdue_email_alert";
       else if (category === "text") db_field = "overdue_text_alert";
@@ -701,17 +652,16 @@ export default {
 
       const action = !alert_action ? "enabled" : "disabled";
       const data = {
-        pk: pk,
         [db_field]: !alert_action,
       };
       const alertColor = !alert_action ? "positive" : "warning";
       this.$axios
-        .post("/agents/overdueaction/", data)
+        .put(`/agents/${agent.agent_id}/`, data)
         .then(r => {
           this.$q.notify({
             color: alertColor,
             icon: "fas fa-check-circle",
-            message: `Overdue ${category} alerts ${action} on ${r.data}`,
+            message: `Overdue ${category} alerts ${action} on ${agent.hostname}`,
           });
         })
         .catch(e => {});
@@ -734,28 +684,27 @@ export default {
             object: agent,
           },
         })
-        .onOk(() => {
-          this.$emit("edit");
-        });
+        .onOk(this.refreshDashboard);
     },
     toggleMaintenance(agent) {
       let data = {
-        id: agent.id,
-        type: "Agent",
-        action: !agent.maintenance_mode,
+        maintenance_mode: !agent.maintenance_mode,
       };
 
-      const text = agent.maintenance_mode ? "Maintenance mode was disabled" : "Maintenance mode was enabled";
-      this.$store.dispatch("toggleMaintenanceMode", data).then(response => {
-        this.notifySuccess(text);
-        this.$emit("edit");
-      });
+      this.$axios
+        .put(`/agents/${agent.agent_id}/`, data)
+        .then(r => {
+          this.notifySuccess(
+            `Maintenance mode was ${agent.maintenance_mode ? "disabled" : "enabled"} on ${agent.hostname}`
+          );
+          this.refreshDashboard();
+        })
+        .catch(e => {
+          console.log(e);
+        });
     },
-    menuMaintenanceText(mode) {
-      return mode ? "Disable Maintenance Mode" : "Enable Maintenance Mode";
-    },
-    rowSelectedClass(id) {
-      if (id === this.selectedRow) {
+    rowSelectedClass(agent_id) {
+      if (agent_id === this.selectedRow) {
         return this.$q.dark.isActive ? "highlight-dark" : "highlight";
       } else {
         return "";
@@ -773,9 +722,9 @@ export default {
         })
         .catch(() => {});
     },
-    runURLAction(agentid, action) {
+    runURLAction(agent_id, action) {
       const data = {
-        agent: agentid,
+        agent_id: agent_id,
         action: action,
       };
       this.$axios
@@ -794,9 +743,45 @@ export default {
         },
       });
     },
+    showSendCommand(agent) {
+      this.$q.dialog({
+        component: SendCommand,
+        componentProps: {
+          agent: agent,
+        },
+      });
+    },
+    showRebootLaterModal(agent) {
+      this.$q
+        .dialog({
+          component: RebootLater,
+          componentProps: {
+            agent: agent,
+          },
+        })
+        .onOk(this.refreshDashboard);
+    },
+    showEditAgent(agent_id) {
+      this.$q
+        .dialog({
+          component: EditAgent,
+          componentProps: {
+            agent_id: agent_id,
+          },
+        })
+        .onOk(this.refreshDashboard);
+    },
+    showAgentRecovery(agent) {
+      this.$q.dialog({
+        component: AgentRecovery,
+        componentProps: {
+          agent: agent,
+        },
+      });
+    },
   },
   computed: {
-    ...mapGetters(["selectedAgentPk", "agentTableHeight", "showCommunityScripts"]),
+    ...mapGetters(["agentTableHeight", "showCommunityScripts"]),
     agentDblClickAction() {
       return this.$store.state.agentDblClickAction;
     },

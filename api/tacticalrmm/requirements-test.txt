@@ -1,3 +1,2 @@
-coverage
-coveralls
+coveralls==3.2.0
 model_bakery

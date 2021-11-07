@@ -12,6 +12,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from logs.models import BaseAuditModel
+from tacticalrmm.models import PermissionQuerySet
 
 CHECK_TYPE_CHOICES = [
     ("diskspace", "Disk Space Check"),
@@ -50,6 +51,7 @@ EVT_LOG_FAIL_WHEN_CHOICES = [
 
 
 class Check(BaseAuditModel):
+    objects = PermissionQuerySet.as_manager()
 
     # common fields
 
@@ -230,16 +232,16 @@ class Check(BaseAuditModel):
 
         return self.last_run
 
-    @property
-    def non_editable_fields(self) -> list[str]:
+    @staticmethod
+    def non_editable_fields() -> list[str]:
         return [
             "check_type",
-            "status",
             "more_info",
             "last_run",
             "fail_count",
             "outage_history",
             "extra_details",
+            "status",
             "stdout",
             "stderr",
             "retcode",
@@ -475,21 +477,6 @@ class Check(BaseAuditModel):
 
         return CheckAuditSerializer(check).data
 
-    # for policy diskchecks
-    @staticmethod
-    def all_disks():
-        return [f"{i}:" for i in string.ascii_uppercase]
-
-    # for policy service checks
-    @staticmethod
-    def load_default_services():
-        with open(
-            os.path.join(settings.BASE_DIR, "services/default_services.json")
-        ) as f:
-            default_services = json.load(f)
-
-        return default_services
-
     def create_policy_check(self, agent=None, policy=None):
 
         if (not agent and not policy) or (agent and policy):
@@ -684,6 +671,8 @@ class Check(BaseAuditModel):
 
 
 class CheckHistory(models.Model):
+    objects = PermissionQuerySet.as_manager()
+
     check_id = models.PositiveIntegerField(default=0)
     x = models.DateTimeField(auto_now_add=True)
     y = models.PositiveIntegerField(null=True, blank=True, default=None)

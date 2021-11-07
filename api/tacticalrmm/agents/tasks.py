@@ -18,9 +18,9 @@ from agents.models import Agent
 from agents.utils import get_winagent_url
 
 
-def agent_update(pk: int, force: bool = False) -> str:
+def agent_update(agent_id: str, force: bool = False) -> str:
 
-    agent = Agent.objects.get(pk=pk)
+    agent = Agent.objects.get(agent_id=agent_id)
 
     if pyver.parse(agent.version) <= pyver.parse("1.3.0"):
         return "not supported"
@@ -30,7 +30,7 @@ def agent_update(pk: int, force: bool = False) -> str:
         DebugLog.warning(
             agent=agent,
             log_type="agent_issues",
-            message=f"Unable to determine arch on {agent.hostname}({agent.pk}). Skipping agent update.",
+            message=f"Unable to determine arch on {agent.hostname}({agent.agent_id}). Skipping agent update.",
         )
         return "noarch"
 
@@ -69,21 +69,21 @@ def agent_update(pk: int, force: bool = False) -> str:
 
 
 @app.task
-def force_code_sign(pks: list[int]) -> None:
-    chunks = (pks[i : i + 50] for i in range(0, len(pks), 50))
+def force_code_sign(agent_ids: list[str]) -> None:
+    chunks = (agent_ids[i : i + 50] for i in range(0, len(agent_ids), 50))
     for chunk in chunks:
-        for pk in chunk:
-            agent_update(pk=pk, force=True)
+        for agent_id in chunk:
+            agent_update(agent_id=agent_id, force=True)
             sleep(0.05)
         sleep(4)
 
 
 @app.task
-def send_agent_update_task(pks: list[int]) -> None:
-    chunks = (pks[i : i + 30] for i in range(0, len(pks), 30))
+def send_agent_update_task(agent_ids: list[str]) -> None:
+    chunks = (agent_ids[i : i + 30] for i in range(0, len(agent_ids), 30))
     for chunk in chunks:
-        for pk in chunk:
-            agent_update(pk)
+        for agent_id in chunk:
+            agent_update(agent_id)
             sleep(0.05)
         sleep(4)
 
@@ -94,17 +94,17 @@ def auto_self_agent_update_task() -> None:
     if not core.agent_auto_update:  # type:ignore
         return
 
-    q = Agent.objects.only("pk", "version")
-    pks: list[int] = [
-        i.pk
+    q = Agent.objects.only("agent_id", "version")
+    agent_ids: list[str] = [
+        i.agent_id
         for i in q
         if pyver.parse(i.version) < pyver.parse(settings.LATEST_AGENT_VER)
     ]
 
-    chunks = (pks[i : i + 30] for i in range(0, len(pks), 30))
+    chunks = (agent_ids[i : i + 30] for i in range(0, len(agent_ids), 30))
     for chunk in chunks:
-        for pk in chunk:
-            agent_update(pk)
+        for agent_id in chunk:
+            agent_update(agent_id)
             sleep(0.05)
         sleep(4)
 

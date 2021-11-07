@@ -22,9 +22,12 @@ from packaging import version as pyver
 
 from core.models import TZ_CHOICES, CoreSettings
 from logs.models import BaseAuditModel, DebugLog
+from tacticalrmm.models import PermissionQuerySet
 
 
 class Agent(BaseAuditModel):
+    objects = PermissionQuerySet.as_manager()
+
     version = models.CharField(default="0.1.0", max_length=255)
     salt_ver = models.CharField(default="1.0.3", max_length=255)
     operating_system = models.CharField(null=True, blank=True, max_length=255)
@@ -33,7 +36,7 @@ class Agent(BaseAuditModel):
     hostname = models.CharField(max_length=255)
     salt_id = models.CharField(null=True, blank=True, max_length=255)
     local_ip = models.TextField(null=True, blank=True)  # deprecated
-    agent_id = models.CharField(max_length=200)
+    agent_id = models.CharField(max_length=200, unique=True)
     last_seen = models.DateTimeField(null=True, blank=True)
     services = models.JSONField(null=True, blank=True)
     public_ip = models.CharField(null=True, max_length=255)
@@ -417,13 +420,6 @@ class Agent(BaseAuditModel):
             update.action = "approve"
             update.save(update_fields=["action"])
 
-        if updates:
-            DebugLog.info(
-                agent=self,
-                log_type="windows_updates",
-                message=f"Approving windows updates on {self.hostname}",
-            )
-
     # returns agent policy merged with a client or site specific policy
     def get_patch_policy(self):
 
@@ -710,7 +706,7 @@ class Agent(BaseAuditModel):
             key1 = key[0:48]
             key2 = key[48:]
             msg = '{{"a":{}, "u":"{}","time":{}}}'.format(
-                action, user, int(time.time())
+                action, user.lower(), int(time.time())
             )
             iv = get_random_bytes(16)
 
@@ -872,6 +868,8 @@ RECOVERY_CHOICES = [
 
 
 class RecoveryAction(models.Model):
+    objects = PermissionQuerySet.as_manager()
+
     agent = models.ForeignKey(
         Agent,
         related_name="recoveryactions",
@@ -886,6 +884,8 @@ class RecoveryAction(models.Model):
 
 
 class Note(models.Model):
+    objects = PermissionQuerySet.as_manager()
+
     agent = models.ForeignKey(
         Agent,
         related_name="notes",
@@ -906,6 +906,8 @@ class Note(models.Model):
 
 
 class AgentCustomField(models.Model):
+    objects = PermissionQuerySet.as_manager()
+
     agent = models.ForeignKey(
         Agent,
         related_name="custom_fields",
@@ -966,6 +968,8 @@ AGENT_HISTORY_STATUS = (("success", "Success"), ("failure", "Failure"))
 
 
 class AgentHistory(models.Model):
+    objects = PermissionQuerySet.as_manager()
+
     agent = models.ForeignKey(
         Agent,
         related_name="history",
@@ -979,7 +983,7 @@ class AgentHistory(models.Model):
     status = models.CharField(
         max_length=50, choices=AGENT_HISTORY_STATUS, default="success"
     )
-    username = models.CharField(max_length=50, default="system")
+    username = models.CharField(max_length=255, default="system")
     results = models.TextField(null=True, blank=True)
     script = models.ForeignKey(
         "scripts.Script",

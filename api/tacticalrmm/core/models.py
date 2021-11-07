@@ -152,10 +152,10 @@ class CoreSettings(BaseAuditModel):
         return False
 
     def send_mail(self, subject, body, alert_template=None, test=False):
-
-        if not alert_template and not self.email_is_configured:
-            if test:
-                return "Email server settings are not configured correctly"
+        if test and not self.email_is_configured:
+            return "There needs to be at least one email recipient configured"
+        # return since email must be configured to continue
+        elif not self.email_is_configured:
             return False
 
         # override email from if alert_template is passed and is set
@@ -200,7 +200,7 @@ class CoreSettings(BaseAuditModel):
             return True
 
     def send_sms(self, body, alert_template=None, test=False):
-        if not alert_template and not self.sms_is_configured:
+        if not self.sms_is_configured:
             return "Sms alerting is not setup correctly."
 
         # override email recipients if alert_template is passed and is set

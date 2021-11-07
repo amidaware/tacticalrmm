@@ -15,24 +15,24 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.8.5"
+TRMM_VERSION = "0.9.0"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.147"
+APP_VER = "0.0.148"
 
 # https://github.com/wh1te909/rmmagent
 LATEST_AGENT_VER = "1.6.2"
 
-MESH_VER = "0.9.16"
+MESH_VER = "0.9.45"
 
 NATS_SERVER_VER = "2.3.3"
 
 # for the update script, bump when need to recreate venv or npm install
-PIP_VER = "22"
-NPM_VER = "23"
+PIP_VER = "23"
+NPM_VER = "24"
 
-SETUPTOOLS_VER = "58.2.0"
+SETUPTOOLS_VER = "58.5.3"
 WHEEL_VER = "0.37.0"
 
 DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
@@ -240,4 +240,3 @@ if "AZPIPELINE" in os.environ:
     MESH_SITE = "https://example.com"
     MESH_TOKEN_KEY = "bd65e957a1e70c622d32523f61508400d6cd0937001a7ac12042227eba0b9ed625233851a316d4f489f02994145f74537a331415d00047dbbf13d940f556806dffe7a8ce1de216dc49edbad0c1a7399c"
     REDIS_HOST = "localhost"
-    KEEP_SALT = False

@@ -12,6 +12,7 @@ from django.db.models.fields import DateTimeField
 from django.db.utils import DatabaseError
 from django.utils import timezone as djangotime
 from logs.models import BaseAuditModel, DebugLog
+from tacticalrmm.models import PermissionQuerySet
 from packaging import version as pyver
 from tacticalrmm.utils import bitdays_to_string
 
@@ -47,6 +48,8 @@ TASK_STATUS_CHOICES = [
 
 
 class AutomatedTask(BaseAuditModel):
+    objects = PermissionQuerySet.as_manager()
+
     agent = models.ForeignKey(
         "agents.Agent",
         related_name="autotasks",
@@ -131,6 +134,31 @@ class AutomatedTask(BaseAuditModel):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        from autotasks.tasks import enable_or_disable_win_task
+        from automation.tasks import update_policy_autotasks_fields_task
+
+        # get old agent if exists
+        old_task = AutomatedTask.objects.get(pk=self.pk) if self.pk else None
+        super(AutomatedTask, self).save(old_model=old_task, *args, **kwargs)
+
+        # check if automated task was enabled/disabled and send celery task
+        if old_task and old_task.enabled != self.enabled:
+            if self.agent:
+                enable_or_disable_win_task.delay(pk=self.pk)
+
+            # check if automated task was enabled/disabled and send celery task
+            elif old_task.policy:
+                update_policy_autotasks_fields_task.delay(
+                    task=self.pk, update_agent=True
+                )
+        # check if policy task was edited and then check if it was a field worth copying to rest of agent tasks
+        elif old_task and old_task.policy:
+            for field in self.policy_fields_to_copy:
+                if getattr(self, field) != getattr(old_task, field):
+                    update_policy_autotasks_fields_task.delay(task=self.pk)
+                    break
 
     @property
     def schedule(self):

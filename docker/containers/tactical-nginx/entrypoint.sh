@@ -27,6 +27,7 @@ else
   fi
 fi
 
+# increase default nginx worker connections
 /bin/bash -c "sed -i 's/worker_connections.*/worker_connections ${WORKER_CONNECTIONS};/g' /etc/nginx/nginx.conf"
 
 
@@ -93,9 +94,6 @@ server  {
         proxy_set_header   X-Forwarded-Host \$server_name;
     }
 
-    error_log  /var/log/nginx/api-error.log;
-    access_log /var/log/nginx/api-access.log;
-
     client_max_body_size 300M;
 
     listen 443 ssl;
@@ -134,9 +132,6 @@ server  {
         proxy_set_header X-Forwarded-Host  \$host;
         proxy_set_header X-Forwarded-Port  \$server_port;
     }
-
-    error_log  /var/log/nginx/app-error.log;
-    access_log /var/log/nginx/app-access.log;
 
     listen 443 ssl;
     ssl_certificate ${CERT_PUB_PATH};

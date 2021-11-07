@@ -3,6 +3,7 @@ from abc import abstractmethod
 
 from django.db import models
 from tacticalrmm.middleware import get_debug_info, get_username
+from tacticalrmm.models import PermissionQuerySet
 
 
 def get_debug_level():
@@ -65,9 +66,9 @@ STATUS_CHOICES = [
 
 
 class AuditLog(models.Model):
-    username = models.CharField(max_length=100)
+    username = models.CharField(max_length=255)
     agent = models.CharField(max_length=255, null=True, blank=True)
-    agent_id = models.PositiveIntegerField(blank=True, null=True)
+    agent_id = models.CharField(max_length=255, blank=True, null=True)
     entry_time = models.DateTimeField(auto_now_add=True)
     action = models.CharField(max_length=100, choices=AUDIT_ACTION_TYPE_CHOICES)
     object_type = models.CharField(max_length=100, choices=AUDIT_OBJECT_TYPE_CHOICES)
@@ -94,7 +95,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             agent=agent.hostname,
-            agent_id=agent.id,
+            agent_id=agent.agent_id,
             object_type="agent",
             action="remote_session",
             message=f"{username} used Mesh Central to initiate a remote session to {agent.hostname}.",
@@ -106,7 +107,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             agent=agent.hostname,
-            agent_id=agent.id,
+            agent_id=agent.agent_id,
             object_type="agent",
             action="execute_command",
             message=f"{username} issued {shell} command on {agent.hostname}.",
@@ -122,7 +123,7 @@ class AuditLog(models.Model):
             username=username,
             object_type=object_type,
             agent=before["hostname"] if object_type == "agent" else None,
-            agent_id=before["id"] if object_type == "agent" else None,
+            agent_id=before["agent_id"] if object_type == "agent" else None,
             action="modify",
             message=f"{username} modified {object_type} {name}",
             before_value=before,
@@ -136,7 +137,7 @@ class AuditLog(models.Model):
             username=username,
             object_type=object_type,
             agent=after["hostname"] if object_type == "agent" else None,
-            agent_id=after["id"] if object_type == "agent" else None,
+            agent_id=after["agent_id"] if object_type == "agent" else None,
             action="add",
             message=f"{username} added {object_type} {name}",
             after_value=after,
@@ -149,6 +150,7 @@ class AuditLog(models.Model):
             username=username,
             object_type=object_type,
             agent=before["hostname"] if object_type == "agent" else None,
+            agent_id=before["agent_id"] if object_type == "agent" else None,
             action="delete",
             message=f"{username} deleted {object_type} {name}",
             before_value=before,
@@ -159,7 +161,7 @@ class AuditLog(models.Model):
     def audit_script_run(username, agent, script, debug_info={}):
         AuditLog.objects.create(
             agent=agent.hostname,
-            agent_id=agent.id,
+            agent_id=agent.agent_id,
             username=username,
             object_type="agent",
             action="execute_script",
@@ -205,7 +207,7 @@ class AuditLog(models.Model):
         AuditLog.objects.create(
             username=username,
             agent=instance.hostname if classname == "Agent" else None,
-            agent_id=instance.id if classname == "Agent" else None,
+            agent_id=instance.agent_id if classname == "Agent" else None,
             object_type=classname.lower(),
             action="url_action",
             message=f"{username} ran url action: {urlaction.pattern} on {classname}: {name}",
@@ -230,7 +232,7 @@ class AuditLog(models.Model):
             site = Site.objects.get(pk=affected["site"])
             target = f"on all agents within site: {site.client.name}\\{site.name}"
         elif affected["target"] == "agents":
-            agents = Agent.objects.filter(pk__in=affected["agents"]).values_list(
+            agents = Agent.objects.filter(agent_id__in=affected["agents"]).values_list(
                 "hostname", flat=True
             )
             target = "on multiple agents"
@@ -269,6 +271,8 @@ LOG_TYPE_CHOICES = [
 
 
 class DebugLog(models.Model):
+    objects = PermissionQuerySet.as_manager()
+
     entry_time = models.DateTimeField(auto_now_add=True)
     agent = models.ForeignKey(
         "agents.Agent",
@@ -320,6 +324,7 @@ class DebugLog(models.Model):
 
 
 class PendingAction(models.Model):
+    objects = PermissionQuerySet.as_manager()
 
     agent = models.ForeignKey(
         "agents.Agent",
@@ -380,9 +385,9 @@ class BaseAuditModel(models.Model):
         abstract = True
 
     # create audit fields
-    created_by = models.CharField(max_length=100, null=True, blank=True)
+    created_by = models.CharField(max_length=255, null=True, blank=True)
     created_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    modified_by = models.CharField(max_length=100, null=True, blank=True)
+    modified_by = models.CharField(max_length=255, null=True, blank=True)
     modified_time = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     @abstractmethod

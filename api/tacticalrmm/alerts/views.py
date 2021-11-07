@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from tacticalrmm.utils import notify_error
 
 from .models import Alert, AlertTemplate
-from .permissions import ManageAlertsPerms
+from .permissions import AlertPerms, AlertTemplatePerms
 from .serializers import (
     AlertSerializer,
     AlertTemplateRelationSerializer,
@@ -20,7 +20,7 @@ from .tasks import cache_agents_alert_template
 
 
 class GetAddAlerts(APIView):
-    permission_classes = [IsAuthenticated, ManageAlertsPerms]
+    permission_classes = [IsAuthenticated, AlertPerms]
 
     def patch(self, request):
 
@@ -92,7 +92,8 @@ class GetAddAlerts(APIView):
                 )
 
             alerts = (
-                Alert.objects.filter(clientFilter)
+                Alert.objects.filter_by_role(request.user)
+                .filter(clientFilter)
                 .filter(severityFilter)
                 .filter(resolvedFilter)
                 .filter(snoozedFilter)
@@ -101,7 +102,7 @@ class GetAddAlerts(APIView):
             return Response(AlertSerializer(alerts, many=True).data)
 
         else:
-            alerts = Alert.objects.all()
+            alerts = Alert.objects.filter_by_role(request.user)
             return Response(AlertSerializer(alerts, many=True).data)
 
     def post(self, request):
@@ -113,11 +114,10 @@ class GetAddAlerts(APIView):
 
 
 class GetUpdateDeleteAlert(APIView):
-    permission_classes = [IsAuthenticated, ManageAlertsPerms]
+    permission_classes = [IsAuthenticated, AlertPerms]
 
     def get(self, request, pk):
         alert = get_object_or_404(Alert, pk=pk)
-
         return Response(AlertSerializer(alert).data)
 
     def put(self, request, pk):
@@ -169,7 +169,7 @@ class GetUpdateDeleteAlert(APIView):
 
 
 class BulkAlerts(APIView):
-    permission_classes = [IsAuthenticated, ManageAlertsPerms]
+    permission_classes = [IsAuthenticated, AlertPerms]
 
     def post(self, request):
         if request.data["bulk_action"] == "resolve":
@@ -193,11 +193,10 @@ class BulkAlerts(APIView):
 
 
 class GetAddAlertTemplates(APIView):
-    permission_classes = [IsAuthenticated, ManageAlertsPerms]
+    permission_classes = [IsAuthenticated, AlertTemplatePerms]
 
     def get(self, request):
         alert_templates = AlertTemplate.objects.all()
-
         return Response(AlertTemplateSerializer(alert_templates, many=True).data)
 
     def post(self, request):
@@ -212,7 +211,7 @@ class GetAddAlertTemplates(APIView):
 
 
 class GetUpdateDeleteAlertTemplate(APIView):
-    permission_classes = [IsAuthenticated, ManageAlertsPerms]
+    permission_classes = [IsAuthenticated, AlertTemplatePerms]
 
     def get(self, request, pk):
         alert_template = get_object_or_404(AlertTemplate, pk=pk)
@@ -243,6 +242,8 @@ class GetUpdateDeleteAlertTemplate(APIView):
 
 
 class RelatedAlertTemplate(APIView):
+    permission_classes = [IsAuthenticated, AlertTemplatePerms]
+
     def get(self, request, pk):
         alert_template = get_object_or_404(AlertTemplate, pk=pk)
         return Response(AlertTemplateRelationSerializer(alert_template).data)

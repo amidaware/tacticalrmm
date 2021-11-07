@@ -9,57 +9,57 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
 
 from agents.models import Agent
 from automation.models import Policy
-from scripts.models import Script
 from tacticalrmm.utils import notify_error
+from tacticalrmm.permissions import _has_perm_on_agent
 
 from .models import Check, CheckHistory
-from .permissions import ManageChecksPerms, RunChecksPerms
+from .permissions import ChecksPerms, RunChecksPerms
 from .serializers import CheckHistorySerializer, CheckSerializer
 
 
-class AddCheck(APIView):
-    permission_classes = [IsAuthenticated, ManageChecksPerms]
+class GetAddChecks(APIView):
+    permission_classes = [IsAuthenticated, ChecksPerms]
+
+    def get(self, request, agent_id=None, policy=None):
+        if agent_id:
+            agent = get_object_or_404(Agent, agent_id=agent_id)
+            checks = Check.objects.filter(agent=agent)
+        elif policy:
+            policy = get_object_or_404(Policy, id=policy)
+            checks = Check.objects.filter(policy=policy)
+        else:
+            checks = Check.objects.filter_by_role(request.user)
+        return Response(CheckSerializer(checks, many=True).data)
 
     def post(self, request):
         from automation.tasks import generate_agent_checks_task
 
-        policy = None
-        agent = None
+        data = request.data.copy()
+        # Determine if adding check to Agent and replace agent_id with pk
+        if "agent" in data.keys():
+            agent = get_object_or_404(Agent, agent_id=data["agent"])
+            if not _has_perm_on_agent(request.user, agent.agent_id):
+                raise PermissionDenied()
 
-        # Determine if adding check to Policy or Agent
-        if "policy" in request.data:
-            policy = get_object_or_404(Policy, id=request.data["policy"])
-            # Object used for filter and save
-            parent = {"policy": policy}
-        else:
-            agent = get_object_or_404(Agent, pk=request.data["pk"])
-            parent = {"agent": agent}
-
-        script = None
-        if "script" in request.data["check"]:
-            script = get_object_or_404(Script, pk=request.data["check"]["script"])
+            data["agent"] = agent.pk
 
         # set event id to 0 if wildcard because it needs to be an integer field for db
         # will be ignored anyway by the agent when doing wildcard check
-        if (
-            request.data["check"]["check_type"] == "eventlog"
-            and request.data["check"]["event_id_is_wildcard"]
-        ):
-            request.data["check"]["event_id"] = 0
+        if data["check_type"] == "eventlog" and data["event_id_is_wildcard"]:
+            data["event_id"] = 0
 
-        serializer = CheckSerializer(
-            data=request.data["check"], partial=True, context=parent
-        )
+        serializer = CheckSerializer(data=data, partial=True)
         serializer.is_valid(raise_exception=True)
-        new_check = serializer.save(**parent, script=script)
+        new_check = serializer.save()
 
         # Generate policy Checks
-        if policy:
-            generate_agent_checks_task.delay(policy=policy.pk)
-        elif agent:
+        if "policy" in data.keys():
+            generate_agent_checks_task.delay(policy=data["policy"])
+        elif "agent" in data.keys():
             checks = agent.agentchecks.filter(  # type: ignore
                 check_type=new_check.check_type, managed_by_policy=True
             )
@@ -81,43 +81,42 @@ class AddCheck(APIView):
 
 
 class GetUpdateDeleteCheck(APIView):
-    permission_classes = [IsAuthenticated, ManageChecksPerms]
+    permission_classes = [IsAuthenticated, ChecksPerms]
 
     def get(self, request, pk):
         check = get_object_or_404(Check, pk=pk)
+        if check.agent and not _has_perm_on_agent(request.user, check.agent.agent_id):
+            raise PermissionDenied()
+
         return Response(CheckSerializer(check).data)
 
-    def patch(self, request, pk):
+    def put(self, request, pk):
         from automation.tasks import update_policy_check_fields_task
 
         check = get_object_or_404(Check, pk=pk)
 
+        data = request.data.copy()
+
+        if check.agent and not _has_perm_on_agent(request.user, check.agent.agent_id):
+            raise PermissionDenied()
+
         # remove fields that should not be changed when editing a check from the frontend
-        if (
-            "check_alert" not in request.data.keys()
-            and "check_reset" not in request.data.keys()
-        ):
-            [request.data.pop(i) for i in check.non_editable_fields]
+        [data.pop(i) for i in Check.non_editable_fields() if i in data.keys()]
 
         # set event id to 0 if wildcard because it needs to be an integer field for db
         # will be ignored anyway by the agent when doing wildcard check
         if check.check_type == "eventlog":
             try:
-                request.data["event_id_is_wildcard"]
+                data["event_id_is_wildcard"]
             except KeyError:
                 pass
             else:
-                if request.data["event_id_is_wildcard"]:
-                    request.data["event_id"] = 0
+                if data["event_id_is_wildcard"]:
+                    data["event_id"] = 0
 
-        serializer = CheckSerializer(instance=check, data=request.data, partial=True)
+        serializer = CheckSerializer(instance=check, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         check = serializer.save()
-
-        # resolve any alerts that are open
-        if "check_reset" in request.data.keys():
-            if check.alert.filter(resolved=False).exists():
-                check.alert.get(resolved=False).resolve()
 
         if check.policy:
             update_policy_check_fields_task.delay(check=check.pk)
@@ -128,6 +127,9 @@ class GetUpdateDeleteCheck(APIView):
         from automation.tasks import generate_agent_checks_task
 
         check = get_object_or_404(Check, pk=pk)
+
+        if check.agent and not _has_perm_on_agent(request.user, check.agent.agent_id):
+            raise PermissionDenied()
 
         check.delete()
 
@@ -146,9 +148,33 @@ class GetUpdateDeleteCheck(APIView):
         return Response(f"{check.readable_desc} was deleted!")
 
 
+class ResetCheck(APIView):
+    permission_classes = [IsAuthenticated, ChecksPerms]
+
+    def post(self, request, pk):
+        check = get_object_or_404(Check, pk=pk)
+
+        if check.agent and not _has_perm_on_agent(request.user, check.agent.agent_id):
+            raise PermissionDenied()
+
+        check.status = "passing"
+        check.save()
+
+        # resolve any alerts that are open
+        if check.alert.filter(resolved=False).exists():
+            check.alert.get(resolved=False).resolve()
+
+        return Response("The check status was reset")
+
+
 class GetCheckHistory(APIView):
-    def patch(self, request, checkpk):
-        check = get_object_or_404(Check, pk=checkpk)
+    permission_classes = [IsAuthenticated, ChecksPerms]
+
+    def patch(self, request, pk):
+        check = get_object_or_404(Check, pk=pk)
+
+        if check.agent and not _has_perm_on_agent(request.user, check.agent.agent_id):
+            raise PermissionDenied()
 
         timeFilter = Q()
 
@@ -160,7 +186,7 @@ class GetCheckHistory(APIView):
                     - djangotime.timedelta(days=request.data["timeFilter"]),
                 )
 
-        check_history = CheckHistory.objects.filter(check_id=checkpk).filter(timeFilter).order_by("-x")  # type: ignore
+        check_history = CheckHistory.objects.filter(check_id=pk).filter(timeFilter).order_by("-x")  # type: ignore
 
         return Response(
             CheckHistorySerializer(
@@ -171,8 +197,8 @@ class GetCheckHistory(APIView):
 
 @api_view()
 @permission_classes([IsAuthenticated, RunChecksPerms])
-def run_checks(request, pk):
-    agent = get_object_or_404(Agent, pk=pk)
+def run_checks(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
 
     if pyver.parse(agent.version) >= pyver.parse("1.4.1"):
         r = asyncio.run(agent.nats_cmd({"func": "runchecks"}, timeout=15))
@@ -185,14 +211,3 @@ def run_checks(request, pk):
     else:
         asyncio.run(agent.nats_cmd({"func": "runchecks"}, wait=False))
         return Response(f"Checks will now be re-run on {agent.hostname}")
-
-
-@api_view()
-def load_checks(request, pk):
-    checks = Check.objects.filter(agent__pk=pk)
-    return Response(CheckSerializer(checks, many=True).data)
-
-
-@api_view()
-def get_disks_for_policies(request):
-    return Response(Check.all_disks())

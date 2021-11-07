@@ -155,7 +155,7 @@ class CoreSettings(BaseAuditModel):
 
         if not alert_template and not self.email_is_configured:
             if test:
-                return "Missing required fields (need at least 1 recipient)"
+                return "Email server settings are not configured correctly"
             return False
 
         # override email from if alert_template is passed and is set
@@ -169,6 +169,9 @@ class CoreSettings(BaseAuditModel):
             email_recipients = ", ".join(alert_template.email_recipients)
         else:
             email_recipients = ", ".join(self.email_alert_recipients)
+
+        if not email_recipients:
+            return "There needs to be at least one email recipient configured"
 
         try:
             msg = EmailMessage()

@@ -44,12 +44,12 @@ class CheckCreds(KnoxLoginView):
             AuditLog.audit_user_failed_login(
                 request.data["username"], debug_info={"ip": request._client_ip}
             )
-            return Response("bad credentials", status=status.HTTP_400_BAD_REQUEST)
+            return notify_error("Bad credentials")
 
         user = serializer.validated_data["user"]
 
         if user.block_dashboard_login:
-            return Response("bad credentials", status=status.HTTP_400_BAD_REQUEST)
+            return notify_error("Bad credentials")
 
         # if totp token not set modify response to notify frontend
         if not user.totp_key:
@@ -73,7 +73,7 @@ class LoginView(KnoxLoginView):
         user = serializer.validated_data["user"]
 
         if user.block_dashboard_login:
-            return Response("bad credentials", status=status.HTTP_400_BAD_REQUEST)
+            return notify_error("Bad credentials")
 
         token = request.data["twofactor"]
         totp = pyotp.TOTP(user.totp_key)
@@ -99,7 +99,7 @@ class LoginView(KnoxLoginView):
             AuditLog.audit_user_failed_twofactor(
                 request.data["username"], debug_info={"ip": request._client_ip}
             )
-            return Response("bad credentials", status=status.HTTP_400_BAD_REQUEST)
+            return notify_error("Bad credentials")
 
 
 class GetAddUsers(APIView):
@@ -224,11 +224,6 @@ class UserUI(APIView):
         return Response("ok")
 
 
-class PermsList(APIView):
-    def get(self, request):
-        return Response(Role.perms())
-
-
 class GetAddRoles(APIView):
     permission_classes = [IsAuthenticated, RolesPerms]
 
@@ -240,7 +235,7 @@ class GetAddRoles(APIView):
         serializer = RoleSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response("ok")
+        return Response("Role was added")
 
 
 class GetUpdateDeleteRole(APIView):
@@ -255,12 +250,12 @@ class GetUpdateDeleteRole(APIView):
         serializer = RoleSerializer(instance=role, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response("ok")
+        return Response("Role was edited")
 
     def delete(self, request, pk):
         role = get_object_or_404(Role, pk=pk)
         role.delete()
-        return Response("ok")
+        return Response("Role was removed")
 
 
 class GetAddAPIKeys(APIView):
@@ -272,15 +267,9 @@ class GetAddAPIKeys(APIView):
 
     def post(self, request):
         # generate a random API Key
-        # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits/23728630#23728630
-        import random
-        import string
+        from django.utils.crypto import get_random_string
 
-        request.data["key"] = "".join(
-            random.SystemRandom().choice(string.ascii_uppercase + string.digits)
-            for _ in range(32)
-        )
-
+        request.data["key"] = get_random_string(length=32).upper()
         serializer = APIKeySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()

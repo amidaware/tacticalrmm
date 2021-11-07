@@ -1,9 +1,9 @@
 
-import { ref } from "vue"
+import { ref, onMounted } from "vue"
 import { fetchCustomFields } from "@/api/core"
 import { formatCustomFieldOptions } from "@/utils/format"
 
-export function useCustomFieldDropdown() {
+export function useCustomFieldDropdown({ onMount = false }) {
 
   const customFieldOptions = ref([])
 
@@ -15,6 +15,8 @@ export function useCustomFieldDropdown() {
     if (model) params[model] = model
     customFieldOptions.value = formatCustomFieldOptions(await fetchCustomFields(params), flat)
   }
+
+  if (onMount) onMounted(getCustomFieldOptions)
 
   return {
     //data

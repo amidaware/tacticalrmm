@@ -8,17 +8,22 @@ from django.utils import timezone as djangotime
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
 
 from agents.models import Agent
 from core.models import CoreSettings
 from tacticalrmm.utils import notify_error
+from tacticalrmm.permissions import _has_perm_on_client, _has_perm_on_site
 
 from .models import Client, ClientCustomField, Deployment, Site, SiteCustomField
-from .permissions import ManageClientsPerms, ManageDeploymentPerms, ManageSitesPerms
+from .permissions import (
+    ClientsPerms,
+    DeploymentPerms,
+    SitesPerms,
+)
 from .serializers import (
     ClientCustomFieldSerializer,
     ClientSerializer,
-    ClientTreeSerializer,
     DeploymentSerializer,
     SiteCustomFieldSerializer,
     SiteSerializer,
@@ -26,11 +31,15 @@ from .serializers import (
 
 
 class GetAddClients(APIView):
-    permission_classes = [IsAuthenticated, ManageClientsPerms]
+    permission_classes = [IsAuthenticated, ClientsPerms]
 
     def get(self, request):
-        clients = Client.objects.all()
-        return Response(ClientSerializer(clients, many=True).data)
+        clients = Client.objects.select_related(
+            "workstation_policy", "server_policy", "alert_template"
+        ).filter_by_role(request.user)
+        return Response(
+            ClientSerializer(clients, context={"user": request.user}, many=True).data
+        )
 
     def post(self, request):
         # create client
@@ -67,15 +76,19 @@ class GetAddClients(APIView):
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
 
-        return Response(f"{client} was added!")
+        # add user to allowed clients in role if restricted user created the client
+        if request.user.role and request.user.role.can_view_clients.exists():
+            request.user.role.can_view_clients.add(client)
+
+        return Response(f"{client.name} was added")
 
 
-class GetUpdateClient(APIView):
-    permission_classes = [IsAuthenticated, ManageClientsPerms]
+class GetUpdateDeleteClient(APIView):
+    permission_classes = [IsAuthenticated, ClientsPerms]
 
     def get(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
-        return Response(ClientSerializer(client).data)
+        return Response(ClientSerializer(client, context={"user": request.user}).data)
 
     def put(self, request, pk):
         client = get_object_or_404(Client, pk=pk)
@@ -107,46 +120,41 @@ class GetUpdateClient(APIView):
                     serializer.is_valid(raise_exception=True)
                     serializer.save()
 
-        return Response("The Client was updated")
+        return Response("{client} was updated")
 
-
-class DeleteClient(APIView):
-    permission_classes = [IsAuthenticated, ManageClientsPerms]
-
-    def delete(self, request, pk, sitepk):
+    def delete(self, request, pk):
         from automation.tasks import generate_agent_checks_task
 
         client = get_object_or_404(Client, pk=pk)
-        agents = Agent.objects.filter(site__client=client)
 
-        if not sitepk:
+        # only run tasks if it affects clients
+        if client.agent_count > 0 and "move_to_site" in request.query_params.keys():
+            agents = Agent.objects.filter(site__client=client)
+            site = get_object_or_404(Site, pk=request.query_params["move_to_site"])
+            agents.update(site=site)
+            generate_agent_checks_task.delay(all=True, create_tasks=True)
+
+        elif client.agent_count > 0:
             return notify_error(
-                "There needs to be a site specified to move existing agents to"
+                "Agents exist under this client. There needs to be a site specified to move existing agents to"
             )
 
-        site = get_object_or_404(Site, pk=sitepk)
-        agents.update(site=site)
-
-        generate_agent_checks_task.delay(all=True, create_tasks=True)
-
         client.delete()
-        return Response(f"{client.name} was deleted!")
-
-
-class GetClientTree(APIView):
-    def get(self, request):
-        clients = Client.objects.all()
-        return Response(ClientTreeSerializer(clients, many=True).data)
+        return Response(f"{client.name} was deleted")
 
 
 class GetAddSites(APIView):
-    permission_classes = [IsAuthenticated, ManageSitesPerms]
+    permission_classes = [IsAuthenticated, SitesPerms]
 
     def get(self, request):
-        sites = Site.objects.all()
+        sites = Site.objects.filter_by_role(request.user)
         return Response(SiteSerializer(sites, many=True).data)
 
     def post(self, request):
+
+        if not _has_perm_on_client(request.user, request.data["site"]["client"]):
+            raise PermissionDenied()
+
         serializer = SiteSerializer(data=request.data["site"])
         serializer.is_valid(raise_exception=True)
         site = serializer.save()
@@ -163,11 +171,15 @@ class GetAddSites(APIView):
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
 
+        # add user to allowed sites in role if restricted user created the client
+        if request.user.role and request.user.role.can_view_sites.exists():
+            request.user.role.can_view_sites.add(site)
+
         return Response(f"Site {site.name} was added!")
 
 
-class GetUpdateSite(APIView):
-    permission_classes = [IsAuthenticated, ManageSitesPerms]
+class GetUpdateDeleteSite(APIView):
+    permission_classes = [IsAuthenticated, SitesPerms]
 
     def get(self, request, pk):
         site = get_object_or_404(Site, pk=pk)
@@ -208,49 +220,46 @@ class GetUpdateSite(APIView):
                     serializer.is_valid(raise_exception=True)
                     serializer.save()
 
-        return Response("Site was edited!")
+        return Response("Site was edited")
 
-
-class DeleteSite(APIView):
-    permission_classes = [IsAuthenticated, ManageSitesPerms]
-
-    def delete(self, request, pk, sitepk):
+    def delete(self, request, pk):
         from automation.tasks import generate_agent_checks_task
 
         site = get_object_or_404(Site, pk=pk)
         if site.client.sites.count() == 1:
             return notify_error("A client must have at least 1 site.")
 
-        agents = Agent.objects.filter(site=site)
+        # only run tasks if it affects clients
+        if site.agent_count > 0 and "move_to_site" in request.query_params.keys():
+            agents = Agent.objects.filter(site=site)
+            new_site = get_object_or_404(Site, pk=request.query_params["move_to_site"])
+            agents.update(site=new_site)
+            generate_agent_checks_task.delay(all=True, create_tasks=True)
 
-        if not sitepk:
+        elif site.agent_count > 0:
             return notify_error(
                 "There needs to be a site specified to move the agents to"
             )
 
-        agent_site = get_object_or_404(Site, pk=sitepk)
-
-        agents.update(site=agent_site)
-
-        generate_agent_checks_task.delay(all=True, create_tasks=True)
-
         site.delete()
-        return Response(f"{site.name} was deleted!")
+        return Response(f"{site.name} was deleted")
 
 
 class AgentDeployment(APIView):
-    permission_classes = [IsAuthenticated, ManageDeploymentPerms]
+    permission_classes = [IsAuthenticated, DeploymentPerms]
 
     def get(self, request):
-        deps = Deployment.objects.all()
+        deps = Deployment.objects.filter_by_role(request.user)
         return Response(DeploymentSerializer(deps, many=True).data)
 
     def post(self, request):
         from knox.models import AuthToken
         from accounts.models import User
 
-        client = get_object_or_404(Client, pk=request.data["client"])
         site = get_object_or_404(Site, pk=request.data["site"])
+
+        if not _has_perm_on_site(request.user, site.pk):
+            raise PermissionDenied()
 
         installer_user = User.objects.filter(is_installer_user=True).first()
 
@@ -268,7 +277,6 @@ class AgentDeployment(APIView):
         }
 
         Deployment(
-            client=client,
             site=site,
             expiry=expires,
             mon_type=request.data["agenttype"],
@@ -277,17 +285,21 @@ class AgentDeployment(APIView):
             token_key=token,
             install_flags=flags,
         ).save()
-        return Response("ok")
+        return Response("The deployment was added successfully")
 
     def delete(self, request, pk):
         d = get_object_or_404(Deployment, pk=pk)
+
+        if not _has_perm_on_site(request.user, d.site.pk):
+            raise PermissionDenied()
+
         try:
             d.auth_token.delete()
         except:
             pass
 
         d.delete()
-        return Response("ok")
+        return Response("The deployment was deleted")
 
 
 class GenerateAgent(APIView):

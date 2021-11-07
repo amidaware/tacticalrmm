@@ -21,10 +21,10 @@
     <q-card-section v-show="version !== null">
       Select Agent
       <br />
-      <hr />
+      <q-separator />
       <q-checkbox v-model="selectAll" label="Select All" @update:model-value="selectAllAction" />
       <q-btn v-show="group.length !== 0" label="Update" color="primary" @click="update" class="q-ml-xl" />
-      <hr />
+      <q-separator />
       <q-option-group
         v-model="group"
         :options="agentOptions"
@@ -41,7 +41,7 @@
 import mixins from "@/mixins/mixins";
 export default {
   name: "UpdateAgents",
-  emits: ["close", "edit"],
+  emits: ["close"],
   mixins: [mixins],
   data() {
     return {
@@ -54,12 +54,12 @@ export default {
   },
   methods: {
     selectAllAction() {
-      this.selectAll ? (this.group = this.agentPKs) : (this.group = []);
+      this.selectAll ? (this.group = this.agentIds) : (this.group = []);
     },
     getVersions() {
       this.$q.loading.show();
       this.$axios
-        .get("/agents/getagentversions/")
+        .get("/agents/versions/")
         .then(r => {
           this.versions = r.data.versions;
           this.version = r.data.versions[0];
@@ -71,27 +71,26 @@ export default {
         });
     },
     update() {
-      const data = { pks: this.group };
+      const data = { agent_ids: this.group };
       this.$axios
-        .post("/agents/updateagents/", data)
+        .post("/agents/update/", data)
         .then(r => {
           this.$emit("close");
-          this.$emit("edit");
           this.notifySuccess("Agents will now be updated");
         })
         .catch(e => {});
     },
   },
   computed: {
-    agentPKs() {
-      return this.agents.map(k => k.pk);
+    agentIds() {
+      return this.agents.map(k => k.agent_id);
     },
     agentOptions() {
       const options = [];
       for (let i of Object.values(this.agents)) {
         let opt = {};
         opt["label"] = `${i.hostname} (${i.client} > ${i.site})`;
-        opt["value"] = i.pk;
+        opt["value"] = i.agent_id;
         options.push(opt);
       }
       return options.sort((a, b) => a.label.localeCompare(b.label));

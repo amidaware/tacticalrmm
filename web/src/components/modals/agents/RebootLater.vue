@@ -67,7 +67,7 @@ export default {
         $q.dialog({
           title: "Reboot pending",
           style: "width: 40vw",
-          message: `A reboot has been scheduled for <strong>${state.value.datetime}</strong> on ${props.agent.agent_id}.
+          message: `A reboot has been scheduled for <strong>${state.value.datetime}</strong> on ${props.agent.hostname}.
             <br />It can be cancelled from the Pending Actions menu until the scheduled time.`,
           html: true,
         }).onDismiss(onDialogOK);

@@ -420,13 +420,6 @@ class Agent(BaseAuditModel):
             update.action = "approve"
             update.save(update_fields=["action"])
 
-        if updates:
-            DebugLog.info(
-                agent=self,
-                log_type="windows_updates",
-                message=f"Approving windows updates on {self.hostname}",
-            )
-
     # returns agent policy merged with a client or site specific policy
     def get_patch_policy(self):
 

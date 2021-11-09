@@ -128,7 +128,12 @@ export default {
     const showCompleted = ref(false);
     const loading = ref(false);
     const completedCount = computed(() => {
-      return actions.value.filter(action => action.status === "completed").length;
+      try {
+        return actions.value.filter(action => action.status === "completed").length;
+      } catch (e) {
+        console.error(e);
+        return 0;
+      }
     });
 
     const visibleColumns = computed(() => {
@@ -152,7 +157,13 @@ export default {
 
     async function getPendingActions() {
       loading.value = true;
-      actions.value = props.agent ? await fetchAgentPendingActions(props.agent.agent_id) : await fetchPendingActions();
+      try {
+        actions.value = props.agent
+          ? await fetchAgentPendingActions(props.agent.agent_id)
+          : await fetchPendingActions();
+      } catch (e) {
+        console.error(e);
+      }
       loading.value = false;
     }
 

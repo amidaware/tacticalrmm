@@ -60,7 +60,7 @@
       </template>
 
       <template v-slot:top-row>
-        <q-tr v-if="debugLog.length === 1000">
+        <q-tr v-if="Array.isArray(debugLog) && debugLog.length === 1000">
           <q-td colspan="100%">
             <q-icon name="warning" color="warning" />
             Results are limited to 1000 rows.
@@ -141,13 +141,17 @@ export default {
 
     async function getDebugLog() {
       loading.value = true;
-      const data = {
-        logLevelFilter: logLevelFilter.value,
-      };
-      if (agentFilter.value) data["agentFilter"] = agentFilter.value;
-      if (logTypeFilter.value) data["logTypeFilter"] = logTypeFilter.value;
+      try {
+        const data = {
+          logLevelFilter: logLevelFilter.value,
+        };
+        if (agentFilter.value) data["agentFilter"] = agentFilter.value;
+        if (logTypeFilter.value) data["logTypeFilter"] = logTypeFilter.value;
 
-      debugLog.value = await fetchDebugLog(data);
+        debugLog.value = await fetchDebugLog(data);
+      } catch (e) {
+        console.error(e);
+      }
       loading.value = false;
     }
 

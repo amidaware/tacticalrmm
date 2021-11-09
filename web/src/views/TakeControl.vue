@@ -66,10 +66,14 @@ export default {
 
     async function getMeshURLs() {
       $q.loading.show();
-      const data = await fetchAgentMeshCentralURLs(params.agent_id);
-      control.value = data.control;
-      status.value = data.status;
-      useMeta({ title: `${data.hostname} - ${data.client} - ${data.site} | Remote Background` });
+      try {
+        const data = await fetchAgentMeshCentralURLs(params.agent_id);
+        control.value = data.control;
+        status.value = data.status;
+        useMeta({ title: `${data.hostname} - ${data.client} - ${data.site} | Remote Background` });
+      } catch (e) {
+        console.error(e);
+      }
       $q.loading.hide();
     }
 

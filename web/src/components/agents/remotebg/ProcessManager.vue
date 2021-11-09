@@ -3,7 +3,7 @@
     dense
     :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
     class="remote-bg-tbl-sticky"
-    style="max-height: 85vh"
+    :style="{ 'max-height': `${$q.screen.height - 36}px` }"
     :rows="processes"
     :columns="columns"
     :pagination="{ rowsPerPage: 0, sortBy: 'cpu_percent', descending: true }"

@@ -142,7 +142,7 @@
               <div class="q-gutter-sm">
                 <q-checkbox
                   v-model="state.run_asap_after_missed"
-                  label="Run task ASAP after a scheduled start is missed (requires agent v1.4.7)"
+                  label="Run task ASAP after a scheduled start is missed"
                 />
               </div>
             </div>

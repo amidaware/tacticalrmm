@@ -320,7 +320,9 @@ export default {
       try {
         const result = await fetchAgentTasks(selectedAgent.value);
         tasks.value = result.filter(task => task.sync_status !== "pendingdeletion");
-      } catch {}
+      } catch (e) {
+        console.error(e);
+      }
       loading.value = false;
     }
 

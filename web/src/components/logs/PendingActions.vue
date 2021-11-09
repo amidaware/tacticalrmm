@@ -156,7 +156,9 @@ export default {
         actions.value = props.agent
           ? await fetchAgentPendingActions(props.agent.agent_id)
           : await fetchPendingActions();
-      } catch {}
+      } catch (e) {
+        console.error(e);
+      }
       loading.value = false;
     }
 

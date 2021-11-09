@@ -300,7 +300,7 @@ export default {
         .onOk(() => {
           this.$q.loading.show();
           this.$axios
-            .delete(`/tasks/${task.pk}/`)
+            .delete(`/tasks/${task.id}/`)
             .then(r => {
               this.getTasks();
               this.$q.loading.hide();

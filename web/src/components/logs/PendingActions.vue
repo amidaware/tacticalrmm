@@ -128,7 +128,12 @@ export default {
     const showCompleted = ref(false);
     const loading = ref(false);
     const completedCount = computed(() => {
-      return actions.value.filter(action => action.status === "completed").length;
+      try {
+        return actions.value.filter(action => action.status === "completed").length;
+      } catch (e) {
+        console.error(e);
+        return 0;
+      }
     });
 
     const visibleColumns = computed(() => {

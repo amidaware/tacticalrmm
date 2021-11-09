@@ -44,7 +44,7 @@ class AgentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Agent
-        exclude = ["last_seen", "id"]
+        exclude = ["last_seen", "id", "patches_last_installed"]
 
 
 class AgentTableSerializer(serializers.ModelSerializer):

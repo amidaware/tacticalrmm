@@ -1,6 +1,6 @@
 <template>
-  <div class="q-pa-none q-ma-none">
-    <div class="row q-pb-xs q-pl-md">
+  <div>
+    <q-bar>
       <span class="text-caption">
         Agent Status:
         <q-badge :color="statusColor" :label="status" />
@@ -16,9 +16,9 @@
       />
       <q-btn color="negative" size="sm" label="Recover Connection" icon="fas fa-first-aid" @click="repairMeshCentral" />
       <q-space />
-    </div>
+    </q-bar>
 
-    <q-video v-show="control" :ratio="16 / 9" :src="control" style="padding-bottom: 51%"></q-video>
+    <q-video v-show="control" :src="control" :style="{ height: `${$q.screen.height - 26}px` }"></q-video>
   </div>
 </template>
 
@@ -66,10 +66,14 @@ export default {
 
     async function getMeshURLs() {
       $q.loading.show();
-      const data = await fetchAgentMeshCentralURLs(params.agent_id);
-      control.value = data.control;
-      status.value = data.status;
-      useMeta({ title: `${data.hostname} - ${data.client} - ${data.site} | Remote Background` });
+      try {
+        const data = await fetchAgentMeshCentralURLs(params.agent_id);
+        control.value = data.control;
+        status.value = data.status;
+        useMeta({ title: `${data.hostname} - ${data.client} - ${data.site} | Remote Background` });
+      } catch (e) {
+        console.error(e);
+      }
       $q.loading.hide();
     }
 

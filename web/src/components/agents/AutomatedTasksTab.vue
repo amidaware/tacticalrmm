@@ -317,8 +317,12 @@ export default {
 
     async function getTasks() {
       loading.value = true;
-      const result = await fetchAgentTasks(selectedAgent.value);
-      tasks.value = result.filter(task => task.sync_status !== "pendingdeletion");
+      try {
+        const result = await fetchAgentTasks(selectedAgent.value);
+        tasks.value = result.filter(task => task.sync_status !== "pendingdeletion");
+      } catch (e) {
+        console.error(e);
+      }
       loading.value = false;
     }
 

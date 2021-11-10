@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="row">
+    <div class="row q-pt-sm q-pl-sm">
       <div class="col-2">
         <q-select dense options-dense outlined v-model="days" :options="lastDaysOptions" :label="showDays" />
       </div>
@@ -15,7 +15,7 @@
       class="remote-bg-tbl-sticky"
       :rows="events"
       :columns="columns"
-      style="max-height: 85vh"
+      :style="{ 'max-height': `${$q.screen.height - 85}px` }"
       :pagination="{ rowsPerPage: 0, sortBy: 'record', descending: true }"
       :filter="filter"
       row-key="uid"
@@ -37,7 +37,7 @@
         <q-radio v-model="logType" color="cyan" val="System" label="System" />
         <q-radio v-model="logType" color="cyan" val="Security" label="Security" />
         <q-space />
-        <q-input v-model="filter" outlined label="Search" dense clearable>
+        <q-input v-model="filter" style="width: 300px" outlined label="Search" dense clearable>
           <template v-slot:prepend>
             <q-icon name="search" />
           </template>

@@ -115,9 +115,13 @@ export default {
 
     onMounted(async () => {
       $q.loading.show();
-      const fields = await fetchCustomFields({ model: "site" });
-      customFields.value = fields.filter(field => !field.hide_in_ui);
-      if (props.site) getSiteCustomFieldValues();
+      try {
+        const fields = await fetchCustomFields({ model: "site" });
+        customFields.value = fields.filter(field => !field.hide_in_ui);
+        if (props.site) getSiteCustomFieldValues();
+      } catch (e) {
+        console.error(e);
+      }
       $q.loading.hide();
     });
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-md">
+  <div>
     <q-tabs
       v-model="tab"
       dense
@@ -18,26 +18,23 @@
     </q-tabs>
     <q-separator />
     <q-tab-panels v-model="tab">
-      <q-tab-panel name="terminal">
+      <q-tab-panel name="terminal" class="q-pa-none">
         <iframe
-          style="overflow: hidden; height: 715px"
           :src="terminal"
-          width="100%"
-          height="100%"
-          scrolling="no"
+          :style="{ height: `${$q.screen.height - 30}px`, width: `${$q.screen.width}px` }"
         ></iframe>
       </q-tab-panel>
-      <q-tab-panel name="processes">
+      <q-tab-panel name="processes" class="q-pa-none">
         <ProcessManager :agent_id="agent_id" />
       </q-tab-panel>
-      <q-tab-panel name="services">
+      <q-tab-panel name="services" class="q-pa-none">
         <ServicesManager :agent_id="agent_id" />
       </q-tab-panel>
-      <q-tab-panel name="eventlog">
+      <q-tab-panel name="eventlog" class="q-pa-none">
         <EventLogManager :agent_id="agent_id" />
       </q-tab-panel>
-      <q-tab-panel name="filebrowser">
-        <iframe style="overflow: hidden; height: 715px" :src="file" width="100%" height="100%" scrolling="no"></iframe>
+      <q-tab-panel name="filebrowser" class="q-pa-none">
+        <iframe :src="file" :style="{ height: `${$q.screen.height - 30}px`, width: `${$q.screen.width}px` }"></iframe>
       </q-tab-panel>
     </q-tab-panels>
   </div>

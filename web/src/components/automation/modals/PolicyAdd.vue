@@ -115,7 +115,6 @@ export default {
         url = `/clients/${this.object.id}/`;
         data = {
           client: {
-            pk: this.object.id,
             server_policy: this.selectedServerPolicy,
             workstation_policy: this.selectedWorkstationPolicy,
             block_policy_inheritance: this.blockInheritance,
@@ -125,7 +124,6 @@ export default {
         url = `/clients/sites/${this.object.id}/`;
         data = {
           site: {
-            pk: this.object.id,
             server_policy: this.selectedServerPolicy,
             workstation_policy: this.selectedWorkstationPolicy,
             block_policy_inheritance: this.blockInheritance,
@@ -186,7 +184,7 @@ export default {
     if (this.type !== "agent") {
       this.selectedServerPolicy = this.object.server_policy;
       this.selectedWorkstationPolicy = this.object.workstation_policy;
-      this.blockInheritance = this.object.blockInheritance;
+      this.blockInheritance = this.object.block_policy_inheritance;
     } else {
       this.selectedAgentPolicy = this.object.policy;
       this.blockInheritance = this.object.block_policy_inheritance;

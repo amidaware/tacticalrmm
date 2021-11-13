@@ -16,6 +16,8 @@ class ScriptTableSerializer(ModelSerializer):
             "category",
             "favorite",
             "default_timeout",
+            "syntax",
+            "filename",
         ]
 
 
@@ -32,6 +34,8 @@ class ScriptSerializer(ModelSerializer):
             "favorite",
             "code_base64",
             "default_timeout",
+            "syntax",
+            "filename",
         ]
 
 

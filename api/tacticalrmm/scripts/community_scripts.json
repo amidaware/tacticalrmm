@@ -102,9 +102,7 @@
     "submittedBy": "https://github.com/bradhawkins85",
     "name": "TacticalRMM - Agent Rename",
     "description": "Updates the DisplayName registry entry for the Tactical RMM windows agent to your desired name. This script takes 1 required argument: the name you wish to set.",
-    "args": [
-      "<string>"
-    ],
+    "syntax": "<string>",
     "shell": "powershell",
     "category": "TRMM (Win):TacticalRMM Related"
   },
@@ -114,9 +112,7 @@
     "submittedBy": "https://github.com/silversword411",
     "name": "Bitlocker - Check Drive for Status",
     "description": "Runs a check on drive for Bitlocker status. Returns 0 if Bitlocker is not enabled, 1 if Bitlocker is enabled",
-    "args": [
-      "[Drive <string>]"
-    ],
+    "syntax": "[Drive <string>]",
     "shell": "powershell",
     "category": "TRMM (Win):Storage"
   },
@@ -431,11 +427,7 @@
     "submittedBy": "https://github.com/silversword411",
     "name": "Chocolatey - Install, Uninstall and Upgrade Software",
     "description": "This script installs, uninstalls and updates software using Chocolatey with logic to slow tasks to minimize hitting community limits. Mode install/uninstall/upgrade Hosts x",
-    "args": [
-      "-$PackageName <string>",
-      "[-Hosts <string>]",
-      "[-mode {(install) | update | uninstall}]"
-    ],
+    "syntax": "-$PackageName <string>\n[-Hosts <string>]\n[-mode {(install) | update | uninstall}]",
     "shell": "powershell",
     "category": "TRMM (Win):3rd Party Software>Chocolatey",
     "default_timeout": "600"
@@ -500,12 +492,7 @@
     "submittedBy": "https://github.com/silversword411",
     "name": "Rename Computer",
     "description": "Rename computer. First parameter will be new PC name. 2nd parameter if yes will auto-reboot machine",
-    "args": [
-      "-NewName <string>",
-      "[-Username <string>]",
-      "[-Password <string>]",
-      "[-Restart]"
-    ],
+    "syntax": "-NewName <string>\n[-Username <string>]\n[-Password <string>]\n[-Restart]",
     "shell": "powershell",
     "category": "TRMM (Win):Other",
     "default_timeout": 30
@@ -516,9 +503,7 @@
     "submittedBy": "https://github.com/tremor021",
     "name": "Power - Restart or Shutdown PC",
     "description": "Restart PC. Add parameter: shutdown if you want to shutdown computer",
-    "args": [
-      "[shutdown]"
-    ],
+    "syntax": "[shutdown]",
     "shell": "powershell",
     "category": "TRMM (Win):Updates"
   },
@@ -757,13 +742,7 @@
     "submittedBy": "https://github.com/brodur",
     "name": "User - Create Local",
     "description": "Create a local user. Parameters are: username, password and optional: description, fullname, group (adds to Users if not specified)",
-    "args": [
-      "-username <string>",
-      "-password <string>",
-      "[-description <string>]",
-      "[-fullname <string>]",
-      "[-group <string>]"
-    ],
+    "syntax": "-username <string>\n-password <string>\n[-description <string>]\n[-fullname <string>]\n[-group <string>]",
     "shell": "powershell",
     "category": "TRMM (Win):User Management"
   },

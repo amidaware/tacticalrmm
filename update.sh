@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="125"
+SCRIPT_VERSION="126"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -123,7 +123,30 @@ sudo systemctl daemon-reload
 sudo systemctl enable daphne.service
 fi
 
-for i in nginx nats rmm daphne celery celerybeat
+if [ ! -f /etc/systemd/system/nats-api.service ]; then
+natsapi="$(cat << EOF
+[Unit]
+Description=TacticalRMM Nats Api v1
+After=nats.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/nats-api
+User=${USER}
+Group=${USER}
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${natsapi}" | sudo tee /etc/systemd/system/nats-api.service > /dev/null
+sudo systemctl daemon-reload
+sudo systemctl enable nats-api.service
+fi
+
+for i in nginx nats-api nats rmm daphne celery celerybeat
 do
 printf >&2 "${GREEN}Stopping ${i} service...${NC}\n"
 sudo systemctl stop ${i}
@@ -276,6 +299,7 @@ python manage.py collectstatic --no-input
 python manage.py reload_nats
 python manage.py load_chocos
 python manage.py create_installer_user
+python manage.py create_natsapi_conf
 python manage.py post_update_tasks
 deactivate
 
@@ -292,7 +316,7 @@ sudo rm -rf /var/www/rmm/dist
 sudo cp -pr /rmm/web/dist /var/www/rmm/
 sudo chown www-data:www-data -R /var/www/rmm/dist
 
-for i in rmm daphne celery celerybeat nginx nats
+for i in nats nats-api rmm daphne celery celerybeat nginx
 do
 printf >&2 "${GREEN}Starting ${i} service${NC}\n"
 sudo systemctl start ${i}

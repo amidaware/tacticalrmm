@@ -96,6 +96,7 @@ EOF
   "${VIRTUAL_ENV}"/bin/python manage.py load_chocos
   "${VIRTUAL_ENV}"/bin/python manage.py load_community_scripts
   "${VIRTUAL_ENV}"/bin/python manage.py reload_nats
+  "${VIRTUAL_ENV}"/bin/python manage.py create_natsapi_conf
   "${VIRTUAL_ENV}"/bin/python manage.py create_installer_user
 
   # create super user 

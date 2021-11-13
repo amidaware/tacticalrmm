@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="31"
+SCRIPT_VERSION="32"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -304,6 +304,7 @@ pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input
+python manage.py create_natsapi_conf
 python manage.py reload_nats
 deactivate
 
@@ -333,7 +334,7 @@ sudo chown -R $USER:$GROUP /home/${USER}/.cache
 print_green 'Enabling Services'
 sudo systemctl daemon-reload
 
-for i in celery.service celerybeat.service rmm.service daphne.service nginx
+for i in celery.service celerybeat.service rmm.service daphne.service nats-api.service nginx
 do
   sudo systemctl enable ${i}
   sudo systemctl stop ${i}

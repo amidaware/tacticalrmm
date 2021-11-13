@@ -27,7 +27,7 @@ func setupNatsOptions(key string) []nats.Option {
 
 func GetConfig(cfg string) (db *sqlx.DB, r DjangoConfig, err error) {
 	if cfg == "" {
-		cfg = "/rmm/api/tacticalrmm/rmm-go.conf"
+		cfg = "/rmm/api/tacticalrmm/nats-api.conf"
 		if !trmm.FileExists(cfg) {
 			err = errors.New("unable to find config file")
 			return

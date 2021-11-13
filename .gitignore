@@ -49,5 +49,5 @@ nats-rmm.conf
 docs/site/
 reset_db.sh
 run_go_cmd.py
-rmm-go.conf
+nats-api.conf
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="55"
+SCRIPT_VERSION="56"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -351,6 +351,7 @@ pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input
+python manage.py create_natsapi_conf
 python manage.py load_chocos
 python manage.py load_community_scripts
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
@@ -439,7 +440,7 @@ echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service > /dev/nul
 natsservice="$(cat << EOF
 [Unit]
 Description=NATS Server
-After=network.target ntp.service
+After=network.target
 
 [Service]
 PrivateTmp=true
@@ -457,6 +458,25 @@ WantedBy=multi-user.target
 EOF
 )"
 echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service > /dev/null
+
+natsapi="$(cat << EOF
+[Unit]
+Description=TacticalRMM Nats Api v1
+After=nats.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/nats-api
+User=${USER}
+Group=${USER}
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${natsapi}" | sudo tee /etc/systemd/system/nats-api.service > /dev/null
 
 nginxrmm="$(cat << EOF
 server_tokens off;
@@ -790,6 +810,10 @@ python manage.py initial_db_setup
 python manage.py reload_nats
 deactivate
 sudo systemctl start nats.service
+
+sleep 1
+sudo systemctl enable nats-api.service
+sudo systemctl start nats-api.service
 
 ## disable django admin
 sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py

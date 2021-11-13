@@ -129,6 +129,7 @@ EOF
   python manage.py load_chocos
   python manage.py load_community_scripts
   python manage.py reload_nats
+  python manage.py create_natsapi_conf
   python manage.py create_installer_user
 
   # create super user 

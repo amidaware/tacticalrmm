@@ -50,10 +50,6 @@ RUN apt-get update && \
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
-# copy nats-api file
-COPY natsapi/bin/nats-api /usr/local/bin/
-RUN chmod +x /usr/local/bin/nats-api
-
 # docker init
 COPY docker/containers/tactical/entrypoint.sh /
 RUN chmod +x /entrypoint.sh

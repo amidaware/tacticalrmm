@@ -6,8 +6,10 @@ set -e
 
 if [ "${DEV}" = 1 ]; then
   NATS_CONFIG=/workspace/api/tacticalrmm/nats-rmm.conf
+  NATS_API_CONFIG=/workspace/api/tacticalrmm/nats-api.conf
 else
   NATS_CONFIG="${TACTICAL_DIR}/api/nats-rmm.conf"
+  NATS_API_CONFIG="${TACTICAL_DIR}/api/nats-api.conf"
 fi
 
 sleep 15
@@ -33,6 +35,12 @@ redirect_stderr=true
 
 [program:config-watcher]
 command=/bin/bash -c "inotifywait -mq -e modify "${NATS_CONFIG}" | while read event; do nats-server --signal reload; done;"
+stdout_logfile=/dev/fd/1
+stdout_logfile_maxbytes=0
+redirect_stderr=true
+
+[program:nats-api]
+command=/bin/bash -c "/usr/local/bin/nats-api -config ${NATS_API_CONFIG}"
 stdout_logfile=/dev/fd/1
 stdout_logfile_maxbytes=0
 redirect_stderr=true

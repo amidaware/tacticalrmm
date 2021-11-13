@@ -19,6 +19,6 @@ class Command(BaseCommand):
             "port": int(db["PORT"]),
             "dbname": db["NAME"],
         }
-        conf = os.path.join(settings.BASE_DIR, "rmm-go.conf")
+        conf = os.path.join(settings.BASE_DIR, "nats-api.conf")
         with open(conf, "w") as f:
             json.dump(config, f)

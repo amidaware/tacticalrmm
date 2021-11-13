@@ -12,7 +12,6 @@ from logs.models import DebugLog, PendingAction
 from packaging import version as pyver
 from scripts.models import Script
 from tacticalrmm.celery import app
-from tacticalrmm.utils import run_nats_api_cmd
 
 from agents.models import Agent
 from agents.utils import get_winagent_url
@@ -297,25 +296,6 @@ def clear_faults_task(older_than_days: int) -> None:
                 "overdue_dashboard_alert",
             ]
         )
-
-
-@app.task
-def get_wmi_task() -> None:
-    agents = Agent.objects.only(
-        "pk", "agent_id", "last_seen", "overdue_time", "offline_time"
-    )
-    ids = [i.agent_id for i in agents if i.status == "online"]
-    run_nats_api_cmd("wmi", ids, timeout=45)
-
-
-@app.task
-def agent_checkin_task() -> None:
-    run_nats_api_cmd("checkin", timeout=30)
-
-
-@app.task
-def agent_getinfo_task() -> None:
-    run_nats_api_cmd("agentinfo", timeout=30)
 
 
 @app.task

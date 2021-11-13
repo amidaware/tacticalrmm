@@ -22,6 +22,7 @@
         <q-item-section>
           <q-item-label v-html="mapOptions ? scope.opt.label : scope.opt"></q-item-label>
         </q-item-section>
+        <q-item-section v-if="filtered && mapOptions" side>{{ scope.opt.cat }}</q-item-section>
       </q-item>
       <q-item-label v-if="scope.opt.category" header class="q-pa-sm" :key="scope.opt.category">{{
         scope.opt.category
@@ -31,7 +32,7 @@
 </template>
 <script>
 // composition imports
-import { ref, toRefs, computed } from "vue";
+import { ref, computed } from "vue";
 
 export default {
   name: "tactical-dropdown",
@@ -51,7 +52,7 @@ export default {
     },
     options: !Array,
   },
-  setup(props) {
+  setup(props, context) {
     const filtered = ref(false);
     const filteredOptions = ref(props.options);
 

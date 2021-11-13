@@ -126,8 +126,8 @@ class Script(BaseAuditModel):
                     i.shell = script["shell"]  # type: ignore
                     i.default_timeout = default_timeout  # type: ignore
                     i.args = args  # type: ignore
-                    i.syntax = syntax # type: ignore
-                    i.filename = script["filename"] # type: ignore
+                    i.syntax = syntax  # type: ignore
+                    i.filename = script["filename"]  # type: ignore
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
                         script_bytes = (
@@ -145,7 +145,7 @@ class Script(BaseAuditModel):
                             "shell",
                             "args",
                             "filename",
-                            "syntax"
+                            "syntax",
                         ]
                     )
 
@@ -188,7 +188,7 @@ class Script(BaseAuditModel):
                                 "shell",
                                 "args",
                                 "filename",
-                                "syntax"
+                                "syntax",
                             ]
                         )
 
@@ -212,7 +212,7 @@ class Script(BaseAuditModel):
                             default_timeout=default_timeout,
                             args=args,
                             filename=script["filename"],
-                            syntax=syntax
+                            syntax=syntax,
                         ).save()
 
         # delete community scripts that had their name changed

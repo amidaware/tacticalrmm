@@ -748,8 +748,8 @@ class Agent(BaseAuditModel):
                 try:
                     ret = msgpack.loads(msg.data)  # type: ignore
                 except Exception as e:
-                    DebugLog.error(agent=self, log_type="agent_issues", message=e)
                     ret = str(e)
+                    DebugLog.error(agent=self, log_type="agent_issues", message=ret)
 
             await nc.close()
             return ret

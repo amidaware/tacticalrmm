@@ -228,7 +228,7 @@ def get_latest_trmm_ver() -> str:
             if "TRMM_VERSION" in line:
                 return line.split(" ")[2].strip('"')
     except Exception as e:
-        DebugLog.error(message=e)
+        DebugLog.error(message=str(e))
 
     return "error"
 

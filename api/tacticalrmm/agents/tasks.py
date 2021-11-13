@@ -267,7 +267,7 @@ def run_script_email_results_task(
                 server.send_message(msg)
                 server.quit()
     except Exception as e:
-        DebugLog.error(message=e)
+        DebugLog.error(message=str(e))
 
 
 @app.task

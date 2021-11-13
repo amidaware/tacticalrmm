@@ -23,7 +23,7 @@ from checks.serializers import CheckRunnerGetSerializer
 from checks.utils import bytes2human
 from logs.models import PendingAction, DebugLog
 from software.models import InstalledSoftware
-from tacticalrmm.utils import SoftwareList, filter_software, notify_error, reload_nats
+from tacticalrmm.utils import notify_error, reload_nats
 from winupdate.models import WinUpdate, WinUpdatePolicy
 
 
@@ -32,55 +32,11 @@ class CheckIn(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def patch(self, request):
+    def put(self, request):
         """
-        !!! DEPRECATED AS OF AGENT 1.6.0 !!!
+        !!! DEPRECATED AS OF AGENT 1.7.0 !!!
         Endpoint be removed in a future release
         """
-        from alerts.models import Alert
-
-        updated = False
-        agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-        if pyver.parse(request.data["version"]) > pyver.parse(
-            agent.version
-        ) or pyver.parse(request.data["version"]) == pyver.parse(
-            settings.LATEST_AGENT_VER
-        ):
-            updated = True
-        agent.version = request.data["version"]
-        agent.last_seen = djangotime.now()
-        agent.save(update_fields=["version", "last_seen"])
-
-        # change agent update pending status to completed if agent has just updated
-        if (
-            updated
-            and agent.pendingactions.filter(  # type: ignore
-                action_type="agentupdate", status="pending"
-            ).exists()
-        ):
-            agent.pendingactions.filter(  # type: ignore
-                action_type="agentupdate", status="pending"
-            ).update(status="completed")
-
-        # handles any alerting actions
-        if Alert.objects.filter(agent=agent, resolved=False).exists():
-            Alert.handle_alert_resolve(agent)
-
-        # sync scheduled tasks
-        if agent.autotasks.exclude(sync_status="synced").exists():  # type: ignore
-            tasks = agent.autotasks.exclude(sync_status="synced")  # type: ignore
-
-            for task in tasks:
-                if task.sync_status == "pendingdeletion":
-                    task.delete_task_on_agent()
-                elif task.sync_status == "initial":
-                    task.modify_task_on_agent()
-                elif task.sync_status == "notsynced":
-                    task.create_task_on_agent()
-
-        return Response("ok")
-
-    def put(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
         serializer = WinAgentSerializer(instance=agent, data=request.data, partial=True)
 
@@ -109,11 +65,8 @@ class CheckIn(APIView):
                 return Response("ok")
 
         if request.data["func"] == "software":
-            raw: SoftwareList = request.data["software"]
-            if not isinstance(raw, list):
-                return notify_error("err")
+            sw = request.data["software"]
 
-            sw = filter_software(raw)
             if not InstalledSoftware.objects.filter(agent=agent).exists():
                 InstalledSoftware(agent=agent, software=sw).save()
             else:
@@ -500,11 +453,7 @@ class Software(APIView):
 
     def post(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
-        raw: SoftwareList = request.data["software"]
-        if not isinstance(raw, list):
-            return notify_error("err")
-
-        sw = filter_software(raw)
+        sw = request.data["software"]
         if not InstalledSoftware.objects.filter(agent=agent).exists():
             InstalledSoftware(agent=agent, software=sw).save()
         else:
@@ -570,7 +519,18 @@ class AgentRecovery(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, agentid):
-        agent = get_object_or_404(Agent, agent_id=agentid)
+        agent = get_object_or_404(
+            Agent.objects.prefetch_related("recoveryactions").only(
+                "pk", "agent_id", "last_seen"
+            ),
+            agent_id=agentid,
+        )
+
+        # TODO remove these 2 lines after agent v1.7.0 has been out for a while
+        # this is handled now by nats-api service
+        agent.last_seen = djangotime.now()
+        agent.save(update_fields=["last_seen"])
+
         recovery = agent.recoveryactions.filter(last_run=None).last()  # type: ignore
         ret = {"mode": "pass", "shellcmd": ""}
         if recovery is None:

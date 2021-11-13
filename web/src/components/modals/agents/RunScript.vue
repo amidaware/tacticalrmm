@@ -1,6 +1,6 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide" persistent @keydown.esc="onDialogHide" :maximized="maximized">
-    <q-card class="dialog-plugin" style="min-width: 50vw">
+    <q-card class="dialog-plugin" style="min-width: 60vw">
       <q-bar>
         Run a script on {{ agent.hostname }}
         <q-space />
@@ -15,8 +15,9 @@
         </q-btn>
       </q-bar>
       <q-form @submit.prevent="sendScript">
-        <q-card-section>
+        <q-card-section class="row">
           <tactical-dropdown
+            class="col-11"
             :rules="[val => !!val || '*Required']"
             v-model="state.script"
             :options="scriptOptions"
@@ -25,6 +26,13 @@
             mapOptions
             filterable
           />
+          <q-btn class="col-1" size="sm" round dense flat icon="info" @click="link ? OpenURL(link) : null">
+            <q-tooltip
+              v-if="syntax"
+              class="bg-white text-primary text-body1"
+              v-html="formatScriptSyntax(syntax)"
+            ></q-tooltip>
+          </q-btn>
         </q-card-section>
         <q-card-section>
           <tactical-dropdown
@@ -97,12 +105,12 @@
 <script>
 // composition imports
 import { ref, watch } from "vue";
-import { useDialogPluginComponent } from "quasar";
+import { useDialogPluginComponent, openURL } from "quasar";
 import { useScriptDropdown } from "@/composables/scripts";
 import { useCustomFieldDropdown } from "@/composables/core";
 import { runScript } from "@/api/agents";
 import { notifySuccess } from "@/utils/notify";
-
+import { formatScriptSyntax } from "@/utils/format";
 //ui imports
 import TacticalDropdown from "@/components/ui/TacticalDropdown";
 
@@ -128,7 +136,9 @@ export default {
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
 
     // setup dropdowns
-    const { script, scriptOptions, defaultTimeout, defaultArgs } = useScriptDropdown(props.script, { onMount: true });
+    const { script, scriptOptions, defaultTimeout, defaultArgs, syntax, link } = useScriptDropdown(props.script, {
+      onMount: true,
+    });
     const { customFieldOptions } = useCustomFieldDropdown({ onMount: true });
 
     // main run script functionaity
@@ -167,6 +177,8 @@ export default {
       state,
       loading,
       scriptOptions,
+      link,
+      syntax,
       ret,
       maximized,
       customFieldOptions,
@@ -175,7 +187,9 @@ export default {
       outputOptions,
 
       //methods
+      formatScriptSyntax,
       sendScript,
+      openURL,
 
       // quasar dialog plugin
       dialogRef,

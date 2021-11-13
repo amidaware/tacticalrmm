@@ -11,7 +11,12 @@
     :use-chips="multiple"
     :use-input="filterable"
     @[filterEvent]="filterFn"
+    v-bind="$attrs"
   >
+    <template v-for="(_, slot) in $slots" v-slot:[slot]="scope">
+      <slot :name="slot" v-bind="scope || {}" />
+    </template>
+
     <template v-slot:option="scope">
       <q-item
         v-if="!scope.opt.category"
@@ -22,7 +27,7 @@
         <q-item-section>
           <q-item-label v-html="mapOptions ? scope.opt.label : scope.opt"></q-item-label>
         </q-item-section>
-        <q-item-section v-if="filtered && mapOptions" side>{{ scope.opt.cat }}</q-item-section>
+        <q-item-section v-if="filtered && mapOptions && scope.opt.cat" side>{{ scope.opt.cat }}</q-item-section>
       </q-item>
       <q-item-label v-if="scope.opt.category" header class="q-pa-sm" :key="scope.opt.category">{{
         scope.opt.category
@@ -36,6 +41,7 @@ import { ref, computed } from "vue";
 
 export default {
   name: "tactical-dropdown",
+  inheritAttrs: false,
   props: {
     modelValue: !String,
     mapOptions: {

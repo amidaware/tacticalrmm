@@ -15,9 +15,8 @@
         </q-btn>
       </q-bar>
       <q-form @submit.prevent="sendScript">
-        <q-card-section class="row">
+        <q-card-section>
           <tactical-dropdown
-            class="col-11"
             :rules="[val => !!val || '*Required']"
             v-model="state.script"
             :options="scriptOptions"
@@ -25,14 +24,13 @@
             outlined
             mapOptions
             filterable
-          />
-          <q-btn class="col-1" size="sm" round dense flat icon="info" @click="link ? OpenURL(link) : null">
-            <q-tooltip
-              v-if="syntax"
-              class="bg-white text-primary text-body1"
-              v-html="formatScriptSyntax(syntax)"
-            ></q-tooltip>
-          </q-btn>
+          >
+            <template v-slot:after>
+              <q-btn size="sm" round dense flat icon="info" @click="openScriptURL">
+                <q-tooltip v-if="syntax" class="bg-white text-primary text-body1" v-html="formatScriptSyntax(syntax)" />
+              </q-btn>
+            </template>
+          </tactical-dropdown>
         </q-card-section>
         <q-card-section>
           <tactical-dropdown
@@ -169,6 +167,10 @@ export default {
       }
     }
 
+    function openScriptURL() {
+      link.value ? openURL(link.value) : null;
+    }
+
     // watchers
     watch([() => state.value.output, () => state.value.emailMode], () => (state.value.emails = []));
 
@@ -189,7 +191,7 @@ export default {
       //methods
       formatScriptSyntax,
       sendScript,
-      openURL,
+      openScriptURL,
 
       // quasar dialog plugin
       dialogRef,

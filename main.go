@@ -6,15 +6,19 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
 	"github.com/wh1te909/tacticalrmm/natsapi"
 )
 
-var version = "2.3.0"
+var (
+	version = "3.0.0"
+	log     = logrus.New()
+)
 
 func main() {
 	ver := flag.Bool("version", false, "Prints version")
-	mode := flag.String("m", "", "Mode")
-	config := flag.String("c", "", "config file")
+	cfg := flag.String("config", "", "Path to config file")
+	logLevel := flag.String("log", "INFO", "The log level")
 	flag.Parse()
 
 	if *ver {
@@ -22,14 +26,15 @@ func main() {
 		return
 	}
 
-	switch *mode {
-	case "wmi":
-		api.GetWMI(*config)
-	case "checkin":
-		api.CheckIn(*config)
-	case "agentinfo":
-		api.AgentInfo(*config)
-	default:
-		fmt.Println(version)
+	setupLogging(logLevel)
+
+	api.Svc(log, *cfg)
+}
+
+func setupLogging(level *string) {
+	ll, err := logrus.ParseLevel(*level)
+	if err != nil {
+		ll = logrus.InfoLevel
 	}
+	log.SetLevel(ll)
 }

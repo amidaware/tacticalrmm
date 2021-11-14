@@ -9,6 +9,7 @@ from .utils import (
     generate_winagent_exe,
     get_bit_days,
     reload_nats,
+    AGENT_DEFER,
 )
 
 
@@ -92,3 +93,11 @@ class TestUtils(TacticalTestCase):
         bit_weekdays = get_bit_days(all_days)
         r = bitdays_to_string(bit_weekdays)
         self.assertEqual(r, "Every day")
+
+    def test_defer_fields_exist(self):
+        from agents.models import Agent
+
+        fields = [i.name for i in Agent._meta.get_fields()]
+
+        for i in AGENT_DEFER:
+            self.assertIn(i, fields)

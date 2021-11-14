@@ -654,3 +654,9 @@ class TestTaskPermissions(TacticalTestCase):
 
         self.check_authorized("post", url)
         self.check_not_authorized("post", unauthorized_url)
+
+    def test_policy_fields_to_copy_exists(self):
+        fields = [i.name for i in AutomatedTask._meta.get_fields()]
+        task = baker.make("autotasks.AutomatedTask")
+        for i in task.policy_fields_to_copy:  # type: ignore
+            self.assertIn(i, fields)

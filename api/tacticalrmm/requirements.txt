@@ -1,12 +1,12 @@
 asgiref==3.4.1
 asyncio-nats-client==0.11.4
-celery==5.1.2
+celery==5.2.0
 certifi==2021.10.8
 cffi==1.15.0
 channels==3.0.4
 channels_redis==3.3.1
 chardet==4.0.0
-cryptography==3.4.8
+cryptography==35.0.0
 daphne==3.0.2
 Django==3.2.9
 django-cors-headers==3.10.0
@@ -17,7 +17,7 @@ future==0.18.2
 loguru==0.5.3
 msgpack==1.0.2
 packaging==21.2
-psycopg2-binary==2.9.1
+psycopg2-binary==2.9.2
 pycparser==2.21
 pycryptodome==3.11.0
 pyotp==2.6.0

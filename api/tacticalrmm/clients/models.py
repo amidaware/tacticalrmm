@@ -6,6 +6,7 @@ from django.db import models
 from agents.models import Agent
 from logs.models import BaseAuditModel
 from tacticalrmm.models import PermissionQuerySet
+from tacticalrmm.utils import AGENT_DEFER
 
 
 class Client(BaseAuditModel):
@@ -73,29 +74,20 @@ class Client(BaseAuditModel):
 
     @property
     def agent_count(self) -> int:
-        return Agent.objects.filter(site__client=self).count()
+        return Agent.objects.defer(*AGENT_DEFER).filter(site__client=self).count()
 
     @property
     def has_maintenanace_mode_agents(self):
         return (
-            Agent.objects.filter(site__client=self, maintenance_mode=True).count() > 0
+            Agent.objects.defer(*AGENT_DEFER)
+            .filter(site__client=self, maintenance_mode=True)
+            .count()
+            > 0
         )
 
     @property
     def has_failing_checks(self):
-        agents = (
-            Agent.objects.only(
-                "pk",
-                "overdue_email_alert",
-                "overdue_text_alert",
-                "last_seen",
-                "overdue_time",
-                "offline_time",
-            )
-            .filter(site__client=self)
-            .prefetch_related("agentchecks", "autotasks")
-        )
-
+        agents = Agent.objects.defer(*AGENT_DEFER).filter(site__client=self)
         data = {"error": False, "warning": False}
 
         for agent in agents:
@@ -194,23 +186,21 @@ class Site(BaseAuditModel):
 
     @property
     def agent_count(self) -> int:
-        return Agent.objects.filter(site=self).count()
+        return Agent.objects.defer(*AGENT_DEFER).filter(site=self).count()
 
     @property
     def has_maintenanace_mode_agents(self):
-        return Agent.objects.filter(site=self, maintenance_mode=True).count() > 0
+        return (
+            Agent.objects.defer(*AGENT_DEFER)
+            .filter(site=self, maintenance_mode=True)
+            .count()
+            > 0
+        )
 
     @property
     def has_failing_checks(self):
         agents = (
-            Agent.objects.only(
-                "pk",
-                "overdue_email_alert",
-                "overdue_text_alert",
-                "last_seen",
-                "overdue_time",
-                "offline_time",
-            )
+            Agent.objects.defer(*AGENT_DEFER)
             .filter(site=self)
             .prefetch_related("agentchecks", "autotasks")
         )

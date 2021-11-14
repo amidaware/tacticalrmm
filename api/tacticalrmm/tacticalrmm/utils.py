@@ -22,6 +22,8 @@ from agents.models import Agent
 
 notify_error = lambda msg: Response(msg, status=status.HTTP_400_BAD_REQUEST)
 
+AGENT_DEFER = ["wmi_detail", "services"]
+
 WEEK_DAYS = {
     "Sunday": 0x1,
     "Monday": 0x2,

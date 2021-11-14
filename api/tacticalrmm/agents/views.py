@@ -20,7 +20,12 @@ from core.models import CoreSettings
 from logs.models import AuditLog, DebugLog, PendingAction
 from scripts.models import Script
 from scripts.tasks import handle_bulk_command_task, handle_bulk_script_task
-from tacticalrmm.utils import get_default_timezone, notify_error, reload_nats
+from tacticalrmm.utils import (
+    get_default_timezone,
+    notify_error,
+    reload_nats,
+    AGENT_DEFER,
+)
 from winupdate.serializers import WinUpdatePolicySerializer
 from winupdate.tasks import bulk_check_for_updates_task, bulk_install_updates_task
 from tacticalrmm.permissions import (
@@ -74,34 +79,13 @@ class GetAgents(APIView):
             or "detail" in request.query_params.keys()
             and request.query_params["detail"] == "true"
         ):
+
             agents = (
-                Agent.objects.filter_by_role(request.user)
+                Agent.objects.filter_by_role(request.user)  # type: ignore
                 .select_related("site", "policy", "alert_template")
                 .prefetch_related("agentchecks")
                 .filter(filter)
-                .only(
-                    "pk",
-                    "hostname",
-                    "agent_id",
-                    "site",
-                    "policy",
-                    "alert_template",
-                    "monitoring_type",
-                    "description",
-                    "needs_reboot",
-                    "overdue_text_alert",
-                    "overdue_email_alert",
-                    "overdue_time",
-                    "offline_time",
-                    "last_seen",
-                    "boot_time",
-                    "logged_in_username",
-                    "last_logged_in_user",
-                    "time_zone",
-                    "maintenance_mode",
-                    "pending_actions_count",
-                    "has_patches_pending",
-                )
+                .defer(*AGENT_DEFER)
             )
             ctx = {"default_tz": get_default_timezone()}
             serializer = AgentTableSerializer(agents, many=True, context=ctx)
@@ -109,7 +93,7 @@ class GetAgents(APIView):
         # if detail=false
         else:
             agents = (
-                Agent.objects.filter_by_role(request.user)
+                Agent.objects.filter_by_role(request.user)  # type: ignore
                 .select_related("site")
                 .filter(filter)
                 .only("agent_id", "hostname", "site")
@@ -125,9 +109,7 @@ class GetUpdateDeleteAgent(APIView):
     # get agent details
     def get(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
-        return Response(
-            AgentSerializer(agent, context={"default_tz": get_default_timezone()}).data
-        )
+        return Response(AgentSerializer(agent).data)
 
     # edit agent
     def put(self, request, agent_id):

@@ -324,6 +324,13 @@ class TaskRunner(APIView):
         serializer.is_valid(raise_exception=True)
         new_task = serializer.save(last_run=djangotime.now())
 
+        AgentHistory.objects.create(
+            agent=agent,
+            type="task_run",
+            script=task.script,
+            script_results=request.data,
+        )
+
         # check if task is a collector and update the custom field
         if task.custom_field:
             if not task.stderr:

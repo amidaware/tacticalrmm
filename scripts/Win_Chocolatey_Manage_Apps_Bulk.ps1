@@ -10,48 +10,54 @@
       .PARAMETER PackageName
       Use this to specify which software to install eg: PackageName googlechrome
       .EXAMPLE
-      Hosts 20 PackageName googlechrome
+      -Hosts 20 -PackageName googlechrome
       .EXAMPLE
-      Mode upgrade Hosts 50
+      -Mode upgrade -Hosts 50
       .EXAMPLE
-      Mode uninstall PackageName googlechrome
+      -Mode uninstall -PackageName googlechrome
       .NOTES
       9/2021 v1 Initial release by @silversword411 and @bradhawkins 
+      11/14/2021 v1.1 Fixing typos and logic flow
   #>
 
 param (
-    [string] $Hosts = "0",
+    [Int] $Hosts = "0",
     [string] $PackageName,
-    [string] $Mode = "install",
+    [string] $Mode = "install"
 )
 
 $ErrorCount = 0
 
-if (!$PackageName) {
-    write-output "No choco package name provided, please include Example: `"PackageName googlechrome`" `n"
-    $ErrorCount += 1
+if ($Mode -ne "upgrade" -and !$PackageName) {
+    write-output "No choco package name provided, please include Example: `"-PackageName googlechrome`" `n"
+    Exit 1
 }
 
-if (!$Mode -eq "upgrade") {
-    $randrange = ($Hosts + 1) * 10
+if ($Hosts -ne "0") {
+    $randrange = ($Hosts + 1) * 6
+    # Write-Output "Calculating rnd"
+    # Write-Output "randrange $randrange"
     $rnd = Get-Random -Minimum 1 -Maximum $randrange; 
-    Start-Sleep -Seconds $rnd; 
-    choco ugrade -y all
-    Write-Output "Running upgrade"
-    Exit 0
-}
-
-if (!$Hosts -eq "0") {
-    write-output "No Hosts Specified, running concurrently"
-    choco $Mode $PackageName -y
-    Exit 0
+    # Write-Output "rnd=$rnd"
 }
 else {
-    $randrange = ($Hosts + 1) * 6
-    $rnd = Get-Random -Minimum 1 -Maximum $randrange; 
+    $rnd = "1"
+    # Write-Output "rnd set to 1 manually"
+    # Write-Output "rnd=$rnd"
+}
+
+if ($Mode -eq "upgrade") {
+    # Write-Output "Starting Upgrade"
     Start-Sleep -Seconds $rnd; 
-    choco $Mode $PackageName -y
+    choco upgrade -y all
+    # Write-Output "Running upgrade"
     Exit 0
 }
+
+# write-output "Running install/uninstall mode"
+Start-Sleep -Seconds $rnd; 
+choco $Mode $PackageName -y
+Exit 0
+
 
 Exit $LASTEXITCODE

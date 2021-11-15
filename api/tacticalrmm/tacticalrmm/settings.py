@@ -65,6 +65,13 @@ REST_FRAMEWORK = {
         "knox.auth.TokenAuthentication",
         "tacticalrmm.auth.APIAuthentication",
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema'
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Tactical RMM API',
+    'DESCRIPTION': 'Simple and Fast remote monitoring and management tool',
+    'VERSION': TRMM_VERSION,
 }
 
 if not "AZPIPELINE" in os.environ:
@@ -97,6 +104,7 @@ INSTALLED_APPS = [
     "logs",
     "scripts",
     "alerts",
+    "drf_spectacular",
 ]
 
 if not "AZPIPELINE" in os.environ:

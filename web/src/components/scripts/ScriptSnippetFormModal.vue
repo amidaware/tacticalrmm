@@ -15,28 +15,28 @@
         </q-btn>
       </q-bar>
       <q-form @submit="submitForm">
-        <q-card-section>
-          <div class="q-gutter-sm row">
-            <div class="col-5">
-              <q-input :rules="[val => !!val || '*Required']" v-model="formSnippet.name" label="Name" filled dense />
-            </div>
-            <div class="col-2">
-              <q-select
-                v-model="formSnippet.shell"
-                :options="shellOptions"
-                label="Shell Type"
-                options-dense
-                filled
-                dense
-                emit-value
-                map-options
-              />
-            </div>
-            <div class="col-4">
-              <q-input filled dense v-model="formSnippet.desc" label="Description" />
-            </div>
-          </div>
-        </q-card-section>
+        <div class="row">
+          <q-input
+            :rules="[val => !!val || '*Required']"
+            class="q-pa-sm col-4"
+            v-model="formSnippet.name"
+            label="Name"
+            filled
+            dense
+          />
+          <q-select
+            v-model="formSnippet.shell"
+            :options="shellOptions"
+            class="q-pa-sm col-2"
+            label="Shell Type"
+            options-dense
+            filled
+            dense
+            emit-value
+            map-options
+          />
+          <q-input class="q-pa-sm col-6" filled dense v-model="formSnippet.desc" label="Description" />
+        </div>
 
         <CodeEditor
           v-model="formSnippet.code"
@@ -44,8 +44,8 @@
           :shell="formSnippet.shell"
         />
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" v-close-popup />
-          <q-btn :loading="loading" flat label="Save" color="primary" type="submit" />
+          <q-btn dense flat label="Cancel" v-close-popup />
+          <q-btn :loading="loading" dense flat label="Save" color="primary" type="submit" />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -95,20 +95,13 @@ export default {
 
     async function submitForm() {
       loading.value = true;
-      let result = "";
       try {
-        // edit existing script snippet
-        if (props.snippet) {
-          result = await editScriptSnippet(snippet.value);
-
-          // add script snippet
-        } else {
-          result = await saveScriptSnippet(snippet.value);
-        }
-
+        const result = props.snippet ? await editScriptSnippet(snippet.value) : await saveScriptSnippet(snippet.value);
         onDialogOK();
         notifySuccess(result);
-      } catch (e) {}
+      } catch (e) {
+        console.error(e);
+      }
 
       loading.value = false;
     }

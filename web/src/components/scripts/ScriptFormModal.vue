@@ -1,6 +1,6 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide" persistent @keydown.esc="onDialogHide" :maximized="maximized">
-    <q-card class="q-dialog-plugin" :style="maximized ? '' : 'width: 70vw; max-width: 90vw'">
+    <q-card class="q-dialog-plugin" :style="maximized ? '' : 'width: 80vw; max-width: 90vw'">
       <q-bar>
         {{ title }}
         <q-space />
@@ -15,73 +15,63 @@
         </q-btn>
       </q-bar>
       <q-form @submit="submitForm">
-        <q-card-section class="row">
-          <div class="q-pa-sm col-1" style="width: auto">
-            <q-icon
-              class="cursor-pointer"
-              :name="formScript.favorite ? 'star' : 'star_outline'"
-              size="md"
-              color="yellow-8"
-              @[clickEvent]="formScript.favorite = !formScript.favorite"
-            />
-          </div>
-          <div class="q-pa-sm col-2">
-            <q-input
-              filled
-              dense
-              :readonly="readonly"
-              v-model="formScript.name"
-              label="Name"
-              :rules="[val => !!val || '*Required']"
-            />
-          </div>
-          <div class="q-pa-sm col-2">
-            <q-select
-              :readonly="readonly"
-              options-dense
-              filled
-              dense
-              v-model="formScript.shell"
-              :options="shellOptions"
-              emit-value
-              map-options
-              label="Shell Type"
-            />
-          </div>
-          <div class="q-pa-sm col-2">
-            <q-input
-              type="number"
-              filled
-              dense
-              :readonly="readonly"
-              v-model.number="formScript.default_timeout"
-              label="Timeout (seconds)"
-              :rules="[val => val >= 5 || 'Minimum is 5']"
-            />
-          </div>
-          <div class="q-pa-sm col-3">
-            <tactical-dropdown
-              hint="Press Enter or Tab when adding a new value"
-              filled
-              v-model="formScript.category"
-              :options="categories"
-              use-input
-              clearable
-              new-value-mode="add-unique"
-              filterable
-              label="Category"
-              :readonly="readonly"
-            />
-          </div>
-          <div class="q-pa-sm col-2">
-            <q-input filled dense :readonly="readonly" v-model="formScript.description" label="Description" />
-          </div>
-        </q-card-section>
-        <div class="q-px-sm q-pt-none q-pb-sm q-mt-none row">
+        <div class="q-pt-sm q-px-sm row">
+          <q-input
+            filled
+            dense
+            class="col-2"
+            :readonly="readonly"
+            v-model="formScript.name"
+            label="Name"
+            :rules="[val => !!val || '*Required']"
+          />
+          <q-select
+            class="q-pl-sm col-2"
+            :readonly="readonly"
+            options-dense
+            filled
+            dense
+            v-model="formScript.shell"
+            :options="shellOptions"
+            emit-value
+            map-options
+            label="Shell Type"
+          />
+          <q-input
+            type="number"
+            class="q-pl-sm col-2"
+            filled
+            dense
+            :readonly="readonly"
+            v-model.number="formScript.default_timeout"
+            label="Timeout (seconds)"
+            :rules="[val => val >= 5 || 'Minimum is 5']"
+          />
+          <tactical-dropdown
+            class="q-pl-sm col-3"
+            filled
+            v-model="formScript.category"
+            :options="categories"
+            use-input
+            clearable
+            new-value-mode="add-unique"
+            filterable
+            label="Category"
+            :readonly="readonly"
+            hide-bottom-space
+          />
+          <q-input
+            class="q-pl-sm col-3"
+            filled
+            dense
+            :readonly="readonly"
+            v-model="formScript.description"
+            label="Description"
+          />
           <tactical-dropdown
             v-model="formScript.args"
             label="Script Arguments (press Enter after typing each argument)"
-            class="col-12"
+            class="q-pb-sm col-12 row"
             filled
             use-input
             multiple
@@ -94,13 +84,35 @@
 
         <CodeEditor
           v-model="code"
-          :style="maximized ? '--prism-height: 76vh' : '--prism-height: 70vh'"
+          :style="maximized ? '--prism-height: 72vh' : '--prism-height: 65vh'"
           :readonly="readonly"
           :shell="formScript.shell"
         />
-        <q-card-actions align="right">
+        <q-card-actions>
+          <tactical-dropdown
+            style="width: 350px"
+            dense
+            filled
+            v-model="agent"
+            :options="agentOptions"
+            label="Agent to run test script on"
+            mapOptions
+            @filter="loadAgentOptions"
+          >
+            <template v-slot:after>
+              <q-btn
+                size="md"
+                color="primary"
+                dense
+                flat
+                label="Test Script"
+                :disable="!agent || !code || !formScript.default_timeout"
+                @click="openTestScriptModal"
+              />
+            </template>
+          </tactical-dropdown>
+          <q-space />
           <q-btn dense flat label="Cancel" v-close-popup />
-          <q-btn dense flat color="primary" label="Test Script" @click="openTestScriptModal" />
           <q-btn v-if="!readonly" :loading="loading" dense flat label="Save" color="primary" type="submit" />
         </q-card-actions>
       </q-form>
@@ -113,6 +125,7 @@
 import { ref, computed } from "vue";
 import { useQuasar, useDialogPluginComponent } from "quasar";
 import { saveScript, editScript, downloadScript } from "@/api/scripts";
+import { useAgentDropdown } from "@/composables/agents";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
@@ -147,6 +160,9 @@ export default {
     const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
     const $q = useQuasar();
 
+    // setup agent dropdown
+    const { agent, agentOptions, getAgentOptions } = useAgentDropdown();
+
     // script form logic
     const script = props.script
       ? ref(Object.assign({}, props.script))
@@ -157,7 +173,6 @@ export default {
     const maximized = ref(false);
     const loading = ref(false);
 
-    const clickEvent = computed(() => (!props.readonly ? "click" : null));
     const title = computed(() => {
       if (props.script) {
         return props.readonly
@@ -204,7 +219,20 @@ export default {
         component: TestScriptModal,
         componentProps: {
           script: { ...script.value, code: code.value },
+          agent: agent.value,
         },
+      });
+    }
+
+    function loadAgentOptions(val, update, abort) {
+      if (agentOptions.value.length > 0) {
+        // already loaded
+        update();
+        return;
+      }
+
+      update(async () => {
+        await getAgentOptions();
       });
     }
 
@@ -214,15 +242,18 @@ export default {
       code,
       maximized,
       loading,
+      agentOptions,
+      agent,
 
       // non-reactive data
       shellOptions,
 
       //computed
-      clickEvent,
+      getAgentOptions,
       title,
 
       //methods
+      loadAgentOptions,
       submitForm,
       openTestScriptModal,
 

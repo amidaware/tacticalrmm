@@ -4,17 +4,13 @@ const baseUrl = "/scripts"
 
 // script operations
 export async function fetchScripts(params = {}) {
-  try {
-    const { data } = await axios.get(`${baseUrl}/`, { params: params })
-    return data
-  } catch (e) { }
+  const { data } = await axios.get(`${baseUrl}/`, { params: params })
+  return data
 }
 
 export async function testScript(agent_id, payload) {
-  try {
-    const { data } = await axios.post(`${baseUrl}/${agent_id}/test/`, payload)
-    return data
-  } catch (e) { }
+  const { data } = await axios.post(`${baseUrl}/${agent_id}/test/`, payload)
+  return data
 }
 
 export async function saveScript(payload) {
@@ -33,45 +29,34 @@ export async function removeScript(id) {
 }
 
 export async function downloadScript(id, params = {}) {
-  try {
-    const { data } = await axios.get(`${baseUrl}/${id}/download/`, { params: params })
-    return data
-  } catch (e) { }
+  const { data } = await axios.get(`${baseUrl}/${id}/download/`, { params: params })
+  return data
 }
 
 
 // script snippet operations
 export async function fetchScriptSnippets(params = {}) {
-  try {
-    const { data } = await axios.get(`${baseUrl}/snippets/`, { params: params })
-    return data
-  } catch (e) { }
+  const { data } = await axios.get(`${baseUrl}/snippets/`, { params: params })
+  return data
+
 }
 
 export async function saveScriptSnippet(payload) {
-  try {
-    const { data } = await axios.post(`${baseUrl}/snippets/`, payload)
-    return data
-  } catch (e) { }
+  const { data } = await axios.post(`${baseUrl}/snippets/`, payload)
+  return data
 }
 
 export async function fetchScriptSnippet(id, params = {}) {
-  try {
-    const { data } = await axios.get(`${baseUrl}/snippets/${id}/`, { params: params })
-    return data
-  } catch (e) { }
+  const { data } = await axios.get(`${baseUrl}/snippets/${id}/`, { params: params })
+  return data
 }
 
 export async function editScriptSnippet(payload) {
-  try {
-    const { data } = await axios.put(`${baseUrl}/snippets/${payload.id}/`, payload)
-    return data
-  } catch (e) { }
+  const { data } = await axios.put(`${baseUrl}/snippets/${payload.id}/`, payload)
+  return data
 }
 
 export async function removeScriptSnippet(id) {
-  try {
-    const { data } = await axios.delete(`${baseUrl}/snippets/${id}/`)
-    return data
-  } catch (e) { }
+  const { data } = await axios.delete(`${baseUrl}/snippets/${id}/`)
+  return data
 }

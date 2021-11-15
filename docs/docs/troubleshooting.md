@@ -161,3 +161,11 @@ Are you trying to use a proxy to share your single public IP with multiple servi
 4. Click the add link
 5. Download both agents
 6. In Tactical RMM, go **Settings > Global Settings > MeshCentral > Upload Mesh Agents** upload them both into the appropriate places.
+
+## Need to recover your mesh token?
+
+Login to server with SSH and run:
+
+```bash
+node /meshcentral/node_modules/meshcentral --logintokenkey
+```

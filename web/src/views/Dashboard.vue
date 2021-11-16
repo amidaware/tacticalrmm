@@ -114,11 +114,16 @@
                 @update:selected="loadFrame(selectedTree)"
               >
                 <template v-slot:default-header="props">
-                  <div class="row">
+                  <div class="row items-center">
                     <q-icon :name="props.node.icon" :color="props.node.color" class="q-mr-sm" />
-                    <span
-                      >{{ props.node.label }} <q-tooltip :delay="600">ID: {{ props.node.id }}</q-tooltip></span
-                    >
+                    <div>
+                      {{ props.node.label }}
+                      <q-tooltip :delay="600">
+                        ID: {{ props.node.id }}<br />
+                        Agent Count:
+                        {{ props.node.children ? props.node.client.agent_count : props.node.site.agent_count }}
+                      </q-tooltip>
+                    </div>
 
                     <q-menu context-menu>
                       <q-list dense style="min-width: 200px">
@@ -942,7 +947,7 @@ export default {
         return this.$store.state.clientTreeSplitter;
       },
       set(newVal) {
-        this.$store.commit("SET_CLIENT_SPLITTER", newVal);
+        this.$store.dispatch("setClientTreeSplitter", newVal);
       },
     },
     tab: {

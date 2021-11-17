@@ -49,6 +49,14 @@ python manage.py remove_orphaned_tasks
 python manage.py get_mesh_exe_url
 ```
 
+## Reset all Auth Tokens for Install agents and web sessions
+
+```bash
+python manage.py shell
+from knox.models import AuthToken
+AuthToken.objects.all().delete()
+```
+
 ## Bulk update agent offline/overdue time
 
 Change offline time on all agents to 5 minutes

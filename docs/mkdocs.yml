@@ -3,13 +3,15 @@ nav:
   - Home: index.md
   - Sponsor: sponsor.md
   - Code Signing: code_signing.md
-  - RMM Installation:
+  - RMM Server Installation:
+      - "Install Considerations": install_considerations.md
       - "Traditional Install": install_server.md
       - "Docker Install": install_docker.md
-  - Agent Installation: install_agent.md
-  - Updating:
+  - RMM Server Updating:
       - "Updating the RMM": update_server.md
       - "Updating the RMM (Docker)": update_docker.md
+  - Agents:
+      - "Agent Installation": install_agent.md
       - "Updating Agents": update_agents.md
   - Functionality:
       - "Alerting": functions/alerting.md
@@ -20,6 +22,7 @@ nav:
       - "Django Admin": functions/django_admin.md
       - "Global Keystore": functions/keystore.md
       - "Maintenance Mode": functions/maintenance_mode.md
+      - "Permissions": functions/permissions.md
       - "Remote Background": functions/remote_bg.md
       - "Settings Override": functions/settings_override.md
       - "Scripting": functions/scripting.md
@@ -78,9 +81,14 @@ extra:
     - icon: fontawesome/brands/github
       link: "https://github.com/wh1te909/tacticalrmm"
 markdown_extensions:
+  - pymdownx.superfences
   - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
   - admonition
   - codehilite:
       guess_lang: false
   - toc:
       permalink: true
+features:
+  - content.tabs.link

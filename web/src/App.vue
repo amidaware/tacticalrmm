@@ -3,13 +3,6 @@
 </template>
 
 <script>
-// imports for ace editor
-import "ace-builds/src-noconflict/mode-powershell";
-import "ace-builds/src-noconflict/mode-python";
-import "ace-builds/src-noconflict/mode-batchfile";
-import "ace-builds/src-noconflict/theme-tomorrow_night_eighties";
-import "ace-builds/src-noconflict/theme-tomorrow";
-
 export default {
   name: "App",
 };

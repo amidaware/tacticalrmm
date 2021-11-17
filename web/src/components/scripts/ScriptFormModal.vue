@@ -87,6 +87,8 @@
           :theme="$q.dark.isActive ? 'tomorrow_night_eighties' : 'tomorrow'"
           :style="{ height: `${maximized ? '72vh' : '64vh'}` }"
           wrap
+          :printMargin="false"
+          :options="{ fontSize: '14px' }"
         />
         <q-card-actions>
           <tactical-dropdown
@@ -132,6 +134,13 @@ import { notifySuccess } from "@/utils/notify";
 import TestScriptModal from "@/components/scripts/TestScriptModal";
 import TacticalDropdown from "@/components/ui/TacticalDropdown";
 import { VAceEditor } from "vue3-ace-editor";
+
+// imports for ace editor
+import "ace-builds/src-noconflict/mode-powershell";
+import "ace-builds/src-noconflict/mode-python";
+import "ace-builds/src-noconflict/mode-batchfile";
+import "ace-builds/src-noconflict/theme-tomorrow_night_eighties";
+import "ace-builds/src-noconflict/theme-tomorrow";
 
 // static data
 import { shellOptions } from "@/composables/scripts";

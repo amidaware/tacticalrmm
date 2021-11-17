@@ -84,7 +84,7 @@
         <v-ace-editor
           v-model:value="code"
           :lang="formScript.shell === 'cmd' ? 'batchfile' : formScript.shell"
-          theme="tomorrow_night"
+          :theme="$q.dark.isActive ? 'tomorrow_night_eighties' : 'tomorrow'"
           :style="{ height: `${maximized ? '72vh' : '64vh'}` }"
           wrap
         />
@@ -131,14 +131,7 @@ import { notifySuccess } from "@/utils/notify";
 // ui imports
 import TestScriptModal from "@/components/scripts/TestScriptModal";
 import TacticalDropdown from "@/components/ui/TacticalDropdown";
-
-// ace editor imports
 import { VAceEditor } from "vue3-ace-editor";
-
-import "ace-builds/src-noconflict/mode-powershell";
-import "ace-builds/src-noconflict/mode-python";
-import "ace-builds/src-noconflict/mode-batchfile";
-import "ace-builds/src-noconflict/theme-tomorrow_night";
 
 // static data
 import { shellOptions } from "@/composables/scripts";

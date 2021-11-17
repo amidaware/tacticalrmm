@@ -41,7 +41,7 @@
         <v-ace-editor
           v-model:value="formSnippet.code"
           :lang="formSnippet.shell === 'cmd' ? 'batchfile' : formSnippet.shell"
-          theme="tomorrow_night"
+          :theme="$q.dark.isActive ? 'tomorrow_night_eighties' : 'tomorrow'"
           :style="{ height: `${maximized ? '80vh' : '70vh'}` }"
           wrap
         />
@@ -61,13 +61,8 @@ import { useDialogPluginComponent } from "quasar";
 import { saveScriptSnippet, editScriptSnippet } from "@/api/scripts";
 import { notifySuccess } from "@/utils/notify";
 
-// ace editor imports
+// ui imports
 import { VAceEditor } from "vue3-ace-editor";
-
-import "ace-builds/src-noconflict/mode-powershell";
-import "ace-builds/src-noconflict/mode-python";
-import "ace-builds/src-noconflict/mode-batchfile";
-import "ace-builds/src-noconflict/theme-tomorrow_night";
 
 // static data
 import { shellOptions } from "@/composables/scripts";

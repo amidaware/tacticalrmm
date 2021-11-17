@@ -38,10 +38,12 @@
           <q-input class="q-pa-sm col-6" filled dense v-model="formSnippet.desc" label="Description" />
         </div>
 
-        <CodeEditor
-          v-model="formSnippet.code"
-          :style="maximized ? '--prism-height: 80vh' : '--prism-height: 70vh'"
-          :shell="formSnippet.shell"
+        <v-ace-editor
+          v-model:value="formSnippet.code"
+          :lang="formSnippet.shell === 'cmd' ? 'batchfile' : formSnippet.shell"
+          theme="tomorrow_night"
+          :style="{ height: `${maximized ? '80vh' : '70vh'}` }"
+          wrap
         />
         <q-card-actions align="right">
           <q-btn dense flat label="Cancel" v-close-popup />
@@ -59,8 +61,13 @@ import { useDialogPluginComponent } from "quasar";
 import { saveScriptSnippet, editScriptSnippet } from "@/api/scripts";
 import { notifySuccess } from "@/utils/notify";
 
-// ui imports
-import CodeEditor from "@/components/ui/CodeEditor";
+// ace editor imports
+import { VAceEditor } from "vue3-ace-editor";
+
+import "ace-builds/src-noconflict/mode-powershell";
+import "ace-builds/src-noconflict/mode-python";
+import "ace-builds/src-noconflict/mode-batchfile";
+import "ace-builds/src-noconflict/theme-tomorrow_night";
 
 // static data
 import { shellOptions } from "@/composables/scripts";
@@ -69,7 +76,7 @@ export default {
   name: "ScriptFormModal",
   emits: [...useDialogPluginComponent.emits],
   components: {
-    CodeEditor,
+    VAceEditor,
   },
   props: {
     snippet: Object,

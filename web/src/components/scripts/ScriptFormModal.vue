@@ -81,12 +81,12 @@
             :readonly="readonly"
           />
         </div>
-
-        <CodeEditor
-          v-model="code"
-          :style="maximized ? '--prism-height: 72vh' : '--prism-height: 65vh'"
-          :readonly="readonly"
-          :shell="formScript.shell"
+        <v-ace-editor
+          v-model:value="code"
+          :lang="formScript.shell === 'cmd' ? 'batchfile' : formScript.shell"
+          theme="tomorrow_night"
+          :style="{ height: `${maximized ? '72vh' : '64vh'}` }"
+          wrap
         />
         <q-card-actions>
           <tactical-dropdown
@@ -129,9 +129,16 @@ import { useAgentDropdown } from "@/composables/agents";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
-import CodeEditor from "@/components/ui/CodeEditor";
 import TestScriptModal from "@/components/scripts/TestScriptModal";
 import TacticalDropdown from "@/components/ui/TacticalDropdown";
+
+// ace editor imports
+import { VAceEditor } from "vue3-ace-editor";
+
+import "ace-builds/src-noconflict/mode-powershell";
+import "ace-builds/src-noconflict/mode-python";
+import "ace-builds/src-noconflict/mode-batchfile";
+import "ace-builds/src-noconflict/theme-tomorrow_night";
 
 // static data
 import { shellOptions } from "@/composables/scripts";
@@ -140,8 +147,8 @@ export default {
   name: "ScriptFormModal",
   emits: [...useDialogPluginComponent.emits],
   components: {
-    CodeEditor,
     TacticalDropdown,
+    VAceEditor,
   },
   props: {
     script: Object,

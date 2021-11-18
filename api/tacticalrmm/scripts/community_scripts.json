@@ -249,10 +249,10 @@
   },
   {
     "guid": "375323e5-cac6-4f35-a304-bb7cef35902d",
-    "filename": "Win_Disk_Status.ps1",
+    "filename": "Win_Disk_Volume_Status.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Disk Hardware Health Check (using Event Viewer errors)",
-    "description": "Checks local disks for errors reported in event viewer within the last 24 hours",
+    "name": "Disk Drive Volume Health Check (using Event Viewer errors)",
+    "description": "Checks Drive Volumes for errors reported in event viewer within the last 24 hours",
     "shell": "powershell",
     "category": "TRMM (Win):Hardware"
   },

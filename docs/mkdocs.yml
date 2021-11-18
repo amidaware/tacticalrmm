@@ -81,14 +81,9 @@ extra:
     - icon: fontawesome/brands/github
       link: "https://github.com/wh1te909/tacticalrmm"
 markdown_extensions:
-  - pymdownx.superfences
   - pymdownx.inlinehilite
-  - pymdownx.tabbed:
-      alternate_style: true
   - admonition
   - codehilite:
       guess_lang: false
   - toc:
       permalink: true
-features:
-  - content.tabs.link

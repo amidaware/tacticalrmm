@@ -37,6 +37,14 @@ python manage.py show_outdated_agents
 python manage.py delete_tokens
 ```
 
+## Reset all Auth Tokens for Install agents and web sessions
+
+```bash
+python manage.py shell
+from knox.models import AuthToken
+AuthToken.objects.all().delete()
+```
+
 ## Check for orphaned tasks on all agents and remove them
 
 ```bash
@@ -47,14 +55,6 @@ python manage.py remove_orphaned_tasks
 
 ```bash
 python manage.py get_mesh_exe_url
-```
-
-## Reset all Auth Tokens for Install agents and web sessions
-
-```bash
-python manage.py shell
-from knox.models import AuthToken
-AuthToken.objects.all().delete()
 ```
 
 ## Bulk update agent offline/overdue time

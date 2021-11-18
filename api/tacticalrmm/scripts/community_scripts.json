@@ -238,11 +238,21 @@
     "default_timeout": "25000"
   },
   {
+    "guid": "4d0ba685-2259-44be-9010-8ed2fa48bf74",
+    "filename": "Win_Win11_Ready.ps1",
+    "submittedBy": "https://github.com/adamjrberry/",
+    "name": "Windows 11 Upgrade capable check",
+    "description": "Checks to see if machine is Win11 capable",
+    "shell": "powershell",
+    "category": "TRMM (Win):Updates",
+    "default_timeout": "3600"
+  },
+  {
     "guid": "375323e5-cac6-4f35-a304-bb7cef35902d",
-    "filename": "Win_Disk_Status.ps1",
+    "filename": "Win_Disk_Volume_Status.ps1",
     "submittedBy": "https://github.com/dinger1986",
-    "name": "Disk Hardware Health Check (using Event Viewer errors)",
-    "description": "Checks local disks for errors reported in event viewer within the last 24 hours",
+    "name": "Disk Drive Volume Health Check (using Event Viewer errors)",
+    "description": "Checks Drive Volumes for errors reported in event viewer within the last 24 hours",
     "shell": "powershell",
     "category": "TRMM (Win):Hardware"
   },

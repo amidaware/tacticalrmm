@@ -102,7 +102,13 @@
         <span class="text-subtitle2 text-bold">Disks</span>
         <div v-for="disk in disks" :key="disk.device">
           <span>{{ disk.device }} ({{ disk.fstype }})</span>
-          <q-linear-progress rounded size="15px" :value="disk.percent / 100" color="green" class="q-mt-sm" />
+          <q-linear-progress
+            rounded
+            size="15px"
+            :value="disk.percent / 100"
+            :color="diskBarColor(disk.percent)"
+            class="q-mt-sm"
+          />
           <span>{{ disk.free }} free of {{ disk.total }}</span>
           <q-separator />
         </div>
@@ -129,6 +135,16 @@ export default {
     // summary tab logic
     const summary = ref(null);
     const loading = ref(false);
+
+    function diskBarColor(percent) {
+      if (percent < 80) {
+        return "positive";
+      } else if (percent > 80 && percent < 95) {
+        return "warning";
+      } else {
+        return "negative";
+      }
+    }
 
     const disks = computed(() => {
       if (!summary.value.disks) {
@@ -181,6 +197,7 @@ export default {
       // methods
       getSummary,
       refreshSummary,
+      diskBarColor,
     };
   },
 };

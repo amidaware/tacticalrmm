@@ -94,6 +94,7 @@
           <tactical-dropdown
             style="width: 350px"
             dense
+            :loading="agentLoading"
             filled
             v-model="agent"
             :options="agentOptions"
@@ -124,7 +125,7 @@
 
 <script>
 // composable imports
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useQuasar, useDialogPluginComponent } from "quasar";
 import { saveScript, editScript, downloadScript } from "@/api/scripts";
 import { useAgentDropdown } from "@/composables/agents";
@@ -181,6 +182,7 @@ export default {
     const code = ref("");
     const maximized = ref(false);
     const loading = ref(false);
+    const agentLoading = ref(false);
 
     const title = computed(() => {
       if (props.script) {
@@ -245,6 +247,13 @@ export default {
       });
     }
 
+    // component life cycle hooks
+    onMounted(async () => {
+      agentLoading.value = true;
+      await getAgentOptions();
+      agentLoading.value = false;
+    });
+
     return {
       // reactive data
       formScript: script.value,
@@ -253,6 +262,7 @@ export default {
       loading,
       agentOptions,
       agent,
+      agentLoading,
 
       // non-reactive data
       shellOptions,

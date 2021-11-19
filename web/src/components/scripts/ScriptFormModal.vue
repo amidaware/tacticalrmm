@@ -100,7 +100,7 @@
             :options="agentOptions"
             label="Agent to run test script on"
             mapOptions
-            @filter="loadAgentOptions"
+            filterable
           >
             <template v-slot:after>
               <q-btn
@@ -235,18 +235,6 @@ export default {
       });
     }
 
-    function loadAgentOptions(val, update, abort) {
-      if (agentOptions.value.length > 0) {
-        // already loaded
-        update();
-        return;
-      }
-
-      update(async () => {
-        await getAgentOptions();
-      });
-    }
-
     // component life cycle hooks
     onMounted(async () => {
       agentLoading.value = true;
@@ -268,11 +256,9 @@ export default {
       shellOptions,
 
       //computed
-      getAgentOptions,
       title,
 
       //methods
-      loadAgentOptions,
       submitForm,
       openTestScriptModal,
 

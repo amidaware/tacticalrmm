@@ -430,7 +430,7 @@ You need to add the certificate private key and public keys to the following fil
 
 7. Restart services
    
-        sudo systemctl restart rmm celery celerybeat nginx nats natsapi
+        sudo systemctl restart rmm celery celerybeat nginx nats nats-api
 
 ## Use certbot to do acme challenge over http
 
@@ -720,7 +720,7 @@ python manage.py reload_nats
 
 ### Restart services
 
-for i in rmm celery celerybeat nginx nats natsapi
+for i in rmm celery celerybeat nginx nats nats-api
 do
 printf >&2 "${GREEN}Restarting ${i} service...${NC}\n"
 sudo systemctl restart ${i}

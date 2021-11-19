@@ -44,9 +44,9 @@ export function formatScriptOptions(data, flat = false) {
       let tmp = [];
       data.forEach(script => {
         if (script.category === cat) {
-          tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args });
+          tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args, filename: script.filename, syntax: script.syntax });
         } else if (cat === "Unassigned" && !script.category) {
-          tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args });
+          tmp.push({ label: script.name, value: script.id, timeout: script.default_timeout, args: script.args, filename: script.filename, syntax: script.syntax });
         }
       })
       const sorted = tmp.sort((a, b) => a.label.localeCompare(b.label));
@@ -157,6 +157,17 @@ export function formatCustomFields(fields, values) {
     }
   }
   return tempArray
+}
+
+export function formatScriptSyntax(syntax) {
+  let temp = syntax
+  temp = temp.replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+  temp = temp.replaceAll("&lt;", `<span style="color:#d4d4d4">&lt;</span>`).replaceAll("&gt;", `<span style="color:#d4d4d4">&gt;</span>`)
+  temp = temp.replaceAll("[", `<span style="color:#ffd70a">[</span>`).replaceAll("]", `<span style="color:#ffd70a">]</span>`)
+  temp = temp.replaceAll("(", `<span style="color:#87cefa">(</span>`).replaceAll(")", `<span style="color:#87cefa">)</span>`)
+  temp = temp.replaceAll("{", `<span style="color:#c586b6">{</span>`).replaceAll("}", `<span style="color:#c586b6">}</span>`)
+  temp = temp.replaceAll("\n", `<br />`)
+  return temp
 }
 
 // date formatting

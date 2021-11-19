@@ -1096,3 +1096,12 @@ class TestCheckPermissions(TacticalTestCase):
 
         self.check_authorized("patch", url)
         self.check_not_authorized("patch", unauthorized_url)
+
+    def test_policy_fields_to_copy_exists(self):
+        from .models import Check
+
+        fields = [i.name for i in Check._meta.get_fields()]
+        check = baker.make("checks.Check")
+
+        for i in check.policy_fields_to_copy:  # type: ignore
+            self.assertIn(i, fields)

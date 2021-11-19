@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 
 from agents.models import Agent
 from logs.models import PendingAction
-from tacticalrmm.utils import filter_software, notify_error
+from tacticalrmm.utils import notify_error
 
 from .models import ChocoSoftware, InstalledSoftware
 from .permissions import SoftwarePerms
@@ -76,13 +76,11 @@ class GetSoftware(APIView):
         if r == "timeout" or r == "natsdown":
             return notify_error("Unable to contact the agent")
 
-        sw = filter_software(r)
-
         if not InstalledSoftware.objects.filter(agent=agent).exists():
-            InstalledSoftware(agent=agent, software=sw).save()
+            InstalledSoftware(agent=agent, software=r).save()
         else:
             s = agent.installedsoftware_set.first()  # type: ignore
-            s.software = sw
+            s.software = r
             s.save(update_fields=["software"])
 
         return Response("ok")

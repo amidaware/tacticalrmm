@@ -9,6 +9,7 @@ from model_bakery import baker, seq
 from tacticalrmm.test import TacticalTestCase
 
 from alerts.tasks import cache_agents_alert_template
+from agents.tasks import handle_agents_task
 
 from .models import Alert, AlertTemplate
 from .serializers import (
@@ -676,25 +677,14 @@ class TestAlertTasks(TacticalTestCase):
         url = "/api/v3/checkin/"
 
         agent_template_text.version = settings.LATEST_AGENT_VER
+        agent_template_text.last_seen = djangotime.now()
         agent_template_text.save()
+
         agent_template_email.version = settings.LATEST_AGENT_VER
+        agent_template_email.last_seen = djangotime.now()
         agent_template_email.save()
 
-        data = {
-            "agent_id": agent_template_text.agent_id,
-            "version": settings.LATEST_AGENT_VER,
-        }
-
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-
-        data = {
-            "agent_id": agent_template_email.agent_id,
-            "version": settings.LATEST_AGENT_VER,
-        }
-
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
+        handle_agents_task()
 
         recovery_sms.assert_called_with(
             pk=Alert.objects.get(agent=agent_template_text).pk
@@ -1365,15 +1355,7 @@ class TestAlertTasks(TacticalTestCase):
         agent.last_seen = djangotime.now()
         agent.save()
 
-        url = "/api/v3/checkin/"
-
-        data = {
-            "agent_id": agent.agent_id,
-            "version": settings.LATEST_AGENT_VER,
-        }
-
-        resp = self.client.patch(url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
+        handle_agents_task()
 
         # this is what data should be
         data = {

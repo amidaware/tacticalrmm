@@ -9,6 +9,9 @@ export function useScriptDropdown(setScript = null, { onMount = false } = {}) {
   const defaultTimeout = ref(30)
   const defaultArgs = ref([])
   const script = ref(setScript)
+  const syntax = ref("")
+  const link = ref("")
+  const baseUrl = "https://github.com/wh1te909/tacticalrmm/blob/master/scripts/"
 
   // specifing flat returns an array of script names versus {value:id, label: hostname}
   async function getScriptOptions(showCommunityScripts = false, flat = false) {
@@ -21,6 +24,8 @@ export function useScriptDropdown(setScript = null, { onMount = false } = {}) {
       const tmpScript = scriptOptions.value.find(i => i.value === script.value);
       defaultTimeout.value = tmpScript.timeout;
       defaultArgs.value = tmpScript.args;
+      syntax.value = tmpScript.syntax
+      link.value = `${baseUrl}${tmpScript.filename}`
     }
   })
 
@@ -36,6 +41,8 @@ export function useScriptDropdown(setScript = null, { onMount = false } = {}) {
     scriptOptions,
     defaultTimeout,
     defaultArgs,
+    syntax,
+    link,
 
     //methods
     getScriptOptions

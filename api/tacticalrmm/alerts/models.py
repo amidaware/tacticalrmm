@@ -464,7 +464,7 @@ class Alert(models.Model):
                 try:
                     temp_args.append(re.sub("\\{\\{.*\\}\\}", value, arg))  # type: ignore
                 except Exception as e:
-                    DebugLog.error(log_type="scripting", message=e)
+                    DebugLog.error(log_type="scripting", message=str(e))
                     continue
 
             else:

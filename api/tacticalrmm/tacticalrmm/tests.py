@@ -1,19 +1,15 @@
-import json
-import os
 from unittest.mock import mock_open, patch
 
 import requests
-from django.conf import settings
 from django.test import override_settings
 from tacticalrmm.test import TacticalTestCase
 
 from .utils import (
     bitdays_to_string,
-    filter_software,
     generate_winagent_exe,
     get_bit_days,
     reload_nats,
-    run_nats_api_cmd,
+    AGENT_DEFER,
 )
 
 
@@ -78,12 +74,6 @@ class TestUtils(TacticalTestCase):
 
         mock_subprocess.assert_called_once()
 
-    @patch("subprocess.run")
-    def test_run_nats_api_cmd(self, mock_subprocess):
-        ids = ["a", "b", "c"]
-        _ = run_nats_api_cmd("wmi", ids)
-        mock_subprocess.assert_called_once()
-
     def test_bitdays_to_string(self):
         a = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         all_days = [
@@ -104,11 +94,10 @@ class TestUtils(TacticalTestCase):
         r = bitdays_to_string(bit_weekdays)
         self.assertEqual(r, "Every day")
 
-    def test_filter_software(self):
-        with open(
-            os.path.join(settings.BASE_DIR, "tacticalrmm/test_data/software1.json")
-        ) as f:
-            sw = json.load(f)
+    def test_defer_fields_exist(self):
+        from agents.models import Agent
 
-        r = filter_software(sw)
-        self.assertIsInstance(r, list)
+        fields = [i.name for i in Agent._meta.get_fields()]
+
+        for i in AGENT_DEFER:
+            self.assertIn(i, fields)

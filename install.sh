@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="55"
+SCRIPT_VERSION="56"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -40,11 +40,11 @@ fi
 
 
 # determine system
-if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]) || ([ "$osname" = "debian" ] && [ $relno -eq 10 ]); then
+if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]) || ([ "$osname" = "debian" ] && [ $relno -ge 10 ]); then
   echo $fullrel
 else
  echo $fullrel
- echo -ne "${RED}Only Ubuntu release 20.04 and Debian 10 are supported\n"
+ echo -ne "${RED}Supported versions: Ubuntu 20.04, Debian 10 and 11\n"
  echo -ne "Your system does not appear to be supported${NC}\n"
  exit 1
 fi
@@ -64,9 +64,11 @@ fi
 
 if ([ "$osname" = "ubuntu" ]); then
   mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 multiverse"
+# there is no bullseye repo yet for mongo so just use buster on debian 11
+elif ([ "$osname" = "debian" ] && [ $relno -eq 11 ]); then
+  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname buster/mongodb-org/4.4 main"
 else
   mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 main"
-
 fi
 
 postgresql_repo="deb [arch=amd64] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
@@ -193,14 +195,14 @@ print_green 'Installing Python 3.9'
 sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
 numprocs=$(nproc)
 cd ~
-wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz
-tar -xf Python-3.9.6.tgz
-cd Python-3.9.6
+wget https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tgz
+tar -xf Python-3.9.9.tgz
+cd Python-3.9.9
 ./configure --enable-optimizations
 make -j $numprocs
 sudo make altinstall
 cd ~
-sudo rm -rf Python-3.9.6 Python-3.9.6.tgz
+sudo rm -rf Python-3.9.9 Python-3.9.9.tgz
 
 
 print_green 'Installing redis and git'
@@ -351,6 +353,7 @@ pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input
+python manage.py create_natsapi_conf
 python manage.py load_chocos
 python manage.py load_community_scripts
 printf >&2 "${YELLOW}%0.s*${NC}" {1..80}
@@ -439,7 +442,7 @@ echo "${daphneservice}" | sudo tee /etc/systemd/system/daphne.service > /dev/nul
 natsservice="$(cat << EOF
 [Unit]
 Description=NATS Server
-After=network.target ntp.service
+After=network.target
 
 [Service]
 PrivateTmp=true
@@ -457,6 +460,25 @@ WantedBy=multi-user.target
 EOF
 )"
 echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service > /dev/null
+
+natsapi="$(cat << EOF
+[Unit]
+Description=TacticalRMM Nats Api v1
+After=nats.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/nats-api
+User=${USER}
+Group=${USER}
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${natsapi}" | sudo tee /etc/systemd/system/nats-api.service > /dev/null
 
 nginxrmm="$(cat << EOF
 server_tokens off;
@@ -790,6 +812,10 @@ python manage.py initial_db_setup
 python manage.py reload_nats
 deactivate
 sudo systemctl start nats.service
+
+sleep 1
+sudo systemctl enable nats-api.service
+sudo systemctl start nats-api.service
 
 ## disable django admin
 sed -i 's/ADMIN_ENABLED = True/ADMIN_ENABLED = False/g' /rmm/api/tacticalrmm/tacticalrmm/local_settings.py

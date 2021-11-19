@@ -119,7 +119,6 @@ class CoreSettings(BaseAuditModel):
     def sms_is_configured(self):
         return all(
             [
-                self.sms_alert_recipients,
                 self.twilio_auth_token,
                 self.twilio_account_sid,
                 self.twilio_number,
@@ -131,7 +130,6 @@ class CoreSettings(BaseAuditModel):
         # smtp with username/password authentication
         if (
             self.smtp_requires_auth
-            and self.email_alert_recipients
             and self.smtp_from_email
             and self.smtp_host
             and self.smtp_host_user
@@ -142,7 +140,6 @@ class CoreSettings(BaseAuditModel):
         # smtp relay
         elif (
             not self.smtp_requires_auth
-            and self.email_alert_recipients
             and self.smtp_from_email
             and self.smtp_host
             and self.smtp_port

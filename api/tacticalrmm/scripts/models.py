@@ -24,7 +24,7 @@ class Script(BaseAuditModel):
     guid = models.CharField(max_length=64, null=True, blank=True)
     name = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True, default="")
-    filename = models.CharField(max_length=255)  # deprecated
+    filename = models.CharField(max_length=255)
     shell = models.CharField(
         max_length=100, choices=SCRIPT_SHELLS, default="powershell"
     )
@@ -37,6 +37,7 @@ class Script(BaseAuditModel):
         blank=True,
         default=list,
     )
+    syntax = TextField(null=True, blank=True)
     favorite = models.BooleanField(default=False)
     category = models.CharField(max_length=100, null=True, blank=True)
     code_base64 = models.TextField(null=True, blank=True, default="")
@@ -115,6 +116,8 @@ class Script(BaseAuditModel):
 
                 args = script["args"] if "args" in script.keys() else []
 
+                syntax = script["syntax"] if "syntax" in script.keys() else ""
+
                 if s.exists():
                     i = s.first()
                     i.name = script["name"]  # type: ignore
@@ -123,6 +126,8 @@ class Script(BaseAuditModel):
                     i.shell = script["shell"]  # type: ignore
                     i.default_timeout = default_timeout  # type: ignore
                     i.args = args  # type: ignore
+                    i.syntax = syntax  # type: ignore
+                    i.filename = script["filename"]  # type: ignore
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
                         script_bytes = (
@@ -139,6 +144,8 @@ class Script(BaseAuditModel):
                             "code_base64",
                             "shell",
                             "args",
+                            "filename",
+                            "syntax",
                         ]
                     )
 
@@ -157,6 +164,8 @@ class Script(BaseAuditModel):
                         s.shell = script["shell"]
                         s.default_timeout = default_timeout
                         s.args = args
+                        s.filename = script["filename"]
+                        s.syntax = syntax
 
                         with open(
                             os.path.join(scripts_dir, script["filename"]), "rb"
@@ -178,6 +187,8 @@ class Script(BaseAuditModel):
                                 "code_base64",
                                 "shell",
                                 "args",
+                                "filename",
+                                "syntax",
                             ]
                         )
 
@@ -200,6 +211,8 @@ class Script(BaseAuditModel):
                             category=category,
                             default_timeout=default_timeout,
                             args=args,
+                            filename=script["filename"],
+                            syntax=syntax,
                         ).save()
 
         # delete community scripts that had their name changed

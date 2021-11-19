@@ -1,4 +1,4 @@
-FROM python:3.9.6-slim
+FROM python:3.9.9-slim
 
 ENV TACTICAL_DIR /opt/tactical
 ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
@@ -12,10 +12,6 @@ EXPOSE 8000 8383 8005
 
 RUN groupadd -g 1000 tactical && \
     useradd -u 1000 -g 1000 tactical
-
-# Copy nats-api file
-COPY natsapi/bin/nats-api /usr/local/bin/
-RUN chmod +x /usr/local/bin/nats-api
 
 # Copy dev python reqs
 COPY .devcontainer/requirements.txt  /

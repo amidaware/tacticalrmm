@@ -1,5 +1,5 @@
 # creates python virtual env
-FROM python:3.9.6-slim AS CREATE_VENV_STAGE
+FROM python:3.9.9-slim AS CREATE_VENV_STAGE
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -23,7 +23,7 @@ RUN apt-get update && \
 
 
 # runtime image
-FROM python:3.9.6-slim
+FROM python:3.9.9-slim
 
 # set env variables
 ENV VIRTUAL_ENV /opt/venv
@@ -49,10 +49,6 @@ RUN apt-get update && \
     useradd -M -d "${TACTICAL_DIR}" -s /bin/bash -u 1000 -g 1000 "${TACTICAL_USER}"
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
-
-# copy nats-api file
-COPY natsapi/bin/nats-api /usr/local/bin/
-RUN chmod +x /usr/local/bin/nats-api
 
 # docker init
 COPY docker/containers/tactical/entrypoint.sh /

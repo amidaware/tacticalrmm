@@ -15,37 +15,41 @@
         </q-btn>
       </q-bar>
       <q-form @submit="submitForm">
-        <q-card-section>
-          <div class="q-gutter-sm row">
-            <div class="col-5">
-              <q-input :rules="[val => !!val || '*Required']" v-model="formSnippet.name" label="Name" filled dense />
-            </div>
-            <div class="col-2">
-              <q-select
-                v-model="formSnippet.shell"
-                :options="shellOptions"
-                label="Shell Type"
-                options-dense
-                filled
-                dense
-                emit-value
-                map-options
-              />
-            </div>
-            <div class="col-4">
-              <q-input filled dense v-model="formSnippet.desc" label="Description" />
-            </div>
-          </div>
-        </q-card-section>
+        <div class="row">
+          <q-input
+            :rules="[val => !!val || '*Required']"
+            class="q-pa-sm col-4"
+            v-model="formSnippet.name"
+            label="Name"
+            filled
+            dense
+          />
+          <q-select
+            v-model="formSnippet.shell"
+            :options="shellOptions"
+            class="q-pa-sm col-2"
+            label="Shell Type"
+            options-dense
+            filled
+            dense
+            emit-value
+            map-options
+          />
+          <q-input class="q-pa-sm col-6" filled dense v-model="formSnippet.desc" label="Description" />
+        </div>
 
-        <CodeEditor
-          v-model="formSnippet.code"
-          :style="maximized ? '--prism-height: 80vh' : '--prism-height: 70vh'"
-          :shell="formSnippet.shell"
+        <v-ace-editor
+          v-model:value="formSnippet.code"
+          :lang="formSnippet.shell === 'cmd' ? 'batchfile' : formSnippet.shell"
+          :theme="$q.dark.isActive ? 'tomorrow_night_eighties' : 'tomorrow'"
+          :style="{ height: `${maximized ? '80vh' : '70vh'}` }"
+          wrap
+          :printMargin="false"
+          :options="{ fontSize: '14px' }"
         />
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" v-close-popup />
-          <q-btn :loading="loading" flat label="Save" color="primary" type="submit" />
+          <q-btn dense flat label="Cancel" v-close-popup />
+          <q-btn :loading="loading" dense flat label="Save" color="primary" type="submit" />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -60,7 +64,14 @@ import { saveScriptSnippet, editScriptSnippet } from "@/api/scripts";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
-import CodeEditor from "@/components/ui/CodeEditor";
+import { VAceEditor } from "vue3-ace-editor";
+
+// imports for ace editor
+import "ace-builds/src-noconflict/mode-powershell";
+import "ace-builds/src-noconflict/mode-python";
+import "ace-builds/src-noconflict/mode-batchfile";
+import "ace-builds/src-noconflict/theme-tomorrow_night_eighties";
+import "ace-builds/src-noconflict/theme-tomorrow";
 
 // static data
 import { shellOptions } from "@/composables/scripts";
@@ -69,7 +80,7 @@ export default {
   name: "ScriptFormModal",
   emits: [...useDialogPluginComponent.emits],
   components: {
-    CodeEditor,
+    VAceEditor,
   },
   props: {
     snippet: Object,
@@ -95,20 +106,13 @@ export default {
 
     async function submitForm() {
       loading.value = true;
-      let result = "";
       try {
-        // edit existing script snippet
-        if (props.snippet) {
-          result = await editScriptSnippet(snippet.value);
-
-          // add script snippet
-        } else {
-          result = await saveScriptSnippet(snippet.value);
-        }
-
+        const result = props.snippet ? await editScriptSnippet(snippet.value) : await saveScriptSnippet(snippet.value);
         onDialogOK();
         notifySuccess(result);
-      } catch (e) {}
+      } catch (e) {
+        console.error(e);
+      }
 
       loading.value = false;
     }

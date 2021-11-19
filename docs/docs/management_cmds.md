@@ -37,6 +37,14 @@ python manage.py show_outdated_agents
 python manage.py delete_tokens
 ```
 
+## Reset all Auth Tokens for Install agents and web sessions
+
+```bash
+python manage.py shell
+from knox.models import AuthToken
+AuthToken.objects.all().delete()
+```
+
 ## Check for orphaned tasks on all agents and remove them
 
 ```bash

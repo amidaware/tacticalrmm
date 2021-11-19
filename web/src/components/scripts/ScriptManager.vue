@@ -1,6 +1,15 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide">
-    <q-card class="q-dialog-plugin" style="width: 90vw; max-width: 90vw">
+    <q-card
+      class="q-dialog-plugin"
+      id="script-manager-card"
+      :style="{
+        width: `${$q.screen.width - 100}px`,
+        'max-width': `${$q.screen.width - 100}px`,
+        height: `${$q.screen.height - 100}px`,
+        'max-height': `${$q.screen.height - 100}px`,
+      }"
+    >
       <q-bar>
         <q-btn @click="getScripts" class="q-mr-sm" dense flat push icon="refresh" />Script Manager
         <q-space />
@@ -8,320 +17,307 @@
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
-      <div class="q-pa-md">
-        <div class="q-gutter-sm row">
-          <q-btn-dropdown icon="add" label="New" no-caps dense flat>
-            <q-list dense>
-              <q-item clickable v-close-popup @click="newScriptModal">
-                <q-item-section side>
-                  <q-icon size="xs" name="add" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>New Script</q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="uploadScriptModal">
-                <q-item-section side>
-                  <q-icon size="xs" name="cloud_upload" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Upload Script</q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-btn-dropdown>
-          <q-btn
-            no-caps
-            dense
-            flat
-            class="q-ml-sm"
-            label="Script Snippets"
-            icon="mdi-script"
-            @click="ScriptSnippetModal"
-          />
-          <q-btn
-            dense
-            flat
-            no-caps
-            class="q-ml-sm"
-            :label="tableView ? 'Folder View' : 'Table View'"
-            :icon="tableView ? 'folder' : 'list'"
-            @click="tableView = !tableView"
-          />
-          <q-btn
-            dense
-            flat
-            no-caps
-            class="q-ml-sm"
-            :label="showCommunityScripts ? 'Hide Community Scripts' : 'Show Community Scripts'"
-            :icon="showCommunityScripts ? 'visibility_off' : 'visibility'"
-            @click="setShowCommunityScripts(!showCommunityScripts)"
-          />
+      <div class="row q-pt-xs q-pl-xs">
+        <q-btn-dropdown icon="add" label="New" no-caps dense flat>
+          <q-list dense>
+            <q-item clickable v-close-popup @click="newScriptModal">
+              <q-item-section side>
+                <q-icon size="xs" name="add" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>New Script</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="uploadScriptModal">
+              <q-item-section side>
+                <q-icon size="xs" name="cloud_upload" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Upload Script</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
+        <q-btn
+          no-caps
+          dense
+          flat
+          class="q-ml-sm"
+          label="Script Snippets"
+          icon="mdi-script"
+          @click="ScriptSnippetModal"
+        />
+        <q-btn
+          dense
+          flat
+          no-caps
+          class="q-ml-sm"
+          :label="tableView ? 'Folder View' : 'Table View'"
+          :icon="tableView ? 'folder' : 'list'"
+          @click="tableView = !tableView"
+        />
+        <q-btn
+          dense
+          flat
+          no-caps
+          class="q-ml-sm"
+          :label="showCommunityScripts ? 'Hide Community Scripts' : 'Show Community Scripts'"
+          :icon="showCommunityScripts ? 'visibility_off' : 'visibility'"
+          @click="setShowCommunityScripts(!showCommunityScripts)"
+        />
 
-          <q-space />
-          <q-input
-            v-model="search"
-            style="width: 300px"
-            label="Search"
-            dense
-            outlined
-            clearable
-            class="q-pr-md q-pb-xs"
-          >
-            <template v-slot:prepend>
-              <q-icon name="search" color="primary" />
-            </template>
-          </q-input>
-        </div>
-        <div class="scroll" style="min-height: 65vh; max-height: 65vh">
-          <!-- List View -->
-          <q-tree
-            ref="folderTree"
-            v-if="!tableView"
-            :nodes="tree"
-            :filter="search"
-            no-connectors
-            node-key="id"
-            v-model:expanded="expanded"
-            no-results-label="No Scripts Found"
-            no-nodes-label="No Scripts Found"
-          >
-            <template v-slot:header-script="props">
-              <div
-                class="cursor-pointer"
-                @dblclick="
-                  props.node.script_type === 'builtin' ? viewCodeModal(props.node) : editScriptModal(props.node)
-                "
-              >
-                <q-icon v-if="props.node.favorite" color="yellow-8" name="star" size="sm" class="q-px-sm" />
-                <q-icon v-else color="yellow-8" name="star_outline" size="sm" class="q-px-sm" />
-
-                <q-icon v-if="props.node.shell === 'powershell'" name="mdi-powershell" color="primary">
-                  <q-tooltip> Powershell </q-tooltip>
-                </q-icon>
-                <q-icon v-else-if="props.node.shell === 'python'" name="mdi-language-python" color="primary">
-                  <q-tooltip> Python </q-tooltip>
-                </q-icon>
-                <q-icon v-else-if="props.node.shell === 'cmd'" name="mdi-microsoft-windows" color="primary">
-                  <q-tooltip> Batch </q-tooltip>
-                </q-icon>
-
-                <span class="q-pl-xs text-weight-bold">{{ props.node.name }}</span>
-                <span class="q-pl-xs">{{ props.node.description }}</span>
-              </div>
-
-              <!-- context menu -->
-              <q-menu context-menu>
-                <q-list dense style="min-width: 200px">
-                  <q-item clickable v-close-popup @click="viewCodeModal(props.node)">
-                    <q-item-section side>
-                      <q-icon name="remove_red_eye" />
-                    </q-item-section>
-                    <q-item-section>View Code</q-item-section>
-                  </q-item>
-
-                  <q-item clickable v-close-popup @click="cloneScriptModal(props.node)">
-                    <q-item-section side>
-                      <q-icon name="content_copy" />
-                    </q-item-section>
-                    <q-item-section>Clone</q-item-section>
-                  </q-item>
-
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="editScriptModal(props.node)"
-                    :disable="props.node.script_type === 'builtin'"
-                  >
-                    <q-item-section side>
-                      <q-icon name="edit" />
-                    </q-item-section>
-                    <q-item-section>Edit</q-item-section>
-                  </q-item>
-
-                  <q-item
-                    clickable
-                    v-close-popup
-                    @click="deleteScript(props.node)"
-                    :disable="props.node.script_type === 'builtin'"
-                  >
-                    <q-item-section side>
-                      <q-icon name="delete" />
-                    </q-item-section>
-                    <q-item-section>Delete</q-item-section>
-                  </q-item>
-
-                  <q-separator></q-separator>
-
-                  <q-item clickable v-close-popup @click="favoriteScript(props.node)">
-                    <q-item-section side>
-                      <q-icon name="star" />
-                    </q-item-section>
-                    <q-item-section>{{
-                      props.node.favorite ? "Remove as Favorite" : "Add as Favorite"
-                    }}</q-item-section>
-                  </q-item>
-
-                  <q-item clickable v-close-popup @click="exportScript(props.node)">
-                    <q-item-section side>
-                      <q-icon name="cloud_download" />
-                    </q-item-section>
-                    <q-item-section>Download Script</q-item-section>
-                  </q-item>
-
-                  <q-separator></q-separator>
-
-                  <q-item clickable v-close-popup>
-                    <q-item-section>Close</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-menu>
-            </template>
-          </q-tree>
-          <q-table
-            v-if="tableView"
-            dense
-            :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
-            class="settings-tbl-sticky"
-            :rows="visibleScripts"
-            :columns="columns"
-            :loading="loading"
-            v-model:pagination="pagination"
-            :filter="search"
-            row-key="id"
-            binary-state-sort
-            hide-pagination
-            virtual-scroll
-            :rows-per-page-options="[0]"
-          >
-            <template v-slot:header-cell-favorite="props">
-              <q-th :props="props" auto-width>
-                <q-icon name="star" color="yellow-8" size="sm" />
-              </q-th>
-            </template>
-
-            <template v-slot:header-cell-shell="props">
-              <q-th :props="props" auto-width> Shell </q-th>
-            </template>
-
-            <template v-slot:no-data> No Scripts Found </template>
-            <template v-slot:body="props">
-              <!-- Table View -->
-              <q-tr
-                :props="props"
-                @dblclick="props.row.script_type === 'builtin' ? viewCodeModal(props.row) : editScriptModal(props.row)"
-                class="cursor-pointer"
-              >
-                <!-- Context Menu -->
-                <q-menu context-menu>
-                  <q-list dense style="min-width: 200px">
-                    <q-item clickable v-close-popup @click="viewCodeModal(props.row)">
-                      <q-item-section side>
-                        <q-icon name="remove_red_eye" />
-                      </q-item-section>
-                      <q-item-section>View Code</q-item-section>
-                    </q-item>
-
-                    <q-item clickable v-close-popup @click="cloneScriptModal(props.row)">
-                      <q-item-section side>
-                        <q-icon name="content_copy" />
-                      </q-item-section>
-                      <q-item-section>Clone</q-item-section>
-                    </q-item>
-
-                    <q-item
-                      clickable
-                      v-close-popup
-                      @click="editScriptModal(props.row)"
-                      :disable="props.row.script_type === 'builtin'"
-                    >
-                      <q-item-section side>
-                        <q-icon name="edit" />
-                      </q-item-section>
-                      <q-item-section>Edit</q-item-section>
-                    </q-item>
-
-                    <q-item
-                      clickable
-                      v-close-popup
-                      @click="deleteScript(props.row)"
-                      :disable="props.row.script_type === 'builtin'"
-                    >
-                      <q-item-section side>
-                        <q-icon name="delete" />
-                      </q-item-section>
-                      <q-item-section>Delete</q-item-section>
-                    </q-item>
-
-                    <q-separator></q-separator>
-
-                    <q-item clickable v-close-popup @click="favoriteScript(props.row)">
-                      <q-item-section side>
-                        <q-icon name="star" />
-                      </q-item-section>
-                      <q-item-section>{{
-                        props.row.favorite ? "Remove as Favorite" : "Add as Favorite"
-                      }}</q-item-section>
-                    </q-item>
-
-                    <q-item clickable v-close-popup @click="exportScript(props.row)">
-                      <q-item-section side>
-                        <q-icon name="cloud_download" />
-                      </q-item-section>
-                      <q-item-section>Download Script</q-item-section>
-                    </q-item>
-
-                    <q-separator></q-separator>
-
-                    <q-item clickable v-close-popup>
-                      <q-item-section>Close</q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-menu>
-                <q-td>
-                  <q-icon v-if="props.row.favorite" color="yellow-8" name="star" size="sm" />
-                </q-td>
-                <q-td>
-                  <q-icon v-if="props.row.shell === 'powershell'" name="mdi-powershell" color="primary" size="sm">
-                    <q-tooltip> Powershell </q-tooltip>
-                  </q-icon>
-                  <q-icon v-else-if="props.row.shell === 'python'" name="mdi-language-python" color="primary" size="sm">
-                    <q-tooltip> Python </q-tooltip>
-                  </q-icon>
-                  <q-icon v-else-if="props.row.shell === 'cmd'" name="mdi-microsoft-windows" color="primary" size="sm">
-                    <q-tooltip> Batch </q-tooltip>
-                  </q-icon>
-                </q-td>
-                <!-- name -->
-                <q-td>
-                  {{ truncateText(props.row.name, 50) }}
-                  <q-tooltip v-if="props.row.name.length >= 50" style="font-size: 12px">
-                    {{ props.row.name }}
-                  </q-tooltip>
-                </q-td>
-                <!-- args -->
-                <q-td>
-                  <span v-if="props.row.args.length > 0">
-                    {{ truncateText(props.row.args.toString(), 30) }}
-                    <q-tooltip v-if="props.row.args.toString().length >= 30" style="font-size: 12px">
-                      {{ props.row.args }}
-                    </q-tooltip>
-                  </span>
-                </q-td>
-
-                <q-td>{{ props.row.category }}</q-td>
-                <q-td>
-                  {{ truncateText(props.row.description, 30) }}
-                  <q-tooltip v-if="props.row.description.length >= 30" style="font-size: 12px">{{
-                    props.row.description
-                  }}</q-tooltip>
-                </q-td>
-                <q-td>{{ props.row.default_timeout }}</q-td>
-              </q-tr>
-            </template>
-          </q-table>
-        </div>
+        <q-space />
+        <q-input v-model="search" style="width: 300px" label="Search" dense outlined clearable class="q-pr-md q-pb-xs">
+          <template v-slot:prepend>
+            <q-icon name="search" color="primary" />
+          </template>
+        </q-input>
       </div>
+      <!-- List View -->
+      <div
+        v-if="!tableView"
+        class="scroll q-pl-xs"
+        :style="{ 'max-height': `${$q.screen.height - 182}px`, 'min-height': `${$q.screen.height - 382}px` }"
+      >
+        <q-tree
+          ref="folderTree"
+          :nodes="tree"
+          :filter="search"
+          no-connectors
+          node-key="id"
+          v-model:expanded="expanded"
+          no-results-label="No Scripts Found"
+          no-nodes-label="No Scripts Found"
+        >
+          <template v-slot:header-script="props">
+            <div
+              class="cursor-pointer"
+              @dblclick="props.node.script_type === 'builtin' ? viewCodeModal(props.node) : editScriptModal(props.node)"
+            >
+              <q-icon v-if="props.node.favorite" color="yellow-8" name="star" size="sm" class="q-px-sm" />
+              <q-icon v-else color="yellow-8" name="star_outline" size="sm" class="q-px-sm" />
+
+              <q-icon v-if="props.node.shell === 'powershell'" name="mdi-powershell" color="primary">
+                <q-tooltip> Powershell </q-tooltip>
+              </q-icon>
+              <q-icon v-else-if="props.node.shell === 'python'" name="mdi-language-python" color="primary">
+                <q-tooltip> Python </q-tooltip>
+              </q-icon>
+              <q-icon v-else-if="props.node.shell === 'cmd'" name="mdi-microsoft-windows" color="primary">
+                <q-tooltip> Batch </q-tooltip>
+              </q-icon>
+
+              <span class="q-pl-xs text-weight-bold">{{ props.node.name }}</span>
+              <span class="q-pl-xs">{{ props.node.description }}</span>
+            </div>
+
+            <!-- context menu -->
+            <q-menu context-menu>
+              <q-list dense style="min-width: 200px">
+                <q-item clickable v-close-popup @click="viewCodeModal(props.node)">
+                  <q-item-section side>
+                    <q-icon name="remove_red_eye" />
+                  </q-item-section>
+                  <q-item-section>View Code</q-item-section>
+                </q-item>
+
+                <q-item clickable v-close-popup @click="cloneScriptModal(props.node)">
+                  <q-item-section side>
+                    <q-icon name="content_copy" />
+                  </q-item-section>
+                  <q-item-section>Clone</q-item-section>
+                </q-item>
+
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="editScriptModal(props.node)"
+                  :disable="props.node.script_type === 'builtin'"
+                >
+                  <q-item-section side>
+                    <q-icon name="edit" />
+                  </q-item-section>
+                  <q-item-section>Edit</q-item-section>
+                </q-item>
+
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="deleteScript(props.node)"
+                  :disable="props.node.script_type === 'builtin'"
+                >
+                  <q-item-section side>
+                    <q-icon name="delete" />
+                  </q-item-section>
+                  <q-item-section>Delete</q-item-section>
+                </q-item>
+
+                <q-separator></q-separator>
+
+                <q-item clickable v-close-popup @click="favoriteScript(props.node)">
+                  <q-item-section side>
+                    <q-icon name="star" />
+                  </q-item-section>
+                  <q-item-section>{{ props.node.favorite ? "Remove as Favorite" : "Add as Favorite" }}</q-item-section>
+                </q-item>
+
+                <q-item clickable v-close-popup @click="exportScript(props.node)">
+                  <q-item-section side>
+                    <q-icon name="cloud_download" />
+                  </q-item-section>
+                  <q-item-section>Download Script</q-item-section>
+                </q-item>
+
+                <q-separator></q-separator>
+
+                <q-item clickable v-close-popup>
+                  <q-item-section>Close</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+          </template>
+        </q-tree>
+      </div>
+      <q-table
+        v-if="tableView"
+        dense
+        :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
+        :style="{ 'max-height': `${$q.screen.height - 182}px` }"
+        class="tbl-sticky"
+        :rows="visibleScripts"
+        :columns="columns"
+        :loading="loading"
+        :pagination="{ rowsPerPage: 0, sortBy: 'favorite', descending: true }"
+        :filter="search"
+        row-key="id"
+        binary-state-sort
+        virtual-scroll
+        :rows-per-page-options="[0]"
+      >
+        <template v-slot:header-cell-favorite="props">
+          <q-th :props="props" auto-width>
+            <q-icon name="star" color="yellow-8" size="sm" />
+          </q-th>
+        </template>
+
+        <template v-slot:header-cell-shell="props">
+          <q-th :props="props" auto-width> Shell </q-th>
+        </template>
+
+        <template v-slot:no-data> No Scripts Found </template>
+        <template v-slot:body="props">
+          <!-- Table View -->
+          <q-tr
+            :props="props"
+            @dblclick="props.row.script_type === 'builtin' ? viewCodeModal(props.row) : editScriptModal(props.row)"
+            class="cursor-pointer"
+          >
+            <!-- Context Menu -->
+            <q-menu context-menu>
+              <q-list dense style="min-width: 200px">
+                <q-item clickable v-close-popup @click="viewCodeModal(props.row)">
+                  <q-item-section side>
+                    <q-icon name="remove_red_eye" />
+                  </q-item-section>
+                  <q-item-section>View Code</q-item-section>
+                </q-item>
+
+                <q-item clickable v-close-popup @click="cloneScriptModal(props.row)">
+                  <q-item-section side>
+                    <q-icon name="content_copy" />
+                  </q-item-section>
+                  <q-item-section>Clone</q-item-section>
+                </q-item>
+
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="editScriptModal(props.row)"
+                  :disable="props.row.script_type === 'builtin'"
+                >
+                  <q-item-section side>
+                    <q-icon name="edit" />
+                  </q-item-section>
+                  <q-item-section>Edit</q-item-section>
+                </q-item>
+
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="deleteScript(props.row)"
+                  :disable="props.row.script_type === 'builtin'"
+                >
+                  <q-item-section side>
+                    <q-icon name="delete" />
+                  </q-item-section>
+                  <q-item-section>Delete</q-item-section>
+                </q-item>
+
+                <q-separator></q-separator>
+
+                <q-item clickable v-close-popup @click="favoriteScript(props.row)">
+                  <q-item-section side>
+                    <q-icon name="star" />
+                  </q-item-section>
+                  <q-item-section>{{ props.row.favorite ? "Remove as Favorite" : "Add as Favorite" }}</q-item-section>
+                </q-item>
+
+                <q-item clickable v-close-popup @click="exportScript(props.row)">
+                  <q-item-section side>
+                    <q-icon name="cloud_download" />
+                  </q-item-section>
+                  <q-item-section>Download Script</q-item-section>
+                </q-item>
+
+                <q-separator></q-separator>
+
+                <q-item clickable v-close-popup>
+                  <q-item-section>Close</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+            <q-td>
+              <q-icon v-if="props.row.favorite" color="yellow-8" name="star" size="sm" />
+            </q-td>
+            <q-td>
+              <q-icon v-if="props.row.shell === 'powershell'" name="mdi-powershell" color="primary" size="sm">
+                <q-tooltip> Powershell </q-tooltip>
+              </q-icon>
+              <q-icon v-else-if="props.row.shell === 'python'" name="mdi-language-python" color="primary" size="sm">
+                <q-tooltip> Python </q-tooltip>
+              </q-icon>
+              <q-icon v-else-if="props.row.shell === 'cmd'" name="mdi-microsoft-windows" color="primary" size="sm">
+                <q-tooltip> Batch </q-tooltip>
+              </q-icon>
+            </q-td>
+            <!-- name -->
+            <q-td>
+              {{ truncateText(props.row.name, 50) }}
+              <q-tooltip v-if="props.row.name.length >= 50" style="font-size: 12px">
+                {{ props.row.name }}
+              </q-tooltip>
+            </q-td>
+            <!-- args -->
+            <q-td>
+              <span v-if="props.row.args.length > 0">
+                {{ truncateText(props.row.args.toString(), 30) }}
+                <q-tooltip v-if="props.row.args.toString().length >= 30" style="font-size: 12px">
+                  {{ props.row.args }}
+                </q-tooltip>
+              </span>
+            </q-td>
+
+            <q-td>{{ props.row.category }}</q-td>
+            <q-td>
+              {{ truncateText(props.row.description, 30) }}
+              <q-tooltip v-if="props.row.description.length >= 30" style="font-size: 12px">{{
+                props.row.description
+              }}</q-tooltip>
+            </q-td>
+            <q-td>{{ props.row.default_timeout }}</q-td>
+          </q-tr>
+        </template>
+      </q-table>
     </q-card>
   </q-dialog>
 </template>
@@ -410,16 +406,20 @@ export default {
 
     async function getScripts() {
       loading.value = true;
-      scripts.value = await fetchScripts();
+      try {
+        scripts.value = await fetchScripts();
+      } catch (e) {
+        console.error(e);
+      }
       loading.value = false;
     }
 
-    function favoriteScript(script) {
+    async function favoriteScript(script) {
       loading.value = true;
       const notifyText = !script.favorite ? "Script was favorited!" : "Script was removed as a favorite!";
       try {
-        editScript({ id: script.id, favorite: !script.favorite });
-        getScripts();
+        const result = await editScript({ id: script.id, favorite: !script.favorite });
+        await getScripts();
         notifySuccess(notifyText);
       } catch (e) {}
 
@@ -446,8 +446,12 @@ export default {
     async function exportScript(script) {
       loading.value = true;
 
-      const { code, filename } = await downloadScript(script.id);
-      exportFile(filename, new Blob([code]), { mimeType: "text/plain;charset=utf-8" });
+      try {
+        const { code, filename } = await downloadScript(script.id);
+        exportFile(filename, new Blob([code]), { mimeType: "text/plain;charset=utf-8" });
+      } catch (e) {
+        console.error(e);
+      }
       loading.value = false;
     }
 
@@ -456,11 +460,6 @@ export default {
     const tableView = ref(true);
     const expanded = ref([]);
     const loading = ref(false);
-    const pagination = ref({
-      rowsPerPage: 0,
-      sortBy: "favorite",
-      descending: true,
-    });
 
     const visibleScripts = computed(() =>
       showCommunityScripts.value ? scripts.value : scripts.value.filter(i => i.script_type !== "builtin")
@@ -494,7 +493,7 @@ export default {
         // sort by name property
         const sortedScripts = scriptsTemp.sort(function (a, b) {
           const nameA = a.name.toUpperCase();
-          const nameB = b.name.toUpperCase(); 
+          const nameB = b.name.toUpperCase();
 
           if (nameA < nameB) {
             return -1;
@@ -515,7 +514,7 @@ export default {
             id: category,
             children: [],
           };
-        
+
           for (let x = 0; x < sortedScripts.length; x++) {
             if (sortedScripts[x].category === category) {
               temp.children.push({ label: sortedScripts[x].name, header: "script", ...sortedScripts[x] });
@@ -610,7 +609,6 @@ export default {
       search,
       tableView,
       expanded,
-      pagination,
       loading,
       showCommunityScripts,
 

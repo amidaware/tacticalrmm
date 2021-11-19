@@ -21,7 +21,7 @@ export default function () {
         agentUrlAction: null,
         defaultAgentTblTab: "server",
         clientTreeSort: "alphafail",
-        clientTreeSplitter: 11,
+        clientTreeSplitter: 20,
         noCodeSign: false,
         hosted: false
       }

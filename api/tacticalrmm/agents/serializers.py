@@ -38,13 +38,15 @@ class AgentSerializer(serializers.ModelSerializer):
     client = serializers.ReadOnlyField(source="client.name")
     site_name = serializers.ReadOnlyField(source="site.name")
     custom_fields = AgentCustomFieldSerializer(many=True, read_only=True)
+    patches_last_installed = serializers.ReadOnlyField()
+    last_seen = serializers.ReadOnlyField()
 
     def get_all_timezones(self, obj):
         return pytz.all_timezones
 
     class Meta:
         model = Agent
-        exclude = ["last_seen", "id", "patches_last_installed"]
+        exclude = ["id"]
 
 
 class AgentTableSerializer(serializers.ModelSerializer):

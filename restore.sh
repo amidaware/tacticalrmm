@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="31"
+SCRIPT_VERSION="32"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh'
 
 sudo apt update
@@ -39,20 +39,22 @@ if [ ! "$osname" = "ubuntu" ] && [ ! "$osname" = "debian" ]; then
 fi
 
 # determine system
-if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]) || ([ "$osname" = "debian" ] && [ $relno -eq 10 ]); then
+if ([ "$osname" = "ubuntu" ] && [ "$fullrelno" = "20.04" ]) || ([ "$osname" = "debian" ] && [ $relno -ge 10 ]); then
   echo $fullrel
 else
  echo $fullrel
- echo -ne "${RED}Only Ubuntu release 20.04 and Debian 10 are supported\n"
+ echo -ne "${RED}Supported versions: Ubuntu 20.04, Debian 10 and 11\n"
  echo -ne "Your system does not appear to be supported${NC}\n"
  exit 1
 fi
 
 if ([ "$osname" = "ubuntu" ]); then
   mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 multiverse"
+# there is no bullseye repo yet for mongo so just use buster on debian 11
+elif ([ "$osname" = "debian" ] && [ $relno -eq 11 ]); then
+  mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname buster/mongodb-org/4.4 main"
 else
   mongodb_repo="deb [arch=amd64] https://repo.mongodb.org/apt/$osname $codename/mongodb-org/4.4 main"
-
 fi
 
 postgresql_repo="deb [arch=amd64] https://apt.postgresql.org/pub/repos/apt/ $codename-pgdg main"
@@ -164,14 +166,14 @@ print_green 'Installing Python 3.9'
 sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
 numprocs=$(nproc)
 cd ~
-wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz
-tar -xf Python-3.9.6.tgz
-cd Python-3.9.6
+wget https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tgz
+tar -xf Python-3.9.9.tgz
+cd Python-3.9.9
 ./configure --enable-optimizations
 make -j $numprocs
 sudo make altinstall
 cd ~
-sudo rm -rf Python-3.9.6 Python-3.9.6.tgz
+sudo rm -rf Python-3.9.9 Python-3.9.9.tgz
 
 
 print_green 'Installing redis and git'
@@ -304,6 +306,7 @@ pip install --no-cache-dir setuptools==${SETUPTOOLS_VER} wheel==${WHEEL_VER}
 pip install --no-cache-dir -r /rmm/api/tacticalrmm/requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input
+python manage.py create_natsapi_conf
 python manage.py reload_nats
 deactivate
 
@@ -333,7 +336,7 @@ sudo chown -R $USER:$GROUP /home/${USER}/.cache
 print_green 'Enabling Services'
 sudo systemctl daemon-reload
 
-for i in celery.service celerybeat.service rmm.service daphne.service nginx
+for i in celery.service celerybeat.service rmm.service daphne.service nats-api.service nginx
 do
   sudo systemctl enable ${i}
   sudo systemctl stop ${i}

@@ -1,6 +1,5 @@
 import json
 import os
-import string
 import subprocess
 import tempfile
 import time
@@ -23,7 +22,7 @@ from agents.models import Agent
 
 notify_error = lambda msg: Response(msg, status=status.HTTP_400_BAD_REQUEST)
 
-SoftwareList = list[dict[str, str]]
+AGENT_DEFER = ["wmi_detail", "services"]
 
 WEEK_DAYS = {
     "Sunday": 0x1,
@@ -147,26 +146,6 @@ def bitdays_to_string(day: int) -> str:
     return ", ".join(ret)
 
 
-def filter_software(sw: SoftwareList) -> SoftwareList:
-    ret: SoftwareList = []
-    printable = set(string.printable)
-    for s in sw:
-        ret.append(
-            {
-                "name": "".join(filter(lambda x: x in printable, s["name"])),
-                "version": "".join(filter(lambda x: x in printable, s["version"])),
-                "publisher": "".join(filter(lambda x: x in printable, s["publisher"])),
-                "install_date": s["install_date"],
-                "size": s["size"],
-                "source": s["source"],
-                "location": s["location"],
-                "uninstall": s["uninstall"],
-            }
-        )
-
-    return ret
-
-
 def reload_nats():
     users = [{"user": "tacticalrmm", "password": settings.SECRET_KEY}]
     agents = Agent.objects.prefetch_related("user").only(
@@ -239,38 +218,6 @@ KnoxAuthMiddlewareStack = lambda inner: KnoxAuthMiddlewareInstance(
 )
 
 
-def run_nats_api_cmd(mode: str, ids: list[str] = [], timeout: int = 30) -> None:
-    if mode == "wmi":
-        config = {
-            "key": settings.SECRET_KEY,
-            "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
-            "agents": ids,
-        }
-    else:
-        db = settings.DATABASES["default"]
-        config = {
-            "key": settings.SECRET_KEY,
-            "natsurl": f"tls://{settings.ALLOWED_HOSTS[0]}:4222",
-            "user": db["USER"],
-            "pass": db["PASSWORD"],
-            "host": db["HOST"],
-            "port": int(db["PORT"]),
-            "dbname": db["NAME"],
-        }
-
-    with tempfile.NamedTemporaryFile(
-        dir="/opt/tactical/tmp" if settings.DOCKER_BUILD else None
-    ) as fp:
-        with open(fp.name, "w") as f:
-            json.dump(config, f)
-
-        cmd = ["/usr/local/bin/nats-api", "-c", fp.name, "-m", mode]
-        try:
-            subprocess.run(cmd, timeout=timeout)
-        except Exception as e:
-            DebugLog.error(message=e)
-
-
 def get_latest_trmm_ver() -> str:
     url = "https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py"
     try:
@@ -283,7 +230,7 @@ def get_latest_trmm_ver() -> str:
             if "TRMM_VERSION" in line:
                 return line.split(" ")[2].strip('"')
     except Exception as e:
-        DebugLog.error(message=e)
+        DebugLog.error(message=str(e))
 
     return "error"
 

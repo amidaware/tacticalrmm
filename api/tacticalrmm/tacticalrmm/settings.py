@@ -15,22 +15,22 @@ EXE_DIR = os.path.join(BASE_DIR, "tacticalrmm/private/exe")
 AUTH_USER_MODEL = "accounts.User"
 
 # latest release
-TRMM_VERSION = "0.9.2"
+TRMM_VERSION = "0.10.0"
 
 # bump this version everytime vue code is changed
 # to alert user they need to manually refresh their browser
-APP_VER = "0.0.150"
+APP_VER = "0.0.151"
 
 # https://github.com/wh1te909/rmmagent
-LATEST_AGENT_VER = "1.6.2"
+LATEST_AGENT_VER = "1.7.0"
 
-MESH_VER = "0.9.45"
+MESH_VER = "0.9.51"
 
 NATS_SERVER_VER = "2.3.3"
 
 # for the update script, bump when need to recreate venv or npm install
-PIP_VER = "23"
-NPM_VER = "24"
+PIP_VER = "24"
+NPM_VER = "25"
 
 SETUPTOOLS_VER = "58.5.3"
 WHEEL_VER = "0.37.0"
@@ -65,6 +65,13 @@ REST_FRAMEWORK = {
         "knox.auth.TokenAuthentication",
         "tacticalrmm.auth.APIAuthentication",
     ),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Tactical RMM API",
+    "DESCRIPTION": "Simple and Fast remote monitoring and management tool",
+    "VERSION": TRMM_VERSION,
 }
 
 if not "AZPIPELINE" in os.environ:
@@ -97,6 +104,7 @@ INSTALLED_APPS = [
     "logs",
     "scripts",
     "alerts",
+    "drf_spectacular",
 ]
 
 if not "AZPIPELINE" in os.environ:

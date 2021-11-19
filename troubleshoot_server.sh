@@ -133,6 +133,7 @@ celerystatus=$(systemctl is-active celery)
 celerybeatstatus=$(systemctl is-active celerybeat)
 nginxstatus=$(systemctl is-active nginx)
 natsstatus=$(systemctl is-active nats)
+natsapistatus=$(systemctl is-active nats-api)
 
 # RMM Service
 if [ $rmmstatus = active ]; then
@@ -196,6 +197,17 @@ if [ $natsstatus = active ]; then
 else
 	printf >&2 "\n\n" | tee -a checklog.log
     echo -ne ${RED}  'nats Service isnt running (Tactical wont work without this)' | tee -a checklog.log
+	printf >&2 "\n\n"
+
+fi
+
+# nats-api Service
+if [ $natsapistatus = active ]; then
+    echo -ne ${GREEN} Success nats-api Service is running | tee -a checklog.log
+	printf >&2 "\n\n"
+else
+	printf >&2 "\n\n" | tee -a checklog.log
+    echo -ne ${RED}  'nats-api Service isnt running (Tactical wont work without this)' | tee -a checklog.log
 	printf >&2 "\n\n"
 
 fi

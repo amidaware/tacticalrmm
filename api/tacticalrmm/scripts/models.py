@@ -24,7 +24,7 @@ class Script(BaseAuditModel):
     guid = models.CharField(max_length=64, null=True, blank=True)
     name = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True, default="")
-    filename = models.CharField(max_length=255)
+    filename = models.CharField(max_length=255, null=True, blank=True)
     shell = models.CharField(
         max_length=100, choices=SCRIPT_SHELLS, default="powershell"
     )

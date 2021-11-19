@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.urls import include, path, register_converter
 from knox import views as knox_views
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from accounts.views import CheckCreds, LoginView
 from core.consumers import DashInfo
@@ -38,18 +37,23 @@ urlpatterns = [
     path("scripts/", include("scripts.urls")),
     path("alerts/", include("alerts.urls")),
     path("accounts/", include("accounts.urls")),
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    path(
-        "api/schema/swagger-ui/",
-        SpectacularSwaggerView.as_view(url_name="schema"),
-        name="swagger-ui",
-    ),
 ]
 
 if hasattr(settings, "ADMIN_ENABLED") and settings.ADMIN_ENABLED:
     from django.contrib import admin
 
     urlpatterns += (path(settings.ADMIN_URL, admin.site.urls),)
+
+if hasattr(settings, "SWAGGER_ENABLED") and settings.SWAGGER_ENABLED:
+    from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+    urlpatterns += (
+        path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+        path(
+            "api/schema/swagger-ui/",
+            SpectacularSwaggerView.as_view(url_name="schema"),
+            name="swagger-ui",
+        ),
+    )
 
 ws_urlpatterns = [
     path("ws/dashinfo/", DashInfo.as_asgi()),  # type: ignore

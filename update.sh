@@ -322,6 +322,9 @@ printf >&2 "${GREEN}Starting ${i} service${NC}\n"
 sudo systemctl start ${i}
 done
 
+sleep 1
+/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py update_agents
+
 CURRENT_MESH_VER=$(cd /meshcentral/node_modules/meshcentral && node -p -e "require('./package.json').version")
 if [[ "${CURRENT_MESH_VER}" != "${LATEST_MESH_VER}" ]] || [[ "$force" = true ]]; then
   printf >&2 "${GREEN}Updating meshcentral from ${CURRENT_MESH_VER} to ${LATEST_MESH_VER}${NC}\n"

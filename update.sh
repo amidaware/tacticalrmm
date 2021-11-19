@@ -198,14 +198,14 @@ if ! [[ $HAS_PY39 ]]; then
   sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev
   numprocs=$(nproc)
   cd ~
-  wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz
-  tar -xf Python-3.9.6.tgz
-  cd Python-3.9.6
+  wget https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tgz
+  tar -xf Python-3.9.9.tgz
+  cd Python-3.9.9
   ./configure --enable-optimizations
   make -j $numprocs
   sudo make altinstall
   cd ~
-  sudo rm -rf Python-3.9.6 Python-3.9.6.tgz
+  sudo rm -rf Python-3.9.9 Python-3.9.9.tgz
 fi
 
 HAS_LATEST_NATS=$(/usr/local/bin/nats-server -version | grep "${NATS_SERVER_VER}")

@@ -1,4 +1,4 @@
-FROM python:3.9.6-slim
+FROM python:3.9.9-slim
 
 ENV TACTICAL_DIR /opt/tactical
 ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready

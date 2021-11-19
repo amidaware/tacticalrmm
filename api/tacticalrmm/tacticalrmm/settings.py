@@ -24,13 +24,13 @@ APP_VER = "0.0.150"
 # https://github.com/wh1te909/rmmagent
 LATEST_AGENT_VER = "1.6.2"
 
-MESH_VER = "0.9.45"
+MESH_VER = "0.9.51"
 
 NATS_SERVER_VER = "2.3.3"
 
 # for the update script, bump when need to recreate venv or npm install
-PIP_VER = "23"
-NPM_VER = "24"
+PIP_VER = "24"
+NPM_VER = "25"
 
 SETUPTOOLS_VER = "58.5.3"
 WHEEL_VER = "0.37.0"

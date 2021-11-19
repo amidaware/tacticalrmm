@@ -1,6 +1,6 @@
 asgiref==3.4.1
 asyncio-nats-client==0.11.4
-celery==5.2.0
+celery==5.2.1
 certifi==2021.10.8
 cffi==1.15.0
 channels==3.0.4
@@ -16,7 +16,7 @@ djangorestframework==3.12.4
 future==0.18.2
 loguru==0.5.3
 msgpack==1.0.2
-packaging==21.2
+packaging==21.3
 psycopg2-binary==2.9.2
 pycparser==2.21
 pycryptodome==3.11.0
@@ -28,7 +28,7 @@ redis==3.5.3
 requests==2.26.0
 six==1.16.0
 sqlparse==0.4.2
-twilio==7.3.0
+twilio==7.3.1
 urllib3==1.26.7
 uWSGI==2.0.20
 validators==0.18.2

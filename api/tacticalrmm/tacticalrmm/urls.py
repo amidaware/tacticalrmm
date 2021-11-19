@@ -46,6 +46,7 @@ if hasattr(settings, "ADMIN_ENABLED") and settings.ADMIN_ENABLED:
 
 if hasattr(settings, "SWAGGER_ENABLED") and settings.SWAGGER_ENABLED:
     from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
     urlpatterns += (
         path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
         path(

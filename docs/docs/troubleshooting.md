@@ -90,10 +90,14 @@ sudo systemctl status nats
 If nats isn't running see detailed reason why it isn't:
 
 ```bash
+sudo systemctl stop nats
 nats-server -DVV -c /rmm/api/tacticalrmm/nats-rmm.conf
 ```
 
-Fix the problem, then reload nats.
+Fix the problem, then restart nats.
+```
+sudo systemctl restart nats
+```
 
 ### From Agent Install
 

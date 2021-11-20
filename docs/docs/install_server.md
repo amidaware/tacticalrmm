@@ -65,6 +65,9 @@ usermod -a -G sudo tactical
 !!!tip
     [Enable passwordless sudo to make your life easier](https://linuxconfig.org/configure-sudo-without-password-on-ubuntu-20-04-focal-fossa-linux)
 
+!!!note
+    You will never login to the server again as `root` again unless something has gone horribly wrong, and you're working with the developers.
+    
 ### Setup the firewall (optional but highly recommended)
 
 !!!info

@@ -19,12 +19,15 @@ Other than this, you should avoid making any changes to your server and let the 
     
     Sometimes, manual intervention will be required during an update in the form of yes/no prompts, so attempting to automate this will ignore these prompts and cause your installation to break.
 
-SSH into your server as the linux user you created during install.
+SSH into your server as the linux user you created during install (eg `tactical`).
 
 !!!danger
     __Never__ run any update scripts or commands as the `root` user.
     
     This will mess up permissions and break your installation.
+
+!!!question
+    You have a [backup](backup.md) right?
 
 Download the update script and run it:
 

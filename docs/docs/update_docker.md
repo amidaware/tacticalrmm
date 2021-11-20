@@ -2,6 +2,9 @@
 
 ## Updating to the latest RMM version
 
+!!!question
+    You have a [backup](https://docs.docker.com/desktop/backup-and-restore/) right?
+
 Tactical RMM updates the docker images on every release and should be available within a few minutes
 
 SSH into your server as a root user and run the below commands:

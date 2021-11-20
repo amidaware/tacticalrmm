@@ -63,8 +63,39 @@ If you have agents that are relatively old, you will need to uninstall them manu
 
 ## Agents not checking in or showing up / General agent issues
 
+These are nats problems. Try quickfix first:
+
+### from Admin Web Interface
+
 First, reload NATS from tactical's web UI:<br>
 *Tools > Server Maintenance > Reload Nats Configuration*
+
+If that doesn't work, check each part starting with the server:
+
+### Server SSH login
+
+Reload NATS:
+
+```bash
+/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py reload_nats
+sudo systemctl restart nats
+```
+
+Look at nats service errors (make sure it's running)
+
+```bash
+sudo systemctl status nats
+```
+
+If nats isn't running see detailed reason why it isn't:
+
+```bash
+nats-server -DVV -c /rmm/api/tacticalrmm/nats-rmm.conf
+```
+
+Fix the problem, then reload nats.
+
+### From Agent Install
 
 Open CMD as admin on the problem computer and stop the agent services:
 

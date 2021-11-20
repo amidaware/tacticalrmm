@@ -8,6 +8,11 @@ At the top right of your web administration interface, click your Username > pre
 
 *****
 
+## Use the filters in the agent list
+
+![User Preferences](images/tipsntricks_filters.png)
+
+*****
 ## MeshCentral
 
 Tactical RMM is actually 2 products: An RMM service with agent, and a secondary [MeshCentral](https://github.com/Ylianst/MeshCentral) install that handles the `Take Control` and `Remote Background` stuff.

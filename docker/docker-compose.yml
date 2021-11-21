@@ -8,17 +8,16 @@ networks:
       driver: default
       config:
         - subnet: 172.20.0.0/24
-  api-db:
-  redis:
-  mesh-db:
+  api-db: null
+  redis: null
+  mesh-db: null # docker managed persistent volumes
 
-# docker managed persistent volumes
 volumes:
-  tactical_data:
-  postgres_data:
-  mongo_data:
-  mesh_data:
-  redis_data:
+  tactical_data: null
+  postgres_data: null
+  mongo_data: null
+  mesh_data: null
+  redis_data: null
 
 services:
   # postgres database for api service
@@ -41,7 +40,7 @@ services:
     image: redis:6.0-alpine
     command: redis-server --appendonly yes
     restart: always
-    volumes: 
+    volumes:
       - redis_data:/data
     networks:
       - redis
@@ -51,7 +50,7 @@ services:
     container_name: trmm-init
     image: ${IMAGE_REPO}tactical:${VERSION}
     restart: on-failure
-    command: ["tactical-init"]
+    command: [ "tactical-init" ]
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASS: ${POSTGRES_PASS}
@@ -63,13 +62,13 @@ services:
       TRMM_PASS: ${TRMM_PASS}
     depends_on:
       - tactical-postgres
-      - tactical-meshcentral    
+      - tactical-meshcentral
     networks:
       - api-db
       - proxy
     volumes:
       - tactical_data:/opt/tactical
-  
+
   # nats
   tactical-nats:
     container_name: trmm-nats
@@ -82,6 +81,7 @@ services:
     volumes:
       - tactical_data:/opt/tactical
     networks:
+      api-db: null
       proxy:
         aliases:
           - ${API_HOST}
@@ -91,7 +91,7 @@ services:
     container_name: trmm-meshcentral
     image: ${IMAGE_REPO}tactical-meshcentral:${VERSION}
     restart: always
-    environment: 
+    environment:
       MESH_HOST: ${MESH_HOST}
       MESH_USER: ${MESH_USER}
       MESH_PASS: ${MESH_PASS}
@@ -102,7 +102,7 @@ services:
       proxy:
         aliases:
           - ${MESH_HOST}
-      mesh-db:
+      mesh-db: null
     volumes:
       - tactical_data:/opt/tactical
       - mesh_data:/home/node/app/meshcentral-data
@@ -137,7 +137,7 @@ services:
   tactical-backend:
     container_name: trmm-backend
     image: ${IMAGE_REPO}tactical:${VERSION}
-    command: ["tactical-backend"]
+    command: [ "tactical-backend" ]
     restart: always
     networks:
       - proxy
@@ -152,7 +152,7 @@ services:
   tactical-websockets:
     container_name: trmm-websockets
     image: ${IMAGE_REPO}tactical:${VERSION}
-    command: ["tactical-websockets"]
+    command: [ "tactical-websockets" ]
     restart: always
     networks:
       - proxy
@@ -188,7 +188,7 @@ services:
   tactical-celery:
     container_name: trmm-celery
     image: ${IMAGE_REPO}tactical:${VERSION}
-    command: ["tactical-celery"]
+    command: [ "tactical-celery" ]
     restart: always
     networks:
       - redis
@@ -204,7 +204,7 @@ services:
   tactical-celerybeat:
     container_name: trmm-celerybeat
     image: ${IMAGE_REPO}tactical:${VERSION}
-    command: ["tactical-celerybeat"]
+    command: [ "tactical-celerybeat" ]
     restart: always
     networks:
       - proxy

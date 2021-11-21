@@ -6,7 +6,7 @@
 
 #### Hardware / OS
 
-A fresh linux VM running either Ubuntu 20.04 LTS or Debian 10 with 3GB RAM
+A fresh linux VM running either Ubuntu 20.04 LTS or Debian 10/11 with 3GB RAM
 
 !!!warning
     The provided install script assumes a fresh server with no software installed on it. Attempting to run it on an existing server with other services **will** break things and the install will fail.
@@ -65,6 +65,9 @@ usermod -a -G sudo tactical
 !!!tip
     [Enable passwordless sudo to make your life easier](https://linuxconfig.org/configure-sudo-without-password-on-ubuntu-20-04-focal-fossa-linux)
 
+!!!note
+    You will never login to the server again as `root` again unless something has gone horribly wrong, and you're working with the developers.
+    
 ### Setup the firewall (optional but highly recommended)
 
 !!!info

@@ -2,7 +2,7 @@
 
 There's pluses and minuses to each install type. Be aware that:
 
-- There is no migration script, once you've installed with one type there is no "conversion". You'll be installing a new server and migrating agents if you decide to go another way.
+- There is no migration script, once you've installed with one type there is no "conversion". You'll be installing a new server and migrating agents manually if you decide to go another way.
 
 ## Traditional Install
 

@@ -32,7 +32,7 @@ Install on a VPS: DigitalOcean, Linode, Vultr, BuyVM (highly recommended), Hetzn
 
 Use something that meets [minimum specs](install_server.md#hardware-os)
 
-### Run updates and setup the linux user
+### Run Updates on OS
 
 SSH into the server as **root**.
 
@@ -45,6 +45,8 @@ apt -y upgrade
 ```
 
 If a new kernel is installed, then reboot the server with the `reboot` command
+
+### Create a linux user
 
 Create a linux user named `tactical` to run the rmm and add it to the sudoers group.
 
@@ -63,11 +65,8 @@ usermod -a -G sudo tactical
 ```
 
 !!!tip
-    [Enable passwordless sudo to make your life easier](https://linuxconfig.org/configure-sudo-without-password-on-ubuntu-20-04-focal-fossa-linux)
+    [Enable passwordless sudo to make your life easier in the future](https://linuxconfig.org/configure-sudo-without-password-on-ubuntu-20-04-focal-fossa-linux)
 
-!!!note
-    You will never login to the server again as `root` again unless something has gone horribly wrong, and you're working with the developers.
-    
 ### Setup the firewall (optional but highly recommended)
 
 !!!info
@@ -101,6 +100,9 @@ Enable and activate the firewall
 ufw enable && ufw reload
 ```
 
+!!!note
+    You will never login to the server again as `root` again unless something has gone horribly wrong, and you're working with the developers.
+    
 ### Create the A records
 
 We'll be using `example.com` as our domain for this example.

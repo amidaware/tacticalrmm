@@ -26,7 +26,7 @@ To renew your Let's Encrypt wildcard cert, run the following command, replacing 
 sudo certbot certonly --manual -d *.example.com --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m admin@example.com --no-eff-email
 ```
 
-Verify the domain with the TXT record. Once issued, run the below commands to base64 encode the certificates and add then to the .env file
+Verify the domain with the TXT record. Once issued, run the below commands to base64 encode the certificates and add them to the .env file
 
 ```bash
 echo "CERT_PUB_KEY=$(sudo base64 -w 0 /etc/letsencrypt/live/${rootdomain}/fullchain.pem)" >> .env

@@ -9,7 +9,7 @@ Install docker
 We'll be using `example.com` as our domain for this example.
 
 !!!info
-    The RMM uses 3 different sites. The Vue frontend e.g. `rmm.example.com` which is where you'll be accesing your RMM from the browser, the REST backend e.g. `api.example.com` and Meshcentral e.g. `mesh.example.com`
+    The RMM uses 3 different sites. The Vue frontend e.g. `rmm.example.com` which is where you'll be accessing your RMM from the browser, the REST backend e.g. `api.example.com` and Meshcentral e.g. `mesh.example.com`
 
 1. Get the public IP of your server with `curl https://icanhazip.tacticalrmm.io`
 2. Open the DNS manager of wherever the domain you purchased is hosted.
@@ -34,7 +34,7 @@ We're using the [DNS-01 challenge method](https://letsencrypt.org/docs/challenge
 #### a. Deploy the TXT record in your DNS manager
 
 !!!warning
-    TXT records can take anywhere from 1 minute to a few hours to propogate depending on your DNS provider.<br/>
+    TXT records can take anywhere from 1 minute to a few hours to propagate depending on your DNS provider.<br/>
     You should verify the TXT record has been deployed first before pressing Enter.<br/>
     A quick way to check is with the following command:<br/> `dig -t txt _acme-challenge.example.com`<br/>
     or test using: <https://viewdns.info/dnsrecord/> Enter: `_acme-challenge.example.com`

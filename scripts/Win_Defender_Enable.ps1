@@ -1,3 +1,6 @@
+# User should pass 1 as argument to the script if Controlled Folder Access should be set
+$CFAccess = $args[0]
+
 # Verifies that script is running on Windows 10 or greater
 function Check-IsWindows10
 {
@@ -92,8 +95,11 @@ if (!(Check-IsWindows10-1709))
 
     Write-Host # `nUpdating Windows Defender Exploit Guard settings`n#  -ForegroundColor Green 
 
-    Write-Host # Enabling Controlled Folder Access and setting to block mode# 
-    Set-MpPreference -EnableControlledFolderAccess Enabled 
+    if ($CFAccess -Eq 1) # Check if user has passed 1 to enable Controlled Folder Access
+    {
+        Write-Host # Enabling Controlled Folder Access and setting to block mode# 
+        Set-MpPreference -EnableControlledFolderAccess Enabled         
+    }
 
     Write-Host # Enabling Network Protection and setting to block mode# 
     Set-MpPreference -EnableNetworkProtection Enabled

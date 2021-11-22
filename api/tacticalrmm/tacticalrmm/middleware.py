@@ -21,6 +21,7 @@ EXCLUDE_PATHS = (
     f"/{settings.ADMIN_URL}",
     "/logout",
     "/agents/installer",
+    "/api/schema",
 )
 
 

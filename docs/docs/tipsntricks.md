@@ -42,3 +42,13 @@ Right-click the connect button in *Take Control* for connect options
 
 6. Ok your way out
 
+## Scripts
+
+### When Running Scripts
+
+Use the (i) at the end of the script name to:
+
+- Hover: see script parameter syntax help
+- Left Click: Opens the script source in Github
+
+![Script Parameter Syntax](images/tipsntricks_script_syntaxhelp.png)

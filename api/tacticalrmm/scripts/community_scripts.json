@@ -286,6 +286,7 @@
     "guid": "da51111c-aff6-4d87-9d76-0608e1f67fe5",
     "filename": "Win_Defender_Enable.ps1",
     "submittedBy": "https://github.com/dinger1986",
+    "syntax": "[-NoControlledFolders]",
     "name": "Defender - Enable",
     "description": "Enables Windows Defender and sets preferences",
     "shell": "powershell",
@@ -694,6 +695,15 @@
     "submittedBy": "https://github.com/dinger1986",
     "name": "Windows UAC - Check Status",
     "description": "Windows UAC - Report status",
+    "shell": "powershell",
+    "category": "TRMM (Win):Security"
+  },
+  {
+    "guid": "43a3206d-f1cb-44ef-8405-aae4d33a0bad",
+    "filename": "Win_Security_Audit.ps1",
+    "submittedBy": "theinterwebs",
+    "name": "Windows Security - Security Audit",
+    "description": "Runs an Audit on many components of windows to check for security issues",
     "shell": "powershell",
     "category": "TRMM (Win):Security"
   },

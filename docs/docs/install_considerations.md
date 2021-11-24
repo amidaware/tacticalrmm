@@ -13,5 +13,5 @@ There's pluses and minuses to each install type. Be aware that:
 
 - Docker is more complicated in concept: has volumes and images
 - If you're running multiple apps it uses less resources in the long run because you only have one OS base files underlying many Containers/Apps
-- Backup/restore is by via Docker methods only
+- Backup/restore is via Docker methods only
 - Docker has container replication/mirroring options for redundancy/multiple servers

@@ -96,10 +96,8 @@ Change the 3 A records `rmm`, `api` and `mesh` and point them to the public IP o
 
 3. Download the restore script.
 
-```bash
-wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh
-chmod +x restore.sh
-```
+        wget https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/restore.sh
+        chmod +x restore.sh
 
 4. Call the restore script, passing it the backup file as the first argument:
 

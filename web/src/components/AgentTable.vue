@@ -564,11 +564,11 @@ export default {
     removeAgent(agent) {
       this.$q
         .dialog({
-          title: `Please type <code style="color:red">${agent.hostname}</code> to confirm deletion.`,
+          title: `Please type <code style="color:red">yes</code> in the box below to confirm deletion.`,
           prompt: {
             model: "",
             type: "text",
-            isValid: val => val === agent.hostname,
+            isValid: val => val === "yes",
           },
           cancel: true,
           ok: { label: "Uninstall", color: "negative" },

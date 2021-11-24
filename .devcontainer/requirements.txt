@@ -35,3 +35,4 @@ Pygments
 mypy
 pysnooper
 isort
+drf_spectacular

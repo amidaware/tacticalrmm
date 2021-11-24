@@ -66,10 +66,5 @@
         "usePlaceholders": true,
         "completeUnimported": true,
         "staticcheck": true,
-    },
-    "cSpell.words": [
-        "certbot",
-        "Meshcentral",
-        "TRMM"
-    ]
+    }
 }

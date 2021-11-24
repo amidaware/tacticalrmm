@@ -1,5 +1,20 @@
-# User should pass 1 as argument to the script if Controlled Folder Access should be set
-$CFAccess = $args[0]
+<#
+      .SYNOPSIS
+      Enables Windows Defender and sets preferences to lock Defender down
+      .DESCRIPTION
+      Windows Defender in its default configuration does basic protections. Running this script will enable many additional settings to increase security.
+      .PARAMETER NoControlledFolders
+      Adding this parameter will not enable Controlled Folders
+      .EXAMPLE
+      -NoControlledFolders
+      .NOTES
+      9/2021 v1 Initial release dinger1986
+      11/24/2021 v1.1 adding command parameters for Controller Folder access by Tremor and silversword
+  #>
+
+param (
+    [switch] $NoControlledFolders
+)
 
 # Verifies that script is running on Windows 10 or greater
 function Check-IsWindows10
@@ -95,10 +110,13 @@ if (!(Check-IsWindows10-1709))
 
     Write-Host # `nUpdating Windows Defender Exploit Guard settings`n#  -ForegroundColor Green 
 
-    if ($CFAccess -Eq 1) # Check if user has passed 1 to enable Controlled Folder Access
+    if ($NoControlledFolders) # Check if user has run with -NoControlledFolders parameter
     {
-        Write-Host # Enabling Controlled Folder Access and setting to block mode# 
-        Set-MpPreference -EnableControlledFolderAccess Enabled         
+        Write-Host "Skipping enabling Controlled folders"
+    }
+    else {
+        Write-Host "Enabling Controlled folders"
+        Set-MpPreference -EnableControlledFolderAccess Enabled
     }
 
     Write-Host # Enabling Network Protection and setting to block mode# 

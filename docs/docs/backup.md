@@ -27,3 +27,9 @@ chmod +x backup.sh
 The backup tar file will be saved in `/rmmbackups` with the following format:
 
 `rmm-backup-CURRENTDATETIME.tar`
+
+## Video Walkthru
+
+<div class="video-wrapper">
+  <iframe width="320" height="180" src="https://www.youtube.com/watch?v=rC0NgYJUf_8" frameborder="0" allowfullscreen></iframe>
+</div>

@@ -699,6 +699,15 @@
     "category": "TRMM (Win):Security"
   },
   {
+    "guid": "43a3206d-f1cb-44ef-8405-aae4d33a0bad",
+    "filename": "Win_Security_Audit.ps1",
+    "submittedBy": "theinterwebs",
+    "name": "Windows Security - Security Audit",
+    "description": "Runs an Audit on many components of windows to check for security issues",
+    "shell": "powershell",
+    "category": "TRMM (Win):Security"
+  },
+  {
     "guid": "7ea6a11a-05c0-4151-b5c1-cb8af029299f",
     "filename": "Win_AzureAD_Check_Connection_Status.ps1",
     "submittedBy": "https://github.com/dinger1986",

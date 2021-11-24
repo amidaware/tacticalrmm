@@ -286,6 +286,7 @@
     "guid": "da51111c-aff6-4d87-9d76-0608e1f67fe5",
     "filename": "Win_Defender_Enable.ps1",
     "submittedBy": "https://github.com/dinger1986",
+    "syntax": "[-NoControlledFolders]",
     "name": "Defender - Enable",
     "description": "Enables Windows Defender and sets preferences",
     "shell": "powershell",

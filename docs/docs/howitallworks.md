@@ -15,41 +15,285 @@ Has a postgres database located here:
 !!!description
     A web interface for the postgres database
 
-### Services
+Dependencies from [here](https://github.com/wh1te909/tacticalrmm/blob/develop/api/tacticalrmm/requirements.txt)
 
-nginx
+### System Services
 
-!!!description
-    Web server that handles https traffic
+This lists the system services used by the server.
 
-Log located at `/var/log/nginx`
+#### nginx web server
 
-```bash
-tail /var/log/nginx
-```
+Nginx is the web server for the `rmm`, `api`, and `mesh` domains. All sites redirect port 80 (HTTP) to port 443 (HTTPS).
 
-### Dependencies from [here](https://github.com/wh1te909/tacticalrmm/blob/develop/api/tacticalrmm/requirements.txt)
+!!! warning
 
-[nats](https://nats.io/)
+    nginx does not serve the NATS service on port 4222.
 
-How communication between client and server bride NAT (Network Address Translation)
+???+ abstract "nginx configuration (a.k.a. sites available)"
 
-[celery](https://github.com/celery/celery)
+    - [nginx configuration docs](https://docs.nginx.com/nginx/admin-guide/basic-functionality/managing-configuration-files/)
 
-!!!description
-    Used to schedule tasks to be sent to Agent
+    === ":material-web: `rmm.example.com`"
+
+        This serves the frontend website that you intereact with.
+
+        - Config: `/etc/nginx/sites-enabled/frontend.conf`
+        - root: `/var/www/rmm/dist`
+        - Access log: `/var/log/nginx/frontend-access.log`
+        - Error log: `/var/log/nginx/frontend-error.log`
+        - TLS certificate: `/etc/letsencrypt/live/example.com/fullchain.pem`
+
+    === ":material-web: `api.example.com`"
+
+        This serves the TRMM API for the frontend and agents. 
+
+        - Config: `/etc/nginx/sites-enabled/rmm.conf`
+        - roots:
+            - `/rmm/api/tacticalrmm/static/`
+            - `/rmm/api/tacticalrmm/tacticalrmm/private/`
+        - Upstreams:
+            - `unix://rmm/api/tacticalrmm/tacticalrmm.sock`
+            - `unix://rmm/daphne.sock`
+        - Access log: `/rmm/api/tacticalrmm/tacticalrmm/private/log/access.log`
+        - Error log: `/rmm/api/tacticalrmm/tacticalrmm/private/log/error.log`
+        - TLS certificate: `/etc/letsencrypt/live/example.com/fullchain.pem`
+
+    === ":material-web: `mesh.example.com`"
+
+        This serves MeshCentral for remote access.
+
+        - Config: `/etc/nginx/sites-enabled/meshcentral.conf`
+        - Upstream: `http://127.0.0.1:4430/`
+        - Access log: `/var/log/nginx/access.log` (uses deafult)
+        - Error log: `/var/log/nginx/error.log` (uses deafult)
+        - TLS certificate: `/etc/letsencrypt/live/example.com/fullchain.pem`
+
+    === ":material-web: default"
+
+        This is the default site installed with nginx. This listens on port 80 only.
+
+        - Config: `/etc/nginx/sites-enabled/default`
+        - root: `/var/www/rmm/dist`
+        - Access log: `/var/log/nginx/access.log` (uses deafult)
+        - Error log: `/var/log/nginx/error.log` (uses deafult)
+
+???+ note "systemd config"
+
+    === ":material-console-line: status commands"
+
+        - Status: `systemctl status --full nginx.service`
+        - Stop: `systemctl stop nginx.service`
+        - Start: `systemctl start nginx.service`
+        - Restart: `systemctl restart nginx.service`
+        - Restart: `systemctl reload nginx.service` reloads the config without restarting
+        - Test config: `nginx -t`
+        - Listening process: `ss -tulnp | grep nginx`
+
+    === ":material-ubuntu: standard"
+
+        - Service: `nginx.service`
+        - Address: `0.0.0.0`
+        - Port: 443
+        - Exec: `/usr/sbin/nginx -g 'daemon on; master_process on;'`
+        - Version: 1.18.0
+
+    === ":material-docker: docker"
+
+        TBD - To Be Documented
+
+#### Tactical RMM (Django uWSGI) service
+
+Built on the Django framework, the Tactical RMM service is the heart of system by serving the API for the frontend and agents.
+
+???+ note "systemd config"
+
+    - [uWSGI docs](https://uwsgi-docs.readthedocs.io/en/latest/index.html)
+
+    === ":material-console-line: status commands"
+
+        - Status: `systemctl status --full rmm.service`
+        - Stop: `systemctl stop rmm.service`
+        - Start: `systemctl start rmm.service`
+        - Restart: `systemctl restart rmm.service`
+        - journalctl:
+            - "tail" the logs: `journalctl --identifier uwsgi --follow`
+            - View the logs: `journalctl --identifier uwsgi --since "30 minutes ago" | less`
+
+    === ":material-ubuntu: standard"
+    
+        - Service: `rmm.service`
+        - Socket: `/rmm/api/tacticalrmm/tacticalrmm.sock`
+        - uWSGI config: `/rmm/api/tacticalrmm/app.ini`
+        - Log: None
+        - Journal identifier: `uwsgi`
+        - Version: 2.0.18
+    
+    === ":material-docker: docker"
+    
+        TBD - To Be Documented
+
+#### Daphne: Django channels daemon
+
+[Daphne](https://github.com/django/daphne) is the official ASGI HTTP/WebSocket server maintained by the [Channels project](https://channels.readthedocs.io/en/stable/index.html).
+
+???+ note "systemd config"
+
+    - Django [Channels configuration docs](https://channels.readthedocs.io/en/stable/topics/channel_layers.html)
+
+    === ":material-console-line: status commands"
+
+        - Status: `systemctl status --full daphne.service`
+        - Stop: `systemctl stop daphne.service`
+        - Start: `systemctl start daphne.service`
+        - Restart: `systemctl restart daphne.service`
+        - journalctl (this provides only system start/stop logs, not the actual logs):
+            - "tail" the logs: `journalctl --identifier daphne --follow`
+            - View the logs: `journalctl --identifier daphne --since "30 minutes ago" | less`
+
+    === ":material-ubuntu: standard"
+
+        - Service: `daphne.service`
+        - Socket: `/rmm/daphne.sock`
+        - Exec: `/rmm/api/env/bin/daphne -u /rmm/daphne.sock tacticalrmm.asgi:application`
+        - Config: `/rmm/api/tacticalrmm/tacticalrmm/local_settings.py`
+        - Log: `/rmm/api/tacticalrmm/tacticalrmm/private/log/debug.log`
+
+    === ":material-docker: docker"
+
+        TBD - To Be Documented
+
+#### NATS server service
+
+[NATS](https://nats.io/) is a messaging bus for "live" communication between the agent and server. NATS provides the framework for the server to push commands to the agent and receive information back.
+
+???+ note "systemd config"
+
+    - [NATS server configuration docs](https://docs.nats.io/running-a-nats-service/configuration)
+
+    === ":material-console-line: status commands"
+
+        - Status: `systemctl status --full nats.service`
+        - Stop: `systemctl stop nats.service`
+        - Start: `systemctl start nats.service`
+        - Restart: `systemctl restart nats.service`
+        - Restart: `systemctl reload nats.service` reloads the config without restarting
+        - journalctl:
+            - "tail" the logs: `journalctl --identifier nats-server --follow`
+            - View the logs: `journalctl --identifier nats-server --since "30 minutes ago" | less`
+        - Listening process: `ss -tulnp | grep nats-server`
+
+    === ":material-ubuntu: standard"
+    
+        - Service: `nats.service`
+        - Address: `0.0.0.0`
+        - Port: `4222`
+        - Exec: `/usr/local/bin/nats-server --config /rmm/api/tacticalrmm/nats-rmm.conf`
+        - Config: `/rmm/api/tacticalrmm/nats-rmm.conf`
+            - TLS: `/etc/letsencrypt/live/example.com/fullchain.pem`
+        - Log: None
+        - Version: v2.3.3
+    
+    === ":material-docker: docker"
+    
+        TBD - To Be Documented
+
+#### NATS API service
+
+The NATS API service appears to bridge the connection between the NATS server and database, allowing the agent to save (i.e. push) information in the database.
+
+???+ note "systemd config"
+
+    === ":material-console-line: status commands"
+
+        - Status: `systemctl status --full nats-api.service`
+        - Stop: `systemctl stop nats-api.service`
+        - Start: `systemctl start nats-api.service`
+        - Restart: `systemctl restart nats-api.service`
+        - journalctl: This application does not appear to log anything.
+
+    === ":material-ubuntu: standard"
+    
+         - Service: `nats-api.service`
+         - Exec: `/usr/local/bin/nats-server --config /rmm/api/tacticalrmm/nats-rmm.conf`
+         - Config: `/rmm/api/tacticalrmm/nats-rmm.conf`
+             - TLS: `/etc/letsencrypt/live/example.com/fullchain.pem`
+         - Log: None
+    
+    === ":material-docker: docker"
+    
+        TBD - To Be Documented
+
+#### Celery service
+
+[Celery](https://github.com/celery/celery) is a task queue focused on real-time processing and is responsible for scheduling tasks to be sent to agents.
 
 Log located at `/var/log/celery`
 
-```bash
-tail /var/log/celery
-```
+???+ note "systemd config"
 
-[Django](https://www.djangoproject.com/)
+    - [Celery docs](https://docs.celeryproject.org/en/stable/index.html)
+    - [Celery configuration docs](https://docs.celeryproject.org/en/stable/userguide/configuration.html)
 
-!!!description
-    Framework to integrate the server to interact with browser
+    === ":material-console-line: status commands"
 
+        - Status: `systemctl status --full celery.service`
+        - Stop: `systemctl stop celery.service`
+        - Start: `systemctl start celery.service`
+        - Restart: `systemctl restart celery.service`
+        - journalctl: Celery executes `sh` causing the systemd identifier to be `sh`, thus mixing the `celery` and `celerybeat` logs together.
+            - "tail" the logs: `journalctl --identifier sh --follow`
+            - View the logs: `journalctl --identifier sh --since "30 minutes ago" | less`
+        - Tail logs: `tail -F /var/log/celery/w*-*.log`
+
+    === ":material-ubuntu: standard"
+    
+        - Service: `celery.service`
+        - Exec: `/bin/sh -c '${CELERY_BIN} -A $CELERY_APP multi start $CELERYD_NODES --pidfile=${CELERYD_PID_FILE} --logfile=${CELERYD_LOG_FILE} --loglevel="${CELERYD_LOG_LEVEL}" $CELERYD_OPTS'`
+        - Config: `/etc/conf.d/celery.conf`
+        - Log: `/var/log/celery/w*-*.log`
+    
+    === ":material-docker: docker"
+    
+        TBD - To Be Documented
+
+#### Celery Beat service
+
+[celery beat](https://github.com/celery/django-celery-beat) is a scheduler; It kicks off tasks at regular intervals, that are then executed by available worker nodes in the cluster.
+
+???+ note "systemd config"
+
+    - [Celery beat docs](https://docs.celeryproject.org/en/stable/userguide/periodic-tasks.html)
+
+    === ":material-console-line: status commands"
+
+        - Status: `systemctl status --full celerybeat.service`
+        - Stop: `systemctl stop celerybeat.service`
+        - Start: `systemctl start celerybeat.service`
+        - Restart: `systemctl restart celerybeat.service`
+        - journalctl: Celery executes `sh` causing the systemd identifier to be `sh`, thus mixing the `celery` and `celerybeat` logs together.
+            - "tail" the logs: `journalctl --identifier sh --follow`
+            - View the logs: `journalctl --identifier sh --since "30 minutes ago" | less`
+        - Tail logs: `tail -F /var/log/celery/beat.log`
+
+    === ":material-ubuntu: standard"
+    
+        - Service: `celerybeat.service`
+        - Exec: `/bin/sh -c '${CELERY_BIN} -A ${CELERY_APP} beat --pidfile=${CELERYBEAT_PID_FILE} --logfile=${CELERYBEAT_LOG_FILE} --loglevel=${CELERYD_LOG_LEVEL}'`
+        - Config: `/etc/conf.d/celery.conf`
+        - Log: `/var/log/celery/beat.log`
+    
+    === ":material-docker: docker"
+    
+        TBD - To Be Documented
+
+### Dependencies
+
+[Django](https://www.djangoproject.com/) - Framework to integrate the server to interact with browser.
+
+<details>
+  <summary>Django dependencies</summary>
+
+```text
 future==0.18.2
 loguru==0.5.3
 msgpack==1.0.2
@@ -60,28 +304,37 @@ pycryptodome==3.10.1
 pyotp==2.6.0
 pyparsing==2.4.7
 pytz==2021.1
+```
+</details>
 
-[qrcode](https://pypi.org/project/qrcode/)
+[qrcode](https://pypi.org/project/qrcode/) - Creating QR codes for 2FA.
 
-!!!description
-    For creating QR codes for 2FA
+<details>
+  <summary>qrcode dependencies</summary>
 
+```text
 redis==3.5.3
 requests==2.25.1
 six==1.16.0
 sqlparse==0.4.1
+```
+</details>
 
-[twilio](https://www.twilio.com/)
+[twilio](https://www.twilio.com/) - Python SMS notification integration.
 
-!!!description
-    Python SMS notification integration
+<details>
+  <summary>twilio dependencies</summary>
 
+```text
 urllib3==1.26.5
 uWSGI==2.0.19.1
 validators==0.18.2
 vine==5.0.0
 websockets==9.1
 zipp==3.4.1
+```
+</details>
+
 
 ## Windows Agent
 
@@ -101,7 +354,7 @@ Found in `%programfiles%\TacticalAgent`
 ![TacticalAgentServices](images/trmm_services.png)
 ![TacticalAgentTaskManager](images/trmm_services__taskmanager_agent.png)
 
-The [MeshCentral](https://meshcentral.com/) system which is accessible from <https://mesh.example.com> and is used
+The [MeshCentral](https://meshcentral.com/) system which is accessible from `https://mesh.example.com` and is used
 
 * It runs 2 goroutines
   * one is the checkrunner which runs all the checks and then just sleeps until it's time to run more checks

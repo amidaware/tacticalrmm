@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
-from tacticalrmm.utils import notify_error, get_default_timezone
+from tacticalrmm.utils import notify_error, get_default_timezone, AGENT_DEFER
 from tacticalrmm.permissions import _audit_log_filter, _has_perm_on_agent
 
 from .models import AuditLog, PendingAction, DebugLog
@@ -93,10 +93,16 @@ class PendingActions(APIView):
 
     def get(self, request, agent_id=None):
         if agent_id:
-            agent = get_object_or_404(Agent, agent_id=agent_id)
+            agent = get_object_or_404(
+                Agent.objects.defer(*AGENT_DEFER), agent_id=agent_id
+            )
             actions = PendingAction.objects.filter(agent=agent)
         else:
-            actions = PendingAction.objects.filter_by_role(request.user)
+            actions = (
+                PendingAction.objects.select_related("agent")
+                .defer("agent__services", "agent__wmi_detail")
+                .filter_by_role(request.user)  # type: ignore
+            )
 
         return Response(PendingActionSerializer(actions, many=True).data)
 

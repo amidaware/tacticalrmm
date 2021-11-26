@@ -14,6 +14,7 @@ nav:
       - "Agent Installation": install_agent.md
       - "Updating Agents": update_agents.md
   - Functionality:
+      - "How it all Works": howitallworks.md
       - "Alerting": functions/alerting.md
       - "API Access": functions/api.md
       - "Automated Tasks": functions/automated_tasks.md

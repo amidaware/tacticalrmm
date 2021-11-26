@@ -10,6 +10,16 @@
     "default_timeout": "300"
   },
   {
+    "guid": "720edbb7-8faf-4a77-9283-29935e8880d0",
+    "filename": "Win_Printer_ClearandRestart.bat",
+    "submittedBy": "https://github.com/wh1te909",
+    "name": "Printers - Clear all print jobs",
+    "description": "This script will stop the spooler, delete all pending print jobs and restart the spooler",
+    "shell": "cmd",
+    "category": "TRMM (Win):Printing",
+    "default_timeout": "300"
+  },
+  {
     "guid": "3ff6a386-11d1-4f9d-8cca-1b0563bb6443",
     "filename": "Win_Google_Chrome_Clear_Cache.ps1",
     "submittedBy": "https://github.com/Omnicef",
@@ -142,6 +152,15 @@
     "description": "Retreives a Bitlocker Recovery Keys",
     "shell": "powershell",
     "category": "TRMM (Win):Storage"
+  },
+  {
+    "guid": "11be7136-0416-47b4-a6dd-9776fa857dca",
+    "filename": "Win_Storage_CheckPools.ps1",
+    "submittedBy": "https://github.com/wh1te909",
+    "name": "Storage Pools - Check Health",
+    "description": "Checks all storage pools for health, returns error 1 if unhealthy",
+    "shell": "powershell",
+    "category": "TRMM (Win):Monitoring"
   },
   {
     "guid": "cfa14c28-4dfc-4d4e-95ee-a380652e058d",

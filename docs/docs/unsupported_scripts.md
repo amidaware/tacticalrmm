@@ -869,3 +869,66 @@ Limit access to Tactical RMM's administration panel in nginx to specific locatio
             server_name rmm.example.com;
             return 404;
         } 
+
+
+
+
+
+## Apache Proxy
+howto -  proxy on apache
+### TRMM SERVER
+edit file /etc/nginx/sites-available/rmm.conf
+add the lines from 'real_ip' module inside server tag:
+  
+
+    set_real_ip_from    192.168.0.200; #IP Address of your apache proxy
+    real_ip_header      X-Forwarded-For;
+
+restart nginx
+
+    systemctl restart nginx
+
+### APACHE
+enable ssl proxy, rewriteEngine. 
+set proxy to preserve host.
+set upgrade rule to websocket.
+set proxypass rules redirecting to rmm location
+
+on your apache ssl config
+example:
+
+    <VirtualHost *:443>
+    	ServerName rmm.blablabla.com.br:443
+    	ServerAlias mesh.blablabla.com.br:443 api.blablabla.com.br:443 
+    	SSLEngine on
+    	
+        SSLCertificateFile "C:/Apache24/conf/ssl-rmm.blablabla.com.br/_.blablabla.com.br-chain.pem"
+    	SSLCertificateKeyFile "C:/Apache24/conf/ssl-rmm.blablabla.com.br/_.blablabla.com.br-key.pem"
+    
+     	SSLProxyEngine on
+    	
+    	RewriteEngine On
+    	ProxyPreserveHost On
+    	
+       	# When Upgrade:websocket header is present, redirect to ws
+       	# Using NC flag (case-insensitive) as some browsers will pass Websocket
+       	RewriteCond %{HTTP:Upgrade} =websocket [NC]
+        RewriteRule ^/(.*)    wss://192.168.0.212/$1 [P,L]
+    	
+    	ProxyPass "/"  "https://192.168.0..212/" retry=3
+    	ProxyPassReverse "/"  "https://192.168.0.212/" retry=3
+     	
+    	BrowserMatch "MSIE [2-5]" \
+    			 nokeepalive ssl-unclean-shutdown \
+    			 downgrade-1.0 force-response-1.0
+
+</VirtualHost>
+
+
+### Updating certificate:
+Im my case, auto DNS Challenge from apache, so every time we get new cert files, it must be copied inside rmm too.
+just overwrite default location:
+/etc/letsencrypt/archive/blablablabla
+or change certs location on nginx conf to whatever you want.
+
+

@@ -78,6 +78,12 @@ mkdocs is Exposed on Port: 8005
 
 Open: [http://rmm.example.com:8005/](http://rmm.example.com:8005/)
 
+!!!note
+    If you add new mkdocs extensions you might need to:<br>
+    - docker-compose down.<br>
+    - Then delete the `/api/tacticalrmm/env/` folder.<br>
+    - Then docker-compose up and it will download/rebuild new extensions
+
 ### View django administration
 
 Open: [http://rmm.example.com:8000/admin/](http://rmm.example.com:8000/admin/)

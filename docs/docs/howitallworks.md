@@ -1,10 +1,12 @@
 # How It All Works
 
-![Network Design](images/TacticalRMM-Network.png)
+[![Network Design](images/TacticalRMM-Network.png)](images/TacticalRMM-Network.png)
 
-1. Agent installer steps
+Still need graphics for
 
-2. Agent checks/tasks and how they work on the workstation/interact with server
+    1. Agent installer steps
+
+    2. Agent checks/tasks and how they work on the workstation/interact with server
 
 ## Server
 
@@ -15,7 +17,7 @@ Has a postgres database located here:
 !!!description
     A web interface for the postgres database
 
-Dependencies from [here](https://github.com/wh1te909/tacticalrmm/blob/develop/api/tacticalrmm/requirements.txt)
+All Tactical RMM dependencies are listed [here](https://github.com/wh1te909/tacticalrmm/blob/develop/api/tacticalrmm/requirements.txt)
 
 ### System Services
 
@@ -286,7 +288,29 @@ Log located at `/var/log/celery`
     
         TBD - To Be Documented
 
-### Dependencies
+#### MeshCentral
+
+[MeshCentral](https://github.com/Ylianst/MeshCentral) is used for: "Take Control" (connecting to machine for remote access), and 2 screens of the "Remote Background" (Terminal, and File Browser).
+
+???+ note "meshcentral"
+
+    - [MeshCentral docs](https://info.meshcentral.com/downloads/MeshCentral2/MeshCentral2UserGuide.pdf)
+
+    === ":material-console-line: status commands"
+
+        - Status: `systemctl status --full meshcentral`
+        - Stop: `systemctl stop meshcentral`
+        - Start: `systemctl start meshcentral`
+        - Restart: `systemctl restart meshcentral`
+
+    === ":material-remote-desktop: Debugging"
+
+        - Open either "Take Control" or "Remote Background" to get mesh login token
+        - Open https://mesh.example.com to open native mesh admin interface
+        - Left-side "My Server" > Choose "Console" > type `agentstats`
+        - To view detailed logging goto "Trace" > click Tracing button and choose categories
+
+### Other Dependencies
 
 [Django](https://www.djangoproject.com/) - Framework to integrate the server to interact with browser.
 

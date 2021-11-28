@@ -186,7 +186,7 @@ If you have agents outside your local network: Make sure the public DNS servers 
 
 Login to your router/NAT device.
 
-1. Set your TRMM server as a static IP (Use a DHCP reservation is usually safer)
+1. Set your TRMM server as a static IP (Using a DHCP reservation is usually safer)
 2. Create 2 port forwarding rules. `TCP Port 443` and `TCP Port 4222` to your TRMM servers private IP address.
    
 !!!note

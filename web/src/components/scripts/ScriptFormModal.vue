@@ -1,6 +1,6 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide" persistent @keydown.esc="onDialogHide" :maximized="maximized">
-    <q-card class="q-dialog-plugin" :style="maximized ? '' : 'width: 80vw; max-width: 90vw'">
+    <q-card class="q-dialog-plugin" :style="maximized ? '' : 'width: 90vw; max-width: 90vw'">
       <q-bar>
         {{ title }}
         <q-space />
@@ -15,81 +15,83 @@
         </q-btn>
       </q-bar>
       <q-form @submit="submitForm">
-        <div class="q-pt-sm q-px-sm row">
-          <q-input
-            filled
-            dense
-            class="col-2"
-            :readonly="readonly"
-            v-model="formScript.name"
-            label="Name"
-            :rules="[val => !!val || '*Required']"
-          />
-          <q-select
-            class="q-pl-sm col-2"
-            :readonly="readonly"
-            options-dense
-            filled
-            dense
-            v-model="formScript.shell"
-            :options="shellOptions"
-            emit-value
-            map-options
-            label="Shell Type"
-          />
-          <q-input
-            type="number"
-            class="q-pl-sm col-2"
-            filled
-            dense
-            :readonly="readonly"
-            v-model.number="formScript.default_timeout"
-            label="Timeout (seconds)"
-            :rules="[val => val >= 5 || 'Minimum is 5']"
-          />
-          <tactical-dropdown
-            class="q-pl-sm col-3"
-            filled
-            v-model="formScript.category"
-            :options="categories"
-            use-input
-            clearable
-            new-value-mode="add-unique"
-            filterable
-            label="Category"
-            :readonly="readonly"
-            hide-bottom-space
-          />
-          <q-input
-            class="q-pl-sm col-3"
-            filled
-            dense
-            :readonly="readonly"
-            v-model="formScript.description"
-            label="Description"
-          />
-          <tactical-dropdown
-            v-model="formScript.args"
-            label="Script Arguments (press Enter after typing each argument)"
-            class="q-pb-sm col-12 row"
-            filled
-            use-input
-            multiple
-            hide-dropdown-icon
-            input-debounce="0"
-            new-value-mode="add"
-            :readonly="readonly"
+        <div class="row q-pa-sm">
+          <div class="col-4 q-gutter-sm q-pr-sm">
+            <q-input
+              filled
+              dense
+              :readonly="readonly"
+              v-model="formScript.name"
+              label="Name"
+              :rules="[val => !!val || '*Required']"
+              hide-bottom-space
+            />
+            <q-input filled dense :readonly="readonly" v-model="formScript.description" label="Description" />
+            <q-select
+              :readonly="readonly"
+              options-dense
+              filled
+              dense
+              v-model="formScript.shell"
+              :options="shellOptions"
+              emit-value
+              map-options
+              label="Shell Type"
+            />
+            <tactical-dropdown
+              filled
+              v-model="formScript.category"
+              :options="categories"
+              use-input
+              clearable
+              new-value-mode="add-unique"
+              filterable
+              label="Category"
+              :readonly="readonly"
+              hide-bottom-space
+            />
+            <tactical-dropdown
+              v-model="formScript.args"
+              label="Script Arguments (press Enter after typing each argument)"
+              filled
+              use-input
+              multiple
+              hide-dropdown-icon
+              input-debounce="0"
+              new-value-mode="add"
+              :readonly="readonly"
+            />
+            <q-input
+              type="number"
+              filled
+              dense
+              :readonly="readonly"
+              v-model.number="formScript.default_timeout"
+              label="Timeout (seconds)"
+              :rules="[val => val >= 5 || 'Minimum is 5']"
+              hide-bottom-space
+            />
+            <q-input
+              label="Syntax"
+              type="textarea"
+              style="height: 150px; overflow-y: auto; resize: none"
+              v-model="formScript.syntax"
+              dense
+              filled
+              :readonly="readonly"
+            />
+          </div>
+          <v-ace-editor
+            v-model:value="code"
+            class="col-8"
+            :lang="formScript.shell === 'cmd' ? 'batchfile' : formScript.shell"
+            :theme="$q.dark.isActive ? 'tomorrow_night_eighties' : 'tomorrow'"
+            :style="{ height: `${maximized ? '87vh' : '64vh'}` }"
+            wrap
+            :printMargin="false"
+            :options="{ fontSize: '14px' }"
           />
         </div>
-        <v-ace-editor
-          v-model:value="code"
-          :lang="formScript.shell === 'cmd' ? 'batchfile' : formScript.shell"
-          :theme="$q.dark.isActive ? 'tomorrow_night_eighties' : 'tomorrow'"
-          :style="{ height: `${maximized ? '72vh' : '64vh'}` }"
-          wrap
-          :printMargin="false"
-          :options="{ fontSize: '14px' }"
-        />
         <q-card-actions>
           <tactical-dropdown
             style="width: 350px"

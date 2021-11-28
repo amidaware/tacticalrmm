@@ -1,4 +1,4 @@
-﻿Function Start-Cleanup {
+Function Start-Cleanup {
 <# 
 .SYNOPSIS
    Automate cleaning up a C:\ drive with low disk space

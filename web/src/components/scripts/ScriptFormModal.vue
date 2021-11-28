@@ -82,7 +82,7 @@
             />
           </div>
           <v-ace-editor
-            v-model:value="code"
+            v-model:value="formScript.script_body"
             class="col-8"
             :lang="formScript.shell === 'cmd' ? 'batchfile' : formScript.shell"
             :theme="$q.dark.isActive ? 'tomorrow_night_eighties' : 'tomorrow'"
@@ -111,7 +111,7 @@
                 dense
                 flat
                 label="Test Script"
-                :disable="!agent || !code || !formScript.default_timeout"
+                :disable="!agent || !formScript.script_body || !formScript.default_timeout"
                 @click="openTestScriptModal"
               />
             </template>
@@ -177,11 +177,10 @@ export default {
 
     // script form logic
     const script = props.script
-      ? ref(Object.assign({}, props.script))
-      : ref({ shell: "powershell", default_timeout: 90, args: [] });
+      ? ref(Object.assign({}, { ...props.script, script_body: "" }))
+      : ref({ shell: "powershell", default_timeout: 90, args: [], script_body: "" });
 
     if (props.clone) script.value.name = `(Copy) ${script.value.name}`;
-    const code = ref("");
     const maximized = ref(false);
     const loading = ref(false);
     const agentLoading = ref(false);
@@ -201,16 +200,13 @@ export default {
     // get code if editing or cloning script
     if (props.script)
       downloadScript(script.value.id, { with_snippets: props.readonly }).then(r => {
-        code.value = r.code;
+        script.value.script_body = r.code;
       });
 
     async function submitForm() {
       loading.value = true;
       let result = "";
       try {
-        // base64 encode the script text
-        script.value.code_base64 = btoa(code.value);
-
         // edit existing script
         if (props.script && !props.clone) {
           result = await editScript(script.value);
@@ -231,7 +227,7 @@ export default {
       $q.dialog({
         component: TestScriptModal,
         componentProps: {
-          script: { ...script.value, code: code.value },
+          script: { ...script.value },
           agent: agent.value,
         },
       });
@@ -247,7 +243,6 @@ export default {
     return {
       // reactive data
       formScript: script.value,
-      code,
       maximized,
       loading,
       agentOptions,

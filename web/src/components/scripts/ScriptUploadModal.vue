@@ -118,12 +118,12 @@ export default {
         // base64 encode the script and delete file
         const reader = new FileReader();
         reader.onloadend = () => {
-          script.value.code_base64 = reader.result.replace(/^data:.+;base64,/, "");
+          script.value.script_body = reader.result;
         };
 
-        reader.readAsDataURL(file.value);
+        reader.readAsText(file.value);
       } else {
-        script.value.code_base64 = "";
+        script.value.script_body = "";
       }
     });
 

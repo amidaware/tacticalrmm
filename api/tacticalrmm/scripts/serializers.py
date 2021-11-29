@@ -23,6 +23,7 @@ class ScriptTableSerializer(ModelSerializer):
 
 class ScriptSerializer(ModelSerializer):
     script_hash = ReadOnlyField()
+
     class Meta:
         model = Script
         fields = [

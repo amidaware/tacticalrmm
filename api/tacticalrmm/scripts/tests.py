@@ -35,9 +35,7 @@ class TestScriptViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @override_settings(
-        SECRET_KEY="Test Secret Key"
-    )
+    @override_settings(SECRET_KEY="Test Secret Key")
     def test_add_script(self):
         url = f"/scripts/"
 
@@ -46,7 +44,7 @@ class TestScriptViews(TacticalTestCase):
             "description": "Description",
             "shell": "powershell",
             "category": "New",
-            "script_body": "Test Script", 
+            "script_body": "Test Script",
             "default_timeout": 99,
             "args": ["hello", "world", r"{{agent.public_ip}}"],
             "favorite": False,
@@ -58,15 +56,15 @@ class TestScriptViews(TacticalTestCase):
 
         new_script = Script.objects.filter(name="Name").get()
         self.assertTrue(new_script)
-        
-        correct_hash = hmac.new(settings.SECRET_KEY.encode(), data["script_body"].encode(), hashlib.sha256).hexdigest()
+
+        correct_hash = hmac.new(
+            settings.SECRET_KEY.encode(), data["script_body"].encode(), hashlib.sha256
+        ).hexdigest()
         self.assertEqual(new_script.script_hash, correct_hash)
 
         self.check_not_authenticated("post", url)
 
-    @override_settings(
-        SECRET_KEY="Test Secret Key"
-    )
+    @override_settings(SECRET_KEY="Test Secret Key")
     def test_modify_script(self):
         # test a call where script doesn't exist
         resp = self.client.put("/scripts/500/", format="json")
@@ -90,7 +88,9 @@ class TestScriptViews(TacticalTestCase):
         script = Script.objects.get(pk=script.pk)
         self.assertEquals(script.description, "Description Change")
 
-        correct_hash = hmac.new(settings.SECRET_KEY.encode(), data["script_body"].encode(), hashlib.sha256).hexdigest()
+        correct_hash = hmac.new(
+            settings.SECRET_KEY.encode(), data["script_body"].encode(), hashlib.sha256
+        ).hexdigest()
         self.assertEqual(script.script_hash, correct_hash)
 
         # test edit a builtin script
@@ -190,7 +190,9 @@ class TestScriptViews(TacticalTestCase):
         self.assertEqual(resp.data, {"filename": f"{script.name}.ps1", "code": "Test Script Body"})  # type: ignore
 
         # test batch file
-        script = baker.make("scripts.Script", script_body="Test Script Body", shell="cmd")
+        script = baker.make(
+            "scripts.Script", script_body="Test Script Body", shell="cmd"
+        )
         url = f"/scripts/{script.pk}/download/"  # type: ignore
 
         resp = self.client.get(url, format="json")
@@ -198,7 +200,9 @@ class TestScriptViews(TacticalTestCase):
         self.assertEqual(resp.data, {"filename": f"{script.name}.bat", "code": "Test Script Body"})  # type: ignore
 
         # test python file
-        script = baker.make("scripts.Script", script_body="Test Script Body", shell="python")
+        script = baker.make(
+            "scripts.Script", script_body="Test Script Body", shell="python"
+        )
         url = f"/scripts/{script.pk}/download/"  # type: ignore
 
         resp = self.client.get(url, format="json")

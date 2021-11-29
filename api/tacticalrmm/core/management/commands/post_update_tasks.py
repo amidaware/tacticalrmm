@@ -23,10 +23,12 @@ class Command(BaseCommand):
                 user.save()
 
         # convert script base64 field to text field
-        user_scripts = Script.objects.exclude(script_type="builtin").filter(script_body="")
+        user_scripts = Script.objects.exclude(script_type="builtin").filter(
+            script_body=""
+        )
         for script in user_scripts:
             # decode base64 string
-            script.script_body = base64.b64decode(script.code_base64.encode("ascii", "ignore")).decode(
-                "ascii", "ignore"
-            )
-            script.hash_script_body() # also saves script
+            script.script_body = base64.b64decode(
+                script.code_base64.encode("ascii", "ignore")
+            ).decode("ascii", "ignore")
+            script.hash_script_body()  # also saves script

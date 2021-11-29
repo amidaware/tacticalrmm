@@ -43,7 +43,7 @@ class Script(BaseAuditModel):
     category = models.CharField(max_length=100, null=True, blank=True)
     script_body = models.TextField(blank=True, default="")
     script_hash = models.CharField(max_length=100, null=True, blank=True)
-    code_base64 = models.TextField(blank=True, default="") # deprecated
+    code_base64 = models.TextField(blank=True, default="")  # deprecated
     default_timeout = models.PositiveIntegerField(default=90)
 
     def __str__(self):
@@ -80,7 +80,9 @@ class Script(BaseAuditModel):
         from django.conf import settings
 
         msg = self.code.encode()
-        self.script_hash = hmac.new(settings.SECRET_KEY.encode(), msg, hashlib.sha256).hexdigest()
+        self.script_hash = hmac.new(
+            settings.SECRET_KEY.encode(), msg, hashlib.sha256
+        ).hexdigest()
         self.save()
 
     @classmethod
@@ -135,8 +137,8 @@ class Script(BaseAuditModel):
                     i.filename = script["filename"]  # type: ignore
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
-                        i.script_body = f.read().decode('utf-8') # type: ignore
-                        i.hash_script_body() # also saves script
+                        i.script_body = f.read().decode("utf-8")  # type: ignore
+                        i.hash_script_body()  # also saves script
 
                 # check if script was added without a guid
                 elif cls.objects.filter(
@@ -159,14 +161,14 @@ class Script(BaseAuditModel):
                         with open(
                             os.path.join(scripts_dir, script["filename"]), "rb"
                         ) as f:
-                            s.script_body = f.read().decode('utf-8')
-                            s.hash_script_body() # also saves the script
+                            s.script_body = f.read().decode("utf-8")
+                            s.hash_script_body()  # also saves the script
 
                 else:
                     print(f"Adding new community script: {script['name']}")
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
-                        script_body = f.read().decode('utf-8')
+                        script_body = f.read().decode("utf-8")
 
                         new_script = cls(
                             script_body=script_body,
@@ -181,7 +183,7 @@ class Script(BaseAuditModel):
                             filename=script["filename"],
                             syntax=syntax,
                         )
-                        new_script.hash_script_body() # also saves script
+                        new_script.hash_script_body()  # also saves script
 
         # delete community scripts that had their name changed
         cls.objects.filter(script_type="builtin", guid=None).delete()

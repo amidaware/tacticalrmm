@@ -7,6 +7,22 @@ cd /rmm/api/tacticalrmm
 source ../env/bin/activate
 ```
 
+## Bulk Delete old agents by last checkin date or agent version
+
+Test to see what will happen
+
+```bash
+python manage.py bulk_delete_agents --days 60
+python manage.py bulk_delete_agents --agentver 1.5.0
+```
+
+Do the delete
+
+```bash
+python manage.py bulk_delete_agents --days 60 --delete
+python manage.py bulk_delete_agents --agentver 1.5.0 --delete
+```
+
 ## Reset a user's password
 
 ```bash

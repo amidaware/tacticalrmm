@@ -364,6 +364,20 @@ zipp==3.4.1
 
 Found in `%programfiles%\TacticalAgent`
 
+### Outbound Firewall Rules
+
+#### Unsigned Agents
+
+Unsigned agents require: https://github.com/wh1te909/rmmagent/releases/*
+
+The agent uses this to obtain public IP info: `curl https://icanhazip.tacticalrmm.io/`
+
+#### Signed Agents
+
+The agent uses this to obtain public IP info: `curl https://icanhazip.tacticalrmm.io/`
+
+Signed agents would require: https://exe.tacticalrmm.io/ and https://exe2.tacticalrmm.io/ for downloading/updating agents
+
 ### Services
 
 3 services exist on all clients

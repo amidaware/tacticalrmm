@@ -366,17 +366,19 @@ Found in `%programfiles%\TacticalAgent`
 
 ### Outbound Firewall Rules
 
+If you have strict firewall rules these are the only outbound rules from the agent needed for all functionality:
+
+1. All agents have to be able to connect outbound to TRMM server on the 3 domain names on ports: 443 (agent and mesh) and 4222 (nats for checks/tasks/data)
+
+2. The agent uses this to obtain public IP info: `curl https://icanhazip.tacticalrmm.io/`
+
 #### Unsigned Agents
 
-Unsigned agents require: https://github.com/wh1te909/rmmagent/releases/*
-
-The agent uses this to obtain public IP info: `curl https://icanhazip.tacticalrmm.io/`
+Unsigned agents require access to: https://github.com/wh1te909/rmmagent/releases/*
 
 #### Signed Agents
 
-The agent uses this to obtain public IP info: `curl https://icanhazip.tacticalrmm.io/`
-
-Signed agents would require: https://exe.tacticalrmm.io/ and https://exe2.tacticalrmm.io/ for downloading/updating agents
+Signed agents will require: https://exe.tacticalrmm.io/ and https://exe2.tacticalrmm.io/ for downloading/updating agents
 
 ### Services
 

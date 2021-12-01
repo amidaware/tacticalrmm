@@ -216,8 +216,8 @@ The NATS API service appears to bridge the connection between the NATS server an
     === ":material-ubuntu: standard"
     
          - Service: `nats-api.service`
-         - Exec: `/usr/local/bin/nats-server --config /rmm/api/tacticalrmm/nats-rmm.conf`
-         - Config: `/rmm/api/tacticalrmm/nats-rmm.conf`
+         - Exec: `/usr/local/bin/nats-api --config /rmm/api/tacticalrmm/nats-api.conf`
+         - Config: `/rmm/api/tacticalrmm/nats-api.conf`
              - TLS: `/etc/letsencrypt/live/example.com/fullchain.pem`
          - Log: None
     
@@ -370,15 +370,15 @@ If you have strict firewall rules these are the only outbound rules from the age
 
 1. All agents have to be able to connect outbound to TRMM server on the 3 domain names on ports: 443 (agent and mesh) and 4222 (nats for checks/tasks/data)
 
-2. The agent uses this to obtain public IP info: `curl https://icanhazip.tacticalrmm.io/`
+2. The agent uses `https://icanhazip.tacticalrmm.io/` to get public IP info. If this site is down for whatever reason, the agent will fallback to `https://icanhazip.com` and then `https://ifconfig.co/ip`
 
 #### Unsigned Agents
 
-Unsigned agents require access to: https://github.com/wh1te909/rmmagent/releases/*
+Unsigned agents require access to: `https://github.com/wh1te909/rmmagent/releases/*`
 
 #### Signed Agents
 
-Signed agents will require: https://exe.tacticalrmm.io/ and https://exe2.tacticalrmm.io/ for downloading/updating agents
+Signed agents will require: `https://exe.tacticalrmm.io/` and `https://exe2.tacticalrmm.io/` for downloading/updating agents
 
 ### Services
 

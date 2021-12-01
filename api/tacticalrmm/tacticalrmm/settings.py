@@ -32,7 +32,7 @@ NATS_SERVER_VER = "2.3.3"
 PIP_VER = "24"
 NPM_VER = "25"
 
-SETUPTOOLS_VER = "58.5.3"
+SETUPTOOLS_VER = "59.4.0"
 WHEEL_VER = "0.37.0"
 
 DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"

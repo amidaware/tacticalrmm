@@ -45,7 +45,7 @@ You can pass the optional `--force` flag to the update script to forcefully run 
 ./update.sh --force
 ```
 
-This is usefull for a botched update that might have not completed fully.
+This is useful for a botched update that might have not completed fully.
 
 The update script will also fix any permissions that might have gotten messed up during a botched update, or if you accidentally ran the update script as the `root` user.
 
@@ -67,7 +67,7 @@ To renew your Let's Encrypt wildcard cert, run the following command, replacing 
 sudo certbot certonly --manual -d *.example.com --agree-tos --no-bootstrap --manual-public-ip-logging-ok --preferred-challenges dns -m admin@example.com --no-eff-email
 ```
 
-Same instructions as during install for [verifying the TXT record](install_server.md#deploy-the-txt-record-in-your-dns-manager) has propogated before hitting Enter.
+Same instructions as during install for [verifying the TXT record](install_server.md#deploy-the-txt-record-in-your-dns-manager) has propagated before hitting Enter.
 
 After this you have renewed the cert, simply run the `update.sh` script, passing it the `--force` flag.
 

@@ -30,7 +30,7 @@ Right-click the connect button in *Take Control* for connect options
 ### Enable Remote Control options
 
 !!!note
-    These settings are independant of Tactical RMM. Enable features (like auto remove inactive devices) with caution
+    These settings are independent of Tactical RMM. Enable features (like auto remove inactive devices) with caution
 
 1. Remote background a machine then go to mesh.EXAMPLE.COM
 2. Click on My Account
@@ -39,6 +39,20 @@ Right-click the connect button in *Take Control* for connect options
 ![Features](images/mesh_userconsent.png)
 5. You can also change features by ticking whatever boxes you want in there (Features: Sync server device name to hostname, Automatically remove inactive devices, Notify/Prompt for Consent/Connection Toolbar settings)<br>
 ![Features](images/mesh_features.png)
-
 6. Ok your way out
 
+### Agent online/offline logs
+
+In mesh from the agent | General Tab
+
+![online](images/mesh_agent_onlineoffline.png)
+## Scripts
+
+### When Running Scripts
+
+Use the (i) at the end of the script name to:
+
+- Hover: see script parameter syntax help
+- Left Click: Opens the script source in Github
+
+![Script Parameter Syntax](images/tipsntricks_script_syntaxhelp.png)

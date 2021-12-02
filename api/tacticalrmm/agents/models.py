@@ -98,7 +98,7 @@ class Agent(BaseAuditModel):
 
         # check if new agent has been created
         # or check if policy have changed on agent
-        # or if site has changed on agent and if so generate-policies
+        # or if site has changed on agent and if so generate policies
         # or if agent was changed from server or workstation
         if (
             not old_agent
@@ -108,10 +108,6 @@ class Agent(BaseAuditModel):
             or (old_agent.block_policy_inheritance != self.block_policy_inheritance)
         ):
             generate_agent_checks_task.delay(agents=[self.pk], create_tasks=True)
-
-        # calculate alert template for new agents
-        if not old_agent:
-            self.set_alert_template()
 
     def __str__(self):
         return self.hostname

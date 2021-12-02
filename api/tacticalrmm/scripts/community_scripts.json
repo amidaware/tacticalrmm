@@ -10,6 +10,16 @@
     "default_timeout": "300"
   },
   {
+    "guid": "720edbb7-8faf-4a77-9283-29935e8880d0",
+    "filename": "Win_Printer_ClearandRestart.bat",
+    "submittedBy": "https://github.com/wh1te909",
+    "name": "Printers - Clear all print jobs",
+    "description": "This script will stop the spooler, delete all pending print jobs and restart the spooler",
+    "shell": "cmd",
+    "category": "TRMM (Win):Printing",
+    "default_timeout": "300"
+  },
+  {
     "guid": "3ff6a386-11d1-4f9d-8cca-1b0563bb6443",
     "filename": "Win_Google_Chrome_Clear_Cache.ps1",
     "submittedBy": "https://github.com/Omnicef",
@@ -144,6 +154,15 @@
     "category": "TRMM (Win):Storage"
   },
   {
+    "guid": "11be7136-0416-47b4-a6dd-9776fa857dca",
+    "filename": "Win_Storage_CheckPools.ps1",
+    "submittedBy": "https://github.com/wh1te909",
+    "name": "Storage Pools - Check Health",
+    "description": "Checks all storage pools for health, returns error 1 if unhealthy",
+    "shell": "powershell",
+    "category": "TRMM (Win):Monitoring"
+  },
+  {
     "guid": "cfa14c28-4dfc-4d4e-95ee-a380652e058d",
     "filename": "Win_Bios_Check.ps1",
     "submittedBy": "https://github.com/ThatsNASt",
@@ -184,7 +203,7 @@
     "filename": "Win_Screenconnect_GetGUID.ps1",
     "submittedBy": "https://github.com/silversword411",
     "name": "Screenconnect - Get GUID for client",
-    "description": "Returns Screenconnect GUID for client - Use with Custom Fields for later use. ",
+    "description": "Returns Screenconnect GUID for client - Use with Custom Fields for later use.",
     "args": [
       "{{client.ScreenConnectService}}"
     ],
@@ -196,7 +215,7 @@
     "filename": "Win_Teamviewer_Get_ID.ps1",
     "submittedBy": "https://github.com/silversword411",
     "name": "TeamViewer - Get ClientID for client",
-    "description": "Returns Teamviwer ClientID for client - Use with Custom Fields for later use. ",
+    "description": "Returns Teamviwer ClientID for client - Use with Custom Fields for later use.",
     "shell": "powershell",
     "category": "TRMM (Win):Collectors"
   },
@@ -205,7 +224,7 @@
     "filename": "Win_AnyDesk_Get_Anynet_ID.ps1",
     "submittedBy": "https://github.com/meuchels",
     "name": "AnyDesk - Get AnyNetID for client",
-    "description": "Returns AnyNetID for client - Use with Custom Fields for later use. ",
+    "description": "Returns AnyNetID for client - Use with Custom Fields for later use.",
     "shell": "powershell",
     "category": "TRMM (Win):Collectors"
   },
@@ -262,6 +281,7 @@
     "submittedBy": "https://github.com/subzdev",
     "name": "Software Uninstaller - list, find, and uninstall most software",
     "description": "Allows listing, finding and uninstalling most software on Windows. There will be a best effort to uninstall silently if the silent uninstall string is not provided.",
+    "syntax": "-list <string>\n[-u <uninstall string>]\n[-u quiet <uninstall string>]",
     "shell": "powershell",
     "category": "TRMM (Win):3rd Party Software",
     "default_timeout": "600"
@@ -272,6 +292,7 @@
     "submittedBy": "https://github.com/jhtechIL/",
     "name": "BitDefender Gravity Zone Install",
     "description": "Installs BitDefender Gravity Zone, requires client custom field setup. See script comments for details",
+    "syntax": "[-log]",
     "args": [
       "-url {{client.bdurl}}",
       "-exe {{client.bdexe}}"
@@ -284,6 +305,7 @@
     "guid": "da51111c-aff6-4d87-9d76-0608e1f67fe5",
     "filename": "Win_Defender_Enable.ps1",
     "submittedBy": "https://github.com/dinger1986",
+    "syntax": "[-NoControlledFolders]",
     "name": "Defender - Enable",
     "description": "Enables Windows Defender and sets preferences",
     "shell": "powershell",
@@ -374,6 +396,7 @@
     "submittedBy": "https://github.com/dinger1986",
     "name": "Defender - Status Report",
     "description": "This will check for Malware and Antispyware within the last 24 hours and display, otherwise will report as Healthy. Command Parameter: (number) if provided will check that number of days back in the log.",
+    "syntax": "[<int>]",
     "shell": "powershell",
     "category": "TRMM (Win):Security>Antivirus"
   },
@@ -409,6 +432,7 @@
     "filename": "Win_Display_Message_To_User.ps1",
     "submittedBy": "https://github.com/bradhawkins85",
     "name": "Message Popup To User",
+    "syntax": "<string>",
     "description": "Displays a popup message to the currently logged on user",
     "shell": "powershell",
     "category": "TRMM (Win):Other"
@@ -418,6 +442,7 @@
     "filename": "Win_Antivirus_Verify.ps1",
     "submittedBy": "https://github.com/beejayzed",
     "name": "Antivirus - Verify Status",
+    "syntax": "[-antivirusName <string>]",
     "description": "Verify and display status for all installed Antiviruses",
     "shell": "powershell",
     "category": "TRMM (Win):Security>Antivirus"
@@ -693,6 +718,15 @@
     "category": "TRMM (Win):Security"
   },
   {
+    "guid": "43a3206d-f1cb-44ef-8405-aae4d33a0bad",
+    "filename": "Win_Security_Audit.ps1",
+    "submittedBy": "theinterwebs",
+    "name": "Windows Security - Security Audit",
+    "description": "Runs an Audit on many components of windows to check for security issues",
+    "shell": "powershell",
+    "category": "TRMM (Win):Security"
+  },
+  {
     "guid": "7ea6a11a-05c0-4151-b5c1-cb8af029299f",
     "filename": "Win_AzureAD_Check_Connection_Status.ps1",
     "submittedBy": "https://github.com/dinger1986",
@@ -799,6 +833,7 @@
     "submittedBy": "https://github.com/tremor021",
     "name": "EXAMPLE File Copying using powershell",
     "description": "Reference Script: Will need manual tweaking, for copying files/folders from paths/websites to local",
+    "syntax": "-source <string>\n-destination <string>\n[-recursive {True | False}]",
     "shell": "powershell",
     "category": "TRMM (Win):Misc>Reference",
     "default_timeout": "1"
@@ -818,6 +853,7 @@
     "filename": "Win_AD_Join_Computer.ps1",
     "submittedBy": "https://github.com/rfost52",
     "name": "AD - Join Computer to Domain",
+    "syntax": "-domain <string>\n-password <string>\n-UserAccount ADMINaccount\n[-OUPath <OU=testOU,DC=test,DC=local>]",
     "description": "Join computer to a domain in Active Directory",
     "shell": "powershell",
     "category": "TRMM (Win):Active Directory",
@@ -828,6 +864,7 @@
     "filename": "Win_Collect_System_Report_And_Email.ps1",
     "submittedBy": "https://github.com/rfost52",
     "name": "Collect System Report and Email",
+    "syntax": "-agentname <string>\n-file <string enter file name with the extension .HTM or .HTML>\n-fromaddress <string>\n-toaddress <string>\n-smtpserver <string>\n-password <string>\n-port <int 587 is the standard port for sending mail over TLS>",
     "description": "Generates a system report in HTML format, then emails it",
     "shell": "powershell",
     "category": "TRMM (Win):Other",

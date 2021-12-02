@@ -15,6 +15,7 @@ from tacticalrmm.celery import app
 
 from agents.models import Agent
 from agents.utils import get_winagent_url
+from tacticalrmm.utils import AGENT_DEFER
 
 
 def agent_update(agent_id: str, force: bool = False) -> str:
@@ -311,9 +312,7 @@ def prune_agent_history(older_than_days: int) -> str:
 
 @app.task
 def handle_agents_task() -> None:
-    q = Agent.objects.prefetch_related("pendingactions", "autotasks").only(
-        "pk", "agent_id", "version", "last_seen", "overdue_time", "offline_time"
-    )
+    q = Agent.objects.defer(*AGENT_DEFER)
     agents = [
         i
         for i in q

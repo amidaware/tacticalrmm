@@ -1,3 +1,4 @@
+import base64
 from django.core.management.base import BaseCommand
 
 from logs.models import PendingAction
@@ -20,3 +21,14 @@ class Command(BaseCommand):
             for user in User.objects.filter(is_installer_user=True):
                 user.block_dashboard_login = True
                 user.save()
+
+        # convert script base64 field to text field
+        user_scripts = Script.objects.exclude(script_type="builtin").filter(
+            script_body=""
+        )
+        for script in user_scripts:
+            # decode base64 string
+            script.script_body = base64.b64decode(
+                script.code_base64.encode("ascii", "ignore")
+            ).decode("ascii", "ignore")
+            script.hash_script_body()  # also saves script

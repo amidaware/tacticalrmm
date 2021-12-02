@@ -121,18 +121,18 @@ class WinUpdates(APIView):
 
     def put(self, request):
         agent = get_object_or_404(Agent, agent_id=request.data["agent_id"])
+
+        needs_reboot: bool = request.data["needs_reboot"]
+        agent.needs_reboot = needs_reboot
+        agent.save(update_fields=["needs_reboot"])
+
         reboot_policy: str = agent.get_patch_policy().reboot_after_install
         reboot = False
 
         if reboot_policy == "always":
             reboot = True
-
-        if request.data["needs_reboot"]:
-            if reboot_policy == "required":
-                reboot = True
-            elif reboot_policy == "never":
-                agent.needs_reboot = True
-                agent.save(update_fields=["needs_reboot"])
+        elif needs_reboot and reboot_policy == "required":
+            reboot = True
 
         if reboot:
             asyncio.run(agent.nats_cmd({"func": "rebootnow"}, wait=False))

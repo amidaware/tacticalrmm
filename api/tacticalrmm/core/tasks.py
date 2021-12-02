@@ -9,6 +9,7 @@ from alerts.tasks import prune_resolved_alerts
 from core.models import CoreSettings
 from logs.tasks import prune_debug_log, prune_audit_log
 from tacticalrmm.celery import app
+from tacticalrmm.utils import AGENT_DEFER
 
 
 @app.task
@@ -58,9 +59,7 @@ def core_maintenance_tasks():
 def cache_db_fields_task():
     from agents.models import Agent
 
-    for agent in Agent.objects.prefetch_related("winupdates", "pendingactions").only(
-        "pending_actions_count", "has_patches_pending", "pk"
-    ):
+    for agent in Agent.objects.defer(*AGENT_DEFER):
         agent.pending_actions_count = agent.pendingactions.filter(
             status="pending"
         ).count()

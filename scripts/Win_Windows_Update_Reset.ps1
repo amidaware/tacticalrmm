@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
 Reset-WindowsUpdate.ps1 - Resets the Windows Update components
 

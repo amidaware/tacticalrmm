@@ -1,5 +1,6 @@
-import base64
 import re
+import hmac
+import hashlib
 from typing import List
 
 from django.contrib.postgres.fields import ArrayField
@@ -40,7 +41,9 @@ class Script(BaseAuditModel):
     syntax = TextField(null=True, blank=True)
     favorite = models.BooleanField(default=False)
     category = models.CharField(max_length=100, null=True, blank=True)
-    code_base64 = models.TextField(null=True, blank=True, default="")
+    script_body = models.TextField(blank=True, default="")
+    script_hash = models.CharField(max_length=100, null=True, blank=True)
+    code_base64 = models.TextField(blank=True, default="")  # deprecated
     default_timeout = models.PositiveIntegerField(default=90)
 
     def __str__(self):
@@ -48,12 +51,7 @@ class Script(BaseAuditModel):
 
     @property
     def code_no_snippets(self):
-        if self.code_base64:
-            return base64.b64decode(self.code_base64.encode("ascii", "ignore")).decode(
-                "ascii", "ignore"
-            )
-        else:
-            return ""
+        return self.script_body if self.script_body else ""
 
     @property
     def code(self):
@@ -77,6 +75,15 @@ class Script(BaseAuditModel):
             return replaced_code
         else:
             return code
+
+    def hash_script_body(self):
+        from django.conf import settings
+
+        msg = self.code.encode()
+        self.script_hash = hmac.new(
+            settings.SECRET_KEY.encode(), msg, hashlib.sha256
+        ).hexdigest()
+        self.save()
 
     @classmethod
     def load_community_scripts(cls):
@@ -130,24 +137,8 @@ class Script(BaseAuditModel):
                     i.filename = script["filename"]  # type: ignore
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
-                        script_bytes = (
-                            f.read().decode("utf-8").encode("ascii", "ignore")
-                        )
-                        i.code_base64 = base64.b64encode(script_bytes).decode("ascii")  # type: ignore
-
-                    i.save(  # type: ignore
-                        update_fields=[
-                            "name",
-                            "description",
-                            "category",
-                            "default_timeout",
-                            "code_base64",
-                            "shell",
-                            "args",
-                            "filename",
-                            "syntax",
-                        ]
-                    )
+                        i.script_body = f.read().decode("utf-8")  # type: ignore
+                        i.hash_script_body()  # also saves script
 
                 # check if script was added without a guid
                 elif cls.objects.filter(
@@ -170,39 +161,17 @@ class Script(BaseAuditModel):
                         with open(
                             os.path.join(scripts_dir, script["filename"]), "rb"
                         ) as f:
-                            script_bytes = (
-                                f.read().decode("utf-8").encode("ascii", "ignore")
-                            )
-                            s.code_base64 = base64.b64encode(script_bytes).decode(
-                                "ascii"
-                            )
-
-                        s.save(
-                            update_fields=[
-                                "guid",
-                                "name",
-                                "description",
-                                "category",
-                                "default_timeout",
-                                "code_base64",
-                                "shell",
-                                "args",
-                                "filename",
-                                "syntax",
-                            ]
-                        )
+                            s.script_body = f.read().decode("utf-8")
+                            s.hash_script_body()  # also saves the script
 
                 else:
                     print(f"Adding new community script: {script['name']}")
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
-                        script_bytes = (
-                            f.read().decode("utf-8").encode("ascii", "ignore")
-                        )
-                        code_base64 = base64.b64encode(script_bytes).decode("ascii")
+                        script_body = f.read().decode("utf-8")
 
-                        cls(
-                            code_base64=code_base64,
+                        new_script = cls(
+                            script_body=script_body,
                             guid=script["guid"],
                             name=script["name"],
                             description=script["description"],
@@ -213,7 +182,8 @@ class Script(BaseAuditModel):
                             args=args,
                             filename=script["filename"],
                             syntax=syntax,
-                        ).save()
+                        )
+                        new_script.hash_script_body()  # also saves script
 
         # delete community scripts that had their name changed
         cls.objects.filter(script_type="builtin", guid=None).delete()

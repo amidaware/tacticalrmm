@@ -5,6 +5,7 @@
         <template v-slot:before>
           <q-tabs dense v-model="tab" vertical class="text-primary">
             <q-tab name="general" label="General" />
+            <q-tab name="customfields" label="Custom Fields" />
             <q-tab name="patch" label="Patches" />
           </q-tabs>
         </template>
@@ -15,7 +16,7 @@
               <q-space />
               <q-btn icon="close" flat round dense v-close-popup />
             </q-card-section>
-            <div class="scroll" style="max-height: 65vh">
+            <div class="scroll" style="height: 65vh; max-height: 65vh">
               <q-tab-panels v-model="tab" animated transition-prev="jump-up" transition-next="jump-up">
                 <!-- general -->
                 <q-tab-panel name="general">
@@ -105,11 +106,18 @@
                     <q-checkbox v-model="agent.overdue_text_alert" label="Get overdue sms alerts" />
                     <q-checkbox v-model="agent.overdue_dashboard_alert" label="Get overdue dashboard alerts" />
                   </q-card-section>
-                  <div class="text-h6" v-if="customFields.length > 0">Custom Fields</div>
+                </q-tab-panel>
+
+                <!-- custom fields -->
+                <q-tab-panel name="customfields">
+                  <div class="text-subtitle" v-if="customFields.length === 0">
+                    No agent custom fields found. Go to **Settings > Global Settings > Custom Settings**
+                  </div>
                   <q-card-section v-for="field in customFields" :key="field.id">
                     <CustomField v-model="custom_fields[field.name]" :field="field" />
                   </q-card-section>
                 </q-tab-panel>
+
                 <!-- patch -->
                 <q-tab-panel name="patch">
                   <PatchPolicyForm :agent="agent" />

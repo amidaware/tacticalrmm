@@ -127,6 +127,9 @@
               <q-item clickable v-close-popup @click="openHelp('docs')">
                 <q-item-section>Documentation</q-item-section>
               </q-item>
+              <q-item clickable v-close-popup @click="openHelp('github')">
+                <q-item-section>GitHub Repo</q-item-section>
+              </q-item>
               <q-item clickable v-close-popup @click="openHelp('bug')">
                 <q-item-section>Bug Report</q-item-section>
               </q-item>
@@ -227,6 +230,9 @@ export default {
     openHelp(mode) {
       let url;
       switch (mode) {
+        case "github":
+          url = "https://github.com/wh1te909/tacticalrmm/";
+          break;
         case "docs":
           url = "https://wh1te909.github.io/tacticalrmm/";
           break;

@@ -211,6 +211,18 @@
     "category": "TRMM (Win):Collectors"
   },
   {
+    "guid": "bbe5645f-c8d8-4d86-bddd-c8dbea45c974",
+    "filename": "Win_Splashtop_Get_ID.ps1",
+    "submittedBy": "https://github.com/r3die",
+    "name": "Splashtop - Get SUUID for client",
+    "description": "Returns Splashtop SUUID for client - Use with Custom Fields for later use.",
+    "args": [
+      "{{agent.SplashtopSUUID}}"
+    ],
+    "shell": "powershell",
+    "category": "TRMM (Win):Collectors"
+  },
+  {
     "guid": "9cfdfe8f-82bf-4081-a59f-576d694f4649",
     "filename": "Win_Teamviewer_Get_ID.ps1",
     "submittedBy": "https://github.com/silversword411",

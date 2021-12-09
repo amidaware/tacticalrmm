@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="56"
+SCRIPT_VERSION="57"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/install.sh'
 
 sudo apt install -y curl wget dirmngr gnupg lsb-release
@@ -454,6 +454,7 @@ User=${USER}
 Group=www-data
 Restart=always
 RestartSec=5s
+LimitNOFILE=1000000
 
 [Install]
 WantedBy=multi-user.target

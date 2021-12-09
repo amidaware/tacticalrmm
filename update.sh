@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="126"
+SCRIPT_VERSION="127"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -66,6 +66,36 @@ cls() {
   printf "\033c"
 }
 
+
+CHECK_NATS_LIMITNOFILE=$(grep LimitNOFILE /etc/systemd/system/nats.service)
+if ! [[ $CHECK_NATS_LIMITNOFILE ]]; then
+
+sudo rm -f /etc/systemd/system/nats.service
+
+natsservice="$(cat << EOF
+[Unit]
+Description=NATS Server
+After=network.target
+
+[Service]
+PrivateTmp=true
+Type=simple
+ExecStart=/usr/local/bin/nats-server -c /rmm/api/tacticalrmm/nats-rmm.conf
+ExecReload=/usr/bin/kill -s HUP \$MAINPID
+ExecStop=/usr/bin/kill -s SIGINT \$MAINPID
+User=${USER}
+Group=www-data
+Restart=always
+RestartSec=5s
+LimitNOFILE=1000000
+
+[Install]
+WantedBy=multi-user.target
+EOF
+)"
+echo "${natsservice}" | sudo tee /etc/systemd/system/nats.service > /dev/null
+sudo systemctl daemon-reload
+fi
 
 if ! sudo nginx -t > /dev/null 2>&1; then
   sudo nginx -t

@@ -288,6 +288,17 @@
     "category": "TRMM (Win):Hardware"
   },
   {
+    "guid": "4ace28ee-98f7-4931-9ac9-0adaf1a757ed",
+    "filename": "Win_Software_Install_Report.ps1",
+    "submittedBy": "https://github.com/silversword",
+    "name": "Software Install - Reports new installs",
+    "description": "This will check for software install events in the application Event Viewer log. If a number is provided as a command parameter it will search that number of days back.",
+    "syntax": "[<int>]",
+    "shell": "powershell",
+    "category": "TRMM (Win):Monitoring",
+    "default_timeout": "90"
+  },
+  {
     "guid": "907652a5-9ec1-4759-9871-a7743f805ff2",
     "filename": "Win_Software_Uninstall.ps1",
     "submittedBy": "https://github.com/subzdev",

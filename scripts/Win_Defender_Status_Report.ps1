@@ -5,7 +5,7 @@
     This will check Event Log for Windows Defender Malware and Antispyware reports, otherwise will report as Healthy. By default if no command parameter is provided it will check the last 1 day (good for a scheduled daily task). 
     If a number is provided as a command parameter it will search back that number of days back provided (good for collecting all AV alerts on the computer).
 .EXAMPLE
-    Win_Defender_Status_reports.ps1 365
+    365
 .NOTES
     v1 dinger initial release 2021
     v1.1 bdrayer Adding full message output if items found

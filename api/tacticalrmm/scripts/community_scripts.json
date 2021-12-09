@@ -30,6 +30,16 @@
     "default_timeout": "300"
   },
   {
+    "guid": "d3c74105-d1e5-40d8-94ff-b4d6b216fe0f",
+    "filename": "Win_Chocolatey_List_Installed.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Chocolatey - List Installed apps",
+    "description": "Lists apps locally installed by chocolatey",
+    "shell": "cmd",
+    "category": "TRMM (Win):3rd Party Software>Chocolatey",
+    "default_timeout": "90"
+  },
+  {
     "guid": "be1de837-f677-4ac5-aa0c-37a0fc9991fc",
     "filename": "Win_Install_Adobe_Reader.ps1",
     "submittedBy": "https://github.com/Omnicef",
@@ -59,6 +69,16 @@
     "category": "TRMM (Win):3rd Party Software>Monitoring"
   },
   {
+    "guid": "5a60c13b-1882-4a92-bdfb-6dd1f6a11dd14",
+    "filename": "Win_Windows_Update_RevertToDefault.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Windows Update - Re-enable Microsoft managed Windows Update",
+    "description": "TRMM agent will set registry key to disable Windows Auto Updates. This will re-enable Windows standard update settings",
+    "shell": "powershell",
+    "category": "TRMM (Win):Updates",
+    "default_timeout": "90"
+  },
+  {
     "guid": "81cc5bcb-01bf-4b0c-89b9-0ac0f3fe0c04",
     "filename": "Win_Windows_Update_Reset.ps1",
     "submittedBy": "https://github.com/Omnicef",
@@ -73,7 +93,7 @@
     "filename": "Win_Start_Cleanup.ps1",
     "submittedBy": "https://github.com/Omnicef",
     "name": "Disk - Cleanup C: drive",
-    "description": "Cleans the C: drive's Window Temperary files, Windows SoftwareDistribution folder, the local users Temperary folder, IIS logs (if applicable) and empties the recycling bin. All deleted files will go into a log transcript in $env:TEMP. By default this script leaves files that are newer than 7 days old however this variable can be edited.",
+    "description": "Cleans the C: drive's Window Temporary files, Windows SoftwareDistribution folder, the local users Temperary folder, IIS logs (if applicable) and empties the recycling bin. All deleted files will go into a log transcript in $env:TEMP. By default this script leaves files that are newer than 7 days old however this variable can be edited.",
     "shell": "powershell",
     "category": "TRMM (Win):Maintenance",
     "default_timeout": "25000"
@@ -288,6 +308,17 @@
     "category": "TRMM (Win):Hardware"
   },
   {
+    "guid": "4ace28ee-98f7-4931-9ac9-0adaf1a757ed",
+    "filename": "Win_Software_Install_Report.ps1",
+    "submittedBy": "https://github.com/silversword",
+    "name": "Software Install - Reports new installs",
+    "description": "This will check for software install events in the application Event Viewer log. If a number is provided as a command parameter it will search that number of days back.",
+    "syntax": "[<int>]",
+    "shell": "powershell",
+    "category": "TRMM (Win):Monitoring",
+    "default_timeout": "90"
+  },
+  {
     "guid": "907652a5-9ec1-4759-9871-a7743f805ff2",
     "filename": "Win_Software_Uninstall.ps1",
     "submittedBy": "https://github.com/subzdev",
@@ -499,10 +530,11 @@
   },
   {
     "guid": "71090fc4-faa6-460b-adb0-95d7863544e1",
-    "filename": "Win_Check_Events_for_Bluescreens.ps1",
-    "submittedBy": "https://github.com/dinger1986",
+    "filename": "Win_Bluescreen_Report.ps1",
+    "submittedBy": "https://github.com/bbrendon",
     "name": "Event Viewer - Bluescreen Notification",
     "description": "Event Viewer Monitor - Notify Bluescreen events on your system",
+    "syntax": "[<int>]",
     "shell": "powershell",
     "category": "TRMM (Win):Monitoring"
   },
@@ -511,7 +543,8 @@
     "filename": "Win_Local_User_Created_Monitor.ps1",
     "submittedBy": "https://github.com/dinger1986",
     "name": "Event Viewer - New User Notification",
-    "description": "Event Viewer Monitor - Notify when new Local user is created",
+    "description": "Event Viewer Monitor - Notify when new Local user is created. If parameter provided will search back that number of days",
+    "syntax": "[<int>]",
     "shell": "powershell",
     "category": "TRMM (Win):Monitoring"
   },
@@ -521,6 +554,7 @@
     "submittedBy": "https://github.com/dinger1986",
     "name": "Event Viewer - Task Scheduler New Item Notification",
     "description": "Event Viewer Monitor - Notify when new Task Scheduler item is created",
+    "syntax": "[<int>]",
     "shell": "powershell",
     "category": "TRMM (Win):Monitoring"
   },
@@ -799,6 +833,16 @@
     "name": "User - Create Local",
     "description": "Create a local user. Parameters are: username, password and optional: description, fullname, group (adds to Users if not specified)",
     "syntax": "-username <string>\n-password <string>\n[-description <string>]\n[-fullname <string>]\n[-group <string>]",
+    "shell": "powershell",
+    "category": "TRMM (Win):User Management"
+  },
+  {
+    "guid": "6e27d5341-88fa-4c2f-9c91-c3aeb1740e85",
+    "filename": "Win_User_EnableDisable.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "User - Enable or disable a user",
+    "description": "Used to enable or disable local user",
+    "syntax": "-Name <string>\n-Enabled { yes | no }",
     "shell": "powershell",
     "category": "TRMM (Win):User Management"
   },

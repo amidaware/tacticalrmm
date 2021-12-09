@@ -534,6 +534,7 @@
     "submittedBy": "https://github.com/dinger1986",
     "name": "Event Viewer - Task Scheduler New Item Notification",
     "description": "Event Viewer Monitor - Notify when new Task Scheduler item is created",
+    "syntax": "[<int>]",
     "shell": "powershell",
     "category": "TRMM (Win):Monitoring"
   },

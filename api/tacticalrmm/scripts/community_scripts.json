@@ -837,6 +837,16 @@
     "category": "TRMM (Win):User Management"
   },
   {
+    "guid": "6e27d5341-88fa-4c2f-9c91-c3aeb1740e85",
+    "filename": "Win_User_EnableDisable.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "User - Enable or disable a user",
+    "description": "Used to enable or disable local user",
+    "syntax": "-Name <string>\n-Enabled { yes | no }",
+    "shell": "powershell",
+    "category": "TRMM (Win):User Management"
+  },
+  {
     "guid": "57997ec7-b293-4fd5-9f90-a25426d0eb90",
     "filename": "Win_Users_List.ps1",
     "submittedBy": "https://github.com/tremor021",

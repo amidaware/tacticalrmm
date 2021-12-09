@@ -1,8 +1,8 @@
 <#
       .SYNOPSIS
-      Used to enable or disable users
+      User - Enable or disable a user
       .DESCRIPTION
-      For installing packages using chocolatey. If you're running against more than 10, include the Hosts parameter to limit the speed. If running on more than 30 agents at a time make sure you also change the script timeout setting.
+      Used to enable or disable local user
       .PARAMETER Name
       Required: Username
       .PARAMETER Enabled

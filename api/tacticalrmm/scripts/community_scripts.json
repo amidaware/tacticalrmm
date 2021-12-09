@@ -30,6 +30,16 @@
     "default_timeout": "300"
   },
   {
+    "guid": "d3c74105-d1e5-40d8-94ff-b4d6b216fe0f",
+    "filename": "Win_Chocolatey_List_Installed.bat",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Chocolatey - List Installed apps",
+    "description": "Lists apps locally installed by chocolatey",
+    "shell": "cmd",
+    "category": "TRMM (Win):3rd Party Software>Chocolatey",
+    "default_timeout": "300"
+  },
+  {
     "guid": "be1de837-f677-4ac5-aa0c-37a0fc9991fc",
     "filename": "Win_Install_Adobe_Reader.ps1",
     "submittedBy": "https://github.com/Omnicef",
@@ -73,7 +83,7 @@
     "filename": "Win_Start_Cleanup.ps1",
     "submittedBy": "https://github.com/Omnicef",
     "name": "Disk - Cleanup C: drive",
-    "description": "Cleans the C: drive's Window Temperary files, Windows SoftwareDistribution folder, the local users Temperary folder, IIS logs (if applicable) and empties the recycling bin. All deleted files will go into a log transcript in $env:TEMP. By default this script leaves files that are newer than 7 days old however this variable can be edited.",
+    "description": "Cleans the C: drive's Window Temporary files, Windows SoftwareDistribution folder, the local users Temperary folder, IIS logs (if applicable) and empties the recycling bin. All deleted files will go into a log transcript in $env:TEMP. By default this script leaves files that are newer than 7 days old however this variable can be edited.",
     "shell": "powershell",
     "category": "TRMM (Win):Maintenance",
     "default_timeout": "25000"

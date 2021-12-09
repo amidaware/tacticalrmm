@@ -37,7 +37,7 @@
     "description": "Lists apps locally installed by chocolatey",
     "shell": "cmd",
     "category": "TRMM (Win):3rd Party Software>Chocolatey",
-    "default_timeout": "300"
+    "default_timeout": "90"
   },
   {
     "guid": "be1de837-f677-4ac5-aa0c-37a0fc9991fc",
@@ -67,6 +67,16 @@
     "description": "Checks Duplicati Backup is running properly over the last 24 hours",
     "shell": "powershell",
     "category": "TRMM (Win):3rd Party Software>Monitoring"
+  },
+  {
+    "guid": "5a60c13b-1882-4a92-bdfb-6dd1f6a11dd14",
+    "filename": "Win_Windows_Update_RevertToDefault.ps1",
+    "submittedBy": "https://github.com/silversword411",
+    "name": "Windows Update - Re-enable Microsoft managed Windows Update",
+    "description": "TRMM agent will set registry key to disable Windows Auto Updates. This will re-enable Windows standard update settings",
+    "shell": "powershell",
+    "category": "TRMM (Win):Updates",
+    "default_timeout": "90"
   },
   {
     "guid": "81cc5bcb-01bf-4b0c-89b9-0ac0f3fe0c04",

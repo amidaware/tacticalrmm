@@ -523,7 +523,8 @@
     "filename": "Win_Local_User_Created_Monitor.ps1",
     "submittedBy": "https://github.com/dinger1986",
     "name": "Event Viewer - New User Notification",
-    "description": "Event Viewer Monitor - Notify when new Local user is created",
+    "description": "Event Viewer Monitor - Notify when new Local user is created. If parameter provided will search back that number of days",
+    "syntax": "[<int>]",
     "shell": "powershell",
     "category": "TRMM (Win):Monitoring"
   },

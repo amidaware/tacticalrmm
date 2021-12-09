@@ -510,10 +510,11 @@
   },
   {
     "guid": "71090fc4-faa6-460b-adb0-95d7863544e1",
-    "filename": "Win_Check_Events_for_Bluescreens.ps1",
-    "submittedBy": "https://github.com/dinger1986",
+    "filename": "Win_Bluescreen_Report.ps1",
+    "submittedBy": "https://github.com/bbrendon",
     "name": "Event Viewer - Bluescreen Notification",
     "description": "Event Viewer Monitor - Notify Bluescreen events on your system",
+    "syntax": "[<int>]",
     "shell": "powershell",
     "category": "TRMM (Win):Monitoring"
   },

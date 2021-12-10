@@ -924,11 +924,16 @@ example:
 
 </VirtualHost>
 
-
 ### Updating certificate:
 Im my case, auto DNS Challenge from apache, so every time we get new cert files, it must be copied inside rmm too.
 just overwrite default location:
 /etc/letsencrypt/archive/blablablabla
 or change certs location on nginx conf to whatever you want.
+
+## nginx Proxy
+
+Having mesh connection issues? 
+
+See <https://info.meshcentral.com/downloads/MeshCentral2/MeshCentral2UserGuide.pdf> page 30.
 
 

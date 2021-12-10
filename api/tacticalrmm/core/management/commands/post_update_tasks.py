@@ -31,4 +31,5 @@ class Command(BaseCommand):
             script.script_body = base64.b64decode(
                 script.code_base64.encode("ascii", "ignore")
             ).decode("ascii", "ignore")
-            script.hash_script_body()  # also saves script
+            # script.hash_script_body()  # also saves script
+            script.save(update_fields=["script_body"])

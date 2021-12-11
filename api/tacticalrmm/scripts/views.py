@@ -36,7 +36,7 @@ class GetAddScripts(APIView):
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()
 
-        obj.hash_script_body()
+        # obj.hash_script_body()
 
         return Response(f"{obj.name} was added!")
 
@@ -65,7 +65,7 @@ class GetUpdateDeleteScript(APIView):
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()
 
-        obj.hash_script_body()
+        # obj.hash_script_body()
 
         return Response(f"{obj.name} was edited!")
 

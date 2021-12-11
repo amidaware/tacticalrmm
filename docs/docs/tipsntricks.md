@@ -1,5 +1,11 @@
 # Tips and Tricks
 
+## Server Monitoring
+
+Monitor Network usage: <https://humdi.net/vnstat/>
+
+Realtime Everything Usage: (_only run when needed because it uses a lot of resources_): <https://learn.netdata.cloud/docs/agent/packaging/installer/methods/kickstart>
+
 ## Customize User Interface
 
 At the top right of your web administration interface, click your Username > preferences. Set default tab: Servers|Workstations|Mixed

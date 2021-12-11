@@ -98,7 +98,7 @@ def dashboard_info(request):
             "client_tree_splitter": request.user.client_tree_splitter,
             "loading_bar_color": request.user.loading_bar_color,
             "clear_search_when_switching": request.user.clear_search_when_switching,
-            "hosted": hasattr(settings, "HOSTED") and settings.HOSTED,
+            "hosted": getattr(settings, "HOSTED", False),
         }
     )
 

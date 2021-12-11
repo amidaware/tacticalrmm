@@ -108,7 +108,7 @@ class Script(BaseAuditModel):
             info = json.load(f)
 
         # used to remove scripts from DB that are removed from the json file and file system
-        community_scripts_processed = [] # list of script guids
+        community_scripts_processed = []  # list of script guids
 
         for script in info:
             if os.path.exists(os.path.join(scripts_dir, script["filename"])):
@@ -132,21 +132,21 @@ class Script(BaseAuditModel):
                 if s.exists():
                     i: Script = s.get()
                     i.name = script["name"]
-                    i.description = script["description"]  
-                    i.category = category  
-                    i.shell = script["shell"] 
-                    i.default_timeout = default_timeout 
-                    i.args = args  
+                    i.description = script["description"]
+                    i.category = category
+                    i.shell = script["shell"]
+                    i.default_timeout = default_timeout
+                    i.args = args
                     i.syntax = syntax
-                    i.filename = script["filename"]  
+                    i.filename = script["filename"]
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
-                        i.script_body = f.read().decode("utf-8") 
-                        # i.hash_script_body() 
+                        i.script_body = f.read().decode("utf-8")
+                        # i.hash_script_body()
                         i.save()
 
                     community_scripts_processed.append(i.guid)
-                
+
                 # doesn't exist in database so create it
                 else:
                     print(f"Adding new community script: {script['name']}")
@@ -167,16 +167,21 @@ class Script(BaseAuditModel):
                             filename=script["filename"],
                             syntax=syntax,
                         )
-                        #new_script.hash_script_body()  # also saves script
+                        # new_script.hash_script_body()  # also saves script
                         new_script.save()
 
                         community_scripts_processed.append(new_script.guid)
 
         # check for community scripts that were deleted from json and scripts folder
-        count, _ = Script.objects.filter(script_type="builtin").exclude(guid__in=community_scripts_processed).delete()
+        count, _ = (
+            Script.objects.filter(script_type="builtin")
+            .exclude(guid__in=community_scripts_processed)
+            .delete()
+        )
         if count:
-            print(f"Removing {count} community scripts that was removed from source repo")     
-
+            print(
+                f"Removing {count} community scripts that was removed from source repo"
+            )
 
     @staticmethod
     def serialize(script):

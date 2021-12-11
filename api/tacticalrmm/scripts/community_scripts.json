@@ -345,6 +345,22 @@
     "category": "TRMM (Win):3rd Party Software"
   },
   {
+    "guid": "bfd61545-839b-45da-8b3d-75ffc4d43272",
+    "filename": "Win_Sophos_EndpointProtection_Install.ps1",
+    "submittedBy": "https://github.com/bc24fl/",
+    "name": "Sophos Endpoint Protection Install",
+    "description": "Installs Sophos Endpoint Protection via the Sophos API.  Products include Antivirus, InterceptX, MDR, Device Encryption.  The script requires API credentials, Custom Fields, and Arguments passed to script.  See script comments for details",
+    "args": [
+      "-ClientId {{client.SophosClientId}}",
+      "-ClientSecret {{client.SophosClientSecret}}",
+      "-TenantName {{client.SophosTenantName}}",
+      "-Products antivirus,intercept"
+    ],
+    "default_timeout": "3600",
+    "shell": "powershell",
+    "category": "TRMM (Win):3rd Party Software"
+  },
+  {
     "guid": "da51111c-aff6-4d87-9d76-0608e1f67fe5",
     "filename": "Win_Defender_Enable.ps1",
     "submittedBy": "https://github.com/dinger1986",

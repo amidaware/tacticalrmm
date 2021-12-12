@@ -107,6 +107,9 @@ class Script(BaseAuditModel):
         ) as f:
             info = json.load(f)
 
+        # used to remove scripts from DB that are removed from the json file and file system
+        community_scripts_processed = []  # list of script guids
+
         for script in info:
             if os.path.exists(os.path.join(scripts_dir, script["filename"])):
                 s = cls.objects.filter(script_type="builtin", guid=script["guid"])
@@ -125,52 +128,33 @@ class Script(BaseAuditModel):
 
                 syntax = script["syntax"] if "syntax" in script.keys() else ""
 
+                # if community script exists update it
                 if s.exists():
-                    i = s.first()
-                    i.name = script["name"]  # type: ignore
-                    i.description = script["description"]  # type: ignore
-                    i.category = category  # type: ignore
-                    i.shell = script["shell"]  # type: ignore
-                    i.default_timeout = default_timeout  # type: ignore
-                    i.args = args  # type: ignore
-                    i.syntax = syntax  # type: ignore
-                    i.filename = script["filename"]  # type: ignore
+                    i: Script = s.get()
+                    i.name = script["name"]
+                    i.description = script["description"]
+                    i.category = category
+                    i.shell = script["shell"]
+                    i.default_timeout = default_timeout
+                    i.args = args
+                    i.syntax = syntax
+                    i.filename = script["filename"]
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
-                        i.script_body = f.read().decode("utf-8")  # type: ignore
-                        i.hash_script_body()  # also saves script
+                        i.script_body = f.read().decode("utf-8")
+                        # i.hash_script_body()
+                        i.save()
 
-                # check if script was added without a guid
-                elif cls.objects.filter(
-                    script_type="builtin", name=script["name"]
-                ).exists():
-                    s = cls.objects.get(script_type="builtin", name=script["name"])
+                    community_scripts_processed.append(i.guid)
 
-                    if not s.guid:
-                        print(f"Updating GUID for: {script['name']}")
-                        s.guid = script["guid"]
-                        s.name = script["name"]
-                        s.description = script["description"]
-                        s.category = category
-                        s.shell = script["shell"]
-                        s.default_timeout = default_timeout
-                        s.args = args
-                        s.filename = script["filename"]
-                        s.syntax = syntax
-
-                        with open(
-                            os.path.join(scripts_dir, script["filename"]), "rb"
-                        ) as f:
-                            s.script_body = f.read().decode("utf-8")
-                            s.hash_script_body()  # also saves the script
-
+                # doesn't exist in database so create it
                 else:
                     print(f"Adding new community script: {script['name']}")
 
                     with open(os.path.join(scripts_dir, script["filename"]), "rb") as f:
                         script_body = f.read().decode("utf-8")
 
-                        new_script = cls(
+                        new_script: Script = cls(
                             script_body=script_body,
                             guid=script["guid"],
                             name=script["name"],
@@ -183,10 +167,21 @@ class Script(BaseAuditModel):
                             filename=script["filename"],
                             syntax=syntax,
                         )
-                        new_script.hash_script_body()  # also saves script
+                        # new_script.hash_script_body()  # also saves script
+                        new_script.save()
 
-        # delete community scripts that had their name changed
-        cls.objects.filter(script_type="builtin", guid=None).delete()
+                        community_scripts_processed.append(new_script.guid)
+
+        # check for community scripts that were deleted from json and scripts folder
+        count, _ = (
+            Script.objects.filter(script_type="builtin")
+            .exclude(guid__in=community_scripts_processed)
+            .delete()
+        )
+        if count:
+            print(
+                f"Removing {count} community scripts that was removed from source repo"
+            )
 
     @staticmethod
     def serialize(script):

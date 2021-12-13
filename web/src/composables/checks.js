@@ -65,7 +65,9 @@ export function useCheckModal({ editCheck, initialState }) {
 
   async function getAgentServiceOptions() {
     const { services } = await fetchAgent(check.value.agent)
-    serviceOptions.value = Object.freeze(services.map(service => ({ label: service.display_name, value: service.name })))
+
+    const tmp = services.map(service => ({ label: service.display_name, value: service.name }))
+    serviceOptions.value = Object.freeze(tmp.sort((a, b) => a.label.localeCompare(b.label)))
     check.value.svc_name = serviceOptions.value[0].value
     check.value.svc_display_name = serviceOptions.value[0].label
   }
@@ -1194,4 +1196,4 @@ export const defaultServiceOptions = [
     value: "tacticalagent",
     label: "Tactical RMM Agent"
   }
-]
+].sort((a, b) => a.label.localeCompare(b.label))

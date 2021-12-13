@@ -197,7 +197,8 @@ Built on the Django framework, the Tactical RMM service is the heart of system b
     
     === ":material-docker: docker"
     
-        TBD - To Be Documented
+        - Get into bash in your docker with: `sudo docker-compose exec tactical-nats /bin/bash`
+        - Log: `nats-api -log debug`
 
 #### NATS API service
 

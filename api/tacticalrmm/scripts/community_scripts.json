@@ -361,6 +361,16 @@
     "category": "TRMM (Win):3rd Party Software"
   },
   {
+    "guid": "a9d2a6c0-8afa-4d69-8faf-f83b49c11702",
+    "filename": "Win_Printer_Restart_Jobs.ps1",
+    "submittedBy": "https://github.com/bc24fl/",
+    "name": "Printers - Restarts stuck printer jobs.",
+    "description": "Cycles through each printer and restarts any jobs that are stuck with error status.",
+    "shell": "powershell",
+    "category": "TRMM (Win):Printing",
+    "default_timeout": "90"
+  },
+  {
     "guid": "da51111c-aff6-4d87-9d76-0608e1f67fe5",
     "filename": "Win_Defender_Enable.ps1",
     "submittedBy": "https://github.com/dinger1986",

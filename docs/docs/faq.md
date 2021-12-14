@@ -1,5 +1,9 @@
 # FAQ
 
+## Is Tactical RMM vulnerable to Log4j
+
+No
+
 ## Is it possible to use XXX with Tactical RMM
 
 While it _may be possible_ to use XXX, we have not configured it and therefore it is [Unsupported](../unsupported_guidelines). We cannot help you configure XXX as it pertains to **your environment**. 

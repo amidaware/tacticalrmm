@@ -45,7 +45,7 @@ nav:
       - "BitDefender GravityZone": 3rdparty_bitdefender_gravityzone.md
   - Unsupported Extras:
       - "Unsupported Guidelines": unsupported_guidelines.md
-      - "Unsupported Scripts": unsupported_scripts.md
+      - "Unsupported Configs": unsupported_scripts.md
       - "Securing nginx": securing_nginx.md
       - "Installing in Synology docker": unsupported_synology_docker_install.md
   - Tips n' Tricks: tipsntricks.md

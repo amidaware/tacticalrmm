@@ -15,7 +15,7 @@ A fresh linux VM running either Ubuntu 20.04 LTS or Debian 10/11 with 3GB RAM
     The install script has been tested on the following public cloud providers: DigitalOcean, Linode, Vultr, BuyVM (highly recommended), Hetzner, AWS, Google Cloud and Azure, as well as behind NAT on Hyper-V, Proxmox and ESXi.
 
 !!!note
-    CPU 1 core is fine for < 200 agents with limited checks/tasks. That said, Tactical RMM is CPU intensive for processing all the back and forth nats traffic which is how information is populated in Tactical.<br><br>
+    CPU: 1 core is fine for < 200 agents with limited checks/tasks. That said, Tactical RMM is CPU intensive for processing all the back and forth nats traffic which is how information is populated in Tactical.<br><br>
     Disk space and speed are dependent on your use case. Of course faster is better SSD/NVMe. Space is dependent on how long you're keeping historical data, and how many checks/script runs and their output size. 50GB should be fine for < 12months of history on < 200 agents with < 30 checks/tasks run at reasonable time intervals.
 
 #### Network Requirements

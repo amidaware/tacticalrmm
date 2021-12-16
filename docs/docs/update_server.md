@@ -87,3 +87,9 @@ If you're running low, shrink you database
 sudo -u postgres psql -d tacticalrmm -c "vacuum full logs_auditlog"
 sudo -u postgres psql -d tacticalrmm -c "vacuum full logs_auditlog"
 ```
+
+## Video Walkthru
+
+<div class="video-wrapper">
+  <iframe width="320" height="180" src="https://www.youtube.com/embed/ElUfQgesYs0" frameborder="0" allowfullscreen></iframe>
+</div>

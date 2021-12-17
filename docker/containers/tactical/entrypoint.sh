@@ -131,6 +131,7 @@ EOF
   python manage.py reload_nats
   python manage.py create_natsapi_conf
   python manage.py create_installer_user
+  python manage.py post_update_tasks
 
   # create super user 
   echo "from accounts.models import User; User.objects.create_superuser('${TRMM_USER}', 'admin@example.com', '${TRMM_PASS}') if not User.objects.filter(username='${TRMM_USER}').exists() else 0;" | python manage.py shell

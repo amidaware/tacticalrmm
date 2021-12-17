@@ -23,6 +23,10 @@ At the top right of your web administration interface, click your Username > pre
 
 Tactical RMM is actually 2 products: An RMM service with agent, and a secondary [MeshCentral](https://github.com/Ylianst/MeshCentral) install that handles the `Take Control` and `Remote Background` stuff.
 
+Want to download multiple files?
+
+> ZIP zip's the currently selected file(s) and saves it in the current directory. Then you can download the ZIP. It doesn't download and ZIP on the fly.
+
 ### Adjust Settings
 
 Right-click the connect button in *Remote Background | Terminal* for shell options

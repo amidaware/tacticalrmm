@@ -127,3 +127,11 @@ if not defined Name (
 ```
 
 There is also a full powershell version [here](https://wh1te909.github.io/tacticalrmm/3rdparty_screenconnect/#install-tactical-rmm-via-screeconnect-commands-window)
+
+## Script for full agent uninstall
+
+You can always use this to silently uninstall agent on workstations
+
+```cmd
+"C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /FORCECLOSEAPPLICATIONS
+```

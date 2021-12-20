@@ -247,7 +247,7 @@
     "filename": "Win_Teamviewer_Get_ID.ps1",
     "submittedBy": "https://github.com/silversword411",
     "name": "TeamViewer - Get ClientID for client",
-    "description": "Returns Teamviwer ClientID for client - Use with Custom Fields for later use.",
+    "description": "Returns Teamviewer ClientID for client - Use with Custom Fields for later use.",
     "shell": "powershell",
     "category": "TRMM (Win):Collectors"
   },
@@ -257,6 +257,15 @@
     "submittedBy": "https://github.com/meuchels",
     "name": "AnyDesk - Get AnyNetID for client",
     "description": "Returns AnyNetID for client - Use with Custom Fields for later use.",
+    "shell": "powershell",
+    "category": "TRMM (Win):Collectors"
+  },
+  {
+    "guid": "672403e4-f9b5-4442-8d8c-4fb376dd0a62",
+    "filename": "Win_Securepoint_Get_DeviceId.ps1",
+    "submittedBy": "https://github.com/maltekiefer",
+    "name": "Securepoint - Get DeviceId for client",
+    "description": "Returns Securepoint DeviceId for client - Use with Custom Fields for later use.",
     "shell": "powershell",
     "category": "TRMM (Win):Collectors"
   },

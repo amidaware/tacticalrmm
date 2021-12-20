@@ -65,7 +65,7 @@ if ($install -eq $NULL) {
 
 	If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
 		write-host ('Tactical RMM Is Already Installed')
-		& 'C:\Program Files\TacticalAgent\unins000.exe' /VERYSILENT /SUPPRESSMSGBOXES /FORCECLOSEAPPLICATIONS
+		& 'C:\Program Files\TacticalAgent\unins000.exe' /VERYSILENT
 		Start-Sleep -s 20	
 	}
 	Invoke-Expression ((new-object System.Net.WebClient).DownloadString($rmmURI))

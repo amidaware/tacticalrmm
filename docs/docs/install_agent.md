@@ -116,7 +116,7 @@ if not defined Name (
     powershell Add-MpPreference -ExclusionPath C:\Windows\Temp\TRMM\*
     cd c:\temp\trmm
     powershell Invoke-WebRequest "%DeploymentURL%" -Outfile tactical.exe
-    REM"C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /FORCECLOSEAPPLICATIONS
+    REM"C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT
     tactical.exe
     powershell Remove-MpPreference -ExclusionPath C:\TEMP\TRMM
     rem exit /b 1
@@ -133,5 +133,5 @@ There is also a full powershell version [here](https://wh1te909.github.io/tactic
 You can always use this to silently uninstall agent on workstations
 
 ```cmd
-"C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /FORCECLOSEAPPLICATIONS
+"C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT
 ```

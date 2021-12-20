@@ -9,6 +9,6 @@ powershell Add-MpPreference -ExclusionPath "C:\Program Files\Mesh Agent\*"
 powershell Add-MpPreference -ExclusionPath C:\Windows\Temp\TRMM\*
 cd c:\temp\trmm
 powershell Invoke-WebRequest "deployment url" -Outfile tactical.exe
-"C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /FORCECLOSEAPPLICATIONS
+"C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT
 start tactical.exe
 powershell Remove-MpPreference -ExclusionPath C:\TEMP\TRMM

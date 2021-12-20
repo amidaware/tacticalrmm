@@ -9,7 +9,7 @@ else {
     $ChkReg = Test-Path 'HKLM:\SOFTWARE\TacticalRMM\'
     If ($ChkReg -eq $True) {
         $regrmm = Get-ItemProperty -Path HKLM:\SOFTWARE\TacticalRMM\        
-        & 'C:\Program Files\TacticalAgent\unins000.exe' /VERYSILENT /SUPPRESSMSGBOXES /FORCECLOSEAPPLICATIONS
+        & 'C:\Program Files\TacticalAgent\unins000.exe' /VERYSILENT
         start-sleep -s 20
     }
     dsregcmd.exe /debug /leave

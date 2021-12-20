@@ -19,6 +19,20 @@ Has a postgres database located here:
 
 All Tactical RMM dependencies are listed [here](https://github.com/wh1te909/tacticalrmm/blob/develop/api/tacticalrmm/requirements.txt)
 
+### Outbound Firewall Rules
+
+If you have strict firewall rules these are the only outbound rules from the server needed for all functionality:
+
+1. Outbound traffic to all agent IP scopes for reflect traffic from agents
+
+#### Server without Code Signing key
+
+No additional rules needed
+
+#### Server with Code Signing key
+
+No additional rules needed
+
 ### System Services
 
 This lists the system services used by the server.

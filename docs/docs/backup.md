@@ -37,6 +37,9 @@ echo -e "\n" >> /rmm/backup.sh
 sudo ln -s /rmm/backup.sh /etc/cron.daily/
 ```
 
+!!!warning
+    Currently the backup script doesn't have any pruning functions so the folder will grow forever without periodic cleanup
+
 # Video Walkthru
 
 <div class="video-wrapper">

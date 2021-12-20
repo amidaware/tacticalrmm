@@ -43,6 +43,21 @@ mesh_config="$(cat << EOF
       "coolofftime": 30
     }
   },
+  "domaindefaults":{
+    "passwordRequirements": {
+      "min": 8,
+      "max": 128,
+      "upper": 1,
+      "lower": 1,
+      "numeric": 1,
+      "nonalpha": 1,
+      "reset": 90,
+      "force2factor": false,
+      "oldPasswordBan": 5,
+      "banCommonPasswords": false,
+      "twoFactorTimeout": 300
+    }
+  },
   "domains": {
     "": {
       "Title": "Tactical RMM",

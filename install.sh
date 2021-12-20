@@ -288,6 +288,21 @@ meshcfg="$(cat << EOF
     "MaxInvalidLogin": { "time": 5, "count": 5, "coolofftime": 30 }
   },
   "domains": {
+    "domaindefaults":{
+      "passwordRequirements": {
+        "min": 8,
+        "max": 128,
+        "upper": 1,
+        "lower": 1,
+        "numeric": 1,
+        "nonalpha": 1,
+        "reset": 90,
+        "force2factor": false,
+        "oldPasswordBan": 5,
+        "banCommonPasswords": false,
+        "twoFactorTimeout": 300
+      }
+    },
     "": {
       "Title": "Tactical RMM",
       "Title2": "Tactical RMM",

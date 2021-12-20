@@ -299,7 +299,7 @@ meshcfg="$(cat << EOF
         "reset": 90,
         "force2factor": false,
         "oldPasswordBan": 5,
-        "banCommonPasswords": false,
+        "banCommonPasswords": true,
         "twoFactorTimeout": 300
       }
     },

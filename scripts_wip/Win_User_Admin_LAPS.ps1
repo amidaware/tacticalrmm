@@ -1,4 +1,4 @@
-# From @subz needs comments, and parameters for New Admin. Merge/consolidate with other admin scripts if possible
+# From @subz needs comments, and parameters for New Admin. Merge/consolidate with other admin Local Administrator Password Scripts if possible
 
 $ComputerName = (Get-CimInstance -ClassName Win32_ComputerSystem | select name).name
 #####################################################################

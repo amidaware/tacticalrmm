@@ -32,6 +32,7 @@ nav:
       - "Examples": functions/examples.md
   - Backup: backup.md
   - Restore: restore.md
+  - Antivirus Exclusions: av.md
   - Troubleshooting: troubleshooting.md
   - FAQ: faq.md
   - Management Commands: management_cmds.md

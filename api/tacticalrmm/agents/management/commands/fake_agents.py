@@ -26,7 +26,7 @@ from tacticalrmm.demo_data import (
     ping_success_output,
 )
 
-AGENTS_TO_GENERATE = 5
+AGENTS_TO_GENERATE = 250
 
 SVCS = settings.BASE_DIR.joinpath("tacticalrmm/test_data/winsvcs.json")
 WMI_1 = settings.BASE_DIR.joinpath("tacticalrmm/test_data/wmi1.json")

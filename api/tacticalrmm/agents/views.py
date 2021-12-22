@@ -167,6 +167,11 @@ class AgentProcesses(APIView):
 
     # list agent processes
     def get(self, request, agent_id):
+        if getattr(settings, "DEMO", False):
+            from tacticalrmm.demo_views import demo_get_procs
+
+            return demo_get_procs()
+
         agent = get_object_or_404(Agent, agent_id=agent_id)
         r = asyncio.run(agent.nats_cmd(data={"func": "procs"}, timeout=5))
         if r == "timeout" or r == "natsdown":
@@ -293,6 +298,11 @@ def ping(request, agent_id):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, EvtLogPerms])
 def get_event_log(request, agent_id, logtype, days):
+    if getattr(settings, "DEMO", False):
+        from tacticalrmm.demo_views import demo_get_eventlog
+
+        return demo_get_eventlog()
+
     agent = get_object_or_404(Agent, agent_id=agent_id)
     timeout = 180 if logtype == "Security" else 30
 

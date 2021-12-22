@@ -145,6 +145,11 @@ MIDDLEWARE = [
 if ADMIN_ENABLED:  # type: ignore
     MIDDLEWARE += ("django.contrib.messages.middleware.MessageMiddleware",)
 
+try:
+    if DEMO:  # type: ignore
+        MIDDLEWARE += ("tacticalrmm.middleware.DemoMiddleware",)
+except:
+    pass
 
 ROOT_URLCONF = "tacticalrmm.urls"
 

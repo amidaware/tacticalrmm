@@ -306,8 +306,8 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        assert any(i["name"] == "Registry" for i in mock_ret.return_value)
-        assert any(i["membytes"] == 434655234324 for i in mock_ret.return_value)
+        assert any(i["name"] == "spoolsv.exe" for i in mock_ret.return_value)
+        assert any(i["membytes"] == 17305600 for i in mock_ret.return_value)
 
         mock_ret.return_value = "timeout"
         r = self.client.get(url)

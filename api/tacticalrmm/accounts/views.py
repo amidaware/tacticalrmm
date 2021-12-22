@@ -25,11 +25,15 @@ from .serializers import (
 
 
 def _is_root_user(request, user) -> bool:
-    return (
+    root = (
         hasattr(settings, "ROOT_USER")
         and request.user != user
         and user.username == settings.ROOT_USER
     )
+    demo = (
+        getattr(settings, "DEMO", False) and request.user.username == settings.ROOT_USER
+    )
+    return root or demo
 
 
 class CheckCreds(KnoxLoginView):
@@ -79,6 +83,8 @@ class LoginView(KnoxLoginView):
         totp = pyotp.TOTP(user.totp_key)
 
         if settings.DEBUG and token == "sekret":
+            valid = True
+        elif getattr(settings, "DEMO", False):
             valid = True
         elif totp.verify(token, valid_window=10):
             valid = True

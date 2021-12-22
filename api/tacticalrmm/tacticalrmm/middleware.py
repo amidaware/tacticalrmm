@@ -126,6 +126,7 @@ class DemoMiddleware:
             {"name": "GetSoftware", "methods": ["POST", "PUT"]},
             {"name": "ScanWindowsUpdates", "methods": ["POST"]},
             {"name": "InstallWindowsUpdates", "methods": ["POST"]},
+            {"name": "PendingActions", "methods": ["DELETE"]},
         ]
 
     def __call__(self, request):

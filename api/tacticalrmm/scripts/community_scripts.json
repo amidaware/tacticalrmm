@@ -210,6 +210,15 @@
     "category": "TRMM (Win):Hardware"
   },
   {
+    "guid": "2cf918d1-1cc8-4208-bc94-9ca7b34e61c2",
+    "filename": "Win_Lenovo_Driver_Updates.ps1",
+    "submittedBy": "https://github.com/maltekiefer",
+    "name": "Lenovo - Driver Updates",
+    "description": "Searches the Lenovo support system for new drivers and installs them",
+    "shell": "powershell",
+    "category": "TRMM (Win):Hardware"
+  },
+  {
     "guid": "72c56717-28ed-4cc6-b30f-b362d30fb4b6",
     "filename": "Win_Hardware_SN.ps1",
     "submittedBy": "https://github.com/subzdev",

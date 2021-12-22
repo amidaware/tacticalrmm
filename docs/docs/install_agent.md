@@ -10,6 +10,7 @@
     `C:\Windows\Temp\winagent-v*.exe`<br/>
     `C:\Windows\Temp\trmm\*`<br/>
     `C:\temp\tacticalrmm*.exe`<br/>
+    See [here for other screenshot examples](av.md)
 
 ## Dynamically generated executable
 

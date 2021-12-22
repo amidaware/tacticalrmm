@@ -2,7 +2,13 @@
 
 Admin URL: <https://cloud.gravityzone.bitdefender.com/>
 
-![Web Exclusions](images/avbitdefender_gravityzone_exclusions.png)
+To exclude URLs: Policies > {policy name} > Network Protection > Content Control > Settings > Exclusions
+
+![Web Exclusions](images/avbitdefender_gravityzone_exclusions0.png)
+
+![Web Exclusions](images/avbitdefender_gravityzone_exclusions1.png)
+
+![Web Exclusions](images/avbitdefender_gravityzone_exclusions2.png)
 
 ## Webroot
 

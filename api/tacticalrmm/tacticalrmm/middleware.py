@@ -122,7 +122,7 @@ class DemoMiddleware:
             {"name": "WMI", "methods": ["POST"]},
             {"name": "PolicyAutoTask", "methods": ["POST"]},
             {"name": "RunAutoTask", "methods": ["POST"]},
-            {"name": "run_checks", "methods": ["GET"]},
+            {"name": "run_checks", "methods": ["POST"]},
             {"name": "GetSoftware", "methods": ["POST", "PUT"]},
             {"name": "ScanWindowsUpdates", "methods": ["POST"]},
             {"name": "InstallWindowsUpdates", "methods": ["POST"]},

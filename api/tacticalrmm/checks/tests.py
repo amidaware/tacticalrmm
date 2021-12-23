@@ -219,14 +219,14 @@ class TestCheckViews(TacticalTestCase):
         agent_b4_141 = baker.make_recipe("agents.agent", version="1.4.0")
 
         url = f"{base_url}/{agent_b4_141.agent_id}/run/"
-        r = self.client.get(url)
+        r = self.client.post(url)
         self.assertEqual(r.status_code, 200)
         nats_cmd.assert_called_with({"func": "runchecks"}, wait=False)
 
         nats_cmd.reset_mock()
         nats_cmd.return_value = "busy"
         url = f"{base_url}/{agent.agent_id}/run/"
-        r = self.client.get(url)
+        r = self.client.post(url)
         self.assertEqual(r.status_code, 400)
         nats_cmd.assert_called_with({"func": "runchecks"}, timeout=15)
         self.assertEqual(r.json(), f"Checks are already running on {agent.hostname}")
@@ -234,7 +234,7 @@ class TestCheckViews(TacticalTestCase):
         nats_cmd.reset_mock()
         nats_cmd.return_value = "ok"
         url = f"{base_url}/{agent.agent_id}/run/"
-        r = self.client.get(url)
+        r = self.client.post(url)
         self.assertEqual(r.status_code, 200)
         nats_cmd.assert_called_with({"func": "runchecks"}, timeout=15)
         self.assertEqual(r.json(), f"Checks will now be re-run on {agent.hostname}")
@@ -242,12 +242,12 @@ class TestCheckViews(TacticalTestCase):
         nats_cmd.reset_mock()
         nats_cmd.return_value = "timeout"
         url = f"{base_url}/{agent.agent_id}/run/"
-        r = self.client.get(url)
+        r = self.client.post(url)
         self.assertEqual(r.status_code, 400)
         nats_cmd.assert_called_with({"func": "runchecks"}, timeout=15)
         self.assertEqual(r.json(), "Unable to contact the agent")
 
-        self.check_not_authenticated("get", url)
+        self.check_not_authenticated("post", url)
 
     def test_get_check_history(self):
         # setup data

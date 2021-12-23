@@ -10,6 +10,16 @@
       <span v-if="summary.maintenance_mode"> &bull; <q-badge color="green"> Maintenance Mode </q-badge> </span>
       &bull; {{ summary.operating_system }} &bull; Agent v{{ summary.version }}
       <q-space />
+      <q-btn
+        dense
+        flat
+        label="Take Control"
+        icon="computer"
+        size="md"
+        no-caps
+        class="q-mr-sm"
+        @click="runTakeControl(selectedAgent)"
+      />
       <q-btn-dropdown dense flat size="md" no-caps label="Actions">
         <AgentActionMenu :agent="summary" />
       </q-btn-dropdown>
@@ -127,7 +137,7 @@
 // composition imports
 import { ref, computed, watch, onMounted } from "vue";
 import { useStore } from "vuex";
-import { fetchAgent, refreshAgentWMI } from "@/api/agents";
+import { fetchAgent, refreshAgentWMI, runTakeControl } from "@/api/agents";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
@@ -219,6 +229,7 @@ export default {
       getSummary,
       refreshSummary,
       diskBarColor,
+      runTakeControl,
     };
   },
 };

@@ -4,13 +4,17 @@
     <q-circular-progress indeterminate size="50px" color="primary" class="q-ma-md" />
   </div>
   <div v-else-if="summary" class="q-pa-sm">
-    <q-btn class="q-mr-sm" dense flat push icon="refresh" @click="refreshSummary" />
-    <span>
+    <q-bar dense style="background-color: transparent">
+      <q-btn dense flat size="md" class="q-mr-sm" icon="refresh" @click="refreshSummary" />
       <b>{{ summary.hostname }}</b>
       <span v-if="summary.maintenance_mode"> &bull; <q-badge color="green"> Maintenance Mode </q-badge> </span>
       &bull; {{ summary.operating_system }} &bull; Agent v{{ summary.version }}
-    </span>
-    <q-separator />
+      <q-space />
+      <q-btn-dropdown dense flat size="md" no-caps label="Actions">
+        <AgentActionMenu :agent="summary" />
+      </q-btn-dropdown>
+    </q-bar>
+    <q-separator class="q-mt-sm" />
     <div class="row">
       <div class="col-4">
         <!-- left -->
@@ -120,17 +124,25 @@
 </template>
 
 <script>
+// composition imports
 import { ref, computed, watch, onMounted } from "vue";
 import { useStore } from "vuex";
 import { fetchAgent, refreshAgentWMI } from "@/api/agents";
 import { notifySuccess } from "@/utils/notify";
 
+// ui imports
+import AgentActionMenu from "@/components/agents/AgentActionMenu";
+
 export default {
   name: "SummaryTab",
+  components: {
+    AgentActionMenu,
+  },
   setup(props) {
     // vuex setup
     const store = useStore();
     const selectedAgent = computed(() => store.state.selectedRow);
+    const refreshSummaryTab = computed(() => store.state.refreshSummaryTab);
 
     // summary tab logic
     const summary = ref(null);
@@ -162,6 +174,7 @@ export default {
     async function getSummary() {
       loading.value = true;
       summary.value = await fetchAgent(selectedAgent.value);
+      store.commit("setRefreshSummaryTab", false);
       loading.value = false;
     }
 
@@ -181,6 +194,14 @@ export default {
       if (newValue) {
         getSummary();
       }
+    });
+
+    watch(refreshSummaryTab, (newValue, oldValue) => {
+      if (newValue && selectedAgent.value) {
+        getSummary();
+      }
+
+      store.commit("setRefreshSummaryTab", false);
     });
 
     onMounted(() => {

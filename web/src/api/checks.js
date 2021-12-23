@@ -30,3 +30,8 @@ export async function resetCheck(id) {
     const { data } = await axios.post(`${baseUrl}/${id}/reset/`)
     return data
 }
+
+export async function runAgentChecks(agent_id) {
+    const { data } = await axios.post(`${baseUrl}/${agent_id}/run/`)
+    return data
+}

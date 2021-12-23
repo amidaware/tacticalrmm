@@ -94,6 +94,7 @@
 <script>
 // composition imports
 import { ref, computed, onMounted } from "vue";
+import { useStore } from "vuex";
 import { useQuasar, useDialogPluginComponent } from "quasar";
 import { fetchPendingActions, fetchAgentPendingActions, deletePendingAction } from "@/api/logs";
 import { getNextAgentUpdateTime } from "@/utils/format";
@@ -122,6 +123,9 @@ export default {
     // setup quasar dialog plugin
     const { dialogRef, onDialogHide } = useDialogPluginComponent();
     const $q = useQuasar();
+
+    // vuex store
+    const store = useStore();
 
     // pending actions logic
     const actions = ref([]);
@@ -178,6 +182,7 @@ export default {
           const result = await deletePendingAction(action.id);
           notifySuccess(result);
           await getPendingActions();
+          store.dispatch("refreshDashboard");
         } catch (e) {
           console.error(e);
         }

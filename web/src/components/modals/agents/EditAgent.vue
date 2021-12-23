@@ -226,11 +226,6 @@ export default {
     editAgent() {
       delete this.agent.all_timezones;
       delete this.agent.timezone;
-      delete this.agent.winupdatepolicy[0].created_by;
-      delete this.agent.winupdatepolicy[0].created_time;
-      delete this.agent.winupdatepolicy[0].modified_by;
-      delete this.agent.winupdatepolicy[0].modified_time;
-      delete this.agent.winupdatepolicy[0].policy;
 
       // only send the timezone data if it has changed
       // this way django will keep the db column as null and inherit from the global setting

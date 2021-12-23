@@ -6,7 +6,11 @@
         <q-item v-if="alertsCount === 0">No New Alerts</q-item>
         <q-item v-for="alert in topAlerts" :key="alert.id">
           <q-item-section>
-            <q-item-label overline>{{ alert.client }} - {{ alert.site }} - {{ alert.hostname }}</q-item-label>
+            <q-item-label overline
+              ><router-link :to="`/agents/${alert.agent_id}`"
+                >{{ alert.client }} - {{ alert.site }} - {{ alert.hostname }}</router-link
+              ></q-item-label
+            >
             <q-item-label lines="1">
               <q-icon size="xs" :class="`text-${alertIconColor(alert.severity)}`" :name="alert.severity"></q-icon>
               {{ alert.message }}

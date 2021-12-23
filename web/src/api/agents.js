@@ -1,6 +1,18 @@
 import axios from "axios"
+import { openURL } from "quasar";
+import { router } from "@/router"
 
 const baseUrl = "/agents"
+
+export function runTakeControl(agent_id) {
+  const url = router.resolve(`/takecontrol/${agent_id}`).href;
+  openURL(url, null, { popup: true, scrollbars: false, location: false, status: false, toolbar: false, menubar: false, width: 1600, height: 900 });
+}
+
+export function runRemoteBackground(agent_id) {
+  const url = router.resolve(`/remotebackground/${agent_id}`).href;
+  openURL(url, null, { popup: true, scrollbars: false, location: false, status: false, toolbar: false, menubar: false, width: 1280, height: 900 });
+}
 
 export async function fetchAgents(params = {}) {
   try {
@@ -16,6 +28,16 @@ export async function fetchAgent(agent_id, params = {}) {
     const { data } = await axios.get(`${baseUrl}/${agent_id}/`, { params: params })
     return data
   } catch (e) { console.error(e) }
+}
+
+export async function editAgent(agent_id, payload) {
+  const { data } = await axios.put(`${baseUrl}/${agent_id}/`, payload)
+  return data
+}
+
+export async function removeAgent(agent_id) {
+  const { data } = await axios.delete(`${baseUrl}/${agent_id}/`)
+  return data
 }
 
 export async function fetchAgentHistory(agent_id, params = {}) {
@@ -101,8 +123,18 @@ export async function scheduleAgentReboot(agent_id, payload) {
   return data
 }
 
+export async function agentRebootNow(agent_id) {
+  const { data } = await axios.post(`${baseUrl}/${agent_id}/reboot/`, payload)
+  return data
+}
+
 export async function sendAgentRecoverMesh(agent_id, params = {}) {
   const { data } = await axios.post(`${baseUrl}/${agent_id}/meshcentral/recover/`, { params: params })
+  return data
+}
+
+export async function sendAgentPing(agent_id, params = {}) {
+  const { data } = await axios.get(`${baseUrl}/${agent_id}/ping/`, { params: params })
   return data
 }
 

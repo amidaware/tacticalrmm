@@ -195,7 +195,7 @@ class GetCheckHistory(APIView):
         )
 
 
-@api_view()
+@api_view(["POST"])
 @permission_classes([IsAuthenticated, RunChecksPerms])
 def run_checks(request, agent_id):
     agent = get_object_or_404(Agent, agent_id=agent_id)

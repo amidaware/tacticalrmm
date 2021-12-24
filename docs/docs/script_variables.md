@@ -14,7 +14,7 @@ See below for the available options.
 - **{{agent.plat}}** - Will show the platform example: *windows*
 - **{{agent.plat_release}}** - Will show the platform release
 - **{{agent.hostname}}** - The hostname of the agent
-- **{{agent.local_ip}}** - Local IP address of agent
+- **{{agent.local_ips}}** - Local IP address of agent
 - **{{agent.public_ip}}** - Public IP address of agent
 - **{{agent.agent_id}}** - agent ID in database
 - **{{agent.last_seen}}** - Date and Time Agent last seen

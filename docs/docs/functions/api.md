@@ -25,15 +25,12 @@ curl https://api.example.com/clients/clients/ -H "X-API-KEY: Y57BXCFAA9WBCXH0XTE
 
 ## Enable Swagger
 
-!!!danger
-    This is an unauthenticated feature **DO NOT** use this on a production environment. This will give the planet access to everything in your Tactical RMM installation
+This will let you add a browser interface to see how you can use the api better.
 
-!!!warning
-    You read the danger above right, only use in a non-public development environment
+Open `/rmm/api/tacticalrmm/tacticalrmm/local_settings.py` and add 
 
-!!!danger
-    This is your final warning, **DO NOT** do the below unless you've licked a penny, spun around 3 times, and pinched the cheeks of a leperchaun. #YouHaveBeenWarned
+```conf
+SWAGGER_ENABLED = True
+```
 
-Open `/rmm/api/tacticalrmm/tacticalrmm/local_settings.py` and add `SWAGGER_ENABLED = True` .
-
-Then visit `https://api.example.com/api/schema/swagger-ui/`
+Then visit `https://api.example.com/api/schema/swagger-ui/` to see it in action.

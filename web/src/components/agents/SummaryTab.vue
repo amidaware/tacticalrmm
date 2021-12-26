@@ -13,6 +13,16 @@
       <q-btn
         dense
         flat
+        label="Popout"
+        icon="open_in_new"
+        size="md"
+        no-caps
+        class="q-mr-sm"
+        @click="openAgentWindow(selectedAgent)"
+      />
+      <q-btn
+        dense
+        flat
         label="Take Control"
         icon="computer"
         size="md"
@@ -137,7 +147,7 @@
 // composition imports
 import { ref, computed, watch, onMounted } from "vue";
 import { useStore } from "vuex";
-import { fetchAgent, refreshAgentWMI, runTakeControl } from "@/api/agents";
+import { fetchAgent, refreshAgentWMI, runTakeControl, openAgentWindow } from "@/api/agents";
 import { notifySuccess } from "@/utils/notify";
 
 // ui imports
@@ -230,6 +240,7 @@ export default {
       refreshSummary,
       diskBarColor,
       runTakeControl,
+      openAgentWindow,
     };
   },
 };

@@ -1017,7 +1017,8 @@ class TestCheckPermissions(TacticalTestCase):
             self.check_not_authorized(method, unauthorized_url)
             self.check_authorized(method, policy_url)
 
-    def test_check_action_permissions(self):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_check_action_permissions(self, nats_cmd):
 
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")

@@ -9,6 +9,11 @@ export function runTakeControl(agent_id) {
   openURL(url, null, { popup: true, scrollbars: false, location: false, status: false, toolbar: false, menubar: false, width: 1600, height: 900 });
 }
 
+export function openAgentWindow(agent_id) {
+  const url = router.resolve(`/agents/${agent_id}`).href;
+  openURL(url, null, { popup: true, scrollbars: false, location: false, status: false, toolbar: false, menubar: false, width: 1600, height: 900 });
+}
+
 export function runRemoteBackground(agent_id) {
   const url = router.resolve(`/remotebackground/${agent_id}`).href;
   openURL(url, null, { popup: true, scrollbars: false, location: false, status: false, toolbar: false, menubar: false, width: 1280, height: 900 });

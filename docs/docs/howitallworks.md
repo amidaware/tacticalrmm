@@ -216,7 +216,7 @@ Built on the Django framework, the Tactical RMM service is the heart of system b
 
 #### NATS API service
 
-The NATS API service appears to bridge the connection between the NATS server and database, allowing the agent to save (i.e. push) information in the database.
+The NATS API service is a very light golang wrapper to replace traditional http requests sent to django. The agent sends the data to nats-api which is just always listening for agent requests (on Port 4222). It then saves the data to postgres directly.
 
 ???+ note "systemd config"
 

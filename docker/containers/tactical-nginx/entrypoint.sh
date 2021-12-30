@@ -12,8 +12,8 @@ set -e
 : "${WEBSOCKETS_SERVICE:=tactical-websockets}"
 : "${DEV:=0}"
 
-CERT_PRIV_PATH=${TACTICAL_DIR}/certs/privkey.pem
-CERT_PUB_PATH=${TACTICAL_DIR}/certs/fullchain.pem
+: "${CERT_PRIV_PATH}:=${TACTICAL_DIR}/certs/privkey.pem"
+: "${CERT_PUB_PATH}:=${TACTICAL_DIR}/certs/fullchain.pem"
 
 mkdir -p "${TACTICAL_DIR}/certs"
 

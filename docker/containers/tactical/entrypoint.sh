@@ -18,6 +18,8 @@ set -e
 : "${APP_HOST:=tactical-frontend}"
 : "${REDIS_HOST:=tactical-redis}"
 
+: "${CERT_PRIV_PATH}:=${TACTICAL_DIR}/certs/privkey.pem"
+: "${CERT_PUB_PATH}:=${TACTICAL_DIR}/certs/fullchain.pem"
 
 function check_tactical_ready {
   sleep 15
@@ -62,8 +64,8 @@ DEBUG = False
 
 DOCKER_BUILD = True
 
-CERT_FILE = '/opt/tactical/certs/fullchain.pem'
-KEY_FILE = '/opt/tactical/certs/privkey.pem'
+CERT_FILE = ${CERT_PUB_PATH}
+KEY_FILE = ${CERT_PRIV_PATH}
 
 EXE_DIR = '/opt/tactical/api/tacticalrmm/private/exe'
 LOG_DIR = '/opt/tactical/api/tacticalrmm/private/log'

@@ -64,8 +64,8 @@ DEBUG = False
 
 DOCKER_BUILD = True
 
-CERT_FILE = ${CERT_PUB_PATH}
-KEY_FILE = ${CERT_PRIV_PATH}
+CERT_FILE = '${CERT_PUB_PATH}'
+KEY_FILE = '${CERT_PRIV_PATH}'
 
 EXE_DIR = '/opt/tactical/api/tacticalrmm/private/exe'
 LOG_DIR = '/opt/tactical/api/tacticalrmm/private/log'

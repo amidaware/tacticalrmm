@@ -4,6 +4,20 @@
 
 No
 
+## Why isn't the agent source available?
+
+<https://discord.com/channels/736478043522072608/744281907361218630/925449414498222103>
+
+It's one of those "this is why we can't have nice things". Unfortunately there are a ton of shady people out there only looking to steal and make a profit off of someone else's work and they tried very hard with tactical.
+
+## Why isn't the Code Signing free?
+
+It's one way we're trying to monetize and get dev's paid. We had github sponsors up for many months before code signing. Very few people donated, some $5 and $10. maybe $40 a month. Once we announced code signing, sponsors came in like crazy, and many people upgraded their $5 to a $50 so while I would like to believe people would gladly donate, that's just not the case. We already tried.
+
+## Who is Amidaware LLC?
+
+The Legal entity behind Tactical RMM
+
 ## Is it possible to use XXX with Tactical RMM
 
 While it _may be possible_ to use XXX, we have not configured it and therefore it is [Unsupported](../unsupported_guidelines). We cannot help you configure XXX as it pertains to **your environment**. 

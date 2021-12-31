@@ -150,3 +150,7 @@ When editing a script, you can add template tags to the script body that contain
     Everything between {{}} is CaSe sEnSiTive
 
 The template tags will only be visible when Editing the script. When downloading or viewing the script code the template tags will be replaced with the script snippet code.
+
+### Temporary Script location 
+
+The script gets saved to a randomly created file in `c:\windows\temp\trmm\` and is then removed after execution or timeout.

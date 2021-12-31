@@ -3,7 +3,7 @@ import os
 import subprocess
 import tempfile
 import time
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import pytz
 import requests
@@ -150,7 +150,7 @@ def get_bit_days(days: list[str]) -> int:
 
 
 def bitdays_to_string(day: int) -> str:
-    ret = []
+    ret: List[str] = []
     if day == 127:
         return "Every day"
 
@@ -161,7 +161,7 @@ def bitdays_to_string(day: int) -> str:
 
 
 def bitmonths_to_string(month: int) -> str:
-    ret = []
+    ret: List[str] = []
     if month == 4095:
         return "Every month"
 
@@ -172,7 +172,7 @@ def bitmonths_to_string(month: int) -> str:
 
 
 def bitweeks_to_string(week: int) -> str:
-    ret = []
+    ret: List[str] = []
     if week == 31:
         return "Every week"
 
@@ -183,7 +183,7 @@ def bitweeks_to_string(week: int) -> str:
 
 
 def bitmonthdays_to_string(day: int) -> str:
-    ret = []
+    ret: List[str] = []
     if day == 2147483647 or 4294967295:
         return "Every day"
 

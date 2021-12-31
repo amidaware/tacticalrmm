@@ -348,7 +348,7 @@ class AutomatedTask(BaseAuditModel):
         if agent:
             task.create_task_on_agent()
 
-    # agent version > 1.7.3
+    # agent version >= 1.7.3
     def generate_nats_task_payload(self, editing=False):
         task = {
             "pk": self.pk,
@@ -357,9 +357,13 @@ class AutomatedTask(BaseAuditModel):
             "overwrite_task": editing,
             "enabled": self.enabled,
             "trigger": self.task_type if self.task_type != "checkfailure" else "manual",
-            "multiple_instances": self.task_instance_policy,
+            "multiple_instances": self.task_instance_policy
+            if self.task_instance_policy
+            else 0,
             "delete_expired_task_after": self.remove_if_not_scheduled,
-            "start_when_available": self.run_asap_after_missed,
+            "start_when_available": self.run_asap_after_missed
+            if self.task_type != "runonce"
+            else True,
         }
 
         if self.task_type in ["runonce", "daily", "weekly", "monthly", "monthlydow"]:
@@ -407,7 +411,6 @@ class AutomatedTask(BaseAuditModel):
                 task["months_of_year"] = self.monthly_months_of_year
                 task["weeks_of_month"] = self.monthly_weeks_of_month
 
-        print(task)
         return task
 
     def create_task_on_agent(self):

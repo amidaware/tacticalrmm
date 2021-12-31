@@ -517,6 +517,7 @@
                 />
                 <div class="col-6"></div>
                 <q-checkbox
+                  :disable="state.task_type === 'runonce'"
                   class="col-6 q-pa-sm"
                   dense
                   v-model="state.run_asap_after_missed"

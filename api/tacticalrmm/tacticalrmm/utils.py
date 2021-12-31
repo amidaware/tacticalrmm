@@ -34,6 +34,32 @@ WEEK_DAYS = {
     "Saturday": 0x40,
 }
 
+MONTHS = {
+    "January": 0x1,
+    "February": 0x2,
+    "March": 0x4,
+    "April": 0x8,
+    "May": 0x10,
+    "June": 0x20,
+    "July": 0x40,
+    "August": 0x80,
+    "September": 0x100,
+    "October": 0x200,
+    "November": 0x400,
+    "December": 0x800,
+}
+
+WEEKS = {
+    "First Week": 0x1,
+    "Second Week": 0x2,
+    "Third Week": 0x4,
+    "Fourth Week": 0x8,
+    "Last Week": 0x10,
+}
+
+MONTH_DAYS = {f"{b}": 0x1 << a for a, b in enumerate(range(1, 32))}
+MONTH_DAYS["Last Day"] = 0x80000000
+
 
 def generate_winagent_exe(
     client: int,
@@ -128,22 +154,51 @@ def bitdays_to_string(day: int) -> str:
     if day == 127:
         return "Every day"
 
-    if day & WEEK_DAYS["Sunday"]:
-        ret.append("Sunday")
-    if day & WEEK_DAYS["Monday"]:
-        ret.append("Monday")
-    if day & WEEK_DAYS["Tuesday"]:
-        ret.append("Tuesday")
-    if day & WEEK_DAYS["Wednesday"]:
-        ret.append("Wednesday")
-    if day & WEEK_DAYS["Thursday"]:
-        ret.append("Thursday")
-    if day & WEEK_DAYS["Friday"]:
-        ret.append("Friday")
-    if day & WEEK_DAYS["Saturday"]:
-        ret.append("Saturday")
-
+    for key, value in WEEK_DAYS.items():
+        if day & int(value):
+            ret.append(key)
     return ", ".join(ret)
+
+
+def bitmonths_to_string(month: int) -> str:
+    ret = []
+    if month == 4095:
+        return "Every month"
+
+    for key, value in MONTHS.items():
+        if month & int(value):
+            ret.append(key)
+    return ", ".join(ret)
+
+
+def bitweeks_to_string(week: int) -> str:
+    ret = []
+    if week == 31:
+        return "Every week"
+
+    for key, value in WEEKS.items():
+        if week & int(value):
+            ret.append(key)
+    return ", ".join(ret)
+
+
+def bitmonthdays_to_string(day: int) -> str:
+    ret = []
+    if day == 2147483647 or 4294967295:
+        return "Every day"
+
+    for key, value in MONTH_DAYS.items():
+        if day & int(value):
+            ret.append(key)
+    return ", ".join(ret)
+
+
+def convert_to_iso_duration(string: str) -> str:
+    tmp = string.upper()
+    if "D" in tmp:
+        return f"P{tmp.replace('D', 'DT')}"
+    else:
+        return f"PT{tmp}"
 
 
 def reload_nats():

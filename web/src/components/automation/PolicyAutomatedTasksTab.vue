@@ -164,8 +164,7 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import AddAutomatedTask from "@/components/tasks/AddAutomatedTask";
-import EditAutomatedTask from "@/components/tasks/EditAutomatedTask";
+import AutomatedTaskForm from "@/components/tasks/AutomatedTaskForm";
 import PolicyStatus from "@/components/automation/modals/PolicyStatus";
 
 export default {
@@ -246,7 +245,7 @@ export default {
     showAddTask() {
       this.$q
         .dialog({
-          component: AddAutomatedTask,
+          component: AutomatedTaskForm,
           componentProps: {
             parent: { policy: this.selectedPolicy },
           },
@@ -256,9 +255,10 @@ export default {
     showEditTask(task) {
       this.$q
         .dialog({
-          component: EditAutomatedTask,
+          component: AutomatedTaskForm,
           componentProps: {
             task: task,
+            parent: { policy: this.selectedPolicy },
           },
         })
         .onOk(this.getTasks);

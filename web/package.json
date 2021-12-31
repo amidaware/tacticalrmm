@@ -18,6 +18,7 @@
     "quasar": "^2.3.4",
     "vue3-ace-editor": "^2.2.1",
     "vue3-apexcharts": "^1.4.0",
+    "vuedraggable": "^4.1.0",
     "vuex": "^4.0.2"
   },
   "devDependencies": {

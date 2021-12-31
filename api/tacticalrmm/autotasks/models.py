@@ -402,11 +402,17 @@ class AutomatedTask(BaseAuditModel):
 
             elif self.task_type == "monthly":
 
-                task["days_of_month"] = self.monthly_days_of_month
+                # check if "last day is configured"
+                if self.monthly_days_of_month > 0x80000000:
+                    task["days_of_month"] = self.monthly_days_of_month - 0x80000000
+                    task["run_on_last_day_of_month"] = True
+                else:
+                    task["days_of_month"] = self.monthly_days_of_month
+                    task["run_on_last_day_of_month"] = False
+
                 task["months_of_year"] = self.monthly_months_of_year
 
             elif self.task_type == "monthlydow":
-
                 task["days_of_week"] = self.run_time_bit_weekdays
                 task["months_of_year"] = self.monthly_months_of_year
                 task["weeks_of_month"] = self.monthly_weeks_of_month

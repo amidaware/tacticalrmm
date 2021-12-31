@@ -16,6 +16,9 @@ class TaskSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
 
+        if "task_type" not in data:
+            return data
+
         # run_time_date required
         if (
             data["task_type"] in ["runonce", "daily", "weekly", "monthly", "monthlydow"]

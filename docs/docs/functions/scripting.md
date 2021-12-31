@@ -7,6 +7,7 @@ Tactical RMM supports uploading existing scripts or adding new scripts right in 
 - Python
 
 ## Adding Scripts
+
 In the dashboard, browse to **Settings > Scripts Manager**. Click the **New** button and select either Upload Script or New Script. The available options for scripts are:
 
 - **Name** - This identifies the script in the dashboard
@@ -16,7 +17,7 @@ In the dashboard, browse to **Settings > Scripts Manager**. Click the **New** bu
     - Powershell
     - Windows Batch
     - Python
-- **Script Arguments** - Optional way to set default arguments for scripts. These will autopopulate when running scripts and can be changed at runtime.
+- **Script Arguments** - Optional way to set default arguments for scripts. These will auto populate when running scripts and can be changed at runtime.
 - **Default Timeout** - Sets the default timeout of the script and will stop script execution if the duration surpasses the configured timeout. Can be changed at script runtime
 - **Favorite** - Favorites the script.
 
@@ -26,7 +27,7 @@ To download a Tactical RMM Script, click on the script in the Script Manager to 
 
 ## Community Scripts
 
-These are script that are built into Tactical RMM. They are provided and mantained by the Tactical RMM community. These scripts are updated whenever Tactical RMM is updated and can't be modified or deleted in the dashboard.
+These are script that are built into Tactical RMM. They are provided and maintained by the Tactical RMM community. These scripts are updated whenever Tactical RMM is updated and can't be modified or deleted in the dashboard.
 
 ### Hiding Community Scripts
 You can choose to hide community script throughout the dashboard by opening **Script Manager** and clicking the **Show/Hide Community Scripts** toggle button.
@@ -43,7 +44,9 @@ In the **Agent Table**, you can right-click on an agent and select **Run Script*
 - **Save as Note** - Saves the output as a Note that can be views in the agent Notes tab
 - **Collector** - Saves to output to the specified custom field.
 
-There is also an option on the agent context menu called **Run Favorited Script**. This will essentially Fire and Forget the script with default args and timeout.
+There is also an option on the agent context menu called **Run Favorited Script**. This will pre-populate the script run dialog with the script of your choice.
+
+[Script Execution Process](../../howitallworks/#windows-agent)
 
 ### Script Arguments
 
@@ -62,7 +65,7 @@ and `()` indicates a default parameter if none is specified
 
 ### Bulk Run on agents
 
-There is also an option on the agent context menu called **Run Favorited Script**.
+Under the tools menu -> Run Bulk Script you can execute scripts against Clients/Sites/Selected Agents/All based on All/Servers/Workstations
 
 ### Automated Tasks
 
@@ -93,7 +96,7 @@ Tactical RMM allows passing in dashboard data to scripts as arguments. The below
 !!!info
     Everything between {{}} is CaSe sEnSiTive
 
-See a full list of available options [Here](../script_variables.md)
+See a full list of possible built-in variables [Here](../script_variables.md)
 
 ### Getting Custom Field values
 
@@ -150,7 +153,3 @@ When editing a script, you can add template tags to the script body that contain
     Everything between {{}} is CaSe sEnSiTive
 
 The template tags will only be visible when Editing the script. When downloading or viewing the script code the template tags will be replaced with the script snippet code.
-
-### Temporary Script location 
-
-The script gets saved to a randomly created file in `c:\windows\temp\trmm\` and is then removed after execution or timeout.

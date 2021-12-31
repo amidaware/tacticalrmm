@@ -379,6 +379,14 @@ zipp==3.4.1
 
 Found in `%programfiles%\TacticalAgent`
 
+When scripts/checks execute, they are:
+
+1. transferred from the server via nats
+2. saved to a randomly created file in `c:\windows\temp\trmm\`
+3. executed
+4. Return info is captured and returned to the server via nats
+5. File in `c:\windows\temp\trmm\` are removed automatically after execution/timeout.
+
 ### Outbound Firewall Rules
 
 If you have strict firewall rules these are the only outbound rules from the agent needed for all functionality:

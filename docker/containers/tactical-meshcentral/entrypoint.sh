@@ -10,6 +10,7 @@ set -e
 : "${MONGODB_PORT:=27017}"
 : "${NGINX_HOST_IP:=172.20.0.20}"
 : "${MESH_PERSISTENT_CONFIG:=0}"
+: "${WS_MASK_OVERRIDE:=0}"
 
 mkdir -p /home/node/app/meshcentral-data
 mkdir -p ${TACTICAL_DIR}/tmp
@@ -50,7 +51,8 @@ mesh_config="$(cat << EOF
       "NewAccounts": false,
       "mstsc": true,
       "GeoLocation": true,
-      "CertUrl": "https://${NGINX_HOST_IP}:443"
+      "CertUrl": "https://${NGINX_HOST_IP}:443",
+      "agentConfig": [ "webSocketMaskOverride=${WS_MASK_OVERRIDE}" ]
     }
   }
 }

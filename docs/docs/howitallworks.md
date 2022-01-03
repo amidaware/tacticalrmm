@@ -216,7 +216,7 @@ Built on the Django framework, the Tactical RMM service is the heart of system b
 
 #### NATS API service
 
-The NATS API service is a very light golang wrapper to replace traditional http requests sent to django. The agent sends the data to nats-api which is just always listening for agent requests (on Port 4222). It then saves the data to postgres directly.
+The NATS API service is a very light golang wrapper to replace traditional http requests sent to django. The agent sends the data to nats-api which is always listening for agent requests (on Port 4222). It then saves the data to postgres directly.
 
 ???+ note "systemd config"
 
@@ -378,6 +378,14 @@ zipp==3.4.1
 ## Windows Agent
 
 Found in `%programfiles%\TacticalAgent`
+
+When scripts/checks execute, they are:
+
+1. transferred from the server via nats
+2. saved to a randomly created file in `c:\windows\temp\trmm\`
+3. executed
+4. Return info is captured and returned to the server via nats
+5. File in `c:\windows\temp\trmm\` are removed automatically after execution/timeout.
 
 ### Outbound Firewall Rules
 

@@ -205,3 +205,9 @@ Login to server with SSH and run:
 ```bash
 node /meshcentral/node_modules/meshcentral --logintokenkey
 ```
+
+## Mesh Agent Not Connecting to server
+
+When agents don't show up in your mesh console (after logging into https://mesh.EXAMPLE.COM), and all data is blank. Your AV has most likely blocked the agent.
+
+![Mesh Not Connecting](images/mesh_no_data.png)

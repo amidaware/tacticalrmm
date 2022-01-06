@@ -21,8 +21,8 @@ set -e
 : "${APP_PORT:=8080}"
 : "${API_PORT:=8000}"
 
-: "${CERT_PRIV_PATH}:=${TACTICAL_DIR}/certs/privkey.pem"
-: "${CERT_PUB_PATH}:=${TACTICAL_DIR}/certs/fullchain.pem"
+: "${CERT_PRIV_PATH:=${TACTICAL_DIR}/certs/privkey.pem}"
+: "${CERT_PUB_PATH:=${TACTICAL_DIR}/certs/fullchain.pem}"
 
 # Add python venv to path
 export PATH="${VIRTUAL_ENV}/bin:$PATH"

@@ -1,6 +1,6 @@
 asgiref==3.4.1
 asyncio-nats-client==0.11.5
-celery==5.2.1
+celery==5.2.2
 certifi==2021.10.8
 cffi==1.15.0
 channels==3.0.4

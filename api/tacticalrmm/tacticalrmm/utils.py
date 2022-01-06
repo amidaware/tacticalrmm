@@ -222,9 +222,8 @@ def reload_nats():
     cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
     key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
     if hasattr(settings, "CERT_FILE") and hasattr(settings, "KEY_FILE"):
-        if os.path.exists(settings.CERT_FILE) and os.path.exists(settings.KEY_FILE):
-            cert_file = settings.CERT_FILE
-            key_file = settings.KEY_FILE
+        cert_file = settings.CERT_FILE
+        key_file = settings.KEY_FILE
 
     config = {
         "tls": {

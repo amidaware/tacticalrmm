@@ -50,12 +50,15 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 =======
 >>>>>>> resolve conflicts
 =======
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+>>>>>>> resolve final conflicts
     <!-- integrations -->
     <q-item clickable v-close-popup @click="getAgentIntegrations(agent)">
       <q-item-section side>
@@ -66,6 +69,7 @@
     </q-item>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
 >>>>>>> massive cleanup of files and restructure of integrations design
@@ -75,12 +79,15 @@
     </q-item> 
 
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+>>>>>>> resolve final conflicts
     <q-item clickable v-ripple v-close-popup @click="showSendCommand(agent)">
       <q-item-section side>
         <q-icon size="xs" name="fas fa-terminal" />
       </q-item-section>
       <q-item-section>Send Command</q-item-section>
     </q-item>
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 
@@ -92,6 +99,8 @@
 >>>>>>> massive cleanup of files and restructure of integrations design
 =======
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+>>>>>>> resolve final conflicts
     <q-item clickable v-ripple v-close-popup @click="showRunScript(agent)">
       <q-item-section side>
         <q-icon size="xs" name="fas fa-terminal" />
@@ -224,6 +233,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 import axios from "axios";
@@ -236,6 +246,9 @@ import axios from "axios";
 =======
 import axios from "axios";
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+import axios from "axios";
+>>>>>>> resolve final conflicts
 // composition imports
 import { ref, inject } from "vue";
 import { useStore } from "vuex";
@@ -265,6 +278,7 @@ import SendCommand from "@/components/modals/agents/SendCommand";
 import RunScript from "@/components/modals/agents/RunScript";
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 import AgentIntegrations from "@/components/modals/agents/AgentIntegrations";
@@ -274,6 +288,9 @@ import AgentIntegrations from "@/components/modals/agents/AgentIntegrations";
 =======
 import AgentIntegrations from "@/components/modals/agents/AgentIntegrations";
 >>>>>>> resolve conflicts
+=======
+import AgentIntegrations from "@/components/modals/agents/AgentIntegrations";
+>>>>>>> resolve final conflicts
 
 export default {
   name: "AgentActionMenu",
@@ -502,13 +519,6 @@ export default {
         }
       });
     }
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-=======
->>>>>>> resolve conflicts
     function getAgentIntegrations(agent) {
       axios
           .get("agents/" + props.agent.agent_id + "/")
@@ -544,6 +554,7 @@ export default {
           });
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
 >>>>>>> massive cleanup of files and restructure of integrations design
@@ -562,11 +573,14 @@ export default {
         });
     }
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+>>>>>>> resolve final conflicts
 
     return {
       // reactive data
       urlActions,
       favoriteScripts,
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -581,6 +595,8 @@ export default {
 >>>>>>> resolve conflicts
 =======
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+>>>>>>> resolve final conflicts
       // methods
       showEditAgent,
       showPendingActionsModal,
@@ -591,6 +607,7 @@ export default {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
       getAgentIntegrations,
@@ -603,6 +620,9 @@ export default {
 =======
       getAgentIntegrations,
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+      getAgentIntegrations,
+>>>>>>> resolve final conflicts
       showSendCommand,
       showRunScript,
       getFavoriteScripts,

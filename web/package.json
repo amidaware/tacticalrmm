@@ -15,14 +15,14 @@
     "axios": "^0.24.0",
     "dotenv": "^8.6.0",
     "qrcode.vue": "^3.2.2",
-    "quasar": "^2.3.4",
+    "quasar": "^2.4.3",
     "vue3-ace-editor": "^2.2.1",
     "vue3-apexcharts": "^1.4.0",
     "vuedraggable": "^4.1.0",
     "vuex": "^4.0.2"
   },
   "devDependencies": {
-    "@quasar/app": "^3.2.5",
+    "@quasar/app": "^3.2.6",
     "@quasar/cli": "^1.2.2"
   },
   "browserslist": [

@@ -11,30 +11,42 @@
                 <q-btn-dropdown label="Actions" flat>
                     <q-list>
 <<<<<<< HEAD
+<<<<<<< HEAD
                         <q-item clickable v-close-popup @click="scanEndpointConfirm('quick')">
 =======
                         <q-item clickable v-close-popup @click="checkout()" v-if="asset.user_can_checkout">
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                        <q-item clickable v-close-popup @click="checkout()">
+>>>>>>> checkin/checkout and delete asset
                             <q-item-section>
                                 <q-item-label>Checkout</q-item-label>
                             </q-item-section>
                         </q-item>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
                         <q-item clickable v-close-popup @click="scanEndpointConfirm('full')">
 =======
                         <q-item clickable v-close-popup @click="checkin()" v-else>
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                        <q-item clickable v-close-popup @click="checkin()">
+>>>>>>> checkin/checkout and delete asset
                             <q-item-section>
                                 <q-item-label>Checkin</q-item-label>
                             </q-item-section>
                         </q-item>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
                         <q-item clickable v-close-popup @click="scanEndpointConfirm('full')">
 =======
                         <q-item clickable v-close-popup @click="deleteAsset()">
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                        <q-item clickable v-close-popup @click="deleteAsset()">
+>>>>>>> checkin/checkout and delete asset
                             <q-item-section>
                                 <q-item-label>Delete Asset</q-item-label>
                             </q-item-section>
@@ -72,16 +84,16 @@
                                 </q-item-section>
 
                                 <q-item-section side top>
-                                    <q-item-label caption>{{asset.model["name"]}} {{asset.model["number"]}}
+                                    <q-item-label caption>{{asset.model.name}} {{asset.model_number}}
                                     </q-item-label>
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
                                 <q-item-section top>
-                                    <q-item-label>Status</q-item-label>
+                                    <q-item-label>Serial</q-item-label>
                                 </q-item-section>
-
                                 <q-item-section side top>
+<<<<<<< HEAD
                                     <q-item-label caption>{{asset.status_label["name"]}}
                                     </q-item-label>
 =======
@@ -102,15 +114,23 @@
                                     {{asset.model_number}}
                                     
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                                    <q-item-label caption>{{asset.serial}}</q-item-label>
+>>>>>>> checkin/checkout and delete asset
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
                                 <q-item-section top>
 <<<<<<< HEAD
+<<<<<<< HEAD
                                     <q-item-label>Company</q-item-label>
+=======
+                                    <q-item-label>Status</q-item-label>
+>>>>>>> checkin/checkout and delete asset
                                 </q-item-section>
+
                                 <q-item-section side top>
-                                    <q-item-label caption>{{asset.company["name"]}}
+                                    <q-item-label caption>{{asset.status_label.name}}
                                     </q-item-label>
 =======
                                     <q-item-label>Serial</q-item-label>
@@ -123,10 +143,14 @@
                             <q-item dense>
                                 <q-item-section top>
 <<<<<<< HEAD
+<<<<<<< HEAD
                                     <q-item-label>Location</q-item-label>
+=======
+                                    <q-item-label>Company</q-item-label>
+>>>>>>> checkin/checkout and delete asset
                                 </q-item-section>
                                 <q-item-section side top>
-                                    <q-item-label caption>Location
+                                    <q-item-label caption>{{asset.company.name}}
                                     </q-item-label>
 =======
                                     <q-item-label>Status</q-item-label>
@@ -141,12 +165,18 @@
                             <q-item dense>
                                 <q-item-section top>
 <<<<<<< HEAD
+<<<<<<< HEAD
                                     <q-item-label>Serial</q-item-label>
+=======
+                                    <q-item-label>Location</q-item-label>
+>>>>>>> checkin/checkout and delete asset
                                 </q-item-section>
                                 <q-item-section side top>
-                                    <q-item-label caption>{{asset.serial}}</q-item-label>
+                                    <q-item-label caption>{{asset.location.name}}
+                                    </q-item-label>
                                 </q-item-section>
                             </q-item>
+
                             <q-item-label header>Purchasing</q-item-label>
 =======
                                     <q-item-label>Company</q-item-label>
@@ -176,11 +206,15 @@
                                 <q-item-section side top>
 <<<<<<< HEAD
                                     <q-item-label caption>
+<<<<<<< HEAD
                                         manufacturer</q-item-label>
 =======
                                     
                                         {{asset.manufacturer.name}}
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                                        {{asset.manufacturer.name}}</q-item-label>
+>>>>>>> checkin/checkout and delete asset
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -226,11 +260,15 @@
                                 <q-item-section side top>
 <<<<<<< HEAD
                                     <q-item-label caption>
+<<<<<<< HEAD
                                         months</q-item-label>
 =======
                                     
                                         {{asset.warranty_months}}
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                                        {{asset.warranty_months}}</q-item-label>
+>>>>>>> checkin/checkout and delete asset
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -240,12 +278,16 @@
 <<<<<<< HEAD
                                 <q-item-section side top>
                                     <q-item-label caption>
+<<<<<<< HEAD
                                         expires</q-item-label>
 =======
                                 <q-item-section side top v-if="asset.warranty_expires">
                                     
                                         {{asset.warranty_expires.formatted}}
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                                        {{asset.warranty_expires}}</q-item-label>
+>>>>>>> checkin/checkout and delete asset
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -255,12 +297,16 @@
 <<<<<<< HEAD
                                 <q-item-section side top>
                                     <q-item-label caption>
+<<<<<<< HEAD
                                         eol</q-item-label>
 =======
                                 <q-item-section side top v-if="asset.eol">
                                    
                                         {{asset.eol.formatted}}
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                                        {{asset.eol}}</q-item-label>
+>>>>>>> checkin/checkout and delete asset
                                 </q-item-section>
                             </q-item>
                         </q-list>
@@ -363,10 +409,15 @@
     import { useRouter } from 'vue-router';
     import AddAsset from "@/components/integrations/snipeit/modals/AddAsset";
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     import Checkout from "@/components/integrations/snipeit/modals/Checkout";
     import Checkin from "@/components/integrations/snipeit/modals/Checkin";
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+    import Checkout from "@/components/integrations/snipeit/modals/Checkout";
+    import Checkin from "@/components/integrations/snipeit/modals/Checkin";
+>>>>>>> checkin/checkout and delete asset
 
     export default {
         name: "SnipeIT",
@@ -375,10 +426,14 @@
 
         setup(props) {
 <<<<<<< HEAD
+<<<<<<< HEAD
             const { dialogRef, onDialogHide } = useDialogPluginComponent();
 =======
             const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+            const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
+>>>>>>> checkin/checkout and delete asset
             const $q = useQuasar();
 
             const tab = ref("")
@@ -387,6 +442,7 @@
 <<<<<<< HEAD
 
             function getHardware() {
+<<<<<<< HEAD
                 asset.value = []
 =======
             const monthlyDepreciation = ref("")
@@ -396,6 +452,9 @@
             function getHardware() {
                 $q.loading.show()
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+
+>>>>>>> checkin/checkout and delete asset
                 axios
                     .get(`/snipeit/hardware/`, { params: { status: 'All' } })
                     .then(r => {
@@ -404,9 +463,13 @@
                         const snipeITAssetsModelNameNumber = []
                         const snipeITAssetsModelNumber = []
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
                         const snipeITAssetTags = []
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                        const snipeITAssetTags = []
+>>>>>>> checkin/checkout and delete asset
                         const snipeITAssetHostnames = []
                         tacticalAgentModels.push(props.agent.wmi_detail.comp_sys[0][0].Model)
                         tacticalAgentModels.push(props.agent.wmi_detail.comp_sys_prod[0][0].Name)
@@ -415,27 +478,40 @@
                         let i = 0;
                         do {
 <<<<<<< HEAD
+<<<<<<< HEAD
                             for (let hardwareObj of r.data.rows) {
                                 snipeITAssetsModelNameNumber.push(hardwareObj.model.name + " " + hardwareObj.model_number)
                                 snipeITAssetsModelNumber.push(hardwareObj.model_number)
                                 snipeITAssetHostnames.push(hardwareObj.name)
 =======
+=======
+                            // for (let hardwareObj of r.data.rows) {
+>>>>>>> checkin/checkout and delete asset
                                 snipeITAssetsModelNameNumber.push(r.data.rows[i].model.name + " " + r.data.rows[i].model_number)
                                 snipeITAssetsModelNumber.push(r.data.rows[i].model_number)
                                 snipeITAssetTags.push(r.data.rows[i].asset_tag)
                                 snipeITAssetHostnames.push(r.data.rows[i].name)
+<<<<<<< HEAD
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+>>>>>>> checkin/checkout and delete asset
 
                                 //Match on Model Number
                                 const modelNumber = tacticalAgentModels.filter(element => snipeITAssetsModelNumber.includes(element))
                                 //Match on Model Name and Number
                                 const modelNameNumber = tacticalAgentModels.filter(element => snipeITAssetsModelNameNumber.includes(element))
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+                                //Match on Asset Tag
+                                const assetTag = tacticalAgentModels.filter(element => snipeITAssetTags.includes(element))
+>>>>>>> checkin/checkout and delete asset
                                 //Match on hostname
                                 const hostnameMatch = tacticalAgentHostname.filter(element => snipeITAssetHostnames.includes(element))
 
-                                if (modelNumber.length > 0 && hostnameMatch.length > 0 || modelNameNumber.length > 0 && hostnameMatch.length > 0 || modelNumber.length > 0 && modelNameNumber.length > 0 && hostnameMatch.length > 0) {
-                                    asset.value = hardwareObj
+                                if (modelNumber.length > 0 && hostnameMatch.length > 0 || modelNameNumber.length > 0 && hostnameMatch.length > 0 || modelNumber.length > 0 && modelNameNumber.length > 0 && hostnameMatch.length > 0 || assetTag.length > 0 && hostnameMatch.length > 0) {
+                                    asset.value = []
+                                    asset.value = r.data.rows[i]
                                     tab.value = 'asset'
                                     foundAsset.value = true
 =======
@@ -470,7 +546,12 @@
                                     foundAsset.value = false
                                 }
 <<<<<<< HEAD
+<<<<<<< HEAD
                             }
+=======
+                            // }
+
+>>>>>>> checkin/checkout and delete asset
                             i++;
                         } while (i < r.data.rows.length);
 
@@ -503,7 +584,10 @@
                 })
             }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> checkin/checkout and delete asset
 
             function checkout(){
                 $q.dialog({
@@ -544,7 +628,10 @@
                 });
             }
 
+<<<<<<< HEAD
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+>>>>>>> checkin/checkout and delete asset
             onMounted(() => {
                 getHardware()
             });
@@ -552,6 +639,7 @@
             return {
                 tab,
                 asset,
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
                 checkout,
@@ -561,6 +649,11 @@
                 currentValue,
                 difference,
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                checkout,
+                checkin,
+                deleteAsset,
+>>>>>>> checkin/checkout and delete asset
                 // quasar dialog
                 dialogRef,
                 onDialogHide,

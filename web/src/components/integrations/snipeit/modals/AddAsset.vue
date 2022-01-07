@@ -357,9 +357,12 @@
           }
          }).onOk(val => {
 <<<<<<< HEAD
+<<<<<<< HEAD
            console.log(val)
 =======
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+>>>>>>> checkin/checkout and delete asset
               let modelObj = {
                 label: val['assetModel'],
                 value: val['assetModelID'],
@@ -420,12 +423,16 @@
 
       watch([assetManufacturer, assetCategory], ([manufacturer, category]) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
         console.log(manufacturer, category)
         if(manufacturer && category){
           console.log()
 =======
         if(manufacturer && category){
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+        if(manufacturer && category){
+>>>>>>> checkin/checkout and delete asset
           newModelButton.value = false
         }
       })

@@ -97,9 +97,12 @@ class GetAsset(APIView):
         result = requests.delete(
             integration.base_url + "hardware/" + asset_id,
 <<<<<<< HEAD
+<<<<<<< HEAD
             json=payload,
 =======
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+>>>>>>> checkin/checkout and delete asset
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",

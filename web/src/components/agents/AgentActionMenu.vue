@@ -541,7 +541,7 @@ export default {
                         agent: agentData,
                         integrations: integrations,
                       }
-                  })
+                })
                 }else{
                   notifyWarning("No integrations configured. Go to Settings > Integrations Manager");
                   return;

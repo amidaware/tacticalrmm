@@ -142,16 +142,26 @@
             function checkout(){
                 let data = {
                     id: props.asset.id,
+<<<<<<< HEAD
                     assigned_user: user.value.value,
                     checkout_to_type: checkoutToType.value,
                     checkout_at: date.formatDate(checkoutDate.value, 'YYYY-MM-DD'),
                     expected_checkin: checkinDate.value ? date.formatDate(checkinDate.value, 'YYYY-MM-DD') : null,
                     note: notes.value 
+=======
+                    checkout_to_type: checkoutToType.value,
+                    checkout_at: date.formatDate(checkoutDate.value, 'YYYY-MM-DD'),
+                    expected_checkin: checkinDate.value ? date.formatDate(checkinDate.value, 'YYYY-MM-DD') : null,
+                    note: notes.value
+>>>>>>> checkin/checkout and delete asset
                 }
                 axios
                     .post(`/snipeit/hardware/` + props.asset.id + `/checkout/`, data)
                     .then(r => {
+<<<<<<< HEAD
                         console.log(r.data)
+=======
+>>>>>>> checkin/checkout and delete asset
                         if(r.data.status === 'error'){
                             notifyError(r.data.messages)
                         }else{

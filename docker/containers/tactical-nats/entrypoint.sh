@@ -3,6 +3,7 @@
 set -e
 
 : "${DEV:=0}"
+: "${NATS_CONFIG_CHECK_INTERVAL:=5}"
 
 if [ "${DEV}" = 1 ]; then
   NATS_CONFIG=/workspace/api/tacticalrmm/nats-rmm.conf
@@ -20,7 +21,7 @@ done
 
 config_watcher="$(cat << EOF
 while true; do
-    sleep 15;
+    sleep ${NATS_CONFIG_CHECK_INTERVAL};
     if [[ ! -z \${NATS_CHECK} ]]; then
         NATS_RELOAD=\$(date -r '/opt/tactical/api/nats-rmm.conf')
         if [[ \$NATS_RELOAD == \$NATS_CHECK ]]; then

@@ -49,16 +49,20 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 =======
 >>>>>>> resolve conflicts
+=======
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
     <!-- integrations -->
     <q-item clickable v-close-popup @click="getAgentIntegrations(agent)">
       <q-item-section side>
         <q-icon size="xs" name="vertical_split" />
       </q-item-section>
       <q-item-section>Integrations</q-item-section>
+<<<<<<< HEAD
     </q-item>
 
 <<<<<<< HEAD
@@ -67,6 +71,10 @@
 >>>>>>> massive cleanup of files and restructure of integrations design
 =======
 >>>>>>> resolve conflicts
+=======
+    </q-item> 
+
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
     <q-item clickable v-ripple v-close-popup @click="showSendCommand(agent)">
       <q-item-section side>
         <q-icon size="xs" name="fas fa-terminal" />
@@ -74,6 +82,7 @@
       <q-item-section>Send Command</q-item-section>
     </q-item>
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 <<<<<<< HEAD
@@ -81,6 +90,8 @@
 
 >>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
 >>>>>>> massive cleanup of files and restructure of integrations design
+=======
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
     <q-item clickable v-ripple v-close-popup @click="showRunScript(agent)">
       <q-item-section side>
         <q-icon size="xs" name="fas fa-terminal" />
@@ -212,6 +223,7 @@
 <script>
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 import axios from "axios";
@@ -221,10 +233,13 @@ import axios from "axios";
 =======
 import axios from "axios";
 >>>>>>> resolve conflicts
+=======
+import axios from "axios";
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
 // composition imports
 import { ref, inject } from "vue";
 import { useStore } from "vuex";
-import { useQuasar } from "quasar";
+import { useQuasar, openURL } from "quasar";
 import { fetchURLActions, runURLAction } from "@/api/core";
 import {
   editAgent,
@@ -238,6 +253,7 @@ import { runAgentUpdateScan, runAgentUpdateInstall } from "@/api/winupdates";
 import { runAgentChecks } from "@/api/checks";
 import { fetchScripts } from "@/api/scripts";
 import { notifySuccess, notifyWarning, notifyError } from "@/utils/notify";
+import { router } from "@/router"
 
 // ui imports
 import PendingActions from "@/components/logs/PendingActions";
@@ -488,6 +504,7 @@ export default {
     }
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 =======
@@ -532,11 +549,25 @@ export default {
 >>>>>>> massive cleanup of files and restructure of integrations design
 =======
 >>>>>>> resolve conflicts
+=======
+    function getAgentIntegrations(agent) {
+      axios
+        .get("agents/" + agent.agent_id + "/")
+        .then(r => {
+          const url = router.resolve(`/integrations/agents/${agent.agent_id}`).href;
+          window.open(url, null, { popup: true, location: false, status: false, toolbar: false, menubar: false, width: 1800, height: 900 });
+          })
+        .catch((e) => {
+            console.log(e)
+        });
+    }
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
 
     return {
       // reactive data
       urlActions,
       favoriteScripts,
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 
@@ -548,6 +579,8 @@ export default {
 >>>>>>> massive cleanup of files and restructure of integrations design
 =======
 >>>>>>> resolve conflicts
+=======
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
       // methods
       showEditAgent,
       showPendingActionsModal,
@@ -557,6 +590,7 @@ export default {
       runURLAction,
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
       getAgentIntegrations,
@@ -566,6 +600,9 @@ export default {
 =======
       getAgentIntegrations,
 >>>>>>> resolve conflicts
+=======
+      getAgentIntegrations,
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
       showSendCommand,
       showRunScript,
       getFavoriteScripts,

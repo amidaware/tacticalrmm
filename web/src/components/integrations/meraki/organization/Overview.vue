@@ -1,4 +1,5 @@
 <template>
+<<<<<<< HEAD
 
   <div class="q-pb-md q-pl-md q-gutter-sm">
     <q-breadcrumbs>
@@ -7,6 +8,8 @@
       <q-breadcrumbs-el class="text-black" label="Overview" />
     </q-breadcrumbs>
   </div>
+=======
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
   <q-scroll-area style="height: 230px">
     <q-inner-loading :showing="uplinksLoading" color="primary" />
     <div class="q-pb-md row justify-center q-gutter-md">

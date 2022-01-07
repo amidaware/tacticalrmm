@@ -118,6 +118,10 @@
             componentProps: {
               id: id,
               name: name,
+<<<<<<< HEAD
+=======
+              integration: integration
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
             }
           }) 
             .onOk(() => {
@@ -130,6 +134,10 @@
             componentProps: {
               id: id,
               name: name,
+<<<<<<< HEAD
+=======
+              integration: integration
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
             },
           })
             .onOk(() => {

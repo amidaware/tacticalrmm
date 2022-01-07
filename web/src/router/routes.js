@@ -47,6 +47,22 @@ const routes = [
     }
   },
   {
+    path: "/integrations/agents/:agent_id",
+    name: "AgentIntegrations",
+    component: () => import("@/views/AgentIntegrations"),
+    meta: {
+      requireAuth: true
+    }
+  },
+  {
+    path: "/integrations/clients/:client_id",
+    name: "ClientIntegrations",
+    component: () => import("@/views/ClientIntegrations"),
+    meta: {
+      requireAuth: true
+    }
+  },
+  {
     path: "/remotebackground/:agent_id",
     name: "RemoteBackground",
     component: () => import("@/views/RemoteBackground"),

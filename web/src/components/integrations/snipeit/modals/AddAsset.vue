@@ -34,6 +34,7 @@
               :rules="[(val) => !!val || '*Required']" />
         </q-step>
 
+<<<<<<< HEAD
         <q-step :name="3" title="Confirm" icon="create_new_folder" :done="step > 3">
           <q-list dense>
             <q-item>
@@ -62,12 +63,110 @@
               </q-item-section>
             </q-item>
           </q-list>
+=======
+        <q-step :name="3" title="Review & Add" icon="create_new_folder" :done="step > 3">
+                        <q-list>
+                            <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Name</q-item-label>
+                                </q-item-section>
+                                <q-item-section side top>
+                                    {{assetName}}
+                                    
+                                </q-item-section>
+                            </q-item>
+                            <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Asset Tag</q-item-label>
+                                </q-item-section>
+
+                                <q-item-section side top>
+                                    {{assetTag}}
+                                    
+                                </q-item-section>
+                            </q-item>
+                            <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Model</q-item-label>
+                                </q-item-section>
+
+                                <q-item-section side top>
+                                    {{assetModel.label}}
+                                    
+                                </q-item-section>
+                            </q-item>
+                           <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Serial</q-item-label>
+                                </q-item-section>
+
+                                <q-item-section side top>
+                                    {{assetSerial}}
+                                    
+                                </q-item-section>
+                            </q-item>
+                           <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Status</q-item-label>
+                                </q-item-section>
+
+                                <q-item-section side top>
+                                    {{assetStatus.label}}
+                                    
+                                </q-item-section>
+                            </q-item>
+                           <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Company</q-item-label>
+                                </q-item-section>
+
+                                <q-item-section side top>
+                                    {{assetCompany.label}}
+                                    
+                                </q-item-section>
+                            </q-item>
+                           <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Location</q-item-label>
+                                </q-item-section>
+
+                                <q-item-section side top>
+                                    {{assetLocation.label}}
+                                    
+                                </q-item-section>
+                            </q-item>
+                           <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Manufacturer</q-item-label>
+                                </q-item-section>
+
+                                <q-item-section side top>
+                                    {{assetManufacturer.label}}
+                                    
+                                </q-item-section>
+                            </q-item>
+                           <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Category</q-item-label>
+                                </q-item-section>
+
+                                <q-item-section side top>
+                                    {{assetCategory.label}}
+                                    
+                                </q-item-section>
+                            </q-item>
+                        </q-list>
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
         </q-step>
 
         <template v-slot:navigation>
           <q-stepper-navigation>
             <q-btn v-if="step != 3" @click="$refs.stepper.next()" color="primary" label="Continue" />
+<<<<<<< HEAD
             <q-btn v-else @click="addAsset()" color="primary" label="Finish" />
+=======
+            <q-btn v-else @click="addAsset()" color="primary" label="Add" />
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
             <q-btn v-if="step > 1" flat color="primary" @click="$refs.stepper.previous()" label="Back"
               class="q-ml-sm" />
           </q-stepper-navigation>
@@ -93,6 +192,10 @@
     setup(props) {
       const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
       const $q = useQuasar();
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
       const assetName = ref("")
       const companyOptions = ref([])
       const assetCompany = ref("")
@@ -121,6 +224,10 @@
       }
 
       function getCompanies() {
+<<<<<<< HEAD
+=======
+        $q.loading.show()
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
         axios
           .get(`/snipeit/companies/`)
           .then(r => {
@@ -168,6 +275,10 @@
               }
               assetStatusOptions.value.push(statusObj)
             }
+<<<<<<< HEAD
+=======
+            $q.loading.hide()
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
           })
           .catch(e => {
             console.log(e.response.data)
@@ -175,6 +286,10 @@
       }
 
       function getModels() {
+<<<<<<< HEAD
+=======
+        $q.loading.show()
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
         axios
           .get(`/snipeit/models/`)
           .then(r => {
@@ -204,6 +319,10 @@
               }
               assetCategoryOptions.value.push(assetCategoryObj)
               }
+<<<<<<< HEAD
+=======
+              $q.loading.hide()
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
           })
           .catch(e => {
               console.log(e.response.data)
@@ -237,7 +356,10 @@
             category: assetCategory.value
           }
          }).onOk(val => {
+<<<<<<< HEAD
            console.log(val)
+=======
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
               let modelObj = {
                 label: val['assetModel'],
                 value: val['assetModelID'],
@@ -248,6 +370,10 @@
       }
 
       function addAsset(){
+<<<<<<< HEAD
+=======
+        $q.loading.show()
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
         let data = {
           asset_tag: assetTag.value,
           status_id: assetStatus.value.value,
@@ -267,6 +393,10 @@
             notifySuccess(props.agent.hostname + " has been added as an asset to Snipe-IT")
             onDialogOK()
           }
+<<<<<<< HEAD
+=======
+          $q.loading.hide()
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
         })
         .catch(e => {
           console.log(e)
@@ -289,9 +419,13 @@
       })
 
       watch([assetManufacturer, assetCategory], ([manufacturer, category]) => {
+<<<<<<< HEAD
         console.log(manufacturer, category)
         if(manufacturer && category){
           console.log()
+=======
+        if(manufacturer && category){
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
           newModelButton.value = false
         }
       })

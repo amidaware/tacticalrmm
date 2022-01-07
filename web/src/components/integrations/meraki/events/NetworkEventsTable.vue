@@ -1,4 +1,5 @@
 <template>
+<<<<<<< HEAD
   <div class="q-pb-md q-pl-md q-gutter-sm">
     <q-breadcrumbs>
       <q-breadcrumbs-el icon="home" class="text-black" />
@@ -7,6 +8,8 @@
       <q-breadcrumbs-el class="text-black" label="Events" />
     </q-breadcrumbs>
   </div>
+=======
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
   <q-table :rows="rows" :columns="columns" row-key="occurredAt" v-model:pagination="pagination" :loading="loading"
     :filter="filter" wrap-cells>
     <template v-slot:loading v-model="loading">

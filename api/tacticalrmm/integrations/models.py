@@ -7,6 +7,10 @@ class Integration(models.Model):
     configuration = models.JSONField(null=True, blank=True)
     data = models.JSONField(null=True, blank=True)
     enabled = models.BooleanField(default=False)
+<<<<<<< HEAD
+=======
+    client_org_related = models.BooleanField(default=False)
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
 
     def __str__(self):
         return self.name

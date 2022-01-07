@@ -31,6 +31,11 @@
 
         setup(props) {
             const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
+<<<<<<< HEAD
+=======
+            const $q = useQuasar();
+
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
             const assetModel = ref("")
             const assetModelOptions = ref([])
             const addNewModel = ref(true)
@@ -41,6 +46,10 @@
             }
 
             function onOKClick() {
+<<<<<<< HEAD
+=======
+                $q.loading.show()
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
                 let data = {
                 model_name: assetModel.value,
                 model_number: assetModel.value,
@@ -55,6 +64,10 @@
                         notifyError(r.data.messages)
                     }else{
                         notifySuccess(r.data.messages)
+<<<<<<< HEAD
+=======
+                        $q.loading.hide()
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
                         onDialogOK({"assetModel": assetModel.value, "assetModelID": r.data.payload.id, "addNewModel":addNewModel.value})
                     }
                 })

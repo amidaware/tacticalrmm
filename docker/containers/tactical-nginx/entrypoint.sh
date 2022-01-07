@@ -169,7 +169,12 @@ server {
     location / {
         #Using variable to disable start checks
 <<<<<<< HEAD
+<<<<<<< HEAD
         set \$meshcentral http://${MESH_SERVICE}:443;
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+        set \$meshcentral http://{$MESH_SERVICE}:443;
 =======
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -177,10 +182,17 @@ server {
 =======
         set \$meshcentral http://${MESH_SERVICE}:443;
 >>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
 =======
         set \$meshcentral http://${MESH_SERVICE}:443;
 >>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
+=======
+        set \$meshcentral http://${MESH_SERVICE}:443;
+>>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
+<<<<<<< HEAD
 >>>>>>> massive cleanup of files and restructure of integrations design
+=======
+>>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
 
         proxy_pass \$meshcentral;
         proxy_http_version 1.1;

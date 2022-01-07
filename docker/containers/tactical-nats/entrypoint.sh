@@ -18,6 +18,27 @@ until [ -f "${TACTICAL_READY_FILE}" ]; do
   sleep 10
 done
 
+config_watcher="$(cat << EOF
+while true; do
+    sleep 15;
+    if [[ ! -z \${NATS_CHECK} ]]; then
+        NATS_RELOAD=\$(date -r '/opt/tactical/api/nats-rmm.conf')
+        if [[ \$NATS_RELOAD == \$NATS_CHECK ]]; then
+            :
+        else
+            nats-server --signal reload;
+            NATS_CHECK=\$(date -r '/opt/tactical/api/nats-rmm.conf');
+        fi
+    else NATS_CHECK=\$(date -r '/opt/tactical/api/nats-rmm.conf');
+    fi
+done
+
+EOF
+)"
+
+echo "${config_watcher}" > /usr/local/bin/config_watcher.sh
+chmod +x /usr/local/bin/config_watcher.sh
+
 mkdir -p /var/log/supervisor
 mkdir -p /etc/supervisor/conf.d
 
@@ -34,7 +55,10 @@ stdout_logfile_maxbytes=0
 redirect_stderr=true
 
 [program:config-watcher]
-command=/bin/bash -c "inotifywait -mq -e modify "${NATS_CONFIG}" | while read event; do nats-server --signal reload; done;"
+command=/bin/bash /usr/local/bin/config_watcher.sh
+startsecs=10
+autorestart=true
+startretries=1
 stdout_logfile=/dev/fd/1
 stdout_logfile_maxbytes=0
 redirect_stderr=true

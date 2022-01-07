@@ -92,8 +92,13 @@ class AutomatedTask(BaseAuditModel):
     # deprecated
     timeout = models.PositiveIntegerField(blank=True, default=120)
 
+<<<<<<< HEAD
     # format -> {"actions": [{"type": "script", "script": 1, "name": "Script Name", "timeout": 90, "script_args": []}, {"type": "cmd", "command": "whoami", "timeout": 90}]}
     actions = JSONField(default=list)
+=======
+    # format -> {"actions": [{"type": "script", "pk": 1, "shell": "powershell", "timeout": 90, "script_args": []}, {"type": "cmd", "command": "whoami"}]}
+    actions = JSONField(default=dict)
+>>>>>>> massive cleanup of files and restructure of integrations design
     assigned_check = models.ForeignKey(
         "checks.Check",
         null=True,
@@ -361,9 +366,13 @@ class AutomatedTask(BaseAuditModel):
             "multiple_instances": self.task_instance_policy
             if self.task_instance_policy
             else 0,
+<<<<<<< HEAD
             "delete_expired_task_after": self.remove_if_not_scheduled
             if self.expire_date
             else False,
+=======
+            "delete_expired_task_after": self.remove_if_not_scheduled,
+>>>>>>> massive cleanup of files and restructure of integrations design
             "start_when_available": self.run_asap_after_missed
             if self.task_type != "runonce"
             else True,

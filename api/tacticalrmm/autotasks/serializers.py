@@ -11,6 +11,7 @@ class TaskSerializer(serializers.ModelSerializer):
     schedule = serializers.ReadOnlyField()
     last_run = serializers.ReadOnlyField(source="last_run_as_timezone")
     alert_template = serializers.SerializerMethodField()
+<<<<<<< HEAD
     run_time_date = serializers.DateTimeField(format="iso-8601", required=False)
     expire_date = serializers.DateTimeField(
         format="iso-8601", allow_null=True, required=False
@@ -82,6 +83,14 @@ class TaskSerializer(serializers.ModelSerializer):
                 del data["monthly_weeks_of_month"]
             if "assigned_check" in data:
                 del data["assigned_check"]
+=======
+    run_time_date = serializers.DateTimeField(format="iso-8601")
+    expire_date = serializers.DateTimeField(format="iso-8601", allow_null=True)
+
+    def validate(self, data):
+
+        if "task_type" not in data:
+>>>>>>> massive cleanup of files and restructure of integrations design
             return data
 
         # run_time_date required
@@ -95,64 +104,104 @@ class TaskSerializer(serializers.ModelSerializer):
 
         # daily task type validation
         if data["task_type"] == "daily":
+<<<<<<< HEAD
             if "daily_interval" not in data or not data["daily_interval"]:
+=======
+            if not data["daily_interval"]:
+>>>>>>> massive cleanup of files and restructure of integrations design
                 raise serializers.ValidationError(
                     f"daily_interval is required for task_type '{data['task_type']}'"
                 )
 
         # weekly task type validation
+<<<<<<< HEAD
         elif data["task_type"] == "weekly":
             if "weekly_interval" not in data or not data["weekly_interval"]:
+=======
+        if data["task_type"] == "weekly":
+            if not data["weekly_interval"]:
+>>>>>>> massive cleanup of files and restructure of integrations design
                 raise serializers.ValidationError(
                     f"weekly_interval is required for task_type '{data['task_type']}'"
                 )
 
+<<<<<<< HEAD
             if "run_time_bit_weekdays" not in data or not data["run_time_bit_weekdays"]:
+=======
+            if not data["run_time_bit_weekdays"]:
+>>>>>>> massive cleanup of files and restructure of integrations design
                 raise serializers.ValidationError(
                     f"run_time_bit_weekdays is required for task_type '{data['task_type']}'"
                 )
 
         # monthly task type validation
+<<<<<<< HEAD
         elif data["task_type"] == "monthly":
             if (
                 "monthly_months_of_year" not in data
                 or not data["monthly_months_of_year"]
             ):
+=======
+        if data["task_type"] == "monthly":
+            if not data["monthly_months_of_year"]:
+>>>>>>> massive cleanup of files and restructure of integrations design
                 raise serializers.ValidationError(
                     f"monthly_months_of_year is required for task_type '{data['task_type']}'"
                 )
 
+<<<<<<< HEAD
             if "monthly_days_of_month" not in data or not data["monthly_days_of_month"]:
+=======
+            if not data["monthly_days_of_month"]:
+>>>>>>> massive cleanup of files and restructure of integrations design
                 raise serializers.ValidationError(
                     f"monthly_days_of_month is required for task_type '{data['task_type']}'"
                 )
 
         # monthly day of week task type validation
+<<<<<<< HEAD
         elif data["task_type"] == "monthlydow":
             if (
                 "monthly_months_of_year" not in data
                 or not data["monthly_months_of_year"]
             ):
+=======
+        if data["task_type"] == "monthlydow":
+            if not data["monthly_months_of_year"]:
+>>>>>>> massive cleanup of files and restructure of integrations design
                 raise serializers.ValidationError(
                     f"monthly_months_of_year is required for task_type '{data['task_type']}'"
                 )
 
+<<<<<<< HEAD
             if (
                 "monthly_weeks_of_month" not in data
                 or not data["monthly_weeks_of_month"]
             ):
+=======
+            if not data["monthly_weeks_of_month"]:
+>>>>>>> massive cleanup of files and restructure of integrations design
                 raise serializers.ValidationError(
                     f"monthly_weeks_of_month is required for task_type '{data['task_type']}'"
                 )
 
+<<<<<<< HEAD
             if "run_time_bit_weekdays" not in data or not data["run_time_bit_weekdays"]:
+=======
+            if not data["run_time_bit_weekdays"]:
+>>>>>>> massive cleanup of files and restructure of integrations design
                 raise serializers.ValidationError(
                     f"run_time_bit_weekdays is required for task_type '{data['task_type']}'"
                 )
 
         # check failure task type validation
+<<<<<<< HEAD
         elif data["task_type"] == "checkfailure":
             if "assigned_check" not in data or not data["assigned_check"]:
+=======
+        if data["task_type"] == "checkfailure":
+            if not data["assigned_check"]:
+>>>>>>> massive cleanup of files and restructure of integrations design
                 raise serializers.ValidationError(
                     f"assigned_check is required for task_type '{data['task_type']}'"
                 )

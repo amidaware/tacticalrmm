@@ -47,13 +47,34 @@
       </q-menu>
     </q-item>
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    <!-- integrations -->
+    <q-item clickable v-close-popup @click="getAgentIntegrations(agent)">
+      <q-item-section side>
+        <q-icon size="xs" name="vertical_split" />
+      </q-item-section>
+      <q-item-section>Integrations</q-item-section>
+    </q-item>
+
+=======
+>>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
+>>>>>>> massive cleanup of files and restructure of integrations design
     <q-item clickable v-ripple v-close-popup @click="showSendCommand(agent)">
       <q-item-section side>
         <q-icon size="xs" name="fas fa-terminal" />
       </q-item-section>
       <q-item-section>Send Command</q-item-section>
     </q-item>
+<<<<<<< HEAD
 
+=======
+<<<<<<< HEAD
+=======
+
+>>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
+>>>>>>> massive cleanup of files and restructure of integrations design
     <q-item clickable v-ripple v-close-popup @click="showRunScript(agent)">
       <q-item-section side>
         <q-icon size="xs" name="fas fa-terminal" />
@@ -183,6 +204,13 @@
 </template>
 
 <script>
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+import axios from "axios";
+=======
+>>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
+>>>>>>> massive cleanup of files and restructure of integrations design
 // composition imports
 import { ref, inject } from "vue";
 import { useStore } from "vuex";
@@ -209,6 +237,13 @@ import RebootLater from "@/components/modals/agents/RebootLater";
 import EditAgent from "@/components/modals/agents/EditAgent";
 import SendCommand from "@/components/modals/agents/SendCommand";
 import RunScript from "@/components/modals/agents/RunScript";
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+import AgentIntegrations from "@/components/modals/agents/AgentIntegrations";
+=======
+>>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
+>>>>>>> massive cleanup of files and restructure of integrations design
 
 export default {
   name: "AgentActionMenu",
@@ -437,12 +472,59 @@ export default {
         }
       });
     }
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    function getAgentIntegrations(agent) {
+      axios
+          .get("agents/" + props.agent.agent_id + "/")
+          .then(r => {
+            let agentData = r.data
+            axios
+              .get("/integrations/")
+              .then(r => {
+                let integrations = []
+
+                if (r.data.length > 0){
+                  for(let integrationObj of r.data){
+                      if(integrationObj.enabled){
+                        integrations.push(integrationObj)
+                      }
+                    }
+                      $q.dialog({
+                      component: AgentIntegrations,
+                      componentProps: {
+                        agent: agentData,
+                        integrations: integrations,
+                      }
+                  })
+                }else{
+                  notifyWarning("No integrations configured. Go to Settings > Integrations Manager");
+                  return;
+                }
+              })
+              .catch(() => {});
+                })
+          .catch((e) => {
+              console.log(e)
+          });
+    }
+=======
+>>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
+>>>>>>> massive cleanup of files and restructure of integrations design
 
     return {
       // reactive data
       urlActions,
       favoriteScripts,
+<<<<<<< HEAD
 
+=======
+<<<<<<< HEAD
+=======
+
+>>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
+>>>>>>> massive cleanup of files and restructure of integrations design
       // methods
       showEditAgent,
       showPendingActionsModal,
@@ -450,6 +532,13 @@ export default {
       runRemoteBackground,
       getURLActions,
       runURLAction,
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+      getAgentIntegrations,
+=======
+>>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
+>>>>>>> massive cleanup of files and restructure of integrations design
       showSendCommand,
       showRunScript,
       getFavoriteScripts,

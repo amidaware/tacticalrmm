@@ -25,6 +25,7 @@ Admin URL:
 ![Web Exclusions](images/avwebroot2.png)
 
 ![Web Exclusions](images/avwebroot1.png)
+<<<<<<< HEAD
 
 ## Sophos
 
@@ -106,3 +107,5 @@ Go To Protect >> Rules and policies and add a firewall rule
 ![FW Exclusions](images/sophosxgscreen8.png)
 
 Optionally select Log Firewall Traffic checkbox for troubleshooting.
+=======
+>>>>>>> massive cleanup of files and restructure of integrations design

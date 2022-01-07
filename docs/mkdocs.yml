@@ -29,6 +29,7 @@ nav:
       - "Scripting": functions/scripting.md
       - "URL Actions": functions/url_actions.md
       - "User Interface Preferences": functions/user_ui.md
+      - "Reference: Script Variables": script_variables.md
       - "Examples": functions/examples.md
   - Backup: backup.md
   - Restore: restore.md

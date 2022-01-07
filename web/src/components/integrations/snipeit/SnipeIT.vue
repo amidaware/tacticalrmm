@@ -12,6 +12,7 @@
                     <q-list>
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                         <q-item clickable v-close-popup @click="scanEndpointConfirm('quick')">
 =======
                         <q-item clickable v-close-popup @click="checkout()" v-if="asset.user_can_checkout">
@@ -19,11 +20,15 @@
 =======
                         <q-item clickable v-close-popup @click="checkout()">
 >>>>>>> checkin/checkout and delete asset
+=======
+                        <q-item clickable v-close-popup @click="checkout()" v-if="asset.user_can_checkout">
+>>>>>>> display depreciation values
                             <q-item-section>
                                 <q-item-label>Checkout</q-item-label>
                             </q-item-section>
                         </q-item>
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
                         <q-item clickable v-close-popup @click="scanEndpointConfirm('full')">
@@ -33,6 +38,9 @@
 =======
                         <q-item clickable v-close-popup @click="checkin()">
 >>>>>>> checkin/checkout and delete asset
+=======
+                        <q-item clickable v-close-popup @click="checkin()" v-else>
+>>>>>>> display depreciation values
                             <q-item-section>
                                 <q-item-label>Checkin</q-item-label>
                             </q-item-section>
@@ -223,6 +231,7 @@
                                 </q-item-section>
 <<<<<<< HEAD
                                 <q-item-section side top>
+<<<<<<< HEAD
                                     <q-item-label caption>
                                         {{asset.purchase_date}}</q-item-label>
 =======
@@ -230,6 +239,10 @@
            
                                         {{asset.purchase_date.formatted}}
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                                    <q-item-label caption v-if="asset.purchase_date">
+                                        {{asset.purchase_date.formatted}}</q-item-label>
+>>>>>>> display depreciation values
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -259,6 +272,7 @@
                                 </q-item-section>
                                 <q-item-section side top>
 <<<<<<< HEAD
+<<<<<<< HEAD
                                     <q-item-label caption>
 <<<<<<< HEAD
                                         months</q-item-label>
@@ -269,6 +283,10 @@
 =======
                                         {{asset.warranty_months}}</q-item-label>
 >>>>>>> checkin/checkout and delete asset
+=======
+                                    <q-item-label caption v-if="asset.warranty_months">
+                                        {{asset.warranty_months.formatted}}</q-item-label>
+>>>>>>> display depreciation values
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -277,6 +295,7 @@
                                 </q-item-section>
 <<<<<<< HEAD
                                 <q-item-section side top>
+<<<<<<< HEAD
                                     <q-item-label caption>
 <<<<<<< HEAD
                                         expires</q-item-label>
@@ -288,6 +307,10 @@
 =======
                                         {{asset.warranty_expires}}</q-item-label>
 >>>>>>> checkin/checkout and delete asset
+=======
+                                    <q-item-label caption v-if="asset.warranty_expires">
+                                        {{asset.warranty_expires.formatted}}</q-item-label>
+>>>>>>> display depreciation values
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -296,6 +319,7 @@
                                 </q-item-section>
 <<<<<<< HEAD
                                 <q-item-section side top>
+<<<<<<< HEAD
                                     <q-item-label caption>
 <<<<<<< HEAD
                                         eol</q-item-label>
@@ -307,6 +331,10 @@
 =======
                                         {{asset.eol}}</q-item-label>
 >>>>>>> checkin/checkout and delete asset
+=======
+                                    <q-item-label caption v-if="asset.eol">
+                                        {{asset.eol.formatted}}</q-item-label>
+>>>>>>> display depreciation values
                                 </q-item-section>
                             </q-item>
                         </q-list>
@@ -333,9 +361,9 @@
 <<<<<<< HEAD
                                 <q-card class="q-mx-sm">
                                     <q-card-section class="text-center">
-                                        <span class="text-weight-light">App
-                                            Vulnerabilities</span>
+                                        <span class="text-weight-light">Current Value</span>
                                         <div class="text-h6">
+<<<<<<< HEAD
                                             {{asset.name}}
 =======
                                 <q-card class="q-mx-sm q-my-sm">
@@ -344,17 +372,24 @@
                                         <div class="text-h6">
                                             ${{currentValue}}
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                                            ${{currentValue}}
+>>>>>>> display depreciation values
                                         </div>
                                     </q-card-section>
                                 </q-card>
                             </div>
                             <div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
 <<<<<<< HEAD
+<<<<<<< HEAD
                                 <q-card class="q-mx-sm">
+=======
+                                  <q-card class="q-mx-sm">
+>>>>>>> display depreciation values
                                     <q-card-section class="text-center">
-                                        <span class="text-weight-light">App
-                                            Vulnerabilities</span>
+                                        <span class="text-weight-light">Monthly Depcreciation</span>
                                         <div class="text-h6">
+<<<<<<< HEAD
                                             {{asset.name}}
 =======
                                   <q-card class="q-mx-sm q-my-sm">
@@ -363,6 +398,9 @@
                                         <div class="text-h6">
                                             ${{monthlyDepreciation}}
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                                            ${{monthlyDepreciation}}
+>>>>>>> display depreciation values
                                         </div>
                                     </q-card-section>
                                 </q-card>
@@ -371,8 +409,9 @@
 <<<<<<< HEAD
                                 <q-card class="q-mx-sm">
                                     <q-card-section class="text-center">
-                                        <span class="text-weight-light">Human Risks</span>
+                                        <span class="text-weight-light">Difference</span>
                                         <div class="text-h6">
+<<<<<<< HEAD
                                             {{asset.name}}
 =======
                                 <q-card class="q-mx-sm q-my-sm">
@@ -381,6 +420,9 @@
                                         <div class="text-h6">
                                             ${{difference}}
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                                            ${{difference}}
+>>>>>>> display depreciation values
                                         </div>
                                     </q-card-section>
                                 </q-card>
@@ -440,6 +482,7 @@
             const asset = ref([])
             const foundAsset = ref(null)
 <<<<<<< HEAD
+<<<<<<< HEAD
 
             function getHardware() {
 <<<<<<< HEAD
@@ -449,6 +492,11 @@
             const currentValue = ref("")
             const difference = ref("")
 
+=======
+            const monthlyDepreciation = ref("")
+            const currentValue = ref("")
+            const difference = ref("")
+>>>>>>> display depreciation values
             function getHardware() {
                 $q.loading.show()
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
@@ -653,7 +701,13 @@
                 checkout,
                 checkin,
                 deleteAsset,
+<<<<<<< HEAD
 >>>>>>> checkin/checkout and delete asset
+=======
+                monthlyDepreciation,
+                currentValue,
+                difference,
+>>>>>>> display depreciation values
                 // quasar dialog
                 dialogRef,
                 onDialogHide,

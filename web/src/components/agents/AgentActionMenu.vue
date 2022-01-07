@@ -48,8 +48,11 @@
     </q-item>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
+=======
+>>>>>>> resolve conflicts
     <!-- integrations -->
     <q-item clickable v-close-popup @click="getAgentIntegrations(agent)">
       <q-item-section side>
@@ -58,9 +61,12 @@
       <q-item-section>Integrations</q-item-section>
     </q-item>
 
+<<<<<<< HEAD
 =======
 >>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
 >>>>>>> massive cleanup of files and restructure of integrations design
+=======
+>>>>>>> resolve conflicts
     <q-item clickable v-ripple v-close-popup @click="showSendCommand(agent)">
       <q-item-section side>
         <q-icon size="xs" name="fas fa-terminal" />
@@ -205,12 +211,16 @@
 
 <script>
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 import axios from "axios";
 =======
 >>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
 >>>>>>> massive cleanup of files and restructure of integrations design
+=======
+import axios from "axios";
+>>>>>>> resolve conflicts
 // composition imports
 import { ref, inject } from "vue";
 import { useStore } from "vuex";
@@ -238,12 +248,16 @@ import EditAgent from "@/components/modals/agents/EditAgent";
 import SendCommand from "@/components/modals/agents/SendCommand";
 import RunScript from "@/components/modals/agents/RunScript";
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 import AgentIntegrations from "@/components/modals/agents/AgentIntegrations";
 =======
 >>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
 >>>>>>> massive cleanup of files and restructure of integrations design
+=======
+import AgentIntegrations from "@/components/modals/agents/AgentIntegrations";
+>>>>>>> resolve conflicts
 
 export default {
   name: "AgentActionMenu",
@@ -473,8 +487,11 @@ export default {
       });
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
+=======
+>>>>>>> resolve conflicts
     function getAgentIntegrations(agent) {
       axios
           .get("agents/" + props.agent.agent_id + "/")
@@ -509,15 +526,19 @@ export default {
               console.log(e)
           });
     }
+<<<<<<< HEAD
 =======
 >>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
 >>>>>>> massive cleanup of files and restructure of integrations design
+=======
+>>>>>>> resolve conflicts
 
     return {
       // reactive data
       urlActions,
       favoriteScripts,
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 <<<<<<< HEAD
@@ -525,6 +546,8 @@ export default {
 
 >>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
 >>>>>>> massive cleanup of files and restructure of integrations design
+=======
+>>>>>>> resolve conflicts
       // methods
       showEditAgent,
       showPendingActionsModal,
@@ -533,12 +556,16 @@ export default {
       getURLActions,
       runURLAction,
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
       getAgentIntegrations,
 =======
 >>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
 >>>>>>> massive cleanup of files and restructure of integrations design
+=======
+      getAgentIntegrations,
+>>>>>>> resolve conflicts
       showSendCommand,
       showRunScript,
       getFavoriteScripts,

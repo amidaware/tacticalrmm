@@ -244,10 +244,13 @@
                                 </q-item-section>
                             </q-item>
                             <q-separator inset/>
+<<<<<<< HEAD
                             <q-item-label header>PURCHASING</q-item-label>
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
 =======
 <q-separator inset/>
+=======
+>>>>>>> implement q.loading and bitdefender component work
                             <q-item-label header>PURCHASING</q-item-label>
 >>>>>>> more reorganization of unused files/folders and list formatting
                             <q-item dense>
@@ -576,6 +579,7 @@
             const monthlyDepreciation = ref("")
             const currentValue = ref("")
             const difference = ref("")
+<<<<<<< HEAD
 
 =======
             const monthlyDepreciation = ref("")
@@ -588,6 +592,11 @@
 =======
 
 >>>>>>> checkin/checkout and delete asset
+=======
+
+            function getHardware() {
+                $q.loading.show()
+>>>>>>> implement q.loading and bitdefender component work
                 axios
                     .get(`/snipeit/hardware/`, { params: { status: 'All' } })
                     .then(r => {
@@ -612,6 +621,7 @@
                         do {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                             for (let hardwareObj of r.data.rows) {
                                 snipeITAssetsModelNameNumber.push(hardwareObj.model.name + " " + hardwareObj.model_number)
                                 snipeITAssetsModelNumber.push(hardwareObj.model_number)
@@ -620,6 +630,8 @@
 =======
                             // for (let hardwareObj of r.data.rows) {
 >>>>>>> checkin/checkout and delete asset
+=======
+>>>>>>> implement q.loading and bitdefender component work
                                 snipeITAssetsModelNameNumber.push(r.data.rows[i].model.name + " " + r.data.rows[i].model_number)
                                 snipeITAssetsModelNumber.push(r.data.rows[i].model_number)
                                 snipeITAssetTags.push(r.data.rows[i].asset_tag)
@@ -673,11 +685,15 @@
                                     tab.value = 'asset'
                                     foundAsset.value = true
                                     $q.loading.hide()
+<<<<<<< HEAD
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+>>>>>>> implement q.loading and bitdefender component work
                                     return;
                                 } else {
                                     foundAsset.value = false
                                 }
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
                             }
@@ -693,6 +709,11 @@
                         } while (i < r.data.rows.length);
                         $q.loading.hide()
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                            i++;
+                        } while (i < r.data.rows.length);
+                        $q.loading.hide()
+>>>>>>> implement q.loading and bitdefender component work
                         notifyError("Could not find a " + props.agent.hostname + " asset by the same name and model number in Snipe-IT")
                         addAsset()
 
@@ -700,10 +721,14 @@
                     .catch(e => {
                         console.log(e)
 <<<<<<< HEAD
+<<<<<<< HEAD
                     });
 =======
                 });
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+                });
+>>>>>>> implement q.loading and bitdefender component work
             }
 
             function addAsset() {

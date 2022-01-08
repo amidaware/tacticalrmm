@@ -193,9 +193,13 @@
       const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
       const $q = useQuasar();
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+
+>>>>>>> implement q.loading and bitdefender component work
       const assetName = ref("")
       const companyOptions = ref([])
       const assetCompany = ref("")
@@ -225,9 +229,13 @@
 
       function getCompanies() {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         $q.loading.show()
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+        $q.loading.show()
+>>>>>>> implement q.loading and bitdefender component work
         axios
           .get(`/snipeit/companies/`)
           .then(r => {
@@ -276,9 +284,13 @@
               assetStatusOptions.value.push(statusObj)
             }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
             $q.loading.hide()
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+            $q.loading.hide()
+>>>>>>> implement q.loading and bitdefender component work
           })
           .catch(e => {
             console.log(e.response.data)
@@ -287,9 +299,13 @@
 
       function getModels() {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         $q.loading.show()
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+        $q.loading.show()
+>>>>>>> implement q.loading and bitdefender component work
         axios
           .get(`/snipeit/models/`)
           .then(r => {
@@ -320,9 +336,13 @@
               assetCategoryOptions.value.push(assetCategoryObj)
               }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
               $q.loading.hide()
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+              $q.loading.hide()
+>>>>>>> implement q.loading and bitdefender component work
           })
           .catch(e => {
               console.log(e.response.data)
@@ -374,9 +394,13 @@
 
       function addAsset(){
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         $q.loading.show()
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+        $q.loading.show()
+>>>>>>> implement q.loading and bitdefender component work
         let data = {
           asset_tag: assetTag.value,
           status_id: assetStatus.value.value,
@@ -397,9 +421,13 @@
             onDialogOK()
           }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
           $q.loading.hide()
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+          $q.loading.hide()
+>>>>>>> implement q.loading and bitdefender component work
         })
         .catch(e => {
           console.log(e)

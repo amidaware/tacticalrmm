@@ -91,7 +91,7 @@ class AutomatedTask(BaseAuditModel):
     # deprecated
     timeout = models.PositiveIntegerField(blank=True, default=120)
 
-    # format -> {"actions": [{"type": "script", "pk": 1, "shell": "powershell", "timeout": 90, "script_args": []}, {"type": "cmd", "command": "whoami"}]}
+    # format -> {"actions": [{"type": "script", "script": 1, "name": "Script Name", "timeout": 90, "script_args": []}, {"type": "cmd", "command": "whoami", "timeout": 90}]}
     actions = JSONField(default=list)
     assigned_check = models.ForeignKey(
         "checks.Check",

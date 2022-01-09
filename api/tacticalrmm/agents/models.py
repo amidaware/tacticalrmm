@@ -926,7 +926,7 @@ class AgentCustomField(models.Model):
     )
 
     def __str__(self):
-        return self.field
+        return self.field.name
 
     @property
     def value(self):

@@ -3,7 +3,7 @@
 set -e
 
 : "${DEV:=0}"
-: "${NATS_CONFIG_CHECK_INTERVAL:=5}"
+: "${NATS_CONFIG_CHECK_INTERVAL:=1}"
 
 if [ "${DEV}" = 1 ]; then
   NATS_CONFIG=/workspace/api/tacticalrmm/nats-rmm.conf

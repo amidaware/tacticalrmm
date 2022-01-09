@@ -119,9 +119,13 @@
               id: id,
               name: name,
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
               integration: integration
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+              integration: integration
+>>>>>>> allow Meraki integration dashboard at client level as well as agent
             }
           }) 
             .onOk(() => {
@@ -135,9 +139,13 @@
               id: id,
               name: name,
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
               integration: integration
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+              integration: integration
+>>>>>>> allow Meraki integration dashboard at client level as well as agent
             },
           })
             .onOk(() => {

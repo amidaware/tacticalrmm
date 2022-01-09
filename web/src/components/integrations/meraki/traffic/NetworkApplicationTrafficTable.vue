@@ -1,5 +1,8 @@
 <template>
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> allow Meraki integration dashboard at client level as well as agent
   <div class="q-pb-md q-pl-md q-gutter-sm">
     <q-breadcrumbs>
       <q-breadcrumbs-el icon="home" class="text-black" />
@@ -9,8 +12,11 @@
       <q-breadcrumbs-el label="Applications" />
     </q-breadcrumbs>
   </div>
+<<<<<<< HEAD
 =======
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+>>>>>>> allow Meraki integration dashboard at client level as well as agent
   <q-table :rows="rows" :columns="columns" row-key="name" v-model:pagination="pagination"
     :visible-columns="applicationTrafficColumnsVisible" :loading="isLoading" :filter="filter">
     <template v-slot:loading v-model="isLoading">

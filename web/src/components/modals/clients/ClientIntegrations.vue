@@ -18,7 +18,7 @@
 
                         <template v-slot:after>
                             <q-card-section class="row items-center q-pb-none">
-                                <div class="text-h6">{{ agent.hostname }} Integrations</div>
+                                <div class="text-h6">{{ node.label }} Integrations</div>
                                 <q-space />
                                 <q-btn icon="close" flat round dense v-close-popup />
                             </q-card-section>
@@ -30,17 +30,11 @@
                             transition-prev="jump-up"
                             transition-next="jump-up"
                             >
-                            <q-tab-panel class="q-px-none" name="Bitdefender GravityZone">
-                                <Bitdefender :agent="agent"/>
-                            </q-tab-panel>
 
                             <q-tab-panel  class="q-px-none" name="Cisco Meraki">
-                                <Meraki :agent="agent" />
+                                <Meraki :node="node" />
                             </q-tab-panel>
 
-                            <q-tab-panel  class="q-px-none" name="Snipe-IT">
-                                <SnipeIT :agent="agent"/>
-                            </q-tab-panel>
                             </q-tab-panels>
                         </template>
                     </q-splitter>
@@ -54,15 +48,13 @@
     import { ref, computed, watch, onMounted } from "vue";
     import { useQuasar, useDialogPluginComponent, date } from "quasar";
     import { notifySuccess, notifyError, notifyWarning } from "@/utils/notify";
-    import Bitdefender from "@/components/integrations/bitdefender/Bitdefender";
-    import SnipeIT from "@/components/integrations/snipeit/SnipeIT";
     import Meraki from "@/components/integrations/meraki/Meraki";
 
     export default {
-        name: "AgentIntegrations",
+        name: "ClientIntegrations",
         emits: [...useDialogPluginComponent.emits],
-        components: {Bitdefender, SnipeIT, Meraki},
-        props: ['agent', 'integrations'],
+        components: {Meraki},
+        props: ['node', 'integrations'],
 
         setup(props) {
             const { dialogRef, onDialogHide } = useDialogPluginComponent();
@@ -71,14 +63,8 @@
             const integrationTab = ref("")
 
             watch(integrationTab, (selection, prevSelection) => {
-                if (selection === 'Bitdefender GravityZone') {
-                    integrationTab.value = 'Bitdefender GravityZone'
-
-                }else if (selection === 'Cisco Meraki'){
+                if (selection === 'Cisco Meraki') {
                     integrationTab.value = 'Cisco Meraki'
-
-                }else if (selection === 'Snipe-IT'){
-                    integrationTab.value = 'Snipe-IT'
                 }
             })
 

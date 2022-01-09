@@ -115,13 +115,16 @@
       let menuLoading = ref(false);
 
       function getOrganizations() {
-        useMeta({ title: `Cisco Meraki | Tactical RMM Integration Dashboard` });
         menuLoading.value = true;
         axios
           .get(`/meraki/organizations/`)
           .then(r => {
             organizations.value = r.data;
             menuLoading.value = false;
+            if(r.data.errors){
+              notifyError(r.data.errors[0])
+            }
+            
           })
           .catch(e => { });
       }

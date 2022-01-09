@@ -141,10 +141,14 @@ class GetAssetCheckout(APIView):
             "id": asset_id,
             "checkout_to_type": request.data['checkout_to_type'],
 <<<<<<< HEAD
+<<<<<<< HEAD
             "assigned_user": 3,
 =======
             "assigned_user": request.data['assigned_user'],
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+            "assigned_user": request.data['assigned_user'],
+>>>>>>> allow Meraki integration dashboard at client level as well as agent
             "checkout_at": request.data['checkout_at'],
             "expected_checkin": request.data['expected_checkin'],
             "note": request.data['note']

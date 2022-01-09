@@ -66,7 +66,11 @@
       </q-item-section>
       <q-item-section>Integrations</q-item-section>
 <<<<<<< HEAD
+<<<<<<< HEAD
     </q-item>
+=======
+    </q-item> 
+>>>>>>> allow Meraki integration dashboard at client level as well as agent
 
 <<<<<<< HEAD
 <<<<<<< HEAD

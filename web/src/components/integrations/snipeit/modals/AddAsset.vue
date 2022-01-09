@@ -35,6 +35,7 @@
         </q-step>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         <q-step :name="3" title="Confirm" icon="create_new_folder" :done="step > 3">
           <q-list dense>
             <q-item>
@@ -64,6 +65,8 @@
             </q-item>
           </q-list>
 =======
+=======
+>>>>>>> allow Meraki integration dashboard at client level as well as agent
         <q-step :name="3" title="Review & Add" icon="create_new_folder" :done="step > 3">
                         <q-list>
                             <q-item dense>
@@ -156,17 +159,24 @@
                                 </q-item-section>
                             </q-item>
                         </q-list>
+<<<<<<< HEAD
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+>>>>>>> allow Meraki integration dashboard at client level as well as agent
         </q-step>
 
         <template v-slot:navigation>
           <q-stepper-navigation>
             <q-btn v-if="step != 3" @click="$refs.stepper.next()" color="primary" label="Continue" />
 <<<<<<< HEAD
+<<<<<<< HEAD
             <q-btn v-else @click="addAsset()" color="primary" label="Finish" />
 =======
             <q-btn v-else @click="addAsset()" color="primary" label="Add" />
 >>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
+=======
+            <q-btn v-else @click="addAsset()" color="primary" label="Add" />
+>>>>>>> allow Meraki integration dashboard at client level as well as agent
             <q-btn v-if="step > 1" flat color="primary" @click="$refs.stepper.previous()" label="Back"
               class="q-ml-sm" />
           </q-stepper-navigation>

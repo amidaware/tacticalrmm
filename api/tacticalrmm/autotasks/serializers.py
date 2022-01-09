@@ -11,12 +11,77 @@ class TaskSerializer(serializers.ModelSerializer):
     schedule = serializers.ReadOnlyField()
     last_run = serializers.ReadOnlyField(source="last_run_as_timezone")
     alert_template = serializers.SerializerMethodField()
-    run_time_date = serializers.DateTimeField(format="iso-8601")
-    expire_date = serializers.DateTimeField(format="iso-8601", allow_null=True)
+    run_time_date = serializers.DateTimeField(format="iso-8601", required=False)
+    expire_date = serializers.DateTimeField(
+        format="iso-8601", allow_null=True, required=False
+    )
+
+    def validate_actions(self, value):
+
+        if not value:
+            raise serializers.ValidationError(
+                f"There must be at least one action configured"
+            )
+
+        for action in value:
+            if "type" not in action:
+                raise serializers.ValidationError(
+                    f"Each action must have a type field of either 'script' or 'cmd'"
+                )
+
+            if action["type"] == "script":
+                if "script" not in action:
+                    raise serializers.ValidationError(
+                        f"A script action type must have a 'script' field with primary key of script"
+                    )
+
+                if "script_args" not in action:
+                    raise serializers.ValidationError(
+                        f"A script action type must have a 'script_args' field with an array of arguments"
+                    )
+
+                if "timeout" not in action:
+                    raise serializers.ValidationError(
+                        f"A script action type must have a 'timeout' field"
+                    )
+
+            if action["type"] == "cmd":
+                if "command" not in action:
+                    raise serializers.ValidationError(
+                        f"A command action type must have a 'command' field"
+                    )
+
+                if "timeout" not in action:
+                    raise serializers.ValidationError(
+                        f"A command action type must have a 'timeout' field"
+                    )
+
+        return value
 
     def validate(self, data):
 
-        if "task_type" not in data:
+        # allow editing with task_type not specified
+        if self.instance and "task_type" not in data:
+
+            # remove schedule related fields from data
+            if "run_time_date" in data:
+                del data["run_time_date"]
+            if "expire_date" in data:
+                del data["expire_date"]
+            if "daily_interval" in data:
+                del data["daily_interval"]
+            if "weekly_interval" in data:
+                del data["weekly_interval"]
+            if "run_time_bit_weekdays" in data:
+                del data["run_time_bit_weekdays"]
+            if "monthly_months_of_year" in data:
+                del data["monthly_months_of_year"]
+            if "monthly_days_of_month" in data:
+                del data["monthly_days_of_month"]
+            if "monthly_weeks_of_month" in data:
+                del data["monthly_weeks_of_month"]
+            if "assigned_check" in data:
+                del data["assigned_check"]
             return data
 
         # run_time_date required
@@ -30,55 +95,64 @@ class TaskSerializer(serializers.ModelSerializer):
 
         # daily task type validation
         if data["task_type"] == "daily":
-            if not data["daily_interval"]:
+            if "daily_interval" not in data or not data["daily_interval"]:
                 raise serializers.ValidationError(
                     f"daily_interval is required for task_type '{data['task_type']}'"
                 )
 
         # weekly task type validation
-        if data["task_type"] == "weekly":
-            if not data["weekly_interval"]:
+        elif data["task_type"] == "weekly":
+            if "weekly_interval" not in data or not data["weekly_interval"]:
                 raise serializers.ValidationError(
                     f"weekly_interval is required for task_type '{data['task_type']}'"
                 )
 
-            if not data["run_time_bit_weekdays"]:
+            if "run_time_bit_weekdays" not in data or not data["run_time_bit_weekdays"]:
                 raise serializers.ValidationError(
                     f"run_time_bit_weekdays is required for task_type '{data['task_type']}'"
                 )
 
         # monthly task type validation
-        if data["task_type"] == "monthly":
-            if not data["monthly_months_of_year"]:
+        elif data["task_type"] == "monthly":
+            if (
+                "monthly_months_of_year" not in data
+                or not data["monthly_months_of_year"]
+            ):
                 raise serializers.ValidationError(
                     f"monthly_months_of_year is required for task_type '{data['task_type']}'"
                 )
 
-            if not data["monthly_days_of_month"]:
+            if "monthly_days_of_month" not in data or not data["monthly_days_of_month"]:
                 raise serializers.ValidationError(
                     f"monthly_days_of_month is required for task_type '{data['task_type']}'"
                 )
 
         # monthly day of week task type validation
-        if data["task_type"] == "monthlydow":
-            if not data["monthly_months_of_year"]:
+        elif data["task_type"] == "monthlydow":
+            if (
+                "monthly_months_of_year" not in data
+                or not data["monthly_months_of_year"]
+            ):
                 raise serializers.ValidationError(
                     f"monthly_months_of_year is required for task_type '{data['task_type']}'"
                 )
 
-            if not data["monthly_weeks_of_month"]:
+            if (
+                "monthly_weeks_of_month" not in data
+                or not data["monthly_weeks_of_month"]
+            ):
                 raise serializers.ValidationError(
                     f"monthly_weeks_of_month is required for task_type '{data['task_type']}'"
                 )
 
-            if not data["run_time_bit_weekdays"]:
+            if "run_time_bit_weekdays" not in data or not data["run_time_bit_weekdays"]:
                 raise serializers.ValidationError(
                     f"run_time_bit_weekdays is required for task_type '{data['task_type']}'"
                 )
 
         # check failure task type validation
-        if data["task_type"] == "checkfailure":
-            if not data["assigned_check"]:
+        elif data["task_type"] == "checkfailure":
+            if "assigned_check" not in data or not data["assigned_check"]:
                 raise serializers.ValidationError(
                     f"assigned_check is required for task_type '{data['task_type']}'"
                 )

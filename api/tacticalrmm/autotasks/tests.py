@@ -57,6 +57,11 @@ class TestAutotaskViews(TacticalTestCase):
         policy = baker.make("automation.Policy")
         check = baker.make_recipe("checks.diskspace_check", agent=agent)
 
+        actions = [
+            {"type": "cmd", "command": "command", "timeout": 30},
+            {"type": "script", "script": script.id, "script_args": [], "timeout": 90},
+        ]
+
         # test invalid agent
         data = {
             "agent": "13kfs89as9d89asd8f98df8df8dfhdf",
@@ -65,36 +70,126 @@ class TestAutotaskViews(TacticalTestCase):
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 404)
 
-        # test add task to agent
+        # test add task without actions
         data = {
             "agent": agent.agent_id,
             "name": "Test Task Scheduled with Assigned Check",
-            "run_time_days": ["Sunday", "Monday", "Friday"],
-            "run_time_minute": "10:00",
-            "timeout": 120,
+            "run_time_days": 56,
             "enabled": True,
-            "script": script.id,
-            "script_args": None,
-            "task_type": "scheduled",
-            "assigned_check": check.id,
+            "actions": [],
+            "task_type": "manual",
+        }
+
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 400)
+
+        # test add manual task_type to agent
+        data = {
+            "agent": agent.agent_id,
+            "name": "Manual",
+            "enabled": True,
+            "actions": actions,
+            "task_type": "manual",
         }
 
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
         create_win_task_schedule.assert_called()
+        create_win_task_schedule.reset_mock()
+
+        # test add daily task_type to agent
+        data = {
+            "agent": agent.agent_id,
+            "name": "Daily",
+            "enabled": True,
+            "actions": actions,
+            "task_type": "daily",
+            "daily_interval": 1,
+            "run_time_date": djangotime.now(),
+            "repetition_interval": "30M",
+            "repetition_duration": "1D",
+            "random_task_delay": "5M",
+        }
+
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        # test add weekly task_type to agent
+        data = {
+            "agent": agent.agent_id,
+            "name": "Weekly",
+            "enabled": True,
+            "actions": actions,
+            "task_type": "weekly",
+            "weekly_interval": 2,
+            "run_time_days": 26,
+            "run_time_date": djangotime.now(),
+            "expire_date": djangotime.now(),
+            "repetition_interval": "30S",
+            "repetition_duration": "1H",
+            "random_task_delay": "5M",
+            "task_instance_policy": 2,
+        }
+
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        create_win_task_schedule.assert_called()
+        create_win_task_schedule.reset_mock()
+
+        # test add monthly task_type to agent
+        data = {
+            "agent": agent.agent_id,
+            "name": "Monthly",
+            "enabled": True,
+            "actions": actions,
+            "task_type": "monthly",
+            "monthly_months_of_year": 56,
+            "monthly_days_of_month": 350,
+            "run_time_date": djangotime.now(),
+            "expire_date": djangotime.now(),
+            "repetition_interval": "30S",
+            "repetition_duration": "1H",
+            "random_task_delay": "5M",
+        }
+
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        create_win_task_schedule.assert_called()
+        create_win_task_schedule.reset_mock()
+
+        # test add monthly day-of-week task_type to agent
+        data = {
+            "agent": agent.agent_id,
+            "name": "Monthly",
+            "enabled": True,
+            "actions": actions,
+            "task_type": "monthlydow",
+            "monthly_months_of_year": 500,
+            "monthly_weeks_of_month": 4,
+            "run_time_days": 15,
+            "run_time_date": djangotime.now(),
+            "expire_date": djangotime.now(),
+            "repetition_interval": "30S",
+            "repetition_duration": "1H",
+            "random_task_delay": "5M",
+        }
+
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+        create_win_task_schedule.assert_called()
+        create_win_task_schedule.reset_mock()
 
         # test add task to policy
         data = {
             "policy": policy.id,  # type: ignore
             "name": "Test Task Manual",
-            "run_time_days": [],
-            "timeout": 120,
             "enabled": True,
-            "script": script.id,
-            "script_args": None,
             "task_type": "manual",
-            "assigned_check": None,
+            "actions": actions,
         }
 
         resp = self.client.post(url, data, format="json")
@@ -120,10 +215,10 @@ class TestAutotaskViews(TacticalTestCase):
 
         self.check_not_authenticated("get", url)
 
-    @patch("autotasks.tasks.enable_or_disable_win_task.delay")
+    @patch("autotasks.tasks.create_win_task_schedule.delay")
     @patch("automation.tasks.update_policy_autotasks_fields_task.delay")
     def test_update_autotask(
-        self, update_policy_autotasks_fields_task, enable_or_disable_win_task
+        self, update_policy_autotasks_fields_task, create_win_task
     ):
         # setup data
         agent = baker.make_recipe("agents.agent")
@@ -142,14 +237,14 @@ class TestAutotaskViews(TacticalTestCase):
 
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        enable_or_disable_win_task.not_called()  # type: ignore
+        create_win_task.not_called()  # type: ignore
 
         # test editing task
         data = {"enabled": False}
 
         resp = self.client.put(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        enable_or_disable_win_task.assert_called_with(pk=agent_task.id)  # type: ignore
+        create_win_task.assert_called_with(pk=agent_task.id)  # type: ignore
 
         url = f"{base_url}/{policy_task.id}/"  # type: ignore
 

@@ -510,11 +510,14 @@
                 />
                 <div class="col-6"></div>
                 <q-checkbox
+                  :disable="!state.expire_date"
                   class="col-6 q-pa-sm"
                   dense
                   v-model="state.remove_if_not_scheduled"
                   label="Delete task if not scheduled for 30 days"
-                />
+                >
+                  <q-tooltip>Must set an expire date</q-tooltip>
+                </q-checkbox>
                 <div class="col-6"></div>
                 <q-checkbox
                   :disable="state.task_type === 'runonce'"

@@ -360,7 +360,9 @@ class AutomatedTask(BaseAuditModel):
             "multiple_instances": self.task_instance_policy
             if self.task_instance_policy
             else 0,
-            "delete_expired_task_after": self.remove_if_not_scheduled,
+            "delete_expired_task_after": self.remove_if_not_scheduled
+            if self.expire_date
+            else False,
             "start_when_available": self.run_asap_after_missed
             if self.task_type != "runonce"
             else True,

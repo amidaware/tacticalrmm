@@ -1,5 +1,6 @@
 import base64
 from django.core.management.base import BaseCommand
+from django.utils.timezone import make_aware
 import datetime as dt
 
 from logs.models import PendingAction
@@ -43,7 +44,9 @@ class Command(BaseCommand):
             # convert scheduled task_type
             if task.task_type == "scheduled":
                 task.task_type = "daily"
-                task.run_time_date = dt.datetime.strptime(task.run_time_minute, "%H:%M")
+                task.run_time_date = make_aware(
+                    dt.datetime.strptime(task.run_time_minute, "%H:%M")
+                )
                 task.daily_interval = 1
                 edited = True
 

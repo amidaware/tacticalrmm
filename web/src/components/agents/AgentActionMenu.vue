@@ -390,7 +390,9 @@ export default {
 
     async function pingAgent(agent) {
       try {
+        $q.loading.show();
         const data = await sendAgentPing(agent.agent_id);
+        $q.loading.hide();
         if (data.status === "offline") {
           $q.dialog({
             title: "Agent offline",
@@ -411,6 +413,7 @@ export default {
           notifyError("Something went wrong");
         }
       } catch (e) {
+        $q.loading.hide();
         console.error(e);
       }
     }

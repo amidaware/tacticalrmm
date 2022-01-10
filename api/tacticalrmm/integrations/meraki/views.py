@@ -123,6 +123,7 @@ class GetClient(APIView):
 
     def get(self, request, pk, mac, format=None):
         integration = Integration.objects.get(name="Cisco Meraki")
+
         try:
             result = requests.get(
                 integration.base_url + "/organizations/" + pk + "/clients/search?mac=" + mac,

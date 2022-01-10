@@ -129,11 +129,10 @@
         </q-step>
 
         <template v-slot:navigation>
-          <q-stepper-navigation>
-            <q-btn v-if="step != 3" @click="$refs.stepper.next()" color="primary" label="Continue" />
-            <q-btn v-else @click="addAsset()" color="primary" label="Add" />
-            <q-btn v-if="step > 1" flat color="primary" @click="$refs.stepper.previous()" label="Back"
-              class="q-ml-sm" />
+          <q-stepper-navigation align="right">
+            <q-btn flat v-if="step > 1" color="primary" @click="$refs.stepper.previous()" label="Back"/>
+            <q-btn flat v-if="step != 3" @click="$refs.stepper.next()" color="primary" label="Next" />
+            <q-btn flat v-else @click="addAsset()" color="primary" label="Add" />
           </q-stepper-navigation>
         </template>
       </q-stepper>

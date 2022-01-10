@@ -46,6 +46,15 @@
                             </q-item>
                             <q-item dense>
                                 <q-item-section top>
+                                    <q-item-label>Asset Tag</q-item-label>
+                                </q-item-section>
+                                <q-item-section side top>
+                                    {{asset.asset_tag}}
+                                    
+                                </q-item-section>
+                            </q-item>
+                            <q-item dense v-if="asset.model">
+                                <q-item-section top>
                                     <q-item-label>Model Name</q-item-label>
                                 </q-item-section>
 
@@ -72,7 +81,7 @@
                                     {{asset.serial}}
                                 </q-item-section>
                             </q-item>
-                            <q-item dense>
+                            <q-item dense v-if="asset.status_label">
                                 <q-item-section top>
                                     <q-item-label>Status</q-item-label>
                                 </q-item-section>
@@ -82,7 +91,7 @@
                                     
                                 </q-item-section>
                             </q-item>
-                            <q-item dense>
+                            <q-item dense v-if="asset.company">
                                 <q-item-section top>
                                     <q-item-label>Company</q-item-label>
                                 </q-item-section>
@@ -102,7 +111,7 @@
                             </q-item>
                             <q-separator inset/>
                             <q-item-label header>PURCHASING</q-item-label>
-                            <q-item dense>
+                            <q-item dense v-if="asset.manufacturer">
                                 <q-item-section top>
                                     <q-item-label>Manufacturer</q-item-label>
                                 </q-item-section>
@@ -255,14 +264,16 @@
                     .then(r => {
                         const tacticalAgentModels = []
                         const tacticalAgentHostname = []
+                        const tacticalAgentSerial = []
                         const snipeITAssetsModelNameNumber = []
                         const snipeITAssetsModelNumber = []
                         const snipeITAssetTags = []
                         const snipeITAssetHostnames = []
+                        const snipeITAssetSerial = []
                         tacticalAgentModels.push(props.agent.wmi_detail.comp_sys[0][0].Model)
                         tacticalAgentModels.push(props.agent.wmi_detail.comp_sys_prod[0][0].Name)
                         tacticalAgentHostname.push(props.agent.hostname)
-
+                        tacticalAgentSerial.push(props.agent.wmi_detail.comp_sys_prod[0][0].IdentifyingNumber)
                         let i = 0;
                         do {
                                 snipeITAssetsModelNameNumber.push(r.data.rows[i].model.name + " " + r.data.rows[i].model_number)
@@ -278,8 +289,10 @@
                                 const assetTag = tacticalAgentModels.filter(element => snipeITAssetTags.includes(element))
                                 //Match on hostname
                                 const hostnameMatch = tacticalAgentHostname.filter(element => snipeITAssetHostnames.includes(element))
+                                //Match on serial
+                                const serial = tacticalAgentSerial.filter(element => snipeITAssetTags.includes(element))
 
-                                if (modelNumber.length > 0 && hostnameMatch.length > 0 || modelNameNumber.length > 0 && hostnameMatch.length > 0 || modelNumber.length > 0 && modelNameNumber.length > 0 && hostnameMatch.length > 0 || assetTag.length > 0 && hostnameMatch.length > 0) {
+                                if (modelNumber.length > 0 && hostnameMatch.length > 0 || modelNameNumber.length > 0 && hostnameMatch.length > 0 || modelNumber.length > 0 && modelNameNumber.length > 0 && hostnameMatch.length > 0 || assetTag.length > 0 && hostnameMatch.length > 0 || serial.length > 0 && hostnameMatch.length > 0) {
                                     if (r.data.rows[i].eol && r.data.rows[i].purchase_date){
                                         const newDate = new Date()
                                         const eolDate = r.data.rows[i].eol.date

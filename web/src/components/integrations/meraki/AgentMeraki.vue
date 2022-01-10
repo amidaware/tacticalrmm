@@ -102,7 +102,7 @@
           .then(r => {
             organizations.value = r.data;
             $q.loading.show({
-              message: 'Searching ' + organizations.value[0].name + ' for any associated Tactical RMM agent MAC addresses... This may take a few minutes.'
+              message: 'Searching ' + organizations.value[0].name + ' for any ' + props.agent.hostname +' associated MAC addresses... This may take a few minutes.'
             })
 
             if (r.data.errors) {
@@ -117,17 +117,20 @@
         const merakiClientsArray = []
         for (let i = 0; i < props.agent.wmi_detail.network_adapter.length; i++) {
           for (let obj of props.agent.wmi_detail.network_adapter[i]) {
-            const macStr = String(obj.MACAddress)
-            const macs = macStr.replaceAll(":", "").toLowerCase()
-            tacticalAgentMacs.value.push(macs)
+            if(obj.MACAddress && obj.NetEnabled){
+              console.log(obj)
+              const macStr = String(obj.MACAddress)
+              const macs = macStr.replaceAll(":", "").toLowerCase()
+              tacticalAgentMacs.value.push(macs)
+            }
+
           }
         }
 
         for (let i = 0; i < tacticalAgentMacs.value.length; i++) {
-          // console.log(tacticalAgentMacs.value[i])
           if (tacticalAgentMacs.value[i]) {
 
-            merakiClientsArray.push(await axios.get(`/meraki/` + organizations.value[0].id + `/client/` + tacticalAgentMacs.value[i] + `/`).catch(e => { notifyError("API errored out")}))
+            merakiClientsArray.push(await axios.get(`/meraki/` + organizations.value[0].id + `/client/` + tacticalAgentMacs.value[i] + `/`).catch(e => { $q.loading.hide()}))
 
           }
 
@@ -139,7 +142,6 @@
 
         for (let i = 0; i < resolvedMerakiClients.length; i++) {
           if (resolvedMerakiClients[i].data) {
-            console.log(resolvedMerakiClients[i].data.records)
             let clientObj = {
               id: resolvedMerakiClients[i].data.clientId,
               mac: resolvedMerakiClients[i].data.mac,
@@ -152,8 +154,10 @@
             rows.value.push(clientObj)
           }
         }
-
-      $q.loading.hide()
+        if(rows.value.length < 1){
+           notifyError('Did not find any associated MAC addresses in your Cisco Meraki organization')
+        }
+        $q.loading.hide()
       }
       
       onMounted(() => {

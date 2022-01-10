@@ -26,7 +26,16 @@
               />
             </q-card-section>
             <q-card-section>
-              <q-checkbox dense label="Collector Task" v-model="collector" class="q-pb-sm" />
+              <q-checkbox
+                dense
+                label="Collector Task"
+                v-model="collector"
+                class="q-pb-sm"
+                @update:model-value="
+                  state.custom_field = null;
+                  state.collector_all_output = false;
+                "
+              />
               <tactical-dropdown
                 v-if="collector"
                 :rules="[val => !!val || '*Required']"
@@ -567,7 +576,7 @@
         />
         <q-btn
           v-else
-          label="Add Task"
+          :label="task ? 'Edit Task' : 'Add Task'"
           color="primary"
           @click="validateStep($refs.taskDetailForm, $refs.stepper)"
           :loading="loading"
@@ -875,10 +884,8 @@ export default {
       }
     );
 
-    watch(collector, (newValue, oldValue) => {
-      task.value.custom_field = null;
-      task.value.collector_all_ouput = false;
-    });
+    // check the collector box when editing task and custom field is set
+    if (props.task && props.task.custom_field) collector.value = true;
 
     // stepper logic
     const step = ref(1);

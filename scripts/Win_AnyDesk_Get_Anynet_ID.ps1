@@ -6,7 +6,9 @@ foreach ($Path in $Paths) {
     }
 }
 
-$ConfigPath = $GoodPath + "\AnyDesk\system.conf"
+$SystemFile = get-childitem -Path $GoodPath -Filter "system.conf" -Recurse -ErrorAction SilentlyContinue
+
+$ConfigPath = $SystemFile.FullName
 
 $ResultsIdSearch = Select-String -Path $ConfigPath -Pattern ad.anynet.id
 

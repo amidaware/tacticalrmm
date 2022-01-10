@@ -32,6 +32,7 @@ TASK_TYPE_CHOICES = [
     ("checkfailure", "On Check Failure"),
     ("manual", "Manual"),
     ("runonce", "Run Once"),
+    ("scheduled", "Scheduled"),  # deprecated
 ]
 
 SYNC_STATUS_CHOICES = [

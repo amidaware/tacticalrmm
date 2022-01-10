@@ -1,5 +1,6 @@
 import base64
 from django.core.management.base import BaseCommand
+import datetime as dt
 
 from logs.models import PendingAction
 from scripts.models import Script
@@ -35,8 +36,18 @@ class Command(BaseCommand):
             # script.hash_script_body()  # also saves script
             script.save(update_fields=["script_body"])
 
-        # convert autotask actions to the new format
+        # convert autotask to the new format
         for task in AutomatedTask.objects.all():
+            edited = False
+
+            # convert scheduled task_type
+            if task.task_type == "scheduled":
+                task.task_type = "daily"
+                task.run_time_date = dt.datetime.strptime(task.run_time_minute, "%H:%M")
+                task.daily_interval = 1
+                edited = True
+
+            # convert actions
             if not task.actions:
                 task.actions = [
                     {
@@ -47,4 +58,7 @@ class Command(BaseCommand):
                         "name": task.script.name,
                     }
                 ]
+                edited = True
+
+            if edited:
                 task.save()

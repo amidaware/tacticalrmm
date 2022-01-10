@@ -58,11 +58,17 @@ SSH into your server and run:
 From the web UI, click **Settings > User Administration** and then right-click on a user:
 ![reset2fa](images/reset2fa.png)
 
-Or from the command line:
+???+ note "Reset Password or 2FA token"
 
-```bash
-/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py reset_2fa <username>
-```
+    === ":material-ubuntu: standard"
+
+        ```bash
+        /rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py reset_2fa <username>
+        ```
+    === ":material-docker: docker"
+        ```bash
+        docker exec -it trmm-backend /bin/bash
+        ```
 
 Then simply log out of the web UI and next time the user logs in they will be redirected to the 2FA setup page which will present a barcode to be scanned with the Authenticator app.
 

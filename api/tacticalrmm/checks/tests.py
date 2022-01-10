@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from django.utils import timezone as djangotime
+from django.conf import settings
 from model_bakery import baker
 
 from checks.models import CheckHistory
@@ -215,13 +216,7 @@ class TestCheckViews(TacticalTestCase):
 
     @patch("agents.models.Agent.nats_cmd")
     def test_run_checks(self, nats_cmd):
-        agent = baker.make_recipe("agents.agent", version="1.4.1")
-        agent_b4_141 = baker.make_recipe("agents.agent", version="1.4.0")
-
-        url = f"{base_url}/{agent_b4_141.agent_id}/run/"
-        r = self.client.post(url)
-        self.assertEqual(r.status_code, 200)
-        nats_cmd.assert_called_with({"func": "runchecks"}, wait=False)
+        agent = baker.make_recipe("agents.agent", version=settings.LATEST_AGENT_VER)
 
         nats_cmd.reset_mock()
         nats_cmd.return_value = "busy"

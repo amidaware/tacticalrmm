@@ -335,14 +335,13 @@ def send_raw_cmd(request, agent_id):
         },
     }
 
-    if pyver.parse(agent.version) >= pyver.parse("1.6.0"):
-        hist = AgentHistory.objects.create(
-            agent=agent,
-            type="cmd_run",
-            command=request.data["cmd"],
-            username=request.user.username[:50],
-        )
-        data["id"] = hist.pk
+    hist = AgentHistory.objects.create(
+        agent=agent,
+        type="cmd_run",
+        command=request.data["cmd"],
+        username=request.user.username[:50],
+    )
+    data["id"] = hist.pk
 
     r = asyncio.run(agent.nats_cmd(data, timeout=timeout + 2))
 
@@ -613,15 +612,13 @@ def run_script(request, agent_id):
         debug_info={"ip": request._client_ip},
     )
 
-    history_pk = 0
-    if pyver.parse(agent.version) >= pyver.parse("1.6.0"):
-        hist = AgentHistory.objects.create(
-            agent=agent,
-            type="script_run",
-            script=script,
-            username=request.user.username[:50],
-        )
-        history_pk = hist.pk
+    hist = AgentHistory.objects.create(
+        agent=agent,
+        type="script_run",
+        script=script,
+        username=request.user.username[:50],
+    )
+    history_pk = hist.pk
 
     if output == "wait":
         r = agent.run_script(

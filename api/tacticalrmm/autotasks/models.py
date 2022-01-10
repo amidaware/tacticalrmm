@@ -484,9 +484,7 @@ class AutomatedTask(BaseAuditModel):
                     },
                 }
 
-                if self.run_asap_after_missed and pyver.parse(
-                    agent.version
-                ) >= pyver.parse("1.4.7"):
+                if self.run_asap_after_missed:
                     nats_data["schedtaskpayload"]["run_asap_after_missed"] = True
 
                 if self.remove_if_not_scheduled:

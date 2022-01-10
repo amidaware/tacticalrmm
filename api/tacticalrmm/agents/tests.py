@@ -626,7 +626,7 @@ class TestAgentViews(TacticalTestCase):
     @patch("agents.tasks.run_script_email_results_task.delay")
     @patch("agents.models.Agent.run_script")
     def test_run_script(self, run_script, email_task):
-        from .models import AgentCustomField, Note
+        from .models import AgentCustomField, Note, AgentHistory
         from clients.models import ClientCustomField, SiteCustomField
 
         run_script.return_value = "ok"
@@ -643,8 +643,9 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
         run_script.assert_called_with(
-            scriptpk=script.pk, args=[], timeout=18, wait=True, history_pk=0
+            scriptpk=script.pk, args=[], timeout=18, wait=True, history_pk=hist.pk
         )
         run_script.reset_mock()
 
@@ -690,8 +691,9 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
         run_script.assert_called_with(
-            scriptpk=script.pk, args=["hello", "world"], timeout=25, history_pk=0
+            scriptpk=script.pk, args=["hello", "world"], timeout=25, history_pk=hist.pk
         )
         run_script.reset_mock()
 
@@ -710,12 +712,13 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
         run_script.assert_called_with(
             scriptpk=script.pk,
             args=["hello", "world"],
             timeout=25,
             wait=True,
-            history_pk=0,
+            history_pk=hist.pk,
         )
         run_script.reset_mock()
 
@@ -737,12 +740,13 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
         run_script.assert_called_with(
             scriptpk=script.pk,
             args=["hello", "world"],
             timeout=25,
             wait=True,
-            history_pk=0,
+            history_pk=hist.pk,
         )
         run_script.reset_mock()
 
@@ -766,12 +770,13 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
         run_script.assert_called_with(
             scriptpk=script.pk,
             args=["hello", "world"],
             timeout=25,
             wait=True,
-            history_pk=0,
+            history_pk=hist.pk,
         )
         run_script.reset_mock()
 
@@ -792,12 +797,13 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
         run_script.assert_called_with(
             scriptpk=script.pk,
             args=["hello", "world"],
             timeout=25,
             wait=True,
-            history_pk=0,
+            history_pk=hist.pk,
         )
         run_script.reset_mock()
 

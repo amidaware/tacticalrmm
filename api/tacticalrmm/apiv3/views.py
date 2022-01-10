@@ -153,14 +153,6 @@ class WinUpdates(APIView):
                 ).save()
 
         agent.delete_superseded_updates()
-
-        # more superseded updates cleanup
-        if pyver.parse(agent.version) <= pyver.parse("1.4.2"):
-            for u in agent.winupdates.filter(  # type: ignore
-                date_installed__isnull=True, result="failed"
-            ).exclude(installed=True):
-                u.delete()
-
         return Response("ok")
 
 
@@ -230,8 +222,6 @@ class CheckRunner(APIView):
 
     def patch(self, request):
         check = get_object_or_404(Check, pk=request.data["id"])
-        if pyver.parse(check.agent.version) < pyver.parse("1.5.7"):
-            return notify_error("unsupported")
 
         check.last_run = djangotime.now()
         check.save(update_fields=["last_run"])

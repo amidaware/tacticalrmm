@@ -47,64 +47,20 @@
       </q-menu>
     </q-item>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-=======
->>>>>>> resolve conflicts
-=======
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
->>>>>>> resolve final conflicts
     <!-- integrations -->
     <q-item clickable v-close-popup @click="getAgentIntegrations(agent)">
       <q-item-section side>
         <q-icon size="xs" name="vertical_split" />
       </q-item-section>
       <q-item-section>Integrations</q-item-section>
-<<<<<<< HEAD
-<<<<<<< HEAD
-    </q-item>
-=======
-    </q-item> 
->>>>>>> allow Meraki integration dashboard at client level as well as agent
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
->>>>>>> massive cleanup of files and restructure of integrations design
-=======
->>>>>>> resolve conflicts
-=======
     </q-item> 
 
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
->>>>>>> resolve final conflicts
     <q-item clickable v-ripple v-close-popup @click="showSendCommand(agent)">
       <q-item-section side>
         <q-icon size="xs" name="fas fa-terminal" />
       </q-item-section>
       <q-item-section>Send Command</q-item-section>
     </q-item>
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-=======
-<<<<<<< HEAD
-=======
-
->>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
->>>>>>> massive cleanup of files and restructure of integrations design
-=======
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
->>>>>>> resolve final conflicts
     <q-item clickable v-ripple v-close-popup @click="showRunScript(agent)">
       <q-item-section side>
         <q-icon size="xs" name="fas fa-terminal" />
@@ -234,25 +190,7 @@
 </template>
 
 <script>
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
 import axios from "axios";
-=======
->>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
->>>>>>> massive cleanup of files and restructure of integrations design
-=======
-import axios from "axios";
->>>>>>> resolve conflicts
-=======
-import axios from "axios";
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-import axios from "axios";
->>>>>>> resolve final conflicts
 // composition imports
 import { ref, inject } from "vue";
 import { useStore } from "vuex";
@@ -280,21 +218,6 @@ import RebootLater from "@/components/modals/agents/RebootLater";
 import EditAgent from "@/components/modals/agents/EditAgent";
 import SendCommand from "@/components/modals/agents/SendCommand";
 import RunScript from "@/components/modals/agents/RunScript";
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-import AgentIntegrations from "@/components/modals/agents/AgentIntegrations";
-=======
->>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
->>>>>>> massive cleanup of files and restructure of integrations design
-=======
-import AgentIntegrations from "@/components/modals/agents/AgentIntegrations";
->>>>>>> resolve conflicts
-=======
-import AgentIntegrations from "@/components/modals/agents/AgentIntegrations";
->>>>>>> resolve final conflicts
 
 export default {
   name: "AgentActionMenu",
@@ -525,48 +448,6 @@ export default {
     }
     function getAgentIntegrations(agent) {
       axios
-          .get("agents/" + props.agent.agent_id + "/")
-          .then(r => {
-            let agentData = r.data
-            axios
-              .get("/integrations/")
-              .then(r => {
-                let integrations = []
-
-                if (r.data.length > 0){
-                  for(let integrationObj of r.data){
-                      if(integrationObj.enabled){
-                        integrations.push(integrationObj)
-                      }
-                    }
-                      $q.dialog({
-                      component: AgentIntegrations,
-                      componentProps: {
-                        agent: agentData,
-                        integrations: integrations,
-                      }
-                })
-                }else{
-                  notifyWarning("No integrations configured. Go to Settings > Integrations Manager");
-                  return;
-                }
-              })
-              .catch(() => {});
-                })
-          .catch((e) => {
-              console.log(e)
-          });
-    }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
->>>>>>> massive cleanup of files and restructure of integrations design
-=======
->>>>>>> resolve conflicts
-=======
-    function getAgentIntegrations(agent) {
-      axios
         .get("agents/" + agent.agent_id + "/")
         .then(r => {
           const url = router.resolve(`/integrations/agents/${agent.agent_id}`).href;
@@ -576,31 +457,11 @@ export default {
             console.log(e)
         });
     }
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
->>>>>>> resolve final conflicts
 
     return {
       // reactive data
       urlActions,
       favoriteScripts,
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-=======
-<<<<<<< HEAD
-=======
-
->>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
->>>>>>> massive cleanup of files and restructure of integrations design
-=======
->>>>>>> resolve conflicts
-=======
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
->>>>>>> resolve final conflicts
       // methods
       showEditAgent,
       showPendingActionsModal,
@@ -608,25 +469,7 @@ export default {
       runRemoteBackground,
       getURLActions,
       runURLAction,
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
       getAgentIntegrations,
-=======
->>>>>>> 2c9d413a1a0d4d3715ac77ea408c94d156899e83
->>>>>>> massive cleanup of files and restructure of integrations design
-=======
-      getAgentIntegrations,
->>>>>>> resolve conflicts
-=======
-      getAgentIntegrations,
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-      getAgentIntegrations,
->>>>>>> resolve final conflicts
       showSendCommand,
       showRunScript,
       getFavoriteScripts,

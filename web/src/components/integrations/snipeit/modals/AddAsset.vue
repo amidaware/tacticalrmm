@@ -34,39 +34,6 @@
               :rules="[(val) => !!val || '*Required']" />
         </q-step>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-        <q-step :name="3" title="Confirm" icon="create_new_folder" :done="step > 3">
-          <q-list dense>
-            <q-item>
-              <q-item-section>
-                clearTreeSelected
-              </q-item-section>
-            </q-item>
-            <q-item>
-              <q-item-section>
-                clearTreeSelected
-              </q-item-section>
-            </q-item>
-            <q-item>
-              <q-item-section>
-                clearTreeSelected
-              </q-item-section>
-            </q-item>
-            <q-item>
-              <q-item-section>
-                clearTreeSelected
-              </q-item-section>
-            </q-item>
-            <q-item>
-              <q-item-section>
-                clearTreeSelected
-              </q-item-section>
-            </q-item>
-          </q-list>
-=======
-=======
->>>>>>> allow Meraki integration dashboard at client level as well as agent
         <q-step :name="3" title="Review & Add" icon="create_new_folder" :done="step > 3">
                         <q-list>
                             <q-item dense>
@@ -159,24 +126,12 @@
                                 </q-item-section>
                             </q-item>
                         </q-list>
-<<<<<<< HEAD
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
->>>>>>> allow Meraki integration dashboard at client level as well as agent
         </q-step>
 
         <template v-slot:navigation>
           <q-stepper-navigation>
             <q-btn v-if="step != 3" @click="$refs.stepper.next()" color="primary" label="Continue" />
-<<<<<<< HEAD
-<<<<<<< HEAD
-            <q-btn v-else @click="addAsset()" color="primary" label="Finish" />
-=======
             <q-btn v-else @click="addAsset()" color="primary" label="Add" />
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-            <q-btn v-else @click="addAsset()" color="primary" label="Add" />
->>>>>>> allow Meraki integration dashboard at client level as well as agent
             <q-btn v-if="step > 1" flat color="primary" @click="$refs.stepper.previous()" label="Back"
               class="q-ml-sm" />
           </q-stepper-navigation>
@@ -202,14 +157,6 @@
     setup(props) {
       const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
       const $q = useQuasar();
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-
->>>>>>> implement q.loading and bitdefender component work
       const assetName = ref("")
       const companyOptions = ref([])
       const assetCompany = ref("")
@@ -238,14 +185,7 @@
       }
 
       function getCompanies() {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
         $q.loading.show()
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-        $q.loading.show()
->>>>>>> implement q.loading and bitdefender component work
         axios
           .get(`/snipeit/companies/`)
           .then(r => {
@@ -293,14 +233,8 @@
               }
               assetStatusOptions.value.push(statusObj)
             }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
+
             $q.loading.hide()
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-            $q.loading.hide()
->>>>>>> implement q.loading and bitdefender component work
           })
           .catch(e => {
             console.log(e.response.data)
@@ -308,14 +242,8 @@
       }
 
       function getModels() {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
+
         $q.loading.show()
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-        $q.loading.show()
->>>>>>> implement q.loading and bitdefender component work
         axios
           .get(`/snipeit/models/`)
           .then(r => {
@@ -345,14 +273,7 @@
               }
               assetCategoryOptions.value.push(assetCategoryObj)
               }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
               $q.loading.hide()
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-              $q.loading.hide()
->>>>>>> implement q.loading and bitdefender component work
           })
           .catch(e => {
               console.log(e.response.data)
@@ -386,13 +307,7 @@
             category: assetCategory.value
           }
          }).onOk(val => {
-<<<<<<< HEAD
-<<<<<<< HEAD
-           console.log(val)
-=======
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
->>>>>>> checkin/checkout and delete asset
+
               let modelObj = {
                 label: val['assetModel'],
                 value: val['assetModelID'],
@@ -403,14 +318,8 @@
       }
 
       function addAsset(){
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
+
         $q.loading.show()
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-        $q.loading.show()
->>>>>>> implement q.loading and bitdefender component work
         let data = {
           asset_tag: assetTag.value,
           status_id: assetStatus.value.value,
@@ -430,14 +339,8 @@
             notifySuccess(props.agent.hostname + " has been added as an asset to Snipe-IT")
             onDialogOK()
           }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
+
           $q.loading.hide()
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-          $q.loading.hide()
->>>>>>> implement q.loading and bitdefender component work
         })
         .catch(e => {
           console.log(e)
@@ -460,17 +363,8 @@
       })
 
       watch([assetManufacturer, assetCategory], ([manufacturer, category]) => {
-<<<<<<< HEAD
-<<<<<<< HEAD
-        console.log(manufacturer, category)
+
         if(manufacturer && category){
-          console.log()
-=======
-        if(manufacturer && category){
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-        if(manufacturer && category){
->>>>>>> checkin/checkout and delete asset
           newModelButton.value = false
         }
       })

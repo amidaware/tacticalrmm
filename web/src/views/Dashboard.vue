@@ -688,7 +688,6 @@ export default {
         .catch(() => {});
     },
     getClientIntegrations(node){
-<<<<<<< HEAD
       this.$axios
         .get("clients/" + node.id + "/")
         .then(r => {
@@ -698,30 +697,6 @@ export default {
         .catch((e) => {
             console.log(e)
         });
-=======
-      console.log(node)
-        this.$axios
-          .get("/integrations/")
-          .then(r => {
-            let integrations = []
-
-            if (r.data.length > 0){
-              for(let integrationObj of r.data){
-                  if(integrationObj.enabled && integrationObj.client_org_related){
-                    integrations.push(integrationObj)
-                  }
-                }
-            
-            }
-                                  this.$q.dialog({
-                    component: ClientIntegrations,
-                    componentProps: {
-                      node: node,
-                      integrations: integrations,
-                    }
-            })
-    })
->>>>>>> allow Meraki integration dashboard at client level as well as agent
     }
   },
   computed: {

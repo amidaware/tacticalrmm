@@ -7,15 +7,6 @@ from ..models import Integration
 
 class GetOrganizations(APIView):
     permission_classes = [IsAuthenticated]
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-    
->>>>>>> allow Meraki integration dashboard at client level as well as agent
     def get(self, request, format=None):
         integration = Integration.objects.get(name="Cisco Meraki")
 
@@ -126,8 +117,7 @@ class GetTopClients(APIView):
 
         return Response(result)
 
-<<<<<<< HEAD
-=======
+
 class GetClient(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -146,9 +136,7 @@ class GetClient(APIView):
             return Response(result)
         except ValueError:
             return Response()
-        
 
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
 class GetNetworkApplicationTraffic(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -215,11 +203,6 @@ class GetClientPolicy(APIView):
         integration = Integration.objects.get(name="Cisco Meraki")
 
         request_dict = {"devicePolicy": request.data['devicePolicy']}
-<<<<<<< HEAD
-        print(request.data)
-=======
-
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
         payload = json.dumps(request_dict, indent=4)
 
         result = requests.put(

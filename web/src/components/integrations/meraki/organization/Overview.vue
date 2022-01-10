@@ -1,21 +1,4 @@
 <template>
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> allow Meraki integration dashboard at client level as well as agent
-
-  <div class="q-pb-md q-pl-md q-gutter-sm">
-    <q-breadcrumbs>
-      <q-breadcrumbs-el icon="home" class="text-black" />
-      <q-breadcrumbs-el class="text-black" :label="organizationName" />
-      <q-breadcrumbs-el class="text-black" label="Overview" />
-    </q-breadcrumbs>
-  </div>
-<<<<<<< HEAD
-=======
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
->>>>>>> allow Meraki integration dashboard at client level as well as agent
   <q-scroll-area style="height: 230px">
     <q-inner-loading :showing="uplinksLoading" color="primary" />
     <div class="q-pb-md row justify-center q-gutter-md">

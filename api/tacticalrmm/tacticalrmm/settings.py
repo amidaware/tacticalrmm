@@ -24,11 +24,7 @@ APP_VER = "0.0.155"
 # https://github.com/wh1te909/rmmagent
 LATEST_AGENT_VER = "1.7.2"
 
-<<<<<<< HEAD
 MESH_VER = "0.9.66"
-=======
-MESH_VER = "0.9.65"
->>>>>>> massive cleanup of files and restructure of integrations design
 
 NATS_SERVER_VER = "2.6.6"
 

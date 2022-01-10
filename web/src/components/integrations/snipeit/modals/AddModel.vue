@@ -31,16 +31,7 @@
 
         setup(props) {
             const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
             const $q = useQuasar();
-
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-            const $q = useQuasar();
-
->>>>>>> implement q.loading and bitdefender component work
             const assetModel = ref("")
             const assetModelOptions = ref([])
             const addNewModel = ref(true)
@@ -51,14 +42,8 @@
             }
 
             function onOKClick() {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
+
                 $q.loading.show()
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-                $q.loading.show()
->>>>>>> implement q.loading and bitdefender component work
                 let data = {
                 model_name: assetModel.value,
                 model_number: assetModel.value,
@@ -73,14 +58,8 @@
                         notifyError(r.data.messages)
                     }else{
                         notifySuccess(r.data.messages)
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
+
                         $q.loading.hide()
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-                        $q.loading.hide()
->>>>>>> implement q.loading and bitdefender component work
                         onDialogOK({"assetModel": assetModel.value, "assetModelID": r.data.payload.id, "addNewModel":addNewModel.value})
                     }
                 })

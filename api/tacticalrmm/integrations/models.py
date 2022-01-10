@@ -7,14 +7,7 @@ class Integration(models.Model):
     configuration = models.JSONField(null=True, blank=True)
     data = models.JSONField(null=True, blank=True)
     enabled = models.BooleanField(default=False)
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
     client_org_related = models.BooleanField(default=False)
->>>>>>> 5a541b0209a0de11b20c5d153af1efa9333fd4ab
-=======
-    client_org_related = models.BooleanField(default=False)
->>>>>>> allow Meraki integration dashboard at client level as well as agent
 
     def __str__(self):
         return self.name

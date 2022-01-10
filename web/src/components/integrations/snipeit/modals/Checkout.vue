@@ -142,38 +142,15 @@
             function checkout(){
                 let data = {
                     id: props.asset.id,
-<<<<<<< HEAD
-<<<<<<< HEAD
                     assigned_user: user.value.value,
                     checkout_to_type: checkoutToType.value,
                     checkout_at: date.formatDate(checkoutDate.value, 'YYYY-MM-DD'),
                     expected_checkin: checkinDate.value ? date.formatDate(checkinDate.value, 'YYYY-MM-DD') : null,
                     note: notes.value 
-=======
-                    checkout_to_type: checkoutToType.value,
-                    checkout_at: date.formatDate(checkoutDate.value, 'YYYY-MM-DD'),
-                    expected_checkin: checkinDate.value ? date.formatDate(checkinDate.value, 'YYYY-MM-DD') : null,
-                    note: notes.value
->>>>>>> checkin/checkout and delete asset
-=======
-                    assigned_user: user.value.value,
-                    checkout_to_type: checkoutToType.value,
-                    checkout_at: date.formatDate(checkoutDate.value, 'YYYY-MM-DD'),
-                    expected_checkin: checkinDate.value ? date.formatDate(checkinDate.value, 'YYYY-MM-DD') : null,
-                    note: notes.value 
->>>>>>> allow Meraki integration dashboard at client level as well as agent
                 }
                 axios
                     .post(`/snipeit/hardware/` + props.asset.id + `/checkout/`, data)
                     .then(r => {
-<<<<<<< HEAD
-<<<<<<< HEAD
-                        console.log(r.data)
-=======
->>>>>>> checkin/checkout and delete asset
-=======
-                        console.log(r.data)
->>>>>>> allow Meraki integration dashboard at client level as well as agent
                         if(r.data.status === 'error'){
                             notifyError(r.data.messages)
                         }else{

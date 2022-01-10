@@ -127,7 +127,7 @@
           // console.log(tacticalAgentMacs.value[i])
           if (tacticalAgentMacs.value[i]) {
 
-            merakiClientsArray.push(await axios.get(`/meraki/` + organizations.value[0].id + `/client/` + tacticalAgentMacs.value[i] + `/`).catch(e => { }))
+            merakiClientsArray.push(await axios.get(`/meraki/` + organizations.value[0].id + `/client/` + tacticalAgentMacs.value[i] + `/`).catch(e => { notifyError("API errored out")}))
 
           }
 
@@ -136,8 +136,6 @@
         for (let i = 0; i < clients.value.length; i++) {
           clients.value.push(...resolvedMerakiClients[i].data.result.items)
         }
-
-
 
         for (let i = 0; i < resolvedMerakiClients.length; i++) {
           if (resolvedMerakiClients[i].data) {
@@ -152,14 +150,10 @@
               user: resolvedMerakiClients[i].data.records[0].user
             }
             rows.value.push(clientObj)
-            console.log(clientObj)
-
-
-
           }
         }
 
-$q.loading.hide()
+      $q.loading.hide()
       }
       
       onMounted(() => {

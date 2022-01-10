@@ -349,7 +349,7 @@ class AutomatedTask(BaseAuditModel):
         if agent:
             task.create_task_on_agent()
 
-    # agent version >= 1.7.3
+    # agent version >= 1.8.0
     def generate_nats_task_payload(self, editing=False):
         task = {
             "pk": self.pk,
@@ -431,7 +431,7 @@ class AutomatedTask(BaseAuditModel):
             .get()
         )
 
-        if pyver.parse(agent.version) >= pyver.parse("1.7.3"):
+        if pyver.parse(agent.version) >= pyver.parse("1.8.0"):
             nats_data = {
                 "func": "schedtask",
                 "schedtaskpayload": self.generate_nats_task_payload(),
@@ -534,7 +534,7 @@ class AutomatedTask(BaseAuditModel):
             .get()
         )
 
-        if pyver.parse(agent.version) >= pyver.parse("1.7.3"):
+        if pyver.parse(agent.version) >= pyver.parse("1.8.0"):
             nats_data = {
                 "func": "schedtask",
                 "schedtaskpayload": self.generate_nats_task_payload(editing=True),

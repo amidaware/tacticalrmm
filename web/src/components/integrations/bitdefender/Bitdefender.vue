@@ -4,7 +4,7 @@
             no-caps narrow-indicator inline-label>
           <q-tab icon="computer" name="endpoint" label="Endpoint" />
           <q-tab icon="summarize" name="reports" label="Reports" />
-          <q-tab icon="local_police" name="quarantine" label="Quarantine" />
+          <q-tab icon="local_police" name="quarantine" label="Quarantine" @click="getQuarantine()" />
         </q-tabs>
         <q-tab-panels v-model="tab" animated>
             <q-tab-panel name="endpoint">
@@ -185,7 +185,11 @@
             </q-tab-panel>
 
             <q-tab-panel name="quarantine">
-                Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                <div class="q-pa-md">
+                    <q-card>
+                    <q-table :rows="rows" :columns="columns" row-key="id" />
+                    </q-card>
+                </div>
             </q-tab-panel>
         </q-tab-panels>
     </q-card>
@@ -214,7 +218,8 @@
             label: "IP",
             align: "left",
             sortable: true,
-
+            field: row => row.ip,
+            format: val => `${val}`,
         },
         {
             name: "threatName",
@@ -222,7 +227,8 @@
             label: "Threat",
             align: "left",
             sortable: true,
-
+            field: row => row.threatName,
+            format: val => `${val}`,
         },
 
         {
@@ -231,7 +237,8 @@
             label: "Quarantined On",
             align: "left",
             sortable: true,
-
+            field: row => row.quarantinedOn,
+            format: val => `${val}`,
         },
         {
             name: "canBeRemoved",
@@ -239,7 +246,8 @@
             label: "Can Be Removed",
             align: "left",
             sortable: true,
-
+            field: row => row.canBeRemoved,
+            format: val => `${val}`,
         },
         {
             name: "canBeRestored",
@@ -247,7 +255,8 @@
             label: "Can Be Restored",
             align: "left",
             sortable: true,
-
+            field: row => row.canBeRestored,
+            format: val => `${val}`,
         },
         {
             name: "details",
@@ -255,7 +264,8 @@
             label: "Details",
             align: "left",
             sortable: true,
-
+            field: row => row.details,
+            format: val => `${val}`,
         }
     ]
 
@@ -275,6 +285,7 @@
             const bitdefenderEndpoint = ref([])
             const endpoint = ref([])
             const modules = ref([])
+            const rows = ref([])
 
             async function getBitdefenderEndpoints(){
                 $q.loading.show()
@@ -308,8 +319,8 @@
                             return;                    
                         }
                     }
-                notifyError("Could not find a " + props.agent.hostname + " in Bitdefender GravityZone")
-
+                $q.loading.hide()
+                notifyError("Could not find the " + props.agent.hostname + " endpoint in Bitdefender GravityZone")
             }
 
             function getBitdefenderEndpoint(){
@@ -346,6 +357,31 @@
                 });
             }
 
+            function getQuarantine(){
+                $q.loading.show()
+                axios
+                .get(`/bitdefender/endpoint/quarantine/` + endpoint.value.id + `/`)
+                .then(r => {
+                    for (let item of r.data.result.items){
+                        let quarantineObj = {
+                            name: item.endpointName,
+                            ip: item.endpointIP,
+                            threatName: item.threatName,
+                            quarantinedOn: item.quarantinedOn,
+                            canBeRemoved: item.canBeRemoved,
+                            canBeRestored: item.canBeRestored,
+                            details: item.details.filePath
+                        }
+                        rows.value.push(quarantineObj)
+                    }
+
+                    $q.loading.hide()
+                })
+                .catch(e => {
+                    console.log(e)
+                });
+            }
+
 
             onMounted(() => {
                 getBitdefenderEndpoints()
@@ -359,11 +395,12 @@
                     page: 1,
                     rowsPerPage: 100
                 },
-                // rows,
-                // columns,
+                rows,
+                columns,
                 endpoint,
                 filter: ref(""),
                 modules,
+                getQuarantine,
                 // quasar dialog
                 dialogRef,
                 onDialogHide,

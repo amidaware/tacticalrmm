@@ -163,11 +163,11 @@ class GetQuarantine(APIView):
 
 class GetEndpointQuarantine(APIView):
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated] 
 
     def get(self, request, endpoint_id, format=None):
         integration = Integration.objects.get(name="Bitdefender GravityZone")
-
+        print(endpoint_id)
         json = {
             "params": {
                     "endpointId": endpoint_id,
@@ -186,7 +186,7 @@ class GetEndpointQuarantine(APIView):
         "Content-Type": "application/json",
         "Authorization": integration.auth_header
         }).json()
-
+        print(result)
         return Response(result)
 
 class GetTasks(APIView):

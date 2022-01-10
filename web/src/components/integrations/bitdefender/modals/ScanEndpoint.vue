@@ -1,6 +1,14 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide">
-    <q-card>
+
+            <q-card class="q-dialog-plugin" style="width: 60vw">
+            <q-bar>
+                {{endpoint.name}} Scan
+                <q-space />
+                <q-btn dense flat icon="close" v-close-popup>
+                    <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+                </q-btn>
+            </q-bar>
       <q-card-section class="row items-center">
       <div class="q-mx-sm">
         <span v-if="scanType === 'quick'">Are you sure you want to initiate a Quick Scan on {{endpoint.name}}?</span>

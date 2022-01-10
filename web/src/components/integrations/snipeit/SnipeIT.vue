@@ -186,7 +186,7 @@
                         </div>
                         <div class="row">
                             <div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
-                                <q-card class="q-mx-sm q-my-sm">
+                                <q-card class="q-mx-sm q-mb-sm">
                                     <q-card-section class="text-center">
                                         <span class="text-weight-light">Current Value</span>
                                         <div class="text-h6">
@@ -196,7 +196,7 @@
                                 </q-card>
                             </div>
                             <div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
-                                  <q-card class="q-mx-sm q-my-sm">
+                                  <q-card class="q-mx-sm q-mb-sm">
                                     <q-card-section class="text-center">
                                         <span class="text-weight-light">Monthly Depcreciation</span>
                                         <div class="text-h6">
@@ -206,7 +206,7 @@
                                 </q-card>
                             </div>
                             <div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
-                                <q-card class="q-mx-sm q-my-sm">
+                                <q-card class="q-mx-sm q-mb-sm">
                                     <q-card-section class="text-center">
                                         <span class="text-weight-light">Difference</span>
                                         <div class="text-h6">
@@ -371,6 +371,7 @@
                         notifyError(r.data.messages)
                     }else{
                         notifySuccess(props.agent.hostname + " has been deleted from Snipe-IT")
+                        asset.value = []
                     }
                 })
                 .catch(e => {

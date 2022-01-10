@@ -3,24 +3,26 @@
         <q-tabs v-model="tab" dense align="left" class="text-grey" active-color="primary" indicator-color="primary"
             no-caps narrow-indicator inline-label>
           <q-tab icon="computer" name="endpoint" label="Endpoint" />
+            <q-tab icon="task_alt" name="tasks" label="Tasks" />
+            <q-tab icon="local_police" name="quarantine" label="Quarantine" @click="getQuarantine()" />
           <q-tab icon="summarize" name="reports" label="Reports" />
-          <q-tab icon="local_police" name="quarantine" label="Quarantine" @click="getQuarantine()" />
         </q-tabs>
         <q-tab-panels v-model="tab" animated>
             <q-tab-panel name="endpoint">
                 <q-btn-dropdown label="Actions" flat>
                     <q-list>
-                        <q-item clickable v-close-popup @click="checkout()">
+                        <q-item clickable v-close-popup @click="quickScan()">
                             <q-item-section>
                                 <q-item-label>Quick Scan</q-item-label>
                             </q-item-section>
                         </q-item>
 
-                        <q-item clickable v-close-popup @click="checkin()">
+                        <q-item clickable v-close-popup @click="fullScan()">
                             <q-item-section>
                                 <q-item-label>Full Scan</q-item-label>
                             </q-item-section>
                         </q-item>
+
                     </q-list>
                 </q-btn-dropdown>
                 <div class="row">
@@ -100,9 +102,10 @@
                                     <q-item-label>Malware Detected</q-item-label>
                                 </q-item-section>
                                 <q-item-section side top>
-                                    
+                                <span>
+                                    <q-icon name="priority_high" color="negative" v-if="endpoint.malwareDetected"/>
                                         {{endpoint.malwareDetected}}
-                                    
+                                    </span>
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -110,9 +113,10 @@
                                     <q-item-label>Infected</q-item-label>
                                 </q-item-section>
                                 <q-item-section side top>
-                                    
+                                <span>
+                                    <q-icon name="priority_high" color="negative" v-if="endpoint.malwareInfected"/>
                                         {{endpoint.malwareInfected}}
-                                    
+                                    </span>
                                 </q-item-section>
                             </q-item>
                             <q-separator inset/>
@@ -135,9 +139,9 @@
                                 <q-card class="q-mx-sm q-mb-sm">
                                     <q-card-section class="text-center">
                                         <span class="text-h6">Risk Score</span>
-                                            <q-linear-progress size="20px" :value="endpoint.riskScore" color="negative">
+                                            <q-linear-progress size="20px" :value="endpoint.riskScoreValue" color="negative">
                                             <div class="absolute-full flex flex-center">
-                                                <q-badge color="white" text-color="black" :label="endpoint.riskScore + ' - ' + endpoint.impact" />
+                                                <q-badge color="white" text-color="black" :label="endpoint.riskScoreLabel + ' - ' + endpoint.impact" />
                                             </div>
                                             </q-linear-progress>
                                     </q-card-section>
@@ -146,7 +150,7 @@
                         </div>
                         <div class="row">
                             <div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
-                                <q-card class="q-mx-sm">
+                                <q-card class="q-mx-sm q-mb-sm">
                                     <q-card-section class="text-center">
                                         <span class="text-weight-light">Misconfigurations</span>
                                         <div class="text-h6">
@@ -156,7 +160,7 @@
                                 </q-card>
                             </div>
                             <div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
-                                  <q-card class="q-mx-sm">
+                                  <q-card class="q-mx-sm q-mb-sm">
                                     <q-card-section class="text-center">
                                         <span class="text-weight-light">App Vulnerabilities</span>
                                         <div class="text-h6">
@@ -166,7 +170,7 @@
                                 </q-card>
                             </div>
                             <div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
-                                <q-card class="q-mx-sm">
+                                <q-card class="q-mx-sm q-mb-sm">
                                     <q-card-section class="text-center">
                                         <span class="text-weight-light">Human Risks</span>
                                         <div class="text-h6">
@@ -179,17 +183,35 @@
                     </div>
                 </div>
             </q-tab-panel>
-
-            <q-tab-panel name="reports">
+            <q-tab-panel name="tasks">
                 Lorem ipsum dolor sit amet consectetur adipisicing elit.
             </q-tab-panel>
-
-            <q-tab-panel name="quarantine">
+            <q-tab-panel name="quarantine" class="q-px-none">
                 <div class="q-pa-md">
+                <q-btn-dropdown label="Actions" flat>
+                    <q-list>
+                        <q-item clickable v-close-popup @click="checkout()">
+                            <q-item-section>
+                                <q-item-label>Restore</q-item-label>
+                            </q-item-section>
+                        </q-item>
+                        <q-item clickable v-close-popup @click="checkin()">
+                            <q-item-section>
+                                <q-item-label>Remove</q-item-label>
+                            </q-item-section>
+                        </q-item>
+                    </q-list>
+                </q-btn-dropdown>
                     <q-card>
-                    <q-table :rows="rows" :columns="columns" row-key="id" />
+                    <q-table :rows="rows" :columns="columns" row-key="id" 
+                    :selected-rows-label="getSelectedString"
+                    selection="multiple"
+                    v-model:selected="selected" />
                     </q-card>
                 </div>
+            </q-tab-panel>
+            <q-tab-panel name="reports">
+                Lorem ipsum dolor sit amet consectetur adipisicing elit.
             </q-tab-panel>
         </q-tab-panels>
     </q-card>
@@ -200,7 +222,7 @@
     import { ref, computed, watch, onMounted } from "vue";
     import { useQuasar, useDialogPluginComponent, date } from "quasar";
     import { notifySuccess, notifyError, notifyWarning } from "@/utils/notify";
-    import ScanEndpoint from "@/components/integrations/bitdefender/modals/ScanEndpointConfirm";
+    import ScanEndpoint from "@/components/integrations/bitdefender/modals/ScanEndpoint";
 
     const columns = [
         {
@@ -286,6 +308,7 @@
             const endpoint = ref([])
             const modules = ref([])
             const rows = ref([])
+            const selected = ref([])
 
             async function getBitdefenderEndpoints(){
                 $q.loading.show()
@@ -327,17 +350,19 @@
                 axios
                 .get(`/bitdefender/endpoint/` + bitdefenderEndpoint.value.id + `/`)
                 .then(r => {
+                    let riskScore = r.data.result.riskScore ? Number(r.data.result.riskScore.value.replace('%','') / 100) : 0
                     endpoint.value = {
                         id: r.data.result.id,
                         name: r.data.result.name,
                         policy: r.data.result.policy.name,
-                        lastSeen: date.formatDate(r.data.result.lastSeen, 'ddd, MMM MM, YYYY @ hh:mm A'),
+                        lastSeen: date.formatDate(r.data.result.lastSeen, 'ddd, MMM D, YYYY @ hh:mm A'),
                         productVersion: r.data.result.agent.productVersion,
                         engineVersion: r.data.result.agent.engineVersion,
-                        lastUpdated: date.formatDate(r.data.result.agent.lastUpdate, 'ddd, MMM MM, YYYY @ hh:mm A'),
+                        lastUpdated: date.formatDate(r.data.result.agent.lastUpdate, 'ddd, MMM D, YYYY @ hh:mm A'),
                         malwareDetected: r.data.result.malwareStatus.detection,
                         malwareInfected: r.data.result.malwareStatus.infected,
-                        riskScore: r.data.result.riskScore ? r.data.result.riskScore.value : "N/A",
+                        riskScoreLabel: r.data.result.riskScore ? computed(() => (riskScore * 100).toFixed(0) + '%') : 0,
+                        riskScoreValue: r.data.result.riskScore ? Number(r.data.result.riskScore.value.replace('%','') / 100) : 0,
                         impact: r.data.result.riskScore ? r.data.result.riskScore.impact : "N/A",
                         misconfigurations: r.data.result.riskScore ? r.data.result.riskScore.misconfigurations : "N/A",
                         appVulnerabilities: r.data.result.riskScore ? r.data.result.riskScore.appVulnerabilities : "N/A",
@@ -362,6 +387,7 @@
                 axios
                 .get(`/bitdefender/endpoint/quarantine/` + endpoint.value.id + `/`)
                 .then(r => {
+                    rows.value = []
                     for (let item of r.data.result.items){
                         let quarantineObj = {
                             name: item.endpointName,
@@ -382,6 +408,25 @@
                 });
             }
 
+            function quickScan(){
+                    $q.dialog({
+                    component: ScanEndpoint,
+                    componentProps: {
+                        scanType: 'quick',
+                        endpoint: endpoint.value
+                    }
+                })
+            }
+
+            function fullScan(){
+                    $q.dialog({
+                    component: ScanEndpoint,
+                    componentProps: {
+                        scanType: 'full',
+                        endpoint: endpoint.value
+                    }
+                })
+            }
 
             onMounted(() => {
                 getBitdefenderEndpoints()
@@ -400,7 +445,13 @@
                 endpoint,
                 filter: ref(""),
                 modules,
+                selected,
+                getSelectedString () {
+                    return selected.value.length === 0 ? '' : `${selected.value.length} record${selected.value.length > 1 ? 's' : ''} selected of ${rows.value.length}`
+                },
                 getQuarantine,
+                quickScan,
+                fullScan,
                 // quasar dialog
                 dialogRef,
                 onDialogHide,

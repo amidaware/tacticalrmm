@@ -6,7 +6,6 @@ from django.shortcuts import get_object_or_404
 from ipware import get_client_ip
 from knox.views import LoginView as KnoxLoginView
 from logs.models import AuditLog
-from rest_framework import status
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response

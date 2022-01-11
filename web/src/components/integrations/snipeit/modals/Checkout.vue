@@ -60,15 +60,15 @@
 
                         <q-input class="q-mt-lg" v-model="notes" filled placeholder="Type notes in here" autogrow />
                     </div>
-            
-            <q-card-actions align="right">
-                <q-btn label="Add" type="submit" />
 
-                <q-btn label="Cancel" v-close-popup />
+                    <q-card-actions align="right">
+                        <q-btn label="Add" type="submit" />
 
-            </q-card-actions>
-            </q-form>
-</q-card-section>
+                        <q-btn label="Cancel" v-close-popup />
+
+                    </q-card-actions>
+                </q-form>
+            </q-card-section>
 
         </q-card>
     </q-dialog>
@@ -113,6 +113,7 @@
                             }
                             userOptions.value.push(userObj)
                         }
+                        userOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
                     })
                     .catch(e => {
                         console.log(e)
@@ -131,6 +132,7 @@
                             }
                             locationOptions.value.push(locationObj)
                         }
+                        locationOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
                     })
                     .catch(e => {
                         console.log(e.response.data)

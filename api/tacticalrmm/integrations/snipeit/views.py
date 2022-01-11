@@ -26,7 +26,6 @@ class GetHardware(APIView):
 
     def post(self, request, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
-        print(request.data)
         payload = {
             "requestable": False,
             "asset_tag": request.data['asset_tag'],
@@ -37,7 +36,6 @@ class GetHardware(APIView):
             "location_id": request.data['location_id'],
             "company_id": request.data['company_id']
         }
-        print(request.data)
         result = requests.post(
             integration.base_url + "hardware",
             json=payload,
@@ -130,7 +128,6 @@ class GetAssetCheckout(APIView):
 
     def post(self, request, asset_id, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
-        print(request.data)
         payload = {
             "id": asset_id,
             "checkout_to_type": request.data['checkout_to_type'],
@@ -159,7 +156,6 @@ class GetAssetCheckin(APIView):
 
     def post(self, request, asset_id, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
-        print(request.data)
         payload = {
             "id": asset_id,
             "location_id": request.data['location_id'],
@@ -303,7 +299,67 @@ class GetModels(APIView):
 
     def post(self, request, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
-        print(request.data['model_name'])
+        payload = {
+            "name": request.data['model_name'],
+            "model_number": request.data['model_number'],
+            "category_id": request.data['category_id'],
+            "manufacturer_id": request.data['manufacturer_id']
+        }
+
+        result = requests.post(
+            integration.base_url + "models",
+            json=payload,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {integration.api_key.strip()}"
+            },
+        ).json()
+
+        return Response(result)
+
+class GetModel(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, model_id, format=None):
+        integration = Integration.objects.get(name="Snipe-IT")
+
+        result = requests.get(
+            integration.base_url + "models/" + model_id,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {integration.api_key.strip()}"
+            },
+        ).json()
+
+        return Response(result)
+
+    def put(self, request, model_id, format=None):
+        integration = Integration.objects.get(name="Snipe-IT")
+        print(request.data)
+        payload = {
+            "name": request.data['name'],
+            "model_number": request.data['model_number'],
+            "category_id": request.data['category_id'],
+            "manufacturer_id": request.data['manufacturer_id']
+        }
+
+        result = requests.put(
+            integration.base_url + "models/" + model_id,
+            json=payload,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {integration.api_key.strip()}"
+            },
+        ).json()
+
+        return Response(result)
+
+    def delete(self, request, model_id, format=None):
+        integration = Integration.objects.get(name="Snipe-IT")
         payload = {
             "name": request.data['model_name'],
             "model_number": request.data['model_number'],

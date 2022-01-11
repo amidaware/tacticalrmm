@@ -3,6 +3,7 @@
         <q-tabs v-model="tab" dense align="left" class="text-grey" active-color="primary" indicator-color="primary"
             no-caps narrow-indicator inline-label>
             <q-tab icon="computer" name="asset" label="Asset" />
+            <q-tab icon="category" name="models" label="Models" />
             <q-tab icon="save" name="licenses" label="Licenses" />
             <q-tab icon="build" name="maintenances" label="Maintenances" />
         </q-tabs>
@@ -219,7 +220,9 @@
                     </div>
                 </div>
             </q-tab-panel>
-
+            <q-tab-panel name="models" class="q-px-none">
+                <ModelsTab />
+            </q-tab-panel>
             <q-tab-panel name="licenses">
                 Lorem ipsum dolor sit amet consectetur adipisicing elit.
             </q-tab-panel>
@@ -241,11 +244,13 @@
     import Checkout from "@/components/integrations/snipeit/modals/Checkout";
     import Checkin from "@/components/integrations/snipeit/modals/Checkin";
     import DeleteAsset from "@/components/integrations/snipeit/modals/DeleteAsset";
+    import ModelsTab from "@/components/integrations/snipeit/ModelsTab";
 
     export default {
         name: "SnipeIT",
         emits: [...useDialogPluginComponent.emits],
         props: ['agent'],
+        components: {ModelsTab},
 
         setup(props) {
             const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();

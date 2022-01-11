@@ -62,6 +62,9 @@
                             }
                             locationOptions.value.push(locationObj)
                         }
+                        
+                        locationOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
+
                     })
                     .catch(e => {
                         console.log(e.response.data)

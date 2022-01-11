@@ -196,6 +196,8 @@
               }
               companyOptions.value.push(companyObj)
             }
+            companyOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
+
           })
           .catch(e => {
             console.log(e.response.data)
@@ -214,6 +216,8 @@
               }
               locationOptions.value.push(locationObj)
             }
+            locationOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
+
           })
           .catch(e => {
             console.log(e.response.data)
@@ -232,6 +236,7 @@
               }
               assetStatusOptions.value.push(statusObj)
             }
+            assetStatusOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
 
             $q.loading.hide()
           })
@@ -246,14 +251,17 @@
         axios
           .get(`/snipeit/models/`)
           .then(r => {
+            console.log(r.data)
             assetModelOptions.value = []
             for (let model of r.data.rows) {
               let modelObj = {
-                label: model.name + " " + model.model_number,
+                label: model.name + ' / ' + model.category.name + ' (' + model.model_number + ')',
                 value: model.id,
               }
               assetModelOptions.value.push(modelObj)
             }
+            assetModelOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
+
           })
           .catch(e => {
             console.log(e.response.data)
@@ -272,6 +280,8 @@
               }
               assetCategoryOptions.value.push(assetCategoryObj)
               }
+              assetCategoryOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
+
               $q.loading.hide()
           })
           .catch(e => {
@@ -291,6 +301,8 @@
             }
             assetManufacturerOptions.value.push(assetManufacturerObj)
             }
+            assetManufacturerOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
+
         })
         .catch(e => {
             console.log(e.response.data)
@@ -317,7 +329,6 @@
       }
 
       function addAsset(){
-
         $q.loading.show()
         let data = {
           asset_tag: assetTag.value,
@@ -328,22 +339,26 @@
           location_id: assetLocation.value.value,
           company_id: assetCompany.value.value
         }
+        if(assetTag.value && assetStatus.value && assetModel.value && assetName.value && assetSerial.value && assetLocation.value && assetCompany.value){
+          axios
+          .post(`/snipeit/hardware/`, data)
+          .then(r => {
+            if (r.data.status === 'error'){
+              notifyError("The Asset Tag must be unique to Snipe-IT")
+            }else{
+              notifySuccess(props.agent.hostname + " has been added as an asset to Snipe-IT")
+              onDialogOK()
+            }
 
-        axios
-        .post(`/snipeit/hardware/`, data)
-        .then(r => {
-          if (r.data.status === 'error'){
-            notifyError("The Asset Tag must be unique to Snipe-IT")
-          }else{
-            notifySuccess(props.agent.hostname + " has been added as an asset to Snipe-IT")
-            onDialogOK()
-          }
-
+            $q.loading.hide()
+          })
+          .catch(e => {
+            console.log(e)
+          });
+        }else{
+          notifyError("Please make sure all fields are filled in")
           $q.loading.hide()
-        })
-        .catch(e => {
-          console.log(e)
-        });
+        }
       }
 
       onMounted(() => {

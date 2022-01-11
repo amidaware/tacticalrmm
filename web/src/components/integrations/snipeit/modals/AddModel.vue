@@ -45,10 +45,10 @@
 
                 $q.loading.show()
                 let data = {
-                model_name: assetModel.value,
-                model_number: assetModel.value,
-                category_id: props.category.value,
-                manufacturer_id: props.manufacturer.value
+                    model_name: assetModel.value,
+                    model_number: assetModel.value,
+                    category_id: props.category.value,
+                    manufacturer_id: props.manufacturer.value
                 }
 
                 axios
@@ -60,11 +60,15 @@
                         notifySuccess(r.data.messages)
 
                         $q.loading.hide()
-                        onDialogOK({"assetModel": assetModel.value, "assetModelID": r.data.payload.id, "addNewModel":addNewModel.value})
+                        onDialogOK({
+                            "assetModel": assetModel.value,
+                            "assetModelID": r.data.payload.id,
+                            "addNewModel":addNewModel.value
+                        })
                     }
                 })
                 .catch(e => {
-                console.log(e)
+                    console.log(e)
                 });
             }
 

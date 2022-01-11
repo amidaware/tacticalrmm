@@ -184,7 +184,10 @@ def bitweeks_to_string(week: int) -> str:
 
 def bitmonthdays_to_string(day: int) -> str:
     ret: List[str] = []
-    if day == 2147483647 or 4294967295:
+
+    if day == MONTH_DAYS["Last Day"]:
+        return "Last day"
+    elif day == 2147483647 or day == 4294967295:
         return "Every day"
 
     for key, value in MONTH_DAYS.items():

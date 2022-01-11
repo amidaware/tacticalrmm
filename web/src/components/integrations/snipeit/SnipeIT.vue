@@ -240,6 +240,7 @@
     import AddAsset from "@/components/integrations/snipeit/modals/AddAsset";
     import Checkout from "@/components/integrations/snipeit/modals/Checkout";
     import Checkin from "@/components/integrations/snipeit/modals/Checkin";
+    import DeleteAsset from "@/components/integrations/snipeit/modals/DeleteAsset";
 
     export default {
         name: "SnipeIT",
@@ -364,19 +365,15 @@
             }
 
             function deleteAsset(){
-                axios
-                .delete(`/snipeit/hardware/` + asset.value.id + `/`)
-                .then(r => {
-                    if (r.data.status === 'error'){
-                        notifyError(r.data.messages)
-                    }else{
-                        notifySuccess(props.agent.hostname + " has been deleted from Snipe-IT")
-                        asset.value = []
+                $q.dialog({
+                    component: DeleteAsset,
+                    componentProps: {
+                        agent: props.agent,
+                        asset: asset.value
                     }
+                }).onOk(() => {
+                    asset.value = []
                 })
-                .catch(e => {
-                    console.log(e)
-                });
             }
 
             onMounted(() => {

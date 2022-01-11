@@ -10,7 +10,16 @@
             </q-bar>
             <div class="q-my-xl q-mx-md">
                 <q-select filled v-model="policy" label="Device Policy" :options="policyOptions" dense
-                    :rules="[(val) => !!val || '*Required']" />
+                    :rules="[(val) => !!val || '*Required']" >
+                            <template v-slot:option="scope">
+          <q-item v-bind="scope.itemProps">
+            <q-item-section>
+              <q-item-label>{{ scope.opt.label }}</q-item-label>
+              <q-item-label caption>{{ scope.opt.description }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </template>
+        </q-select>
                 <q-btn class="q-mb-md" label="Save" @click="savePolicy()" />
             </div>
         </q-card>
@@ -33,7 +42,7 @@
             const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
             const $q = useQuasar();
             const policy = ref("")
-            const policyOptions = ref(['Whitelisted','Blocked','Normal'])
+            const policyOptions = ref([{label: 'Whitelisted', value: 'Whitelisted', description: 'No bandwidth limits or splash page'}, {label: 'Blocked', value: 'Blocked', description:'No access allowed'},{label:'Normal', value: 'Normal', description:''}])
 
             function getDevicePolicy(){
                 $q.loading.show({
@@ -57,7 +66,7 @@
                     message: 'Applying new device policy for ' + props.agent.hostname
                 })
                 let data = {
-                    devicePolicy: policy.value
+                    devicePolicy: policy.value.value
                 }
                 axios
                 .put(`/meraki/` + props.selected.value[0].networkId + `/clients/` + props.selected.value[0].mac + `/policy/`, data)

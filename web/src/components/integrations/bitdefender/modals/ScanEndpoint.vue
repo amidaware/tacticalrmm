@@ -3,14 +3,20 @@
 
             <q-card class="q-dialog-plugin" style="width: 60vw">
             <q-bar>
-                {{endpoint.name}} Scan
+            <span v-if="scanType === 'quick'">
+                {{endpoint.name}} Quick Scan
+                </span>
+                <span v-else>
+                {{endpoint.name}} Full Scan
+
+                </span>
                 <q-space />
                 <q-btn dense flat icon="close" v-close-popup>
                     <q-tooltip class="bg-white text-primary">Close</q-tooltip>
                 </q-btn>
             </q-bar>
       <q-card-section class="row items-center">
-      <div class="q-mx-sm">
+      <div>
         <span v-if="scanType === 'quick'">Are you sure you want to initiate a Quick Scan on {{endpoint.name}}?</span>
         <span v-else>Are you sure you want to initiate a Full Scan on {{endpoint.name}}?</span>
       </div>
@@ -32,7 +38,7 @@
   import { notifySuccess, notifyError } from "@/utils/notify";
 
   export default {
-    name: "ScanEndpointConfirm",
+    name: "ScanEndpoint",
     emits: [...useDialogPluginComponent.emits],
     props: ['scanType', 'endpoint'],
     setup(props) {

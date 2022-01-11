@@ -202,7 +202,7 @@ class GetClientPolicy(APIView):
 
     def put(self, request, network_id, client_mac, format=None):
         integration = Integration.objects.get(name="Cisco Meraki")
-
+        print(request.data)
         request_dict = {"devicePolicy": request.data['devicePolicy']}
         payload = json.dumps(request_dict, indent=4)
 

@@ -104,3 +104,21 @@ No, you haven't.
 ![AV Sandbox1](images/faq_av_sandbox3.png)
 
 ![AV Sandbox1](images/faq_av_sandbox4.png)
+
+## DNS can't find record
+
+Q. My dns isn’t working 
+
+A. Make sure it’s correctly formatted some dns hosts add in the domain automatically. 
+
+## Onsite DNS server and LAN only TRMM servers
+
+Q. Can I use onsite dns servers (I don’t want my server internet accessible). 
+
+A. Yes that’s covered in the docs, you can use internal dns for api, mesh and rmm domains but need to add the dns txt to an internet resolvable dns server for letsencrypt wildcard cert
+
+## Self-Signed Certs
+
+Q. Why can’t I use a self signed certificate for web etc. 
+
+A. NATS over TLS needs a real certificate signed with a trusted root certificate. NATS can function without TLS however that isn’t recommended

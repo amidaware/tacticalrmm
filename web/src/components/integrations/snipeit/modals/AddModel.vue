@@ -8,11 +8,13 @@
                     <q-tooltip class="bg-white text-primary">Close</q-tooltip>
                 </q-btn>
             </q-bar>
-            <div class="q-my-xl q-mx-md">
-                <q-select filled v-model="assetModel" label="Model" :options="assetModelOptions" dense
-                    :rules="[(val) => !!val || '*Required']" />
-                <q-btn class="q-mb-md" label="Save" @click="onOKClick()" />
-            </div>
+            <q-card-section>
+                    <q-select filled v-model="assetModel" label="Model" :options="assetModelOptions" dense
+                        :rules="[(val) => !!val || '*Required']" />
+                <q-card-actions align="right">
+                    <q-btn class="q-mb-md" label="Save" @click="onOKClick()" />
+                </q-card-actions>
+            </q-card-section>
         </q-card>
     </q-dialog>
 </template>

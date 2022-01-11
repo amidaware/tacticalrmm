@@ -3,7 +3,6 @@
         <q-card class="q-dialog-plugin" style="width: 60vw">
             <q-bar>
                 Edit Asset Model
-
                 <q-space />
                 <q-btn dense flat icon="close" v-close-popup>
                     <q-tooltip class="bg-white text-primary">Close</q-tooltip>
@@ -20,11 +19,8 @@
                             :options="assetManufacturerOptions" dense :rules="[(val) => !!val || '*Required']" />
                         <q-select filled v-model="assetCategory" label="Category" :options="assetCategoryOptions" dense
                             :rules="[(val) => !!val || '*Required']" />
-
                     </div>
-
                     <q-card-actions align="right">
-
                         <q-btn label="Cancel" v-close-popup />
                         <q-btn label="Save" type="submit" />
                     </q-card-actions>

@@ -33,16 +33,16 @@
                 <div class="row">
                     <div class="col-5">
                         <q-list>
-                        <q-item-section>
-                            <q-item-label header>GENERAL </q-item-label>
-                        </q-item-section>
+                            <q-item-section>
+                                <q-item-label header>GENERAL </q-item-label>
+                            </q-item-section>
                             <q-item dense>
                                 <q-item-section top>
                                     <q-item-label>Name</q-item-label>
                                 </q-item-section>
                                 <q-item-section side top>
                                     {{asset.name}}
-                                    
+
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -51,7 +51,7 @@
                                 </q-item-section>
                                 <q-item-section side top>
                                     {{asset.asset_tag}}
-                                    
+
                                 </q-item-section>
                             </q-item>
                             <q-item dense v-if="asset.model">
@@ -61,17 +61,17 @@
 
                                 <q-item-section side top>
                                     {{asset.model.name}}
-                                    
+
                                 </q-item-section>
                             </q-item>
-                           <q-item dense>
+                            <q-item dense>
                                 <q-item-section top>
                                     <q-item-label>Model Number</q-item-label>
                                 </q-item-section>
 
                                 <q-item-section side top>
                                     {{asset.model_number}}
-                                    
+
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -89,7 +89,7 @@
 
                                 <q-item-section side top>
                                     {{asset.status_label.name}}
-                                    
+
                                 </q-item-section>
                             </q-item>
                             <q-item dense v-if="asset.company">
@@ -98,7 +98,7 @@
                                 </q-item-section>
                                 <q-item-section side top>
                                     {{asset.company.name}}
-                                    
+
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -107,10 +107,10 @@
                                 </q-item-section>
                                 <q-item-section side top v-if="asset.location">
                                     {{asset.location.name}}
-                                    
+
                                 </q-item-section>
                             </q-item>
-                            <q-separator inset/>
+                            <q-separator inset />
                             <q-item-label header>PURCHASING</q-item-label>
                             <q-item dense v-if="asset.manufacturer">
                                 <q-item-section top>
@@ -118,8 +118,8 @@
                                 </q-item-section>
 
                                 <q-item-section side top>
-                                    
-                                        {{asset.manufacturer.name}}
+
+                                    {{asset.manufacturer.name}}
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -127,8 +127,8 @@
                                     <q-item-label>Purchase Date</q-item-label>
                                 </q-item-section>
                                 <q-item-section side top v-if="asset.purchase_date">
-           
-                                        {{asset.purchase_date.formatted}}
+
+                                    {{asset.purchase_date.formatted}}
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -136,20 +136,20 @@
                                     <q-item-label>Purchase Cost</q-item-label>
                                 </q-item-section>
                                 <q-item-section side top>
-                                    
-                                        ${{asset.purchase_cost}}
-                                    
+
+                                    ${{asset.purchase_cost}}
+
                                 </q-item-section>
                             </q-item>
-                            <q-separator inset/>
+                            <q-separator inset />
                             <q-item-label header>WARRANTY</q-item-label>
                             <q-item dense>
                                 <q-item-section top>
                                     <q-item-label>Months</q-item-label>
                                 </q-item-section>
                                 <q-item-section side top>
-                                    
-                                        {{asset.warranty_months}}
+
+                                    {{asset.warranty_months}}
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -157,8 +157,8 @@
                                     <q-item-label>Expires</q-item-label>
                                 </q-item-section>
                                 <q-item-section side top v-if="asset.warranty_expires">
-                                    
-                                        {{asset.warranty_expires.formatted}}
+
+                                    {{asset.warranty_expires.formatted}}
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -166,8 +166,8 @@
                                     <q-item-label>End of Life</q-item-label>
                                 </q-item-section>
                                 <q-item-section side top v-if="asset.eol">
-                                   
-                                        {{asset.eol.formatted}}
+
+                                    {{asset.eol.formatted}}
                                 </q-item-section>
                             </q-item>
                         </q-list>
@@ -197,7 +197,7 @@
                                 </q-card>
                             </div>
                             <div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
-                                  <q-card class="q-mx-sm q-mb-sm">
+                                <q-card class="q-mx-sm q-mb-sm">
                                     <q-card-section class="text-center">
                                         <span class="text-weight-light">Monthly Depcreciation</span>
                                         <div class="text-h6">
@@ -250,7 +250,7 @@
         name: "SnipeIT",
         emits: [...useDialogPluginComponent.emits],
         props: ['agent'],
-        components: {ModelsTab},
+        components: { ModelsTab },
 
         setup(props) {
             const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
@@ -282,46 +282,46 @@
                         tacticalAgentSerial.push(props.agent.wmi_detail.comp_sys_prod[0][0].IdentifyingNumber)
                         let i = 0;
                         do {
-                                snipeITAssetsModelNameNumber.push(r.data.rows[i].model.name + " " + r.data.rows[i].model_number)
-                                snipeITAssetsModelNumber.push(r.data.rows[i].model_number)
-                                snipeITAssetTags.push(r.data.rows[i].asset_tag)
-                                snipeITAssetHostnames.push(r.data.rows[i].name)
+                            snipeITAssetsModelNameNumber.push(r.data.rows[i].model.name + " " + r.data.rows[i].model_number)
+                            snipeITAssetsModelNumber.push(r.data.rows[i].model_number)
+                            snipeITAssetTags.push(r.data.rows[i].asset_tag)
+                            snipeITAssetHostnames.push(r.data.rows[i].name)
 
-                                //Match on Model Number
-                                const modelNumber = tacticalAgentModels.filter(element => snipeITAssetsModelNumber.includes(element))
-                                //Match on Model Name and Number
-                                const modelNameNumber = tacticalAgentModels.filter(element => snipeITAssetsModelNameNumber.includes(element))
-                                //Match on Asset Tag
-                                const assetTag = tacticalAgentModels.filter(element => snipeITAssetTags.includes(element))
-                                //Match on hostname
-                                const hostnameMatch = tacticalAgentHostname.filter(element => snipeITAssetHostnames.includes(element))
-                                //Match on serial
-                                const serial = tacticalAgentSerial.filter(element => snipeITAssetTags.includes(element))
+                            //Match on Model Number
+                            const modelNumber = tacticalAgentModels.filter(element => snipeITAssetsModelNumber.includes(element))
+                            //Match on Model Name and Number
+                            const modelNameNumber = tacticalAgentModels.filter(element => snipeITAssetsModelNameNumber.includes(element))
+                            //Match on Asset Tag
+                            const assetTag = tacticalAgentModels.filter(element => snipeITAssetTags.includes(element))
+                            //Match on hostname
+                            const hostnameMatch = tacticalAgentHostname.filter(element => snipeITAssetHostnames.includes(element))
+                            //Match on serial
+                            const serial = tacticalAgentSerial.filter(element => snipeITAssetTags.includes(element))
 
-                                if (modelNumber.length > 0 && hostnameMatch.length > 0 || modelNameNumber.length > 0 && hostnameMatch.length > 0 || modelNumber.length > 0 && modelNameNumber.length > 0 && hostnameMatch.length > 0 || assetTag.length > 0 && hostnameMatch.length > 0 || serial.length > 0 && hostnameMatch.length > 0) {
-                                    if (r.data.rows[i].eol && r.data.rows[i].purchase_date){
-                                        const newDate = new Date()
-                                        const eolDate = r.data.rows[i].eol.date
-                                        const purchase_date = r.data.rows[i].purchase_date.date
-                                        const unit = 'months'
+                            if (modelNumber.length > 0 && hostnameMatch.length > 0 || modelNameNumber.length > 0 && hostnameMatch.length > 0 || modelNumber.length > 0 && modelNameNumber.length > 0 && hostnameMatch.length > 0 || assetTag.length > 0 && hostnameMatch.length > 0 || serial.length > 0 && hostnameMatch.length > 0) {
+                                if (r.data.rows[i].eol && r.data.rows[i].purchase_date) {
+                                    const newDate = new Date()
+                                    const eolDate = r.data.rows[i].eol.date
+                                    const purchase_date = r.data.rows[i].purchase_date.date
+                                    const unit = 'months'
 
-                                        const depreciationDateDiff = date.getDateDiff(eolDate, purchase_date, unit)
-                                        const depreciationCost = parseInt(r.data.rows[i].purchase_cost.replace(/,/g, ''), 10) / depreciationDateDiff
-                                        const currentDepreciationValue = date.getDateDiff(newDate, purchase_date, unit)
+                                    const depreciationDateDiff = date.getDateDiff(eolDate, purchase_date, unit)
+                                    const depreciationCost = parseInt(r.data.rows[i].purchase_cost.replace(/,/g, ''), 10) / depreciationDateDiff
+                                    const currentDepreciationValue = date.getDateDiff(newDate, purchase_date, unit)
 
-                                        currentValue.value = (parseInt(r.data.rows[i].purchase_cost.replace(/,/g, ''), 10) - (currentDepreciationValue * depreciationCost)).toFixed(2)
-                                        difference.value = (currentDepreciationValue * depreciationCost).toFixed(2)
-                                        monthlyDepreciation.value = depreciationCost.toFixed(2)
-                                    }
-                                    asset.value = []
-                                    asset.value = r.data.rows[i]
-                                    tab.value = 'asset'
-                                    foundAsset.value = true
-                                    $q.loading.hide()
-                                    return;
-                                } else {
-                                    foundAsset.value = false
+                                    currentValue.value = (parseInt(r.data.rows[i].purchase_cost.replace(/,/g, ''), 10) - (currentDepreciationValue * depreciationCost)).toFixed(2)
+                                    difference.value = (currentDepreciationValue * depreciationCost).toFixed(2)
+                                    monthlyDepreciation.value = depreciationCost.toFixed(2)
                                 }
+                                asset.value = []
+                                asset.value = r.data.rows[i]
+                                tab.value = 'asset'
+                                foundAsset.value = true
+                                $q.loading.hide()
+                                return;
+                            } else {
+                                foundAsset.value = false
+                            }
                             i++;
                         } while (i < r.data.rows.length);
                         $q.loading.hide()
@@ -331,7 +331,7 @@
                     })
                     .catch(e => {
                         console.log(e)
-                });
+                    });
             }
 
             function addAsset() {
@@ -345,7 +345,7 @@
                 })
             }
 
-            function checkout(){
+            function checkout() {
                 $q.dialog({
                     component: Checkout,
                     componentProps: {
@@ -357,7 +357,7 @@
                 })
             }
 
-            function checkin(){
+            function checkin() {
                 $q.dialog({
                     component: Checkin,
                     componentProps: {
@@ -369,7 +369,7 @@
                 })
             }
 
-            function deleteAsset(){
+            function deleteAsset() {
                 $q.dialog({
                     component: DeleteAsset,
                     componentProps: {

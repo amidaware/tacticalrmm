@@ -29,108 +29,108 @@
           <q-select filled dense v-model="assetModel" label="Model" :options="assetModelOptions"
             :rules="[ (val) => !!val || '*Required' ]" />
           <q-select filled v-model="assetManufacturer" label="Manufacturer" :options="assetManufacturerOptions" dense
-              :rules="[(val) => !!val || '*Required']" />
+            :rules="[(val) => !!val || '*Required']" />
           <q-select filled v-model="assetCategory" label="Category" :options="assetCategoryOptions" dense
-              :rules="[(val) => !!val || '*Required']" />
+            :rules="[(val) => !!val || '*Required']" />
         </q-step>
 
         <q-step :name="3" title="Review & Add" icon="create_new_folder" :done="step > 3">
-                        <q-list>
-                            <q-item dense>
-                                <q-item-section top>
-                                    <q-item-label>Name</q-item-label>
-                                </q-item-section>
-                                <q-item-section side top>
-                                    {{assetName}}
-                                    
-                                </q-item-section>
-                            </q-item>
-                            <q-item dense>
-                                <q-item-section top>
-                                    <q-item-label>Asset Tag</q-item-label>
-                                </q-item-section>
+          <q-list>
+            <q-item dense>
+              <q-item-section top>
+                <q-item-label>Name</q-item-label>
+              </q-item-section>
+              <q-item-section side top>
+                {{assetName}}
 
-                                <q-item-section side top>
-                                    {{assetTag}}
-                                    
-                                </q-item-section>
-                            </q-item>
-                            <q-item dense>
-                                <q-item-section top>
-                                    <q-item-label>Model</q-item-label>
-                                </q-item-section>
+              </q-item-section>
+            </q-item>
+            <q-item dense>
+              <q-item-section top>
+                <q-item-label>Asset Tag</q-item-label>
+              </q-item-section>
 
-                                <q-item-section side top>
-                                    {{assetModel.label}}
-                                    
-                                </q-item-section>
-                            </q-item>
-                           <q-item dense>
-                                <q-item-section top>
-                                    <q-item-label>Serial</q-item-label>
-                                </q-item-section>
+              <q-item-section side top>
+                {{assetTag}}
 
-                                <q-item-section side top>
-                                    {{assetSerial}}
-                                    
-                                </q-item-section>
-                            </q-item>
-                           <q-item dense>
-                                <q-item-section top>
-                                    <q-item-label>Status</q-item-label>
-                                </q-item-section>
+              </q-item-section>
+            </q-item>
+            <q-item dense>
+              <q-item-section top>
+                <q-item-label>Model</q-item-label>
+              </q-item-section>
 
-                                <q-item-section side top>
-                                    {{assetStatus.label}}
-                                    
-                                </q-item-section>
-                            </q-item>
-                           <q-item dense>
-                                <q-item-section top>
-                                    <q-item-label>Company</q-item-label>
-                                </q-item-section>
+              <q-item-section side top>
+                {{assetModel.label}}
 
-                                <q-item-section side top>
-                                    {{assetCompany.label}}
-                                    
-                                </q-item-section>
-                            </q-item>
-                           <q-item dense>
-                                <q-item-section top>
-                                    <q-item-label>Location</q-item-label>
-                                </q-item-section>
+              </q-item-section>
+            </q-item>
+            <q-item dense>
+              <q-item-section top>
+                <q-item-label>Serial</q-item-label>
+              </q-item-section>
 
-                                <q-item-section side top>
-                                    {{assetLocation.label}}
-                                    
-                                </q-item-section>
-                            </q-item>
-                           <q-item dense>
-                                <q-item-section top>
-                                    <q-item-label>Manufacturer</q-item-label>
-                                </q-item-section>
+              <q-item-section side top>
+                {{assetSerial}}
 
-                                <q-item-section side top>
-                                    {{assetManufacturer.label}}
-                                    
-                                </q-item-section>
-                            </q-item>
-                           <q-item dense>
-                                <q-item-section top>
-                                    <q-item-label>Category</q-item-label>
-                                </q-item-section>
+              </q-item-section>
+            </q-item>
+            <q-item dense>
+              <q-item-section top>
+                <q-item-label>Status</q-item-label>
+              </q-item-section>
 
-                                <q-item-section side top>
-                                    {{assetCategory.label}}
-                                    
-                                </q-item-section>
-                            </q-item>
-                        </q-list>
+              <q-item-section side top>
+                {{assetStatus.label}}
+
+              </q-item-section>
+            </q-item>
+            <q-item dense>
+              <q-item-section top>
+                <q-item-label>Company</q-item-label>
+              </q-item-section>
+
+              <q-item-section side top>
+                {{assetCompany.label}}
+
+              </q-item-section>
+            </q-item>
+            <q-item dense>
+              <q-item-section top>
+                <q-item-label>Location</q-item-label>
+              </q-item-section>
+
+              <q-item-section side top>
+                {{assetLocation.label}}
+
+              </q-item-section>
+            </q-item>
+            <q-item dense>
+              <q-item-section top>
+                <q-item-label>Manufacturer</q-item-label>
+              </q-item-section>
+
+              <q-item-section side top>
+                {{assetManufacturer.label}}
+
+              </q-item-section>
+            </q-item>
+            <q-item dense>
+              <q-item-section top>
+                <q-item-label>Category</q-item-label>
+              </q-item-section>
+
+              <q-item-section side top>
+                {{assetCategory.label}}
+
+              </q-item-section>
+            </q-item>
+          </q-list>
         </q-step>
 
         <template v-slot:navigation>
           <q-stepper-navigation align="right">
-            <q-btn flat v-if="step > 1" color="primary" @click="$refs.stepper.previous()" label="Back"/>
+            <q-btn flat v-if="step > 1" color="primary" @click="$refs.stepper.previous()" label="Back" />
             <q-btn flat v-if="step != 3" @click="$refs.stepper.next()" color="primary" label="Next" />
             <q-btn flat v-else @click="addAsset()" color="primary" label="Add" />
           </q-stepper-navigation>
@@ -269,45 +269,45 @@
       }
 
       function getCategories() {
-          axios
+        axios
           .get(`/snipeit/categories/`)
           .then(r => {
-              assetCategoryOptions.value = []
-              for (let category of r.data.rows) {
+            assetCategoryOptions.value = []
+            for (let category of r.data.rows) {
               let assetCategoryObj = {
-                  label: category.name,
-                  value: category.id,
+                label: category.name,
+                value: category.id,
               }
               assetCategoryOptions.value.push(assetCategoryObj)
-              }
-              assetCategoryOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
+            }
+            assetCategoryOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
 
-              $q.loading.hide()
+            $q.loading.hide()
           })
           .catch(e => {
-              console.log(e.response.data)
+            console.log(e.response.data)
           });
       }
 
       function getManufacturers() {
         axios
-        .get(`/snipeit/manufacturers/`)
-        .then(r => {
+          .get(`/snipeit/manufacturers/`)
+          .then(r => {
             assetManufacturerOptions.value = []
             for (let manufacturer of r.data.rows) {
-            let assetManufacturerObj = {
+              let assetManufacturerObj = {
                 label: manufacturer.name,
                 value: manufacturer.id,
-            }
-            assetManufacturerOptions.value.push(assetManufacturerObj)
+              }
+              assetManufacturerOptions.value.push(assetManufacturerObj)
             }
             assetManufacturerOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
 
-        })
-        .catch(e => {
+          })
+          .catch(e => {
             console.log(e.response.data)
-        });
-    }
+          });
+      }
 
       function addModel() {
         $q.dialog({
@@ -317,18 +317,18 @@
             manufacturer: assetManufacturer.value,
             category: assetCategory.value
           }
-         }).onOk(val => {
+        }).onOk(val => {
 
-              let modelObj = {
-                label: val['assetModel'],
-                value: val['assetModelID'],
-              }
-              assetModelOptions.value.push(modelObj)
-              assetModel.value = modelObj
+          let modelObj = {
+            label: val['assetModel'],
+            value: val['assetModelID'],
+          }
+          assetModelOptions.value.push(modelObj)
+          assetModel.value = modelObj
         })
       }
 
-      function addAsset(){
+      function addAsset() {
         $q.loading.show()
         let data = {
           asset_tag: assetTag.value,
@@ -339,23 +339,23 @@
           location_id: assetLocation.value.value,
           company_id: assetCompany.value.value
         }
-        if(assetTag.value && assetStatus.value && assetModel.value && assetName.value && assetSerial.value && assetLocation.value && assetCompany.value){
+        if (assetTag.value && assetStatus.value && assetModel.value && assetName.value && assetSerial.value && assetLocation.value && assetCompany.value) {
           axios
-          .post(`/snipeit/hardware/`, data)
-          .then(r => {
-            if (r.data.status === 'error'){
-              notifyError("The Asset Tag must be unique to Snipe-IT")
-            }else{
-              notifySuccess(props.agent.hostname + " has been added as an asset to Snipe-IT")
-              onDialogOK()
-            }
+            .post(`/snipeit/hardware/`, data)
+            .then(r => {
+              if (r.data.status === 'error') {
+                notifyError("The Asset Tag must be unique to Snipe-IT")
+              } else {
+                notifySuccess(props.agent.hostname + " has been added as an asset to Snipe-IT")
+                onDialogOK()
+              }
 
-            $q.loading.hide()
-          })
-          .catch(e => {
-            console.log(e)
-          });
-        }else{
+              $q.loading.hide()
+            })
+            .catch(e => {
+              console.log(e)
+            });
+        } else {
           notifyError("Please make sure all fields are filled in")
           $q.loading.hide()
         }
@@ -378,7 +378,7 @@
 
       watch([assetManufacturer, assetCategory], ([manufacturer, category]) => {
 
-        if(manufacturer && category){
+        if (manufacturer && category) {
           newModelButton.value = false
         }
       })

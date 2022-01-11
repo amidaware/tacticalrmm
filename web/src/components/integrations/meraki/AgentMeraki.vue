@@ -1,21 +1,30 @@
 <template>
-
   <div class="q-pa-md">
-  <q-btn-dropdown label="Actions" flat :disable="actionBtnDisabled">
-      <q-list>
-          <q-item clickable v-close-popup @click="getDevicePolicy()">
-              <q-item-section>
-                  <q-item-label>Device Policy</q-item-label>
-              </q-item-section>
-          </q-item>
-
-      </q-list>
-  </q-btn-dropdown>
     <q-card>
-      <q-table :rows="rows" :columns="columns" row-key="id"
-      :selected-rows-label="getSelectedString"
-      selection="single"
-      v-model:selected="selected" />
+      <q-table :rows="rows" :columns="columns" row-key="id" :selected-rows-label="getSelectedString" selection="single"
+        v-model:selected="selected" :filter="filter">
+        <template v-slot:top-left>
+          <q-btn flat dense @click="getOrganizations()" icon="refresh" />
+
+          <q-btn-dropdown label="Actions" flat :disable="actionBtnDisabled">
+            <q-list>
+              <q-item clickable v-close-popup @click="getDevicePolicy()">
+                <q-item-section>
+                  <q-item-label>Device Policy</q-item-label>
+                </q-item-section>
+              </q-item>
+
+            </q-list>
+          </q-btn-dropdown>
+        </template>
+        <template v-slot:top-right>
+          <q-input outlined v-model="filter" label="Search" dense debounce="300" clearable>
+            <template v-slot:prepend>
+              <q-icon name="search" />
+            </template>
+          </q-input>
+        </template>
+      </q-table>
     </q-card>
   </div>
 </template>
@@ -26,7 +35,7 @@
   import { ref, computed, onMounted, watch } from "vue";
   import { useMeta, useQuasar, useDialogPluginComponent, date } from "quasar";
   import { notifySuccess, notifyError } from "@/utils/notify";
-  
+
   import Policy from "@/components/integrations/meraki/modals/Policy";
 
 
@@ -136,13 +145,13 @@
       let actionBtnDisabled = ref(true)
 
       function getOrganizations() {
-        $q.loading.show({message: 'Getting organization...'})
+        $q.loading.show({ message: 'Getting organization...' })
         axios
           .get(`/meraki/organizations/`)
           .then(r => {
             organizations.value = r.data;
             $q.loading.show({
-              message: 'Searching ' + organizations.value[0].name + ' for any ' + props.agent.hostname +' associated MAC addresses... This may take a few minutes.'
+              message: 'Searching ' + organizations.value[0].name + ' for any ' + props.agent.hostname + ' associated MAC addresses... This may take a few minutes.'
             })
 
             if (r.data.errors) {
@@ -157,7 +166,7 @@
         const merakiClientsArray = []
         for (let i = 0; i < props.agent.wmi_detail.network_adapter.length; i++) {
           for (let obj of props.agent.wmi_detail.network_adapter[i]) {
-            if(obj.MACAddress && obj.NetEnabled){
+            if (obj.MACAddress && obj.NetEnabled) {
               const macStr = String(obj.MACAddress)
               const macs = macStr.replaceAll(":", "").toLowerCase()
               tacticalAgentMacs.value.push(macs)
@@ -168,7 +177,7 @@
 
         for (let i = 0; i < tacticalAgentMacs.value.length; i++) {
           if (tacticalAgentMacs.value[i]) {
-            merakiClientsArray.push(await axios.get(`/meraki/` + organizations.value[0].id + `/client/` + tacticalAgentMacs.value[i] + `/`).catch(e => { $q.loading.hide()}))
+            merakiClientsArray.push(await axios.get(`/meraki/` + organizations.value[0].id + `/client/` + tacticalAgentMacs.value[i] + `/`).catch(e => { $q.loading.hide() }))
           }
         }
 
@@ -196,26 +205,26 @@
           }
         }
 
-        if(rows.value.length < 1){
-           notifyError('Could not find any associated ' + props.agent.hostname + ' MAC addresses')
+        if (rows.value.length < 1) {
+          notifyError('Could not find any associated ' + props.agent.hostname + ' MAC addresses')
         }
         $q.loading.hide()
       }
 
-      function getDevicePolicy(){
-            $q.dialog({
-              component: Policy,
-              componentProps: {
-                  selected: selected,
-                  agent: props.agent
-              }
-          })
+      function getDevicePolicy() {
+        $q.dialog({
+          component: Policy,
+          componentProps: {
+            selected: selected,
+            agent: props.agent
+          }
+        })
       }
 
-      watch(selected, (val) =>{
-        if (selected.value.length > 0){
+      watch(selected, (val) => {
+        if (selected.value.length > 0) {
           actionBtnDisabled.value = false
-        }else{
+        } else {
           actionBtnDisabled.value = true
         }
       })
@@ -231,10 +240,12 @@
         columns,
         rows,
         selected,
-        getSelectedString () {
-            return selected.value.length === 0 ? '' : `${selected.value.length} record${selected.value.length > 1 ? 's' : ''} selected of ${rows.value.length}`
+        filter: ref(""),
+        getSelectedString() {
+          return selected.value.length === 0 ? '' : `${selected.value.length} record${selected.value.length > 1 ? 's' : ''} selected of ${rows.value.length}`
         },
         actionBtnDisabled,
+        getOrganizations,
         getDevicePolicy,
         // quasar dialog plugin
         dialogRef,

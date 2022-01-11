@@ -8,7 +8,7 @@
             <q-tab icon="build" name="maintenances" label="Maintenances" />
         </q-tabs>
         <q-tab-panels v-model="tab" animated>
-            <q-tab-panel name="asset">
+            <q-tab-panel name="asset" class="q-px-none">
                 <q-btn-dropdown label="Actions" flat>
                     <q-list>
                         <q-item clickable v-close-popup @click="checkout()" v-if="asset.user_can_checkout">
@@ -16,7 +16,6 @@
                                 <q-item-label>Checkout</q-item-label>
                             </q-item-section>
                         </q-item>
-
                         <q-item clickable v-close-popup @click="checkin()" v-else>
                             <q-item-section>
                                 <q-item-label>Checkin</q-item-label>
@@ -46,7 +45,6 @@
                                 </q-item-section>
                                 <q-item-section side top>
                                     {{asset.name}}
-
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -55,24 +53,20 @@
                                 </q-item-section>
                                 <q-item-section side top>
                                     {{asset.asset_tag}}
-
                                 </q-item-section>
                             </q-item>
                             <q-item dense v-if="asset.model">
                                 <q-item-section top>
                                     <q-item-label>Model Name</q-item-label>
                                 </q-item-section>
-
                                 <q-item-section side top>
                                     {{asset.model.name}}
-
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
                                 <q-item-section top>
                                     <q-item-label>Model Number</q-item-label>
                                 </q-item-section>
-
                                 <q-item-section side top>
                                     {{asset.model_number}}
 
@@ -90,10 +84,8 @@
                                 <q-item-section top>
                                     <q-item-label>Status</q-item-label>
                                 </q-item-section>
-
                                 <q-item-section side top>
                                     {{asset.status_label.name}}
-
                                 </q-item-section>
                             </q-item>
                             <q-item dense v-if="asset.company">
@@ -102,7 +94,6 @@
                                 </q-item-section>
                                 <q-item-section side top>
                                     {{asset.company.name}}
-
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -111,7 +102,6 @@
                                 </q-item-section>
                                 <q-item-section side top v-if="asset.location">
                                     {{asset.location.name}}
-
                                 </q-item-section>
                             </q-item>
                             <q-separator inset />
@@ -120,9 +110,7 @@
                                 <q-item-section top>
                                     <q-item-label>Manufacturer</q-item-label>
                                 </q-item-section>
-
                                 <q-item-section side top>
-
                                     {{asset.manufacturer.name}}
                                 </q-item-section>
                             </q-item>
@@ -131,7 +119,6 @@
                                     <q-item-label>Purchase Date</q-item-label>
                                 </q-item-section>
                                 <q-item-section side top v-if="asset.purchase_date">
-
                                     {{asset.purchase_date.formatted}}
                                 </q-item-section>
                             </q-item>
@@ -140,9 +127,7 @@
                                     <q-item-label>Purchase Cost</q-item-label>
                                 </q-item-section>
                                 <q-item-section side top>
-
                                     ${{asset.purchase_cost}}
-
                                 </q-item-section>
                             </q-item>
                             <q-separator inset />
@@ -152,7 +137,6 @@
                                     <q-item-label>Months</q-item-label>
                                 </q-item-section>
                                 <q-item-section side top>
-
                                     {{asset.warranty_months}}
                                 </q-item-section>
                             </q-item>
@@ -161,7 +145,6 @@
                                     <q-item-label>Expires</q-item-label>
                                 </q-item-section>
                                 <q-item-section side top v-if="asset.warranty_expires">
-
                                     {{asset.warranty_expires.formatted}}
                                 </q-item-section>
                             </q-item>
@@ -170,7 +153,6 @@
                                     <q-item-label>End of Life</q-item-label>
                                 </q-item-section>
                                 <q-item-section side top v-if="asset.eol">
-
                                     {{asset.eol.formatted}}
                                 </q-item-section>
                             </q-item>
@@ -227,11 +209,10 @@
             <q-tab-panel name="models" class="q-px-none">
                 <ModelsTab />
             </q-tab-panel>
-            <q-tab-panel name="licenses">
+            <q-tab-panel name="licenses" class="q-px-none">
                 Lorem ipsum dolor sit amet consectetur adipisicing elit.
             </q-tab-panel>
-
-            <q-tab-panel name="maintenances">
+            <q-tab-panel name="maintenances" class="q-px-none">
                 <MaintenancesTab 
                 :asset="asset"/>
             </q-tab-panel>

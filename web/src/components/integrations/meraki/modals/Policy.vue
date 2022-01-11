@@ -8,20 +8,23 @@
                     <q-tooltip class="bg-white text-primary">Close</q-tooltip>
                 </q-btn>
             </q-bar>
-            <div class="q-my-xl q-mx-md">
+            <q-card-section>
                 <q-select filled v-model="policy" label="Device Policy" :options="policyOptions" dense
-                    :rules="[(val) => !!val || '*Required']" >
-                            <template v-slot:option="scope">
-          <q-item v-bind="scope.itemProps">
-            <q-item-section>
-              <q-item-label>{{ scope.opt.label }}</q-item-label>
-              <q-item-label caption>{{ scope.opt.description }}</q-item-label>
-            </q-item-section>
-          </q-item>
-        </template>
-        </q-select>
-                <q-btn class="q-mb-md" label="Save" @click="savePolicy()" />
-            </div>
+                    :rules="[(val) => !!val || '*Required']">
+                    <template v-slot:option="scope">
+                        <q-item v-bind="scope.itemProps">
+                            <q-item-section>
+                                <q-item-label>{{ scope.opt.label }}</q-item-label>
+                                <q-item-label caption>{{ scope.opt.description }}</q-item-label>
+                            </q-item-section>
+                        </q-item>
+                    </template>
+                </q-select>
+            </q-card-section>
+            <q-card-actions align="right">
+                <q-btn label="Cancel" v-close-popup />
+                <q-btn label="Save" @click="savePolicy()" />
+            </q-card-actions>
         </q-card>
     </q-dialog>
 </template>
@@ -42,26 +45,25 @@
             const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
             const $q = useQuasar();
             const policy = ref("")
-            const policyOptions = ref([{label: 'Whitelisted', value: 'Whitelisted', description: 'No bandwidth limits or splash page'}, {label: 'Blocked', value: 'Blocked', description:'No access allowed'},{label:'Normal', value: 'Normal', description:''}])
+            const policyOptions = ref([{ label: 'Whitelisted', value: 'Whitelisted', description: 'No bandwidth limits or splash page' }, { label: 'Blocked', value: 'Blocked', description: 'No access allowed' }, { label: 'Normal', value: 'Normal', description: '' }])
 
-            function getDevicePolicy(){
+            function getDevicePolicy() {
                 $q.loading.show({
                     message: 'Getting device policy for ' + props.agent.hostname
                 })
                 axios
-                .get(`/meraki/` + props.selected.value[0].networkId + `/clients/` + props.selected.value[0].mac + `/policy/`)
-                .then(r => {
-                    policy.value = r.data.devicePolicy
-
-                    if (r.data.errors) {
-                    notifyError(r.data.errors[0])
-                    }
-                    $q.loading.hide()
-                })
-                .catch(e => { });
+                    .get(`/meraki/` + props.selected.value[0].networkId + `/clients/` + props.selected.value[0].mac + `/policy/`)
+                    .then(r => {
+                        policy.value = r.data.devicePolicy
+                        if (r.data.errors) {
+                            notifyError(r.data.errors[0])
+                        }
+                        $q.loading.hide()
+                    })
+                    .catch(e => { });
             }
 
-            function savePolicy(){
+            function savePolicy() {
                 $q.loading.show({
                     message: 'Applying new device policy for ' + props.agent.hostname
                 })
@@ -69,18 +71,18 @@
                     devicePolicy: policy.value.value
                 }
                 axios
-                .put(`/meraki/` + props.selected.value[0].networkId + `/clients/` + props.selected.value[0].mac + `/policy/`, data)
-                .then(r => {
-                    policy.value = r.data.devicePolicy
+                    .put(`/meraki/` + props.selected.value[0].networkId + `/clients/` + props.selected.value[0].mac + `/policy/`, data)
+                    .then(r => {
+                        policy.value = r.data.devicePolicy
 
-                    if (r.data.errors) {
-                    notifyError(r.data.errors[0])
-                    }
-                    $q.loading.hide()
-                    notifySuccess('Device policy successfully applied to ' +  props.agent.hostname)
-                    onDialogOK()
-                })
-                .catch(e => { });
+                        if (r.data.errors) {
+                            notifyError(r.data.errors[0])
+                        }
+                        $q.loading.hide()
+                        notifySuccess('Device policy successfully applied to ' + props.agent.hostname)
+                        onDialogOK()
+                    })
+                    .catch(e => { });
             }
 
             onMounted(() => {

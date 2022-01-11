@@ -158,8 +158,6 @@
                                     finishDate: maintenance.completion_date ? maintenance.completion_date.formatted : "No date set",
                                 }
                                 rows.value.push(maintenanceObj)
-                            }else{
-
                             }
                         }
 
@@ -168,12 +166,10 @@
             }
 
             function editMaintenance() {
-                // console.log(selected.value)
                 $q.dialog({
                     component: EditMaintenance,
                     componentProps: {
                         selected: selected.value
-
                     }
                 }).onOk(() => {
                     getAssetMaintenances()
@@ -185,7 +181,6 @@
                     component: DeleteMaintenance,
                     componentProps: {
                         selected: selected.value
-
                     }
                 }).onOk(() => {
                     getAssetMaintenances()
@@ -193,7 +188,6 @@
             }
 
             watch(selected, (val) => {
-
                 if (selected.value.length > 0) {
                     actionBtnDisabled.value = false
                 } else {

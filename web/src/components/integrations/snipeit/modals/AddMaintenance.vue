@@ -16,7 +16,6 @@
                         :rules="[(val) => !!val || '*Required']">
                         <template v-slot:option="scope">
                             <q-item v-bind="scope.itemProps">
-
                                 <q-item-section>
                                     <q-item-label>{{ scope.opt.label }}</q-item-label>
                                     <q-item-label caption>{{ scope.opt.description }}</q-item-label>
@@ -26,7 +25,6 @@
                     </q-select>
                     <q-select filled dense v-model="assetSupplier" label="Supplier" :options="assetSupplierOptions"
                         :rules="[(val) => !!val || '*Required']" />
-
                     <q-select filled dense v-model="assetMaintenanceType" label="Maintenance Type"
                         :options="assetMaintenanceTypeOptions" :rules="[(val) => !!val || '*Required']" />
                     <div class="row q-pt-none">
@@ -46,7 +44,6 @@
                                 </template>
                             </q-input>
                         </div>
-
                         <div class="col-6">
                             <q-input filled dense label="Estimated Completion Date" v-model="completionDate" mask="date"
                                 :rules="['date']">
@@ -69,14 +66,12 @@
                         :rules="[(val) => !!val || '*Required']" style="width:150px" mask="#.##" fill-mask="0"
                         reverse-fill-mask />
                     <q-input v-model="notes" filled placeholder="Type notes in here" autogrow />
-
                     <q-card-actions align="right">
                         <q-btn label="Add" type="submit" />
                         <q-btn label="Cancel" v-close-popup />
                     </q-card-actions>
                 </q-form>
             </q-card-section>
-
         </q-card>
     </q-dialog>
 </template>
@@ -109,7 +104,6 @@
             const notes = ref("")
 
             function getHardware() {
-                console.log(props.asset)
                 let assetObj = {
                     label: props.asset.name,
                     value: props.asset.id,
@@ -118,49 +112,26 @@
                 assetHardware.value = assetObj
                 assetOptions.value.push(assetObj)
                 getSuppliers()
-                // $q.loading.show()
-                // asset
-                //     axios
-                //     .get(`/snipeit/hardware/`, { params: { status: 'All' } })
-                //     .then(r => {
-                //         console.log(r.data)
-                //         for(let asset of r.data.rows){
-                //             let assetObj = {
-                //                 label: asset.name,
-                //                 value: asset.id,
-                //                 description: asset.assigned_to ? asset.model.name + ' ' + asset.model_number + ' -> ' + asset.assigned_to.name : asset.model.name + ' ' + asset.model_number
-                //             }
-                //             assetOptions.value.push(assetObj)
-                //             assetOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
-
-                //         }
-                //         getSuppliers()
-                //     })
-                //     .catch(e => {
-                //         console.log(e)
-                //     });
             }
 
             function getSuppliers() {
                 $q.loading.show()
                 axios
-                    .get(`/snipeit/suppliers/`)
-                    .then(r => {
-
-                        for (let supplier of r.data.rows) {
-                            let supplierObj = {
-                                label: supplier.name,
-                                value: supplier.id,
-                            }
-                            assetSupplierOptions.value.push(supplierObj)
-                            assetSupplierOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
-
+                .get(`/snipeit/suppliers/`)
+                .then(r => {
+                    for (let supplier of r.data.rows) {
+                        let supplierObj = {
+                            label: supplier.name,
+                            value: supplier.id,
                         }
-                        $q.loading.hide()
-                    })
-                    .catch(e => {
-                        console.log(e)
-                    });
+                        assetSupplierOptions.value.push(supplierObj)
+                        assetSupplierOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
+                    }
+                    $q.loading.hide()
+                })
+                .catch(e => {
+                    console.log(e)
+                });
             }
 
             function addMaintenance() {

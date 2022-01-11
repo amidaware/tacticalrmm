@@ -38,8 +38,6 @@
             const $q = useQuasar();
 
             function deleteMaintenance() {
-                $q.loading.show()
-
                 axios
                 .delete(`/snipeit/maintenances/` + props.selected[0].id)
                 .then(r => {
@@ -47,8 +45,6 @@
                         notifyError(r.data.messages)
                     }else{
                         notifySuccess(r.data.messages)
-
-                        $q.loading.hide()
                         onDialogOK()
                     }
                 })

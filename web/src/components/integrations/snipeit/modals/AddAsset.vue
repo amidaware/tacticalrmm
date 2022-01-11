@@ -33,7 +33,6 @@
           <q-select filled v-model="assetCategory" label="Category" :options="assetCategoryOptions" dense
             :rules="[(val) => !!val || '*Required']" />
         </q-step>
-
         <q-step :name="3" title="Review & Add" icon="create_new_folder" :done="step > 3">
           <q-list>
             <q-item dense>
@@ -42,92 +41,74 @@
               </q-item-section>
               <q-item-section side top>
                 {{assetName}}
-
               </q-item-section>
             </q-item>
             <q-item dense>
               <q-item-section top>
                 <q-item-label>Asset Tag</q-item-label>
               </q-item-section>
-
               <q-item-section side top>
                 {{assetTag}}
-
               </q-item-section>
             </q-item>
             <q-item dense>
               <q-item-section top>
                 <q-item-label>Model</q-item-label>
               </q-item-section>
-
               <q-item-section side top>
                 {{assetModel.label}}
-
               </q-item-section>
             </q-item>
             <q-item dense>
               <q-item-section top>
                 <q-item-label>Serial</q-item-label>
               </q-item-section>
-
               <q-item-section side top>
                 {{assetSerial}}
-
               </q-item-section>
             </q-item>
             <q-item dense>
               <q-item-section top>
                 <q-item-label>Status</q-item-label>
               </q-item-section>
-
               <q-item-section side top>
                 {{assetStatus.label}}
-
               </q-item-section>
             </q-item>
             <q-item dense>
               <q-item-section top>
                 <q-item-label>Company</q-item-label>
               </q-item-section>
-
               <q-item-section side top>
                 {{assetCompany.label}}
-
               </q-item-section>
             </q-item>
             <q-item dense>
               <q-item-section top>
                 <q-item-label>Location</q-item-label>
               </q-item-section>
-
               <q-item-section side top>
                 {{assetLocation.label}}
-
               </q-item-section>
             </q-item>
             <q-item dense>
               <q-item-section top>
                 <q-item-label>Manufacturer</q-item-label>
               </q-item-section>
-
               <q-item-section side top>
                 {{assetManufacturer.label}}
-
               </q-item-section>
             </q-item>
             <q-item dense>
               <q-item-section top>
                 <q-item-label>Category</q-item-label>
               </q-item-section>
-
               <q-item-section side top>
                 {{assetCategory.label}}
-
               </q-item-section>
             </q-item>
           </q-list>
         </q-step>
-
         <template v-slot:navigation>
           <q-stepper-navigation align="right">
             <q-btn flat v-if="step > 1" color="primary" @click="$refs.stepper.previous()" label="Back" />

@@ -8,7 +8,7 @@
             <q-tab icon="summarize" name="reports" label="Reports" />
         </q-tabs>
         <q-tab-panels v-model="tab" animated>
-            <q-tab-panel name="endpoint">
+            <q-tab-panel name="endpoint" class="q-px-none">
                 <q-btn-dropdown label="Actions" flat>
                     <q-list>
                         <q-item clickable v-close-popup @click="quickScan()">
@@ -16,7 +16,6 @@
                                 <q-item-label>Quick Scan</q-item-label>
                             </q-item-section>
                         </q-item>
-
                         <q-item clickable v-close-popup @click="fullScan()">
                             <q-item-section>
                                 <q-item-label>Full Scan</q-item-label>
@@ -36,7 +35,6 @@
                                 </q-item-section>
                                 <q-item-section side top>
                                     {{endpoint.name}}
-
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -45,17 +43,14 @@
                                 </q-item-section>
                                 <q-item-section side top>
                                     {{endpoint.id}}
-
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
                                 <q-item-section top>
                                     <q-item-label>Policy</q-item-label>
                                 </q-item-section>
-
                                 <q-item-section side top>
                                     {{endpoint.policy}}
-
                                 </q-item-section>
                             </q-item>
                             <q-item dense>
@@ -72,9 +67,7 @@
                                 <q-item-section top>
                                     <q-item-label>Product Version</q-item-label>
                                 </q-item-section>
-
                                 <q-item-section side top>
-
                                     {{endpoint.productVersion}}
                                 </q-item-section>
                             </q-item>
@@ -87,7 +80,6 @@
                                     {{endpoint.engineVersion}}
                                 </q-item-section>
                             </q-item>
-
                             <q-item dense>
                                 <q-item-section top>
                                     <q-item-label>Last Update</q-item-label>
@@ -184,13 +176,13 @@
                     </div>
                 </div>
             </q-tab-panel>
-            <q-tab-panel name="scanTasks">
+            <q-tab-panel name="scanTasks" class="q-px-none">
                 <ScanTasks :endpoint="endpoint" />
             </q-tab-panel>
             <q-tab-panel name="quarantine" class="q-px-none">
                 <Quarantine :endpoint="endpoint" />
             </q-tab-panel>
-            <q-tab-panel name="reports">
+            <q-tab-panel name="reports" class="q-px-none">
                 Lorem ipsum dolor sit amet consectetur adipisicing elit.
             </q-tab-panel>
         </q-tab-panels>

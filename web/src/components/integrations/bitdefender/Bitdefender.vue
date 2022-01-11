@@ -3,7 +3,7 @@
         <q-tabs v-model="tab" dense align="left" class="text-grey" active-color="primary" indicator-color="primary"
             no-caps narrow-indicator inline-label>
           <q-tab icon="computer" name="endpoint" label="Endpoint" />
-            <q-tab icon="task_alt" name="tasks" label="Tasks" />
+            <q-tab icon="task_alt" name="tasks" label="Scan Tasks" />
             <q-tab icon="local_police" name="quarantine" label="Quarantine" @click="getQuarantine()" />
           <q-tab icon="summarize" name="reports" label="Reports" />
         </q-tabs>

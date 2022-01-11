@@ -8,13 +8,15 @@
                     <q-tooltip class="bg-white text-primary">Close</q-tooltip>
                 </q-btn>
             </q-bar>
-            <q-card-section>
-                    <q-select filled v-model="assetModel" label="Model" :options="assetModelOptions" dense
-                        :rules="[(val) => !!val || '*Required']" />
-                <q-card-actions align="right">
-                    <q-btn class="q-mb-md" label="Save" @click="onOKClick()" />
-                </q-card-actions>
+            <q-card-section class="row items-center">
+                <div>
+                    Are you sure you want to delete the maintenance entry from Snipe-IT?
+                </div>
             </q-card-section>
+            <q-card-actions align="right">
+                <q-btn label="Cancel" v-close-popup />
+                <q-btn label="Confirm" v-close-popup @click="deleteMaintenance()" />
+            </q-card-actions>
         </q-card>
     </q-dialog>
 </template>
@@ -29,32 +31,17 @@
     export default {
         name: "DeleteMaintenance",
         emits: [...useDialogPluginComponent.emits],
-        props: [],
+        props: ['selected'],
 
         setup(props) {
             const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
             const $q = useQuasar();
-            const assetModel = ref("")
-            const assetModelOptions = ref([])
-            const addNewModel = ref(true)
 
-            function getTacticalAgent() {
-                assetModelOptions.value.push(props.agent.wmi_detail.comp_sys_prod[0][0].IdentifyingNumber)
-                assetModelOptions.value.push(props.agent.wmi_detail.comp_sys_prod[0][0].Name)
-            }
-
-            function onOKClick() {
-
+            function deleteMaintenance() {
                 $q.loading.show()
-                let data = {
-                    model_name: assetModel.value,
-                    model_number: assetModel.value,
-                    category_id: props.category.value,
-                    manufacturer_id: props.manufacturer.value
-                }
 
                 axios
-                .post(`/snipeit/models/`, data)
+                .delete(`/snipeit/maintenances/` + props.selected[0].id)
                 .then(r => {
                     if (r.data.status === 'error'){
                         notifyError(r.data.messages)
@@ -62,11 +49,7 @@
                         notifySuccess(r.data.messages)
 
                         $q.loading.hide()
-                        onDialogOK({
-                            "assetModel": assetModel.value,
-                            "assetModelID": r.data.payload.id,
-                            "addNewModel":addNewModel.value
-                        })
+                        onDialogOK()
                     }
                 })
                 .catch(e => {
@@ -79,9 +62,7 @@
             });
 
             return {
-                assetModel,
-                assetModelOptions,
-                onOKClick,
+                deleteMaintenance,
                 // quasar dialog plugin
                 dialogRef,
                 onDialogHide,

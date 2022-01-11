@@ -390,6 +390,24 @@ class GetManufacturers(APIView):
 
         return Response(result)
 
+class GetSuppliers(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        integration = Integration.objects.get(name="Snipe-IT")
+
+        result = requests.get(
+            integration.base_url + "suppliers/",
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {integration.api_key.strip()}"
+            },
+        ).json()
+
+        return Response(result)
+
 class GetMaintenances(APIView):
 
     permission_classes = [IsAuthenticated]
@@ -408,6 +426,31 @@ class GetMaintenances(APIView):
 
         return Response(result)
 
+    def post(self, request, format=None):
+        integration = Integration.objects.get(name="Snipe-IT")
+        print(request.data)
+        payload = {
+            "title": request.data['title'],
+            "asset_maintenance_type": request.data['asset_maintenance_type'],
+            "asset_id": request.data['asset_id'],
+            "supplier_id": request.data['supplier_id'],
+            "start_date": request.data['start_date'],
+            "completion_date": request.data['completion_date'],
+            "cost": request.data['cost']
+        }
+
+        result = requests.post(
+            integration.base_url + "maintenances",
+            json=payload,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {integration.api_key.strip()}"
+            },
+        ).json()
+
+        return Response(result)
+
 class GetMaintenance(APIView):
 
     permission_classes = [IsAuthenticated]
@@ -416,6 +459,20 @@ class GetMaintenance(APIView):
         integration = Integration.objects.get(name="Snipe-IT")
 
         result = requests.get(
+            integration.base_url + "maintenances/" + maintenance_id,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {integration.api_key.strip()}"
+            },
+        ).json()
+
+        return Response(result)
+
+    def delete(self, request, maintenance_id, format=None):
+        integration = Integration.objects.get(name="Snipe-IT")
+
+        result = requests.delete(
             integration.base_url + "maintenances/" + maintenance_id,
             headers={
                 "Accept": "application/json",

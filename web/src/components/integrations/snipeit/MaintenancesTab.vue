@@ -44,8 +44,17 @@
 
     const columns = [
         {
+            name: "title",
+            align: "left",
+            label: "Title",
+            field: (row) => row.title,
+            format: (val) => `${val}`,
+            sortable: true,
+            required: true,
+        },
+        {
             name: "name",
-            label: "Name",
+            label: "Asset Name",
             align: "left",
             field: (row) => row.name,
             format: (val) => `${val}`,
@@ -80,10 +89,19 @@
             required: true,
         },
         {
-            name: "title",
+            name: "cost",
             align: "left",
-            label: "Title",
-            field: (row) => row.title,
+            label: "Cost",
+            field: (row) => row.cost,
+            format: (val) => `${val}`,
+            sortable: true,
+            required: true,
+        },
+        {
+            name: "notes",
+            align: "left",
+            label: "Notes",
+            field: (row) => row.notes,
             format: (val) => `${val}`,
             sortable: true,
             required: true,
@@ -125,12 +143,7 @@
                     .get(`/snipeit/maintenances/`)
                     .then(r => {
                         rows.value = []
-                        // console.log(r.data.rows)
-                        // for (let maintenance of r.data) {
-                        //     console.log(maintenance)
-                            // console.log(props.asset.asset_tag,maintenance.asset.asset_tag)
                         for (let maintenance of r.data.rows) {
-                            console.log(maintenance)
                             if(maintenance.asset.asset_tag == props.asset.asset_tag){
                                 let maintenanceObj = {
                                     id: maintenance.id,
@@ -139,10 +152,11 @@
                                     type: maintenance.asset_maintenance_type,
                                     location: maintenance.location ? maintenance.location.name : "No location set",
                                     title: maintenance.title,
+                                    cost: '$' + maintenance.cost,
+                                    notes: maintenance.notes,
                                     startDate: maintenance.start_date ? maintenance.start_date.formatted : "No date set",
                                     finishDate: maintenance.completion_date ? maintenance.completion_date.formatted : "No date set",
                                 }
-                                console.log(maintenanceObj)
                                 rows.value.push(maintenanceObj)
                             }else{
 

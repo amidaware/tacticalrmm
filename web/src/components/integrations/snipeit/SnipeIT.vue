@@ -377,15 +377,13 @@
             }
 
             function addMaintenance() {
-                tab.value = 'maintenances'
                 $q.dialog({
                     component: AddMaintenance,
                     componentProps: {
-                        agent: props.agent,
                         asset: asset.value
                     }
                 }).onOk(() => {
-                    getHardware()
+                    tab.value = 'maintenances'
                 })
             }
 

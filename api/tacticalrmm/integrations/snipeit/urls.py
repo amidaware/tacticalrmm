@@ -14,6 +14,7 @@ urlpatterns = [
     path('models/', views.GetModels.as_view()),
     path('models/<str:model_id>/', views.GetModel.as_view()),
     path('manufacturers/', views.GetManufacturers.as_view()),
+    path('suppliers/', views.GetSuppliers.as_view()),
     path('maintenances/', views.GetMaintenances.as_view()),
     path('maintenances/<str:maintenance_id>/', views.GetMaintenance.as_view()),
     path('categories/', views.GetCategories.as_view()),

@@ -1,9 +1,9 @@
-FROM nats:2.3.3-alpine
+FROM nats:2.6.6-alpine
 
 ENV TACTICAL_DIR /opt/tactical
 ENV TACTICAL_READY_FILE ${TACTICAL_DIR}/tmp/tactical.ready
 
-RUN apk add --no-cache inotify-tools supervisor bash
+RUN apk add --no-cache supervisor bash
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 

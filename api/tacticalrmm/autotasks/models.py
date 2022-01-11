@@ -32,6 +32,7 @@ TASK_TYPE_CHOICES = [
     ("checkfailure", "On Check Failure"),
     ("manual", "Manual"),
     ("runonce", "Run Once"),
+    ("scheduled", "Scheduled"),  # deprecated
 ]
 
 SYNC_STATUS_CHOICES = [
@@ -91,8 +92,8 @@ class AutomatedTask(BaseAuditModel):
     # deprecated
     timeout = models.PositiveIntegerField(blank=True, default=120)
 
-    # format -> {"actions": [{"type": "script", "pk": 1, "shell": "powershell", "timeout": 90, "script_args": []}, {"type": "cmd", "command": "whoami"}]}
-    actions = JSONField(default=dict)
+    # format -> {"actions": [{"type": "script", "script": 1, "name": "Script Name", "timeout": 90, "script_args": []}, {"type": "cmd", "command": "whoami", "timeout": 90}]}
+    actions = JSONField(default=list)
     assigned_check = models.ForeignKey(
         "checks.Check",
         null=True,
@@ -348,7 +349,7 @@ class AutomatedTask(BaseAuditModel):
         if agent:
             task.create_task_on_agent()
 
-    # agent version >= 1.7.3
+    # agent version >= 1.8.0
     def generate_nats_task_payload(self, editing=False):
         task = {
             "pk": self.pk,
@@ -360,7 +361,9 @@ class AutomatedTask(BaseAuditModel):
             "multiple_instances": self.task_instance_policy
             if self.task_instance_policy
             else 0,
-            "delete_expired_task_after": self.remove_if_not_scheduled,
+            "delete_expired_task_after": self.remove_if_not_scheduled
+            if self.expire_date
+            else False,
             "start_when_available": self.run_asap_after_missed
             if self.task_type != "runonce"
             else True,
@@ -403,7 +406,7 @@ class AutomatedTask(BaseAuditModel):
             elif self.task_type == "monthly":
 
                 # check if "last day is configured"
-                if self.monthly_days_of_month > 0x80000000:
+                if self.monthly_days_of_month >= 0x80000000:
                     task["days_of_month"] = self.monthly_days_of_month - 0x80000000
                     task["run_on_last_day_of_month"] = True
                 else:
@@ -428,7 +431,7 @@ class AutomatedTask(BaseAuditModel):
             .get()
         )
 
-        if pyver.parse(agent.version) >= pyver.parse("1.7.3"):
+        if pyver.parse(agent.version) >= pyver.parse("1.8.0"):
             nats_data = {
                 "func": "schedtask",
                 "schedtaskpayload": self.generate_nats_task_payload(),
@@ -481,9 +484,7 @@ class AutomatedTask(BaseAuditModel):
                     },
                 }
 
-                if self.run_asap_after_missed and pyver.parse(
-                    agent.version
-                ) >= pyver.parse("1.4.7"):
+                if self.run_asap_after_missed:
                     nats_data["schedtaskpayload"]["run_asap_after_missed"] = True
 
                 if self.remove_if_not_scheduled:
@@ -533,7 +534,7 @@ class AutomatedTask(BaseAuditModel):
             .get()
         )
 
-        if pyver.parse(agent.version) >= pyver.parse("1.7.3"):
+        if pyver.parse(agent.version) >= pyver.parse("1.8.0"):
             nats_data = {
                 "func": "schedtask",
                 "schedtaskpayload": self.generate_nats_task_payload(editing=True),

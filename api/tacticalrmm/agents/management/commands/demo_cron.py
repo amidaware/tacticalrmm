@@ -12,15 +12,14 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
 
         random_dates = []
+        now = djangotime.now()
 
         for _ in range(20):
-            rand = djangotime.now() - djangotime.timedelta(minutes=random.randint(1, 2))
+            rand = now - djangotime.timedelta(minutes=random.randint(1, 2))
             random_dates.append(rand)
 
         for _ in range(5):
-            rand = djangotime.now() - djangotime.timedelta(
-                minutes=random.randint(10, 20)
-            )
+            rand = now - djangotime.timedelta(minutes=random.randint(10, 20))
             random_dates.append(rand)
 
         """ for _ in range(5):

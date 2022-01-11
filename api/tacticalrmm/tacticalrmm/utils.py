@@ -184,7 +184,10 @@ def bitweeks_to_string(week: int) -> str:
 
 def bitmonthdays_to_string(day: int) -> str:
     ret: List[str] = []
-    if day == 2147483647 or 4294967295:
+
+    if day == MONTH_DAYS["Last Day"]:
+        return "Last day"
+    elif day == 2147483647 or day == 4294967295:
         return "Every day"
 
     for key, value in MONTH_DAYS.items():
@@ -222,9 +225,8 @@ def reload_nats():
     cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
     key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
     if hasattr(settings, "CERT_FILE") and hasattr(settings, "KEY_FILE"):
-        if os.path.exists(settings.CERT_FILE) and os.path.exists(settings.KEY_FILE):
-            cert_file = settings.CERT_FILE
-            key_file = settings.KEY_FILE
+        cert_file = settings.CERT_FILE
+        key_file = settings.KEY_FILE
 
     config = {
         "tls": {

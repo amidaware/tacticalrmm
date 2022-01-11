@@ -152,7 +152,10 @@ export default {
     watch(
       () => state.value.svc_name,
       (newvalue, oldValue) => {
-        state.value.svc_display_name = serviceOptions.value.find(i => i.value === state.value.svc_name).label;
+        // prevent error when in manual mode
+        try {
+          state.value.svc_display_name = serviceOptions.value.find(i => i.value === state.value.svc_name).label;
+        } catch {}
       }
     );
 

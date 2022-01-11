@@ -4,7 +4,6 @@ from datetime import datetime as dt
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone as djangotime
-from packaging import version as pyver
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -200,14 +199,10 @@ class GetCheckHistory(APIView):
 def run_checks(request, agent_id):
     agent = get_object_or_404(Agent, agent_id=agent_id)
 
-    if pyver.parse(agent.version) >= pyver.parse("1.4.1"):
-        r = asyncio.run(agent.nats_cmd({"func": "runchecks"}, timeout=15))
-        if r == "busy":
-            return notify_error(f"Checks are already running on {agent.hostname}")
-        elif r == "ok":
-            return Response(f"Checks will now be re-run on {agent.hostname}")
-        else:
-            return notify_error("Unable to contact the agent")
-    else:
-        asyncio.run(agent.nats_cmd({"func": "runchecks"}, wait=False))
+    r = asyncio.run(agent.nats_cmd({"func": "runchecks"}, timeout=15))
+    if r == "busy":
+        return notify_error(f"Checks are already running on {agent.hostname}")
+    elif r == "ok":
         return Response(f"Checks will now be re-run on {agent.hostname}")
+    else:
+        return notify_error("Unable to contact the agent")

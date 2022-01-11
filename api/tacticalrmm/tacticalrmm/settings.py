@@ -24,16 +24,16 @@ APP_VER = "0.0.155"
 # https://github.com/wh1te909/rmmagent
 LATEST_AGENT_VER = "1.7.2"
 
-MESH_VER = "0.9.61"
+MESH_VER = "0.9.66"
 
-NATS_SERVER_VER = "2.3.3"
+NATS_SERVER_VER = "2.6.6"
 
 # for the update script, bump when need to recreate venv or npm install
 PIP_VER = "25"
 NPM_VER = "27"
 
 SETUPTOOLS_VER = "59.6.0"
-WHEEL_VER = "0.37.0"
+WHEEL_VER = "0.37.1"
 
 DL_64 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}.exe"
 DL_32 = f"https://github.com/wh1te909/rmmagent/releases/download/v{LATEST_AGENT_VER}/winagent-v{LATEST_AGENT_VER}-x86.exe"

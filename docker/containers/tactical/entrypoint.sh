@@ -18,8 +18,8 @@ set -e
 : "${APP_HOST:=tactical-frontend}"
 : "${REDIS_HOST:=tactical-redis}"
 
-: "${CERT_PRIV_PATH}:=${TACTICAL_DIR}/certs/privkey.pem"
-: "${CERT_PUB_PATH}:=${TACTICAL_DIR}/certs/fullchain.pem"
+: "${CERT_PRIV_PATH:=${TACTICAL_DIR}/certs/privkey.pem}"
+: "${CERT_PUB_PATH:=${TACTICAL_DIR}/certs/fullchain.pem}"
 
 function check_tactical_ready {
   sleep 15

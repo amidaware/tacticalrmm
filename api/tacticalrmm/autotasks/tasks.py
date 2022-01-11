@@ -1,6 +1,5 @@
 import asyncio
 import datetime as dt
-from logging import log
 import random
 from time import sleep
 from typing import Union

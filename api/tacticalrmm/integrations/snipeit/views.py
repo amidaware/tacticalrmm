@@ -390,6 +390,41 @@ class GetManufacturers(APIView):
 
         return Response(result)
 
+class GetMaintenances(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        integration = Integration.objects.get(name="Snipe-IT")
+
+        result = requests.get(
+            integration.base_url + "maintenances/",
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {integration.api_key.strip()}"
+            },
+        ).json()
+
+        return Response(result)
+
+class GetMaintenance(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, maintenance_id, format=None):
+        integration = Integration.objects.get(name="Snipe-IT")
+
+        result = requests.get(
+            integration.base_url + "maintenances/" + maintenance_id,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {integration.api_key.strip()}"
+            },
+        ).json()
+
+        return Response(result)
 
 class GetLocations(APIView):
 

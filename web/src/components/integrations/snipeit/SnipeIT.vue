@@ -22,7 +22,11 @@
                                 <q-item-label>Checkin</q-item-label>
                             </q-item-section>
                         </q-item>
-
+                        <q-item clickable v-close-popup @click="addMaintenance()">
+                            <q-item-section>
+                                <q-item-label>Add Maintenance</q-item-label>
+                            </q-item-section>
+                        </q-item>
                         <q-item clickable v-close-popup @click="deleteAsset()">
                             <q-item-section>
                                 <q-item-label>Delete Asset</q-item-label>
@@ -228,7 +232,8 @@
             </q-tab-panel>
 
             <q-tab-panel name="maintenances">
-                Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                <MaintenancesTab 
+                :asset="asset"/>
             </q-tab-panel>
         </q-tab-panels>
     </q-card>
@@ -243,14 +248,16 @@
     import AddAsset from "@/components/integrations/snipeit/modals/AddAsset";
     import Checkout from "@/components/integrations/snipeit/modals/Checkout";
     import Checkin from "@/components/integrations/snipeit/modals/Checkin";
+    import AddMaintenance from "@/components/integrations/snipeit/modals/AddMaintenance";
     import DeleteAsset from "@/components/integrations/snipeit/modals/DeleteAsset";
     import ModelsTab from "@/components/integrations/snipeit/ModelsTab";
+    import MaintenancesTab from "@/components/integrations/snipeit/MaintenancesTab";
 
     export default {
         name: "SnipeIT",
         emits: [...useDialogPluginComponent.emits],
         props: ['agent'],
-        components: { ModelsTab },
+        components: { ModelsTab, MaintenancesTab },
 
         setup(props) {
             const { dialogRef, onDialogHide, onDialogOK } = useDialogPluginComponent();
@@ -369,6 +376,19 @@
                 })
             }
 
+            function addMaintenance() {
+                tab.value = 'maintenances'
+                $q.dialog({
+                    component: AddMaintenance,
+                    componentProps: {
+                        agent: props.agent,
+                        asset: asset.value
+                    }
+                }).onOk(() => {
+                    getHardware()
+                })
+            }
+
             function deleteAsset() {
                 $q.dialog({
                     component: DeleteAsset,
@@ -394,6 +414,7 @@
                 monthlyDepreciation,
                 currentValue,
                 difference,
+                addMaintenance,
                 // quasar dialog
                 dialogRef,
                 onDialogHide,

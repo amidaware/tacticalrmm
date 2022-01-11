@@ -10,7 +10,7 @@
             </q-bar>
             <q-card-section>
                 <q-form @submit="checkout()">
-                    <div class="q-gutter-sm text-center">
+                    <div class="text-center">
                         <q-radio v-model="checkoutToType" val="user" label="User" />
                         <q-radio v-model="checkoutToType" val="asset" label="Asset" />
                         <q-radio v-model="checkoutToType" val="location" label="Location" />
@@ -56,15 +56,11 @@
                                 </q-input>
                             </div>
                         </div>
-
                         <q-input class="q-mt-lg" v-model="notes" filled placeholder="Type notes in here" autogrow />
                     </div>
-
                     <q-card-actions align="right">
-                        <q-btn label="Add" type="submit" />
-
+                        <q-btn label="Checkout" type="submit" />
                         <q-btn label="Cancel" v-close-popup />
-
                     </q-card-actions>
                 </q-form>
             </q-card-section>

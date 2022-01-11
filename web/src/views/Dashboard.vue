@@ -326,7 +326,6 @@ import SitesForm from "@/components/clients/SitesForm";
 import DeleteClient from "@/components/clients/DeleteClient";
 import InstallAgent from "@/components/modals/agents/InstallAgent";
 import AlertTemplateAdd from "@/components/modals/alerts/AlertTemplateAdd";
-import ClientIntegrations from "@/components/modals/clients/ClientIntegrations";
 
 import { removeClient, removeSite } from "@/api/clients";
 
@@ -337,7 +336,6 @@ export default {
     AgentTable,
     SubTableTabs,
     InstallAgent,
-    ClientIntegrations,
   },
   // allow child components to refresh table
   provide() {

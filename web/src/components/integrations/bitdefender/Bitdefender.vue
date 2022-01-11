@@ -4,7 +4,7 @@
             no-caps narrow-indicator inline-label>
           <q-tab icon="computer" name="endpoint" label="Endpoint" />
             <q-tab icon="task_alt" name="tasks" label="Scan Tasks" />
-            <q-tab icon="local_police" name="quarantine" label="Quarantine" @click="getQuarantine()" />
+            <q-tab icon="local_police" name="quarantine" label="Quarantine" />
           <q-tab icon="summarize" name="reports" label="Reports" />
         </q-tabs>
         <q-tab-panels v-model="tab" animated>
@@ -187,28 +187,8 @@
                 Lorem ipsum dolor sit amet consectetur adipisicing elit.
             </q-tab-panel>
             <q-tab-panel name="quarantine" class="q-px-none">
-                <div class="q-pa-md">
-                <q-btn-dropdown label="Actions" flat>
-                    <q-list>
-                        <q-item clickable v-close-popup @click="checkout()">
-                            <q-item-section>
-                                <q-item-label>Restore</q-item-label>
-                            </q-item-section>
-                        </q-item>
-                        <q-item clickable v-close-popup @click="checkin()">
-                            <q-item-section>
-                                <q-item-label>Remove</q-item-label>
-                            </q-item-section>
-                        </q-item>
-                    </q-list>
-                </q-btn-dropdown>
-                    <q-card>
-                    <q-table :rows="rows" :columns="columns" row-key="id" 
-                    :selected-rows-label="getSelectedString"
-                    selection="multiple"
-                    v-model:selected="selected" />
-                    </q-card>
-                </div>
+                <Quarantine 
+                :endpoint="endpoint"/>
             </q-tab-panel>
             <q-tab-panel name="reports">
                 Lorem ipsum dolor sit amet consectetur adipisicing elit.
@@ -223,79 +203,14 @@
     import { useQuasar, useDialogPluginComponent, date } from "quasar";
     import { notifySuccess, notifyError, notifyWarning } from "@/utils/notify";
     import ScanEndpoint from "@/components/integrations/bitdefender/modals/ScanEndpoint";
-
-    const columns = [
-        {
-            name: "name",
-            required: true,
-            label: "Name",
-            align: "left",
-            sortable: true,
-            field: row => row.name,
-            format: val => `${val}`,
-        },
-        {
-            name: "ip",
-            required: true,
-            label: "IP",
-            align: "left",
-            sortable: true,
-            field: row => row.ip,
-            format: val => `${val}`,
-        },
-        {
-            name: "threatName",
-            required: true,
-            label: "Threat",
-            align: "left",
-            sortable: true,
-            field: row => row.threatName,
-            format: val => `${val}`,
-        },
-
-        {
-            name: "quarantinedOn",
-            required: true,
-            label: "Quarantined On",
-            align: "left",
-            sortable: true,
-            field: row => row.quarantinedOn,
-            format: val => `${val}`,
-        },
-        {
-            name: "canBeRemoved",
-            required: true,
-            label: "Can Be Removed",
-            align: "left",
-            sortable: true,
-            field: row => row.canBeRemoved,
-            format: val => `${val}`,
-        },
-        {
-            name: "canBeRestored",
-            required: true,
-            label: "Can Be Restored",
-            align: "left",
-            sortable: true,
-            field: row => row.canBeRestored,
-            format: val => `${val}`,
-        },
-        {
-            name: "details",
-            required: true,
-            label: "Details",
-            align: "left",
-            sortable: true,
-            field: row => row.details,
-            format: val => `${val}`,
-        }
-    ]
+    import Quarantine from "@/components/integrations/bitdefender/Quarantine";
+    import ScanTasks from "@/components/integrations/bitdefender/ScanTasks";
 
     export default {
         name: "Bitdefender",
         emits: [...useDialogPluginComponent.emits],
         props: ['agent'],
-        
+        components: {Quarantine},
         setup(props) {
             const { dialogRef, onDialogHide } = useDialogPluginComponent();
             const $q = useQuasar();
@@ -307,8 +222,6 @@
             const bitdefenderEndpoint = ref([])
             const endpoint = ref([])
             const modules = ref([])
-            const rows = ref([])
-            const selected = ref([])
 
             async function getBitdefenderEndpoints(){
                 $q.loading.show()
@@ -382,32 +295,6 @@
                 });
             }
 
-            function getQuarantine(){
-                $q.loading.show()
-                axios
-                .get(`/bitdefender/endpoint/quarantine/` + endpoint.value.id + `/`)
-                .then(r => {
-                    rows.value = []
-                    for (let item of r.data.result.items){
-                        let quarantineObj = {
-                            name: item.endpointName,
-                            ip: item.endpointIP,
-                            threatName: item.threatName,
-                            quarantinedOn: item.quarantinedOn,
-                            canBeRemoved: item.canBeRemoved,
-                            canBeRestored: item.canBeRestored,
-                            details: item.details.filePath
-                        }
-                        rows.value.push(quarantineObj)
-                    }
-
-                    $q.loading.hide()
-                })
-                .catch(e => {
-                    console.log(e)
-                });
-            }
-
             function quickScan(){
                     $q.dialog({
                     component: ScanEndpoint,
@@ -434,22 +321,8 @@
 
             return {
                 tab,
-                quarantinePagination: {
-                    sortBy: 'quarantinedOn',
-                    descending: false,
-                    page: 1,
-                    rowsPerPage: 100
-                },
-                rows,
-                columns,
                 endpoint,
-                filter: ref(""),
                 modules,
-                selected,
-                getSelectedString () {
-                    return selected.value.length === 0 ? '' : `${selected.value.length} record${selected.value.length > 1 ? 's' : ''} selected of ${rows.value.length}`
-                },
-                getQuarantine,
                 quickScan,
                 fullScan,
                 // quasar dialog

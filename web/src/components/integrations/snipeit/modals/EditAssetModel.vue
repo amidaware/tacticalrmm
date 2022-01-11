@@ -2,7 +2,7 @@
     <q-dialog ref="dialogRef" @hide="onDialogHide">
         <q-card class="q-dialog-plugin" style="width: 60vw">
             <q-bar>
-                Edit {{selected.manufacturer}} - {{selected.modelNumber}}
+                Edit Asset Model
 
                 <q-space />
                 <q-btn dense flat icon="close" v-close-popup>

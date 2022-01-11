@@ -4,10 +4,10 @@
             <q-card class="q-dialog-plugin" style="width: 60vw">
             <q-bar>
             <span v-if="scanType === 'quick'">
-                {{endpoint.name}} Quick Scan
+                Quick Scan
                 </span>
                 <span v-else>
-                {{endpoint.name}} Full Scan
+                Full Scan
 
                 </span>
                 <q-space />

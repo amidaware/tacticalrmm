@@ -10,12 +10,12 @@
             </q-bar>
       <q-card-section class="row items-center">
       <div>
-        Are you sure you want to delete the {{model.name}} model from Snipe-IT?
+        Are you sure you want to delete the {{selected.name}} model from Snipe-IT?
       </div>
       </q-card-section>
       <q-card-actions align="right">
         <q-btn label="Cancel" v-close-popup />
-        <q-btn label="Confirm" v-close-popup @click="deleteAsset()" />
+        <q-btn label="Confirm" v-close-popup @click="deleteAssetModel()" />
       </q-card-actions>
     </q-card>
     </q-dialog>
@@ -31,15 +31,15 @@
     export default {
         name: "DeleteModel",
         emits: [...useDialogPluginComponent.emits],
-        props: ['model'],
+        props: ['selected'],
 
         setup(props) {
             const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
             const $q = useQuasar();
 
-            function deleteModel(){
+            function deleteAssetModel(){
                 axios
-                .delete(`/snipeit/models/` + props.model.id + `/`)
+                .delete(`/snipeit/models/` + props.selected[0].id + `/`)
                 .then(r => {
                     if (r.data.status === 'error'){
                         notifyError(r.data.messages)
@@ -49,7 +49,7 @@
                     }
                 })
                 .catch(e => {
-                    console.log(e)
+                    console.log(e.response.data)
                 });
             }
 
@@ -58,7 +58,7 @@
             });
 
             return {
-                deleteModel,
+                deleteAssetModel,
                 // quasar dialog plugin
                 dialogRef,
                 onDialogHide,

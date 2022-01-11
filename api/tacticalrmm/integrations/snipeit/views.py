@@ -360,16 +360,9 @@ class GetModel(APIView):
 
     def delete(self, request, model_id, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
-        payload = {
-            "name": request.data['model_name'],
-            "model_number": request.data['model_number'],
-            "category_id": request.data['category_id'],
-            "manufacturer_id": request.data['manufacturer_id']
-        }
-
-        result = requests.post(
-            integration.base_url + "models",
-            json=payload,
+        print(model_id)
+        result = requests.delete(
+            integration.base_url + "models/" + model_id,
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",

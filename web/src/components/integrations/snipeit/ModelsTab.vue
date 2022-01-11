@@ -45,7 +45,7 @@
     },
     {
       name: "name",
-      label: "Name",
+      label: "Model Name",
       align: "left",
       field: (row) => row.name,
       format: (val) => `${val}`,
@@ -126,7 +126,15 @@
         }
 
         function deleteAssetModel(){
+            $q.dialog({
+            component: DeleteAssetModel,
+            componentProps: {
+                selected: selected.value
 
+            }
+        }).onOk(() => {
+                    getAssetModels()
+            })
         }
 
       watch(selected, (val) =>{

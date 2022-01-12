@@ -45,8 +45,7 @@
                             </q-input>
                         </div>
                         <div class="col-6">
-                            <q-input filled dense label="Estimated Completion Date" v-model="completionDate" mask="date"
-                                :rules="['date']">
+                            <q-input filled dense label="Completion Date" v-model="completionDate" mask="date" class="q-mb-md">
                                 <template v-slot:append>
                                     <q-icon name="event" class="cursor-pointer">
                                         <q-popup-proxy ref="qDateProxy" cover transition-show="scale"
@@ -141,7 +140,7 @@
                     asset_id: props.asset.id,
                     supplier_id: assetSupplier.value.value,
                     start_date: date.formatDate(startDate.value, 'YYYY-MM-DD'),
-                    completion_date: date.formatDate(completionDate.value, 'YYYY-MM-DD'),
+                    completion_date: completionDate.value ? date.formatDate(completionDate.value, 'YYYY-MM-DD') : null,
                     cost: cost.value,
                     notes: notes.value
                 }

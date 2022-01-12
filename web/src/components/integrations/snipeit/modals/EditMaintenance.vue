@@ -123,7 +123,7 @@
                     assetSupplier.value = supplierObj
                     assetMaintenanceType.value = r.data.asset_maintenance_type
                     startDate.value = r.data.start_date.date
-                    completionDate.value = r.data.completion_date.date
+                    completionDate.value = completionDate.value ? r.data.completion_date.date : null,
                     cost.value = r.data.cost
                     notes.value = r.data.notes
                     getSuppliers()
@@ -159,7 +159,7 @@
                     asset_id: props.asset.id,
                     supplier_id: assetSupplier.value.value,
                     start_date: date.formatDate(startDate.value, 'YYYY-MM-DD'),
-                    completion_date: date.formatDate(completionDate.value, 'YYYY-MM-DD'),
+                    completion_date: completionDate.value ? date.formatDate(completionDate.value, 'YYYY-MM-DD') : null,
                     cost: cost.value,
                     notes: notes.value
                 }

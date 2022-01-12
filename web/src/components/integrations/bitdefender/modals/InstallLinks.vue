@@ -3,7 +3,7 @@
         <q-card class="q-dialog-plugin" style="min-width: 60vw">
             <q-bar>
                 <span>
-                    Packages
+                    Package Install Links
                 </span>
                 <q-space />
                 <q-btn dense flat icon="close" v-close-popup>
@@ -72,7 +72,7 @@
         {
             name: "packageName",
             required: true,
-            label: "Name",
+            label: "Package Name",
             align: "left",
             sortable: true,
             field: row => row.packageName,

@@ -124,3 +124,21 @@ Go To Protect >> Rules and policies and add a firewall rule
 ![FW Exclusions](images/sophosxgscreen8.png)
 
 Optionally select Log Firewall Traffic checkbox for troubleshooting.
+
+## ESET ESMC Console
+
+There are two spots:
+
+1. In the Detection Engine -> Performance Exclusions
+2. Web Access Protection -> URL Address Management
+
+
+![Web Exclusions](images/esetesmc1.png)
+
+![Web Exclusions](images/esetesmc2.png)
+
+![Web Exclusions](images/esetesmc3.png)
+
+![Web Exclusions](images/esetesmc4.png)
+
+![Web Exclusions](images/esetesmc5.png)

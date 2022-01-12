@@ -4,7 +4,6 @@
             no-caps narrow-indicator inline-label>
             <q-tab icon="computer" name="asset" label="Asset" />
             <q-tab icon="category" name="models" label="Models" />
-            <q-tab icon="save" name="licenses" label="Licenses" />
             <q-tab icon="build" name="maintenances" label="Maintenances" />
         </q-tabs>
         <q-tab-panels v-model="tab" animated>
@@ -47,6 +46,14 @@
                                     {{asset.name}}
                                 </q-item-section>
                             </q-item>
+                            <q-item dense v-if="asset.status_label">
+                                <q-item-section top>
+                                    <q-item-label>Status</q-item-label>
+                                </q-item-section>
+                                <q-item-section side top>
+                                    {{asset.status_label.name}}
+                                </q-item-section>
+                            </q-item>
                             <q-item dense>
                                 <q-item-section top>
                                     <q-item-label>Asset Tag</q-item-label>
@@ -78,14 +85,6 @@
                                 </q-item-section>
                                 <q-item-section side top>
                                     {{asset.serial}}
-                                </q-item-section>
-                            </q-item>
-                            <q-item dense v-if="asset.status_label">
-                                <q-item-section top>
-                                    <q-item-label>Status</q-item-label>
-                                </q-item-section>
-                                <q-item-section side top>
-                                    {{asset.status_label.name}}
                                 </q-item-section>
                             </q-item>
                             <q-item dense v-if="asset.company">
@@ -209,9 +208,6 @@
             <q-tab-panel name="models" class="q-px-none">
                 <ModelsTab />
             </q-tab-panel>
-            <q-tab-panel name="licenses" class="q-px-none">
-                Lorem ipsum dolor sit amet consectetur adipisicing elit.
-            </q-tab-panel>
             <q-tab-panel name="maintenances" class="q-px-none">
                 <MaintenancesTab 
                 :asset="asset"/>
@@ -315,7 +311,6 @@
                         $q.loading.hide()
                         notifyError("Could not find a " + props.agent.hostname + " asset by the same name and model number in Snipe-IT")
                         addAsset()
-
                     })
                     .catch(e => {
                         console.log(e)

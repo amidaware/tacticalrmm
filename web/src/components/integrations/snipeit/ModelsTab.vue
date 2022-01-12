@@ -101,6 +101,7 @@
             let actionBtnDisabled = ref(true)
 
             function getAssetModels() {
+                $q.loading.show()
                 rows.value = []
                 axios
                     .get(`/snipeit/models/`)
@@ -116,17 +117,16 @@
                             }
                             rows.value.push(modelObj)
                         }
+                        $q.loading.hide()
                     })
                     .catch(e => { });
             }
 
             function editAssetModel() {
-                // console.log(selected.value)
                 $q.dialog({
                     component: EditAssetModel,
                     componentProps: {
                         selected: selected.value
-
                     }
                 }).onOk(() => {
                     getAssetModels()
@@ -138,7 +138,6 @@
                     component: DeleteAssetModel,
                     componentProps: {
                         selected: selected.value
-
                     }
                 }).onOk(() => {
                     getAssetModels()
@@ -146,7 +145,6 @@
             }
 
             watch(selected, (val) => {
-
                 if (selected.value.length > 0) {
                     actionBtnDisabled.value = false
                 } else {

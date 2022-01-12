@@ -11,26 +11,25 @@
       <q-stepper v-model="step" ref="stepper" color="primary" animated>
         <q-step :name="1" :title="'Add ' + agent.hostname" icon="settings" :done="step > 1">
           <q-form>
-            <q-input filled v-model="assetName" label="Name" dense :rules="[(val) => !!val || '*Required']" />
-            <q-select filled dense v-model="assetCompany" label="Company" :options="companyOptions"
+            <q-input filled v-model="assetName" label="Name *" dense :rules="[(val) => !!val || '*Required']" />
+            <q-select filled dense v-model="assetCompany" label="Company *" :options="companyOptions"
               :rules="[(val) => !!val || '*Required']" />
-            <q-select filled dense v-model="assetLocation" label="Location" :options="locationOptions"
+            <q-select filled dense v-model="assetLocation" label="Location *" :options="locationOptions"
               :rules="[ (val) => !!val || '*Required' ]" />
-            <q-select filled v-model="assetTag" label="Asset Tag" :options="assetTagOptions" dense
+            <q-select filled v-model="assetTag" label="Asset Tag *" :options="assetTagOptions" dense
               :rules="[(val) => !!val || '*Required']" />
-            <q-input filled v-model="assetSerial" label="Serial" dense :rules="[(val) => !!val || '*Required']" />
+            <q-input filled v-model="assetSerial" label="Serial *" dense :rules="[(val) => !!val || '*Required']" />
             <q-select filled dense v-model="assetStatus" label="Status" :options="assetStatusOptions"
               :rules="[(val) => !!val || '*Required']" />
           </q-form>
         </q-step>
-
         <q-step :name="2" title="Associate" icon="create_new_folder" :done="step > 2">
           <q-btn :disable="newModelButton" class="q-mb-md" icon="add" label="New Model" @click="addModel()" />
-          <q-select filled dense v-model="assetModel" label="Model" :options="assetModelOptions"
+          <q-select filled dense v-model="assetModel" label="Model *" :options="assetModelOptions"
             :rules="[ (val) => !!val || '*Required' ]" />
-          <q-select filled v-model="assetManufacturer" label="Manufacturer" :options="assetManufacturerOptions" dense
+          <q-select filled v-model="assetManufacturer" label="Manufacturer *" :options="assetManufacturerOptions" dense
             :rules="[(val) => !!val || '*Required']" />
-          <q-select filled v-model="assetCategory" label="Category" :options="assetCategoryOptions" dense
+          <q-select filled v-model="assetCategory" label="Category *" :options="assetCategoryOptions" dense
             :rules="[(val) => !!val || '*Required']" />
         </q-step>
         <q-step :name="3" title="Review & Add" icon="create_new_folder" :done="step > 3">
@@ -178,7 +177,6 @@
               companyOptions.value.push(companyObj)
             }
             companyOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
-
           })
           .catch(e => {
             console.log(e.response.data)
@@ -198,7 +196,6 @@
               locationOptions.value.push(locationObj)
             }
             locationOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
-
           })
           .catch(e => {
             console.log(e.response.data)
@@ -218,7 +215,6 @@
               assetStatusOptions.value.push(statusObj)
             }
             assetStatusOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
-
             $q.loading.hide()
           })
           .catch(e => {
@@ -227,12 +223,10 @@
       }
 
       function getModels() {
-
         $q.loading.show()
         axios
           .get(`/snipeit/models/`)
           .then(r => {
-            console.log(r.data)
             assetModelOptions.value = []
             for (let model of r.data.rows) {
               let modelObj = {
@@ -242,7 +236,6 @@
               assetModelOptions.value.push(modelObj)
             }
             assetModelOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
-
           })
           .catch(e => {
             console.log(e.response.data)
@@ -283,7 +276,6 @@
               assetManufacturerOptions.value.push(assetManufacturerObj)
             }
             assetManufacturerOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
-
           })
           .catch(e => {
             console.log(e.response.data)
@@ -299,7 +291,6 @@
             category: assetCategory.value
           }
         }).onOk(val => {
-
           let modelObj = {
             label: val['assetModel'],
             value: val['assetModelID'],
@@ -330,7 +321,6 @@
                   notifySuccess(r.data.messages)
                   onDialogOK()
               }
-
               $q.loading.hide()
             })
             .catch(e => {
@@ -358,7 +348,6 @@
       })
 
       watch([assetManufacturer, assetCategory], ([manufacturer, category]) => {
-
         if (manufacturer && category) {
           newModelButton.value = false
         }

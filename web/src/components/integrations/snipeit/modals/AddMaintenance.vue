@@ -10,9 +10,9 @@
             </q-bar>
             <q-card-section>
                 <q-form @submit="addMaintenance()">
-                    <q-input filled v-model="maintenanceTitle" label="Title" dense
+                    <q-input filled v-model="maintenanceTitle" label="Title *" dense
                         :rules="[(val) => !!val || '*Required']" />
-                    <q-select filled dense v-model="assetHardware" label="Asset" :options="assetOptions"
+                    <q-select filled dense v-model="assetHardware" label="Asset *" :options="assetOptions"
                         :rules="[(val) => !!val || '*Required']">
                         <template v-slot:option="scope">
                             <q-item v-bind="scope.itemProps">
@@ -23,13 +23,13 @@
                             </q-item>
                         </template>
                     </q-select>
-                    <q-select filled dense v-model="assetSupplier" label="Supplier" :options="assetSupplierOptions"
+                    <q-select filled dense v-model="assetSupplier" label="Supplier *" :options="assetSupplierOptions"
                         :rules="[(val) => !!val || '*Required']" />
-                    <q-select filled dense v-model="assetMaintenanceType" label="Maintenance Type"
+                    <q-select filled dense v-model="assetMaintenanceType" label="Maintenance Type *"
                         :options="assetMaintenanceTypeOptions" :rules="[(val) => !!val || '*Required']" />
                     <div class="row q-pt-none">
                         <div class="col-6 q-mr-md">
-                            <q-input filled dense label="Start Date" v-model="startDate" mask="date" :rules="['date']">
+                            <q-input filled dense label="Start Date *" v-model="startDate" mask="date" :rules="['date']">
                                 <template v-slot:append>
                                     <q-icon name="event" class="cursor-pointer">
                                         <q-popup-proxy ref="qDateProxy" cover transition-show="scale"
@@ -61,8 +61,7 @@
                             </q-input>
                         </div>
                     </div>
-                    <q-input filled dense v-model="cost" label="Cost" prefix="$"
-                        :rules="[(val) => !!val || '*Required']" style="width:150px" mask="#.##" fill-mask="0"
+                    <q-input filled dense class="q-mb-md" v-model="cost" label="Cost" prefix="$" style="width:150px" mask="#.##" fill-mask="0"
                         reverse-fill-mask />
                     <q-input v-model="notes" filled placeholder="Type notes in here" autogrow />
                     <q-card-actions align="right">
@@ -141,7 +140,7 @@
                     supplier_id: assetSupplier.value.value,
                     start_date: date.formatDate(startDate.value, 'YYYY-MM-DD'),
                     completion_date: completionDate.value ? date.formatDate(completionDate.value, 'YYYY-MM-DD') : null,
-                    cost: cost.value,
+                    cost: cost.value ? cost.value : null,
                     notes: notes.value
                 }
                 axios
@@ -153,7 +152,6 @@
                             notifySuccess(r.data.messages)
                             onDialogOK()
                         }
-
                     })
                     .catch(e => {
                         console.log(e)

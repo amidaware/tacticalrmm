@@ -29,7 +29,7 @@
     import { notifySuccess, notifyError } from "@/utils/notify";
 
     export default {
-        name: "DeleteModel",
+        name: "DeleteAssetModel",
         emits: [...useDialogPluginComponent.emits],
         props: ['selected'],
 
@@ -44,18 +44,14 @@
                         if (r.data.status === 'error') {
                             notifyError(r.data.messages)
                         } else {
-                            notifySuccess(props.model.name + " has been deleted from Snipe-IT")
-                            onDialogOK()
+                            notifySuccess(r.data.messages)
                         }
+                        onDialogOK()
                     })
                     .catch(e => {
                         console.log(e.response.data)
                     });
             }
-
-            onMounted(() => {
-
-            });
 
             return {
                 deleteAssetModel,

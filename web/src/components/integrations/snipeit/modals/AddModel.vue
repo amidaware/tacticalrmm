@@ -9,7 +9,7 @@
                 </q-btn>
             </q-bar>
             <q-card-section>
-                    <q-select filled v-model="assetModel" label="Model" :options="assetModelOptions" dense
+                    <q-select filled v-model="assetModel" label="Model *" :options="assetModelOptions" dense
                         :rules="[(val) => !!val || '*Required']" />
                 <q-card-actions align="right">
                     <q-btn class="q-mb-md" label="Save" @click="onOKClick()" />
@@ -44,7 +44,6 @@
             }
 
             function onOKClick() {
-
                 $q.loading.show()
                 let data = {
                     model_name: assetModel.value,

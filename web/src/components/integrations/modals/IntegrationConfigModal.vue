@@ -67,7 +67,6 @@
             enabled.value = r.data.enabled
           })
           .catch(e => {
-
           });
       };
 

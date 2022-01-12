@@ -22,7 +22,7 @@
                             :options="locationOptions" :rules="[(val) => !!val || '*Required']" />
                         <div class="row q-pt-none">
                             <div class="col-6 q-mr-md">
-                                <q-input filled dense label="Checkout Date" v-model="checkoutDate" mask="date"
+                                <q-input filled dense label="Checkout Date *" v-model="checkoutDate" mask="date"
                                     :rules="['date']">
                                     <template v-slot:append>
                                         <q-icon name="event" class="cursor-pointer">
@@ -64,7 +64,6 @@
                     </q-card-actions>
                 </q-form>
             </q-card-section>
-
         </q-card>
     </q-dialog>
 </template>
@@ -163,6 +162,7 @@
                     getLocations()
                 ]
             })
+            
             onMounted(() => {
                 getUsers()
             });

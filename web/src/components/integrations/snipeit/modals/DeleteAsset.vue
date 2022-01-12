@@ -45,17 +45,13 @@
                             notifyError(r.data.messages)
                         } else {
                             notifySuccess(props.agent.hostname + " has been deleted from Snipe-IT")
-                            onDialogOK()
                         }
+                        onDialogOK()
                     })
                     .catch(e => {
                         console.log(e)
                     });
             }
-
-            onMounted(() => {
-
-            });
 
             return {
                 deleteAsset,

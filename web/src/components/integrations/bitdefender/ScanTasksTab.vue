@@ -73,7 +73,7 @@
   ]
 
   export default {
-    name: "ScanTasks",
+    name: "ScanTasksTab",
     emits: [...useDialogPluginComponent.emits],
     props: ['endpoint'],
 
@@ -83,7 +83,7 @@
       let rows = ref([])
 
       function getScanTasks() {
-
+        $q.loading.show()
         axios
           .get(`/bitdefender/tasks/`)
           .then(r => {
@@ -97,7 +97,7 @@
               }
               rows.value.push(itemObj)
             }
-
+            $q.loading.hide()
           })
           .catch(e => {
             console.log(e.response.data)

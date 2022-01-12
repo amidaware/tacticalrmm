@@ -11,14 +11,12 @@
             <q-card-section>
                 <q-form @submit="checkin()" class="q-pa-md">
                     <div class="q-gutter-sm text-center">
-                        <q-select filled dense v-model="location" label="Locations" :options="locationOptions"
+                        <q-select filled dense v-model="location" label="Location *" :options="locationOptions"
                             :rules="[(val) => !!val || '*Required']" />
-
                         <q-input v-model="notes" filled placeholder="Type notes in here" autogrow />
                     </div>
                     <q-card-actions align="right">
                         <q-btn label="Add" type="submit" />
-
                         <q-btn label="Cancel" v-close-popup />
                     </q-card-actions>
                 </q-form>
@@ -63,7 +61,6 @@
                         }
 
                         locationOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
-
                     })
                     .catch(e => {
                         console.log(e.response.data)
@@ -90,6 +87,7 @@
                         console.log(e.response.data)
                     });
             }
+            
             onMounted(() => {
                 getLocations()
             });

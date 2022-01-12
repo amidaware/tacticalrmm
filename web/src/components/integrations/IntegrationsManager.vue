@@ -129,7 +129,6 @@
           }).onOk(() => {
             getIntegrations()
           })
-
         } else if (name === "Snipe-IT") {
           $q.dialog({
             component: IntegrationConfigModal,
@@ -141,7 +140,6 @@
           }).onOk(() => {
             getIntegrations()
           })
-
         } else {
           notifyError(name + " integration not yet implemented")
         }
@@ -169,7 +167,4 @@
       };
     },
   };
-
-
-
 </script>

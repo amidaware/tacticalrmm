@@ -182,10 +182,10 @@
                 </div>
             </q-tab-panel>
             <q-tab-panel name="scanTasks" class="q-px-none">
-                <ScanTasks :endpoint="endpoint" />
+                <ScanTasksTab :endpoint="endpoint" />
             </q-tab-panel>
             <q-tab-panel name="quarantine" class="q-px-none">
-                <Quarantine :endpoint="endpoint" />
+                <QuarantineTab :endpoint="endpoint" />
             </q-tab-panel>
             <q-tab-panel name="reports" class="q-px-none">
                 Lorem ipsum dolor sit amet consectetur adipisicing elit.
@@ -201,14 +201,14 @@
     import { notifySuccess, notifyError, notifyWarning } from "@/utils/notify";
     import InstallLinks from "@/components/integrations/bitdefender/modals/InstallLinks";
     import ScanEndpoint from "@/components/integrations/bitdefender/modals/ScanEndpoint";
-    import Quarantine from "@/components/integrations/bitdefender/Quarantine";
-    import ScanTasks from "@/components/integrations/bitdefender/ScanTasks";
+    import QuarantineTab from "@/components/integrations/bitdefender/QuarantineTab";
+    import ScanTasksTab from "@/components/integrations/bitdefender/ScanTasksTab";
 
     export default {
         name: "Bitdefender",
         emits: [...useDialogPluginComponent.emits],
         props: ['agent'],
-        components: { InstallLinks, ScanTasks, Quarantine },
+        components: { InstallLinks, ScanTasksTab, QuarantineTab },
         setup(props) {
             const { dialogRef, onDialogHide } = useDialogPluginComponent();
             const $q = useQuasar();
@@ -255,6 +255,7 @@
                 }
                 $q.loading.hide()
                 notifyError("Could not find the " + props.agent.hostname + " endpoint in Bitdefender GravityZone")
+                getInstallLinks()
             }
 
             function getBitdefenderEndpoint() {
@@ -339,5 +340,4 @@
             };
         },
     };
-
 </script>

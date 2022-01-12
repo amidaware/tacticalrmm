@@ -11,13 +11,13 @@
             <q-card-section>
                 <q-form @submit="saveAssetModel()">
                     <div class="q-gutter-sm text-center">
-                        <q-input filled v-model="assetName" label="Name" dense
+                        <q-input filled v-model="assetName" label="Name *" dense
                             :rules="[(val) => !!val || '*Required']" />
-                        <q-input filled v-model="assetModelNumber" label="Model Number" dense
+                        <q-input filled v-model="assetModelNumber" label="Model Number *" dense
                             :rules="[(val) => !!val || '*Required']" />
-                        <q-select filled v-model="assetManufacturer" label="Manufacturer"
+                        <q-select filled v-model="assetManufacturer" label="Manufacturer *"
                             :options="assetManufacturerOptions" dense :rules="[(val) => !!val || '*Required']" />
-                        <q-select filled v-model="assetCategory" label="Category" :options="assetCategoryOptions" dense
+                        <q-select filled v-model="assetCategory" label="Category *" :options="assetCategoryOptions" dense
                             :rules="[(val) => !!val || '*Required']" />
                     </div>
                     <q-card-actions align="right">
@@ -26,7 +26,6 @@
                     </q-card-actions>
                 </q-form>
             </q-card-section>
-
         </q-card>
     </q-dialog>
 </template>
@@ -88,6 +87,7 @@
                         console.log(e.response.data)
                     });
             }
+
             function getManufacturers() {
                 axios
                     .get(`/snipeit/manufacturers/`)
@@ -101,7 +101,6 @@
                             assetManufacturerOptions.value.push(assetManufacturerObj)
                         }
                         assetManufacturerOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
-
                     })
                     .catch(e => {
                         console.log(e.response.data)

@@ -1,6 +1,5 @@
 <template>
     <div>
-
         <q-splitter v-model="splitterModel">
             <template v-slot:before>
                 <q-tabs v-model="integrationTab" vertical dense class="text-primary"
@@ -8,29 +7,24 @@
                     <q-tab :name="integration.name" :label="integration.name" />
                 </q-tabs>
             </template>
-
             <template v-slot:after>
                 <q-card-section class="row items-center q-py-none">
                     <div class="text-h6">{{ agent.hostname }} Integrations</div>
-
                 </q-card-section>
                 <q-tab-panels v-model="integrationTab" animated swipeable vertical transition-prev="jump-up"
                     transition-next="jump-up">
                     <q-tab-panel class="q-px-none" name="Bitdefender GravityZone">
                         <Bitdefender :agent="agent" />
                     </q-tab-panel>
-
                     <q-tab-panel class="q-px-none" name="Cisco Meraki">
                         <AgentMeraki :agent="agent" />
                     </q-tab-panel>
-
                     <q-tab-panel class="q-px-none" name="Snipe-IT">
                         <SnipeIT :agent="agent" />
                     </q-tab-panel>
                 </q-tab-panels>
             </template>
         </q-splitter>
-
     </div>
 </template>
 <script>
@@ -61,9 +55,7 @@
                 axios
                     .get("agents/" + route.params.agent_id + "/")
                     .then(r => {
-                        
                         agent.value = r.data
-                        
                     })
                     .catch((e) => {
                         console.log(e)
@@ -73,9 +65,16 @@
                 axios
                     .get("/integrations/")
                     .then(r => {
-                        integrations.value = r.data
+                        for (let integrationObj of r.data) {
+                            if (integrationObj.enabled) {
+                                integrations.value.push(integrationObj)
+                            }
+                        }
+                        if (integrations.value.length < 1) {
+                            notifyWarning('There are no integrations configured. Go to Settings > Integrations Manager.')
+                        }
                     })
-                                        .catch((e) => {
+                    .catch((e) => {
                         console.log(e)
                     });
             }
@@ -109,7 +108,7 @@
 </script>
 
 <style>
-body {
-  overflow: scroll;
-}
+    body {
+        overflow: scroll;
+    }
 </style>

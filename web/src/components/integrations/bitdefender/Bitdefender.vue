@@ -11,6 +11,11 @@
             <q-tab-panel name="endpoint" class="q-px-none">
                 <q-btn-dropdown label="Actions" flat>
                     <q-list>
+                        <q-item clickable v-close-popup @click="getPackages()">
+                            <q-item-section>
+                                <q-item-label>Get Packages</q-item-label>
+                            </q-item-section>
+                        </q-item>
                         <q-item clickable v-close-popup @click="quickScan()">
                             <q-item-section>
                                 <q-item-label>Quick Scan</q-item-label>
@@ -194,6 +199,7 @@
     import { ref, computed, watch, onMounted } from "vue";
     import { useQuasar, useDialogPluginComponent, date } from "quasar";
     import { notifySuccess, notifyError, notifyWarning } from "@/utils/notify";
+    import Packages from "@/components/integrations/bitdefender/modals/Packages";
     import ScanEndpoint from "@/components/integrations/bitdefender/modals/ScanEndpoint";
     import Quarantine from "@/components/integrations/bitdefender/Quarantine";
     import ScanTasks from "@/components/integrations/bitdefender/ScanTasks";
@@ -202,7 +208,7 @@
         name: "Bitdefender",
         emits: [...useDialogPluginComponent.emits],
         props: ['agent'],
-        components: { ScanTasks, Quarantine },
+        components: { Packages, ScanTasks, Quarantine },
         setup(props) {
             const { dialogRef, onDialogHide } = useDialogPluginComponent();
             const $q = useQuasar();
@@ -287,6 +293,15 @@
                     });
             }
 
+            function getPackages() {
+                $q.dialog({
+                    component: Packages,
+                    componentProps: {
+                        endpoint: endpoint.value
+                    }
+                })
+            }
+
             function quickScan() {
                 $q.dialog({
                     component: ScanEndpoint,
@@ -315,6 +330,7 @@
                 tab,
                 endpoint,
                 modules,
+                getPackages,
                 quickScan,
                 fullScan,
                 // quasar dialog

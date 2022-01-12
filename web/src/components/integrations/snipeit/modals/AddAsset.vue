@@ -325,10 +325,10 @@
             .post(`/snipeit/hardware/`, data)
             .then(r => {
               if (r.data.status === 'error') {
-                notifyError("The Asset Tag must be unique to Snipe-IT")
+                  notifyError(r.data.messages)
               } else {
-                notifySuccess(props.agent.hostname + " has been added as an asset to Snipe-IT")
-                onDialogOK()
+                  notifySuccess(r.data.messages)
+                  onDialogOK()
               }
 
               $q.loading.hide()

@@ -103,13 +103,11 @@
             const cost = ref("")
             const notes = ref("")
 
-
             function getMaintenance(){
                 axios
                 .get(`/snipeit/maintenances/` + props.selected[0].id)
                 .then(r => {
                     $q.loading.show()
-                    console.log(r.data)
                     let assetObj = {
                         label: props.asset.name,
                         value: props.asset.id,
@@ -134,18 +132,6 @@
                     console.log(e)
                 });
             }
-
-            // function getHardware() {
-            //     console.log(props.selected)
-            //     let assetObj = {
-            //         label: props.asset.name,
-            //         value: props.asset.id,
-            //         description: props.asset.assigned_to ? props.asset.model.name + ' ' + props.asset.model_number + ' -> ' + props.asset.assigned_to.name : props.asset.model.name + ' ' + props.asset.model_number
-            //     }
-            //     assetHardware.value = assetObj
-            //     assetOptions.value.push(assetObj)
-            //     getSuppliers()
-            // }
 
             function getSuppliers() {
                 axios
@@ -180,11 +166,10 @@
                 axios
                     .patch(`/snipeit/maintenances/` + props.selected[0].id + `/`, data)
                     .then(r => {
-                        console.log(r.data)
                         if (r.data.status === 'error') {
-                            notifyError("Please try again")
+                            notifyError(r.data.messages)
                         } else {
-                            notifySuccess("The maintenance entry has been edited for " + props.asset.name)
+                            notifySuccess(r.data.messages)
                             onDialogOK()
                         }
 

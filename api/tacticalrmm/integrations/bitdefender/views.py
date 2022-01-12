@@ -67,7 +67,28 @@ class GetEndpoint(APIView):
 
         return Response(result)
 
+class GetPackages(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request, format=None):
+        integration = Integration.objects.get(name="Bitdefender GravityZone")
+
+        json = {
+            "jsonrpc": "2.0",
+            "method": "getInstallationLinks",
+            "id": integration.company_id,
+        }
+        result = requests.post(
+            integration.base_url + "v1.0/jsonrpc/packages",
+            json=json,
+            verify=False,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": integration.auth_header,
+            },
+        ).json()
+
+        return Response(result)   
 
 class GetQuickScan(APIView):
     permission_classes = [IsAuthenticated]

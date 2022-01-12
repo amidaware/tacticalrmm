@@ -41,9 +41,9 @@
                 axios
                 .delete(`/snipeit/maintenances/` + props.selected[0].id)
                 .then(r => {
-                    if (r.data.status === 'error'){
+                    if (r.data.status === 'error') {
                         notifyError(r.data.messages)
-                    }else{
+                    } else {
                         notifySuccess(r.data.messages)
                         onDialogOK()
                     }
@@ -54,7 +54,6 @@
             }
 
             onMounted(() => {
-                // getTacticalAgent()
             });
 
             return {

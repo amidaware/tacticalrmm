@@ -149,9 +149,9 @@
                     .post(`/snipeit/maintenances/`, data)
                     .then(r => {
                         if (r.data.status === 'error') {
-                            notifyError("Please try again")
+                            notifyError(r.data.messages)
                         } else {
-                            notifySuccess("A maintenance entry has been added for " + props.asset.name)
+                            notifySuccess(r.data.messages)
                             onDialogOK()
                         }
 

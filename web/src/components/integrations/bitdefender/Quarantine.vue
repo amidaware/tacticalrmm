@@ -114,12 +114,10 @@
     setup(props) {
       const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
       const $q = useQuasar();
-      const rows = ref([])
 
+      const rows = ref([])
       const selected = ref([])
       let actionBtnDisabled = ref(true)
-
-      // console.log(props.selected)
 
       function getQuarantine() {
         $q.loading.show()

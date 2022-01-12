@@ -71,7 +71,7 @@
                             }
                         }
                         if (integrations.value.length < 1) {
-                            notifyWarning('There are no integrations configured. Go to Settings > Integrations Manager.')
+                            notifyWarning('There are no agent integrations configured. Go to Settings > Integrations Manager.')
                         }
                     })
                     .catch((e) => {

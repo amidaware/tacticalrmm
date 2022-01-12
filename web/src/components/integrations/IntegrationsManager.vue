@@ -8,44 +8,48 @@
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
-          <q-card-section>
-            <q-table :rows="rows" :columns="columns" row-key="name" :filter="filter" grid hide-header
-              :pagination="pagination">
-              <template v-slot:top-right>
-                <q-input outlined v-model="filter" label="Search" dense debounce="300" clearable>
-                  <template v-slot:prepend>
-                    <q-icon name="search" />
-                  </template>
-                </q-input>
+      <q-card-section>
+        <q-table :rows="rows" :columns="columns" row-key="name" :filter="filter" grid hide-header
+          :pagination="pagination">
+          <template v-slot:top-right>
+            <q-input outlined v-model="filter" label="Search" dense debounce="300" clearable>
+              <template v-slot:prepend>
+                <q-icon name="search" />
               </template>
-              <template v-slot:item="props">
-                <div class="q-pa-xs col-xs-12 col-sm-6 col-md-4 col-lg-3 grid-style-transition">
-                  <q-card class="bg-grey-1">
-                    <q-card-section>
-                      <div class="text-h6">{{props.row.name}}</div>
-                    </q-card-section>
-                    <q-card-section class="q-pt-none">
-                      {{props.row.description}}
-                    </q-card-section>
-                    <div class="vertical-bottom">
-                      <q-card-actions align="left">
-                        <q-btn label="View Config" class="q-ml-sm"
-                          @click="viewIntegrationConfig(props.row.id, props.row.name, props.row.integration)"></q-btn>
-                      </q-card-actions>
-                    </div>
-                    <q-separator v-if="props.row.enabled" />
-                    <q-card-section>
-                      <q-chip color="positive" text-color="white" icon="check_circle_outline" v-if="props.row.enabled"
-                        outline>
-                        Enabled
-                      </q-chip>
-                    </q-card-section>
-                  </q-card>
-                </div>
-              </template>
-            </q-table>
-          </q-card-section>
-          </q-card>
+            </q-input>
+          </template>
+          <template v-slot:item="props">
+            <div class="q-pa-xs col-xs-12 col-sm-6 col-md-4 col-lg-3 grid-style-transition">
+              <q-card class="bg-grey-1">
+                <q-card-section>
+                  <div class="text-h6">{{props.row.name}}</div>
+                </q-card-section>
+                <q-card-section class="q-pt-none">
+                  {{props.row.description}}
+                </q-card-section>
+                <q-card-section>
+                  <q-chip dense color="positive" text-color="white" icon="check_circle_outline" v-if="props.row.enabled"
+                    outline>
+                    Enabled
+                  </q-chip>
+                  <q-chip dense color="positive" text-color="white" outline>
+                    Agent
+                  </q-chip>
+                  <q-chip dense color="positive" text-color="white" v-if="props.row.client_org_related" outline>
+                    Client
+                  </q-chip>
+                </q-card-section>
+                <q-separator />
+                <q-card-actions align="right">
+                  <q-btn size="md" label="View Config" class="q-ml-sm"
+                    @click="viewIntegrationConfig(props.row.id, props.row.name, props.row.integration)"></q-btn>
+                </q-card-actions>
+              </q-card>
+            </div>
+          </template>
+        </q-table>
+      </q-card-section>
+    </q-card>
   </q-dialog>
 </template>
 
@@ -69,7 +73,7 @@
 
       const columns = [
         {
-          name: 'desc',
+          name: 'name',
           required: true,
           label: 'Name',
           align: 'left',
@@ -91,20 +95,18 @@
                 description: integration.description,
                 api_key: integration.configuration.api_key,
                 enabled: integration.enabled,
+                client_org_related: integration.client_org_related,
                 integration: integration
               };
-
               rows.value.push(integrationObj);
-
             }
           })
           .catch(e => {
-
           });
       };
 
       function viewIntegrationConfig(id, name, integration) {
-        if (name === "Bitdefender GravityZone"){
+        if (name === "Bitdefender GravityZone") {
           $q.dialog({
             component: IntegrationConfigModal,
             componentProps: {
@@ -112,12 +114,11 @@
               name: name,
               integration: integration
             }
-          }) 
-            .onOk(() => {
-              getIntegrations()
-            })
-            
-        }else if (name === "Cisco Meraki") {
+          }).onOk(() => {
+            getIntegrations()
+          })
+
+        } else if (name === "Cisco Meraki") {
           $q.dialog({
             component: IntegrationConfigModal,
             componentProps: {
@@ -125,10 +126,9 @@
               name: name,
               integration: integration
             },
+          }).onOk(() => {
+            getIntegrations()
           })
-            .onOk(() => {
-              getIntegrations()
-            })
 
         } else if (name === "Snipe-IT") {
           $q.dialog({
@@ -138,22 +138,22 @@
               name: name,
               integration: integration
             },
+          }).onOk(() => {
+            getIntegrations()
           })
-            .onOk(() => {
-              getIntegrations()
-            })
 
         } else {
           notifyError(name + " integration not yet implemented")
         }
       }
+
       onMounted(() => {
         getIntegrations();
       });
 
       return {
         pagination: {
-          sortBy: 'desc',
+          sortBy: 'name',
           descending: false,
           rowsPerPage: 8
         },

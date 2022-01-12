@@ -8,26 +8,26 @@
           <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
       </q-bar>
-        <q-card-section>
-          <q-form @submit="submitConfig()">
-            <div class="q-gutter-y-md">
-              <q-input outlined v-model="apikey" label="API Key" stack-label
-                placeholder="32hk20f3kjf30hjf0kk54uifdsfaof32" hint="Check with the API provider"
-                :rules="[(val) => !!val || '*Required']" dense autogrow />
-              <q-input outlined v-model="apiurl" label="Base URL" stack-label
-                placeholder="https://api.provider.com/api/v1/" hint="Check with the API provider"
-                :rules="[(val) => !!val || '*Required']" dense />
-              <q-input v-if="name === 'Bitdefender GravityZone'" outlined v-model="companyID" label="Company ID" stack-label
-                placeholder="fsdja90ueji3lkjdsifj892jf3i" hint="Check with the API provider"
-                :rules="[(val) => !!val || '*Required']" dense />
-              <q-card-actions align="right">
-                <q-btn v-if="!enabled" @click="enableChoice=true" label="Enable" type="submit"></q-btn>
-                <q-btn v-if="enabled" label="Edit" type="submit" class="q-mr-md"></q-btn>
-                <q-btn v-if="enabled" @click="enableChoice=false" label="Disable" type="submit"></q-btn>
-              </q-card-actions>
-            </div>
-          </q-form>
-    </q-card-section>
+      <q-card-section>
+        <q-form @submit="submitConfig()">
+          <div class="q-gutter-y-md">
+            <q-input outlined v-model="apikey" label="API Key" stack-label
+              placeholder="32hk20f3kjf30hjf0kk54uifdsfaof32" hint="Check with the API provider"
+              :rules="[(val) => !!val || '*Required']" dense autogrow />
+            <q-input outlined v-model="apiurl" label="Base URL" stack-label
+              placeholder="https://api.provider.com/api/v1/" hint="Check with the API provider"
+              :rules="[(val) => !!val || '*Required']" dense />
+            <q-input v-if="name === 'Bitdefender GravityZone'" outlined v-model="companyID" label="Company ID"
+              stack-label placeholder="fsdja90ueji3lkjdsifj892jf3i" hint="Check with the API provider"
+              :rules="[(val) => !!val || '*Required']" dense />
+            <q-card-actions align="right">
+              <q-btn v-if="!enabled" @click="enableChoice=true" label="Enable" type="submit"></q-btn>
+              <q-btn v-if="enabled" label="Edit" type="submit" class="q-mr-md"></q-btn>
+              <q-btn v-if="enabled" @click="enableChoice=false" label="Disable" type="submit"></q-btn>
+            </q-card-actions>
+          </div>
+        </q-form>
+      </q-card-section>
     </q-card>
   </q-dialog>
 </template>
@@ -69,7 +69,6 @@
           .catch(e => {
 
           });
-
       };
 
       function submitConfig() {
@@ -83,7 +82,6 @@
           axios
             .post(`/integrations/` + props.id + `/`, data)
             .then(r => {
-              
               notifySuccess(props.name + " integration enabled!");
               onDialogOK()
             })
@@ -123,7 +121,6 @@
               onDialogOK()
             })
             .catch(e => {
-
             });
         }
       }

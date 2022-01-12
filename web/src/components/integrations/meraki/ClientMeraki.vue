@@ -113,12 +113,10 @@
 
       function getOrganizations() {
         $q.loading.show()
-        menuLoading.value = true;
         axios
           .get(`/meraki/organizations/`)
           .then(r => {
             organizations.value = r.data;
-            menuLoading.value = false;
             if(r.data.errors){
               notifyError(r.data.errors[0])
             }

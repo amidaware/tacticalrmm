@@ -1,20 +1,14 @@
 <template>
-  <q-dialog ref="dialogRef" @hide="onDialogHide">
-    <q-layout view="hHh Lpr lff" container class="shadow-2 rounded-borders q-dialog-plugin"
-      style="width: 90vw; max-width: 90vw">
-      <q-header class="bg-grey-3 text-black">
-        <q-bar>
-          <q-btn ref="refresh" @click="getIntegrations()" class="q-mr-sm" dense flat push icon="refresh" />Integrations
-          Manager
-          <q-space />
-          <q-btn dense flat icon="close" v-close-popup>
-            <q-tooltip class="bg-white text-primary">Close</q-tooltip>
-          </q-btn>
-        </q-bar>
-      </q-header>
-      <q-page-container class="bg-white">
-        <q-page>
-          <div class="q-pa-md">
+  <q-dialog ref="dialogRef" @hide="onDialogHide" persistant>
+    <q-card class="q-dialog-plugin" style="width: 90vw; max-width: 90vw; height: 40vw; max-height: 40vw">
+      <q-bar>
+        Integrations Manager
+        <q-space />
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+          <q-card-section>
             <q-table :rows="rows" :columns="columns" row-key="name" :filter="filter" grid hide-header
               :pagination="pagination">
               <template v-slot:top-right>
@@ -50,10 +44,8 @@
                 </div>
               </template>
             </q-table>
-          </div>
-        </q-page>
-      </q-page-container>
-    </q-layout>
+          </q-card-section>
+          </q-card>
   </q-dialog>
 </template>
 

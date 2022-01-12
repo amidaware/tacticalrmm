@@ -1,17 +1,14 @@
 <template>
-  <q-dialog ref="dialogRef" @hide="onDialogHide">
-    <q-layout view="hHh Lpr lff" container class="shadow-2 rounded-borders q-dialog-plugin">
-      <q-header class="bg-grey-3 text-black">
-        <q-bar>
-          {{name}}
-          <q-space />
-          <q-btn dense flat icon="close" v-close-popup>
-            <q-tooltip class="bg-white text-primary">Close</q-tooltip>
-          </q-btn>
-        </q-bar>
-      </q-header>
-      <q-page-container class="bg-white">
-        <q-page padding>
+  <q-dialog ref="dialogRef" @hide="onDialogHide" persistant>
+    <q-card class="q-dialog-plugin" style="width: 60vw">
+      <q-bar>
+        {{name}}
+        <q-space />
+        <q-btn dense flat icon="close" v-close-popup>
+          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
+      </q-bar>
+        <q-card-section>
           <q-form @submit="submitConfig()">
             <div class="q-gutter-y-md">
               <q-input outlined v-model="apikey" label="API Key" stack-label
@@ -23,16 +20,15 @@
               <q-input v-if="name === 'Bitdefender GravityZone'" outlined v-model="companyID" label="Company ID" stack-label
                 placeholder="fsdja90ueji3lkjdsifj892jf3i" hint="Check with the API provider"
                 :rules="[(val) => !!val || '*Required']" dense />
-              <div class="q-mt-xl">
+              <q-card-actions align="right">
                 <q-btn v-if="!enabled" @click="enableChoice=true" label="Enable" type="submit"></q-btn>
                 <q-btn v-if="enabled" label="Edit" type="submit" class="q-mr-md"></q-btn>
                 <q-btn v-if="enabled" @click="enableChoice=false" label="Disable" type="submit"></q-btn>
-              </div>
+              </q-card-actions>
             </div>
           </q-form>
-        </q-page>
-      </q-page-container>
-    </q-layout>
+    </q-card-section>
+    </q-card>
   </q-dialog>
 </template>
 

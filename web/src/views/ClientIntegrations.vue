@@ -51,7 +51,7 @@
                             }
                         }
                         if (integrations.value.length < 1) {
-                            notifyWarning('There are no client integrations configured. Go to Settings > Integrations Manager.')
+                            notifyWarning('No Client Integrations configured. Go to Settings > Integrations Manager')
                         }
                     })
                     .catch((e) => {

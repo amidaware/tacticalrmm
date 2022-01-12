@@ -138,6 +138,7 @@
             let actionBtnDisabled = ref(true)
 
             function getAssetMaintenances() {
+                $q.loading.show()
                 rows.value = []
                 axios
                     .get(`/snipeit/maintenances/`)
@@ -160,7 +161,7 @@
                                 rows.value.push(maintenanceObj)
                             }
                         }
-
+                        $q.loading.hide()
                     })
                     .catch(e => { });
             }
@@ -169,7 +170,8 @@
                 $q.dialog({
                     component: EditMaintenance,
                     componentProps: {
-                        selected: selected.value
+                        selected: selected.value,
+                        asset:props.asset
                     }
                 }).onOk(() => {
                     getAssetMaintenances()

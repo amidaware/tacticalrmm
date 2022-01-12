@@ -143,6 +143,7 @@
                     start_date: date.formatDate(startDate.value, 'YYYY-MM-DD'),
                     completion_date: date.formatDate(completionDate.value, 'YYYY-MM-DD'),
                     cost: cost.value,
+                    notes: notes.value
                 }
                 axios
                     .post(`/snipeit/maintenances/`, data)

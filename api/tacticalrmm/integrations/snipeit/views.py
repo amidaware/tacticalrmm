@@ -13,7 +13,7 @@ class GetHardware(APIView):
         integration = Integration.objects.get(name="Snipe-IT")
 
         result = requests.get(
-            integration.base_url + "hardware?limit=500&offset=0&order=desc&status=" + request.query_params['status'],
+            integration.base_url + "hardware?limit=500&offset=0&order=desc&status=" + request.query_params["status"],
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",
@@ -28,13 +28,13 @@ class GetHardware(APIView):
         integration = Integration.objects.get(name="Snipe-IT")
         payload = {
             "requestable": False,
-            "asset_tag": request.data['asset_tag'],
-            "status_id": request.data['status_id'],
-            "model_id": request.data['model_id'],
-            "name": request.data['name'],
-            "serial": request.data['serial'],
-            "location_id": request.data['location_id'],
-            "company_id": request.data['company_id']
+            "asset_tag": request.data["asset_tag"],
+            "status_id": request.data["status_id"],
+            "model_id": request.data["model_id"],
+            "name": request.data["name"],
+            "serial": request.data["serial"],
+            "location_id": request.data["location_id"],
+            "company_id": request.data["company_id"]
         }
         result = requests.post(
             integration.base_url + "hardware",
@@ -70,11 +70,11 @@ class GetAsset(APIView):
         integration = Integration.objects.get(name="Snipe-IT")
 
         payload = {
-            "name": request.data['name'],
-            "assetTag": request.data['assetTag'],
-            "serial": request.data['serial'],
-            "purchaseCost": request.data['purchaseCost'],
-            "warranty": request.data['warranty']
+            "name": request.data["name"],
+            "assetTag": request.data["assetTag"],
+            "serial": request.data["serial"],
+            "purchaseCost": request.data["purchaseCost"],
+            "warranty": request.data["warranty"]
         }
 
         result = requests.put(
@@ -130,11 +130,11 @@ class GetAssetCheckout(APIView):
         integration = Integration.objects.get(name="Snipe-IT")
         payload = {
             "id": asset_id,
-            "checkout_to_type": request.data['checkout_to_type'],
-            "assigned_user": request.data['assigned_user'],
-            "checkout_at": request.data['checkout_at'],
-            "expected_checkin": request.data['expected_checkin'],
-            "note": request.data['note']
+            "checkout_to_type": request.data["checkout_to_type"],
+            "assigned_user": request.data["assigned_user"],
+            "checkout_at": request.data["checkout_at"],
+            "expected_checkin": request.data["expected_checkin"],
+            "note": request.data["note"]
         }
 
         result = requests.post(
@@ -158,8 +158,8 @@ class GetAssetCheckin(APIView):
         integration = Integration.objects.get(name="Snipe-IT")
         payload = {
             "id": asset_id,
-            "location_id": request.data['location_id'],
-            "note": request.data['note']
+            "location_id": request.data["location_id"],
+            "note": request.data["note"]
         }
 
         result = requests.post(
@@ -213,7 +213,7 @@ class GetCompany(APIView):
         integration = Integration.objects.get(name="Snipe-IT")
 
         payload = {
-            "name": request.data['name']
+            "name": request.data["name"]
         }
 
         result = requests.patch(
@@ -300,10 +300,10 @@ class GetModels(APIView):
     def post(self, request, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
         payload = {
-            "name": request.data['model_name'],
-            "model_number": request.data['model_number'],
-            "category_id": request.data['category_id'],
-            "manufacturer_id": request.data['manufacturer_id']
+            "name": request.data["model_name"],
+            "model_number": request.data["model_number"],
+            "category_id": request.data["category_id"],
+            "manufacturer_id": request.data["manufacturer_id"]
         }
 
         result = requests.post(
@@ -340,10 +340,10 @@ class GetModel(APIView):
         integration = Integration.objects.get(name="Snipe-IT")
         print(request.data)
         payload = {
-            "name": request.data['name'],
-            "model_number": request.data['model_number'],
-            "category_id": request.data['category_id'],
-            "manufacturer_id": request.data['manufacturer_id']
+            "name": request.data["name"],
+            "model_number": request.data["model_number"],
+            "category_id": request.data["category_id"],
+            "manufacturer_id": request.data["manufacturer_id"]
         }
 
         result = requests.put(
@@ -430,13 +430,14 @@ class GetMaintenances(APIView):
         integration = Integration.objects.get(name="Snipe-IT")
         print(request.data)
         payload = {
-            "title": request.data['title'],
-            "asset_maintenance_type": request.data['asset_maintenance_type'],
-            "asset_id": request.data['asset_id'],
-            "supplier_id": request.data['supplier_id'],
-            "start_date": request.data['start_date'],
-            "completion_date": request.data['completion_date'],
-            "cost": request.data['cost']
+            "title": request.data["title"],
+            "asset_maintenance_type": request.data["asset_maintenance_type"],
+            "asset_id": request.data["asset_id"],
+            "supplier_id": request.data["supplier_id"],
+            "start_date": request.data["start_date"],
+            "completion_date": request.data["completion_date"],
+            "cost": request.data["cost"],
+            "notes": request.data["notes"]
         }
 
         result = requests.post(
@@ -451,6 +452,7 @@ class GetMaintenances(APIView):
 
         return Response(result)
 
+
 class GetMaintenance(APIView):
 
     permission_classes = [IsAuthenticated]
@@ -460,6 +462,32 @@ class GetMaintenance(APIView):
 
         result = requests.get(
             integration.base_url + "maintenances/" + maintenance_id,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {integration.api_key.strip()}"
+            },
+        ).json()
+
+        return Response(result)
+
+    def patch(self, request, maintenance_id, format=None):
+        integration = Integration.objects.get(name="Snipe-IT")
+        print(request.data)
+        payload = {
+            "title": request.data["title"],
+            "asset_maintenance_type": request.data["asset_maintenance_type"],
+            "asset_id": request.data["asset_id"],
+            "supplier_id": request.data["supplier_id"],
+            "start_date": request.data["start_date"],
+            "completion_date": request.data["completion_date"],
+            "cost": request.data["cost"],
+            "notes": request.data["notes"]
+        }
+
+        result = requests.patch(
+            integration.base_url + "maintenances/" + maintenance_id,
+            json=payload,
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",
@@ -522,7 +550,7 @@ class GetLocation(APIView):
         integration = Integration.objects.get(name="Snipe-IT")
 
         payload = {
-            "name": request.data['name']
+            "name": request.data["name"]
         }
 
         result = requests.patch(
@@ -590,10 +618,10 @@ class GetUser(APIView):
         integration = Integration.objects.get(name="Snipe-IT")
 
         payload = {
-            "first_name": request.data['first_name'],
-            "last_name": request.data['last_name'],
-            "jobtitle": request.data['jobtitle'],
-            "department": request.data['department']
+            "first_name": request.data["first_name"],
+            "last_name": request.data["last_name"],
+            "jobtitle": request.data["jobtitle"],
+            "department": request.data["department"]
             }
 
         result = requests.patch(

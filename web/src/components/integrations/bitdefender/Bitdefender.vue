@@ -11,9 +11,9 @@
             <q-tab-panel name="endpoint" class="q-px-none">
                 <q-btn-dropdown label="Actions" flat>
                     <q-list>
-                        <q-item clickable v-close-popup @click="getPackages()">
+                        <q-item clickable v-close-popup @click="getInstallLinks()">
                             <q-item-section>
-                                <q-item-label>Get Packages</q-item-label>
+                                <q-item-label>Get Install Links</q-item-label>
                             </q-item-section>
                         </q-item>
                         <q-item clickable v-close-popup @click="quickScan()">
@@ -199,7 +199,7 @@
     import { ref, computed, watch, onMounted } from "vue";
     import { useQuasar, useDialogPluginComponent, date } from "quasar";
     import { notifySuccess, notifyError, notifyWarning } from "@/utils/notify";
-    import Packages from "@/components/integrations/bitdefender/modals/Packages";
+    import InstallLinks from "@/components/integrations/bitdefender/modals/InstallLinks";
     import ScanEndpoint from "@/components/integrations/bitdefender/modals/ScanEndpoint";
     import Quarantine from "@/components/integrations/bitdefender/Quarantine";
     import ScanTasks from "@/components/integrations/bitdefender/ScanTasks";
@@ -208,7 +208,7 @@
         name: "Bitdefender",
         emits: [...useDialogPluginComponent.emits],
         props: ['agent'],
-        components: { Packages, ScanTasks, Quarantine },
+        components: { InstallLinks, ScanTasks, Quarantine },
         setup(props) {
             const { dialogRef, onDialogHide } = useDialogPluginComponent();
             const $q = useQuasar();
@@ -293,9 +293,9 @@
                     });
             }
 
-            function getPackages() {
+            function getInstallLinks() {
                 $q.dialog({
-                    component: Packages,
+                    component: InstallLinks,
                     componentProps: {
                         endpoint: endpoint.value
                     }
@@ -330,7 +330,7 @@
                 tab,
                 endpoint,
                 modules,
-                getPackages,
+                getInstallLinks,
                 quickScan,
                 fullScan,
                 // quasar dialog

@@ -15,7 +15,7 @@
                     <q-table :rows="rows" :columns="columns" row-key="installLinkWindows" :pagination="pagination"
                         :filter="filter" flat>
                         <template v-slot:top-left>
-                            <q-btn flat dense @click="getPackages()" icon="refresh" />
+                            <q-btn flat dense @click="getInstallLinks()" icon="refresh" />
                         </template>
                         <template v-slot:top-right>
                             <q-input outlined v-model="filter" label="Search" dense debounce="300" clearable>
@@ -117,7 +117,7 @@
             const packages = ref([])
             const rows = ref([])
 
-            function getPackages() {
+            function getInstallLinks() {
                 rows.value = []
                 $q.loading.show()
                 axios
@@ -152,7 +152,7 @@
             }
 
             onMounted(() => {
-                getPackages()
+                getInstallLinks()
             });
 
             return {
@@ -166,7 +166,7 @@
                 rows,
                 columns,
                 filter: ref(""),
-                getPackages,
+                getInstallLinks,
                 copyInstallLink,
                 // quasar dialog plugin
                 dialogRef,

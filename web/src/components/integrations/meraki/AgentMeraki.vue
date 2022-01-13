@@ -1,32 +1,136 @@
 <template>
-  <div class="q-pa-md">
-    <q-card>
-      <q-table :rows="rows" :columns="columns" row-key="id" :selected-rows-label="getSelectedString" selection="single"
-        v-model:selected="selected" :filter="filter">
-        <template v-slot:top-left>
-          <q-btn flat dense @click="getOrganizations()" icon="refresh" />
+    <q-card flat>
+        <q-tabs v-model="tab" dense align="left" class="text-grey" active-color="primary" indicator-color="primary"
+            no-caps narrow-indicator inline-label>
+            <q-tab icon="computer" name="client" label="Client" />
+            <q-tab icon="settings_ethernet" name="macAddresses" label="MAC Addresses"/>
+        </q-tabs>
+        <q-tab-panels v-model="tab" animated>
+            <q-tab-panel name="client" class="q-px-none">
+                <div class="row">
+                    <div class="col-5">
+                        <q-list>
+                            <q-item-section>
+                                <q-item-label header>GENERAL </q-item-label>
+                            </q-item-section>
+                            <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Name</q-item-label>
+                                </q-item-section>
+                                <q-item-section side top>
+                                </q-item-section>
+                            </q-item>
+                            <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>ID</q-item-label>
+                                </q-item-section>
+                                <q-item-section side top>
+                                </q-item-section>
+                            </q-item>
+                            <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Policy</q-item-label>
+                                </q-item-section>
+                                <q-item-section side top>
+                                </q-item-section>
+                            </q-item>
+                            <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Last Seen</q-item-label>
+                                </q-item-section>
+                                <q-item-section side top>
+                                </q-item-section>
+                            </q-item>
+                            <q-separator inset />
+                            <q-item-label header>AGENT</q-item-label>
+                            <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Product Version</q-item-label>
+                                </q-item-section>
+                                <q-item-section side top>
+                                </q-item-section>
+                            </q-item>
+                            <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Engine Version</q-item-label>
+                                </q-item-section>
+                                <q-item-section side top>
 
-          <q-btn-dropdown label="Actions" flat :disable="actionBtnDisabled">
-            <q-list>
-              <q-item clickable v-close-popup @click="getDevicePolicy()">
-                <q-item-section>
-                  <q-item-label>Device Policy</q-item-label>
-                </q-item-section>
-              </q-item>
-
-            </q-list>
-          </q-btn-dropdown>
-        </template>
-        <template v-slot:top-right>
-          <q-input outlined v-model="filter" label="Search" dense debounce="300" clearable>
-            <template v-slot:prepend>
-              <q-icon name="search" />
-            </template>
-          </q-input>
-        </template>
-      </q-table>
+                                </q-item-section>
+                            </q-item>
+                            <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Last Update</q-item-label>
+                                </q-item-section>
+                                <q-item-section side top>
+                                </q-item-section>
+                            </q-item>
+                            <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Malware Detected</q-item-label>
+                                </q-item-section>
+                            </q-item>
+                            <q-item dense>
+                                <q-item-section top>
+                                    <q-item-label>Infected</q-item-label>
+                                </q-item-section>
+                            </q-item>
+                            <q-separator inset />
+                        </q-list>
+                    </div>
+                    <div class="col-7">
+                        <div class="row q-mt-sm">
+                            <div class="col-12">
+                                <q-card class="q-mx-sm q-mb-sm">
+                                    <q-card-section class="text-center">
+                                        <span class="text-h6">Risk Score</span>
+fdsa
+                                    </q-card-section>
+                                </q-card>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+                                <q-card class="q-mx-sm q-mb-sm">
+                                    <q-card-section class="text-center">
+                                        <span class="text-weight-light">Misconfigurations</span>
+                                        <div class="text-h6">
+                                        safd
+                                        </div>
+                                    </q-card-section>
+                                </q-card>
+                            </div>
+                            <div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+                                <q-card class="q-mx-sm q-mb-sm">
+                                    <q-card-section class="text-center">
+                                        <span class="text-weight-light">App Vulnerabilities</span>
+                                        <div class="text-h6">
+                                        fdsa
+                                        </div>
+                                    </q-card-section>
+                                </q-card>
+                            </div>
+                            <div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+                                <q-card class="q-mx-sm q-mb-sm">
+                                    <q-card-section class="text-center">
+                                        <span class="text-weight-light">Human Risks</span>
+                                        <div class="text-h6">
+                                        fdsa
+                                        </div>
+                                    </q-card-section>
+                                </q-card>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </q-tab-panel>
+            <q-tab-panel name="macAddresses" class="q-px-none">
+                <MACAddressesTable 
+                :agent="agent"
+                :rows="rows"/>
+            </q-tab-panel>
+        </q-tab-panels>
     </q-card>
-  </div>
 </template>
 
 <script>
@@ -35,103 +139,14 @@
   import { ref, computed, onMounted, watch } from "vue";
   import { useMeta, useQuasar, useDialogPluginComponent, date } from "quasar";
   import { notifySuccess, notifyError } from "@/utils/notify";
-
-  import Policy from "@/components/integrations/meraki/modals/Policy";
-
-
-  const columns = [
-    {
-      name: "id",
-      label: "ID",
-      align: "left",
-      field: (row) => row.id,
-      format: (val) => `${val}`,
-      sortable: true,
-      required: true,
-    },
-    {
-      name: "mac",
-      label: "MAC",
-      align: "left",
-      field: (row) => row.mac,
-      format: (val) => `${val}`,
-      sortable: true,
-      required: true,
-    },
-    {
-      name: "manufacturer",
-      label: "Manufacturer",
-      align: "left",
-      field: (row) => row.manufacturer,
-      format: (val) => `${val}`,
-      sortable: true,
-      required: true,
-    },
-    {
-      name: "description",
-      align: "left",
-      label: "Description",
-      field: "description",
-      field: (row) => row.description,
-      format: (val) => `${val}`,
-      sortable: true,
-      required: true,
-    },
-    {
-      name: "ip",
-      align: "left",
-      label: "IP",
-      field: "ip",
-      field: (row) => row.ip,
-      format: (val) => `${val}`,
-      sortable: true,
-      required: true,
-    },
-    {
-      name: "status",
-      align: "left",
-      label: "Status",
-      field: "status",
-      field: (row) => row.status,
-      format: (val) => `${val}`,
-      sortable: true,
-      required: true,
-    },
-    {
-      name: "firstSeen",
-      align: "left",
-      label: "First Seen",
-      field: "firstSeen",
-      field: (row) => row.firstSeen,
-      format: (val) => `${val}`,
-      sortable: true,
-      required: true,
-    },
-    {
-      name: "lastSeen",
-      align: "left",
-      label: "Last Seen",
-      field: "lastSeen",
-      field: (row) => row.lastSeen,
-      format: (val) => `${val}`,
-      sortable: true,
-      required: true,
-    },
-    {
-      name: "user",
-      align: "left",
-      label: "User",
-      field: "user",
-      field: (row) => row.user,
-      format: (val) => `${val}`,
-      sortable: true,
-      required: true,
-    },
-  ]
+  import MACAddressesTable from "@/components/integrations/meraki/MACAddressesTable";
+  
   export default {
     name: "AgentMeraki",
     emits: [...useDialogPluginComponent.emits],
     props: ['agent'],
+    components: {MACAddressesTable},
+
     setup(props) {
       const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
       const $q = useQuasar();
@@ -168,8 +183,8 @@
           for (let obj of props.agent.wmi_detail.network_adapter[i]) {
             if (obj.MACAddress && obj.NetEnabled) {
               const macStr = String(obj.MACAddress)
-              const macs = macStr.replaceAll(":", "").toLowerCase()
-              tacticalAgentMacs.value.push(macs)
+              const rows = macStr.replaceAll(":", "").toLowerCase()
+              tacticalAgentMacs.value.push(rows)
             }
 
           }
@@ -203,6 +218,7 @@
             }
             rows.value.push(clientObj)
           }
+          tab.value = 'client'
         }
 
         if (rows.value.length < 1) {
@@ -211,15 +227,14 @@
         $q.loading.hide()
       }
 
-      function getDevicePolicy() {
-        $q.dialog({
-          component: Policy,
-          componentProps: {
-            selected: selected,
-            agent: props.agent
-          }
-        })
-      }
+      // function getMACAddresses() {
+      //   $q.dialog({
+      //     component: MACAddressesTable,
+      //     componentProps: {
+      //       agent: props.agent
+      //     }
+      //   })
+      // }
 
       watch(selected, (val) => {
         if (selected.value.length > 0) {
@@ -237,16 +252,9 @@
         splitterModel: ref(17),
         organizations,
         tab,
-        columns,
         rows,
-        selected,
-        filter: ref(""),
-        getSelectedString() {
-          return selected.value.length === 0 ? '' : `${selected.value.length} record${selected.value.length > 1 ? 's' : ''} selected of ${rows.value.length}`
-        },
-        actionBtnDisabled,
         getOrganizations,
-        getDevicePolicy,
+        // getMACAddresses,
         // quasar dialog plugin
         dialogRef,
         onDialogHide,

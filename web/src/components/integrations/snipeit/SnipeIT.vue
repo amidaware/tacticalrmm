@@ -309,7 +309,7 @@
                             i++;
                         } while (i < r.data.rows.length);
                         $q.loading.hide()
-                        notifyError("Could not find a " + props.agent.hostname + " asset by the same name and model number in Snipe-IT")
+                        notifyError("Could not find a " + props.agent.hostname + " asset with the same asset tag, hostname or model number in Snipe-IT")
                         addAsset()
                     })
                     .catch(e => {

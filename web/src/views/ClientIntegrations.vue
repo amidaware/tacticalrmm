@@ -17,8 +17,8 @@
             </q-tab-panels>
         </template>
     </q-splitter>
-
 </template>
+
 <script>
     import axios from "axios";
     import { useRoute } from 'vue-router';
@@ -57,8 +57,8 @@
                     .catch((e) => {
                         console.log(e)
                     })
-
             }
+
             function getClient() {
                 axios
                     .get("clients/" + route.params.client_id + "/")
@@ -76,10 +76,12 @@
                     integrationTab.value = 'Cisco Meraki'
                 }
             })
+
             onMounted(() => {
                 getIntegrations()
                 getClient();
             });
+            
             return {
                 splitterModel: ref(15),
                 integrationTab,

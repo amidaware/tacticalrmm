@@ -27,6 +27,7 @@
         </q-splitter>
     </div>
 </template>
+
 <script>
     import axios from "axios";
     import { useRoute } from 'vue-router';
@@ -61,6 +62,7 @@
                         console.log(e)
                     });
             }
+
             function getIntegrations() {
                 axios
                     .get("/integrations/")
@@ -90,10 +92,12 @@
                     integrationTab.value = 'Snipe-IT'
                 }
             })
+
             onMounted(() => {
                 getAgent();
                 getIntegrations()
             });
+            
             return {
                 splitterModel: ref(15),
                 integrationTab,

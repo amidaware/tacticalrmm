@@ -254,7 +254,7 @@
                     }
                 }
                 $q.loading.hide()
-                notifyError("Could not find the " + props.agent.hostname + " endpoint in Bitdefender GravityZone")
+                notifyError("Could not find the " + props.agent.hostname + " endpoint with the same MAC address in Bitdefender GravityZone")
                 getInstallLinks()
             }
 

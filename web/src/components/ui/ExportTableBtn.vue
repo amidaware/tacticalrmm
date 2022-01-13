@@ -1,5 +1,5 @@
 <template>
-  <q-btn dense color="primary" icon-right="archive" @click="export">
+  <q-btn dense color="primary" icon-right="archive" @click="exportTable">
     <q-tooltip>Export table as CSV</q-tooltip>
   </q-btn>
 </template>
@@ -15,7 +15,7 @@ export default {
   },
   setup(props) {
     return {
-      export: () => exportTableToCSV(props.data, props.columns),
+      exportTable: () => exportTableToCSV(props.data, props.columns),
     };
   },
 };

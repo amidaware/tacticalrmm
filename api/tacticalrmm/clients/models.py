@@ -9,11 +9,17 @@ from tacticalrmm.models import PermissionQuerySet
 from tacticalrmm.utils import AGENT_DEFER
 
 
+def _default_failing_checks_data():
+    return {"error": False, "warning": False}
+
+
 class Client(BaseAuditModel):
     objects = PermissionQuerySet.as_manager()
 
     name = models.CharField(max_length=255, unique=True)
     block_policy_inheritance = models.BooleanField(default=False)
+    failing_checks = models.JSONField(default=_default_failing_checks_data)
+    agent_count = models.PositiveIntegerField(default=0)
     workstation_policy = models.ForeignKey(
         "automation.Policy",
         related_name="workstation_clients",
@@ -73,10 +79,6 @@ class Client(BaseAuditModel):
         return self.name
 
     @property
-    def agent_count(self) -> int:
-        return Agent.objects.defer(*AGENT_DEFER).filter(site__client=self).count()
-
-    @property
     def has_maintenanace_mode_agents(self):
         return (
             Agent.objects.defer(*AGENT_DEFER)
@@ -86,35 +88,8 @@ class Client(BaseAuditModel):
         )
 
     @property
-    def has_failing_checks(self):
-        agents = Agent.objects.defer(*AGENT_DEFER).filter(site__client=self)
-        data = {"error": False, "warning": False}
-
-        for agent in agents:
-            if agent.maintenance_mode:
-                break
-
-            if agent.overdue_email_alert or agent.overdue_text_alert:
-                if agent.status == "overdue":
-                    data["error"] = True
-                    break
-
-            if agent.checks["has_failing_checks"]:
-
-                if agent.checks["warning"]:
-                    data["warning"] = True
-
-                if agent.checks["failing"]:
-                    data["error"] = True
-                    break
-
-            if agent.autotasks.exists():  # type: ignore
-                for i in agent.autotasks.all():  # type: ignore
-                    if i.status == "failing" and i.alert_severity == "error":
-                        data["error"] = True
-                        break
-
-        return data
+    def live_agent_count(self) -> int:
+        return Agent.objects.defer(*AGENT_DEFER).filter(site__client=self).count()
 
     @staticmethod
     def serialize(client):
@@ -130,6 +105,8 @@ class Site(BaseAuditModel):
     client = models.ForeignKey(Client, related_name="sites", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     block_policy_inheritance = models.BooleanField(default=False)
+    failing_checks = models.JSONField(default=_default_failing_checks_data)
+    agent_count = models.PositiveIntegerField(default=0)
     workstation_policy = models.ForeignKey(
         "automation.Policy",
         related_name="workstation_sites",
@@ -185,52 +162,12 @@ class Site(BaseAuditModel):
         return self.name
 
     @property
-    def agent_count(self) -> int:
-        return Agent.objects.defer(*AGENT_DEFER).filter(site=self).count()
-
-    @property
     def has_maintenanace_mode_agents(self):
-        return (
-            Agent.objects.defer(*AGENT_DEFER)
-            .filter(site=self, maintenance_mode=True)
-            .count()
-            > 0
-        )
+        return self.agents.defer(*AGENT_DEFER).filter(maintenance_mode=True).count() > 0  # type: ignore
 
     @property
-    def has_failing_checks(self):
-        agents = (
-            Agent.objects.defer(*AGENT_DEFER)
-            .filter(site=self)
-            .prefetch_related("agentchecks", "autotasks")
-        )
-
-        data = {"error": False, "warning": False}
-
-        for agent in agents:
-            if agent.maintenance_mode:
-                break
-
-            if agent.overdue_email_alert or agent.overdue_text_alert:
-                if agent.status == "overdue":
-                    data["error"] = True
-                    break
-
-            if agent.checks["has_failing_checks"]:
-                if agent.checks["warning"]:
-                    data["warning"] = True
-
-                if agent.checks["failing"]:
-                    data["error"] = True
-                    break
-
-            if agent.autotasks.exists():  # type: ignore
-                for i in agent.autotasks.all():  # type: ignore
-                    if i.status == "failing" and i.alert_severity == "error":
-                        data["error"] = True
-                        break
-
-        return data
+    def live_agent_count(self) -> int:
+        return self.agents.defer(*AGENT_DEFER).count()  # type: ignore
 
     @staticmethod
     def serialize(site):

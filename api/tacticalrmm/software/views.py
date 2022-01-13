@@ -2,7 +2,6 @@ import asyncio
 from typing import Any
 
 from django.shortcuts import get_object_or_404
-from packaging import version as pyver
 from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -42,9 +41,6 @@ class GetSoftware(APIView):
     # software install
     def post(self, request, agent_id):
         agent = get_object_or_404(Agent, agent_id=agent_id)
-        if pyver.parse(agent.version) < pyver.parse("1.4.8"):
-            return notify_error("Requires agent v1.4.8")
-
         name = request.data["name"]
 
         action = PendingAction.objects.create(

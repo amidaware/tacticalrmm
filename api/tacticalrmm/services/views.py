@@ -1,8 +1,8 @@
 import asyncio
 
 from agents.models import Agent
-from checks.models import Check
 from django.shortcuts import get_object_or_404
+from django.conf import settings
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,6 +15,11 @@ class GetServices(APIView):
     permission_classes = [IsAuthenticated, WinSvcsPerms]
 
     def get(self, request, agent_id):
+        if getattr(settings, "DEMO", False):
+            from tacticalrmm.demo_views import demo_get_services
+
+            return demo_get_services()
+
         agent = get_object_or_404(Agent, agent_id=agent_id)
         r = asyncio.run(agent.nats_cmd(data={"func": "winservices"}, timeout=10))
 

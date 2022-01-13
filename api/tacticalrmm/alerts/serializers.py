@@ -10,12 +10,29 @@ from .models import Alert, AlertTemplate
 
 class AlertSerializer(ModelSerializer):
 
-    hostname = SerializerMethodField(read_only=True)
-    client = SerializerMethodField(read_only=True)
-    site = SerializerMethodField(read_only=True)
-    alert_time = SerializerMethodField(read_only=True)
-    resolve_on = SerializerMethodField(read_only=True)
-    snoozed_until = SerializerMethodField(read_only=True)
+    hostname = SerializerMethodField()
+    agent_id = SerializerMethodField()
+    client = SerializerMethodField()
+    site = SerializerMethodField()
+    alert_time = SerializerMethodField()
+    resolve_on = SerializerMethodField()
+    snoozed_until = SerializerMethodField()
+
+    def get_agent_id(self, instance):
+        if instance.alert_type == "availability":
+            return instance.agent.agent_id if instance.agent else ""
+        elif instance.alert_type == "check":
+            return (
+                instance.assigned_check.agent.agent_id
+                if instance.assigned_check
+                else ""
+            )
+        elif instance.alert_type == "task":
+            return (
+                instance.assigned_task.agent.agent_id if instance.assigned_task else ""
+            )
+        else:
+            return ""
 
     def get_hostname(self, instance):
         if instance.alert_type == "availability":

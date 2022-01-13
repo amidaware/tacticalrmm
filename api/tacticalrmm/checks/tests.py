@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from django.utils import timezone as djangotime
+from django.conf import settings
 from model_bakery import baker
 
 from checks.models import CheckHistory
@@ -215,18 +216,12 @@ class TestCheckViews(TacticalTestCase):
 
     @patch("agents.models.Agent.nats_cmd")
     def test_run_checks(self, nats_cmd):
-        agent = baker.make_recipe("agents.agent", version="1.4.1")
-        agent_b4_141 = baker.make_recipe("agents.agent", version="1.4.0")
-
-        url = f"{base_url}/{agent_b4_141.agent_id}/run/"
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 200)
-        nats_cmd.assert_called_with({"func": "runchecks"}, wait=False)
+        agent = baker.make_recipe("agents.agent", version=settings.LATEST_AGENT_VER)
 
         nats_cmd.reset_mock()
         nats_cmd.return_value = "busy"
         url = f"{base_url}/{agent.agent_id}/run/"
-        r = self.client.get(url)
+        r = self.client.post(url)
         self.assertEqual(r.status_code, 400)
         nats_cmd.assert_called_with({"func": "runchecks"}, timeout=15)
         self.assertEqual(r.json(), f"Checks are already running on {agent.hostname}")
@@ -234,7 +229,7 @@ class TestCheckViews(TacticalTestCase):
         nats_cmd.reset_mock()
         nats_cmd.return_value = "ok"
         url = f"{base_url}/{agent.agent_id}/run/"
-        r = self.client.get(url)
+        r = self.client.post(url)
         self.assertEqual(r.status_code, 200)
         nats_cmd.assert_called_with({"func": "runchecks"}, timeout=15)
         self.assertEqual(r.json(), f"Checks will now be re-run on {agent.hostname}")
@@ -242,12 +237,12 @@ class TestCheckViews(TacticalTestCase):
         nats_cmd.reset_mock()
         nats_cmd.return_value = "timeout"
         url = f"{base_url}/{agent.agent_id}/run/"
-        r = self.client.get(url)
+        r = self.client.post(url)
         self.assertEqual(r.status_code, 400)
         nats_cmd.assert_called_with({"func": "runchecks"}, timeout=15)
         self.assertEqual(r.json(), "Unable to contact the agent")
 
-        self.check_not_authenticated("get", url)
+        self.check_not_authenticated("post", url)
 
     def test_get_check_history(self):
         # setup data
@@ -1017,7 +1012,8 @@ class TestCheckPermissions(TacticalTestCase):
             self.check_not_authorized(method, unauthorized_url)
             self.check_authorized(method, policy_url)
 
-    def test_check_action_permissions(self):
+    @patch("agents.models.Agent.nats_cmd")
+    def test_check_action_permissions(self, nats_cmd):
 
         agent = baker.make_recipe("agents.agent")
         unauthorized_agent = baker.make_recipe("agents.agent")

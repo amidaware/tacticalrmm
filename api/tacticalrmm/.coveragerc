@@ -21,4 +21,6 @@ omit =
     */tests.py
     */test.py
     checks/utils.py
+    */asgi.py
+    */demo_views.py
     

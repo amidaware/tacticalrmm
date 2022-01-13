@@ -201,7 +201,6 @@ import PermissionsManager from "@/components/accounts/PermissionsManager";
 
 export default {
   name: "FileBar",
-  inject: ["refreshDashboard"],
   components: {
     UpdateAgents,
     EditCoreSettings,
@@ -254,32 +253,30 @@ export default {
       });
     },
     showAlertsManager() {
-      this.$q
-        .dialog({
-          component: AlertsManager,
-        })
-        .onDismiss(this.refreshDashboard);
+      this.$q.dialog({
+        component: AlertsManager,
+      });
     },
     showClientsManager() {
       this.$q
         .dialog({
           component: ClientsManager,
         })
-        .onDismiss(() => this.refreshDashboard(false));
+        .onDismiss(() => this.$store.dispatch("refreshDashboard", true));
     },
     showAddClientModal() {
       this.$q
         .dialog({
           component: ClientsForm,
         })
-        .onOk(this.refreshDashboard);
+        .onOk(() => this.$store.dispatch("loadTree"));
     },
     showAddSiteModal() {
       this.$q
         .dialog({
           component: SitesForm,
         })
-        .onOk(this.refreshDashboard);
+        .onOk(() => this.$store.dispatch("loadTree"));
     },
     showPermissionsManager() {
       this.$q.dialog({
@@ -334,11 +331,9 @@ export default {
       });
     },
     showPendingActions() {
-      this.$q
-        .dialog({
-          component: PendingActions,
-        })
-        .onDismiss(this.refreshDashboard);
+      this.$q.dialog({
+        component: PendingActions,
+      });
     },
     showDeployments() {
       this.$q.dialog({

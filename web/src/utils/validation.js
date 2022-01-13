@@ -35,3 +35,7 @@ export function validateEventID(val) {
 export function validateRetcode(val, done) {
   /^\d+$/.test(val) ? done(val) : done();
 }
+
+export function validateTimePeriod(val) {
+  return /^\d{1,3}(H|h|M|m|S|s|d|D)$/.test(val);
+}

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="127"
+SCRIPT_VERSION="128"
 SCRIPT_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/update.sh'
 LATEST_SETTINGS_URL='https://raw.githubusercontent.com/wh1te909/tacticalrmm/master/api/tacticalrmm/tacticalrmm/settings.py'
 YELLOW='\033[1;33m'
@@ -173,6 +173,8 @@ if ! [[ $CHECK_NGINX_WORKER_CONN ]]; then
   printf >&2 "${GREEN}Changing nginx worker connections to 2048${NC}\n"
   sudo sed -i 's/worker_connections.*/worker_connections 2048;/g' /etc/nginx/nginx.conf
 fi
+
+sudo sed -i 's/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
 
 HAS_PY39=$(which python3.9)
 if ! [[ $HAS_PY39 ]]; then

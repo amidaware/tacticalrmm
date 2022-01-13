@@ -4,8 +4,8 @@
       dense
       :table-class="{ 'table-bgcolor': !$q.dark.isActive, 'table-bgcolor-dark': $q.dark.isActive }"
       class="agents-tbl-sticky"
-      :table-style="{ 'max-height': agentTableHeight }"
-      :rows="frame"
+      :table-style="{ 'max-height': tableHeight }"
+      :rows="agents"
       :filter="search"
       :filter-method="filterTable"
       :columns="columns"
@@ -84,189 +84,8 @@
           @click="agentRowSelected(props.row.agent_id)"
           @dblclick="rowDoubleClicked(props.row.agent_id)"
         >
-          <!-- context menu -->
           <q-menu context-menu>
-            <q-list dense style="min-width: 200px">
-              <!-- edit agent -->
-              <q-item clickable v-close-popup @click="showEditAgent(props.row.agent_id)">
-                <q-item-section side>
-                  <q-icon size="xs" name="fas fa-edit" />
-                </q-item-section>
-                <q-item-section>Edit {{ props.row.hostname }}</q-item-section>
-              </q-item>
-              <!-- agent pending actions -->
-              <q-item clickable v-close-popup @click="showPendingActionsModal(props.row)">
-                <q-item-section side>
-                  <q-icon size="xs" name="far fa-clock" />
-                </q-item-section>
-                <q-item-section>Pending Agent Actions</q-item-section>
-              </q-item>
-              <!-- take control -->
-              <q-item clickable v-ripple v-close-popup @click.stop.prevent="takeControl(props.row.agent_id)">
-                <q-item-section side>
-                  <q-icon size="xs" name="fas fa-desktop" />
-                </q-item-section>
-
-                <q-item-section>Take Control</q-item-section>
-              </q-item>
-
-              <q-item clickable v-ripple @click="getURLActions">
-                <q-item-section side>
-                  <q-icon size="xs" name="open_in_new" />
-                </q-item-section>
-                <q-item-section>Run URL Action</q-item-section>
-                <q-item-section side>
-                  <q-icon name="keyboard_arrow_right" />
-                </q-item-section>
-                <q-menu auto-close anchor="top end" self="top start">
-                  <q-list>
-                    <q-item
-                      v-for="action in urlActions"
-                      :key="action.id"
-                      dense
-                      clickable
-                      v-close-popup
-                      @click="runURLAction(props.row.agent_id, action.id)"
-                    >
-                      {{ action.name }}
-                    </q-item>
-                  </q-list>
-                </q-menu>
-              </q-item>
-
-              <q-item clickable v-ripple v-close-popup @click="showSendCommand(props.row)">
-                <q-item-section side>
-                  <q-icon size="xs" name="fas fa-terminal" />
-                </q-item-section>
-                <q-item-section>Send Command</q-item-section>
-              </q-item>
-
-              <q-item clickable v-ripple v-close-popup @click="showRunScript(props.row)">
-                <q-item-section side>
-                  <q-icon size="xs" name="fas fa-terminal" />
-                </q-item-section>
-                <q-item-section>Run Script</q-item-section>
-              </q-item>
-
-              <q-item clickable v-ripple @click="getFavoriteScripts">
-                <q-item-section side>
-                  <q-icon size="xs" name="star" />
-                </q-item-section>
-                <q-item-section>Run Favorited Script</q-item-section>
-                <q-item-section side>
-                  <q-icon name="keyboard_arrow_right" />
-                </q-item-section>
-                <q-menu auto-close anchor="top end" self="top start">
-                  <q-list>
-                    <q-item
-                      v-for="script in favoriteScripts"
-                      :key="script.value"
-                      dense
-                      clickable
-                      v-close-popup
-                      @click="showRunScript(props.row, script.value)"
-                    >
-                      {{ script.label }}
-                    </q-item>
-                  </q-list>
-                </q-menu>
-              </q-item>
-
-              <q-item clickable v-close-popup @click.stop.prevent="remoteBG(props.row.agent_id)">
-                <q-item-section side>
-                  <q-icon size="xs" name="fas fa-cogs" />
-                </q-item-section>
-                <q-item-section>Remote Background</q-item-section>
-              </q-item>
-
-              <!-- maintenance mode -->
-              <q-item clickable v-close-popup @click="toggleMaintenance(props.row)">
-                <q-item-section side>
-                  <q-icon size="xs" name="construction" />
-                </q-item-section>
-                <q-item-section>
-                  {{ props.row.maintenance_mode ? "Disable Maintenance Mode" : "Enable Maintenance Mode" }}
-                </q-item-section>
-              </q-item>
-
-              <!-- patch management -->
-              <q-item clickable>
-                <q-item-section side>
-                  <q-icon size="xs" name="system_update" />
-                </q-item-section>
-                <q-item-section>Patch Management</q-item-section>
-                <q-item-section side>
-                  <q-icon name="keyboard_arrow_right" />
-                </q-item-section>
-
-                <q-menu anchor="top right" self="top left">
-                  <q-list dense style="min-width: 100px">
-                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="runPatchStatusScan(props.row)">
-                      <q-item-section>Run Patch Status Scan</q-item-section>
-                    </q-item>
-                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="installPatches(props.row)">
-                      <q-item-section>Install Patches Now</q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-menu>
-              </q-item>
-
-              <q-item clickable v-close-popup @click.stop.prevent="runChecks(props.row)">
-                <q-item-section side>
-                  <q-icon size="xs" name="fas fa-check-double" />
-                </q-item-section>
-                <q-item-section>Run Checks</q-item-section>
-              </q-item>
-
-              <q-item clickable>
-                <q-item-section side>
-                  <q-icon size="xs" name="power_settings_new" />
-                </q-item-section>
-                <q-item-section>Reboot</q-item-section>
-                <q-item-section side>
-                  <q-icon name="keyboard_arrow_right" />
-                </q-item-section>
-
-                <q-menu anchor="top right" self="top left">
-                  <q-list dense style="min-width: 100px">
-                    <!-- reboot now -->
-                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="rebootNow(props.row)">
-                      <q-item-section>Now</q-item-section>
-                    </q-item>
-                    <!-- reboot later -->
-                    <q-item clickable v-ripple v-close-popup @click.stop.prevent="showRebootLaterModal(props.row)">
-                      <q-item-section>Later</q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-menu>
-              </q-item>
-
-              <q-item clickable v-close-popup @click.stop.prevent="showPolicyAdd(props.row)">
-                <q-item-section side>
-                  <q-icon size="xs" name="policy" />
-                </q-item-section>
-                <q-item-section>Assign Automation Policy</q-item-section>
-              </q-item>
-
-              <q-item clickable v-close-popup @click.stop.prevent="showAgentRecovery(props.row)">
-                <q-item-section side>
-                  <q-icon size="xs" name="fas fa-first-aid" />
-                </q-item-section>
-                <q-item-section>Agent Recovery</q-item-section>
-              </q-item>
-
-              <q-item clickable v-close-popup @click.stop.prevent="pingAgent(props.row)">
-                <q-item-section side>
-                  <q-icon size="xs" name="delete" />
-                </q-item-section>
-                <q-item-section>Remove Agent</q-item-section>
-              </q-item>
-
-              <q-separator />
-              <q-item clickable v-close-popup>
-                <q-item-section>Close</q-item-section>
-              </q-item>
-            </q-list>
+            <AgentActionMenu :agent="props.row" />
           </q-menu>
           <q-td>
             <q-checkbox
@@ -389,19 +208,20 @@
 
 <script>
 import mixins from "@/mixins/mixins";
-import { mapGetters } from "vuex";
-import { date, openURL } from "quasar";
+import { mapState } from "vuex";
+import { date } from "quasar";
 import EditAgent from "@/components/modals/agents/EditAgent";
-import RebootLater from "@/components/modals/agents/RebootLater";
 import PendingActions from "@/components/logs/PendingActions";
-import PolicyAdd from "@/components/automation/modals/PolicyAdd";
-import SendCommand from "@/components/modals/agents/SendCommand";
-import AgentRecovery from "@/components/modals/agents/AgentRecovery";
-import RunScript from "@/components/modals/agents/RunScript";
+import AgentActionMenu from "@/components/agents/AgentActionMenu";
+import { runURLAction } from "@/api/core";
+import { runTakeControl, runRemoteBackground } from "@/api/agents";
 
 export default {
   name: "AgentTable",
-  props: ["frame", "columns", "userName", "search", "visibleColumns"],
+  components: {
+    AgentActionMenu,
+  },
+  props: ["agents", "columns", "search", "visibleColumns"],
   inject: ["refreshDashboard"],
   mixins: [mixins],
   data() {
@@ -411,8 +231,6 @@ export default {
         sortBy: "hostname",
         descending: false,
       },
-      favoriteScripts: [],
-      urlActions: [],
     };
   },
   methods: {
@@ -479,167 +297,24 @@ export default {
             this.showEditAgent(agent_id);
             break;
           case "takecontrol":
-            this.takeControl(agent_id);
+            runTakeControl(agent_id);
             break;
           case "remotebg":
-            this.remoteBG(agent_id);
+            runRemoteBackground(agent_id);
             break;
           case "urlaction":
-            this.runURLAction(agent_id, this.agentUrlAction);
+            runURLAction({ agent_id: agent_id, action: this.agentUrlAction });
             break;
         }
       }, 500);
     },
-    getFavoriteScripts() {
-      this.favoriteScripts = [];
-      this.$axios
-        .get("/scripts/", { params: { showCommunityScripts: this.showCommunityScripts } })
-        .then(r => {
-          if (r.data.filter(k => k.favorite === true).length === 0) {
-            this.notifyWarning("You don't have any scripts favorited!");
-            return;
-          }
-          this.favoriteScripts = r.data
-            .filter(k => k.favorite === true)
-            .map(script => ({
-              label: script.name,
-              value: script.id,
-              timeout: script.default_timeout,
-              args: script.args,
-            }))
-            .sort((a, b) => a.label.localeCompare(b.label));
-        })
-        .catch(e => {});
-    },
-    runPatchStatusScan(agent) {
-      this.$axios
-        .post(`/winupdate/${agent.agent_id}/scan/`)
-        .then(r => {
-          this.notifySuccess(`Scan will be run shortly on ${agent.hostname}`);
-        })
-        .catch(e => {});
-    },
-    installPatches(agent) {
-      this.$q.loading.show();
-      this.$axios
-        .post(`/winupdate/${agent.agent_id}/install/`)
-        .then(r => {
-          this.$q.loading.hide();
-          this.notifySuccess(r.data);
-        })
-        .catch(e => {
-          this.$q.loading.hide();
-        });
-    },
     showPendingActionsModal(agent) {
-      this.$q
-        .dialog({
-          component: PendingActions,
-          componentProps: {
-            agent: agent,
-          },
-        })
-        .onDismiss(this.refreshDashboard);
-    },
-    takeControl(agent_id) {
-      const url = this.$router.resolve(`/takecontrol/${agent_id}`).href;
-      window.open(url, "", "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1600,height=900");
-    },
-    remoteBG(agent_id) {
-      const url = this.$router.resolve(`/remotebackground/${agent_id}`).href;
-      window.open(url, "", "scrollbars=no,location=no,status=no,toolbar=no,menubar=no,width=1280,height=826");
-    },
-    runChecks(agent) {
-      this.$q.loading.show();
-      this.$axios
-        .get(`/checks/${agent.agent_id}/run/`)
-        .then(r => {
-          this.$q.loading.hide();
-          this.notifySuccess(r.data);
-        })
-        .catch(e => {
-          this.$q.loading.hide();
-        });
-    },
-    removeAgent(agent) {
-      this.$q
-        .dialog({
-          title: `Please type <code style="color:red">yes</code> in the box below to confirm deletion.`,
-          prompt: {
-            model: "",
-            type: "text",
-            isValid: val => val === "yes",
-          },
-          cancel: true,
-          ok: { label: "Uninstall", color: "negative" },
-          persistent: true,
-          html: true,
-        })
-        .onOk(val => {
-          this.$q.loading.show();
-          this.$axios
-            .delete(`/agents/${agent.agent_id}/`)
-            .then(r => {
-              this.$q.loading.hide();
-              this.notifySuccess(r.data);
-              this.refreshDashboard();
-            })
-            .catch(e => {
-              this.$q.loading.hide();
-            });
-        });
-    },
-    pingAgent(agent) {
-      this.$q.loading.show();
-      this.$axios
-        .get(`/agents/${agent.agent_id}/ping/`)
-        .then(r => {
-          this.$q.loading.hide();
-          if (r.data.status === "offline") {
-            this.$q
-              .dialog({
-                title: "Agent offline",
-                message: `${agent.hostname} cannot be contacted. 
-                  Would you like to continue with the uninstall? 
-                  If so, the agent will need to be manually uninstalled from the computer.`,
-                cancel: { label: "No", color: "negative" },
-                ok: { label: "Yes", color: "positive" },
-                persistent: true,
-              })
-              .onOk(() => this.removeAgent(agent))
-              .onCancel(() => {
-                return;
-              });
-          } else if (r.data.status === "online") {
-            this.removeAgent(agent);
-          } else {
-            this.notifyError("Something went wrong");
-          }
-        })
-        .catch(e => {
-          this.$q.loading.hide();
-        });
-    },
-    rebootNow(agent) {
-      this.$q
-        .dialog({
-          title: "Are you sure?",
-          message: `Reboot ${agent.hostname} now`,
-          cancel: true,
-          persistent: true,
-        })
-        .onOk(() => {
-          this.$q.loading.show();
-          this.$axios
-            .post(`/agents/${agent.agent_id}/reboot/`)
-            .then(r => {
-              this.$q.loading.hide();
-              this.notifySuccess(`${agent.hostname} will now be restarted`);
-            })
-            .catch(e => {
-              this.$q.loading.hide();
-            });
-        });
+      this.$q.dialog({
+        component: PendingActions,
+        componentProps: {
+          agent: agent,
+        },
+      });
     },
     agentRowSelected(agent_id) {
       this.$store.commit("setActiveRow", agent_id);
@@ -675,91 +350,12 @@ export default {
         return "agent-normal";
       }
     },
-    showPolicyAdd(agent) {
-      this.$q
-        .dialog({
-          component: PolicyAdd,
-          componentProps: {
-            type: "agent",
-            object: agent,
-          },
-        })
-        .onOk(this.refreshDashboard);
-    },
-    toggleMaintenance(agent) {
-      let data = {
-        maintenance_mode: !agent.maintenance_mode,
-      };
-
-      this.$axios
-        .put(`/agents/${agent.agent_id}/`, data)
-        .then(r => {
-          this.notifySuccess(
-            `Maintenance mode was ${agent.maintenance_mode ? "disabled" : "enabled"} on ${agent.hostname}`
-          );
-          this.refreshDashboard();
-        })
-        .catch(e => {
-          console.log(e);
-        });
-    },
     rowSelectedClass(agent_id) {
       if (agent_id === this.selectedRow) {
         return this.$q.dark.isActive ? "highlight-dark" : "highlight";
       } else {
         return "";
       }
-    },
-    getURLActions() {
-      this.$axios
-        .get("/core/urlaction/")
-        .then(r => {
-          if (r.data.length === 0) {
-            this.notifyWarning("No URL Actions configured. Go to Settings > Global Settings > URL Actions");
-            return;
-          }
-          this.urlActions = r.data;
-        })
-        .catch(() => {});
-    },
-    runURLAction(agent_id, action) {
-      const data = {
-        agent_id: agent_id,
-        action: action,
-      };
-      this.$axios
-        .patch("/core/urlaction/run/", data)
-        .then(r => {
-          openURL(r.data);
-        })
-        .catch(() => {});
-    },
-    showRunScript(agent, script = undefined) {
-      this.$q.dialog({
-        component: RunScript,
-        componentProps: {
-          agent,
-          script,
-        },
-      });
-    },
-    showSendCommand(agent) {
-      this.$q.dialog({
-        component: SendCommand,
-        componentProps: {
-          agent: agent,
-        },
-      });
-    },
-    showRebootLaterModal(agent) {
-      this.$q
-        .dialog({
-          component: RebootLater,
-          componentProps: {
-            agent: agent,
-          },
-        })
-        .onOk(this.refreshDashboard);
     },
     showEditAgent(agent_id) {
       this.$q
@@ -769,19 +365,14 @@ export default {
             agent_id: agent_id,
           },
         })
-        .onOk(this.refreshDashboard);
-    },
-    showAgentRecovery(agent) {
-      this.$q.dialog({
-        component: AgentRecovery,
-        componentProps: {
-          agent: agent,
-        },
-      });
+        .onOk(() => {
+          this.refreshDashboard();
+          this.$store.commit("setRefreshSummaryTab", true);
+        });
     },
   },
   computed: {
-    ...mapGetters(["agentTableHeight", "showCommunityScripts"]),
+    ...mapState(["tableHeight"]),
     agentDblClickAction() {
       return this.$store.state.agentDblClickAction;
     },

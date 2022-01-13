@@ -1,4 +1,4 @@
-# Backing up the RMM
+## Backing up the RMM
 
 !!!note
         This is only applicable for the standard install, not Docker installs.
@@ -28,7 +28,7 @@ The backup tar file will be saved in `/rmmbackups` with the following format:
 
 `rmm-backup-CURRENTDATETIME.tar`
 
-# Schedule to run daily via cron
+## Schedule to run daily via cron
 
 Make a symlink in `/etc/cron.d` (daily cron jobs) with these contents `00 18 * * * tactical /rmm/backup.sh` to run at 6pm daily.
 
@@ -40,7 +40,7 @@ sudo ln -s /rmm/backup.sh /etc/cron.daily/
 !!!warning
     Currently the backup script doesn't have any pruning functions so the folder will grow forever without periodic cleanup
 
-# Video Walkthru
+## Video Walkthru
 
 <div class="video-wrapper">
   <iframe width="320" height="180" src="https://www.youtube.com/embed/rC0NgYJUf_8" frameborder="0" allowfullscreen></iframe>

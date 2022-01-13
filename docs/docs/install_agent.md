@@ -10,6 +10,7 @@
     `C:\Windows\Temp\winagent-v*.exe`<br/>
     `C:\Windows\Temp\trmm\*`<br/>
     `C:\temp\tacticalrmm*.exe`<br/>
+    See [here for other screenshot examples](av.md)
 
 ## Dynamically generated executable
 
@@ -135,3 +136,13 @@ You can always use this to silently uninstall agent on workstations
 ```cmd
 "C:\Program Files\TacticalAgent\unins000.exe" /VERYSILENT
 ```
+
+## Reinstalling mesh and reconnecting to TRMM
+
+Run this from Send Command
+
+```cmd
+"C:\Program Files\TacticalAgent\meshagent.exe" -fullinstall
+```
+
+Then use Agent Recovery | Mesh Agent and choose Recover

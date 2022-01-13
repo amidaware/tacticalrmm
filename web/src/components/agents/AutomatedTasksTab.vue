@@ -249,8 +249,7 @@ import { notifySuccess, notifyError } from "@/utils/notify";
 import { truncateText } from "@/utils/format";
 
 // ui imports
-import AddAutomatedTask from "@/components/tasks/AddAutomatedTask";
-import EditAutomatedTask from "@/components/tasks/EditAutomatedTask";
+import AutomatedTaskForm from "@/components/tasks/AutomatedTaskForm";
 import ScriptOutput from "@/components/checks/ScriptOutput";
 
 // static data
@@ -380,7 +379,7 @@ export default {
 
     function showAddTask() {
       $q.dialog({
-        component: AddAutomatedTask,
+        component: AutomatedTaskForm,
         componentProps: {
           parent: { agent: selectedAgent.value },
         },
@@ -393,9 +392,10 @@ export default {
       if (task.managed_by_policy) return;
 
       $q.dialog({
-        component: EditAutomatedTask,
+        component: AutomatedTaskForm,
         componentProps: {
           task: task,
+          parent: { agent: selectedAgent.value },
         },
       }).onOk(() => {
         getTasks();

@@ -1,108 +1,110 @@
 <template>
-  <q-card style="min-width: 85vh">
-    <q-splitter v-model="splitterModel">
-      <template v-slot:before>
-        <q-tabs dense v-model="tab" vertical class="text-primary">
-          <q-tab name="ui" label="User Interface" />
-        </q-tabs>
-      </template>
-      <template v-slot:after>
-        <q-form @submit.prevent="editUserPrefs">
-          <q-card-section class="row items-center">
-            <div class="text-h6">Preferences</div>
-            <q-space />
-            <q-btn icon="close" flat round dense v-close-popup />
-          </q-card-section>
-          <q-tab-panels v-model="tab" animated transition-prev="jump-up" transition-next="jump-up">
-            <!-- UI -->
-            <q-tab-panel name="ui">
-              <div class="text-subtitle2">User Interface</div>
-              <q-separator />
-              <q-card-section class="row">
-                <div class="col-6">Agent double-click action:</div>
-                <div class="col-2"></div>
-                <q-select
-                  map-options
-                  emit-value
-                  outlined
-                  dense
-                  options-dense
-                  v-model="agentDblClickAction"
-                  :options="agentDblClickOptions"
-                  class="col-4"
-                  @update:model-value="url_action = null"
-                />
-              </q-card-section>
-              <q-card-section class="row" v-if="agentDblClickAction === 'urlaction'">
-                <div class="col-6">URL Action:</div>
-                <div class="col-2"></div>
-                <q-select
-                  map-options
-                  emit-value
-                  outlined
-                  dense
-                  options-dense
-                  v-model="url_action"
-                  :options="urlActions"
-                  class="col-4"
-                />
-              </q-card-section>
-              <q-card-section class="row">
-                <div class="col-6">Agent table default tab:</div>
-                <div class="col-2"></div>
-                <q-select
-                  map-options
-                  emit-value
-                  outlined
-                  dense
-                  options-dense
-                  v-model="defaultAgentTblTab"
-                  :options="defaultAgentTblTabOptions"
-                  class="col-4"
-                />
-              </q-card-section>
-              <q-card-section class="row">
-                <div class="col-4">Loading Bar Color:</div>
-                <div class="col-4"></div>
-                <q-select
-                  outlined
-                  dense
-                  options-dense
-                  v-model="loading_bar_color"
-                  :options="loadingBarColors"
-                  class="col-4"
-                />
-              </q-card-section>
-              <q-card-section class="row">
-                <div class="col-2">Client Sort:</div>
-                <div class="col-2"></div>
-                <q-select
-                  map-options
-                  emit-value
-                  outlined
-                  dense
-                  options-dense
-                  v-model="clientTreeSort"
-                  :options="clientTreeSortOptions"
-                  class="col-8"
-                />
-              </q-card-section>
-              <q-card-section class="row">
-                <q-checkbox
-                  v-model="clear_search_when_switching"
-                  label="Clear search field when switching client/site"
-                />
-              </q-card-section>
-            </q-tab-panel>
-          </q-tab-panels>
+  <q-dialog ref="dialog" @hide="onHide">
+    <q-card class="q-dialog-plugin" style="min-width: 85vh">
+      <q-splitter v-model="splitterModel">
+        <template v-slot:before>
+          <q-tabs dense v-model="tab" vertical class="text-primary">
+            <q-tab name="ui" label="User Interface" />
+          </q-tabs>
+        </template>
+        <template v-slot:after>
+          <q-form @submit.prevent="editUserPrefs">
+            <q-card-section class="row items-center">
+              <div class="text-h6">Preferences</div>
+              <q-space />
+              <q-btn icon="close" flat round dense v-close-popup />
+            </q-card-section>
+            <q-tab-panels v-model="tab" animated transition-prev="jump-up" transition-next="jump-up">
+              <!-- UI -->
+              <q-tab-panel name="ui">
+                <div class="text-subtitle2">User Interface</div>
+                <q-separator />
+                <q-card-section class="row">
+                  <div class="col-6">Agent double-click action:</div>
+                  <div class="col-2"></div>
+                  <q-select
+                    map-options
+                    emit-value
+                    outlined
+                    dense
+                    options-dense
+                    v-model="agentDblClickAction"
+                    :options="agentDblClickOptions"
+                    class="col-4"
+                    @update:model-value="url_action = null"
+                  />
+                </q-card-section>
+                <q-card-section class="row" v-if="agentDblClickAction === 'urlaction'">
+                  <div class="col-6">URL Action:</div>
+                  <div class="col-2"></div>
+                  <q-select
+                    map-options
+                    emit-value
+                    outlined
+                    dense
+                    options-dense
+                    v-model="url_action"
+                    :options="urlActions"
+                    class="col-4"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-6">Agent table default tab:</div>
+                  <div class="col-2"></div>
+                  <q-select
+                    map-options
+                    emit-value
+                    outlined
+                    dense
+                    options-dense
+                    v-model="defaultAgentTblTab"
+                    :options="defaultAgentTblTabOptions"
+                    class="col-4"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-4">Loading Bar Color:</div>
+                  <div class="col-4"></div>
+                  <q-select
+                    outlined
+                    dense
+                    options-dense
+                    v-model="loading_bar_color"
+                    :options="loadingBarColors"
+                    class="col-4"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <div class="col-2">Client Sort:</div>
+                  <div class="col-2"></div>
+                  <q-select
+                    map-options
+                    emit-value
+                    outlined
+                    dense
+                    options-dense
+                    v-model="clientTreeSort"
+                    :options="clientTreeSortOptions"
+                    class="col-8"
+                  />
+                </q-card-section>
+                <q-card-section class="row">
+                  <q-checkbox
+                    v-model="clear_search_when_switching"
+                    label="Clear search field when switching client/site"
+                  />
+                </q-card-section>
+              </q-tab-panel>
+            </q-tab-panels>
 
-          <q-card-section class="row items-center">
-            <q-btn label="Save" color="primary" type="submit" />
-          </q-card-section>
-        </q-form>
-      </template>
-    </q-splitter>
-  </q-card>
+            <q-card-section class="row items-center">
+              <q-btn label="Save" color="primary" type="submit" />
+            </q-card-section>
+          </q-form>
+        </template>
+      </q-splitter>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
@@ -111,7 +113,7 @@ import mixins from "@/mixins/mixins";
 
 export default {
   name: "UserPreferences",
-  emits: ["edit", "close"],
+  emits: ["hide", "ok", "cancel"],
   mixins: [mixins],
   data() {
     return {
@@ -219,11 +221,23 @@ export default {
         .patch("/accounts/users/ui/", data)
         .then(r => {
           this.notifySuccess("Preferences were saved!");
-          this.$emit("edit");
           this.$store.dispatch("loadTree");
-          this.$emit("close");
+          this.onOk();
         })
         .catch(e => {});
+    },
+    show() {
+      this.$refs.dialog.show();
+    },
+    hide() {
+      this.$refs.dialog.hide();
+    },
+    onHide() {
+      this.$emit("hide");
+    },
+    onOk() {
+      this.$emit("ok");
+      this.hide();
     },
   },
   mounted() {

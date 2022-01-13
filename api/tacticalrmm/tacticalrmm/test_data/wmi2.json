@@ -1,0 +1,3613 @@
+{
+    "graphics": [
+        [
+            {
+                "Name": "NVIDIA Quadro P520",
+                "Status": "OK",
+                "Caption": "NVIDIA Quadro P520",
+                "DeviceID": "VideoController1",
+                "AdapterRAM": 2147483648,
+                "DriverDate": "2020-11-20T00:00:00Z",
+                "SystemName": "SERVER123456",
+                "Description": "NVIDIA Quadro P520",
+                "InstallDate": "0001-01-01T00:00:00Z",
+                "Availability": 3,
+                "DriverVersion": "27.21.14.5266",
+                "AdapterDACType": "Integrated RAMDAC",
+                "MaxRefreshRate": 0,
+                "MinRefreshRate": 0,
+                "VideoProcessor": "Quadro P520",
+                "TimeOfLastReset": "0001-01-01T00:00:00Z",
+                "CurrentRefreshRate": 60,
+                "MaxMemorySupported": 0,
+                "AdapterCompatibility": "NVIDIA",
+                "VideoModeDescription": "2560 x 1440 x 4294967296 colors",
+                "CapabilityDescriptions": null,
+                "AcceleratorCapabilities": null,
+                "InstalledDisplayDrivers": "C:\\Windows\\System32\\DriverStore\\FileRepository\\nvlt.inf_amd64_3156bc34fe7846db\\nvldumdx.dll,C:\\Windows\\System32\\DriverStore\\FileRepository\\nvlt.inf_amd64_3156bc34fe7846db\\nvldumdx.dll,C:\\Windows\\System32\\DriverStore\\FileRepository\\nvlt.inf_amd64_3156bc34fe7846db\\nvldumdx.dll,C:\\Windows\\System32\\DriverStore\\FileRepository\\nvlt.inf_amd64_3156bc34fe7846db\\nvldumdx.dll",
+                "SystemCreationClassName": "Win32_ComputerSystem",
+                "CurrentVerticalResolution": 1440
+            }
+        ]
+    ],
+    "os": [
+        [
+            {
+                "BootDevice": "\\Device\\HarddiskVolume4"
+            },
+            {
+                "BuildNumber": "17763"
+            },
+            {
+                "BuildType": "Multiprocessor Free"
+            },
+            {
+                "Caption": "Microsoft Windows Server 2019 Standard"
+            },
+            {
+                "CodeSet": "1252"
+            },
+            {
+                "CountryCode": "1"
+            },
+            {
+                "CreationClassName": "Win32_OperatingSystem"
+            },
+            {
+                "CSCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "CSName": "SERVER123456"
+            },
+            {
+                "CurrentTimeZone": -420
+            },
+            {
+                "DataExecutionPrevention_32BitApplications": true
+            },
+            {
+                "DataExecutionPrevention_Available": true
+            },
+            {
+                "DataExecutionPrevention_Drivers": true
+            },
+            {
+                "DataExecutionPrevention_SupportPolicy": 3
+            },
+            {
+                "Debug": false
+            },
+            {
+                "Description": ""
+            },
+            {
+                "Distributed": false
+            },
+            {
+                "EncryptionLevel": 256
+            },
+            {
+                "ForegroundApplicationBoost": 2
+            },
+            {
+                "FreePhysicalMemory": "101909320"
+            },
+            {
+                "FreeSpaceInPagingFiles": "29360128"
+            },
+            {
+                "FreeVirtualMemory": "131687780"
+            },
+            {
+                "InstallDate": "20200221133221.000000-420"
+            },
+            {
+                "LastBootUpTime": "20200221153223.097418-420"
+            },
+            {
+                "LocalDateTime": "20200712234402.775000-420"
+            },
+            {
+                "Locale": "0409"
+            },
+            {
+                "Manufacturer": "Microsoft Corporation"
+            },
+            {
+                "MaxNumberOfProcesses": -1
+            },
+            {
+                "MaxProcessMemorySize": "137438953344"
+            },
+            {
+                "MUILanguages": [
+                    "en-US"
+                ]
+            },
+            {
+                "Name": "Microsoft Windows Server 2019 Standard|C:\\Windows|\\Device\\Harddisk2\\Partition4"
+            },
+            {
+                "NumberOfLicensedUsers": 0
+            },
+            {
+                "NumberOfProcesses": 133
+            },
+            {
+                "NumberOfUsers": 1
+            },
+            {
+                "OperatingSystemSKU": 7
+            },
+            {
+                "Organization": ""
+            },
+            {
+                "OSArchitecture": "64-bit"
+            },
+            {
+                "OSLanguage": 1033
+            },
+            {
+                "OSProductSuite": 272
+            },
+            {
+                "OSType": 18
+            },
+            {
+                "PortableOperatingSystem": false
+            },
+            {
+                "Primary": true
+            },
+            {
+                "ProductType": 3
+            },
+            {
+                "RegisteredUser": "Windows User"
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "ServicePackMajorVersion": 0
+            },
+            {
+                "ServicePackMinorVersion": 0
+            },
+            {
+                "SizeStoredInPagingFiles": "29360128"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SuiteMask": 272
+            },
+            {
+                "SystemDevice": "\\Device\\HarddiskVolume6"
+            },
+            {
+                "SystemDirectory": "C:\\Windows\\system32"
+            },
+            {
+                "SystemDrive": "C:"
+            },
+            {
+                "TotalVirtualMemorySize": "230546044"
+            },
+            {
+                "TotalVisibleMemorySize": "201185916"
+            },
+            {
+                "Version": "10.0.17763"
+            },
+            {
+                "WindowsDirectory": "C:\\Windows"
+            }
+        ]
+    ],
+    "cpu": [
+        [
+            {
+                "AddressWidth": 64
+            },
+            {
+                "Architecture": 9
+            },
+            {
+                "AssetTag": "UNKNOWN"
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "Intel64 Family 6 Model 79 Stepping 1"
+            },
+            {
+                "Characteristics": 252
+            },
+            {
+                "CpuStatus": 1
+            },
+            {
+                "CreationClassName": "Win32_Processor"
+            },
+            {
+                "CurrentClockSpeed": 2098
+            },
+            {
+                "CurrentVoltage": 18
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Intel64 Family 6 Model 79 Stepping 1"
+            },
+            {
+                "DeviceID": "CPU0"
+            },
+            {
+                "ExtClock": 100
+            },
+            {
+                "Family": 179
+            },
+            {
+                "L2CacheSize": 2048
+            },
+            {
+                "L3CacheSize": 20480
+            },
+            {
+                "L3CacheSpeed": 0
+            },
+            {
+                "Level": 6
+            },
+            {
+                "LoadPercentage": 2
+            },
+            {
+                "Manufacturer": "GenuineIntel"
+            },
+            {
+                "MaxClockSpeed": 2098
+            },
+            {
+                "Name": "Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz"
+            },
+            {
+                "NumberOfCores": 8
+            },
+            {
+                "NumberOfEnabledCore": 8
+            },
+            {
+                "NumberOfLogicalProcessors": 16
+            },
+            {
+                "PartNumber": ""
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProcessorId": "BFEBFBFF000406F1"
+            },
+            {
+                "ProcessorType": 3
+            },
+            {
+                "Revision": 20225
+            },
+            {
+                "Role": "CPU"
+            },
+            {
+                "SecondLevelAddressTranslationExtensions": false
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "SocketDesignation": "Proc 1"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "StatusInfo": 3
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "ThreadCount": 16
+            },
+            {
+                "UpgradeMethod": 43
+            },
+            {
+                "Version": ""
+            },
+            {
+                "VirtualizationFirmwareEnabled": false
+            },
+            {
+                "VMMonitorModeExtensions": false
+            }
+        ],
+        [
+            {
+                "AddressWidth": 64
+            },
+            {
+                "Architecture": 9
+            },
+            {
+                "AssetTag": "UNKNOWN"
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "Intel64 Family 6 Model 79 Stepping 1"
+            },
+            {
+                "Characteristics": 252
+            },
+            {
+                "CpuStatus": 1
+            },
+            {
+                "CreationClassName": "Win32_Processor"
+            },
+            {
+                "CurrentClockSpeed": 2098
+            },
+            {
+                "CurrentVoltage": 18
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Intel64 Family 6 Model 79 Stepping 1"
+            },
+            {
+                "DeviceID": "CPU1"
+            },
+            {
+                "ExtClock": 100
+            },
+            {
+                "Family": 179
+            },
+            {
+                "L2CacheSize": 2048
+            },
+            {
+                "L3CacheSize": 20480
+            },
+            {
+                "L3CacheSpeed": 0
+            },
+            {
+                "Level": 6
+            },
+            {
+                "Manufacturer": "GenuineIntel"
+            },
+            {
+                "MaxClockSpeed": 2098
+            },
+            {
+                "Name": "Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz"
+            },
+            {
+                "NumberOfCores": 8
+            },
+            {
+                "NumberOfEnabledCore": 8
+            },
+            {
+                "NumberOfLogicalProcessors": 16
+            },
+            {
+                "PartNumber": ""
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProcessorId": "BFEBFBFF000406F1"
+            },
+            {
+                "ProcessorType": 3
+            },
+            {
+                "Revision": 20225
+            },
+            {
+                "Role": "CPU"
+            },
+            {
+                "SecondLevelAddressTranslationExtensions": false
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "SocketDesignation": "Proc 2"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "StatusInfo": 3
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "ThreadCount": 16
+            },
+            {
+                "UpgradeMethod": 43
+            },
+            {
+                "Version": ""
+            },
+            {
+                "VirtualizationFirmwareEnabled": false
+            },
+            {
+                "VMMonitorModeExtensions": false
+            }
+        ]
+    ],
+    "mem": [
+        [
+            {
+                "Attributes": 1
+            },
+            {
+                "BankLabel": ""
+            },
+            {
+                "Capacity": "17179869184"
+            },
+            {
+                "Caption": "Physical Memory"
+            },
+            {
+                "ConfiguredClockSpeed": 2133
+            },
+            {
+                "ConfiguredVoltage": 1200
+            },
+            {
+                "CreationClassName": "Win32_PhysicalMemory"
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Physical Memory"
+            },
+            {
+                "DeviceLocator": "PROC 1 DIMM 1"
+            },
+            {
+                "FormFactor": 8
+            },
+            {
+                "Manufacturer": "HP     "
+            },
+            {
+                "MaxVoltage": 1200
+            },
+            {
+                "MemoryType": 0
+            },
+            {
+                "MinVoltage": 1200
+            },
+            {
+                "Name": "Physical Memory"
+            },
+            {
+                "PartNumber": "809082-091"
+            },
+            {
+                "SMBIOSMemoryType": 26
+            },
+            {
+                "Speed": 2400
+            },
+            {
+                "Tag": "Physical Memory 0"
+            },
+            {
+                "TotalWidth": 72
+            },
+            {
+                "TypeDetail": 8320
+            }
+        ],
+        [
+            {
+                "Attributes": 1
+            },
+            {
+                "BankLabel": ""
+            },
+            {
+                "Capacity": "17179869184"
+            },
+            {
+                "Caption": "Physical Memory"
+            },
+            {
+                "ConfiguredClockSpeed": 2133
+            },
+            {
+                "ConfiguredVoltage": 1200
+            },
+            {
+                "CreationClassName": "Win32_PhysicalMemory"
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Physical Memory"
+            },
+            {
+                "DeviceLocator": "PROC 1 DIMM 4"
+            },
+            {
+                "FormFactor": 8
+            },
+            {
+                "Manufacturer": "HP     "
+            },
+            {
+                "MaxVoltage": 1200
+            },
+            {
+                "MemoryType": 0
+            },
+            {
+                "MinVoltage": 1200
+            },
+            {
+                "Name": "Physical Memory"
+            },
+            {
+                "PartNumber": "809082-091"
+            },
+            {
+                "SMBIOSMemoryType": 26
+            },
+            {
+                "Speed": 2400
+            },
+            {
+                "Tag": "Physical Memory 3"
+            },
+            {
+                "TotalWidth": 72
+            },
+            {
+                "TypeDetail": 8320
+            }
+        ],
+        [
+            {
+                "Attributes": 1
+            },
+            {
+                "BankLabel": ""
+            },
+            {
+                "Capacity": "17179869184"
+            },
+            {
+                "Caption": "Physical Memory"
+            },
+            {
+                "ConfiguredClockSpeed": 2133
+            },
+            {
+                "ConfiguredVoltage": 1200
+            },
+            {
+                "CreationClassName": "Win32_PhysicalMemory"
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Physical Memory"
+            },
+            {
+                "DeviceLocator": "PROC 1 DIMM 9"
+            },
+            {
+                "FormFactor": 8
+            },
+            {
+                "Manufacturer": "HP     "
+            },
+            {
+                "MaxVoltage": 1200
+            },
+            {
+                "MemoryType": 0
+            },
+            {
+                "MinVoltage": 1200
+            },
+            {
+                "Name": "Physical Memory"
+            },
+            {
+                "PartNumber": "809082-091"
+            },
+            {
+                "SMBIOSMemoryType": 26
+            },
+            {
+                "Speed": 2400
+            },
+            {
+                "Tag": "Physical Memory 8"
+            },
+            {
+                "TotalWidth": 72
+            },
+            {
+                "TypeDetail": 8320
+            }
+        ],
+        [
+            {
+                "Attributes": 1
+            },
+            {
+                "BankLabel": ""
+            },
+            {
+                "Capacity": "17179869184"
+            },
+            {
+                "Caption": "Physical Memory"
+            },
+            {
+                "ConfiguredClockSpeed": 2133
+            },
+            {
+                "ConfiguredVoltage": 1200
+            },
+            {
+                "CreationClassName": "Win32_PhysicalMemory"
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Physical Memory"
+            },
+            {
+                "DeviceLocator": "PROC 1 DIMM 12"
+            },
+            {
+                "FormFactor": 8
+            },
+            {
+                "Manufacturer": "HP     "
+            },
+            {
+                "MaxVoltage": 1200
+            },
+            {
+                "MemoryType": 0
+            },
+            {
+                "MinVoltage": 1200
+            },
+            {
+                "Name": "Physical Memory"
+            },
+            {
+                "PartNumber": "809082-091"
+            },
+            {
+                "SMBIOSMemoryType": 26
+            },
+            {
+                "Speed": 2400
+            },
+            {
+                "Tag": "Physical Memory 11"
+            },
+            {
+                "TotalWidth": 72
+            },
+            {
+                "TypeDetail": 8320
+            }
+        ],
+        [
+            {
+                "Attributes": 2
+            },
+            {
+                "BankLabel": ""
+            },
+            {
+                "Capacity": "34359738368"
+            },
+            {
+                "Caption": "Physical Memory"
+            },
+            {
+                "ConfiguredClockSpeed": 2133
+            },
+            {
+                "ConfiguredVoltage": 1200
+            },
+            {
+                "CreationClassName": "Win32_PhysicalMemory"
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Physical Memory"
+            },
+            {
+                "DeviceLocator": "PROC 2 DIMM 1"
+            },
+            {
+                "FormFactor": 8
+            },
+            {
+                "Manufacturer": "UNKNOWN"
+            },
+            {
+                "MaxVoltage": 1200
+            },
+            {
+                "MemoryType": 0
+            },
+            {
+                "MinVoltage": 1200
+            },
+            {
+                "Name": "Physical Memory"
+            },
+            {
+                "PartNumber": "NOT AVAILABLE"
+            },
+            {
+                "SMBIOSMemoryType": 26
+            },
+            {
+                "Speed": 2600
+            },
+            {
+                "Tag": "Physical Memory 12"
+            },
+            {
+                "TotalWidth": 72
+            },
+            {
+                "TypeDetail": 8320
+            }
+        ],
+        [
+            {
+                "Attributes": 2
+            },
+            {
+                "BankLabel": ""
+            },
+            {
+                "Capacity": "34359738368"
+            },
+            {
+                "Caption": "Physical Memory"
+            },
+            {
+                "ConfiguredClockSpeed": 2133
+            },
+            {
+                "ConfiguredVoltage": 1200
+            },
+            {
+                "CreationClassName": "Win32_PhysicalMemory"
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Physical Memory"
+            },
+            {
+                "DeviceLocator": "PROC 2 DIMM 4"
+            },
+            {
+                "FormFactor": 8
+            },
+            {
+                "Manufacturer": "UNKNOWN"
+            },
+            {
+                "MaxVoltage": 1200
+            },
+            {
+                "MemoryType": 0
+            },
+            {
+                "MinVoltage": 1200
+            },
+            {
+                "Name": "Physical Memory"
+            },
+            {
+                "PartNumber": "NOT AVAILABLE"
+            },
+            {
+                "SMBIOSMemoryType": 26
+            },
+            {
+                "Speed": 2600
+            },
+            {
+                "Tag": "Physical Memory 15"
+            },
+            {
+                "TotalWidth": 72
+            },
+            {
+                "TypeDetail": 8320
+            }
+        ],
+        [
+            {
+                "Attributes": 2
+            },
+            {
+                "BankLabel": ""
+            },
+            {
+                "Capacity": "34359738368"
+            },
+            {
+                "Caption": "Physical Memory"
+            },
+            {
+                "ConfiguredClockSpeed": 2133
+            },
+            {
+                "ConfiguredVoltage": 1200
+            },
+            {
+                "CreationClassName": "Win32_PhysicalMemory"
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Physical Memory"
+            },
+            {
+                "DeviceLocator": "PROC 2 DIMM 9"
+            },
+            {
+                "FormFactor": 8
+            },
+            {
+                "Manufacturer": "UNKNOWN"
+            },
+            {
+                "MaxVoltage": 1200
+            },
+            {
+                "MemoryType": 0
+            },
+            {
+                "MinVoltage": 1200
+            },
+            {
+                "Name": "Physical Memory"
+            },
+            {
+                "PartNumber": "NOT AVAILABLE"
+            },
+            {
+                "SMBIOSMemoryType": 26
+            },
+            {
+                "Speed": 2600
+            },
+            {
+                "Tag": "Physical Memory 20"
+            },
+            {
+                "TotalWidth": 72
+            },
+            {
+                "TypeDetail": 8320
+            }
+        ],
+        [
+            {
+                "Attributes": 2
+            },
+            {
+                "BankLabel": ""
+            },
+            {
+                "Capacity": "34359738368"
+            },
+            {
+                "Caption": "Physical Memory"
+            },
+            {
+                "ConfiguredClockSpeed": 2133
+            },
+            {
+                "ConfiguredVoltage": 1200
+            },
+            {
+                "CreationClassName": "Win32_PhysicalMemory"
+            },
+            {
+                "DataWidth": 64
+            },
+            {
+                "Description": "Physical Memory"
+            },
+            {
+                "DeviceLocator": "PROC 2 DIMM 12"
+            },
+            {
+                "FormFactor": 8
+            },
+            {
+                "Manufacturer": "UNKNOWN"
+            },
+            {
+                "MaxVoltage": 1200
+            },
+            {
+                "MemoryType": 0
+            },
+            {
+                "MinVoltage": 1200
+            },
+            {
+                "Name": "Physical Memory"
+            },
+            {
+                "PartNumber": "NOT AVAILABLE"
+            },
+            {
+                "SMBIOSMemoryType": 26
+            },
+            {
+                "Speed": 2600
+            },
+            {
+                "Tag": "Physical Memory 23"
+            },
+            {
+                "TotalWidth": 72
+            },
+            {
+                "TypeDetail": 8320
+            }
+        ]
+    ],
+    "usb": [
+        [
+            {
+                "Caption": "Standard Universal PCI to USB Host Controller"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_USBController"
+            },
+            {
+                "Description": "Standard Universal PCI to USB Host Controller"
+            },
+            {
+                "DeviceID": "PCI\\VEN_103C&DEV_3300&SUBSYS_3381103C&REV_03\\4&2383FE5D&0&04E2"
+            },
+            {
+                "Manufacturer": "(Standard USB Host Controller)"
+            },
+            {
+                "Name": "Standard Universal PCI to USB Host Controller"
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_103C&DEV_3300&SUBSYS_3381103C&REV_03\\4&2383FE5D&0&04E2"
+            },
+            {
+                "ProtocolSupported": 16
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            }
+        ],
+        [
+            {
+                "Caption": "Standard Enhanced PCI to USB Host Controller"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_USBController"
+            },
+            {
+                "Description": "Standard Enhanced PCI to USB Host Controller"
+            },
+            {
+                "DeviceID": "PCI\\VEN_8086&DEV_8D2D&SUBSYS_8030103C&REV_05\\3&11583659&0&D0"
+            },
+            {
+                "Manufacturer": "(Standard USB Host Controller)"
+            },
+            {
+                "Name": "Standard Enhanced PCI to USB Host Controller"
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_8086&DEV_8D2D&SUBSYS_8030103C&REV_05\\3&11583659&0&D0"
+            },
+            {
+                "ProtocolSupported": 16
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            }
+        ],
+        [
+            {
+                "Caption": "Standard Enhanced PCI to USB Host Controller"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_USBController"
+            },
+            {
+                "Description": "Standard Enhanced PCI to USB Host Controller"
+            },
+            {
+                "DeviceID": "PCI\\VEN_8086&DEV_8D26&SUBSYS_8030103C&REV_05\\3&11583659&0&E8"
+            },
+            {
+                "Manufacturer": "(Standard USB Host Controller)"
+            },
+            {
+                "Name": "Standard Enhanced PCI to USB Host Controller"
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_8086&DEV_8D26&SUBSYS_8030103C&REV_05\\3&11583659&0&E8"
+            },
+            {
+                "ProtocolSupported": 16
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            }
+        ],
+        [
+            {
+                "Caption": "Intel(R) USB 3.0 eXtensible Host Controller - 1.0 (Microsoft)"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_USBController"
+            },
+            {
+                "Description": "USB xHCI Compliant Host Controller"
+            },
+            {
+                "DeviceID": "PCI\\VEN_8086&DEV_8D31&SUBSYS_8030103C&REV_05\\3&11583659&0&A0"
+            },
+            {
+                "Manufacturer": "Generic USB xHCI Host Controller"
+            },
+            {
+                "Name": "Intel(R) USB 3.0 eXtensible Host Controller - 1.0 (Microsoft)"
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_8086&DEV_8D31&SUBSYS_8030103C&REV_05\\3&11583659&0&A0"
+            },
+            {
+                "ProtocolSupported": 16
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            }
+        ]
+    ],
+    "bios": [
+        [
+            {
+                "BiosCharacteristics": [
+                    7,
+                    9,
+                    11,
+                    12,
+                    14,
+                    15,
+                    16,
+                    19,
+                    22,
+                    23,
+                    24,
+                    26,
+                    27,
+                    28,
+                    29,
+                    30,
+                    32,
+                    33,
+                    40,
+                    41,
+                    42,
+                    43
+                ]
+            },
+            {
+                "BIOSVersion": [
+                    "HP     - 1",
+                    "P89",
+                    "HP - 21E00"
+                ]
+            },
+            {
+                "Caption": "P89"
+            },
+            {
+                "Description": "P89"
+            },
+            {
+                "EmbeddedControllerMajorVersion": 2
+            },
+            {
+                "EmbeddedControllerMinorVersion": 50
+            },
+            {
+                "Manufacturer": "HP"
+            },
+            {
+                "Name": "P89"
+            },
+            {
+                "PrimaryBIOS": true
+            },
+            {
+                "ReleaseDate": "20160913000000.000000+000"
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "SMBIOSBIOSVersion": "P89"
+            },
+            {
+                "SMBIOSMajorVersion": 2
+            },
+            {
+                "SMBIOSMinorVersion": 8
+            },
+            {
+                "SMBIOSPresent": true
+            },
+            {
+                "SoftwareElementID": "P89"
+            },
+            {
+                "SoftwareElementState": 3
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemBiosMajorVersion": 2
+            },
+            {
+                "SystemBiosMinorVersion": 30
+            },
+            {
+                "TargetOperatingSystem": 0
+            },
+            {
+                "Version": "HP     - 1"
+            }
+        ]
+    ],
+    "disk": [
+        [
+            {
+                "BytesPerSector": 512
+            },
+            {
+                "Capabilities": [
+                    3,
+                    4
+                ]
+            },
+            {
+                "CapabilityDescriptions": [
+                    "Random Access",
+                    "Supports Writing"
+                ]
+            },
+            {
+                "Caption": "Microsoft Storage Space Device"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_DiskDrive"
+            },
+            {
+                "Description": "Disk drive"
+            },
+            {
+                "DeviceID": "\\\\.\\PHYSICALDRIVE5"
+            },
+            {
+                "FirmwareRevision": "0.1"
+            },
+            {
+                "Index": 5
+            },
+            {
+                "InterfaceType": "SCSI"
+            },
+            {
+                "Manufacturer": "(Standard disk drives)"
+            },
+            {
+                "MediaLoaded": true
+            },
+            {
+                "MediaType": "Fixed hard disk media"
+            },
+            {
+                "Model": "Microsoft Storage Space Device"
+            },
+            {
+                "Name": "\\\\.\\PHYSICALDRIVE5"
+            },
+            {
+                "Partitions": 1
+            },
+            {
+                "PNPDeviceID": "STORAGE\\DISK\\{C905ECA4-6609-4829-8510-DB4D3AFD36E6}"
+            },
+            {
+                "SCSIBus": 0
+            },
+            {
+                "SCSILogicalUnit": 1
+            },
+            {
+                "SCSIPort": 0
+            },
+            {
+                "SCSITargetId": 0
+            },
+            {
+                "SectorsPerTrack": 63
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "Size": "3962100925440"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TotalCylinders": "481698"
+            },
+            {
+                "TotalHeads": 255
+            },
+            {
+                "TotalSectors": "7738478370"
+            },
+            {
+                "TotalTracks": "122832990"
+            },
+            {
+                "TracksPerCylinder": 255
+            }
+        ],
+        [
+            {
+                "BytesPerSector": 512
+            },
+            {
+                "Capabilities": [
+                    3,
+                    4
+                ]
+            },
+            {
+                "CapabilityDescriptions": [
+                    "Random Access",
+                    "Supports Writing"
+                ]
+            },
+            {
+                "Caption": "ATA CT500MX500SSD1 SCSI Disk Device"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_DiskDrive"
+            },
+            {
+                "Description": "Disk drive"
+            },
+            {
+                "DeviceID": "\\\\.\\PHYSICALDRIVE3"
+            },
+            {
+                "FirmwareRevision": "023 "
+            },
+            {
+                "Index": 3
+            },
+            {
+                "InterfaceType": "SCSI"
+            },
+            {
+                "Manufacturer": "(Standard disk drives)"
+            },
+            {
+                "MediaLoaded": true
+            },
+            {
+                "MediaType": "Fixed hard disk media"
+            },
+            {
+                "Model": "ATA CT500MX500SSD1 SCSI Disk Device"
+            },
+            {
+                "Name": "\\\\.\\PHYSICALDRIVE3"
+            },
+            {
+                "Partitions": 0
+            },
+            {
+                "PNPDeviceID": "SCSI\\DISK&VEN_ATA&PROD_CT500MX500SSD1\\5&2F1553C3&0&000700"
+            },
+            {
+                "SCSIBus": 0
+            },
+            {
+                "SCSILogicalUnit": 0
+            },
+            {
+                "SCSIPort": 0
+            },
+            {
+                "SCSITargetId": 7
+            },
+            {
+                "SectorsPerTrack": 63
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "Size": "500105249280"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TotalCylinders": "60801"
+            },
+            {
+                "TotalHeads": 255
+            },
+            {
+                "TotalSectors": "976768065"
+            },
+            {
+                "TotalTracks": "15504255"
+            },
+            {
+                "TracksPerCylinder": 255
+            }
+        ],
+        [
+            {
+                "BytesPerSector": 512
+            },
+            {
+                "Capabilities": [
+                    3,
+                    4
+                ]
+            },
+            {
+                "CapabilityDescriptions": [
+                    "Random Access",
+                    "Supports Writing"
+                ]
+            },
+            {
+                "Caption": "ATA Crucial_CT500MX2 SCSI Disk Device"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_DiskDrive"
+            },
+            {
+                "Description": "Disk drive"
+            },
+            {
+                "DeviceID": "\\\\.\\PHYSICALDRIVE2"
+            },
+            {
+                "FirmwareRevision": "MU02"
+            },
+            {
+                "Index": 2
+            },
+            {
+                "InterfaceType": "SCSI"
+            },
+            {
+                "Manufacturer": "(Standard disk drives)"
+            },
+            {
+                "MediaLoaded": true
+            },
+            {
+                "MediaType": "Fixed hard disk media"
+            },
+            {
+                "Model": "ATA Crucial_CT500MX2 SCSI Disk Device"
+            },
+            {
+                "Name": "\\\\.\\PHYSICALDRIVE2"
+            },
+            {
+                "Partitions": 3
+            },
+            {
+                "PNPDeviceID": "SCSI\\DISK&VEN_ATA&PROD_CRUCIAL_CT500MX2\\5&2F1553C3&0&000600"
+            },
+            {
+                "SCSIBus": 0
+            },
+            {
+                "SCSILogicalUnit": 0
+            },
+            {
+                "SCSIPort": 0
+            },
+            {
+                "SCSITargetId": 6
+            },
+            {
+                "SectorsPerTrack": 63
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "Size": "500105249280"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TotalCylinders": "60801"
+            },
+            {
+                "TotalHeads": 255
+            },
+            {
+                "TotalSectors": "976768065"
+            },
+            {
+                "TotalTracks": "15504255"
+            },
+            {
+                "TracksPerCylinder": 255
+            }
+        ]
+    ],
+    "comp_sys": [
+        [
+            {
+                "AdminPasswordStatus": 3
+            },
+            {
+                "AutomaticManagedPagefile": true
+            },
+            {
+                "AutomaticResetBootOption": true
+            },
+            {
+                "AutomaticResetCapability": true
+            },
+            {
+                "BootROMSupported": true
+            },
+            {
+                "BootStatus": [
+                    0,
+                    0,
+                    0,
+                    196,
+                    15,
+                    194,
+                    0,
+                    0,
+                    0,
+                    0
+                ]
+            },
+            {
+                "BootupState": "Normal boot"
+            },
+            {
+                "Caption": "SERVER123456"
+            },
+            {
+                "ChassisBootupState": 3
+            },
+            {
+                "CreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "CurrentTimeZone": -420
+            },
+            {
+                "DaylightInEffect": true
+            },
+            {
+                "Description": "AT/AT COMPATIBLE"
+            },
+            {
+                "DNSHostName": "SERVER123456"
+            },
+            {
+                "Domain": "WORKGROUP"
+            },
+            {
+                "DomainRole": 2
+            },
+            {
+                "EnableDaylightSavingsTime": true
+            },
+            {
+                "FrontPanelResetStatus": 3
+            },
+            {
+                "HypervisorPresent": true
+            },
+            {
+                "InfraredSupported": false
+            },
+            {
+                "KeyboardPasswordStatus": 3
+            },
+            {
+                "Manufacturer": "HP"
+            },
+            {
+                "Model": "ProLiant DL380 Gen9"
+            },
+            {
+                "Name": "SERVER123456"
+            },
+            {
+                "NetworkServerModeEnabled": true
+            },
+            {
+                "NumberOfLogicalProcessors": 32
+            },
+            {
+                "NumberOfProcessors": 2
+            },
+            {
+                "OEMStringArray": [
+                    "PSF:                                                            ",
+                    "Product ID: 859084-S01",
+                    "OEM String: "
+                ]
+            },
+            {
+                "PartOfDomain": false
+            },
+            {
+                "PauseAfterReset": "-1"
+            },
+            {
+                "PCSystemType": 4
+            },
+            {
+                "PCSystemTypeEx": 4
+            },
+            {
+                "PowerOnPasswordStatus": 3
+            },
+            {
+                "PowerState": 0
+            },
+            {
+                "PowerSupplyState": 3
+            },
+            {
+                "PrimaryOwnerName": "Windows User"
+            },
+            {
+                "ResetCapability": 1
+            },
+            {
+                "ResetCount": -1
+            },
+            {
+                "ResetLimit": -1
+            },
+            {
+                "Roles": [
+                    "LM_Workstation",
+                    "LM_Server",
+                    "NT",
+                    "Server_NT"
+                ]
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemFamily": "ProLiant"
+            },
+            {
+                "SystemSKUNumber": "859084-S01"
+            },
+            {
+                "SystemType": "x64-based PC"
+            },
+            {
+                "ThermalState": 3
+            },
+            {
+                "TotalPhysicalMemory": "206014377984"
+            },
+            {
+                "WakeUpType": 6
+            },
+            {
+                "Workgroup": "WORKGROUP"
+            }
+        ]
+    ],
+    "base_board": [
+        [
+            {
+                "Caption": "Base Board"
+            },
+            {
+                "CreationClassName": "Win32_BaseBoard"
+            },
+            {
+                "Description": "Base Board"
+            },
+            {
+                "HostingBoard": true
+            },
+            {
+                "HotSwappable": false
+            },
+            {
+                "Manufacturer": "HP"
+            },
+            {
+                "Name": "Base Board"
+            },
+            {
+                "PoweredOn": true
+            },
+            {
+                "Product": "ProLiant DL380 Gen9"
+            },
+            {
+                "Removable": true
+            },
+            {
+                "Replaceable": true
+            },
+            {
+                "RequiresDaughterBoard": false
+            },
+            {
+                "SerialNumber": "123456"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "Tag": "Base Board"
+            }
+        ]
+    ],
+    "comp_sys_prod": [
+        [
+            {
+                "Caption": "Computer System Product"
+            },
+            {
+                "Description": "Computer System Product"
+            },
+            {
+                "IdentifyingNumber": "123456"
+            },
+            {
+                "Name": "ProLiant DL380 Gen9"
+            },
+            {
+                "UUID": "123456"
+            },
+            {
+                "Vendor": "HP"
+            },
+            {
+                "Version": ""
+            }
+        ]
+    ],
+    "network_config": [
+        [
+            {
+                "Caption": "[00000000] Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "Description": "Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "Index": 0
+            },
+            {
+                "InterfaceIndex": 11
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "kdnic"
+            },
+            {
+                "SettingID": "{C8813F21-FC58-4EF5-B6DE-F10DF9AFF459}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000001] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "Index": 1
+            },
+            {
+                "InterfaceIndex": 3
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "3C:A8:2A:E6:27:C9"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "SettingID": "{07BCD0FA-68CB-43DA-A95C-9F5761C070E4}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000002] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "Index": 2
+            },
+            {
+                "InterfaceIndex": 13
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "94:18:82:6E:16:2C"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "SettingID": "{EB82D1C8-1AE1-436F-92C9-CAAC93E72E95}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000003] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "Index": 3
+            },
+            {
+                "InterfaceIndex": 8
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "3C:A8:2A:E6:27:CA"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "SettingID": "{77E8A4E5-31CE-4618-A6A8-084310C616E2}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000004] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DatabasePath": "%SystemRoot%\\System32\\drivers\\etc"
+            },
+            {
+                "DefaultIPGateway": [
+                    "172.17.0.1"
+                ]
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet #4"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "DHCPLeaseExpires": "20200713203019.000000-420"
+            },
+            {
+                "DHCPLeaseObtained": "20200712203019.000000-420"
+            },
+            {
+                "DHCPServer": "172.17.0.1"
+            },
+            {
+                "DNSDomainSuffixSearchOrder": []
+            },
+            {
+                "DNSEnabledForWINSResolution": false
+            },
+            {
+                "DNSHostName": "SERVER123456"
+            },
+            {
+                "DNSServerSearchOrder": [
+                    "172.17.4.11",
+                    "172.17.4.22",
+                    "172.17.4.86"
+                ]
+            },
+            {
+                "DomainDNSRegistrationEnabled": false
+            },
+            {
+                "FullDNSRegistrationEnabled": true
+            },
+            {
+                "GatewayCostMetric": [
+                    0
+                ]
+            },
+            {
+                "Index": 4
+            },
+            {
+                "InterfaceIndex": 7
+            },
+            {
+                "IPAddress": [
+                    "172.17.9.121",
+                    "fe80::45d7:5980:c39a:b6b2"
+                ]
+            },
+            {
+                "IPConnectionMetric": 25
+            },
+            {
+                "IPEnabled": true
+            },
+            {
+                "IPFilterSecurityEnabled": false
+            },
+            {
+                "IPSecPermitIPProtocols": []
+            },
+            {
+                "IPSecPermitTCPPorts": []
+            },
+            {
+                "IPSecPermitUDPPorts": []
+            },
+            {
+                "IPSubnet": [
+                    "255.255.240.0",
+                    "64"
+                ]
+            },
+            {
+                "MACAddress": "3C:A8:2A:E6:27:C8"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "SettingID": "{7128A11A-718E-430E-98C7-99DE8AE13020}"
+            },
+            {
+                "TcpipNetbiosOptions": 0
+            },
+            {
+                "WINSEnableLMHostsLookup": true
+            },
+            {
+                "WINSScopeID": ""
+            }
+        ],
+        [
+            {
+                "Caption": "[00000005] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "Index": 5
+            },
+            {
+                "InterfaceIndex": 4
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "94:18:82:6E:16:2D"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "SettingID": "{1A157B66-2890-4416-B43F-883CD05B8B0B}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000006] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "Index": 6
+            },
+            {
+                "InterfaceIndex": 10
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "3C:A8:2A:E6:27:CB"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "SettingID": "{C2DD58DC-8153-4492-8A4A-A3C6804BF2D7}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000007] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "Index": 7
+            },
+            {
+                "InterfaceIndex": 12
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "94:18:82:6E:16:2E"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "SettingID": "{D670A8E4-1D5B-4E7C-90EF-7B95ED0F9A1B}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000008] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "Index": 8
+            },
+            {
+                "InterfaceIndex": 6
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "MACAddress": "94:18:82:6E:16:2F"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "SettingID": "{3E4991C7-0C2C-42BB-A40F-133AAD11FB34}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000009] Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "Description": "Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 9
+            },
+            {
+                "InterfaceIndex": 38
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "VMSMP"
+            },
+            {
+                "SettingID": "{DA1BE60D-9764-4A53-A05A-BAFD7D6D8622}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000010] Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "DatabasePath": "%SystemRoot%\\System32\\drivers\\etc"
+            },
+            {
+                "DefaultIPGateway": [
+                    "172.17.0.1"
+                ]
+            },
+            {
+                "Description": "Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "DHCPLeaseExpires": "20200713203024.000000-420"
+            },
+            {
+                "DHCPLeaseObtained": "20200712203024.000000-420"
+            },
+            {
+                "DHCPServer": "172.17.0.1"
+            },
+            {
+                "DNSDomainSuffixSearchOrder": []
+            },
+            {
+                "DNSEnabledForWINSResolution": false
+            },
+            {
+                "DNSHostName": "SERVER123456"
+            },
+            {
+                "DNSServerSearchOrder": [
+                    "8.8.8.8",
+                    "208.67.222.222"
+                ]
+            },
+            {
+                "DomainDNSRegistrationEnabled": false
+            },
+            {
+                "FullDNSRegistrationEnabled": true
+            },
+            {
+                "GatewayCostMetric": [
+                    0
+                ]
+            },
+            {
+                "Index": 10
+            },
+            {
+                "InterfaceIndex": 30
+            },
+            {
+                "IPAddress": [
+                    "172.17.9.6",
+                    "fe80::6017:bb9f:9609:aa1"
+                ]
+            },
+            {
+                "IPConnectionMetric": 25
+            },
+            {
+                "IPEnabled": true
+            },
+            {
+                "IPFilterSecurityEnabled": false
+            },
+            {
+                "IPSecPermitIPProtocols": []
+            },
+            {
+                "IPSecPermitTCPPorts": []
+            },
+            {
+                "IPSecPermitUDPPorts": []
+            },
+            {
+                "IPSubnet": [
+                    "255.255.240.0",
+                    "64"
+                ]
+            },
+            {
+                "MACAddress": "94:18:82:6E:16:2D"
+            },
+            {
+                "ServiceName": "VMSNPXYMP"
+            },
+            {
+                "SettingID": "{76543B78-0150-491F-9CF7-5195A55FFDD5}"
+            },
+            {
+                "TcpipNetbiosOptions": 0
+            },
+            {
+                "WINSEnableLMHostsLookup": true
+            },
+            {
+                "WINSScopeID": ""
+            }
+        ],
+        [
+            {
+                "Caption": "[00000011] Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "Description": "Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "DHCPEnabled": false
+            },
+            {
+                "Index": 11
+            },
+            {
+                "InterfaceIndex": 42
+            },
+            {
+                "IPEnabled": false
+            },
+            {
+                "ServiceName": "VMSMP"
+            },
+            {
+                "SettingID": "{78CB2FB1-3139-40D7-A3F2-63B3A63943D6}"
+            }
+        ],
+        [
+            {
+                "Caption": "[00000012] Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "DatabasePath": "%SystemRoot%\\System32\\drivers\\etc"
+            },
+            {
+                "DefaultIPGateway": [
+                    "172.17.0.1"
+                ]
+            },
+            {
+                "Description": "Hyper-V Virtual Ethernet Adapter #2"
+            },
+            {
+                "DHCPEnabled": true
+            },
+            {
+                "DHCPLeaseExpires": "20200713203024.000000-420"
+            },
+            {
+                "DHCPLeaseObtained": "20200712203024.000000-420"
+            },
+            {
+                "DHCPServer": "172.17.0.1"
+            },
+            {
+                "DNSDomainSuffixSearchOrder": []
+            },
+            {
+                "DNSEnabledForWINSResolution": false
+            },
+            {
+                "DNSHostName": "SERVER123456"
+            },
+            {
+                "DNSServerSearchOrder": [
+                    "8.8.8.8",
+                    "208.67.222.222"
+                ]
+            },
+            {
+                "DomainDNSRegistrationEnabled": false
+            },
+            {
+                "FullDNSRegistrationEnabled": true
+            },
+            {
+                "GatewayCostMetric": [
+                    0
+                ]
+            },
+            {
+                "Index": 12
+            },
+            {
+                "InterfaceIndex": 27
+            },
+            {
+                "IPAddress": [
+                    "172.17.9.122",
+                    "fe80::f8a1:3a0c:e2c7:d174"
+                ]
+            },
+            {
+                "IPConnectionMetric": 25
+            },
+            {
+                "IPEnabled": true
+            },
+            {
+                "IPFilterSecurityEnabled": false
+            },
+            {
+                "IPSecPermitIPProtocols": []
+            },
+            {
+                "IPSecPermitTCPPorts": []
+            },
+            {
+                "IPSecPermitUDPPorts": []
+            },
+            {
+                "IPSubnet": [
+                    "255.255.240.0",
+                    "64"
+                ]
+            },
+            {
+                "MACAddress": "94:18:82:6E:16:2C"
+            },
+            {
+                "ServiceName": "VMSNPXYMP"
+            },
+            {
+                "SettingID": "{549B2925-331C-4865-9148-8D5AFCB1B054}"
+            },
+            {
+                "TcpipNetbiosOptions": 0
+            },
+            {
+                "WINSEnableLMHostsLookup": true
+            },
+            {
+                "WINSScopeID": ""
+            }
+        ]
+    ],
+    "desktop_monitor": [
+        [
+            {
+                "Availability": 8
+            },
+            {
+                "Caption": "Generic PnP Monitor"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_DesktopMonitor"
+            },
+            {
+                "Description": "Generic PnP Monitor"
+            },
+            {
+                "DeviceID": "DesktopMonitor1"
+            },
+            {
+                "MonitorManufacturer": "(Standard monitor types)"
+            },
+            {
+                "MonitorType": "Generic PnP Monitor"
+            },
+            {
+                "Name": "Generic PnP Monitor"
+            },
+            {
+                "PixelsPerXLogicalInch": 96
+            },
+            {
+                "PixelsPerYLogicalInch": 96
+            },
+            {
+                "PNPDeviceID": "DISPLAY\\AQ_0000\\5&116A715B&0&UID0"
+            },
+            {
+                "Status": "OK"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            }
+        ]
+    ],
+    "network_adapter": [
+        [
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000000] Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "DeviceID": "0"
+            },
+            {
+                "Index": 0
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 11
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "ROOT\\KDNIC\\0000"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Microsoft Kernel Debug Network Adapter"
+            },
+            {
+                "ServiceName": "kdnic"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TimeOfLastReset": "20200221153223.097418-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000001] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DeviceID": "1"
+            },
+            {
+                "GUID": "{07BCD0FA-68CB-43DA-A95C-9F5761C070E4}"
+            },
+            {
+                "Index": 1
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 3
+            },
+            {
+                "MACAddress": "3C:A8:2A:E6:27:C9"
+            },
+            {
+                "Manufacturer": "Broadcom Corporation"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "NetConnectionID": "Ethernet"
+            },
+            {
+                "NetConnectionStatus": 7
+            },
+            {
+                "NetEnabled": false
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_14E4&DEV_1657&SUBSYS_3383103C&REV_01\\00003CA82AE627C901"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "Speed": "9223372036854775807"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TimeOfLastReset": "20200221153223.097418-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000002] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DeviceID": "2"
+            },
+            {
+                "GUID": "{EB82D1C8-1AE1-436F-92C9-CAAC93E72E95}"
+            },
+            {
+                "Index": 2
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 13
+            },
+            {
+                "MACAddress": "94:18:82:6E:16:2C"
+            },
+            {
+                "Manufacturer": "Broadcom Corporation"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "NetConnectionID": "Embedded LOM 1 Port 1"
+            },
+            {
+                "NetConnectionStatus": 2
+            },
+            {
+                "NetEnabled": true
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_14E4&DEV_1657&SUBSYS_22BE103C&REV_01\\00009418826E162C00"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TimeOfLastReset": "20200221153223.097418-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000003] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DeviceID": "3"
+            },
+            {
+                "GUID": "{77E8A4E5-31CE-4618-A6A8-084310C616E2}"
+            },
+            {
+                "Index": 3
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 8
+            },
+            {
+                "MACAddress": "3C:A8:2A:E6:27:CA"
+            },
+            {
+                "Manufacturer": "Broadcom Corporation"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Broadcom NetXtreme Gigabit Ethernet #3"
+            },
+            {
+                "NetConnectionID": "Ethernet 2"
+            },
+            {
+                "NetConnectionStatus": 7
+            },
+            {
+                "NetEnabled": false
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_14E4&DEV_1657&SUBSYS_3383103C&REV_01\\00003CA82AE627CA02"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "Speed": "9223372036854775807"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TimeOfLastReset": "20200221153223.097418-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000004] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DeviceID": "4"
+            },
+            {
+                "GUID": "{7128A11A-718E-430E-98C7-99DE8AE13020}"
+            },
+            {
+                "Index": 4
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 7
+            },
+            {
+                "MACAddress": "3C:A8:2A:E6:27:C8"
+            },
+            {
+                "Manufacturer": "Broadcom Corporation"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Broadcom NetXtreme Gigabit Ethernet #4"
+            },
+            {
+                "NetConnectionID": "HOST NIC"
+            },
+            {
+                "NetConnectionStatus": 2
+            },
+            {
+                "NetEnabled": true
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_14E4&DEV_1657&SUBSYS_3383103C&REV_01\\00003CA82AE627C800"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "Speed": "1000000000"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TimeOfLastReset": "20200221153223.097418-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000005] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DeviceID": "5"
+            },
+            {
+                "GUID": "{1A157B66-2890-4416-B43F-883CD05B8B0B}"
+            },
+            {
+                "Index": 5
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 4
+            },
+            {
+                "MACAddress": "94:18:82:6E:16:2D"
+            },
+            {
+                "Manufacturer": "Broadcom Corporation"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "NetConnectionID": "Embedded LOM 1 Port 2"
+            },
+            {
+                "NetConnectionStatus": 2
+            },
+            {
+                "NetEnabled": true
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_14E4&DEV_1657&SUBSYS_22BE103C&REV_01\\00009418826E162D01"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TimeOfLastReset": "20200221153223.097418-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000006] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DeviceID": "6"
+            },
+            {
+                "GUID": "{C2DD58DC-8153-4492-8A4A-A3C6804BF2D7}"
+            },
+            {
+                "Index": 6
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 10
+            },
+            {
+                "MACAddress": "3C:A8:2A:E6:27:CB"
+            },
+            {
+                "Manufacturer": "Broadcom Corporation"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Broadcom NetXtreme Gigabit Ethernet #6"
+            },
+            {
+                "NetConnectionID": "Ethernet 4"
+            },
+            {
+                "NetConnectionStatus": 7
+            },
+            {
+                "NetEnabled": false
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_14E4&DEV_1657&SUBSYS_3383103C&REV_01\\00003CA82AE627CB03"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "Speed": "9223372036854775807"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TimeOfLastReset": "20200221153223.097418-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000007] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DeviceID": "7"
+            },
+            {
+                "GUID": "{D670A8E4-1D5B-4E7C-90EF-7B95ED0F9A1B}"
+            },
+            {
+                "Index": 7
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 12
+            },
+            {
+                "MACAddress": "94:18:82:6E:16:2E"
+            },
+            {
+                "Manufacturer": "Broadcom Corporation"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Broadcom NetXtreme Gigabit Ethernet #7"
+            },
+            {
+                "NetConnectionID": "Embedded LOM 1 Port 3"
+            },
+            {
+                "NetConnectionStatus": 7
+            },
+            {
+                "NetEnabled": false
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_14E4&DEV_1657&SUBSYS_22BE103C&REV_01\\00009418826E162E02"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "Speed": "9223372036854775807"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TimeOfLastReset": "20200221153223.097418-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000008] Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "DeviceID": "8"
+            },
+            {
+                "GUID": "{3E4991C7-0C2C-42BB-A40F-133AAD11FB34}"
+            },
+            {
+                "Index": 8
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 6
+            },
+            {
+                "MACAddress": "94:18:82:6E:16:2F"
+            },
+            {
+                "Manufacturer": "Broadcom Corporation"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Broadcom NetXtreme Gigabit Ethernet #8"
+            },
+            {
+                "NetConnectionID": "Embedded LOM 1 Port 4"
+            },
+            {
+                "NetConnectionStatus": 7
+            },
+            {
+                "NetEnabled": false
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "PCI\\VEN_14E4&DEV_1657&SUBSYS_22BE103C&REV_01\\00009418826E162F03"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Broadcom NetXtreme Gigabit Ethernet"
+            },
+            {
+                "ServiceName": "b57nd60a"
+            },
+            {
+                "Speed": "9223372036854775807"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TimeOfLastReset": "20200221153223.097418-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000009] Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "DeviceID": "9"
+            },
+            {
+                "Index": 9
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 38
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "ROOT\\VMS_VSMP\\0000"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "ServiceName": "VMSMP"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TimeOfLastReset": "20200221153223.097418-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000010] Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "DeviceID": "10"
+            },
+            {
+                "GUID": "{76543B78-0150-491F-9CF7-5195A55FFDD5}"
+            },
+            {
+                "Index": 10
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 30
+            },
+            {
+                "MACAddress": "94:18:82:6E:16:2D"
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "NetConnectionID": "vEthernet (SHARED1)"
+            },
+            {
+                "NetConnectionStatus": 2
+            },
+            {
+                "NetEnabled": true
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "ROOT\\VMS_MP\\0000"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "ServiceName": "VMSNPXYMP"
+            },
+            {
+                "Speed": "1000000000"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TimeOfLastReset": "20200221153223.097418-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000011] Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "DeviceID": "11"
+            },
+            {
+                "Index": 11
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 42
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "PhysicalAdapter": false
+            },
+            {
+                "PNPDeviceID": "ROOT\\VMS_VSMP\\0001"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Hyper-V Virtual Switch Extension Adapter"
+            },
+            {
+                "ServiceName": "VMSMP"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TimeOfLastReset": "20200221153223.097418-420"
+            }
+        ],
+        [
+            {
+                "AdapterType": "Ethernet 802.3"
+            },
+            {
+                "AdapterTypeId": 0
+            },
+            {
+                "Availability": 3
+            },
+            {
+                "Caption": "[00000012] Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "ConfigManagerErrorCode": 0
+            },
+            {
+                "ConfigManagerUserConfig": false
+            },
+            {
+                "CreationClassName": "Win32_NetworkAdapter"
+            },
+            {
+                "Description": "Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "DeviceID": "12"
+            },
+            {
+                "GUID": "{549B2925-331C-4865-9148-8D5AFCB1B054}"
+            },
+            {
+                "Index": 12
+            },
+            {
+                "Installed": true
+            },
+            {
+                "InterfaceIndex": 27
+            },
+            {
+                "MACAddress": "94:18:82:6E:16:2C"
+            },
+            {
+                "Manufacturer": "Microsoft"
+            },
+            {
+                "MaxNumberControlled": 0
+            },
+            {
+                "Name": "Hyper-V Virtual Ethernet Adapter #2"
+            },
+            {
+                "NetConnectionID": "vEthernet (SHARED2)"
+            },
+            {
+                "NetConnectionStatus": 2
+            },
+            {
+                "NetEnabled": true
+            },
+            {
+                "PhysicalAdapter": true
+            },
+            {
+                "PNPDeviceID": "ROOT\\VMS_MP\\0001"
+            },
+            {
+                "PowerManagementSupported": false
+            },
+            {
+                "ProductName": "Hyper-V Virtual Ethernet Adapter"
+            },
+            {
+                "ServiceName": "VMSNPXYMP"
+            },
+            {
+                "Speed": "1000000000"
+            },
+            {
+                "SystemCreationClassName": "Win32_ComputerSystem"
+            },
+            {
+                "SystemName": "SERVER123456"
+            },
+            {
+                "TimeOfLastReset": "20200221153223.097418-420"
+            }
+        ]
+    ]
+}

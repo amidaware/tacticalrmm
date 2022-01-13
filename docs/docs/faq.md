@@ -4,6 +4,20 @@
 
 No
 
+## Why isn't the agent source available?
+
+<https://discord.com/channels/736478043522072608/744281907361218630/925449414498222103>
+
+It's one of those "this is why we can't have nice things". Unfortunately there are a ton of shady people out there only looking to steal and make a profit off of someone else's work and they tried very hard with tactical.
+
+## Why isn't the Code Signing free?
+
+It's one way we're trying to monetize and get dev's paid. We had github sponsors up for many months before code signing. Very few people donated, some $5 and $10. maybe $40 a month. Once we announced code signing, sponsors came in like crazy, and many people upgraded their $5 to a $50 so while I would like to believe people would gladly donate, that's just not the case. We already tried.
+
+## Who is Amidaware LLC?
+
+The Legal entity behind Tactical RMM
+
 ## Is it possible to use XXX with Tactical RMM
 
 While it _may be possible_ to use XXX, we have not configured it and therefore it is [Unsupported](../unsupported_guidelines). We cannot help you configure XXX as it pertains to **your environment**. 
@@ -44,11 +58,17 @@ SSH into your server and run:
 From the web UI, click **Settings > User Administration** and then right-click on a user:
 ![reset2fa](images/reset2fa.png)
 
-Or from the command line:
+???+ note "Reset Password or 2FA token"
 
-```bash
-/rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py reset_2fa <username>
-```
+    === ":material-ubuntu: standard"
+
+        ```bash
+        /rmm/api/env/bin/python /rmm/api/tacticalrmm/manage.py reset_2fa <username>
+        ```
+    === ":material-docker: docker"
+        ```bash
+        docker exec -it trmm-backend /bin/bash
+        ```
 
 Then simply log out of the web UI and next time the user logs in they will be redirected to the 2FA setup page which will present a barcode to be scanned with the Authenticator app.
 
@@ -90,3 +110,21 @@ No, you haven't.
 ![AV Sandbox1](images/faq_av_sandbox3.png)
 
 ![AV Sandbox1](images/faq_av_sandbox4.png)
+
+## DNS can't find record
+
+Q. My dns isn’t working 
+
+A. Make sure it’s correctly formatted some dns hosts add in the domain automatically. 
+
+## Onsite DNS server and LAN only TRMM servers
+
+Q. Can I use onsite dns servers (I don’t want my server internet accessible). 
+
+A. Yes that’s covered in the docs, you can use internal dns for api, mesh and rmm domains but need to add the dns txt to an internet resolvable dns server for letsencrypt wildcard cert
+
+## Self-Signed Certs
+
+Q. Why can’t I use a self signed certificate for web etc. 
+
+A. NATS over TLS needs a real certificate signed with a trusted root certificate. NATS can function without TLS however that isn’t recommended

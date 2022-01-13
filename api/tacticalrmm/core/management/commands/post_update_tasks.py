@@ -1,8 +1,11 @@
 import base64
 from django.core.management.base import BaseCommand
+from django.utils.timezone import make_aware
+import datetime as dt
 
 from logs.models import PendingAction
 from scripts.models import Script
+from autotasks.models import AutomatedTask
 from accounts.models import User
 
 
@@ -33,3 +36,32 @@ class Command(BaseCommand):
             ).decode("ascii", "ignore")
             # script.hash_script_body()  # also saves script
             script.save(update_fields=["script_body"])
+
+        # convert autotask to the new format
+        for task in AutomatedTask.objects.all():
+            edited = False
+
+            # convert scheduled task_type
+            if task.task_type == "scheduled":
+                task.task_type = "daily"
+                task.run_time_date = make_aware(
+                    dt.datetime.strptime(task.run_time_minute, "%H:%M")
+                )
+                task.daily_interval = 1
+                edited = True
+
+            # convert actions
+            if not task.actions:
+                task.actions = [
+                    {
+                        "type": "script",
+                        "script": task.script.pk,
+                        "script_args": task.script_args,
+                        "timeout": task.timeout,
+                        "name": task.script.name,
+                    }
+                ]
+                edited = True
+
+            if edited:
+                task.save()

@@ -1,6 +1,13 @@
 import { createRouter, createMemoryHistory, createWebHistory, createWebHashHistory } from 'vue-router'
 import routes from './routes';
 
+// useful for importing router outside of vue components
+// import {router} from "@/router"
+export const router = new createRouter({
+  routes,
+  history: createWebHistory(process.env.VUE_ROUTER_BASE)
+})
+
 export default function ({ store }) {
   const createHistory = process.env.SERVER
     ? createMemoryHistory

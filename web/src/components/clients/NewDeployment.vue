@@ -10,7 +10,14 @@
       </q-bar>
       <q-form @submit="submit">
         <q-card-section>
-          <tactical-dropdown outlined label="Site" v-model="state.site" :options="siteOptions" mapOptions />
+          <tactical-dropdown
+            :rules="[val => !!val || '*Required']"
+            outlined
+            label="Site"
+            v-model="state.site"
+            :options="siteOptions"
+            mapOptions
+          />
         </q-card-section>
         <q-card-section>
           <div class="q-pl-sm">Agent Type</div>

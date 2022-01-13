@@ -6,7 +6,6 @@ from django.shortcuts import get_object_or_404
 from ipware import get_client_ip
 from knox.views import LoginView as KnoxLoginView
 from logs.models import AuditLog
-from rest_framework import status
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -25,11 +24,15 @@ from .serializers import (
 
 
 def _is_root_user(request, user) -> bool:
-    return (
+    root = (
         hasattr(settings, "ROOT_USER")
         and request.user != user
         and user.username == settings.ROOT_USER
     )
+    demo = (
+        getattr(settings, "DEMO", False) and request.user.username == settings.ROOT_USER
+    )
+    return root or demo
 
 
 class CheckCreds(KnoxLoginView):
@@ -79,6 +82,8 @@ class LoginView(KnoxLoginView):
         totp = pyotp.TOTP(user.totp_key)
 
         if settings.DEBUG and token == "sekret":
+            valid = True
+        elif getattr(settings, "DEMO", False):
             valid = True
         elif totp.verify(token, valid_window=10):
             valid = True

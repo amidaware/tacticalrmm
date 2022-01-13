@@ -3,7 +3,7 @@ import os
 import subprocess
 import tempfile
 import time
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import pytz
 import requests
@@ -33,6 +33,32 @@ WEEK_DAYS = {
     "Friday": 0x20,
     "Saturday": 0x40,
 }
+
+MONTHS = {
+    "January": 0x1,
+    "February": 0x2,
+    "March": 0x4,
+    "April": 0x8,
+    "May": 0x10,
+    "June": 0x20,
+    "July": 0x40,
+    "August": 0x80,
+    "September": 0x100,
+    "October": 0x200,
+    "November": 0x400,
+    "December": 0x800,
+}
+
+WEEKS = {
+    "First Week": 0x1,
+    "Second Week": 0x2,
+    "Third Week": 0x4,
+    "Fourth Week": 0x8,
+    "Last Week": 0x10,
+}
+
+MONTH_DAYS = {f"{b}": 0x1 << a for a, b in enumerate(range(1, 32))}
+MONTH_DAYS["Last Day"] = 0x80000000
 
 
 def generate_winagent_exe(
@@ -124,26 +150,58 @@ def get_bit_days(days: list[str]) -> int:
 
 
 def bitdays_to_string(day: int) -> str:
-    ret = []
+    ret: List[str] = []
     if day == 127:
         return "Every day"
 
-    if day & WEEK_DAYS["Sunday"]:
-        ret.append("Sunday")
-    if day & WEEK_DAYS["Monday"]:
-        ret.append("Monday")
-    if day & WEEK_DAYS["Tuesday"]:
-        ret.append("Tuesday")
-    if day & WEEK_DAYS["Wednesday"]:
-        ret.append("Wednesday")
-    if day & WEEK_DAYS["Thursday"]:
-        ret.append("Thursday")
-    if day & WEEK_DAYS["Friday"]:
-        ret.append("Friday")
-    if day & WEEK_DAYS["Saturday"]:
-        ret.append("Saturday")
-
+    for key, value in WEEK_DAYS.items():
+        if day & int(value):
+            ret.append(key)
     return ", ".join(ret)
+
+
+def bitmonths_to_string(month: int) -> str:
+    ret: List[str] = []
+    if month == 4095:
+        return "Every month"
+
+    for key, value in MONTHS.items():
+        if month & int(value):
+            ret.append(key)
+    return ", ".join(ret)
+
+
+def bitweeks_to_string(week: int) -> str:
+    ret: List[str] = []
+    if week == 31:
+        return "Every week"
+
+    for key, value in WEEKS.items():
+        if week & int(value):
+            ret.append(key)
+    return ", ".join(ret)
+
+
+def bitmonthdays_to_string(day: int) -> str:
+    ret: List[str] = []
+
+    if day == MONTH_DAYS["Last Day"]:
+        return "Last day"
+    elif day == 2147483647 or day == 4294967295:
+        return "Every day"
+
+    for key, value in MONTH_DAYS.items():
+        if day & int(value):
+            ret.append(key)
+    return ", ".join(ret)
+
+
+def convert_to_iso_duration(string: str) -> str:
+    tmp = string.upper()
+    if "D" in tmp:
+        return f"P{tmp.replace('D', 'DT')}"
+    else:
+        return f"PT{tmp}"
 
 
 def reload_nats():
@@ -167,9 +225,8 @@ def reload_nats():
     cert_file = f"/etc/letsencrypt/live/{domain}/fullchain.pem"
     key_file = f"/etc/letsencrypt/live/{domain}/privkey.pem"
     if hasattr(settings, "CERT_FILE") and hasattr(settings, "KEY_FILE"):
-        if os.path.exists(settings.CERT_FILE) and os.path.exists(settings.KEY_FILE):
-            cert_file = settings.CERT_FILE
-            key_file = settings.KEY_FILE
+        cert_file = settings.CERT_FILE
+        key_file = settings.KEY_FILE
 
     config = {
         "tls": {

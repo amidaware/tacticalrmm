@@ -167,6 +167,11 @@ class AgentProcesses(APIView):
 
     # list agent processes
     def get(self, request, agent_id):
+        if getattr(settings, "DEMO", False):
+            from tacticalrmm.demo_views import demo_get_procs
+
+            return demo_get_procs()
+
         agent = get_object_or_404(Agent, agent_id=agent_id)
         r = asyncio.run(agent.nats_cmd(data={"func": "procs"}, timeout=5))
         if r == "timeout" or r == "natsdown":
@@ -293,6 +298,11 @@ def ping(request, agent_id):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, EvtLogPerms])
 def get_event_log(request, agent_id, logtype, days):
+    if getattr(settings, "DEMO", False):
+        from tacticalrmm.demo_views import demo_get_eventlog
+
+        return demo_get_eventlog()
+
     agent = get_object_or_404(Agent, agent_id=agent_id)
     timeout = 180 if logtype == "Security" else 30
 
@@ -325,14 +335,13 @@ def send_raw_cmd(request, agent_id):
         },
     }
 
-    if pyver.parse(agent.version) >= pyver.parse("1.6.0"):
-        hist = AgentHistory.objects.create(
-            agent=agent,
-            type="cmd_run",
-            command=request.data["cmd"],
-            username=request.user.username[:50],
-        )
-        data["id"] = hist.pk
+    hist = AgentHistory.objects.create(
+        agent=agent,
+        type="cmd_run",
+        command=request.data["cmd"],
+        username=request.user.username[:50],
+    )
+    data["id"] = hist.pk
 
     r = asyncio.run(agent.nats_cmd(data, timeout=timeout + 2))
 
@@ -603,15 +612,13 @@ def run_script(request, agent_id):
         debug_info={"ip": request._client_ip},
     )
 
-    history_pk = 0
-    if pyver.parse(agent.version) >= pyver.parse("1.6.0"):
-        hist = AgentHistory.objects.create(
-            agent=agent,
-            type="script_run",
-            script=script,
-            username=request.user.username[:50],
-        )
-        history_pk = hist.pk
+    hist = AgentHistory.objects.create(
+        agent=agent,
+        type="script_run",
+        script=script,
+        username=request.user.username[:50],
+    )
+    history_pk = hist.pk
 
     if output == "wait":
         r = agent.run_script(

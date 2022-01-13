@@ -229,6 +229,7 @@ export default {
       this.selectedTemplate = null;
     },
     refresh() {
+      this.$store.dispatch("refreshDashboard");
       this.getTemplates();
       this.clearRow();
     },
@@ -246,7 +247,6 @@ export default {
             .then(r => {
               this.refresh();
               this.$q.loading.hide();
-
               this.notifySuccess(`Alert template ${template.name} was deleted!`);
             })
             .catch(error => {
@@ -308,6 +308,7 @@ export default {
         .put(`alerts/templates/${template.id}/`, data)
         .then(r => {
           this.notifySuccess(text);
+          this.$store.dispatch("refreshDashboard");
         })
         .catch(error => {});
     },

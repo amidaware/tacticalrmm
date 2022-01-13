@@ -79,11 +79,8 @@ class Script(BaseAuditModel):
     def hash_script_body(self):
         from django.conf import settings
 
-        msg = self.code.encode()
-        self.script_hash = hmac.new(
-            settings.SECRET_KEY.encode(), msg, hashlib.sha256
-        ).hexdigest()
-        self.save()
+        msg = self.code.encode(errors="ignore")
+        return hmac.new(settings.SECRET_KEY.encode(), msg, hashlib.sha256).hexdigest()
 
     @classmethod
     def load_community_scripts(cls):

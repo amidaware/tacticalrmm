@@ -1,13 +1,9 @@
-import json
-import os
-import string
 from statistics import mean
 from typing import Any
 
 import pytz
 from alerts.models import SEVERITY_CHOICES
 from core.models import CoreSettings
-from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models

@@ -8,7 +8,7 @@ Note: If you don't want to share any specific info publicly on discord you can D
 Server Install Specific questions:
 4. What version of Ubuntu/Debian, is it a Desktop or Server
 5. Are you using a real domain
-6. Did letsencrypt finalise and work
+6. Did letsencrypt finalize and work
 7. Have you looked at the troubleshooting steps on github? https://wh1te909.github.io/tacticalrmm/troubleshooting/
 8. What kind of ssl certs? Let's Encrypt, or purchased (you're not trying to make self-signed work right?)
 9. Check Expiry date of your certificates in the browser (at https://rmm.example.com )
@@ -17,3 +17,7 @@ Network Troubleshooting
 10. Are you using a proxy?
 11. Are you a wizard? See https://wh1te909.github.io/tacticalrmm/unsupported_guidelines/
   If so, what's in the network between agent and server?
+
+Agent Troubleshooting
+12. Is there ANY 3rd party Antivirus installed on the computer?
+13. Is there any network based filtering/AV filtering?

@@ -18,8 +18,7 @@ class Command(BaseCommand):
         token = get_auth_token(mesh_settings.mesh_username, mesh_settings.mesh_token)
 
         if settings.DOCKER_BUILD:
-            site = mesh_settings.mesh_site.replace("https", "ws")
-            uri = f"{site}:443/control.ashx?auth={token}"
+            uri = f"{settings.MESH_WS_URL}/control.ashx?auth={token}"
         else:
             site = mesh_settings.mesh_site.replace("https", "wss")
             uri = f"{site}/control.ashx?auth={token}"

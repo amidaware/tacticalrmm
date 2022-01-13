@@ -1,6 +1,5 @@
 import asyncio
 import datetime as dt
-from logging import log
 import random
 from time import sleep
 from typing import Union
@@ -22,7 +21,7 @@ def create_win_task_schedule(pk):
 
 
 @app.task
-def enable_or_disable_win_task(pk):
+def modify_win_task(pk):
     task = AutomatedTask.objects.get(pk=pk)
 
     task.modify_task_on_agent()

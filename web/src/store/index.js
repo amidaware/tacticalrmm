@@ -1,5 +1,5 @@
 import { createStore } from 'vuex'
-import { Screen } from 'quasar'
+import { Screen, Dark, LoadingBar } from 'quasar'
 import axios from "axios";
 
 export default function () {
@@ -8,12 +8,14 @@ export default function () {
       return {
         username: localStorage.getItem("user_name") || null,
         token: localStorage.getItem("access_token") || null,
-        clients: {},
         tree: [],
+        agents: [],
         treeReady: false,
+        selectedTree: "",
         selectedRow: null,
         agentTableLoading: false,
         needrefresh: false,
+        refreshSummaryTab: false,
         tableHeight: "300px",
         tabHeight: "300px",
         showCommunityScripts: false,
@@ -23,7 +25,10 @@ export default function () {
         clientTreeSort: "alphafail",
         clientTreeSplitter: 20,
         noCodeSign: false,
-        hosted: false
+        hosted: false,
+        clearSearchWhenSwitching: false,
+        currentTRMMVersion: null,
+        latestTRMMVersion: null
       }
     },
     getters: {
@@ -39,14 +44,8 @@ export default function () {
       showCommunityScripts(state) {
         return state.showCommunityScripts;
       },
-      needRefresh(state) {
-        return state.needrefresh;
-      },
-      agentTableHeight(state) {
-        return state.tableHeight;
-      },
-      tabsTableHeight(state) {
-        return state.tabHeight;
+      allClientsSelected(state) {
+        return !state.selectedTree;
       },
     },
     mutations: {
@@ -63,9 +62,6 @@ export default function () {
       destroyCommit(state) {
         state.token = null;
         state.username = null;
-      },
-      getUpdatedSites(state, clients) {
-        state.clients = clients;
       },
       loadTree(state, treebar) {
         state.tree = treebar;
@@ -104,6 +100,24 @@ export default function () {
       },
       SET_HOSTED(state, val) {
         state.hosted = val
+      },
+      setClearSearchWhenSwitching(state, val) {
+        state.clearSearchWhenSwitching = val
+      },
+      setLatestTRMMVersion(state, val) {
+        state.latestTRMMVersion = val
+      },
+      setCurrentTRMMVersion(state, val) {
+        state.currentTRMMVersion = val
+      },
+      setAgents(state, agents) {
+        state.agents = agents
+      },
+      setRefreshSummaryTab(state, val) {
+        state.refreshSummaryTab = val
+      },
+      setSelectedTree(state, val) {
+        state.selectedTree = val
       }
     },
     actions: {
@@ -119,14 +133,53 @@ export default function () {
         })
           .catch(e => { })
       },
-      getDashInfo(context) {
-        return axios.get("/core/dashinfo/");
+      refreshDashboard({ state, commit, dispatch }, clearTreeSelected = false) {
+        if (clearTreeSelected || !state.selectedTree) {
+          dispatch("loadAgents")
+          commit("setSelectedTree", "")
+        }
+        else if (state.selectedTree.includes("Client")) {
+          dispatch("loadAgents", `?client=${state.selectedTree.split("|")[1]}`)
+        }
+        else if (state.selectedTree.includes("Site")) {
+          dispatch("loadAgents", `?site=${state.selectedTree.split("|")[1]}`)
+        } else {
+          console.error("refreshDashboard has incorrect parameters")
+          return
+        }
+
+        if (clearTreeSelected) commit("destroySubTable")
+
+        dispatch("loadTree");
+        dispatch("getDashInfo", false);
       },
-      getUpdatedSites(context) {
-        axios.get("/clients/").then(r => {
-          context.commit("getUpdatedSites", r.data);
-        })
-          .catch(e => { });
+      async loadAgents(context, params = null) {
+        context.commit("AGENT_TABLE_LOADING", true);
+        try {
+          const { data } = await axios.get(`/agents/${params ? params : ""}`)
+          context.commit("setAgents", data);
+        } catch (e) {
+          console.error(e)
+        }
+
+        context.commit("AGENT_TABLE_LOADING", false);
+      },
+      async getDashInfo(context, edited = true) {
+        const { data } = await axios.get("/core/dashinfo/");
+        if (edited) {
+          LoadingBar.setDefaults({ color: data.loading_bar_color });
+          context.commit("setClearSearchWhenSwitching", data.clear_search_when_switching);
+          context.commit("SET_DEFAULT_AGENT_TBL_TAB", data.default_agent_tbl_tab);
+          context.commit("SET_CLIENT_TREE_SORT", data.client_tree_sort);
+          context.commit("SET_CLIENT_SPLITTER", data.client_tree_splitter);
+        }
+        Dark.set(data.dark_mode);
+        context.commit("setCurrentTRMMVersion", data.trmm_version);
+        context.commit("setLatestTRMMVersion", data.latest_trmm_ver);
+        context.commit("SET_AGENT_DBLCLICK_ACTION", data.dbl_click_action);
+        context.commit("SET_URL_ACTION", data.url_action);
+        context.commit("setShowCommunityScripts", data.show_community_scripts);
+        context.commit("SET_HOSTED", data.hosted);
       },
       loadTree({ commit, state }) {
         axios.get("/clients/").then(r => {

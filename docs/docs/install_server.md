@@ -226,6 +226,6 @@ We've said it before, we'll say it again.
 
 - We recommend regular updates.
 
-    - Every 3 months.
+    - Every 2-3 months.
 
         - Do it when you update your SSL certs.

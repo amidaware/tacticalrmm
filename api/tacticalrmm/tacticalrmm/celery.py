@@ -37,10 +37,6 @@ app.conf.beat_schedule = {
         "task": "agents.tasks.auto_self_agent_update_task",
         "schedule": crontab(minute=35, hour="*"),
     },
-    "handle-agents": {
-        "task": "agents.tasks.handle_agents_task",
-        "schedule": crontab(minute="*/3"),
-    },
 }
 
 
@@ -49,7 +45,7 @@ def debug_task(self):
     print("Request: {0!r}".format(self.request))
 
 
-@app.on_after_finalize.connect
+@app.on_after_finalize.connect  # type: ignore
 def setup_periodic_tasks(sender, **kwargs):
 
     from agents.tasks import agent_outages_task
@@ -59,4 +55,4 @@ def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(60.0, agent_outages_task.s())
     sender.add_periodic_task(60.0 * 30, core_maintenance_tasks.s())
     sender.add_periodic_task(60.0 * 60, unsnooze_alerts.s())
-    sender.add_periodic_task(90.0, cache_db_fields_task.s())
+    sender.add_periodic_task(85.0, cache_db_fields_task.s())

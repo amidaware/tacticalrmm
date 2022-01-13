@@ -1,4 +1,5 @@
 import { date } from "quasar";
+import { validateTimePeriod } from "@/utils/validation"
 
 // dropdown options formatting
 
@@ -198,6 +199,11 @@ export function dateStringToUnix(drfString) {
   return parseInt(date.formatDate(d, "X"));
 }
 
+// takes a unix timestamp and converts it to quasar datetime field value YYYY-MM-DD HH:mm:ss
+export function formatDateInputField(unixtimestamp) {
+  return date.formatDate(unixtimestamp, "YYYY-MM-DD HH:mm:ss")
+}
+
 // string formatting
 
 export function capitalize(string) {
@@ -231,4 +237,52 @@ export function bytes2Human(bytes) {
 export function convertMemoryToPercent(percent, memory) {
   const mb = memory * 1024;
   return Math.ceil((percent * mb) / 100).toLocaleString();
+}
+
+// convert time period(str) to seconds(int) (3h -> 10800) used for comparing time intervals
+export function convertPeriodToSeconds(period) {
+  if (!validateTimePeriod(period)) {
+    console.error("Time Period is invalid")
+    return NaN
+  }
+
+  if (period.toUpperCase().includes("S"))
+    // remove last letter from string and return since already in seconds
+    return parseInt(period.slice(0, -1))
+  else if (period.toUpperCase().includes("M"))
+    // remove last letter from string and multiple by 60 to get seconds
+    return parseInt(period.slice(0, -1)) * 60
+  else if (period.toUpperCase().includes("H"))
+    // remove last letter from string and multiple by 60 twice to get seconds
+    return parseInt(period.slice(0, -1)) * 60 * 60
+  else if (period.toUpperCase().includes("D"))
+    // remove last letter from string and multiply by 24 and 60 twice to get seconds
+    return parseInt(period.slice(0, -1)) * 24 * 60 * 60
+}
+
+// takes an integer and converts it to an array in binary format. i.e: 13 -> [8, 4, 1]
+// Needed to work with multi-select fields in tasks form
+export function convertToBitArray(number) {
+  let bitArray = []
+  let binary = number.toString(2)
+  for (let i = 0; i < binary.length; ++i) {
+    if (binary[i] !== "0") {
+      // last binary digit
+      if (binary.slice(i).length === 1) {
+        bitArray.push(1)
+      } else {
+        bitArray.push(parseInt(binary.slice(i), 2) - parseInt(binary.slice(i + 1), 2))
+      }
+    }
+  }
+  return bitArray
+}
+
+// takes an array of integers and adds them together
+export function convertFromBitArray(array) {
+  let result = 0
+  for (let i = 0; i < array.length; i++) {
+    result += array[i]
+  }
+  return result
 }

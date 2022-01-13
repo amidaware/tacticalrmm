@@ -1,4 +1,4 @@
-# API Access
+## API Access
 
 *Version added: v0.8.3*
 
@@ -23,3 +23,16 @@ Example curl request:
 curl https://api.example.com/clients/clients/ -H "X-API-KEY: Y57BXCFAA9WBCXH0XTEL6R5KAK69CNCZ"
 ```
 
+## Enable Swagger
+
+This will let you add a browser interface to see how you can use the api better.
+
+Open `/rmm/api/tacticalrmm/tacticalrmm/local_settings.py` and add 
+
+```conf
+SWAGGER_ENABLED = True
+```
+
+Restart django: `sudo systemctl restart rmm`
+
+Then visit `https://api.example.com/api/schema/swagger-ui/` to see it in action.

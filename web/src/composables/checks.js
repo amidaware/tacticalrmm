@@ -104,6 +104,10 @@ export function useCheckDropdown() {
   const checkOptions = ref([])
 
   async function getCheckOptions({ agent, policy }, flat = false) {
+    if (!agent && !policy) {
+      console.error("Need to specify agent or policy object when calling getCheckOptions")
+      return
+    }
     checkOptions.value = formatCheckOptions(agent ? await fetchAgentChecks(agent) : await fetchPolicyChecks(policy), flat)
   }
 

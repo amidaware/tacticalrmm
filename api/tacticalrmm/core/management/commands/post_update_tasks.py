@@ -39,29 +39,32 @@ class Command(BaseCommand):
 
         # convert autotask to the new format
         for task in AutomatedTask.objects.all():
-            edited = False
+            try:
+                edited = False
 
-            # convert scheduled task_type
-            if task.task_type == "scheduled":
-                task.task_type = "daily"
-                task.run_time_date = make_aware(
-                    dt.datetime.strptime(task.run_time_minute, "%H:%M")
-                )
-                task.daily_interval = 1
-                edited = True
+                # convert scheduled task_type
+                if task.task_type == "scheduled":
+                    task.task_type = "daily"
+                    task.run_time_date = make_aware(
+                        dt.datetime.strptime(task.run_time_minute, "%H:%M")
+                    )
+                    task.daily_interval = 1
+                    edited = True
 
-            # convert actions
-            if not task.actions:
-                task.actions = [
-                    {
-                        "type": "script",
-                        "script": task.script.pk,
-                        "script_args": task.script_args,
-                        "timeout": task.timeout,
-                        "name": task.script.name,
-                    }
-                ]
-                edited = True
+                # convert actions
+                if not task.actions:
+                    task.actions = [
+                        {
+                            "type": "script",
+                            "script": task.script.pk,
+                            "script_args": task.script_args,
+                            "timeout": task.timeout,
+                            "name": task.script.name,
+                        }
+                    ]
+                    edited = True
 
-            if edited:
-                task.save()
+                if edited:
+                    task.save()
+            except:
+                continue

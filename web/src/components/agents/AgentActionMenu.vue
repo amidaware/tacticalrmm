@@ -360,10 +360,13 @@ export default {
         cancel: true,
         persistent: true,
       }).onOk(async () => {
+        $q.loading.show();
         try {
           const result = await agentRebootNow(agent.agent_id);
           notifySuccess(`${agent.hostname} will now be restarted`);
+          $q.loading.hide();
         } catch (e) {
+          $q.loading.hide();
           console.error(e);
         }
       });

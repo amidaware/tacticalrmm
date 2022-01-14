@@ -129,7 +129,7 @@ export async function scheduleAgentReboot(agent_id, payload) {
 }
 
 export async function agentRebootNow(agent_id) {
-  const { data } = await axios.post(`${baseUrl}/${agent_id}/reboot/`, payload)
+  const { data } = await axios.post(`${baseUrl}/${agent_id}/reboot/`)
   return data
 }
 

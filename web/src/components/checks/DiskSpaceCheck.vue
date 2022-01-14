@@ -12,7 +12,15 @@
       <q-form @submit.prevent="submit(onDialogOK)">
         <div style="max-height: 70vh" class="scroll">
           <q-card-section>
-            <q-select dense :disable="!!check" outlined v-model="state.disk" :options="diskOptions" label="Disk" />
+            <q-select
+              dense
+              :disable="!!check"
+              outlined
+              v-model="state.disk"
+              :options="diskOptions"
+              label="Disk"
+              :rules="[val => !!val || '*Required']"
+            />
           </q-card-section>
           <q-card-section>
             <q-input

@@ -9,6 +9,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from django.utils import timezone as djangotime
 from packaging import version as pyver
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -383,18 +384,28 @@ class Reboot(APIView):
             random.choice(string.ascii_letters) for _ in range(10)
         )
 
+        expire_date = obj + djangotime.timedelta(minutes=5)
+
         nats_data = {
             "func": "schedtask",
             "schedtaskpayload": {
                 "type": "schedreboot",
-                "deleteafter": True,
-                "trigger": "once",
+                "enabled": True,
+                "delete_expired_task_after": True,
+                "start_when_available": False,
+                "multiple_instances": 2,
+                "trigger": "runonce",
                 "name": task_name,
-                "year": int(dt.datetime.strftime(obj, "%Y")),
-                "month": dt.datetime.strftime(obj, "%B"),
-                "day": int(dt.datetime.strftime(obj, "%d")),
-                "hour": int(dt.datetime.strftime(obj, "%H")),
-                "min": int(dt.datetime.strftime(obj, "%M")),
+                "start_year": int(dt.datetime.strftime(obj, "%Y")),
+                "start_month": int(dt.datetime.strftime(obj, "%-m")),
+                "start_day": int(dt.datetime.strftime(obj, "%-d")),
+                "start_hour": int(dt.datetime.strftime(obj, "%-H")),
+                "start_min": int(dt.datetime.strftime(obj, "%-M")),
+                "expire_year": int(expire_date.strftime("%Y")),
+                "expire_month": int(expire_date.strftime("%-m")),
+                "expire_day": int(expire_date.strftime("%-d")),
+                "expire_hour": int(expire_date.strftime("%-H")),
+                "expire_min": int(expire_date.strftime("%-M")),
             },
         }
 

@@ -18,7 +18,6 @@ from django.db import models
 from django.utils import timezone as djangotime
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrTimeout
-from packaging import version as pyver
 
 from core.models import TZ_CHOICES, CoreSettings
 from logs.models import BaseAuditModel, DebugLog
@@ -345,7 +344,7 @@ class Agent(BaseAuditModel):
             },
         }
 
-        if history_pk != 0 and pyver.parse(self.version) >= pyver.parse("1.6.0"):
+        if history_pk != 0:
             data["id"] = history_pk
 
         running_agent = self

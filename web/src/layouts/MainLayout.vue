@@ -131,7 +131,7 @@ export default {
 
     const currentTRMMVersion = computed(() => store.state.currentTRMMVersion);
     const latestTRMMVersion = computed(() => store.state.latestTRMMVersion);
-    const needRefresh = computed(() => store.state.needRefresh);
+    const needRefresh = computed(() => store.state.needrefresh);
     const user = computed(() => store.state.username);
     const token = computed(() => store.state.token);
 

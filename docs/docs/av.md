@@ -1,3 +1,21 @@
+
+# Antivirus
+
+They are usually fraught with false-positives because we live in a world of complex greys, not black and white. 
+
+At the moment, Microsoft Windows Defender thinks a go executable with virtually nothing in it is the "Trojan:Win32/Wacatac.B!ml" virus <https://old.reddit.com/r/golang/comments/s1bh01/goexecutables_and_windows_defender/>
+
+At Tactical we recommend: 
+
+1. No 3rd party AV
+2. Use the `Defender Status Report` script (Task > Run Daily - Use Automation manager) to monitor machines: <https://github.com/wh1te909/tacticalrmm/blob/develop/scripts/Win_Defender_Status_Report.ps1>
+3. If you want to lock a system down, run the `Defender Enable` script (test in your environment, because it can stop Microsoft Office from opening docs) that will turn on Protected Folders: <https://github.com/wh1te909/tacticalrmm/blob/develop/scripts/Win_Defender_Enable.ps1> and you will be extremely safe. Annoyed, but safe. Use [this](https://github.com/amidaware/trmm-awesome/blob/main/scripts/Windows_Defender_Allowed_List.ps1) as an Exclusion List for Protected Folders items.
+
+Be aware there is also [a powershell script](https://github.com/wh1te909/tacticalrmm/blob/develop/scripts/Win_TRMM_AV_Update_Exclusion.ps1) to add TRMM exclusions specific to Windows Defender
+
+!!!note
+    If you need to use 3rd party AV, add the necessary exclusions (see below for examples) and submit the exe's as safe
+
 ## Bitdefender Gravityzone
 
 Admin URL: <https://cloud.gravityzone.bitdefender.com/>
@@ -25,7 +43,6 @@ Admin URL:
 ![Web Exclusions](images/avwebroot2.png)
 
 ![Web Exclusions](images/avwebroot1.png)
-<<<<<<< HEAD
 
 ## Sophos
 
@@ -107,5 +124,22 @@ Go To Protect >> Rules and policies and add a firewall rule
 ![FW Exclusions](images/sophosxgscreen8.png)
 
 Optionally select Log Firewall Traffic checkbox for troubleshooting.
-=======
->>>>>>> massive cleanup of files and restructure of integrations design
+
+## ESET ESMC Console
+
+There are two spots:
+
+1. In the Detection Engine -> Performance Exclusions
+2. Web Access Protection -> URL Address Management
+
+
+![Web Exclusions](images/esetesmc1.png)
+
+![Web Exclusions](images/esetesmc2.png)
+
+![Web Exclusions](images/esetesmc3.png)
+
+![Web Exclusions](images/esetesmc4.png)
+
+![Web Exclusions](images/esetesmc5.png)
+

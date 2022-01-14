@@ -23,7 +23,7 @@ pycryptodome==3.12.0
 pyotp==2.6.0
 pyparsing==3.0.6
 pytz==2021.3
-qrcode==6.1
+qrcode==7.3.1
 redis==4.1.0
 requests==2.27.1
 six==1.16.0
@@ -33,6 +33,6 @@ urllib3==1.26.8
 uWSGI==2.0.20
 validators==0.18.2
 vine==5.0.0
-websockets==9.1
+websockets==10.1
 zipp==3.7.0
 drf_spectacular==0.21.1

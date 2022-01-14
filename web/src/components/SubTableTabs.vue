@@ -156,7 +156,7 @@ export default {
   props: {
     activeTabs: {
       type: Array,
-      default: ["summary", "checks", "tasks", "patches", "software", "history", "notes", "assets", "audit"],
+      default: ["summary", "checks", "tasks", "patches", "software", "history", "notes", "assets", "debug", "audit"],
     },
   },
   setup(props) {

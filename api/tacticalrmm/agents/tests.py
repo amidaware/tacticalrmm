@@ -430,14 +430,22 @@ class TestAgentViews(TacticalTestCase):
             "func": "schedtask",
             "schedtaskpayload": {
                 "type": "schedreboot",
-                "deleteafter": True,
-                "trigger": "once",
+                "enabled": True,
+                "delete_expired_task_after": True,
+                "start_when_available": False,
+                "multiple_instances": 2,
+                "trigger": "runonce",
                 "name": r.data["task_name"],  # type: ignore
-                "year": 2025,
-                "month": "August",
-                "day": 29,
-                "hour": 18,
-                "min": 41,
+                "start_year": 2025,
+                "start_month": 8,
+                "start_day": 29,
+                "start_hour": 18,
+                "start_min": 41,
+                "expire_year": 2025,
+                "expire_month": 8,
+                "expire_day": 29,
+                "expire_hour": 18,
+                "expire_min": 46,
             },
         }
         nats_cmd.assert_called_with(nats_data, timeout=10)
@@ -626,7 +634,7 @@ class TestAgentViews(TacticalTestCase):
     @patch("agents.tasks.run_script_email_results_task.delay")
     @patch("agents.models.Agent.run_script")
     def test_run_script(self, run_script, email_task):
-        from .models import AgentCustomField, Note
+        from .models import AgentCustomField, Note, AgentHistory
         from clients.models import ClientCustomField, SiteCustomField
 
         run_script.return_value = "ok"
@@ -643,8 +651,9 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
         run_script.assert_called_with(
-            scriptpk=script.pk, args=[], timeout=18, wait=True, history_pk=0
+            scriptpk=script.pk, args=[], timeout=18, wait=True, history_pk=hist.pk
         )
         run_script.reset_mock()
 
@@ -690,8 +699,9 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
         run_script.assert_called_with(
-            scriptpk=script.pk, args=["hello", "world"], timeout=25, history_pk=0
+            scriptpk=script.pk, args=["hello", "world"], timeout=25, history_pk=hist.pk
         )
         run_script.reset_mock()
 
@@ -710,12 +720,13 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
         run_script.assert_called_with(
             scriptpk=script.pk,
             args=["hello", "world"],
             timeout=25,
             wait=True,
-            history_pk=0,
+            history_pk=hist.pk,
         )
         run_script.reset_mock()
 
@@ -737,12 +748,13 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
         run_script.assert_called_with(
             scriptpk=script.pk,
             args=["hello", "world"],
             timeout=25,
             wait=True,
-            history_pk=0,
+            history_pk=hist.pk,
         )
         run_script.reset_mock()
 
@@ -766,12 +778,13 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
         run_script.assert_called_with(
             scriptpk=script.pk,
             args=["hello", "world"],
             timeout=25,
             wait=True,
-            history_pk=0,
+            history_pk=hist.pk,
         )
         run_script.reset_mock()
 
@@ -792,12 +805,13 @@ class TestAgentViews(TacticalTestCase):
 
         r = self.client.post(url, data, format="json")
         self.assertEqual(r.status_code, 200)
+        hist = AgentHistory.objects.filter(agent=self.agent, script=script).last()
         run_script.assert_called_with(
             scriptpk=script.pk,
             args=["hello", "world"],
             timeout=25,
             wait=True,
-            history_pk=0,
+            history_pk=hist.pk,
         )
         run_script.reset_mock()
 

@@ -349,7 +349,7 @@ class AutomatedTask(BaseAuditModel):
         if agent:
             task.create_task_on_agent()
 
-    # agent version >= 1.7.3
+    # agent version >= 1.8.0
     def generate_nats_task_payload(self, editing=False):
         task = {
             "pk": self.pk,
@@ -406,7 +406,7 @@ class AutomatedTask(BaseAuditModel):
             elif self.task_type == "monthly":
 
                 # check if "last day is configured"
-                if self.monthly_days_of_month > 0x80000000:
+                if self.monthly_days_of_month >= 0x80000000:
                     task["days_of_month"] = self.monthly_days_of_month - 0x80000000
                     task["run_on_last_day_of_month"] = True
                 else:
@@ -431,7 +431,7 @@ class AutomatedTask(BaseAuditModel):
             .get()
         )
 
-        if pyver.parse(agent.version) >= pyver.parse("1.7.3"):
+        if pyver.parse(agent.version) >= pyver.parse("1.8.0"):
             nats_data = {
                 "func": "schedtask",
                 "schedtaskpayload": self.generate_nats_task_payload(),
@@ -484,9 +484,7 @@ class AutomatedTask(BaseAuditModel):
                     },
                 }
 
-                if self.run_asap_after_missed and pyver.parse(
-                    agent.version
-                ) >= pyver.parse("1.4.7"):
+                if self.run_asap_after_missed:
                     nats_data["schedtaskpayload"]["run_asap_after_missed"] = True
 
                 if self.remove_if_not_scheduled:
@@ -536,7 +534,7 @@ class AutomatedTask(BaseAuditModel):
             .get()
         )
 
-        if pyver.parse(agent.version) >= pyver.parse("1.7.3"):
+        if pyver.parse(agent.version) >= pyver.parse("1.8.0"):
             nats_data = {
                 "func": "schedtask",
                 "schedtaskpayload": self.generate_nats_task_payload(editing=True),

@@ -11,6 +11,12 @@ set -e
 : "${NGINX_HOST_IP:=172.20.0.20}"
 : "${MESH_PERSISTENT_CONFIG:=0}"
 : "${WS_MASK_OVERRIDE:=0}"
+: "${SMTP_HOST:=smtp.example.com}"
+: "${SMTP_PORT:=587}"
+: "${SMTP_FROM:=mesh@example.com}"
+: "${SMTP_USER:=mesh@example.com}"
+: "${SMTP_PASS:=mesh-smtp-pass}"
+: "${SMTP_TLS:=false}"
 
 mkdir -p /home/node/app/meshcentral-data
 mkdir -p ${TACTICAL_DIR}/tmp
@@ -54,6 +60,14 @@ mesh_config="$(cat << EOF
       "CertUrl": "https://${NGINX_HOST_IP}:443",
       "agentConfig": [ "webSocketMaskOverride=${WS_MASK_OVERRIDE}" ]
     }
+  },
+  "smtp": {
+    "host": "${SMTP_HOST}",
+    "port": ${SMTP_PORT},
+    "from": "${SMTP_FROM}",
+    "user": "${SMTP_USER}",
+    "pass": "${SMTP_PASS}",
+    "tls": ${SMTP_TLS}
   }
 }
 EOF

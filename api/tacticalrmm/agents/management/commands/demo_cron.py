@@ -4,6 +4,7 @@ import random
 from django.core.management.base import BaseCommand
 from django.utils import timezone as djangotime
 from agents.models import Agent
+from core.tasks import cache_db_fields_task
 
 
 class Command(BaseCommand):
@@ -34,3 +35,5 @@ class Command(BaseCommand):
         for agent in agents:
             agent.last_seen = random.choice(random_dates)
             agent.save(update_fields=["last_seen"])
+
+        cache_db_fields_task()

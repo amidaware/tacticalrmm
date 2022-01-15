@@ -34,7 +34,13 @@ class GetHardware(APIView):
             "name": request.data["name"],
             "serial": request.data["serial"],
             "location_id": request.data["location_id"],
-            "company_id": request.data["company_id"]
+            "company_id": request.data["company_id"],
+            "manufacturer_id": request.data["manufacturer_id"],
+            "supplier_id": request.data["supplier_id"],
+            "purchase_cost": request.data["purchase_cost"],
+            "purchase_date": request.data["purchase_date"],
+            "warranty_months": request.data["warranty_months"],
+            "order_number": request.data["order_number"]
         }
         result = requests.post(
             integration.base_url + "hardware",

@@ -21,18 +21,28 @@
             <q-input filled v-model="assetSerial" label="Serial *" dense :rules="[(val) => !!val || '*Required']" />
             <q-select filled dense v-model="assetStatus" label="Status" :options="assetStatusOptions"
               :rules="[(val) => !!val || '*Required']" />
+
+            <q-input filled dense class="q-mb-md" v-model="assetPurchaseCost" label="Purchase Cost" prefix="$"
+              style="width:200px" mask="#.##" fill-mask="0" reverse-fill-mask />
+            <q-input filled dense stacked-label="Purchase Date" v-model="assetPurchaseDate" type="date" class="q-mb-md"
+              style="width:200px" />
+            <q-input filled dense class="q-mb-md" v-model="assetWarrantyMonths" label="Warranty (Months)"
+              style="width:300px" />
+            <q-input filled dense class="q-mb-md" v-model="assetOrderNumber" label="Order Number" style="width:300px" />
           </q-form>
         </q-step>
-        <q-step :name="2" title="Associate" icon="create_new_folder" :done="step > 2">
+        <q-step :name="2" title="Choose Asset Model" icon="create_new_folder" :done="step > 2">
           <q-btn :disable="newModelButton" class="q-mb-md" icon="add" label="New Model" @click="addModel()" />
           <q-select filled dense v-model="assetModel" label="Model *" :options="assetModelOptions"
             :rules="[ (val) => !!val || '*Required' ]" />
           <q-select filled v-model="assetManufacturer" label="Manufacturer *" :options="assetManufacturerOptions" dense
             :rules="[(val) => !!val || '*Required']" />
+          <q-select filled v-model="assetSupplier" label="Supplier" :options="assetSupplierOptions" dense
+            class="q-mb-md" />
           <q-select filled v-model="assetCategory" label="Category *" :options="assetCategoryOptions" dense
             :rules="[(val) => !!val || '*Required']" />
         </q-step>
-        <q-step :name="3" title="Review & Add" icon="create_new_folder" :done="step > 3">
+        <q-step :name="3" title="Review" icon="create_new_folder" :done="step > 3">
           <q-list>
             <q-item dense>
               <q-item-section top>
@@ -100,10 +110,50 @@
             </q-item>
             <q-item dense>
               <q-item-section top>
+                <q-item-label>Supplier</q-item-label>
+              </q-item-section>
+              <q-item-section side top>
+                {{assetSupplier.label}}
+              </q-item-section>
+            </q-item>
+            <q-item dense>
+              <q-item-section top>
                 <q-item-label>Category</q-item-label>
               </q-item-section>
               <q-item-section side top>
                 {{assetCategory.label}}
+              </q-item-section>
+            </q-item>
+            <q-item dense>
+              <q-item-section top>
+                <q-item-label>Purchase Cost</q-item-label>
+              </q-item-section>
+              <q-item-section side top>
+                {{assetPurchaseCost}}
+              </q-item-section>
+            </q-item>
+            <q-item dense>
+              <q-item-section top>
+                <q-item-label>Purchase Date</q-item-label>
+              </q-item-section>
+              <q-item-section side top>
+                {{assetPurchaseDate}}
+              </q-item-section>
+            </q-item>
+            <q-item dense>
+              <q-item-section top>
+                <q-item-label>Warranty (Months)</q-item-label>
+              </q-item-section>
+              <q-item-section side top>
+                {{assetWarrantyMonths}}
+              </q-item-section>
+            </q-item>
+            <q-item dense>
+              <q-item-section top>
+                <q-item-label>Order Number</q-item-label>
+              </q-item-section>
+              <q-item-section side top>
+                {{assetOrderNumber}}
               </q-item-section>
             </q-item>
           </q-list>
@@ -150,8 +200,14 @@
       const assetModelOptions = ref([])
       const assetManufacturer = ref("")
       const assetManufacturerOptions = ref([])
+      const assetSupplier = ref("")
+      const assetSupplierOptions = ref([])
       const assetCategory = ref("")
       const assetCategoryOptions = ref([])
+      const assetPurchaseCost = ref("")
+      const assetPurchaseDate = ref("")
+      const assetWarrantyMonths = ref("")
+      const assetOrderNumber = ref("")
       const addNewModel = ref(false)
       const step = ref(1)
       const newModelButton = ref(true)
@@ -282,6 +338,26 @@
           });
       }
 
+      function getSuppliers() {
+        $q.loading.show()
+        axios
+          .get(`/snipeit/suppliers/`)
+          .then(r => {
+            for (let supplier of r.data.rows) {
+              let supplierObj = {
+                label: supplier.name,
+                value: supplier.id,
+              }
+              assetSupplierOptions.value.push(supplierObj)
+              assetSupplierOptions.value.sort((a, b) => (a.label > b.label) ? 1 : -1)
+            }
+            $q.loading.hide()
+          })
+          .catch(e => {
+            console.log(e)
+          });
+      }
+
       function addModel() {
         $q.dialog({
           component: AddModel,
@@ -309,17 +385,23 @@
           name: assetName.value,
           serial: assetSerial.value,
           location_id: assetLocation.value.value,
-          company_id: assetCompany.value.value
+          company_id: assetCompany.value.value,
+          manufacturer_id: assetManufacturer.value.value,
+          supplier_id: assetSupplier.value ? assetSupplier.value.value : null,
+          purchase_cost: assetPurchaseCost.value ? assetPurchaseCost.value : null,
+          purchase_date: assetPurchaseDate.value ? assetPurchaseDate.value : null,
+          warranty_months: assetWarrantyMonths.value ? assetWarrantyMonths.value : null,
+          order_number: assetOrderNumber.value ? assetOrderNumber.value : null
         }
         if (assetTag.value && assetStatus.value && assetModel.value && assetName.value && assetSerial.value && assetLocation.value && assetCompany.value) {
           axios
             .post(`/snipeit/hardware/`, data)
             .then(r => {
               if (r.data.status === 'error') {
-                  notifyError(r.data.messages)
+                notifyError(r.data.messages)
               } else {
-                  notifySuccess(r.data.messages)
-                  onDialogOK()
+                notifySuccess(r.data.messages)
+                onDialogOK()
               }
               $q.loading.hide()
             })
@@ -342,6 +424,7 @@
       watch(step, (selection) => {
         if (selection === 2) {
           getModels()
+          getSuppliers()
           getManufacturers()
           getCategories()
         }
@@ -370,8 +453,14 @@
         assetModelOptions,
         assetManufacturer,
         assetManufacturerOptions,
+        assetSupplier,
+        assetSupplierOptions,
         assetCategory,
         assetCategoryOptions,
+        assetPurchaseCost,
+        assetPurchaseDate,
+        assetWarrantyMonths,
+        assetOrderNumber,
         addAsset,
         addModel,
         // quasar dialog plugin

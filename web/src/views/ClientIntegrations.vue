@@ -7,12 +7,12 @@
         </template>
         <template v-slot:after>
             <q-card-section class="row items-center q-py-none">
-                <div class="text-h6">{{ node.name }} Integrations</div>
+                <div class="text-h6">Client Integrations</div>
             </q-card-section>
             <q-tab-panels v-model="integrationTab" animated swipeable vertical transition-prev="jump-up"
                 transition-next="jump-up">
                 <q-tab-panel class="q-px-none" name="Cisco Meraki">
-                    <ClientMeraki :node="node" />
+                   <ClientMeraki :node="node" />
                 </q-tab-panel>
             </q-tab-panels>
         </template>
@@ -40,6 +40,8 @@
             const integrationTab = ref("")
             const node = ref([])
             const integrations = ref([])
+            const organization = ref("")
+            const orgChoice = ref(false)
             function getIntegrations() {
                 useMeta({ title: `Client Integrations Dashboard` });
                 axios
@@ -73,7 +75,7 @@
 
             watch(integrationTab, (selection, prevSelection) => {
                 if (selection === 'Cisco Meraki') {
-                    integrationTab.value = 'Cisco Meraki'
+                        integrationTab.value = 'Cisco Meraki'
                 }
             })
 
@@ -81,12 +83,13 @@
                 getIntegrations()
                 getClient();
             });
-            
+
             return {
                 splitterModel: ref(15),
                 integrationTab,
                 integrations,
                 node,
+                orgChoice,
                 // quasar dialog
                 dialogRef,
                 onDialogHide,

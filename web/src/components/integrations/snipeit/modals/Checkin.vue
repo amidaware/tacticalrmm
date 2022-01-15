@@ -16,7 +16,7 @@
                         <q-input v-model="notes" filled placeholder="Type notes in here" autogrow />
                     </div>
                     <q-card-actions align="right">
-                        <q-btn label="Add" type="submit" />
+                        <q-btn label="Checkin" type="submit" />
                         <q-btn label="Cancel" v-close-popup />
                     </q-card-actions>
                 </q-form>

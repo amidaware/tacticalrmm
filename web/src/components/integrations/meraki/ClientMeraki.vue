@@ -2,8 +2,7 @@
   <q-splitter v-model="splitterModel">
     <template v-slot:before>
       <q-inner-loading :showing="menuLoading" color="primary" />
-      <q-expansion-item group="organizationsGroup" v-for="organization in organizations" v-bind:key="organization.id"
-        icon="business" caption="Organization" :label="organization.name"
+      <q-expansion-item group="organizationsGroup" icon="business" caption="Organization" :label="organization.name"
         @click="getNetworks(organization.id, organization.name)">
         <q-list>
           <q-item clickable v-ripple active-class="menu-link"
@@ -77,13 +76,15 @@
 
 <script>
   import axios from "axios";
+  import AssociateOrg from "@/components/integrations/meraki/modals/AssociateOrg";
+
   import Overview from "@/components/integrations/meraki/organization/Overview";
   import TopClientsTable from "@/components/integrations/meraki/organization/TopClientsTable";
   import NetworkApplicationTrafficTable from "@/components/integrations/meraki/traffic/NetworkApplicationTrafficTable";
   import NetworkClientsTrafficTable from "@/components/integrations/meraki/traffic/NetworkClientsTrafficTable";
   import NetworkEventsTable from "@/components/integrations/meraki/events/NetworkEventsTable";
   // composable imports
-  import { ref, computed, onMounted } from "vue";
+  import { ref, computed, onMounted, onBeforeMount } from "vue";
   import { useMeta, useQuasar, useDialogPluginComponent } from "quasar";
   import { notifySuccess, notifyError } from "@/utils/notify";
 
@@ -91,6 +92,7 @@
     name: "ClientMeraki",
     emits: [...useDialogPluginComponent.emits],
     components: {
+      AssociateOrg,
       Overview,
       TopClientsTable,
       NetworkApplicationTrafficTable,
@@ -101,7 +103,7 @@
       const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
       const $q = useQuasar();
 
-      let organizations = ref([]);
+      let organization = ref([]);
       let networks = ref([]);
       let organizationID = ref("");
       let organizationName = ref("");
@@ -111,24 +113,31 @@
       let menuItem = ref("");
       let menuLoading = ref(false);
 
-      function getOrganizations() {
-        $q.loading.show()
-        axios
-          .get(`/meraki/organizations/`)
-          .then(r => {
-            organizations.value = r.data;
-            if(r.data.errors){
-              notifyError(r.data.errors[0])
-            }
-            $q.loading.hide()
-          })
-          .catch(e => { });
+      function getOrganization() {
+        $q.dialog({
+          component: AssociateOrg,
+          componentProps: {
+
+          }
+        }).onOk(val => {
+          $q.loading.show({ message: 'Applying organization...' })
+          axios
+            .get(`/meraki/organizations/` + val['organization'].value)
+            .then(r => {
+              organizationID.value = val['organization'].value
+              organization.value = r.data;
+              if (r.data.errors) {
+                notifyError(r.data.errors[0])
+              }
+              $q.loading.hide()
+            })
+            .catch(e => {
+            });
+        })
       }
 
-      function getNetworks(orgID, orgName) {
+      function getNetworks() {
         menuLoading.value = true;
-        organizationID.value = orgID;
-        organizationName.value = orgName;
         axios
           .get(`/meraki/` + organizationID.value + `/networks/`)
           .then(r => {
@@ -168,15 +177,19 @@
       }
 
       onMounted(() => {
-        getOrganizations();
+        // getOrganization();
       });
+
+      onBeforeMount(() => {
+        getOrganization()
+      })
 
       return {
         splitterModel: ref(17),
         menuLoading,
         menu,
         menuItem,
-        organizations,
+        organization,
         networks,
         organizationID,
         organizationName,

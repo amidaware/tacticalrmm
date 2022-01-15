@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [ 
     path('organizations/', views.GetOrganizations.as_view()),
+    path('organizations/<str:organization_id>/', views.GetOrganization.as_view()),
     path('<str:pk>/networks/', views.GetNetworks.as_view()),
     path('<str:pk>/devices/statuses/', views.GetDevices.as_view()),
     path('<str:pk>/devices_summary/<str:timespan>/', views.GetDevicesSummary.as_view()),

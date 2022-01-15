@@ -160,10 +160,11 @@
         rows,
         enabled,
         getIntegrations,
+        viewIntegrationConfig,
+
         // quasar dialog
         dialogRef,
         onDialogHide,
-        viewIntegrationConfig,
       };
     },
   };

@@ -21,6 +21,22 @@ class GetOrganizations(APIView):
 
         return Response(result)
 
+class GetOrganization(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, organization_id, format=None):
+        integration = Integration.objects.get(name="Cisco Meraki")
+
+        result = requests.get(
+            integration.base_url + "organizations/" + organization_id,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "X-Cisco-Meraki-API-Key": integration.api_key
+            }, timeout=(1,30),
+        ).json()
+
+        return Response(result)
+
 
 class GetNetworks(APIView):
     permission_classes = [IsAuthenticated]
@@ -182,6 +198,27 @@ class GetNetworkClientTraffic(APIView):
 
         return Response(result)
 
+class GetNetworkEvents(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, network_id, timespan, format=None):
+        integration = Integration.objects.get(name="Cisco Meraki")
+        print(timespan)
+        if "endingBefore" in str(timespan):
+            url = integration.base_url + "networks/"+ network_id +"/events?perPage=1000&productType=appliance&" + str(timespan)
+        else:
+            url = integration.base_url + "networks/"+ network_id +"/events?perPage=1000&productType=appliance"
+
+        result = requests.get(
+            url,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "X-Cisco-Meraki-API-Key": integration.api_key
+            }, timeout=(1,30),
+        ).json()
+
+        return Response(result)
 
 class GetClientPolicy(APIView):
     permission_classes = [IsAuthenticated]
@@ -215,26 +252,4 @@ class GetClientPolicy(APIView):
             }, data=payload, timeout=(1,30),
         ).json()
         
-        return Response(result)
-
-class GetNetworkEvents(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, network_id, timespan, format=None):
-        integration = Integration.objects.get(name="Cisco Meraki")
-
-        if "endingBefore" in str(timespan):
-            url = integration.base_url + "networks/"+ network_id +"/events?perPage=1000&productType=appliance&" + str(timespan)
-        else:
-            url = integration.base_url + "networks/"+ network_id +"/events?perPage=1000&productType=appliance"
-
-        result = requests.get(
-            url,
-            headers={
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "X-Cisco-Meraki-API-Key": integration.api_key
-            }, timeout=(1,30),
-        ).json()
-
         return Response(result)

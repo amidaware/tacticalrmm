@@ -57,6 +57,7 @@
                     .get("agents/" + route.params.agent_id + "/")
                     .then(r => {
                         agent.value = r.data
+                        getIntegrations()
                     })
                     .catch((e) => {
                         console.log(e)
@@ -95,9 +96,9 @@
 
             onMounted(() => {
                 getAgent();
-                getIntegrations()
+                // getIntegrations()
             });
-            
+
             return {
                 splitterModel: ref(15),
                 integrationTab,

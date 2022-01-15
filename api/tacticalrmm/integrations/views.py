@@ -22,16 +22,17 @@ class GetIntegration(APIView):
     # serializer_class = GetIntegrationsSerializer
     def get(self, request, pk):
         integration = get_object_or_404(Integration, pk=pk)
-
         return Response(GetIntegrationSerializer(integration).data)
 
     def post(self, request, pk):
         if request.data['enabled'] == True:
+            print(integration.configuration['tactical_meraki_associations'])
             integration = get_object_or_404(Integration, pk=pk)
             integration.configuration['api_key'] = request.data['apikey']
             integration.configuration['api_url'] = request.data['apiurl']
             integration.configuration['company_id'] = request.data['companyID']
             integration.enabled = True
+            # integration.configuration['tactical_meraki_associations'] = [{'id':1, 'name':'osborn'},{'id':2, 'name':'dea'}]
             integration.save()
 
             return Response("ok")
@@ -46,10 +47,15 @@ class GetIntegration(APIView):
             return Response("ok")
 
     def put(self, request, pk):
+        if request.data['associate'] == True:
+            integration.configuration['organization_association'] = [{'id':1, 'name':'osborn'},{'id':2, 'name':'dea'}]
+            integration.save()
+        else:
             integration = get_object_or_404(Integration, pk=pk)
             integration.configuration['api_key'] = request.data['apikey']
             integration.configuration['api_url'] = request.data['apiurl']
             integration.configuration['company_id'] = request.data['companyID']
+            # integration.configuration['tactical_meraki_associations'] = [{'id':1, 'name':'osborn'},{'id':2, 'name':'dea'}]
             integration.save()
 
             return Response("ok")

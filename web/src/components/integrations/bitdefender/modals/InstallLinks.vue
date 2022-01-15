@@ -11,9 +11,9 @@
                 </q-btn>
             </q-bar>
             <q-card-section>
-                <div class="q-pa-sm">
+                <div>
                     <q-table :rows="rows" :columns="columns" row-key="installLinkWindows" :pagination="pagination"
-                        :filter="filter" flat>
+                        :filter="filter">
                         <template v-slot:top-left>
                             <q-btn flat dense @click="getInstallLinks()" icon="refresh" />
                         </template>

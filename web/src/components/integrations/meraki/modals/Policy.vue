@@ -37,7 +37,7 @@
     import { notifySuccess, notifyError } from "@/utils/notify";
 
     export default {
-        name: "AddModel",
+        name: "Policy",
         emits: [...useDialogPluginComponent.emits],
         props: ['agent', 'selected'],
 

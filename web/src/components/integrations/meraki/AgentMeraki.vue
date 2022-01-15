@@ -159,6 +159,18 @@ fdsa
       const selected = ref([])
       let actionBtnDisabled = ref(true)
 
+      function convertTime(timestamp){
+            var a = new Date(timestamp * 1000);
+            var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            var year = a.getFullYear();
+            var month = months[a.getMonth()];
+            var date = a.getDate();
+            var hour = a.getHours();
+            var min = a.getMinutes();
+            var sec = a.getSeconds();
+            return month + ' ' + date + ', ' + year + ' @ ' + hour + ':' + min + ':' + sec;
+      }
+
       function getOrganizations() {
         $q.loading.show({ message: 'Getting organization...' })
         axios
@@ -203,18 +215,20 @@ fdsa
 
         for (let i = 0; i < resolvedMerakiClients.length; i++) {
           if (resolvedMerakiClients[i].data) {
+            let firstSeenObj = convertTime(resolvedMerakiClients[i].data.records[i].firstSeen)
+            let lastSeenObj = convertTime(resolvedMerakiClients[i].data.records[i].lastSeen)
             let clientObj = {
               id: resolvedMerakiClients[i].data.clientId,
               mac: resolvedMerakiClients[i].data.mac,
               manufacturer: resolvedMerakiClients[i].data.manufacturer,
-              description: resolvedMerakiClients[i].data.records[0].description,
-              ip: resolvedMerakiClients[i].data.records[0].ip,
-              status: resolvedMerakiClients[i].data.records[0].status,
-              firstSeen: date.formatDate(resolvedMerakiClients[i].data.records[0].firstSeen, 'ddd, MMM D, YYYY @ hh:mm A'),
-              lastSeen: date.formatDate(resolvedMerakiClients[i].data.records[0].lastSeen, 'ddd, MMM D, YYYY @ hh:mm A'),
-              user: resolvedMerakiClients[i].data.records[0].user,
-              networkId: resolvedMerakiClients[i].data.records[0].network.id,
-              networkName: resolvedMerakiClients[i].data.records[0].network.name
+              description: resolvedMerakiClients[i].data.records[i].description,
+              ip: resolvedMerakiClients[i].data.records[i].ip,
+              status: resolvedMerakiClients[i].data.records[i].status,
+              firstSeen: firstSeenObj,
+              lastSeen: lastSeenObj,
+              user: resolvedMerakiClients[i].data.records[i].user,
+              networkId: resolvedMerakiClients[i].data.records[i].network.id,
+              networkName: resolvedMerakiClients[i].data.records[i].network.name
             }
             rows.value.push(clientObj)
           }
@@ -226,15 +240,6 @@ fdsa
         }
         $q.loading.hide()
       }
-
-      // function getMACAddresses() {
-      //   $q.dialog({
-      //     component: MACAddressesTable,
-      //     componentProps: {
-      //       agent: props.agent
-      //     }
-      //   })
-      // }
 
       watch(selected, (val) => {
         if (selected.value.length > 0) {

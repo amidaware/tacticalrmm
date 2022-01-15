@@ -45,7 +45,7 @@
                             </q-input>
                         </div>
                         <div class="col-6">
-                            <q-input filled dense label="Completion Date" v-model="completionDate" mask="date">
+                            <q-input filled dense label="Completion Date" v-model="completionDate" mask="date" class="q-mb-md">
                                 <template v-slot:append>
                                     <q-icon name="event" class="cursor-pointer">
                                         <q-popup-proxy ref="qDateProxy" cover transition-show="scale"

@@ -283,7 +283,7 @@
                             const serial = tacticalAgentSerial.filter(element => snipeITAssetTags.includes(element))
 
                             if (modelNumber.length > 0 && hostnameMatch.length > 0 || modelNameNumber.length > 0 && hostnameMatch.length > 0 || modelNumber.length > 0 && modelNameNumber.length > 0 && hostnameMatch.length > 0 || assetTag.length > 0 && hostnameMatch.length > 0 || serial.length > 0 && hostnameMatch.length > 0) {
-                                if (r.data.rows[i].eol && r.data.rows[i].purchase_date) {
+                                if (r.data.rows[i].eol && r.data.rows[i].purchase_date && r.data.rows[i].purchase_cost) {
                                     const newDate = new Date()
                                     const eolDate = r.data.rows[i].eol.date
                                     const purchase_date = r.data.rows[i].purchase_date.date

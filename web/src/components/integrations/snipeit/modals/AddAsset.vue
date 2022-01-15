@@ -1,13 +1,6 @@
 <template>
   <q-dialog ref="dialogRef" @hide="onDialogHide" persistant>
     <q-card class="q-dialog-plugin" style="width: 60vw">
-      <q-bar>
-        Add Asset
-        <q-space />
-        <q-btn dense flat icon="close" v-close-popup>
-          <q-tooltip class="bg-white text-primary">Close</q-tooltip>
-        </q-btn>
-      </q-bar>
       <q-stepper v-model="step" ref="stepper" color="primary" animated>
         <q-step :name="1" :title="'Add ' + agent.hostname" icon="settings" :done="step > 1">
           <q-form>
@@ -21,11 +14,21 @@
             <q-input filled v-model="assetSerial" label="Serial *" dense :rules="[(val) => !!val || '*Required']" />
             <q-select filled dense v-model="assetStatus" label="Status" :options="assetStatusOptions"
               :rules="[(val) => !!val || '*Required']" />
-
             <q-input filled dense class="q-mb-md" v-model="assetPurchaseCost" label="Purchase Cost" prefix="$"
               style="width:200px" mask="#.##" fill-mask="0" reverse-fill-mask />
-            <q-input filled dense stacked-label="Purchase Date" v-model="assetPurchaseDate" type="date" class="q-mb-md"
-              style="width:200px" />
+              <q-input dense stack-label label="Purchase Date" filled v-model="assetPurchaseDate" mask="date" :rules="['date']">
+                <template v-slot:append>
+                  <q-icon name="event" class="cursor-pointer">
+                    <q-popup-proxy ref="qDateProxy" cover transition-show="scale" transition-hide="scale">
+                      <q-date v-model="assetPurchaseDate">
+                        <div class="row items-center justify-end">
+                          <q-btn v-close-popup label="Close" color="primary" flat />
+                        </div>
+                      </q-date>
+                    </q-popup-proxy>
+                  </q-icon>
+                </template>
+              </q-input>
             <q-input filled dense class="q-mb-md" v-model="assetWarrantyMonths" label="Warranty (Months)"
               style="width:300px" />
             <q-input filled dense class="q-mb-md" v-model="assetOrderNumber" label="Order Number" style="width:300px" />

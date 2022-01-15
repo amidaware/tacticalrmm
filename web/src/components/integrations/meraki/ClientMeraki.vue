@@ -132,6 +132,7 @@
               $q.loading.hide()
             })
             .catch(e => {
+
             });
         })
       }
@@ -144,7 +145,9 @@
             networks.value = r.data;
             menuLoading.value = false;
           })
-          .catch(e => { });
+          .catch(e => {
+            console.log(e)
+          });
       }
       function getOverview() {
         menu.value = organizationID.value + "organizationOverview";

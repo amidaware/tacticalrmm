@@ -3,20 +3,16 @@
         <q-card class="q-dialog-plugin" style="width: 60vw">
             <q-bar>
                 Associate Meraki Organization
-                <q-space />
-                <q-btn dense flat icon="close" v-close-popup>
-                    <q-tooltip class="bg-white text-primary">Close</q-tooltip>
-                </q-btn>
             </q-bar>
             <q-card-section>
-                <q-select filled v-model="organization" label="Organization *" :options="organizationOptions" dense
-                    :rules="[(val) => !!val || '*Required']" />
+                <q-form @submit="onOKClick()">
+                    <q-select filled v-model="organization" label="Organization *" :options="organizationOptions" dense
+                        :rules="[(val) => !!val || '*Required']" />
+                    <q-card-actions align="right">
+                        <q-btn class="q-mb-md" label="Save" type="submit" />
+                    </q-card-actions>
+                </q-form>
             </q-card-section>
-
-            <q-card-actions align="right">
-                <q-btn class="q-mb-md" label="Save" @click="onOKClick()" />
-            </q-card-actions>
-
         </q-card>
     </q-dialog>
 </template>

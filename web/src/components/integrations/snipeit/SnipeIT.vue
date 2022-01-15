@@ -10,12 +10,12 @@
             <q-tab-panel name="asset" class="q-px-none">
                 <q-btn-dropdown label="Actions" flat>
                     <q-list>
-                        <q-item clickable v-close-popup @click="checkout()" v-if="asset.user_can_checkout">
+                        <q-item clickable v-close-popup @click="checkout()">
                             <q-item-section>
                                 <q-item-label>Checkout</q-item-label>
                             </q-item-section>
                         </q-item>
-                        <q-item clickable v-close-popup @click="checkin()" v-else>
+                        <q-item clickable v-close-popup @click="checkin()">
                             <q-item-section>
                                 <q-item-label>Checkin</q-item-label>
                             </q-item-section>

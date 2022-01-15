@@ -177,7 +177,7 @@
   import axios from "axios";
   // composable imports
   import { ref, computed, onMounted, watch } from "vue";
-  import { useQuasar, useDialogPluginComponent } from "quasar";
+  import { useQuasar, useDialogPluginComponent, date } from "quasar";
   import { notifySuccess, notifyError } from "@/utils/notify";
   import AddModel from "@/components/integrations/snipeit/modals/AddModel";
 
@@ -387,12 +387,12 @@
           model_id: assetModel.value.value,
           name: assetName.value,
           serial: assetSerial.value,
-          location_id: assetLocation.value.value,
+          rtd_location_id: assetLocation.value.value,
           company_id: assetCompany.value.value,
           manufacturer_id: assetManufacturer.value.value,
           supplier_id: assetSupplier.value ? assetSupplier.value.value : null,
           purchase_cost: assetPurchaseCost.value ? assetPurchaseCost.value : null,
-          purchase_date: assetPurchaseDate.value ? assetPurchaseDate.value : null,
+          purchase_date: assetPurchaseDate.value ? date.formatDate(assetPurchaseDate.value, 'YYYY-MM-DD') : null,
           warranty_months: assetWarrantyMonths.value ? assetWarrantyMonths.value : null,
           order_number: assetOrderNumber.value ? assetOrderNumber.value : null
         }
@@ -400,6 +400,7 @@
           axios
             .post(`/snipeit/hardware/`, data)
             .then(r => {
+              console.log(r.data)
               if (r.data.status === 'error') {
                 notifyError(r.data.messages)
               } else {

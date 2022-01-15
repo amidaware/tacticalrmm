@@ -26,7 +26,6 @@ class GetHardware(APIView):
 
     def post(self, request, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
-
         payload = {
             "requestable": False,
             "asset_tag": request.data["asset_tag"],
@@ -34,7 +33,8 @@ class GetHardware(APIView):
             "model_id": request.data["model_id"],
             "name": request.data["name"],
             "serial": request.data["serial"],
-            "location_id": request.data["location_id"],
+            "rtd_location_id": request.data["rtd_location_id"],
+            # "location_id": request.data["location_id"],
             "company_id": request.data["company_id"],
             "manufacturer_id": request.data["manufacturer_id"],
             "supplier_id": request.data["supplier_id"],

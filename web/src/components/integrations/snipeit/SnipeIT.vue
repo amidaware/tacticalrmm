@@ -228,7 +228,7 @@
     import { useQuasar, useDialogPluginComponent, date } from "quasar";
     import { notifySuccess, notifyError, notifyWarning } from "@/utils/notify";
     import { useRouter } from 'vue-router';
-    import AddAsset from "@/components/integrations/snipeit/modals/AddAsset";
+    import AssetForm from "@/components/integrations/snipeit/modals/AssetForm";
     import Checkout from "@/components/integrations/snipeit/modals/Checkout";
     import Checkin from "@/components/integrations/snipeit/modals/Checkin";
     import AddMaintenance from "@/components/integrations/snipeit/modals/AddMaintenance";
@@ -326,7 +326,7 @@
 
             function addAsset() {
                 $q.dialog({
-                    component: AddAsset,
+                    component: AssetForm,
                     componentProps: {
                         agent: props.agent,
                     }
@@ -372,7 +372,7 @@
 
             function editAsset() {
                 $q.dialog({
-                    component: EditAsset,
+                    component: AssetForm,
                     componentProps: {
                         agent: props.agent,
                         asset: asset.value

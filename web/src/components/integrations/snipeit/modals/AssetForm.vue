@@ -2,7 +2,7 @@
   <q-dialog ref="dialogRef" @hide="onDialogHide" persistant>
     <q-card class="q-dialog-plugin" style="width: 60vw">
       <q-stepper v-model="step" ref="stepper" color="primary" animated>
-        <q-step :name="1" :title="'Add ' + agent.hostname" icon="settings" :done="step > 1">
+        <q-step :name="1" :title="stepperTitle" icon="settings" :done="step > 1">
           <q-form>
             <q-input filled v-model="assetName" label="Name *" dense :rules="[(val) => !!val || '*Required']" />
             <q-select filled dense v-model="assetCompany" label="Company *" :options="companyOptions"
@@ -16,19 +16,20 @@
               :rules="[(val) => !!val || '*Required']" />
             <q-input filled dense class="q-mb-md" v-model="assetPurchaseCost" label="Purchase Cost" prefix="$"
               style="width:200px" mask="#.##" fill-mask="0" reverse-fill-mask />
-              <q-input dense stack-label label="Purchase Date" filled v-model="assetPurchaseDate" mask="date" :rules="['date']">
-                <template v-slot:append>
-                  <q-icon name="event" class="cursor-pointer">
-                    <q-popup-proxy ref="qDateProxy" cover transition-show="scale" transition-hide="scale">
-                      <q-date v-model="assetPurchaseDate">
-                        <div class="row items-center justify-end">
-                          <q-btn v-close-popup label="Close" color="primary" flat />
-                        </div>
-                      </q-date>
-                    </q-popup-proxy>
-                  </q-icon>
-                </template>
-              </q-input>
+            <q-input dense stack-label label="Purchase Date" filled v-model="assetPurchaseDate" mask="date"
+              :rules="['date']">
+              <template v-slot:append>
+                <q-icon name="event" class="cursor-pointer">
+                  <q-popup-proxy ref="qDateProxy" cover transition-show="scale" transition-hide="scale">
+                    <q-date v-model="assetPurchaseDate">
+                      <div class="row items-center justify-end">
+                        <q-btn v-close-popup label="Close" color="primary" flat />
+                      </div>
+                    </q-date>
+                  </q-popup-proxy>
+                </q-icon>
+              </template>
+            </q-input>
             <q-input filled dense class="q-mb-md" v-model="assetWarrantyMonths" label="Warranty (Months)"
               style="width:300px" />
             <q-input filled dense class="q-mb-md" v-model="assetOrderNumber" label="Order Number" style="width:300px" />
@@ -165,7 +166,7 @@
           <q-stepper-navigation align="right">
             <q-btn flat v-if="step > 1" color="primary" @click="$refs.stepper.previous()" label="Back" />
             <q-btn flat v-if="step != 3" @click="$refs.stepper.next()" color="primary" label="Next" />
-            <q-btn flat v-else @click="addAsset()" color="primary" label="Add" />
+            <q-btn flat v-else @click="submitAsset()" color="primary" label="Submit" />
           </q-stepper-navigation>
         </template>
       </q-stepper>
@@ -182,7 +183,7 @@
   import AddModel from "@/components/integrations/snipeit/modals/AddModel";
 
   export default {
-    name: "AddAsset",
+    name: "AssetForm",
     emits: [...useDialogPluginComponent.emits],
     props: ['agent', 'asset'],
 
@@ -213,13 +214,31 @@
       const assetOrderNumber = ref("")
       const addNewModel = ref(false)
       const step = ref(1)
+      const stepperTitle = ref("")
       const newModelButton = ref(true)
 
       function getTacticalAgent() {
+        stepperTitle.value = 'Add ' + props.agent.hostname
         assetName.value = props.agent.hostname
         assetTagOptions.value.push(props.agent.wmi_detail.comp_sys_prod[0][0].IdentifyingNumber)
         assetTagOptions.value.push(props.agent.wmi_detail.comp_sys_prod[0][0].Name)
         assetSerial.value = props.agent.wmi_detail.os[0][0].SerialNumber
+        if (props.asset) {
+          stepperTitle.value = 'Edit ' + props.agent.hostname
+          assetSerial.value = props.agent.wmi_detail.os[0][0].SerialNumber
+          assetCompany.value = { label: props.asset.company.name, value: props.asset.company.id }
+          assetLocation.value = { label: props.asset.location.name, value: props.asset.location.id }
+          assetTag.value = props.asset.asset_tag
+          assetStatus.value = { label: props.asset.status_label.name, value: props.asset.status_label.id }
+          assetPurchaseDate.value = props.asset.purchase_date.date
+          assetPurchaseCost.value = props.asset.purchase_cost
+          assetCategory.value = { label: props.asset.category.name, value: props.asset.category.id }
+          assetSupplier.value = { label: props.asset.supplier.name, value: props.asset.supplier.id }
+          assetWarrantyMonths.value = props.asset.warranty_months.split(' ')[0]
+          assetOrderNumber.value = props.asset.order_number
+          assetManufacturer.value = { label: props.asset.manufacturer.name, value: props.asset.manufacturer.id }
+          assetModel.value = { label: props.asset.model.name, value: props.asset.model.id }
+        }
       }
 
       function getCompanies() {
@@ -379,7 +398,7 @@
         })
       }
 
-      function addAsset() {
+      function submitAsset() {
         $q.loading.show()
         let data = {
           asset_tag: assetTag.value,
@@ -397,21 +416,38 @@
           order_number: assetOrderNumber.value ? assetOrderNumber.value : null
         }
         if (assetTag.value && assetStatus.value && assetModel.value && assetName.value && assetSerial.value && assetLocation.value && assetCompany.value) {
-          axios
-            .post(`/snipeit/hardware/`, data)
-            .then(r => {
-              console.log(r.data)
-              if (r.data.status === 'error') {
-                notifyError(r.data.messages)
-              } else {
-                notifySuccess(r.data.messages)
-                onDialogOK()
-              }
-              $q.loading.hide()
-            })
-            .catch(e => {
-              console.log(e)
-            });
+          if (props.asset) {
+            axios
+              .put(`/snipeit/hardware/` + props.asset.id + `/`, data)
+              .then(r => {
+                if (r.data.status === 'error') {
+                  notifyError(r.data.messages)
+                } else {
+                  notifySuccess(r.data.messages)
+                  onDialogOK()
+                }
+                $q.loading.hide()
+              })
+              .catch(e => {
+                console.log(e)
+              });
+          } else {
+            axios
+              .post(`/snipeit/hardware/`, data)
+              .then(r => {
+                if (r.data.status === 'error') {
+                  notifyError(r.data.messages)
+                } else {
+                  notifySuccess(r.data.messages)
+                  onDialogOK()
+                }
+                $q.loading.hide()
+              })
+              .catch(e => {
+                console.log(e)
+              });
+          }
+
         } else {
           notifyError("Please make sure all fields are filled in")
           $q.loading.hide()
@@ -465,8 +501,9 @@
         assetPurchaseDate,
         assetWarrantyMonths,
         assetOrderNumber,
-        addAsset,
+        submitAsset,
         addModel,
+        stepperTitle,
         // quasar dialog plugin
         dialogRef,
         onDialogHide,

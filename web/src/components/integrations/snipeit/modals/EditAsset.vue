@@ -2,7 +2,7 @@
   <q-dialog ref="dialogRef" @hide="onDialogHide" persistant>
     <q-card class="q-dialog-plugin" style="width: 60vw">
       <q-stepper v-model="step" ref="stepper" color="primary" animated>
-        <q-step :name="1" :title="'Add ' + agent.hostname" icon="settings" :done="step > 1">
+        <q-step :name="1" :title="'Edit ' + agent.hostname" icon="settings" :done="step > 1">
           <q-form>
             <q-input filled v-model="assetName" label="Name *" dense :rules="[(val) => !!val || '*Required']" />
             <q-select filled dense v-model="assetCompany" label="Company *" :options="companyOptions"

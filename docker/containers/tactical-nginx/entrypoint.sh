@@ -3,8 +3,8 @@
 set -e
 
 : "${WORKER_CONNECTIONS:=2048}"
-: "${APP_PORT:=80}"
-: "${API_PORT:=80}"
+: "${APP_PORT:=8080}"
+: "${API_PORT:=8080}"
 : "${NGINX_RESOLVER:=127.0.0.11}"
 : "${BACKEND_SERVICE:=tactical-backend}"
 : "${FRONTEND_SERVICE:=tactical-frontend}"
@@ -101,7 +101,7 @@ server  {
 
     client_max_body_size 300M;
 
-    listen 443 ssl;
+    listen 4443 ssl;
     ssl_certificate ${CERT_PUB_PATH};
     ssl_certificate_key ${CERT_PRIV_PATH};
     ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
@@ -109,7 +109,7 @@ server  {
 }
 
 server {
-    listen 80;
+    listen 8080;
     server_name ${API_HOST};
     return 301 https://\$server_name\$request_uri;
 }
@@ -138,7 +138,7 @@ server  {
         proxy_set_header X-Forwarded-Port  \$server_port;
     }
 
-    listen 443 ssl;
+    listen 4443 ssl;
     ssl_certificate ${CERT_PUB_PATH};
     ssl_certificate_key ${CERT_PRIV_PATH};
     ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
@@ -147,7 +147,7 @@ server  {
 
 server {
 
-    listen 80;
+    listen 8080;
     server_name ${APP_HOST};
     return 301 https://\$server_name\$request_uri;
 }
@@ -156,7 +156,7 @@ server {
 server {
     resolver ${NGINX_RESOLVER} valid=30s;
 
-    listen 443 ssl;
+    listen 4443 ssl;
     proxy_send_timeout 330s;
     proxy_read_timeout 330s;
     server_name ${MESH_HOST};
@@ -187,7 +187,7 @@ server {
 server {
     resolver ${NGINX_RESOLVER} valid=30s;
 
-    listen 80;
+    listen 8080;
     server_name ${MESH_HOST};
     return 301 https://\$server_name\$request_uri;
 }

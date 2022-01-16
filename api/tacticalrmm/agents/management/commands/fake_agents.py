@@ -6,6 +6,7 @@ import datetime as dt
 from django.core.management.base import BaseCommand
 from django.utils import timezone as djangotime
 from django.conf import settings
+from django.core.management import call_command
 
 from accounts.models import User
 from agents.models import Agent, AgentHistory
@@ -63,7 +64,7 @@ class Command(BaseCommand):
         AuditLog.objects.all().delete()
         PendingAction.objects.all().delete()
 
-        Script.load_community_scripts()
+        call_command("load_community_scripts")
 
         # policies
         check_policy = Policy()
@@ -510,7 +511,16 @@ class Command(BaseCommand):
 
             nla_task = AutomatedTask()
             nla_task.agent = agent
-            nla_task.script = restart_nla
+            actions = [
+                {
+                    "name": restart_nla.name,
+                    "type": "script",
+                    "script": restart_nla.pk,
+                    "timeout": 90,
+                    "script_args": [],
+                }
+            ]
+            nla_task.actions = actions
             nla_task.assigned_check = check6
             nla_task.name = "Restart NLA"
             nla_task.task_type = "checkfailure"
@@ -524,11 +534,27 @@ class Command(BaseCommand):
 
             spool_task = AutomatedTask()
             spool_task.agent = agent
-            spool_task.script = clear_spool
+            actions = [
+                {
+                    "name": clear_spool.name,
+                    "type": "script",
+                    "script": clear_spool.pk,
+                    "timeout": 90,
+                    "script_args": [],
+                }
+            ]
+            spool_task.actions = actions
             spool_task.name = "Clear the print spooler"
-            spool_task.task_type = "scheduled"
-            spool_task.run_time_bit_weekdays = 127
-            spool_task.run_time_minute = "04:45"
+            spool_task.task_type = "daily"
+            spool_task.run_time_date = djangotime.now() + djangotime.timedelta(
+                minutes=10
+            )
+            spool_task.expire_date = djangotime.now() + djangotime.timedelta(days=753)
+            spool_task.daily_interval = 1
+            spool_task.weekly_interval = 1
+            spool_task.task_repetition_duration = "2h"
+            spool_task.task_repetition_interval = "25m"
+            spool_task.random_task_delay = "3m"
             spool_task.win_task_name = "demospool123"
             spool_task.last_run = djangotime.now()
             spool_task.retcode = 0
@@ -539,7 +565,16 @@ class Command(BaseCommand):
             tmp_dir_task = AutomatedTask()
             tmp_dir_task.agent = agent
             tmp_dir_task.name = "show temp dir files"
-            tmp_dir_task.script = show_tmp_dir_script
+            actions = [
+                {
+                    "name": show_tmp_dir_script.name,
+                    "type": "script",
+                    "script": show_tmp_dir_script.pk,
+                    "timeout": 90,
+                    "script_args": [],
+                }
+            ]
+            tmp_dir_task.actions = actions
             tmp_dir_task.task_type = "manual"
             tmp_dir_task.win_task_name = "demotemp"
             tmp_dir_task.last_run = djangotime.now()
@@ -665,4 +700,5 @@ class Command(BaseCommand):
 
             self.stdout.write(self.style.SUCCESS(f"Added agent # {count_agents + 1}"))
 
+        call_command("load_demo_scripts")
         self.stdout.write("done")

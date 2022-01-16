@@ -42,6 +42,7 @@
             const integrations = ref([])
             const organization = ref("")
             const orgChoice = ref(false)
+
             function getIntegrations() {
                 useMeta({ title: `Client Integrations Dashboard` });
                 axios
@@ -75,7 +76,7 @@
 
             watch(integrationTab, (selection, prevSelection) => {
                 if (selection === 'Cisco Meraki') {
-                        integrationTab.value = 'Cisco Meraki'
+                    integrationTab.value = 'Cisco Meraki'
                 }
             })
 

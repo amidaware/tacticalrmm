@@ -77,7 +77,6 @@
 <script>
   import axios from "axios";
   import AssociateOrg from "@/components/integrations/meraki/modals/AssociateOrg";
-
   import Overview from "@/components/integrations/meraki/organization/Overview";
   import TopClientsTable from "@/components/integrations/meraki/organization/TopClientsTable";
   import NetworkApplicationTrafficTable from "@/components/integrations/meraki/traffic/NetworkApplicationTrafficTable";
@@ -123,7 +122,7 @@
           $q.dialog({
             component: AssociateOrg,
           }).onOk(val => {
-            notifySuccess(val['meraki_organization_label'] + ' is now associated ' + props.node.name)
+            notifySuccess(val['meraki_organization_label'] + ' is now associated with ' + props.node.name)
             let data = {
               associate: true,
               node_id: props.node.id,
@@ -171,6 +170,7 @@
             console.log(e)
           });
       }
+
       function getOverview() {
         menu.value = organizationID.value + "organizationOverview";
         menuItem.value = organizationID.value + "organizationOverview";
@@ -200,10 +200,6 @@
         menu.value = networkID.value + "networkEvents";
         menuItem.value = networkID.value + "networkEventsTable";
       }
-
-      onMounted(() => {
-        // getOrganization();
-      });
 
       onBeforeMount(() => {
         checkAssocation()

@@ -232,7 +232,6 @@
     import Checkout from "@/components/integrations/snipeit/modals/Checkout";
     import Checkin from "@/components/integrations/snipeit/modals/Checkin";
     import AddMaintenance from "@/components/integrations/snipeit/modals/AddMaintenance";
-    import EditAsset from "@/components/integrations/snipeit/modals/EditAsset";
     import DeleteAsset from "@/components/integrations/snipeit/modals/DeleteAsset";
     import ModelsTab from "@/components/integrations/snipeit/ModelsTab";
     import MaintenancesTab from "@/components/integrations/snipeit/MaintenancesTab";

@@ -7,12 +7,12 @@
         </template>
         <template v-slot:after>
             <q-card-section class="row items-center q-py-none">
-                <div class="text-h6">Client Integrations</div>
+                <div class="text-h6">{{node.name}} Integrations</div>
             </q-card-section>
             <q-tab-panels v-model="integrationTab" animated swipeable vertical transition-prev="jump-up"
                 transition-next="jump-up">
                 <q-tab-panel class="q-px-none" name="Cisco Meraki">
-                   <ClientMeraki :node="node" />
+                   <ClientMeraki :node="node" :integrations="integrations"/>
                 </q-tab-panel>
             </q-tab-panels>
         </template>

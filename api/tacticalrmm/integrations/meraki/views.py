@@ -3,7 +3,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 import requests
 import json
-from ..models import Integration
+from ..models import Integration 
 
 class GetOrganizations(APIView):
     permission_classes = [IsAuthenticated]

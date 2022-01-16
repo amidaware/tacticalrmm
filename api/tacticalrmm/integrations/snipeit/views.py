@@ -6,7 +6,6 @@ import json
 from ..models import Integration
 
 class GetHardware(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
@@ -26,6 +25,7 @@ class GetHardware(APIView):
 
     def post(self, request, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
+
         payload = {
             "requestable": False,
             "asset_tag": request.data["asset_tag"],
@@ -42,6 +42,7 @@ class GetHardware(APIView):
             "warranty_months": request.data["warranty_months"],
             "order_number": request.data["order_number"]
         }
+        
         result = requests.post(
             integration.base_url + "hardware",
             json=payload,
@@ -55,7 +56,6 @@ class GetHardware(APIView):
         return Response(result)
 
 class GetAsset(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, asset_id, format=None):
@@ -74,7 +74,7 @@ class GetAsset(APIView):
 
     def put(self, request, asset_id, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
-        print(asset_id)
+
         payload = {
             "requestable": False,
             "asset_tag": request.data["asset_tag"],
@@ -120,7 +120,6 @@ class GetAsset(APIView):
         return Response(result)
 
 class GetAssetByTag(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, asset_tag, format=None):
@@ -138,11 +137,11 @@ class GetAssetByTag(APIView):
         return Response(result)
 
 class GetAssetCheckout(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def post(self, request, asset_id, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
+
         payload = {
             "id": asset_id,
             "checkout_to_type": request.data["checkout_to_type"],
@@ -166,11 +165,11 @@ class GetAssetCheckout(APIView):
 
 
 class GetAssetCheckin(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def post(self, request, asset_id, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
+
         payload = {
             "id": asset_id,
             "location_id": request.data["location_id"],
@@ -190,7 +189,6 @@ class GetAssetCheckin(APIView):
         return Response(result)
 
 class GetCompanies(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
@@ -259,7 +257,6 @@ class GetCompany(APIView):
         return Response(result)
 
 class GetStatusLabels(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
@@ -277,7 +274,6 @@ class GetStatusLabels(APIView):
         return Response(result)
 
 class GetCategories(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
@@ -295,7 +291,6 @@ class GetCategories(APIView):
         return Response(result)
 
 class GetModels(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
@@ -314,6 +309,7 @@ class GetModels(APIView):
 
     def post(self, request, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
+
         payload = {
             "name": request.data["model_name"],
             "model_number": request.data["model_number"],
@@ -334,7 +330,6 @@ class GetModels(APIView):
         return Response(result)
 
 class GetModel(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, model_id, format=None):
@@ -353,7 +348,7 @@ class GetModel(APIView):
 
     def put(self, request, model_id, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
-        print(request.data)
+
         payload = {
             "name": request.data["name"],
             "model_number": request.data["model_number"],
@@ -375,7 +370,7 @@ class GetModel(APIView):
 
     def delete(self, request, model_id, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
-        print(model_id)
+
         result = requests.delete(
             integration.base_url + "models/" + model_id,
             headers={
@@ -388,7 +383,6 @@ class GetModel(APIView):
         return Response(result)
 
 class GetManufacturers(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
@@ -406,7 +400,6 @@ class GetManufacturers(APIView):
         return Response(result)
 
 class GetSuppliers(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
@@ -424,7 +417,6 @@ class GetSuppliers(APIView):
         return Response(result)
 
 class GetMaintenances(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
@@ -443,7 +435,7 @@ class GetMaintenances(APIView):
 
     def post(self, request, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
-        print(request.data)
+
         payload = {
             "title": request.data["title"],
             "asset_maintenance_type": request.data["asset_maintenance_type"],
@@ -469,7 +461,6 @@ class GetMaintenances(APIView):
 
 
 class GetMaintenance(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, maintenance_id, format=None):
@@ -488,7 +479,7 @@ class GetMaintenance(APIView):
 
     def patch(self, request, maintenance_id, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
-        print(request.data)
+
         payload = {
             "title": request.data["title"],
             "asset_maintenance_type": request.data["asset_maintenance_type"],
@@ -527,7 +518,6 @@ class GetMaintenance(APIView):
         return Response(result)
 
 class GetLocations(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
@@ -595,7 +585,6 @@ class GetLocation(APIView):
         return Response(result)
 
 class GetUsers(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):

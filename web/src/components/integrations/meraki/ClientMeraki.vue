@@ -91,6 +91,7 @@
   export default {
     name: "ClientMeraki",
     emits: [...useDialogPluginComponent.emits],
+    props: ['node', 'integrations'],
     components: {
       AssociateOrg,
       Overview,
@@ -113,28 +114,49 @@
       let menuItem = ref("");
       let menuLoading = ref(false);
 
-      function getOrganization() {
-        $q.dialog({
-          component: AssociateOrg,
-          componentProps: {
+      function checkAssocation() {
+        const obj = props.integrations[0].configuration.tactical_meraki_associations.find(o => o.node_id === props.node.id);
 
-          }
-        }).onOk(val => {
-          $q.loading.show({ message: 'Applying organization...' })
-          axios
-            .get(`/meraki/organizations/` + val['organization'].value)
-            .then(r => {
-              organizationID.value = val['organization'].value
-              organization.value = r.data;
-              if (r.data.errors) {
-                notifyError(r.data.errors[0])
-              }
-              $q.loading.hide()
-            })
-            .catch(e => {
+        if (obj) {
+          getOrganization(obj)
+        } else {
+          $q.dialog({
+            component: AssociateOrg,
+          }).onOk(val => {
+            notifySuccess(val['meraki_organization_label'] + ' is now associated ' + props.node.name)
+            let data = {
+              associate: true,
+              node_id: props.node.id,
+              meraki_organization_id: val['meraki_organization_id'],
+              meraki_organization_label: val['meraki_organization_label']
+            }
+            axios
+              .put(`/integrations/` + props.integrations[0].id + `/`, data)
+              .then(r => {
+                getOrganization(val)
+              })
+              .catch(e => {
+                console.log(e)
+              });
+          })
+        }
+      }
 
-            });
-        })
+      function getOrganization(obj) {
+        $q.loading.show({ message: 'Getting ' + obj.meraki_organization_label + '...' })
+        axios
+          .get(`/meraki/organizations/` + obj.meraki_organization_id)
+          .then(r => {
+            organizationID.value = r.data.id
+            organization.value = r.data;
+            if (r.data.errors) {
+              notifyError(r.data.errors[0])
+            }
+            $q.loading.hide()
+          })
+          .catch(e => {
+
+          });
       }
 
       function getNetworks() {
@@ -184,7 +206,7 @@
       });
 
       onBeforeMount(() => {
-        getOrganization()
+        checkAssocation()
       })
 
       return {

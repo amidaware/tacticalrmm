@@ -35,7 +35,6 @@
             const organization = ref("")
             const organizationOptions = ref([])
 
-
             function getOrganizations() {
                 $q.loading.show({ message: 'Getting Cisco Meraki organizations...' })
                 axios
@@ -49,18 +48,18 @@
                             organizationOptions.value.push(orgObj)
                         }
                         $q.loading.hide()
-
                     })
                     .catch(e => { });
             }
+
             function onOKClick() {
                 onDialogOK({
-                    "organization": organization.value
+                    "meraki_organization_label": organization.value.label,
+                    "meraki_organization_id": organization.value.value
                 })
             }
 
             onMounted(() => {
-
                 getOrganizations()
             });
 

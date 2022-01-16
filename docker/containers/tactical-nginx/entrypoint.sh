@@ -168,7 +168,7 @@ server {
 
     location / {
         #Using variable to disable start checks
-        set \$meshcentral http://${MESH_SERVICE}:443;
+        set \$meshcentral http://${MESH_SERVICE}:4443;
 
         proxy_pass \$meshcentral;
         proxy_http_version 1.1;

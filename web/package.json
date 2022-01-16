@@ -15,7 +15,7 @@
     "axios": "^0.24.0",
     "dotenv": "^10.0.0",
     "qrcode.vue": "^3.3.3",
-    "quasar": "^2.4.4",
+    "quasar": "^2.4.10",
     "vue3-ace-editor": "^2.2.2",
     "vue3-apexcharts": "^1.4.1",
     "vuedraggable": "^4.1.0",

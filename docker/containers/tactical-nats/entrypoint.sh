@@ -40,12 +40,10 @@ EOF
 echo "${config_watcher}" > /usr/local/bin/config_watcher.sh
 chmod +x /usr/local/bin/config_watcher.sh
 
-mkdir -p /var/log/supervisor
-mkdir -p /etc/supervisor/conf.d
-
 supervisor_config="$(cat << EOF
 [supervisord]
 nodaemon=true
+logfile=/tmp/supervisord.log
 [include]
 files = /etc/supervisor/conf.d/*.conf
 

@@ -4,10 +4,9 @@
 #BurntToast Module Source and Examples: https://github.com/Windos/BurntToast
 #RunAsUser Module Source and Examples: https://github.com/KelvinTegelaar/RunAsUser
 
-
-# Set parameters
+# Assign last logged in user from TRMM to variable
 param (
-  [int[]] $expiryDaysToAlert=@(1,2,3,7)
+  [int[]] $expiryDaysToAlert=@(0,1,2,3,7)
 )
 
 
@@ -62,7 +61,7 @@ $passwordExpiry = $output -replace ".*  "
 
 
 # TESTING - UNCOMMENT AND MANUALLY SET PASSWORD EXPIRY TO TEST SCRIPT AND ALERTS
-# $passwordExpiry = "1/14/2022 12:00:00"
+# $passwordExpiry = "1/17/2022 12:00:00"
 
 
 # Check if password is set to never expire.
@@ -85,7 +84,7 @@ else
 # Set messagetext variable depending on how soon the password expires.
 if ($expiryDays -le 1)
 {
-    $messagetext = "Your password is going to expire!  To ensure you are not blocked from logging into your PC or online services, you must update your password immediately."
+    $messagetext = "Your password is about to expire!  To ensure you are not blocked from logging into your PC or online services, you must update your password immediately."
     $urgentFlag = 1
 }
 elseif ($expiryDays -le 2)
@@ -95,7 +94,7 @@ elseif ($expiryDays -le 2)
 }
 elseif ($expiryDays -le 3)
 {
-    $messagetext = "Your password will expire in 3 days or less.  Please change your password."
+    $messagetext = "Your password will expire in 3 days or less.  Please change your password as soon as possible."
     $urgentFlag = 0
 }
 elseif ($expiryDays -le 7)
@@ -106,8 +105,8 @@ elseif ($expiryDays -le 7)
 
 
 # Download Regular and Urgent Image files
-$regDownloadPath = "https://YOURDOMAIN.COM/BurntToastLogo.png"
-Invoke-WebRequest $regDownloadPath -OutFile "C:\Program Files\TacticalAgent\BurntToastLogo.png"
+$regDownloadPath = "https://YOURDOMAIN.COM/BurntToastLogoRegular.png"
+Invoke-WebRequest $regDownloadPath -OutFile "C:\Program Files\TacticalAgent\BurntToastLogoRegular.png"
 $urgentDownloadPath = "https://YOURDOMAIN.COM/BurntToastLogoUrgent.png"
 Invoke-WebRequest $urgentDownloadPath -OutFile "C:\Program Files\TacticalAgent\BurntToastLogoUrgent.png"
 
@@ -119,7 +118,7 @@ if ($urgentFlag -eq 1)
 }
 else
 {
-    $popupImage = "C:\Program Files\TacticalAgent\BurntToastLogo.png"
+    $popupImage = "C:\Program Files\TacticalAgent\BurntToastLogoRegular.png"
 }
 
 
@@ -128,8 +127,7 @@ if ($expiryDays -in $expiryDaysToAlert)
 {
     $command = @"
         `$HeroImage = New-BTImage -Source "${popupImage}" -HeroImage
-        `$Text1 = New-BTText -Content "*** IMPORTANT Alert from IT Department ***"
-        `$Text2 = New-BTText -Content "${messagetext}"
+        `$Text1 = New-BTText -Content "*** IMPORTANT Alert from IT Department ***`n`n${messagetext}"
         `$Button = New-BTButton -Content "Snooze" -snooze -id 'SnoozeTime'
         `$Button2 = New-BTButton -Content "Dismiss" -dismiss
         `$5Min = New-BTSelectionBoxItem -Id 5 -Content '5 minutes'
@@ -140,7 +138,7 @@ if ($expiryDays -in $expiryDaysToAlert)
         `$Items = `$5Min, `$10Min, `$1Hour, `$4Hour, `$1Day
         `$SelectionBox = New-BTInput -Id 'SnoozeTime' -DefaultSelectionBoxItemId 10 -Items `$Items
         `$Action = New-BTAction -Buttons `$Button, `$Button2 -inputs `$SelectionBox
-        `$Binding = New-BTBinding -Children `$Text1, `$Text2 -HeroImage `$HeroImage
+        `$Binding = New-BTBinding -Children `$Text1 -HeroImage `$HeroImage
         `$Visual = New-BTVisual -BindingGeneric `$Binding
         `$Audio = New-BTAudio -Source ms-winsoundevent:Notification.Looping.Alarm4
         `$Content = New-BTContent -Visual `$Visual -Actions `$Action -Audio `$Audio

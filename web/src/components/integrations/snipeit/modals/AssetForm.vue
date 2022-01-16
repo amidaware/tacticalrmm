@@ -14,25 +14,38 @@
             <q-input filled v-model="assetSerial" label="Serial *" dense :rules="[(val) => !!val || '*Required']" />
             <q-select filled dense v-model="assetStatus" label="Status" :options="assetStatusOptions"
               :rules="[(val) => !!val || '*Required']" />
-            <q-input filled dense class="q-mb-md" v-model="assetPurchaseCost" label="Purchase Cost" prefix="$"
-              style="width:200px" mask="#.##" fill-mask="0" reverse-fill-mask />
-            <q-input dense stack-label label="Purchase Date" filled v-model="assetPurchaseDate" mask="date"
-              :rules="['date']">
-              <template v-slot:append>
-                <q-icon name="event" class="cursor-pointer">
-                  <q-popup-proxy ref="qDateProxy" cover transition-show="scale" transition-hide="scale">
-                    <q-date v-model="assetPurchaseDate">
-                      <div class="row items-center justify-end">
-                        <q-btn v-close-popup label="Close" color="primary" flat />
-                      </div>
-                    </q-date>
-                  </q-popup-proxy>
-                </q-icon>
-              </template>
-            </q-input>
-            <q-input filled dense class="q-mb-md" v-model="assetWarrantyMonths" label="Warranty (Months)"
-              style="width:300px" />
-            <q-input filled dense class="q-mb-md" v-model="assetOrderNumber" label="Order Number" style="width:300px" />
+            <div class="row">
+              <div class="col-6">
+                <q-input filled dense class="q-mb-md" v-model="assetPurchaseCost" label="Purchase Cost" prefix="$"
+                  style="width:200px" mask="#.##" fill-mask="0" reverse-fill-mask />
+              </div>
+              <div class="col-6" align="right">
+                <q-input dense stack-label label="Purchase Date" filled v-model="assetPurchaseDate" mask="date"
+                  style="width:200px" :rules="['date']">
+                  <template v-slot:append>
+                    <q-icon name="event" class="cursor-pointer">
+                      <q-popup-proxy ref="qDateProxy" cover transition-show="scale" transition-hide="scale">
+                        <q-date v-model="assetPurchaseDate">
+                          <div class="row items-center justify-end">
+                            <q-btn v-close-popup label="Close" color="primary" flat />
+                          </div>
+                        </q-date>
+                      </q-popup-proxy>
+                    </q-icon>
+                  </template>
+                </q-input>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-6">
+                <q-input filled dense class="q-mb-md" v-model="assetWarrantyMonths" label="Warranty (Months)"
+                  style="width:200px" />
+              </div>
+              <div class="col-6" align="right">
+                <q-input filled dense class="q-mb-md" v-model="assetOrderNumber" label="Order Number"
+                  style="width:200px" />
+              </div>
+            </div>
           </q-form>
         </q-step>
         <q-step :name="2" title="Choose Asset Model" icon="create_new_folder" :done="step > 2">
@@ -426,7 +439,6 @@
                   notifySuccess(r.data.messages)
                   onDialogOK()
                 }
-                $q.loading.hide()
               })
               .catch(e => {
                 console.log(e)
@@ -441,7 +453,6 @@
                   notifySuccess(r.data.messages)
                   onDialogOK()
                 }
-                $q.loading.hide()
               })
               .catch(e => {
                 console.log(e)

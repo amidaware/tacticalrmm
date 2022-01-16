@@ -10,7 +10,7 @@
             </q-bar>
             <q-card-section class="row items-center">
                 <div>
-                    Are you sure you want to delete the {{asset.name}} asset from Snipe-IT?
+                    Are you sure you want to delete the <span class="text-weight-bold">{{asset.name}}</span> asset from Snipe-IT?
                 </div>
             </q-card-section>
             <q-card-actions align="right">

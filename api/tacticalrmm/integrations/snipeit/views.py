@@ -34,7 +34,6 @@ class GetHardware(APIView):
             "name": request.data["name"],
             "serial": request.data["serial"],
             "rtd_location_id": request.data["rtd_location_id"],
-            # "location_id": request.data["location_id"],
             "company_id": request.data["company_id"],
             "manufacturer_id": request.data["manufacturer_id"],
             "supplier_id": request.data["supplier_id"],
@@ -75,13 +74,22 @@ class GetAsset(APIView):
 
     def put(self, request, asset_id, format=None):
         integration = Integration.objects.get(name="Snipe-IT")
-
+        print(asset_id)
         payload = {
+            "requestable": False,
+            "asset_tag": request.data["asset_tag"],
+            "status_id": request.data["status_id"],
+            "model_id": request.data["model_id"],
             "name": request.data["name"],
-            "assetTag": request.data["assetTag"],
             "serial": request.data["serial"],
-            "purchaseCost": request.data["purchaseCost"],
-            "warranty": request.data["warranty"]
+            "rtd_location_id": request.data["rtd_location_id"],
+            "company_id": request.data["company_id"],
+            "manufacturer_id": request.data["manufacturer_id"],
+            "supplier_id": request.data["supplier_id"],
+            "purchase_cost": request.data["purchase_cost"],
+            "purchase_date": request.data["purchase_date"],
+            "warranty_months": request.data["warranty_months"],
+            "order_number": request.data["order_number"]
         }
 
         result = requests.put(

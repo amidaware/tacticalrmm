@@ -4,7 +4,7 @@ celery
 channels
 channels_redis
 django-ipware
-Django==3.2.10
+Django==3.2.11
 django-cors-headers
 django-rest-knox
 djangorestframework

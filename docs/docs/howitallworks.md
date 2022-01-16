@@ -1,5 +1,16 @@
 # How It All Works
 
+## Understanding TRMM
+
+Anything you configure: scripts, tasks, patching etc is queued and scheduled on the server to do something. 
+Everything that is queued, happens immediately when agents are online.
+The agent gets a nats command, server tells it to do xyz and it does it.
+
+When agents are not connected to the server nothing happens. The windows task scheduler says do x at some time, what it's asked to do is get x command from the server. If server is offline, nothing happens.
+If an agent comes online, every x interval (windows update, pending tasks etc) check and see is there something for me to do that I missed while I was offline. When that time occurs (eg agent sees if it needs to update itself at 35mins past every hr https://wh1te909.github.io/tacticalrmm/update_agents/ ) it'll get requested on the online agent.
+
+That's the simplified general rule for everything TRMM.
+
 [![Network Design](images/TacticalRMM-Network.png)](images/TacticalRMM-Network.png)
 
 Still need graphics for

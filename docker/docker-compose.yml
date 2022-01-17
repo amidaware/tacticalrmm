@@ -75,6 +75,7 @@ services:
   tactical-nats:
     container_name: trmm-nats
     image: ${IMAGE_REPO}tactical-nats:${VERSION}
+    user: 1000:1000
     restart: always
     environment:
       API_HOST: ${API_HOST}
@@ -92,6 +93,7 @@ services:
   tactical-meshcentral:
     container_name: trmm-meshcentral
     image: ${IMAGE_REPO}tactical-meshcentral:${VERSION}
+    user: 1000:1000
     restart: always
     environment:
       MESH_HOST: ${MESH_HOST}
@@ -115,6 +117,7 @@ services:
   tactical-mongodb:
     container_name: trmm-mongodb
     image: mongo:4.4
+    user: 1000:1000
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
@@ -129,6 +132,7 @@ services:
   tactical-frontend:
     container_name: trmm-frontend
     image: ${IMAGE_REPO}tactical-frontend:${VERSION}
+    user: 1000:1000
     restart: always
     networks:
       - proxy
@@ -139,6 +143,7 @@ services:
   tactical-backend:
     container_name: trmm-backend
     image: ${IMAGE_REPO}tactical:${VERSION}
+    user: 1000:1000
     command: [ "tactical-backend" ]
     restart: always
     networks:
@@ -154,6 +159,7 @@ services:
   tactical-websockets:
     container_name: trmm-websockets
     image: ${IMAGE_REPO}tactical:${VERSION}
+    user: 1000:1000
     command: [ "tactical-websockets" ]
     restart: always
     networks:
@@ -170,6 +176,7 @@ services:
   tactical-nginx:
     container_name: trmm-nginx
     image: ${IMAGE_REPO}tactical-nginx:${VERSION}
+    user: 1000:1000
     restart: always
     environment:
       APP_HOST: ${APP_HOST}
@@ -190,6 +197,7 @@ services:
   tactical-celery:
     container_name: trmm-celery
     image: ${IMAGE_REPO}tactical:${VERSION}
+    user: 1000:1000
     command: [ "tactical-celery" ]
     restart: always
     networks:
@@ -206,6 +214,7 @@ services:
   tactical-celerybeat:
     container_name: trmm-celerybeat
     image: ${IMAGE_REPO}tactical:${VERSION}
+    user: 1000:1000
     command: [ "tactical-celerybeat" ]
     restart: always
     networks:

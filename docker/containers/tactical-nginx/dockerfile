@@ -4,7 +4,13 @@ ENV TACTICAL_DIR /opt/tactical
 
 USER root
 
+RUN deluser --remove-home nginx \
+  && addgroup -S nginx -g 1000 \
+  && adduser -S -G nginx -u 1000 nginx
+
 RUN apk add --no-cache openssl bash
+
+RUN chown -R nginx:nginx /etc/nginx
 
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 

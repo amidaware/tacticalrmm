@@ -44,6 +44,7 @@ supervisor_config="$(cat << EOF
 [supervisord]
 nodaemon=true
 logfile=/tmp/supervisord.log
+pidfile=/tmp/supervisord.pid
 [include]
 files = /etc/supervisor/conf.d/*.conf
 

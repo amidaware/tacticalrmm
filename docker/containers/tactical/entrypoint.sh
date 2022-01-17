@@ -10,7 +10,7 @@ set -e
 : "${POSTGRES_PASS:=tactical}"
 : "${POSTGRES_DB:=tacticalrmm}"
 : "${MESH_SERVICE:=tactical-meshcentral}"
-: "${MESH_WS_URL:=ws://${MESH_SERVICE}:443}"
+: "${MESH_WS_URL:=ws://${MESH_SERVICE}:4443}"
 : "${MESH_USER:=meshcentral}"
 : "${MESH_PASS:=meshcentralpass}"
 : "${MESH_HOST:=tactical-meshcentral}"
@@ -51,7 +51,7 @@ if [ "$1" = 'tactical-init' ]; then
     sleep 5
   done
 
-  until (echo > /dev/tcp/"${MESH_SERVICE}"/443) &> /dev/null; do
+  until (echo > /dev/tcp/"${MESH_SERVICE}"/4443) &> /dev/null; do
     echo "waiting for meshcentral container to be ready..."
     sleep 5
   done

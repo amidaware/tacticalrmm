@@ -54,7 +54,7 @@ mesh_config="$(cat << EOF
       "NewAccounts": false,
       "mstsc": true,
       "GeoLocation": true,
-      "CertUrl": "https://${NGINX_HOST_IP}:443",
+      "CertUrl": "https://${NGINX_HOST_IP}:4443",
       "agentConfig": [ "webSocketMaskOverride=${WS_MASK_OVERRIDE}" ]
     }
   },
@@ -88,7 +88,7 @@ if [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ]; then
 fi
 
 # wait for nginx container
-until (echo > /dev/tcp/"${NGINX_HOST_IP}"/443) &> /dev/null; do
+until (echo > /dev/tcp/"${NGINX_HOST_IP}"/4443) &> /dev/null; do
   echo "waiting for nginx to start..."
   sleep 5
 done

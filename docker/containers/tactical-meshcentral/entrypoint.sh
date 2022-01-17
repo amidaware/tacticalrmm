@@ -9,6 +9,7 @@ set -e
 : "${MONGODB_HOST:=tactical-mongodb}"
 : "${MONGODB_PORT:=27017}"
 : "${NGINX_HOST_IP:=172.20.0.20}"
+: "${NGINX_HOST_PORT:=4443}"
 : "${MESH_PERSISTENT_CONFIG:=0}"
 : "${WS_MASK_OVERRIDE:=0}"
 : "${SMTP_HOST:=smtp.example.com}"
@@ -54,7 +55,7 @@ mesh_config="$(cat << EOF
       "NewAccounts": false,
       "mstsc": true,
       "GeoLocation": true,
-      "CertUrl": "https://${NGINX_HOST_IP}:4443",
+      "CertUrl": "https://${NGINX_HOST_IP}:${NGINX_HOST_PORT}",
       "agentConfig": [ "webSocketMaskOverride=${WS_MASK_OVERRIDE}" ]
     }
   },
@@ -88,7 +89,7 @@ if [ ! -f "${TACTICAL_DIR}/tmp/mesh_token" ]; then
 fi
 
 # wait for nginx container
-until (echo > /dev/tcp/"${NGINX_HOST_IP}"/4443) &> /dev/null; do
+until (echo > /dev/tcp/"${NGINX_HOST_IP}"/${NGINX_HOST_PORT}) &> /dev/null; do
   echo "waiting for nginx to start..."
   sleep 5
 done

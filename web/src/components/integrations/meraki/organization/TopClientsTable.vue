@@ -127,6 +127,7 @@
       sortable: false,
     },
   ];
+  
   function wrapCsvValue(val, formatFn) {
     let formatted = formatFn !== void 0 ? formatFn(val) : val;
 

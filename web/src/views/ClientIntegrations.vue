@@ -49,7 +49,7 @@
                     .get("integrations/")
                     .then(r => {
                         for (let integrationObj of r.data) {
-                            if (integrationObj.enabled && integrationObj.client_org_related) {
+                            if (integrationObj.enabled && integrationObj.client_related) {
                                 integrations.value.push(integrationObj)
                             }
                         }
@@ -58,7 +58,7 @@
                         }
                     })
                     .catch((e) => {
-                        console.log(e)
+                        console.log(e.response.data)
                     })
             }
 

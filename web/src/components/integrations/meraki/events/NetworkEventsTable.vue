@@ -51,11 +51,10 @@
 </template>
 
 <script>
-  import { ref } from "vue";
-  import { date } from "quasar";
-  import { exportFile, useQuasar } from "quasar";
-
   import axios from "axios";
+  import { ref, computed, onMounted, onBeforeMount } from "vue";
+  import { useMeta, useQuasar, useDialogPluginComponent, date } from "quasar";
+  import { notifySuccess, notifyError } from "@/utils/notify";
 
   const columns = [
     {
@@ -100,41 +99,36 @@
   }
 
   export default {
+
     name: "NetworkEventsTable",
     props: ["organizationID", "organizationName", "networkID", "networkName"],
-    data() {
-      return {
-        pagination: {
-          rowsPerPage: 10,
-          sortBy: "time",
-          descending: true,
-        },
-        events: "",
-        columns,
-        rows: [],
-        timespan: { label: "", value: 0 },
-        loading: ref(false),
-        filter: ref(""),
-        selectedDate: "",
-        updateProxy: "",
-        save: "",
-        timespanDropdown: false,
-        minMonth: "",
-        maxMonth: "",
-      };
-    },
-    methods: {
-      getEvents: function getEvents(networkID, timespan) {
+    setup(props) {
+      const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
+      const $q = useQuasar();
+
+      const rows = ref([])
+      const events = ref("")
+      const maxMonth = ref("")
+      const minMonth = ref("")
+      const timespan = ref({ label: "", value: 0 })
+      const loading = ref(false)
+      const filter = ref("")
+      const selectedDate = ref("")
+      const updateProxy = ref("")
+      const save = ref("")
+      const timespanDropdown = ref(false)
+
+      function getEvents(timespan) {
         const currentDate = new Date();
-        this.maxMonth = date.formatDate(currentDate, "YYYY/MM");
+        maxMonth.value = date.formatDate(currentDate, "YYYY/MM");
         const newDate = date.subtractFromDate(currentDate, { month: 2 });
-        this.minMonth = date.formatDate(newDate, "YYYY/MM");
-        this.timespanDropdown = false;
+        minMonth.value = date.formatDate(newDate, "YYYY/MM");
+        timespanDropdown.value = false;
         let url = null;
         if (typeof timespan === "string" && typeof timespan !== null) {
           const endingBefore = date.formatDate(timespan, "YYYY-MM-DDT00:00:00.000Z");
           const formattedDate = date.formatDate(timespan, "MMM DD, YYYY HH:MM aa");
-          this.timespan.label = "Before: " + formattedDate;
+          timespan.value.label = "Before: " + formattedDate;
 
           url = "endingBefore=" + endingBefore;
         } else if (typeof timespan === "number" && timespan !== null) {
@@ -142,14 +136,14 @@
         } else {
           url = 7200;
         }
-        this.loading = true;
+        $q.loading.show({ message: 'fdsaafsdas' })
         axios
-          .get(`/meraki/` + this.networkID + `/events/` + url + `/`)
+          .get(`/meraki/` + props.networkID + `/events/` + url + `/`)
           .then(r => {
-            this.rows = [];
-            this.events = "";
-            this.events = r.data.events;
-            for (let event of this.events) {
+            rows.value = [];
+            events.value = "";
+            events.value = r.data.events;
+            for (let event of events.value) {
               let arr = Object.entries(event.eventData);
               let result = arr.join(" ").replaceAll(",", ": ");
               let formattedDate = date.formatDate(
@@ -162,19 +156,20 @@
                 details: result,
                 description: event.description,
               };
-              this.rows.push(eventObj);
+              rows.value.push(eventObj);
             }
-            this.loading = false;
+            $q.loading.hide()
           })
           .catch(e => {
-
+            console.log(e)
           });
-      },
-      exportTable() {
-        const content = [this.columns.map((col) => wrapCsvValue(col.label))]
+      }
+
+      function exportTable() {
+        const content = [columns.value.map((col) => wrapCsvValue(col.label))]
           .concat(
-            this.rows.map((row) =>
-              this.columns
+            rows.value.map((row) =>
+              columns.value
                 .map((col) =>
                   wrapCsvValue(
                     typeof col.field === "function"
@@ -197,10 +192,33 @@
             icon: "warning",
           });
         }
-      },
-    },
-    mounted() {
-      this.getEvents();
-    },
-  };
+      }
+      onBeforeMount(() => {
+        getEvents()
+      })
+
+
+      return {
+        pagination: {
+          rowsPerPage: 10,
+          sortBy: "time",
+          descending: true,
+        },
+        events,
+        columns,
+        rows,
+        timespan,
+        loading,
+        filter,
+        selectedDate,
+        updateProxy,
+        save,
+        timespanDropdown,
+        minMonth,
+        maxMonth,
+        exportTable,
+      }
+    }
+  }
+
 </script>

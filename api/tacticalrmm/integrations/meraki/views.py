@@ -72,13 +72,12 @@ class GetDevices(APIView):
 
         return Response(result)
 
-class GetDevicesSummary(APIView):
+class GetOverview(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk, timespan, format=None):
         integration = Integration.objects.get(name="Cisco Meraki")
-
-        if "t0" in str(timespan):
+        if "t0" and "t1" in str(timespan):
             url = integration.base_url + "organizations/" + pk +"/summary/top/devices/byUsage?perPage=1000&" + str(timespan)
         else:
             url = integration.base_url + "organizations/" + pk +"/summary/top/devices/byUsage?perPage=1000&timespan=" + str(timespan)

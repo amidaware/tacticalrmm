@@ -35,7 +35,7 @@
                   <q-chip dense color="positive" text-color="white" outline>
                     Agent
                   </q-chip>
-                  <q-chip dense color="positive" text-color="white" v-if="props.row.client_org_related" outline>
+                  <q-chip dense color="positive" text-color="white" v-if="props.row.client_related" outline>
                     Client
                   </q-chip>
                 </q-card-section>
@@ -95,7 +95,7 @@
                 description: integration.description,
                 api_key: integration.configuration.api_key,
                 enabled: integration.enabled,
-                client_org_related: integration.client_org_related,
+                client_related: integration.client_related,
                 integration: integration
               };
               rows.value.push(integrationObj);

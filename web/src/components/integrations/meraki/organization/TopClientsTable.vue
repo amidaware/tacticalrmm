@@ -1,36 +1,84 @@
 <template>
-  <q-table class="q-pt-md q-mb-xl" :rows="rows" :columns="columns" row-key="occurredAt" v-model:pagination="pagination"
-    :loading="isLoading" :filter="filter" wrap-cells>
-    <template v-slot:loading v-model="isLoading">
-      <q-inner-loading showing color="primary" />
-    </template>
+  <q-table
+    class="q-pt-md q-mb-xl"
+    :rows="rows"
+    :columns="columns"
+    row-key="id"
+    v-model:pagination="pagination"
+    :loading="tableLoading"
+  >
     <template v-slot:top-left>
-      <q-btn flat dense @click="getTopClients(timespan.value)" icon="refresh" />
-      <q-btn-dropdown no-caps flat :label="timespan.label">
+      <q-btn
+        flat
+        dense
+        @click="timespan.label = 'for the last day'; timespan.value = 86400; getTopClients()"
+        icon="refresh"
+        class="q-mb-sm q-mr-md"
+      />
+      <span class="text-h6">{{ totalUsage }}</span>
+      <span class="q-pl-sm">transferred</span>
+      <span>
+        (
+        <q-icon name="arrow_downward" />
+        {{ totalDownstream }},
+        <q-icon name="arrow_upward" />
+        {{ totalUpstream }})
+      </span>
+      <q-btn-dropdown
+        no-caps
+        flat
+        :label="timespan.label"
+        v-model="timespanMenu"
+        class="q-mb-xs q-px-sm"
+      >
         <q-list>
-          <q-item clickable v-close-popup no-caps @click="getTopClients(86400)">
+          <q-item
+            clickable
+            v-close-popup
+            no-caps
+            @click="timespan.label = 'for the last day'; timespan.value = 86400; getTopClients()"
+          >
             <q-item-section>
-              <q-item-label>Over the past day</q-item-label>
+              <q-item-label>for the last day</q-item-label>
             </q-item-section>
           </q-item>
-          <q-item clickable v-close-popup no-caps @click="getTopClients(604800)">
+          <q-item
+            clickable
+            v-close-popup
+            no-caps
+            @click="timespan.label = 'for the last week'; timespan.value = 604800; getTopClients()"
+          >
             <q-item-section>
-              <q-item-label> Over the past week </q-item-label>
+              <q-item-label>for the last week</q-item-label>
             </q-item-section>
           </q-item>
-          <q-item clickable v-close-popup @click="getTopClients(2592000)">
+          <q-item
+            clickable
+            v-close-popup
+            @click="timespan.label = 'for the last 30 days'; timespan.value = 2592000; getTopClients()"
+          >
             <q-item-section>
-              <q-item-label>Over the past 30 days</q-item-label>
+              <q-item-label>for the last 30 days</q-item-label>
             </q-item-section>
           </q-item>
           <q-item clickable>
             <q-item-section v-ripple>
               <q-item-label>Custom range</q-item-label>
-              <q-popup-proxy @before-show="updateProxy" transition-show="scale" transition-hide="scale">
+              <q-popup-proxy
+                @before-show="updateProxy"
+                transition-show="scale"
+                transition-hide="scale"
+              >
                 <q-date v-model="dateRange" :options="dateOptions" range>
                   <div class="row items-center justify-end q-gutter-sm">
                     <q-btn label="Cancel" color="primary" flat v-close-popup />
-                    <q-btn label="OK" color="primary" flat @click="getTopClients(dateRange)" v-close-popup />
+                    <q-btn
+                      label="OK"
+                      color="primary"
+                      flat
+                      @click="timespan.value = dateRange; timespanMenu = false; getTopClients()"
+                      v-close-popup
+                    />
                   </div>
                 </q-date>
               </q-popup-proxy>
@@ -38,36 +86,38 @@
           </q-item>
         </q-list>
       </q-btn-dropdown>
-      <span class="text-h6 q-mr-sm">{{ totalTraffic }}</span>
-      <span class="q-mr-sm text-weight-light">(
-        <q-icon name="arrow_downward" />{{ totalTrafficRecv }},
-        <q-icon name="arrow_upward" />{{ totalTrafficSent }}) transferred
-      </span>
     </template>
     <template v-slot:top-right="props">
-      <q-btn flat dense color="primary" icon="archive" no-caps class="q-ml-md" @click="exportTable" />
+      <q-btn
+        flat
+        dense
+        color="primary"
+        icon="archive"
+        no-caps
+        class="q-ml-md"
+        @click="exportTable"
+      />
     </template>
     <template v-slot:body="props">
       <q-tr :props="props">
-        <q-td key="number" :props="props">
-          <span class="text-caption">{{ props.row.number }}</span>
+        <q-td key="id" :props="props">
+          <span class="text-caption">{{ props.row.id }}</span>
         </q-td>
         <q-td key="name" :props="props">
           <span class="text-caption">{{ props.row.name }}</span>
         </q-td>
-        <q-td key="network" :props="props">
-          <span class="text-caption">{{ props.row.network }}</span>
+        <q-td key="networkName" :props="props">
+          <span class="text-caption">{{ props.row.networkName }}</span>
         </q-td>
         <q-td key="mac" :props="props">
           <span class="text-caption">{{ props.row.mac }}</span>
         </q-td>
-        <q-td key="usage" :props="props">
-          <span class="text-caption">{{ props.row.usage }}</span>
+        <q-td key="usageTotal" :props="props">
+          <span class="text-caption">{{ props.row.usage.total }}</span>
         </q-td>
-        <q-td key="percentage" :props="props">
-          <span class="text-caption">{{ props.row.percentage.percent }}%</span>
-          <q-linear-progress :value="props.row.percentage.progress" color="positive">
-          </q-linear-progress>
+        <q-td key="usagePercentage" :props="props">
+          <span class="text-caption">{{ props.row.usage.percentage.toFixed(0) }}%</span>
+          <q-linear-progress :value="props.row.usage.progress" color="positive"></q-linear-progress>
         </q-td>
       </q-tr>
     </template>
@@ -75,233 +125,214 @@
 </template>
 
 <script>
-  import { ref } from "vue";
-  import axios from "axios";
-  import { date } from "quasar";
-  import { exportFile, useQuasar } from "quasar";
+import axios from "axios";
+import { ref, onMounted } from "vue";
+import { useQuasar, date } from "quasar";
 
-  const columns = [
-    {
-      name: "number",
-      align: "left",
-      label: "#",
-      field: "number",
-      sortable: false,
-    },
-    {
-      name: "name",
-      required: true,
-      label: "Name",
-      align: "left",
-      field: (row) => row.name,
-      format: (val) => `${val}`,
-      sortable: false,
-    },
-    {
-      name: "network",
-      align: "left",
-      label: "Network",
-      field: "network",
-      sortable: false,
-    },
-    {
-      name: "mac",
-      align: "left",
-      label: "MAC",
-      field: "mac",
-      sortable: false,
-    },
-    {
-      name: "usage",
-      label: "Usage",
-      field: "usage",
-      align: "left",
-      sortable: false,
-    },
+const columns = [
+  // {
+  //   name: "number",
+  //   align: "left",
+  //   label: "#",
+  //   field: "number",
+  //   sortable: false,
+  // },
+  {
+    name: "id",
+    required: true,
+    label: "ID",
+    align: "left",
+    field: (row) => row.id,
+    format: (val) => `${val}`,
+    sortable: false,
+  },
+  {
+    name: "name",
+    align: "left",
+    label: "Name",
+    field: "name",
+    sortable: false,
+  },
+  {
+    name: "networkName",
+    align: "left",
+    label: "Network",
+    field: "networkName",
+    sortable: false,
+  },
+  {
+    name: "mac",
+    label: "MAC",
+    field: "mac",
+    align: "left",
+    sortable: false,
+  },
+  {
+    name: "usageTotal",
+    align: "left",
+    label: "Usage",
+    field: "usageTotal",
+    sortable: true,
+  },
+  {
+    name: "usagePercentage",
+    align: "left",
+    label: "% Used",
+    field: "usagePercentage",
+    sortable: true,
+  },
+];
 
-    {
-      name: "percentage",
-      label: "% Used",
-      field: "percentage",
-      align: "left",
-      sortable: false,
-    },
-  ];
-  
-  function wrapCsvValue(val, formatFn) {
-    let formatted = formatFn !== void 0 ? formatFn(val) : val;
+function wrapCsvValue(val, formatFn) {
+  let formatted = formatFn !== void 0 ? formatFn(val) : val;
+  formatted = formatted === void 0 || formatted === null ? "" : String(formatted);
+  formatted = formatted.split('"').join('""');
 
-    formatted = formatted === void 0 || formatted === null ? "" : String(formatted);
+  return `"${formatted}"`;
+}
+export default {
+  name: "TopClientsTable",
+  props: ["organizationID", "organizationName"],
+  setup(props) {
+    const tableLoading = ref(false)
+    const rows = ref([])
+    const uplinks = ref([])
+    const timespanMenu = ref(false)
+    const timespan = ref({ label: "for the last day", value: 86400 })
+    const dateOptions = ref([])
+    const dateRange = ref("")
+    const updateProxy = ref("")
+    const totalUsage = ref(null)
+    const totalDownstream = ref(null)
+    const totalUpstream = ref(null)
 
-    formatted = formatted.split('"').join('""');
-    /**
-     * Excel accepts \n and \r in strings, but some other CSV parsers do not
-     * Uncomment the next two lines to escape new lines
-     */
-    // .split('\n').join('\\n')
-    // .split('\r').join('\\r')
+    function formatUsage(usage) {
+      if (usage < 1000) {
+        let totalMB = usage.toFixed(2)
+        return String(totalMB) + " MB"
 
-    return `"${formatted}"`;
-  }
-  export default {
-    name: "TopClientsTable",
-    props: ["tabPanel", "organizationID", "organizationName"],
-    data() {
-      return {
-        pagination: {
-          rowsPerPage: 10,
-          sortBy: "percentage",
-          descending: true,
-        },
-        isLoading: ref(false),
-        rows: ref([]),
-        columns,
-        filter: ref(""),
-        uplinks: ref([]),
-        timespan: ref({ label: "Over the past day", value: 86400 }),
-        totalClients: ref(0),
-        totalDevicesUsage: ref(0),
-        dateOptions: ref([]),
-        dateRange: ref(""),
-        updateProxy: ref(""),
-        totalTraffic: 0,
-        totalTrafficRecv: 0,
-        totalTrafficSent: 0,
-      };
-    },
-    methods: {
-      getTopClients(time) {
-        this.isLoading = true;
-        let url = null;
+      } else if (usage > 1000 && usage <= 1000000) {
+        let totalGB = (usage / 1000).toFixed(2)
+        return String(totalGB) + " GB"
 
-        if (time === 86400) {
-          this.timespan.label = "Over the past day";
-          this.timespan.value = 86400;
-        } else if (time === 604800) {
-          this.timespan.label = "Over the past week";
-          this.timespan.value = 604800;
-        } else if (time === 2592000) {
-          this.timespan.label = "Over the past 30 days";
-          this.timespan.value = 2592000;
-        }
+      } else if (usage > 1000000 && usage <= 1000000000) {
+        let totalTB = (usage / 1000000).toFixed(2)
+        return String(totalTB) + " TB"
+      }
+    }
 
-        if (typeof time === "object" && typeof time !== null) {
-          const formattedFrom = date.formatDate(time.from, "YYYY-MM-DDT00:00:00.000Z");
-          const formattedTo = date.formatDate(time.to, "YYYY-MM-DDT00:00:00.000Z");
-          const from = date.formatDate(time.from, "MMM DD, YYYY HH:MM aa");
-          const to = date.formatDate(time.to, "MMM DD, YYYY HH:MM aa");
-          this.timespan.label = from + " - " + to;
-          url = "t0=" + formattedFrom + "&t1=" + formattedTo;
-        } else if (typeof time === "number" && time !== null) {
-          url = time;
-        } else {
-          url = 86400;
-        }
+    function getTopClients() {
+      tableLoading.value = true
 
-        axios
-          .get(`meraki/` + this.organizationID + `/top_clients/` + url + `/`)
-          .then(r => {
-            this.rows = [];
-            this.totalTrafficObj = 0;
-            this.totalTrafficRecvObj = 0;
-            this.totalTrafficSentObj = 0;
-            this.totalTraffic = 0;
-            this.totalTrafficRecv = 0;
-            this.totalTrafficSent = 0;
-            let number = 1;
-            for (let client of r.data) {
-              let clientObj = {
-                number: number++,
-                name: client.name,
-                network: client.network.name,
-                mac: client.mac,
-                usage:
-                  client.usage.total > 1024
-                    ? (client.usage.total / 1024).toFixed(2) + " GB"
-                    : client.usage.total.toFixed(2) + " MB",
-                percentage: {
-                  progress: client.usage.percentage / 60,
-                  percent: client.usage.percentage.toFixed(1),
-                },
-              };
-              this.totalTrafficObj += client.usage.total;
-              this.totalTrafficRecvObj += client.usage.downstream;
-              this.totalTrafficSentObj += client.usage.upstream;
-              this.rows.push(clientObj);
+      for (let i = 0; i < 31; i++) {
+        let newDate = date.subtractFromDate(new Date(), { days: i });
+        let formattedDate = date.formatDate(newDate, "YYYY/MM/DD");
+        dateOptions.value.push(formattedDate);
+      }
+
+      if (typeof timespan.value.value === 'object') {
+        let t0 = date.formatDate(timespan.value.value.from, "YYYY-MM-DDT00:00:00.000Z");
+        let t1 = date.formatDate(timespan.value.value.to, "YYYY-MM-DDT00:00:00.000Z");
+        timespan.value.value = "t0=" + t0 + "&t1=" + t1
+        timespan.value.label = date.formatDate(t0, "MMM D, YYYY @ hh:mm A") + " - " + date.formatDate(t1, "MMM D, YYYY @ hh:mm A")
+      }
+
+      axios
+        .get(`meraki/` + props.organizationID + `/top_clients/` + timespan.value.value + `/`)
+        .then(r => {
+          rows.value = []
+          totalUsage.value = 0
+          totalDownstream.value = 0
+          totalUpstream.value = 0
+
+          for (let client of r.data) {
+            let returnedUsage = formatUsage(client.usage.total)
+            totalUsage.value += client.usage.total
+            totalDownstream.value += client.usage.downstream
+            totalUpstream.value += client.usage.upstream
+
+            let clientObj = {
+              id: client.id,
+              mac: client.mac,
+              name: client.name,
+              networkId: client.network.id,
+              networkName: client.network.name,
+              usage: { total: returnedUsage, downstream: client.usage.downstream, upstream: client.usage.upstream, percentage: client.usage.percentage, progress: client.usage.percentage / 100 },
             }
-            for (let i = 0; i < 30; i++) {
-              let newDate = date.subtractFromDate(new Date(), { days: i });
-              let formattedDate = date.formatDate(newDate, "YYYY/MM/DD");
-              this.dateOptions.push(formattedDate);
-            }
-            this.totalTrafficObj > 1048576
-              ? (this.totalTraffic = (this.totalTrafficObj / 1048576).toFixed(2) + " TB")
-              : this.totalTrafficObj > 1024 && this.totalTrafficObj < 1048576
-                ? (this.totalTraffic = (this.totalTrafficObj / 1024).toFixed(2) + " GB")
-                : this.totalTrafficObj < 1024
-                  ? (this.totalTraffic = (this.totalTrafficObj / 1024).toFixed(1) + " MB")
-                  : "";
+            rows.value.push(clientObj)
+          }
 
-            this.totalTrafficRecvObj > 1048576
-              ? (this.totalTrafficRecv =
-                (this.totalTrafficRecvObj / 1048576).toFixed(2) + " TB")
-              : this.totalTrafficRecvObj > 1024 && this.totalTrafficRecvObj < 1048576
-                ? (this.totalTrafficRecv =
-                  (this.totalTrafficRecvObj / 1024).toFixed(2) + " GB")
-                : this.totalTrafficRecvObj < 1024
-                  ? (this.totalTrafficRecv =
-                    (this.totalTrafficRecvObj / 1024).toFixed(1) + " MB")
-                  : "";
+          let returnedTotalUsage = formatUsage(totalUsage.value)
+          let returnedTotalDownstream = formatUsage(totalDownstream.value)
+          let returnedTotalUpstream = formatUsage(totalUpstream.value)
 
-            this.totalTrafficSentObj > 1048576
-              ? (this.totalTrafficSent =
-                (this.totalTrafficSentObj / 1048576).toFixed(2) + " TB")
-              : this.totalTrafficSentObj > 1024 && this.totalTrafficSentObj < 1048576
-                ? (this.totalTrafficSent =
-                  (this.totalTrafficSentObj / 1024).toFixed(2) + " GB")
-                : this.totalTrafficSentObj < 1024
-                  ? (this.totalTrafficSent =
-                    (this.totalTrafficSentObj / 1024).toFixed(1) + " MB")
-                  : "";
-            this.isLoading = false;
-          })
-          .catch(e => {
+          totalUsage.value = returnedTotalUsage
+          totalDownstream.value = returnedTotalDownstream
+          totalUpstream.value = returnedTotalUpstream
+          tableLoading.value = false
+        })
+        .catch(e => {
 
-          });
+        });
 
-      },
-      exportTable() {
-        // naive encoding to csv format
-        const content = [this.columns.map((col) => wrapCsvValue(col.label))]
-          .concat(
-            this.rows.map((row) =>
-              this.columns
-                .map((col) =>
-                  wrapCsvValue(
-                    typeof col.field === "function"
-                      ? col.field(row)
-                      : row[col.field === void 0 ? col.name : col.field],
-                    col.format
-                  )
+    }
+
+    function exportTable() {
+      const content = [columns.value.map((col) => wrapCsvValue(col.label))]
+        .concat(
+          rows.value.map((row) =>
+            columns.value
+              .map((col) =>
+                wrapCsvValue(
+                  typeof col.field === "function"
+                    ? col.field(row)
+                    : row[col.field === void 0 ? col.name : col.field],
+                  col.format
                 )
-                .join(",")
-            )
+              )
+              .join(",")
           )
-          .join("\r\n");
+        )
+        .join("\r\n");
 
-        const status = exportFile("table-export.csv", content, "text/csv");
+      const status = exportFile("table-export.csv", content, "text/csv");
 
-        if (status !== true) {
-          $q.notify({
-            message: "Browser denied file download...",
-            color: "negative",
-            icon: "warning",
-          });
-        }
+      if (status !== true) {
+        $q.notify({
+          message: "Browser denied file download...",
+          color: "negative",
+          icon: "warning",
+        });
+      }
+    }
+
+    onMounted(() => {
+      getTopClients();
+    })
+
+
+
+    return {
+      pagination: {
+        rowsPerPage: 10,
+        sortBy: "percentage",
+        descending: true,
       },
-    },
-    mounted() {
-      this.getTopClients();
-    },
-  };
+      tableLoading,
+      rows,
+      columns,
+      uplinks,
+      timespanMenu,
+      timespan,
+      dateOptions,
+      dateRange,
+      updateProxy,
+      totalUsage,
+      totalDownstream,
+      totalUpstream,
+      getTopClients,
+      exportTable,
+    };
+  }
+}
 </script>

@@ -47,7 +47,7 @@
       <q-btn
         flat
         dense
-        @click="timespan.label = 'for the past day'; timespan.value = 86400; getOverview()"
+        @click="timespan.label = 'for the last day'; timespan.value = 86400; getOverview()"
         icon="refresh"
         class="q-mb-sm q-mr-md"
       />
@@ -55,35 +55,41 @@
       <span class="q-px-sm">clients and</span>
       <span class="text-h6">{{ totalUsage }}</span>
       <span class="q-pl-sm">transferred</span>
-      <q-btn-dropdown no-caps flat :label="timespan.label" v-model="timespanMenu" class="q-mb-xs">
+      <q-btn-dropdown
+        no-caps
+        flat
+        :label="timespan.label"
+        v-model="timespanMenu"
+        class="q-mb-xs q-px-sm"
+      >
         <q-list>
           <q-item
             clickable
             v-close-popup
             no-caps
-            @click="timespan.label = 'for the past day'; timespan.value = 86400; getOverview()"
+            @click="timespan.label = 'for the last day'; timespan.value = 86400; getOverview()"
           >
             <q-item-section>
-              <q-item-label>for the past day</q-item-label>
+              <q-item-label>for the last day</q-item-label>
             </q-item-section>
           </q-item>
           <q-item
             clickable
             v-close-popup
             no-caps
-            @click="timespan.label = 'for the past week'; timespan.value = 604800; getOverview()"
+            @click="timespan.label = 'for the last week'; timespan.value = 604800; getOverview()"
           >
             <q-item-section>
-              <q-item-label>for the past week</q-item-label>
+              <q-item-label>for the last week</q-item-label>
             </q-item-section>
           </q-item>
           <q-item
             clickable
             v-close-popup
-            @click="timespan.label = 'for the past 30 days'; timespan.value = 2592000; getOverview()"
+            @click="timespan.label = 'for the last 30 days'; timespan.value = 2592000; getOverview()"
           >
             <q-item-section>
-              <q-item-label>for the past 30 days</q-item-label>
+              <q-item-label>for the last 30 days</q-item-label>
             </q-item-section>
           </q-item>
           <q-item clickable>
@@ -101,7 +107,7 @@
                       label="OK"
                       color="primary"
                       flat
-                      @click="timespan.label = 'for the selected date range'; timespan.value = dateRange; timespanMenu = false; getOverview()"
+                      @click="timespan.value = dateRange; timespanMenu = false; getOverview()"
                       v-close-popup
                     />
                   </div>
@@ -133,7 +139,7 @@
 <script>
 import axios from "axios";
 import { ref, onBeforeMount } from "vue";
-import { useQuasar, useDialogPluginComponent, date } from "quasar";
+import { useQuasar, date } from "quasar";
 
 const columns = [
   {
@@ -198,7 +204,7 @@ export default {
 
     const rows = ref([])
     const uplinks = ref([])
-    const timespan = ref({ label: "for the past day", value: 86400 })
+    const timespan = ref({ label: "for the last day", value: 86400 })
     const timespanMenu = ref(false)
     const totalClients = ref(null)
     const totalUsage = ref(null)
@@ -261,7 +267,7 @@ export default {
         let t0 = date.formatDate(timespan.value.value.from, "YYYY-MM-DDT00:00:00.000Z");
         let t1 = date.formatDate(timespan.value.value.to, "YYYY-MM-DDT00:00:00.000Z");
         timespan.value.value = "t0=" + t0 + "&t1=" + t1
-        timespan.value.label = date.formatDate(t0, "ddd, MMM D, YYYY @ hh:mm A") + " - " + date.formatDate(t1, "ddd, MMM D, YYYY @ hh:mm A")
+        timespan.value.label = date.formatDate(t0, "MMM D, YYYY @ hh:mm A") + " - " + date.formatDate(t1, "MMM D, YYYY @ hh:mm A")
       }
 
       axios

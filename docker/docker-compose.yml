@@ -68,8 +68,8 @@ services:
       - proxy
     volumes:
       - tactical_data:/opt/tactical
-      - mesh_data:/home/node/app/meshcentral-data
-      - mongo_data:/data/db
+      - mesh_data:/meshcentral-data
+      - mongo_data:/mongo/data/db
 
   # nats
   tactical-nats:

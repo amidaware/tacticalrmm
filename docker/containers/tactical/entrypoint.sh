@@ -37,13 +37,13 @@ if [ "$1" = 'tactical-init' ]; then
   # copy container data to volume
   rsync -a --no-perms --no-owner --delete --exclude "tmp/*" --exclude "certs/*" --exclude="api/tacticalrmm/private/*" "${TACTICAL_TMP_DIR}/" "${TACTICAL_DIR}/"
 
-  mkdir -p /home/node/app/meshcentral-data
+  mkdir -p /meshcentral-data
   mkdir -p ${TACTICAL_DIR}/tmp
-  touch /home/node/app/meshcentral-data/.initialized && chown -R 1000:1000 /home/node/app/meshcentral-data
+  touch /meshcentral-data/.initialized && chown -R 1000:1000 /meshcentral-data
   touch ${TACTICAL_DIR}/tmp/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}
   mkdir -p ${TACTICAL_DIR}/certs && chown -R 1000:1000 ${TACTICAL_DIR}/certs
-  mkdir -p /data/db
-  touch /data/db/.initialized && chown -R 1000:1000 /data/db
+  mkdir -p /mongo/data/db
+  touch /mongo/data/db/.initialized && chown -R 1000:1000 /mongo/data/db
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/exe
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/log
   touch ${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log

@@ -4,7 +4,7 @@
     :rows="rows"
     :columns="columns"
     row-key="id"
-    pagination="pagination"
+    :pagination="pagination"
     :loading="tableLoading"
   >
     <template v-slot:top-left>

@@ -37,7 +37,7 @@
   </q-scroll-area>
   <q-table
     class="q-pt-md q-mb-xl"
-    pagination="pagination"
+    :pagination="pagination"
     row-key="networkId"
     :rows="rows"
     :columns="columns"

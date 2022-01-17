@@ -4,7 +4,7 @@
     :rows="rows"
     :columns="columns"
     row-key="id"
-    v-model:pagination="pagination"
+    pagination="pagination"
     :loading="tableLoading"
   >
     <template v-slot:top-left>
@@ -130,13 +130,6 @@ import { ref, onMounted } from "vue";
 import { useQuasar, date } from "quasar";
 
 const columns = [
-  // {
-  //   name: "number",
-  //   align: "left",
-  //   label: "#",
-  //   field: "number",
-  //   sortable: false,
-  // },
   {
     name: "id",
     required: true,
@@ -144,42 +137,42 @@ const columns = [
     align: "left",
     field: (row) => row.id,
     format: (val) => `${val}`,
-    sortable: false,
+    sortable: true,
   },
   {
     name: "name",
     align: "left",
     label: "Name",
     field: "name",
-    sortable: false,
+    sortable: true,
   },
   {
     name: "networkName",
     align: "left",
     label: "Network",
     field: "networkName",
-    sortable: false,
+    sortable: true,
   },
   {
     name: "mac",
     label: "MAC",
     field: "mac",
     align: "left",
-    sortable: false,
+    sortable: true,
   },
   {
     name: "usageTotal",
     align: "left",
     label: "Usage",
     field: "usageTotal",
-    sortable: true,
+    sortable: false,
   },
   {
     name: "usagePercentage",
     align: "left",
     label: "% Used",
     field: "usagePercentage",
-    sortable: true,
+    sortable: false,
   },
 ];
 
@@ -314,9 +307,10 @@ export default {
 
     return {
       pagination: {
-        rowsPerPage: 10,
-        sortBy: "percentage",
+        sortBy: 'percentage',
         descending: true,
+        page: 1,
+        rowsPerPage: 10
       },
       tableLoading,
       rows,

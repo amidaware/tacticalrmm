@@ -37,7 +37,7 @@
   </q-scroll-area>
   <q-table
     class="q-pt-md q-mb-xl"
-    v-model:pagination="pagination"
+    pagination="pagination"
     row-key="networkId"
     :rows="rows"
     :columns="columns"
@@ -178,14 +178,14 @@ const columns = [
     align: "left",
     label: "Usage",
     field: "usageTotal",
-    sortable: true,
+    sortable: false,
   },
   {
     name: "usagePercentage",
     align: "left",
     label: "% Used",
     field: "usagePercentage",
-    sortable: true,
+    sortable: false,
   },
   {
     name: "clients",
@@ -312,9 +312,10 @@ export default {
 
     return {
       pagination: {
-        rowsPerPage: 10,
-        sortBy: "percentage",
+        sortBy: 'percentage',
         descending: true,
+        page: 1,
+        rowsPerPage: 10
       },
       rows,
       columns,

@@ -38,6 +38,7 @@ services:
   tactical-redis:
     container_name: trmm-redis
     image: redis:6.0-alpine
+    user: 1000:1000
     command: redis-server --appendonly yes
     restart: always
     volumes:
@@ -70,6 +71,7 @@ services:
       - tactical_data:/opt/tactical
       - mesh_data:/meshcentral-data
       - mongo_data:/mongo/data/db
+      - redis_data:/redis/data
 
   # nats
   tactical-nats:

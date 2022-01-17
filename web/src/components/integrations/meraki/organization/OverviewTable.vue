@@ -55,7 +55,7 @@
       <span class="q-px-sm">clients and</span>
       <span class="text-h6">{{ totalUsage }}</span>
       <span class="q-pl-sm">transferred</span>
-      <q-btn-dropdown no-caps flat :label="timespan.label" v-model="timespanMenu">
+      <q-btn-dropdown no-caps flat :label="timespan.label" v-model="timespanMenu" class="q-mb-xs">
         <q-list>
           <q-item
             clickable
@@ -80,7 +80,7 @@
           <q-item
             clickable
             v-close-popup
-            @click="timespan.label = 'for the past 30 days'; timespan.value = 2592000; getOverview(2592000)"
+            @click="timespan.label = 'for the past 30 days'; timespan.value = 2592000; getOverview()"
           >
             <q-item-section>
               <q-item-label>for the past 30 days</q-item-label>
@@ -132,9 +132,8 @@
 
 <script>
 import axios from "axios";
-import { ref, computed, onMounted, onBeforeMount } from "vue";
-import { useMeta, useQuasar, useDialogPluginComponent, date } from "quasar";
-import { notifySuccess, notifyError } from "@/utils/notify";
+import { ref, onBeforeMount } from "vue";
+import { useQuasar, useDialogPluginComponent, date } from "quasar";
 
 const columns = [
   {
@@ -195,7 +194,6 @@ export default {
   name: "OverviewTable",
   props: ["organizationID", "organizationName"],
   setup(props) {
-    const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
     const $q = useQuasar();
 
     const rows = ref([])
@@ -209,7 +207,7 @@ export default {
     const updateProxy = ref("")
     const tableLoading = ref(false)
 
-    function formatUsage(usage, decimals = 2) {
+    function formatUsage(usage) {
       if (usage < 1000) {
         let totalMB = usage.toFixed(2)
         return String(totalMB) + " MB"
@@ -304,7 +302,6 @@ export default {
 
     onBeforeMount(() => {
       getUplinks()
-      // getOverview()
     })
 
     return {

@@ -42,6 +42,8 @@ if [ "$1" = 'tactical-init' ]; then
   touch /home/node/app/meshcentral-data/.initialized && chown -R 1000:1000 /home/node/app/meshcentral-data
   touch ${TACTICAL_DIR}/tmp/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}
   mkdir -p ${TACTICAL_DIR}/certs && chown -R 1000:1000 ${TACTICAL_DIR}/certs
+  mkdir -p /data/db
+  touch /data/db/.initialized && chown -R 1000:1000 /data/db
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/exe
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/log
   touch ${TACTICAL_DIR}/api/tacticalrmm/private/log/django_debug.log

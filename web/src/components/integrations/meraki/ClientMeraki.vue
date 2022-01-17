@@ -1,85 +1,72 @@
 <template>
-  <q-splitter v-model="splitterModel">
-    <template v-slot:before>
-      <q-inner-loading :showing="menuLoading" color="primary" />
-      <q-expansion-item group="organizationsGroup" icon="business" caption="Organization" :label="organization.name"
-        @click="getNetworks(organization.id, organization.name)">
+  <q-card flat>
+    <q-tabs v-model="tab" dense align="left" class="text-grey" active-color="primary" indicator-color="primary" no-caps
+      narrow-indicator inline-label>
+      <q-btn-dropdown auto-close stretch flat no-caps icon="business" label="Organization">
         <q-list>
-          <q-item clickable v-ripple active-class="menu-link"
-            :active="menuItem === organizationID + 'organizationOverview'" :inset-level="1" @click="getOverview()">
+          <q-item clickable @click="tab = 'overviewTable'" :active="tab === 'overviewTable'" active-class="menu-link">
             <q-item-section>Overview</q-item-section>
           </q-item>
-          <q-item clickable v-ripple active-class="menu-link" :active="menuItem === organizationID + 'topClients'"
-            :inset-level="1" @click="getTopClients()">
-            <q-item-section>Top clients</q-item-section>
+          <q-item clickable @click="tab = 'topClientsTable'" :active="tab === 'topClientsTable'"
+            active-class="menu-link">
+            <q-item-section>Top Clients</q-item-section>
           </q-item>
-
         </q-list>
-        <q-expansion-item group="networksGroup" v-for="network in networks" v-bind:key="network.id" expand-separator
-          clickable icon="public" header-:inset-level="1" :label="network.name" caption="Network">
-          <q-list>
-            <q-item :inset-level="1" clickable active-class="menu-link" :active="menu === network.id + 'traffic'">
-              <q-item-section>Traffic</q-item-section>
-              <q-item-section side>
-                <q-icon name="keyboard_arrow_right" />
-              </q-item-section>
-              <q-menu fit square anchor="top right" self="top left">
-                <q-item clickable v-close-popup active-class="menu-link"
-                  :active="menuItem === network.id + 'applicationTraffic'" @click="getNetwork(network.id, network.name);
-                    getNetworkApplicationTraffic(network.id)">
-                  Applications
-                </q-item>
-                <q-item clickable v-close-popup active-class="menu-link"
-                  :active="menuItem === network.id + 'clientTraffic'" @click="getNetwork(network.id, network.name);
-                    getNetworkClientTraffic(network.id)">
-                  Clients
-                </q-item>
-              </q-menu>
-            </q-item>
-            <q-item clickable :inset-level="1" v-ripple :active="menuItem === network.id + 'networkEventsTable'" @click="
-            getNetwork(network.id, network.name);
-            getNetworkEventsTable(network.id);
-          " active-class="menu-link">
-              <q-item-section>Events</q-item-section>
-            </q-item>
-          </q-list>
-        </q-expansion-item>
-      </q-expansion-item>
-    </template>
-    <template v-slot:after>
-      <q-tab-panels v-model="menuItem" animated vertical transition-prev="jump-up" transition-next="jump-up">
-        <q-tab-panel :name="organizationID + 'organizationOverview'" v-if="show">
-          <Overview :organizationID="organizationID" :organizationName="organizationName" />
-        </q-tab-panel>
-
-        <q-tab-panel :name="organizationID + 'topClients'">
-          <TopClientsTable :organizationID="organizationID" :organizationName="organizationName" />
-        </q-tab-panel>
-
-        <q-tab-panel :name="networkID + 'applicationTraffic'">
-          <NetworkApplicationTrafficTable :organizationID="organizationID" :organizationName="organizationName"
-            :networkID="networkID" :networkName="networkName" />
-        </q-tab-panel>
-
-        <q-tab-panel :name="networkID + 'clientTraffic'">
-          <NetworkClientsTrafficTable :organizationID="organizationID" :organizationName="organizationName"
-            :networkID="networkID" :networkName="networkName" />
-        </q-tab-panel>
-        <q-tab-panel :name="networkID + 'networkEventsTable'">
-          <NetworkEventsTable :organizationID="organizationID" :organizationName="organizationName"
-            :networkID="networkID" :networkName="networkName" />
-        </q-tab-panel>
-      </q-tab-panels>
-    </template>
-  </q-splitter>
+      </q-btn-dropdown>
+      <q-btn-dropdown flat dense stretch no-caps icon="public" label="Networks" class="q-px-md">
+        <q-list>
+          <q-item v-for="network in networks" clickable>
+            <q-item-section>{{network.name}}</q-item-section>
+            <q-item-section side>
+              <q-icon name="keyboard_arrow_right" />
+            </q-item-section>
+            <q-menu fit square anchor="top right" self="top left">
+              <q-item clickable v-close-popup @click="getNetworkApplicationTraffic(network.id)"
+                :active="tab === network.id + 'networkTrafficAnalyticsTable'" active-class="menu-link">
+                Traffic analytics
+              </q-item>
+              <q-item clickable v-close-popup @click="getNetworkClientTraffic(network.id)"
+                :active="tab === network.id + 'networkClientTrafficTable'" active-class="menu-link">
+                Clients
+              </q-item>
+              <q-item clickable v-close-popup @click="getNetworkEventsTable(network.id)"
+                :active="tab === network.id + 'networkEventsTable'" active-class="menu-link">
+                Events
+              </q-item>
+            </q-menu>
+          </q-item>
+        </q-list>
+      </q-btn-dropdown>
+    </q-tabs>
+    <q-tab-panels v-model="tab" animated>
+      <q-tab-panel name="overviewTable" class="q-px-md">
+        <OverviewTable :organizationID="organizationID" :organizationName="organizationName" />
+      </q-tab-panel>
+      <q-tab-panel name="topClientsTable" class="q-px-md">
+        <TopClientsTable :organizationID="organizationID" :organizationName="organizationName" />
+      </q-tab-panel>
+      <q-tab-panel :name="networkId + 'networkTrafficAnalyticsTable'">
+        <NetworkTrafficAnalyticsTable :organizationID="organizationID" :organizationName="organizationName"
+          :networkID="networkId" :networkName="networkName" />
+      </q-tab-panel>
+      <q-tab-panel :name="networkId + 'networkClientTrafficTable'">
+        <NetworkClientsTrafficTable :organizationID="organizationID" :organizationName="organizationName"
+          :networkID="networkId" :networkName="networkName" />
+      </q-tab-panel>
+      <q-tab-panel :name="networkId + 'networkEventsTable'">
+        <NetworkEventsTable :organizationID="organizationID" :organizationName="organizationName" :networkID="networkId"
+          :networkName="networkName" />
+      </q-tab-panel>
+    </q-tab-panels>
+  </q-card>
 </template>
 
 <script>
   import axios from "axios";
   import AssociateOrg from "@/components/integrations/meraki/modals/AssociateOrg";
-  import Overview from "@/components/integrations/meraki/organization/Overview";
+  import OverviewTable from "@/components/integrations/meraki/organization/OverviewTable";
   import TopClientsTable from "@/components/integrations/meraki/organization/TopClientsTable";
-  import NetworkApplicationTrafficTable from "@/components/integrations/meraki/traffic/NetworkApplicationTrafficTable";
+  import NetworkTrafficAnalyticsTable from "@/components/integrations/meraki/traffic/NetworkTrafficAnalyticsTable";
   import NetworkClientsTrafficTable from "@/components/integrations/meraki/traffic/NetworkClientsTrafficTable";
   import NetworkEventsTable from "@/components/integrations/meraki/events/NetworkEventsTable";
   // composable imports
@@ -93,9 +80,9 @@
     props: ['node', 'integrations'],
     components: {
       AssociateOrg,
-      Overview,
+      OverviewTable,
       TopClientsTable,
-      NetworkApplicationTrafficTable,
+      NetworkTrafficAnalyticsTable,
       NetworkClientsTrafficTable,
       NetworkEventsTable,
     },
@@ -103,15 +90,13 @@
       const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
       const $q = useQuasar();
 
-      let organization = ref([]);
-      let networks = ref([]);
-      let organizationID = ref("");
-      let organizationName = ref("");
-      let networkID = ref("");
-      let networkName = ref("");
-      let menu = ref("");
-      let menuItem = ref("");
-      let menuLoading = ref(false);
+      const tab = ref("")
+      const organization = ref([]);
+      const networks = ref([]);
+      const organizationID = ref("");
+      const organizationName = ref("");
+      const networkId = ref("");
+      const networkName = ref("");
 
       function checkAssocation() {
         const obj = props.integrations[0].configuration.tactical_meraki_associations.find(o => o.node_id === props.node.id);
@@ -142,7 +127,7 @@
       }
 
       function getOrganization(obj) {
-        $q.loading.show({ message: 'Getting ' + obj.meraki_organization_label + '...' })
+        $q.loading.show({ message: 'Getting ' + obj.meraki_organization_label + ' networks...' })
         axios
           .get(`/meraki/organizations/` + obj.meraki_organization_id)
           .then(r => {
@@ -151,7 +136,7 @@
             if (r.data.errors) {
               notifyError(r.data.errors[0])
             }
-            $q.loading.hide()
+            getNetworks()
           })
           .catch(e => {
 
@@ -159,67 +144,48 @@
       }
 
       function getNetworks() {
-        menuLoading.value = true;
         axios
           .get(`/meraki/` + organizationID.value + `/networks/`)
           .then(r => {
             networks.value = r.data;
-            menuLoading.value = false;
+            tab.value = 'overviewTable'
+            $q.loading.hide()
           })
           .catch(e => {
             console.log(e)
           });
       }
 
-      function getOverview() {
-        menu.value = organizationID.value + "organizationOverview";
-        menuItem.value = organizationID.value + "organizationOverview";
+      function getNetworkApplicationTraffic(network_Id) {
+        networkId.value = network_Id
+        tab.value = this.network_Id + "networkTrafficAnalyticsTable"
       }
 
-      function getTopClients() {
-        menu.value = organizationID.value + "topClients";
-        menuItem.value = organizationID.value + "topClients";
+      function getNetworkClientTraffic(network_Id) {
+        networkId.value = network_Id
+        tab.value = this.networkId + "networkClientTrafficTable"
       }
 
-      function getNetwork(netID, netName) {
-        networkID.value = netID;
-        networkName.value = netName;
-      }
-
-      function getNetworkApplicationTraffic() {
-        menu.value = networkID.value + "traffic";
-        menuItem.value = networkID.value + "applicationTraffic";
-      }
-
-      function getNetworkClientTraffic() {
-        menu.value = networkID.value + "traffic";
-        menuItem.value = networkID.value + "clientTraffic";
-      }
-
-      function getNetworkEventsTable() {
-        menu.value = networkID.value + "networkEvents";
-        menuItem.value = networkID.value + "networkEventsTable";
+      function getNetworkEventsTable(network_Id) {
+        networkId.value = network_Id
+        tab.value = this.networkId + "networkEventsTable"
       }
 
       onBeforeMount(() => {
         checkAssocation()
+
       })
 
       return {
+        tab,
         splitterModel: ref(17),
-        menuLoading,
-        menu,
-        menuItem,
         organization,
         networks,
         organizationID,
         organizationName,
         networkName,
-        networkID,
-        getOverview,
+        networkId,
         getNetworks,
-        getNetwork,
-        getTopClients,
         getNetworkApplicationTraffic,
         getNetworkClientTraffic,
         getNetworkEventsTable,
@@ -230,3 +196,8 @@
     },
   };
 </script>
+<style lang="sass">
+  .menu-link
+    color: black
+    background: #eeeeee
+</style>

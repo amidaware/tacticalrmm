@@ -12,7 +12,7 @@
             <q-select filled v-model="assetTag" label="Asset Tag *" :options="assetTagOptions" dense
               :rules="[(val) => !!val || '*Required']" />
             <q-input filled v-model="assetSerial" label="Serial *" dense :rules="[(val) => !!val || '*Required']" />
-            <q-select filled dense v-model="assetStatus" label="Status" :options="assetStatusOptions"
+            <q-select filled dense v-model="assetStatus" label="Status *" :options="assetStatusOptions"
               :rules="[(val) => !!val || '*Required']" />
             <div class="row">
               <div class="col-6">
@@ -240,7 +240,7 @@
           stepperTitle.value = 'Edit ' + props.agent.hostname
           assetSerial.value = props.agent.wmi_detail.os[0][0].SerialNumber
           assetCompany.value = { label: props.asset.company.name, value: props.asset.company.id }
-          assetLocation.value = { label: props.asset.location.name, value: props.asset.location.id }
+          assetLocation.value = props.asset.location ? { label: props.asset.location.name, value: props.asset.location.id } : ""
           assetTag.value = props.asset.asset_tag
           assetStatus.value = { label: props.asset.status_label.name, value: props.asset.status_label.id }
           assetPurchaseDate.value = props.asset.purchase_date.date
@@ -460,7 +460,7 @@
           }
 
         } else {
-          notifyError("Please make sure all fields are filled in")
+          notifyError("Please make sure all required fields are filled in")
           $q.loading.hide()
         }
       }

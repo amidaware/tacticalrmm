@@ -285,14 +285,14 @@ export default {
       }
 
       if (typeof timespan.value.value === 'object') {
-        let t0 = date.formatDate(timespan.value.value.from, "YYYY-MM-DDT00:00:00.000Z");
-        let t1 = date.formatDate(timespan.value.value.to, "YYYY-MM-DDT00:00:00.000Z");
+        const t0 = date.formatDate(timespan.value.value.from, "YYYY-MM-DDT00:00:00.000Z");
+        const t1 = date.formatDate(timespan.value.value.to, "YYYY-MM-DDT00:00:00.000Z");
         timespan.value.value = "t0=" + t0 + "&t1=" + t1
         timespan.value.label = date.formatDate(t0, "MMM D, YYYY @ hh:mm A") + " - " + date.formatDate(t1, "MMM D, YYYY @ hh:mm A")
 
       } else if (timespan.value.value !== 7200 && timespan.value.value !== 86400 && timespan.value.value !== 604800 && timespan.value.value !== 2592000) {
-        let t0 = date.formatDate(timespan.value.value, "YYYY-MM-DDT00:00:00.000Z");
-        let t1 = date.formatDate(timespan.value.value, "YYYY-MM-DDT23:59:00.000Z");
+        const t0 = date.formatDate(timespan.value.value, "YYYY-MM-DDT00:00:00.000Z");
+        const t1 = date.formatDate(timespan.value.value, "YYYY-MM-DDT23:59:00.000Z");
         timespan.value.value = "t0=" + t0 + "&t1=" + t1
         timespan.value.label = date.formatDate(t0, "MMM D, YYYY @ hh:mm A") + " - " + date.formatDate(t1, "MMM D, YYYY @ hh:mm A")
       }

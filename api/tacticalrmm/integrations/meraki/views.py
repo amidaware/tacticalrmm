@@ -181,7 +181,7 @@ class GetNetworkClientTraffic(APIView):
 
     def get(self, request, network_id, timespan, format=None):
         integration = Integration.objects.get(name="Cisco Meraki")
-        print(timespan)
+
         if "t0" and "t1" in str(timespan):
             url = integration.base_url + "networks/" + network_id +"/clients?perPage=1000&" + str(timespan)
         else:

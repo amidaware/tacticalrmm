@@ -160,7 +160,7 @@ export default {
       let url = null;
       if (typeof timespan === "string" && typeof timespan !== null) {
         const endingBefore = date.formatDate(timespan, "YYYY-MM-DDT00:00:00.000Z");
-        const formattedDate = date.formatDate(timespan, "MMM DD, YYYY HH:MM aa");
+        const formattedDate = date.formatDate(timespan, "MMM DD, YYYY @ h:mm A");
         timespan.value.label = "Before: " + formattedDate;
 
         url = "endingBefore=" + endingBefore;
@@ -181,7 +181,7 @@ export default {
             let result = arr.join(" ").replaceAll(",", ": ");
             let formattedDate = date.formatDate(
               event.occurredAt,
-              "MMM DD, YYYY h:mm:ss aa"
+              "MMM DD, YYYY @ h:mm A"
             );
             let eventObj = {
               occurredAt: formattedDate,

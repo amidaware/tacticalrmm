@@ -316,8 +316,8 @@ export default {
               usage: { total: returnedUsage, recv: client.usage.recv, sent: client.usage.sent },
               recentDeviceMac: client.recentDeviceMac,
               recentDeviceName: client.recentDeviceName,
-              firstSeen: client.firstSeen,
-              lastSeen: client.lastSeen,
+              firstSeen: date.formatDate(client.firstSeen, "MMM DD, YYYY @ h:mm A"),
+              lastSeen: date.formatDate(client.lastSeen, "MMM DD, YYYY @ h:mm A"),
               os: client.os,
               vlan: client.vlan
             }

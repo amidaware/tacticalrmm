@@ -131,4 +131,4 @@ Q. Why can’t I use a self signed certificate for web etc.
 
 A. NATS over TLS needs a real certificate signed with a trusted root certificate.
 
-NATS can function without TLS however that isn’t recommended, and we don't support it. NATS is what passes data between server and agent. Would you really pass your RMM's Command and Control without encryption that manages all your agents? Hint: The answer to this question is **HELL NO**
+If you aren't a dev in a non-production environment, don't run nats with self signed certs: <https://docs.nats.io/running-a-nats-service/configuration/securing_nats/tls#self-signed-certificates-for-testing>

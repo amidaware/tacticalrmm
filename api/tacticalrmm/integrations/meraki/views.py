@@ -16,7 +16,7 @@ class GetOrganizations(APIView):
                 "Accept": "application/json",
                 "Content-Type": "application/json",
                 "X-Cisco-Meraki-API-Key": integration.api_key
-            }, timeout=(1,30),
+            }, timeout=(3,30),
         ).json()
 
         return Response(result)
@@ -32,7 +32,7 @@ class GetOrganization(APIView):
                 "Accept": "application/json",
                 "Content-Type": "application/json",
                 "X-Cisco-Meraki-API-Key": integration.api_key
-            }, timeout=(1,30),
+            }, timeout=(3,30),
         ).json()
 
         return Response(result)
@@ -50,7 +50,7 @@ class GetNetworks(APIView):
                 "Accept": "application/json",
                 "Content-Type": "application/json",
                 "X-Cisco-Meraki-API-Key": integration.api_key
-            }, timeout=(1,30),
+            }, timeout=(3,30),
         ).json()
 
         return Response(result)
@@ -67,7 +67,7 @@ class GetDevices(APIView):
                 "Accept": "application/json",
                 "Content-Type": "application/json",
                 "X-Cisco-Meraki-API-Key": integration.api_key
-            }, timeout=(1,30),
+            }, timeout=(3,30),
         ).json()
 
         return Response(result)
@@ -89,7 +89,7 @@ class GetOverview(APIView):
                 "Accept": "application/json",
                 "Content-Type": "application/json",
                 "X-Cisco-Meraki-API-Key": integration.api_key
-            }, timeout=(1,30),
+            }, timeout=(3,30),
         ).json()
 
         return Response(result)
@@ -106,7 +106,7 @@ class GetNetworkUplinks(APIView):
                 "Accept": "application/json",
                 "Content-Type": "application/json",
                 "X-Cisco-Meraki-API-Key": integration.api_key
-            }, timeout=(1,30),
+            }, timeout=(3,30),
         ).json()
 
         return Response(result)
@@ -128,7 +128,7 @@ class GetTopClients(APIView):
                 "Accept": "application/json",
                 "Content-Type": "application/json",
                 "X-Cisco-Meraki-API-Key": integration.api_key
-            }, timeout=(1,30),
+            }, timeout=(3,30),
         ).json()
 
         return Response(result)
@@ -147,7 +147,7 @@ class GetClient(APIView):
                     "Accept": "application/json",
                     "Content-Type": "application/json",
                     "X-Cisco-Meraki-API-Key": integration.api_key
-                }, timeout=(1,30),
+                }, timeout=(3,30),
             ).json()
             
             return Response(result)
@@ -171,7 +171,7 @@ class GetNetworkApplicationTraffic(APIView):
                 "Accept": "application/json",
                 "Content-Type": "application/json",
                 "X-Cisco-Meraki-API-Key": integration.api_key
-            }, timeout=(1,30),
+            }, timeout=(3,30),
         ).json()
 
         return Response(result)
@@ -193,7 +193,7 @@ class GetNetworkClientTraffic(APIView):
                 "Accept": "application/json",
                 "Content-Type": "application/json",
                 "X-Cisco-Meraki-API-Key": integration.api_key
-            }, timeout=(1,30),
+            }, timeout=(3,30),
         ).json()
 
         return Response(result)
@@ -215,7 +215,7 @@ class GetNetworkEvents(APIView):
                 "Accept": "application/json",
                 "Content-Type": "application/json",
                 "X-Cisco-Meraki-API-Key": integration.api_key
-            }, timeout=(1,30),
+            }, timeout=(3,30),
         ).json()
 
         return Response(result)
@@ -232,7 +232,7 @@ class GetClientPolicy(APIView):
                 "Accept": "application/json",
                 "Content-Type": "application/json",
                 "X-Cisco-Meraki-API-Key": integration.api_key
-            }, timeout=(1,30),
+            }, timeout=(3,30),
         ).json()
 
         return Response(result)
@@ -249,7 +249,7 @@ class GetClientPolicy(APIView):
                 "Accept": "application/json",
                 "Content-Type": "application/json",
                 "X-Cisco-Meraki-API-Key": integration.api_key
-            }, data=payload, timeout=(1,30),
+            }, data=payload, timeout=(3,30),
         ).json()
         
         return Response(result)

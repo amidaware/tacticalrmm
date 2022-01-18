@@ -36,3 +36,77 @@ SWAGGER_ENABLED = True
 Restart django: `sudo systemctl restart rmm`
 
 Then visit `https://api.example.com/api/schema/swagger-ui/` to see it in action.
+
+???+ abstract "Example Code"
+
+    === ":fontawesome-brands-python: Python"
+
+        Requests Windows Update check to run against agent ID
+
+        ```python
+        import requests
+
+        API = "http://api.example.com"
+        HEADERS = {
+            "Content-Type": "application/json",
+            "X-API-KEY": "DKNRPTHSAPCKT8A36MCAMNZREWWWFPWI",
+        }
+
+
+        def trigger_update_scan():
+            agents = requests.get(f"{API}/agents/?detail=false", headers=HEADERS)
+            for agent in agents.json():
+                r = requests.post(f"{API}/winupdate/{agent['agent_id']}/scan/", headers=HEADERS)
+                print(r.json())
+
+
+        if __name__ == "__main__":
+            trigger_update_scan()
+        ```
+
+    === ":material-powershell: Powershell"
+
+        ```powershell
+        # Example - Get all agents using API
+
+        $headers = @{
+            'X-API-KEY' = 'ABC1234567890987654321'
+        }
+
+        $url = "https://api.yourdomain.com/agents/"
+
+        $agentsResult = Invoke-RestMethod -Method 'Get' -Uri $url -Headers $headers -ContentType "application/json"
+
+        foreach ($agent in $agentsResult) {
+            Write-Host $agent
+            
+            #Write-Host $agent.hostname
+        }
+        ```
+
+    === ":material-powershell: Powershell"
+
+        ```powershell
+        # Example - Send powershell command to agent.  Make sure to pass {{agent.agent_id}} as a parameter
+
+        param(
+            $AgentId
+        )
+
+        $headers = @{
+            'X-API-KEY' = 'ABC1234567890987654321'
+        }
+
+        $url = "https://api.yourdomain.com/agents/$AgentId/cmd/"
+
+        $body = @{
+            "shell"   = "powershell"
+            "cmd"     = "dir c:\\users" 
+            "timeout" = 30
+        }
+
+
+        $commandResult = Invoke-RestMethod -Method 'Post' -Uri $url -Body ($body|ConvertTo-Json) -Headers $headers -ContentType "application/json"
+
+        Write-Host $commandResult
+        ```

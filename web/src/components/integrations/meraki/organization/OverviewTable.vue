@@ -44,79 +44,83 @@
     :loading="tableLoading"
   >
     <template v-slot:top-left>
-      <q-btn
-        flat
-        dense
-        @click="timespan.label = 'for the last day'; timespan.value = 86400; getOverview()"
-        icon="refresh"
-        class="q-mb-sm q-mr-md"
-      />
-      <span class="text-h6">{{ totalClients }}</span>
-      <span class="q-px-sm">clients and</span>
-      <span class="text-h6">{{ totalUsage }}</span>
-      <span class="q-pl-sm">transferred</span>
-      <q-btn-dropdown
-        no-caps
-        flat
-        :label="timespan.label"
-        v-model="timespanMenu"
-        class="q-mb-xs q-px-sm"
-      >
-        <q-list>
-          <q-item
-            clickable
-            v-close-popup
-            no-caps
-            @click="timespan.label = 'for the last day'; timespan.value = 86400; getOverview()"
-          >
-            <q-item-section>
-              <q-item-label>for the last day</q-item-label>
-            </q-item-section>
-          </q-item>
-          <q-item
-            clickable
-            v-close-popup
-            no-caps
-            @click="timespan.label = 'for the last week'; timespan.value = 604800; getOverview()"
-          >
-            <q-item-section>
-              <q-item-label>for the last week</q-item-label>
-            </q-item-section>
-          </q-item>
-          <q-item
-            clickable
-            v-close-popup
-            @click="timespan.label = 'for the last 30 days'; timespan.value = 2592000; getOverview()"
-          >
-            <q-item-section>
-              <q-item-label>for the last 30 days</q-item-label>
-            </q-item-section>
-          </q-item>
-          <q-item clickable>
-            <q-item-section v-ripple>
-              <q-item-label>Custom range</q-item-label>
-              <q-popup-proxy
-                @before-show="updateProxy"
-                transition-show="scale"
-                transition-hide="scale"
-              >
-                <q-date v-model="dateRange" :options="dateOptions" range>
-                  <div class="row items-center justify-end q-gutter-sm">
-                    <q-btn label="Cancel" color="primary" flat v-close-popup />
-                    <q-btn
-                      label="OK"
-                      color="primary"
-                      flat
-                      @click="timespan.value = dateRange; timespanMenu = false; getOverview()"
-                      v-close-popup
-                    />
-                  </div>
-                </q-date>
-              </q-popup-proxy>
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </q-btn-dropdown>
+      <div>
+        <q-btn
+          flat
+          dense
+          @click="timespan.label = 'for the last day'; timespan.value = 86400; getOverview()"
+          icon="refresh"
+          label="Overview"
+          class="q-mr-md"
+        />
+        <span class="text-weight-bold q-mr-xs">{{ totalClients }}</span>
+        <span class="q-ml-xs q-mr-sm">total clients and</span>
+        <span class="text-weight-bold q-mr-xs">{{ totalUsage }}</span>
+        <span class="q-ml-xs q-mr-sm">transferred</span>
+        <q-btn-dropdown
+          no-caps
+          flat
+          :label="timespan.label"
+          v-model="timespanMenu"
+          class="q-px-none"
+          style="margin-bottom:3px"
+        >
+          <q-list>
+            <q-item
+              clickable
+              v-close-popup
+              no-caps
+              @click="timespan.label = 'for the last day'; timespan.value = 86400; getOverview()"
+            >
+              <q-item-section>
+                <q-item-label>for the last day</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item
+              clickable
+              v-close-popup
+              no-caps
+              @click="timespan.label = 'for the last week'; timespan.value = 604800; getOverview()"
+            >
+              <q-item-section>
+                <q-item-label>for the last week</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item
+              clickable
+              v-close-popup
+              @click="timespan.label = 'for the last 30 days'; timespan.value = 2592000; getOverview()"
+            >
+              <q-item-section>
+                <q-item-label>for the last 30 days</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item clickable>
+              <q-item-section v-ripple>
+                <q-item-label>Custom range</q-item-label>
+                <q-popup-proxy
+                  @before-show="updateProxy"
+                  transition-show="scale"
+                  transition-hide="scale"
+                >
+                  <q-date v-model="dateRange" :options="dateOptions" range>
+                    <div class="row items-center justify-end q-gutter-sm">
+                      <q-btn label="Cancel" color="primary" flat v-close-popup />
+                      <q-btn
+                        label="OK"
+                        color="primary"
+                        flat
+                        @click="timespan.value = dateRange; timespanMenu = false; getOverview()"
+                        v-close-popup
+                      />
+                    </div>
+                  </q-date>
+                </q-popup-proxy>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
+      </div>
     </template>
     <template v-slot:body="props">
       <q-tr :props="props">

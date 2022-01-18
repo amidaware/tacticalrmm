@@ -106,7 +106,7 @@ ufw enable && ufw reload
 
 !!!note
     You will never login to the server again as `root` again unless something has gone horribly wrong, and you're working with the developers.
-    
+
 ### Create the A records
 
 We'll be using `example.com` as our domain for this example.
@@ -192,7 +192,7 @@ Login to your router/NAT device.
 
 1. Set your TRMM server as a static IP (Using a DHCP reservation is usually safer)
 2. Create 2 port forwarding rules. `TCP Port 443` and `TCP Port 4222` to your TRMM servers private IP address.
-   
+
 !!!note
     <https://portforward.com/> can help with Port Forwarding setup
 

@@ -62,7 +62,7 @@ Nginx is the web server for the `rmm`, `api`, and `mesh` domains. All sites redi
 
     === ":material-web: `rmm.example.com`"
 
-        This serves the frontend website that you intereact with.
+        This serves the frontend website that you interact with.
 
         - Config: `/etc/nginx/sites-enabled/frontend.conf`
         - root: `/var/www/rmm/dist`
@@ -91,8 +91,8 @@ Nginx is the web server for the `rmm`, `api`, and `mesh` domains. All sites redi
 
         - Config: `/etc/nginx/sites-enabled/meshcentral.conf`
         - Upstream: `http://127.0.0.1:4430/`
-        - Access log: `/var/log/nginx/access.log` (uses deafult)
-        - Error log: `/var/log/nginx/error.log` (uses deafult)
+        - Access log: `/var/log/nginx/access.log` (uses default)
+        - Error log: `/var/log/nginx/error.log` (uses default)
         - TLS certificate: `/etc/letsencrypt/live/example.com/fullchain.pem`
 
     === ":material-web: default"
@@ -101,8 +101,8 @@ Nginx is the web server for the `rmm`, `api`, and `mesh` domains. All sites redi
 
         - Config: `/etc/nginx/sites-enabled/default`
         - root: `/var/www/rmm/dist`
-        - Access log: `/var/log/nginx/access.log` (uses deafult)
-        - Error log: `/var/log/nginx/error.log` (uses deafult)
+        - Access log: `/var/log/nginx/access.log` (uses default)
+        - Error log: `/var/log/nginx/error.log` (uses default)
 
 ???+ note "systemd config"
 

@@ -87,6 +87,7 @@ extra:
       link: "https://github.com/wh1te909/tacticalrmm"
 
 markdown_extensions:
+  - pymdownx.keys
   - pymdownx.inlinehilite
   - admonition
   - pymdownx.details

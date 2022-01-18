@@ -120,3 +120,12 @@ Create your first client/site, choose the default timezone and then upload the m
 ## Note about Backups
 
 The backup script **does not** work with docker. To backup your install use [standard docker backup/restore](https://docs.docker.com/desktop/backup-and-restore/) processes.
+
+If your file system is `btrfs` something like:
+
+```bash
+docker-compose stop
+btrfs subvolume snapshot -r /srv/tsd /srv/tsd/.snapshot-`date +%F-%H%M%S`
+```
+
+or you can look at [this](https://github.com/larseberhardt/TRMM-Docker-Backup-Script)

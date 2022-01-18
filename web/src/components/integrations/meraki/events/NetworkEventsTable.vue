@@ -35,6 +35,7 @@
 timespan.label = '';
         "
         icon="refresh"
+        label="Network Events"
       />
       <q-btn
         icon="event"

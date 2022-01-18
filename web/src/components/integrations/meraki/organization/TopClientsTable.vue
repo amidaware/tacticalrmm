@@ -15,12 +15,10 @@
           @click="timespan.label = 'for the last day'; timespan.value = 86400; getTopClients()"
           icon="refresh"
           label="Top Clients"
+          class="q-mr-md"
         />
-      </div>
-    </template>
-    <template v-slot:top-right>
-      <div>
-        <span class="text-weight-bold q-mr-xs">{{ totalUsage }}</span>
+
+        <span class="text-h6 q-mr-xs">{{ totalUsage }}</span>
         <span class="q-ml-xs q-mr-sm">transferred</span>
         <q-btn-dropdown
           no-caps
@@ -28,7 +26,7 @@
           :label="timespan.label"
           v-model="timespanMenu"
           class="q-px-none"
-          style="margin-bottom:2.5px"
+          style="margin-bottom:2.2px"
         >
           <q-list>
             <q-item

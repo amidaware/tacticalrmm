@@ -53,9 +53,9 @@
           label="Overview"
           class="q-mr-md"
         />
-        <span class="text-weight-bold q-mr-xs">{{ totalClients }}</span>
+        <span class="text-h6 q-mr-xs">{{ totalClients }}</span>
         <span class="q-ml-xs q-mr-sm">total clients and</span>
-        <span class="text-weight-bold q-mr-xs">{{ totalUsage }}</span>
+        <span class="text-h6 q-mr-xs">{{ totalUsage }}</span>
         <span class="q-ml-xs q-mr-sm">transferred</span>
         <q-btn-dropdown
           no-caps
@@ -63,7 +63,7 @@
           :label="timespan.label"
           v-model="timespanMenu"
           class="q-px-none"
-          style="margin-bottom:3px"
+          style="margin-bottom:2.2px"
         >
           <q-list>
             <q-item

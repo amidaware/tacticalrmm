@@ -17,7 +17,7 @@
           label="Client Traffic"
           class="q-mr-md"
         />
-        <span class="text-weight-bold q-mr-xs">{{ totalUsage }}</span>
+        <span class="text-h6 q-mr-xs">{{ totalUsage }}</span>
         <span>
           (
           <q-icon name="arrow_downward" />
@@ -33,7 +33,7 @@
           :label="timespan.label"
           v-model="timespanMenu"
           class="q-px-none"
-          style="margin-bottom:2.5px"
+          style="margin-bottom:2.2px"
         >
           <q-list>
             <q-item

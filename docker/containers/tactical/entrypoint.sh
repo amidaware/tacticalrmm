@@ -39,12 +39,13 @@ if [ "$1" = 'tactical-init' ]; then
 
   mkdir -p /meshcentral-data
   mkdir -p ${TACTICAL_DIR}/tmp
+  mkdir -p ${TACTICAL_DIR}/certs
+  mkdir -p /mongo/data/db
+  mkdir -p /redis/data
   touch /meshcentral-data/.initialized && chown -R 1000:1000 /meshcentral-data
   touch ${TACTICAL_DIR}/tmp/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}
-  mkdir -p ${TACTICAL_DIR}/certs && chown -R 1000:1000 ${TACTICAL_DIR}/certs
-  mkdir -p /mongo/data/db
+  touch ${TACTICAL_DIR}/certs/.initialized && chown -R 1000:1000 ${TACTICAL_DIR}/certs
   touch /mongo/data/db/.initialized && chown -R 1000:1000 /mongo/data/db
-  mkdir -p /redis/data
   touch /redis/data/.initialized && chown -R 1000:1000 /redis/data
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/exe
   mkdir -p ${TACTICAL_DIR}/api/tacticalrmm/private/log

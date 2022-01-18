@@ -10,7 +10,10 @@
             </q-bar>
             <q-card-section class="row items-center">
                 <div>
-                    Are you sure you want to delete the <span class="text-weight-bold">{{selected[0].title}}</span> maintenance entry from Snipe-IT?
+                    Are you sure you want to delete the
+                    <span
+                        class="text-weight-bold"
+                    >{{ selected[0].title }}</span> maintenance entry from Snipe-IT?
                 </div>
             </q-card-section>
             <q-card-actions align="right">
@@ -22,23 +25,22 @@
 </template>
 
 <script>
-    import axios from "axios";
-    // composable imports
-    import { ref, computed, onMounted, watch } from "vue";
-    import { useQuasar, useDialogPluginComponent } from "quasar";
-    import { notifySuccess, notifyError } from "@/utils/notify";
+import axios from "axios";
+// composable imports
+import { onMounted, } from "vue";
+import { useDialogPluginComponent } from "quasar";
+import { notifySuccess, notifyError } from "@/utils/notify";
 
-    export default {
-        name: "DeleteMaintenance",
-        emits: [...useDialogPluginComponent.emits],
-        props: ['selected'],
+export default {
+    name: "DeleteMaintenance",
+    emits: [...useDialogPluginComponent.emits],
+    props: ['selected'],
 
-        setup(props) {
-            const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
-            const $q = useQuasar();
+    setup(props) {
+        const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
 
-            function deleteMaintenance() {
-                axios
+        function deleteMaintenance() {
+            axios
                 .delete(`/snipeit/maintenances/` + props.selected[0].id)
                 .then(r => {
                     if (r.data.status === 'error') {
@@ -51,17 +53,17 @@
                 .catch(e => {
                     console.log(e)
                 });
-            }
+        }
 
-            onMounted(() => {
-            });
+        onMounted(() => {
+        });
 
-            return {
-                deleteMaintenance,
-                // quasar dialog plugin
-                dialogRef,
-                onDialogHide,
-            }
+        return {
+            deleteMaintenance,
+            // quasar dialog plugin
+            dialogRef,
+            onDialogHide,
         }
     }
+}
 </script>

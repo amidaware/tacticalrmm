@@ -9,8 +9,14 @@
                 </q-btn>
             </q-bar>
             <q-card-section>
-                    <q-select filled v-model="assetModel" label="Model *" :options="assetModelOptions" dense
-                        :rules="[(val) => !!val || '*Required']" />
+                <q-select
+                    filled
+                    v-model="assetModel"
+                    label="Model *"
+                    :options="assetModelOptions"
+                    dense
+                    :rules="[(val) => !!val || '*Required']"
+                />
                 <q-card-actions align="right">
                     <q-btn class="q-mb-md" label="Save" @click="onOKClick()" />
                 </q-card-actions>
@@ -20,71 +26,71 @@
 </template>
 
 <script>
-    import axios from "axios";
-    // composable imports
-    import { ref, computed, onMounted, watch } from "vue";
-    import { useQuasar, useDialogPluginComponent } from "quasar";
-    import { notifySuccess, notifyError } from "@/utils/notify";
+import axios from "axios";
+// composable imports
+import { ref, onMounted, } from "vue";
+import { useQuasar, useDialogPluginComponent } from "quasar";
+import { notifySuccess, notifyError } from "@/utils/notify";
 
-    export default {
-        name: "AddModel",
-        emits: [...useDialogPluginComponent.emits],
-        props: ['agent', 'manufacturer', 'category'],
+export default {
+    name: "AddModel",
+    emits: [...useDialogPluginComponent.emits],
+    props: ['agent', 'manufacturer', 'category'],
 
-        setup(props) {
-            const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
-            const $q = useQuasar();
-            const assetModel = ref("")
-            const assetModelOptions = ref([])
-            const addNewModel = ref(true)
+    setup(props) {
+        const { dialogRef, onDialogOK, onDialogHide } = useDialogPluginComponent();
+        const $q = useQuasar();
+        const assetModel = ref("")
+        const assetModelOptions = ref([])
+        const addNewModel = ref(true)
 
-            function getTacticalAgent() {
-                assetModelOptions.value.push(props.agent.wmi_detail.comp_sys_prod[0][0].IdentifyingNumber)
-                assetModelOptions.value.push(props.agent.wmi_detail.comp_sys_prod[0][0].Name)
+        function getTacticalAgent() {
+            assetModelOptions.value.push(props.agent.wmi_detail.comp_sys_prod[0][0].IdentifyingNumber)
+            assetModelOptions.value.push(props.agent.wmi_detail.comp_sys_prod[0][0].Name)
+        }
+
+        function onOKClick() {
+            $q.loading.show()
+            let data = {
+                model_name: assetModel.value,
+                model_number: assetModel.value,
+                category_id: props.category.value,
+                manufacturer_id: props.manufacturer.value
             }
 
-            function onOKClick() {
-                $q.loading.show()
-                let data = {
-                    model_name: assetModel.value,
-                    model_number: assetModel.value,
-                    category_id: props.category.value,
-                    manufacturer_id: props.manufacturer.value
-                }
-
-                axios
+            axios
                 .post(`/snipeit/models/`, data)
                 .then(r => {
-                    if (r.data.status === 'error'){
+                    if (r.data.status === 'error') {
                         notifyError(r.data.messages)
-                    }else{
+                    } else {
                         notifySuccess(r.data.messages)
 
                         $q.loading.hide()
                         onDialogOK({
                             "assetModel": assetModel.value,
                             "assetModelID": r.data.payload.id,
-                            "addNewModel":addNewModel.value
+                            "addNewModel": addNewModel.value
                         })
                     }
                 })
                 .catch(e => {
                     console.log(e)
                 });
-            }
+        }
 
-            onMounted(() => {
-                getTacticalAgent()
-            });
+        onMounted(() => {
+            getTacticalAgent()
+        });
 
-            return {
-                assetModel,
-                assetModelOptions,
-                onOKClick,
-                // quasar dialog plugin
-                dialogRef,
-                onDialogHide,
-            }
+        return {
+            assetModel,
+            assetModelOptions,
+            onOKClick,
+            // quasar dialog plugin
+            dialogRef,
+            onDialogHide,
         }
     }
+}
 </script>

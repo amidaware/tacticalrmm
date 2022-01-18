@@ -152,6 +152,7 @@
 import axios from "axios";
 import { ref, onMounted } from "vue";
 import { useQuasar, date } from "quasar";
+import Policy from "@/components/integrations/meraki/modals/Policy";
 
 const columns = [
   {
@@ -240,6 +241,8 @@ export default {
   props: ["organizationName", "networkID", "networkName"],
 
   setup(props) {
+    const $q = useQuasar();
+
     const timespanMenu = ref(false)
     const timespan = ref({ label: "for the last 2 hours", value: 7200 })
     const rows = ref([])
@@ -334,6 +337,16 @@ export default {
         });
     }
 
+    function getDevicePolicy() {
+      $q.dialog({
+        component: Policy,
+        componentProps: {
+          selected: selected,
+          agent: props.agent
+        }
+      })
+    }
+
     onMounted(() => {
       getClientTraffic();
     })
@@ -358,6 +371,7 @@ export default {
       updateProxy,
       tableLoading,
       getClientTraffic,
+      getDevicePolicy
     };
   }
 }

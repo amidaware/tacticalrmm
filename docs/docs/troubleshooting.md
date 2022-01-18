@@ -39,7 +39,7 @@ bash -x install.sh 2>&1 | tee install.log
 
 ## "Bad credentials" error when trying to login to the Web UI
 
-If you are sure you are using the correct credentials and still getting a "bad credentials" error, open your browser's dev tools (ctrl + shift + j on chrome) and check the Console tab to see the real error.
+If you are sure you are using the correct credentials and still getting a "bad credentials" error, open your browser's dev tools (++ctrl+shift+j++ on chrome) and check the Console tab to see the real error.
 
 It will most probably be a CORS error which means you need to check your DNS settings and make sure whatever computer you're trying to access the UI from resolves your 3 subdomains to the correct IP of the server running the RMM (public IP if running in the cloud, or private IP if running behind NAT).
 
@@ -138,7 +138,7 @@ This will fix permissions and reinstall python/node packages that might have got
 
 Check the debug log from the web UI: **File > Debug Log**
 
-Open your browser's dev tools (ctrl + shift + j on chrome) and check the Console tab for any errors
+Open your browser's dev tools (++ctrl+shift+j++ on chrome) and check the Console tab for any errors
 
 Check all the systemd services that the rmm uses to function and check to make sure they're all active/running and enabled:
 
